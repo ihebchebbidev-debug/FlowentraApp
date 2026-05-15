@@ -170,7 +170,10 @@ public static class TenantConnectionResolver
     public sealed record ConfiguredTenantConnection(string Tenant, string Source, string EnvironmentVariable, string ConnectionString);
 
     public static string GetEnvironmentVariableName(string tenant)
-        => $"{TenantDatabasePrefix}{tenant.ToUpperInvariant()}{TenantDatabaseSuffix}";
+        => $"{TenantDatabasePrefix}{NormalizeTenantForEnvironmentKey(tenant)}{TenantDatabaseSuffix}";
+
+    private static string NormalizeTenantForEnvironmentKey(string tenant)
+        => new string(tenant.Trim().ToUpperInvariant().Select(ch => char.IsLetterOrDigit(ch) ? ch : '_').ToArray());
 
     public static string? GetConnectionString(string? tenant)
     {
