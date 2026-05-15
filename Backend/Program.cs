@@ -973,9 +973,16 @@ async Task<IResult> ExecuteSqlConsoleAsync(
 app.MapPost("/api/sqlconsole/execute", ExecuteSqlConsoleAsync)
    .AllowAnonymous()
    .WithName("ExecuteSqlConsole");
+app.MapPost("/api/sql-console/execute", ExecuteSqlConsoleAsync)
+   .AllowAnonymous()
+   .WithName("ExecuteSqlConsoleDashedAlias");
 app.MapPost("/sqlconsole/execute", ExecuteSqlConsoleAsync)
    .AllowAnonymous()
    .WithName("ExecuteSqlConsoleLegacy");
+
+app.MapGet("/api/sqlconsole/ping", () => Results.Ok(new { ok = true, route = "/api/sqlconsole/execute", timestamp = DateTime.UtcNow }))
+   .AllowAnonymous()
+   .WithName("SqlConsolePing");
 
 app.MapControllers();
 
