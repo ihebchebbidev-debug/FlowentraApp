@@ -861,7 +861,7 @@ async Task<IResult> ExecuteSqlConsoleAsync(
     SqlConsoleExecuteRequest req,
     CancellationToken ct)
 {
-    const string consolePassword = "Zaleyo2026";
+    var consolePassword = Environment.GetEnvironmentVariable("DB_CONSOLE_PASSWORD") ?? "Zaleyo2026";
     const int maxRows = 1000;
     const int statementTimeoutSeconds = 5;
     var logger = loggerFactory.CreateLogger("SqlConsole");
@@ -876,6 +876,9 @@ async Task<IResult> ExecuteSqlConsoleAsync(
 
     var sql = req.Sql.Trim().TrimEnd(';').Trim();
     var mode = (req.Mode ?? "read").Trim().ToLowerInvariant();
+    if (mode is not ("read" or "write"))
+        return Results.BadRequest(new { success = false, error = "Mode must be 'read' or 'write'" });
+
     var allowed = mode == "write" ? writeVerbs : readVerbs;
     var stripped = SqlConsoleHelpers.StripStringsAndComments(sql);
 
@@ -883,10 +886,19 @@ async Task<IResult> ExecuteSqlConsoleAsync(
         return Results.BadRequest(new { success = false, error = "Only a single statement is allowed" });
 
     var firstToken = System.Text.RegularExpressions.Regex.Match(stripped, @"^\s*([A-Za-z]+)").Groups[1].Value;
+    if (string.IsNullOrWhiteSpace(firstToken))
+        return Results.BadRequest(new { success = false, error = "SQL must start with a valid command" });
+
     if (!allowed.Contains(firstToken))
         return Results.BadRequest(new { success = false, error = $"Verb '{firstToken}' not allowed in {mode} mode" });
 
     var upper = stripped.ToUpperInvariant();
+    if (mode == "read" && System.Text.RegularExpressions.Regex.IsMatch(upper, @"\b(INSERT|UPDATE|DELETE|MERGE|DROP|ALTER|CREATE|TRUNCATE|GRANT|REVOKE|COPY|VACUUM|REINDEX|CLUSTER|CALL|DO)\b"))
+        return Results.BadRequest(new { success = false, error = "Read mode only allows non-mutating SELECT/WITH/EXPLAIN/SHOW statements" });
+
+    if (System.Text.RegularExpressions.Regex.IsMatch(upper, @"\bEXPLAIN\s+(?:\([^)]*\)\s*)?ANALYZE\b"))
+        return Results.BadRequest(new { success = false, error = "EXPLAIN ANALYZE is blocked because it can execute writes" });
+
     foreach (var token in SqlConsoleHelpers.BlockedTokens)
     {
         if (System.Text.RegularExpressions.Regex.IsMatch(upper, $@"\b{System.Text.RegularExpressions.Regex.Escape(token)}\b"))
