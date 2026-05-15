@@ -459,9 +459,9 @@ export function TopNavigation() {
       return (
         <Collapsible key={item.id || item.title} open={isDropdownOpen} onOpenChange={() => toggleDropdown(item.id)}>
           <CollapsibleTrigger
-            className={`group/navitem transition-all duration-150 ease-out h-8 rounded-lg gap-2 px-2 py-1.5 w-full flex items-center text-sm font-normal outline-none ${
+            className={`group/navitem transition-all duration-150 ease-out h-8 rounded-lg gap-2 px-2 py-1.5 w-full flex items-center text-sm font-bold outline-none ${
               itemIsActive
-                ? 'bg-sidebar-accent text-foreground font-medium shadow-sm'
+                ? 'bg-sidebar-accent text-foreground font-bold shadow-sm'
                 : 'text-sidebar-foreground/70 hover:bg-sidebar-foreground/[0.06] hover:text-foreground'
             }`}
           >
@@ -486,8 +486,8 @@ export function TopNavigation() {
                       onClick={() => setIsMobileSidebarOpen(false)}
                       className={`flex items-center gap-2 h-7 px-2 py-1 transition-all duration-150 ease-out cursor-pointer rounded-md text-sm w-full ${
                         subActive
-                          ? 'text-foreground font-medium bg-sidebar-accent/60'
-                          : 'text-sidebar-foreground/50 hover:text-foreground hover:bg-sidebar-foreground/[0.05]'
+                          ? 'text-foreground font-bold bg-sidebar-accent/60'
+                          : 'text-sidebar-foreground/50 font-bold hover:text-foreground hover:bg-sidebar-foreground/[0.05]'
                       }`}
                     >
                       <span>{resolveSubItemTitle(subItem.title)}</span>
@@ -510,8 +510,8 @@ export function TopNavigation() {
         className={() =>
           `group/navitem flex items-center text-sm gap-2 px-2 py-1.5 outline-none rounded-lg transition-all duration-150 h-8 ${
             isActive(item.url)
-              ? 'bg-sidebar-accent text-foreground font-medium shadow-sm'
-              : 'font-normal text-sidebar-foreground/70 hover:bg-sidebar-foreground/[0.06] hover:text-foreground'
+              ? 'bg-sidebar-accent text-foreground font-bold shadow-sm'
+              : 'font-bold text-sidebar-foreground/70 hover:bg-sidebar-foreground/[0.06] hover:text-foreground'
           }`
         }
       >
@@ -565,7 +565,7 @@ export function TopNavigation() {
                        <img 
                          src={companyLogo} 
                          alt={t('sidebarCompanyLogoAlt')} 
-                         className="h-7 object-contain"
+                         className="h-14 object-contain"
                        />
                      ) : (
                        <Building2 className="h-5 w-5 text-foreground/80" />
@@ -597,7 +597,7 @@ export function TopNavigation() {
                        {/* Workspace Section */}
                        <Collapsible open={isWorkspaceOpen} onOpenChange={() => setIsWorkspaceOpen(!isWorkspaceOpen)}>
                          <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-1.5 mb-1 text-muted-foreground/35 hover:text-muted-foreground/55 transition-all duration-150 ease-out group rounded-md hover:bg-sidebar-foreground/[0.03]">
-                           <span className="text-[10.5px] font-semibold uppercase tracking-[0.1em] select-none">{t('workspace')}</span>
+                           <span className="text-[11px] font-bold uppercase tracking-[0.1em] select-none">{t('workspace')}</span>
                            <ChevronDown className={`h-3 w-3 opacity-0 group-hover:opacity-100 transition-all duration-200 ${isWorkspaceOpen ? '' : '-rotate-90'}`} />
                          </CollapsibleTrigger>
                          <CollapsibleContent className="overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
@@ -610,7 +610,7 @@ export function TopNavigation() {
                        {/* CRM Section */}
                        <Collapsible open={isCrmOpen} onOpenChange={() => setIsCrmOpen(!isCrmOpen)} className="mt-4">
                          <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-1.5 mb-1 text-muted-foreground/35 hover:text-muted-foreground/55 transition-all duration-150 ease-out group rounded-md hover:bg-sidebar-foreground/[0.03]">
-                           <span className="text-[10.5px] font-semibold uppercase tracking-[0.1em] select-none">{t('crm')}</span>
+                           <span className="text-[11px] font-bold uppercase tracking-[0.1em] select-none">{t('crm')}</span>
                            <ChevronDown className={`h-3 w-3 opacity-0 group-hover:opacity-100 transition-all duration-200 ${isCrmOpen ? '' : '-rotate-90'}`} />
                          </CollapsibleTrigger>
                          <CollapsibleContent className="overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
@@ -623,7 +623,7 @@ export function TopNavigation() {
                        {/* Service Section */}
                        <Collapsible open={isServiceOpen} onOpenChange={() => setIsServiceOpen(!isServiceOpen)} className="mt-4">
                          <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-1.5 mb-1 text-muted-foreground/35 hover:text-muted-foreground/55 transition-all duration-150 ease-out group rounded-md hover:bg-sidebar-foreground/[0.03]">
-                           <span className="text-[10.5px] font-semibold uppercase tracking-[0.1em] select-none">{t('service')}</span>
+                           <span className="text-[11px] font-bold uppercase tracking-[0.1em] select-none">{t('service')}</span>
                            <ChevronDown className={`h-3 w-3 opacity-0 group-hover:opacity-100 transition-all duration-200 ${isServiceOpen ? '' : '-rotate-90'}`} />
                          </CollapsibleTrigger>
                          <CollapsibleContent className="overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
@@ -636,7 +636,7 @@ export function TopNavigation() {
                        {/* System Section */}
                        <Collapsible open={isSystemOpen} onOpenChange={() => setIsSystemOpen(!isSystemOpen)} className="mt-4">
                          <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-1.5 mb-1 text-muted-foreground/35 hover:text-muted-foreground/55 transition-all duration-150 ease-out group rounded-md hover:bg-sidebar-foreground/[0.03]">
-                           <span className="text-[10.5px] font-semibold uppercase tracking-[0.1em] select-none">{t('system')}</span>
+                           <span className="text-[11px] font-bold uppercase tracking-[0.1em] select-none">{t('system')}</span>
                            <ChevronDown className={`h-3 w-3 opacity-0 group-hover:opacity-100 transition-all duration-200 ${isSystemOpen ? '' : '-rotate-90'}`} />
                          </CollapsibleTrigger>
                          <CollapsibleContent className="overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
@@ -846,7 +846,7 @@ export function TopNavigation() {
                   <DropdownMenu key={item.title}>
                     <DropdownMenuTrigger asChild>
                       <div className={`relative flex items-center gap-2 px-4 py-3 cursor-pointer transition-all ${active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
-                        <span className="text-sm font-medium">{resolveTitle(item.title)}</span>
+                        <span className="text-base font-bold">{resolveTitle(item.title)}</span>
                         <ChevronDown className={`h-4 w-4 ${active ? 'text-primary' : 'text-muted-foreground'}`} />
                         {active && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
                       </div>
@@ -858,7 +858,7 @@ export function TopNavigation() {
                             to={sub.url}
                             end={sub.url === "/dashboard"}
                             className={({ isActive }) => 
-                              `block px-4 py-2.5 text-sm font-medium transition-colors ${
+                              `block px-4 py-2.5 text-sm font-bold transition-colors ${
                                 isActive 
                                   ? 'text-primary' 
                                   : 'text-foreground/70 hover:text-foreground hover:bg-muted/50'
@@ -876,7 +876,7 @@ export function TopNavigation() {
               return (
                 <div key={item.title} className={`relative transition-all ${active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
                   <NavLink to={item.url} end={item.url === "/dashboard"} className="flex items-center px-4 py-3">
-                    <span className="text-sm font-medium">{resolveTitle(item.title)}</span>
+                    <span className="text-base font-bold">{resolveTitle(item.title)}</span>
                   </NavLink>
                   {active && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
                 </div>
@@ -891,7 +891,7 @@ export function TopNavigation() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <div className={`relative flex items-center gap-2 px-4 py-3 cursor-pointer transition-all ${anySystemActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
-                      <span className="text-sm font-medium">{t('system')}</span>
+                      <span className="text-base font-bold">{t('system')}</span>
                       <ChevronDown className={`h-4 w-4 ${anySystemActive ? 'text-primary' : 'text-muted-foreground'}`} />
                       {anySystemActive && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
                     </div>
@@ -905,7 +905,7 @@ export function TopNavigation() {
                               to={sub.url}
                               end={sub.url === "/dashboard"}
                               className={({ isActive }) => 
-                                `block px-4 py-2.5 text-sm font-medium transition-colors ${
+                                `block px-4 py-2.5 text-sm font-bold transition-colors ${
                                   isActive 
                                     ? 'text-primary' 
                                     : 'text-foreground/70 hover:text-foreground hover:bg-muted/50'
@@ -923,7 +923,7 @@ export function TopNavigation() {
                             to={item.url}
                             end={item.url === "/dashboard"}
                             className={({ isActive }) => 
-                              `block px-4 py-2.5 text-sm font-medium transition-colors ${
+                              `block px-4 py-2.5 text-sm font-bold transition-colors ${
                                 isActive 
                                   ? 'text-primary' 
                                   : 'text-foreground/70 hover:text-foreground hover:bg-muted/50'

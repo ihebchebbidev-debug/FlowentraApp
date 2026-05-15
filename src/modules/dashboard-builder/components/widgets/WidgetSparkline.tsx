@@ -23,7 +23,7 @@ export function WidgetSparkline({ widget }: Props) {
     <WidgetBackground bg={cfg.kpiBg} fallbackColor={color} widgetId={widget.id}>
       <div className="h-full flex flex-col justify-between py-1 px-1">
         <div>
-          <span className="text-[11px] font-medium text-muted-foreground truncate block">{title}</span>
+          <span className="text-sm font-bold text-muted-foreground truncate block">{title}</span>
           <p className="text-lg font-bold text-foreground mt-0.5">{value}</p>
         </div>
         <div className="flex-1 min-h-0 mt-1">

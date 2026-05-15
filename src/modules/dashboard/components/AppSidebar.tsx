@@ -625,9 +625,9 @@ export function AppSidebar() {
             <CollapsibleTrigger
               data-sidebar-nav-item
               tabIndex={0}
-              className={`group/navitem transition-all duration-150 ease-out h-8 rounded-lg gap-2 px-2 py-1.5 w-full flex items-center text-sm font-normal outline-none focus-visible:ring-1 focus-visible:ring-ring ${
+              className={`group/navitem transition-all duration-150 ease-out h-8 rounded-lg gap-2 px-2 py-1.5 w-full flex items-center text-sm font-bold outline-none focus-visible:ring-1 focus-visible:ring-ring ${
                 itemIsActive
-                  ? 'bg-sidebar-accent text-foreground font-medium shadow-sm'
+                  ? 'bg-sidebar-accent text-foreground font-bold shadow-sm'
                   : 'text-sidebar-foreground/70 hover:bg-sidebar-foreground/[0.06] hover:text-foreground'
               }`}
             >
@@ -647,7 +647,7 @@ export function AppSidebar() {
                     <SidebarMenuSubItem key={subItem.url} className={`relative mb-0 ${isLast ? 'sidebar-tree-last' : ''}`}>
                       <div className={`absolute -left-[15.5px] top-1/2 -translate-y-1/2 w-[10px] h-px transition-colors duration-150 ${subActive ? 'bg-sidebar-primary/50' : 'bg-sidebar-border/30'}`} />
                       <div className={`absolute -left-[15.5px] top-1/2 -translate-y-1/2 translate-x-[9px] w-[3px] h-[3px] rounded-full transition-colors duration-150 ${subActive ? 'bg-sidebar-primary' : 'bg-sidebar-border/50'}`} />
-                      <SidebarMenuSubButton asChild className={`h-7 px-2 py-1 transition-all duration-150 ease-out border-r-0 cursor-pointer rounded-md text-sm ${subActive ? 'text-foreground font-medium bg-sidebar-accent/60' : 'text-sidebar-foreground/50 hover:text-foreground hover:bg-sidebar-foreground/[0.05]'}`}>
+                      <SidebarMenuSubButton asChild className={`h-7 px-2 py-1 transition-all duration-150 ease-out border-r-0 cursor-pointer rounded-md text-sm font-bold ${subActive ? 'text-foreground bg-sidebar-accent/60' : 'text-sidebar-foreground/60 hover:text-foreground hover:bg-sidebar-foreground/[0.05]'}`}>
                         <NavLink
                           to={subItem.url}
                           end={subItem.url === "/dashboard" || !subItem.url.includes('?')}
@@ -698,27 +698,23 @@ export function AppSidebar() {
         key={displayTitle}
         className="group/navitem"
       >
-        <SidebarMenuButton asChild className="h-8 rounded-lg w-full transition-all duration-150">
-          <NavLink
-            to={item.url}
-            end={item.url === "/dashboard"}
-            data-sidebar-nav-item
-            tabIndex={0}
-            className={({ isActive }) =>
-              `group/navitem flex items-center text-sm gap-2 px-2 py-1.5 outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-lg transition-all duration-150 ${
-                isActive
-                  ? 'bg-sidebar-accent text-foreground font-medium shadow-sm'
-                  : 'font-normal text-sidebar-foreground/70 hover:bg-sidebar-foreground/[0.06] hover:text-foreground'
-              }`
-            }
-          >
-            <item.icon className="h-4 w-4 flex-shrink-0 transition-transform duration-200" style={iconColorStyle} />
-            <span className="flex-1 min-w-0 text-left capitalize truncate">
-              {resolveTitle(displayTitle)}
-            </span>
-            {renderFavoriteStar(item.url)}
-          </NavLink>
-        </SidebarMenuButton>
+        <NavLink
+          to={item.url}
+          end={item.url === "/dashboard"}
+          data-sidebar-nav-item
+          tabIndex={0}
+          className={`group/navitem transition-all duration-150 ease-out h-8 rounded-lg gap-2 px-2 py-1.5 w-full flex items-center text-sm font-bold outline-none focus-visible:ring-1 focus-visible:ring-ring ${
+            isActive(item.url)
+              ? 'bg-sidebar-accent text-foreground shadow-sm'
+              : 'text-sidebar-foreground/70 hover:bg-sidebar-foreground/[0.06] hover:text-foreground'
+          }`}
+        >
+          <item.icon className="h-4 w-4 flex-shrink-0 transition-transform duration-200" style={iconColorStyle} />
+          <span className="flex-1 min-w-0 text-left capitalize truncate">
+            {resolveTitle(displayTitle)}
+          </span>
+          {renderFavoriteStar(item.url)}
+        </NavLink>
       </SidebarMenuItem>
     );
   };
@@ -731,7 +727,7 @@ export function AppSidebar() {
         className="flex items-center justify-between w-full px-2 py-1.5 mb-1 text-muted-foreground/35 hover:text-muted-foreground/55 transition-all duration-150 ease-out group rounded-md hover:bg-sidebar-foreground/[0.03]"
         data-tour={dataTour}
       >
-        <span className="text-[10.5px] font-semibold uppercase tracking-[0.1em] select-none">{label}</span>
+        <span className="text-[11px] font-bold uppercase tracking-[0.1em] select-none">{label}</span>
         <ChevronDown className={`h-3 w-3 opacity-0 group-hover:opacity-100 transition-all duration-200 ${isOpen ? '' : '-rotate-90'}`} />
       </CollapsibleTrigger>
     );
@@ -747,7 +743,7 @@ export function AppSidebar() {
               <img 
                 src={companyLogo} 
                 alt={t('sidebarCompanyLogoAlt')} 
-                className="h-9 object-contain"
+                className="h-16 object-contain"
               />
             ) : (
               <Building2 className="h-5 w-5 text-foreground/80" />
@@ -784,7 +780,7 @@ export function AppSidebar() {
               {!collapsed && (
                 <div className="flex items-center gap-1.5 px-2 py-1.5 mb-1">
                   <Star className="h-3 w-3 text-warning/60 fill-warning/60" />
-                  <span className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/35 select-none">
+                  <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground/35 select-none">
                     {t('sidebar.favorites', 'Favorites')}
                   </span>
                 </div>

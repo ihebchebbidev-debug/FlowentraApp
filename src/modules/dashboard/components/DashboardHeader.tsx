@@ -165,7 +165,7 @@ export function DashboardHeader() {
               <img 
                 src={companyLogo} 
                 alt="Company Logo" 
-                className="h-8 object-contain"
+                className="h-14 object-contain"
               />
             </div>
           )}

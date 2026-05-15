@@ -42,7 +42,7 @@ export function WidgetGauge({ widget }: Props) {
             <span className="text-xl font-bold text-foreground">{numValue}%</span>
           </div>
         </div>
-        <span className="text-[11px] font-medium text-muted-foreground text-center truncate max-w-full px-1">{title}</span>
+        <span className="text-sm font-bold text-muted-foreground text-center truncate max-w-full px-1">{title}</span>
       </div>
     </WidgetBackground>
   );

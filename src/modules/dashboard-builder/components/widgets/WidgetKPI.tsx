@@ -64,7 +64,7 @@ export function WidgetKPI({ widget }: Props) {
         </div>
 
         <div className="min-w-0 flex-1">
-          <h4 className="text-xs font-semibold truncate leading-tight"
+          <h4 className="text-sm font-bold truncate leading-tight"
             style={{ color: showLightText ? 'rgba(255,255,255,0.85)' : undefined }}>
             {title}
           </h4>

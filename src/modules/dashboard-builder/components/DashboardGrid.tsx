@@ -264,7 +264,7 @@ export function DashboardGrid({ widgets, isEditing, gridSettings, onLayoutChange
                       <WidgetIcon className="text-primary h-4 w-4" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h4 className="font-semibold text-foreground truncate text-sm">
+                      <h4 className="font-bold text-foreground truncate text-base">
                         {title}
                       </h4>
                       {description && (
