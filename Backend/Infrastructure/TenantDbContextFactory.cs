@@ -46,8 +46,12 @@ public class TenantDbContextFactory : ITenantDbContextFactory
     /// </summary>
     public string GetConnectionString(string? tenant)
     {
-        if (string.IsNullOrWhiteSpace(tenant) || string.Equals(tenant, TenantMiddleware.ViewAllSentinel, StringComparison.OrdinalIgnoreCase))
+        if (string.IsNullOrWhiteSpace(tenant) ||
+            string.Equals(tenant, TenantMiddleware.ViewAllSentinel, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(tenant, "default", StringComparison.OrdinalIgnoreCase))
+        {
             return _defaultConnectionString;
+        }
 
         return _connCache.GetOrAdd(tenant, t =>
         {
