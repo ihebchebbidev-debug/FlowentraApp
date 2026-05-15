@@ -407,20 +407,20 @@ export default function DbConsolePage() {
 
       {showSettings && (
         <div className={`${panelClass} p-4 space-y-3`}>
-          <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-[var(--neon)]/80">// connection</div>
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Connection</div>
           <div className="grid md:grid-cols-2 gap-3">
-            <div>
-              <label className="text-[11px] text-slate-400 font-mono">API URL</label>
+            <div className="space-y-1">
+              <label className="text-[11px] text-muted-foreground">API URL</label>
               <Input value={apiUrl} onChange={e => setApiUrl(e.target.value)} placeholder="https://api.flowentra.app"
-                className="bg-black/40 border-white/10 font-mono text-xs focus-visible:ring-[var(--neon)]/40 focus-visible:border-[var(--neon)]/40" />
+                className="font-mono text-xs" />
             </div>
             <div className="space-y-1">
-              <label className="text-[11px] text-slate-400 font-mono">
+              <label className="text-[11px] text-muted-foreground">
                 Tenant{tenantsLoading ? " (loading…)" : ""}
               </label>
               {tenantList.length > 0 ? (
                 <Select value={tenant || undefined} onValueChange={setTenant}>
-                  <SelectTrigger className="h-9 bg-black/40 border-white/10 font-mono text-xs focus:ring-[var(--neon)]/40">
+                  <SelectTrigger className="h-9 font-mono text-xs">
                     <SelectValue placeholder="Select a tenant" />
                   </SelectTrigger>
                   <SelectContent>
@@ -439,17 +439,17 @@ export default function DbConsolePage() {
                   value={tenant}
                   onChange={(e) => setTenant(e.target.value.trim().toLowerCase())}
                   placeholder="krossier"
-                  className="bg-black/40 border-white/10 font-mono text-xs focus-visible:ring-[var(--neon)]/40 focus-visible:border-[var(--neon)]/40"
+                  className="font-mono text-xs"
                 />
               )}
               {tenantsError && (
-                <p className="text-[11px] text-rose-400">
+                <p className="text-[11px] text-destructive">
                   Couldn't load tenants ({tenantsError}). Type the slug manually.
                 </p>
               )}
             </div>
           </div>
-          <p className="text-[11px] text-slate-500 font-mono">
+          <p className="text-[11px] text-muted-foreground">
             Values are stored locally in your browser and sent only to the API URL above.
           </p>
         </div>
@@ -458,42 +458,42 @@ export default function DbConsolePage() {
       <div className={`grid gap-4 ${showSchema ? "md:grid-cols-[240px_1fr]" : "grid-cols-1"}`}>
         {showSchema && (
           <div className={`${panelClass} p-2 space-y-2 max-h-[70vh] flex flex-col`}>
-            <div className="px-2 pt-1 pb-0.5 text-[10px] font-mono uppercase tracking-[0.2em] text-[var(--neon)]/70">
-              // schema
+            <div className="px-2 pt-1 pb-0.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Schema
             </div>
             <Input
               value={schemaFilter} onChange={e => setSchemaFilter(e.target.value)}
               placeholder="Filter tables…"
-              className="h-7 text-xs bg-black/40 border-white/10 font-mono focus-visible:ring-[var(--neon)]/40 focus-visible:border-[var(--neon)]/40"
+              className="h-7 text-xs font-mono"
             />
             <div className="overflow-auto flex-1 -mx-1 px-1">
               {filteredTables.map(t => (
                 <button
                   key={t} onClick={() => insertTable(t)}
                   title={`${SCHEMA_MAP[t].length} columns — click to query`}
-                  className="group flex w-full items-center justify-between gap-2 text-left px-2 py-1 text-[12px] font-mono rounded hover:bg-[var(--neon)]/10 hover:text-[var(--neon)] text-slate-300 transition"
+                  className="group flex w-full items-center justify-between gap-2 text-left px-2 py-1 text-[12px] font-mono rounded hover:bg-muted text-foreground/80 hover:text-foreground transition"
                 >
                   <span className="truncate">
-                    <span className="text-slate-500 group-hover:text-[var(--neon)]/60">▸ </span>{t}
+                    <span className="text-muted-foreground group-hover:text-primary">▸ </span>{t}
                   </span>
-                  <span className="text-[10px] text-slate-500 tabular-nums">{SCHEMA_MAP[t].length}</span>
+                  <span className="text-[10px] text-muted-foreground tabular-nums">{SCHEMA_MAP[t].length}</span>
                 </button>
               ))}
               {filteredTables.length === 0 && (
-                <p className="text-[11px] text-slate-500 p-2 font-mono">No tables match.</p>
+                <p className="text-[11px] text-muted-foreground p-2">No tables match.</p>
               )}
             </div>
           </div>
         )}
 
         <div className={`${panelClass} p-3`}>
-          <div className="rounded-lg overflow-hidden border border-white/10 ring-1 ring-[var(--neon)]/10 shadow-[0_0_40px_-20px_var(--neon-soft)]">
+          <div className="rounded-md overflow-hidden border border-border">
             <CodeMirror
               ref={editorRef}
               value={sqlText}
               onChange={setSqlText}
               extensions={extensions}
-              theme={oneDark}
+              theme={isDark ? oneDark : "light"}
               basicSetup={{
                 lineNumbers: true,
                 highlightActiveLine: true,
@@ -509,25 +509,24 @@ export default function DbConsolePage() {
             />
           </div>
           <div className="flex items-center justify-between mt-2 gap-2 flex-wrap">
-            <span className="text-[11px] text-slate-500 font-mono">
-              <kbd className="px-1.5 py-0.5 rounded bg-black/50 border border-white/10 text-slate-300">⌘/Ctrl</kbd>
+            <span className="text-[11px] text-muted-foreground">
+              <kbd className="px-1.5 py-0.5 rounded bg-muted border border-border text-foreground">⌘/Ctrl</kbd>
               <span className="mx-1">+</span>
-              <kbd className="px-1.5 py-0.5 rounded bg-black/50 border border-white/10 text-slate-300">Enter</kbd>
-              <span className="mx-2 text-slate-600">·</span>
-              mode <span className={mode === "write" ? "text-rose-300" : "text-[var(--neon)]"}>{mode}</span>
+              <kbd className="px-1.5 py-0.5 rounded bg-muted border border-border text-foreground">Enter</kbd>
+              <span className="mx-2 text-muted-foreground/60">·</span>
+              mode <span className={mode === "write" ? "text-destructive font-medium" : "text-primary font-medium"}>{mode}</span>
             </span>
             <div className="flex items-center gap-2">
-              <Button size="sm" variant="ghost" onClick={copySql} className="text-slate-300 hover:text-white hover:bg-white/5">
+              <Button size="sm" variant="ghost" onClick={copySql}>
                 <Copy className="h-3 w-3 mr-1" />Copy SQL
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => { setSqlText(""); setResult(null); }} className="text-slate-300 hover:text-white hover:bg-white/5">
+              <Button size="sm" variant="ghost" onClick={() => { setSqlText(""); setResult(null); }}>
                 <Trash2 className="h-3 w-3 mr-1" />Clear
               </Button>
               <Button
                 size="sm"
                 onClick={run}
                 disabled={running || !sqlText.trim()}
-                className="bg-[var(--neon)] text-black font-semibold hover:bg-[var(--neon)]/90 shadow-[0_0_18px_-4px_var(--neon-soft)] disabled:opacity-40 disabled:shadow-none"
               >
                 {running ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Play className="h-3 w-3 mr-1" />}
                 Run
@@ -540,22 +539,22 @@ export default function DbConsolePage() {
       {result && (
         <div className={`${panelClass} p-3 space-y-2`}>
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <div className="flex items-center gap-3 text-xs font-mono">
+            <div className="flex items-center gap-3 text-xs">
               {result.success ? (
-                <Badge className="bg-[var(--neon)]/15 text-[var(--neon)] border-[var(--neon)]/30 shadow-[0_0_12px_-4px_var(--neon-soft)]">● OK</Badge>
+                <Badge className="bg-success/15 text-success border-success/30 hover:bg-success/15">● OK</Badge>
               ) : (
-                <Badge className="bg-rose-500/15 text-rose-300 border-rose-500/30">● ERROR</Badge>
+                <Badge variant="destructive">● ERROR</Badge>
               )}
-              <span className="text-slate-400 tabular-nums">{result.durationMs ?? 0}<span className="text-slate-600 ml-0.5">ms</span></span>
+              <span className="text-muted-foreground tabular-nums font-mono">{result.durationMs ?? 0}<span className="ml-0.5">ms</span></span>
               {typeof result.rowsAffected === "number" && (
-                <span className="text-slate-400">{result.rowsAffected} row(s) affected</span>
+                <span className="text-muted-foreground">{result.rowsAffected} row(s) affected</span>
               )}
-              {result.rows && <span className="text-slate-400 tabular-nums">{result.rows.length} row(s)</span>}
+              {result.rows && <span className="text-muted-foreground tabular-nums font-mono">{result.rows.length} row(s)</span>}
             </div>
             {result.rows && result.rows.length > 0 && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button size="sm" variant="outline" className="border-white/10 bg-black/30 text-slate-200 hover:bg-white/5 hover:text-white"><Download className="h-3 w-3 mr-1" />Export</Button>
+                  <Button size="sm" variant="outline"><Download className="h-3 w-3 mr-1" />Export</Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-52">
                   <DropdownMenuItem onClick={expCsv}><FileSpreadsheet className="h-3.5 w-3.5 mr-2" />CSV (.csv)</DropdownMenuItem>
@@ -569,26 +568,26 @@ export default function DbConsolePage() {
           </div>
 
           {result.error && (
-            <pre className="text-xs bg-rose-500/10 text-rose-300 border border-rose-500/20 p-3 rounded-md overflow-auto whitespace-pre-wrap font-mono">{result.error}</pre>
+            <pre className="text-xs bg-destructive/10 text-destructive border border-destructive/20 p-3 rounded-md overflow-auto whitespace-pre-wrap font-mono">{result.error}</pre>
           )}
 
           {result.rows && result.rows.length > 0 && (
-            <div className="overflow-auto border border-white/10 rounded-lg max-h-[55vh] bg-black/30">
+            <div className="overflow-auto border border-border rounded-md max-h-[55vh] bg-background">
               <table className="w-full text-[12px] font-mono border-separate border-spacing-0">
                 <thead className="sticky top-0 z-10">
                   <tr>{cols.map(c => (
-                    <th key={c} className="text-left px-2.5 py-2 bg-[#0d1411] border-b border-white/10 text-[10px] uppercase tracking-wider text-[var(--neon)]/80 font-semibold">{c}</th>
+                    <th key={c} className="text-left px-2.5 py-2 bg-muted border-b border-border text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{c}</th>
                   ))}</tr>
                 </thead>
                 <tbody>
                   {result.rows.map((r, i) => (
-                    <tr key={i} className="hover:bg-[var(--neon)]/[0.04] transition-colors">
+                    <tr key={i} className="hover:bg-muted/50 transition-colors">
                       {cols.map(c => {
                         const v = r[c];
-                        const s = v == null ? <span className="text-slate-600 italic">NULL</span>
+                        const s = v == null ? <span className="text-muted-foreground italic">NULL</span>
                                 : typeof v === "object" ? JSON.stringify(v)
                                 : String(v);
-                        return <td key={c} className="px-2.5 py-1.5 border-b border-white/5 align-top max-w-[420px] truncate text-slate-200" title={typeof s === "string" ? s : ""}>{s}</td>;
+                        return <td key={c} className="px-2.5 py-1.5 border-b border-border align-top max-w-[420px] truncate text-foreground" title={typeof s === "string" ? s : ""}>{s}</td>;
                       })}
                     </tr>
                   ))}
@@ -601,12 +600,12 @@ export default function DbConsolePage() {
 
       {history.length > 0 && (
         <div className={`${panelClass} p-3`}>
-          <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-[var(--neon)]/70 mb-2">// history</div>
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">History</div>
           <div className="space-y-1 max-h-48 overflow-auto">
             {history.map((h, i) => (
               <button key={i} onClick={() => setSqlText(h)}
-                className="group flex items-center gap-2 w-full text-left text-[12px] font-mono px-2 py-1 rounded hover:bg-[var(--neon)]/10 hover:text-[var(--neon)] text-slate-400 truncate transition">
-                <span className="text-slate-600 group-hover:text-[var(--neon)]/60">$</span>
+                className="group flex items-center gap-2 w-full text-left text-[12px] font-mono px-2 py-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground truncate transition">
+                <span className="text-muted-foreground group-hover:text-primary">$</span>
                 <span className="truncate">{h}</span>
               </button>
             ))}
