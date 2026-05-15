@@ -325,47 +325,32 @@ export default function DbConsolePage() {
     return q ? TABLE_NAMES.filter(t => t.toLowerCase().includes(q)) : TABLE_NAMES;
   }, [schemaFilter]);
 
-  // ── Neon-inspired theme tokens (scoped to this page) ──
-  // Force dark + electric-green accent regardless of app theme.
-  const shellClass =
-    "dark min-h-screen w-full bg-[#0a0f0d] text-slate-200 " +
-    "[--neon:#00e599] [--neon-soft:rgba(0,229,153,0.18)] " +
-    "bg-[radial-gradient(1200px_600px_at_10%_-10%,rgba(0,229,153,0.10),transparent_60%),radial-gradient(900px_500px_at_110%_10%,rgba(56,189,248,0.08),transparent_60%),linear-gradient(180deg,#070b09_0%,#0a0f0d_100%)]";
-  const gridOverlay =
-    "before:pointer-events-none before:absolute before:inset-0 before:opacity-[0.06] " +
-    "before:[background-image:linear-gradient(rgba(0,229,153,0.6)_1px,transparent_1px),linear-gradient(90deg,rgba(0,229,153,0.6)_1px,transparent_1px)] " +
-    "before:[background-size:32px_32px]";
+  // ── App-themed tokens (uses semantic design system) ──
+  const shellClass = "min-h-screen w-full bg-background text-foreground";
   const panelClass =
-    "relative rounded-xl border border-white/5 bg-white/[0.02] backdrop-blur-sm " +
-    "shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_20px_40px_-20px_rgba(0,0,0,0.6)]";
+    "relative rounded-lg border border-border bg-card text-card-foreground shadow-[var(--shadow-card)]";
 
   if (!unlocked) {
     return (
-      <div className={`${shellClass} ${gridOverlay} relative flex items-center justify-center p-6`}>
-        <div className={`${panelClass} relative z-10 w-full max-w-sm p-7 space-y-5`}>
-          <div className="absolute -inset-px rounded-xl bg-gradient-to-b from-[var(--neon-soft)] to-transparent opacity-50 pointer-events-none" />
-          <div className="relative flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg border border-[var(--neon)]/30 bg-[var(--neon)]/10 grid place-items-center shadow-[0_0_20px_-4px_var(--neon-soft)]">
-              <Lock className="h-5 w-5 text-[var(--neon)]" />
+      <div className={`${shellClass} relative flex items-center justify-center p-6`}>
+        <div className={`${panelClass} w-full max-w-sm p-7 space-y-5`}>
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-md border border-border bg-primary/10 grid place-items-center">
+              <Lock className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-base font-semibold tracking-tight text-white">DB Console</h1>
-              <p className="text-[11px] text-slate-400 font-mono">access · restricted</p>
+              <h1 className="text-base font-semibold tracking-tight text-foreground">DB Console</h1>
+              <p className="text-[11px] text-muted-foreground">Restricted access</p>
             </div>
           </div>
-          <p className="text-sm text-slate-400">Enter access password to continue.</p>
+          <p className="text-sm text-muted-foreground">Enter access password to continue.</p>
           <Input
             type="password" value={pwd} onChange={e => setPwd(e.target.value)}
             onKeyDown={e => e.key === "Enter" && tryUnlock()}
             placeholder="••••••••" autoFocus
-            className="bg-black/40 border-white/10 font-mono tracking-widest placeholder:text-slate-600 focus-visible:ring-[var(--neon)]/40 focus-visible:border-[var(--neon)]/40"
+            className="font-mono tracking-widest"
           />
-          <Button
-            className="w-full bg-[var(--neon)] text-black font-semibold hover:bg-[var(--neon)]/90 shadow-[0_0_24px_-4px_var(--neon-soft)]"
-            onClick={tryUnlock}
-          >
-            Unlock
-          </Button>
+          <Button className="w-full" onClick={tryUnlock}>Unlock</Button>
         </div>
       </div>
     );
