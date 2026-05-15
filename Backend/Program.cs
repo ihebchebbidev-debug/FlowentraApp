@@ -1084,7 +1084,11 @@ public static class SqlConsoleHelpers
 
         foreach (var singleWordToken in BlockedSingleWordTokens)
         {
-            if (System.Text.RegularExpressions.Regex.IsMatch(upperSql, $@"\b{System.Text.RegularExpressions.Regex.Escape(singleWordToken)}\b"))
+            var pattern = singleWordToken.EndsWith('_')
+                ? $@"\b{System.Text.RegularExpressions.Regex.Escape(singleWordToken)}[A-Z0-9_]*\b"
+                : $@"\b{System.Text.RegularExpressions.Regex.Escape(singleWordToken)}\b";
+
+            if (System.Text.RegularExpressions.Regex.IsMatch(upperSql, pattern))
             {
                 token = singleWordToken;
                 return true;
