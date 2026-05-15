@@ -104,8 +104,9 @@ var rawConnection = Environment.GetEnvironmentVariable("DATABASE_URL") ??
 
 string? connectionString = null;
 
-// Use the startup logger created earlier
-startupLogger.LogInformation($"Raw connection: {rawConnection?.Substring(0, Math.Min(80, rawConnection?.Length ?? 0))}...");
+// Use the startup logger created earlier. Never log raw connection strings because
+// DATABASE_URL contains credentials.
+startupLogger.LogInformation("Raw DATABASE_URL/default connection configured: {Configured}", !string.IsNullOrWhiteSpace(rawConnection));
 
 if (!string.IsNullOrEmpty(rawConnection))
 {
