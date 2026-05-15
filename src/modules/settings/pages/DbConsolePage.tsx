@@ -357,49 +357,49 @@ export default function DbConsolePage() {
   }
 
   return (
-    <div className={`${shellClass} ${gridOverlay} relative`}>
+    <div className={`${shellClass} relative`}>
       <div className="relative z-10 p-4 md:p-6 space-y-4 max-w-full">
       {/* ── Top bar ───────────────────────────────────────── */}
       <div className={`${panelClass} flex items-center justify-between gap-2 flex-wrap px-4 py-3`}>
         <div className="flex items-center gap-3">
-          <div className="relative h-8 w-8 rounded-md border border-[var(--neon)]/30 bg-[var(--neon)]/10 grid place-items-center">
-            <Database className="h-4 w-4 text-[var(--neon)]" />
-            <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-[var(--neon)] shadow-[0_0_8px_var(--neon)] animate-pulse" />
+          <div className="relative h-8 w-8 rounded-md border border-border bg-primary/10 grid place-items-center">
+            <Database className="h-4 w-4 text-primary" />
+            <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-primary animate-pulse" />
           </div>
           <div className="leading-tight">
-            <h1 className="text-sm font-semibold tracking-tight text-white">DB Console</h1>
-            <p className="text-[10px] text-slate-400 font-mono uppercase tracking-wider">postgres · live</p>
+            <h1 className="text-sm font-semibold tracking-tight text-foreground">DB Console</h1>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">postgres · live</p>
           </div>
-          <span className="hidden sm:inline-flex items-center gap-1.5 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-[10px] font-mono text-slate-300">
-            <span className={`h-1.5 w-1.5 rounded-full ${tenant ? "bg-[var(--neon)] shadow-[0_0_6px_var(--neon)]" : "bg-amber-400"}`} />
+          <span className="hidden sm:inline-flex items-center gap-1.5 rounded-md border border-border bg-muted px-2 py-1 text-[10px] font-mono text-foreground">
+            <span className={`h-1.5 w-1.5 rounded-full ${tenant ? "bg-success" : "bg-warning"}`} />
             {tenant || "no tenant"}
           </span>
-          <span className="hidden md:inline-flex items-center rounded-md border border-white/10 bg-black/30 px-2 py-1 text-[10px] font-mono text-slate-400">
+          <span className="hidden md:inline-flex items-center rounded-md border border-border bg-muted px-2 py-1 text-[10px] font-mono text-muted-foreground">
             {TABLE_NAMES.length} tables
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="inline-flex rounded-md border border-white/10 overflow-hidden text-[11px] font-mono bg-black/30">
+          <div className="inline-flex rounded-md border border-border overflow-hidden text-[11px] font-medium bg-muted">
             <button
               className={`px-3 py-1.5 transition ${mode === "read"
-                ? "bg-[var(--neon)]/15 text-[var(--neon)] shadow-[inset_0_0_0_1px_var(--neon-soft)]"
-                : "text-slate-400 hover:text-slate-200"}`}
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"}`}
               onClick={() => setMode("read")}
             >READ</button>
             <button
               className={`px-3 py-1.5 transition ${mode === "write"
-                ? "bg-rose-500/15 text-rose-300 shadow-[inset_0_0_0_1px_rgba(244,63,94,0.3)]"
-                : "text-slate-400 hover:text-slate-200"}`}
+                ? "bg-destructive text-destructive-foreground"
+                : "text-muted-foreground hover:text-foreground"}`}
               onClick={() => setMode("write")}
             >WRITE</button>
           </div>
-          <Button size="sm" variant="outline" onClick={() => setShowSchema(s => !s)} className="border-white/10 bg-black/30 text-slate-200 hover:bg-white/5 hover:text-white">
+          <Button size="sm" variant="outline" onClick={() => setShowSchema(s => !s)}>
             <Table2 className="h-3 w-3 mr-1" />Schema
           </Button>
-          <Button size="sm" variant="outline" onClick={() => setShowSettings(s => !s)} className="border-white/10 bg-black/30 text-slate-200 hover:bg-white/5 hover:text-white">
+          <Button size="sm" variant="outline" onClick={() => setShowSettings(s => !s)}>
             <Settings2 className="h-3 w-3 mr-1" />Connection
           </Button>
-          <Button size="sm" variant="outline" onClick={lock} className="border-white/10 bg-black/30 text-slate-200 hover:bg-white/5 hover:text-white">
+          <Button size="sm" variant="outline" onClick={lock}>
             <Lock className="h-3 w-3 mr-1" />Lock
           </Button>
         </div>
