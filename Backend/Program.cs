@@ -1057,14 +1057,43 @@ public sealed class SqlConsoleExecuteRequest
 
 public static class SqlConsoleHelpers
 {
-    public static readonly string[] BlockedTokens =
+    private static readonly string[] BlockedSingleWordTokens =
     {
         "DROP", "ALTER", "CREATE", "TRUNCATE", "GRANT", "REVOKE", "COPY",
-        "VACUUM", "REINDEX", "CLUSTER", "CALL", "DO", "SET ROLE", "RESET",
-        "LISTEN", "NOTIFY", "SECURITY DEFINER", "PG_SLEEP", "PG_READ_",
+        "VACUUM", "REINDEX", "CLUSTER", "CALL", "DO", "RESET",
+        "LISTEN", "NOTIFY", "PG_SLEEP", "PG_READ_",
         "LO_IMPORT", "LO_EXPORT", "DBLINK", "PG_TERMINATE_BACKEND",
         "PG_CANCEL_BACKEND", "INFORMATION_SCHEMA", "PG_CATALOG"
     };
+
+    private static readonly string[] BlockedPhrases =
+    {
+        "SET ROLE", "SECURITY DEFINER"
+    };
+
+    public static bool TryFindBlockedToken(string upperSql, out string token)
+    {
+        foreach (var phrase in BlockedPhrases)
+        {
+            if (System.Text.RegularExpressions.Regex.IsMatch(upperSql, $@"\b{System.Text.RegularExpressions.Regex.Escape(phrase).Replace("\\ ", @"\s+")}\b"))
+            {
+                token = phrase;
+                return true;
+            }
+        }
+
+        foreach (var singleWordToken in BlockedSingleWordTokens)
+        {
+            if (System.Text.RegularExpressions.Regex.IsMatch(upperSql, $@"\b{System.Text.RegularExpressions.Regex.Escape(singleWordToken)}\b"))
+            {
+                token = singleWordToken;
+                return true;
+            }
+        }
+
+        token = string.Empty;
+        return false;
+    }
 
     public static string StripStringsAndComments(string sql)
     {
