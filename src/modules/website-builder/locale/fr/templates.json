@@ -1,0 +1,18 @@
+{
+  "chooseTemplate": "Choisir un Modèle",
+  "templateCount": "{{count}} modèles professionnels dans {{categories}} catégories",
+  "siteName": "Nom du site...",
+  "blankSite": "Site Vierge",
+  "startFromScratch": "Partir de Zéro",
+  "blankSiteDesc": "Toile vierge — construisez ce que vous voulez",
+  "createSite": "Créer le Site",
+  "backToDetails": "Retour aux Détails",
+  "backToTemplates": "Retour aux Modèles",
+  "colorPalette": "Palette de Couleurs",
+  "features": "Fonctionnalités",
+  "scrollToExplore": "(défilez pour explorer)",
+  "allTemplates": "Tous les Modèles",
+  "noMatchingTemplates": "Aucun modèle correspondant",
+  "noMatchingDesc": "Essayez une recherche ou catégorie différente",
+  "home": "Accueil"
+}

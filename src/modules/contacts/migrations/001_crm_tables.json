@@ -1,0 +1,126 @@
+{
+  "module": "contacts",
+  "version": "001",
+  "description": "CRM Contact Management Tables",
+  "tables": [
+    {
+      "name": "CRM.contacts",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "name": { "type": "string", "required": true },
+        "email": { "type": "string", "required": true },
+        "phone": { "type": "string", "required": false },
+        "company": { "type": "string", "required": false },
+        "position": { "type": "string", "required": false },
+        "status": { "type": "string", "required": true, "enum": ["active", "inactive", "prospect", "customer"] },
+        "type": { "type": "string", "required": true, "enum": ["individual", "company"] },
+        "tags": { "type": "array", "items": "string" },
+        "address": { "type": "string", "required": false },
+        "lastContact": { "type": "datetime", "required": false },
+        "notes": { "type": "text", "required": false },
+        "avatar": { "type": "string", "required": false },
+        "favorite": { "type": "boolean", "default": false },
+        "roleId": { "type": "string", "required": false, "foreignKey": "SYS.roles.id" },
+        "createdAt": { "type": "datetime", "required": true },
+        "updatedAt": { "type": "datetime", "required": true },
+        "createdBy": { "type": "string", "required": true, "foreignKey": "SYS.users.id" },
+        "modifiedBy": { "type": "string", "required": true, "foreignKey": "SYS.users.id" }
+      },
+      "indexes": ["email", "status", "type", "company"]
+    },
+    {
+      "name": "CRM.contact_notes",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "contactId": { "type": "string", "required": true, "foreignKey": "CRM.contacts.id" },
+        "content": { "type": "text", "required": true },
+        "createdAt": { "type": "datetime", "required": true },
+        "createdBy": { "type": "string", "required": true, "foreignKey": "SYS.users.id" }
+      }
+    },
+    {
+      "name": "CRM.contact_offers",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "contactId": { "type": "string", "required": true, "foreignKey": "CRM.contacts.id" },
+        "title": { "type": "string", "required": true },
+        "amount": { "type": "decimal", "required": true },
+        "status": { "type": "string", "required": true, "enum": ["draft", "sent", "accepted", "rejected"] },
+        "validUntil": { "type": "datetime", "required": false },
+        "createdAt": { "type": "datetime", "required": true },
+        "updatedAt": { "type": "datetime", "required": true }
+      }
+    },
+    {
+      "name": "CRM.contact_projects",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "contactId": { "type": "string", "required": true, "foreignKey": "CRM.contacts.id" },
+        "name": { "type": "string", "required": true },
+        "description": { "type": "text", "required": false },
+        "status": { "type": "string", "required": true, "enum": ["active", "completed", "on-hold", "cancelled"] },
+        "type": { "type": "string", "required": true, "enum": ["service", "sales", "internal", "custom"] },
+        "startDate": { "type": "datetime", "required": false },
+        "endDate": { "type": "datetime", "required": false },
+        "ownerId": { "type": "string", "required": true, "foreignKey": "SYS.users.id" },
+        "ownerName": { "type": "string", "required": true },
+        "teamMembers": { "type": "array", "items": "string" },
+        "createdAt": { "type": "datetime", "required": true },
+        "updatedAt": { "type": "datetime", "required": true },
+        "completedAt": { "type": "datetime", "required": false }
+      }
+    },
+    {
+      "name": "CRM.contact_project_columns",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "projectId": { "type": "string", "required": true, "foreignKey": "CRM.contact_projects.id" },
+        "title": { "type": "string", "required": true },
+        "color": { "type": "string", "required": true },
+        "position": { "type": "integer", "required": true },
+        "isDefault": { "type": "boolean", "default": false },
+        "createdAt": { "type": "datetime", "required": true }
+      }
+    },
+    {
+      "name": "CRM.contact_tasks",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "title": { "type": "string", "required": true },
+        "description": { "type": "text", "required": false },
+        "status": { "type": "string", "required": true },
+        "priority": { "type": "string", "required": true, "enum": ["low", "medium", "high", "urgent"] },
+        "assigneeId": { "type": "string", "required": false, "foreignKey": "SYS.users.id" },
+        "assigneeName": { "type": "string", "required": false },
+        "projectId": { "type": "string", "required": true, "foreignKey": "CRM.contact_projects.id" },
+        "contactId": { "type": "string", "required": true, "foreignKey": "CRM.contacts.id" },
+        "parentTaskId": { "type": "string", "required": false, "foreignKey": "CRM.contact_tasks.id" },
+        "dueDate": { "type": "datetime", "required": false },
+        "tags": { "type": "array", "items": "string" },
+        "estimatedHours": { "type": "decimal", "required": false },
+        "actualHours": { "type": "decimal", "required": false },
+        "columnId": { "type": "string", "required": true, "foreignKey": "CRM.contact_project_columns.id" },
+        "position": { "type": "integer", "required": true },
+        "createdAt": { "type": "datetime", "required": true },
+        "updatedAt": { "type": "datetime", "required": true },
+        "completedAt": { "type": "datetime", "required": false }
+      }
+    },
+    {
+      "name": "CRM.contact_tags",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "name": { "type": "string", "required": true },
+        "color": { "type": "string", "required": true },
+        "createdAt": { "type": "datetime", "required": true }
+      }
+    }
+  ]
+}

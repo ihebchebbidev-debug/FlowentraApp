@@ -1,0 +1,221 @@
+{
+  "module": "sales",
+  "version": "001",
+  "description": "CRM Sales Management Tables - Updated for installation allocation and enhanced tracking",
+  "tables": [
+    {
+      "name": "CRM.offers",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "title": { "type": "string", "required": true },
+        "contactId": { "type": "string", "required": true, "foreignKey": "CRM.contacts.id" },
+        "contactName": { "type": "string", "required": true },
+        "contactCompany": { "type": "string", "required": false },
+        "contactLocation": { "type": "json", "required": false, "description": "Contact location with longitude, latitude, hasLocation fields" },
+        "amount": { "type": "decimal", "required": true },
+        "currency": { "type": "string", "required": true, "foreignKey": "LU.currencies.id" },
+        "status": { "type": "string", "required": true, "enum": ["draft", "sent", "accepted", "declined", "expired"] },
+        "priority": { "type": "string", "required": true, "enum": ["low", "medium", "high", "urgent"] },
+        "description": { "type": "text", "required": false },
+        "notes": { "type": "text", "required": false },
+        "validUntil": { "type": "datetime", "required": false },
+        "shareLink": { "type": "string", "required": false },
+        "assignedTo": { "type": "string", "required": false, "foreignKey": "SYS.users.id" },
+        "convertedToSaleId": { "type": "string", "required": false, "foreignKey": "CRM.sales.id" },
+        "isRecurring": { "type": "boolean", "default": false },
+        "recurringInterval": { "type": "string", "required": false, "enum": ["weekly", "monthly", "quarterly", "annually"] },
+        "tags": { "type": "array", "items": "string" },
+        "createdAt": { "type": "datetime", "required": true },
+        "updatedAt": { "type": "datetime", "required": true },
+        "createdBy": { "type": "string", "required": true, "foreignKey": "SYS.users.id" },
+        "modifiedBy": { "type": "string", "required": false, "foreignKey": "SYS.users.id" }
+      },
+      "indexes": ["contactId", "status", "assignedTo", "createdAt"]
+    },
+    {
+      "name": "CRM.offer_items",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "offerId": { "type": "string", "required": true, "foreignKey": "CRM.offers.id" },
+        "type": { "type": "string", "required": true, "enum": ["service", "article"] },
+        "itemId": { "type": "string", "required": true },
+        "itemCode": { "type": "string", "required": false },
+        "itemName": { "type": "string", "required": true },
+        "description": { "type": "text", "required": false },
+        "quantity": { "type": "decimal", "required": true },
+        "unitPrice": { "type": "decimal", "required": true },
+        "totalPrice": { "type": "decimal", "required": true },
+        "discount": { "type": "decimal", "default": 0 },
+        "position": { "type": "integer", "required": true },
+        "installationId": { "type": "string", "required": false, "foreignKey": "FIELD.installations.id", "description": "Required for service items - installation where service will be performed" },
+        "installationName": { "type": "string", "required": false, "description": "Display name of installation" },
+        "requiresServiceOrder": { "type": "boolean", "default": false, "description": "Flag indicating if this item needs service order generation when offer becomes sale" }
+      },
+      "indexes": ["offerId", "type", "installationId"],
+      "constraints": [
+        {
+          "type": "check",
+          "name": "service_installation_required",
+          "condition": "(type = 'service' AND installationId IS NOT NULL AND requiresServiceOrder = true) OR (type = 'article')"
+        }
+      ]
+    },
+    {
+      "name": "CRM.offer_notes",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "offerId": { "type": "string", "required": true, "foreignKey": "CRM.offers.id" },
+        "note": { "type": "text", "required": true },
+        "isInternal": { "type": "boolean", "default": false },
+        "createdAt": { "type": "datetime", "required": true },
+        "createdBy": { "type": "string", "required": true, "foreignKey": "SYS.users.id" }
+      },
+      "indexes": ["offerId", "createdAt"]
+    },
+    {
+      "name": "CRM.offer_attachments",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "offerId": { "type": "string", "required": true, "foreignKey": "CRM.offers.id" },
+        "fileName": { "type": "string", "required": true },
+        "originalName": { "type": "string", "required": true },
+        "fileSize": { "type": "integer", "required": true },
+        "mimeType": { "type": "string", "required": true },
+        "fileUrl": { "type": "string", "required": true },
+        "description": { "type": "text", "required": false },
+        "uploadedAt": { "type": "datetime", "required": true },
+        "uploadedBy": { "type": "string", "required": true, "foreignKey": "SYS.users.id" }
+      },
+      "indexes": ["offerId", "uploadedAt"]
+    },
+    {
+      "name": "CRM.offer_activity_logs",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "offerId": { "type": "string", "required": true, "foreignKey": "CRM.offers.id" },
+        "action": { "type": "string", "required": true, "enum": ["created", "updated", "sent", "viewed", "accepted", "declined", "expired", "converted_to_sale"] },
+        "description": { "type": "text", "required": false },
+        "metadata": { "type": "json", "required": false },
+        "performedAt": { "type": "datetime", "required": true },
+        "performedBy": { "type": "string", "required": true, "foreignKey": "SYS.users.id" }
+      },
+      "indexes": ["offerId", "action", "performedAt"]
+    },
+    {
+      "name": "CRM.sales",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "title": { "type": "string", "required": true },
+        "contactId": { "type": "string", "required": true, "foreignKey": "CRM.contacts.id" },
+        "offerId": { "type": "string", "required": false, "foreignKey": "CRM.offers.id" },
+        "contactName": { "type": "string", "required": true },
+        "contactCompany": { "type": "string", "required": false },
+        "contactLocation": { "type": "json", "required": false, "description": "Contact location with longitude, latitude, hasLocation fields" },
+        "amount": { "type": "decimal", "required": true },
+        "currency": { "type": "string", "required": true, "foreignKey": "LU.currencies.id" },
+        "status": { "type": "string", "required": true, "enum": ["pending", "confirmed", "invoiced", "paid", "cancelled"] },
+        "stage": { "type": "string", "required": true, "enum": ["prospecting", "qualification", "proposal", "negotiation", "closed"] },
+        "priority": { "type": "string", "required": true, "enum": ["low", "medium", "high", "urgent"] },
+        "description": { "type": "text", "required": false },
+        "notes": { "type": "text", "required": false },
+        "estimatedCloseDate": { "type": "datetime", "required": false },
+        "actualCloseDate": { "type": "datetime", "required": false },
+        "probability": { "type": "integer", "default": 0 },
+        "assignedTo": { "type": "string", "required": false, "foreignKey": "SYS.users.id" },
+        "source": { "type": "string", "required": false },
+        "materialsFulfillment": { "type": "string", "required": false, "enum": ["pending", "partial", "completed", "cancelled"], "description": "Status of material items delivery" },
+        "serviceOrdersStatus": { "type": "string", "required": false, "enum": ["pending", "in_progress", "completed", "cancelled"], "description": "Overall status of generated service orders" },
+        "lostReason": { "type": "text", "required": false },
+        "tags": { "type": "array", "items": "string" },
+        "lastActivity": { "type": "datetime", "required": false },
+        "createdAt": { "type": "datetime", "required": true },
+        "updatedAt": { "type": "datetime", "required": true },
+        "createdBy": { "type": "string", "required": true, "foreignKey": "SYS.users.id" },
+        "modifiedBy": { "type": "string", "required": false, "foreignKey": "SYS.users.id" }
+      },
+      "indexes": ["contactId", "status", "stage", "assignedTo", "createdAt"]
+    },
+    {
+      "name": "CRM.sale_items",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "saleId": { "type": "string", "required": true, "foreignKey": "CRM.sales.id" },
+        "type": { "type": "string", "required": true, "enum": ["service", "article"] },
+        "itemId": { "type": "string", "required": true },
+        "itemCode": { "type": "string", "required": false },
+        "itemName": { "type": "string", "required": true },
+        "description": { "type": "text", "required": false },
+        "quantity": { "type": "decimal", "required": true },
+        "unitPrice": { "type": "decimal", "required": true },
+        "totalPrice": { "type": "decimal", "required": true },
+        "discount": { "type": "decimal", "default": 0 },
+        "position": { "type": "integer", "required": true },
+        "installationId": { "type": "string", "required": false, "foreignKey": "FIELD.installations.id", "description": "Required for service items - installation where service will be performed" },
+        "installationName": { "type": "string", "required": false, "description": "Display name of installation" },
+        "requiresServiceOrder": { "type": "boolean", "default": false, "description": "Flag indicating if this item needs service order generation" },
+        "serviceOrderGenerated": { "type": "boolean", "default": false, "description": "Track if service order was created for this item" },
+        "serviceOrderId": { "type": "string", "required": false, "foreignKey": "FIELD.service_orders.id", "description": "Reference to generated service order" },
+        "fulfillmentStatus": { "type": "string", "required": false, "enum": ["pending", "delivered", "cancelled"], "description": "For material items - delivery status" }
+      },
+      "indexes": ["saleId", "type", "installationId", "serviceOrderId"],
+      "constraints": [
+        {
+          "type": "check",
+          "name": "service_installation_required_sale",
+          "condition": "(type = 'service' AND installationId IS NOT NULL AND requiresServiceOrder = true) OR (type = 'article')"
+        }
+      ]
+    },
+    {
+      "name": "CRM.sale_notes",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "saleId": { "type": "string", "required": true, "foreignKey": "CRM.sales.id" },
+        "note": { "type": "text", "required": true },
+        "isInternal": { "type": "boolean", "default": false },
+        "createdAt": { "type": "datetime", "required": true },
+        "createdBy": { "type": "string", "required": true, "foreignKey": "SYS.users.id" }
+      },
+      "indexes": ["saleId", "createdAt"]
+    },
+    {
+      "name": "CRM.sale_attachments",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "saleId": { "type": "string", "required": true, "foreignKey": "CRM.sales.id" },
+        "fileName": { "type": "string", "required": true },
+        "originalName": { "type": "string", "required": true },
+        "fileSize": { "type": "integer", "required": true },
+        "mimeType": { "type": "string", "required": true },
+        "fileUrl": { "type": "string", "required": true },
+        "description": { "type": "text", "required": false },
+        "uploadedAt": { "type": "datetime", "required": true },
+        "uploadedBy": { "type": "string", "required": true, "foreignKey": "SYS.users.id" }
+      },
+      "indexes": ["saleId", "uploadedAt"]
+    },
+    {
+      "name": "CRM.sale_activity_logs",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "saleId": { "type": "string", "required": true, "foreignKey": "CRM.sales.id" },
+        "action": { "type": "string", "required": true, "enum": ["created", "updated", "confirmed", "invoiced", "paid", "cancelled", "service_order_generated", "materials_shipped", "materials_delivered"] },
+        "description": { "type": "text", "required": false },
+        "metadata": { "type": "json", "required": false },
+        "performedAt": { "type": "datetime", "required": true },
+        "performedBy": { "type": "string", "required": true, "foreignKey": "SYS.users.id" }
+      },
+      "indexes": ["saleId", "action", "performedAt"]
+    }
+  ]
+}

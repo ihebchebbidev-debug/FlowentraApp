@@ -1,0 +1,396 @@
+{
+  "icons": [
+    { "id": "a1111111-1111-1111-1111-111111111111", "name": "Home", "library": "lucide", "component": "Home", "tags": ["dashboard","home"] },
+    { "id": "afilte11-1111-1111-1111-111111111111", "name": "FileText", "library": "lucide", "component": "FileText", "tags": ["offers","quotes"] },
+    { "id": "a2222222-2222-2222-2222-222222222222", "name": "Users", "library": "lucide", "component": "Users", "tags": ["contacts","people"] },
+    { "id": "a3333333-3333-3333-3333-333333333333", "name": "TrendingUp", "library": "lucide", "component": "TrendingUp", "tags": ["sales"] },
+    { "id": "a4444444-4444-4444-4444-444444444444", "name": "Package", "library": "lucide", "component": "Package", "tags": ["inventory"] },
+    { "id": "a5555555-5555-5555-5555-555555555555", "name": "Calendar", "library": "lucide", "component": "Calendar", "tags": ["schedule"] },
+    { "id": "adocumen-1111-1111-1111-111111111111", "name": "Folder", "library": "lucide", "component": "Folder", "tags": ["documents","files"] },
+    { "id": "a6666666-6666-6666-6666-666666666666", "name": "Settings", "library": "lucide", "component": "Settings", "tags": ["system"] },
+    { "id": "a7777777-7777-7777-7777-777777777777", "name": "Wrench", "library": "lucide", "component": "Wrench", "tags": ["field","service"] },
+    { "id": "a9999999-9999-9999-9999-999999999999", "name": "BarChart3", "library": "lucide", "component": "BarChart3", "tags": ["reports"] },
+    { "id": "caldays-1111-1111-1111-111111111111", "name": "CalendarDays", "library": "lucide", "component": "CalendarDays", "tags": ["planner","calendar"] },
+    { "id": "cliplist-1111-1111-1111-111111111111", "name": "ClipboardList", "library": "lucide", "component": "ClipboardList", "tags": ["dispatches","tasks"] },
+    { "id": "clock111-1111-1111-1111-111111111111", "name": "Clock", "library": "lucide", "component": "Clock", "tags": ["time","expenses","tracking"] },
+    { "id": "checksqu-1111-1111-1111-111111111111", "name": "CheckSquare", "library": "lucide", "component": "CheckSquare", "tags": ["todo","tasks"] },
+    { "id": "database-1111-1111-1111-111111111111", "name": "Database", "library": "lucide", "component": "Database", "tags": ["lookups"] },
+    { "id": "gitbranch-1111-1111-1111-111111111111", "name": "GitBranch", "library": "lucide", "component": "GitBranch", "tags": ["workflow", "automation", "status", "flow"] },
+    { "id": "usercog-1111-1111-1111-111111111111", "name": "UserCog", "library": "lucide", "component": "UserCog", "tags": ["hr", "people", "human resources"] },
+    { "id": "shoppingcart-1111-1111-1111-111111111111", "name": "ShoppingCart", "library": "lucide", "component": "ShoppingCart", "tags": ["purchases", "buying", "procurement"] }
+  ],
+
+  "items": [
+    {
+      "id": "dashboard-1111-1111-1111-111111111111",
+      "tenantId": null,
+      "title": "dashboard",
+      "url": "/dashboard",
+      "description": "Overview insights",
+      "iconId": "a1111111-1111-1111-1111-111111111111",
+      "iconName": "Home",
+      "group": "workspace",
+      "position": 0,
+      "active": true,
+      "dropdown": [
+        {
+          "title": "dashboard_builder",
+          "url": "/dashboard/dashboards",
+          "description": "Custom dashboards"
+        }
+      ],
+      "meta": {}
+    },
+    {
+      "id": "articles-1111-1111-1111-111111111111",
+      "tenantId": null,
+      "title": "articles",
+      "url": "/dashboard/inventory-services",
+      "description": "Product catalog",
+      "iconId": "a4444444-4444-4444-4444-444444444444",
+      "iconName": "Package",
+      "group": "workspace",
+      "position": 1,
+      "active": true,
+      "meta": {}
+    },
+    {
+      "id": "contacts-1111-1111-1111-111111111111",
+      "tenantId": null,
+      "title": "contacts",
+      "url": "/dashboard/contacts",
+      "description": "Customer database",
+      "iconId": "a2222222-2222-2222-2222-222222222222",
+      "iconName": "Users",
+      "group": "crm",
+      "position": 0,
+      "active": true,
+      "dropdown": [
+        {
+          "title": "all_contacts",
+          "url": "/dashboard/contacts",
+          "description": "All contacts"
+        },
+        {
+          "title": "company",
+          "url": "/dashboard/contacts?type=company",
+          "description": "Company contacts"
+        },
+        {
+          "title": "person",
+          "url": "/dashboard/contacts?type=individual",
+          "description": "Individual contacts"
+        }
+      ],
+      "meta": {}
+    },
+    {
+      "id": "suppliers-1111-1111-1111-111111111111",
+      "tenantId": null,
+      "title": "suppliers",
+      "url": "/dashboard/suppliers",
+      "description": "Supplier directory",
+      "iconId": "a4444444-4444-4444-4444-444444444444",
+      "iconName": "Package",
+      "group": "crm",
+      "position": 1,
+      "active": true,
+      "meta": {}
+    },
+    {
+      "id": "purchases-1111-1111-1111-111111111111",
+      "tenantId": null,
+      "title": "purchases",
+      "url": "/dashboard/purchases",
+      "description": "Purchase management",
+      "iconId": "shoppingcart-1111-1111-1111-111111111111",
+      "iconName": "ShoppingCart",
+      "group": "crm",
+      "position": 2,
+      "active": true,
+      "dropdown": [
+        {
+          "title": "purchase_orders",
+          "url": "/dashboard/purchases/orders",
+          "description": "Purchase orders"
+        },
+        {
+          "title": "goods_receipts",
+          "url": "/dashboard/purchases/receipts",
+          "description": "Goods receipts"
+        },
+        {
+          "title": "supplier_invoices",
+          "url": "/dashboard/purchases/invoices",
+          "description": "Supplier invoices"
+        },
+        {
+          "title": "compliance",
+          "url": "/dashboard/purchases/compliance",
+          "description": "Fiscal compliance"
+        }
+      ],
+      "meta": {}
+    },
+    {
+      "id": "emails-1111-1111-1111-111111111111",
+      "tenantId": null,
+      "title": "emails",
+      "url": "/dashboard/email-calendar/emails",
+      "description": "Email management",
+      "iconId": "mail-1111-1111-1111-111111111111",
+      "iconName": "Mail",
+      "group": "workspace",
+      "position": 3,
+      "active": false,
+      "meta": {}
+    },
+    {
+      "id": "calendarsync-1111-1111-1111-111111111111",
+      "tenantId": null,
+      "title": "calendar",
+      "url": "/dashboard/calendar",
+      "description": "Calendar",
+      "iconId": "a5555555-5555-5555-5555-555555555555",
+      "iconName": "Calendar",
+      "group": "workspace",
+      "position": 4,
+      "active": true,
+      "meta": {}
+    },
+    {
+      "id": "documents-1111-1111-1111-111111111111",
+      "tenantId": null,
+      "title": "documents",
+      "url": "/dashboard/documents",
+      "description": "Document management",
+      "iconId": "adocumen-1111-1111-1111-111111111111",
+      "iconName": "Folder",
+      "group": "workspace",
+      "position": 4,
+      "active": true,
+      "meta": {}
+    },
+    {
+      "id": "hr-1111-1111-1111-111111111111",
+      "tenantId": null,
+      "title": "hr",
+      "url": "/dashboard/hr",
+      "description": "Human resources",
+      "iconId": "usercog-1111-1111-1111-111111111111",
+      "iconName": "UserCog",
+      "group": "workspace",
+      "position": 5,
+      "active": true,
+      "dropdown": [
+        { "title": "employees", "url": "/dashboard/hr/employees", "description": "Employees" },
+        { "title": "absences", "url": "/dashboard/hr/leaves", "description": "Absences" },
+        { "title": "payroll", "url": "/dashboard/hr/payroll", "description": "Payroll" },
+        { "title": "bonuses", "url": "/dashboard/hr/bonuses", "description": "Bonuses & costs" },
+        { "title": "cnss", "url": "/dashboard/hr/cnss", "description": "CNSS & compliance" },
+        { "title": "performance", "url": "/dashboard/hr/performance", "description": "Goals & reviews" },
+        { "title": "recruitment", "url": "/dashboard/hr/recruitment", "description": "Job openings & applicants" },
+        { "title": "reports", "url": "/dashboard/hr/reports", "description": "Reports" },
+        { "title": "settings", "url": "/dashboard/hr/settings", "description": "HR settings" }
+      ],
+      "meta": {}
+    },
+    {
+      "id": "salesoffers-1111-1111-1111-111111111111",
+      "tenantId": null,
+      "title": "sales",
+      "url": "/dashboard/offers",
+      "description": "Sales & offers",
+      "iconId": "a3333333-3333-3333-3333-333333333333",
+      "iconName": "TrendingUp",
+      "group": "crm",
+      "position": 1,
+      "active": true,
+      "dropdown": [
+        {
+          "title": "offers",
+          "url": "/dashboard/offers",
+          "description": "Client offers"
+        },
+        {
+          "title": "orders",
+          "url": "/dashboard/sales",
+          "description": "Sales pipeline"
+        }
+      ],
+      "meta": {}
+    },
+    {
+      "id": "todo-1111-1111-1111-111111111111",
+      "tenantId": null,
+      "title": "todo",
+      "url": "/dashboard/tasks/daily",
+      "description": "Task management",
+      "iconId": "checksqu-1111-1111-1111-111111111111",
+      "iconName": "CheckSquare",
+      "group": "crm",
+      "position": 2,
+      "active": true,
+      "dropdown": [
+        {
+          "title": "daily_tasks",
+          "url": "/dashboard/tasks/daily",
+          "description": "Daily todo list"
+        },
+        {
+          "title": "projects",
+          "url": "/dashboard/tasks/projects",
+          "description": "Project management"
+        }
+      ],
+      "meta": {}
+    },
+    {
+      "id": "serviceorders-1111-1111-1111-111111111111",
+      "tenantId": null,
+      "title": "services",
+      "url": "/dashboard/field/service-orders/list",
+      "description": "Service management",
+      "iconId": "a7777777-7777-7777-7777-777777777777",
+      "iconName": "Wrench",
+      "group": "service",
+      "position": 0,
+      "active": true,
+      "dropdown": [
+        {
+          "title": "service orders",
+          "url": "/dashboard/field/service-orders/list",
+          "description": "Service order list"
+        },
+        {
+          "title": "dispatches",
+          "url": "/dashboard/field/dispatcher",
+          "description": "Dispatch management"
+        },
+        {
+          "title": "installations",
+          "url": "/dashboard/field/installations/list",
+          "description": "Installation management"
+        }
+      ],
+      "meta": {}
+    },
+    {
+      "id": "timeexpenses-1111-1111-1111-111111111111",
+      "tenantId": null,
+      "title": "time-expenses",
+      "url": "/dashboard/field/time-expenses",
+      "description": "Time & expense tracking",
+      "iconId": "clock111-1111-1111-1111-111111111111",
+      "iconName": "Clock",
+      "group": "service",
+      "position": 1,
+      "active": true,
+      "meta": {}
+    },
+    {
+      "id": "planner-1111-1111-1111-111111111111",
+      "tenantId": null,
+      "title": "planner",
+      "url": "/dashboard/field/dispatcher/interface",
+      "description": "Planning interface",
+      "iconId": "caldays-1111-1111-1111-111111111111",
+      "iconName": "CalendarDays",
+      "group": "service",
+      "position": 2,
+      "active": true,
+      "meta": {}
+    },
+    {
+      "id": "websitebuilder-1111-1111-1111-111111111111",
+      "tenantId": null,
+      "title": "website-builder",
+      "url": "/dashboard/website-builder",
+      "description": "Build & publish websites",
+      "iconId": "a1111111-1111-1111-1111-111111111112",
+      "iconName": "Globe",
+      "group": "system",
+      "position": 1,
+      "active": true,
+      "meta": {}
+    },
+    {
+      "id": "workflow-1111-1111-1111-111111111111",
+      "tenantId": null,
+      "title": "workflow",
+      "url": "/dashboard/workflow",
+      "description": "Visual workflow automation",
+      "iconId": "gitbranch-1111-1111-1111-111111111111",
+      "iconName": "GitBranch",
+      "group": "system",
+      "position": 0,
+      "active": true,
+      "meta": {}
+    },
+    {
+      "id": "dynamicforms-1111-1111-1111-111111111111",
+      "tenantId": null,
+      "title": "dynamic_forms",
+      "url": "/dashboard/settings/dynamic-forms",
+      "description": "Custom form builder",
+      "iconId": "cliplist-1111-1111-1111-111111111111",
+      "iconName": "ClipboardList",
+      "group": "system",
+      "position": 1,
+      "active": true,
+      "meta": {}
+    },
+    {
+      "id": "lookups-1111-1111-1111-111111111111",
+      "tenantId": null,
+      "title": "lookups",
+      "url": "/dashboard/lookups",
+      "description": "Configure app lookups",
+      "iconId": "database-1111-1111-1111-111111111111",
+      "iconName": "Database",
+      "group": "system",
+      "position": 2,
+      "active": true,
+      "meta": {}
+    },
+    {
+      "id": "settings-1111-1111-1111-111111111111",
+      "tenantId": null,
+      "title": "settings",
+      "url": "/dashboard/settings",
+      "description": "System preferences",
+      "iconId": "a6666666-6666-6666-6666-666666666666",
+      "iconName": "Settings",
+      "group": "system",
+      "position": 3,
+      "active": true,
+      "meta": {}
+    },
+    {
+      "id": "sync-history-1111-1111-1111-111111111111",
+      "tenantId": null,
+      "title": "sync_history",
+      "url": "/dashboard/settings/sync",
+      "description": "Sync history and rejected operations",
+      "iconId": "a9999999-9999-9999-9999-999999999999",
+      "iconName": "BarChart3",
+      "group": "system",
+      "position": 4,
+      "active": true,
+      "meta": {}
+    },
+    {
+      "id": "external-1111-1111-1111-111111111111",
+      "tenantId": null,
+      "title": "external",
+      "url": "/dashboard/external",
+      "description": "External API endpoints",
+      "iconId": "a1111111-1111-1111-1111-111111111112",
+      "iconName": "Globe",
+      "group": "system",
+      "position": 5,
+      "active": true,
+      "meta": {}
+    }
+  ]
+}

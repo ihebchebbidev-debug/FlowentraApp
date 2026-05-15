@@ -1,0 +1,116 @@
+[
+  {
+    "id": "proj-001",
+    "name": "Server Infrastructure Upgrade",
+    "description": "Complete server infrastructure upgrade for Acme Corp",
+    "type": "service",
+    "status": "active",
+    "startDate": "2024-01-15T00:00:00.000Z",
+    "endDate": "2024-03-15T00:00:00.000Z",
+    "ownerId": "tech-001",
+    "ownerName": "Jean Dupont",
+    "teamMembers": ["tech-001", "tech-004", "tech-006"],
+    "contactId": "contact-001",
+    "contactName": "John Doe - Acme Corp",
+    "budget": 45000.00,
+    "actualCost": 28500.00,
+    "progress": 65,
+    "priority": "high",
+    "tags": ["infrastructure", "server", "enterprise"],
+    "columns": [
+      {
+        "id": "col-1",
+        "title": "Planning",
+        "color": "bg-slate-500",
+        "position": 0,
+        "isDefault": false,
+        "createdAt": "2024-01-10T00:00:00.000Z"
+      },
+      {
+        "id": "col-2",
+        "title": "In Progress",
+        "color": "bg-primary",
+        "position": 1,
+        "isDefault": false,
+        "createdAt": "2024-01-10T00:00:00.000Z"
+      },
+      {
+        "id": "col-3",
+        "title": "Quality Check",
+        "color": "bg-warning",
+        "position": 2,
+        "isDefault": false,
+        "createdAt": "2024-01-10T00:00:00.000Z"
+      },
+      {
+        "id": "col-4",
+        "title": "Completed",
+        "color": "bg-success",
+        "position": 3,
+        "isDefault": false,
+        "createdAt": "2024-01-10T00:00:00.000Z"
+      }
+    ],
+    "createdAt": "2024-01-15T10:00:00.000Z",
+    "updatedAt": "2024-01-28T14:30:00.000Z",
+    "createdBy": "user-001",
+    "modifiedBy": "user-001"
+  },
+  {
+    "id": "proj-002",
+    "name": "Network Security Assessment",
+    "description": "Security audit and compliance assessment project",
+    "type": "service",
+    "status": "active",
+    "startDate": "2024-02-01T00:00:00.000Z",
+    "endDate": "2024-04-30T00:00:00.000Z",
+    "ownerId": "tech-003",
+    "ownerName": "Sarah Wilson",
+    "teamMembers": ["tech-003", "tech-005"],
+    "contactId": "contact-004",
+    "contactName": "Acme Corporation",
+    "budget": 15000.00,
+    "actualCost": 8750.00,
+    "progress": 80,
+    "priority": "urgent",
+    "tags": ["security", "audit", "compliance"],
+    "columns": [
+      {
+        "id": "col-5",
+        "title": "Assessment",
+        "color": "bg-slate-500",
+        "position": 0,
+        "isDefault": false,
+        "createdAt": "2024-02-01T00:00:00.000Z"
+      },
+      {
+        "id": "col-6",
+        "title": "Analysis",
+        "color": "bg-primary",
+        "position": 1,
+        "isDefault": false,
+        "createdAt": "2024-02-01T00:00:00.000Z"
+      },
+      {
+        "id": "col-7",
+        "title": "Report",
+        "color": "bg-warning",
+        "position": 2,
+        "isDefault": false,
+        "createdAt": "2024-02-01T00:00:00.000Z"
+      },
+      {
+        "id": "col-8",
+        "title": "Delivered",
+        "color": "bg-success",
+        "position": 3,
+        "isDefault": false,
+        "createdAt": "2024-02-01T00:00:00.000Z"
+      }
+    ],
+    "createdAt": "2024-02-01T08:00:00.000Z",
+    "updatedAt": "2024-02-10T14:30:00.000Z",
+    "createdBy": "user-001",
+    "modifiedBy": "user-003"
+  }
+]

@@ -1,0 +1,662 @@
+/**
+ * TenantManagement — Settings tab for managing companies (multi-tenancy).
+ * Only accessible by MainAdminUser.
+ */
+import { useState, useEffect } from 'react';
+import { Building2, Plus, Save, Loader2, Trash2, Star, StarOff, Power, PowerOff, Pencil, Upload, X, Layers, Eye } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from 'react-i18next';
+import { useRef } from 'react';
+import { API_URL } from '@/config/api';
+import { getAuthHeadersNoContentType , getMutationHeaders, getMutationHeadersNoContentType} from '@/utils/apiHeaders';
+import { setTenantOverride, isViewAllMode, VIEW_ALL_SENTINEL, getCurrentTenant } from '@/utils/tenant';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { tenantsApi, type Tenant, type CreateTenantRequest, type UpdateTenantRequest } from '@/services/api/tenantsApi';
+
+export function TenantManagement() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const { t } = useTranslation('settings');
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
+  const [editLoading, setEditLoading] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingTenant, setDeletingTenant] = useState<Tenant | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [dragActive, setDragActive] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [form, setForm] = useState<CreateTenantRequest>({
+    slug: '',
+    companyName: '',
+    companyWebsite: '',
+    companyPhone: '',
+    companyAddress: '',
+    companyCountry: '',
+    industry: '',
+    companyLogoUrl: '',
+  });
+
+  const fetchTenants = async () => {
+    try {
+      const data = await tenantsApi.list();
+      setTenants(data);
+    } catch {
+      toast({
+        title: t('companies.loadErrorTitle'),
+        description: t('companies.loadError'),
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchTenants(); }, []);
+
+  const openCreate = () => {
+    setEditingTenant(null);
+    setForm({ slug: '', companyName: '', companyWebsite: '', companyPhone: '', companyAddress: '', companyCountry: '', industry: '', companyLogoUrl: '' });
+    setLogoFile(null);
+    setLogoPreview(null);
+    setDialogOpen(true);
+  };
+
+  const openEdit = (tenant: Tenant) => {
+    // Open immediately with current row data, then refresh from backend
+    setEditingTenant(tenant);
+    setDialogOpen(true);
+    setEditLoading(true);
+
+    const applyTenantToForm = (tnt: Tenant) => {
+      setForm({
+        slug: tnt.slug,
+        companyName: tnt.companyName,
+        companyWebsite: tnt.companyWebsite || '',
+        companyPhone: tnt.companyPhone || '',
+        companyAddress: tnt.companyAddress || '',
+        companyCountry: tnt.companyCountry || '',
+        industry: tnt.industry || '',
+        companyLogoUrl: tnt.companyLogoUrl || '',
+      });
+      setLogoFile(null);
+      setLogoPreview(tnt.companyLogoUrl ? `${API_URL}/${String(tnt.companyLogoUrl).replace(/^\/+/, '')}` : null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    applyTenantToForm(tenant);
+
+    tenantsApi
+      .getById(tenant.id)
+      .then((fresh) => {
+        setEditingTenant(fresh);
+        applyTenantToForm(fresh);
+      })
+      .catch(() => {
+        toast({
+          title: t('companies.loadErrorTitle'),
+          description: t('companies.loadError'),
+          variant: 'destructive',
+        });
+      })
+      .finally(() => setEditLoading(false));
+  };
+
+  const handleSave = async () => {
+    if (!form.companyName.trim()) {
+      toast({ title: 'Error', description: t('companies.companyNameRequired'), variant: 'destructive' });
+      return;
+    }
+    if (!editingTenant && !form.slug.trim()) {
+      toast({ title: 'Error', description: t('companies.slugRequired'), variant: 'destructive' });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      let uploadedLogoUrl = form.companyLogoUrl;
+
+      // Handle Logo Upload via API if a new file is picked
+      if (logoFile) {
+        const uploadFormData = new FormData();
+        uploadFormData.append('files', logoFile);
+        uploadFormData.append('moduleType', 'company');
+        uploadFormData.append('category', 'company-logo');
+        uploadFormData.append('description', 'Company Logo');
+
+        const uploadRes = await fetch(`${API_URL}/api/Documents/upload`, {
+          method: 'POST',
+          headers: getMutationHeadersNoContentType(),
+          body: uploadFormData,
+        });
+
+        if (uploadRes.ok) {
+          const result = await uploadRes.json();
+          const docs = result.documents || result.data || (Array.isArray(result) ? result : [result]);
+          const uploadedDoc = docs[0];
+          const filePath = uploadedDoc?.filePath || uploadedDoc?.FilePath || uploadedDoc?.path || uploadedDoc?.Path;
+          const docId = uploadedDoc?.id || uploadedDoc?.Id;
+
+          if (filePath) {
+            uploadedLogoUrl = filePath.replace(/^\//, '');
+          } else if (docId) {
+            uploadedLogoUrl = `api/Documents/download/${docId}`;
+          }
+        } else {
+          toast({ title: 'Upload Failed', description: 'Could not upload the logo image.', variant: 'destructive' });
+          setSaving(false);
+          return;
+        }
+      }
+
+      if (editingTenant) {
+        const update: UpdateTenantRequest = {
+          companyName: form.companyName,
+          companyWebsite: form.companyWebsite || undefined,
+          companyPhone: form.companyPhone || undefined,
+          companyAddress: form.companyAddress || undefined,
+          companyCountry: form.companyCountry || undefined,
+          industry: form.industry || undefined,
+          companyLogoUrl: uploadedLogoUrl ?? '',
+        };
+        await tenantsApi.update(editingTenant.id, update);
+        toast({ title: 'Updated', description: t('companies.editSuccess', { companyName: form.companyName }) });
+      } else {
+        await tenantsApi.create({ ...form, companyLogoUrl: uploadedLogoUrl ?? '' });
+        toast({ title: 'Created', description: t('companies.createSuccess', { companyName: form.companyName }) });
+      }
+      setDialogOpen(false);
+      setLogoFile(null);
+      setLogoPreview(null);
+      fetchTenants();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error?.response?.data?.message || t('companies.saveError'),
+        variant: 'destructive',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deletingTenant) return;
+    try {
+      await tenantsApi.delete(deletingTenant.id);
+      toast({ title: 'Deactivated', description: t('companies.deactivateSuccess', { companyName: deletingTenant.companyName }) });
+      fetchTenants();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error?.response?.data?.message || t('companies.deactivateError'),
+        variant: 'destructive',
+      });
+    } finally {
+      setDeleteDialogOpen(false);
+      setDeletingTenant(null);
+    }
+  };
+
+  // Drag & Drop Handlers
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      handleFile(e.target.files[0]);
+    }
+  };
+
+  const handleFile = (file: File) => {
+    if (file.type.startsWith('image/')) {
+      setLogoFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setLogoPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeLogo = () => {
+    setLogoPreview(null);
+    setLogoFile(null);
+    setForm({ ...form, companyLogoUrl: '' });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleSetDefault = async (tenant: Tenant) => {
+    try {
+      await tenantsApi.setDefault(tenant.id);
+      toast({
+        title: t('companies.setDefaultTitle', 'Default company updated'),
+        description: t(
+          'companies.setDefaultReloadHint',
+          'The app will now reload and switch to this company so that all data uses it as default.'
+        ),
+      });
+      setTenantOverride(tenant.slug);
+    } catch {
+      toast({ title: 'Error', description: t('companies.setDefaultError'), variant: 'destructive' });
+    }
+  };
+
+  if (loading) {
+    return (
+      <Card className="shadow-card border-0 bg-card">
+        <CardContent className="flex items-center justify-center py-12">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <>
+      <Card className="shadow-card border-0 bg-card">
+        <CardHeader className="p-4 sm:p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-primary" />
+                {t('companies.title')}
+              </CardTitle>
+              <CardDescription className="text-xs mt-1">
+                {t('companies.managementDesc')}
+              </CardDescription>
+            </div>
+            <Button onClick={openCreate} size="sm" className="gradient-primary">
+              <Plus className="h-4 w-4 mr-2" />
+              {t('companies.addCompany')}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+          {/* View All Companies toggle */}
+          {tenants.filter(t => t.isActive).length > 1 && (
+            <div className="mb-4">
+              <div
+                className={`flex items-center justify-between p-4 rounded-lg border transition-colors cursor-pointer ${
+                  isViewAllMode()
+                    ? 'border-primary/50 bg-primary/5'
+                    : 'border-border/50 bg-muted/20 hover:border-primary/30'
+                }`}
+                onClick={() => {
+                  if (isViewAllMode()) {
+                    setTenantOverride(null);
+                  } else {
+                    setTenantOverride(VIEW_ALL_SENTINEL);
+                  }
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg shrink-0 ${isViewAllMode() ? 'bg-primary/20' : 'bg-muted'}`}>
+                    <Layers className={`h-5 w-5 ${isViewAllMode() ? 'text-primary' : 'text-muted-foreground'}`} />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-sm text-foreground">{t('companies.viewAllCompanies', 'View All Companies')}</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {t('companies.viewAllDesc', 'See and manage data from all companies in one view')}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {isViewAllMode() && (
+                    <Badge variant="default" className="text-[10px] h-5 px-2">{t('companies.active', 'Active')}</Badge>
+                  )}
+                  <Eye className={`h-4 w-4 ${isViewAllMode() ? 'text-primary' : 'text-muted-foreground'}`} />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {tenants.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Building2 className="h-12 w-12 mx-auto mb-3 opacity-30" />
+              <p className="text-sm">{t('companies.noCompanies')}</p>
+              <p className="text-xs mt-1">{t('companies.noCompaniesDesc')}</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {tenants.map(tenant => {
+                const currentSlug = getCurrentTenant();
+                const isCurrentTenant = !isViewAllMode() && (
+                  (tenant.isDefault && !currentSlug) || tenant.slug === currentSlug
+                );
+                return (
+                <div
+                  key={tenant.id}
+                  className={`flex items-center gap-4 p-4 rounded-lg border transition-colors cursor-pointer ${
+                    isCurrentTenant
+                      ? 'border-primary/50 bg-primary/5'
+                      : 'border-border/50 bg-muted/20 hover:border-primary/30'
+                  }`}
+                  onClick={() => {
+                    setTenantOverride(tenant.slug);
+                  }}
+                >
+                  {/* Company Icon or Logo */}
+                  <div className="p-2 rounded-lg bg-primary/10 shrink-0 w-12 h-12 flex items-center justify-center overflow-hidden">
+                    {(() => {
+                      // 1. First priority: The tenant's own logo
+                      if (tenant.companyLogoUrl) {
+                        return (
+                          <img 
+                            src={`${API_URL}/${tenant.companyLogoUrl.replace(/^\/+/, '')}`} 
+                            alt={tenant.companyName} 
+                            className="max-w-full max-h-full object-contain"
+                          />
+                        );
+                      }
+                      
+                      // 2. Second priority: If it's the default company, fall back to the admin's logo
+                      if (tenant.isDefault && user?.companyLogoUrl) {
+                        return (
+                          <img 
+                            src={`${API_URL}/${user.companyLogoUrl.replace(/^\/+/, '')}`} 
+                            alt={tenant.companyName} 
+                            className="max-w-full max-h-full object-contain"
+                          />
+                        );
+                      }
+                      
+                      // 3. Last fallback: Building icon
+                      return (
+                        <Building2 className="h-5 w-5 text-primary" />
+                      );
+                    })()}
+                  </div>
+
+                  {/* Company Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-medium text-sm text-foreground truncate">{tenant.companyName}</h3>
+                      {isCurrentTenant && (
+                        <Badge variant="secondary" className="text-[10px] h-4 px-1.5">{t('companies.currentBadge', 'Current')}</Badge>
+                      )}
+                      {tenant.isDefault && (
+                        <Badge variant="default" className="text-[10px] h-4 px-1.5">{t('companies.defaultBadge')}</Badge>
+                      )}
+                      {!tenant.isActive && (
+                        <Badge variant="destructive" className="text-[10px] h-4 px-1.5">{t('companies.inactiveBadge')}</Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 mt-0.5">
+                      <span className="text-xs text-muted-foreground font-mono">{tenant.slug}</span>
+                      {tenant.industry && (
+                        <span className="text-xs text-muted-foreground">• {tenant.industry}</span>
+                      )}
+                      {tenant.companyCountry && (
+                        <span className="text-xs text-muted-foreground">• {tenant.companyCountry}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-1 shrink-0">
+                    {!tenant.isDefault && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handleSetDefault(tenant)}
+                        title={t('companies.setDefault')}
+                      >
+                        <Star className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => openEdit(tenant)}
+                      title={t('companies.edit')}
+                    >
+                      <Pencil className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                    {!tenant.isDefault && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 hover:text-destructive"
+                        onClick={() => { setDeletingTenant(tenant); setDeleteDialogOpen(true); }}
+                        title={t('companies.deactivate')}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Create/Edit Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{editingTenant ? t('companies.editTitle') : t('companies.createTitle')}</DialogTitle>
+            <DialogDescription>
+              {editingTenant
+                ? t('companies.managementDesc')
+                : t('companies.managementDesc')}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {editLoading ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {t('companies.loadingCompany', 'Loading company details…')}
+              </div>
+            ) : null}
+            {!editingTenant && (
+              <div className="space-y-2">
+                <Label>{t('companies.slugLabel')} <span className="text-destructive">*</span></Label>
+                <Input
+                  value={form.slug}
+                  onChange={e => setForm(f => ({ ...f, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') }))}
+                  placeholder={t('companies.slugPlaceholder')}
+                  className="font-mono"
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  {t('companies.slugHint')}
+                </p>
+              </div>
+            )}
+            
+            {/* Logo Upload */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Upload className="h-4 w-4 text-muted-foreground" />
+                {t('companies.logoLabel', 'Company Logo')}
+              </Label>
+              
+              {logoPreview ? (
+                <div className="relative group">
+                  <div className="flex items-center gap-4 p-4 border rounded-xl bg-muted/30">
+                    <img 
+                      src={logoPreview} 
+                      alt="Company logo" 
+                      className="w-12 h-12 object-contain rounded-lg bg-background shadow-sm"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm text-foreground truncate">{form.companyName || 'Logo preview'}</p>
+                      <p className="text-xs text-muted-foreground">Click the X to remove</p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={removeLogo}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive hover:text-destructive-foreground h-8 w-8"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  className={`relative border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer hover:border-primary/50 hover:bg-primary/5 ${
+                    dragActive ? 'border-primary bg-primary/10' : 'border-muted-foreground/30'
+                  }`}
+                  onDragEnter={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDragOver={handleDrag}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileInput}
+                    className="sr-only"
+                  />
+                  <div className="space-y-2">
+                    <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center mx-auto">
+                      <Upload className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm text-foreground">Upload or drag a file</p>
+                      <p className="text-xs text-muted-foreground">PNG, JPG up to 5MB</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label>{t('companies.companyNameLabel')} <span className="text-destructive">*</span></Label>
+              <Input
+                value={form.companyName}
+                onChange={e => setForm(f => ({ ...f, companyName: e.target.value }))}
+                placeholder={t('companies.companyNamePlaceholder')}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>{t('companies.websiteLabel')}</Label>
+                <Input
+                  value={form.companyWebsite}
+                  onChange={e => setForm(f => ({ ...f, companyWebsite: e.target.value }))}
+                  placeholder={t('companies.websitePlaceholder')}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{t('companies.phoneLabel')}</Label>
+                <Input
+                  value={form.companyPhone}
+                  onChange={e => setForm(f => ({ ...f, companyPhone: e.target.value }))}
+                  placeholder={t('companies.phonePlaceholder')}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>{t('companies.countryLabel')}</Label>
+                <Input
+                  value={form.companyCountry}
+                  onChange={e => setForm(f => ({ ...f, companyCountry: e.target.value.toUpperCase().slice(0, 2) }))}
+                  placeholder={t('companies.countryPlaceholder')}
+                  maxLength={2}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{t('companies.industryLabel')}</Label>
+                <Input
+                  value={form.industry}
+                  onChange={e => setForm(f => ({ ...f, industry: e.target.value }))}
+                  placeholder={t('companies.industryPlaceholder')}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>{t('companies.addressLabel')}</Label>
+              <Input
+                value={form.companyAddress}
+                onChange={e => setForm(f => ({ ...f, companyAddress: e.target.value }))}
+                placeholder={t('companies.addressPlaceholder')}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>{t('companies.cancelButton')}</Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+              {editingTenant ? t('companies.saveButton') : t('companies.createButton')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('companies.deactivateTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('companies.deactivateConfirm', { companyName: deletingTenant?.companyName })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('companies.cancelButton')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {t('companies.deactivateButton')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}

@@ -1,0 +1,87 @@
+{
+  "offers": "Devis",
+  "title": "Devis",
+  "subtitle": "Gérer les devis et propositions",
+  "pageDescription": "Créez et gérez les offres et devis clients",
+  "new_offer": "Nouvelle Offre",
+  "add_offer": "Ajouter une Offre",
+  "edit_offer": "Modifier l'Offre",
+  "offer_statistics": "Statistiques des Offres",
+  "total_offers": "Total des Offres",
+  "active_offers": "Offres Actives",
+  "accepted_offers": "Offres Acceptées",
+  "declined_offers": "Offres Déclinées",
+  "conversion_rate": "Taux de Conversion",
+  "average_value": "Valeur Moyenne",
+  "total_value": "Valeur Totale",
+  "totalValue": "Valeur Totale",
+  "monthly_growth": "Croissance Mensuelle",
+  "searchOffers": "Rechercher des offres...",
+  "no_offers_found": "Aucune offre trouvée",
+  "loading_offers": "Chargement des offres...",
+  "confirm_delete": "Êtes-vous sûr de vouloir supprimer cette offre ?",
+  "confirm_send": "Êtes-vous sûr de vouloir envoyer cette offre ?",
+  "confirm_accept": "Êtes-vous sûr de vouloir accepter cette offre ?",
+  "confirm_decline": "Êtes-vous sûr de vouloir décliner cette offre ?",
+  "total": "Total",
+  "noExpiryDate": "Pas de date d'expiration",
+  "unassigned": "Non assigné",
+  "accessDenied": "Accès Refusé",
+  "accessDeniedDescription": "Vous n'avez pas la permission de voir les offres. Veuillez contacter votre administrateur.",
+
+  "itemsSubtotal": "Sous-total des Articles",
+  "manageItems": "Gérer les Articles",
+
+  "filteredCountText": "{{count}} offres dans votre base",
+
+  "table": {
+    "offer": "Offre",
+    "contact": "Contact",
+    "amount": "Montant",
+    "status": "Statut",
+    "validUntil": "Valide Jusqu'au",
+    "viewDetails": "Voir les Détails",
+    "editOffer": "Modifier l'Offre"
+  },
+
+  "listView": {
+    "viewDetails": "Voir les Détails",
+    "editOffer": "Modifier l'Offre",
+    "convertToSale": "Convertir en Vente",
+    "noOffersDescription": "Commencez par créer votre première offre"
+  },
+
+  "deleteConfirm": {
+    "title": "Supprimer l'Offre",
+    "description": "Êtes-vous sûr de vouloir supprimer cette offre ? Cette action est irréversible.",
+    "cancel": "Annuler",
+    "confirm": "Supprimer"
+  },
+
+  "bulk": {
+    "selectAll": "Sélectionner toutes les offres",
+    "selectItem": "Sélectionner {{name}}",
+    "selectedCount": "{{count}} offre(s) sélectionnée(s)",
+    "deselectAll": "Tout Désélectionner",
+    "deleteSelected": "Supprimer la Sélection",
+    "deleteTitle": "Supprimer Plusieurs Offres",
+    "deleteDescription": "Êtes-vous sûr de vouloir supprimer {{count}} offre(s) ? Cette action est irréversible.",
+    "deletingProgress": "Suppression en cours...",
+    "deleting": "Suppression..."
+  },
+
+  "filters": {
+    "filters": "Filtres",
+    "export": "Exporter",
+    "allStatuses": "Tous les Statuts",
+    "draft": "Brouillon",
+    "sent": "Envoyée",
+    "accepted": "Acceptée",
+    "declined": "Déclinée",
+    "allAssignees": "Tous les Assignés",
+    "anyTime": "Toute Période",
+    "last7Days": "7 Derniers Jours",
+    "last30Days": "30 Derniers Jours",
+    "lastYear": "Année Dernière"
+  }
+}

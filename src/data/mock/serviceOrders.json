@@ -1,0 +1,75 @@
+[
+  {
+    "id": "so-001",
+    "orderNumber": "SO-2024-001",
+    "saleId": "sale-001",
+    "offerId": "offer-001",
+    "title": "Server Maintenance Implementation",
+    "description": "Execute server maintenance package as per approved sale",
+    "status": "in_progress",
+    "priority": "high",
+    "customer": {
+      "id": "contact-001",
+      "company": "Acme Corp",
+      "contactPerson": "John Doe",
+      "phone": "+216 72 285 123",
+      "email": "john@acme.com",
+      "address": {
+        "street": "Avenue Habib Bourguiba",
+        "city": "Nabeul",
+        "state": "Nabeul",
+        "zipCode": "8000",
+        "country": "Tunisia",
+        "longitude": 10.737222,
+        "latitude": 36.456389,
+        "hasLocation": 1
+      }
+    },
+    "serviceType": "Server Maintenance",
+    "scheduledAt": "2024-01-25T09:00:00.000Z",
+    "startedAt": "2024-01-25T09:15:00.000Z",
+    "estimatedDuration": 480,
+    "actualDuration": 420,
+    "assignedTechnicians": ["tech-001", "tech-004"],
+    "notes": "Priority service order - client is VIP. Coordinate with IT team for server downtime window.",
+    "createdAt": "2024-01-20T16:45:00.000Z",
+    "updatedAt": "2024-01-28T14:30:00.000Z",
+    "createdBy": "user-001",
+    "modifiedBy": "user-001"
+  },
+  {
+    "id": "so-002",
+    "orderNumber": "SO-2024-002", 
+    "saleId": "sale-003",
+    "title": "Enterprise Security Audit Implementation",
+    "description": "Comprehensive security audit and compliance assessment implementation",
+    "status": "scheduled",
+    "priority": "urgent",
+    "customer": {
+      "id": "contact-004",
+      "company": "Acme Corporation",
+      "contactPerson": "Mark Brown",
+      "phone": "+216 72 298 456",
+      "email": "mark.brown@acme.com",
+      "address": {
+        "street": "Route de Hammamet",
+        "city": "Nabeul",
+        "state": "Nabeul", 
+        "zipCode": "8001",
+        "country": "Tunisia",
+        "longitude": 10.745892,
+        "latitude": 36.451203,
+        "hasLocation": 1
+      }
+    },
+    "serviceType": "Security Audit",
+    "scheduledAt": "2024-02-05T08:00:00.000Z",
+    "estimatedDuration": 1440,
+    "assignedTechnicians": ["tech-003", "tech-005"],
+    "notes": "Enterprise security audit - requires compliance documentation. Schedule with CISO present.",
+    "createdAt": "2024-01-25T15:00:00.000Z",
+    "updatedAt": "2024-01-29T10:20:00.000Z",
+    "createdBy": "user-001",
+    "modifiedBy": "user-003"
+  }
+]

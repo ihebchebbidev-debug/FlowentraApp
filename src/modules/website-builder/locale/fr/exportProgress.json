@@ -1,0 +1,16 @@
+{
+  "exportingHtml": "Export HTML Statique",
+  "exportingReact": "Export Projet React",
+  "waitMessage": "Veuillez patienter pendant que nous préparons vos fichiers pour le téléchargement.",
+  "preparing": "Préparation...",
+  "extractingImages": "Extraction des Images",
+  "generatingPages": "Génération des Pages",
+  "creatingZip": "Création du ZIP",
+  "complete": "Terminé !",
+  "processingPhase": "Traitement...",
+  "processed": "Traité",
+  "total": "Total",
+  "images": "Images",
+  "files": "Fichiers",
+  "exportComplete": "Export terminé ! Votre téléchargement devrait démarrer automatiquement."
+}

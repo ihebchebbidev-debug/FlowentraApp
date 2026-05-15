@@ -1,0 +1,8 @@
+{
+  "addNewPage": "Add New Page",
+  "pageTitleLabel": "Page Title",
+  "pageTitlePlaceholder": "Page title (e.g., About, Services)",
+  "urlSlugPrefix": "URL slug:",
+  "chooseTemplate": "Choose a template",
+  "createPage": "Create Page"
+}

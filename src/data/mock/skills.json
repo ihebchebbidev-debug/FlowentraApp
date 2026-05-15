@@ -1,0 +1,62 @@
+[
+  {
+    "id": "skill-001",
+    "name": "Server Maintenance",
+    "category": "Infrastructure",
+    "description": "Physical and virtual server maintenance, updates, and optimization",
+    "level": "advanced",
+    "isActive": true,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "skill-002", 
+    "name": "Network Installation",
+    "category": "Networking",
+    "description": "Installation and configuration of network infrastructure",
+    "level": "expert",
+    "isActive": true,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "skill-003",
+    "name": "Security Auditing",
+    "category": "Security",
+    "description": "Comprehensive security assessments and vulnerability analysis",
+    "level": "expert",
+    "isActive": true,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "skill-004",
+    "name": "Hardware Repair",
+    "category": "Hardware",
+    "description": "Diagnosis and repair of computer hardware components",
+    "level": "advanced",
+    "isActive": true,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "skill-005",
+    "name": "Full Stack Development",
+    "category": "Development",
+    "description": "Complete web application development from frontend to backend",
+    "level": "expert",
+    "isActive": true,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "skill-006",
+    "name": "Database Administration",
+    "category": "Data Management",
+    "description": "Database design, optimization, and maintenance",
+    "level": "expert",
+    "isActive": true,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+]

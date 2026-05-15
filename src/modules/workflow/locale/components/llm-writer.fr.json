@@ -1,0 +1,8 @@
+{
+  "llm-writer": {
+    "title": "Rédacteur IA",
+    "fullDescription": "Génère du contenu textuel en utilisant un modèle de langage pour des emails, descriptions ou autres champs textuels.",
+    "how": "Fournissez un prompt et des paramètres (ton, longueur). Le modèle générera du contenu à relire ou envoyer automatiquement.",
+    "examples": ["Générer un email de relance pour un lead","Créer une description produit à partir des détails"]
+  }
+}

@@ -1,0 +1,135 @@
+{
+  "module": "preferences",
+  "version": "001",
+  "description": "User Workspace Preferences and Customization Tables",
+  "tables": [
+    {
+      "name": "PREF.user_preferences",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "userId": { "type": "string", "required": true, "foreignKey": "SYS.users.id" },
+        "theme": { "type": "string", "required": true, "enum": ["light", "dark", "system"], "default": "system" },
+        "language": { "type": "string", "required": true, "default": "en" },
+        "primaryColor": { "type": "string", "required": true, "enum": ["blue", "red", "green", "purple", "orange", "indigo"], "default": "blue" },
+        "layoutMode": { "type": "string", "required": true, "enum": ["sidebar", "topbar"], "default": "sidebar" },
+        "dataView": { "type": "string", "required": true, "enum": ["table", "list", "grid"], "default": "table" },
+        "timezone": { "type": "string", "required": false },
+        "dateFormat": { "type": "string", "required": true, "default": "MM/DD/YYYY" },
+        "timeFormat": { "type": "string", "required": true, "enum": ["12h", "24h"], "default": "12h" },
+        "currency": { "type": "string", "required": true, "default": "USD" },
+        "numberFormat": { "type": "string", "required": true, "enum": ["comma", "dot"], "default": "comma" },
+        "notifications": { "type": "json", "required": true },
+        "sidebarCollapsed": { "type": "boolean", "default": false },
+        "compactMode": { "type": "boolean", "default": false },
+        "showTooltips": { "type": "boolean", "default": true },
+        "animationsEnabled": { "type": "boolean", "default": true },
+        "soundEnabled": { "type": "boolean", "default": true },
+        "autoSave": { "type": "boolean", "default": true },
+        "workArea": { "type": "string", "required": false },
+        "dashboardLayout": { "type": "json", "required": false },
+        "quickAccessItems": { "type": "array", "items": "string" },
+        "createdAt": { "type": "datetime", "required": true },
+        "updatedAt": { "type": "datetime", "required": true }
+      },
+      "indexes": ["userId", "theme", "language"]
+    },
+    {
+      "name": "PREF.company_settings",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "userId": { "type": "string", "required": true, "foreignKey": "SYS.users.id" },
+        "companyName": { "type": "string", "required": false },
+        "companyLogo": { "type": "string", "required": false },
+        "companyWebsite": { "type": "string", "required": false },
+        "companyAddress": { "type": "json", "required": false },
+        "companyPhone": { "type": "string", "required": false },
+        "companyEmail": { "type": "string", "required": false },
+        "taxNumber": { "type": "string", "required": false },
+        "businessType": { "type": "string", "required": false },
+        "industry": { "type": "string", "required": false },
+        "employeeCount": { "type": "string", "required": false, "enum": ["1-10", "11-50", "51-200", "201-500", "500+"] },
+        "fiscalYearStart": { "type": "string", "required": false },
+        "defaultCurrency": { "type": "string", "required": true, "default": "USD" },
+        "invoicePrefix": { "type": "string", "required": false },
+        "quotePrefix": { "type": "string", "required": false },
+        "orderPrefix": { "type": "string", "required": false },
+        "createdAt": { "type": "datetime", "required": true },
+        "updatedAt": { "type": "datetime", "required": true }
+      },
+      "indexes": ["userId", "industry"]
+    },
+    {
+      "name": "PREF.workspace_templates",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "name": { "type": "string", "required": true },
+        "description": { "type": "text", "required": false },
+        "category": { "type": "string", "required": true, "enum": ["dashboard", "layout", "theme", "workflow"] },
+        "templateData": { "type": "json", "required": true },
+        "isPublic": { "type": "boolean", "default": false },
+        "isSystem": { "type": "boolean", "default": false },
+        "tags": { "type": "array", "items": "string" },
+        "usageCount": { "type": "integer", "default": 0 },
+        "rating": { "type": "decimal", "required": false },
+        "createdBy": { "type": "string", "required": true, "foreignKey": "SYS.users.id" },
+        "createdAt": { "type": "datetime", "required": true },
+        "updatedAt": { "type": "datetime", "required": true }
+      },
+      "indexes": ["category", "isPublic", "isSystem", "createdBy"]
+    },
+    {
+      "name": "PREF.user_templates",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "userId": { "type": "string", "required": true, "foreignKey": "SYS.users.id" },
+        "templateId": { "type": "string", "required": true, "foreignKey": "PREF.workspace_templates.id" },
+        "customizations": { "type": "json", "required": false },
+        "isActive": { "type": "boolean", "default": false },
+        "appliedAt": { "type": "datetime", "required": true }
+      },
+      "indexes": ["userId", "templateId", "isActive"]
+    },
+    {
+      "name": "PREF.dashboard_widgets",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "userId": { "type": "string", "required": true, "foreignKey": "SYS.users.id" },
+        "widgetType": { "type": "string", "required": true, "enum": ["chart", "kpi", "list", "calendar", "activity", "custom"] },
+        "title": { "type": "string", "required": true },
+        "config": { "type": "json", "required": true },
+        "position": { "type": "json", "required": true },
+        "size": { "type": "json", "required": true },
+        "isVisible": { "type": "boolean", "default": true },
+        "refreshInterval": { "type": "integer", "required": false },
+        "dataSource": { "type": "string", "required": false },
+        "permissions": { "type": "json", "required": false },
+        "createdAt": { "type": "datetime", "required": true },
+        "updatedAt": { "type": "datetime", "required": true }
+      },
+      "indexes": ["userId", "widgetType", "isVisible"]
+    },
+    {
+      "name": "PREF.user_shortcuts",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "userId": { "type": "string", "required": true, "foreignKey": "SYS.users.id" },
+        "name": { "type": "string", "required": true },
+        "description": { "type": "text", "required": false },
+        "shortcutKey": { "type": "string", "required": true },
+        "action": { "type": "string", "required": true },
+        "actionData": { "type": "json", "required": false },
+        "isEnabled": { "type": "boolean", "default": true },
+        "category": { "type": "string", "required": false },
+        "createdAt": { "type": "datetime", "required": true },
+        "updatedAt": { "type": "datetime", "required": true }
+      },
+      "indexes": ["userId", "shortcutKey", "isEnabled"]
+    }
+  ]
+}

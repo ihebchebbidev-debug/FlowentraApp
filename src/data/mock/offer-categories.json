@@ -1,0 +1,42 @@
+[
+  {
+    "id": "potential",
+    "name": "Potential",
+    "description": "Potential business opportunity",
+    "color": "#3B82F6",
+    "sortOrder": 1,
+    "isActive": true
+  },
+  {
+    "id": "big_project",
+    "name": "Big Project",
+    "description": "Large-scale project opportunity",
+    "color": "#8B5CF6",
+    "sortOrder": 2,
+    "isActive": true
+  },
+  {
+    "id": "likely_to_close",
+    "name": "Likely to Close",
+    "description": "High probability of closing",
+    "color": "#10B981",
+    "sortOrder": 3,
+    "isActive": true
+  },
+  {
+    "id": "unlikely_to_close",
+    "name": "Unlikely to Close",
+    "description": "Low probability of closing",
+    "color": "#EF4444",
+    "sortOrder": 4,
+    "isActive": true
+  },
+  {
+    "id": "follow_up_required",
+    "name": "Follow-up Required",
+    "description": "Needs follow-up action",
+    "color": "#F59E0B",
+    "sortOrder": 5,
+    "isActive": true
+  }
+]

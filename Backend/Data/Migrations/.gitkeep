@@ -1,0 +1,2 @@
+# This folder will contain Entity Framework migrations
+# Run 'dotnet ef migrations add InitialCreate' to create your first migration

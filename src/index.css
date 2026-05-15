@@ -1,0 +1,454 @@
+@import "react-day-picker/dist/style.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Compact table styles for import preview */
+.compact-table {
+  --row-height: 40px;
+  --header-height: 44px;
+}
+
+.compact-table .virtual-table-row {
+  min-height: var(--row-height);
+  border-bottom: 1px solid hsl(var(--border));
+  transition: background-color 0.15s ease;
+}
+
+.compact-table .virtual-table-row:hover {
+  background-color: hsl(var(--muted) / 0.5);
+}
+
+.compact-table .virtual-table-header {
+  min-height: var(--header-height);
+  background-color: hsl(var(--muted) / 0.8);
+  border-bottom: 2px solid hsl(var(--border));
+  font-weight: 600;
+}
+
+/* Status indicators */
+.status-valid {
+  color: hsl(142 76% 36%);
+}
+
+.status-error {
+  color: hsl(0 84% 60%);
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 640px) {
+  .compact-table {
+    --row-height: 48px;
+    --header-height: 48px;
+  }
+}
+
+/* FlowSolution Design System - Professional SaaS Theme */
+/* Import statement removed - fonts loaded via HTML link tags */
+
+@layer base {
+  :root {
+    /* Professional Brand Colors — refined, less aggressive */
+    --primary: 4 80% 56%;              /* Refined Red — slightly less saturated for elegance */
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 4 80% 46%;
+    --primary-light: 4 60% 96%;
+    
+    --accent: 172 66% 34%;             /* Teal — slightly desaturated for sophistication */
+    --accent-foreground: 0 0% 100%;
+    --accent-hover: 172 66% 26%;
+    --accent-light: 172 50% 96%;
+    
+    --secondary: 220 14% 96%;          /* Neutral cool gray */
+    --secondary-foreground: 220 20% 20%;
+    --secondary-hover: 220 14% 93%;
+    --secondary-light: 220 14% 98%;
+
+    /* Status Colors — professional, muted tones */
+    --success: 142 64% 38%;
+    --success-foreground: 0 0% 100%;
+    --success-light: 142 50% 96%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --warning-light: 38 80% 96%;
+    --destructive: 0 72% 56%;
+    --destructive-foreground: 0 0% 100%;
+    --destructive-light: 0 60% 96%;
+    --info: 220 70% 52%;               /* Info now blue — distinct from primary */
+    --info-foreground: 0 0% 100%;
+    --info-light: 220 60% 96%;
+
+    /* Chart Colors — harmonised palette */
+    --chart-1: 4 80% 56%;
+    --chart-2: 172 66% 34%;
+    --chart-3: 142 64% 38%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 220 70% 52%;
+    --chart-6: 262 60% 52%;
+
+    /* Clean Interface — Twenty-inspired neutral tones */
+    --background: 0 0% 98%;            /* Near-white, clean #FAFAFA */
+    --foreground: 220 20% 14%;         /* Rich dark text */
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 14%;
+    
+    --muted: 220 14% 95%;
+    --muted-foreground: 220 10% 46%;
+    --border: 220 13% 90%;             /* Subtle, clean borders */
+    --input: 0 0% 100%;
+    --ring: 4 80% 56%;
+
+    /* Popover */
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 14%;
+
+    /* Refined Shadows & Effects */
+    --radius: 0.5rem;                  /* Tighter radius — more professional */
+    --shadow-soft: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-medium: 0 2px 8px -2px rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+    --shadow-strong: 0 8px 24px -4px rgb(0 0 0 / 0.1), 0 2px 6px -2px rgb(0 0 0 / 0.05);
+    --shadow-glow: 0 0 24px rgb(0 0 0 / 0.06);
+    --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.03);
+    
+    /* Subtle Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-hover)) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(var(--accent-hover)) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
+    --gradient-success: linear-gradient(135deg, hsl(var(--success)) 0%, hsl(142 64% 46%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(220 14% 99%) 100%);
+    
+    /* Transitions */
+    --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    --transition-fast: all 0.12s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Sidebar — clean, minimal */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 20% 14%;
+    --sidebar-primary: 4 80% 56%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 14% 96%;
+    --sidebar-accent-foreground: 220 20% 14%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 4 80% 56%;
+  }
+
+  .dark {
+    /* Dark Mode — refined, easy on eyes */
+    --primary: 4 78% 62%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 4 78% 68%;
+    --primary-light: 4 60% 14%;
+    
+    --accent: 172 60% 42%;
+    --accent-foreground: 0 0% 100%;
+    --accent-hover: 172 60% 48%;
+    --accent-light: 172 50% 12%;
+
+    /* Dark Backgrounds — Twenty-inspired depth */
+    --background: 220 16% 8%;
+    --foreground: 220 14% 92%;
+    --card: 220 16% 10%;
+    --card-foreground: 220 14% 92%;
+    
+    --muted: 220 16% 13%;
+    --muted-foreground: 220 10% 58%;
+    --border: 220 14% 18%;
+    --input: 220 16% 12%;
+    --ring: 4 78% 62%;
+    
+    /* Dark Status */
+    --success: 142 64% 48%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 58%;
+    --warning-foreground: 0 0% 100%;
+    --destructive: 0 72% 62%;
+    --destructive-foreground: 0 0% 100%;
+    --info: 220 70% 62%;
+    --info-foreground: 0 0% 100%;
+
+    --secondary: 220 16% 12%;
+    --secondary-foreground: 220 14% 92%;
+    --popover: 220 16% 10%;
+    --popover-foreground: 220 14% 92%;
+
+    /* Dark Shadows */
+    --shadow-soft: 0 1px 4px -1px hsl(0 0% 0% / 0.3);
+    --shadow-medium: 0 4px 12px -3px hsl(0 0% 0% / 0.4);
+    --shadow-strong: 0 8px 24px -6px hsl(0 0% 0% / 0.5);
+    --shadow-card: 0 1px 4px -1px hsl(0 0% 0% / 0.25);
+    
+    /* Dark Sidebar */
+    --sidebar-background: 220 16% 9%;
+    --sidebar-foreground: 220 14% 92%;
+    --sidebar-primary: 4 78% 62%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 16% 13%;
+    --sidebar-accent-foreground: 220 14% 92%;
+    --sidebar-border: 220 14% 18%;
+    --sidebar-ring: 4 78% 62%;
+
+    --gradient-card: linear-gradient(145deg, hsl(220 16% 10%) 0%, hsl(220 16% 12%) 100%);
+  }
+}
+
+/* Remove list bullets from sidebar */
+[data-sidebar] ul,
+[data-sidebar] li {
+  list-style: none !important;
+  list-style-type: none !important;
+}
+
+/* Twenty-style tree connector: hide the vertical line after the last sub-item */
+.sidebar-tree-sub .sidebar-tree-last::after {
+  content: '';
+  position: absolute;
+  left: -15.5px;
+  top: 50%;
+  bottom: -4px;
+  width: 1px;
+  background: hsl(var(--sidebar-background));
+  z-index: 1;
+}
+
+/* Refined global font sizing — Inter-based like Twenty */
+html {
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: 'rlig' 1, 'calt' 1, 'cv01' 1, 'cv02' 1;
+  letter-spacing: -0.011em;
+  font-optical-sizing: auto;
+}
+
+/* Global icon defaults — consistent stroke and sizing like Twenty */
+svg.lucide {
+  stroke-width: 1.75;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body,
+  #root {
+    width: 100%;
+    max-width: 100%;
+    min-height: 100%;
+    overflow-x: hidden;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-weight: 400;
+    line-height: 1.5;
+  }
+
+  /* Professional Utility Classes */
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+  
+  .shadow-medium {
+    box-shadow: var(--shadow-medium);
+  }
+  
+  .shadow-strong {
+    box-shadow: var(--shadow-strong);
+  }
+  
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+  
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+  
+  /* Modern Gradients */
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .gradient-accent {
+    background: var(--gradient-accent);
+  }
+  
+  .gradient-hero {
+    background: var(--gradient-hero);
+  }
+  
+  .gradient-success {
+    background: var(--gradient-success);
+  }
+  
+  .gradient-card {
+    background: var(--gradient-card);
+  }
+  
+  /* Smooth Transitions */
+  .transition-smooth {
+    transition: var(--transition-smooth);
+  }
+  
+  .transition-bounce {
+    transition: var(--transition-bounce);
+  }
+  
+  .transition-fast {
+    transition: var(--transition-fast);
+  }
+  
+  /* Interactive Elements */
+  .hover-lift {
+    @apply transition-smooth;
+  }
+  
+  .hover-lift:hover {
+    @apply -translate-y-1 shadow-medium;
+  }
+  
+  .card-interactive {
+    @apply shadow-card hover-lift cursor-pointer;
+  }
+  
+  /* Chart Color Classes */
+  .chart-1 { color: hsl(var(--chart-1)); }
+  .chart-2 { color: hsl(var(--chart-2)); }
+  .chart-3 { color: hsl(var(--chart-3)); }
+  .chart-4 { color: hsl(var(--chart-4)); }
+  .chart-5 { color: hsl(var(--chart-5)); }
+  .chart-6 { color: hsl(var(--chart-6)); }
+  
+  .bg-chart-1 { background-color: hsl(var(--chart-1)); }
+  .bg-chart-2 { background-color: hsl(var(--chart-2)); }
+  .bg-chart-3 { background-color: hsl(var(--chart-3)); }
+  .bg-chart-4 { background-color: hsl(var(--chart-4)); }
+  .bg-chart-5 { background-color: hsl(var(--chart-5)); }
+  .bg-chart-6 { background-color: hsl(var(--chart-6)); }
+  
+  /* Status Indicators */
+  .status-success { 
+    @apply bg-success/10 text-success border border-success/20 rounded-md px-2.5 py-0.5 text-[11px] font-medium;
+  }
+  
+  .status-warning { 
+    @apply bg-warning/10 text-warning border border-warning/20 rounded-md px-2.5 py-0.5 text-[11px] font-medium;
+  }
+  
+  .status-error { 
+    @apply bg-destructive/10 text-destructive border border-destructive/20 rounded-md px-2.5 py-0.5 text-[11px] font-medium;
+  }
+  
+  .status-info { 
+    @apply bg-info/10 text-info border border-info/20 rounded-md px-2.5 py-0.5 text-[11px] font-medium;
+  }
+
+  /* Native filter selects — consistent with shadcn inputs */
+  select.border {
+    height: 2rem;
+    font-size: 13px;
+    border-radius: 0.375rem;
+    border-color: hsl(var(--border) / 0.6);
+    padding: 0 2rem 0 0.625rem;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  select.border:focus {
+    outline: none;
+    border-color: hsl(var(--ring));
+    box-shadow: 0 0 0 1px hsl(var(--ring));
+  }
+}
+
+/* Custom global scrollbars — subtle, professional */
+:root {
+  --scrollbar-size: 8px;
+}
+
+/* WebKit browsers (Chrome, Edge, Safari) */
+*::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Firefox */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+}
+
+*::-webkit-scrollbar-thumb:active {
+  background-color: hsl(var(--muted-foreground) / 0.6);
+}
+
+/* Hide module header subtitles globally
+   Many module headers render a small subtitle using the classes
+   "text-[11px] text-muted-foreground" (or the same order reversed).
+   The product request is to remove those descriptions site-wide. This
+   CSS rule hides those subtitle <p> elements without changing markup
+   or translations. If you prefer explicit edits, we can remove the
+   <p> tags from each header component instead.
+*/
+.text-\[11px\].text-muted-foreground,
+.text-muted-foreground.text-\[11px\] {
+  display: none !important;
+}
+
+/* Horizontal mask for scrollable tab lists: soft fade on the right edge */
+.mask-fade-right {
+  /* hide native scrollbar visuals on supporting browsers */
+  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none; /* Firefox */
+  overflow: auto;
+  -webkit-mask-image: linear-gradient(to right, black 0%, black calc(100% - 2.5rem), transparent 100%);
+  mask-image: linear-gradient(to right, black 0%, black calc(100% - 2.5rem), transparent 100%);
+}
+.mask-fade-right::-webkit-scrollbar {
+  display: none;
+}
+
+/* Shimmer animation for loading indicators */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 1.5s infinite;
+}
+
+/* Mobile sidebar smooth animations with configurable durations */
+[data-state="open"][style*="--sheet-open-duration"] {
+  animation-duration: var(--sheet-open-duration) !important;
+}
+[data-state="closed"][style*="--sheet-close-duration"] {
+  animation-duration: var(--sheet-close-duration) !important;
+}
+[style*="--sheet-easing"] {
+  animation-timing-function: var(--sheet-easing) !important;
+}

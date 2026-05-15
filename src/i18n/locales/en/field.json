@@ -1,0 +1,51 @@
+{
+  "dashboard": "Field Dashboard",
+  "reports": "Reports",
+  "calendar": "Dispatch Calendar",
+  "kpis": {
+    "activeServiceOrders": "Active Service Orders",
+    "technicianWorking": "Technicians Working Today",
+    "todayDispatches": "Today's Dispatches",
+    "firstTimeFixRate": "First-Time Fix Rate"
+  },
+  "analytics": {
+    "technicianPerformance": "Technician Performance", 
+    "serviceOrdersWorked": "Service Orders Worked",
+    "timePostingsDone": "Time Postings Done",
+    "dispatchesTotal": "Total Dispatches",
+    "jobCompletionTimes": "Job Completion Times",
+    "revenueInsights": "Revenue & Cost Insights"
+  },
+  "calendar": {
+    "monthView": "Month View",
+    "weekView": "Week View",
+    "today": "Today",
+    "thisWeek": "This Week",
+    "thisMonth": "This Month",
+    "noDispatches": "No dispatches scheduled",
+    "viewDetails": "View Details"
+  },
+  "status": {
+    "pending": "Pending",
+    "assigned": "Assigned",
+    "inProgress": "In Progress", 
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "serviceOrders": {
+    "contactPhone": "Contact Phone",
+    "targetCompletionDate": "Target Completion Date",
+    "notSpecified": "Not specified"
+  },
+  "installations": {
+    "deleteConfirm": {
+      "title": "Delete Installation",
+      "description": "Are you sure you want to delete this installation? This action cannot be undone.",
+      "cancel": "Cancel",
+      "confirm": "Delete"
+    }
+  },
+  "actions": "Actions"
+}

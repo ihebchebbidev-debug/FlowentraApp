@@ -1,0 +1,64 @@
+[
+  {
+    "id": 1,
+    "name": "John Doe",
+    "email": "john@example.com",
+    "phone": "+1 234 567 8900",
+    "company": "Acme Corp",
+    "status": "Active",
+    "type": "person",
+    "tags": ["VIP", "Hot Lead"],
+    "lastContact": "2024-01-15",
+    "favorite": true
+  },
+  {
+    "id": 2,
+    "name": "Jane Smith",
+    "email": "jane@techstartup.com",
+    "phone": "+1 234 567 8901",
+    "company": "Tech Startup Inc",
+    "status": "Lead",
+    "type": "person",
+    "tags": ["Enterprise", "Tech"],
+    "lastContact": "2024-01-12",
+    "favorite": false
+  },
+  {
+    "id": 3,
+    "name": "Mike Johnson",
+    "email": "mike@consulting.com",
+    "phone": "+1 234 567 8902",
+    "company": "Consulting LLC",
+    "status": "Prospect",
+    "type": "person",
+    "tags": ["Follow-up", "Consulting"],
+    "lastContact": "2024-01-10",
+    "favorite": false
+  },
+  {
+    "id": 4,
+    "name": "Acme Corporation",
+    "email": "contact@acme.com",
+    "phone": "+1 555 123 4567",
+    "company": "Acme Corporation",
+    "status": "Active",
+    "type": "company",
+    "keyUsers": ["John Doe", "Sarah Wilson", "Mark Brown"],
+    "tags": ["Enterprise", "Key Account", "Fortune 500"],
+    "lastContact": "2024-01-14",
+    "favorite": true
+  },
+  {
+    "id": 5,
+    "name": "TechFlow Solutions",
+    "email": "info@techflow.com",
+    "phone": "+1 555 987 6543",
+    "company": "TechFlow Solutions",
+    "status": "Lead",
+    "type": "company",
+    "keyUsers": ["Mike Chen", "Lisa Johnson"],
+    "tags": ["Startup", "Potential", "SaaS"],
+    "lastContact": "2024-01-08",
+    "favorite": false
+  }
+]

@@ -1,0 +1,22 @@
+{
+  "globalBlocks": "Global Blocks",
+  "saveAsGlobal": "Save \"{{name}}\" as Global Block",
+  "searchBlocks": "Search blocks...",
+  "loadingBlocks": "Loading blocks…",
+  "noGlobalBlocks": "No global blocks yet",
+  "noMatches": "No matches",
+  "reuseTip": "Select a component and save it here to reuse across sites",
+  "usedCount": "Used {{count}} time(s)",
+  "saveAsGlobalBlock": "Save as Global Block",
+  "blockName": "Block Name",
+  "blockNamePlaceholder": "Block name",
+  "descriptionOptional": "Description (optional)",
+  "descriptionPlaceholder": "Brief description",
+  "globalBlocksTip": "Global blocks can be reused across all your sites. Edit once, update everywhere.",
+  "saveBlock": "Save Block",
+  "savedSuccess": "\"{{name}}\" saved as global block",
+  "addedToPage": "\"{{name}}\" added to page",
+  "blockDeleted": "Global block deleted",
+  "failedToSave": "Failed to save block",
+  "failedToDelete": "Failed to delete"
+}

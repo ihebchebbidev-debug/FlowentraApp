@@ -1,0 +1,148 @@
+{
+  "title": "Temps & Dépenses",
+  "subtitle": "Suivre et gérer les entrées de temps et les dépenses des techniciens",
+  "overview": "Aperçu",
+  "calendar": "Calendrier",
+  "summary": "Résumé",
+  "details": "Détails",
+  "filters": {
+    "title": "Filtres",
+    "date_range": "Période",
+    "users": "Techniciens",
+    "all_users": "Tous les Techniciens",
+    "select_users": "Sélectionner Techniciens",
+    "entry_types": "Types d'Entrées",
+    "status": "Statut",
+    "view_type": "Type de Vue"
+  },
+  "view_types": {
+    "day": "Vue Journalière",
+    "week": "Vue Hebdomadaire",
+    "month": "Vue Mensuelle"
+  },
+  "entry_types": {
+    "time": "Temps Seulement",
+    "expense": "Dépense Seulement", 
+    "both": "Temps & Dépense"
+  },
+  "status": {
+    "pending": "En Attente",
+    "approved": "Approuvé",
+    "rejected": "Rejeté"
+  },
+  "totals": {
+    "total_time": "Temps Total",
+    "total_expenses": "Dépenses Totales",
+    "total_earnings": "Gains Totaux",
+    "average_hourly": "Taux Horaire Moyen",
+    "entries_count": "Total Entrées"
+  },
+  "time_format": {
+    "hours": "heures",
+    "minutes": "minutes",
+    "hour_short": "h",
+    "minute_short": "m"
+  },
+  "calendar": {
+    "today": "Aujourd'hui",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "no_entries": "Aucune entrée pour cette date",
+    "select_date": "Sélectionnez une date pour voir les entrées",
+    "time_entries": "Entrées de temps",
+    "expenses": "Dépenses",
+    "weekdays": {
+      "mon": "Lun",
+      "tue": "Mar",
+      "wed": "Mer",
+      "thu": "Jeu",
+      "fri": "Ven",
+      "sat": "Sam",
+      "sun": "Dim"
+    }
+  },
+  "summary_cards": {
+    "time_booked": "Temps Réservé",
+    "expenses_total": "Dépenses Totales",
+    "earnings_total": "Gains Totaux", 
+    "technicians_active": "Techniciens Actifs"
+  },
+  "stats": {
+    "total_time": "Temps Total",
+    "total_expenses": "Dépenses Totales",
+    "users": "Utilisateurs",
+    "service_orders": "Ordres de Service"
+  },
+  "table": {
+    "technician": "Technicien",
+    "date": "Date",
+    "time_booked": "Temps Réservé",
+    "expenses": "Dépenses",
+    "earnings": "Gains",
+    "description": "Description",
+    "type": "Type",
+    "status": "Statut",
+    "service_order": "Ordre de Service",
+    "dispatch": "Répartition",
+    "hourly_rate": "Taux Horaire"
+  },
+  "empty_states": {
+    "no_entries": "Aucune Entrée Temps & Dépenses",
+    "no_entries_description": "Aucune entrée trouvée pour les filtres sélectionnés.",
+    "no_data": "Aucune donnée disponible",
+    "select_filters": "Veuillez sélectionner des filtres pour voir les données"
+  },
+  "export": {
+    "title": "Exporter Temps & Dépenses",
+    "format": "Format d'Export",
+    "csv": "Fichier CSV",
+    "pdf": "Rapport PDF",
+    "excel": "Fichier Excel",
+    "date_range": "Période",
+    "include_summary": "Inclure le Résumé",
+    "include_details": "Inclure les Détails"
+  },
+  "add_entry": {
+    "button": "Ajouter une entrée",
+    "title": "Ajouter une entrée de temps ou de dépense",
+    "tab_time": "Entrée de temps",
+    "tab_expense": "Dépense",
+    "dispatch": "Dispatch",
+    "dispatch_placeholder": "Sélectionner un dispatch",
+    "dispatch_search": "Rechercher des dispatches...",
+    "no_dispatches": "Aucun dispatch trouvé",
+    "technician": "Technicien",
+    "technician_placeholder": "Sélectionner un technicien",
+    "assign_myself": "M'assigner",
+    "work_type": "Type de travail",
+    "work_type_placeholder": "ex. Maintenance, Réparation...",
+    "duration": "Durée",
+    "hours": "h",
+    "minutes": "min",
+    "description": "Description",
+    "description_placeholder": "Description optionnelle...",
+    "billable": "Facturable",
+    "hourly_rate": "Taux horaire",
+    "expense_type": "Type de dépense",
+    "expense_type_placeholder": "ex. Déplacement, Pièces, Repas...",
+    "amount": "Montant",
+    "currency": "Devise",
+    "date": "Date",
+    "submit_time": "Ajouter l'entrée de temps",
+    "submit_expense": "Ajouter la dépense",
+    "submitting": "Envoi en cours...",
+    "success_time": "Entrée de temps ajoutée avec succès",
+    "success_expense": "Dépense ajoutée avec succès",
+    "error_time": "Échec de l'ajout de l'entrée de temps",
+    "error_expense": "Échec de l'ajout de la dépense",
+    "validation": {
+      "dispatch_required": "Veuillez sélectionner un dispatch",
+      "technician_required": "Veuillez sélectionner un technicien",
+      "work_type_required": "Le type de travail est requis",
+      "duration_required": "La durée doit être supérieure à 0",
+      "expense_type_required": "Le type de dépense est requis",
+      "amount_required": "Le montant doit être supérieur à 0",
+      "date_required": "La date est requise"
+    }
+  }
+}

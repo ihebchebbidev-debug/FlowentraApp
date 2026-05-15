@@ -1,0 +1,86 @@
+{
+  "createUser": {
+    "title": "Create New User",
+    "description": "Add a new user to the system with their details.",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "email": "Email",
+    "password": "Password",
+    "phoneNumber": "Phone Number",
+    "countryCode": "Country Code",
+    "required": "*",
+    "cancel": "Cancel",
+    "creating": "Creating...",
+    "createUser": "Create User",
+    "checkingEmail": "Checking email availability...",
+    "placeholders": {
+      "firstName": "John",
+      "lastName": "Doe",
+      "email": "john.doe@example.com",
+      "password": "Minimum 8 characters",
+      "phone": "+1234567890",
+      "country": "US"
+    },
+    "errors": {
+      "fillRequired": "Please fill in all required fields"
+    },
+    "success": {
+      "title": "Success",
+      "message": "User created successfully"
+    }
+  },
+  "editUser": {
+    "title": "Edit User",
+    "description": "Update user information and manage password for {{firstName}} {{lastName}}",
+    "tabs": {
+      "details": "Details",
+      "password": "Reset Password"
+    },
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "email": "Email",
+    "phoneNumber": "Phone Number",
+    "countryCode": "Country Code",
+    "activeUser": "Active User",
+    "activeUserDesc": "User can access the system",
+    "cancel": "Cancel",
+    "updating": "Updating...",
+    "updateUser": "Update User",
+    "checkingEmail": "Checking email availability...",
+    "placeholders": {
+      "firstName": "John",
+      "lastName": "Doe",
+      "email": "john.doe@example.com",
+      "phone": "+1234567890",
+      "country": "US"
+    },
+    "password": {
+      "warning": "Resetting the password will log out the user from all devices. They will need to log in again with the new password.",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm New Password",
+      "newPasswordPlaceholder": "Enter new password (min 8 characters)",
+      "confirmPlaceholder": "Confirm new password",
+      "mismatch": "Passwords do not match",
+      "resetting": "Resetting...",
+      "resetButton": "Reset Password",
+      "minLength": "Password must be at least 8 characters",
+      "success": "Password reset successfully. User will need to log in again."
+    },
+    "success": {
+      "title": "Success",
+      "message": "User updated successfully"
+    }
+  },
+  "common": {
+    "error": "Error",
+    "success": "Success",
+    "failedToCreate": "Failed to create user",
+    "failedToUpdate": "Failed to update user",
+    "failedToResetPassword": "Failed to reset password"
+  },
+  "plugin": {
+    "name": "Users",
+    "description": "User accounts and roles.",
+    "category": "System"
+  }
+}

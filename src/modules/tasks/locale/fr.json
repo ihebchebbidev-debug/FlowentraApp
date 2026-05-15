@@ -1,0 +1,864 @@
+{
+  "projects": {
+    "title": "Projets & Tâches",
+    "description": "Organisez les tâches en projets avec des flux personnalisés",
+    "header": {
+      "back": "Retour aux Projets",
+      "backShort": "Retour",
+      "loadingTasks": "Chargement des tâches...",
+      "add": "Ajouter",
+      "addTask": "Ajouter une Tâche",
+      "manage": "Gérer",
+      "loadingProject": "Chargement du projet...",
+      "notFoundTitle": "Projet Introuvable",
+      "notFoundDesc": "Le projet que vous recherchez n'existe pas.",
+      "searchPlaceholder": "Rechercher des tâches"
+    },
+    "filters": {
+      "filters": "Filtres",
+      "all": "Tous",
+      "todo": "À faire",
+      "inProgress": "En cours",
+      "review": "En révision",
+      "done": "Terminé",
+      "clear": "Effacer",
+      "allAssignees": "Tous les Assignés",
+      "anyTime": "Toute période",
+      "last7": "7 derniers jours",
+      "last30": "30 derniers jours",
+      "last365": "Dernière année"
+    },
+    "dateFilter": {
+      "allDates": "Toutes les Dates",
+      "showingAll": "Tout Afficher",
+      "filterByDate": "Filtrer par Date"
+    },
+    "completedSection": {
+      "completed": "Tâches Terminées"
+    },
+    "noTasks": {
+      "none": "Aucune tâche trouvée pour ce projet.",
+      "refresh": "Actualiser"
+    },
+    "listView": {
+      "searchPlaceholder": "Rechercher des tâches...",
+      "all": "Tous",
+      "pending": "En attente",
+      "completed": "Terminées",
+      "addTask": "Ajouter une Tâche",
+      "tasks": "Tâches",
+      "noTasksMatch": "Aucune tâche ne correspond à vos filtres",
+      "noTasks": "Aucune tâche pour le moment",
+      "noTasksInCategory": "Aucune tâche dans cette catégorie"
+    },
+    "manager": {
+      "allStatuses": "Tous les Statuts",
+      "active": "Actif",
+      "completed": "Terminé",
+      "onHold": "En Pause",
+      "cancelled": "Annulé",
+      "allTypes": "Tous les Types",
+      "service": "Service",
+      "sales": "Vente",
+      "internal": "Interne",
+      "custom": "Personnalisé",
+      "allOwners": "Tous les Propriétaires",
+      "anyTime": "Toute période",
+      "last7": "7 derniers jours",
+      "last30": "30 derniers jours",
+      "last365": "12 derniers mois",
+      "clear": "Effacer"
+    },
+    "form": {
+      "editTitle": "Modifier le Projet: {{name}}",
+      "errorTitle": "Erreur",
+      "nameRequired": "Le nom du projet est requis.",
+      "labels": {
+        "projectName": "Nom du Projet *",
+        "description": "Description",
+        "projectType": "Type de Projet",
+        "selectProjectType": "Sélectionner le type de projet",
+        "projectStatus": "Statut du Projet",
+        "startDate": "Date de Début",
+        "endDate": "Date de Fin",
+        "teamMembers": "Membres de l'Équipe",
+        "customColumns": "Colonnes Personnalisées",
+        "addNewColumn": "Ajouter une nouvelle colonne..."
+      },
+      "placeholders": {
+        "enterProjectName": "Entrez le nom du projet",
+        "describeProject": "Décrivez votre projet..."
+      },
+      "buttons": {
+        "cancel": "Annuler",
+        "updateProject": "Mettre à Jour le Projet",
+        "pickDate": "Choisir une date",
+        "addTeamMember": "Ajouter des membres"
+      },
+      "projectTypes": {
+        "service": "Projet de Service",
+        "sales": "Projet de Vente",
+        "internal": "Projet Interne",
+        "custom": "Projet Personnalisé"
+      }
+    },
+    "createModal": {
+      "title": "Créer un Nouveau Projet",
+      "titleSubProject": "Créer un Sous-Projet",
+      "under": "Sous :",
+      "projectName": "Nom du Projet *",
+      "projectNamePlaceholder": "Entrez le nom du projet",
+      "description": "Description",
+      "descriptionPlaceholder": "Décrivez votre projet...",
+      "projectType": "Type de Projet",
+      "selectProjectType": "Sélectionner le type de projet",
+      "startDate": "Date de Début",
+      "endDate": "Date de Fin",
+      "pickDate": "Choisir une date",
+      "teamMembers": "Membres de l'Équipe",
+      "loadingUsers": "Chargement des utilisateurs...",
+      "selectTeamMember": "Sélectionnez un membre de l'équipe...",
+      "noUsersAvailable": "Aucun utilisateur disponible",
+      "columns": "Colonnes (par défaut : À faire, En cours, Révision, Terminé)",
+      "addNewColumn": "Ajouter une nouvelle colonne...",
+      "cancel": "Annuler",
+      "createProject": "Créer le Projet",
+      "createSubProject": "Créer le Sous-Projet",
+      "projectTypes": {
+        "service": "Projet de Service",
+        "sales": "Projet de Vente",
+        "internal": "Projet Interne",
+        "custom": "Projet Personnalisé"
+      },
+      "defaultColumns": {
+        "todo": "À faire",
+        "inProgress": "En cours",
+        "review": "Révision",
+        "done": "Terminé"
+      },
+      "warnings": {
+        "couldNotLoadTeam": "Impossible de charger la liste des membres"
+      },
+      "errors": {
+        "nameRequired": "Le nom du projet est requis."
+      }
+    },
+    "stats": {
+      "total": "Total",
+      "active": "Actifs",
+      "completed": "Terminés",
+      "late": "En retard"
+    },
+    "searchPlaceholder": "Rechercher des projets...",
+    "buttons": {
+      "quickTask": "Tâche Rapide",
+      "dailyTasks": "Tâches Quotidiennes",
+      "newProject": "Nouveau Projet"
+    },
+    "loading": "Chargement des projets...",
+    "empty": {
+      "title": "Aucun projet trouvé",
+      "createHint": "Créez un projet pour commencer",
+      "searchHint": "Essayez d'ajuster vos critères de recherche"
+    },
+    "toast": {
+      "loadError": "Échec du chargement des projets",
+      "createSuccess": "Projet créé avec succès !",
+      "createError": "Échec de la création du projet",
+      "updateSuccess": "Projet mis à jour avec succès !",
+      "updateError": "Échec de la mise à jour du projet",
+      "deleteSuccess": "Projet supprimé avec succès !",
+      "deleteError": "Échec de la suppression du projet",
+      "statusError": "Échec de la mise à jour du statut",
+      "invalidId": "ID de projet invalide"
+    },
+    "deleteConfirm": {
+      "title": "Supprimer le Projet",
+      "description": "Êtes-vous sûr de vouloir supprimer \"{{name}}\" ? Cette action est irréversible et supprimera toutes les tâches associées.",
+      "cancel": "Annuler",
+      "confirm": "Supprimer"
+    },
+    "list": {
+      "tasks": "tâches",
+      "members": "membres",
+      "open": "Ouvrir",
+      "editProject": "Modifier le Projet",
+      "pauseProject": "Suspendre le Projet",
+      "resumeProject": "Reprendre le Projet",
+      "markComplete": "Marquer Terminé",
+      "deleteProject": "Supprimer le Projet",
+      "overdue": "En retard",
+      "progress": "Progression",
+      "table": {
+        "project": "Projet",
+        "type": "Type",
+        "status": "Statut",
+        "progress": "Progression",
+        "team": "Équipe",
+        "startDate": "Date de début",
+        "showing": "Affichage de {{from}} à {{to}} sur {{total}} résultats",
+        "previous": "Précédent",
+        "next": "Suivant"
+      },
+      "card": {
+        "openProject": "Ouvrir le Projet",
+        "overdue": "En retard",
+        "tasks": "Tâches :",
+        "team": "Équipe :",
+        "due": "Échéance :"
+      },
+      "status": {
+        "active": "actif",
+        "completed": "terminé",
+        "on-hold": "en pause",
+        "cancelled": "annulé"
+      },
+      "type": {
+        "service": "service",
+        "sales": "vente",
+        "internal": "interne",
+        "custom": "personnalisé",
+        "development": "développement"
+      },
+      "detail": {
+        "tabs": {
+          "overview": "Vue d'ensemble",
+          "tasks": "Tâches",
+          "team": "Équipe",
+          "notes": "Notes",
+          "documents": "Documents",
+          "activity": "Activité",
+          "settings": "Paramètres"
+        },
+        "overview": {
+          "projectInfo": "Informations du Projet",
+          "description": "Description",
+          "noDescription": "Aucune description fournie",
+          "status": "Statut",
+          "priority": "Priorité",
+          "type": "Type",
+          "owner": "Propriétaire",
+          "startDate": "Date de Début",
+          "endDate": "Date de Fin",
+          "createdDate": "Créé le",
+          "lastUpdated": "Dernière mise à jour",
+          "notSet": "Non défini",
+          "relatedContact": "Contact Associé",
+          "noContact": "Aucun contact lié",
+          "viewContact": "Voir le Contact",
+          "taskSummary": "Résumé des Tâches",
+          "totalTasks": "Total des Tâches",
+          "completed": "Terminées",
+          "inProgress": "En Cours",
+          "overdue": "En Retard",
+          "completion": "Achèvement",
+          "hoursTracked": "Heures Suivies",
+          "estimatedHours": "Heures Estimées",
+          "actualHours": "Heures Réelles",
+          "progress": "Progression",
+          "quickStats": "Statistiques Rapides",
+          "projectDates": "Dates du Projet"
+        },
+        "team": {
+          "title": "Membres de l'Équipe",
+          "owner": "Propriétaire",
+          "member": "Membre",
+          "tasksAssigned": "Tâches assignées",
+          "tasksCompleted": "Tâches terminées",
+          "addMember": "Ajouter un Membre",
+          "removeMember": "Retirer",
+          "noMembers": "Aucun membre dans l'équipe",
+          "noMembersHint": "Ajoutez des membres pour collaborer sur ce projet",
+          "confirmRemove": "Retirer {{name}} de l'équipe ?",
+          "confirmRemoveDesc": "Ce membre n'aura plus accès à ce projet.",
+          "selectMember": "Sélectionner un membre à ajouter...",
+          "allAdded": "Tous les utilisateurs sont déjà dans l'équipe",
+          "workload": "Charge de travail"
+        },
+        "notes": {
+          "title": "Notes du Projet",
+          "addNote": "Ajouter une Note",
+          "placeholder": "Écrire une note sur ce projet...",
+          "noNotes": "Aucune note pour le moment",
+          "noNotesHint": "Ajoutez des notes pour suivre les informations importantes",
+          "post": "Publier la Note",
+          "deleteConfirm": "Supprimer cette note ?",
+          "by": "par",
+          "loadError": "Échec du chargement des notes",
+          "emptyError": "La note ne peut pas être vide",
+          "postSuccess": "Note publiée avec succès",
+          "postError": "Échec de la publication de la note",
+          "deleteSuccess": "Note supprimée avec succès",
+          "deleteError": "Échec de la suppression de la note"
+        },
+        "documents": {
+          "title": "Documents du Projet"
+        },
+        "activity": {
+          "title": "Chronologie d'Activité",
+          "noActivity": "Aucune activité enregistrée",
+          "noActivityHint": "L'activité apparaîtra ici au fur et à mesure de votre travail",
+          "actions": {
+            "created": "Projet créé",
+            "updated": "Projet mis à jour",
+            "taskAdded": "Tâche ajoutée",
+            "taskCompleted": "Tâche terminée",
+            "memberAdded": "Membre ajouté",
+            "memberRemoved": "Membre retiré",
+            "statusChanged": "Statut modifié",
+            "documentUploaded": "Document téléversé",
+            "noteAdded": "Note ajoutée"
+          },
+          "filters": {
+            "all": "Toute l'Activité",
+            "tasks": "Tâches",
+            "team": "Équipe",
+            "notes": "Notes",
+            "status": "Changements de Statut"
+          }
+        },
+        "settings": {
+          "title": "Paramètres du Projet",
+          "editProject": "Modifier le Projet",
+          "dangerZone": "Zone Dangereuse",
+          "deleteProject": "Supprimer le Projet",
+          "deleteWarning": "Cela supprimera définitivement le projet et toutes ses tâches."
+        }
+      }
+    },
+    "detail": {
+      "tabs": {
+        "overview": "Vue d'ensemble",
+        "tasks": "Tâches",
+        "team": "Équipe",
+        "notes": "Notes",
+        "documents": "Documents",
+        "activity": "Activité",
+        "settings": "Paramètres"
+      },
+      "overview": {
+        "projectInfo": "Informations du Projet",
+        "description": "Description",
+        "noDescription": "Aucune description fournie",
+        "status": "Statut",
+        "priority": "Priorité",
+        "type": "Type",
+        "owner": "Propriétaire",
+        "startDate": "Date de Début",
+        "endDate": "Date de Fin",
+        "createdDate": "Créé le",
+        "lastUpdated": "Dernière mise à jour",
+        "notSet": "Non défini",
+        "relatedContact": "Contact Associé",
+        "noContact": "Aucun contact lié",
+        "viewContact": "Voir le Contact",
+        "taskSummary": "Résumé des Tâches",
+        "totalTasks": "Total des Tâches",
+        "completed": "Terminées",
+        "inProgress": "En Cours",
+        "overdue": "En Retard",
+        "completion": "Achèvement",
+        "hoursTracked": "Heures Suivies",
+        "estimatedHours": "Heures Estimées",
+        "actualHours": "Heures Réelles",
+        "progress": "Progression",
+        "quickStats": "Statistiques Rapides",
+        "projectDates": "Dates du Projet"
+      },
+      "team": {
+        "title": "Membres de l'Équipe",
+        "owner": "Propriétaire",
+        "member": "Membre",
+        "tasksAssigned": "Tâches assignées",
+        "tasksCompleted": "Tâches terminées",
+        "addMember": "Ajouter un Membre",
+        "removeMember": "Retirer",
+        "noMembers": "Aucun membre dans l'équipe",
+        "noMembersHint": "Ajoutez des membres pour collaborer sur ce projet",
+        "confirmRemove": "Retirer {{name}} de l'équipe ?",
+        "confirmRemoveDesc": "Ce membre n'aura plus accès à ce projet.",
+        "selectMember": "Sélectionner un membre à ajouter...",
+        "allAdded": "Tous les utilisateurs sont déjà dans l'équipe",
+        "workload": "Charge de travail"
+      },
+      "notes": {
+        "title": "Notes du Projet",
+        "addNote": "Ajouter une Note",
+        "placeholder": "Écrire une note sur ce projet...",
+        "noNotes": "Aucune note pour le moment",
+        "noNotesHint": "Ajoutez des notes pour suivre les informations importantes",
+        "post": "Publier la Note",
+        "deleteConfirm": "Supprimer cette note ?",
+        "by": "par",
+        "loadError": "Échec du chargement des notes",
+        "emptyError": "La note ne peut pas être vide",
+        "postSuccess": "Note publiée avec succès",
+        "postError": "Échec de la publication de la note",
+        "deleteSuccess": "Note supprimée avec succès",
+        "deleteError": "Échec de la suppression de la note"
+      },
+      "documents": {
+        "title": "Documents du Projet"
+      },
+      "activity": {
+        "title": "Chronologie d'Activité",
+        "noActivity": "Aucune activité enregistrée",
+        "noActivityHint": "L'activité apparaîtra ici au fur et à mesure de votre travail",
+        "actions": {
+          "created": "Projet créé",
+          "updated": "Projet mis à jour",
+          "taskAdded": "Tâche ajoutée",
+          "taskCompleted": "Tâche terminée",
+          "memberAdded": "Membre ajouté",
+          "memberRemoved": "Membre retiré",
+          "statusChanged": "Statut modifié",
+          "documentUploaded": "Document téléversé",
+          "noteAdded": "Note ajoutée"
+        },
+        "filters": {
+          "all": "Toute l'Activité",
+          "tasks": "Tâches",
+          "team": "Équipe",
+          "notes": "Notes",
+          "status": "Changements de Statut"
+        }
+      },
+      "settings": {
+        "title": "Paramètres du Projet",
+        "editProject": "Modifier le Projet",
+        "dangerZone": "Zone Dangereuse",
+        "deleteProject": "Supprimer le Projet",
+        "deleteWarning": "Cela supprimera définitivement le projet et toutes ses tâches."
+      }
+    }
+  },
+  "daily": {
+    "title": "Tâches Quotidiennes",
+    "subtitle": "Gérez vos tâches personnelles quotidiennes",
+    "backToProjects": "Retour aux Projets",
+    "back": "Retour",
+    "addTask": "Ajouter une Tâche",
+    "add": "Ajouter",
+    "searchPlaceholder": "Rechercher des tâches",
+    "today": "Aujourd'hui",
+    "showAllDates": "Afficher Toutes les Dates",
+    "showingAll": "Tout Afficher",
+    "dropHere": "Déposez les tâches ici",
+    "filters": {
+      "title": "Filtres",
+      "status": "Statut",
+      "priority": "Priorité",
+      "all": "Tous",
+      "todo": "À faire",
+      "inProgress": "En cours",
+      "done": "Terminé",
+      "urgent": "Urgent",
+      "high": "Haute",
+      "medium": "Moyenne",
+      "low": "Basse"
+    },
+    "columns": {
+      "todo": "À Faire",
+      "inProgress": "En Cours",
+      "done": "Terminé"
+    },
+    "loading": "Chargement des tâches...",
+    "noTasks": "Aucune tâche quotidienne trouvée. Créez votre première tâche !",
+    "noTasksYet": "Aucune tâche quotidienne pour le moment.",
+    "addFirstTask": "Ajouter votre première tâche",
+    "overdue": "en retard",
+    "daysLate": "{{count}}j en retard",
+    "dayOverdue": "{{count}} jour en retard",
+    "daysOverdue": "{{count}} jours en retard",
+    "due": "Échéance :",
+    "completed": "Terminé",
+    "completedDate": "Terminé le {{date}}",
+    "reopen": "Rouvrir",
+    "complete": "Terminer",
+    "delete": "Supprimer",
+    "addDialog": {
+      "title": "Ajouter une Nouvelle Tâche",
+      "description": "Créez une nouvelle tâche quotidienne. Elle sera ajoutée à la colonne \"À Faire\".",
+      "titleLabel": "Titre *",
+      "titlePlaceholder": "Entrez le titre de la tâche",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Entrez la description de la tâche",
+      "priorityLabel": "Priorité",
+      "dueDateLabel": "Date d'Échéance",
+      "cancel": "Annuler",
+      "submit": "Ajouter la Tâche"
+    },
+    "completedSection": {
+      "title": "Tâches Terminées",
+      "todayCompleted": "Terminées aujourd'hui",
+      "clearAll": "Tout Effacer"
+    },
+    "clearDialog": {
+      "title": "Effacer Toutes les Tâches Terminées ?",
+      "description": "Ceci supprimera définitivement {{count}} tâche{{plural}} terminée{{plural}}. Cette action est irréversible.",
+      "cancel": "Annuler",
+      "confirm": "Tout Effacer"
+    },
+    "toast": {
+      "taskCreated": "Tâche créée avec succès",
+      "taskMoved": "Tâche déplacée avec succès",
+      "taskCompleted": "Tâche terminée",
+      "taskReopened": "Tâche rouverte",
+      "taskDeleted": "Tâche supprimée",
+      "taskCheckedOff": "Tâche cochée !",
+      "clearedTasks": "{{count}} tâche(s) terminée(s) effacée(s)",
+      "errorCreate": "Échec de la création de la tâche",
+      "errorMove": "Échec du déplacement de la tâche",
+      "errorUpdate": "Échec de la mise à jour de la tâche",
+      "errorDelete": "Échec de la suppression de la tâche",
+      "errorClear": "Échec de l'effacement des tâches terminées",
+      "enterTitle": "Veuillez entrer un titre de tâche",
+      "commentAdded": "Commentaire ajouté",
+      "commentAddedDesc": "Votre commentaire a été publié avec succès.",
+      "commentDeleted": "Commentaire supprimé",
+      "commentDeletedDesc": "Le commentaire a été supprimé.",
+      "commentError": "Erreur",
+      "commentAddFailed": "Échec de l'ajout du commentaire.",
+      "commentDeleteFailed": "Échec de la suppression du commentaire."
+    },
+    "comments": {
+      "title": "Commentaires",
+      "placeholder": "Ajouter un commentaire...",
+      "postButton": "Publier",
+      "noComments": "Aucun commentaire. Soyez le premier à commenter !"
+    }
+  },
+  "columnManager": {
+    "selectTeamMember": "Sélectionnez un membre de l'équipe à ajouter...",
+    "loading": "Chargement...",
+    "allUsersInTeam": "Tous les utilisateurs sont déjà dans l'équipe"
+  },
+  "kanban": {
+    "byStatus": "Par Statut",
+    "byTechnician": "Par Technicien",
+    "status": "Statut",
+    "people": "Équipe"
+  },
+  "settings": {
+    "title": "Gérer les Paramètres du Projet",
+    "tabs": {
+      "columns": "Colonnes",
+      "teamMembers": "Membres de l'Équipe"
+    },
+    "columns": {
+      "description": "Personnalisez votre flux de travail en ajoutant, modifiant ou supprimant des colonnes.",
+      "addColumn": "Ajouter une Colonne",
+      "cannotDelete": "Suppression Impossible",
+      "cannotDeleteDesc": "Vous devez avoir au moins une colonne."
+    },
+    "team": {
+      "description": "Ajoutez ou supprimez des membres de l'équipe de ce projet.",
+      "loadingUsers": "Chargement des utilisateurs...",
+      "selectPlaceholder": "Sélectionnez un membre de l'équipe à ajouter...",
+      "allInTeam": "Tous les utilisateurs sont déjà dans l'équipe",
+      "noMembers": "Aucun membre de l'équipe assigné",
+      "noMembersHint": "Ajoutez des membres de l'équipe en utilisant le menu déroulant ci-dessus",
+      "quickView": "Aperçu rapide :"
+    },
+    "toast": {
+      "success": "Succès",
+      "saved": "Paramètres du projet sauvegardés !"
+    },
+    "cancel": "Annuler",
+    "saveChanges": "Sauvegarder"
+  },
+  "taskDetail": {
+    "title": "Détails de la Tâche",
+    "description": "Description",
+    "noDescription": "Aucune description fournie",
+    "addDescription": "Ajouter une description...",
+    "assignee": "Assigné à",
+    "unassigned": "Non assigné",
+    "dueDate": "Date d'Échéance",
+    "noDueDate": "Pas de date d'échéance",
+    "timeline": "Chronologie",
+    "created": "Créé :",
+    "lastMoved": "Dernier déplacement :",
+    "status": "Statut :",
+    "comments": "Commentaires",
+    "taskTitle": "Titre de la tâche",
+    "select": "Sélectionner...",
+    "assignToTechnician": "Assigner à un technicien",
+    "unassignTask": "Désassigner la tâche",
+    "editTask": "Modifier la Tâche",
+    "priority": {
+      "high": "Haute",
+      "medium": "Moyenne",
+      "low": "Basse"
+    },
+    "statusLabels": {
+      "todo": "À Faire",
+      "progress": "En Cours",
+      "review": "Révision",
+      "done": "Terminé"
+    },
+    "deleteConfirm": {
+      "title": "Supprimer la Tâche",
+      "description": "Êtes-vous sûr de vouloir supprimer cette tâche ? Cette action est irréversible.",
+      "cancel": "Annuler",
+      "confirm": "Supprimer"
+    }
+  },
+  "toast": {
+    "success": "Succès",
+    "error": "Erreur",
+    "validationError": "Erreur de Validation",
+    "taskAssigned": "Tâche assignée à {{name}}",
+    "taskUnassigned": "Tâche désassignée",
+    "taskUpdated": "Tâche mise à jour avec succès !",
+    "taskDeleted": "Tâche supprimée avec succès !",
+    "taskCreated": "Tâche créée avec succès !",
+    "taskCreatedLocal": "Tâche créée localement.",
+    "taskReassigned": "Tâche Réassignée",
+    "taskCompleted": "Tâche marquée comme terminée",
+    "taskStatusUpdated": "Statut de la tâche mis à jour",
+    "teamUpdated": "Équipe mise à jour ! {{count}} membres assignés au projet.",
+    "teamMembersUpdated": "Membres de l'équipe mis à jour avec succès !",
+    "failedAssign": "Échec de l'assignation de la tâche. Veuillez réessayer.",
+    "failedUnassign": "Échec de la désassignation de la tâche. Veuillez réessayer.",
+    "failedUpdate": "Échec de la mise à jour de la tâche. Veuillez réessayer.",
+    "failedDelete": "Échec de la suppression de la tâche. Veuillez réessayer.",
+    "failedCreate": "Échec de la création de la tâche. Veuillez réessayer.",
+    "failedTeamUpdate": "Échec de la mise à jour des membres de l'équipe. Veuillez réessayer.",
+    "failedStatus": "Échec de la mise à jour du statut. Veuillez réessayer.",
+    "titleRequired": "Le titre de la tâche est requis"
+  },
+  "quickTask": {
+    "title": "Créer une Tâche Rapide",
+    "taskTitle": "Titre de la Tâche *",
+    "taskTitlePlaceholder": "Entrez le titre de la tâche",
+    "description": "Description",
+    "descriptionPlaceholder": "Décrivez la tâche...",
+    "priority": "Priorité",
+    "selectPriority": "Sélectionner la priorité",
+    "project": "Projet",
+    "selectProject": "Sélectionner le projet",
+    "noProject": "Aucun Projet",
+    "assignTo": "Assigner à",
+    "assignPlaceholder": "Assigner à quelqu'un",
+    "myself": "Moi-même",
+    "unassigned": "Non assigné",
+    "column": "Colonne",
+    "selectColumn": "Sélectionner la colonne",
+    "dueDate": "Date d'Échéance",
+    "cancel": "Annuler",
+    "createTask": "Créer la Tâche"
+  },
+  "teamManagement": {
+    "title": "Gérer l'Équipe - {{name}}",
+    "teamMembers": "Membres de l'Équipe",
+    "owner": "Propriétaire",
+    "noMembers": "Aucun membre de l'équipe assigné",
+    "noMembersHint": "Ajoutez des membres de l'équipe pour collaborer sur ce projet",
+    "addMembers": "Ajouter des Membres",
+    "searchPlaceholder": "Rechercher des techniciens...",
+    "quickAdd": "Ajout rapide d'un membre",
+    "noTechsFound": "Aucun technicien correspondant à votre recherche",
+    "allOnTeam": "Tous les techniciens disponibles sont déjà dans l'équipe",
+    "add": "Ajouter",
+    "autoUpdate": "Mise à jour automatique des colonnes Technicien",
+    "autoUpdateHint": "Les membres de l'équipe apparaîtront automatiquement dans la vue \"Par Technicien\" pour une meilleure organisation.",
+    "cancel": "Annuler",
+    "updateTeam": "Mettre à jour l'équipe ({{count}} membres)"
+  },
+  "timeTracking": {
+    "title": "Suivi du Temps",
+    "startTimer": "Démarrer",
+    "stopTimer": "Arrêter",
+    "addEntry": "Ajouter",
+    "editEntry": "Modifier l'Entrée",
+    "timerRunning": "Minuteur en cours",
+    "totalLogged": "Total enregistré",
+    "estimated": "Estimé",
+    "billable": "Facturable",
+    "entries": "Entrées",
+    "progress": "Progression",
+    "overEstimate": "{{hours}}h au-dessus de l'estimation",
+    "recentEntries": "Entrées récentes",
+    "noEntries": "Aucune entrée de temps. Commencez à suivre votre travail !",
+    "startTime": "Heure de début",
+    "endTime": "Heure de fin",
+    "duration": "Durée",
+    "workType": "Type de travail",
+    "description": "Description",
+    "descriptionPlaceholder": "Décrivez le travail effectué...",
+    "hourlyRate": "Taux horaire",
+    "workTypes": {
+      "work": "Travail",
+      "break": "Pause",
+      "meeting": "Réunion",
+      "review": "Révision",
+      "travel": "Déplacement",
+      "other": "Autre"
+    },
+    "approvalStatus": {
+      "pending": "En attente",
+      "approved": "Approuvé",
+      "rejected": "Rejeté"
+    },
+    "deleteConfirm": {
+      "title": "Supprimer l'entrée de temps",
+      "description": "Êtes-vous sûr de vouloir supprimer cette entrée de temps ? Cette action est irréversible."
+    },
+    "toast": {
+      "timerStarted": "Minuteur démarré",
+      "timerStopped": "Minuteur arrêté et temps enregistré",
+      "timerStartError": "Échec du démarrage du minuteur",
+      "timerStopError": "Échec de l'arrêt du minuteur",
+      "entryCreated": "Entrée de temps ajoutée",
+      "entryUpdated": "Entrée de temps mise à jour",
+      "entryDeleted": "Entrée de temps supprimée",
+      "createError": "Échec de l'ajout de l'entrée de temps",
+      "updateError": "Échec de la mise à jour de l'entrée de temps",
+      "deleteError": "Échec de la suppression de l'entrée de temps",
+      "startTimeRequired": "L'heure de début est requise",
+      "endTimeRequired": "L'heure de fin est requise",
+      "endAfterStart": "L'heure de fin doit être après l'heure de début"
+    }
+  },
+  "checklist": {
+    "title": "Checklists",
+    "addChecklist": "Ajouter un Checklist",
+    "noChecklists": "Aucun checklist pour le moment",
+    "addChecklistHint": "Ajoutez un checklist pour suivre les sous-tâches",
+    "checklistTitlePlaceholder": "Titre du checklist...",
+    "itemPlaceholder": "Ajouter un élément...",
+    "addItem": "Ajouter un élément",
+    "complete": "terminé",
+    "convertToTask": "Convertir en tâche",
+    "deleteConfirm": {
+      "title": "Supprimer le Checklist",
+      "description": "Ceci supprimera le checklist et tous ses éléments. Cette action est irréversible."
+    },
+    "toast": {
+      "checklistCreated": "Checklist créé",
+      "checklistUpdated": "Checklist mis à jour",
+      "checklistDeleted": "Checklist supprimé",
+      "loadError": "Échec du chargement des checklists",
+      "createError": "Échec de la création du checklist",
+      "updateError": "Échec de la mise à jour du checklist",
+      "deleteError": "Échec de la suppression du checklist",
+      "itemCreateError": "Échec de l'ajout de l'élément",
+      "itemUpdateError": "Échec de la mise à jour de l'élément",
+      "itemDeleteError": "Échec de la suppression de l'élément",
+      "toggleError": "Échec de la mise à jour de l'élément",
+      "convertedToTask": "Converti en tâche",
+      "convertedToTaskDesc": "L'élément a été converti en nouvelle tâche",
+      "convertError": "Échec de la conversion en tâche",
+      "reorderError": "Échec de la réorganisation des éléments"
+    }
+  },
+  "recurring": {
+    "title": "Récurrence",
+    "makeRecurring": "Rendre Récurrent",
+    "noRecurring": "Pas une tâche récurrente",
+    "makeRecurringHint": "Faire répéter cette tâche automatiquement",
+    "createRecurring": "Créer une Tâche Récurrente",
+    "repeatEvery": "Répéter tous les",
+    "onDays": "Les jours",
+    "onDay": "Le jour",
+    "startDate": "Date de début",
+    "endDate": "Date de fin (optionnel)",
+    "noEndDate": "Pas de date de fin",
+    "clearEndDate": "Effacer la date de fin",
+    "maxOccurrences": "Occurrences max (optionnel)",
+    "unlimited": "Illimité",
+    "lastDay": "Dernier jour du mois",
+    "nextOn": "Prochaine :",
+    "generated": "générées",
+    "active": "Actif",
+    "paused": "En pause",
+    "types": {
+      "day": "Jour(s)",
+      "week": "Semaine(s)",
+      "month": "Mois",
+      "year": "Année(s)"
+    },
+    "days": {
+      "sun": "Di",
+      "mon": "Lu",
+      "tue": "Ma",
+      "wed": "Me",
+      "thu": "Je",
+      "fri": "Ve",
+      "sat": "Sa"
+    },
+    "deleteConfirm": {
+      "title": "Supprimer la Règle de Récurrence",
+      "description": "Cela arrêtera la répétition de la tâche. Les tâches déjà générées ne seront pas affectées."
+    },
+    "toast": {
+      "created": "Tâche récurrente créée",
+      "createError": "Échec de la création de la tâche récurrente",
+      "paused": "Tâche récurrente en pause",
+      "resumed": "Tâche récurrente reprise",
+      "deleted": "Tâche récurrente supprimée",
+      "deleteError": "Échec de la suppression de la tâche récurrente"
+    }
+  },
+  "dynamicForms": {
+    "title": "Formulaires",
+    "attachForm": "Joindre un Formulaire",
+    "noForms": "Aucun formulaire joint",
+    "attachHint": "Joindre un formulaire pour collecter des données structurées",
+    "noAvailableForms": "Aucun formulaire disponible",
+    "noReleasedForms": "Aucun formulaire publié disponible. Créez et publiez un formulaire d'abord.",
+    "selectForm": "Sélectionner un Formulaire",
+    "selectFormDescription": "Choisissez un formulaire à joindre à cette tâche",
+    "fillFormDescription": "Remplissez le formulaire ci-dessous. Vous pouvez sauvegarder en brouillon et continuer plus tard.",
+    "fields": "champs",
+    "completed": "Terminé",
+    "draft": "Brouillon",
+    "progress": "Progression",
+    "viewResponse": "Voir la Réponse",
+    "editResponse": "Modifier la Réponse",
+    "continueFilling": "Continuer à Remplir",
+    "deleteDraft": "Supprimer le Brouillon",
+    "saveDraft": "Enregistrer Brouillon",
+    "draftSaved": "Brouillon enregistré",
+    "draftSaveError": "Échec de l'enregistrement du brouillon",
+    "draftDeleted": "Brouillon supprimé",
+    "download": "Télécharger PDF",
+    "submittedOn": "Soumis le",
+    "submit": "Soumettre",
+    "requiredFieldsMissing": "Veuillez remplir tous les champs obligatoires",
+    "formSubmitted": "Formulaire soumis avec succès",
+    "submitError": "Échec de la soumission du formulaire",
+    "popupBlocked": "Veuillez autoriser les popups pour télécharger",
+    "task": "Tâche",
+    "submitted": "Soumis"
+  },
+  "common": {
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "close": "Fermer",
+    "yes": "Oui",
+    "no": "Non",
+    "dismiss": "Rejeter",
+    "retry": "Réessayer"
+  },
+  "deployment": {
+    "updateAvailable": "Nouvelle Version Disponible",
+    "updateDescription": "Une nouvelle version de l'application a été déployée. Veuillez actualiser pour obtenir les dernières fonctionnalités et corrections.",
+    "refresh": "Actualiser Maintenant"
+  },
+  "connection": {
+    "offline": "Pas de Connexion Internet",
+    "backendDown": "Backend Indisponible",
+    "backendIssue": "Problème Backend",
+    "checkFailed": "Impossible de se connecter au serveur",
+    "retrying": "Nouvelle tentative de connexion..."
+  },
+  "plugin": {
+    "name": "Tâches",
+    "description": "Listes de tâches personnelles et d'équipe.",
+    "category": "Système"
+  }
+}

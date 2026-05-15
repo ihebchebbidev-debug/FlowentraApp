@@ -1,0 +1,1 @@
+export { default as InventoryServicesModule } from "./InventoryServicesModule";

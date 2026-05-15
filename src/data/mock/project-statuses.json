@@ -1,0 +1,6 @@
+[
+  { "id": "active", "name": "Active" },
+  { "id": "on-hold", "name": "On Hold" },
+  { "id": "completed", "name": "Completed" },
+  { "id": "cancelled", "name": "Cancelled" }
+]

@@ -1,0 +1,61 @@
+{
+  "module": "articles",
+  "version": "001",
+  "description": "CRM Article/Product Management Tables",
+  "tables": [
+    {
+      "name": "CRM.articles",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "name": { "type": "string", "required": true },
+        "sku": { "type": "string", "required": true, "unique": true },
+        "description": { "type": "text", "required": false },
+        "category": { "type": "string", "required": true, "foreignKey": "LU.article_categories.id" },
+        "stock": { "type": "integer", "required": true },
+        "minStock": { "type": "integer", "required": true },
+        "maxStock": { "type": "integer", "required": false },
+        "price": { "type": "decimal", "required": true },
+        "sellPrice": { "type": "decimal", "required": true },
+        "cost": { "type": "decimal", "required": false },
+        "status": { "type": "string", "required": true, "foreignKey": "LU.article_statuses.id" },
+        "location": { "type": "string", "required": true },
+        "supplier": { "type": "string", "required": false },
+        "barcode": { "type": "string", "required": false },
+        "weight": { "type": "decimal", "required": false },
+        "dimensions": { "type": "json", "required": false },
+        "images": { "type": "array", "items": "string" },
+        "tags": { "type": "array", "items": "string" },
+        "isActive": { "type": "boolean", "default": true },
+        "createdAt": { "type": "datetime", "required": true },
+        "updatedAt": { "type": "datetime", "required": true },
+        "createdBy": { "type": "string", "required": true, "foreignKey": "SYS.users.id" },
+        "modifiedBy": { "type": "string", "required": false, "foreignKey": "SYS.users.id" }
+      },
+      "indexes": ["sku", "category", "status", "location", "supplier"]
+    },
+    {
+      "name": "CRM.services",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "name": { "type": "string", "required": true },
+        "serviceCode": { "type": "string", "required": true, "unique": true },
+        "description": { "type": "text", "required": false },
+        "category": { "type": "string", "required": true, "foreignKey": "LU.service_categories.id" },
+        "basePrice": { "type": "decimal", "required": true },
+        "hourlyRate": { "type": "decimal", "required": false },
+        "estimatedDuration": { "type": "integer", "required": false },
+        "skillsRequired": { "type": "array", "items": "string" },
+        "status": { "type": "string", "required": true },
+        "isActive": { "type": "boolean", "default": true },
+        "tags": { "type": "array", "items": "string" },
+        "createdAt": { "type": "datetime", "required": true },
+        "updatedAt": { "type": "datetime", "required": true },
+        "createdBy": { "type": "string", "required": true, "foreignKey": "SYS.users.id" },
+        "modifiedBy": { "type": "string", "required": false, "foreignKey": "SYS.users.id" }
+      },
+      "indexes": ["serviceCode", "category", "status"]
+    }
+  ]
+}

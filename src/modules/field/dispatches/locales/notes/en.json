@@ -1,0 +1,25 @@
+{
+  "title": "Notes & Issues",
+  "add_note": "Add Note",
+  "note_content": "Note Content",
+  "note_category": "Category",
+  "priority": "Priority",
+  "attach_files": "Attach Files",
+  "save_note": "Save Note",
+  "no_notes": "No notes added",
+  "created_by": "Created By",
+  "created_at": "Created At",
+  "resolved": "Resolved",
+  "resolved_on": "Resolved on",
+  "by": "by",
+  "attachments_count": "attachment(s)",
+  "select_priority": "Select priority",
+  "note_description_placeholder": "Describe the note, issue or observation...",
+  "categories": {
+    "general": "General",
+    "issue": "Issue",
+    "work_performed": "Work Performed",
+    "customer_interaction": "Customer Interaction",
+    "internal": "Internal"
+  }
+}

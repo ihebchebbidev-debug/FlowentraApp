@@ -1,0 +1,125 @@
+{
+  "module": "system",
+  "version": "001",
+  "description": "System Configuration and User Management Tables",
+  "tables": [
+    {
+      "name": "SYS.users",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "name": { "type": "string", "required": true },
+        "firstName": { "type": "string", "required": false },
+        "lastName": { "type": "string", "required": false },
+        "email": { "type": "string", "required": true, "unique": true },
+        "phone": { "type": "string", "required": false },
+        "avatar": { "type": "string", "required": false },
+        "roleId": { "type": "string", "required": true, "foreignKey": "SYS.roles.id" },
+        "department": { "type": "string", "required": false },
+        "position": { "type": "string", "required": false },
+        "status": { "type": "string", "required": true, "enum": ["active", "inactive", "suspended"] },
+        "lastLogin": { "type": "datetime", "required": false },
+        "preferences": { "type": "json", "required": false },
+        "timezone": { "type": "string", "required": false },
+        "language": { "type": "string", "default": "en" },
+        "isEmailVerified": { "type": "boolean", "default": false },
+        "createdAt": { "type": "datetime", "required": true },
+        "updatedAt": { "type": "datetime", "required": true },
+        "createdBy": { "type": "string", "required": false, "foreignKey": "SYS.users.id" }
+      },
+      "indexes": ["email", "roleId", "department", "status"]
+    },
+    {
+      "name": "SYS.roles",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "name": { "type": "string", "required": true, "unique": true },
+        "description": { "type": "text", "required": false },
+        "permissions": { "type": "json", "required": true },
+        "level": { "type": "integer", "required": true },
+        "isSystem": { "type": "boolean", "default": false },
+        "isActive": { "type": "boolean", "default": true },
+        "createdAt": { "type": "datetime", "required": true },
+        "updatedAt": { "type": "datetime", "required": true },
+        "createdBy": { "type": "string", "required": false, "foreignKey": "SYS.users.id" }
+      },
+      "indexes": ["name", "level"]
+    },
+    {
+      "name": "SYS.system_logs",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "timestamp": { "type": "datetime", "required": true },
+        "level": { "type": "string", "required": true, "foreignKey": "LU.log_levels.id" },
+        "message": { "type": "text", "required": true },
+        "module": { "type": "string", "required": true },
+        "action": { "type": "string", "required": false },
+        "userId": { "type": "string", "required": false, "foreignKey": "SYS.users.id" },
+        "userEmail": { "type": "string", "required": false },
+        "ipAddress": { "type": "string", "required": false },
+        "userAgent": { "type": "string", "required": false },
+        "details": { "type": "json", "required": false },
+        "stackTrace": { "type": "text", "required": false }
+      },
+      "indexes": ["timestamp", "level", "module", "userId"]
+    },
+    {
+      "name": "SYS.system_settings",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "key": { "type": "string", "required": true, "unique": true },
+        "value": { "type": "json", "required": true },
+        "category": { "type": "string", "required": true },
+        "description": { "type": "text", "required": false },
+        "dataType": { "type": "string", "required": true, "enum": ["string", "number", "boolean", "json", "array"] },
+        "isPublic": { "type": "boolean", "default": false },
+        "isSystem": { "type": "boolean", "default": false },
+        "updatedAt": { "type": "datetime", "required": true },
+        "updatedBy": { "type": "string", "required": true, "foreignKey": "SYS.users.id" }
+      },
+      "indexes": ["key", "category"]
+    },
+    {
+      "name": "SYS.audit_trail",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "tableName": { "type": "string", "required": true },
+        "recordId": { "type": "string", "required": true },
+        "action": { "type": "string", "required": true, "enum": ["insert", "update", "delete"] },
+        "oldValues": { "type": "json", "required": false },
+        "newValues": { "type": "json", "required": false },
+        "changedFields": { "type": "array", "items": "string" },
+        "userId": { "type": "string", "required": true, "foreignKey": "SYS.users.id" },
+        "userEmail": { "type": "string", "required": true },
+        "timestamp": { "type": "datetime", "required": true },
+        "ipAddress": { "type": "string", "required": false },
+        "userAgent": { "type": "string", "required": false }
+      },
+      "indexes": ["tableName", "recordId", "action", "userId", "timestamp"]
+    },
+    {
+      "name": "SYS.notifications",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "userId": { "type": "string", "required": true, "foreignKey": "SYS.users.id" },
+        "title": { "type": "string", "required": true },
+        "message": { "type": "text", "required": true },
+        "type": { "type": "string", "required": true, "enum": ["info", "success", "warning", "error"] },
+        "category": { "type": "string", "required": false },
+        "isRead": { "type": "boolean", "default": false },
+        "readAt": { "type": "datetime", "required": false },
+        "relatedType": { "type": "string", "required": false },
+        "relatedId": { "type": "string", "required": false },
+        "actionUrl": { "type": "string", "required": false },
+        "createdAt": { "type": "datetime", "required": true },
+        "expiresAt": { "type": "datetime", "required": false }
+      },
+      "indexes": ["userId", "isRead", "createdAt", "type"]
+    }
+  ]
+}

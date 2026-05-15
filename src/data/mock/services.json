@@ -1,0 +1,290 @@
+[
+  {
+    "id": "srv-001",
+    "name": "Kitchen Renovation Service",
+    "description": "Complete kitchen renovation including design, demolition, installation, and finishing",
+    "category": "Renovation Services",
+    "subcategory": "Kitchen Remodeling",
+    "serviceCode": "KRS-001",
+    "basePrice": 25000.00,
+    "hourlyRate": 125.00,
+    "estimatedDuration": "4-6 weeks",
+    "skillsRequired": ["Carpentry", "Plumbing", "Electrical", "Design"],
+    "materialsIncluded": false,
+    "warrantyCoverage": "2 years on workmanship",
+    "serviceArea": "Residential",
+    "popularity": "High",
+    "seasonalDemand": "Spring/Summer",
+    "status": "active",
+    "tags": ["renovation", "kitchen", "residential", "premium"],
+    "inclusions": [
+      "Design consultation",
+      "3D rendering",
+      "Demolition",
+      "Electrical rough-in",
+      "Plumbing modifications",
+      "Cabinet installation",
+      "Countertop installation",
+      "Flooring installation",
+      "Paint and finishing",
+      "Final cleanup"
+    ],
+    "addOnServices": [
+      {
+        "name": "Appliance Installation",
+        "price": 500.00
+      },
+      {
+        "name": "Backsplash Installation",
+        "price": 800.00
+      },
+      {
+        "name": "Under-cabinet Lighting",
+        "price": 650.00
+      }
+    ],
+    "averageRating": 4.8,
+    "reviewCount": 156,
+    "lastUpdated": "2024-01-20T00:00:00.000Z"
+  },
+  {
+    "id": "srv-002",
+    "name": "Bathroom Remodeling Service",
+    "description": "Full bathroom renovation from concept to completion with modern fixtures and finishes",
+    "category": "Renovation Services",
+    "subcategory": "Bathroom Remodeling",
+    "serviceCode": "BRS-002",
+    "basePrice": 18000.00,
+    "hourlyRate": 115.00,
+    "estimatedDuration": "3-4 weeks",
+    "skillsRequired": ["Plumbing", "Tiling", "Electrical", "Waterproofing"],
+    "materialsIncluded": false,
+    "warrantyCoverage": "3 years on plumbing, 2 years on fixtures",
+    "serviceArea": "Residential",
+    "popularity": "High",
+    "seasonalDemand": "Year-round",
+    "status": "active",
+    "tags": ["renovation", "bathroom", "residential", "luxury"],
+    "inclusions": [
+      "Design planning",
+      "Demolition",
+      "Plumbing rough-in",
+      "Electrical work",
+      "Waterproofing",
+      "Tile installation", 
+      "Fixture installation",
+      "Vanity installation",
+      "Mirror and accessories",
+      "Final inspection"
+    ],
+    "addOnServices": [
+      {
+        "name": "Heated Flooring",
+        "price": 1200.00
+      },
+      {
+        "name": "Steam Shower",
+        "price": 2500.00
+      },
+      {
+        "name": "Smart Toilet Installation",
+        "price": 800.00
+      }
+    ],
+    "averageRating": 4.7,
+    "reviewCount": 132,
+    "lastUpdated": "2024-01-18T00:00:00.000Z"
+  },
+  {
+    "id": "srv-003",
+    "name": "HVAC System Installation",
+    "description": "Professional installation of heating, ventilation, and air conditioning systems",
+    "category": "HVAC Services",
+    "subcategory": "System Installation",
+    "serviceCode": "HVS-003",
+    "basePrice": 8500.00,
+    "hourlyRate": 95.00,
+    "estimatedDuration": "2-3 days",
+    "skillsRequired": ["HVAC Certification", "Electrical", "Ductwork"],
+    "materialsIncluded": true,
+    "warrantyCoverage": "10 years on equipment, 5 years on installation",
+    "serviceArea": "Residential & Commercial",
+    "popularity": "Medium",
+    "seasonalDemand": "Spring/Fall",
+    "status": "active",
+    "tags": ["hvac", "installation", "heating", "cooling"],
+    "inclusions": [
+      "System design",
+      "Equipment procurement",
+      "Ductwork installation",
+      "Electrical connections",
+      "Thermostat installation",
+      "System commissioning",
+      "Performance testing",
+      "Customer training",
+      "Warranty registration",
+      "Follow-up service"
+    ],
+    "addOnServices": [
+      {
+        "name": "Smart Thermostat Upgrade",
+        "price": 300.00
+      },
+      {
+        "name": "Air Purification System",
+        "price": 1500.00
+      },
+      {
+        "name": "Zoning System",
+        "price": 2200.00
+      }
+    ],
+    "averageRating": 4.6,
+    "reviewCount": 89,
+    "lastUpdated": "2024-01-22T00:00:00.000Z"
+  },
+  {
+    "id": "srv-004",
+    "name": "Website Design & Development",
+    "description": "Custom website design and development with modern responsive design and SEO optimization",
+    "category": "Digital Services",
+    "subcategory": "Web Development",
+    "serviceCode": "WDD-004",
+    "basePrice": 5500.00,
+    "hourlyRate": 85.00,
+    "estimatedDuration": "6-8 weeks",
+    "skillsRequired": ["Web Design", "Frontend Development", "SEO", "Content Management"],
+    "materialsIncluded": true,
+    "warrantyCoverage": "1 year on functionality, 6 months support",
+    "serviceArea": "All Industries",
+    "popularity": "Very High",
+    "seasonalDemand": "Year-round",
+    "status": "active",
+    "tags": ["web design", "development", "seo", "responsive"],
+    "inclusions": [
+      "Discovery consultation",
+      "Wireframe creation",
+      "UI/UX design",
+      "Responsive development",
+      "Content management system",
+      "SEO optimization",
+      "Performance optimization",
+      "Security implementation",
+      "Testing & QA",
+      "Launch support"
+    ],
+    "addOnServices": [
+      {
+        "name": "E-commerce Integration",
+        "price": 2000.00
+      },
+      {
+        "name": "Advanced Analytics Setup",
+        "price": 500.00
+      },
+      {
+        "name": "Social Media Integration",
+        "price": 750.00
+      }
+    ],
+    "averageRating": 4.9,
+    "reviewCount": 203,
+    "lastUpdated": "2024-01-25T00:00:00.000Z"
+  },
+  {
+    "id": "srv-005",
+    "name": "Electrical System Upgrade",
+    "description": "Complete electrical system modernization including panel upgrades and code compliance",
+    "category": "Electrical Services",
+    "subcategory": "System Upgrades",
+    "serviceCode": "ESU-005",
+    "basePrice": 4200.00,
+    "hourlyRate": 75.00,
+    "estimatedDuration": "1-2 weeks",
+    "skillsRequired": ["Licensed Electrician", "Code Compliance", "Safety Protocols"],
+    "materialsIncluded": true,
+    "warrantyCoverage": "5 years on work, lifetime on permits",
+    "serviceArea": "Residential & Commercial",
+    "popularity": "Medium",
+    "seasonalDemand": "Year-round",
+    "status": "active",
+    "tags": ["electrical", "upgrade", "safety", "code-compliance"],
+    "inclusions": [
+      "Electrical assessment",
+      "Permit acquisition",
+      "Panel upgrade",
+      "Circuit installation",
+      "Outlet upgrades",
+      "GFCI installation",
+      "Code compliance verification",
+      "Safety inspection",
+      "Documentation",
+      "Cleanup"
+    ],
+    "addOnServices": [
+      {
+        "name": "Whole House Surge Protection",
+        "price": 650.00
+      },
+      {
+        "name": "Generator Connection",
+        "price": 1200.00
+      },
+      {
+        "name": "EV Charger Installation",
+        "price": 800.00
+      }
+    ],
+    "averageRating": 4.5,
+    "reviewCount": 67,
+    "lastUpdated": "2024-01-19T00:00:00.000Z"
+  },
+  {
+    "id": "srv-006",
+    "name": "Landscaping Design & Installation",
+    "description": "Professional landscape design and installation with plant selection and hardscaping",
+    "category": "Landscaping Services",
+    "subcategory": "Design & Installation",
+    "serviceCode": "LDI-006",
+    "basePrice": 7500.00,
+    "hourlyRate": 65.00,
+    "estimatedDuration": "2-4 weeks",
+    "skillsRequired": ["Landscape Design", "Horticulture", "Hardscaping", "Irrigation"],
+    "materialsIncluded": false,
+    "warrantyCoverage": "1 year on plants, 3 years on hardscape",
+    "serviceArea": "Residential & Commercial",
+    "popularity": "High",
+    "seasonalDemand": "Spring/Summer",
+    "status": "active",
+    "tags": ["landscaping", "design", "plants", "hardscape"],
+    "inclusions": [
+      "Site analysis",
+      "Design consultation",
+      "Plant selection",
+      "Soil preparation",
+      "Plant installation",
+      "Hardscape installation",
+      "Irrigation setup",
+      "Mulching",
+      "Initial maintenance",
+      "Care instructions"
+    ],
+    "addOnServices": [
+      {
+        "name": "Outdoor Lighting",
+        "price": 1800.00
+      },
+      {
+        "name": "Water Feature",
+        "price": 3500.00
+      },
+      {
+        "name": "Automatic Irrigation",
+        "price": 2200.00
+      }
+    ],
+    "averageRating": 4.7,
+    "reviewCount": 145,
+    "lastUpdated": "2024-01-16T00:00:00.000Z"
+  }
+]

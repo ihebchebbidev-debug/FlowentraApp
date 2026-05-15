@@ -1,0 +1,9 @@
+{
+  "webhook": {
+    "title": "Webhook",
+    "fullDescription": "Starts or interacts with the workflow when an external system sends an HTTP request.",
+  "configureDescription": "Configure the webhook endpoint and map incoming payload fields to node inputs.",
+  "how": "Expose an endpoint or use an existing webhook integration to trigger the workflow and map payload fields to node inputs.",
+    "examples": ["Trigger workflow when payment provider posts a webhook","Receive form submissions via webhook"]
+  }
+}

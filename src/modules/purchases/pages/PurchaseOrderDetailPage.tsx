@@ -1,0 +1,523 @@
+import { useState, useEffect, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Send, Package, FileText, CheckCircle, User, Building2, MapPin, ClipboardList, Download, Pencil, Plus, Trash2, Save, X, Loader2 } from "lucide-react";
+import { purchaseOrderService, goodsReceiptService, supplierInvoiceService } from "../services/purchaseService";
+import { PurchasePageHeader } from "../components/PurchasePageHeader";
+import { PurchaseErrorBoundary, PurchaseErrorFallback } from "../components/PurchaseErrorBoundary";
+import { DetailSkeleton } from "../components/PurchaseSkeletons";
+import { PurchaseOrderPDFPreviewModal } from "../components/PurchaseOrderPDFPreviewModal";
+import { useCurrency } from "@/shared/hooks/useCurrency";
+import { UNIT_OPTIONS, getUnitLabel } from "@/constants/units";
+import { toast } from "sonner";
+import type { PurchaseOrder, GoodsReceipt, SupplierInvoice, PurchaseActivity, PurchaseOrderItem } from "../types";
+import { CreateActionButton } from '@/components/CreateActionButton';
+
+const STATUS_COLORS: Record<string, string> = {
+  draft: 'bg-muted text-muted-foreground',
+  validated: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  ordered: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+  partially_received: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+  received: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+  closed: 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+  cancelled: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+};
+
+// Visual progress flow (left → right). 'closed' is shown after 'received' so
+// the user sees the full lifecycle the backend allows.
+const STATUS_FLOW = ['draft', 'validated', 'ordered', 'partially_received', 'received', 'closed'];
+
+function PurchaseOrderDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { t } = useTranslation('purchases');
+  const [activeTab, setActiveTab] = useState('overview');
+  const [isPdfOpen, setIsPdfOpen] = useState(false);
+  const { format: formatCurrency } = useCurrency();
+  const [po, setPo] = useState<PurchaseOrder | null>(null);
+  const [receipts, setReceipts] = useState<GoodsReceipt[]>([]);
+  const [invoices, setInvoices] = useState<SupplierInvoice[]>([]);
+  const [activities, setActivities] = useState<PurchaseActivity[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  // Items edit mode (only available when status === 'draft')
+  const [isEditingItems, setIsEditingItems] = useState(false);
+  const [draftItems, setDraftItems] = useState<Partial<PurchaseOrderItem>[]>([]);
+  const [savingItems, setSavingItems] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    if (!id) return;
+    setError(null);
+    try {
+      const [order, grData, siData, acts] = await Promise.all([
+        purchaseOrderService.getById(id),
+        goodsReceiptService.getAll({ purchase_order_id: id }).catch(() => ({ receipts: [] })),
+        // Scope invoice fetch by PO id so we don't pull every invoice in the system.
+        // Backend supports `purchase_order_id` filter; client-side filter is kept as a safety net.
+        supplierInvoiceService.getAll({ purchaseOrderId: id, limit: 100 }).catch(() => ({ invoices: [] })),
+        purchaseOrderService.getActivities(id).catch(() => []),
+      ]);
+      setPo(order);
+      setReceipts(grData.receipts || []);
+      setInvoices((siData.invoices || []).filter(i => String(i.purchaseOrderId) === id));
+      setActivities(acts || []);
+    } catch (e: any) {
+      setError(e?.message || t('orders.notFound'));
+    } finally {
+      setLoading(false);
+    }
+  }, [id, t]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const handleValidate = async () => {
+    if (!id) return;
+    try {
+      const updated = await purchaseOrderService.validate(id);
+      setPo(updated);
+      toast.success(t('actions.validated'));
+    } catch (e: any) { toast.error(e?.message || t('common.error', 'Failed')); }
+  };
+
+  const handleSendToSupplier = async () => {
+    if (!id) return;
+    try {
+      const updated = await purchaseOrderService.sendToSupplier(id);
+      setPo(updated);
+      toast.success(t('actions.sentToSupplier'));
+    } catch (e: any) { toast.error(e?.message || t('common.error', 'Failed')); }
+  };
+
+  // ── Items edit mode ──
+  const computeLineTotal = (it: Partial<PurchaseOrderItem>): number => {
+    const qty = Number(it.quantity) || 0;
+    const price = Number(it.unitPrice) || 0;
+    const disc = Number(it.discount) || 0;
+    const sub = qty * price;
+    const discAmt = (it.discountType || 'percentage') === 'percentage' ? sub * disc / 100 : disc;
+    return Math.max(0, sub - discAmt);
+  };
+
+  const startEditItems = () => {
+    if (!po) return;
+    setDraftItems(po.items.map(it => ({ ...it })));
+    setIsEditingItems(true);
+  };
+
+  const cancelEditItems = () => {
+    setIsEditingItems(false);
+    setDraftItems([]);
+  };
+
+  const updateDraftItem = (idx: number, field: string, value: any) => {
+    setDraftItems(prev => {
+      const u = [...prev];
+      (u[idx] as any)[field] = value;
+      u[idx].lineTotal = computeLineTotal(u[idx]);
+      return u;
+    });
+  };
+
+  const addDraftItem = () => {
+    setDraftItems(prev => [...prev, {
+      id: `new-${Date.now()}` as any,
+      description: '',
+      quantity: 1,
+      unitPrice: 0,
+      taxRate: 19,
+      discount: 0,
+      discountType: 'percentage',
+      unit: 'piece',
+      lineTotal: 0,
+      receivedQty: 0,
+      displayOrder: prev.length,
+    } as Partial<PurchaseOrderItem>]);
+  };
+
+  const removeDraftItem = (idx: number) => {
+    setDraftItems(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const saveItems = async () => {
+    if (!id || !po) return;
+    if (draftItems.some(it => !it.articleId && !it.description?.trim())) {
+      toast.error(t('validation.itemArticleOrDescription', 'Each line needs an article or a description'));
+      return;
+    }
+    if (draftItems.some(it => !it.quantity || Number(it.quantity) <= 0)) {
+      toast.error(t('validation.quantityRequired', 'Quantity must be greater than zero'));
+      return;
+    }
+    setSavingItems(true);
+    try {
+      const originalIds = new Set(po.items.map(i => String(i.id)));
+      const draftIdsKept = new Set(
+        draftItems.filter(d => !String(d.id).startsWith('new-')).map(d => String(d.id))
+      );
+
+      // 1) Delete removed items
+      const toDelete = po.items.filter(orig => !draftIdsKept.has(String(orig.id)));
+      // 2) Update existing
+      const toUpdate = draftItems.filter(d => !String(d.id).startsWith('new-'));
+      // 3) Create new
+      const toCreate = draftItems.filter(d => String(d.id).startsWith('new-'));
+
+      const buildItemPayload = (it: Partial<PurchaseOrderItem>) => ({
+        articleId: it.articleId,
+        articleName: it.articleName,
+        articleNumber: it.articleNumber,
+        supplierRef: it.supplierRef,
+        description: it.description || '',
+        quantity: Number(it.quantity) || 0,
+        unitPrice: Number(it.unitPrice) || 0,
+        taxRate: Number(it.taxRate) || 0,
+        discount: Number(it.discount) || 0,
+        discountType: it.discountType || 'percentage',
+        unit: it.unit || 'piece',
+      });
+
+      // Run all mutations in parallel and gather successes/failures separately so
+      // a single failed update no longer blocks the others. Whatever the outcome,
+      // we refetch from the server at the end so the UI always reflects ground truth.
+      const deletePromises = toDelete.map(d => purchaseOrderService.deleteItem(id, String(d.id)));
+      const updatePromises = toUpdate.map(u => purchaseOrderService.updateItem(id, String(u.id), buildItemPayload(u)));
+      const createPromises = toCreate.map(c => purchaseOrderService.addItem(id, buildItemPayload(c)));
+
+      const results = await Promise.allSettled([...deletePromises, ...updatePromises, ...createPromises]);
+      const failedCount = results.filter(r => r.status === 'rejected').length;
+
+      if (failedCount === 0) {
+        toast.success(t('items.updated', 'Items updated'));
+        setIsEditingItems(false);
+        setDraftItems([]);
+      } else if (failedCount === results.length) {
+        toast.error(t('common.error', 'Failed to save items'));
+      } else {
+        toast.error(t('items.partialUpdate', '{{ok}} saved, {{fail}} failed — refreshing', {
+          ok: results.length - failedCount,
+          fail: failedCount,
+        }));
+        setIsEditingItems(false);
+        setDraftItems([]);
+      }
+      await fetchData();
+    } catch (e: any) {
+      toast.error(e?.message || t('common.error', 'Failed to save items'));
+      // On unexpected failure, refresh too so the user isn't stuck with a stale draft.
+      await fetchData();
+    } finally {
+      setSavingItems(false);
+    }
+  };
+
+  if (loading) return <DetailSkeleton />;
+  if (error) return <PurchaseErrorFallback error={error} onRetry={fetchData} backTo="/dashboard/purchases/orders" />;
+  if (!po) return <PurchaseErrorFallback error={t('orders.notFound')} backTo="/dashboard/purchases/orders" />;
+
+  const fmt = (n: number) => n.toLocaleString('fr-TN', { minimumFractionDigits: 2 });
+  const currentStepIndex = STATUS_FLOW.indexOf(po.status);
+
+  return (
+    <div className="flex flex-col">
+      <PurchasePageHeader
+        title={po.orderNumber}
+        subtitle={po.title || po.supplierName}
+        icon={ClipboardList}
+        backTo={{ to: '/dashboard/purchases/orders', label: t('orders.title') }}
+        actions={
+          <div className="flex items-center gap-2">
+            <Badge className={STATUS_COLORS[po.status]}>{t(`status.${po.status}`)}</Badge>
+            <Button size="sm" variant="outline" onClick={() => setIsPdfOpen(true)}>
+              <Download className="h-3.5 w-3.5 mr-1" /> {t('actions.exportPdf')}
+            </Button>
+            {po.status === 'draft' && <Button size="sm" variant="outline" onClick={handleValidate}><CheckCircle className="h-3.5 w-3.5 mr-1" /> {t('actions.validate')}</Button>}
+            {po.status === 'validated' && <Button size="sm" onClick={handleSendToSupplier}><Send className="h-3.5 w-3.5 mr-1" /> {t('actions.sendToSupplier')}</Button>}
+            {['ordered', 'partially_received'].includes(po.status) && <Button size="sm" onClick={() => navigate(`/dashboard/purchases/receipts/add?poId=${id}`)}><Package className="h-3.5 w-3.5 mr-1" /> {t('actions.receiveGoods')}</Button>}
+            {po.status === 'received' && <CreateActionButton size="sm" variant="outline" onClick={() => navigate('/dashboard/purchases/invoices/add')}><FileText className="h-3.5 w-3.5 mr-1" /> {t('actions.createInvoice')}</CreateActionButton>}
+          </div>
+        }
+      />
+
+      <div className="p-4 md:p-6 space-y-4">
+        {/* Status Flow */}
+        <Card>
+          <CardContent className="p-3">
+            <div className="flex items-center gap-1">
+              {STATUS_FLOW.map((step, i) => (
+                <div key={step} className="flex items-center flex-1">
+                  <div className={`flex items-center justify-center rounded-full h-6 w-6 text-[10px] font-medium ${i <= currentStepIndex ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                    {i + 1}
+                  </div>
+                  <span className={`text-[10px] ml-1 hidden sm:inline ${i <= currentStepIndex ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                    {t(`status.${step}`)}
+                  </span>
+                  {i < STATUS_FLOW.length - 1 && <div className={`flex-1 h-0.5 mx-1 ${i < currentStepIndex ? 'bg-primary' : 'bg-border'}`} />}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="h-8">
+            <TabsTrigger value="overview" className="text-xs">{t('tabs.overview')}</TabsTrigger>
+            <TabsTrigger value="items" className="text-xs">{t('tabs.items')}</TabsTrigger>
+            <TabsTrigger value="receipts" className="text-xs">{t('tabs.receipts')} ({receipts.length})</TabsTrigger>
+            <TabsTrigger value="invoices" className="text-xs">{t('tabs.invoices')} ({invoices.length})</TabsTrigger>
+            <TabsTrigger value="activity" className="text-xs">{t('tabs.activity')}</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="mt-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              <Card>
+                <CardHeader className="pb-2"><CardTitle className="text-sm">{t('detail.supplierInfo')}</CardTitle></CardHeader>
+                <CardContent className="space-y-2 text-xs">
+                  <div className="flex items-center gap-2"><Building2 className="h-3.5 w-3.5 text-muted-foreground" /><span className="font-medium">{po.supplierName}</span></div>
+                  {po.supplierEmail && <div className="flex items-center gap-2 text-muted-foreground"><User className="h-3.5 w-3.5" />{po.supplierEmail}</div>}
+                  {po.supplierPhone && <div className="flex items-center gap-2 text-muted-foreground"><User className="h-3.5 w-3.5" />{po.supplierPhone}</div>}
+                  {po.supplierAddress && <div className="flex items-center gap-2 text-muted-foreground"><MapPin className="h-3.5 w-3.5" />{po.supplierAddress}</div>}
+                  {po.supplierMatriculeFiscale && <div className="flex items-center gap-2 text-muted-foreground"><FileText className="h-3.5 w-3.5" />{po.supplierMatriculeFiscale}</div>}
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2"><CardTitle className="text-sm">{t('detail.orderSummary')}</CardTitle></CardHeader>
+                <CardContent className="space-y-2 text-xs">
+                  <div className="flex justify-between"><span className="text-muted-foreground">{t('fields.date')}</span><span>{po.orderDate}</span></div>
+                  {po.expectedDelivery && <div className="flex justify-between"><span className="text-muted-foreground">{t('fields.expectedDelivery')}</span><span>{po.expectedDelivery}</span></div>}
+                  <div className="flex justify-between"><span className="text-muted-foreground">{t('fields.paymentTerms')}</span><span>{po.paymentTerms}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">{t('fields.currency')}</span><span>{po.currency}</span></div>
+                  <Separator className="my-2" />
+                  <div className="flex justify-between"><span className="text-muted-foreground">{t('fields.subtotal')}</span><span>{fmt(po.subTotal)}</span></div>
+                  {po.discount > 0 && <div className="flex justify-between text-destructive"><span>{t('fields.discount')}</span><span>-{po.discountType === 'percentage' ? `${po.discount}%` : fmt(po.discount)}</span></div>}
+                  <div className="flex justify-between"><span className="text-muted-foreground">{t('fields.tax')}</span><span>{fmt(po.taxAmount)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">{t('fields.fiscalStamp')}</span><span>{fmt(po.fiscalStamp)}</span></div>
+                  <Separator className="my-2" />
+                  <div className="flex justify-between font-bold text-sm"><span>{t('fields.grandTotal')}</span><span>{fmt(po.grandTotal)} {po.currency}</span></div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="items" className="mt-4">
+            <Card>
+              <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                <CardTitle className="text-sm">{t('tabs.items')}</CardTitle>
+                {po.status === 'draft' && (
+                  isEditingItems ? (
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="outline" onClick={addDraftItem} disabled={savingItems}>
+                        <Plus className="h-3.5 w-3.5 mr-1" /> {t('create.addItem')}
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={cancelEditItems} disabled={savingItems}>
+                        <X className="h-3.5 w-3.5 mr-1" /> {t('actions.cancel', 'Cancel')}
+                      </Button>
+                      <Button size="sm" onClick={saveItems} disabled={savingItems}>
+                        {savingItems ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+                        {t('actions.save')}
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button size="sm" variant="outline" onClick={startEditItems}>
+                      <Pencil className="h-3.5 w-3.5 mr-1" /> {t('actions.edit', 'Edit items')}
+                    </Button>
+                  )
+                )}
+              </CardHeader>
+              <CardContent className="p-0">
+                {!isEditingItems ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs">{t('fields.article')}</TableHead>
+                        <TableHead className="text-xs">{t('fields.supplierRef')}</TableHead>
+                        <TableHead className="text-xs text-center">{t('fields.quantity')}</TableHead>
+                        <TableHead className="text-xs text-center">{t('fields.received')}</TableHead>
+                        <TableHead className="text-xs text-right">{t('fields.unitPrice')}</TableHead>
+                        <TableHead className="text-xs text-right">{t('fields.discount', 'Discount')}</TableHead>
+                        <TableHead className="text-xs text-right">{t('fields.tax', 'Tax')} %</TableHead>
+                        <TableHead className="text-xs text-right">{t('fields.lineTotal')}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {po.items.map(item => (
+                        <TableRow key={item.id}>
+                          <TableCell>
+                            <div className="text-xs font-medium">{item.articleName || item.description}</div>
+                            <div className="text-[10px] text-muted-foreground">{item.articleNumber}</div>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{item.supplierRef || '-'}</TableCell>
+                          <TableCell className="text-xs text-center">{Number(item.quantity || 0).toFixed(2)} {getUnitLabel(item.unit, t)}</TableCell>
+                          <TableCell className="text-xs text-center">
+                            <span className={item.receivedQty >= item.quantity ? 'text-green-600' : item.receivedQty > 0 ? 'text-amber-600' : 'text-muted-foreground'}>
+                              {Number(item.receivedQty || 0).toFixed(2)}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-xs text-right">{fmt(item.unitPrice)}</TableCell>
+                          <TableCell className="text-xs text-right">
+                            {(item.discount ?? 0) > 0
+                              ? (item.discountType === 'percentage' ? `${item.discount}%` : fmt(item.discount || 0))
+                              : '-'}
+                          </TableCell>
+                          <TableCell className="text-xs text-right">{item.taxRate ?? 0}%</TableCell>
+                          <TableCell className="text-xs text-right font-medium">{fmt(item.lineTotal)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs min-w-[180px]">{t('fields.description')}</TableHead>
+                        <TableHead className="text-xs w-20">{t('fields.quantity')}</TableHead>
+                        <TableHead className="text-xs w-24">{t('fields.unit', 'Unit')}</TableHead>
+                        <TableHead className="text-xs w-24">{t('fields.unitPrice')}</TableHead>
+                        <TableHead className="text-xs w-32">{t('fields.discount', 'Discount')}</TableHead>
+                        <TableHead className="text-xs w-20">{t('fields.tax', 'Tax')} %</TableHead>
+                        <TableHead className="text-xs text-right">{t('fields.lineTotal')}</TableHead>
+                        <TableHead className="w-10"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {draftItems.map((item, idx) => (
+                        <TableRow key={String(item.id) || idx}>
+                          <TableCell>
+                            <Input className="h-7 text-xs" placeholder={t('create.articleDescription')} value={item.description || ''} onChange={e => updateDraftItem(idx, 'description', e.target.value)} />
+                            {item.articleName && <div className="text-[10px] text-muted-foreground mt-0.5">{item.articleName}</div>}
+                          </TableCell>
+                          <TableCell><Input type="number" min="0" step="0.01" className="h-7 text-xs w-16" value={item.quantity ?? ''} onChange={e => updateDraftItem(idx, 'quantity', Number(e.target.value))} /></TableCell>
+                          <TableCell>
+                            <Select value={item.unit || 'piece'} onValueChange={v => updateDraftItem(idx, 'unit', v)}>
+                              <SelectTrigger className="h-7 text-xs w-20"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                {UNIT_OPTIONS.map(u => <SelectItem key={u.value} value={u.value}>{getUnitLabel(u.value, t)}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell><Input type="number" min="0" step="0.01" className="h-7 text-xs w-20" value={item.unitPrice ?? ''} onChange={e => updateDraftItem(idx, 'unitPrice', Number(e.target.value))} /></TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Input type="number" min="0" step="0.01" className="h-7 text-xs w-14" value={item.discount ?? 0} onChange={e => updateDraftItem(idx, 'discount', Number(e.target.value))} />
+                              <Select value={item.discountType || 'percentage'} onValueChange={v => updateDraftItem(idx, 'discountType', v)}>
+                                <SelectTrigger className="h-7 text-xs w-14 px-1"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="percentage">%</SelectItem>
+                                  <SelectItem value="fixed">TND</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </TableCell>
+                          <TableCell><Input type="number" min="0" max="100" step="0.01" className="h-7 text-xs w-16" value={item.taxRate ?? 19} onChange={e => updateDraftItem(idx, 'taxRate', Number(e.target.value))} /></TableCell>
+                          <TableCell className="text-xs text-right font-medium">{fmt(item.lineTotal || 0)}</TableCell>
+                          <TableCell>
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeDraftItem(idx)} disabled={savingItems}>
+                              <Trash2 className="h-3 w-3 text-destructive" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {draftItems.length === 0 && (
+                        <TableRow><TableCell colSpan={8} className="text-center py-6 text-xs text-muted-foreground">{t('create.noItems')}</TableCell></TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="receipts" className="mt-4">
+            {receipts.length === 0 ? (
+              <Card><CardContent className="py-8 text-center text-sm text-muted-foreground">{t('receipts.empty')}</CardContent></Card>
+            ) : (
+              <div className="space-y-3">
+                {receipts.map(gr => (
+                  <Card key={gr.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(`/dashboard/purchases/receipts/${gr.id}`)}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium">{gr.receiptNumber}</p>
+                          <p className="text-xs text-muted-foreground">{gr.receiptDate} &bull; {gr.receivedByName}</p>
+                        </div>
+                        <Badge className={gr.status === 'complete' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}>
+                          {t(`receiptStatus.${gr.status}`)}
+                        </Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="invoices" className="mt-4">
+            {invoices.length === 0 ? (
+              <Card><CardContent className="py-8 text-center text-sm text-muted-foreground">{t('invoices.empty')}</CardContent></Card>
+            ) : (
+              <div className="space-y-3">
+                {invoices.map(inv => (
+                  <Card key={inv.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(`/dashboard/purchases/invoices/${inv.id}`)}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium">{inv.invoiceNumber}</p>
+                          <p className="text-xs text-muted-foreground">{inv.invoiceDate} &bull; {fmt(inv.grandTotal)} TND</p>
+                        </div>
+                        <Badge variant="outline">{t(`invoiceStatus.${inv.status}`)}</Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="activity" className="mt-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="space-y-4">
+                  {activities.map(a => (
+                    <div key={a.id} className="flex gap-3">
+                      <div className="flex flex-col items-center">
+                        <div className="rounded-full h-2 w-2 bg-primary mt-1.5" />
+                        <div className="w-px flex-1 bg-border" />
+                      </div>
+                      <div className="pb-4">
+                        <p className="text-xs font-medium">{a.description}</p>
+                        <p className="text-[10px] text-muted-foreground">{new Date(a.performedAt).toLocaleString()} &bull; {a.performedByName}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {activities.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">{t('activity.empty')}</p>}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      <PurchaseOrderPDFPreviewModal
+        isOpen={isPdfOpen}
+        onClose={() => setIsPdfOpen(false)}
+        order={po}
+        formatCurrency={formatCurrency}
+      />
+    </div>
+  );
+}
+
+export default function PurchaseOrderDetailPageWrapper() {
+  return (
+    <PurchaseErrorBoundary backTo="/dashboard/purchases/orders">
+      <PurchaseOrderDetailPage />
+    </PurchaseErrorBoundary>
+  );
+}

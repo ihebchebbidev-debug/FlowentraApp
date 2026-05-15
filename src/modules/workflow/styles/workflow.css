@@ -1,0 +1,293 @@
+/* n8n-inspired workflow styles — polished edition */
+
+/* Base workflow module */
+.workflow-module {
+  font-size: 85%;
+  line-height: 1.4;
+}
+
+/* =========== Canvas =========== */
+
+/* n8n-style canvas background — dot grid with accent crosses */
+.react-flow__pane {
+  background-color: hsl(var(--background));
+  background-image:
+    radial-gradient(circle, hsl(var(--muted-foreground) / 0.15) 1px, transparent 1px),
+    radial-gradient(circle, hsl(var(--muted-foreground) / 0.06) 1px, transparent 1px);
+  background-size: 20px 20px, 100px 100px;
+  background-position: 0 0, 10px 10px;
+}
+
+/* Make the React Flow SVG background dots more subtle */
+.react-flow__background pattern circle {
+  fill: hsl(var(--muted-foreground) / 0.12);
+}
+
+/* =========== Node execution states =========== */
+.workflow-node-waiting {
+  animation: pulse-waiting 2s ease-in-out infinite;
+}
+
+.workflow-node-executing {
+  animation: pulse-executing 1.2s ease-in-out infinite;
+}
+
+.workflow-node-completed {
+  box-shadow: 0 0 0 2px hsl(var(--success));
+}
+
+.workflow-node-failed {
+  box-shadow: 0 0 0 2px hsl(var(--destructive));
+}
+
+@keyframes pulse-waiting {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes pulse-executing {
+  0%, 100% {
+    box-shadow: 0 0 0 0 hsl(var(--primary) / 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 12px hsl(var(--primary) / 0);
+  }
+}
+
+/* =========== Execution progress =========== */
+.workflow-progress-bar {
+  height: 3px;
+  background: hsl(var(--muted));
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.workflow-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--success)));
+  transition: width 0.3s ease;
+}
+
+@keyframes progressShimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* =========== Status badges =========== */
+.workflow-status-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  z-index: 10;
+}
+
+.workflow-status-badge.executing {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.workflow-status-badge.completed {
+  background: hsl(var(--success));
+  color: white;
+}
+
+.workflow-status-badge.failed {
+  background: hsl(var(--destructive));
+  color: hsl(var(--destructive-foreground));
+}
+
+/* =========== Handle styles =========== */
+.react-flow__handle {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: hsl(var(--background));
+  border: 2.5px solid hsl(var(--muted-foreground) / 0.4);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.react-flow__handle:hover {
+  background: hsl(var(--primary));
+  border-color: hsl(var(--primary));
+  transform: scale(1.4);
+  box-shadow: 0 0 0 4px hsl(var(--primary) / 0.15), 0 0 12px hsl(var(--primary) / 0.3);
+}
+
+.react-flow__handle-left {
+  left: -5px;
+}
+
+.react-flow__handle-right {
+  right: -5px;
+}
+
+/* =========== Edge styles =========== */
+.react-flow__edge-path {
+  stroke-width: 1.8;
+  stroke: hsl(var(--muted-foreground) / 0.35);
+  transition: stroke 0.2s, stroke-width 0.2s, filter 0.2s;
+}
+
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke: hsl(var(--primary) / 0.6);
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 3px hsl(var(--primary) / 0.2));
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: hsl(var(--primary));
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 4px hsl(var(--primary) / 0.3));
+}
+
+.react-flow__edge.animated .react-flow__edge-path {
+  stroke-dasharray: 6 4;
+  animation: edgeDash 0.8s linear infinite;
+}
+
+@keyframes edgeDash {
+  to { stroke-dashoffset: -10; }
+}
+
+/* =========== Connection line (dragging) =========== */
+.react-flow__connection-line {
+  stroke: hsl(var(--primary) / 0.7);
+  stroke-width: 2.5;
+  stroke-dasharray: 8 4;
+  filter: drop-shadow(0 0 6px hsl(var(--primary) / 0.3));
+}
+
+/* =========== Controls =========== */
+.react-flow__controls {
+  background: hsl(var(--card) / 0.95);
+  backdrop-filter: blur(12px) saturate(1.5);
+  border: 1px solid hsl(var(--border) / 0.8);
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04);
+  overflow: hidden;
+}
+
+.react-flow__controls-button {
+  background: transparent;
+  border-bottom: 1px solid hsl(var(--border) / 0.4);
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.react-flow__controls-button:hover {
+  background: hsl(var(--accent));
+}
+
+.react-flow__controls-button:last-child {
+  border-bottom: none;
+}
+
+.react-flow__controls-button svg {
+  fill: hsl(var(--foreground) / 0.7);
+  width: 14px;
+  height: 14px;
+}
+
+.react-flow__controls-button:hover svg {
+  fill: hsl(var(--foreground));
+}
+
+/* =========== MiniMap =========== */
+.react-flow__minimap {
+  background: hsl(var(--card) / 0.9) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 1px solid hsl(var(--border) / 0.6) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.06) !important;
+  overflow: hidden;
+}
+
+/* =========== Selection =========== */
+.react-flow__selection {
+  background: hsl(var(--primary) / 0.06);
+  border: 1.5px dashed hsl(var(--primary) / 0.35);
+  border-radius: 8px;
+}
+
+/* =========== Panel/Toolbar =========== */
+.workflow-toolbar {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  gap: 8px;
+  padding: 8px 16px;
+  background: hsl(var(--card) / 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid hsl(var(--border) / 0.8);
+  border-radius: 14px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+}
+
+/* =========== Panel slide-in =========== */
+.panel-slide-in {
+  animation: slideIn 0.25s ease-out;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* =========== Palette node hover =========== */
+.palette-node:hover {
+  background: hsl(var(--muted));
+  transform: translateX(2px);
+}
+
+/* =========== Node drag preview =========== */
+.node-drag-preview {
+  opacity: 0.8;
+  transform: scale(1.05);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+/* =========== Empty state animation =========== */
+@keyframes emptyStateFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+.empty-state-float {
+  animation: emptyStateFloat 4s ease-in-out infinite;
+}
+
+@keyframes emptyStatePulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.1); }
+}
+
+.empty-state-pulse {
+  animation: emptyStatePulse 3s ease-in-out infinite;
+}
+
+/* =========== Responsive =========== */
+@media (max-width: 768px) {
+  .workflow-toolbar {
+    padding: 6px 12px;
+  }
+  
+  .workflow-module {
+    font-size: 80%;
+  }
+}

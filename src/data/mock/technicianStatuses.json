@@ -1,0 +1,62 @@
+[
+  {
+    "id": "available",
+    "name": "Available",
+  "color": "#10B981",
+  "description": "Available for assignments",
+  "isDefault": true,
+    "position": 0,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "busy",
+    "name": "Busy",
+  "color": "#F59E0B",
+  "description": "Currently busy / assigned",
+  "isDefault": true,
+    "position": 1,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "not_working",
+    "name": "Not Working",
+  "color": "#EF4444",
+  "description": "Not working",
+  "isDefault": true,
+    "position": 2,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "on_leave",
+    "name": "On Leave",
+  "color": "#8B5CF6",
+  "description": "On leave",
+  "isDefault": true,
+    "position": 3,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "over_capacity",
+    "name": "Over Capacity",
+  "color": "#F59E0B",
+  "description": "Over capacity (static)",
+  "isDefault": false,
+    "position": 4,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "offline",
+    "name": "Offline",
+  "color": "#9CA3AF",
+  "description": "Offline",
+  "isDefault": true,
+    "position": 5,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+]

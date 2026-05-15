@@ -1,0 +1,9 @@
+{
+  "parallel": {
+  "title": "Parallèle",
+  "fullDescription": "Exécute plusieurs branches simultanément et peut attendre toutes ou la première terminée.",
+  "how": "Configurez plusieurs branches et choisissez d'attendre toutes ou de continuer dès la première terminée.",
+  "configureDescription": "Exécutez les branches en parallèle; choisissez d'attendre toutes ou de continuer sur la première.",
+  "examples": ["Exécuter plusieurs vérifications en parallèle","Traitement fan-out des éléments"]
+  }
+}

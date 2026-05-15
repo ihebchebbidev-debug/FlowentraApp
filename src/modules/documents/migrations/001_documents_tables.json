@@ -1,0 +1,30 @@
+{
+  "module": "documents",
+  "version": "001", 
+  "description": "Document Management Tables",
+  "tables": [
+    {
+      "name": "CRM.documents",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "fileName": { "type": "string", "required": true },
+        "originalName": { "type": "string", "required": true },
+        "filePath": { "type": "string", "required": true },
+        "fileSize": { "type": "integer", "required": true },
+        "mimeType": { "type": "string", "required": true },
+        "category": { "type": "string", "required": false },
+        "relatedType": { "type": "string", "required": false, "enum": ["contact", "offer", "sale", "project", "service_order"] },
+        "relatedId": { "type": "string", "required": false },
+        "description": { "type": "text", "required": false },
+        "tags": { "type": "array", "items": "string" },
+        "isPublic": { "type": "boolean", "default": false },
+        "uploadedAt": { "type": "datetime", "required": true },
+        "uploadedBy": { "type": "string", "required": true, "foreignKey": "SYS.users.id" },
+        "modifiedAt": { "type": "datetime", "required": false },
+        "modifiedBy": { "type": "string", "required": false, "foreignKey": "SYS.users.id" }
+      },
+      "indexes": ["relatedType", "relatedId", "uploadedAt", "category"]
+    }
+  ]
+}

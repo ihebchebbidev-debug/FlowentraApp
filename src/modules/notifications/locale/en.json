@@ -1,0 +1,39 @@
+{
+  "header": {
+    "title": "Notifications",
+    "desc": "Stay up to date with your workspace activity.",
+    "pageTitle": "Notifications | Flowentra",
+    "pageDesc": "View and manage all your notifications in one place."
+  },
+  "actions": {
+    "refresh": "Refresh",
+    "markAllRead": "Mark all as read",
+    "allCaughtUpTitle": "All caught up",
+    "allCaughtUpDesc": "All notifications marked as read."
+  },
+  "tabs": {
+    "all": "All",
+    "unread": "Unread",
+    "tasks": "Tasks",
+    "sales": "Sales",
+    "offers": "Offers & Services",
+    "inventory": "Inventory"
+  },
+  "empty": {
+    "unread": "You're all caught up. No unread notifications.",
+    "default": "No notifications in this category."
+  },
+  "categories": {
+    "system": "System",
+    "sale": "Sale",
+    "offer": "Offer",
+    "service": "Service",
+    "task": "Task",
+    "inventory": "Inventory"
+  },
+  "plugin": {
+    "name": "Notifications",
+    "description": "Notification center and alerts.",
+    "category": "System"
+  }
+}

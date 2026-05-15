@@ -1,0 +1,7 @@
+[
+  { "id": "vacation", "name": "Vacation", "description": "Paid vacation" , "isDefault": true, "position": 0 },
+  { "id": "travel", "name": "Travel", "description": "Work-related travel" , "isDefault": true, "position": 1 },
+  { "id": "sick", "name": "Sick", "description": "Sick leave" , "isDefault": true, "position": 2 },
+  { "id": "family", "name": "Family", "description": "Family-related leave" , "isDefault": true, "position": 3 },
+  { "id": "bereavement", "name": "Bereavement", "description": "Bereavement leave" , "isDefault": true, "position": 4 }
+]

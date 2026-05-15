@@ -1,0 +1,8 @@
+{
+  "switch": {
+    "title": "Commutateur",
+    "fullDescription": "Dirige l'exécution vers plusieurs branches selon une valeur.",
+    "how": "Spécifiez le champ utilisé et définissez des cas pour chaque valeur possible afin de diriger le flux.",
+    "examples": ["Diriger par pays vers des handlers différents","Basculer selon le mode de paiement"]
+  }
+}

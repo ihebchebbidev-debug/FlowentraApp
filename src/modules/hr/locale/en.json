@@ -1,0 +1,7 @@
+{
+  "plugin": {
+    "name": "Human Resources",
+    "description": "Employees, payroll, leaves and attendance.",
+    "category": "HR"
+  }
+}

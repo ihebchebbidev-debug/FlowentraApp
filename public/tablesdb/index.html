@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Tables DB — Visualization</title>
+    <style>
+      html,body{height:100%;margin:0;font-family:Inter,Arial,Helvetica,sans-serif}
+      .app{display:flex;height:100vh}
+      .left{width:72%;min-width:420px;border-right:1px solid #e5e7eb;position:relative}
+      .right{width:28%;padding:12px;box-sizing:border-box;overflow:auto}
+      #cy{width:100%;height:100%}
+      .controls{position:absolute;left:8px;top:8px;background:#fff;padding:8px;border-radius:6px;box-shadow:0 1px 6px rgba(0,0,0,0.08);z-index:10}
+      input[type=text]{width:220px;padding:6px;border:1px solid #d1d5db;border-radius:4px}
+      button{margin-left:6px;padding:6px 8px;border-radius:4px;border:1px solid #d1d5db;background:#f9fafb}
+      h3{margin:6px 0 8px;font-size:14px}
+      .meta{font-size:13px;color:#374151}
+      .field{font-family:monospace;background:#f3f4f6;padding:6px;border-radius:4px;margin-bottom:6px;display:block}
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <div class="left">
+        <div class="controls">
+          <input id="search" type="text" placeholder="Find table (name)" />
+          <button id="fit">Fit</button>
+          <button id="reset">Reset</button>
+        </div>
+        <div id="cy"></div>
+      </div>
+      <div class="right">
+        <h2>Tables DB</h2>
+        <div class="meta">Click a node to view details. Drag to rearrange, scroll to zoom.</div>
+        <hr />
+        <div id="details"><em>No table selected</em></div>
+      </div>
+    </div>
+
+    <!-- Cytoscape core -->
+    <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
+  <!-- Popper + Tippy for rich tooltips -->
+  <script src="https://unpkg.com/@popperjs/core@2"></script>
+  <link rel="stylesheet" href="https://unpkg.com/tippy.js@6/dist/tippy.css" />
+  <script src="https://unpkg.com/tippy.js@6/dist/tippy.umd.min.js"></script>
+
+    <script>
+      // Load tables.json (served from the same folder)
+      fetch('./tables.json').then(r=>r.json()).then(data=>init(data)).catch(err=>{
+        document.getElementById('details').innerText = 'Failed to load tables.json: '+err.message;
+      });
+
+      function simpleName(s){
+        // extract left-most token before dot or bracket
+        // Only treat parentheses as a polymorphic list when it's explicit (contains commas)
+        // or when the word 'polymorphic' appears. This avoids parsing expressions like
+        // "(type==service)" as a node id.
+        if(!s) return null;
+        const polyExplicit = s.match(/polymorphic\s*\(([^)]+)\)/i);
+        if(polyExplicit) return polyExplicit[1].split(',').map(x=>x.trim());
+        const paren = s.match(/\(([^)]+)\)/);
+        if(paren && paren[1].includes(',')) return paren[1].split(',').map(x=>x.trim());
+        const m = s.match(/^([a-zA-Z0-9_\-]+)/);
+        return m ? [m[1]] : null;
+      }
+
+      function init(tablesJson){
+        const tables = tablesJson.tables || [];
+        const relations = tablesJson.relations || [];
+
+        // Build a map of nodes so we can add placeholders for missing references
+        const nodeMap = new Map();
+        const nodes = tables.map(t => {
+          const fields = (t.sampleFields || []).slice(0, 12);
+          // build a compact display: header + separator + up to 12 sample fields
+          const separator = '────────────────────────';
+          const display = t.name + '\n' + separator + (fields.length ? '\n' + fields.map(f => '  ' + f).join('\n') : '');
+          const item = { data: { id: t.name, name: t.name, display: display, file: t.file, sampleFields: t.sampleFields || [] } };
+          nodeMap.set(t.name, item);
+          return item;
+        });
+
+        const edges = [];
+        relations.forEach((rel, idx) => {
+          const fromCandidates = simpleName(rel.from) || [];
+          // try to parse target side
+          let targets = [];
+          if (typeof rel.to === 'string') {
+            const poly = rel.to.match(/\(([^)]+)\)/);
+            if (poly) {
+              const inner = poly[1].trim();
+              if (inner.indexOf(',') !== -1 || /^[a-zA-Z0-9_\-,\s]+$/.test(inner)) {
+                targets = inner.split(',').map(x => x.trim());
+              } else {
+                const tmatch = rel.to.match(/([a-zA-Z0-9_\-]+)/);
+                if (tmatch) targets = [tmatch[1]];
+              }
+            } else {
+              const tmatch = rel.to.match(/([a-zA-Z0-9_\-]+)/);
+              if (tmatch) targets = [tmatch[1]];
+            }
+          }
+
+          fromCandidates.forEach(fc => {
+            targets.forEach(tgt => {
+              // ensure source exists
+              if (!nodeMap.has(fc)) {
+                const placeholder = { data: { id: fc, label: fc + ' (missing)', file: null, sampleFields: [] } };
+                nodeMap.set(fc, placeholder);
+                nodes.push(placeholder);
+              }
+              // ensure target exists
+              if (!nodeMap.has(tgt)) {
+                const placeholder = { data: { id: tgt, label: tgt + ' (missing)', file: null, sampleFields: [] } };
+                nodeMap.set(tgt, placeholder);
+                nodes.push(placeholder);
+              }
+
+              edges.push({ data: { id: 'e' + idx + '-' + fc + '-' + tgt, source: fc, target: tgt, label: rel.note || rel.type || '' } });
+            });
+          });
+        });
+
+        const cy = cytoscape({
+          container: document.getElementById('cy'),
+          elements: { nodes: nodes, edges: edges },
+          style: [
+            { selector: 'node', style: { 'background-color': '#ffffff', 'label': 'data(display)', 'color':'#0f172a', 'text-valign':'top', 'text-halign':'left', 'text-wrap':'wrap', 'shape': 'round-rectangle', 'padding':'10px', 'font-size': 12, 'font-family': 'monospace', 'border-width': 1, 'border-color': '#e5e7eb', 'width': 320, 'shadow-blur': 6, 'shadow-color': 'rgba(2,6,23,0.06)' } },
+            { selector: 'node.missing', style: { 'background-color': '#fff7ed', 'shape': 'round-rectangle', 'color': '#111', 'border-style':'dashed', 'border-color':'#f97316' } },
+            { selector: 'edge', style: { 'curve-style': 'bezier', 'target-arrow-shape': 'triangle', 'line-color': '#9ca3af', 'target-arrow-color': '#9ca3af', 'width': 2 } },
+            { selector: ':selected', style: { 'background-color': '#f97316', 'line-color': '#f97316', 'target-arrow-color': '#f97316' } }
+          ],
+          layout: { name: 'cose', idealEdgeLength: 120, nodeRepulsion: 8000 }
+        });
+
+        // attach tippy tooltips for each node (hover or tap)
+        cy.nodes().forEach(node => {
+          const d = node.data();
+          const content = document.createElement('div');
+          const title = document.createElement('div'); title.style.fontWeight='600'; title.textContent = d.name || d.id; content.appendChild(title);
+          const path = document.createElement('div'); path.style.fontSize='12px'; path.style.color='#475569'; path.textContent = d.file || '(no file)'; content.appendChild(path);
+          if (d.sampleFields && d.sampleFields.length){
+            const ul = document.createElement('ul'); ul.style.margin='8px 0 0'; ul.style.paddingLeft='16px'; ul.style.fontFamily='monospace'; d.sampleFields.slice(0,30).forEach(f=>{ const li = document.createElement('li'); li.textContent = f; ul.appendChild(li); }); content.appendChild(ul);
+          }
+
+          const tip = tippy(document.createElement('div'), {
+            content: content,
+            allowHTML: true,
+            interactive: true,
+            placement: 'right',
+            trigger: 'manual',
+            animation: 'shift-away',
+            theme: 'light-border'
+          });
+
+          // show tooltip on hover or tap
+          node.on('mouseover', () => tip.show());
+          node.on('mouseout', () => tip.hide());
+          node.on('tap', () => tip.show());
+        });
+
+        // click handler
+        cy.on('tap', 'node', function(evt){
+          const node = evt.target;
+          const d = node.data();
+          const right = document.getElementById('details');
+          right.innerHTML = '';
+          const h = document.createElement('h3'); h.textContent = d.name || d.id; right.appendChild(h);
+          const meta = document.createElement('div'); meta.className='meta'; meta.innerHTML = 'file: <code>'+(d.file || '(none)')+'</code>'; right.appendChild(meta);
+          right.appendChild(document.createElement('hr'));
+          const fh = document.createElement('h4'); fh.textContent = 'Sample fields'; right.appendChild(fh);
+          if(d.sampleFields && d.sampleFields.length){
+            const ul = document.createElement('ul'); ul.style.paddingLeft='18px';
+            d.sampleFields.forEach(f=>{ const li = document.createElement('li'); li.textContent = f; ul.appendChild(li); });
+            right.appendChild(ul);
+          } else { const no = document.createElement('div'); no.className='meta'; no.textContent='(no sample fields)'; right.appendChild(no); }
+        });
+
+        // search box
+        document.getElementById('search').addEventListener('input', e=>{
+          const q = e.target.value.trim().toLowerCase();
+          if(!q){ cy.elements().removeClass('faded'); return; }
+          cy.nodes().forEach(n=>{ const keep = n.id().toLowerCase().includes(q); n.toggleClass('faded', !keep); });
+          cy.style().selector('.faded').style({ 'opacity': 0.12 }).update();
+        });
+
+        document.getElementById('fit').addEventListener('click', ()=> cy.fit(40));
+        document.getElementById('reset').addEventListener('click', ()=> location.reload());
+
+        // make nodes draggable and persist positions locally
+        cy.nodes().forEach(n=> n.grabify());
+
+        // mark placeholder nodes (no file) with a class so they render differently
+        cy.nodes().forEach(n=>{
+          const d = n.data();
+          if(!d.file){ n.addClass('missing'); }
+        });
+      }
+    </script>
+  </body>
+</html>

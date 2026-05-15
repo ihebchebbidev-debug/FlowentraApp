@@ -1,0 +1,34 @@
+{
+  "header": {
+    "title": "Deals",
+    "subtitle": "Track your sales pipeline and revenue opportunities",
+    "add": "Add Deal"
+  },
+  "active": {
+    "title": "Active Deals",
+    "description": "Your current sales opportunities"
+  },
+  "pipeline": {
+    "title": "Pipeline Overview",
+    "description": "Visual representation of your sales pipeline",
+    "deals": "Deals"
+  },
+  "revenue": {
+    "total": "Total Pipeline",
+    "thisMonth": "This Month",
+    "avgDeal": "Avg Deal Size",
+    "winRate": "Win Rate"
+  },
+  "stages": {
+    "Lead": "Lead",
+    "Qualified": "Qualified",
+    "Proposal": "Proposal",
+    "Negotiation": "Negotiation",
+    "Closed Won": "Closed Won"
+  },
+  "plugin": {
+    "name": "Deals",
+    "description": "Manage active deals from lead to close.",
+    "category": "CRM"
+  }
+}

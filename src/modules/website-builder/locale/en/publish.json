@@ -1,0 +1,22 @@
+{
+  "publishWebsite": "Publish Website",
+  "publishDesc": "Make your website publicly accessible with a unique URL",
+  "websiteIsLive": "Website is Live",
+  "websiteIsDraft": "Website is Created",
+  "publishedOn": "Published {{date}}",
+  "toggleToPublish": "Toggle to make it publicly accessible",
+  "publicUrl": "Public URL",
+  "publishFirst": "Publish the site first to make this URL accessible",
+  "sitePublished": "Site published!",
+  "siteUnpublished": "Site unpublished",
+  "failedToPublish": "Failed to publish",
+  "failedToUnpublish": "Failed to unpublish",
+  "export": "Export",
+  "exportReactProject": "Export React Project",
+  "exportDesc": "Pixel-perfect Vite + React + TypeScript project with full responsiveness",
+  "reactProjectDownloaded": "React project downloaded!",
+  "exportFailed": "Export failed",
+  "previewOpened": "Preview opened in a new tab!",
+  "previewFailed": "Preview failed",
+  "noIndexPage": "No index page found for preview"
+}

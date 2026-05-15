@@ -1,0 +1,264 @@
+{
+  "id": "default-business-workflow",
+  "name": "defaultWorkflow.name",
+  "description": "defaultWorkflow.description",
+  "isDefault": true,
+  "version": 2,
+  "nodes": [
+    {
+      "id": "trigger-offer-accepted",
+      "type": "offer-status-trigger",
+      "position": { "x": 100, "y": 100 },
+      "data": {
+        "label": "defaultWorkflow.nodes.offerAccepted",
+        "type": "offer-status-trigger",
+        "description": "defaultWorkflow.nodes.offerAcceptedDesc",
+        "entityType": "offer",
+        "fromStatus": "any",
+        "toStatus": "accepted"
+      }
+    },
+    {
+      "id": "action-create-sale",
+      "type": "sale",
+      "position": { "x": 400, "y": 100 },
+      "data": {
+        "label": "defaultWorkflow.nodes.createSale",
+        "type": "sale",
+        "description": "defaultWorkflow.nodes.createSaleDesc",
+        "entityType": "sale",
+        "actionType": "create",
+        "config": {
+          "autoCreate": true,
+          "copyFromOffer": true
+        }
+      }
+    },
+    {
+      "id": "trigger-sale-in-progress",
+      "type": "sale-status-trigger",
+      "position": { "x": 100, "y": 280 },
+      "data": {
+        "label": "defaultWorkflow.nodes.saleInProgress",
+        "type": "sale-status-trigger",
+        "description": "defaultWorkflow.nodes.saleInProgressDesc",
+        "entityType": "sale",
+        "fromStatus": "created",
+        "toStatus": "in_progress"
+      }
+    },
+    {
+      "id": "condition-has-services",
+      "type": "if-else",
+      "position": { "x": 400, "y": 280 },
+      "data": {
+        "label": "defaultWorkflow.nodes.hasServices",
+        "type": "if-else",
+        "description": "defaultWorkflow.nodes.hasServicesDesc",
+        "config": {
+          "field": "sale.hasServiceItems",
+          "operator": "equals",
+          "value": "true"
+        }
+      }
+    },
+    {
+      "id": "action-create-service-order",
+      "type": "service-order",
+      "position": { "x": 720, "y": 220 },
+      "data": {
+        "label": "defaultWorkflow.nodes.createServiceOrder",
+        "type": "service-order",
+        "description": "defaultWorkflow.nodes.createServiceOrderDesc",
+        "entityType": "service_order",
+        "actionType": "create",
+        "config": {
+          "autoCreate": true,
+          "copyServicesFromSale": true,
+          "initialStatus": "pending"
+        }
+      }
+    },
+    {
+      "id": "trigger-job-planned",
+      "type": "service-order-status-trigger",
+      "position": { "x": 100, "y": 460 },
+      "data": {
+        "label": "defaultWorkflow.nodes.serviceOrderScheduled",
+        "type": "service-order-status-trigger",
+        "description": "defaultWorkflow.nodes.serviceOrderScheduledDesc",
+        "entityType": "service_order",
+        "fromStatus": "pending",
+        "toStatus": "scheduled"
+      }
+    },
+    {
+      "id": "action-create-dispatch",
+      "type": "dispatch",
+      "position": { "x": 400, "y": 460 },
+      "data": {
+        "label": "defaultWorkflow.nodes.createDispatches",
+        "type": "dispatch",
+        "description": "defaultWorkflow.nodes.createDispatchesDesc",
+        "entityType": "dispatch",
+        "actionType": "create",
+        "config": {
+          "autoCreate": true,
+          "createPerService": true,
+          "initialStatus": "planned"
+        }
+      }
+    },
+    {
+      "id": "trigger-dispatch-in-progress",
+      "type": "dispatch-status-trigger",
+      "position": { "x": 100, "y": 640 },
+      "data": {
+        "label": "defaultWorkflow.nodes.dispatchInProgress",
+        "type": "dispatch-status-trigger",
+        "description": "defaultWorkflow.nodes.dispatchInProgressDesc",
+        "entityType": "dispatch",
+        "fromStatus": "any",
+        "toStatus": "in_progress"
+      }
+    },
+    {
+      "id": "action-so-in-progress",
+      "type": "update-service-order-status",
+      "position": { "x": 400, "y": 640 },
+      "data": {
+        "label": "defaultWorkflow.nodes.serviceOrderInProgress",
+        "type": "update-service-order-status",
+        "description": "defaultWorkflow.nodes.serviceOrderInProgressDesc",
+        "entityType": "service_order",
+        "actionType": "update-status",
+        "config": {
+          "newStatus": "in_progress",
+          "condition": "ifNotAlreadyInProgress"
+        }
+      }
+    },
+    {
+      "id": "trigger-dispatch-completed",
+      "type": "dispatch-status-trigger",
+      "position": { "x": 100, "y": 820 },
+      "data": {
+        "label": "defaultWorkflow.nodes.dispatchTechCompleted",
+        "type": "dispatch-status-trigger",
+        "description": "defaultWorkflow.nodes.dispatchTechCompletedDesc",
+        "entityType": "dispatch",
+        "fromStatus": "in_progress",
+        "toStatus": "technically_completed"
+      }
+    },
+    {
+      "id": "condition-all-done",
+      "type": "if-else",
+      "position": { "x": 400, "y": 820 },
+      "data": {
+        "label": "defaultWorkflow.nodes.checkAllDispatches",
+        "type": "if-else",
+        "description": "defaultWorkflow.nodes.checkAllDispatchesDesc",
+        "config": {
+          "field": "serviceOrder.allDispatchesCompleted",
+          "operator": "equals",
+          "value": "true"
+        }
+      }
+    },
+    {
+      "id": "action-so-tech-complete",
+      "type": "update-service-order-status",
+      "position": { "x": 720, "y": 760 },
+      "data": {
+        "label": "defaultWorkflow.nodes.serviceOrderTechCompleted",
+        "type": "update-service-order-status",
+        "description": "defaultWorkflow.nodes.serviceOrderTechCompletedDesc",
+        "entityType": "service_order",
+        "actionType": "update-status",
+        "config": {
+          "newStatus": "technically_completed"
+        }
+      }
+    },
+    {
+      "id": "action-so-partial",
+      "type": "update-service-order-status",
+      "position": { "x": 720, "y": 900 },
+      "data": {
+        "label": "defaultWorkflow.nodes.serviceOrderPartiallyCompleted",
+        "type": "update-service-order-status",
+        "description": "defaultWorkflow.nodes.serviceOrderPartiallyCompletedDesc",
+        "entityType": "service_order",
+        "actionType": "update-status",
+        "config": {
+          "newStatus": "partially_completed"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "trigger-offer-accepted",
+      "target": "action-create-sale",
+      "type": "smoothstep",
+      "animated": true
+    },
+    {
+      "id": "e2",
+      "source": "trigger-sale-in-progress",
+      "target": "condition-has-services",
+      "type": "smoothstep",
+      "animated": true
+    },
+    {
+      "id": "e3",
+      "source": "condition-has-services",
+      "target": "action-create-service-order",
+      "sourceHandle": "yes",
+      "type": "smoothstep",
+      "animated": true,
+      "label": "YES"
+    },
+    {
+      "id": "e4",
+      "source": "trigger-job-planned",
+      "target": "action-create-dispatch",
+      "type": "smoothstep",
+      "animated": true
+    },
+    {
+      "id": "e5",
+      "source": "trigger-dispatch-in-progress",
+      "target": "action-so-in-progress",
+      "type": "smoothstep",
+      "animated": true
+    },
+    {
+      "id": "e6",
+      "source": "trigger-dispatch-completed",
+      "target": "condition-all-done",
+      "type": "smoothstep",
+      "animated": true
+    },
+    {
+      "id": "e7",
+      "source": "condition-all-done",
+      "target": "action-so-tech-complete",
+      "sourceHandle": "yes",
+      "type": "smoothstep",
+      "animated": true,
+      "label": "YES"
+    },
+    {
+      "id": "e8",
+      "source": "condition-all-done",
+      "target": "action-so-partial",
+      "sourceHandle": "no",
+      "type": "smoothstep",
+      "animated": true,
+      "label": "NO"
+    }
+  ]
+}

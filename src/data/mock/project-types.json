@@ -1,0 +1,6 @@
+[
+  { "id": "service", "name": "Service" },
+  { "id": "sales", "name": "Sales" },
+  { "id": "internal", "name": "Internal" },
+  { "id": "custom", "name": "Custom" }
+]

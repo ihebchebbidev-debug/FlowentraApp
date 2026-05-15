@@ -1,0 +1,8 @@
+{
+  "trigger": {
+    "title": "Trigger",
+    "fullDescription": "Starts the workflow based on a manual action, event, or schedule.",
+    "how": "Choose how the workflow should start: manually, via webhook, scheduled or based on external events.",
+    "examples": ["Run workflow manually from UI","Start workflow when a new order is created"]
+  }
+}

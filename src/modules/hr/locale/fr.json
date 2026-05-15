@@ -1,0 +1,7 @@
+{
+  "plugin": {
+    "name": "Ressources humaines",
+    "description": "Employés, paie, congés et présence.",
+    "category": "RH"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "api": {
+    "title": "API",
+    "fullDescription": "Calls external APIs to fetch or push data as part of the workflow.",
+    "how": "Configure endpoint, method, headers and body. Map responses to workflow variables and handle errors.",
+    "examples": ["Call payment gateway to charge card","Fetch product info by Reference"]
+  }
+}

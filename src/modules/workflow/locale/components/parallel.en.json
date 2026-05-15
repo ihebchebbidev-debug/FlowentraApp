@@ -1,0 +1,9 @@
+{
+  "parallel": {
+  "title": "Parallel",
+  "fullDescription": "Runs multiple branches concurrently and can wait for all or the first to complete.",
+  "how": "Configure multiple branches and choose whether to wait for all to finish or proceed on the first completion.",
+  "configureDescription": "Run branches concurrently; choose wait-for-all or proceed-on-first.",
+  "examples": ["Run multiple checks in parallel","Fan-out processing of items"]
+  }
+}

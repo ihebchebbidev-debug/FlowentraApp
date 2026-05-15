@@ -1,0 +1,5 @@
+[
+  { "id": "monthly", "name": "Monthly" },
+  { "id": "quarterly", "name": "Quarterly" },
+  { "id": "annually", "name": "Annually" }
+]

@@ -1,0 +1,158 @@
+[
+  {
+    "id": "dispatch-001",
+    "jobNumber": "DJ-2024-001",
+    "title": "Server Maintenance Dispatch",
+    "description": "On-site server maintenance and diagnostic work",
+    "customer": {
+      "id": "contact-001",
+      "company": "Acme Corp",
+      "contactPerson": "John Doe",
+      "phone": "+216 72 285 123",
+      "email": "john@acme.com",
+      "address": {
+        "street": "Avenue Habib Bourguiba",
+        "city": "Nabeul",
+        "state": "Nabeul",
+        "zipCode": "8000",
+        "country": "Tunisia",
+        "longitude": 10.737222,
+        "latitude": 36.456389,
+        "hasLocation": 1
+      }
+    },
+    "status": "completed",
+    "priority": "high",
+    "scheduledAt": "2024-01-25T09:00:00.000Z",
+    "startedAt": "2024-01-25T09:15:00.000Z",
+    "completedAt": "2024-01-25T16:30:00.000Z",
+    "estimatedDuration": 480,
+    "actualDuration": 435,
+    "assignedTechnicians": ["tech-001", "tech-004"],
+    "serviceOrderId": "so-001",
+    "notes": "Completed server diagnostics and installed new memory modules. Client satisfied with results.",
+    "materials": [
+      {
+        "itemId": "art-001",
+        "itemName": "Server Memory Module 32GB",
+        "quantity": 2,
+        "used": 2
+      }
+    ],
+    "createdAt": "2024-01-20T16:45:00.000Z",
+    "updatedAt": "2024-01-25T16:30:00.000Z",
+    "createdBy": "user-001",
+    "modifiedBy": "tech-001"
+  },
+  {
+    "id": "dispatch-002",
+    "jobNumber": "DJ-2024-002",
+    "title": "Network Infrastructure Installation",
+    "description": "Network switch installation and configuration",
+    "customer": {
+      "id": "contact-002",
+      "company": "Tech Startup Inc",
+      "contactPerson": "Jane Smith",
+      "phone": "+216 72 298 765",
+      "email": "jane@techstartup.com",
+      "address": {
+        "street": "Route de Hammamet",
+        "city": "Nabeul",
+        "state": "Nabeul",
+        "zipCode": "8001",
+        "country": "Tunisia",
+        "longitude": 10.740500,
+        "latitude": 36.459000,
+        "hasLocation": 1
+      }
+    },
+    "status": "in_progress",
+    "priority": "medium",
+    "scheduledAt": "2024-02-01T10:00:00.000Z",
+    "startedAt": "2024-02-01T10:15:00.000Z",
+    "estimatedDuration": 360,
+    "assignedTechnicians": ["tech-002"],
+    "notes": "Started network installation. Awaiting client approval for additional access points.",
+    "materials": [
+      {
+        "itemId": "art-002",
+        "itemName": "Enterprise Network Switch",
+        "quantity": 1,
+        "used": 1
+      }
+    ],
+    "createdAt": "2024-01-28T14:20:00.000Z",
+    "updatedAt": "2024-02-01T14:30:00.000Z",
+    "createdBy": "user-002",
+    "modifiedBy": "tech-002"
+  },
+  {
+    "id": "dispatch-003",
+    "jobNumber": "DJ-2024-003",  
+    "title": "Security System Assessment",
+    "description": "Comprehensive security audit and vulnerability assessment",
+    "customer": {
+      "id": "contact-004",
+      "company": "Acme Corporation",
+      "contactPerson": "Mark Brown",
+      "phone": "+216 72 301 890",
+      "email": "mark.brown@acme.com",
+      "address": {
+        "street": "Rue des Palmiers",
+        "city": "Nabeul",
+        "state": "Nabeul",
+        "zipCode": "8002",
+        "country": "Tunisia",
+        "longitude": 10.734000,
+        "latitude": 36.453000,
+        "hasLocation": 1
+      }
+    },
+    "status": "scheduled",
+    "priority": "urgent",
+    "scheduledAt": "2024-02-05T08:00:00.000Z",
+    "estimatedDuration": 600,
+    "assignedTechnicians": ["tech-003", "tech-005"],
+    "serviceOrderId": "so-002",
+    "notes": "Enterprise security assessment scheduled. Requires clearance documentation.",
+    "materials": [],
+    "createdAt": "2024-01-30T11:00:00.000Z",
+    "updatedAt": "2024-01-30T11:00:00.000Z",
+    "createdBy": "user-001",
+    "modifiedBy": "user-001"
+  },
+  {
+    "id": "dispatch-004",
+    "jobNumber": "DJ-2024-004",
+    "title": "Remote System Configuration",
+    "description": "Remote server configuration and optimization",
+    "customer": {
+      "id": "contact-003",
+      "company": "Consulting LLC", 
+      "contactPerson": "Mike Johnson",
+      "phone": "+216 72 287 654",
+      "email": "mike@consulting.com",
+      "address": {
+        "street": "Avenue de la République",
+        "city": "Nabeul",
+        "state": "Nabeul",
+        "zipCode": "8003",
+        "country": "Tunisia",
+        "longitude": 10.745892,
+        "latitude": 36.451203,
+        "hasLocation": 1
+      }
+    },
+    "status": "pending",
+    "priority": "low",
+    "scheduledAt": "2024-02-10T14:00:00.000Z",
+    "estimatedDuration": 240,
+    "assignedTechnicians": ["tech-004"],
+    "notes": "Remote configuration work. No on-site visit required.",
+    "materials": [],
+    "createdAt": "2024-02-01T09:30:00.000Z",
+    "updatedAt": "2024-02-01T09:30:00.000Z",
+    "createdBy": "user-003",
+    "modifiedBy": "user-003"
+  }
+]

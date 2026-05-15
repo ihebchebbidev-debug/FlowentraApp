@@ -1,0 +1,62 @@
+[
+  {
+    "id": "plumbing",
+    "name": "Plumbing",
+    "color": "#3b82f6",
+    "description": "Plumbing services",
+    "isDefault": true,
+    "position": 0,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "electrical",
+    "name": "Electrical",
+    "color": "#f59e0b",
+    "description": "Electrical services", 
+    "isDefault": true,
+    "position": 1,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "hvac",
+    "name": "HVAC",
+    "color": "#10b981",
+    "description": "Heating and cooling",
+    "isDefault": true,
+    "position": 2,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "maintenance",
+    "name": "General Maintenance",
+    "color": "#8b5cf6",
+    "description": "General maintenance tasks",
+    "isDefault": true,
+    "position": 3,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "emergency",
+    "name": "Emergency Service",
+    "color": "#ef4444",
+    "description": "Urgent emergency services",
+    "isDefault": false,
+    "position": 4,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "inspection",
+    "name": "Inspection",
+    "color": "#06b6d4",
+    "description": "Inspection services",
+    "isDefault": false,
+    "position": 5,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+]

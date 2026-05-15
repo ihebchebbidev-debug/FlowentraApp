@@ -1,0 +1,16 @@
+{
+  "condition": {
+    "title": "Condition",
+    "fullDescription": "Évalue une condition pour décider du routage du workflow en fonction des données ou champs.",
+  "conditionType": "Type de condition",
+  "chooseTemplate": "Choisir un modèle",
+  "condition": "Condition",
+  "example": "Ex: contact.budget > 10000",
+  "trueAction": "Action vraie",
+  "trueActionPlaceholder": "Action à effectuer quand la condition est vraie...",
+  "falseAction": "Action fausse",
+  "falseActionPlaceholder": "Action à effectuer quand la condition est fausse...",
+    "how": "Définissez les opérateurs et les valeurs de comparaison. Utilisez le résultat pour diriger le flux.",
+    "examples": ["Si le client est premium alors diriger vers flux prioritaire","Vérifier si le stock > 0 avant de créer une intervention"]
+  }
+}

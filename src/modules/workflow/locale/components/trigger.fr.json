@@ -1,0 +1,8 @@
+{
+  "trigger": {
+    "title": "Déclencheur",
+    "fullDescription": "Démarre le workflow suite à une action manuelle, un événement ou une planification.",
+    "how": "Choisissez comment démarrer: manuellement, via webhook, planifié ou suite à un événement externe.",
+    "examples": ["Lancer le workflow manuellement depuis l'interface","Démarrer quand une nouvelle commande est créée"]
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "action": {
+    "title": "Action",
+    "fullDescription": "Performs a custom action, such as updating records, calling APIs, or running scripts.",
+  "configureDescription": "Select an action and map inputs/outputs to perform updates or calls.",
+  "how": "Configure the action type and provide necessary parameters. Use actions to mutate data or trigger side effects.",
+    "examples": ["Update CRM record","Call external API to push data"]
+  }
+}

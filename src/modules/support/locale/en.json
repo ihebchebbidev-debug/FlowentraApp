@@ -1,0 +1,371 @@
+{
+  "common": {
+    "newTicket": "New ticket",
+    "reply": "Reply",
+    "attachments": "Attachments",
+    "priority": "Priority",
+    "status": "Status",
+    "open": "Open",
+    "closed": "Closed",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "search": {
+    "placeholder": "Search FAQs...",
+    "noResults": "No results found for \"{{query}}\"",
+    "clearSearch": "Clear search",
+    "resultsFound": "{{count}} result found for \"{{query}}\"",
+    "resultsFound_plural": "{{count}} results found for \"{{query}}\"",
+    "emptyState": "No FAQs match your search. Try different keywords."
+  },
+  "support": {
+    "title": "Support Center",
+    "subtitle": "Get help and find answers",
+    "categories": "Support Categories",
+    "popularArticles": "Popular Articles",
+    "articles": "Articles",
+    "lastUpdated": "Last Updated",
+    "browse": "Browse",
+    "searchPlaceholder": "Ask anything, e.g. 'How do I create an offer?'",
+    "contactSupport": "Contact Support",
+    "dashboard": "Dashboard",
+    "quickLinks": {
+      "faq": "Frequently Asked Questions",
+      "faqDesc": "Find answers to common questions",
+      "tickets": "My Support Tickets",
+      "ticketsDesc": "View or create support requests",
+      "assistant": "Ask our Assistant",
+      "assistantDesc": "Chat with our AI support assistant"
+    },
+    "quickTags": {
+      "createOffer": "Create offer",
+      "convertToSale": "Convert to sale",
+      "planJob": "Plan a job",
+      "logTime": "Log time"
+    },
+    "tour": {
+      "title": "Guided Product Tour",
+      "description": "New to Flowentra? Take a guided tour to discover all features and get started quickly.",
+      "button": "Start Tour"
+    }
+  },
+  "categories": {
+    "gettingStarted": {
+      "title": "Getting Started",
+      "description": "Learn the basics and set up your account"
+    },
+    "offersAndSales": {
+      "title": "Offers & Sales",
+      "description": "Create offers and manage sales orders"
+    },
+    "serviceOrders": {
+      "title": "Service Orders",
+      "description": "Manage service orders and jobs"
+    },
+    "planningAndDispatches": {
+      "title": "Planning & Dispatches",
+      "description": "Schedule jobs and manage dispatches"
+    },
+    "timeAndExpenses": {
+      "title": "Time & Expenses",
+      "description": "Track time, expenses and materials"
+    },
+    "inventoryAndArticles": {
+      "title": "Inventory & Articles",
+      "description": "Manage articles, materials and services"
+    },
+    "installationsAndEquipment": {
+      "title": "Installations & Equipment",
+      "description": "Track equipment and installations"
+    },
+    "accountAndSettings": {
+      "title": "Account & Settings",
+      "description": "Manage your profile and preferences"
+    }
+  },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "loading": "Loading...",
+    "questions": {
+      "gettingStarted": {
+        "whatIsWorkflow": {
+          "q": "What is the main workflow of this application?",
+          "a": "The workflow follows: Create an Offer → Convert to Sale Order → Generate Service Order (for services) → Schedule Jobs → Dispatch to technicians → Log time, expenses and materials."
+        },
+        "howToNavigate": {
+          "q": "How do I navigate between modules?",
+          "a": "Use the sidebar menu to access Dashboard, Contacts, Offers, Sales, Service Orders, Planner, and other modules. Each module handles a specific part of your business workflow."
+        },
+        "whatAreDailyTasks": {
+          "q": "What are Daily Tasks?",
+          "a": "Daily Tasks show your scheduled dispatches for the day. You can view assigned jobs, log time and expenses, and update job status directly from this view."
+        }
+      },
+      "offersAndSales": {
+        "howToCreateOffer": {
+          "q": "How do I create a new offer?",
+          "a": "Go to Offers → Click 'New Offer' → Add customer details → Add articles (materials and/or services) → Set pricing and discounts → Save or send the offer."
+        },
+        "howToAddArticles": {
+          "q": "How do I add articles to an offer?",
+          "a": "In the offer editor, click 'Add Item' → Search for articles by name or code → Select the article → Adjust quantity and pricing if needed."
+        },
+        "howToConvertToSale": {
+          "q": "How do I convert an offer to a sale?",
+          "a": "Open the accepted offer → Click 'Convert to Sale' → Review the details → Confirm. This creates a Sale Order and, if services are included, generates a Service Order automatically."
+        },
+        "whatHappensAfterConversion": {
+          "q": "What happens when I convert an offer to a sale?",
+          "a": "A Sale Order is created. If the offer contains service items, a Service Order is automatically generated with Jobs for each service that needs to be performed."
+        },
+        "howToSetDiscount": {
+          "q": "How do I apply discounts to an offer?",
+          "a": "In the offer editor, you can set a discount percentage or fixed amount at the line item level or as an overall offer discount in the totals section."
+        }
+      },
+      "serviceOrders": {
+        "whatIsServiceOrder": {
+          "q": "What is a Service Order?",
+          "a": "A Service Order is created when a Sale Order contains services. It contains Jobs that need to be scheduled and performed by technicians in the field."
+        },
+        "howToViewJobs": {
+          "q": "How do I view jobs in a Service Order?",
+          "a": "Open the Service Order → Navigate to the 'Jobs' tab → You'll see all jobs with their status, assigned technician, and scheduled dates."
+        },
+        "howToUpdateJobStatus": {
+          "q": "How do I update a job's status?",
+          "a": "Open the job → Change the status dropdown (Pending, In Progress, Completed, Cancelled) → Save. You can also update status from the Planner or Daily Tasks view."
+        },
+        "howToLinkEquipment": {
+          "q": "How do I link equipment/installation to a job?",
+          "a": "In the job details, use the 'Installation' field to search and select the customer's equipment. This links the job to a specific piece of equipment for tracking."
+        }
+      },
+      "planningAndDispatches": {
+        "howToScheduleJob": {
+          "q": "How do I schedule a job to a technician?",
+          "a": "Go to Planner → Drag the unscheduled job to a technician's timeline → Drop it at the desired date/time. This creates a Dispatch."
+        },
+        "whatIsDispatch": {
+          "q": "What is a Dispatch?",
+          "a": "A Dispatch is created when a Job is scheduled to a user via the planning board. Technicians see their dispatches in Daily Tasks and can log time and expenses against them."
+        },
+        "howToReschedule": {
+          "q": "How do I reschedule a dispatch?",
+          "a": "In the Planner, drag the dispatch to a new time slot or different technician. You can also open the dispatch and edit the scheduled date/time directly."
+        },
+        "howToViewTechSchedule": {
+          "q": "How do I view a technician's schedule?",
+          "a": "Go to Planner → Select the technician from the list → Their scheduled dispatches appear on the timeline. Use the date picker to navigate between days/weeks."
+        }
+      },
+      "timeAndExpenses": {
+        "howToLogTime": {
+          "q": "How do I log time against a dispatch?",
+          "a": "Open the dispatch → Go to 'Time' tab → Click 'Add Entry' → Enter start/end time or duration → Add notes if needed → Save."
+        },
+        "howToAddExpense": {
+          "q": "How do I add an expense?",
+          "a": "Open the dispatch or service order → Go to 'Expenses' tab → Click 'Add Expense' → Select expense type → Enter amount and details → Attach receipt if required → Save."
+        },
+        "howToLogMaterials": {
+          "q": "How do I log materials used on a job?",
+          "a": "Open the dispatch → Go to 'Materials' tab → Click 'Add Material' → Search for the article → Enter quantity used → Save. This updates inventory automatically."
+        },
+        "whereToSeeTimesheet": {
+          "q": "Where can I see my timesheet?",
+          "a": "Go to Time & Expenses → Select the date range → View your logged hours organized by day, dispatch, or project. You can export this data for reporting."
+        }
+      },
+      "inventoryAndArticles": {
+        "howToCreateArticle": {
+          "q": "How do I create a new article?",
+          "a": "Go to Articles → Click 'New Article' → Enter name, code, description → Set as Material or Service → Add pricing → Set inventory settings if applicable → Save."
+        },
+        "differenceMaterialService": {
+          "q": "What's the difference between a Material and a Service?",
+          "a": "Materials are physical items that affect inventory (parts, equipment). Services are labor or work performed (installation, repair) that generate Jobs when sold."
+        },
+        "howToCheckStock": {
+          "q": "How do I check stock levels?",
+          "a": "Go to Inventory → View current stock levels for all materials → Use filters to find low stock items → Click an item to see movement history."
+        },
+        "howToAdjustInventory": {
+          "q": "How do I adjust inventory?",
+          "a": "Go to Inventory → Select the article → Click 'Adjust' → Enter the adjustment quantity and reason → Save. Adjustments are logged for auditing."
+        }
+      },
+      "installationsAndEquipment": {
+        "whatIsInstallation": {
+          "q": "What is an Installation?",
+          "a": "An Installation represents a piece of equipment at a customer location. Jobs are linked to installations to track service history and maintenance for specific equipment."
+        },
+        "howToCreateInstallation": {
+          "q": "How do I create a new installation?",
+          "a": "Go to Installations → Click 'New Installation' → Select customer → Enter equipment details (type, serial number, location) → Save."
+        },
+        "howToViewServiceHistory": {
+          "q": "How do I view service history for equipment?",
+          "a": "Open the Installation → Go to 'History' tab → View all past jobs, dispatches, and work performed on this equipment in chronological order."
+        },
+        "howToScheduleMaintenance": {
+          "q": "How do I schedule preventive maintenance?",
+          "a": "Open the Installation → Go to 'Maintenance' tab → Set up maintenance schedule → The system will automatically create jobs when maintenance is due."
+        }
+      },
+      "accountAndSettings": {
+        "howToChangePassword": {
+          "q": "How do I change my password?",
+          "a": "Go to Settings → Account → Click 'Change Password' → Enter current password → Enter and confirm new password → Save."
+        },
+        "howToUpdateProfile": {
+          "q": "How do I update my profile information?",
+          "a": "Go to Settings → Profile → Edit your name, email, phone, and other details → Upload a profile photo if desired → Save changes."
+        },
+        "howToSetNotifications": {
+          "q": "How do I configure notifications?",
+          "a": "Go to Settings → Notifications → Choose which events trigger notifications → Select notification method (email, in-app) → Save preferences."
+        },
+        "howToSwitchLanguage": {
+          "q": "How do I switch the application language?",
+          "a": "Go to Settings → Preferences → Select your preferred language (English/French) → The interface will update immediately."
+        }
+      }
+    }
+  },
+  "chat": {
+    "title": "Ask our Assistant",
+    "you": "You",
+    "assistant": "Assistant",
+    "typing": "Assistant is typing...",
+    "placeholder": "Type your question...",
+    "send": "Send"
+  },
+  "ticket": {
+    "title": "Create Support Request",
+    "titlePlaceholder": "Short title",
+    "summaryPlaceholder": "One-line summary",
+    "descriptionPlaceholder": "Describe your issue in detail...",
+    "errorDetailsPlaceholder": "Error details, steps to reproduce, logs...",
+    "linksPlaceholder": "Related links (comma separated)",
+    "module": "Module",
+    "priority": "Priority",
+    "category": "Category",
+    "attachments": "Attachments",
+    "submit": "Submit Request",
+    "createRequest": "Create Request",
+    "createNewTicket": "Create New Ticket",
+    "success": "Ticket created — our team will review it shortly",
+    "error": "Failed to create support request"
+  },
+  "reportIssue": {
+    "title": "Report an Issue",
+    "subtitle": "Describe the problem you're experiencing and our team will look into it.",
+    "issueTitle": "Title",
+    "issueTitlePlaceholder": "Brief summary of the issue",
+    "description": "Description",
+    "descriptionPlaceholder": "Describe the issue in detail — include steps to reproduce, expected vs actual behavior...",
+    "urgency": "Urgency",
+    "category": "Category",
+    "currentPage": "Current Page",
+    "currentPagePlaceholder": "Auto-detected — or enter manually",
+    "relatedUrl": "Related URL (optional)",
+    "relatedUrlPlaceholder": "https://...",
+    "linkToExisting": "Link to existing ticket",
+    "linkWarning": "Ticket created but one or more links failed",
+    "attachments": "Attachments",
+    "dragDrop": "Drag & drop files here, or",
+    "browse": "browse",
+    "maxFiles": "Max {{max}} files",
+    "select": "Select",
+    "remove": "Remove",
+    "submit": "Submit Report",
+    "cancel": "Cancel",
+    "success": "Issue reported — our team will review it shortly.",
+    "required": "This field is required",
+    "optionalDetails": "Optional details",
+    "screenshot": "Screenshot",
+    "takeScreenshot": "Take Screenshot",
+    "cropScreenshot": "Crop Screenshot",
+    "cropHint": "Drag to select the area you want to include, or confirm to use the full screenshot.",
+    "confirmScreenshot": "Add Screenshot",
+    "screenshotAdded": "Screenshot added as attachment",
+    "screenshotError": "Failed to capture screenshot"
+  },
+  "admin": {
+    "title": "Support Tickets",
+    "subtitle": "Manage and respond to reported issues",
+    "refresh": "Refresh",
+    "total": "Total",
+    "statusOpen": "Open",
+    "statusInProgress": "In Progress",
+    "statusResolved": "Resolved",
+    "statusClosed": "Closed",
+    "searchPlaceholder": "Search tickets by title, email, tenant...",
+    "allStatuses": "All Statuses",
+    "allUrgencies": "All Urgencies",
+    "sortByDate": "Sort by date",
+    "noTickets": "No tickets found",
+    "noTicketsHint": "Try adjusting your filters or search query",
+    "changeStatus": "Change Status",
+    "statusUpdated": "Status updated",
+    "statusError": "Failed to update status",
+    "fetchError": "Failed to load tickets"
+  },
+  "comments": {
+    "title": "Conversation",
+    "add": "Add a comment",
+    "placeholder": "Write a message...",
+    "markInternal": "Mark as internal note",
+    "clear": "Clear",
+    "send": "Send",
+    "sending": "Sending...",
+    "internal": "Internal",
+    "addError": "Failed to add comment"
+  },
+  "links": {
+    "searchPlaceholder": "Search tickets...",
+    "types": {
+      "related": "Related",
+      "duplicate": "Duplicate",
+      "blocks": "Blocks",
+      "blocked_by": "Blocked by"
+    }
+  },
+  "priorities": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High",
+    "urgent": "Urgent",
+    "critical": "Critical"
+  },
+  "ticketCategories": {
+    "general": "General",
+    "technical": "Technical",
+    "billing": "Billing",
+    "feature": "Feature Request",
+    "bug": "Bug Report",
+    "account": "Account",
+    "other": "Other"
+  },
+  "modules": {
+    "dashboard": "Dashboard",
+    "sales": "Sales",
+    "inventory": "Inventory",
+    "field": "Field",
+    "settings": "Settings"
+  },
+  "supportChoice": {
+    "title": "Support",
+    "subtitle": "How can we help you today?",
+    "createTicket": "Report an Issue",
+    "createTicketDesc": "Describe a problem and our team will handle it",
+    "viewTickets": "View My Tickets",
+    "viewTicketsDesc": "Check the status of your submitted tickets"
+  },
+  "plugin": {
+    "name": "Support",
+    "description": "Customer support tickets and case management.",
+    "category": "Comms"
+  }
+}

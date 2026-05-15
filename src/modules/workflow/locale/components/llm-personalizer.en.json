@@ -1,0 +1,8 @@
+{
+  "llm-personalizer": {
+    "title": "AI Personalizer",
+    "fullDescription": "Personalizes messages or content per recipient using AI-driven data and templates.",
+    "how": "Provide recipient data and a template; the personalizer fills variables and adapts tone or content for each recipient.",
+    "examples": ["Personalize email body with customer details","Adjust marketing copy by segment"]
+  }
+}

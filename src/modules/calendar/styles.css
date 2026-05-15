@@ -1,0 +1,166 @@
+
+/* Calendar theme overrides using design tokens */
+.rbc-calendar {
+  background-color: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow-elegant, 0 10px 30px -10px hsl(var(--primary) / 0.15));
+}
+
+.rbc-toolbar {
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid hsl(var(--border));
+  justify-content: flex-start;
+  gap: 6px;
+}
+
+.rbc-toolbar button {
+  background: transparent;
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--foreground));
+  border-radius: 0.5rem;
+  padding: 0.35rem 0.6rem;
+}
+
+.rbc-toolbar button.rbc-active,
+.rbc-toolbar button:focus,
+.rbc-toolbar button:hover {
+  background: hsl(var(--primary) / 0.08);
+  border-color: hsl(var(--primary));
+  color: hsl(var(--primary));
+}
+
+/* Move the month label closer to the navigation buttons */
+.rbc-toolbar .rbc-toolbar-label {
+  flex: 0 0 auto !important;
+  text-align: left !important;
+  margin-left: 6px !important;
+}
+
+/* Reduce default margins between toolbar groups */
+.rbc-toolbar .rbc-btn-group {
+  margin: 0 4px 0 0 !important;
+}
+
+.rbc-today {
+  background-color: hsl(var(--primary) / 0.06);
+}
+
+.rbc-month-view, .rbc-time-view, .rbc-agenda-view {
+  background-color: hsl(var(--card));
+}
+
+.rbc-off-range-bg {
+  background: hsl(var(--muted));
+}
+
+.rbc-event, .rbc-day-slot .rbc-background-event {
+  background-color: hsl(var(--primary));
+  border: none;
+  color: hsl(var(--primary-foreground));
+  border-radius: 0.25rem;
+  padding: 1px 2px !important;
+  font-size: 10px !important;
+  line-height: 1.2 !important;
+  box-sizing: border-box !important;
+}
+
+
+.rbc-slot-selection {
+  background-color: hsl(var(--primary) / 0.15);
+}
+
+/* Dark mode tweaks */
+.dark .rbc-calendar { background-color: hsl(var(--card)); color: hsl(var(--card-foreground)); }
+.dark .rbc-toolbar { border-bottom-color: hsl(var(--border)); }
+.dark .rbc-toolbar button { border-color: hsl(var(--border)); color: hsl(var(--foreground)); }
+.dark .rbc-toolbar button.rbc-active,
+.dark .rbc-toolbar button:focus,
+.dark .rbc-toolbar button:hover { 
+  background: hsl(var(--primary)); 
+  border-color: hsl(var(--primary)); 
+  color: white; 
+}
+
+.dark .rbc-off-range-bg { background: hsl(var(--muted) / 0.5); }
+.dark .rbc-today { background-color: hsl(var(--primary) / 0.16); }
+
+.dark .rbc-header,
+.dark .rbc-time-header { background: hsl(var(--card)); color: hsl(var(--muted-foreground)); border-bottom: 1px solid hsl(var(--border)); }
+
+.dark .rbc-time-view .rbc-time-content,
+.dark .rbc-month-view { border-color: hsl(var(--border)); }
+
+.dark .rbc-time-slot,
+.dark .rbc-day-bg { border-color: hsl(var(--border) / 0.6); }
+
+.dark .rbc-event,
+.dark .rbc-day-slot .rbc-background-event {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  box-shadow: var(--shadow-soft, 0 6px 16px -8px hsl(var(--primary) / 0.35));
+  padding: 1px 2px !important;
+  font-size: 10px !important;
+  line-height: 1.2 !important;
+  box-sizing: border-box !important;
+}
+
+.dark .rbc-slot-selection { background-color: hsl(var(--primary) / 0.2); outline: 1px solid hsl(var(--primary) / 0.5); }
+
+.dark .rbc-date-cell { color: hsl(var(--muted-foreground)); }
+.dark .rbc-date-cell.rbc-now { color: hsl(var(--foreground)); }
+
+/* Enhanced +more text visibility */
+.rbc-show-more {
+  color: white !important;
+  background-color: hsl(var(--primary)) !important;
+  border-radius: 0.25rem !important;
+  padding: 2px 6px !important;
+  font-weight: 700 !important;
+  font-size: 10px !important;
+  line-height: 1.2 !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5) !important;
+  border: 1px solid rgba(255,255,255,0.2) !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  text-align: center !important;
+  display: block !important;
+  margin-top: 0 !important;
+  z-index: 10 !important;
+}
+
+.rbc-show-more:hover {
+  background-color: hsl(var(--primary) / 0.9) !important;
+  transform: scale(1.02) !important;
+}
+
+/* Keep +more styled consistently */
+.rbc-month-view .rbc-show-more { display: inline-block !important; }
+
+/* Ensure +more isn't clipped by the row container */
+.rbc-month-row .rbc-row-content { padding-bottom: 4px; }
+
+/* Month cell: target two rows of events max by using a taller event line */
+.rbc-month-row .rbc-event {
+  height: 20px !important;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* No space between the last event and +more */
+.rbc-month-row .rbc-row-content .rbc-row .rbc-event + .rbc-show-more {
+  margin-top: 0 !important;
+}
+
+/* Prevent half-cut borders in cells */
+.rbc-month-row .rbc-row-content .rbc-row {
+  padding: 0 3px;
+}
+
+/* Tighten vertical spacing between segments to keep events close */
+.rbc-month-row .rbc-row-segment {
+  margin: 0 !important;
+  padding: 0 2px 0 2px !important;
+}

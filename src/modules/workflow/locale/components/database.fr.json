@@ -1,0 +1,8 @@
+{
+  "database": {
+    "title": "Base de données",
+    "fullDescription": "Effectue des opérations sur la base de données comme créer, mettre à jour, supprimer ou interroger des enregistrements.",
+    "how": "Configurez l'action base de données, la table/collection et le mapping des champs. Utilisez des requêtes pour récupérer des données pour les décisions.",
+    "examples": ["Insérer un enregistrement sur nouveau lead","Mettre à jour le statut après traitement"]
+  }
+}

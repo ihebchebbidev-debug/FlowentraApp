@@ -1,0 +1,9 @@
+{
+  "loop": {
+    "title": "Boucle",
+    "fullDescription": "Répète des actions tant qu'une condition est vraie ou pour un nombre d'itérations défini.",
+  "configureDescription": "Traitez des éléments en lot ou réessayez des opérations ; définissez la condition et le nombre max d'itérations.",
+  "how": "Configurez la condition de boucle ou le nombre d'itérations et définissez les actions du corps de boucle.",
+    "examples": ["Traiter chaque élément d'une liste","Réessayer une opération N fois jusqu'à réussite"]
+  }
+}

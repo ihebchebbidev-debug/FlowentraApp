@@ -1,0 +1,51 @@
+{
+  "dashboard": "Tableau de Bord Terrain",
+  "reports": "Rapports",
+  "calendar": "Calendrier des Interventions",
+  "kpis": {
+    "activeServiceOrders": "Ordres de Service Actifs",
+    "technicianWorking": "Techniciens Travaillant Aujourd'hui",
+    "todayDispatches": "Interventions d'Aujourd'hui",
+    "firstTimeFixRate": "Taux de Résolution au Premier Passage"
+  },
+  "analytics": {
+    "technicianPerformance": "Performance des Techniciens",
+    "serviceOrdersWorked": "Ordres de Service Traités",
+    "timePostingsDone": "Pointages Effectués",
+    "dispatchesTotal": "Total des Interventions",
+    "jobCompletionTimes": "Temps de Réalisation des Tâches",
+    "revenueInsights": "Analyse des Revenus et Coûts"
+  },
+  "calendar": {
+    "monthView": "Vue Mensuelle",
+    "weekView": "Vue Hebdomadaire", 
+    "today": "Aujourd'hui",
+    "thisWeek": "Cette Semaine",
+    "thisMonth": "Ce Mois",
+    "noDispatches": "Aucune intervention planifiée",
+    "viewDetails": "Voir Détails"
+  },
+  "status": {
+    "pending": "En Attente",
+    "assigned": "Assigné",
+    "inProgress": "En Cours",
+    "completed": "Terminé", 
+    "cancelled": "Annulé",
+    "active": "Actif",
+    "inactive": "Inactif"
+  },
+  "serviceOrders": {
+    "contactPhone": "Téléphone du Contact",
+    "targetCompletionDate": "Date d'Achèvement Cible",
+    "notSpecified": "Non spécifié"
+  },
+  "installations": {
+    "deleteConfirm": {
+      "title": "Supprimer l'installation",
+      "description": "Êtes-vous sûr de vouloir supprimer cette installation ? Cette action est irréversible.",
+      "cancel": "Annuler",
+      "confirm": "Supprimer"
+    }
+  },
+  "actions": "Actions"
+}

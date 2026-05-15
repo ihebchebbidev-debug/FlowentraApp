@@ -1,0 +1,8 @@
+{
+  "llm-analyzer": {
+    "title": "AI Analyzer",
+    "fullDescription": "Analyzes text or data using an AI model to extract insights, summaries, or classifications.",
+    "how": "Feed data or text to the analyzer and configure the output type (summary, tags, sentiment). Use results to drive workflow decisions.",
+    "examples": ["Summarize customer feedback","Classify support tickets by topic"]
+  }
+}

@@ -1,0 +1,73 @@
+/**
+ * Hook to manage target tenant state in create/edit forms.
+ * Automatically clears the target tenant on unmount.
+ */
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { setTargetTenantId, clearTargetTenant, getSelectedTargetTenantId } from '@/utils/targetTenant';
+import { isViewAllMode } from '@/utils/tenant';
+import { useUserType } from '@/hooks/useUserType';
+import { useTenantMap } from '@/contexts/TenantMapContext';
+
+/**
+ * @param initialTenantId - For edit forms, pass the record's existing tenantId
+ */
+export function useTargetTenant(initialTenantId?: number) {
+  const { isMainAdminUser } = useUserType();
+  const { tenants, loaded: tenantsLoaded } = useTenantMap();
+  // Regular users never operate in view-all targeting mode — backend uses
+  // their session tenant. Only main admins can pick a target company.
+  const viewAll = isMainAdminUser && isViewAllMode();
+  const [targetTenantId, setLocalTenantId] = useState<number | undefined>(initialTenantId ?? getSelectedTargetTenantId());
+  const autoSelected = useRef(false);
+
+  // Auto-preselect the first company when in view-all mode and nothing is selected.
+  // For single-company users (or when only one tenant exists), this always picks
+  // the default (tenantId maps to data-table 0).
+  useEffect(() => {
+    if (!viewAll || !tenantsLoaded || autoSelected.current) return;
+    if (targetTenantId !== undefined) return; // already selected
+
+    const firstTenant = tenants[0];
+    if (firstTenant) {
+      autoSelected.current = true;
+      setLocalTenantId(firstTenant.id);
+      setTargetTenantId(firstTenant.id);
+    }
+  }, [viewAll, tenantsLoaded, tenants, targetTenantId]);
+
+  // Sync with global store
+  useEffect(() => {
+    if (viewAll && targetTenantId !== undefined) {
+      setTargetTenantId(targetTenantId);
+    }
+    return () => {
+      clearTargetTenant();
+    };
+  }, [viewAll, targetTenantId]);
+
+  const handleTenantChange = useCallback((tenantId: number) => {
+    setLocalTenantId(tenantId);
+    setTargetTenantId(tenantId);
+  }, []);
+
+  /**
+   * Returns true if a target tenant is required but not selected.
+   * Use in form submit handlers to block submission.
+   *
+   * Resolved via getSelectedTargetTenantId() so an active company
+   * filter (header dropdown) counts as a valid selection, even when
+   * the form's local state hasn't been touched.
+   */
+  const isTenantRequired = viewAll && getSelectedTargetTenantId(targetTenantId) === undefined;
+
+  return {
+    viewAll,
+    targetTenantId,
+    handleTenantChange,
+    /** True when in view-all mode and no tenant has been selected yet */
+    isTenantRequired,
+    /** Available tenants for the selector */
+    tenants,
+    tenantsLoaded,
+  };
+}

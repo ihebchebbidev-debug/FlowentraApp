@@ -1,0 +1,121 @@
+{
+  "calendar": {
+    "includeWeekends": "Inclure les weekends"
+  },
+  "common": {
+    "calendarView": "Vue Calendrier",
+    "listView": "Vue Liste",
+    "mapView": "Vue Carte",
+    "createDispatch": "Créer Opération",
+    "assign": "Assigner",
+    "schedule": "Planifier",
+    "start": "Début",
+    "end": "Fin",
+    "save": "Sauvegarder",
+    "cancel": "Annuler",
+    "searchPlaceholder": "Rechercher opérations..."
+  },
+  "planningMode": {
+    "label": "Mode de Planification",
+    "job": "Travail par Travail",
+    "jobDescription": "Glisser les travaux individuels pour assigner",
+    "serviceOrder": "Ordre de Service",
+    "serviceOrderDescription": "Glisser l'ordre de service complet pour assigner tous les travaux"
+  },
+  "batchAssignment": {
+    "title": "Assignation par Lot",
+    "jobs": "travaux",
+    "total": "total",
+    "jobsToAssign": "Travaux à assigner",
+    "assignmentDetails": "Détails de l'assignation",
+    "technician": "Technicien",
+    "date": "Date",
+    "timeRange": "Plage Horaire",
+    "location": "Emplacement",
+    "infoNote": "Cela créera {{count}} opérations pour tous les travaux de cet ordre de service, assignés séquentiellement au technicien sélectionné.",
+    "creating": "Création des interventions...",
+    "confirmAll": "Assigner les {{count}} Travaux",
+    "success": "{{count}} travaux assignés avec succès !",
+    "error": "Échec de l'assignation de certains travaux"
+  },
+  "map": {
+    "title": "Vue Carte",
+    "showMap": "Afficher la Carte",
+    "hideMap": "Masquer la Carte",
+    "noLocationsTitle": "Aucun emplacement à afficher",
+    "noLocationsDescription": "Les tâches avec des données de localisation des contacts apparaîtront ici sur la carte.",
+    "legend": "Légende",
+    "pinShowsTechnician": "Les épingles affichent les initiales du technicien assigné",
+    "openInMaps": "Ouvrir dans Maps",
+    "jobsOnMap": "tâches sur la carte",
+    "unassigned": "Non assigné",
+    "unknownTechnician": "Inconnu",
+    "assignedTechnician": "Technicien Assigné",
+    "job": "Tâche",
+    "noCustomer": "N/A",
+    "noAddress": "Aucune adresse",
+    "priority": "Priorité",
+    "status": "Statut",
+    "viewDetails": "Voir les Détails"
+  },
+  "dispatcher": {
+    "statuses": {
+      "pending": "En attente",
+      "assigned": "Assigné",
+      "acknowledged": "Acquitté",
+      "en_route": "En route",
+      "on_site": "Sur site",
+      "in_progress": "En cours",
+      "technically_completed": "Techniquement Terminé",
+      "completed": "Terminé",
+      "cancelled": "Annulé",
+      "not_scheduled": "Non planifié",
+      "scheduled": "Planifié"
+    },
+    "selected_count": "{{count}} opération(s) sélectionnée(s)",
+    "deselect_all": "Tout Désélectionner",
+    "bulk_delete": "Supprimer la Sélection",
+    "bulk_delete_confirm_title": "Supprimer {{count}} opération(s) ?",
+    "bulk_delete_confirm_description": "Cela supprimera définitivement {{count}} opération(s) et toutes les données associées. Les travaux associés seront réinitialisés au statut non planifié.",
+    "bulk_deleting": "Suppression...",
+    "confirm_delete": "Supprimer",
+    "cancel": "Annuler",
+    "available_until": "Disponible jusqu'à {{time}}",
+    "workload": {
+      "light": "Charge légère",
+      "normal": "Charge normale",
+      "heavy": "Charge élevée",
+      "overloaded": "Surchargé"
+    },
+    "technician_details": "Détails du Technicien",
+    "email": "Email",
+    "phone": "Téléphone",
+    "working_hours": "Heures de Travail",
+    "working_hours_today": "Horaires du jour",
+    "skills": "Compétences",
+    "schedule_status": "Statut du Planning",
+    "not_working_today": "Ne travaille pas aujourd'hui",
+    "on_leave": "En congé",
+    "day_off": "Jour de repos",
+    "leave_type": "Type de congé"
+  },
+  "mapAssign": {
+    "nearbyTechnicians": "Techniciens à Proximité",
+    "assignJob": "Assigner la Tâche",
+    "noNearbyTechs": "Aucun technicien disponible à proximité",
+    "distance": "{{distance}} km",
+    "skills": "Compétences",
+    "assign": "Assigner",
+    "selectTimeSlot": "Sélectionner un Créneau",
+    "assignToTechnician": "Assigner à {{name}}",
+    "availableSlots": "Créneaux Disponibles",
+    "noAvailableSlots": "Aucun créneau disponible aujourd'hui",
+    "assigned_successfully": "Tâche assignée avec succès",
+    "assignment_failed": "Échec de l'assignation de la tâche"
+  },
+  "plugin": {
+    "name": "Dispatcheur",
+    "description": "Dispatch en temps réel et affectation des techniciens.",
+    "category": "Terrain"
+  }
+}

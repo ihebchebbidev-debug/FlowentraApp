@@ -1,0 +1,34 @@
+[
+  {
+    "id": "todo",
+    "title": "Todo",
+    "color": "bg-slate-500",
+    "position": 0,
+    "isDefault": true,
+    "createdAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "progress",
+    "title": "In Progress",
+    "color": "bg-primary",
+    "position": 1,
+    "isDefault": true,
+    "createdAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "review",
+    "title": "Review",
+    "color": "bg-warning",
+    "position": 2,
+    "isDefault": true,
+    "createdAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "done",
+    "title": "Done",
+    "color": "bg-success",
+    "position": 3,
+    "isDefault": true,
+    "createdAt": "2024-01-01T00:00:00.000Z"
+  }
+]

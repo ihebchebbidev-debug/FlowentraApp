@@ -1,0 +1,8 @@
+{
+  "try-catch": {
+    "title": "Try / Catch",
+    "fullDescription": "Tente une action et fournit des branches de gestion d'erreur en cas d'échec.",
+    "how": "Encapsulez les opérations risquées et configurez des réessais, actions de secours ou notifications d'erreur.",
+    "examples": ["Réessayer un appel API en cas d'erreur transitoire","Utiliser un service alternatif en cas d'erreur"]
+  }
+}

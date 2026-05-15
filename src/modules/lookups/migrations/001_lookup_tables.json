@@ -1,0 +1,168 @@
+{
+  "module": "lookups",
+  "version": "001",
+  "description": "Lookup Tables for System Configuration",
+  "tables": [
+    {
+      "name": "LU.article_categories",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "name": { "type": "string", "required": true },
+        "description": { "type": "text", "required": false },
+        "color": { "type": "string", "required": false },
+        "isActive": { "type": "boolean", "default": true },
+        "sortOrder": { "type": "integer", "default": 0 }
+      }
+    },
+    {
+      "name": "LU.article_statuses",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "name": { "type": "string", "required": true },
+        "color": { "type": "string", "required": false },
+        "isActive": { "type": "boolean", "default": true },
+        "sortOrder": { "type": "integer", "default": 0 }
+      }
+    },
+    {
+      "name": "LU.service_categories",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "name": { "type": "string", "required": true },
+        "description": { "type": "text", "required": false },
+        "color": { "type": "string", "required": true },
+        "isActive": { "type": "boolean", "default": true },
+        "sortOrder": { "type": "integer", "default": 0 }
+      }
+    },
+    {
+      "name": "LU.currencies",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "name": { "type": "string", "required": true },
+        "symbol": { "type": "string", "required": true },
+        "code": { "type": "string", "required": true, "unique": true },
+        "rate": { "type": "decimal", "default": 1.0 },
+        "isDefault": { "type": "boolean", "default": false },
+        "isActive": { "type": "boolean", "default": true }
+      }
+    },
+    {
+      "name": "LU.countries",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "name": { "type": "string", "required": true },
+        "code": { "type": "string", "required": true, "unique": true },
+        "phonePrefix": { "type": "string", "required": false },
+        "isActive": { "type": "boolean", "default": true }
+      }
+    },
+    {
+      "name": "LU.priorities",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "name": { "type": "string", "required": true },
+        "color": { "type": "string", "required": true },
+        "level": { "type": "integer", "required": true },
+        "isActive": { "type": "boolean", "default": true }
+      }
+    },
+    {
+      "name": "LU.event_types",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "name": { "type": "string", "required": true },
+        "color": { "type": "string", "required": false },
+        "defaultDuration": { "type": "integer", "required": false },
+        "isActive": { "type": "boolean", "default": true }
+      }
+    },
+    {
+      "name": "LU.task_statuses",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "name": { "type": "string", "required": true },
+        "color": { "type": "string", "required": true },
+        "isCompleted": { "type": "boolean", "default": false },
+        "sortOrder": { "type": "integer", "default": 0 },
+        "isActive": { "type": "boolean", "default": true }
+      }
+    },
+    {
+      "name": "LU.project_statuses",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "name": { "type": "string", "required": true },
+        "color": { "type": "string", "required": false },
+        "isCompleted": { "type": "boolean", "default": false },
+        "isActive": { "type": "boolean", "default": true }
+      }
+    },
+    {
+      "name": "LU.project_types",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "name": { "type": "string", "required": true },
+        "description": { "type": "text", "required": false },
+        "color": { "type": "string", "required": false },
+        "isActive": { "type": "boolean", "default": true }
+      }
+    },
+    {
+      "name": "LU.offer_statuses",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "name": { "type": "string", "required": true },
+        "color": { "type": "string", "required": false },
+        "isCompleted": { "type": "boolean", "default": false },
+        "isActive": { "type": "boolean", "default": true }
+      }
+    },
+    {
+      "name": "LU.technician_statuses",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "name": { "type": "string", "required": true },
+        "color": { "type": "string", "required": true },
+        "isAvailable": { "type": "boolean", "default": true },
+        "isActive": { "type": "boolean", "default": true }
+      }
+    },
+    {
+      "name": "LU.leave_types",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "name": { "type": "string", "required": true },
+        "color": { "type": "string", "required": false },
+        "isPaid": { "type": "boolean", "default": true },
+        "maxDays": { "type": "integer", "required": false },
+        "isActive": { "type": "boolean", "default": true }
+      }
+    },
+    {
+      "name": "LU.skills",
+      "primaryKey": "id",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "name": { "type": "string", "required": true },
+        "category": { "type": "string", "required": true },
+        "level": { "type": "string", "required": true, "enum": ["beginner", "intermediate", "advanced", "expert"] },
+        "description": { "type": "text", "required": false },
+        "isActive": { "type": "boolean", "default": true }
+      }
+    }
+  ]
+}
