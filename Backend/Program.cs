@@ -900,10 +900,9 @@ async Task<IResult> ExecuteSqlConsoleAsync(
     if (System.Text.RegularExpressions.Regex.IsMatch(upper, @"\bEXPLAIN\s+(?:\([^)]*\)\s*)?ANALYZE\b"))
         return Results.BadRequest(new { success = false, error = "EXPLAIN ANALYZE is blocked because it can execute writes" });
 
-    foreach (var token in SqlConsoleHelpers.BlockedTokens)
+    if (SqlConsoleHelpers.TryFindBlockedToken(upper, out var blockedToken))
     {
-        if (System.Text.RegularExpressions.Regex.IsMatch(upper, $@"\b{System.Text.RegularExpressions.Regex.Escape(token)}\b"))
-            return Results.BadRequest(new { success = false, error = $"Token '{token}' is blocked" });
+        return Results.BadRequest(new { success = false, error = $"Token '{blockedToken}' is blocked" });
     }
 
     if (firstToken.Equals("SELECT", StringComparison.OrdinalIgnoreCase) &&
