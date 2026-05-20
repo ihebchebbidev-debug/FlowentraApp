@@ -238,6 +238,10 @@ builder.Services.AddScoped<ApplicationDbContext>(sp =>
 // Allow services to depend on the base DbContext type (maps to ApplicationDbContext)
 builder.Services.AddScoped<DbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
 
+// Per-request module scope provider (shared vs per_company resolver)
+builder.Services.AddScoped<MyApi.Modules.Settings.Services.IModuleScopeProvider>(sp =>
+    new MyApi.Modules.Settings.Services.ModuleScopeProvider(sp.GetRequiredService<ApplicationDbContext>()));
+
 // JWT Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

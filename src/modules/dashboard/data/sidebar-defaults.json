@@ -80,21 +80,13 @@
           "title": "person",
           "url": "/dashboard/contacts?type=individual",
           "description": "Individual contacts"
+        },
+        {
+          "title": "suppliers",
+          "url": "/dashboard/suppliers",
+          "description": "Supplier directory"
         }
       ],
-      "meta": {}
-    },
-    {
-      "id": "suppliers-1111-1111-1111-111111111111",
-      "tenantId": null,
-      "title": "suppliers",
-      "url": "/dashboard/suppliers",
-      "description": "Supplier directory",
-      "iconId": "a4444444-4444-4444-4444-444444444444",
-      "iconName": "Package",
-      "group": "crm",
-      "position": 1,
-      "active": true,
       "meta": {}
     },
     {
@@ -224,25 +216,13 @@
       "id": "todo-1111-1111-1111-111111111111",
       "tenantId": null,
       "title": "todo",
-      "url": "/dashboard/tasks/daily",
+      "url": "/dashboard/tasks/projects",
       "description": "Task management",
       "iconId": "checksqu-1111-1111-1111-111111111111",
       "iconName": "CheckSquare",
       "group": "crm",
       "position": 2,
       "active": true,
-      "dropdown": [
-        {
-          "title": "daily_tasks",
-          "url": "/dashboard/tasks/daily",
-          "description": "Daily todo list"
-        },
-        {
-          "title": "projects",
-          "url": "/dashboard/tasks/projects",
-          "description": "Project management"
-        }
-      ],
       "meta": {}
     },
     {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -14,9 +14,10 @@ import { CustomCalendar } from "./CustomCalendar";
 import { UnassignedJobsList, type PlanningMode } from "./UnassignedJobsList";
 import { DispatcherMapView } from "./DispatcherMapView";
 import { useDispatcherProgressiveLoad } from "../hooks/useDispatcherProgressiveLoad";
-import type { Job, CalendarViewType } from "../types";
+import { useActivePlanningProfile } from "../hooks/usePlanningProfile";
+import type { Job, CalendarViewType, Technician } from "../types";
 import { appSettingsApi } from "@/services/api/appSettingsApi";
-import { startOfWeek, endOfWeek } from "date-fns";
+import { startOfWeek, endOfWeek, addDays } from "date-fns";
 
 export function DispatchingInterface() {
   const { t } = useTranslation();
@@ -24,13 +25,21 @@ export function DispatchingInterface() {
 
   // Progressive loading hook
   const { technicians, jobs, loadingState, isFullyLoaded, refresh } = useDispatcherProgressiveLoad();
-  
+
+  // Active planning profile drives board behavior
+  const { profile: activeProfile, settings: profileSettings, visibleUserIds } = useActivePlanningProfile();
+
   const [selectedTechnician] = useState<string | null>(null);
-  const [calendarView] = useState<CalendarViewType>({
-    type: 'week',
-    startDate: startOfWeek(new Date()),
-    endDate: endOfWeek(new Date())
-  });
+
+  // Calendar view follows profile.defaultView
+  const calendarView = useMemo<CalendarViewType>(() => {
+    const today = new Date();
+    if (profileSettings.defaultView === 'day') {
+      return { type: 'day', startDate: today, endDate: addDays(today, 0) };
+    }
+    return { type: 'week', startDate: startOfWeek(today), endDate: endOfWeek(today) };
+  }, [profileSettings.defaultView]);
+
   // Trigger for refreshing calendar assigned jobs
   const [calendarRefreshTrigger, setCalendarRefreshTrigger] = useState(0);
 
@@ -39,13 +48,13 @@ export function DispatchingInterface() {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isJobsSheetOpen, setIsJobsSheetOpen] = useState(false);
   const [isTechniciansSheetOpen, setIsTechniciansSheetOpen] = useState(false);
-  
-  // Planning mode (local toggle): serviceOrder = batch drag, job = drag individually
-  const [planningMode, setPlanningMode] = useState<PlanningMode>('serviceOrder');
 
-  // Fetch JobConversionMode from settings (installation vs service)
-  // This controls how jobs are grouped/displayed in the planning board
-  const { data: conversionMode } = useQuery({
+  // Planning mode is derived from the active profile's board mode
+  const planningMode: PlanningMode = profileSettings.mode === 'installations' ? 'job' : 'serviceOrder';
+  const setPlanningMode = (_: PlanningMode) => { /* managed by profile */ };
+
+  // conversionMode: profile overrides the global app setting
+  const { data: conversionModeRaw } = useQuery({
     queryKey: ['appSetting', 'JobConversionMode'],
     queryFn: async () => {
       const value = await appSettingsApi.getSetting('JobConversionMode');
@@ -53,6 +62,26 @@ export function DispatchingInterface() {
     },
     staleTime: 30000,
   });
+  const conversionMode: 'installation' | 'service' =
+    profileSettings.mode === 'installations' ? 'installation' :
+    profileSettings.mode === 'service_orders' ? 'service' :
+    (conversionModeRaw || 'installation');
+
+  // Filter visible technicians by active profile
+  const visibleTechnicians = useMemo<Technician[]>(() => {
+    let list = technicians;
+    if (visibleUserIds && visibleUserIds.length > 0) {
+      const set = new Set(visibleUserIds.map(String));
+      list = list.filter(tech => set.has(String(tech.id)) || set.has(tech.id.match(/\d+/)?.[0] ?? ''));
+    }
+    if (profileSettings.hideUsersWithoutWorkingHours) {
+      list = list.filter(tech => {
+        const wh = tech.workingHours;
+        return wh && wh.start && wh.end && wh.start !== wh.end;
+      });
+    }
+    return list;
+  }, [technicians, visibleUserIds, profileSettings.hideUsersWithoutWorkingHours]);
   
   // Track if we're refreshing (separate from initial load)
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -181,7 +210,7 @@ export function DispatchingInterface() {
               <div className="flex-1 min-w-0 max-w-[calc(100vw-288px)]">
                 <CustomCalendar
                   view={calendarView}
-                  technicians={technicians}
+                  technicians={visibleTechnicians}
                   selectedTechnician={selectedTechnician}
                   onJobAssignment={handleJobAssignment}
                   onDispatchDeleted={handleRefresh}
@@ -207,7 +236,7 @@ export function DispatchingInterface() {
             <div className="flex-1 p-4">
               <DispatcherMapView
                 jobs={jobs}
-                technicians={technicians}
+                technicians={visibleTechnicians}
                 onJobClick={handleMapJobClick}
                 onJobAssigned={handleRefresh}
               />
@@ -222,7 +251,7 @@ export function DispatchingInterface() {
           {viewMode === 'calendar' ? (
             <CustomCalendar
               view={calendarView}
-              technicians={technicians}
+              technicians={visibleTechnicians}
               selectedTechnician={selectedTechnician}
               onJobAssignment={handleJobAssignment}
               onDispatchDeleted={handleRefresh}
@@ -234,7 +263,7 @@ export function DispatchingInterface() {
             <div className="p-4 h-full">
               <DispatcherMapView
                 jobs={jobs}
-                technicians={technicians}
+                technicians={visibleTechnicians}
                 onJobClick={handleMapJobClick}
                 onJobAssigned={handleRefresh}
               />

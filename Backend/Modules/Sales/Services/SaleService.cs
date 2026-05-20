@@ -5,6 +5,7 @@ using MyApi.Modules.Sales.Models;
 using MyApi.Modules.Contacts.Models;
 using MyApi.Modules.Articles.Services;
 using MyApi.Modules.WorkflowEngine.Services;
+using MyApi.Modules.Projects.Services;
 
 namespace MyApi.Modules.Sales.Services
 {
@@ -254,6 +255,7 @@ namespace MyApi.Modules.Sales.Services
                 Description = offer.Description,
                 ContactId = offer.ContactId,
                 ProjectId = offer.ProjectId,
+                IsDeal = offer.ProjectId.HasValue,
                 Status = "created",  // Start with 'created' status instead of 'won'
                 Stage = "offer",     // Start at 'offer' stage
                 Priority = "medium",
@@ -286,6 +288,11 @@ namespace MyApi.Modules.Sales.Services
 
             _context.Sales.Add(sale);
             await _context.SaveChangesAsync();
+
+            // Auto-note on the project (deal won)
+            ProjectAutoNote.Add(_context, offer.ProjectId,
+                $"Offer #{offer.OfferNumber} won → Sale #{sale.SaleNumber} created (deal, total {sale.TotalAmount} {sale.Currency}).",
+                userId);
 
             // Copy items
             if (offer.Items != null && offer.Items.Any())
@@ -732,6 +739,7 @@ namespace MyApi.Modules.Sales.Services
                 Description = sale.Description,
                 ContactId = sale.ContactId,
                 ProjectId = sale.ProjectId,
+                IsDeal = sale.IsDeal,
                 Contact = contact != null ? new ContactSummaryDto
                 {
                     Id = contact.Id,

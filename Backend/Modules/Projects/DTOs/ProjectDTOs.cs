@@ -11,6 +11,7 @@ namespace MyApi.Modules.Projects.DTOs
         public int? ContactId { get; set; }
         public string? ContactName { get; set; }
         public string Status { get; set; } = string.Empty;
+        public string ProjectKind { get; set; } = "client";
         public string? Priority { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
@@ -73,6 +74,9 @@ namespace MyApi.Modules.Projects.DTOs
         public string? Status { get; set; } = "active";
 
         [StringLength(20)]
+        public string? ProjectKind { get; set; } = "client";
+
+        [StringLength(20)]
         public string? Priority { get; set; } = "medium";
 
         public DateTime? StartDate { get; set; }
@@ -101,6 +105,9 @@ namespace MyApi.Modules.Projects.DTOs
         public string? Status { get; set; }
 
         [StringLength(20)]
+        public string? ProjectKind { get; set; }
+
+        [StringLength(20)]
         public string? Priority { get; set; }
 
         public DateTime? StartDate { get; set; }
@@ -119,6 +126,9 @@ namespace MyApi.Modules.Projects.DTOs
         public string Title { get; set; } = string.Empty;
         public string? Status { get; set; }
         public DateTime? Date { get; set; }
+        /// <summary>For sales: true when the sale is a won-deal of this project.</summary>
+        public bool? IsDeal { get; set; }
+        public decimal? Amount { get; set; }
     }
 
     public class ProjectLinksDto

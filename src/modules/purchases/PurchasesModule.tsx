@@ -2,7 +2,8 @@ import { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 
-const PurchaseDashboard = lazy(() => import("./pages/PurchaseDashboard"));
+const PurchasesHubPage = lazy(() => import("./pages/PurchasesHubPage"));
+const PurchaseReportsHubPage = lazy(() => import("./pages/PurchaseReportsHubPage"));
 const PurchaseOrderListPage = lazy(() => import("./pages/PurchaseOrderListPage"));
 const PurchaseOrderDetailPage = lazy(() => import("./pages/PurchaseOrderDetailPage"));
 const CreatePurchaseOrderPage = lazy(() => import("./pages/CreatePurchaseOrderPage"));
@@ -27,7 +28,7 @@ export function PurchasesModule() {
     <PluginGate code="PL0025PURCHASES">
       <Suspense fallback={<PageSkeleton />}>
         <Routes>
-          <Route index element={<PurchaseDashboard />} />
+          <Route index element={<PurchasesHubPage />} />
           <Route path="orders" element={<PurchaseOrderListPage />} />
           <Route path="orders/add" element={<CreatePurchaseOrderPage />} />
           <Route path="orders/:id" element={<PurchaseOrderDetailPage />} />
@@ -39,7 +40,9 @@ export function PurchasesModule() {
           <Route path="invoices/add" element={<CreateSupplierInvoicePage />} />
           <Route path="invoices/:id" element={<SupplierInvoiceDetailPage />} />
           <Route path="compliance" element={<ComplianceDashboardPage />} />
-          <Route path="reports" element={<PurchaseReportsPage />} />
+          <Route path="reports" element={<PurchaseReportsHubPage />} />
+          {/* Legacy direct routes — kept for back-compat / deep links */}
+          <Route path="reports/legacy" element={<PurchaseReportsPage />} />
           <Route path="reports/supplier-performance" element={<SupplierPerformancePage />} />
           <Route path="reports/price-evolution" element={<PriceEvolutionPage />} />
           <Route path="reports/aging" element={<SupplierInvoiceAgingPage />} />

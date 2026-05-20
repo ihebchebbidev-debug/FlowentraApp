@@ -28,7 +28,8 @@ import { ProjectTeamTab } from '../components/project-detail/ProjectTeamTab';
 import { ProjectNotesTab } from '../components/project-detail/ProjectNotesTab';
 import { ProjectDocumentsTab } from '../components/project-detail/ProjectDocumentsTab';
 import { ProjectActivityTab } from '../components/project-detail/ProjectActivityTab';
-import { ProjectSettingsTab } from '../components/project-detail/ProjectSettingsTab';
+import { ProjectOffersTab } from '../components/project-detail/ProjectOffersTab';
+import { ProjectSummaryTab } from '../components/project-detail/ProjectSummaryTab';
 
 // Interface for technician/assignable users
 interface Technician {
@@ -414,41 +415,48 @@ export default function ProjectTasksPage() {
                     {activeTab === 'notes' && t('projects.detail.tabs.notes')}
                     {activeTab === 'documents' && t('projects.detail.tabs.documents')}
                     {activeTab === 'activity' && t('projects.detail.tabs.activity')}
-                    {activeTab === 'settings' && t('projects.detail.tabs.settings')}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-card">
                   <SelectItem value="overview">{t('projects.detail.tabs.overview')}</SelectItem>
+                  <SelectItem value="summary">{t('projects.detail.tabs.summary')}</SelectItem>
+                  <SelectItem value="offers">{t('projects.detail.tabs.offers')}</SelectItem>
+                  <SelectItem value="deals">{t('projects.detail.tabs.deals')}</SelectItem>
                   <SelectItem value="tasks">{t('projects.detail.tabs.tasks')}</SelectItem>
                   <SelectItem value="team">{t('projects.detail.tabs.team')}</SelectItem>
                   <SelectItem value="notes">{t('projects.detail.tabs.notes')}</SelectItem>
                   <SelectItem value="documents">{t('projects.detail.tabs.documents')}</SelectItem>
                   <SelectItem value="activity">{t('projects.detail.tabs.activity')}</SelectItem>
-                  <SelectItem value="settings">{t('projects.detail.tabs.settings')}</SelectItem>
                 </SelectContent>
               </Select>
             ) : (
-              <TabsList className="w-full h-auto p-1 bg-muted/50 rounded-lg grid grid-cols-7">
-                <TabsTrigger value="overview" className="px-3 py-2 text-xs sm:text-sm font-medium">
+              <TabsList className="w-full h-auto p-1 bg-muted/50 rounded-lg grid grid-cols-9">
+                <TabsTrigger value="overview" className="px-2 py-2 text-xs sm:text-sm font-medium">
                   {t('projects.detail.tabs.overview')}
                 </TabsTrigger>
-                <TabsTrigger value="tasks" className="px-3 py-2 text-xs sm:text-sm font-medium">
+                <TabsTrigger value="summary" className="px-2 py-2 text-xs sm:text-sm font-medium">
+                  {t('projects.detail.tabs.summary')}
+                </TabsTrigger>
+                <TabsTrigger value="offers" className="px-2 py-2 text-xs sm:text-sm font-medium">
+                  {t('projects.detail.tabs.offers')}
+                </TabsTrigger>
+                <TabsTrigger value="deals" className="px-2 py-2 text-xs sm:text-sm font-medium">
+                  {t('projects.detail.tabs.deals')}
+                </TabsTrigger>
+                <TabsTrigger value="tasks" className="px-2 py-2 text-xs sm:text-sm font-medium">
                   {t('projects.detail.tabs.tasks')}
                 </TabsTrigger>
-                <TabsTrigger value="team" className="px-3 py-2 text-xs sm:text-sm font-medium">
+                <TabsTrigger value="team" className="px-2 py-2 text-xs sm:text-sm font-medium">
                   {t('projects.detail.tabs.team')}
                 </TabsTrigger>
-                <TabsTrigger value="notes" className="px-3 py-2 text-xs sm:text-sm font-medium">
+                <TabsTrigger value="notes" className="px-2 py-2 text-xs sm:text-sm font-medium">
                   {t('projects.detail.tabs.notes')}
                 </TabsTrigger>
-                <TabsTrigger value="documents" className="px-3 py-2 text-xs sm:text-sm font-medium">
+                <TabsTrigger value="documents" className="px-2 py-2 text-xs sm:text-sm font-medium">
                   {t('projects.detail.tabs.documents')}
                 </TabsTrigger>
-                <TabsTrigger value="activity" className="px-3 py-2 text-xs sm:text-sm font-medium">
+                <TabsTrigger value="activity" className="px-2 py-2 text-xs sm:text-sm font-medium">
                   {t('projects.detail.tabs.activity')}
-                </TabsTrigger>
-                <TabsTrigger value="settings" className="px-3 py-2 text-xs sm:text-sm font-medium">
-                  {t('projects.detail.tabs.settings')}
                 </TabsTrigger>
               </TabsList>
             )}
@@ -464,6 +472,18 @@ export default function ProjectTasksPage() {
                   technicians={technicians}
                   projectLinks={projectLinks}
                 />
+              </TabsContent>
+
+              <TabsContent value="summary" className="mt-0">
+                <ProjectSummaryTab project={project} projectLinks={projectLinks} />
+              </TabsContent>
+
+              <TabsContent value="offers" className="mt-0">
+                <ProjectOffersTab projectLinks={projectLinks} mode="offers" />
+              </TabsContent>
+
+              <TabsContent value="deals" className="mt-0">
+                <ProjectOffersTab projectLinks={projectLinks} mode="deals" sales={projectLinks?.sales ?? []} />
               </TabsContent>
 
               <TabsContent value="tasks" className="mt-0">
@@ -524,10 +544,6 @@ export default function ProjectTasksPage() {
 
               <TabsContent value="activity" className="mt-0">
                 <ProjectActivityTab project={project} />
-              </TabsContent>
-
-              <TabsContent value="settings" className="mt-0">
-                <ProjectSettingsTab />
               </TabsContent>
             </div>
           </div>

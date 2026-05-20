@@ -24,6 +24,7 @@ import {
   Star,
   Search,
   Command,
+  PanelLeftClose,
 } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -50,6 +51,16 @@ import {
 } from "@/components/ui/sidebar";
 import { useProductTourContext } from "@/contexts/ProductTourContext";
 import { Button } from '@/components/ui/button';
+import { useAuth } from "@/contexts/AuthContext";
+import { UserAvatar } from "@/components/ui/user-avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { LogOut, User as UserIcon, ChevronsUpDown } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Tooltip,
@@ -212,6 +223,7 @@ export function AppSidebar() {
       'individual': 'contacts.filters.person',
       'company': 'contacts.filters.company',
       'companies': 'contacts.filters.company',
+      'suppliers': 'suppliers',
       'dashboard builder': 'sidebarSub.dashboardBuilder',
       'dashboard_builder': 'sidebarSub.dashboardBuilder',
       'crm dashboard': 'sidebarSub.crmDashboard',
@@ -307,7 +319,9 @@ export function AppSidebar() {
       existing.some(item => item.title === 'emails' && item.active !== false) ||
       !existing.some(item => item.title === 'calendar' && item.url === '/dashboard/calendar') ||
       (existing.some(item => item.title === 'dashboard' && item.dropdown && !item.dropdown.some(d => d.title === 'dashboard_builder'))) ||
-      (existing.some(item => item.title === 'dashboard' && item.dropdown && item.dropdown.some(d => d.title === 'crm_dashboard' || d.title === 'field_dashboard')));
+      (existing.some(item => item.title === 'dashboard' && item.dropdown && item.dropdown.some(d => d.title === 'crm_dashboard' || d.title === 'field_dashboard'))) ||
+      existing.some(item => item.title === 'suppliers') ||
+      !existing.some(item => item.title === 'contacts' && item.dropdown?.some(d => d.title === 'suppliers'));
     
     if (needsMigration) {
       resetSidebarConfig();
@@ -736,37 +750,13 @@ export function AppSidebar() {
   return (
     <Sidebar data-tour="sidebar" className="border-r border-sidebar-border/60 bg-sidebar" collapsible="icon">
       <SidebarContent className="bg-sidebar flex flex-col h-full overflow-y-auto sm:overflow-y-visible">
-        {/* Brand Header */}
+        {/* Brand Header — profile avatar over company-logo background */}
         {!collapsed && (
-          <div className="flex-shrink-0 h-[52px] px-5 flex items-center border-b border-sidebar-border/40">
-            {companyLogo ? (
-              <img 
-                src={companyLogo} 
-                alt={t('sidebarCompanyLogoAlt')} 
-                className="h-16 object-contain"
-              />
-            ) : (
-              <Building2 className="h-5 w-5 text-foreground/80" />
-            )}
-          </div>
+          <ProfileBrandHeader companyLogo={companyLogo} />
         )}
-
-        {/* Search shortcut hint */}
-        {!collapsed && (
-          <div className="px-3 pt-3 pb-1">
-            <button
-              onClick={() => {
-                // Trigger ⌘K command palette
-                document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }));
-              }}
-              className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-sidebar-border/40 bg-sidebar-foreground/[0.02] hover:bg-sidebar-foreground/[0.05] text-muted-foreground/50 hover:text-muted-foreground/70 transition-all duration-150 text-[12px]"
-            >
-              <Search className="h-3.5 w-3.5" />
-              <span className="flex-1 text-left">{t('sidebar.search', 'Search...')}</span>
-              <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-sidebar-foreground/[0.06] text-[10px] font-mono text-muted-foreground/40">
-                <Command className="h-2.5 w-2.5" />K
-              </kbd>
-            </button>
+        {collapsed && (
+          <div className="flex-shrink-0 h-[52px] flex items-center justify-center border-b border-sidebar-border/40">
+            <ProfileAvatarOnly />
           </div>
         )}
 
@@ -835,5 +825,162 @@ export function AppSidebar() {
 
       </SidebarContent>
     </Sidebar>
+  );
+}
+
+// ——————————————————————————————————————————————
+// Profile brand header (replaces company logo at top of sidebar)
+// Avatar circle in front, company logo as faded background, user name + dropdown.
+// ——————————————————————————————————————————————
+function ProfileBrandHeader({ companyLogo }: { companyLogo: string | null | undefined }) {
+  const { user, logout, isMainAdmin } = useAuth();
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { toggleSidebar } = useSidebar();
+
+  const fullName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.email || 'User';
+  const roleLabel = isMainAdmin
+    ? t('admin', 'Admin')
+    : (user as any)?.roleName || t('user', 'User');
+
+  const handleSignOut = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch {
+      toast({
+        title: t('signOutFailed', 'Sign out failed'),
+        description: t('signOutFailedDescription', 'Please try again.'),
+        variant: 'destructive',
+      });
+    }
+  };
+
+  return (
+    <div className="relative flex-shrink-0 h-[72px] border-b border-sidebar-border/40 overflow-hidden">
+      {/* Dynamic company logo as background */}
+      {companyLogo ? (
+        <img
+          src={companyLogo}
+          alt=""
+          aria-hidden
+          className="absolute inset-0 h-full w-full object-cover opacity-40 pointer-events-none select-none scale-110 blur-[1px]"
+        />
+      ) : (
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-sidebar-accent/40 to-sidebar" />
+      )}
+      {/* Dark overlay for readability */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/30 to-black/40 pointer-events-none" />
+
+      {/* Collapse button — top right */}
+      <button
+        type="button"
+        onClick={toggleSidebar}
+        aria-label={t('collapse_sidebar', 'Collapse sidebar')}
+        className="absolute top-1.5 right-1.5 z-20 h-6 w-6 inline-flex items-center justify-center rounded-md bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white/85 hover:text-white transition"
+      >
+        <PanelLeftClose className="h-3.5 w-3.5" />
+      </button>
+
+      {/* Profile row */}
+      <div className="relative z-10 h-full flex items-center gap-2.5 px-3">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              title={fullName}
+              className="flex items-center gap-2 min-w-0 group focus:outline-none"
+            >
+              <span className="rounded-full ring-2 ring-white/40 group-hover:ring-white/70 transition-all shadow-md">
+                <UserAvatar
+                  src={user?.profilePictureUrl}
+                  name={fullName}
+                  seed={user?.id ?? 'user'}
+                  size="md"
+                />
+              </span>
+              <div className="min-w-0 text-left flex items-center gap-1">
+                <div className="min-w-0">
+                  <p className="text-[13px] font-semibold text-white leading-tight truncate drop-shadow">
+                    {fullName}
+                  </p>
+                  <p className="text-[11px] text-white/75 leading-tight truncate drop-shadow">
+                    {roleLabel}
+                  </p>
+                </div>
+                <ChevronDown className="h-3.5 w-3.5 text-white/70 group-hover:text-white transition flex-shrink-0" />
+              </div>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" side="bottom" className="w-52 p-1">
+            <DropdownMenuItem onClick={() => navigate('/dashboard/settings/profile')} className="text-xs gap-2 px-2.5 py-1.5 rounded-md">
+              <UserIcon className="h-3.5 w-3.5 text-muted-foreground" />
+              {t('profile', 'Profile')}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/dashboard/settings')} className="text-xs gap-2 px-2.5 py-1.5 rounded-md">
+              <Settings className="h-3.5 w-3.5 text-muted-foreground" />
+              {t('settings', 'Settings')}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="my-1" />
+            <DropdownMenuItem onClick={handleSignOut} className="text-xs gap-2 px-2.5 py-1.5 rounded-md text-destructive focus:text-destructive">
+              <LogOut className="h-3.5 w-3.5" />
+              {t('signOut', 'Sign out')}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
+  );
+}
+
+// Collapsed mini variant — just the avatar with the same dropdown
+function ProfileAvatarOnly() {
+  const { user, logout } = useAuth();
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const fullName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.email || 'User';
+
+  const handleSignOut = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch {
+      toast({
+        title: t('signOutFailed', 'Sign out failed'),
+        variant: 'destructive',
+      });
+    }
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="rounded-full hover:ring-2 hover:ring-sidebar-ring/40 transition">
+          <UserAvatar
+            src={user?.profilePictureUrl}
+            name={fullName}
+            seed={user?.id ?? 'user'}
+            size="md"
+          />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" side="right" className="w-52 p-1">
+        <DropdownMenuItem onClick={() => navigate('/dashboard/settings/profile')} className="text-xs gap-2 px-2.5 py-1.5 rounded-md">
+          <UserIcon className="h-3.5 w-3.5 text-muted-foreground" />
+          {t('profile', 'Profile')}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => navigate('/dashboard/settings')} className="text-xs gap-2 px-2.5 py-1.5 rounded-md">
+          <Settings className="h-3.5 w-3.5 text-muted-foreground" />
+          {t('settings', 'Settings')}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator className="my-1" />
+        <DropdownMenuItem onClick={handleSignOut} className="text-xs gap-2 px-2.5 py-1.5 rounded-md text-destructive focus:text-destructive">
+          <LogOut className="h-3.5 w-3.5" />
+          {t('signOut', 'Sign out')}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

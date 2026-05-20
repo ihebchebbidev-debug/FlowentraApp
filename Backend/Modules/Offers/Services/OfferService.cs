@@ -6,6 +6,7 @@ using MyApi.Modules.Contacts.Models;
 using MyApi.Modules.Shared.Services;
 using MyApi.Modules.Articles.Services;
 using MyApi.Modules.WorkflowEngine.Services;
+using MyApi.Modules.Projects.Services;
 
 namespace MyApi.Modules.Offers.Services
 {
@@ -625,6 +626,7 @@ namespace MyApi.Modules.Offers.Services
                     Tags = offer.Tags != null ? offer.Tags.Concat(new[] { "Converted" }).ToArray() : new[] { "Converted" },
                     OfferId = id.ToString(),
                     ProjectId = offer.ProjectId,
+                    IsDeal = offer.ProjectId.HasValue,
                     ConvertedFromOfferAt = DateTime.UtcNow,
                     CreatedBy = userId,
                     CreatedByName = createdByName,
@@ -638,6 +640,11 @@ namespace MyApi.Modules.Offers.Services
                 _context.Sales.Add(sale);
                 await _context.SaveChangesAsync();
                 saleId = sale.Id;
+
+                // Auto-note on the project (deal won)
+                ProjectAutoNote.Add(_context, offer.ProjectId,
+                    $"Offer #{offer.OfferNumber} won → Sale #{sale.SaleNumber} created (deal, total {sale.TotalAmount} {sale.Currency}).",
+                    userId);
 
                 // Copy offer items → sale items
                 if (offer.Items != null && offer.Items.Any())

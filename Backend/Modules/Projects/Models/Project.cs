@@ -28,6 +28,15 @@ namespace MyApi.Modules.Projects.Models
         [MaxLength(20)]
         public string Status { get; set; } = "active";
 
+        /// <summary>
+        /// Distinguishes a client-success project (contact-driven container for offers/deals)
+        /// from an internal/operational project. Defaults to "client".
+        /// Values: "client" | "internal".
+        /// </summary>
+        [Required]
+        [MaxLength(20)]
+        public string ProjectKind { get; set; } = "client";
+
         [MaxLength(20)]
         public string? Priority { get; set; }
 

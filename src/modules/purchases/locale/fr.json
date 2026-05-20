@@ -1,4 +1,5 @@
 {
+  "hub": { "overview": "Aperçu" },
   "dashboard": {
     "title": "Achats",
     "subtitle": "Gérer les bons de commande, réceptions et factures fournisseurs",

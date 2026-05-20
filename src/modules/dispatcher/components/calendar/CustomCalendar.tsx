@@ -19,6 +19,7 @@ import type { ZoomLevel, CalendarSettings, ZoomDimensions, TechnicianAvailabilit
 import { toast } from "sonner";
 import { schedulesApi, type UserLeave, type UserFullSchedule } from "@/services/api/schedulesApi";
 import { maxLanes as computeMaxLanes } from "../../utils/lanes";
+import { useActivePlanningProfile } from "../../hooks/usePlanningProfile";
 
 // Leave data structure for calendar display
 export interface TechnicianLeave {
@@ -67,6 +68,9 @@ interface PendingReschedule {
 }
 
 export function CustomCalendar({ view, technicians, selectedTechnician, onJobAssignment, onDispatchDeleted, onRefreshRequest, refreshTrigger, isMobile, conversionMode = 'installation' }: CustomCalendarProps) {
+  // Active planning profile drives display/permission behavior
+  const { settings: profileSettings } = useActivePlanningProfile();
+
   const [assignedJobs, setAssignedJobs] = useState<Record<string, Job[]>>({});
   // transient previews for fast UI feedback during drag/resize
   const [previewJobs, setPreviewJobs] = useState<Record<string, Job[]>>({});
@@ -74,8 +78,8 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
   // Locked to week view per requirements (remove other view options)
   const viewType = 'week';
   const [zoomLevel, setZoomLevel] = useState<ZoomLevel>('md');
-  // Force fixed 3-day window view every time
-  const [settings, setSettings] = useState<CalendarSettings>({ includeWeekends: false });
+  // Calendar settings are now sourced from the active planning profile
+  const settings: CalendarSettings = { includeWeekends: profileSettings.includeWeekends };
   const [showSettings, setShowSettings] = useState(false);
   // Date range state: default to today + 3 day window
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>(() => {
@@ -139,9 +143,28 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
   const [technicianAvailability, setTechnicianAvailability] = useState<TechnicianAvailability[]>([]);
 
   const workingHours = Array.from({ length: 10 }, (_, i) => i + 8); // 8 AM to 5 PM
-  const displayedTechnicians = selectedTechnician 
+  const baseDisplayed = selectedTechnician
     ? technicians.filter(t => t.id === selectedTechnician)
     : technicians;
+
+  // Additional profile-driven filter: hide users on leave today.
+  // (visibleUserIds + no-hours filters are applied upstream in DispatchingInterface.)
+  const displayedTechnicians = useMemo(() => {
+    if (!profileSettings.hideUsersOnLeaveToday) return baseDisplayed;
+    const today = new Date();
+    const todayStr = format(today, 'yyyy-MM-dd');
+    const onLeaveIds = new Set(
+      technicianLeaves
+        .filter(l => l.status === 'approved' || l.status === 'pending')
+        .filter(l => {
+          const s = format(l.startDate, 'yyyy-MM-dd');
+          const e = format(l.endDate, 'yyyy-MM-dd');
+          return s <= todayStr && todayStr <= e;
+        })
+        .map(l => l.technicianId)
+    );
+    return baseDisplayed.filter(t => !onLeaveIds.has(t.id));
+  }, [baseDisplayed, profileSettings.hideUsersOnLeaveToday, technicianLeaves]);
 
   // Generate date array from dateRange
   const dates = useMemo(() => {
@@ -165,23 +188,32 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
 
   const dimensions = getZoomDimensions();
 
-  // Filter jobs by status
+  // Filter jobs by status and active planning profile settings
   const filteredAssignedJobs = useMemo(() => {
     const merged = { ...assignedJobs, ...previewJobs };
-    
-    if (statusFilter === 'all') {
-      return merged;
-    }
-    
+    const {
+      displayClosedDispatches,
+      displayRejectedDispatches,
+      displayCancelledDispatches,
+      autoCollapseCompleted,
+    } = profileSettings;
+
     const filtered: Record<string, Job[]> = {};
     for (const key of Object.keys(merged)) {
       filtered[key] = merged[key].filter(job => {
-        const jobStatus = job.status || 'pending';
-        return jobStatus === statusFilter;
+        const jobStatus = (job.status || 'pending').toLowerCase();
+        // Profile-driven dispatch visibility
+        if (!displayClosedDispatches && (jobStatus === 'closed' || jobStatus === 'completed')) return false;
+        if (!displayRejectedDispatches && jobStatus === 'rejected') return false;
+        if (!displayCancelledDispatches && jobStatus === 'cancelled') return false;
+        if (autoCollapseCompleted && (jobStatus === 'completed' || jobStatus === 'closed')) return false;
+        // Manual status filter from CalendarControls
+        if (statusFilter !== 'all' && jobStatus !== statusFilter) return false;
+        return true;
       });
     }
     return filtered;
-  }, [assignedJobs, previewJobs, statusFilter]);
+  }, [assignedJobs, previewJobs, statusFilter, profileSettings]);
 
   // Per-technician dynamic row heights driven by stacked-lane count.
   // Keep in sync with CalendarGrid LANE_HEIGHT constant.
@@ -926,7 +958,7 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
       {showSettings && (
         <CalendarSettingsPanel
           settings={settings}
-          onSettingsChange={setSettings}
+          onSettingsChange={() => { /* managed by active planning profile */ }}
         />
       )}
 

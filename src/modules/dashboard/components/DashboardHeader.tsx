@@ -333,7 +333,8 @@ export function DashboardHeader() {
             </Button>
           )}
 
-          {/* User avatar last */}
+          {/* User avatar last — only when sidebar is in topbar mode (sidebar version owns the profile otherwise) */}
+          {layoutMode === 'topbar' && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild data-tour="user-menu">
               <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full p-0 overflow-hidden">
@@ -379,6 +380,7 @@ export function DashboardHeader() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          )}
         </div>
       </div>
       

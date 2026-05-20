@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using MyApi.Infrastructure;
 using MyApi.Modules.Auth.Models;
@@ -292,6 +295,41 @@ namespace MyApi.Data
         // Plugin Registry — per-tenant module enable/disable overrides
         public DbSet<MyApi.Modules.Plugins.Models.ActivatedModule> ActivatedModules { get; set; }
 
+        // Module Scope Settings — per-module shared/per_company configuration
+        public DbSet<MyApi.Modules.Settings.Models.ModuleScopeSetting> ModuleScopeSettings { get; set; }
+
+        // ═══ MODULE SCOPE: shared vs per_company ═══
+        // Lazy-loaded once per DbContext from the ModuleScopeSettings table.
+        // Used by both the global query filter and StampTenantIdOnNewEntities.
+        private Dictionary<string, bool>? _moduleSharedCache;
+        private void EnsureModuleScopeLoaded()
+        {
+            if (_moduleSharedCache != null) return;
+            try
+            {
+                _moduleSharedCache = Set<MyApi.Modules.Settings.Models.ModuleScopeSetting>()
+                    .AsNoTracking()
+                    .ToList()
+                    .ToDictionary(
+                        r => r.ModuleKey,
+                        r => string.Equals(r.Scope, "shared", StringComparison.OrdinalIgnoreCase),
+                        StringComparer.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                // Table missing (pre-migration) → degrade to per_company.
+                _moduleSharedCache = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+            }
+        }
+        public bool IsModuleShared(string moduleKey)
+        {
+            if (string.IsNullOrWhiteSpace(moduleKey)) return false;
+            EnsureModuleScopeLoaded();
+            return _moduleSharedCache!.TryGetValue(moduleKey, out var v) && v;
+        }
+        /// <summary>Force the next IsModuleShared call to re-read from DB.</summary>
+        public void InvalidateModuleScopeCache() { _moduleSharedCache = null; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -309,24 +347,58 @@ namespace MyApi.Data
             {
                 if (typeof(ITenantEntity).IsAssignableFrom(entityType.ClrType))
                 {
+                    // Pick the scope-aware filter when the entity opts in via [ModuleScope].
+                    var scopeAttr = entityType.ClrType
+                        .GetCustomAttributes(typeof(ModuleScopeAttribute), inherit: true)
+                        .Cast<ModuleScopeAttribute>()
+                        .FirstOrDefault();
+
+                    var methodName = scopeAttr != null
+                        ? nameof(ApplyScopedTenantQueryFilter)
+                        : nameof(ApplyTenantQueryFilter);
+
                     var method = typeof(ApplicationDbContext)
-                        .GetMethod(nameof(ApplyTenantQueryFilter),
+                        .GetMethod(methodName,
                             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!
                         .MakeGenericMethod(entityType.ClrType);
-                    method.Invoke(null, new object[] { modelBuilder, this });
+
+                    if (scopeAttr != null)
+                        method.Invoke(null, new object[] { modelBuilder, this, scopeAttr.ModuleKey });
+                    else
+                        method.Invoke(null, new object[] { modelBuilder, this });
                 }
             }
         }
 
         /// <summary>
-        /// Apply a global query filter for tenant isolation on a specific entity type.
-        /// Uses expression tree that captures 'this' so EF re-evaluates _currentTenantId per query.
+        /// Per-company filter (entities without [ModuleScope]). Original behaviour.
         /// </summary>
         private static void ApplyTenantQueryFilter<T>(ModelBuilder modelBuilder, ApplicationDbContext ctx)
             where T : class, ITenantEntity
         {
-            modelBuilder.Entity<T>().HasQueryFilter(e => ctx._currentTenantId == -1 || e.TenantId == ctx._currentTenantId);
+            modelBuilder.Entity<T>().HasQueryFilter(e =>
+                ctx._currentTenantId == -1 || e.TenantId == ctx._currentTenantId);
         }
+
+        /// <summary>
+        /// Scope-aware filter (entities with [ModuleScope("key")]):
+        ///   shared      → WHERE TenantId = 0        (single shared dataset)
+        ///   per_company → WHERE TenantId = current  (default)
+        ///   view-all (-1) bypass still honoured.
+        /// EF translates ctx.IsModuleShared(key) to a runtime parameter, so the
+        /// generated SQL is a normal WHERE TenantId = @p clause.
+        /// </summary>
+        private static void ApplyScopedTenantQueryFilter<T>(
+            ModelBuilder modelBuilder, ApplicationDbContext ctx, string moduleKey)
+            where T : class, ITenantEntity
+        {
+            modelBuilder.Entity<T>().HasQueryFilter(e =>
+                ctx._currentTenantId == -1
+                || (ctx.IsModuleShared(moduleKey)
+                        ? e.TenantId == 0
+                        : e.TenantId == ctx._currentTenantId));
+        }
+
 
         // ═══ MULTI-TENANCY: Auto-set TenantId on insert ═══
         public override int SaveChanges()
@@ -355,6 +427,16 @@ namespace MyApi.Data
 
         private void StampTenantIdOnNewEntities()
         {
+            // ── Resolve the [ModuleScope] key for an entity instance, if any. ──
+            static string? GetModuleKey(object entity)
+            {
+                var attr = entity.GetType()
+                    .GetCustomAttributes(typeof(ModuleScopeAttribute), inherit: true)
+                    .Cast<ModuleScopeAttribute>()
+                    .FirstOrDefault();
+                return attr?.ModuleKey;
+            }
+
             // Block writes in view-all mode (TenantId = -1 sentinel) ONLY if no target tenant override
             // When X-Target-Tenant is provided, the middleware sets _currentTenantId to the target tenant
             // so writes are properly scoped. -1 means "all tenants" with no target specified.
@@ -364,9 +446,12 @@ namespace MyApi.Data
                 // system-scoped (TenantId = 0) and must never break the request just because
                 // no target tenant was provided. Without this, login + other admin actions
                 // emit a noisy "primary persist failed" warning on every call.
+                // Shared modules are also fine in view-all mode (they always write TenantId = 0).
                 var hasBlockingChanges = ChangeTracker.Entries<ITenantEntity>()
                     .Where(e => e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted)
-                    .Any(e => e.Entity is not MyApi.Modules.Shared.Models.SystemLog);
+                    .Any(e =>
+                        e.Entity is not MyApi.Modules.Shared.Models.SystemLog &&
+                        !(GetModuleKey(e.Entity) is string k && IsModuleShared(k)));
                 if (hasBlockingChanges)
                 {
                     throw new InvalidOperationException(
@@ -378,6 +463,14 @@ namespace MyApi.Data
             {
                 if (entry.State == EntityState.Added)
                 {
+                    // Shared modules always live at TenantId = 0, regardless of current company.
+                    var moduleKey = GetModuleKey(entry.Entity);
+                    if (moduleKey != null && IsModuleShared(moduleKey))
+                    {
+                        entry.Entity.TenantId = 0;
+                        continue;
+                    }
+
                     // In view-all mode, default audit logs to system tenant (0) instead of -1.
                     if (_currentTenantId == -1 && entry.Entity is MyApi.Modules.Shared.Models.SystemLog)
                     {
@@ -398,6 +491,15 @@ namespace MyApi.Data
                     else
                     {
                         entry.Entity.TenantId = _currentTenantId;
+                    }
+                }
+                else if (entry.State == EntityState.Modified)
+                {
+                    // Protect shared-module rows: never let TenantId drift off 0.
+                    var moduleKey = GetModuleKey(entry.Entity);
+                    if (moduleKey != null && IsModuleShared(moduleKey) && entry.Entity.TenantId != 0)
+                    {
+                        entry.Entity.TenantId = 0;
                     }
                 }
             }

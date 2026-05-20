@@ -156,6 +156,7 @@ namespace MyApi.Modules.Projects.Services
                     ContactId = createDto.ContactId,
                     TeamMembers = SerializeTeamMembers(createDto.TeamMembers),
                     Status = createDto.Status ?? "active",
+                    ProjectKind = createDto.ProjectKind ?? "client",
                     Priority = createDto.Priority ?? "medium",
                     StartDate = createDto.StartDate,
                     EndDate = createDto.EndDate,
@@ -165,6 +166,10 @@ namespace MyApi.Modules.Projects.Services
 
                 _context.Projects.Add(project);
                 await _context.SaveChangesAsync();
+
+                ProjectAutoNote.Add(_context, project.Id,
+                    $"Project '{project.Name}' created (kind: {project.ProjectKind}, status: {project.Status}).",
+                    createdByUser);
 
                 await SetProjectIdForLinkedEntitiesAsync(project.Id, createDto.LinkOfferId, createDto.LinkSaleId, createDto.LinkServiceOrderId, createDto.LinkDispatchId);
 
@@ -211,8 +216,14 @@ namespace MyApi.Modules.Projects.Services
                 if (updateDto.TeamMembers != null)
                     project.TeamMembers = SerializeTeamMembers(updateDto.TeamMembers);
 
+                var oldStatus = project.Status;
+                var oldKind = project.ProjectKind;
+
                 if (!string.IsNullOrEmpty(updateDto.Status))
                     project.Status = updateDto.Status;
+
+                if (!string.IsNullOrEmpty(updateDto.ProjectKind))
+                    project.ProjectKind = updateDto.ProjectKind;
 
                 if (!string.IsNullOrEmpty(updateDto.Priority))
                     project.Priority = updateDto.Priority;
@@ -225,6 +236,11 @@ namespace MyApi.Modules.Projects.Services
 
                 project.ModifiedBy = modifiedByUser;
                 project.ModifiedDate = DateTime.UtcNow;
+
+                if (!string.IsNullOrEmpty(updateDto.Status) && oldStatus != project.Status)
+                    ProjectAutoNote.Add(_context, id, $"Status changed: {oldStatus} → {project.Status}.", modifiedByUser);
+                if (!string.IsNullOrEmpty(updateDto.ProjectKind) && oldKind != project.ProjectKind)
+                    ProjectAutoNote.Add(_context, id, $"Kind changed: {oldKind} → {project.ProjectKind}.", modifiedByUser);
 
                 await _context.SaveChangesAsync();
                 await SetProjectIdForLinkedEntitiesAsync(id, updateDto.LinkOfferId, updateDto.LinkSaleId, updateDto.LinkServiceOrderId, updateDto.LinkDispatchId);
@@ -485,7 +501,8 @@ namespace MyApi.Modules.Projects.Services
                     Number = o.OfferNumber ?? $"OFR-{o.Id}",
                     Title = o.Title ?? "Offer",
                     Status = o.Status,
-                    Date = o.CreatedDate
+                    Date = o.CreatedDate,
+                    Amount = o.TotalAmount
                 }).ToList(),
                 Sales = sales.Select(s => new ProjectLinkedEntityDto
                 {
@@ -494,7 +511,9 @@ namespace MyApi.Modules.Projects.Services
                     Number = s.SaleNumber ?? $"SAL-{s.Id}",
                     Title = s.Title ?? "Sale",
                     Status = s.Status,
-                    Date = s.CreatedDate
+                    Date = s.CreatedDate,
+                    IsDeal = s.IsDeal,
+                    Amount = s.GrandTotal > 0 ? s.GrandTotal : s.TotalAmount
                 }).ToList(),
                 ServiceOrders = serviceOrders.Select(s => new ProjectLinkedEntityDto
                 {
@@ -533,6 +552,7 @@ namespace MyApi.Modules.Projects.Services
                 RelatedEntityId = dto.EntityId,
                 RelatedEntityType = dto.EntityType
             });
+            ProjectAutoNote.Add(_context, projectId, $"Linked {dto.EntityType} #{dto.EntityId} to the project.", userId);
             await _context.SaveChangesAsync();
 
             return await GetProjectLinksAsync(projectId);
@@ -554,6 +574,7 @@ namespace MyApi.Modules.Projects.Services
                 RelatedEntityId = entityId,
                 RelatedEntityType = entityType
             });
+            ProjectAutoNote.Add(_context, projectId, $"Unlinked {entityType} #{entityId} from the project.", userId);
             await _context.SaveChangesAsync();
 
             return await GetProjectLinksAsync(projectId);
@@ -605,6 +626,7 @@ namespace MyApi.Modules.Projects.Services
                     ? $"{project.Contact.FirstName} {project.Contact.LastName}".Trim() 
                     : null,
                 Status = project.Status,
+                ProjectKind = project.ProjectKind ?? "client",
                 Priority = project.Priority,
                 StartDate = project.StartDate,
                 EndDate = project.EndDate,

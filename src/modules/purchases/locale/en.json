@@ -1,4 +1,5 @@
 {
+  "hub": { "overview": "Overview" },
   "dashboard": {
     "title": "Purchases",
     "subtitle": "Manage purchase orders, receipts, and supplier invoices",

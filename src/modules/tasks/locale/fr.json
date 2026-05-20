@@ -329,6 +329,9 @@
     "detail": {
       "tabs": {
         "overview": "Vue d'ensemble",
+        "summary": "Résumé",
+        "offers": "Devis",
+        "deals": "Affaires",
         "tasks": "Tâches",
         "team": "Équipe",
         "notes": "Notes",
@@ -429,6 +432,30 @@
         "dangerZone": "Zone Dangereuse",
         "deleteProject": "Supprimer le Projet",
         "deleteWarning": "Cela supprimera définitivement le projet et toutes ses tâches."
+      },
+      "summary": {
+        "title": "Résumé du projet",
+        "total": "total",
+        "won": "gagné",
+        "open": "ouverts",
+        "winRate": "Taux de réussite",
+        "serviceOrders": "Bons de service",
+        "overallStatus": "Statut global",
+        "kind": "Type",
+        "priority": "Priorité",
+        "contact": "Contact",
+        "recentActivity": "Activité récente",
+        "noActivity": "Aucun devis, affaire ou bon de service lié pour l'instant."
+      },
+      "offers": {
+        "title": "Devis du projet",
+        "empty": "Aucun devis pour ce projet.",
+        "total": "Valeur totale"
+      },
+      "deals": {
+        "title": "Affaires gagnées",
+        "empty": "Aucune affaire gagnée. Convertissez un devis pour le marquer comme affaire.",
+        "badge": "Affaire"
       }
     }
   },

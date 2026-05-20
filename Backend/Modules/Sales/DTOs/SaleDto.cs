@@ -10,6 +10,8 @@ namespace MyApi.Modules.Sales.DTOs
         // Contact Information
         public int ContactId { get; set; }
         public int? ProjectId { get; set; }
+        /// <summary>True when this sale is a won "deal" of a Project (converted from a project offer).</summary>
+        public bool IsDeal { get; set; }
         public ContactSummaryDto? Contact { get; set; }
         
         // Financial Information

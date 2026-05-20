@@ -329,6 +329,9 @@
     "detail": {
       "tabs": {
         "overview": "Overview",
+        "summary": "Summary",
+        "offers": "Offers",
+        "deals": "Deals",
         "tasks": "Tasks",
         "team": "Team",
         "notes": "Notes",
@@ -429,6 +432,30 @@
         "dangerZone": "Danger Zone",
         "deleteProject": "Delete Project",
         "deleteWarning": "This will permanently delete the project and all its tasks."
+      },
+      "summary": {
+        "title": "Project Summary",
+        "total": "total",
+        "won": "won",
+        "open": "open",
+        "winRate": "Win rate",
+        "serviceOrders": "Service Orders",
+        "overallStatus": "Overall Status",
+        "kind": "Kind",
+        "priority": "Priority",
+        "contact": "Contact",
+        "recentActivity": "Recent Activity",
+        "noActivity": "No linked offers, deals or service orders yet."
+      },
+      "offers": {
+        "title": "Project Offers",
+        "empty": "No offers yet for this project.",
+        "total": "Total value"
+      },
+      "deals": {
+        "title": "Won Deals",
+        "empty": "No deals won yet. Convert an offer to mark it as a deal.",
+        "badge": "Deal"
       }
     }
   },

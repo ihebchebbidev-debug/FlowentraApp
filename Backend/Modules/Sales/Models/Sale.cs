@@ -38,6 +38,13 @@ namespace MyApi.Modules.Sales.Models
         [Column("ProjectId")]
         public int? ProjectId { get; set; }
 
+        /// <summary>
+        /// True when this Sale represents a "won deal" of a Project
+        /// (created by converting an Offer that belonged to that Project).
+        /// </summary>
+        [Column("IsDeal")]
+        public bool IsDeal { get; set; } = false;
+
         [Column("SaleDate")]
         public DateTime SaleDate { get; set; } = DateTime.UtcNow;
 
