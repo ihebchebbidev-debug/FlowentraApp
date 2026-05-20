@@ -435,7 +435,9 @@ function escapeHtml(str) {
 }
 
 function buildHTML() {
-  const logoPath = path.join(ROOT, "public", "assets", "krossier-logo.png");
+  // Use the Flowentra logo from src/assets; fall back to krossier if missing
+  const logoPath =
+    path.join(ROOT, "src", "assets", "flowentra-logo.png");
   const logoBase64 = imageToBase64(logoPath);
 
   const tocItems = MODULES.map(
@@ -514,8 +516,8 @@ function buildHTML() {
 
     /* ── Variables ── */
     :root {
-      --orange: #f97316;
-      --orange-light: #fff7ed;
+      --orange: hsl(237 84% 67%);
+      --orange-light: hsl(237 84% 97%);
       --dark: #111827;
       --muted: #6b7280;
       --border: #e5e7eb;
