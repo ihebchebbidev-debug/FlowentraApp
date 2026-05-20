@@ -833,16 +833,13 @@ export function AppSidebar() {
 // Avatar circle in front, company logo as faded background, user name + dropdown.
 // ——————————————————————————————————————————————
 function ProfileBrandHeader({ companyLogo }: { companyLogo: string | null | undefined }) {
-  const { user, logout, isMainAdmin } = useAuth();
+  const { user, logout } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { toggleSidebar } = useSidebar();
 
   const fullName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.email || 'User';
-  const roleLabel = isMainAdmin
-    ? t('admin', 'Admin')
-    : (user as any)?.roleName || t('user', 'User');
 
   const handleSignOut = async () => {
     try {
@@ -884,7 +881,7 @@ function ProfileBrandHeader({ companyLogo }: { companyLogo: string | null | unde
       </button>
 
       {/* Profile row */}
-      <div className="relative z-10 h-full flex items-center gap-2.5 px-3">
+      <div className="relative z-10 h-full flex items-center gap-2.5 px-3 pt-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
@@ -901,12 +898,9 @@ function ProfileBrandHeader({ companyLogo }: { companyLogo: string | null | unde
                 />
               </span>
               <div className="min-w-0 text-left flex items-center gap-1">
-                <div className="min-w-0">
+                <div className="min-w-1">
                   <p className="text-[13px] font-semibold text-white leading-tight truncate drop-shadow">
                     {fullName}
-                  </p>
-                  <p className="text-[11px] text-white/75 leading-tight truncate drop-shadow">
-                    {roleLabel}
                   </p>
                 </div>
                 <ChevronDown className="h-3.5 w-3.5 text-white/70 group-hover:text-white transition flex-shrink-0" />

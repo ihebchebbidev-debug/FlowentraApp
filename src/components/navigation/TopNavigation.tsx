@@ -67,6 +67,8 @@ import { TenantSwitcher } from "@/components/TenantSwitcher";
 import { GlobalCompanyFilter } from "@/components/CompanyFilter";
 import { useOffline } from "@/contexts/OfflineContext";
 import { useAiAssistantAvailable } from "@/hooks/useAiAssistantAvailable";
+import { useAuth } from "@/contexts/AuthContext";
+import { UserAvatar } from "@/components/ui/user-avatar";
 
 // Map sidebar item titles to permission modules for access control
 const SIDEBAR_PERMISSION_MAP: Record<string, PermissionModule> = {
@@ -131,6 +133,9 @@ export function TopNavigation() {
   const { hasPermission, isMainAdmin, isLoading: permissionsLoading } = usePermissions();
   const { enabled: offlineEnabled, pendingCount, setEnabled: setOfflineEnabled } = useOffline();
   const aiAssistantAvailable = useAiAssistantAvailable();
+  const { user } = useAuth();
+  const fullName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.email || 'User';
+  
   
   // Check if user has permission to view a sidebar item
   const canViewItem = (itemTitle: string): boolean => {
@@ -570,6 +575,23 @@ export function TopNavigation() {
                      ) : (
                        <Building2 className="h-5 w-5 text-foreground/80" />
                      )}
+                   </div>
+
+                   {/* User Profile */}
+                   <div className="flex-shrink-0 px-5 pt-1 pb-2 border-b border-sidebar-border/40">
+                     <div className="flex items-center gap-2.5">
+                       <UserAvatar
+                         src={user?.profilePictureUrl}
+                         name={fullName}
+                         seed={user?.id ?? 'user'}
+                         size="md"
+                       />
+                       <div className="min-w-0">
+                         <p className="text-[13px] font-medium text-sidebar-foreground leading-tight truncate">
+                           {fullName}
+                         </p>
+                       </div>
+                     </div>
                    </div>
 
                    {/* Tenant Switcher — only visible for MainAdmin with multiple companies */}
