@@ -217,8 +217,8 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
 
   // Per-technician dynamic row heights driven by stacked-lane count.
   // Keep in sync with CalendarGrid LANE_HEIGHT constant.
-  const LANE_HEIGHT = 36;
-  const MIN_ROW_HEIGHT = 80;
+  const LANE_HEIGHT = profileSettings.compactRows ? 26 : 36;
+  const MIN_ROW_HEIGHT = profileSettings.compactRows ? 56 : 80;
   const rowHeights = useMemo(() => {
     const heights: Record<string, number> = {};
     for (const tech of displayedTechnicians) {
@@ -273,18 +273,39 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
     e.preventDefault();
     e.stopPropagation();
     setDragOverSlot(null);
-    
+
+    // Profile-driven safety gate: scheduling in the past
+    if (!profileSettings.allowSchedulingInPast) {
+      const slot = new Date(date);
+      slot.setHours(hour, 0, 0, 0);
+      if (slot.getTime() < Date.now() - 60 * 60 * 1000) {
+        toast.error(t('dispatcher.profiles.cannot_schedule_past', { defaultValue: 'Scheduling in the past is disabled in your planning profile.' }));
+        return;
+      }
+    }
+
     try {
       const dataText = e.dataTransfer.getData('application/json');
       if (!dataText) {
         throw new Error('No drag data found');
       }
-      
+
       const data: DragData & { timestamp?: number; isReschedule?: boolean } = JSON.parse(dataText);
-      
+
       // Validate drag data
       if (!data.type || !data.item) {
         throw new Error('Invalid drag data format');
+      }
+
+      // Profile-driven safety gate: scheduling jobs at all
+      if (!data.isReschedule && !profileSettings.allowSchedulingJobs) {
+        toast.error(t('dispatcher.profiles.scheduling_disabled', { defaultValue: 'Scheduling new jobs is disabled in your planning profile.' }));
+        return;
+      }
+      // Profile-driven safety gate: moving existing dispatches
+      if (data.isReschedule && !profileSettings.allowChangingDispatches) {
+        toast.error(t('dispatcher.profiles.changing_disabled', { defaultValue: 'Changing dispatches is disabled in your planning profile.' }));
+        return;
       }
       
       // Handle service order batch assignment
@@ -384,6 +405,10 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
 
         if (collision.hasCollision) {
           const nextSlot = CollisionService.findNextAvailableSlot(newScheduledStart, totalDurationMinutes, existingJobs);
+          if (!profileSettings.confirmOnOverlap) {
+            openInstallationModal(nextSlot ?? newScheduledStart);
+            return;
+          }
           setPendingOverlap({
             overlappingJobs: collision.overlappingJobs,
             proposedStart: newScheduledStart,
@@ -466,6 +491,10 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
 
         if (collision.hasCollision) {
           const nextSlot = CollisionService.findNextAvailableSlot(newScheduledStart, 180, existingJobs);
+          if (!profileSettings.confirmOnOverlap) {
+            openAssignmentModal(nextSlot ?? newScheduledStart);
+            return;
+          }
           setPendingOverlap({
             overlappingJobs: collision.overlappingJobs,
             proposedStart: newScheduledStart,
@@ -752,7 +781,13 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
 
   const handleUnassignJob = async () => {
     if (!selectedJob) return;
-    
+
+    // Profile-driven safety gate
+    if (!profileSettings.allowUnassigningDispatches) {
+      toast.error(t('dispatcher.profiles.unassign_disabled', { defaultValue: 'Unassigning dispatches is disabled in your planning profile.' }));
+      return;
+    }
+
     // Check if locked
     if (DispatcherService.isDispatchLocked(selectedJob.id)) {
       toast.error(t('dispatcher.dispatch_locked_error'));

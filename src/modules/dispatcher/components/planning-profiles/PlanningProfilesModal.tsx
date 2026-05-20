@@ -146,11 +146,6 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
                 </span>
                 {activeProfile ? (
                   <Badge variant="default" className="gap-1.5 py-1">
-                    <span
-                      className="h-2 w-2 rounded-full"
-                      style={{ background: activeProfile.color ?? '#6366f1' }}
-                      aria-hidden
-                    />
                     <Star className="h-3 w-3" fill="currentColor" />
                     {activeProfile.name}
                   </Badge>
@@ -251,17 +246,6 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
                               className="mt-1"
                               rows={3}
                             />
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <Label>{t('dispatcher.profiles.field_color', { defaultValue: 'Color' })}</Label>
-                              <Input
-                                type="color"
-                                value={draft.color ?? '#6366f1'}
-                                onChange={e => setDraft({ ...draft, color: e.target.value })}
-                                className="mt-1 h-10"
-                              />
-                            </div>
                           </div>
                           <ToggleRow
                             label={t('dispatcher.profiles.field_shared', { defaultValue: 'Share with team' })}
@@ -431,7 +415,7 @@ function ProfileSection({
           onClick={() => onSelect(p.id)}
           className={`w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-accent/50 transition-colors ${selectedId === p.id ? 'bg-accent' : ''}`}
         >
-          <span className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ background: p.color ?? '#6366f1' }} />
+          <CalendarDays className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
           <span className="flex-1 text-sm truncate">{p.name}</span>
           {activeId === p.id && <Star className="h-3.5 w-3.5 text-primary flex-shrink-0" fill="currentColor" />}
         </button>

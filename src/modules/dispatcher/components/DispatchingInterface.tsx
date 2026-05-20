@@ -3,12 +3,21 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { 
+import {
   Calendar as CalendarIcon,
   RefreshCcw,
   Map,
   LayoutGrid,
+  Wand2,
+  Sparkles,
 } from "lucide-react";
+import { toast } from "sonner";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
 
 import { CustomCalendar } from "./CustomCalendar";
 import { UnassignedJobsList, type PlanningMode } from "./UnassignedJobsList";
@@ -18,6 +27,7 @@ import { useActivePlanningProfile } from "../hooks/usePlanningProfile";
 import type { Job, CalendarViewType, Technician } from "../types";
 import { appSettingsApi } from "@/services/api/appSettingsApi";
 import { startOfWeek, endOfWeek, addDays } from "date-fns";
+import { autoFillDay, rankTechniciansForJob } from "../utils/planningAssist";
 
 export function DispatchingInterface() {
   const { t } = useTranslation();
@@ -85,9 +95,52 @@ export function DispatchingInterface() {
   
   // Track if we're refreshing (separate from initial load)
   const [isRefreshing, setIsRefreshing] = useState(false);
-  
+
+  // Auto-fill day state
+  const [autoFillOpen, setAutoFillOpen] = useState(false);
+  const [autoFilling, setAutoFilling] = useState(false);
+
   // View mode: 'calendar' or 'map'
   const [viewMode, setViewMode] = useState<'calendar' | 'map'>('calendar');
+
+  // Smart suggestions: best technicians for top unassigned jobs
+  const suggestions = useMemo(() => {
+    const topJobs = jobs.slice(0, 5);
+    return topJobs.map(job => ({
+      job,
+      ranked: rankTechniciansForJob(job, visibleTechnicians).slice(0, 3),
+    }));
+  }, [jobs, visibleTechnicians]);
+
+  const runAutoFill = async () => {
+    if (jobs.length === 0) {
+      toast.info(t('dispatcher.autofill.no_jobs', { defaultValue: 'No unassigned jobs to plan.' }));
+      setAutoFillOpen(false);
+      return;
+    }
+    if (visibleTechnicians.length === 0) {
+      toast.error(t('dispatcher.autofill.no_techs', { defaultValue: 'No visible technicians in this profile.' }));
+      setAutoFillOpen(false);
+      return;
+    }
+    setAutoFilling(true);
+    try {
+      const today = new Date();
+      const res = await autoFillDay(today, jobs, visibleTechnicians, {
+        allowSchedulingInPast: profileSettings.allowSchedulingInPast,
+      });
+      if (res.assigned > 0) toast.success(t('dispatcher.autofill.success', { defaultValue: '{{n}} job(s) auto-scheduled', n: res.assigned }));
+      if (res.skipped > 0) toast.warning(t('dispatcher.autofill.skipped', { defaultValue: '{{n}} job(s) could not be placed', n: res.skipped }));
+      if (res.errors.length > 0) console.warn('Auto-fill errors:', res.errors);
+      await handleRefresh();
+    } catch (e) {
+      console.error(e);
+      toast.error(t('dispatcher.autofill.failed', { defaultValue: 'Auto-fill failed' }));
+    } finally {
+      setAutoFilling(false);
+      setAutoFillOpen(false);
+    }
+  };
 
   useEffect(() => {
     const checkMobile = () => {
@@ -187,6 +240,58 @@ export function DispatchingInterface() {
             </Button>
           </div>
           
+          {/* Smart suggestions popover */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2" disabled={jobs.length === 0}>
+                <Sparkles className="h-4 w-4" />
+                <span className="hidden sm:inline">{t('dispatcher.suggest.button', { defaultValue: 'Suggest' })}</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-96 p-0">
+              <div className="px-4 py-3 border-b">
+                <div className="text-sm font-semibold">{t('dispatcher.suggest.title', { defaultValue: 'Best-fit technicians' })}</div>
+                <div className="text-xs text-muted-foreground">{t('dispatcher.suggest.subtitle', { defaultValue: 'Top picks for your unassigned jobs (skills + availability + distance).' })}</div>
+              </div>
+              <div className="max-h-80 overflow-auto divide-y">
+                {suggestions.length === 0 && (
+                  <div className="p-4 text-sm text-muted-foreground">{t('dispatcher.suggest.empty', { defaultValue: 'No unassigned jobs.' })}</div>
+                )}
+                {suggestions.map(({ job, ranked }) => (
+                  <div key={job.id} className="p-3">
+                    <div className="text-sm font-medium truncate">{job.title}</div>
+                    <div className="text-[11px] text-muted-foreground mb-2 truncate">{job.customerName}</div>
+                    {ranked.length === 0 ? (
+                      <div className="text-xs text-muted-foreground">{t('dispatcher.suggest.no_tech', { defaultValue: 'No technicians available' })}</div>
+                    ) : (
+                      <div className="flex flex-wrap gap-1.5">
+                        {ranked.map((r, idx) => (
+                          <Badge key={r.technician.id} variant={idx === 0 ? 'default' : 'secondary'} className="gap-1 font-normal">
+                            {r.technician.firstName} {r.technician.lastName}
+                            <span className="opacity-70">· {r.score}</span>
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Auto-fill day */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setAutoFillOpen(true)}
+            disabled={autoFilling || jobs.length === 0 || !profileSettings.allowSchedulingJobs}
+            className="gap-2"
+            title={!profileSettings.allowSchedulingJobs ? t('dispatcher.profiles.scheduling_disabled', { defaultValue: 'Scheduling new jobs is disabled in your planning profile.' }) : undefined}
+          >
+            <Wand2 className={`h-4 w-4 ${autoFilling ? 'animate-pulse' : ''}`} />
+            <span className="hidden sm:inline">{t('dispatcher.autofill.button', { defaultValue: 'Auto-fill day' })}</span>
+          </Button>
+
           <Button
             variant="outline"
             size="sm"
@@ -199,6 +304,28 @@ export function DispatchingInterface() {
           </Button>
         </div>
       </header>
+
+      <AlertDialog open={autoFillOpen} onOpenChange={setAutoFillOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('dispatcher.autofill.confirm_title', { defaultValue: "Auto-fill today's planning?" })}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('dispatcher.autofill.confirm_desc', {
+                defaultValue: 'This will assign up to {{n}} unassigned job(s) to your {{m}} visible technician(s), placed back-to-back inside their working hours. You can adjust afterwards.',
+                n: jobs.length,
+                m: visibleTechnicians.length,
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={autoFilling}>{t('common.cancel', { defaultValue: 'Cancel' })}</AlertDialogCancel>
+            <AlertDialogAction onClick={runAutoFill} disabled={autoFilling}>
+              {autoFilling ? t('common.loading', { defaultValue: 'Loading…' }) : t('dispatcher.autofill.run', { defaultValue: 'Run auto-fill' })}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
 
 
       {/* Desktop Layout */}

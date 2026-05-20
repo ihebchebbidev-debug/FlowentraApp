@@ -40,7 +40,6 @@ function ensureDefaultProfile(): PlanningProfile {
       ownerUserId: getCurrentUserId(),
       name: 'Default',
       description: 'Auto-created default planning profile',
-      color: '#6366f1',
       icon: 'CalendarDays',
       isShared: false,
       visibleUserIds: [],
