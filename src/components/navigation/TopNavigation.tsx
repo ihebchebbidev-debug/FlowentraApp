@@ -577,8 +577,8 @@ export function TopNavigation() {
                      )}
                    </div>
 
-                   {/* User Profile */}
-                   <div className="flex-shrink-0 px-5 pt-1 pb-2 border-b border-sidebar-border/40">
+                    {/* User Profile */}
+                    <div className="flex-shrink-0 px-5 pt-5 pb-3 border-b border-sidebar-border/40">
                      <div className="flex items-center gap-2.5">
                        <UserAvatar
                          src={user?.profilePictureUrl}

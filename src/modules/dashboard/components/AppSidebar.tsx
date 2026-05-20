@@ -881,7 +881,7 @@ function ProfileBrandHeader({ companyLogo }: { companyLogo: string | null | unde
       </button>
 
       {/* Profile row */}
-      <div className="relative z-10 h-full flex items-center gap-2.5 px-3 pt-2">
+      <div className="relative z-10 h-full flex items-end gap-2.5 px-3 pt-2 pb-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
