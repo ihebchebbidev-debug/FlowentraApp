@@ -47,7 +47,7 @@ export function DashboardContent() {
       <Routes>
         <Route index element={
           <Suspense fallback={<PageSkeleton />}>
-            <DashboardBuilderPage />
+            <DashboardOverview />
           </Suspense>
         } />
         <Route path="dashboards" element={
@@ -55,6 +55,7 @@ export function DashboardContent() {
             <DashboardBuilderPage />
           </Suspense>
         } />
+
         <Route path="contacts/*" element={
           <PermissionRoute module="contacts" action="read">
             <Suspense fallback={<PageSkeleton />}>

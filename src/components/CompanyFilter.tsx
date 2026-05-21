@@ -12,7 +12,7 @@
  * - Pulls the company list from TenantMapContext (already populated for
  *   MainAdmins on app boot), so no extra network call.
  */
-import { Building2 } from 'lucide-react';
+import { Building2, Layers } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -21,9 +21,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useTenantMap } from '@/contexts/TenantMapContext';
-import { isViewAllMode } from '@/utils/tenant';
+import { getCurrentTenant, isViewAllMode, setTenantOverride, VIEW_ALL_SENTINEL } from '@/utils/tenant';
+import { usePermissions } from '@/hooks/usePermissions';
 import { cn } from '@/lib/utils';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
 // ─── Per-module filter store ────────────────────────────────────────────────
@@ -140,27 +141,60 @@ export function CompanyFilter({
   size = 'sm',
 }: CompanyFilterProps) {
   const { tenants } = useTenantMap();
+  const { isMainAdmin } = usePermissions();
+  const viewAll = isViewAllMode();
+  const currentSlug = getCurrentTenant();
 
-  // Hide entirely outside view-all mode or when there's nothing to choose from.
-  if (!isViewAllMode() || tenants.length <= 1) return null;
+  // Only relevant for MainAdmin with at least 2 tenants. Stays visible even
+  // when the user has pinned a single company — in that mode the dropdown
+  // doubles as a quick company switcher.
+  if (!isMainAdmin || tenants.length <= 1) return null;
+
+  // In pinned-company mode, reflect the actual current tenant in the trigger
+  // and let the user jump to any other company (or back to "All companies").
+  const currentTenant = !viewAll ? tenants.find(t => t.slug === currentSlug) : undefined;
+  const selectValue = viewAll
+    ? (value === 'all' ? 'all' : String(value))
+    : (currentTenant ? String(currentTenant.id) : 'all');
+
+  const handleChange = (v: string) => {
+    if (viewAll) {
+      onChange(v === 'all' ? 'all' : Number(v));
+      return;
+    }
+    // Pinned-company mode → behave as a tenant switcher
+    if (v === 'all') {
+      setTenantOverride(VIEW_ALL_SENTINEL);
+      return;
+    }
+    const target = tenants.find(t => t.id === Number(v));
+    if (target && target.slug !== currentSlug) {
+      setTenantOverride(target.slug);
+    }
+  };
 
   return (
-    <Select
-      value={value === 'all' ? 'all' : String(value)}
-      onValueChange={(v) => onChange(v === 'all' ? 'all' : Number(v))}
-    >
+    <Select value={selectValue} onValueChange={handleChange}>
       <SelectTrigger
         className={cn(
           'gap-2',
           size === 'sm' ? 'h-9 w-[180px]' : 'h-10 w-[220px]',
           className,
         )}
+        title={viewAll ? 'Filter by company' : 'Switch company'}
       >
-        <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+        {viewAll
+          ? <Layers className="h-4 w-4 text-primary shrink-0" />
+          : <Building2 className="h-4 w-4 text-primary shrink-0" />}
         <SelectValue placeholder="All companies" />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="all">All companies</SelectItem>
+        <SelectItem value="all">
+          <span className="inline-flex items-center gap-2">
+            <Layers className="h-3.5 w-3.5 text-muted-foreground" />
+            All companies
+          </span>
+        </SelectItem>
         {tenants.map((t) => (
           <SelectItem key={t.id} value={String(t.id)}>
             {t.companyName}
@@ -212,7 +246,7 @@ export function filterByCompany<T>(rows: T[], value: CompanyFilterValue): T[] {
  * Filtering is a no-op when the user is not in view-all mode, so it's safe
  * to leave in every list permanently.
  */
-import { useMemo } from 'react';
+
 export function useFilteredByCompany<T>(rows: T[], keyOverride?: string): T[] {
   const value = useGlobalCompanyFilter(keyOverride);
   return useMemo(() => filterByCompany(rows, value), [rows, value]);
