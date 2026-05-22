@@ -333,6 +333,7 @@ export const dispatchesApi = {
     description?: string;
     billable?: boolean;
     hourlyRate?: number;
+    overrunReason?: string;
   }): Promise<TimeEntry> {
     const payload = {
       technicianId: entry.technicianId,
@@ -343,6 +344,7 @@ export const dispatchesApi = {
       description: entry.description || null,
       billable: entry.billable ?? true,
       hourlyRate: entry.hourlyRate ?? null,
+      overrunReason: entry.overrunReason || null,
     };
 
     const result = await apiFetch<any>(`/api/dispatches/${dispatchId}/time-entries`, { method: 'POST', body: JSON.stringify(payload) });
@@ -397,6 +399,7 @@ export const dispatchesApi = {
     currency: string;
     description?: string;
     date: string;
+    overrunReason?: string;
   }): Promise<Expense> {
     const payload = {
       technicianId: expense.technicianId,
@@ -406,6 +409,7 @@ export const dispatchesApi = {
       currency: expense.currency || 'USD',
       description: expense.description || null,
       date: expense.date,
+      overrunReason: expense.overrunReason || null,
     };
 
     const result = await apiFetch<any>(`/api/dispatches/${dispatchId}/expenses`, { method: 'POST', body: JSON.stringify(payload) });

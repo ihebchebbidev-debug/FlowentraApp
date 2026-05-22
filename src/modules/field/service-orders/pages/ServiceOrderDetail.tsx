@@ -27,6 +27,7 @@ import { MaterialsTab } from "../components/MaterialsTab";
 import { ServiceOrderActivityTab } from "../components/ServiceOrderActivityTab";
 import { DocumentsTab } from "../components/DocumentsTab";
 import { ChecklistsSection } from "@/modules/shared/components/documents";
+import PlanVsActualPanel from "@/shared/components/planning/PlanVsActualPanel";
 import { cn } from "@/lib/utils";
 import { CompanyBadge } from "@/components/CompanyBadge";
 import { TenantSelector } from "@/components/TenantSelector";
@@ -1360,17 +1361,27 @@ export default function ServiceOrderDetail() {
 
           {/* Time & Expenses Tab */}
           <TabsContent value="time_expenses">
-            <Card>
-              <CardContent className="pt-6">
-                <TimeExpensesTab
-                  serviceOrder={serviceOrderForComponents}
-                  timeEntries={timeEntries}
-                  expenses={expenses}
-                  onUpdate={fetchRelatedData}
-                />
-              </CardContent>
-            </Card>
+            <div className="space-y-4">
+              {mappedJobs.length > 0 && (
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  {mappedJobs.map(j => (
+                    <PlanVsActualPanel key={j.id} serviceOrderJobId={j.id} />
+                  ))}
+                </div>
+              )}
+              <Card>
+                <CardContent className="pt-6">
+                  <TimeExpensesTab
+                    serviceOrder={serviceOrderForComponents}
+                    timeEntries={timeEntries}
+                    expenses={expenses}
+                    onUpdate={fetchRelatedData}
+                  />
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
+
 
           {/* Materials Tab */}
           <TabsContent value="materials">

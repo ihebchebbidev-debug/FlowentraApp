@@ -72,6 +72,7 @@ export function AddTimeExpenseDialog({
     description: '',
     billable: true,
     hourlyRate: 50,
+    overrunReason: '',
   });
 
   // Expense form
@@ -83,7 +84,11 @@ export function AddTimeExpenseDialog({
     currency: 'TND',
     description: '',
     date: new Date(),
+    overrunReason: '',
   });
+
+  // Overrun UI state — true after backend rejects with overrun error
+  const [overrunRequired, setOverrunRequired] = useState(false);
 
   // Load dispatches on open
   useEffect(() => {
@@ -105,6 +110,7 @@ export function AddTimeExpenseDialog({
         currency: 'TND',
         description: editingEntry.description || '',
         date: new Date(editingEntry.date),
+        overrunReason: '',
       });
     } else {
       setActiveTab('time');
@@ -118,6 +124,7 @@ export function AddTimeExpenseDialog({
         description: editingEntry.description || '',
         billable: true,
         hourlyRate: editingEntry.hourlyRate || 50,
+        overrunReason: '',
       });
     }
   }, [open, editingEntry]);
@@ -155,6 +162,7 @@ export function AddTimeExpenseDialog({
       description: '',
       billable: true,
       hourlyRate: 50,
+      overrunReason: '',
     });
     setExpenseForm({
       dispatchId: '',
@@ -164,8 +172,10 @@ export function AddTimeExpenseDialog({
       currency: 'TND',
       description: '',
       date: new Date(),
+      overrunReason: '',
     });
     setDispatchSearch('');
+    setOverrunRequired(false);
   };
 
   const handleClose = () => {
@@ -216,13 +226,20 @@ export function AddTimeExpenseDialog({
           description: timeForm.description || undefined,
           billable: timeForm.billable,
           hourlyRate: timeForm.hourlyRate,
+          overrunReason: timeForm.overrunReason || undefined,
         });
         toast.success(t('time-expenses:add_entry.success_time'));
       }
       handleClose();
       onSuccess?.();
     } catch (err: any) {
-      toast.error(t('time-expenses:add_entry.error_time') + (err.message ? `: ${err.message}` : ''));
+      const msg = String(err?.message || '');
+      if (/overrun|plan|exceed/i.test(msg) && !timeForm.overrunReason) {
+        setOverrunRequired(true);
+        toast.error(t('planning.overrunReasonRequired', 'Logged time exceeds the planned budget. Please provide an overrun reason.'));
+      } else {
+        toast.error(t('time-expenses:add_entry.error_time') + (msg ? `: ${msg}` : ''));
+      }
     } finally {
       setSubmitting(false);
     }
@@ -268,13 +285,20 @@ export function AddTimeExpenseDialog({
           currency: expenseForm.currency,
           description: expenseForm.description || undefined,
           date: format(expenseForm.date, "yyyy-MM-dd'T'HH:mm:ss"),
+          overrunReason: expenseForm.overrunReason || undefined,
         });
         toast.success(t('time-expenses:add_entry.success_expense'));
       }
       handleClose();
       onSuccess?.();
     } catch (err: any) {
-      toast.error(t('time-expenses:add_entry.error_expense') + (err.message ? `: ${err.message}` : ''));
+      const msg = String(err?.message || '');
+      if (/overrun|plan|exceed/i.test(msg) && !expenseForm.overrunReason) {
+        setOverrunRequired(true);
+        toast.error(t('planning.overrunReasonRequired', 'Logged expense exceeds the planned budget. Please provide an overrun reason.'));
+      } else {
+        toast.error(t('time-expenses:add_entry.error_expense') + (msg ? `: ${msg}` : ''));
+      }
     } finally {
       setSubmitting(false);
     }
@@ -463,6 +487,24 @@ export function AddTimeExpenseDialog({
                   rows={2}
                 />
               </div>
+
+              {/* Overrun reason */}
+              <div className="space-y-1.5">
+                <Label className={`text-sm ${overrunRequired ? 'text-destructive' : ''}`}>
+                  {t('planning.overrunReason', 'Overrun reason')}
+                  {overrunRequired && ' *'}
+                  <span className="ml-2 text-xs text-muted-foreground font-normal">
+                    {t('planning.overrunReasonHint', '(required only if exceeding planned budget)')}
+                  </span>
+                </Label>
+                <Textarea
+                  value={timeForm.overrunReason}
+                  onChange={(e) => setTimeForm(f => ({ ...f, overrunReason: e.target.value }))}
+                  placeholder={t('planning.overrunReasonPlaceholder', 'Why is the planned time exceeded?')}
+                  rows={2}
+                  className={overrunRequired ? 'border-destructive' : ''}
+                />
+              </div>
             </TabsContent>
 
             {/* ─── EXPENSE TAB ─── */}
@@ -613,6 +655,24 @@ export function AddTimeExpenseDialog({
                   onChange={(e) => setExpenseForm(f => ({ ...f, description: e.target.value }))}
                   placeholder={t('time-expenses:add_entry.description_placeholder')}
                   rows={2}
+                />
+              </div>
+
+              {/* Overrun reason */}
+              <div className="space-y-1.5">
+                <Label className={`text-sm ${overrunRequired ? 'text-destructive' : ''}`}>
+                  {t('planning.overrunReason', 'Overrun reason')}
+                  {overrunRequired && ' *'}
+                  <span className="ml-2 text-xs text-muted-foreground font-normal">
+                    {t('planning.overrunReasonHint', '(required only if exceeding planned budget)')}
+                  </span>
+                </Label>
+                <Textarea
+                  value={expenseForm.overrunReason}
+                  onChange={(e) => setExpenseForm(f => ({ ...f, overrunReason: e.target.value }))}
+                  placeholder={t('planning.overrunReasonPlaceholder', 'Why is the planned budget exceeded?')}
+                  rows={2}
+                  className={overrunRequired ? 'border-destructive' : ''}
                 />
               </div>
             </TabsContent>
