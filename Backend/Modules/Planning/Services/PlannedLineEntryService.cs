@@ -134,7 +134,7 @@ namespace MyApi.Modules.Planning.Services
             // Actuals come from dispatch TimeEntries/Expenses on dispatches linked to this job.
             // Best-effort: aggregate via DispatchJobs that reference this ServiceOrderJob.
             var dispatchIds = await _db.Set<MyApi.Modules.Dispatches.Models.DispatchJob>()
-                .Where(dj => dj.ServiceOrderJobId == serviceOrderJobId)
+                .Where(dj => dj.JobId == serviceOrderJobId && !dj.IsDeleted)
                 .Select(dj => dj.DispatchId)
                 .Distinct()
                 .ToListAsync();
