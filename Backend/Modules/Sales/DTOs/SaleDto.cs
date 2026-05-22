@@ -111,6 +111,7 @@ namespace MyApi.Modules.Sales.DTOs
         public bool ServiceOrderGenerated { get; set; }
         public string? ServiceOrderId { get; set; }
         public string? FulfillmentStatus { get; set; }
+        public List<MyApi.Modules.Planning.DTOs.PlannedLineEntryDto>? PlannedEntries { get; set; }
     }
 
     public class CreateSaleDto

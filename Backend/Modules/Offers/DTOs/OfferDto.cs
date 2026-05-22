@@ -96,6 +96,7 @@ namespace MyApi.Modules.Offers.DTOs
         public string DiscountType { get; set; } = "percentage";
         public string? InstallationId { get; set; }
         public string? InstallationName { get; set; }
+        public List<MyApi.Modules.Planning.DTOs.PlannedLineEntryDto>? PlannedEntries { get; set; }
     }
 
     public class CreateOfferDto

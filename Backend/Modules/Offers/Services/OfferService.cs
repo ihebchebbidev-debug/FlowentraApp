@@ -18,6 +18,7 @@ namespace MyApi.Modules.Offers.Services
         private readonly IStockTransactionService? _stockTransactionService;
         private readonly IWorkflowTriggerService? _workflowTriggerService;
         private readonly MyApi.Modules.Numbering.Services.INumberingService? _numberingService;
+        private readonly MyApi.Modules.Planning.Services.IPlannedLineEntryService? _plannedEntries;
 
         public OfferService(
             ApplicationDbContext context, 
@@ -25,7 +26,8 @@ namespace MyApi.Modules.Offers.Services
             IEntityFormDocumentService formDocumentService,
             IStockTransactionService? stockTransactionService = null,
             IWorkflowTriggerService? workflowTriggerService = null,
-            MyApi.Modules.Numbering.Services.INumberingService? numberingService = null)
+            MyApi.Modules.Numbering.Services.INumberingService? numberingService = null,
+            MyApi.Modules.Planning.Services.IPlannedLineEntryService? plannedEntries = null)
         {
             _context = context;
             _logger = logger;
@@ -33,6 +35,7 @@ namespace MyApi.Modules.Offers.Services
             _stockTransactionService = stockTransactionService;
             _workflowTriggerService = workflowTriggerService;
             _numberingService = numberingService;
+            _plannedEntries = plannedEntries;
         }
 
         public async Task<PaginatedOfferResponse> GetOffersAsync(
@@ -453,6 +456,27 @@ namespace MyApi.Modules.Offers.Services
                         });
 
                         await _context.SaveChangesAsync();
+
+                        // Carry planned time/expenses from offer items to the rebuilt sale items (Stage 2).
+                        if (_plannedEntries != null && offerItems.Any())
+                        {
+                            try
+                            {
+                                var newSaleItemsList = await _context.SaleItems
+                                    .Where(si => si.SaleId == sale.Id)
+                                    .OrderBy(si => si.Id)
+                                    .ToListAsync();
+                                // Pair by index — both lists were built in the same order from offerItems.
+                                for (int i = 0; i < offerItems.Count && i < newSaleItemsList.Count; i++)
+                                {
+                                    await _plannedEntries.CopyAsync("offer_item", offerItems[i].Id, "sale_item", newSaleItemsList[i].Id, userId);
+                                }
+                            }
+                            catch (Exception planEx)
+                            {
+                                _logger.LogWarning(planEx, "Failed to copy planned entries during offer→sale sync (offer {OfferId})", id);
+                            }
+                        }
                         _logger.LogInformation("Synced offer {OfferId} changes to linked sale {SaleId}", id, linkedSaleId);
                     }
                 }
@@ -681,6 +705,28 @@ namespace MyApi.Modules.Offers.Services
                 });
 
                 await _context.SaveChangesAsync();
+
+                // Carry planned time/expenses from offer items → new sale items (Stage 2).
+                if (_plannedEntries != null && offer.Items != null && offer.Items.Any())
+                {
+                    try
+                    {
+                        var srcOfferItems = offer.Items.ToList();
+                        var newSaleItems = await _context.SaleItems
+                            .Where(si => si.SaleId == sale.Id)
+                            .OrderBy(si => si.Id)
+                            .ToListAsync();
+                        for (int i = 0; i < srcOfferItems.Count && i < newSaleItems.Count; i++)
+                        {
+                            await _plannedEntries.CopyAsync("offer_item", srcOfferItems[i].Id, "sale_item", newSaleItems[i].Id, userId);
+                        }
+                    }
+                    catch (Exception planEx)
+                    {
+                        _logger.LogWarning(planEx, "Failed to copy planned entries during offer→sale conversion (offer {OfferId})", id);
+                    }
+                }
+
 
                 // Copy form documents from offer to sale
                 try

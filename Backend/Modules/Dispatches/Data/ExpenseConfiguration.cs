@@ -17,6 +17,8 @@ namespace MyApi.Modules.Dispatches.Data
             builder.Property(e => e.ExpenseDate).IsRequired();
             builder.Property(e => e.ReceiptPath).HasMaxLength(500);
             builder.Property(e => e.CreatedDate).IsRequired();
+            builder.Property(e => e.OverrunFlag).HasDefaultValue(false);
+            builder.Property(e => e.OverrunReason).HasMaxLength(500);
         }
     }
 }

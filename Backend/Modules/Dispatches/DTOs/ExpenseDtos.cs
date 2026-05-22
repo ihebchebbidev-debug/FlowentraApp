@@ -15,6 +15,7 @@ namespace MyApi.Modules.Dispatches.DTOs
         public string Currency { get; set; } = "USD";
         public string? Description { get; set; }
         public DateTime? Date { get; set; }
+        public string? OverrunReason { get; set; }
     }
 
     public class UpdateExpenseDto
@@ -43,6 +44,8 @@ namespace MyApi.Modules.Dispatches.DTOs
         public DateTime CreatedAt { get; set; }
         public string? InvoiceStatus { get; set; }
         public string? SourceTable { get; set; } // "service_order" or "dispatch"
+        public bool OverrunFlag { get; set; }
+        public string? OverrunReason { get; set; }
     }
 
     public class ApproveExpenseDto

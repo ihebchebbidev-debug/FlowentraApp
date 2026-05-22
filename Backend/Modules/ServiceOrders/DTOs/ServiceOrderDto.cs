@@ -181,6 +181,7 @@ namespace MyApi.Modules.ServiceOrders.DTOs
         public int? CompletionPercentage { get; set; }
         public string[]? AssignedTechnicianIds { get; set; }
         public List<UserLightDto>? AssignedTechnicians { get; set; }
+        public List<MyApi.Modules.Planning.DTOs.PlannedLineEntryDto>? PlannedEntries { get; set; }
     }
 
     /// <summary>Body for PATCH /api/service-orders/{soId}/jobs/{jobId}/status</summary>

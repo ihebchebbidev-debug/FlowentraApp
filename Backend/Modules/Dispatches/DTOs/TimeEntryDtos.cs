@@ -17,6 +17,9 @@ namespace MyApi.Modules.Dispatches.DTOs
         public string? Description { get; set; }
         public bool Billable { get; set; }
         public decimal? HourlyRate { get; set; }
+
+        /// <summary>Required when this entry will push cumulative actuals beyond the planned budget.</summary>
+        public string? OverrunReason { get; set; }
     }
 
     public class UpdateTimeEntryDto
@@ -47,6 +50,8 @@ namespace MyApi.Modules.Dispatches.DTOs
         public DateTime CreatedAt { get; set; }
         public string? InvoiceStatus { get; set; }
         public string? SourceTable { get; set; } // "service_order" or "dispatch"
+        public bool OverrunFlag { get; set; }
+        public string? OverrunReason { get; set; }
     }
 
     public class ApproveTimeEntryDto

@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SaleItem } from "../types";
+import PlannedEntriesEditor from "@/shared/components/planning/PlannedEntriesEditor";
 
 interface EditSaleItemModalProps {
   item: SaleItem;
@@ -126,6 +127,15 @@ export function EditSaleItemModal({ item, isOpen, onClose, onSave }: EditSaleIte
               </p>
             </CardContent>
           </Card>
+
+          {/* Planning panel — only for service lines */}
+          {editedItem.type === 'service' && (
+            <PlannedEntriesEditor
+              parentType="sale_item"
+              parentId={Number(editedItem.id)}
+            />
+          )}
+
 
           {/* Actions */}
           <div className="flex justify-end gap-3">

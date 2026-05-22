@@ -47,5 +47,12 @@ namespace MyApi.Modules.Dispatches.Models
         [Required]
         [Column("CreatedDate")]
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+
+        [Column("OverrunFlag")]
+        public bool OverrunFlag { get; set; } = false;
+
+        [Column("OverrunReason")]
+        [MaxLength(500)]
+        public string? OverrunReason { get; set; }
     }
 }

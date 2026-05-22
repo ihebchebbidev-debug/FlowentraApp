@@ -18,19 +18,22 @@ namespace MyApi.Modules.ServiceOrders.Services
         private readonly IWorkflowTriggerService? _workflowTriggerService;
         private readonly MyApi.Modules.Numbering.Services.INumberingService? _numberingService;
         private readonly IAppSettingsService? _appSettingsService;
+        private readonly MyApi.Modules.Planning.Services.IPlannedLineEntryService? _plannedEntries;
 
         public ServiceOrderService(
             ApplicationDbContext context, 
             ILogger<ServiceOrderService> logger,
             IWorkflowTriggerService? workflowTriggerService = null,
             MyApi.Modules.Numbering.Services.INumberingService? numberingService = null,
-            IAppSettingsService? appSettingsService = null)
+            IAppSettingsService? appSettingsService = null,
+            MyApi.Modules.Planning.Services.IPlannedLineEntryService? plannedEntries = null)
         {
             _context = context;
             _logger = logger;
             _workflowTriggerService = workflowTriggerService;
             _numberingService = numberingService;
             _appSettingsService = appSettingsService;
+            _plannedEntries = plannedEntries;
         }
 
         public async Task<ServiceOrderDto> CreateFromSaleAsync(int saleId, CreateServiceOrderDto createDto, string userId)
@@ -225,6 +228,31 @@ namespace MyApi.Modules.ServiceOrders.Services
 
                     _context.ServiceOrderJobs.AddRange(jobs);
                     await _context.SaveChangesAsync();
+
+                    // Carry planned time/expenses from sale items → service order jobs (Stage 2).
+                    // A job may aggregate multiple sale items (installation-grouped); SaleItemId stores "1,2,3".
+                    if (_plannedEntries != null)
+                    {
+                        foreach (var j in jobs)
+                        {
+                            if (string.IsNullOrWhiteSpace(j.SaleItemId)) continue;
+                            foreach (var part in j.SaleItemId.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                            {
+                                if (int.TryParse(part.Trim(), out var saleItemId))
+                                {
+                                    try
+                                    {
+                                        await _plannedEntries.CopyAsync("sale_item", saleItemId, "service_order_job", j.Id, userId);
+                                    }
+                                    catch (Exception planEx)
+                                    {
+                                        _logger.LogWarning(planEx, "Failed to copy planned entries from sale_item {SaleItemId} to job {JobId}", saleItemId, j.Id);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
 
                     // Update sale items with service order information
                     foreach (var item in serviceItems)

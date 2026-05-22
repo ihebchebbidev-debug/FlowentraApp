@@ -18,17 +18,20 @@ namespace MyApi.Modules.Dispatches.Services
         private readonly ILogger<DispatchService> _logger;
         private readonly IWorkflowTriggerService? _workflowTriggerService;
         private readonly MyApi.Modules.Numbering.Services.INumberingService? _numberingService;
+        private readonly MyApi.Modules.Planning.Services.IPlannedLineEntryService? _plannedEntries;
 
         public DispatchService(
             ApplicationDbContext db, 
             ILogger<DispatchService> logger,
             IWorkflowTriggerService? workflowTriggerService = null,
-            MyApi.Modules.Numbering.Services.INumberingService? numberingService = null)
+            MyApi.Modules.Numbering.Services.INumberingService? numberingService = null,
+            MyApi.Modules.Planning.Services.IPlannedLineEntryService? plannedEntries = null)
         {
             _db = db;
             _logger = logger;
             _workflowTriggerService = workflowTriggerService;
             _numberingService = numberingService;
+            _plannedEntries = plannedEntries;
         }
 
         // Helper to build a map of technicianId -> display name for a dispatch
@@ -1107,6 +1110,19 @@ namespace MyApi.Modules.Dispatches.Services
             var d = await _db.Dispatches.FirstOrDefaultAsync(x => x.Id == dispatchId && !x.IsDeleted);
             if (d == null) throw new KeyNotFoundException($"Dispatch {dispatchId} not found");
 
+            var newMinutes = (decimal)(dto.EndTime - dto.StartTime).TotalMinutes;
+            if (newMinutes < 0) newMinutes = 0;
+
+            // Soft-cap overrun check against planned totals (Stage 2).
+            var (plannedMin, actualMin) = await GetPlannedAndActualMinutesAsync(dispatchId);
+            bool willOverrun = plannedMin > 0 && (actualMin + newMinutes) > plannedMin;
+            if (willOverrun && string.IsNullOrWhiteSpace(dto.OverrunReason))
+            {
+                throw new InvalidOperationException(
+                    $"Logging {newMinutes} min would exceed planned budget ({actualMin}/{plannedMin} min already logged). " +
+                    "Provide 'overrunReason' to confirm.");
+            }
+
             var te = new TimeEntry
             {
                 DispatchId = dispatchId,
@@ -1114,9 +1130,11 @@ namespace MyApi.Modules.Dispatches.Services
                 WorkType = dto.WorkType,
                 StartTime = dto.StartTime,
                 EndTime = dto.EndTime,
-                Duration = (decimal)(dto.EndTime - dto.StartTime).TotalMinutes,
+                Duration = newMinutes,
                 Description = dto.Description,
-                CreatedDate = DateTime.UtcNow
+                CreatedDate = DateTime.UtcNow,
+                OverrunFlag = willOverrun,
+                OverrunReason = willOverrun ? dto.OverrunReason : null,
             };
             _db.TimeEntries.Add(te);
             await _db.SaveChangesAsync();
@@ -1134,8 +1152,57 @@ namespace MyApi.Modules.Dispatches.Services
                 EndTime = te.EndTime,
                 Duration = (int)(te.Duration ?? 0), 
                 Description = te.Description,
-                CreatedAt = te.CreatedDate 
+                CreatedAt = te.CreatedDate,
+                OverrunFlag = te.OverrunFlag,
+                OverrunReason = te.OverrunReason,
             };
+        }
+
+        /// <summary>Sum planned minutes (planned_minutes * technician_count) across all service-order jobs linked to this dispatch, and the already-logged actual minutes.</summary>
+        private async Task<(decimal plannedMinutes, decimal actualMinutes)> GetPlannedAndActualMinutesAsync(int dispatchId)
+        {
+            var jobIds = await _db.Set<DispatchJob>()
+                .Where(dj => dj.DispatchId == dispatchId && !dj.IsDeleted)
+                .Select(dj => dj.JobId)
+                .Distinct()
+                .ToListAsync();
+            if (jobIds.Count == 0) return (0, 0);
+
+            var planned = await _db.Set<MyApi.Modules.Planning.Models.PlannedLineEntry>()
+                .Where(p => p.ParentType == "service_order_job" && jobIds.Contains(p.ParentId) && p.Kind == "time")
+                .Select(p => new { p.PlannedMinutes, p.TechnicianCount })
+                .ToListAsync();
+            decimal plannedTotal = planned.Sum(p => (decimal)((p.PlannedMinutes ?? 0) * (p.TechnicianCount ?? 1)));
+
+            decimal actualTotal = await _db.TimeEntries
+                .Where(t => t.DispatchId == dispatchId && t.Duration != null)
+                .SumAsync(t => (decimal?)t.Duration ?? 0m);
+            return (plannedTotal, actualTotal);
+        }
+
+        /// <summary>Sum planned amounts for an expense type across all jobs linked to this dispatch, and the already-logged actual amounts.</summary>
+        private async Task<(decimal plannedAmount, decimal actualAmount)> GetPlannedAndActualExpenseAsync(int dispatchId, string expenseType)
+        {
+            var jobIds = await _db.Set<DispatchJob>()
+                .Where(dj => dj.DispatchId == dispatchId && !dj.IsDeleted)
+                .Select(dj => dj.JobId)
+                .Distinct()
+                .ToListAsync();
+            if (jobIds.Count == 0) return (0, 0);
+
+            var et = (expenseType ?? "").ToLower();
+            decimal plannedTotal = await _db.Set<MyApi.Modules.Planning.Models.PlannedLineEntry>()
+                .Where(p => p.ParentType == "service_order_job"
+                    && jobIds.Contains(p.ParentId)
+                    && p.Kind == "expense"
+                    && p.ExpenseType != null
+                    && p.ExpenseType.ToLower() == et)
+                .SumAsync(p => (decimal?)p.PlannedAmount ?? 0m);
+
+            decimal actualTotal = await _db.DispatchExpenses
+                .Where(e => e.DispatchId == dispatchId && e.ExpenseType.ToLower() == et)
+                .SumAsync(e => (decimal?)e.Amount ?? 0m);
+            return (plannedTotal, actualTotal);
         }
 
         public async Task<IEnumerable<TimeEntryDto>> GetTimeEntriesAsync(int dispatchId)
@@ -1209,6 +1276,16 @@ namespace MyApi.Modules.Dispatches.Services
             var d = await _db.Dispatches.FirstOrDefaultAsync(x => x.Id == dispatchId && !x.IsDeleted);
             if (d == null) throw new KeyNotFoundException($"Dispatch {dispatchId} not found");
 
+            // Soft-cap overrun check on expenses bucketed by type (Stage 2).
+            var (plannedAmt, actualAmt) = await GetPlannedAndActualExpenseAsync(dispatchId, dto.Type);
+            bool willOverrun = plannedAmt > 0 && (actualAmt + dto.Amount) > plannedAmt;
+            if (willOverrun && string.IsNullOrWhiteSpace(dto.OverrunReason))
+            {
+                throw new InvalidOperationException(
+                    $"Expense of {dto.Amount} would exceed planned '{dto.Type}' budget ({actualAmt}/{plannedAmt}). " +
+                    "Provide 'overrunReason' to confirm.");
+            }
+
             var exp = new Expense
             {
                 DispatchId = dispatchId,
@@ -1217,7 +1294,9 @@ namespace MyApi.Modules.Dispatches.Services
                 Description = dto.Description,
                 ExpenseDate = dto.Date ?? DateTime.UtcNow,
                 RecordedBy = userId,
-                CreatedDate = DateTime.UtcNow
+                CreatedDate = DateTime.UtcNow,
+                OverrunFlag = willOverrun,
+                OverrunReason = willOverrun ? dto.OverrunReason : null,
             };
             _db.DispatchExpenses.Add(exp);
             await _db.SaveChangesAsync();
@@ -1236,7 +1315,9 @@ namespace MyApi.Modules.Dispatches.Services
                 Description = exp.Description,
                 Date = exp.ExpenseDate,
                 Status = "pending", 
-                CreatedAt = exp.CreatedDate 
+                CreatedAt = exp.CreatedDate,
+                OverrunFlag = exp.OverrunFlag,
+                OverrunReason = exp.OverrunReason,
             };
         }
 

@@ -44,5 +44,13 @@ namespace MyApi.Modules.Dispatches.Models
         [Required]
         [Column("CreatedDate")]
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+
+        /// <summary>Set when this entry pushed cumulative actuals beyond the planned budget.</summary>
+        [Column("OverrunFlag")]
+        public bool OverrunFlag { get; set; } = false;
+
+        [Column("OverrunReason")]
+        [MaxLength(500)]
+        public string? OverrunReason { get; set; }
     }
 }

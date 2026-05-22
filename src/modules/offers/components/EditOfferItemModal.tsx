@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Package, Wrench, DollarSign, Percent } from "lucide-react";
 import { OfferItem } from "../types";
+import PlannedEntriesEditor from "@/shared/components/planning/PlannedEntriesEditor";
 
 interface EditOfferItemModalProps {
   open: boolean;
@@ -255,6 +256,16 @@ export function EditOfferItemModal({ open, onOpenChange, item, onUpdateItem, cur
               </label>
             </div>
           )}
+
+          {/* Planning panel — only for service lines */}
+          {item.type === 'service' && (
+            <PlannedEntriesEditor
+              parentType="offer_item"
+              parentId={Number(item.id)}
+              currency={currency}
+            />
+          )}
+
 
           <div className="flex justify-end gap-3 pt-4 border-t">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
