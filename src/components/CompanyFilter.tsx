@@ -145,10 +145,11 @@ export function CompanyFilter({
   const viewAll = isViewAllMode();
   const currentSlug = getCurrentTenant();
 
-  // Only relevant for MainAdmin with at least 2 tenants. Stays visible even
-  // when the user has pinned a single company — in that mode the dropdown
-  // doubles as a quick company switcher.
-  if (!isMainAdmin || tenants.length <= 1) return null;
+  // Always render when the user has access to more than one company so they
+  // can switch at any time — even after pinning a single company. We no
+  // longer require MainAdmin: any user with multi-tenant access sees it.
+  if (tenants.length <= 1) return null;
+  void isMainAdmin; // kept for future role-specific UI tweaks
 
   // In pinned-company mode, reflect the actual current tenant in the trigger
   // and let the user jump to any other company (or back to "All companies").
@@ -177,8 +178,8 @@ export function CompanyFilter({
     <Select value={selectValue} onValueChange={handleChange}>
       <SelectTrigger
         className={cn(
-          'gap-2',
-          size === 'sm' ? 'h-9 w-[180px]' : 'h-10 w-[220px]',
+          'gap-2 border-primary/40 bg-primary/5 hover:bg-primary/10 focus:ring-primary/40',
+          size === 'sm' ? 'h-9 w-[200px]' : 'h-10 w-[240px]',
           className,
         )}
         title={viewAll ? 'Filter by company' : 'Switch company'}

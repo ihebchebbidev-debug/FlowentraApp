@@ -240,57 +240,74 @@ export function DispatchingInterface() {
             </Button>
           </div>
           
-          {/* Smart suggestions popover */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2" disabled={jobs.length === 0}>
-                <Sparkles className="h-4 w-4" />
-                <span className="hidden sm:inline">{t('dispatcher.suggest.button', { defaultValue: 'Suggest' })}</span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-96 p-0">
-              <div className="px-4 py-3 border-b">
-                <div className="text-sm font-semibold">{t('dispatcher.suggest.title', { defaultValue: 'Best-fit technicians' })}</div>
-                <div className="text-xs text-muted-foreground">{t('dispatcher.suggest.subtitle', { defaultValue: 'Top picks for your unassigned jobs (skills + availability + distance).' })}</div>
-              </div>
-              <div className="max-h-80 overflow-auto divide-y">
-                {suggestions.length === 0 && (
-                  <div className="p-4 text-sm text-muted-foreground">{t('dispatcher.suggest.empty', { defaultValue: 'No unassigned jobs.' })}</div>
-                )}
-                {suggestions.map(({ job, ranked }) => (
-                  <div key={job.id} className="p-3">
-                    <div className="text-sm font-medium truncate">{job.title}</div>
-                    <div className="text-[11px] text-muted-foreground mb-2 truncate">{job.customerName}</div>
-                    {ranked.length === 0 ? (
-                      <div className="text-xs text-muted-foreground">{t('dispatcher.suggest.no_tech', { defaultValue: 'No technicians available' })}</div>
-                    ) : (
-                      <div className="flex flex-wrap gap-1.5">
-                        {ranked.map((r, idx) => (
-                          <Badge key={r.technician.id} variant={idx === 0 ? 'default' : 'secondary'} className="gap-1 font-normal">
-                            {r.technician.firstName} {r.technician.lastName}
-                            <span className="opacity-70">· {r.score}</span>
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
+          {/* Smart Planning group — always visible, clearly labeled */}
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-primary/30 bg-primary/5">
+            <span className="hidden md:inline text-[11px] font-medium text-primary uppercase tracking-wide pr-1">
+              {t('dispatcher.smart_planning', { defaultValue: 'Smart Planning' })}
+            </span>
 
-          {/* Auto-fill day */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setAutoFillOpen(true)}
-            disabled={autoFilling || jobs.length === 0 || !profileSettings.allowSchedulingJobs}
-            className="gap-2"
-            title={!profileSettings.allowSchedulingJobs ? t('dispatcher.profiles.scheduling_disabled', { defaultValue: 'Scheduling new jobs is disabled in your planning profile.' }) : undefined}
-          >
-            <Wand2 className={`h-4 w-4 ${autoFilling ? 'animate-pulse' : ''}`} />
-            <span className="hidden sm:inline">{t('dispatcher.autofill.button', { defaultValue: 'Auto-fill day' })}</span>
-          </Button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="default" size="sm" className="gap-2 h-8">
+                  <Sparkles className="h-4 w-4" />
+                  <span>{t('dispatcher.suggest.button', { defaultValue: 'Suggest' })}</span>
+                  {jobs.length > 0 && (
+                    <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">{jobs.length}</Badge>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-96 p-0">
+                <div className="px-4 py-3 border-b">
+                  <div className="text-sm font-semibold">{t('dispatcher.suggest.title', { defaultValue: 'Best-fit technicians' })}</div>
+                  <div className="text-xs text-muted-foreground">{t('dispatcher.suggest.subtitle', { defaultValue: 'Top picks for your unassigned jobs (skills + availability + distance).' })}</div>
+                </div>
+                <div className="max-h-80 overflow-auto divide-y">
+                  {suggestions.length === 0 && (
+                    <div className="p-4 text-sm text-muted-foreground">{t('dispatcher.suggest.empty', { defaultValue: 'No unassigned jobs to suggest for.' })}</div>
+                  )}
+                  {suggestions.map(({ job, ranked }) => (
+                    <div key={job.id} className="p-3">
+                      <div className="text-sm font-medium truncate">{job.title}</div>
+                      <div className="text-[11px] text-muted-foreground mb-2 truncate">{job.customerName}</div>
+                      {ranked.length === 0 ? (
+                        <div className="text-xs text-muted-foreground">{t('dispatcher.suggest.no_tech', { defaultValue: 'No technicians available' })}</div>
+                      ) : (
+                        <div className="flex flex-wrap gap-1.5">
+                          {ranked.map((r, idx) => (
+                            <Badge key={r.technician.id} variant={idx === 0 ? 'default' : 'secondary'} className="gap-1 font-normal">
+                              {r.technician.firstName} {r.technician.lastName}
+                              <span className="opacity-70">· {r.score}</span>
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => {
+                if (jobs.length === 0) {
+                  toast.info(t('dispatcher.autofill.no_jobs', { defaultValue: 'No unassigned jobs to plan.' }));
+                  return;
+                }
+                if (!profileSettings.allowSchedulingJobs) {
+                  toast.error(t('dispatcher.profiles.scheduling_disabled', { defaultValue: 'Scheduling new jobs is disabled in your planning profile.' }));
+                  return;
+                }
+                setAutoFillOpen(true);
+              }}
+              disabled={autoFilling}
+              className="gap-2 h-8"
+            >
+              <Wand2 className={`h-4 w-4 ${autoFilling ? 'animate-pulse' : ''}`} />
+              <span>{t('dispatcher.autofill.button', { defaultValue: 'Auto-fill day' })}</span>
+            </Button>
+          </div>
 
           <Button
             variant="outline"

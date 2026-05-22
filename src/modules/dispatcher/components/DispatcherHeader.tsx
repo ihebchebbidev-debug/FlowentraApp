@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { CalendarRange, Undo2 } from "lucide-react";
+import { CalendarRange, Undo2, Sparkles } from "lucide-react";
 import { prefetchDispatcherOnHover } from "@/shared/prefetch";
 import { DispatcherService } from "../services/dispatcher.service";
 import { toast } from "sonner";
@@ -81,8 +81,8 @@ export function DispatcherHeader({ onDispatchJobs, hasCreateAccess = true }: Dis
             onMouseEnter={prefetchDispatcherOnHover}
             onFocus={prefetchDispatcherOnHover}
           >
-            <CalendarRange className="mr-2 h-4 w-4" />
-            {t('dispatcher.dispatch_jobs')}
+            <Sparkles className="mr-2 h-4 w-4" />
+            {t('dispatcher.open_planning_board', { defaultValue: 'Open Planning Board' })}
           </Button>
         )}
       </div>
