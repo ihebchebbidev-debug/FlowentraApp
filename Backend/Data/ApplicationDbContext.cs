@@ -298,6 +298,9 @@ namespace MyApi.Data
         // Module Scope Settings — per-module shared/per_company configuration
         public DbSet<MyApi.Modules.Settings.Models.ModuleScopeSetting> ModuleScopeSettings { get; set; }
 
+        // Planning — predefined time & expenses on offer/sale/service-order-job lines
+        public DbSet<MyApi.Modules.Planning.Models.PlannedLineEntry> PlannedLineEntries { get; set; }
+
         // ═══ MODULE SCOPE: shared vs per_company ═══
         // Lazy-loaded once per DbContext from the ModuleScopeSettings table.
         // Used by both the global query filter and StampTenantIdOnNewEntities.
@@ -553,6 +556,7 @@ namespace MyApi.Data
             modelBuilder.ApplyConfiguration(new ServiceOrderMaterialConfiguration());
             modelBuilder.ApplyConfiguration(new ServiceOrderTimeEntryConfiguration());
             modelBuilder.ApplyConfiguration(new ServiceOrderExpenseConfiguration());
+            modelBuilder.ApplyConfiguration(new MyApi.Modules.Planning.Data.PlannedLineEntryConfiguration());
             
             // Notifications configuration
             new NotificationConfiguration().Configure(modelBuilder);
