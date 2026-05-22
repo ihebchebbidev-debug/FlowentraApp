@@ -128,25 +128,29 @@ namespace MyApi.Modules.Purchases.Controllers
             }
         }
 
-        // Mark invoice as synced to TEJ (Tunisian e-tax journal).
-        // Persists tej_synced=true, tej_sync_date=now, tej_sync_status='synced'.
+        // Sync a supplier invoice to TEJ:
+        //   1. Creates an RSRecord (entity_type=supplier_invoice) snapshotted from the
+        //      invoice + supplier (operation code, RS amount, RS-TVA, beneficiary block).
+        //   2. Links invoice.RsRecordId to the created record.
+        //   3. Stamps tej_synced=true, tej_sync_date=now, tej_sync_status='synced'.
+        // Idempotent: re-calling on an already-synced invoice is a no-op (returns same record).
         [HttpPost("{id:int}/tej-sync")]
         public async Task<IActionResult> SyncTej(int id)
         {
             try
             {
                 var userId = GetUserId();
-                var dto = new UpdateSupplierInvoiceDto
-                {
-                    TejSynced = true,
-                    TejSyncDate = DateTime.UtcNow,
-                    TejSyncStatus = "synced",
-                };
-                var invoice = await _service.UpdateInvoiceAsync(id, dto, userId, GetUserName());
-                await _systemLogService.LogSuccessAsync($"Supplier invoice TEJ-synced: {invoice.InvoiceNumber}", "Purchases", "update", userId, GetUserName(), "SupplierInvoice", id.ToString());
+                var invoice = await _service.SyncTejAsync(id, userId, GetUserName());
+                await _systemLogService.LogSuccessAsync(
+                    $"Supplier invoice TEJ-synced: {invoice.InvoiceNumber} (RS record #{invoice.RsRecordId})",
+                    "Purchases", "update", userId, GetUserName(), "SupplierInvoice", id.ToString());
                 return Ok(new { success = true, data = invoice });
             }
             catch (KeyNotFoundException) { return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = "Invoice not found" } }); }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { success = false, error = new { code = "TEJ_SYNC_BLOCKED", message = ex.Message } });
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error TEJ-syncing invoice {Id}", id);

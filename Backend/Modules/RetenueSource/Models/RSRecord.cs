@@ -14,165 +14,89 @@ namespace MyApi.Modules.RetenueSource.Models
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
 
-        [Required]
-        [Column("EntityType")]
-        [MaxLength(20)]
-        public string EntityType { get; set; } = string.Empty; // "offer" or "sale"
+        /// <summary>"offer" | "sale" | "supplier_invoice"</summary>
+        [Required] [Column("EntityType")] [MaxLength(20)]
+        public string EntityType { get; set; } = string.Empty;
 
-        [Required]
-        [Column("EntityId")]
+        [Required] [Column("EntityId")]
         public int EntityId { get; set; }
 
-        [Column("EntityNumber")]
-        [MaxLength(50)]
+        [Column("EntityNumber")] [MaxLength(50)]
         public string? EntityNumber { get; set; }
 
-        [Required]
-        [Column("InvoiceNumber")]
-        [MaxLength(100)]
+        [Required] [Column("InvoiceNumber")] [MaxLength(100)]
         public string InvoiceNumber { get; set; } = string.Empty;
 
-        [Required]
-        [Column("InvoiceDate")]
-        public DateTime InvoiceDate { get; set; }
+        [Required] [Column("InvoiceDate")] public DateTime InvoiceDate { get; set; }
+        [Required] [Column("InvoiceAmount", TypeName = "decimal(15,2)")] public decimal InvoiceAmount { get; set; }
+        [Required] [Column("PaymentDate")] public DateTime PaymentDate { get; set; }
+        [Required] [Column("AmountPaid", TypeName = "decimal(15,2)")] public decimal AmountPaid { get; set; }
+        [Required] [Column("RSAmount", TypeName = "decimal(15,2)")] public decimal RSAmount { get; set; }
 
-        [Required]
-        [Column("InvoiceAmount", TypeName = "decimal(15,2)")]
-        public decimal InvoiceAmount { get; set; }
+        /// <summary>Legacy rate code (10/05/03/20). Kept for backward compatibility — TEJ now uses <see cref="OperationCode"/>.</summary>
+        [Required] [Column("RSTypeCode")] [MaxLength(10)]
+        public string RSTypeCode { get; set; } = "10";
 
-        [Required]
-        [Column("PaymentDate")]
-        public DateTime PaymentDate { get; set; }
+        [Required] [Column("SupplierName")] [MaxLength(255)] public string SupplierName { get; set; } = string.Empty;
+        [Required] [Column("SupplierTaxId")] [MaxLength(50)] public string SupplierTaxId { get; set; } = string.Empty;
+        [Column("SupplierAddress")] [MaxLength(500)] public string? SupplierAddress { get; set; }
 
-        [Required]
-        [Column("AmountPaid", TypeName = "decimal(15,2)")]
-        public decimal AmountPaid { get; set; }
+        [Required] [Column("PayerName")] [MaxLength(255)] public string PayerName { get; set; } = string.Empty;
+        [Required] [Column("PayerTaxId")] [MaxLength(50)] public string PayerTaxId { get; set; } = string.Empty;
+        [Column("PayerAddress")] [MaxLength(500)] public string? PayerAddress { get; set; }
 
-        [Required]
-        [Column("RSAmount", TypeName = "decimal(15,2)")]
-        public decimal RSAmount { get; set; }
+        [Required] [Column("Status")] [MaxLength(20)]
+        public string Status { get; set; } = "pending";
 
-        [Required]
-        [Column("RSTypeCode")]
-        [MaxLength(10)]
-        public string RSTypeCode { get; set; } = "10"; // 10, 05, 03, 20
+        [Column("TEJExported")] public bool TEJExported { get; set; } = false;
+        [Column("TEJFileName")] [MaxLength(255)] public string? TEJFileName { get; set; }
 
-        [Required]
-        [Column("SupplierName")]
-        [MaxLength(255)]
-        public string SupplierName { get; set; } = string.Empty;
+        // ── Compliance ──
+        [Column("DeclarationDeadline")] public DateTime? DeclarationDeadline { get; set; }
+        [Column("IsOverdue")] public bool IsOverdue { get; set; } = false;
+        [Column("DaysLate")] public int DaysLate { get; set; } = 0;
+        [Column("PenaltyAmount", TypeName = "decimal(15,2)")] public decimal PenaltyAmount { get; set; } = 0m;
+        [Column("SupplierType")] [MaxLength(20)] public string? SupplierType { get; set; }
+        [Column("IsExemptByTreaty")] public bool IsExemptByTreaty { get; set; } = false;
+        [Column("TreatyCode")] [MaxLength(20)] public string? TreatyCode { get; set; }
+        [Column("TEJAcceptanceNumber")] [MaxLength(255)] public string? TEJAcceptanceNumber { get; set; }
+        [Column("TEJTransmissionStatus")] [MaxLength(20)] public string TEJTransmissionStatus { get; set; } = "pending";
+        [Column("Notes")] [MaxLength(1000)] public string? Notes { get; set; }
 
-        [Required]
-        [Column("SupplierTaxId")]
-        [MaxLength(50)]
-        public string SupplierTaxId { get; set; } = string.Empty; // Matricule Fiscal
+        // ── TEJ / RiTEJ Compliance (DGI cahier de charges v1.0) ──
+        /// <summary>IdTypeOperation per official table (e.g. "RS1_000001").</summary>
+        [Column("OperationCode")] [MaxLength(20)] public string? OperationCode { get; set; }
 
-        [Column("SupplierAddress")]
-        [MaxLength(500)]
-        public string? SupplierAddress { get; set; }
+        /// <summary>CNPC if applicable.</summary>
+        [Column("Cnpc")] [MaxLength(20)] public string? Cnpc { get; set; }
 
-        [Required]
-        [Column("PayerName")]
-        [MaxLength(255)]
-        public string PayerName { get; set; } = string.Empty;
+        /// <summary>Prise en charge flag (declarant supports the RS instead of withholding from the beneficiary).</summary>
+        [Column("PriseEnCharge")] public bool PriseEnCharge { get; set; } = false;
 
-        [Required]
-        [Column("PayerTaxId")]
-        [MaxLength(50)]
-        public string PayerTaxId { get; set; } = string.Empty;
+        [Column("AnneeFacturation")] public int? AnneeFacturation { get; set; }
+        [Column("RefCertifChezDeclarant")] [MaxLength(50)] public string? RefCertifChezDeclarant { get; set; }
 
-        [Column("PayerAddress")]
-        [MaxLength(500)]
-        public string? PayerAddress { get; set; }
+        // RS-TVA (separate withholding on VAT, when applicable)
+        [Column("RsTvaCode")] [MaxLength(20)] public string? RsTvaCode { get; set; }
+        [Column("RsTvaTaux", TypeName = "decimal(5,2)")] public decimal? RsTvaTaux { get; set; }
+        [Column("RsTvaAmount", TypeName = "decimal(15,2)")] public decimal RsTvaAmount { get; set; } = 0m;
 
-        [Required]
-        [Column("Status")]
-        [MaxLength(20)]
-        public string Status { get; set; } = "pending"; // pending, exported, error
+        /// <summary>Computed: AmountPaid - RSAmount - RsTvaAmount.</summary>
+        [Column("MontantNetServi", TypeName = "decimal(15,2)")] public decimal MontantNetServi { get; set; } = 0m;
 
-        [Column("TEJExported")]
-        public bool TEJExported { get; set; } = false;
+        // Beneficiary snapshot (TEJ Beneficiaire block)
+        [Column("BeneficiaireCategorie")] [MaxLength(2)] public string? BeneficiaireCategorie { get; set; }
+        [Column("BeneficiaireIsResident")] public bool BeneficiaireIsResident { get; set; } = true;
+        [Column("BeneficiaireIdType")] public short? BeneficiaireIdType { get; set; }
+        [Column("BeneficiaireDateNaissance")] public DateTime? BeneficiaireDateNaissance { get; set; }
+        [Column("BeneficiairePaysCode")] [MaxLength(3)] public string BeneficiairePaysCode { get; set; } = "TN";
 
-        [Column("TEJFileName")]
-        [MaxLength(255)]
-        public string? TEJFileName { get; set; }
+        /// <summary>0=AjouterCertificats, 1=ModifierCertificats, 2=AnnulerCertificats.</summary>
+        [Column("Acte")] public short Acte { get; set; } = 0;
 
-        /// <summary>
-        /// COMPLIANCE CRITICAL: Declaration deadline (20th of month following payment)
-        /// </summary>
-        [Column("DeclarationDeadline")]
-        public DateTime? DeclarationDeadline { get; set; }
-
-        /// <summary>
-        /// COMPLIANCE CRITICAL: Is this record past declaration deadline?
-        /// </summary>
-        [Column("IsOverdue")]
-        public bool IsOverdue { get; set; } = false;
-
-        /// <summary>
-        /// COMPLIANCE CRITICAL: Days past deadline (for penalty calculation)
-        /// </summary>
-        [Column("DaysLate")]
-        public int DaysLate { get; set; } = 0;
-
-        /// <summary>
-        /// COMPLIANCE CRITICAL: Penalty amount for late declaration (Tunisia requirement)
-        /// </summary>
-        [Column("PenaltyAmount", TypeName = "decimal(15,2)")]
-        public decimal PenaltyAmount { get; set; } = 0m;
-
-        /// <summary>
-        /// COMPLIANCE MEDIUM: Supplier classification (individual/company/non_resident)
-        /// </summary>
-        [Column("SupplierType")]
-        [MaxLength(20)]
-        public string? SupplierType { get; set; } // individual, company, non_resident
-
-        /// <summary>
-        /// COMPLIANCE MEDIUM: Is this supplier exempt by bilateral treaty (EU-TN, AGTC, etc)?
-        /// </summary>
-        [Column("IsExemptByTreaty")]
-        public bool IsExemptByTreaty { get; set; } = false;
-
-        /// <summary>
-        /// COMPLIANCE MEDIUM: Treaty code if exempt (e.g., "EU-TN", "AGTC")
-        /// </summary>
-        [Column("TreatyCode")]
-        [MaxLength(20)]
-        public string? TreatyCode { get; set; }
-
-        /// <summary>
-        /// COMPLIANCE MEDIUM: TEJ acceptance number from tax authority
-        /// </summary>
-        [Column("TEJAcceptanceNumber")]
-        [MaxLength(255)]
-        public string? TEJAcceptanceNumber { get; set; }
-
-        /// <summary>
-        /// COMPLIANCE MEDIUM: TEJ transmission status (pending/accepted/rejected)
-        /// </summary>
-        [Column("TEJTransmissionStatus")]
-        [MaxLength(20)]
-        public string TEJTransmissionStatus { get; set; } = "pending"; // pending, accepted, rejected
-
-        [Column("Notes")]
-        [MaxLength(1000)]
-        public string? Notes { get; set; }
-
-        [Required]
-        [Column("CreatedAt")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-        [Required]
-        [Column("CreatedBy")]
-        [MaxLength(100)]
-        public string CreatedBy { get; set; } = string.Empty;
-
-        [Column("ModifiedAt")]
-        public DateTime? ModifiedAt { get; set; }
-
-        [Column("ModifiedBy")]
-        [MaxLength(100)]
-        public string? ModifiedBy { get; set; }
+        [Required] [Column("CreatedAt")] public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        [Required] [Column("CreatedBy")] [MaxLength(100)] public string CreatedBy { get; set; } = string.Empty;
+        [Column("ModifiedAt")] public DateTime? ModifiedAt { get; set; }
+        [Column("ModifiedBy")] [MaxLength(100)] public string? ModifiedBy { get; set; }
     }
 }

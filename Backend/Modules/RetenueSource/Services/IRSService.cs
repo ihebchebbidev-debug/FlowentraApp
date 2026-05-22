@@ -29,6 +29,14 @@ namespace MyApi.Modules.RetenueSource.Services
         Task<TEJExportResponseDto> ExportTEJAsync(TEJExportRequestDto request, string userId);
         Task<List<TEJExportLogDto>> GetTEJExportLogsAsync(int? year = null);
 
+        // ─── Cross-module: create an RS record from a paid supplier invoice ───
+        Task<RSRecordDto> CreateForSupplierInvoiceAsync(
+            int supplierInvoiceId,
+            MyApi.Modules.Purchases.Models.SupplierInvoice invoice,
+            MyApi.Modules.Contacts.Models.Contact supplier,
+            TEJDeclarantDto declarant,
+            string userId);
+
         // ─── Stats ───
         Task<RSStatsDto> GetRSStatsAsync(string? entityType = null, int? entityId = null, int? month = null, int? year = null);
     }

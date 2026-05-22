@@ -41,7 +41,24 @@ namespace MyApi.Modules.RetenueSource.DTOs
         public string? TreatyCode { get; set; }
         public string? TEJAcceptanceNumber { get; set; }
         public string TEJTransmissionStatus { get; set; } = "pending"; // pending, accepted, rejected
-        
+
+        // ─── TEJ / RiTEJ (DGI cahier de charges) ───
+        public string? OperationCode { get; set; }
+        public string? Cnpc { get; set; }
+        public bool PriseEnCharge { get; set; }
+        public int? AnneeFacturation { get; set; }
+        public string? RefCertifChezDeclarant { get; set; }
+        public string? RsTvaCode { get; set; }
+        public decimal? RsTvaTaux { get; set; }
+        public decimal RsTvaAmount { get; set; }
+        public decimal MontantNetServi { get; set; }
+        public string? BeneficiaireCategorie { get; set; }
+        public bool BeneficiaireIsResident { get; set; } = true;
+        public short? BeneficiaireIdType { get; set; }
+        public DateTime? BeneficiaireDateNaissance { get; set; }
+        public string BeneficiairePaysCode { get; set; } = "TN";
+        public short Acte { get; set; } = 0;
+
         // ─── AUDIT TRAIL ───
         public DateTime CreatedAt { get; set; }
         public string CreatedBy { get; set; } = string.Empty;
@@ -74,6 +91,22 @@ namespace MyApi.Modules.RetenueSource.DTOs
         public string? SupplierType { get; set; }  // individual, company, non_resident
         public bool IsExemptByTreaty { get; set; } = false;
         public string? TreatyCode { get; set; }
+
+        // ─── TEJ / RiTEJ ───
+        public string? OperationCode { get; set; }
+        public string? Cnpc { get; set; }
+        public bool PriseEnCharge { get; set; } = false;
+        public int? AnneeFacturation { get; set; }
+        public string? RefCertifChezDeclarant { get; set; }
+        public string? RsTvaCode { get; set; }
+        public decimal? RsTvaTaux { get; set; }
+        public decimal RsTvaAmount { get; set; } = 0m;
+        public string? BeneficiaireCategorie { get; set; }
+        public bool BeneficiaireIsResident { get; set; } = true;
+        public short? BeneficiaireIdType { get; set; }
+        public DateTime? BeneficiaireDateNaissance { get; set; }
+        public string BeneficiairePaysCode { get; set; } = "TN";
+        public short Acte { get; set; } = 0;
     }
 
     // ─── Update Request ───

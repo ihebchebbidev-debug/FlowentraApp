@@ -47,6 +47,8 @@ namespace MyApi.Modules.Purchases.Services
         Task<SupplierInvoiceItemDto> AddItemAsync(int invoiceId, CreateSupplierInvoiceItemDto dto);
         Task<SupplierInvoiceItemDto> UpdateItemAsync(int invoiceId, int itemId, CreateSupplierInvoiceItemDto dto);
         Task<bool> DeleteItemAsync(int invoiceId, int itemId);
+        // TEJ sync — creates an RSRecord linked to the invoice and stamps tej_synced fields.
+        Task<SupplierInvoiceDto> SyncTejAsync(int invoiceId, string userId, string? userName = null);
     }
 
     public interface IArticleSupplierService

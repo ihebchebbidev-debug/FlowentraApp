@@ -168,19 +168,34 @@ namespace MyApi.Modules.RetenueSource.Services
                 Notes = dto.Notes,
                 Status = "pending",
                 TEJExported = false,
-                
-                // ─── CRITICAL COMPLIANCE FIELDS ───
+
+                // ─── COMPLIANCE FIELDS ───
                 DeclarationDeadline = declarationDeadline,
                 IsOverdue = isOverdue,
                 DaysLate = daysLate,
                 PenaltyAmount = penaltyAmount,
-                
-                // ─── MEDIUM PRIORITY COMPLIANCE FIELDS ───
                 SupplierType = dto.SupplierType,
                 IsExemptByTreaty = dto.IsExemptByTreaty,
                 TreatyCode = dto.TreatyCode,
                 TEJTransmissionStatus = "pending",
-                
+
+                // ─── TEJ / RiTEJ ───
+                OperationCode = dto.OperationCode ?? Constants.TejOperationCodes.LegacyToOperationCode(dto.RSTypeCode),
+                Cnpc = dto.Cnpc,
+                PriseEnCharge = dto.PriseEnCharge,
+                AnneeFacturation = dto.AnneeFacturation ?? dto.InvoiceDate.Year,
+                RefCertifChezDeclarant = dto.RefCertifChezDeclarant,
+                RsTvaCode = dto.RsTvaCode,
+                RsTvaTaux = dto.RsTvaTaux,
+                RsTvaAmount = dto.RsTvaAmount,
+                MontantNetServi = Math.Round(dto.AmountPaid - rsAmount - dto.RsTvaAmount, 2),
+                BeneficiaireCategorie = dto.BeneficiaireCategorie,
+                BeneficiaireIsResident = dto.BeneficiaireIsResident,
+                BeneficiaireIdType = dto.BeneficiaireIdType,
+                BeneficiaireDateNaissance = dto.BeneficiaireDateNaissance,
+                BeneficiairePaysCode = dto.BeneficiairePaysCode ?? "TN",
+                Acte = dto.Acte,
+
                 // ─── AUDIT TRAIL ───
                 CreatedAt = DateTime.UtcNow,
                 CreatedBy = userId
@@ -189,8 +204,8 @@ namespace MyApi.Modules.RetenueSource.Services
             _db.RSRecords.Add(record);
             await _db.SaveChangesAsync();
 
-            _logger.LogInformation("RS record created: ID={Id}, Invoice={Invoice}, Amount={Amount}",
-                record.Id, record.InvoiceNumber, record.RSAmount);
+            _logger.LogInformation("RS record created: ID={Id}, Invoice={Invoice}, Amount={Amount}, OpCode={OpCode}",
+                record.Id, record.InvoiceNumber, record.RSAmount, record.OperationCode);
 
             return MapToDto(record);
         }
@@ -442,6 +457,110 @@ namespace MyApi.Modules.RetenueSource.Services
             }).ToList();
         }
 
+        // ─── Cross-module: Supplier Invoice → RS Record ───
+
+        /// <summary>
+        /// Create an RSRecord from a paid supplier invoice. Called by SupplierInvoiceService.SyncTejAsync.
+        /// Idempotent: if invoice.RsRecordId is already set we just return the existing record.
+        /// </summary>
+        public async Task<RSRecordDto> CreateForSupplierInvoiceAsync(
+            int supplierInvoiceId,
+            MyApi.Modules.Purchases.Models.SupplierInvoice invoice,
+            MyApi.Modules.Contacts.Models.Contact supplier,
+            TEJDeclarantDto declarant,
+            string userId)
+        {
+            if (invoice.RsRecordId.HasValue)
+            {
+                var existing = await _db.RSRecords.FindAsync(invoice.RsRecordId.Value);
+                if (existing != null) return MapToDto(existing);
+            }
+
+            if (!invoice.RsApplicable || invoice.RsAmount <= 0)
+                throw new InvalidOperationException(
+                    $"Invoice {invoice.InvoiceNumber}: RS is not applicable or RsAmount is zero — nothing to declare to TEJ");
+
+            if (invoice.AmountPaid <= 0)
+                throw new InvalidOperationException(
+                    $"Invoice {invoice.InvoiceNumber}: cannot create an RS record before any payment is recorded");
+
+            // RS is declared on the basis actually paid. We pro-rate RsAmount to AmountPaid
+            // so partial payments produce a proportional RS line (matches Tunisian practice).
+            var paidRatio = invoice.GrandTotal > 0
+                ? Math.Min(invoice.AmountPaid / invoice.GrandTotal, 1m)
+                : 1m;
+            var declaredRs    = Math.Round(invoice.RsAmount    * paidRatio, 2);
+            var declaredRsTva = Math.Round(invoice.RsTvaAmount * paidRatio, 2);
+            var netServi      = Math.Round(invoice.AmountPaid - declaredRs - declaredRsTva, 2);
+
+            var operationCode = invoice.RsOperationCode
+                ?? Constants.TejOperationCodes.LegacyToOperationCode(invoice.RsTypeCode);
+
+            var paymentDate = invoice.PaymentDate ?? DateTime.UtcNow;
+            var declarationDeadline = new DateTime(
+                paymentDate.AddMonths(1).Year, paymentDate.AddMonths(1).Month, 20);
+
+            var record = new RSRecord
+            {
+                EntityType = "supplier_invoice",
+                EntityId = supplierInvoiceId,
+                EntityNumber = invoice.InvoiceNumber,
+                InvoiceNumber = invoice.SupplierInvoiceRef ?? invoice.InvoiceNumber,
+                InvoiceDate = invoice.InvoiceDate,
+                InvoiceAmount = invoice.GrandTotal,
+                PaymentDate = paymentDate,
+                AmountPaid = invoice.AmountPaid,
+                RSAmount = declaredRs,
+                RSTypeCode = invoice.RsTypeCode ?? "10",
+                SupplierName = supplier.Name ?? supplier.Company ?? $"{supplier.FirstName} {supplier.LastName}".Trim(),
+                SupplierTaxId = supplier.MatriculeFiscale ?? supplier.Cin ?? "",
+                SupplierAddress = supplier.Address,
+                PayerName = declarant.Name,
+                PayerTaxId = declarant.TaxId,
+                PayerAddress = declarant.Address,
+                Status = "pending",
+                TEJExported = false,
+                DeclarationDeadline = declarationDeadline,
+                IsOverdue = DateTime.UtcNow > declarationDeadline,
+                DaysLate = DateTime.UtcNow > declarationDeadline
+                    ? (int)(DateTime.UtcNow - declarationDeadline).TotalDays : 0,
+                PenaltyAmount = 0m,
+
+                // TEJ / RiTEJ
+                OperationCode = operationCode,
+                Cnpc = invoice.Cnpc,
+                PriseEnCharge = invoice.PriseEnCharge,
+                AnneeFacturation = invoice.AnneeFacturation ?? invoice.InvoiceDate.Year,
+                RefCertifChezDeclarant = invoice.RefCertifChezDeclarant ?? $"SI-{invoice.Id}",
+                RsTvaCode = invoice.RsTvaCode,
+                RsTvaTaux = invoice.RsTvaTaux,
+                RsTvaAmount = declaredRsTva,
+                MontantNetServi = netServi,
+
+                BeneficiaireCategorie = supplier.CategorieContribuable ?? "PM",
+                BeneficiaireIsResident = supplier.IsResident,
+                BeneficiaireIdType = supplier.IdTaxpayerType ?? 1,
+                BeneficiaireDateNaissance = supplier.DateNaissance,
+                BeneficiairePaysCode = supplier.PaysCode ?? "TN",
+                Acte = invoice.TejActe,
+
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = userId
+            };
+
+            _db.RSRecords.Add(record);
+            await _db.SaveChangesAsync();
+
+            invoice.RsRecordId = record.Id;
+            await _db.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Supplier invoice {Invoice} synced to TEJ: RSRecord={RsId}, OpCode={OpCode}, RS={RS}",
+                invoice.InvoiceNumber, record.Id, operationCode, declaredRs);
+
+            return MapToDto(record);
+        }
+
         // ─── Stats ───
 
         public async Task<RSStatsDto> GetRSStatsAsync(string? entityType, int? entityId, int? month, int? year)
@@ -475,12 +594,29 @@ namespace MyApi.Modules.RetenueSource.Services
             return Math.Round(amountPaid * rate / 100m, 2);
         }
 
+        /// <summary>
+        /// Generate TEJ XML conformant with the official DGI / RiTEJ cahier de charges v1.0.
+        /// Key rules:
+        ///   * Root element <DeclarationsRS VersionSchema="1.0">
+        ///   * Dates formatted DD/MM/YYYY
+        ///   * Amounts in MILLIMES (xs:integer = value * 1000), no decimals
+        ///   * Structured Beneficiaire: TypeIdentifiant + Identifiant + CategorieContribuable + Resident
+        ///   * IdTypeOperation = OperationCode (RS1_xxxxxx). Falls back to legacy-code mapping.
+        ///   * Per-certificate totals (TotalMontantHT / TotalMontantTVA / TotalMontantNetServi)
+        /// </summary>
         private string GenerateTEJXml(TEJDeclarantDto declarant, List<RSRecord> records)
         {
+            var first = records.First();
+            var year  = first.PaymentDate.Year;
+            var month = first.PaymentDate.Month;
+
+            // Group certificates by Acte (0=Ajouter, 1=Modifier, 2=Annuler)
+            var byActe = records.GroupBy(r => r.Acte).OrderBy(g => g.Key).ToList();
+
             var settings = new XmlWriterSettings
             {
                 Indent = true,
-                Encoding = Encoding.UTF8,
+                Encoding = new UTF8Encoding(false),  // no BOM (TEJ rejects BOM)
                 OmitXmlDeclaration = false
             };
 
@@ -488,105 +624,142 @@ namespace MyApi.Modules.RetenueSource.Services
             using (var writer = XmlWriter.Create(ms, settings))
             {
                 writer.WriteStartDocument();
-                
-                // Root element with metadata attributes
-                writer.WriteStartElement("Declaration");
-                writer.WriteAttributeString("Version", "2.0");
-                writer.WriteAttributeString("TransmissionDateTime", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"));
-                writer.WriteAttributeString("DeclarationPeriod", $"{records.First().PaymentDate.Year}-{records.First().PaymentDate.Month:D2}");
+                writer.WriteStartElement("DeclarationsRS");
+                writer.WriteAttributeString("VersionSchema", "1.0");
 
-                // ─── Declaration Header ───
-                writer.WriteStartElement("DeclarationHeader");
-                writer.WriteElementString("DeclarationType", "RETENUE_A_LA_SOURCE");
-                writer.WriteElementString("TaxYear", records.First().PaymentDate.Year.ToString());
-                writer.WriteElementString("DeclarationMonth", records.First().PaymentDate.Month.ToString());
-                writer.WriteElementString("TotalRecords", records.Count.ToString());
-                writer.WriteElementString("TotalWithheldAmount", records.Sum(r => r.RSAmount).ToString("F2"));
-                writer.WriteElementString("CurrentDateTime", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss"));
-                writer.WriteEndElement(); // DeclarationHeader
-
-                // ─── Declarant (Enhanced) ───
+                // ── Déclarant ──
                 writer.WriteStartElement("Declarant");
-                writer.WriteElementString("Name", declarant.Name);
-                writer.WriteElementString("TaxID", declarant.TaxId);
-                writer.WriteElementString("Country", "TN"); // Tunisia
-                writer.WriteElementString("Address", declarant.Address);
-                if (!string.IsNullOrEmpty(declarant.Email))
+                WriteIdentifiant(writer, 1, declarant.TaxId);                       // 1=MF
+                writer.WriteElementString("CategorieContribuable", "PM");           // company by default
+                writer.WriteElementString("NometprenonOuRaisonsociale", Trunc(declarant.Name, 200));
+                writer.WriteStartElement("InfosContact");
+                writer.WriteElementString("Adresse", Trunc(declarant.Address ?? "", 200));
+                if (!string.IsNullOrWhiteSpace(declarant.Email))
                     writer.WriteElementString("Email", declarant.Email);
-                if (!string.IsNullOrEmpty(declarant.Phone))
-                    writer.WriteElementString("Phone", declarant.Phone);
-                writer.WriteElementString("ActivityCode", ""); // Could be mapped from entity
-                writer.WriteEndElement(); // Declarant
+                if (!string.IsNullOrWhiteSpace(declarant.Phone))
+                    writer.WriteElementString("Telephone", declarant.Phone);
+                writer.WriteEndElement();                                            // /InfosContact
+                writer.WriteEndElement();                                            // /Declarant
 
-                // ─── Beneficiaries (Enhanced) ───
-                writer.WriteStartElement("Beneficiaries");
-                
-                decimal totalAmount = 0;
-                decimal totalRSAmount = 0;
-                
-                foreach (var r in records)
+                // ── Référence Déclaration ──
+                writer.WriteStartElement("ReferenceDeclaration");
+                writer.WriteElementString("ActeDepot", "0");                         // 0=initial dépôt
+                writer.WriteElementString("AnneeDepot", year.ToString());
+                writer.WriteElementString("MoisDepot", month.ToString("D2"));
+                writer.WriteEndElement();
+
+                // ── Certificats (par Acte) ──
+                foreach (var grp in byActe)
                 {
-                    totalAmount += r.AmountPaid;
-                    totalRSAmount += r.RSAmount;
+                    var wrapper = grp.Key switch
+                    {
+                        1 => "ModifierCertificats",
+                        2 => "AnnulerCertificats",
+                        _ => "AjouterCertificats"
+                    };
+                    writer.WriteStartElement(wrapper);
 
-                    writer.WriteStartElement("Beneficiary");
-                    
-                    // Basic Info
-                    writer.WriteElementString("Name", r.SupplierName);
-                    writer.WriteElementString("TaxID", r.SupplierTaxId);
-                    writer.WriteElementString("Address", r.SupplierAddress ?? "");
-                    writer.WriteElementString("Country", "TN"); // Default to Tunisia
-                    
-                    // Invoice Details
-                    writer.WriteStartElement("Invoice");
-                    writer.WriteElementString("Number", r.InvoiceNumber);
-                    writer.WriteElementString("Date", r.InvoiceDate.ToString("yyyy-MM-dd"));
-                    writer.WriteElementString("Amount", r.InvoiceAmount.ToString("F2"));
-                    writer.WriteEndElement(); // Invoice
+                    long totalHT = 0, totalTVA = 0, totalNet = 0, totalRS = 0;
+                    foreach (var r in grp)
+                    {
+                        WriteCertificat(writer, r);
+                        // HT base = AmountPaid (assume hors TVA already on RS base for purchases)
+                        totalHT  += ToMillimes(r.AmountPaid);
+                        totalTVA += ToMillimes(r.RsTvaAmount);
+                        totalRS  += ToMillimes(r.RSAmount + r.RsTvaAmount);
+                        totalNet += ToMillimes(r.MontantNetServi > 0
+                            ? r.MontantNetServi
+                            : r.AmountPaid - r.RSAmount - r.RsTvaAmount);
+                    }
+                    writer.WriteElementString("TotalMontantHT",         totalHT.ToString());
+                    writer.WriteElementString("TotalMontantTVA",        totalTVA.ToString());
+                    writer.WriteElementString("TotalMontantRS",         totalRS.ToString());
+                    writer.WriteElementString("TotalMontantNetServi",   totalNet.ToString());
 
-                    // Payment Details
-                    writer.WriteStartElement("Payment");
-                    writer.WriteElementString("Date", r.PaymentDate.ToString("yyyy-MM-dd"));
-                    writer.WriteElementString("Amount", r.AmountPaid.ToString("F2"));
-                    writer.WriteEndElement(); // Payment
-
-                    // Withholding Details
-                    writer.WriteStartElement("Withholding");
-                    writer.WriteElementString("TypeCode", r.RSTypeCode);
-                    writer.WriteElementString("Rate", GetRSRate(r.RSTypeCode).ToString("F2"));
-                    writer.WriteElementString("Amount", r.RSAmount.ToString("F2"));
-                    writer.WriteElementString("Stage", "FINAL"); // Could be provisional/advance/final
-                    writer.WriteElementString("IsPartial", "false"); // Could reference IsPartialWithholding if model has it
-                    writer.WriteEndElement(); // Withholding
-
-                    // Compliance Metadata
-                    writer.WriteStartElement("Compliance");
-                    writer.WriteElementString("RecordID", r.Id.ToString());
-                    writer.WriteElementString("CreatedDate", r.CreatedAt.ToString("yyyy-MM-dd"));
-                    writer.WriteElementString("Status", r.Status ?? "PENDING");
-                    writer.WriteElementString("Notes", r.Notes ?? "");
-                    writer.WriteEndElement(); // Compliance
-
-                    writer.WriteEndElement(); // Beneficiary
+                    writer.WriteEndElement();                                        // /AjouterCertificats etc.
                 }
-                
-                writer.WriteEndElement(); // Beneficiaries
 
-                // ─── Summary Statistics ───
-                writer.WriteStartElement("Summary");
-                writer.WriteElementString("RecordCount", records.Count.ToString());
-                writer.WriteElementString("TotalPaymentAmount", totalAmount.ToString("F2"));
-                writer.WriteElementString("TotalWithheldAmount", totalRSAmount.ToString("F2"));
-                decimal avgRate = records.Count > 0 ? (totalRSAmount / totalAmount) * 100 : 0;
-                writer.WriteElementString("AverageWithholdingRate", avgRate.ToString("F2"));
-                writer.WriteEndElement(); // Summary
-
-                writer.WriteEndElement(); // Declaration
+                writer.WriteEndElement();                                            // /DeclarationsRS
                 writer.WriteEndDocument();
             }
 
             return Encoding.UTF8.GetString(ms.ToArray());
         }
+
+        private void WriteCertificat(XmlWriter w, RSRecord r)
+        {
+            w.WriteStartElement("Certificat");
+
+            // RefCertifChezDeclarant: stable per-certif id provided by declarant
+            w.WriteElementString("RefCertifChezDeclarant",
+                Trunc(r.RefCertifChezDeclarant ?? $"CRT-{r.Id}", 50));
+            w.WriteElementString("AnneeFacturation",
+                (r.AnneeFacturation ?? r.InvoiceDate.Year).ToString());
+            w.WriteElementString("IdTypeOperation",
+                r.OperationCode ?? Constants.TejOperationCodes.LegacyToOperationCode(r.RSTypeCode));
+            if (!string.IsNullOrWhiteSpace(r.Cnpc))
+                w.WriteElementString("Cnpc", r.Cnpc);
+
+            // ── Bénéficiaire ──
+            w.WriteStartElement("Beneficiaire");
+            WriteIdentifiant(w, r.BeneficiaireIdType ?? 1, r.SupplierTaxId);
+            w.WriteElementString("CategorieContribuable", r.BeneficiaireCategorie ?? "PM");
+            w.WriteElementString("Resident", r.BeneficiaireIsResident ? "1" : "0");
+            w.WriteElementString("NometprenonOuRaisonsociale", Trunc(r.SupplierName, 200));
+            if (r.BeneficiaireDateNaissance.HasValue)
+                w.WriteElementString("DateNaissance",
+                    r.BeneficiaireDateNaissance.Value.ToString("dd/MM/yyyy"));
+            w.WriteElementString("Pays", r.BeneficiairePaysCode ?? "TN");
+            w.WriteStartElement("InfosContact");
+            w.WriteElementString("Adresse", Trunc(r.SupplierAddress ?? "", 200));
+            w.WriteEndElement();
+            w.WriteEndElement();                                                     // /Beneficiaire
+
+            // ── Facture ──
+            w.WriteStartElement("Facture");
+            w.WriteElementString("NumeroFacture", Trunc(r.InvoiceNumber, 50));
+            w.WriteElementString("DateFacture", r.InvoiceDate.ToString("dd/MM/yyyy"));
+            w.WriteElementString("DatePayement", r.PaymentDate.ToString("dd/MM/yyyy"));
+            w.WriteElementString("MontantHT",          ToMillimes(r.AmountPaid).ToString());
+            w.WriteElementString("MontantTVA",         ToMillimes(r.RsTvaAmount).ToString());
+            w.WriteElementString("TauxRS",             ((int)Math.Round(GetRSRate(r.RSTypeCode) * 100)).ToString()); // 10.00% -> 1000
+            w.WriteElementString("MontantRS",          ToMillimes(r.RSAmount).ToString());
+            if (r.RsTvaAmount > 0)
+                w.WriteElementString("MontantRSTVA",   ToMillimes(r.RsTvaAmount).ToString());
+            var net = r.MontantNetServi > 0 ? r.MontantNetServi : r.AmountPaid - r.RSAmount - r.RsTvaAmount;
+            w.WriteElementString("MontantNetServi",    ToMillimes(net).ToString());
+            w.WriteElementString("PriseEnCharge",      r.PriseEnCharge ? "1" : "0");
+            w.WriteEndElement();                                                     // /Facture
+
+            w.WriteEndElement();                                                     // /Certificat
+        }
+
+        /// <summary>
+        /// Write the TEJ identifier choice block:
+        ///   1 = MatriculeFiscal, 2 = CIN, 3 = Passeport, 4 = CarteSejour, 5 = AutreIdentifiantFiscal.
+        /// </summary>
+        private static void WriteIdentifiant(XmlWriter w, short type, string value)
+        {
+            w.WriteStartElement("TypeIdentifiant");
+            w.WriteString(type.ToString());
+            w.WriteEndElement();
+            var elementName = type switch
+            {
+                2 => "Cin",
+                3 => "Passeport",
+                4 => "CarteSejour",
+                5 => "AutreIdentifiantFiscal",
+                _ => "MatriculeFiscal"
+            };
+            w.WriteElementString(elementName, (value ?? "").Trim());
+        }
+
+        /// <summary>Convert TND decimal to TEJ millimes (xs:integer = value * 1000).</summary>
+        private static long ToMillimes(decimal amount) =>
+            (long)Math.Round(amount * 1000m, MidpointRounding.AwayFromZero);
+
+        private static string Trunc(string s, int max) =>
+            string.IsNullOrEmpty(s) ? "" : (s.Length <= max ? s : s.Substring(0, max));
 
         private async Task<int> SaveTEJFileAsDocument(
             string fileName, string xmlContent,
@@ -664,21 +837,34 @@ namespace MyApi.Modules.RetenueSource.Services
             TEJExported = r.TEJExported,
             TEJFileName = r.TEJFileName,
             Notes = r.Notes,
-            
-            // CRITICAL COMPLIANCE FIELDS
+
             DeclarationDeadline = r.DeclarationDeadline,
             IsOverdue = r.IsOverdue,
             DaysLate = r.DaysLate,
             PenaltyAmount = r.PenaltyAmount,
-            
-            // MEDIUM PRIORITY COMPLIANCE FIELDS
+
             SupplierType = r.SupplierType,
             IsExemptByTreaty = r.IsExemptByTreaty,
             TreatyCode = r.TreatyCode,
             TEJAcceptanceNumber = r.TEJAcceptanceNumber,
             TEJTransmissionStatus = r.TEJTransmissionStatus,
-            
-            // AUDIT TRAIL
+
+            OperationCode = r.OperationCode,
+            Cnpc = r.Cnpc,
+            PriseEnCharge = r.PriseEnCharge,
+            AnneeFacturation = r.AnneeFacturation,
+            RefCertifChezDeclarant = r.RefCertifChezDeclarant,
+            RsTvaCode = r.RsTvaCode,
+            RsTvaTaux = r.RsTvaTaux,
+            RsTvaAmount = r.RsTvaAmount,
+            MontantNetServi = r.MontantNetServi,
+            BeneficiaireCategorie = r.BeneficiaireCategorie,
+            BeneficiaireIsResident = r.BeneficiaireIsResident,
+            BeneficiaireIdType = r.BeneficiaireIdType,
+            BeneficiaireDateNaissance = r.BeneficiaireDateNaissance,
+            BeneficiairePaysCode = r.BeneficiairePaysCode,
+            Acte = r.Acte,
+
             CreatedAt = r.CreatedAt,
             CreatedBy = r.CreatedBy,
             ModifiedAt = r.ModifiedAt,

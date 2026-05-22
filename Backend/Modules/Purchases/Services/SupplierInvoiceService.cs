@@ -10,13 +10,97 @@ namespace MyApi.Modules.Purchases.Services
         private readonly ApplicationDbContext _context;
         private readonly ILogger<SupplierInvoiceService> _logger;
         private readonly MyApi.Modules.Numbering.Services.INumberingService? _numberingService;
+        private readonly MyApi.Modules.RetenueSource.Services.IRSService? _rsService;
 
         public SupplierInvoiceService(ApplicationDbContext context, ILogger<SupplierInvoiceService> logger,
-            MyApi.Modules.Numbering.Services.INumberingService? numberingService = null)
+            MyApi.Modules.Numbering.Services.INumberingService? numberingService = null,
+            MyApi.Modules.RetenueSource.Services.IRSService? rsService = null)
         {
             _context = context;
             _logger = logger;
             _numberingService = numberingService;
+            _rsService = rsService;
+        }
+
+        // ─── TEJ sync ───
+        // Creates an RSRecord (entity_type = supplier_invoice) snapshotted from the
+        // invoice + supplier, links the resulting record id back onto the invoice,
+        // and marks tej_synced fields. Idempotent: if invoice.RsRecordId is already
+        // set we just refresh the sync timestamp.
+        public async Task<SupplierInvoiceDto> SyncTejAsync(int invoiceId, string userId, string? userName = null)
+        {
+            if (_rsService == null)
+                throw new InvalidOperationException("IRSService is not registered; cannot sync to TEJ");
+
+            var invoice = await _context.SupplierInvoices
+                .FirstOrDefaultAsync(i => i.Id == invoiceId && !i.IsDeleted)
+                ?? throw new KeyNotFoundException($"SupplierInvoice {invoiceId} not found");
+
+            if (!invoice.RsApplicable)
+                throw new InvalidOperationException("RS is not applicable on this invoice — nothing to sync");
+            if (invoice.AmountPaid <= 0)
+                throw new InvalidOperationException("Cannot sync to TEJ before any payment is recorded");
+
+            var supplier = await _context.Contacts.FirstOrDefaultAsync(c => c.Id == invoice.SupplierId)
+                ?? throw new KeyNotFoundException($"Supplier {invoice.SupplierId} not found");
+
+            // Derive declarant from the tenant's first registered "company" contact, or
+            // fall back to placeholder values the controller should ideally override.
+            var declarant = new MyApi.Modules.RetenueSource.DTOs.TEJDeclarantDto
+            {
+                Name = supplier.Name ?? "Declarant",
+                TaxId = supplier.MatriculeFiscale ?? "",
+                Address = supplier.Address ?? ""
+            };
+            // Prefer settings-based declarant when available.
+            var settingsCompany = await _context.Contacts.AsNoTracking()
+                .Where(c => !c.IsDeleted && c.Type == "company" && !string.IsNullOrEmpty(c.MatriculeFiscale))
+                .OrderBy(c => c.Id)
+                .FirstOrDefaultAsync();
+            if (settingsCompany != null)
+            {
+                declarant = new MyApi.Modules.RetenueSource.DTOs.TEJDeclarantDto
+                {
+                    Name = settingsCompany.Name,
+                    TaxId = settingsCompany.MatriculeFiscale ?? "",
+                    Address = settingsCompany.Address ?? "",
+                    Email = settingsCompany.Email,
+                    Phone = settingsCompany.Phone
+                };
+            }
+
+            try
+            {
+                var rsDto = await _rsService.CreateForSupplierInvoiceAsync(
+                    invoiceId, invoice, supplier, declarant, userId);
+
+                invoice.TejSynced = true;
+                invoice.TejSyncDate = DateTime.UtcNow;
+                invoice.TejSyncStatus = "synced";
+                invoice.TejErrorMessage = null;
+                invoice.RsRecordId = rsDto.Id;
+                invoice.ModifiedDate = DateTime.UtcNow;
+                invoice.ModifiedBy = userId;
+
+                _context.PurchaseActivities.Add(new PurchaseActivity
+                {
+                    EntityType = "supplier_invoice", EntityId = invoiceId, ActivityType = "tej_synced",
+                    Description = $"Invoice {invoice.InvoiceNumber} synced to TEJ (RS record #{rsDto.Id})",
+                    PerformedBy = userId, PerformedByName = userName, PerformedAt = DateTime.UtcNow
+                });
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                invoice.TejSyncStatus = "error";
+                invoice.TejErrorMessage = ex.Message;
+                invoice.ModifiedDate = DateTime.UtcNow;
+                invoice.ModifiedBy = userId;
+                await _context.SaveChangesAsync();
+                throw;
+            }
+
+            return (await GetInvoiceByIdAsync(invoiceId))!;
         }
 
         public async Task<PaginatedSupplierInvoiceResponse> GetInvoicesAsync(
@@ -99,6 +183,7 @@ namespace MyApi.Modules.Purchases.Services
                 SupplierInvoiceRef = dto.SupplierInvoiceRef,
                 SupplierId = dto.SupplierId,
                 SupplierName = supplier.Name ?? string.Empty,
+                SupplierMatriculeFiscale = supplier.MatriculeFiscale,
                 PurchaseOrderId = dto.PurchaseOrderId,
                 GoodsReceiptId = dto.GoodsReceiptId,
                 InvoiceDate = dto.InvoiceDate,
@@ -111,6 +196,12 @@ namespace MyApi.Modules.Purchases.Services
                 Notes = dto.Notes,
                 RsApplicable = dto.RsApplicable,
                 RsTypeCode = dto.RsTypeCode,
+                RsOperationCode = dto.RsOperationCode,
+                Cnpc = dto.Cnpc,
+                PriseEnCharge = dto.PriseEnCharge,
+                AnneeFacturation = dto.AnneeFacturation ?? dto.InvoiceDate.Year,
+                RsTvaCode = dto.RsTvaCode,
+                RsTvaTaux = dto.RsTvaTaux,
                 CreatedBy = userId,
                 CreatedDate = DateTime.UtcNow
             };
@@ -297,6 +388,15 @@ namespace MyApi.Modules.Purchases.Services
                         if (dto.RsApplicable.HasValue) invoice.RsApplicable = dto.RsApplicable.Value;
                         if (dto.RsTypeCode != null) invoice.RsTypeCode = dto.RsTypeCode;
                     }
+                    // TEJ / RiTEJ fields
+                    if (dto.RsOperationCode != null) invoice.RsOperationCode = dto.RsOperationCode;
+                    if (dto.Cnpc != null) invoice.Cnpc = dto.Cnpc;
+                    if (dto.PriseEnCharge.HasValue) invoice.PriseEnCharge = dto.PriseEnCharge.Value;
+                    if (dto.AnneeFacturation.HasValue) invoice.AnneeFacturation = dto.AnneeFacturation;
+                    if (dto.RefCertifChezDeclarant != null) invoice.RefCertifChezDeclarant = dto.RefCertifChezDeclarant;
+                    if (dto.RsTvaCode != null) invoice.RsTvaCode = dto.RsTvaCode;
+                    if (dto.RsTvaTaux.HasValue) invoice.RsTvaTaux = dto.RsTvaTaux;
+                    if (dto.TejActe.HasValue) invoice.TejActe = dto.TejActe.Value;
                     if (dto.TejSynced.HasValue) invoice.TejSynced = dto.TejSynced.Value;
                     if (dto.TejSyncDate.HasValue) invoice.TejSyncDate = dto.TejSyncDate;
                     if (dto.TejSyncStatus != null) invoice.TejSyncStatus = dto.TejSyncStatus;
@@ -527,19 +627,28 @@ namespace MyApi.Modules.Purchases.Services
             // RS (retenue à la source). Always reset first so toggling RsApplicable off
             // (or clearing RsTypeCode) actually removes a previously-applied retention.
             invoice.RsAmount = 0m;
+            invoice.RsTvaAmount = 0m;
             if (invoice.RsApplicable && !string.IsNullOrEmpty(invoice.RsTypeCode))
             {
                 var rsRate = invoice.RsTypeCode switch
                 {
-                    "P1" => 1.5m, "P2" => 5m, "P3" => 10m, "P4" => 15m, "P5" => 25m, _ => 0m
+                    "P1" => 1.5m, "P2" => 5m, "P3" => 10m, "P4" => 15m, "P5" => 25m,
+                    // legacy rate codes
+                    "10" => 10m, "05" => 0.5m, "03" => 3m, "20" => 20m,
+                    _ => 0m
                 };
-                invoice.RsAmount = afterDiscount * rsRate / 100;
+                invoice.RsAmount = Math.Round(afterDiscount * rsRate / 100m, 2);
+                // RS-TVA (separate withholding on VAT) when configured
+                if (invoice.RsTvaTaux is decimal tvaRate && tvaRate > 0)
+                    invoice.RsTvaAmount = Math.Round(invoice.TaxAmount * tvaRate / 100m, 2);
             }
             // Floor non-negative: a header discount larger than SubTotal (or an RS that
             // exceeds the discounted base) would otherwise produce a negative GrandTotal,
             // breaking the AmountPaid > GrandTotal overpayment guard and the
             // PO.PaymentStatus sync (totalDue<=0 → "paid" without any cash recorded).
-            invoice.GrandTotal = Math.Max(0, afterDiscount + invoice.TaxAmount + invoice.FiscalStamp - invoice.RsAmount);
+            invoice.GrandTotal = Math.Max(0,
+                afterDiscount + invoice.TaxAmount + invoice.FiscalStamp
+                - invoice.RsAmount - invoice.RsTvaAmount);
             await _context.SaveChangesAsync();
         }
 
@@ -564,6 +673,11 @@ namespace MyApi.Modules.Purchases.Services
             PaymentMethod = inv.PaymentMethod, PaymentDate = inv.PaymentDate, Notes = inv.Notes,
             RsApplicable = inv.RsApplicable, RsTypeCode = inv.RsTypeCode, RsAmount = inv.RsAmount,
             RsRecordId = inv.RsRecordId,
+            RsOperationCode = inv.RsOperationCode, Cnpc = inv.Cnpc,
+            PriseEnCharge = inv.PriseEnCharge, AnneeFacturation = inv.AnneeFacturation,
+            RefCertifChezDeclarant = inv.RefCertifChezDeclarant,
+            RsTvaCode = inv.RsTvaCode, RsTvaTaux = inv.RsTvaTaux, RsTvaAmount = inv.RsTvaAmount,
+            TejActe = inv.TejActe,
             FactureEnLigneId = inv.FactureEnLigneId, FactureEnLigneStatus = inv.FactureEnLigneStatus,
             FactureEnLigneSentAt = inv.FactureEnLigneSentAt,
             TejSynced = inv.TejSynced, TejSyncDate = inv.TejSyncDate, TejSyncStatus = inv.TejSyncStatus,

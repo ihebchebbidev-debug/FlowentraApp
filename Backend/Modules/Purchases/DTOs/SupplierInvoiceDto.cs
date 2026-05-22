@@ -30,6 +30,16 @@ namespace MyApi.Modules.Purchases.DTOs
         public string? RsTypeCode { get; set; }
         public decimal RsAmount { get; set; }
         public int? RsRecordId { get; set; }
+        // TEJ / RiTEJ (DGI cahier de charges)
+        public string? RsOperationCode { get; set; }
+        public string? Cnpc { get; set; }
+        public bool PriseEnCharge { get; set; }
+        public int? AnneeFacturation { get; set; }
+        public string? RefCertifChezDeclarant { get; set; }
+        public string? RsTvaCode { get; set; }
+        public decimal? RsTvaTaux { get; set; }
+        public decimal RsTvaAmount { get; set; }
+        public short TejActe { get; set; }
         // Facture en ligne
         public string? FactureEnLigneId { get; set; }
         public string? FactureEnLigneStatus { get; set; }
@@ -77,6 +87,12 @@ namespace MyApi.Modules.Purchases.DTOs
         public string? Notes { get; set; }
         public bool RsApplicable { get; set; }
         public string? RsTypeCode { get; set; }
+        public string? RsOperationCode { get; set; }
+        public string? Cnpc { get; set; }
+        public bool PriseEnCharge { get; set; }
+        public int? AnneeFacturation { get; set; }
+        public string? RsTvaCode { get; set; }
+        public decimal? RsTvaTaux { get; set; }
         public List<CreateSupplierInvoiceItemDto>? Items { get; set; }
     }
 
@@ -105,6 +121,14 @@ namespace MyApi.Modules.Purchases.DTOs
         public string? Notes { get; set; }
         public bool? RsApplicable { get; set; }
         public string? RsTypeCode { get; set; }
+        public string? RsOperationCode { get; set; }
+        public string? Cnpc { get; set; }
+        public bool? PriseEnCharge { get; set; }
+        public int? AnneeFacturation { get; set; }
+        public string? RefCertifChezDeclarant { get; set; }
+        public string? RsTvaCode { get; set; }
+        public decimal? RsTvaTaux { get; set; }
+        public short? TejActe { get; set; }
         // TEJ sync (Tunisian e-tax journal)
         public bool? TejSynced { get; set; }
         public DateTime? TejSyncDate { get; set; }

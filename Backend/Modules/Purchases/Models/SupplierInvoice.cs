@@ -110,6 +110,19 @@ namespace MyApi.Modules.Purchases.Models
         [Column("RsRecordId")]
         public int? RsRecordId { get; set; }
 
+        // ── TEJ / RiTEJ (DGI cahier de charges v1.0) ──
+        /// <summary>Official IdTypeOperation, e.g. "RS1_000001".</summary>
+        [Column("RsOperationCode")] [MaxLength(20)] public string? RsOperationCode { get; set; }
+        [Column("Cnpc")] [MaxLength(20)] public string? Cnpc { get; set; }
+        [Column("PriseEnCharge")] public bool PriseEnCharge { get; set; } = false;
+        [Column("AnneeFacturation")] public int? AnneeFacturation { get; set; }
+        [Column("RefCertifChezDeclarant")] [MaxLength(50)] public string? RefCertifChezDeclarant { get; set; }
+        [Column("RsTvaCode")] [MaxLength(20)] public string? RsTvaCode { get; set; }
+        [Column("RsTvaTaux", TypeName = "decimal(5,2)")] public decimal? RsTvaTaux { get; set; }
+        [Column("RsTvaAmount", TypeName = "decimal(18,2)")] public decimal RsTvaAmount { get; set; } = 0;
+        /// <summary>0=Ajouter (default), 1=Modifier, 2=Annuler.</summary>
+        [Column("TejActe")] public short TejActe { get; set; } = 0;
+
         // ── Facture en Ligne ──
         [Column("FactureEnLigneId")]
         [MaxLength(100)]
