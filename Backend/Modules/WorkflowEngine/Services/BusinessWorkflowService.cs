@@ -17,19 +17,22 @@ namespace MyApi.Modules.WorkflowEngine.Services
         private readonly IWorkflowTriggerService _triggerService;
         private readonly IWorkflowNotificationService _notificationService;
         private readonly MyApi.Modules.Numbering.Services.INumberingService? _numberingService;
+        private readonly MyApi.Modules.Planning.Services.IPlannedLineEntryService? _plannedEntries;
 
         public BusinessWorkflowService(
             ApplicationDbContext db,
             ILogger<BusinessWorkflowService> logger,
             IWorkflowTriggerService triggerService,
             IWorkflowNotificationService notificationService,
-            MyApi.Modules.Numbering.Services.INumberingService? numberingService = null)
+            MyApi.Modules.Numbering.Services.INumberingService? numberingService = null,
+            MyApi.Modules.Planning.Services.IPlannedLineEntryService? plannedEntries = null)
         {
             _db = db;
             _logger = logger;
             _triggerService = triggerService;
             _notificationService = notificationService;
             _numberingService = numberingService;
+            _plannedEntries = plannedEntries;
         }
 
         /// <summary>
@@ -136,6 +139,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
                 await _db.SaveChangesAsync();
 
                 // Copy offer items to sale items with all fields
+                var offerItemToSaleItem = new List<(int OfferItemId, SaleItem SaleItem)>();
                 if (offer.Items != null && offer.Items.Any())
                 {
                     foreach (var offerItem in offer.Items)
@@ -161,8 +165,25 @@ namespace MyApi.Modules.WorkflowEngine.Services
                             FulfillmentStatus = "pending"
                         };
                         _db.SaleItems.Add(saleItem);
+                        offerItemToSaleItem.Add((offerItem.Id, saleItem));
                     }
                     await _db.SaveChangesAsync();
+
+                    // Carry planned time/expenses from offer items → sale items (Stage 2).
+                    if (_plannedEntries != null)
+                    {
+                        foreach (var (offerItemId, saleItem) in offerItemToSaleItem)
+                        {
+                            try
+                            {
+                                await _plannedEntries.CopyAsync("offer_item", offerItemId, "sale_item", saleItem.Id, userId ?? "system");
+                            }
+                            catch (Exception planEx)
+                            {
+                                _logger.LogWarning(planEx, "Failed to copy planned entries from offer_item {OfferItemId} to sale_item {SaleItemId}", offerItemId, saleItem.Id);
+                            }
+                        }
+                    }
                 }
 
                 // Update offer status
@@ -342,6 +363,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
                 await _db.SaveChangesAsync();
 
                 // Create service order jobs for each service item
+                var saleItemToJob = new List<(int SaleItemId, ServiceOrderJob Job)>();
                 foreach (var serviceItem in serviceItems)
                 {
                     var job = new ServiceOrderJob
@@ -359,12 +381,29 @@ namespace MyApi.Modules.WorkflowEngine.Services
                         WorkType = "maintenance"
                     };
                     _db.ServiceOrderJobs.Add(job);
+                    saleItemToJob.Add((serviceItem.Id, job));
 
                     // Mark the sale item as service order generated
                     serviceItem.ServiceOrderGenerated = true;
                     serviceItem.ServiceOrderId = serviceOrder.Id.ToString();
                 }
                 await _db.SaveChangesAsync();
+
+                // Carry planned time/expenses from sale items → service order jobs (Stage 2).
+                if (_plannedEntries != null)
+                {
+                    foreach (var (saleItemId, job) in saleItemToJob)
+                    {
+                        try
+                        {
+                            await _plannedEntries.CopyAsync("sale_item", saleItemId, "service_order_job", job.Id, userId ?? "system");
+                        }
+                        catch (Exception planEx)
+                        {
+                            _logger.LogWarning(planEx, "Failed to copy planned entries from sale_item {SaleItemId} to job {JobId}", saleItemId, job.Id);
+                        }
+                    }
+                }
 
                 // Copy article/material items from sale to service order materials
                 var materialItems = sale.Items?.Where(i => i.Type == "article").ToList() ?? new List<SaleItem>();
