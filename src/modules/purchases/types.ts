@@ -179,7 +179,9 @@ export interface SupplierInvoice {
   // Tunisian compliance
   rsApplicable: boolean;
   rsTypeCode?: string;
+  rsOperationCode?: string;       // TEJ IdTypeOperation (RSn_NNNNNN)
   rsAmount: number;
+  rsTvaAmount?: number;
   rsRecordId?: string;
   factureEnLigneId?: string;
   factureEnLigneStatus?: FactureEnLigneStatus;
