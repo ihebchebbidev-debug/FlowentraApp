@@ -12,6 +12,8 @@ import { Switch } from "@/components/ui/switch";
 import { Plus, Trash2, Save, FilePlus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { RS_TRANSACTION_TYPES } from "@/modules/shared/types/retenue-source";
+import { TejOperationCodePicker } from "@/modules/shared/components/TejOperationCodePicker";
+import { legacyToTejOperationCode } from "@/modules/shared/constants/tejOperationCodes";
 import { PurchasePageHeader } from "../components/PurchasePageHeader";
 import { supplierInvoiceService } from "../services/purchaseService";
 import { apiFetch } from "@/services/api/apiClient";
@@ -31,6 +33,7 @@ export default function CreateSupplierInvoicePage() {
   const [supplierRef, setSupplierRef] = useState('');
   const [rsApplicable, setRsApplicable] = useState(false);
   const [rsTypeCode, setRsTypeCode] = useState('10');
+  const [rsOperationCode, setRsOperationCode] = useState<string>('RS1_000002');
   // SupplierInvoiceItem has NO per-line discount field on the backend, so we
   // intentionally don't expose one here — anything we sent would be silently
   // dropped, leaving the persisted invoice priced higher than the preview.
@@ -106,6 +109,7 @@ export default function CreateSupplierInvoicePage() {
         fiscalStamp,
         rsApplicable,
         rsTypeCode: rsApplicable ? rsTypeCode : undefined,
+        rsOperationCode: rsApplicable ? rsOperationCode : undefined,
         items: items.map((item, idx) => ({
           description: item.description,
           quantity: item.quantity,
@@ -185,11 +189,19 @@ export default function CreateSupplierInvoicePage() {
               {rsApplicable && (
                 <>
                   <div><Label className="text-xs">{t('compliance.rsType')}</Label>
-                    <Select value={rsTypeCode} onValueChange={setRsTypeCode}>
+                    <Select value={rsTypeCode} onValueChange={(v) => {
+                      setRsTypeCode(v);
+                      setRsOperationCode(legacyToTejOperationCode(v));
+                    }}>
                       <SelectTrigger className="h-8 mt-1"><SelectValue /></SelectTrigger>
                       <SelectContent>{RS_TRANSACTION_TYPES.map(r => <SelectItem key={r.code} value={r.code}>{r.rate}% - {r.labelFr}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
+                  <TejOperationCodePicker
+                    value={rsOperationCode}
+                    onChange={(code) => setRsOperationCode(code)}
+                    purchaseOnly
+                  />
                   <div className="p-2 bg-amber-50 dark:bg-amber-900/20 rounded text-xs">
                     <p className="font-medium text-amber-700 dark:text-amber-400">{t('compliance.rsAmount')}: {fmt(rsAmount)} TND</p>
                     <p className="text-[10px] text-muted-foreground mt-1">{t('compliance.rsNote')}</p>

@@ -19,6 +19,8 @@ import {
   type CreateRSRecordDto,
   type UpdateRSRecordDto,
 } from '@/modules/shared/services/rsApiService';
+import { TejOperationCodePicker } from '@/modules/shared/components/TejOperationCodePicker';
+import { legacyToTejOperationCode } from '@/modules/shared/constants/tejOperationCodes';
 
 const RS_TYPES = [
   { code: '10', rate: 10,  label: 'Honoraires / Services professionnels' },
@@ -59,6 +61,7 @@ export function RSRecordModal({
   const [paymentDate, setPaymentDate] = useState('');
   const [amountPaid, setAmountPaid] = useState(entityAmount);
   const [rsTypeCode, setRsTypeCode] = useState('10');
+  const [operationCode, setOperationCode] = useState<string>('RS1_000002');
   const [supplierName, setSupplierName] = useState(contactName);
   const [supplierTaxId, setSupplierTaxId] = useState(contactTaxId);
   const [supplierAddress, setSupplierAddress] = useState(contactAddress);
@@ -80,6 +83,7 @@ export function RSRecordModal({
       setPaymentDate(editRecord.paymentDate?.split('T')[0] || '');
       setAmountPaid(editRecord.amountPaid);
       setRsTypeCode(editRecord.rsTypeCode);
+      setOperationCode((editRecord as any).operationCode || legacyToTejOperationCode(editRecord.rsTypeCode));
       setSupplierName(editRecord.supplierName);
       setSupplierTaxId(editRecord.supplierTaxId);
       setSupplierAddress(editRecord.supplierAddress || '');
@@ -104,6 +108,7 @@ export function RSRecordModal({
       setSupplierType('company');
       setIsExemptByTreaty(false);
       setTreatyCode('');
+      setOperationCode('RS1_000002');
     }
   }, [editRecord, entityNumber, entityAmount, contactName, contactTaxId, contactAddress, open]);
 
@@ -133,7 +138,8 @@ export function RSRecordModal({
           payerName, payerTaxId, payerAddress: payerAddress || undefined,
           notes: notes || undefined,
           supplierType, isExemptByTreaty, treatyCode: treatyCode || undefined,
-        };
+          operationCode,
+        } as any;
         await updateRSRecord(editRecord.id, dto);
         toast.success('Enregistrement RS mis à jour');
       } else {
@@ -145,7 +151,8 @@ export function RSRecordModal({
           payerName, payerTaxId, payerAddress: payerAddress || undefined,
           notes: notes || undefined,
           supplierType, isExemptByTreaty, treatyCode: treatyCode || undefined,
-        };
+          operationCode,
+        } as any;
         await createRSRecord(dto);
         toast.success('Retenue à la source enregistrée avec succès');
       }
@@ -208,7 +215,7 @@ export function RSRecordModal({
                 <Percent className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-semibold text-foreground">Calcul de la retenue</span>
               </div>
-              <Select value={rsTypeCode} onValueChange={setRsTypeCode}>
+              <Select value={rsTypeCode} onValueChange={(v) => { setRsTypeCode(v); setOperationCode(legacyToTejOperationCode(v)); }}>
                 <SelectTrigger className="h-8 w-auto min-w-[200px] bg-background text-xs border-border">
                   <SelectValue />
                 </SelectTrigger>
@@ -221,6 +228,14 @@ export function RSRecordModal({
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="px-4 pt-3">
+              <TejOperationCodePicker
+                value={operationCode}
+                onChange={(code) => setOperationCode(code)}
+                purchaseOnly
+              />
             </div>
 
             {/* Calculator body */}
