@@ -135,9 +135,26 @@ public class TenantMiddleware
             }
 
             context.Items["Tenant"] = tenant;
-            var tenantId = TenantSlugCache.GetTenantId(tenant);
+            // X-Tenant selects the app/database (krossier/demo/dev). It must NOT
+            // automatically become the row-level company TenantId. Inside each
+            // app database, rows default to company TenantId=0 unless the company
+            // switcher sends X-Target-Tenant.
+            var tenantId = 0;
+            var targetTenantHeader = context.Request.Headers[TargetTenantHeaderName].FirstOrDefault();
+            if (!string.IsNullOrEmpty(targetTenantHeader) && int.TryParse(targetTenantHeader, out var targetTenantId))
+            {
+                if (!TenantSlugCache.IsValidTenantId(targetTenantId))
+                {
+                    _logger.LogWarning("🚫 TENANT-MIDDLEWARE: X-Target-Tenant {TenantId} is invalid or inactive", targetTenantId);
+                    context.Response.StatusCode = 404;
+                    await context.Response.WriteAsJsonAsync(new { error = $"Target company {targetTenantId} does not exist or is inactive." });
+                    return;
+                }
+                tenantId = TenantSlugCache.ToDataTenantId(targetTenantId);
+                context.Items["TenantTargetOverride"] = true;
+            }
             context.Items["TenantId"] = tenantId;
-            _logger.LogDebug("🏢 TENANT-MIDDLEWARE: Request {Method} {Path} → tenant='{Tenant}' (TenantId={TenantId}, KnownTenant={KnownTenant}, DedicatedDb={DedicatedDb})",
+            _logger.LogDebug("🏢 TENANT-MIDDLEWARE: Request {Method} {Path} → app tenant='{Tenant}' (CompanyTenantId={TenantId}, KnownTenant={KnownTenant}, DedicatedDb={DedicatedDb})",
                 context.Request.Method, context.Request.Path, tenant, tenantId, knownTenant, hasDedicatedDb);
         }
         else

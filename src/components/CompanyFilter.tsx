@@ -42,7 +42,19 @@ function readPersisted(key: string): CompanyFilterValue {
   if (typeof window === 'undefined') return 'all';
   try {
     const raw = window.localStorage.getItem(STORAGE_PREFIX + key);
-    if (!raw || raw === 'all') return 'all';
+    if (raw === null || raw === undefined) {
+      // No per-module value — inherit from the global selection so the
+      // header pick applies everywhere by default.
+      if (key !== DEFAULT_KEY) {
+        const globalRaw = window.localStorage.getItem(STORAGE_PREFIX + DEFAULT_KEY);
+        if (globalRaw && globalRaw !== 'all') {
+          const gn = Number(globalRaw);
+          if (Number.isFinite(gn)) return gn;
+        }
+      }
+      return 'all';
+    }
+    if (raw === 'all') return 'all';
     const n = Number(raw);
     return Number.isFinite(n) ? n : 'all';
   } catch {
@@ -207,17 +219,35 @@ export function CompanyFilter({
 }
 
 /**
- * GlobalCompanyFilter — same dropdown as <CompanyFilter> but bound to the
- * shared store. Drop this in the top nav once and every list reacts to it.
+ * GlobalCompanyFilter — same dropdown as <CompanyFilter> but bound to a
+ * single app-wide selection (not per-module). The header always reflects
+ * the company the user picked, even when navigating across modules.
+ *
+ * On change we also mirror the value into every per-module key that already
+ * has a remembered selection so list pages don't show stale data.
  */
 export function GlobalCompanyFilter(props: Omit<CompanyFilterProps, 'value' | 'onChange'>) {
-  const moduleKey = useModuleKey();
-  const value = useGlobalCompanyFilter(moduleKey);
+  const value = useGlobalCompanyFilter(DEFAULT_KEY);
   return (
     <CompanyFilter
       {...props}
       value={value}
-      onChange={(v) => setGlobalCompanyFilter(v, moduleKey)}
+      onChange={(v) => {
+        setGlobalCompanyFilter(v, DEFAULT_KEY);
+        if (typeof window === 'undefined') return;
+        try {
+          const moduleKeys: string[] = [];
+          for (let i = 0; i < window.localStorage.length; i++) {
+            const key = window.localStorage.key(i);
+            if (!key?.startsWith(STORAGE_PREFIX)) continue;
+            const moduleKey = key.slice(STORAGE_PREFIX.length);
+            if (moduleKey && moduleKey !== DEFAULT_KEY) moduleKeys.push(moduleKey);
+          }
+          moduleKeys.forEach((k) => setGlobalCompanyFilter(v, k));
+        } catch {
+          /* ignore storage failures */
+        }
+      }}
     />
   );
 }

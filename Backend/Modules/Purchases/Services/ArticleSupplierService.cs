@@ -40,6 +40,17 @@ namespace MyApi.Modules.Purchases.Services
 
         public async Task<ArticleSupplierDto> CreateAsync(CreateArticleSupplierDto dto, string userId)
         {
+            if (await _context.ArticleSuppliers.AnyAsync(a => a.ArticleId == dto.ArticleId && a.SupplierId == dto.SupplierId && !a.IsDeleted))
+                throw new InvalidOperationException("This supplier is already linked to the article");
+
+            if (dto.IsPreferred)
+            {
+                var others = await _context.ArticleSuppliers
+                    .Where(a => a.ArticleId == dto.ArticleId && a.IsPreferred && !a.IsDeleted)
+                    .ToListAsync();
+                foreach (var other in others) other.IsPreferred = false;
+            }
+
             var entity = new ArticleSupplier
             {
                 ArticleId = dto.ArticleId, SupplierId = dto.SupplierId,
@@ -74,7 +85,17 @@ namespace MyApi.Modules.Purchases.Services
             if (dto.Currency != null) entity.Currency = dto.Currency;
             if (dto.MinOrderQty.HasValue) entity.MinOrderQty = dto.MinOrderQty.Value;
             if (dto.LeadTimeDays.HasValue) entity.LeadTimeDays = dto.LeadTimeDays.Value;
-            if (dto.IsPreferred.HasValue) entity.IsPreferred = dto.IsPreferred.Value;
+            if (dto.IsPreferred.HasValue)
+            {
+                if (dto.IsPreferred.Value)
+                {
+                    var others = await _context.ArticleSuppliers
+                        .Where(a => a.ArticleId == entity.ArticleId && a.Id != id && a.IsPreferred && !a.IsDeleted)
+                        .ToListAsync();
+                    foreach (var other in others) other.IsPreferred = false;
+                }
+                entity.IsPreferred = dto.IsPreferred.Value;
+            }
             if (dto.IsActive.HasValue) entity.IsActive = dto.IsActive.Value;
             if (dto.Notes != null) entity.Notes = dto.Notes;
             entity.ModifiedDate = DateTime.UtcNow;

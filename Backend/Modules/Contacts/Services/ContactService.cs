@@ -156,14 +156,20 @@ namespace MyApi.Modules.Contacts.Services
             try
             {
                 // Parse Name into FirstName/LastName if provided
-                var firstName = createDto.FirstName;
-                var lastName = createDto.LastName;
+                var firstName = createDto.FirstName?.Trim() ?? string.Empty;
+                var lastName = createDto.LastName?.Trim() ?? string.Empty;
                 
                 if (!string.IsNullOrEmpty(createDto.Name) && string.IsNullOrEmpty(firstName))
                 {
                     var nameParts = createDto.Name.Split(' ', 2);
                     firstName = nameParts[0];
                     lastName = nameParts.Length > 1 ? nameParts[1] : string.Empty;
+                }
+
+                if (string.IsNullOrWhiteSpace(lastName) &&
+                    string.Equals(createDto.Type, "company", StringComparison.OrdinalIgnoreCase))
+                {
+                    lastName = createDto.Company?.Trim() ?? firstName;
                 }
 
                 // Check if email already exists (if email provided)

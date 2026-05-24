@@ -211,10 +211,13 @@ builder.Services.AddScoped<ApplicationDbContext>(sp =>
         }
     }
 
-    var tenantId = httpContext?.Items["TenantId"] as int? ?? 0;
-    if (!string.IsNullOrWhiteSpace(tenant) && tenantId == 0 && TenantSlugCache.HasTenant(tenant))
+    var tenantId = httpContext?.Items["TenantId"] as int?;
+    if (tenantId == null)
     {
-        tenantId = TenantSlugCache.GetTenantId(tenant);
+        var targetTenantHeader = httpContext?.Request.Headers[TenantMiddleware.TargetTenantHeaderName].FirstOrDefault();
+        tenantId = int.TryParse(targetTenantHeader, out var targetTenantId)
+            ? TenantSlugCache.ToDataTenantId(targetTenantId)
+            : 0;
     }
 
     ApplicationDbContext ctx;
@@ -231,7 +234,7 @@ builder.Services.AddScoped<ApplicationDbContext>(sp =>
         ctx = new ApplicationDbContext(options);
     }
 
-    ctx.SetTenantId(tenantId);
+    ctx.SetTenantId(tenantId.Value);
     return ctx;
 });
 

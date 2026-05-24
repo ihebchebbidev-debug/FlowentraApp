@@ -5,7 +5,7 @@
  * apiClient.ts reads it via getTargetTenantHeaders() and auto-attaches
  * X-Target-Tenant header to mutation requests.
  */
-import { getCurrentTenant, isViewAllMode, TARGET_TENANT_HEADER, TENANT_HEADER } from '@/utils/tenant';
+import { getCurrentTenant, isViewAllMode, TARGET_TENANT_HEADER } from '@/utils/tenant';
 
 /** In-memory target tenant for the current form session */
 let _targetTenantId: number | undefined;
@@ -176,20 +176,15 @@ export function getTargetTenantHeaders(tenantId?: number): Record<string, string
 
 /**
  * Headers for the currently selected active company while the app is in view-all mode.
- * A numeric selection from the header dropdown narrows reads by overriding X-Tenant,
- * and keeps X-Target-Tenant available for mutations/forms.
+ * X-Tenant is reserved for app/database slugs (krossier/demo/dev); company
+ * scoping always travels through X-Target-Tenant.
  */
 export function getTenantRequestHeaders(tenantId?: number): Record<string, string> {
   if (!isViewAllMode()) return {};
   const id = getSelectedTargetTenantId(tenantId);
   if (id === undefined || id === null) return {};
 
-  const headers = getTargetTenantHeaders(id);
-  const slug = getTenantSlugForId(id);
-  if (slug && slug !== getCurrentTenant()) {
-    headers[TENANT_HEADER] = slug;
-  }
-  return headers;
+  return getTargetTenantHeaders(id);
 }
 
 /**
