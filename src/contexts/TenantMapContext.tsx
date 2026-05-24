@@ -4,7 +4,7 @@
  */
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
 import { tenantsApi, type Tenant } from '@/services/api/tenantsApi';
-import { usePermissions } from '@/hooks/usePermissions';
+import { useAuth } from '@/contexts/AuthContext';
 import { registerTenantHeaderMetadata } from '@/utils/targetTenant';
 import { isViewAllMode, setTenantOverrideWithoutReload, VIEW_ALL_SENTINEL } from '@/utils/tenant';
 
@@ -24,6 +24,18 @@ const TenantMapContext = createContext<TenantMapContextValue>({
 });
 
 const CACHE_KEY = 'tenants:cache:v1';
+
+function getStoredAccessToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return (
+    window.localStorage.getItem('access_token') ||
+    window.sessionStorage.getItem('access_token') ||
+    window.localStorage.getItem('auth_token') ||
+    window.sessionStorage.getItem('auth_token') ||
+    window.localStorage.getItem('token') ||
+    window.sessionStorage.getItem('token')
+  );
+}
 
 function readCache(): Tenant[] | null {
   if (typeof window === 'undefined') return null;
@@ -47,8 +59,7 @@ function writeCache(tenants: Tenant[]): void {
 }
 
 export function TenantMapProvider({ children }: { children: ReactNode }) {
-  const { isMainAdmin } = usePermissions();
-  const userId = typeof window !== 'undefined' ? window.localStorage.getItem('user_id') : null;
+  const { isAuthenticated, isLoading, user } = useAuth();
 
   // Fix #5: hydrate from cache so the switcher doesn't flash empty on reload.
   const initialCache = readCache() ?? [];
@@ -66,13 +77,17 @@ export function TenantMapProvider({ children }: { children: ReactNode }) {
     // multi-company users now see the switcher too.
     // Fix #2: depend on userId as well so the effect re-runs once auth
     // data lands (closing the isMainAdmin race on first paint).
-    if (typeof window !== 'undefined') {
-      const token = window.localStorage.getItem('auth_token') || window.localStorage.getItem('token');
-      if (!token) {
-        setLoaded(true);
-        return;
-      }
+    if (isLoading) return;
+
+    const token = getStoredAccessToken();
+    if (!isAuthenticated || !token) {
+      setTenants([]);
+      setTenantMap(new Map());
+      setLoaded(true);
+      return;
     }
+
+    setLoaded(initialCache.length > 0);
 
     tenantsApi.list()
       .then((data) => {
@@ -95,7 +110,7 @@ export function TenantMapProvider({ children }: { children: ReactNode }) {
         console.warn('[TenantMapContext] Failed to load tenant list:', err);
       })
       .finally(() => setLoaded(true));
-  }, [isMainAdmin, userId]);
+  }, [isAuthenticated, isLoading, user?.id]);
 
   const getCompanyName = useCallback(
     (tenantId: number): string => {
