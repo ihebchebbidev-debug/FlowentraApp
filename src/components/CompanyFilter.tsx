@@ -211,9 +211,6 @@ export function CompanyFilter({
         )}
         title={viewAll ? 'Filter by company' : 'Switch company'}
       >
-        {viewAll
-          ? <Layers className="h-4 w-4 text-primary shrink-0" />
-          : <Building2 className="h-4 w-4 text-primary shrink-0" />}
         <SelectValue placeholder="All companies" />
       </SelectTrigger>
       <SelectContent>
