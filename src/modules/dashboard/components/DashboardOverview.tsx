@@ -149,35 +149,40 @@ export default function DashboardOverview() {
   }, [serviceOrders]);
 
   const salesBarData = React.useMemo(() => {
-    const inProgressCount = sales.filter(s => s.status === 'in_progress' || s.status === 'created').length;
-    const closedCount = sales.filter(s => s.status === 'closed' || s.status === 'invoiced' || s.status === 'partially_invoiced').length;
-    const cancelledCount = sales.filter(s => s.status === 'cancelled').length;
+    let inProgress = 0, closed = 0, cancelled = 0;
+    sales.forEach(s => {
+      const st = (s.status || '').toString().toLowerCase();
+      if (st === 'closed' || st === 'invoiced' || st === 'partially_invoiced' || st === 'completed' || st === 'won') closed++;
+      else if (st === 'cancelled' || st === 'canceled' || st === 'lost') cancelled++;
+      else inProgress++;
+    });
     return [
-      { name: t('overview.inProgress', 'In Progress'), value: inProgressCount },
-      { name: t('overview.closed', 'Closed'), value: closedCount },
-      { name: t('overview.cancelled', 'Cancelled'), value: cancelledCount },
-    ];
+      { name: t('overview.inProgress', 'In Progress'), value: inProgress, color: 'hsl(217 91% 60%)' },
+      { name: t('overview.closed', 'Closed'), value: closed, color: 'hsl(142 71% 45%)' },
+      { name: t('overview.cancelled', 'Cancelled'), value: cancelled, color: 'hsl(0 84% 60%)' },
+    ].filter(d => d.value > 0);
   }, [sales, t]);
 
   const offersBarData = React.useMemo(() => {
-    const statusCounts = { draft: 0, sent: 0, accepted: 0, declined: 0, modified: 0, cancelled: 0 };
+    const c = { draft: 0, sent: 0, accepted: 0, declined: 0, modified: 0, cancelled: 0 };
     offers.forEach(offer => {
-      const status = offer.status?.toLowerCase() || '';
-      if (status === 'draft' || status === 'created') statusCounts.draft++;
-      else if (status === 'sent' || status === 'pending' || status === 'negotiation') statusCounts.sent++;
-      else if (status === 'accepted' || status === 'won') statusCounts.accepted++;
-      else if (status === 'declined' || status === 'rejected' || status === 'expired' || status === 'lost') statusCounts.declined++;
-      else if (status === 'modified') statusCounts.modified++;
-      else if (status === 'cancelled') statusCounts.cancelled++;
+      const status = (offer.status || '').toString().toLowerCase();
+      if (status === 'draft' || status === 'created' || status === '') c.draft++;
+      else if (status === 'sent' || status === 'pending' || status === 'negotiation') c.sent++;
+      else if (status === 'accepted' || status === 'won' || status === 'approved') c.accepted++;
+      else if (status === 'declined' || status === 'rejected' || status === 'expired' || status === 'lost') c.declined++;
+      else if (status === 'modified' || status === 'updated') c.modified++;
+      else if (status === 'cancelled' || status === 'canceled') c.cancelled++;
+      else c.draft++;
     });
     return [
-      { name: t('overview.draft'), value: statusCounts.draft },
-      { name: t('overview.sent'), value: statusCounts.sent },
-      { name: t('overview.accepted'), value: statusCounts.accepted },
-      { name: t('overview.declined', 'Declined'), value: statusCounts.declined },
-      { name: t('overview.modified', 'Modified'), value: statusCounts.modified },
-      { name: t('overview.cancelled', 'Cancelled'), value: statusCounts.cancelled },
-    ];
+      { name: t('overview.draft'), value: c.draft, color: 'hsl(220 9% 60%)' },
+      { name: t('overview.sent'), value: c.sent, color: 'hsl(217 91% 60%)' },
+      { name: t('overview.accepted'), value: c.accepted, color: 'hsl(142 71% 45%)' },
+      { name: t('overview.declined', 'Declined'), value: c.declined, color: 'hsl(0 84% 60%)' },
+      { name: t('overview.modified', 'Modified'), value: c.modified, color: 'hsl(38 92% 50%)' },
+      { name: t('overview.cancelled', 'Cancelled'), value: c.cancelled, color: 'hsl(0 72% 51%)' },
+    ].filter(d => d.value > 0);
   }, [offers, t]);
 
   // ── tile registry ──
@@ -297,7 +302,7 @@ export default function DashboardOverview() {
       label: t('overview.salesStatus', 'Sales Status'),
       defaultSpan: 3, sizes: [3, 4, 6],
       render: () => (
-        <Card className="flex flex-col min-h-[320px] border-0 bg-gradient-to-br from-card to-muted/20 shadow-lg hover:shadow-xl transition-shadow duration-300 h-full">
+        <Card className="flex flex-col min-h-[240px] border-0 bg-gradient-to-br from-card to-muted/20 shadow-lg hover:shadow-xl transition-shadow duration-300 h-full">
           <CardHeader className="py-3 sm:py-4 px-4 sm:px-5 border-b border-border/50">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-center gap-2 sm:gap-3">
@@ -316,13 +321,13 @@ export default function DashboardOverview() {
           </CardHeader>
           <CardContent className="flex-1 p-3 sm:p-5 min-h-0 flex flex-col">
             {salesBarData.every(d => d.value === 0) ? (
-              <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+              <div className="flex flex-col items-center justify-center h-full text-muted-foreground py-8">
                 <TrendingUp className="h-12 w-12 mb-3 opacity-20" />
                 <p className="text-sm font-medium">{t('overview.noSalesData')}</p>
                 <p className="text-xs mt-1">{t('overview.noSalesDataDesc')}</p>
               </div>
             ) : (
-              <div className="flex-1 min-h-0"><ThemedBarChart data={salesBarData} height="100%" usePrimaryGradient /></div>
+              <div className="flex-1 min-h-0"><ThemedBarChart data={salesBarData} height={180} usePrimaryGradient={false} /></div>
             )}
           </CardContent>
         </Card>
@@ -333,7 +338,7 @@ export default function DashboardOverview() {
       label: t('overview.offersPipeline'),
       defaultSpan: 3, sizes: [3, 4, 6],
       render: () => (
-        <Card className="flex flex-col min-h-[320px] border-0 bg-gradient-to-br from-card to-muted/20 shadow-lg hover:shadow-xl transition-shadow duration-300 h-full">
+        <Card className="flex flex-col min-h-[240px] border-0 bg-gradient-to-br from-card to-muted/20 shadow-lg hover:shadow-xl transition-shadow duration-300 h-full">
           <CardHeader className="py-3 sm:py-4 px-4 sm:px-5 border-b border-border/50">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-center gap-2 sm:gap-3">
@@ -352,13 +357,13 @@ export default function DashboardOverview() {
           </CardHeader>
           <CardContent className="flex-1 p-3 sm:p-5 min-h-0 flex flex-col">
             {offersBarData.every(d => d.value === 0) ? (
-              <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+              <div className="flex flex-col items-center justify-center h-full text-muted-foreground py-8">
                 <ShoppingCart className="h-10 w-10 sm:h-12 sm:w-12 mb-3 opacity-20" />
                 <p className="text-sm font-medium">{t('overview.noOffersData')}</p>
                 <p className="text-xs mt-1">{t('overview.noOffersDataDesc')}</p>
               </div>
             ) : (
-              <div className="flex-1 min-h-0"><ThemedBarChart data={offersBarData} height="100%" usePrimaryGradient /></div>
+              <div className="flex-1 min-h-0"><ThemedBarChart data={offersBarData} height={180} usePrimaryGradient={false} /></div>
             )}
           </CardContent>
         </Card>

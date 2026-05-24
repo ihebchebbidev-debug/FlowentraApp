@@ -60,9 +60,20 @@ namespace MyApi.Modules.Purchases.Services
                 Notes = dto.Notes, IsActive = true, CreatedBy = userId, CreatedDate = DateTime.UtcNow
             };
             _context.ArticleSuppliers.Add(entity);
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("ux_article_suppliers_tenant_article_supplier") == true)
+            {
+                // Race: another concurrent request created the same (Article, Supplier)
+                // link between our pre-check and SaveChanges. The partial unique index
+                // (see migration 20260524_Purchases_QA_Hardening.sql) caught it.
+                throw new InvalidOperationException("This supplier is already linked to the article");
+            }
             return (await GetByIdAsync(entity.Id))!;
         }
+
 
         public async Task<ArticleSupplierDto> UpdateAsync(int id, UpdateArticleSupplierDto dto, string userId)
         {
