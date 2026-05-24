@@ -3,7 +3,8 @@
  * Only accessible by MainAdminUser.
  */
 import { useState, useEffect } from 'react';
-import { Building2, Plus, Save, Loader2, Trash2, Star, StarOff, Power, PowerOff, Pencil, Upload, X, Layers, Eye } from 'lucide-react';
+import { Building2, Plus, Save, Loader2, Trash2, Star, StarOff, Power, PowerOff, Pencil, Upload, X, Layers, Eye, Settings2 } from 'lucide-react';
+import { ModuleScopeDialog } from './ModuleScopeDialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,6 +49,7 @@ export function TenantManagement() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingTenant, setDeletingTenant] = useState<Tenant | null>(null);
   const [saving, setSaving] = useState(false);
+  const [scopeDialogOpen, setScopeDialogOpen] = useState(false);
 
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -313,10 +315,22 @@ export function TenantManagement() {
                 {t('companies.managementDesc')}
               </CardDescription>
             </div>
-            <Button onClick={openCreate} size="sm" className="gradient-primary">
-              <Plus className="h-4 w-4 mr-2" />
-              {t('companies.addCompany')}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                onClick={() => setScopeDialogOpen(true)}
+                size="sm"
+                variant="outline"
+                title={t('moduleScope.title', 'Module Data Scope')}
+              >
+                <Settings2 className="h-4 w-4 mr-2" />
+                {t('moduleScope.title', 'Module Data Scope')}
+              </Button>
+              <Button onClick={openCreate} size="sm" className="gradient-primary">
+                <Plus className="h-4 w-4 mr-2" />
+                {t('companies.addCompany')}
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
@@ -660,6 +674,8 @@ export function TenantManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ModuleScopeDialog open={scopeDialogOpen} onOpenChange={setScopeDialogOpen} />
     </>
   );
 }
