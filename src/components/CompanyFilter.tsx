@@ -157,10 +157,25 @@ export function CompanyFilter({
   const viewAll = isViewAllMode();
   const currentSlug = getCurrentTenant();
 
-  // Always render when the user has access to more than one company so they
-  // can switch at any time — even after pinning a single company. We no
-  // longer require MainAdmin: any user with multi-tenant access sees it.
-  if (tenants.length <= 1) return null;
+  // Fix #4: instead of disappearing on single-tenant accounts, render a
+  // compact disabled chip so the header layout stays stable across users.
+  if (tenants.length === 0) return null;
+  if (tenants.length === 1) {
+    const only = tenants[0];
+    return (
+      <div
+        className={cn(
+          'inline-flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 text-sm text-foreground/80',
+          size === 'sm' ? 'h-9' : 'h-10',
+          className,
+        )}
+        title={only.companyName}
+      >
+        <Building2 className="h-4 w-4 text-primary shrink-0" />
+        <span className="truncate max-w-[160px]">{only.companyName}</span>
+      </div>
+    );
+  }
   void isMainAdmin; // kept for future role-specific UI tweaks
 
   // In pinned-company mode, reflect the actual current tenant in the trigger
