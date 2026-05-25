@@ -1,6 +1,6 @@
 # Flowentra Backend — VPS Operations Handover
 
-This is the **operations runbook** for the Flowentra .NET 8 backend running on the OVH VPS. Pair it with `HANDOVER.md` (architecture) and `Backend/README.md` (deep dive).
+This is the **operations runbook** for the Flowentra .NET 8 backend running onk the OVH VPS. Pair it with `HANDOVER.md` (architecture) and `Backend/README.md` (deep dive).
 
 >  **Credentials in this document are sensitive.** Rotate them after handover and store the new values in a password manager (1Password / Bitwarden / Vault). Do **not** commit rotated secrets back to Git.j
 
