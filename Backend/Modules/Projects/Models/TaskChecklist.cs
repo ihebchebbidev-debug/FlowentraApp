@@ -71,6 +71,7 @@ namespace MyApi.Modules.Projects.Models
     /// <summary>
     /// TaskChecklistItem model for individual items within a checklist
     /// </summary>
+    [ModuleScope("projects")]
     public class TaskChecklistItem : ITenantEntity
     {
         public int TenantId { get; set; }

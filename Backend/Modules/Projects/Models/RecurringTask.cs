@@ -63,6 +63,7 @@ namespace MyApi.Modules.Projects.Models
         public virtual DailyTask? DailyTask { get; set; }
     }
 
+    [ModuleScope("projects")]
     public class RecurringTaskLog : ITenantEntity
     {
         public int TenantId { get; set; }

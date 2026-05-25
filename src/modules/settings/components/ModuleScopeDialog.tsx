@@ -55,6 +55,7 @@ export function ModuleScopeDialog({ open, onOpenChange }: Props) {
 
   const [search, setSearch] = useState('');
   const [draft, setDraft] = useState<Record<string, Scope>>({});
+  const [backendKeys, setBackendKeys] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -62,6 +63,22 @@ export function ModuleScopeDialog({ open, onOpenChange }: Props) {
     () => runtimeState.filter((s) => s.isEnabled).map((s) => s.manifest),
     [runtimeState]
   );
+
+  // Union of (a) frontend plugin manifests, (b) any backend module keys not
+  // covered by a plugin (e.g. "service_orders"). Ensures every backend-controlled
+  // key is editable in the dialog, even when there's no matching FE plugin.
+  type Row = { moduleKey: string; label: string };
+  const allRows: Row[] = useMemo(() => {
+    const fromPlugins: Row[] = enabledModules.map((m) => ({
+      moduleKey: m.moduleKey,
+      label: t(`${m.moduleKey}:plugin.name`, { defaultValue: m.moduleKey }),
+    }));
+    const known = new Set(fromPlugins.map((r) => r.moduleKey));
+    const extras: Row[] = backendKeys
+      .filter((k) => !known.has(k))
+      .map((k) => ({ moduleKey: k, label: k.replace(/_/g, ' ') }));
+    return [...fromPlugins, ...extras].sort((a, b) => a.label.localeCompare(b.label));
+  }, [enabledModules, backendKeys, t]);
 
   // Hydrate from backend whenever the dialog opens
   useEffect(() => {
@@ -75,6 +92,7 @@ export function ModuleScopeDialog({ open, onOpenChange }: Props) {
         const map: Record<string, Scope> = {};
         rows.forEach((r) => { map[r.moduleKey] = r.scope; });
         setDraft(map);
+        setBackendKeys(rows.map((r) => r.moduleKey));
       })
       .catch((err) => {
         toast({
@@ -83,27 +101,27 @@ export function ModuleScopeDialog({ open, onOpenChange }: Props) {
           variant: 'destructive',
         });
         setDraft({});
+        setBackendKeys([]);
       })
       .finally(() => setLoading(false));
   }, [open, t, toast]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return enabledModules;
-    return enabledModules.filter((m) => {
-      const name = t(`${m.moduleKey}:plugin.name`, { defaultValue: m.moduleKey }).toLowerCase();
-      return name.includes(q) || m.moduleKey.toLowerCase().includes(q);
-    });
-  }, [enabledModules, search, t]);
+    if (!q) return allRows;
+    return allRows.filter(
+      (r) => r.label.toLowerCase().includes(q) || r.moduleKey.toLowerCase().includes(q)
+    );
+  }, [allRows, search]);
 
   const sharedCount = useMemo(
-    () => enabledModules.filter((m) => (draft[m.moduleKey] ?? DEFAULT_SCOPE) === 'shared').length,
-    [enabledModules, draft]
+    () => allRows.filter((r) => (draft[r.moduleKey] ?? DEFAULT_SCOPE) === 'shared').length,
+    [allRows, draft]
   );
 
   const setAll = (scope: Scope) => {
     const next: Record<string, Scope> = { ...draft };
-    enabledModules.forEach((m) => { next[m.moduleKey] = scope; });
+    allRows.forEach((r) => { next[r.moduleKey] = scope; });
     setDraft(next);
   };
 
@@ -114,11 +132,11 @@ export function ModuleScopeDialog({ open, onOpenChange }: Props) {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Only push entries for modules currently visible to the admin.
-      const payload = enabledModules.map((m) => ({
-        moduleKey: m.moduleKey,
-        scope: draft[m.moduleKey] ?? DEFAULT_SCOPE,
+      const payload = allRows.map((r) => ({
+        moduleKey: r.moduleKey,
+        scope: draft[r.moduleKey] ?? DEFAULT_SCOPE,
       }));
+
       const res = await fetch(`${API_URL}/api/module-scope`, {
         method: 'PUT',
         headers: authHeaders({ 'Content-Type': 'application/json' }),
@@ -183,9 +201,10 @@ export function ModuleScopeDialog({ open, onOpenChange }: Props) {
         <div className="text-xs text-muted-foreground px-1">
           {t('moduleScope.summary', '{{shared}} of {{total}} modules shared across all companies', {
             shared: sharedCount,
-            total: enabledModules.length,
+            total: allRows.length,
           })}
         </div>
+
 
         {/* List */}
         <div className="flex-1 overflow-y-auto -mx-1 px-1 space-y-2">
@@ -199,13 +218,12 @@ export function ModuleScopeDialog({ open, onOpenChange }: Props) {
               {t('moduleScope.empty', 'No modules match your search.')}
             </div>
           ) : (
-            filtered.map((m) => {
-              const scope = draft[m.moduleKey] ?? DEFAULT_SCOPE;
+            filtered.map((r) => {
+              const scope = draft[r.moduleKey] ?? DEFAULT_SCOPE;
               const isShared = scope === 'shared';
-              const name = t(`${m.moduleKey}:plugin.name`, { defaultValue: m.moduleKey });
               return (
                 <div
-                  key={m.moduleKey}
+                  key={r.moduleKey}
                   className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border/50 bg-muted/20 hover:border-primary/30 transition-colors"
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -216,7 +234,7 @@ export function ModuleScopeDialog({ open, onOpenChange }: Props) {
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-foreground truncate">{name}</p>
+                        <p className="text-sm font-medium text-foreground truncate capitalize">{r.label}</p>
                         <Badge
                           variant={isShared ? 'default' : 'secondary'}
                           className="text-[10px] h-4 px-1.5"
@@ -226,17 +244,18 @@ export function ModuleScopeDialog({ open, onOpenChange }: Props) {
                             : t('moduleScope.isolated', 'Isolated')}
                         </Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground font-mono truncate">{m.moduleKey}</p>
+                      <p className="text-xs text-muted-foreground font-mono truncate">{r.moduleKey}</p>
                     </div>
                   </div>
                   <Switch
                     checked={isShared}
-                    onCheckedChange={(v) => handleToggle(m.moduleKey, v)}
+                    onCheckedChange={(v) => handleToggle(r.moduleKey, v)}
                     aria-label={t('moduleScope.toggleAria', 'Toggle shared scope')}
                   />
                 </div>
               );
             })
+
           )}
         </div>
 
