@@ -41,6 +41,8 @@ export function ContactsList() {
   
   // Initialize viewMode from user preferences
   const getInitialViewMode = (): 'list' | 'table' => {
+    // Mobile always defaults to list view
+    if (typeof window !== 'undefined' && window.innerWidth < 768) return 'list';
     try {
       const localPrefs = localStorage.getItem('user-preferences');
       if (localPrefs) {

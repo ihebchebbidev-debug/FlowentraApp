@@ -55,6 +55,7 @@ import { serviceOrdersApi } from "@/services/api/serviceOrdersApi";
 import { TechnicianDetailModal, type TechnicianInfo } from "../components/TechnicianDetailModal";
 import { useDispatchDeletion } from "@/modules/field/dispatches/hooks/useDispatchDeletion";
 import { DispatchesKanbanView } from "../components/DispatchesKanbanView";
+import { getInitialViewMode } from '../../../hooks/getInitialViewMode';
 
 // Extended dispatch type for display
 interface DisplayDispatch {
@@ -100,7 +101,7 @@ export function DispatcherPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState("dispatches");
-  const [viewMode, setViewMode] = useState<'list' | 'table' | 'kanban'>('table');
+  const [viewMode, setViewMode] = useState<'list' | 'table' | 'kanban'>(() => getInitialViewMode(['list','table','kanban'] as const, 'table'));
   const [filters, setFilters] = useState<DispatcherFilters>({
     searchTerm: '',
     status: 'all',

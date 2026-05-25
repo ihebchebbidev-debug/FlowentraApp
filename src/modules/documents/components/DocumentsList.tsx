@@ -54,6 +54,7 @@ import { DocumentThumbnail } from './DocumentThumbnail';
 import { Document, DocumentFilters as FilterType } from '../types';
 import { DocumentsService } from '../services/documents.service';
 import { toast } from 'sonner';
+import { getInitialViewMode } from '../../../hooks/getInitialViewMode';
 
 export function DocumentsList() {
   const { t } = useTranslation();
@@ -63,7 +64,7 @@ export function DocumentsList() {
   const [showEditor, setShowEditor] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [filters, setFilters] = useState<FilterType>({});
-  const [viewMode, setViewMode] = useState<'list' | 'table'>('table');
+  const [viewMode, setViewMode] = useState<'list' | 'table'>(() => getInitialViewMode(['list','table'] as const, 'table'));
   const [selectedStat, setSelectedStat] = useState<string>('all');
   const [showFilterBar, setShowFilterBar] = useState(false);
 

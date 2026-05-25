@@ -26,6 +26,7 @@ import inventoryStatuses from "@/data/mock/inventory-statuses.json";
 
 // Use unified articles service
 import { ArticlesService, type InventoryArticle } from "@/modules/articles/services/articles.service";
+import { getInitialViewMode } from '../../../../hooks/getInitialViewMode';
 
 interface InventoryItem {
   id: number | string;
@@ -61,7 +62,7 @@ const convertArticleToFieldInventory = (article: InventoryArticle): InventoryIte
 export default function InventoryList() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [viewMode, setViewMode] = useState<'list' | 'table'>('table');
+  const [viewMode, setViewMode] = useState<'list' | 'table'>(() => getInitialViewMode(['list','table'] as const, 'table'));
   const [query, setQuery] = useState("");
   const [showFilterBar, setShowFilterBar] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('all');

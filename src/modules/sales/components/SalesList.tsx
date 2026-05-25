@@ -69,6 +69,7 @@ import { offersApi } from "@/services/api/offersApi";
 import { usePermissions } from "@/hooks/usePermissions";
 import { SalesKanbanView } from './SalesKanbanView';
 import { TableRowActions } from '@/shared/components/TableRowActions';
+import { getInitialViewMode } from '../../../hooks/getInitialViewMode';
 
 // Helper to calculate total amount from items including taxes
 const calculateItemsTotal = (sale: Sale): number => {
@@ -96,7 +97,7 @@ export function SalesList() {
   const hasDeleteAccess = isMainAdmin || canDelete('sales');
   
   // Local UI state
-  const [viewMode, setViewMode] = useState<'list' | 'table' | 'kanban'>('table');
+  const [viewMode, setViewMode] = useState<'list' | 'table' | 'kanban'>(() => getInitialViewMode(['list','table','kanban'] as const, 'table'));
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | string>('all');
   const [filterStage, setFilterStage] = useState<'all' | string>('all');

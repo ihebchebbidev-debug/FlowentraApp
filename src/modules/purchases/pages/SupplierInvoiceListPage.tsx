@@ -39,6 +39,7 @@ import { ExportModal, type ExportConfig } from "@/components/shared/ExportModal"
 import { TableRowActions } from "@/shared/components/TableRowActions";
 import { formatStatValue } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
+import { getInitialViewMode } from '../../../hooks/getInitialViewMode';
 
 const rsRateForCode = (code?: string): number | null => {
   if (!code) return null;
@@ -75,7 +76,7 @@ function SupplierInvoiceListContent() {
   const [rsFilter, setRsFilter] = useState<string>("all");
   const [selectedStat, setSelectedStat] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode] = useState<"table" | "list">("table");
+  const [viewMode, setViewMode] = useState<'list' | 'table'>(() => getInitialViewMode(['list','table'] as const, 'table'));
   const [showExport, setShowExport] = useState(false);
   const [companyId, setCompanyId] = useState<CompanyFilterValue>("all");
 

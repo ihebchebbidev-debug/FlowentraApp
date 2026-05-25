@@ -49,6 +49,7 @@ import { isViewAllMode } from '@/utils/tenant';
 import { CompanyBadge } from '@/components/CompanyBadge';
 import { useFilteredByCompany } from '@/components/CompanyFilter';
 import { CreateActionButton } from '@/components/CreateActionButton';
+import { getInitialViewMode } from '../../../../hooks/getInitialViewMode';
 
 export default function InstallationsList() {
   const { t, i18n } = useTranslation('installations');
@@ -73,7 +74,7 @@ export default function InstallationsList() {
   const [filterType, setFilterType] = useState<'all' | string>('all');
   const [filterManufacturer, setFilterManufacturer] = useState<'all' | string>('all');
   const [filterWarranty, setFilterWarranty] = useState<'all' | 'with' | 'without'>('all');
-  const [viewMode, setViewMode] = useState<'list' | 'table'>('table');
+  const [viewMode, setViewMode] = useState<'list' | 'table'>(() => getInitialViewMode(['list','table'] as const, 'table'));
   const [selectedStat, setSelectedStat] = useState<string>('all');
   const [showFilterBar, setShowFilterBar] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);

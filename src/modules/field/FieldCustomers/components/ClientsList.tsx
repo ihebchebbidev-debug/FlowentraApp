@@ -23,6 +23,7 @@ import {
 
 // Import mock data from JSON file
 import fieldCustomersData from "@/data/mock/fieldCustomers.json";
+import { getInitialViewMode } from '../../../../hooks/getInitialViewMode';
 
 interface Client {
   id: number;
@@ -41,7 +42,7 @@ interface Client {
 export default function ClientsList() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [viewMode, setViewMode] = useState<'list' | 'table'>('table');
+  const [viewMode, setViewMode] = useState<'list' | 'table'>(() => getInitialViewMode(['list','table'] as const, 'table'));
   const [query, setQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<'all' | string>('all');
   const [filterType, setFilterType] = useState<'all' | string>('all');

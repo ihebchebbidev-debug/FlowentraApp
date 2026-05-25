@@ -38,6 +38,7 @@ import { ExportModal, type ExportConfig } from "@/components/shared/ExportModal"
 import { TableRowActions } from "@/shared/components/TableRowActions";
 import { formatStatValue } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
+import { getInitialViewMode } from '../../../hooks/getInitialViewMode';
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
@@ -69,7 +70,7 @@ function PurchaseOrderListContent() {
   const [paymentFilter, setPaymentFilter] = useState<string>("all");
   const [selectedStat, setSelectedStat] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode] = useState<"table" | "list">("table");
+  const [viewMode, setViewMode] = useState<'list' | 'table'>(() => getInitialViewMode(['list','table'] as const, 'table'));
   const [showExport, setShowExport] = useState(false);
   const [companyId, setCompanyId] = useState<CompanyFilterValue>("all");
 

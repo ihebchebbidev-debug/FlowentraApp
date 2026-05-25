@@ -12,6 +12,10 @@ export function useDefaultViewMode(fallbackDefault: ViewMode = 'table') {
   
   // Determine initial value from preferences or fallback
   const getInitialViewMode = (): ViewMode => {
+    // Mobile always defaults to list view for readability
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      return 'list';
+    }
     // Try localStorage preferences first
     try {
       const localPrefs = localStorage.getItem('user-preferences');

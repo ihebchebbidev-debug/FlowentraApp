@@ -12,6 +12,8 @@ export function useArticlesList() {
   
   // Initialize viewMode from user preferences
   const getInitialViewMode = (): ListViewMode => {
+    // Mobile always defaults to list view
+    if (typeof window !== 'undefined' && window.innerWidth < 768) return 'list';
     try {
       const localPrefs = localStorage.getItem('user-preferences');
       if (localPrefs) {

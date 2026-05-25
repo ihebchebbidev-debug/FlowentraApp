@@ -63,6 +63,7 @@ import { isViewAllMode } from '@/utils/tenant';
 import { CompanyBadge } from '@/components/CompanyBadge';
 import { useFilteredByCompany } from '@/components/CompanyFilter';
 import { CreateActionButton } from '@/components/CreateActionButton';
+import { getInitialViewMode } from '../../../hooks/getInitialViewMode';
 
 // Helper to calculate total amount from items including taxes
 // Business rule: Subtotal → Discount → Tax (on afterDiscount) → Fiscal Stamp
@@ -79,7 +80,7 @@ export function OffersList() {
   const { t } = useTranslation('offers');
   const navigate = useNavigate();
   const { canCreate, canRead, canUpdate, canDelete, isLoading: permissionsLoading, isMainAdmin } = usePermissions();
-  const [viewMode, setViewMode] = useState<'list' | 'table' | 'kanban'>('table');
+  const [viewMode, setViewMode] = useState<'list' | 'table' | 'kanban'>(() => getInitialViewMode(['list','table','kanban'] as const, 'table'));
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | string>('all');
   const [showFilterBar, setShowFilterBar] = useState(false);
