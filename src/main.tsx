@@ -9,8 +9,10 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 )
 
-// Register Service Worker for offline support and smart cachingq
-if ('serviceWorker' in navigator) {
+// Register Service Worker for offline support and smart caching (production only)
+// In Lovable preview/sandbox iframes the SW cannot be served, which produces
+// spurious 404s and registration retries. Skip in dev.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js', { scope: '/' })
       .then((reg) => {

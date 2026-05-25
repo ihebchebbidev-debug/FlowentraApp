@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import React, { Suspense } from "react";
 import { PermissionRoute } from "@/components/permissions/PermissionRoute";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
@@ -202,6 +202,9 @@ export function DashboardContent() {
         } />
         {/* Help/Support route */}
         <Route path="help/*" element={<HelpModule />} />
+        {/* Projects: standalone /dashboard/projects URLs redirect into the tasks module */}
+        <Route path="projects" element={<Navigate to="/dashboard/tasks/projects" replace />} />
+        <Route path="projects/*" element={<Navigate to="/dashboard/tasks/projects" replace />} />
         {/* Tickets Admin */}
         <Route path="ticketsadmin" element={
           <Suspense fallback={<PageSkeleton />}>

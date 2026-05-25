@@ -220,7 +220,7 @@ export function DocumentsList() {
       case 'offers': return '/dashboard/offers';
       case 'sales': return '/dashboard/sales';
       case 'services': return '/dashboard/service-orders';
-      case 'projects': return '/dashboard/projects';
+      case 'projects': return '/dashboard/tasks/projects';
       case 'contacts': return '/dashboard/contacts';
       default: return null; // field / general → no clickable link
     }
@@ -741,7 +741,11 @@ export function DocumentsList() {
           moduleType="general"
           moduleName="General"
           showFileUpload={true}
-          onCreated={() => { setShowEditor(false); refetch(); }}
+          onCreated={() => {
+            setShowEditor(false);
+            // Small delay so the backend has committed the row before we re-query.
+            setTimeout(() => { refetch(); }, 300);
+          }}
         />
       )}
 

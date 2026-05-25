@@ -393,8 +393,8 @@ const AddUnifiedArticle = () => {
                       <SelectValue placeholder={loadingCategories ? t('addForm.loading') : t('addForm.select_category')} />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.map((cat) => (
-                        <SelectItem key={String(cat.id)} value={String(cat.id)}>
+                       {categories.filter(c => c.id !== null && c.id !== undefined && String(c.id) !== '').map((cat) => (
+                         <SelectItem key={String(cat.id)} value={String(cat.id)}>
                           {cat.name}
                         </SelectItem>
                       ))}
@@ -418,8 +418,8 @@ const AddUnifiedArticle = () => {
                         <SelectValue placeholder={loadingLocations ? t('addForm.loading') : t('addForm.select_location')} />
                       </SelectTrigger>
                       <SelectContent>
-                        {locations.map((loc) => (
-                          <SelectItem key={String(loc.id)} value={String(loc.id)}>
+                         {locations.filter(l => l.id !== null && l.id !== undefined && String(l.id) !== '').map((loc) => (
+                           <SelectItem key={String(loc.id)} value={String(loc.id)}>
                             {loc.name}
                           </SelectItem>
                         ))}
@@ -443,8 +443,8 @@ const AddUnifiedArticle = () => {
                     <SelectValue placeholder={loadingGroups ? t('addForm.loading') : t('addForm.select_group')} />
                   </SelectTrigger>
                   <SelectContent>
-                    {groups.map((grp) => (
-                      <SelectItem key={String(grp.id)} value={String(grp.id)}>
+                     {groups.filter(g => g.id !== null && g.id !== undefined && String(g.id) !== '').map((grp) => (
+                       <SelectItem key={String(grp.id)} value={String(grp.id)}>
                         {grp.name}
                       </SelectItem>
                     ))}
