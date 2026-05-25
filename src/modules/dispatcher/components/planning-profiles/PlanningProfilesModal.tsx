@@ -153,7 +153,7 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
                 <CalendarDays className="h-5 w-5 text-primary" />
                 {t('dispatcher.profiles.title', { defaultValue: 'Planning profiles' })}
               </span>
-              <span className="flex items-center gap-2 text-xs font-normal">
+              <span className="flex items-center gap-2 text-xs font-normal mr-8">
                 <span className="text-muted-foreground">
                   {t('dispatcher.profiles.currently_active', { defaultValue: 'Currently active' })}:
                 </span>
