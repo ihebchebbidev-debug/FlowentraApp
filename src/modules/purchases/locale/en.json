@@ -65,10 +65,13 @@
   },
   "status": {
     "draft": "Draft",
+    "sent": "Sent",
+    "confirmed": "Confirmed",
     "validated": "Validated",
     "ordered": "Ordered",
     "partially_received": "Partially Received",
     "received": "Received",
+    "closed": "Closed",
     "cancelled": "Cancelled"
   },
   "paymentStatus": {

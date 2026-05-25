@@ -64,10 +64,13 @@
   },
   "status": {
     "draft": "مسودة",
+    "sent": "مرسل",
+    "confirmed": "مؤكد",
     "validated": "مصادق عليه",
     "ordered": "تم الطلب",
     "partially_received": "مستلم جزئياً",
     "received": "مستلم",
+    "closed": "مغلق",
     "cancelled": "ملغى"
   },
   "paymentStatus": {

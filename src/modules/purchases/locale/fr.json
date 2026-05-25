@@ -65,10 +65,13 @@
   },
   "status": {
     "draft": "Brouillon",
+    "sent": "Envoyé",
+    "confirmed": "Confirmé",
     "validated": "Validé",
     "ordered": "Commandé",
     "partially_received": "Partiellement reçu",
     "received": "Reçu",
+    "closed": "Clôturé",
     "cancelled": "Annulé"
   },
   "paymentStatus": {
