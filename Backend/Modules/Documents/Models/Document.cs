@@ -5,6 +5,7 @@ using MyApi.Infrastructure;
 
 namespace MyApi.Modules.Documents.Models
 {
+    [ModuleScope("documents")]
     [Table("Documents")]
     public class Document : ITenantEntity
     {

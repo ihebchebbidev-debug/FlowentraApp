@@ -4,6 +4,7 @@ using MyApi.Infrastructure;
 
 namespace MyApi.Modules.ServiceOrders.Models
 {
+    [ModuleScope("service_orders")]
     [Table("ServiceOrderJobs")]
     public class ServiceOrderJob : ITenantEntity
     {

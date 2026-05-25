@@ -4,6 +4,7 @@ using MyApi.Infrastructure;
 
 namespace MyApi.Modules.Calendar.Models
 {
+    [ModuleScope("calendar")]
     [Table("event_reminders")]
     public class EventReminder : ITenantEntity
     {

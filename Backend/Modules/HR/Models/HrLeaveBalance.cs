@@ -5,6 +5,7 @@ using MyApi.Infrastructure;
 
 namespace MyApi.Modules.HR.Models
 {
+    [ModuleScope("hr")]
     [Table("hr_leave_balances")]
     public class HrLeaveBalance : ITenantEntity
     {

@@ -4,6 +4,7 @@ using MyApi.Infrastructure;
 
 namespace MyApi.Modules.Offers.Models
 {
+    [ModuleScope("offers")]
     [Table("OfferItems")]
     public class OfferItem : ITenantEntity
     {

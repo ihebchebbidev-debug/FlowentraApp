@@ -8,6 +8,7 @@ namespace MyApi.Modules.Projects.Models
     /// TaskComment model matching database schema:
     /// Id, TaskId, Comment, CreatedDate, CreatedBy
     /// </summary>
+    [ModuleScope("projects")]
     public class TaskComment : ITenantEntity
     {
         public int TenantId { get; set; }

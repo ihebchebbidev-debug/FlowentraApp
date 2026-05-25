@@ -9,6 +9,7 @@ namespace MyApi.Modules.HR.Models
     /// Versioned record of an employee's gross salary over time.
     /// Created automatically whenever HrEmployeeSalaryConfig.GrossSalary changes.
     /// </summary>
+    [ModuleScope("hr")]
     [Table("hr_salary_history")]
     public class HrSalaryHistory : ITenantEntity
     {

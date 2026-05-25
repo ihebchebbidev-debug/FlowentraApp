@@ -5,6 +5,7 @@ using MyApi.Modules.Users.Models;
 
 namespace MyApi.Modules.Skills.Models
 {
+    [ModuleScope("skills")]
     [Table("Skills")]
     public class Skill : ITenantEntity
     {

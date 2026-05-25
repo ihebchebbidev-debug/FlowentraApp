@@ -5,6 +5,7 @@ using MyApi.Infrastructure;
 
 namespace MyApi.Modules.Purchases.Models
 {
+    [ModuleScope("purchases")]
     [Table("PurchaseActivities")]
     public class PurchaseActivity : ITenantEntity
     {

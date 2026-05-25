@@ -9,6 +9,7 @@ namespace MyApi.Modules.HR.Models
     /// Tenant-configurable CNSS / payroll rates (Tunisia).
     /// Only one active row per tenant is expected; older rows kept for history.
     /// </summary>
+    [ModuleScope("hr")]
     [Table("hr_cnss_rates")]
     public class HrCnssRate : ITenantEntity
     {

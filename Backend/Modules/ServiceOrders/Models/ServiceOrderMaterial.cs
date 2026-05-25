@@ -9,6 +9,7 @@ namespace MyApi.Modules.ServiceOrders.Models
     /// Represents materials directly associated with a service order (from sale conversion or manually added).
     /// This is separate from DispatchMaterials which are used during dispatch execution.
     /// </summary>
+    [ModuleScope("service_orders")]
     [Table("ServiceOrderMaterials")]
     public class ServiceOrderMaterial : ITenantEntity
     {

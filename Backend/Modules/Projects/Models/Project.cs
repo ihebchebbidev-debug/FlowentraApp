@@ -5,6 +5,7 @@ using MyApi.Modules.Contacts.Models;
 
 namespace MyApi.Modules.Projects.Models
 {
+    [ModuleScope("projects")]
     [Table("Projects")]
     public class Project : ITenantEntity
     {

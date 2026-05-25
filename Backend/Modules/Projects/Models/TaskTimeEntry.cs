@@ -8,6 +8,7 @@ namespace MyApi.Modules.Projects.Models
     /// TaskTimeEntry model for tracking time spent on tasks
     /// Supports both Project Tasks and Daily Tasks
     /// </summary>
+    [ModuleScope("projects")]
     public class TaskTimeEntry : ITenantEntity
     {
         public int TenantId { get; set; }

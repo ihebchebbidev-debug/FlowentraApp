@@ -5,6 +5,7 @@ using MyApi.Infrastructure;
 
 namespace MyApi.Modules.HR.Models
 {
+    [ModuleScope("hr")]
     [Table("hr_job_openings")]
     public class HrJobOpening : ITenantEntity
     {

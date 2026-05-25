@@ -4,6 +4,7 @@ using MyApi.Infrastructure;
 
 namespace MyApi.Modules.Lookups.Models
 {
+    [ModuleScope("lookups")]
     [Table("LookupItems")]
     public class LookupItem : ITenantEntity
     {

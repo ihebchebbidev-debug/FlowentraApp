@@ -22,4 +22,12 @@ namespace MyApi.Modules.Settings.DTOs
         /// </summary>
         public string MigrationStrategy { get; set; } = "keep_at_zero";
     }
+
+    public class BulkModuleScopeItem
+    {
+        [Required] public string ModuleKey { get; set; } = string.Empty;
+        [Required, RegularExpression("^(shared|per_company)$")]
+        public string Scope { get; set; } = "per_company";
+    }
 }
+

@@ -4,6 +4,7 @@ using MyApi.Infrastructure;
 
 namespace MyApi.Modules.Sales.Models
 {
+    [ModuleScope("sales")]
     [Table("SaleActivities")]
     public class SaleActivity : ITenantEntity
     {

@@ -724,7 +724,9 @@ CREATE INDEX IF NOT EXISTS ix_activated_modules_tenant
             "WB_ActivityLog",
             // Email Accounts
             "ConnectedEmailAccounts",
-            "EmailBlocklistItems"
+            "EmailBlocklistItems",
+            "ModuleScopeSettings"
+
         };
 
         var existingTables = context.Database.SqlQueryRaw<string>(
@@ -787,6 +789,38 @@ CREATE INDEX IF NOT EXISTS ix_activated_modules_tenant
         {
             migrationLogger.LogInformation("✅ Database validation PASSED - All expected tables exist!");
         }
+
+        // ─── Ensure ModuleScopeSettings table exists (migrations are disabled) ───
+        // Idempotent: creates the table + seeds default keys on first boot.
+        // Safe to run on every startup.
+        try
+        {
+            context.Database.ExecuteSqlRaw(@"
+                CREATE TABLE IF NOT EXISTS ""ModuleScopeSettings"" (
+                    ""ModuleKey""        VARCHAR(64)   PRIMARY KEY,
+                    ""Scope""            VARCHAR(16)   NOT NULL DEFAULT 'per_company',
+                    ""UpdatedAt""        TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+                    ""UpdatedByUserId""  INTEGER       NULL,
+                    CONSTRAINT ""CK_ModuleScopeSettings_Scope""
+                        CHECK (""Scope"" IN ('per_company', 'shared'))
+                );
+
+                INSERT INTO ""ModuleScopeSettings"" (""ModuleKey"", ""Scope"") VALUES
+                    ('contacts','per_company'),('articles','per_company'),
+                    ('lookups','per_company'),('offers','per_company'),
+                    ('sales','per_company'),('purchases','per_company'),
+                    ('hr','per_company'),('projects','per_company'),
+                    ('service_orders','per_company'),('calendar','per_company'),
+                    ('documents','per_company'),('notifications','per_company'),
+                    ('skills','per_company')
+                ON CONFLICT (""ModuleKey"") DO NOTHING;
+            ");
+            migrationLogger.LogInformation("✅ ModuleScopeSettings table ensured (idempotent).");
+        }
+        catch (Exception ex)
+        {
+            migrationLogger.LogWarning(ex, "⚠️ Could not ensure ModuleScopeSettings table — feature will degrade to per_company.");
+        }
     }
     catch (Exception ex)
     {
@@ -794,6 +828,7 @@ CREATE INDEX IF NOT EXISTS ix_activated_modules_tenant
         throw;
     }
 }
+
 
 // Middleware pipeline
 

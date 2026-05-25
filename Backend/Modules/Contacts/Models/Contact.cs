@@ -4,6 +4,7 @@ using MyApi.Infrastructure;
 
 namespace MyApi.Modules.Contacts.Models
 {
+    [ModuleScope("contacts")]
     [Table("Contacts")]
     public class Contact : ITenantEntity, MyApi.Modules.Shared.Models.ISoftDeletable
     {

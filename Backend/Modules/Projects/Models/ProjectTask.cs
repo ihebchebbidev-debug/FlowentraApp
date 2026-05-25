@@ -8,6 +8,7 @@ namespace MyApi.Modules.Projects.Models
     /// ProjectTask refactored to represent a lightweight Activity:
     /// Id, Title, Description, DueDate, AssignedUserId, TaskType, Status, RelatedEntityType, RelatedEntityId, CreatedDate, CreatedBy, ModifiedDate, ModifiedBy
     /// </summary>
+    [ModuleScope("projects")]
     public class ProjectTask : ITenantEntity
     {
         public int TenantId { get; set; }

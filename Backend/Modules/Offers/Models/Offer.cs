@@ -4,6 +4,7 @@ using MyApi.Infrastructure;
 
 namespace MyApi.Modules.Offers.Models
 {
+    [ModuleScope("offers")]
     [Table("Offers")]
     public class Offer : ITenantEntity, MyApi.Modules.Shared.Models.ISoftDeletable
     {

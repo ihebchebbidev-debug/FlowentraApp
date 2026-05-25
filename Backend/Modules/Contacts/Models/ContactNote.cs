@@ -4,6 +4,7 @@ using MyApi.Infrastructure;
 
 namespace MyApi.Modules.Contacts.Models
 {
+    [ModuleScope("contacts")]
     [Table("ContactNotes")]
     public class ContactNote : ITenantEntity
     {

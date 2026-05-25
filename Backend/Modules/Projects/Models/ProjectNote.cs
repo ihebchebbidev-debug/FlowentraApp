@@ -4,6 +4,7 @@ using MyApi.Infrastructure;
 
 namespace MyApi.Modules.Projects.Models
 {
+    [ModuleScope("projects")]
     public class ProjectNote : ITenantEntity
     {
         public int TenantId { get; set; }

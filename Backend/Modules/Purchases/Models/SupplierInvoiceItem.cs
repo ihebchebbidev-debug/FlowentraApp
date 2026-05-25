@@ -4,6 +4,7 @@ using MyApi.Infrastructure;
 
 namespace MyApi.Modules.Purchases.Models
 {
+    [ModuleScope("purchases")]
     [Table("SupplierInvoiceItems")]
     public class SupplierInvoiceItem : ITenantEntity
     {

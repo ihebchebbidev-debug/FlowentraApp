@@ -4,6 +4,7 @@ using MyApi.Infrastructure;
 
 namespace MyApi.Modules.Notifications.Models
 {
+    [ModuleScope("notifications")]
     [Table("Notifications")]
     public class Notification : ITenantEntity
     {

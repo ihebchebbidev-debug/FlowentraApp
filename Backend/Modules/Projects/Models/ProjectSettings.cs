@@ -5,6 +5,7 @@ using MyApi.Infrastructure;
 
 namespace MyApi.Modules.Projects.Models
 {
+    [ModuleScope("projects")]
     [Table("ProjectSettings")]
     public class ProjectSettings : ITenantEntity
     {

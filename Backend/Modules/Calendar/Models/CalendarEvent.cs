@@ -5,6 +5,7 @@ using MyApi.Infrastructure;
 
 namespace MyApi.Modules.Calendar.Models
 {
+    [ModuleScope("calendar")]
     [Table("calendar_events")]
     public class CalendarEvent : ITenantEntity
     {

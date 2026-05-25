@@ -6,6 +6,7 @@ using MyApi.Infrastructure;
 
 namespace MyApi.Modules.Purchases.Models
 {
+    [ModuleScope("purchases")]
     [Table("GoodsReceipts")]
     public class GoodsReceipt : ITenantEntity, MyApi.Modules.Shared.Models.ISoftDeletable
     {

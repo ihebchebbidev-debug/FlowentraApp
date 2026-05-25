@@ -8,6 +8,7 @@ namespace MyApi.Modules.Projects.Models
     /// DailyTask model matching database schema:
     /// Id, Title, Description, DueDate, IsCompleted, CompletedDate, AssignedUserId, Priority, Status, CreatedDate, CreatedBy
     /// </summary>
+    [ModuleScope("projects")]
     public class DailyTask : ITenantEntity
     {
         public int TenantId { get; set; }

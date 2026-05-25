@@ -138,5 +138,64 @@ namespace MyApi.Modules.Settings.Controllers
                 UpdatedAt = row.UpdatedAt,
             });
         }
+
+        /// <summary>
+        /// Bulk upsert. Body: [{ moduleKey, scope }, …]. Atomic — either all rows save or none.
+        /// Used by the Module Data Scope dialog's single "Save" button.
+        /// </summary>
+        [HttpPut]
+        public async Task<ActionResult<List<ModuleScopeDto>>> BulkUpdate(
+            [FromBody] List<BulkModuleScopeItem> body)
+        {
+            if (!IsMainAdmin())
+                return Forbid();
+            if (body == null || body.Count == 0)
+                return BadRequest(new { error = "Body must contain at least one item." });
+
+            var userId = GetUserId();
+            var now = DateTime.UtcNow;
+            var saved = new List<ModuleScopeDto>(body.Count);
+
+            foreach (var item in body)
+            {
+                var key = (item?.ModuleKey ?? string.Empty).Trim().ToLowerInvariant();
+                if (string.IsNullOrWhiteSpace(key)) continue;
+
+                var scope = (item!.Scope ?? "per_company").Trim().ToLowerInvariant();
+                if (scope != "shared" && scope != "per_company")
+                    return BadRequest(new { error = $"Scope for '{key}' must be 'shared' or 'per_company'." });
+
+                var row = await _db.Set<ModuleScopeSetting>()
+                    .FirstOrDefaultAsync(m => m.ModuleKey == key);
+                if (row == null)
+                {
+                    row = new ModuleScopeSetting { ModuleKey = key, Scope = scope };
+                    _db.Add(row);
+                }
+                else
+                {
+                    row.Scope = scope;
+                }
+                row.UpdatedAt = now;
+                row.UpdatedByUserId = userId;
+
+                saved.Add(new ModuleScopeDto
+                {
+                    ModuleKey = row.ModuleKey,
+                    Scope = row.Scope,
+                    UpdatedAt = row.UpdatedAt,
+                });
+            }
+
+            await _db.SaveChangesAsync();
+            _provider.Invalidate();
+
+            _logger.LogInformation(
+                "ModuleScope BULK updated ({Count} rows) by user {UserId}",
+                saved.Count, userId);
+
+            return Ok(saved);
+        }
     }
 }
+
