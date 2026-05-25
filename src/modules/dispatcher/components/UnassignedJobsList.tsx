@@ -56,24 +56,40 @@ export function UnassignedJobsList({
   const [searchTerm, setSearchTerm] = useState("");
   const [_isDragging, setIsDragging] = useState(false);
   
-  // Group jobs by service order and filter by search term
-  // Only show service orders with status 'ready_for_planning'.
-  // Memoized so heavy filtering only re-runs when its inputs change.
+  // Group from the jobs prop itself: it is the source of truth used by Suggest/Auto-fill.
+  // Service-order cache is only used for extra display metadata, so a stale/missing SO cache
+  // can never hide real unassigned jobs from the sidebar.
   const groupedData = useMemo(() => {
     const serviceOrders = DispatcherService.getServiceOrders();
+    const serviceOrdersById = new Map(serviceOrders.map(order => [String(order.id), order]));
     const searchLower = searchTerm.trim().toLowerCase();
-    // Statuses that represent a Service Order that still has jobs to plan/dispatch.
-    // Must stay in sync with JobMappingService.fetchServiceOrdersWithUnassignedJobs.
-    const PLANNABLE_STATUSES = new Set(['ready_for_planning', 'pending', 'planned']);
-    return serviceOrders
-      .filter(order => PLANNABLE_STATUSES.has(order.status))
-      .map(order => ({
-        ...order,
-        unassignedJobs: jobs.filter(job => job.serviceOrderId === order.id)
-      }))
-      // Only surface SOs that actually have unassigned jobs left to plan,
-      // otherwise the list shows empty orders and looks broken.
-      .filter(order => order.unassignedJobs.length > 0)
+
+    const jobsByServiceOrder = jobs.reduce((groups, job) => {
+      const serviceOrderId = String(job.serviceOrderId);
+      const group = groups.get(serviceOrderId) || [];
+      group.push(job);
+      groups.set(serviceOrderId, group);
+      return groups;
+    }, new Map<string, Job[]>());
+
+    return Array.from(jobsByServiceOrder.entries())
+      .map(([serviceOrderId, unassignedJobs]) => {
+        const cachedOrder = serviceOrdersById.get(serviceOrderId);
+        const firstJob = unassignedJobs[0];
+
+        return {
+          id: serviceOrderId,
+          title: cachedOrder?.title || firstJob?.serviceOrderTitle || firstJob?.serviceOrderNumber || `SO-${serviceOrderId}`,
+          customerName: cachedOrder?.customerName || firstJob?.customerName || 'Unknown Customer',
+          status: cachedOrder?.status || 'ready_for_planning',
+          priority: cachedOrder?.priority || firstJob?.priority || 'medium',
+          jobs: cachedOrder?.jobs || unassignedJobs,
+          totalEstimatedDuration: cachedOrder?.totalEstimatedDuration ?? unassignedJobs.reduce((sum, job) => sum + (job.estimatedDuration || 0), 0),
+          location: cachedOrder?.location || firstJob?.location || { address: 'No address specified' },
+          createdAt: cachedOrder?.createdAt || firstJob?.createdAt || new Date(),
+          unassignedJobs,
+        };
+      })
       .filter(order => {
         if (!searchLower) return true;
         const matchesOrderId = order.id.toLowerCase().includes(searchLower);
