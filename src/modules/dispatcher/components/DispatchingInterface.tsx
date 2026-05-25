@@ -128,6 +128,7 @@ export function DispatchingInterface() {
       const today = new Date();
       const res = await autoFillDay(today, jobs, visibleTechnicians, {
         allowSchedulingInPast: profileSettings.allowSchedulingInPast,
+        bufferMinutes: 15,
       });
       if (res.assigned > 0) toast.success(t('dispatcher.autofill.success', { defaultValue: '{{n}} job(s) auto-scheduled', n: res.assigned }));
       if (res.skipped > 0) toast.warning(t('dispatcher.autofill.skipped', { defaultValue: '{{n}} job(s) could not be placed', n: res.skipped }));
