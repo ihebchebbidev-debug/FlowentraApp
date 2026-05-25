@@ -30,8 +30,9 @@ export default function CustomerDetailsForm({ formData, updateCustomer, updateCu
 
   const handleCustomerSelect = (customer: Customer) => {
     setSelectedCustomer(customer);
-    
-    // Auto-populate customer data
+
+    // Auto-populate customer data (id is required for submission)
+    updateCustomer('id', String(customer.id));
     updateCustomer('company', customer.company);
     updateCustomer('contactPerson', customer.name);
     updateCustomer('email', customer.email);
@@ -58,6 +59,7 @@ export default function CustomerDetailsForm({ formData, updateCustomer, updateCu
 
   const clearCustomerSelection = () => {
     setSelectedCustomer(null);
+    updateCustomer('id', '');
   };
 
   return (
