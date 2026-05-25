@@ -1,5 +1,25 @@
 {
   "hub": { "overview": "Overview" },
+  "cockpitTitle": "Purchases",
+  "cockpitSubtitle": "Orders, receipts, invoices, compliance & insights",
+  "newOrder": "New Order",
+  "newReceipt": "New Receipt",
+  "newInvoice": "New Invoice",
+  "tabs": {
+    "overview": "Overview",
+    "orders": "Orders",
+    "receipts": "Receipts",
+    "invoices": "Invoices",
+    "insights": "Insights"
+  },
+  "insights": {
+    "reports": "Reports",
+    "compliance": "Compliance",
+    "performance": "Supplier Perf.",
+    "price": "Price Evolution",
+    "aging": "Invoice Aging",
+    "audit": "Audit Log"
+  },
   "dashboard": {
     "title": "Purchases",
     "subtitle": "Manage purchase orders, receipts, and supplier invoices",

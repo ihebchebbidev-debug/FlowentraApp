@@ -1,5 +1,25 @@
 {
   "hub": { "overview": "Aperçu" },
+  "cockpitTitle": "Achats",
+  "cockpitSubtitle": "Commandes, réceptions, factures, conformité et analyses",
+  "newOrder": "Nouvelle commande",
+  "newReceipt": "Nouvelle réception",
+  "newInvoice": "Nouvelle facture",
+  "tabs": {
+    "overview": "Aperçu",
+    "orders": "Commandes",
+    "receipts": "Réceptions",
+    "invoices": "Factures",
+    "insights": "Analyses"
+  },
+  "insights": {
+    "reports": "Rapports",
+    "compliance": "Conformité",
+    "performance": "Perf. fourn.",
+    "price": "Évolution des prix",
+    "aging": "Antériorité factures",
+    "audit": "Journal d'audit"
+  },
   "dashboard": {
     "title": "Achats",
     "subtitle": "Gérer les bons de commande, réceptions et factures fournisseurs",

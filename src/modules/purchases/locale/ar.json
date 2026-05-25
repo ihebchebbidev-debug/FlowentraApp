@@ -1,4 +1,24 @@
 {
+  "cockpitTitle": "المشتريات",
+  "cockpitSubtitle": "الطلبات، الاستلام، الفواتير، الامتثال والتحليلات",
+  "newOrder": "طلب جديد",
+  "newReceipt": "استلام جديد",
+  "newInvoice": "فاتورة جديدة",
+  "tabs": {
+    "overview": "نظرة عامة",
+    "orders": "الطلبات",
+    "receipts": "الاستلامات",
+    "invoices": "الفواتير",
+    "insights": "التحليلات"
+  },
+  "insights": {
+    "reports": "التقارير",
+    "compliance": "الامتثال",
+    "performance": "أداء الموردين",
+    "price": "تطور الأسعار",
+    "aging": "تقادم الفواتير",
+    "audit": "سجل التدقيق"
+  },
   "dashboard": {
     "title": "المشتريات",
     "subtitle": "إدارة أوامر الشراء والاستلام وفواتير الموردين",
