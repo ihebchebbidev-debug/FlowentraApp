@@ -64,6 +64,39 @@ export interface CreateServiceOrderFromSaleRequest {
   tags?: string[];
 }
 
+/**
+ * Body for POST /api/service-orders/direct — create a Service Order without
+ * a parent Offer or Sale. Only contactId is required.
+ */
+export interface CreateDirectServiceOrderRequest {
+  contactId: number;
+  projectId?: number;
+  serviceType?: string;
+  priority?: string;
+  description?: string;
+  notes?: string;
+  startDate?: string;
+  targetCompletionDate?: string;
+  estimatedDuration?: number;
+  estimatedCost?: number;
+  requiresApproval?: boolean;
+  tags?: string[];
+  customFields?: Record<string, unknown>;
+  assignedTechnicianIds?: string[];
+  installationIds?: string[];
+  materials?: Array<{
+    articleId?: number;
+    name: string;
+    sku?: string;
+    description?: string;
+    quantity: number;
+    unitPrice: number;
+    unit?: string;
+    internalComment?: string;
+    externalComment?: string;
+  }>;
+}
+
 export interface UpdateServiceOrderRequest {
   orderNumber?: string;
   priority?: string;
@@ -166,6 +199,19 @@ export const serviceOrdersApi = {
 
   async createFromSale(saleId: number, request: CreateServiceOrderFromSaleRequest): Promise<ServiceOrder> {
     const result = await apiFetch<any>(`/api/service-orders/from-sale/${saleId}`, { method: 'POST', body: JSON.stringify(request) });
+    const data = unwrap(result, 'Failed to create service order');
+    return data.data || data;
+  },
+
+  /**
+   * Create a Service Order directly, without an originating Offer or Sale.
+   * A shadow Sale is auto-generated when the order is later completed.
+   */
+  async createDirect(request: CreateDirectServiceOrderRequest): Promise<ServiceOrder> {
+    const result = await apiFetch<any>(`/api/service-orders/direct`, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
     const data = unwrap(result, 'Failed to create service order');
     return data.data || data;
   },

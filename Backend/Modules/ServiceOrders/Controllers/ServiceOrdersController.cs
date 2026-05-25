@@ -78,6 +78,52 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             }
         }
 
+        /// <summary>
+        /// POST /api/service-orders/direct — create a Service Order without an
+        /// originating Offer or Sale. Only ContactId is required.
+        /// </summary>
+        [HttpPost("direct")]
+        public async Task<IActionResult> CreateDirect([FromBody] CreateDirectServiceOrderDto createDto)
+        {
+            if (createDto == null)
+                return BadRequest(new { success = false, error = new { code = "INVALID_REQUEST", message = "Body is required" } });
+            if (createDto.ContactId <= 0)
+                return BadRequest(new { success = false, error = new { code = "INVALID_REQUEST", message = "ContactId is required" } });
+
+            try
+            {
+                var userId = GetCurrentUserId();
+                var serviceOrder = await _serviceOrderService.CreateDirectAsync(createDto, userId);
+
+                await _systemLogService.LogSuccessAsync(
+                    $"Direct service order created: {serviceOrder.OrderNumber}",
+                    "ServiceOrders", "create", userId, GetCurrentUserName(),
+                    "ServiceOrder", serviceOrder.Id.ToString());
+
+                return CreatedAtAction(nameof(GetServiceOrderById), new { id = serviceOrder.Id }, new
+                {
+                    success = true,
+                    data = serviceOrder
+                });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = ex.Message } });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { success = false, error = new { code = "INVALID_REQUEST", message = ex.Message } });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating direct service order");
+                await _systemLogService.LogErrorAsync("Failed to create direct service order",
+                    "ServiceOrders", "create", GetCurrentUserId(), GetCurrentUserName(),
+                    "ServiceOrder", details: ex.Message);
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+            }
+        }
+
         [HttpGet]
         public async Task<IActionResult> GetServiceOrders(
             [FromQuery] string? status = null,

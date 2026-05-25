@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { UserPlus, CheckSquare, Layers, FileText, Package, Building } from 'lucide-react';
+import { UserPlus, CheckSquare, Layers, FileText, Package, Building, Wrench } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ContactForm } from '@/modules/contacts/components/ContactForm';
@@ -62,6 +62,9 @@ export function QuickCreateModal({ open, onOpenChange }: QuickCreateModalProps) 
       case 'quickCreate.newOffer':
         // Offers are complex and best handled by the dedicated page
         navigate('/dashboard/offers/add');
+        break;
+      case 'quickCreate.newServiceOrder':
+        navigate('/dashboard/field/service-orders/create');
         break;
       default:
         break;
@@ -131,6 +134,7 @@ export function QuickCreateModal({ open, onOpenChange }: QuickCreateModalProps) 
     { labelKey: 'quickCreate.newTask', icon: CheckSquare },
     { labelKey: 'quickCreate.newProject', icon: Layers },
     { labelKey: 'quickCreate.newOffer', icon: FileText },
+    { labelKey: 'quickCreate.newServiceOrder', icon: Wrench },
     { labelKey: 'quickCreate.newArticle', icon: Package },
     { labelKey: 'quickCreate.newInstallation', icon: Building }
   ];

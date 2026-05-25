@@ -15,6 +15,8 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { useLookups } from '@/shared/contexts/LookupsContext';
 import { TenantSelector } from '@/components/TenantSelector';
 import { useTargetTenant } from '@/hooks/useTargetTenant';
+import { serviceOrdersApi, type CreateDirectServiceOrderRequest } from '@/services/api/serviceOrdersApi';
+import { toast } from 'sonner';
 
 export default function CreateServiceOrder() {
   const { t } = useTranslation('service_orders');
@@ -69,29 +71,55 @@ export default function CreateServiceOrder() {
     type: 'offer' | 'sale' 
   } | null>(null);
   const [assignedInstallations, setAssignedInstallations] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (isTenantRequired) {
       return;
     }
-    
-    // Create the service order
-    const newServiceOrder = {
-      ...formData,
-      repair: {
-        ...formData.repair,
-        promisedRepairDate: promisedDate
-      },
-      installations: assignedInstallations, // Use the assignedInstallations state
-      linkedRecord
-    };
 
-    console.log("Creating service order:", newServiceOrder);
-    
-    // Navigate back to service orders list
-    navigate("/dashboard/field/service-orders");
+    const contactId = Number(formData.customer?.id);
+    if (!contactId || Number.isNaN(contactId)) {
+      toast.error(t('errors.contact_required', { defaultValue: 'Please select a customer first' }));
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const payload: CreateDirectServiceOrderRequest = {
+        contactId,
+        priority: formData.priority,
+        description: formData.repair?.description,
+        notes: formData.repair?.description,
+        targetCompletionDate: promisedDate ? promisedDate.toISOString() : undefined,
+        assignedTechnicianIds: formData.assignedTechnicians?.length
+          ? formData.assignedTechnicians.map(String)
+          : undefined,
+        installationIds: assignedInstallations?.length
+          ? assignedInstallations.map(String)
+          : undefined,
+        tags: undefined,
+      };
+
+      const created = await serviceOrdersApi.createDirect(payload);
+      toast.success(
+        t('create_success', {
+          defaultValue: 'Service order {{number}} created',
+          number: created.orderNumber,
+        })
+      );
+      navigate(`/dashboard/field/service-orders/${created.id}`);
+    } catch (err: any) {
+      console.error('Failed to create direct service order', err);
+      toast.error(
+        err?.message ||
+          t('create_error', { defaultValue: 'Failed to create service order' })
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const updateAssignedTechnicians = (technicianIds: string[]) => {
@@ -226,9 +254,9 @@ export default function CreateServiceOrder() {
               {t('cancel')}
             </Button>
           </Link>
-          <Button type="submit">
+          <Button type="submit" disabled={isSubmitting}>
             <Plus className="h-4 w-4 mr-2" />
-            {t('create_service_order')}
+            {isSubmitting ? t('creating', { defaultValue: 'Creating…' }) : t('create_service_order')}
           </Button>
         </div>
       </form>

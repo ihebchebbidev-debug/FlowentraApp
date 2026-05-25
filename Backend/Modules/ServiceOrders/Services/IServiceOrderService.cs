@@ -6,6 +6,14 @@ namespace MyApi.Modules.ServiceOrders.Services
     public interface IServiceOrderService
     {
         Task<ServiceOrderDto> CreateFromSaleAsync(int saleId, CreateServiceOrderDto createDto, string userId);
+
+        /// <summary>
+        /// Create a Service Order directly, without an originating Offer or Sale.
+        /// Only ContactId is required; everything else is optional. A shadow
+        /// Sale is generated automatically when the order is later completed.
+        /// </summary>
+        Task<ServiceOrderDto> CreateDirectAsync(CreateDirectServiceOrderDto createDto, string userId);
+
         Task<PaginatedServiceOrderResponse> GetServiceOrdersAsync(
             string? status = null,
             string? priority = null,
