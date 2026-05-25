@@ -13,7 +13,8 @@ import { LeavesList } from './LeavesList';
 import { schedulesApi } from '@/services/api/schedulesApi';
 import { cn } from '@/lib/utils';
 import { useEmployees } from '../../hooks/useEmployees';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 async function mapWithConcurrency<T, R>(items: T[], concurrency: number, fn: (item: T) => Promise<R>): Promise<R[]> {
   const results: R[] = [];
@@ -34,6 +35,7 @@ export function LeavesPage() {
   const { t } = useTranslation('hr');
   const [open, setOpen] = useState(false);
   const year = dayjs().year();
+  const queryClient = useQueryClient();
   const { employeesQuery } = useEmployees();
 
   const users = useMemo(() => {
@@ -126,13 +128,20 @@ export function LeavesPage() {
         open={open}
         onOpenChange={setOpen}
         onSubmit={async (values) => {
-          await schedulesApi.createLeave({
-            userId: Number(values.userId),
-            leaveType: values.type,
-            startDate: values.startDate,
-            endDate: values.endDate,
-            reason: values.reason,
-          });
+          try {
+            await schedulesApi.createLeave({
+              userId: Number(values.userId),
+              leaveType: values.type,
+              startDate: values.startDate,
+              endDate: values.endDate,
+              reason: values.reason,
+            });
+            toast.success(t('leavesPage.created', 'Leave request created'));
+            await queryClient.invalidateQueries({ queryKey: ['hr', 'planningLeavesCalendar'] });
+          } catch (e: any) {
+            toast.error(e?.message || t('leavesPage.createFailed', 'Failed to create leave request'));
+            throw e;
+          }
         }}
       />
     </div>

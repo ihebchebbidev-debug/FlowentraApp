@@ -73,8 +73,24 @@ export function LeaveRequestForm(props: {
               toast.error(t('validation.tenantRequired', 'Please select a target company'));
               return;
             }
-            await props.onSubmit(values);
-            props.onOpenChange(false);
+            if (!values.startDate || !values.endDate) {
+              toast.error(t('validation.datesRequired', 'Start and end dates are required'));
+              return;
+            }
+            if (values.endDate < values.startDate) {
+              toast.error(t('validation.endBeforeStart', 'End date must be after start date'));
+              return;
+            }
+            try {
+              await props.onSubmit(values);
+              props.onOpenChange(false);
+              form.reset();
+            } catch {
+              // parent shows toast
+            }
+          }, (errors) => {
+            const first = Object.values(errors)[0] as any;
+            toast.error(first?.message || t('validation.checkForm', 'Please complete the required fields'));
           })}
         >
           <TenantSelector value={targetTenantId} onChange={handleTenantChange} />
@@ -158,14 +174,14 @@ export function LeaveRequestForm(props: {
                 <CalendarDays className="h-4 w-4 text-muted-foreground" />
                 {t('leavesPage.startDate')}
               </Label>
-              <Input type="date" {...form.register('startDate')} />
+              <Input type="date" {...form.register('startDate', { required: t('validation.required', 'Required') as string })} />
             </div>
             <div className="grid gap-2">
               <Label className="flex items-center gap-2">
                 <CalendarDays className="h-4 w-4 text-muted-foreground" />
                 {t('leavesPage.endDate')}
               </Label>
-              <Input type="date" {...form.register('endDate')} />
+              <Input type="date" {...form.register('endDate', { required: t('validation.required', 'Required') as string })} />
             </div>
           </div>
           <div className="grid gap-2">
