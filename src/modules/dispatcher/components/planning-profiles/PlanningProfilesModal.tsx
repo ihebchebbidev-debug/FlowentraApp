@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CalendarDays, Plus, Copy, Trash2, Star, Share2, Check, Loader2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { CalendarDays, Plus, Copy, Trash2, Star, Share2, Check, Loader2, Package, Building2, List } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +18,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { appSettingsApi } from '@/services/api/appSettingsApi';
 import {
   useActivePlanningProfile,
   usePlanningProfileMutations,
@@ -43,6 +45,17 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<PlanningProfile | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+
+  // Mirrors DispatchingInterface: needed to label the planning-mode toggle correctly.
+  const { data: conversionMode = 'installation' } = useQuery({
+    queryKey: ['appSetting', 'JobConversionMode'],
+    queryFn: async () => {
+      const value = await appSettingsApi.getSetting('JobConversionMode');
+      return (value === 'service' || value === 'installation') ? value as 'installation' | 'service' : 'installation';
+    },
+    staleTime: 30000,
+  });
+
 
   const selected = useMemo(
     () => profiles.find(p => p.id === selectedId) ?? activeProfile ?? profiles[0] ?? null,
@@ -253,7 +266,50 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
                             checked={draft.isShared}
                             onChange={v => setDraft({ ...draft, isShared: v })}
                           />
+
+                          {/* Planning mode toggle — mirrors the dispatcher header toggle */}
+                          <div className="rounded-md border p-3 bg-muted/30">
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium">
+                                  {t('dispatcher.profiles.planning_mode_label', { defaultValue: 'Planning mode' })}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  {t('dispatcher.profiles.planning_mode_hint', {
+                                    defaultValue: 'How items are dragged onto the board. Matches the toggle above the unassigned jobs list.',
+                                  })}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <span className={`text-xs ${draft.settings.mode === 'service_orders' ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
+                                  <Package className="h-3 w-3 inline mr-1" />
+                                  {t('dispatcher.planning_mode_service_order', { defaultValue: 'Service Order' })}
+                                </span>
+                                <Switch
+                                  checked={draft.settings.mode === 'installations'}
+                                  onCheckedChange={(checked) => updateSetting('mode', checked ? 'installations' : 'service_orders')}
+                                  className="data-[state=checked]:bg-primary"
+                                />
+                                <span className={`text-xs ${draft.settings.mode === 'installations' ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
+                                  {conversionMode === 'installation' ? (
+                                    <>
+                                      <Building2 className="h-3 w-3 inline mr-1" />
+                                      {t('dispatcher.planning_mode_installation', { defaultValue: 'Per Installation' })}
+                                    </>
+                                  ) : (
+                                    <>
+                                      <List className="h-3 w-3 inline mr-1" />
+                                      {t('dispatcher.planning_mode_job', { defaultValue: 'Per Job' })}
+                                    </>
+                                  )}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
                         </TabsContent>
+
+
+
 
                         <TabsContent value="users" className="space-y-4 mt-0">
                           <VisibleUsersTab
@@ -279,8 +335,9 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
                               <Select value={draft.settings.mode} onValueChange={v => updateSetting('mode', v as PlanningProfileSettings['mode'])}>
                                 <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="service_orders">{t('dispatcher.profiles.mode_service_orders', { defaultValue: 'Service orders' })}</SelectItem>
-                                  <SelectItem value="installations">{t('dispatcher.profiles.mode_installations', { defaultValue: 'Installations' })}</SelectItem>
+                                  <SelectItem value="service_orders">{t('dispatcher.planning_mode_service_order', { defaultValue: 'Service Order' })}</SelectItem>
+                                  <SelectItem value="installations">{conversionMode === 'installation' ? t('dispatcher.planning_mode_installation', { defaultValue: 'Per Installation' }) : t('dispatcher.planning_mode_job', { defaultValue: 'Per Job' })}</SelectItem>
+
                                 </SelectContent>
                               </Select>
                             </div>
