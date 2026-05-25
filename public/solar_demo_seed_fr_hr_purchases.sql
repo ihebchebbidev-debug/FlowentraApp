@@ -156,7 +156,7 @@ JOIN LATERAL (
 -- HR — TIME ENTRIES sur Service Orders (60 entrées de pointage)
 -- ===========================================================================
 INSERT INTO "ServiceOrderTimeEntries" ("ServiceOrderId","TechnicianId","StartTime","EndTime",
-                                       "DurationMinutes","Description","Type","CreatedBy","CreatedAt")
+                                       "Duration","Description","WorkType","CreatedBy","CreatedAt")
 SELECT so."Id",
        u."Id"::text,
        NOW() - ((g||' hours')::interval),
