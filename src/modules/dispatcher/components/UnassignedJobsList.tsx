@@ -62,12 +62,18 @@ export function UnassignedJobsList({
   const groupedData = useMemo(() => {
     const serviceOrders = DispatcherService.getServiceOrders();
     const searchLower = searchTerm.trim().toLowerCase();
+    // Statuses that represent a Service Order that still has jobs to plan/dispatch.
+    // Must stay in sync with JobMappingService.fetchServiceOrdersWithUnassignedJobs.
+    const PLANNABLE_STATUSES = new Set(['ready_for_planning', 'pending', 'planned']);
     return serviceOrders
-      .filter(order => order.status === 'ready_for_planning')
+      .filter(order => PLANNABLE_STATUSES.has(order.status))
       .map(order => ({
         ...order,
         unassignedJobs: jobs.filter(job => job.serviceOrderId === order.id)
       }))
+      // Only surface SOs that actually have unassigned jobs left to plan,
+      // otherwise the list shows empty orders and looks broken.
+      .filter(order => order.unassignedJobs.length > 0)
       .filter(order => {
         if (!searchLower) return true;
         const matchesOrderId = order.id.toLowerCase().includes(searchLower);
