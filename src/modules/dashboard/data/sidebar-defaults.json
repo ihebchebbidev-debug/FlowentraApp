@@ -103,22 +103,22 @@
       "dropdown": [
         {
           "title": "purchase_orders",
-          "url": "/dashboard/purchases/orders",
+          "url": "/dashboard/purchases?tab=orders",
           "description": "Purchase orders"
         },
         {
           "title": "goods_receipts",
-          "url": "/dashboard/purchases/receipts",
+          "url": "/dashboard/purchases?tab=receipts",
           "description": "Goods receipts"
         },
         {
           "title": "supplier_invoices",
-          "url": "/dashboard/purchases/invoices",
+          "url": "/dashboard/purchases?tab=invoices",
           "description": "Supplier invoices"
         },
         {
           "title": "compliance",
-          "url": "/dashboard/purchases/compliance",
+          "url": "/dashboard/purchases?tab=insights",
           "description": "Fiscal compliance"
         }
       ],

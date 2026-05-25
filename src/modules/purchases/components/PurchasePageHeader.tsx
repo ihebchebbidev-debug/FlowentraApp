@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import type { LucideIcon } from 'lucide-react';
+import { useIsPurchasesEmbedded } from './EmbeddedContext';
 
 export function PurchasePageHeader(props: {
   title: string;
@@ -11,6 +12,18 @@ export function PurchasePageHeader(props: {
   actions?: React.ReactNode;
 }) {
   const Icon = props.icon;
+  const embedded = useIsPurchasesEmbedded();
+
+  // Inside the cockpit, only render the actions inline (no title / icon / border)
+  // because the cockpit provides its own unified header.
+  if (embedded) {
+    if (!props.actions) return null;
+    return (
+      <div className="flex items-center justify-end gap-2 px-4 pt-3">
+        {props.actions}
+      </div>
+    );
+  }
 
   return (
     <div className="border-b border-border bg-card/50 backdrop-blur">
