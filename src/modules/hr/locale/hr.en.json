@@ -388,7 +388,7 @@
     "balancesTab": "Balances",
     "approvalsTab": "Approvals",
     "calendarHint": "Calendar view of team leaves.",
-    "calendarEmptyHint": "No approved leaves to show yet.",
+    "calendarEmptyHint": "No approved leaves found. Approved leaves will appear on their scheduled dates.",
     "listTitle": "Leave requests",
     "status": "Status",
     "noLeaves": "No leave requests found.",

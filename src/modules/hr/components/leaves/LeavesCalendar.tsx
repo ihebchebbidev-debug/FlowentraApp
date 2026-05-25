@@ -33,6 +33,14 @@ export function LeavesCalendar(props: { events?: LeaveEvent[] }) {
 
   const views = useMemo(() => [Views.MONTH], []);
   const events = props.events ?? [];
+  const defaultDate = useMemo(() => {
+    if (!events.length) return new Date();
+    const upcoming = events
+      .map(e => e.start)
+      .filter(d => d.getTime() >= Date.now())
+      .sort((a, b) => a.getTime() - b.getTime())[0];
+    return upcoming ?? events.map(e => e.start).sort((a, b) => b.getTime() - a.getTime())[0];
+  }, [events]);
 
   return (
     <Card className="shadow-card border-0 bg-card p-3">
@@ -51,6 +59,7 @@ export function LeavesCalendar(props: { events?: LeaveEvent[] }) {
           events={events}
           views={views as any}
           defaultView={Views.MONTH}
+          defaultDate={defaultDate}
           selectable={false}
           popup={false}
           style={{ height: '100%' }}

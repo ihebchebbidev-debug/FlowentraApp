@@ -388,7 +388,7 @@
     "balancesTab": "Soldes",
     "approvalsTab": "Validations",
     "calendarHint": "Vue calendrier des congés de l’équipe.",
-    "calendarEmptyHint": "Aucun congé approuvé à afficher pour l’instant.",
+    "calendarEmptyHint": "Aucun congé approuvé trouvé. Les congés approuvés apparaîtront à leurs dates prévues.",
     "listTitle": "Demandes de congé",
     "status": "Statut",
     "noLeaves": "Aucune demande de congé.",
