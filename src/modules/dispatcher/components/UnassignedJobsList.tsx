@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Switch } from "@/components/ui/switch";
 import { 
   Clock, 
   Building2, 
@@ -16,8 +15,8 @@ import {
   ChevronRight,
   Package,
   Search,
-  List
 } from "lucide-react";
+
 import type { Job, ServiceOrder, InstallationGroup } from "../types";
 import { DispatcherService } from "../services/dispatcher.service";
 import { cn } from "@/lib/utils";
@@ -435,33 +434,8 @@ export function UnassignedJobsList({
       <CardHeader className="pb-3">
         <h3 className="text-sm font-semibold mb-2">{t('dispatcher.service_orders')}</h3>
         
-        {/* Planning Mode Toggle: Service Order vs Per Installation/Per Job (depends on conversionMode) */}
-        {onPlanningModeChange && (
-          <div className="flex items-center gap-2">
-            <span className={`text-xs ${planningMode === 'serviceOrder' ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
-              <Package className="h-3 w-3 inline mr-1" />
-              {t('dispatcher.planning_mode_service_order', 'Service Order')}
-            </span>
-            <Switch
-              checked={planningMode === 'job'}
-              onCheckedChange={(checked) => onPlanningModeChange(checked ? 'job' : 'serviceOrder')}
-              className="data-[state=checked]:bg-primary"
-            />
-            <span className={`text-xs ${planningMode === 'job' ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
-              {conversionMode === 'installation' ? (
-                <>
-                  <Building2 className="h-3 w-3 inline mr-1" />
-                  {t('dispatcher.planning_mode_installation', 'Per Installation')}
-                </>
-              ) : (
-                <>
-                  <List className="h-3 w-3 inline mr-1" />
-                  {t('dispatcher.planning_mode_job', 'Per Job')}
-                </>
-              )}
-            </span>
-          </div>
-        )}
+
+
         
         {/* Search Input */}
         <div className="relative mt-1">
