@@ -42,23 +42,24 @@ export function TenantSelector({
   const { tenants, getCompanyName, loaded } = useTenantMap();
   const { isMainAdminUser } = useUserType();
 
-  // Only main admins ever see the tenant picker. Regular users always create
-  // under their own (default) company — backend resolves tenant from session.
-  if (!isMainAdminUser) return null;
-
-  // Only show in view-all mode
-  if (!isViewAllMode()) return null;
-
-  if (!loaded) return null;
-
-  // Single-tenant deployments: auto-select the only tenant, don't render a picker.
+  // Single-tenant deployments / header-selected company: auto-apply the
+  // active tenant to the form so the picker UI is unnecessary.
   useEffect(() => {
     if (loaded && tenants.length === 1 && value !== tenants[0].id) {
       onChange(tenants[0].id);
     }
   }, [loaded, tenants, value, onChange]);
 
+  // The user already picks their active company from the header — never
+  // render an extra in-form picker. We still render the read-only badge
+  // (used on detail pages) so users can see which company owns a record.
+  if (!readOnly) return null;
+
+  if (!isMainAdminUser) return null;
+  if (!isViewAllMode()) return null;
+  if (!loaded) return null;
   if (tenants.length <= 1) return null;
+
 
   if (readOnly && value) {
     return (

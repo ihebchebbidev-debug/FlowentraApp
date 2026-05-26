@@ -54,18 +54,13 @@ export function ProjectManager({ onSwitchToTasks: _onSwitchToTasks }: ProjectMan
   const { preferences } = usePreferences();
   const { logAction, logSearch, logFilter, logFormSubmit } = useActionLogger('Projects');
   
-  // Initialize viewMode from user preferences
+  // Desktop defaults to the table view ('grid' renders <ProjectsTable />),
+  // mobile defaults to the single-column list view.
   const getInitialViewMode = (): 'grid' | 'list' => {
-    try {
-      const localPrefs = localStorage.getItem('user-preferences');
-      if (localPrefs) {
-        const prefs = JSON.parse(localPrefs);
-        if (prefs.dataView === 'list' || prefs.dataView === 'table') return 'list';
-        if (prefs.dataView === 'grid') return 'grid';
-      }
-    } catch (e) {}
+    if (typeof window !== 'undefined' && window.innerWidth < 768) return 'list';
     return 'grid';
   };
+
   
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectStatsMap, setProjectStatsMap] = useState<Record<string, ProjectStats>>({});
