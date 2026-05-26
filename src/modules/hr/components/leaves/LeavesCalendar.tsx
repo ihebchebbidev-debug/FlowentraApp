@@ -23,7 +23,7 @@ function getLocalizer() {
   return _localizer;
 }
 
-export function LeavesCalendar(props: { events?: LeaveEvent[] }) {
+export function LeavesCalendar(props: { events?: LeaveEvent[]; isLoading?: boolean }) {
   const localizer = getLocalizer();
   const { i18n, t } = useTranslation('hr');
 
@@ -33,6 +33,7 @@ export function LeavesCalendar(props: { events?: LeaveEvent[] }) {
 
   const views = useMemo(() => [Views.MONTH], []);
   const events = props.events ?? [];
+  const isLoading = !!props.isLoading;
   const defaultDate = useMemo(() => {
     if (!events.length) return new Date();
     const upcoming = events
@@ -45,7 +46,7 @@ export function LeavesCalendar(props: { events?: LeaveEvent[] }) {
   return (
     <Card className="shadow-card border-0 bg-card p-3">
       <div className="text-sm text-muted-foreground mb-3">{t('leavesPage.calendarHint')}</div>
-      {events.length === 0 ? (
+      {!isLoading && events.length === 0 ? (
         <Alert className="mb-3">
           <AlertDescription className="flex items-start gap-2">
             <CalendarX2 className="h-4 w-4 mt-0.5 text-muted-foreground" />

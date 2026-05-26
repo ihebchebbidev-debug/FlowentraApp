@@ -107,7 +107,7 @@ export function LeavesPage() {
           </TabsList>
 
           <TabsContent value="calendar" className="mt-3">
-            <LeavesCalendar events={calendarEvents} />
+            <LeavesCalendar events={calendarEvents} isLoading={employeesQuery.isLoading || leavesQuery.isLoading || leavesQuery.isFetching} />
           </TabsContent>
 
           <TabsContent value="list" className="mt-3">
