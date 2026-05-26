@@ -76,12 +76,6 @@ export function PurchaseOrdersSearchControls(props: Props) {
               </Badge>
             )}
           </Button>
-          {viewAll && (
-            <CompanyFilter
-              value={props.companyId}
-              onChange={props.onCompanyChange}
-            />
-          )}
           <div className="hidden md:flex items-center border border-border rounded-md p-0.5">
             <Button
               variant={props.viewMode === "table" ? "secondary" : "ghost"}

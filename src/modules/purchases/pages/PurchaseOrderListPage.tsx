@@ -158,11 +158,9 @@ function PurchaseOrderListContent() {
     });
   }, [orders, paymentFilter, selectedStat]);
 
-  const companyFilteredOrders = useFilteredByCompany(filteredOrders);
-  const companyScopedOrders = useMemo(
-    () => companyFilteredOrders.filter((o) => companyId === "all" || (o as any).tenantId === companyId),
-    [companyFilteredOrders, companyId],
-  );
+  // Tenant scoping is handled server-side via the header company switcher,
+  // so the list renders whatever the API returns — no extra client filter.
+  const companyScopedOrders = filteredOrders;
 
   // Stats — calculated from currently loaded orders
   const stats = useMemo(() => {
