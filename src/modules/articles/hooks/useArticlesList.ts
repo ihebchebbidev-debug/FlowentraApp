@@ -1,42 +1,23 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { ArticlesService, type InventoryArticle } from "../services/articles.service";
 import { Package, CheckCircle, AlertTriangle, DollarSign } from "lucide-react";
 import { useLookups } from "@/shared/contexts/LookupsContext";
-import { usePreferences } from "@/hooks/usePreferences";
 
 export type ListViewMode = "grid" | "list";
 
 export function useArticlesList() {
   const [searchTerm, setSearchTerm] = useState("");
-  const { preferences } = usePreferences();
+
   
-  // Initialize viewMode from user preferences
+  // Desktop defaults to the dense grid view, mobile to the single-column list.
   const getInitialViewMode = (): ListViewMode => {
-    // Mobile always defaults to list view
     if (typeof window !== 'undefined' && window.innerWidth < 768) return 'list';
-    try {
-      const localPrefs = localStorage.getItem('user-preferences');
-      if (localPrefs) {
-        const prefs = JSON.parse(localPrefs);
-        // Map 'table' preference to 'list' for this component
-        if (prefs.dataView === 'table' || prefs.dataView === 'list') return 'list';
-        if (prefs.dataView === 'grid') return 'grid';
-      }
-    } catch (e) {}
-    return 'list';
+    return 'grid';
   };
-  
+
   const [viewMode, setViewMode] = useState<ListViewMode>(getInitialViewMode);
   const [filterStatus, setFilterStatus] = useState<"all" | string>("all");
   const [filterCategory, setFilterCategory] = useState<"all" | string>("all");
-  
-  // Update viewMode when preferences change
-  useEffect(() => {
-    if (preferences?.dataView) {
-      const newMode = preferences.dataView === 'grid' ? 'grid' : 'list';
-      setViewMode(newMode as ListViewMode);
-    }
-  }, [preferences?.dataView]);
   
   const { articleCategories, serviceCategories, locations } = useLookups();
 

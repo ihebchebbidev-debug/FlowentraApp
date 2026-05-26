@@ -62,7 +62,9 @@ export function ArticlesList() {
   const [filterCategory, setFilterCategory] = useState<'all' | string>('all');
   const [filterLocation, setFilterLocation] = useState<'all' | string>('all');
   const [filterSupplier, setFilterSupplier] = useState<'all' | string>('all');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() =>
+    typeof window !== 'undefined' && window.innerWidth < 768 ? 'list' : 'grid'
+  );
   
   // Permission checks (disabled in view-all mode)
   const viewAll = isViewAllMode();

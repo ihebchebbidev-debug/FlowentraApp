@@ -19,11 +19,20 @@ export function getInitialViewMode<T extends AnyViewMode>(
   allowed: readonly T[],
   fallback: T,
 ): T {
+  const allowedStr = allowed as readonly string[];
+
   // Mobile override — always prefer the list view when supported.
-  if (isMobileViewport() && (allowed as readonly string[]).includes('list')) {
-    return 'list' as T;
+  if (isMobileViewport()) {
+    if (allowedStr.includes('list')) return 'list' as T;
+    return fallback;
   }
 
+  // Desktop override — always prefer the table view when supported,
+  // so every module list opens in its dense tabular view by default.
+  if (allowedStr.includes('table')) return 'table' as T;
+  if (allowedStr.includes('grid')) return 'grid' as T;
+
+  // Fallback to saved user preference if no table/grid is available.
   try {
     const raw = typeof localStorage !== 'undefined'
       ? localStorage.getItem('user-preferences')
@@ -31,12 +40,8 @@ export function getInitialViewMode<T extends AnyViewMode>(
     if (raw) {
       const prefs = JSON.parse(raw);
       const v = prefs?.dataView as AnyViewMode | undefined;
-      if (v && (allowed as readonly string[]).includes(v)) {
+      if (v && allowedStr.includes(v)) {
         return v as T;
-      }
-      // Map unsupported preferences to a sensible neighbour.
-      if (v === 'grid' && (allowed as readonly string[]).includes('table')) {
-        return 'table' as T;
       }
     }
   } catch {
