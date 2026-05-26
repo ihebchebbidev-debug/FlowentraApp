@@ -16,6 +16,7 @@ import { PurchasePageHeader } from "../components/PurchasePageHeader";
 import { PurchaseErrorBoundary, PurchaseErrorFallback } from "../components/PurchaseErrorBoundary";
 import { DetailSkeleton } from "../components/PurchaseSkeletons";
 import { SupplierInvoicePDFPreviewModal } from "../components/SupplierInvoicePDFPreviewModal";
+import { SupplierInvoiceStatusFlow } from "../components/SupplierInvoiceStatusFlow";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { toast } from "sonner";
 import type { SupplierInvoice, SupplierInvoiceItem } from "../types";
@@ -239,6 +240,25 @@ function SupplierInvoiceDetailContent() {
       />
 
       <div className="p-4 md:p-6 space-y-4">
+        {/* Status Flow */}
+        <Card>
+          <CardContent className="p-3">
+            <SupplierInvoiceStatusFlow
+              currentStatus={inv.status}
+              onStatusChange={async (next) => {
+                if (!id || next === inv.status) return;
+                try {
+                  const updated = await supplierInvoiceService.update(id, { status: next as any });
+                  setInv(updated);
+                  toast.success(t('status.updated', 'Status updated'));
+                } catch (e: any) {
+                  toast.error(e?.message || t('common.error', 'Failed'));
+                }
+              }}
+            />
+          </CardContent>
+        </Card>
+
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="h-8">
             <TabsTrigger value="overview" className="text-xs">{t('tabs.overview')}</TabsTrigger>

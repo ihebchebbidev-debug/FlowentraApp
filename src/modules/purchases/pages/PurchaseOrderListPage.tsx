@@ -24,6 +24,9 @@ import { ListTableSkeleton } from "../components/PurchaseSkeletons";
 import { PullToRefreshIndicator } from "../components/PullToRefreshIndicator";
 import { BulkActionBar } from "../components/BulkActionBar";
 import { runBulkDelete, restoreRowsAtOriginalIndex } from "../utils/bulkDelete";
+import { PurchaseOrdersHeader } from "../components/PurchaseOrdersHeader";
+import { PurchaseOrdersStats } from "../components/PurchaseOrdersStats";
+import { PurchaseOrdersSearchControls } from "../components/PurchaseOrdersSearchControls";
 import { useDebounce } from "@/shared/hooks/useDebounce";
 import { useInfiniteScroll } from "@/shared/hooks/useInfiniteScroll";
 import { usePullToRefresh } from "@/shared/hooks/usePullToRefresh";
@@ -323,166 +326,39 @@ function PurchaseOrderListContent() {
 
   return (
     <div ref={containerRef} className="flex flex-col overflow-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border bg-card/50 backdrop-blur">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="p-2 rounded-lg bg-primary/10 shrink-0">
-            <ShoppingCart className="h-5 w-5 md:h-6 md:w-6 text-primary" />
-          </div>
-          <div className="min-w-0">
-            <h1 className="text-lg md:text-xl font-semibold text-foreground truncate">
-              {t("orders.title", "Purchase Orders")}
-            </h1>
-            <p className="text-[11px] text-muted-foreground">
-              {t("orders.subtitle", "{{count}} orders", { count: total })}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0"
-            onClick={() => setShowExport(true)}
-            title={t("actions.export", "Export")}
-          >
-            <Download className="h-4 w-4" />
-          </Button>
-          <CreateActionButton size="sm" onClick={() => navigate("/dashboard/purchases/orders/add")}>
-            <Plus className="h-4 w-4 mr-1" />
-            <span className="hidden sm:inline">{t("orders.newOrder", "New Order")}</span>
-          </CreateActionButton>
-        </div>
-      </div>
+      <PurchaseOrdersHeader total={total} onExport={() => setShowExport(true)} />
 
       <PullToRefreshIndicator pullDistance={pullDistance} refreshing={refreshing} />
 
-      {/* KPI cards */}
-      <div className="p-3 sm:p-4 border-b border-border">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          {statCards.map((s) => {
-            const isSelected = selectedStat === s.key;
-            const interactive = !s.readonly;
-            return (
-              <Card
-                key={s.key}
-                className={cn(
-                  "shadow-sm border transition-all",
-                  interactive && "cursor-pointer hover:shadow-md hover:-translate-y-0.5",
-                  isSelected ? "border-primary bg-primary/5" : "border-border",
-                )}
-                onClick={() => interactive && setSelectedStat((prev) => (prev === s.key ? "all" : s.key))}
-              >
-                <CardContent className="p-3">
-                  <div className="flex items-center gap-3">
-                    <div className={cn("p-2 rounded-lg shrink-0", s.bg)}>
-                      <s.icon className={cn("h-4 w-4", s.color)} />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-[11px] text-muted-foreground truncate">{s.label}</div>
-                      <div className="text-base sm:text-lg font-semibold text-foreground truncate">{s.value}</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      </div>
+      <PurchaseOrdersStats
+        stats={{
+          total,
+          open: stats.open,
+          received: stats.received,
+          totalValue: stats.totalValue,
+        }}
+        selected={selectedStat}
+        onSelect={setSelectedStat}
+      />
 
-      {/* Toolbar */}
-      <div className="p-3 sm:p-4 space-y-3">
-        <div className="flex flex-col sm:flex-row gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder={t("orders.searchPlaceholder", "Search orders...")}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 h-9"
-            />
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Button
-              variant={showFilters || hasActiveFilter ? "default" : "outline"}
-              size="sm"
-              className="h-9"
-              onClick={() => setShowFilters((v) => !v)}
-            >
-              <Filter className="h-3.5 w-3.5 sm:mr-1.5" />
-              <span className="hidden sm:inline">{t("filters.title", "Filters")}</span>
-              {hasActiveFilter && (
-                <Badge variant="secondary" className="ml-1.5 h-4 px-1 text-[10px]">
-                  •
-                </Badge>
-              )}
-            </Button>
-            {viewAll && <CompanyFilter value={companyId} onChange={setCompanyId} />}
-            <div className="hidden md:flex items-center border border-border rounded-md p-0.5">
-              <Button
-                variant={viewMode === "table" ? "secondary" : "ghost"}
-                size="sm"
-                className="h-7 w-7 p-0"
-                onClick={() => setViewMode("table")}
-              >
-                <TableIcon className="h-3.5 w-3.5" />
-              </Button>
-              <Button
-                variant={viewMode === "list" ? "secondary" : "ghost"}
-                size="sm"
-                className="h-7 w-7 p-0"
-                onClick={() => setViewMode("list")}
-              >
-                <ListIcon className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          </div>
-        </div>
+      <PurchaseOrdersSearchControls
+        search={search}
+        onSearchChange={setSearch}
+        showFilters={showFilters}
+        onToggleFilters={() => setShowFilters((v) => !v)}
+        hasActiveFilter={hasActiveFilter}
+        statusFilter={statusFilter}
+        onStatusChange={setStatusFilter}
+        paymentFilter={paymentFilter}
+        onPaymentChange={setPaymentFilter}
+        companyId={companyId}
+        onCompanyChange={setCompanyId}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+      />
 
-        {showFilters && (
-          <div className="flex flex-wrap items-center gap-2 p-3 bg-muted/30 border border-border rounded-lg animate-in fade-in slide-in-from-top-1 duration-200">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[150px] h-8">
-                <SelectValue placeholder={t("fields.status", "Status")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("filters.allStatuses", "All Statuses")}</SelectItem>
-                <SelectItem value="draft">{t("status.draft")}</SelectItem>
-                <SelectItem value="validated">{t("status.validated")}</SelectItem>
-                <SelectItem value="ordered">{t("status.ordered")}</SelectItem>
-                <SelectItem value="partially_received">{t("status.partially_received")}</SelectItem>
-                <SelectItem value="received">{t("status.received")}</SelectItem>
-                <SelectItem value="cancelled">{t("status.cancelled")}</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={paymentFilter} onValueChange={setPaymentFilter}>
-              <SelectTrigger className="w-[150px] h-8">
-                <SelectValue placeholder={t("fields.paymentStatus", "Payment")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("filters.allPayments", "All Payments")}</SelectItem>
-                <SelectItem value="pending">{t("paymentStatus.pending")}</SelectItem>
-                <SelectItem value="partial">{t("paymentStatus.partial")}</SelectItem>
-                <SelectItem value="paid">{t("paymentStatus.paid")}</SelectItem>
-              </SelectContent>
-            </Select>
-            {hasActiveFilter && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8"
-                onClick={() => {
-                  setStatusFilter("all");
-                  setPaymentFilter("all");
-                  setSelectedStat("all");
-                }}
-              >
-                <X className="h-3.5 w-3.5 mr-1" />
-                {t("filters.clear", "Clear")}
-              </Button>
-            )}
-          </div>
-        )}
+      <div className="px-3 sm:px-4 pb-3 sm:pb-4 space-y-3">
+
 
         <BulkActionBar
           selectedCount={selectedIds.size}

@@ -15,6 +15,7 @@ import { PurchasePageHeader } from "../components/PurchasePageHeader";
 import { PurchaseErrorBoundary, PurchaseErrorFallback } from "../components/PurchaseErrorBoundary";
 import { DetailSkeleton } from "../components/PurchaseSkeletons";
 import { PurchaseOrderPDFPreviewModal } from "../components/PurchaseOrderPDFPreviewModal";
+import { PurchaseOrderStatusFlow } from "../components/PurchaseOrderStatusFlow";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { UNIT_OPTIONS, getUnitLabel } from "@/constants/units";
 import { toast } from "sonner";
@@ -31,9 +32,6 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
 };
 
-// Visual progress flow (left → right). 'closed' is shown after 'received' so
-// the user sees the full lifecycle the backend allows.
-const STATUS_FLOW = ['draft', 'validated', 'ordered', 'partially_received', 'received', 'closed'];
 
 function PurchaseOrderDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -223,7 +221,17 @@ function PurchaseOrderDetailPage() {
   if (!po) return <PurchaseErrorFallback error={t('orders.notFound')} backTo="/dashboard/purchases/orders" />;
 
   const fmt = (n: number) => n.toLocaleString('fr-TN', { minimumFractionDigits: 2 });
-  const currentStepIndex = STATUS_FLOW.indexOf(po.status);
+
+  const handleStatusChange = async (next: string) => {
+    if (!id || next === po.status) return;
+    try {
+      const updated = await purchaseOrderService.update(id, { status: next as any });
+      setPo(updated);
+      toast.success(t('status.updated', 'Status updated'));
+    } catch (e: any) {
+      toast.error(e?.message || t('common.error', 'Failed'));
+    }
+  };
 
   return (
     <div className="flex flex-col">
@@ -250,21 +258,13 @@ function PurchaseOrderDetailPage() {
         {/* Status Flow */}
         <Card>
           <CardContent className="p-3">
-            <div className="flex items-center gap-1">
-              {STATUS_FLOW.map((step, i) => (
-                <div key={step} className="flex items-center flex-1">
-                  <div className={`flex items-center justify-center rounded-full h-6 w-6 text-[10px] font-medium ${i <= currentStepIndex ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
-                    {i + 1}
-                  </div>
-                  <span className={`text-[10px] ml-1 hidden sm:inline ${i <= currentStepIndex ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
-                    {t(`status.${step}`)}
-                  </span>
-                  {i < STATUS_FLOW.length - 1 && <div className={`flex-1 h-0.5 mx-1 ${i < currentStepIndex ? 'bg-primary' : 'bg-border'}`} />}
-                </div>
-              ))}
-            </div>
+            <PurchaseOrderStatusFlow
+              currentStatus={po.status}
+              onStatusChange={handleStatusChange}
+            />
           </CardContent>
         </Card>
+
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="h-8">
