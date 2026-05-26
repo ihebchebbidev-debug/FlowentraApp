@@ -320,6 +320,19 @@
       "purchase_order": "Purchase Order",
       "goods_receipt": "Goods Receipt",
       "supplier_invoice": "Supplier Invoice"
+    },
+    "actionLabel": {
+      "created": "Created",
+      "updated": "Updated",
+      "deleted": "Deleted",
+      "status_changed": "Status changed",
+      "sent": "Sent",
+      "received": "Received",
+      "paid": "Paid",
+      "cancelled": "Cancelled",
+      "validated": "Validated",
+      "tej_sync": "TEJ Sync",
+      "tej_sync_failed": "TEJ Sync failed"
     }
   },
   "activity": {

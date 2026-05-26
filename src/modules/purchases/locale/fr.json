@@ -320,6 +320,19 @@
       "purchase_order": "Bon de commande",
       "goods_receipt": "Réception",
       "supplier_invoice": "Facture fournisseur"
+    },
+    "actionLabel": {
+      "created": "Créé",
+      "updated": "Modifié",
+      "deleted": "Supprimé",
+      "status_changed": "Statut modifié",
+      "sent": "Envoyé",
+      "received": "Reçu",
+      "paid": "Payé",
+      "cancelled": "Annulé",
+      "validated": "Validé",
+      "tej_sync": "Synchro TEJ",
+      "tej_sync_failed": "Échec synchro TEJ"
     }
   },
   "activity": {

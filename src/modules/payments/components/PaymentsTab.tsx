@@ -60,8 +60,8 @@ import i18n from 'i18next';
 import en from '@/modules/payments/locale/en.json';
 import fr from '@/modules/payments/locale/fr.json';
 if (!i18n.hasResourceBundle('en', 'payments')) {
-  i18n.addResourceBundle('en', 'payments', en.payments, true, true);
-  i18n.addResourceBundle('fr', 'payments', fr.payments, true, true);
+  i18n.addResourceBundle('en', 'payments', en, true, true);
+  i18n.addResourceBundle('fr', 'payments', fr, true, true);
 }
 
 // ── Props ─────────────────────────────────────────────

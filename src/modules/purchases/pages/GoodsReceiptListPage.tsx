@@ -246,7 +246,7 @@ function GoodsReceiptListContent() {
   }> = [
     {
       key: "all",
-      label: t("receipts.stats.total", "Total Receipts"),
+      label: t("receipts.stats.total", "Total Receipts") || "Total Receipts",
       value: formatStatValue(total),
       icon: Package,
       color: "text-chart-1",
@@ -254,7 +254,7 @@ function GoodsReceiptListContent() {
     },
     {
       key: "partial",
-      label: t("receipts.stats.partial", "Partial"),
+      label: t("receipts.stats.partial", "Partial") || "Partial",
       value: formatStatValue(stats.partial),
       icon: Clock,
       color: "text-chart-2",
@@ -262,7 +262,7 @@ function GoodsReceiptListContent() {
     },
     {
       key: "complete",
-      label: t("receipts.stats.complete", "Complete"),
+      label: t("receipts.stats.complete", "Complete") || "Complete",
       value: formatStatValue(stats.complete),
       icon: CheckCircle2,
       color: "text-chart-3",
@@ -270,7 +270,7 @@ function GoodsReceiptListContent() {
     },
     {
       key: "rejected",
-      label: t("receipts.stats.rejected", "Rejected"),
+      label: t("receipts.stats.rejected", "Rejected") || "Rejected",
       value: formatStatValue(stats.rejected),
       icon: XCircle,
       color: "text-chart-4",

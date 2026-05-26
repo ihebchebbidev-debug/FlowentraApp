@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3, TrendingUp, LineChart as LineIcon, Clock, ArrowRight } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { purchaseOrderService } from "../services/purchaseService";
 import { PurchasePageHeader } from "../components/PurchasePageHeader";
 import { PurchaseErrorBoundary, PurchaseErrorFallback } from "../components/PurchaseErrorBoundary";
@@ -103,12 +103,30 @@ function PurchaseReportsContent() {
             <CardHeader className="pb-2"><CardTitle className="text-sm">{t('reports.spendingBySupplier')}</CardTitle></CardHeader>
             <CardContent className="flex items-center justify-center">
               {supplierData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={240}>
+                <ResponsiveContainer width="100%" height={260}>
                   <PieChart>
-                    <Pie data={supplierData} cx="50%" cy="50%" outerRadius={80} dataKey="amount" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                    <Pie
+                      data={supplierData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={45}
+                      outerRadius={75}
+                      paddingAngle={2}
+                      dataKey="amount"
+                      nameKey="name"
+                    >
                       {supplierData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                     </Pie>
-                    <Tooltip contentStyle={tooltipStyle} />
+                    <Tooltip
+                      contentStyle={tooltipStyle}
+                      formatter={(v: number) => [`${v.toLocaleString()} TND`, '']}
+                    />
+                    <Legend
+                      verticalAlign="bottom"
+                      align="center"
+                      iconType="circle"
+                      wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (

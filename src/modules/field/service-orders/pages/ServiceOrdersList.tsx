@@ -390,12 +390,17 @@ export default function ServiceOrdersList() {
             <p className="text-[11px] text-muted-foreground">{t('list.subtitle')}</p>
           </div>
         </div>
-        {/* <div>
-            <CreateActionButton className="bg-primary text-white hover:bg-primary/90 shadow-medium hover-lift w-full sm:w-auto" onClick={() => navigate('/dashboard/field/service-orders/create')}>
+        {hasCreateAccess && (
+          <div>
+            <CreateActionButton
+              className="bg-primary text-white hover:bg-primary/90 shadow-medium hover-lift"
+              onClick={() => navigate('/dashboard/field/service-orders/create')}
+            >
               <Plus className="mr-2 h-4 w-4 text-white" />
               {t('list.create_service_order')}
             </CreateActionButton>
-          </div> */}
+          </div>
+        )}
       </header>
 
       {/* Mobile Header */}

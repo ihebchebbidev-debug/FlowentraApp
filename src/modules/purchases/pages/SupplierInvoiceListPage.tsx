@@ -271,7 +271,7 @@ function SupplierInvoiceListContent() {
   }> = [
     {
       key: "all",
-      label: t("invoices.stats.total", "Total Invoices"),
+      label: t("invoices.stats.total", "Total Invoices") || "Total Invoices",
       value: formatStatValue(total),
       icon: FileText,
       color: "text-chart-1",
@@ -279,7 +279,7 @@ function SupplierInvoiceListContent() {
     },
     {
       key: "unpaid",
-      label: t("invoices.stats.unpaid", "Unpaid"),
+      label: t("invoices.stats.unpaid", "Unpaid") || "Unpaid",
       value: formatStatValue(stats.unpaid),
       icon: Clock,
       color: "text-chart-2",
@@ -287,7 +287,7 @@ function SupplierInvoiceListContent() {
     },
     {
       key: "overdue",
-      label: t("invoices.stats.overdue", "Overdue"),
+      label: t("invoices.stats.overdue", "Overdue") || "Overdue",
       value: formatStatValue(stats.overdue),
       icon: AlertCircle,
       color: "text-destructive",
@@ -295,7 +295,7 @@ function SupplierInvoiceListContent() {
     },
     {
       key: "value",
-      label: t("invoices.stats.value", "Total Value"),
+      label: t("invoices.stats.value", "Total Value") || "Total Value",
       value: `${fmt(stats.totalValue)} TND`,
       icon: DollarSign,
       color: "text-chart-4",
