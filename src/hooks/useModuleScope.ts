@@ -28,7 +28,13 @@ export type ModuleKey =
   | 'calendar'
   | 'documents'
   | 'lookups'
-  | 'notifications';
+  | 'notifications'
+  | 'dispatches'
+  | 'installations'
+  | 'planning'
+  | 'workflow_engine'
+  | 'dynamic_forms'
+  | 'dashboards';
 
 const CACHE_KEY = 'module-scope-cache-v2';
 const EVENT = 'module-scope-changed';

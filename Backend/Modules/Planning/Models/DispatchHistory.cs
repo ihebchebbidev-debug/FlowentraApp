@@ -5,6 +5,7 @@ using MyApi.Infrastructure;
 
 namespace MyApi.Modules.Planning.Models
 {
+    [ModuleScope("planning")]
     [Table("dispatch_history")]
     public class DispatchHistory : ITenantEntity
     {

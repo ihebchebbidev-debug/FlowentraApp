@@ -10,6 +10,7 @@ namespace MyApi.Modules.Planning.Models
     /// Carries lineage from the originating offer line through every conversion so plan-vs-actual
     /// can be computed at execution time on the dispatch.
     /// </summary>
+    [ModuleScope("planning")]
     [Table("PlannedLineEntries")]
     public class PlannedLineEntry : ITenantEntity
     {

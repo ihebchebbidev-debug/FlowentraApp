@@ -4,6 +4,7 @@ using MyApi.Infrastructure;
 
 namespace MyApi.Modules.Installations.Models
 {
+    [ModuleScope("installations")]
     [Table("MaintenanceHistory")]
     public class MaintenanceHistory : ITenantEntity
     {

@@ -19,6 +19,7 @@ namespace MyApi.Modules.Shared.Models
     /// Entity Form Document - links dynamic forms to offers/sales
     /// Allows multiple form documents per entity, same form can be filled multiple times
     /// </summary>
+    [ModuleScope("documents")]
     [Table("EntityFormDocuments")]
     public class EntityFormDocument : BaseEntityWithSoftDelete, ITenantEntity
     {

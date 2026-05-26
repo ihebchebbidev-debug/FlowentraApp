@@ -7,6 +7,7 @@ using MyApi.Modules.Contacts.Models;
 
 namespace MyApi.Modules.Dispatches.Models
 {
+    [ModuleScope("dispatches")]
     [Table("Dispatches")]
     public class Dispatch : ITenantEntity, MyApi.Modules.Shared.Models.ISoftDeletable
     {

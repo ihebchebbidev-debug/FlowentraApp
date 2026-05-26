@@ -8,6 +8,7 @@ namespace MyApi.Modules.WorkflowEngine.Models
     /// Tracks which entities have been processed by which workflow triggers.
     /// Prevents duplicate workflow executions when using state-based polling.
     /// </summary>
+    [ModuleScope("workflow_engine")]
     [Table("WorkflowProcessedEntities")]
     public class WorkflowProcessedEntity : ITenantEntity
     {

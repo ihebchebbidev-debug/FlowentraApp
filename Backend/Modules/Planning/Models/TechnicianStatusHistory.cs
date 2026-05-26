@@ -5,6 +5,7 @@ using MyApi.Infrastructure;
 
 namespace MyApi.Modules.Planning.Models
 {
+    [ModuleScope("planning")]
     [Table("technician_status_history")]
     public class TechnicianStatusHistory : ITenantEntity
     {

@@ -4,6 +4,7 @@ using MyApi.Infrastructure;
 
 namespace MyApi.Modules.WorkflowEngine.Models
 {
+    [ModuleScope("workflow_engine")]
     [Table("WorkflowTriggers")]
     public class WorkflowTrigger : ITenantEntity
     {

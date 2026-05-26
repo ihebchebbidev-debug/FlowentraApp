@@ -39,6 +39,7 @@ namespace MyApi.Modules.DynamicForms.Models
     /// <summary>
     /// Dynamic Form entity - stores form definitions with fields as JSON
     /// </summary>
+    [ModuleScope("dynamic_forms")]
     [Table("DynamicForms")]
     public class DynamicForm : BaseEntityWithStatus, ITenantEntity
     {

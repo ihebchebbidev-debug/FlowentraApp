@@ -4,6 +4,7 @@ using MyApi.Infrastructure;
 
 namespace MyApi.Modules.Installations.Models
 {
+    [ModuleScope("installations")]
     [Table("Installations")]
     public class Installation : ITenantEntity
     {

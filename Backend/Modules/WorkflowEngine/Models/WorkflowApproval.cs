@@ -4,6 +4,7 @@ using MyApi.Infrastructure;
 
 namespace MyApi.Modules.WorkflowEngine.Models
 {
+    [ModuleScope("workflow_engine")]
     [Table("WorkflowApprovals")]
     public class WorkflowApproval : ITenantEntity
     {

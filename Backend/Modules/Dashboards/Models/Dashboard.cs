@@ -4,6 +4,7 @@ using MyApi.Infrastructure;
 
 namespace MyApi.Modules.Dashboards.Models
 {
+    [ModuleScope("dashboards")]
     [Table("Dashboards")]
     public class Dashboard : ITenantEntity
     {

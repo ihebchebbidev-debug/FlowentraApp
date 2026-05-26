@@ -5,6 +5,7 @@ using MyApi.Infrastructure;
 
 namespace MyApi.Modules.Dispatches.Models
 {
+    [ModuleScope("dispatches")]
     [Table("TimeEntries")]
     public class TimeEntry : ITenantEntity
     {

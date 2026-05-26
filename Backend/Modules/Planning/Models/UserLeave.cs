@@ -5,6 +5,7 @@ using MyApi.Infrastructure;
 
 namespace MyApi.Modules.Planning.Models
 {
+    [ModuleScope("planning")]
     [Table("user_leaves")]
     public class UserLeave : ITenantEntity
     {
