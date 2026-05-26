@@ -116,13 +116,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // No tenant resolved yet.
       //
-      // MainAdminUser → default to VIEW-ALL so every list shows rows from
-      // every company (with the Company column tagging each row). They can
-      // narrow down via the TenantSwitcher whenever they want.
-      //
-      // Regular users stay scoped to their own company (next branch).
+      // We deliberately DO NOT auto-pin VIEW_ALL_SENTINEL for main admins
+      // anymore — leaving the tenant unset routes them through the mandatory
+      // /select-company picker (RequireCompany guard) so every record they
+      // create is tagged to a concrete company. They can still opt into
+      // "View all companies" from the picker for audit work.
       if (isMain) {
-        setTenantOverrideWithoutReload(VIEW_ALL_SENTINEL);
         return;
       }
 

@@ -128,13 +128,11 @@ export function EditSaleItemModal({ item, isOpen, onClose, onSave }: EditSaleIte
             </CardContent>
           </Card>
 
-          {/* Planning panel — only for service lines */}
-          {editedItem.type === 'service' && (
-            <PlannedEntriesEditor
-              parentType="sale_item"
-              parentId={Number(editedItem.id)}
-            />
-          )}
+          {/* Planning panel — every line type can carry a planned budget. */}
+          <PlannedEntriesEditor
+            parentType="sale_item"
+            parentId={Number(editedItem.id)}
+          />
 
 
           {/* Actions */}

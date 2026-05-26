@@ -257,14 +257,17 @@ export function EditOfferItemModal({ open, onOpenChange, item, onUpdateItem, cur
             </div>
           )}
 
-          {/* Planning panel — only for service lines */}
-          {item.type === 'service' && (
-            <PlannedEntriesEditor
-              parentType="offer_item"
-              parentId={Number(item.id)}
-              currency={currency}
-            />
-          )}
+          {/*
+            Planning panel — shown for every line type. Service lines mainly
+            use planned time, article/material lines use planned expenses
+            (subcontractor / materials buckets). Hiding it for non-services
+            meant article lines could never have a planned expense budget.
+          */}
+          <PlannedEntriesEditor
+            parentType="offer_item"
+            parentId={Number(item.id)}
+            currency={currency}
+          />
 
 
           <div className="flex justify-end gap-3 pt-4 border-t">

@@ -1,67 +1,46 @@
-## Goal
+# Fix the remaining flow issues
 
-Right now the Purchases module ships **18 separate pages** (Dashboard, Orders list/detail/create, Receipts list/detail/create/edit, Invoices list/detail/create, Compliance, Audit Log, Reports + 3 report drill-downs). Pages like Compliance feel empty because they hold one strip of KPIs. Goal: keep every feature, but make the module feel like **one dense, tabbed cockpit** instead of a maze of half-empty screens.
+Three changes, shipped in this order so we can verify each before the next.
 
-## New architecture (3 pages, hybrid drill-down)
+## 1. Require a company before the user lands on anything else
 
-```text
-/purchases                     -> Cockpit (default tab: Overview)
-   tabs: Overview | Orders | Receipts | Invoices | Insights
-/purchases/orders/:id          -> full detail route (kept, for share links + PDF)
-/purchases/orders/add          -> full create route (kept, large form)
-/purchases/receipts/:id        -> kept
-/purchases/receipts/:id/edit   -> kept
-/purchases/receipts/add        -> kept
-/purchases/invoices/:id        -> kept
-/purchases/invoices/add        -> kept
-```
+Right now the app boots in **"All companies"** view, every "Add" button is disabled with a tooltip, and the Service Orders / Offers / Sales lists silently filter to zero rows. We will make company selection a hard gate.
 
-Everything else (Compliance, Audit Log, Reports, Supplier Performance, Price Evolution, Invoice Aging, Dashboard KPIs) becomes a **tab or sub-section inside `/purchases`**. No separate routes.
+- On login, if the user belongs to more than one company **and** has not picked one yet, redirect to a new `/select-company` screen (cards: company name, role, last accessed). No sidebar, no dashboard until a pick is made.
+- Selection is persisted (the existing `targetTenantId` storage) and restored on next visit, so returning users skip the screen.
+- A new "Switch company" button in the top bar opens the same picker as a modal — replaces today's "All companies" dropdown for non-admins.
+- Admins keep the "All companies" toggle (they need it to audit), but it now requires an explicit click — it is no longer the boot default.
+- Every "Add Offer / Add Sale / Add Service Order" button drops its disabled+tooltip pattern, because a company is always selected.
 
-### Cockpit tabs
+## 2. Sales routes work on direct load
 
-1. **Overview** — KPI strip (POs, Receipts pending, Invoices outstanding, Spend YTD) + Monthly Spending chart + Recent Activity feed (last 10 from audit log) + small Compliance strip (RS, Facture en Ligne, TEJ counters as compact pill row, not big cards).
-2. **Orders** — current list with filters, status badges, bulk actions. Row click → side drawer (quick view: header, items, totals, status timeline, "Open full page" link → `/purchases/orders/:id`). "New" button → `/purchases/orders/add`.
-3. **Receipts** — same pattern (list + drawer + full route for create/edit).
-4. **Invoices** — same pattern + RS toggle visible in drawer.
-5. **Insights** — sub-tabs: Reports | Supplier Performance | Price Evolution | Invoice Aging | Audit Log | Compliance details. One scrollable page, segmented sub-tabs at top, each section is dense (table + chart side-by-side where possible).
+`/sales` and `/sales/:id` currently 404 on refresh because the Sales module is mounted only inside the dashboard shell.
 
-### Drill-down pattern (hybrid)
+- Re-export the Sales routes at the top level alongside Offers and Service Orders so `BrowserRouter` resolves them on a cold load.
+- Keep the sidebar entry pointing at the same path — no UX change for users who navigate from the menu.
 
-- **Row click anywhere** → opens a right-side `Sheet` drawer with the full read-only detail + inline status actions (validate, send, cancel, mark paid…). Fast, no navigation.
-- **"Open full page" button** in drawer → existing `/purchases/{entity}/:id` route (kept for PDF preview, deep editing, shareable URL, browser back).
-- Create/edit forms stay as full routes (too big for a drawer).
+## 3. Planned Times & Expenses editor on Offer + Sale items
 
-### Visual density (4/5)
+The `PlannedLineEntries` backend and `plannedEntriesService` frontend already exist, but the item modal never lets a user author them, so the dispatcher's overrun guard and the plan-vs-actual report have nothing to compare against.
 
-- Tighter table row padding (`py-2` instead of `py-4`), smaller font for secondary data, sticky table header, sticky tab bar.
-- KPI strip = single row of compact cards, not large hero tiles.
-- Compliance counters become pill badges inline, not standalone cards.
-- Charts max-height ~240px so two fit side-by-side at lg+.
+Add a collapsible **"Planning"** section to the existing Offer item modal (and the matching Sale item modal):
 
-## Implementation steps
+- **Time** rows: planned minutes, technician count, hourly rate, optional note.
+- **Expense** rows: type (travel / per-diem / materials / subcontractor), planned amount, currency, optional note.
+- "Add time" / "Add expense" buttons, inline delete.
+- On save, call `plannedEntriesService` with `parentType=offer_item` (or `sale_item`) and the item id; the backend's existing `CopyAsync` propagates them through sale → service_order_job, preserving `OriginOfferItemId`.
+- On edit, list existing rows from `GetForParentAsync` so the user sees what was authored before.
 
-1. **New `PurchasesCockpit.tsx` page** — Tabs (shadcn) for Overview / Orders / Receipts / Invoices / Insights. URL-synced via `?tab=`.
-2. **New `OverviewTab.tsx`** — extract KPI + chart + activity from `PurchaseDashboard` + condensed compliance pills from `ComplianceDashboardPage`.
-3. **New `InsightsTab.tsx`** — sub-tabs hosting existing `PurchaseReportsPage`, `SupplierPerformancePage`, `PriceEvolutionPage`, `SupplierInvoiceAgingPage`, `PurchaseAuditLogPage`, and the rest of `ComplianceDashboardPage`. Refactor those pages to export a content-only component (no page header) the tab can render.
-4. **Reuse existing list pages** for Orders/Receipts/Invoices tabs — extract their table into `*ListContent` components, strip the page chrome, host inside tabs.
-5. **Add `EntityQuickViewDrawer.tsx`** — generic Sheet that takes `{type, id}` and renders compact detail with "Open full page" link. Wire row click in each list to open it.
-6. **Update `PurchasesModule.tsx` routes**:
-   - `/purchases` → `PurchasesCockpit`
-   - Keep `/orders/add`, `/orders/:id`, `/receipts/add`, `/receipts/:id`, `/receipts/:id/edit`, `/invoices/add`, `/invoices/:id`
-   - **Remove** standalone routes: `/orders`, `/receipts`, `/invoices`, `/compliance`, `/audit-log`, `/reports`, `/reports/*` → all redirect to `/purchases?tab=…`
-7. **Update sidebar links** (Purchase Orders / Goods Receipts / Supplier Invoices / Compliance) to point to `/purchases?tab=orders` etc., so the existing nav still works.
-8. Keep `PurchaseDashboard.tsx`, `ComplianceDashboardPage.tsx`, list pages, etc. as thin wrappers around their extracted content components (in case anything else imports them).
+## Technical notes
 
-## What stays identical
+- `targetTenant.ts` already exposes `setTargetTenantId / clearTargetTenant / isViewAllMode`. The gate is implemented in a top-level `<RequireCompany>` wrapper around the dashboard routes, reading `getSelectedTargetTenantId()`.
+- Sales routes: move the `<Route path="sales/*">` block out of `DashboardContent` and into the top-level router alongside `OffersModule`, while keeping it inside the same authenticated layout.
+- Planned editor: new component `PlannedEntriesEditor.tsx` reused by both `OfferItemModal` and `SaleItemModal`. No new API endpoints needed.
+- No schema migrations.
 
-- All services, types, mutations, PDF generation, permissions, plugin gate.
-- All create/edit forms (full pages, unchanged).
-- All deep-link detail routes for sharing/PDF.
-- Every feature currently shipped — just rearranged.
+## Verification
 
-## Out of scope
-
-- Backend changes.
-- New features or status flows.
-- Visual redesign of forms/PDFs.
+After each step:
+1. Log in as `testadmin@gmail.com`, confirm the company picker appears, pick "Company A", land on dashboard with company pinned.
+2. Hit `/dashboard/sales/9` directly in the URL bar — page loads.
+3. Open an offer item, add 60 min × 2 techs @ 80 TND/h plus a 50 TND travel expense, save, reopen, values persist; convert offer → sale, open sale item, values are copied.

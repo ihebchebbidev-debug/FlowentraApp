@@ -18,6 +18,7 @@ import { offersApi } from "@/services/api/offersApi";
 import { salesApi } from "@/services/api/salesApi";
 import { articlesApi } from "@/services/api/articlesApi";
 import { InstallationSelector } from "@/modules/field/installations/components/InstallationSelector";
+import PlannedEntriesEditor from "@/shared/components/planning/PlannedEntriesEditor";
 import { CreateInstallationModal } from "@/modules/field/installations/components/CreateInstallationModal";
 import { DeleteConfirmationModal } from "@/shared/components/DeleteConfirmationModal";
 import { toast } from "sonner";
@@ -495,6 +496,15 @@ export function ItemsTab({ offer, onItemsUpdated }: ItemsTabProps) {
                 ) : (
                   <p className="text-sm text-muted-foreground">{t('itemsTab.noInstallationLinked')}</p>
                 )}
+              </div>
+
+              {/* Planned time & expenses (read-only summary, full editor lives in EditOfferItemModal) */}
+              <div className="pt-2 border-t">
+                <PlannedEntriesEditor
+                  parentType="offer_item"
+                  parentId={Number(selectedItem.id)}
+                  currency={(selectedItem as any).currency || undefined}
+                />
               </div>
             </div>
           )}

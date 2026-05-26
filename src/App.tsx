@@ -30,6 +30,9 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { PreferencesProvider } from "./contexts/PreferencesProvider";
 import { OfflineProvider } from "./contexts/OfflineContext";
 import { TenantMapProvider } from "./contexts/TenantMapContext";
+import { PrefixRedirect } from "./components/PrefixRedirect";
+import { RequireCompany } from "./components/RequireCompany";
+const SelectCompany = lazyWithRetry(() => import("./modules/auth/pages/SelectCompany"));
 import { useTenantDocumentTitle } from "./hooks/useTenantDocumentTitle";
 
 const TenantTitleSync: React.FC = () => {
@@ -319,13 +322,18 @@ const App = () => {
                     <Route path="/onboarding" element={<Onboarding />} />
                     {/* API Testing System */}
                     <Route path="/tests" element={<ApiTestsPage />} />
-                    {/* Redirect standalone paths into dashboard so sidebar shows */}
+                    {/* Redirect standalone paths into dashboard so sidebar shows. PrefixRedirect preserves trailing segments (e.g. /sales/9 → /dashboard/sales/9). */}
                     <Route path="/offers" element={<Navigate to="/dashboard/offers" replace />} />
-                    <Route path="/offers/*" element={<Navigate to="/dashboard/offers" replace />} />
+                    <Route path="/offers/*" element={<PrefixRedirect to="/dashboard/offers" />} />
+                    <Route path="/sales" element={<Navigate to="/dashboard/sales" replace />} />
+                    <Route path="/sales/*" element={<PrefixRedirect to="/dashboard/sales" />} />
+                    <Route path="/service-orders" element={<Navigate to="/dashboard/field/service-orders" replace />} />
+                    <Route path="/service-orders/*" element={<PrefixRedirect to="/dashboard/field/service-orders" />} />
                     <Route path="/calendar" element={<Navigate to="/dashboard/calendar" replace />} />
-                    <Route path="/calendar/*" element={<Navigate to="/dashboard/calendar" replace />} />
+                    <Route path="/calendar/*" element={<PrefixRedirect to="/dashboard/calendar" />} />
                     <Route path="/ticketsadmin" element={<Navigate to="/dashboard/ticketsadmin" replace />} />
-                   <Route path="/dashboard/*" element={<DashboardGate />} />
+                   <Route path="/select-company" element={<SelectCompany />} />
+                   <Route path="/dashboard/*" element={<RequireCompany><DashboardGate /></RequireCompany>} />
                     {/* Customer Support Module */}
                     <Route path="/support/*" element={<SupportModuleRoutes />} />
                     {/* Public Forms (no authentication required) */}
