@@ -119,6 +119,9 @@ export default function ServiceOrdersList() {
 
         return {
           id: String(so.id),
+          // Preserve tenantId so `useFilteredByCompany` (which reads it via `any` cast)
+          // doesn't wipe every row when the user has pinned a company in view-all mode.
+          tenantId: so.tenantId ?? so.TenantId ?? so.companyId ?? so.CompanyId,
           orderNumber: so.orderNumber || `SO-${so.id}`,
           offerId: so.offerId ? String(so.offerId) : undefined,
           saleId: so.saleId ? String(so.saleId) : undefined,
@@ -272,8 +275,8 @@ export default function ServiceOrdersList() {
       })();
 
       // Handle stat filters
-      if (selectedStat === 'active') return matchesSearch && ['scheduled', 'in_progress'].includes(order.status);
-      if (selectedStat === 'completed') return matchesSearch && order.status === 'completed';
+      if (selectedStat === 'active') return matchesSearch && ['scheduled', 'in_progress', 'partially_completed'].includes(order.status);
+      if (selectedStat === 'completed') return matchesSearch && ['completed', 'partially_completed'].includes(order.status);
       if (selectedStat === 'urgent') return matchesSearch && order.priority === 'urgent';
 
       return matchesSearch && matchesStatus && matchesPriority && matchesAssigned && matchesDate;
@@ -348,14 +351,14 @@ export default function ServiceOrdersList() {
     },
     {
       label: t('list.active_orders'),
-      value: formatStatValue(serviceOrders.filter(o => ['scheduled', 'in_progress'].includes(o.status)).length),
+      value: formatStatValue(serviceOrders.filter(o => ['scheduled', 'in_progress', 'partially_completed'].includes(o.status)).length),
       icon: Target,
       color: "chart-2",
       filter: 'active'
     },
     {
       label: t('list.completed'),
-      value: formatStatValue(serviceOrders.filter(o => o.status === 'completed').length),
+      value: formatStatValue(serviceOrders.filter(o => ['completed', 'partially_completed'].includes(o.status)).length),
       icon: CheckCircle,
       color: "chart-3",
       filter: 'completed'
