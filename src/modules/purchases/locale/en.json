@@ -1,5 +1,7 @@
 {
-  "hub": { "overview": "Overview" },
+  "hub": {
+    "overview": "Overview"
+  },
   "cockpitTitle": "Purchases",
   "cockpitSubtitle": "Orders, receipts, invoices, compliance & insights",
   "newOrder": "New Order",
@@ -7,10 +9,11 @@
   "newInvoice": "New Invoice",
   "tabs": {
     "overview": "Overview",
-    "orders": "Orders",
+    "items": "Items",
     "receipts": "Receipts",
     "invoices": "Invoices",
-    "insights": "Insights"
+    "activity": "Activity",
+    "compliance": "Compliance"
   },
   "insights": {
     "reports": "Reports",
@@ -70,7 +73,13 @@
     "selectPOFirst": "Select a purchase order to load items",
     "deleted": "Receipt deleted",
     "deletedBadge": "Deleted",
-    "deletedNotice": "This goods receipt has been deleted and is kept for audit purposes only. Stock movements have been reversed."
+    "deletedNotice": "This goods receipt has been deleted and is kept for audit purposes only. Stock movements have been reversed.",
+    "stats": {
+      "total": "Total Receipts",
+      "partial": "Partial",
+      "complete": "Complete",
+      "rejected": "Rejected"
+    }
   },
   "invoices": {
     "title": "Supplier Invoices",
@@ -81,7 +90,13 @@
     "notFound": "Invoice not found",
     "createTitle": "Create Supplier Invoice",
     "created": "Supplier invoice created successfully",
-    "deleted": "Invoice deleted"
+    "deleted": "Invoice deleted",
+    "stats": {
+      "total": "Total Invoices",
+      "unpaid": "Unpaid",
+      "overdue": "Overdue",
+      "value": "Total Value"
+    }
   },
   "status": {
     "draft": "Draft",
@@ -186,14 +201,6 @@
     "cancel": "Cancel",
     "tejSynced": "Synced with TEJ",
     "factureEnLigneSent": "Sent to FactureEnLigne"
-  },
-  "tabs": {
-    "overview": "Overview",
-    "items": "Items",
-    "receipts": "Receipts",
-    "invoices": "Invoices",
-    "activity": "Activity",
-    "compliance": "Compliance"
   },
   "detail": {
     "supplierInfo": "Supplier Information",

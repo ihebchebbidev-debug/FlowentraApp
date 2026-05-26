@@ -1,5 +1,7 @@
 {
-  "hub": { "overview": "Aperçu" },
+  "hub": {
+    "overview": "Aperçu"
+  },
   "cockpitTitle": "Achats",
   "cockpitSubtitle": "Commandes, réceptions, factures, conformité et analyses",
   "newOrder": "Nouvelle commande",
@@ -7,10 +9,11 @@
   "newInvoice": "Nouvelle facture",
   "tabs": {
     "overview": "Aperçu",
-    "orders": "Commandes",
+    "items": "Articles",
     "receipts": "Réceptions",
     "invoices": "Factures",
-    "insights": "Analyses"
+    "activity": "Activité",
+    "compliance": "Conformité"
   },
   "insights": {
     "reports": "Rapports",
@@ -70,7 +73,13 @@
     "selectPOFirst": "Sélectionnez un bon de commande pour charger les articles",
     "deleted": "Réception supprimée",
     "deletedBadge": "Supprimée",
-    "deletedNotice": "Cette réception de marchandises a été supprimée et conservée à des fins d'audit uniquement. Les mouvements de stock ont été annulés."
+    "deletedNotice": "Cette réception de marchandises a été supprimée et conservée à des fins d'audit uniquement. Les mouvements de stock ont été annulés.",
+    "stats": {
+      "total": "Réceptions totales",
+      "partial": "Partielles",
+      "complete": "Complètes",
+      "rejected": "Rejetées"
+    }
   },
   "invoices": {
     "title": "Factures Fournisseurs",
@@ -81,7 +90,13 @@
     "notFound": "Facture non trouvée",
     "createTitle": "Créer une Facture Fournisseur",
     "created": "Facture fournisseur créée avec succès",
-    "deleted": "Facture supprimée"
+    "deleted": "Facture supprimée",
+    "stats": {
+      "total": "Factures totales",
+      "unpaid": "Impayées",
+      "overdue": "En retard",
+      "value": "Valeur totale"
+    }
   },
   "status": {
     "draft": "Brouillon",
@@ -186,14 +201,6 @@
     "cancel": "Annuler",
     "tejSynced": "Synchronisé avec TEJ",
     "factureEnLigneSent": "Envoyé à FactureEnLigne"
-  },
-  "tabs": {
-    "overview": "Aperçu",
-    "items": "Articles",
-    "receipts": "Réceptions",
-    "invoices": "Factures",
-    "activity": "Activité",
-    "compliance": "Conformité"
   },
   "detail": {
     "supplierInfo": "Informations fournisseur",
