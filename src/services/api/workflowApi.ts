@@ -112,26 +112,52 @@ export const workflowApi = {
     return data || [];
   },
 
-  // Get default workflow (always active, application-wide)
-  // Throws error on network failure so caller can handle appropriately
-  getDefault: async (): Promise<WorkflowDefinition | null> => {
-    const { data, error, status } = await apiFetch<WorkflowDefinition>('/api/workflows/default', {
-      headers: { 'X-Skip-Logging': 'true' }
-    });
-    
-    // Network error (status 0) - throw so caller knows backend is unreachable
-    if (status === 0) {
-      throw new Error('Backend unreachable');
-    }
-    
-    // API error but backend responded (e.g., 404 = no default workflow configured)
-    if (error) {
-      console.warn('API returned error for default workflow:', error);
-      return null;
-    }
-    
-    return data;
-  },
+  // Get default workflow (always active, application-wide).
+  // Cached in-memory for 60s + request-deduped so detail screens don't
+  // hammer the endpoint with repeat 404s when no default is configured.
+  getDefault: (() => {
+    let cached: { value: WorkflowDefinition | null; ts: number } | null = null;
+    let inflight: Promise<WorkflowDefinition | null> | null = null;
+    const TTL_MS = 60_000;
+
+    const invalidate = () => {
+      cached = null;
+      inflight = null;
+    };
+
+    const fn = async (): Promise<WorkflowDefinition | null> => {
+      const now = Date.now();
+      if (cached && now - cached.ts < TTL_MS) return cached.value;
+      if (inflight) return inflight;
+
+      inflight = (async () => {
+        const { data, error, status } = await apiFetch<WorkflowDefinition>('/api/workflows/default', {
+          headers: { 'X-Skip-Logging': 'true' },
+        });
+
+        if (status === 0) {
+          inflight = null;
+          throw new Error('Backend unreachable');
+        }
+
+        if (error) {
+          console.warn('API returned error for default workflow:', error);
+          cached = { value: null, ts: Date.now() };
+          inflight = null;
+          return null;
+        }
+
+        cached = { value: data ?? null, ts: Date.now() };
+        inflight = null;
+        return data ?? null;
+      })();
+
+      return inflight;
+    };
+
+    (fn as any).invalidate = invalidate;
+    return fn as ((() => Promise<WorkflowDefinition | null>) & { invalidate: () => void });
+  })(),
 
   // Get workflow by ID
   getById: async (id: number): Promise<WorkflowDefinition | null> => {

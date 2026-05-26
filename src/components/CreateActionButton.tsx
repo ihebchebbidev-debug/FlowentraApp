@@ -3,20 +3,15 @@
  * <Button> that becomes inert with an explanatory tooltip when the user is in
  * cross-company view-all mode and has not yet selected a target company.
  *
- * Use this for any action that creates a new tenant-scoped record (offers,
- * sales, contacts, articles, dispatches, service orders, projects, …).
- *
  * Behavior:
  *  - Outside view-all mode: behaves exactly like <Button>.
- *  - In view-all mode without a selected target company: visually disabled,
- *    aria-disabled, click intercepted, wrapped in a Radix tooltip explaining
- *    why and prompting the user to pick a company.
+ *  - In view-all mode without a selected target company: visually muted with
+ *    a tooltip AND a toast on click explaining the user must pick a company.
+ *    We deliberately keep the button clickable (not natively `disabled`) so
+ *    the click feedback fires — previously the button felt "dead" because
+ *    native disabled buttons swallow pointer events silently.
  *  - In view-all mode with a target company selected: behaves exactly like
- *    <Button> — submits as usual.
- *
- * The component never renders the destination link itself; pages keep their
- * existing onClick / navigate logic. We only intercept the click when the
- * guard is active.
+ *    <Button>.
  */
 import * as React from 'react';
 import { Button, type ButtonProps } from '@/components/ui/button';
@@ -28,12 +23,9 @@ import {
 } from '@/components/ui/tooltip';
 import { useCreateActionGuard } from '@/hooks/useCreateActionGuard';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export interface CreateActionButtonProps extends ButtonProps {
-  /**
-   * Override the tooltip message shown when the action is blocked.
-   * Defaults to a translated "Select a target company first…" message.
-   */
   blockedTooltip?: string;
 }
 
@@ -52,21 +44,22 @@ export const CreateActionButton = React.forwardRef<
       if (isBlocked) {
         event.preventDefault();
         event.stopPropagation();
+        toast.warning(blockedTooltip ?? guard.reason);
         return;
       }
       onClick?.(event);
     },
-    [isBlocked, onClick],
+    [isBlocked, onClick, blockedTooltip, guard.reason],
   );
 
   const button = (
     <Button
       ref={ref}
       onClick={handleClick}
-      disabled={disabled || isBlocked}
+      disabled={disabled}
       aria-disabled={disabled || isBlocked}
       data-blocked={isBlocked || undefined}
-      className={cn(className)}
+      className={cn(isBlocked && 'opacity-60 cursor-help', className)}
       {...rest}
     >
       {children}
@@ -75,16 +68,10 @@ export const CreateActionButton = React.forwardRef<
 
   if (!isBlocked) return button;
 
-  // Wrap disabled buttons in a span so the tooltip still receives pointer
-  // events (disabled buttons swallow them in most browsers).
   return (
     <TooltipProvider delayDuration={150}>
       <Tooltip>
-        <TooltipTrigger asChild>
-          <span tabIndex={0} className="inline-flex">
-            {button}
-          </span>
-        </TooltipTrigger>
+        <TooltipTrigger asChild>{button}</TooltipTrigger>
         <TooltipContent side="bottom" className="max-w-xs text-center">
           {blockedTooltip ?? guard.reason}
         </TooltipContent>

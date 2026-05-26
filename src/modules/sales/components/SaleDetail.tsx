@@ -118,7 +118,7 @@ export function SaleDetail() {
               <div className="h-full w-1/2 bg-primary/60 rounded-full animate-[shimmer_1.2s_ease-in-out_infinite]"
                 style={{ transform: 'translateX(-100%)', animation: 'shimmer 1.2s ease-in-out infinite' }} />
             </div>
-            <p className="text-sm text-muted-foreground mt-2">{t('detail.loading')}</p>
+            <p className="text-sm text-muted-foreground mt-2">{t('detail.loadingSale')}</p>
           </div>
         </div>
       </div>

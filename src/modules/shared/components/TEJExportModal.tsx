@@ -97,6 +97,37 @@ export function TEJExportModal({ open, onOpenChange, entityType, entityId, onExp
     }
   }, [open, month, year]);
 
+  const buildEmptyEnvelopeXml = () => {
+    const mm = String(month).padStart(2, '0');
+    const esc = (s: string) => s.replace(/[<>&'"]/g, c => ({ '<':'&lt;','>':'&gt;','&':'&amp;',"'":'&apos;','"':'&quot;' }[c] as string));
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<DeclarationRetenueSource>
+  <Entete>
+    <TypeActe>${typeActe}</TypeActe>
+    <CodeNatureOperation>${codeNature}</CodeNatureOperation>
+    <Annee>${year}</Annee>
+    <Mois>${mm}</Mois>
+    <MatriculeFiscal>${esc(payerTaxId)}</MatriculeFiscal>
+    <RaisonSociale>${esc(payerName)}</RaisonSociale>
+    <Adresse>${esc(payerAddress)}</Adresse>
+  </Entete>
+  <Certificats/>
+  <Totaux>
+    <NombreCertificats>0</NombreCertificats>
+    <MontantTotalRS>0.000</MontantTotalRS>
+  </Totaux>
+</DeclarationRetenueSource>`;
+  };
+
+  const downloadClientSide = (fileName: string, xml: string) => {
+    const blob = new Blob([xml], { type: 'application/xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = fileName;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
   const handleExport = async () => {
     setErrors([]);
     setExportResult(null);
@@ -107,6 +138,16 @@ export function TEJExportModal({ open, onOpenChange, entityType, entityId, onExp
 
     setExporting(true);
     try {
+      // Empty period → generate header-only envelope client-side (valid TEJ "déclaration néant")
+      if (recordCount === 0) {
+        const fileName = `${payerTaxId}-${year}-${String(month).padStart(2, '0')}-${typeActe}.xml`;
+        downloadClientSide(fileName, buildEmptyEnvelopeXml());
+        setExportResult({ status: 'success', fileName, recordCount: 0 } as any);
+        toast.success(`Déclaration néant générée : ${fileName}`);
+        onExportComplete();
+        return;
+      }
+
       const result = await exportTEJ({
         month: Number(month), year: Number(year),
         declarant: { name: payerName, taxId: payerTaxId, address: payerAddress },
@@ -292,7 +333,7 @@ export function TEJExportModal({ open, onOpenChange, entityType, entityId, onExp
 
           {recordCount === 0 && !loadingStats && (
             <p className="text-xs text-muted-foreground text-center -mt-2">
-              ⚠️ Aucun enregistrement RS en attente pour cette période.
+              ℹ️ Aucun enregistrement RS pour cette période — une <strong>déclaration néant</strong> sera générée.
             </p>
           )}
 
@@ -396,7 +437,7 @@ export function TEJExportModal({ open, onOpenChange, entityType, entityId, onExp
             </Button>
             <Button
               onClick={handleExport}
-              disabled={exporting || recordCount === 0 || loadingStats || overdueRecordCount > 0}
+              disabled={exporting || loadingStats || overdueRecordCount > 0}
               className="gap-2 min-w-[150px]"
             >
               {exporting ? (
