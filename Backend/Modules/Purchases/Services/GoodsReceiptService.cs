@@ -8,6 +8,17 @@ namespace MyApi.Modules.Purchases.Services
 {
     public class GoodsReceiptService : IGoodsReceiptService
     {
+        // Npgsql requires DateTimes written to `timestamp with time zone` columns
+        // to be UTC. Browser date inputs arrive as Kind=Unspecified, which causes
+        // SaveChanges to fail on ReceiptDate writes.
+        private static DateTime? AsUtc(DateTime? dt) => dt.HasValue ? AsUtc(dt.Value) : (DateTime?)null;
+        private static DateTime AsUtc(DateTime dt) => dt.Kind switch
+        {
+            DateTimeKind.Utc => dt,
+            DateTimeKind.Local => dt.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(dt, DateTimeKind.Utc),
+        };
+
         private readonly ApplicationDbContext _context;
         private readonly ILogger<GoodsReceiptService> _logger;
         private readonly MyApi.Modules.Numbering.Services.INumberingService? _numberingService;
@@ -111,7 +122,7 @@ namespace MyApi.Modules.Purchases.Services
                         PurchaseOrderId = po.Id,
                         SupplierId = po.SupplierId,
                         SupplierName = po.SupplierName,
-                        ReceiptDate = dto.ReceiptDate ?? DateTime.UtcNow,
+                        ReceiptDate = AsUtc(dto.ReceiptDate ?? DateTime.UtcNow),
                         Status = "partial",
                         DeliveryNoteRef = dto.DeliveryNoteRef,
                         Notes = dto.Notes,
@@ -258,7 +269,7 @@ namespace MyApi.Modules.Purchases.Services
                         ?? throw new KeyNotFoundException($"PurchaseOrder {receipt.PurchaseOrderId} not found");
 
                     // Header fields (no PO/Supplier mutation — those are receipt identity).
-                    if (dto.ReceiptDate.HasValue) receipt.ReceiptDate = dto.ReceiptDate.Value;
+                    if (dto.ReceiptDate.HasValue) receipt.ReceiptDate = AsUtc(dto.ReceiptDate.Value);
                     if (dto.DeliveryNoteRef != null) receipt.DeliveryNoteRef = dto.DeliveryNoteRef;
                     if (dto.Notes != null) receipt.Notes = dto.Notes;
 

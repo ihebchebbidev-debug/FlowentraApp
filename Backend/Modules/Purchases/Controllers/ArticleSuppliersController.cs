@@ -37,7 +37,7 @@ namespace MyApi.Modules.Purchases.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching suppliers for article {ArticleId}", articleId);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.InnerException != null ? ex.Message + " :: " + ex.InnerException.Message : ex.Message, type = ex.GetType().Name, inner = ex.InnerException?.GetType().Name } });
             }
         }
 
@@ -52,7 +52,7 @@ namespace MyApi.Modules.Purchases.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching articles for supplier {SupplierId}", supplierId);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.InnerException != null ? ex.Message + " :: " + ex.InnerException.Message : ex.Message, type = ex.GetType().Name, inner = ex.InnerException?.GetType().Name } });
             }
         }
 
@@ -68,7 +68,7 @@ namespace MyApi.Modules.Purchases.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching article-supplier {Id}", id);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.InnerException != null ? ex.Message + " :: " + ex.InnerException.Message : ex.Message, type = ex.GetType().Name, inner = ex.InnerException?.GetType().Name } });
             }
         }
 
@@ -85,7 +85,7 @@ namespace MyApi.Modules.Purchases.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating article-supplier");
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.InnerException != null ? ex.Message + " :: " + ex.InnerException.Message : ex.Message, type = ex.GetType().Name, inner = ex.InnerException?.GetType().Name } });
             }
         }
 
@@ -103,7 +103,7 @@ namespace MyApi.Modules.Purchases.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating article-supplier {Id}", id);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.InnerException != null ? ex.Message + " :: " + ex.InnerException.Message : ex.Message, type = ex.GetType().Name, inner = ex.InnerException?.GetType().Name } });
             }
         }
 
@@ -120,7 +120,7 @@ namespace MyApi.Modules.Purchases.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting article-supplier {Id}", id);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.InnerException != null ? ex.Message + " :: " + ex.InnerException.Message : ex.Message, type = ex.GetType().Name, inner = ex.InnerException?.GetType().Name } });
             }
         }
 
@@ -135,7 +135,7 @@ namespace MyApi.Modules.Purchases.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching price history for article-supplier {Id}", id);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.InnerException != null ? ex.Message + " :: " + ex.InnerException.Message : ex.Message, type = ex.GetType().Name, inner = ex.InnerException?.GetType().Name } });
             }
         }
     }

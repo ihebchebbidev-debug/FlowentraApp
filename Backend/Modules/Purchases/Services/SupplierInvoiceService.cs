@@ -7,6 +7,17 @@ namespace MyApi.Modules.Purchases.Services
 {
     public class SupplierInvoiceService : ISupplierInvoiceService
     {
+        // Npgsql rejects non-UTC DateTimes for `timestamp with time zone` columns.
+        // Purchase invoice dates come from HTML date inputs, so normalize them
+        // before persisting to avoid SaveChanges failures.
+        private static DateTime? AsUtc(DateTime? dt) => dt.HasValue ? AsUtc(dt.Value) : (DateTime?)null;
+        private static DateTime AsUtc(DateTime dt) => dt.Kind switch
+        {
+            DateTimeKind.Utc => dt,
+            DateTimeKind.Local => dt.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(dt, DateTimeKind.Utc),
+        };
+
         private readonly ApplicationDbContext _context;
         private readonly ILogger<SupplierInvoiceService> _logger;
         private readonly MyApi.Modules.Numbering.Services.INumberingService? _numberingService;
@@ -206,8 +217,8 @@ namespace MyApi.Modules.Purchases.Services
                 SupplierMatriculeFiscale = supplier.MatriculeFiscale,
                 PurchaseOrderId = dto.PurchaseOrderId,
                 GoodsReceiptId = dto.GoodsReceiptId,
-                InvoiceDate = dto.InvoiceDate,
-                DueDate = dto.DueDate,
+                InvoiceDate = AsUtc(dto.InvoiceDate),
+                DueDate = AsUtc(dto.DueDate),
                 Status = "draft",
                 Currency = dto.Currency,
                 Discount = dto.Discount,
@@ -340,7 +351,7 @@ namespace MyApi.Modules.Purchases.Services
                             throw new InvalidOperationException($"Paid invoices cannot transition to '{dto.Status}'");
                         invoice.Status = dto.Status;
                     }
-                    if (dto.DueDate.HasValue) invoice.DueDate = dto.DueDate.Value;
+                    if (dto.DueDate.HasValue) invoice.DueDate = AsUtc(dto.DueDate.Value);
                     if (dto.Discount.HasValue) invoice.Discount = dto.Discount.Value;
                     if (dto.DiscountType != null) invoice.DiscountType = dto.DiscountType;
                     if (dto.FiscalStamp.HasValue) invoice.FiscalStamp = dto.FiscalStamp.Value;
@@ -397,7 +408,7 @@ namespace MyApi.Modules.Purchases.Services
                             }
                         }
                     }
-                    if (dto.PaymentDate.HasValue) invoice.PaymentDate = dto.PaymentDate;
+                    if (dto.PaymentDate.HasValue) invoice.PaymentDate = AsUtc(dto.PaymentDate);
                     if (dto.Notes != null) invoice.Notes = dto.Notes;
                     // RsApplicable/RsTypeCode already applied above when totalsAffected;
                     // apply here for the case where they weren't passed alongside other
@@ -418,12 +429,12 @@ namespace MyApi.Modules.Purchases.Services
                     if (dto.RsTvaTaux.HasValue) invoice.RsTvaTaux = dto.RsTvaTaux;
                     if (dto.TejActe.HasValue) invoice.TejActe = dto.TejActe.Value;
                     if (dto.TejSynced.HasValue) invoice.TejSynced = dto.TejSynced.Value;
-                    if (dto.TejSyncDate.HasValue) invoice.TejSyncDate = dto.TejSyncDate;
+                    if (dto.TejSyncDate.HasValue) invoice.TejSyncDate = AsUtc(dto.TejSyncDate);
                     if (dto.TejSyncStatus != null) invoice.TejSyncStatus = dto.TejSyncStatus;
                     if (dto.TejErrorMessage != null) invoice.TejErrorMessage = dto.TejErrorMessage;
                     if (dto.FactureEnLigneId != null) invoice.FactureEnLigneId = dto.FactureEnLigneId;
                     if (dto.FactureEnLigneStatus != null) invoice.FactureEnLigneStatus = dto.FactureEnLigneStatus;
-                    if (dto.FactureEnLigneSentAt.HasValue) invoice.FactureEnLigneSentAt = dto.FactureEnLigneSentAt;
+                    if (dto.FactureEnLigneSentAt.HasValue) invoice.FactureEnLigneSentAt = AsUtc(dto.FactureEnLigneSentAt);
                     invoice.ModifiedDate = DateTime.UtcNow;
                     invoice.ModifiedBy = userId;
 

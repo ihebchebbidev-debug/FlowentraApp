@@ -14,7 +14,13 @@ namespace MyApi.Modules.Numbering.Services
         // Valid entities
         private static readonly HashSet<string> ValidEntities = new(StringComparer.OrdinalIgnoreCase)
         {
-            "Offer", "Sale", "ServiceOrder", "Dispatch"
+            "Offer", "Sale", "ServiceOrder", "Dispatch",
+            // Purchases module: PurchaseOrderService / GoodsReceiptService /
+            // SupplierInvoiceService all call GetNextAsync(...) with these keys.
+            // Without them the service throws ArgumentException on every Create*
+            // call — callers catch and fall back to a GUID, but that loses the
+            // configurable numbering template and pollutes order numbers.
+            "PurchaseOrder", "GoodsReceipt", "SupplierInvoice"
         };
 
         // Entity prefixes for legacy fallback
@@ -23,7 +29,10 @@ namespace MyApi.Modules.Numbering.Services
             { "Offer", "OFR" },
             { "Sale", "SALE" },
             { "ServiceOrder", "SO" },
-            { "Dispatch", "DISP" }
+            { "Dispatch", "DISP" },
+            { "PurchaseOrder", "PO" },
+            { "GoodsReceipt", "GR" },
+            { "SupplierInvoice", "INV" }
         };
 
         // Token regex: matches {TOKEN} or {TOKEN:param}
@@ -106,6 +115,9 @@ namespace MyApi.Modules.Numbering.Services
                     "Sale" => await _context.Sales.AnyAsync(s => s.SaleNumber == number),
                     "ServiceOrder" => await _context.ServiceOrders.AnyAsync(s => s.OrderNumber == number),
                     "Dispatch" => await _context.Dispatches.AnyAsync(d => d.DispatchNumber == number),
+                    "PurchaseOrder" => await _context.PurchaseOrders.AnyAsync(o => o.OrderNumber == number),
+                    "GoodsReceipt" => await _context.GoodsReceipts.AnyAsync(r => r.ReceiptNumber == number),
+                    "SupplierInvoice" => await _context.SupplierInvoices.AnyAsync(i => i.InvoiceNumber == number),
                     _ => false
                 };
             }

@@ -31,8 +31,8 @@ namespace MyApi.Modules.Purchases.DTOs
         public string[]? Tags { get; set; }
         public string? BillingAddress { get; set; }
         public string? DeliveryAddress { get; set; }
-        public string? ServiceOrderId { get; set; }
-        public string? SaleId { get; set; }
+        public int? ServiceOrderId { get; set; }
+        public int? SaleId { get; set; }
         public string? ApprovedBy { get; set; }
         public DateTime? ApprovalDate { get; set; }
         public DateTime? SentToSupplierAt { get; set; }
@@ -70,6 +70,12 @@ namespace MyApi.Modules.Purchases.DTOs
         public string? Description { get; set; }
         public int SupplierId { get; set; }
         public string Currency { get; set; } = "TND";
+        // Frontend sends the user-picked order date (e.g. backdating a PO recorded
+        // a few days late). Previously this field was missing from the DTO and
+        // the server silently stamped DateTime.UtcNow, throwing away the user's
+        // input — confusing for accountants who need the booked date to match
+        // the supplier's paperwork.
+        public DateTime? OrderDate { get; set; }
         public DateTime? ExpectedDelivery { get; set; }
         public decimal Discount { get; set; }
         public string DiscountType { get; set; } = "percentage";
@@ -79,8 +85,8 @@ namespace MyApi.Modules.Purchases.DTOs
         public string[]? Tags { get; set; }
         public string? BillingAddress { get; set; }
         public string? DeliveryAddress { get; set; }
-        public string? ServiceOrderId { get; set; }
-        public string? SaleId { get; set; }
+        public int? ServiceOrderId { get; set; }
+        public int? SaleId { get; set; }
         public List<CreatePurchaseOrderItemDto>? Items { get; set; }
     }
 

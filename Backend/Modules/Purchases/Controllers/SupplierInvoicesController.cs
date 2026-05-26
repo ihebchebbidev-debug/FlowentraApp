@@ -42,7 +42,7 @@ namespace MyApi.Modules.Purchases.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching supplier invoices");
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.InnerException != null ? ex.Message + " :: " + ex.InnerException.Message : ex.Message, type = ex.GetType().Name, inner = ex.InnerException?.GetType().Name } });
             }
         }
 
@@ -58,7 +58,7 @@ namespace MyApi.Modules.Purchases.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching supplier invoice {Id}", id);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.InnerException != null ? ex.Message + " :: " + ex.InnerException.Message : ex.Message, type = ex.GetType().Name, inner = ex.InnerException?.GetType().Name } });
             }
         }
 
@@ -87,7 +87,7 @@ namespace MyApi.Modules.Purchases.Controllers
             {
                 _logger.LogError(ex, "Error creating supplier invoice");
                 await _systemLogService.LogErrorAsync("Failed to create supplier invoice", "Purchases", "create", GetUserId(), GetUserName(), details: ex.Message);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.InnerException != null ? ex.Message + " :: " + ex.InnerException.Message : ex.Message, type = ex.GetType().Name, inner = ex.InnerException?.GetType().Name } });
             }
         }
 
@@ -106,7 +106,7 @@ namespace MyApi.Modules.Purchases.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating supplier invoice {Id}", id);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.InnerException != null ? ex.Message + " :: " + ex.InnerException.Message : ex.Message, type = ex.GetType().Name, inner = ex.InnerException?.GetType().Name } });
             }
         }
 
@@ -124,7 +124,7 @@ namespace MyApi.Modules.Purchases.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting supplier invoice {Id}", id);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.InnerException != null ? ex.Message + " :: " + ex.InnerException.Message : ex.Message, type = ex.GetType().Name, inner = ex.InnerException?.GetType().Name } });
             }
         }
 
@@ -154,7 +154,7 @@ namespace MyApi.Modules.Purchases.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error TEJ-syncing invoice {Id}", id);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.InnerException != null ? ex.Message + " :: " + ex.InnerException.Message : ex.Message, type = ex.GetType().Name, inner = ex.InnerException?.GetType().Name } });
             }
         }
 
@@ -178,7 +178,7 @@ namespace MyApi.Modules.Purchases.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error sending facture en ligne for invoice {Id}", id);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.InnerException != null ? ex.Message + " :: " + ex.InnerException.Message : ex.Message, type = ex.GetType().Name, inner = ex.InnerException?.GetType().Name } });
             }
         }
 
@@ -196,7 +196,7 @@ namespace MyApi.Modules.Purchases.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error adding item to invoice {Id}", id);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.InnerException != null ? ex.Message + " :: " + ex.InnerException.Message : ex.Message, type = ex.GetType().Name, inner = ex.InnerException?.GetType().Name } });
             }
         }
 
@@ -213,7 +213,7 @@ namespace MyApi.Modules.Purchases.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating item {ItemId} on invoice {Id}", itemId, id);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.InnerException != null ? ex.Message + " :: " + ex.InnerException.Message : ex.Message, type = ex.GetType().Name, inner = ex.InnerException?.GetType().Name } });
             }
         }
 
@@ -231,7 +231,7 @@ namespace MyApi.Modules.Purchases.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting item {ItemId} on invoice {Id}", itemId, id);
-                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.InnerException != null ? ex.Message + " :: " + ex.InnerException.Message : ex.Message, type = ex.GetType().Name, inner = ex.InnerException?.GetType().Name } });
             }
         }
     }

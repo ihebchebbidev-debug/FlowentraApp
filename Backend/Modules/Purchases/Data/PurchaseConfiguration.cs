@@ -13,7 +13,17 @@ namespace MyApi.Modules.Purchases.Data
                 entity.ToTable("PurchaseOrders");
                 entity.HasKey(e => e.Id);
                 entity.HasMany(e => e.Items).WithOne(i => i.PurchaseOrder).HasForeignKey(i => i.PurchaseOrderId).OnDelete(DeleteBehavior.Cascade);
-                entity.HasMany(e => e.Activities).WithOne().HasForeignKey("EntityId").IsRequired(false);
+                // NOTE: PurchaseActivity.EntityId is POLYMORPHIC — it points to a
+                // purchase_order OR goods_receipt OR supplier_invoice depending on
+                // PurchaseActivity.EntityType. It is NOT a foreign key to PurchaseOrders.
+                // Mapping it as a HasMany().WithOne().HasForeignKey("EntityId") corrupts
+                // EF's model: activities for goods receipts / supplier invoices end up
+                // treated as orphan children of PurchaseOrders, and SaveChanges fails
+                // with relationship-fixup errors on every write that logs an activity
+                // (Create / Update / Delete PO, GR, Invoice).
+                // The Activities navigation is unused — leave it un-mapped via
+                // [NotMapped] on the model. Use _context.PurchaseActivities directly.
+                entity.Ignore(e => e.Activities);
             });
         }
     }

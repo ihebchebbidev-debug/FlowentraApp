@@ -7,6 +7,18 @@ namespace MyApi.Modules.Purchases.Services
 {
     public class PurchaseOrderService : IPurchaseOrderService
     {
+        // Npgsql requires DateTimes destined for `timestamp with time zone`
+        // columns to have Kind=Utc. JSON-bound DateTimes from the client come
+        // through as Kind=Unspecified and blow up with a DbUpdateException
+        // ("Cannot write DateTime with Kind=Unspecified ...") on SaveChanges.
+        private static DateTime? AsUtc(DateTime? dt) => dt.HasValue ? AsUtc(dt.Value) : (DateTime?)null;
+        private static DateTime AsUtc(DateTime dt) => dt.Kind switch
+        {
+            DateTimeKind.Utc => dt,
+            DateTimeKind.Local => dt.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(dt, DateTimeKind.Utc),
+        };
+
         private readonly ApplicationDbContext _context;
         private readonly ILogger<PurchaseOrderService> _logger;
         private readonly MyApi.Modules.Numbering.Services.INumberingService? _numberingService;
@@ -85,8 +97,10 @@ namespace MyApi.Modules.Purchases.Services
                 SupplierPhone = supplier.Phone,
                 SupplierAddress = supplier.Address,
                 Status = "draft",
-                OrderDate = DateTime.UtcNow,
-                ExpectedDelivery = dto.ExpectedDelivery,
+                // Respect the user-supplied OrderDate (e.g. backdated POs); fall
+                // back to UtcNow only if the client didn't send one.
+                OrderDate = AsUtc(dto.OrderDate ?? DateTime.UtcNow),
+                ExpectedDelivery = AsUtc(dto.ExpectedDelivery),
                 Currency = dto.Currency,
                 Discount = dto.Discount,
                 DiscountType = dto.DiscountType,
@@ -203,12 +217,33 @@ namespace MyApi.Modules.Purchases.Services
                     {
                         if (!AllowedStatusTransitions.TryGetValue(oldStatus, out var allowed) || !allowed.Contains(dto.Status))
                             throw new InvalidOperationException($"Status transition not allowed: '{oldStatus}' → '{dto.Status}'");
+
+                        // Receipt integrity guard: a PO can only be marked "received" or
+                        // "partially_received" when the line ReceivedQty values agree.
+                        // Previously a user could flip a PO's status to "received"
+                        // manually even though no GoodsReceipt existed and every
+                        // line's ReceivedQty was 0 (cf. QA bug BC-XL-00001 where
+                        // header=Received but Receipts tab count=0).
+                        if (string.Equals(dto.Status, "received", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var items = order.Items ?? new List<PurchaseOrderItem>();
+                            if (!items.Any() || items.Any(i => i.ReceivedQty < i.Quantity))
+                                throw new InvalidOperationException(
+                                    "Cannot mark PO as 'received' until every line item has been fully received via a GoodsReceipt.");
+                        }
+                        else if (string.Equals(dto.Status, "partially_received", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var items = order.Items ?? new List<PurchaseOrderItem>();
+                            if (!items.Any(i => i.ReceivedQty > 0))
+                                throw new InvalidOperationException(
+                                    "Cannot mark PO as 'partially_received' without at least one line having a received quantity.");
+                        }
                     }
 
                     if (dto.Title != null) order.Title = dto.Title;
                     if (dto.Description != null) order.Description = dto.Description;
                     if (dto.Status != null) order.Status = dto.Status;
-                    if (dto.ExpectedDelivery.HasValue) order.ExpectedDelivery = dto.ExpectedDelivery;
+                    if (dto.ExpectedDelivery.HasValue) order.ExpectedDelivery = AsUtc(dto.ExpectedDelivery);
                     if (dto.Discount.HasValue) order.Discount = dto.Discount.Value;
                     if (dto.DiscountType != null) order.DiscountType = dto.DiscountType;
                     if (dto.FiscalStamp.HasValue) order.FiscalStamp = dto.FiscalStamp.Value;

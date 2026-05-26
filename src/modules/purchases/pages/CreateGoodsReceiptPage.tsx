@@ -92,7 +92,8 @@ export default function CreateGoodsReceiptPage() {
     try {
       await goodsReceiptService.create({
         purchaseOrderId: poId,
-        receiptDate,
+        // Send as UTC ISO so the backend's Npgsql can store it in `timestamp with time zone`.
+        receiptDate: new Date(`${receiptDate}T00:00:00Z`).toISOString(),
         deliveryNoteRef: deliveryNoteRef || undefined,
         notes: notes || undefined,
         items: items.filter(i => i.quantityReceived > 0 || i.quantityRejected > 0).map(i => ({

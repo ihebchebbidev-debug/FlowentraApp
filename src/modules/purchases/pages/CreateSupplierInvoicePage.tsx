@@ -93,15 +93,15 @@ export default function CreateSupplierInvoicePage() {
   const handleSave = async () => {
     if (isTenantRequired) { toast.error(t('validation.tenantRequired', 'Please select a target company')); return; }
     if (!supplierId) { toast.error(t('validation.supplierRequired')); return; }
+    if (!dueDate) { toast.error(t('validation.dueDateRequired', 'Due date is required')); return; }
     if (items.length === 0) { toast.error(t('validation.itemsRequired')); return; }
     if (items.some(i => !i.description?.trim())) { toast.error(t('validation.descriptionRequired', 'Each item needs a description')); return; }
     setSaving(true);
     try {
       await supplierInvoiceService.create({
         supplierId,
-        invoiceDate,
-        // Backend rejects empty-string dates with 400; send undefined when blank.
-        dueDate: dueDate || undefined,
+        invoiceDate: new Date(`${invoiceDate}T00:00:00Z`).toISOString(),
+        dueDate: new Date(`${dueDate}T00:00:00Z`).toISOString(),
         supplierInvoiceRef: supplierRef || undefined,
         currency: 'TND',
         discount: 0,

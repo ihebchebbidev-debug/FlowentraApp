@@ -221,8 +221,8 @@ export default function CreatePurchaseOrderPage() {
       await purchaseOrderService.create({
         title,
         supplierId,
-        orderDate,
-        expectedDelivery: expectedDelivery || undefined,
+        orderDate: new Date(`${orderDate}T00:00:00Z`).toISOString(),
+        expectedDelivery: expectedDelivery ? new Date(`${expectedDelivery}T00:00:00Z`).toISOString() : undefined,
         paymentTerms,
         notes: notes || undefined,
         currency: 'TND',

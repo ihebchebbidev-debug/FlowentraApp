@@ -116,12 +116,10 @@ namespace MyApi.Modules.Purchases.Models
         public string? DeliveryAddress { get; set; }
 
         [Column("ServiceOrderId")]
-        [MaxLength(50)]
-        public string? ServiceOrderId { get; set; }
+        public int? ServiceOrderId { get; set; }
 
         [Column("SaleId")]
-        [MaxLength(50)]
-        public string? SaleId { get; set; }
+        public int? SaleId { get; set; }
 
         [Column("ApprovedBy")]
         [MaxLength(100)]
@@ -158,6 +156,11 @@ namespace MyApi.Modules.Purchases.Models
         public virtual MyApi.Modules.Contacts.Models.Contact? Supplier { get; set; }
 
         public virtual ICollection<PurchaseOrderItem>? Items { get; set; }
+        // Polymorphic — see PurchaseConfiguration. Must stay [NotMapped] so EF
+        // does not infer a shadow PurchaseOrderId FK on PurchaseActivities,
+        // which causes "column PurchaseOrderId of relation PurchaseActivities
+        // does not exist" on every insert.
+        [NotMapped]
         public virtual ICollection<PurchaseActivity>? Activities { get; set; }
     }
 }
