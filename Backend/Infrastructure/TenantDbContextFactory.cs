@@ -63,7 +63,11 @@ public class TenantDbContextFactory : ITenantDbContextFactory
             }
 
             var envKey = TenantConnectionResolver.GetEnvironmentVariableName(t);
-            if (TenantSlugCache.HasTenant(t, t))
+            // Check the DEFAULT DB's tenant directory (loaded eagerly at
+            // startup) — that's where the master slug list lives. Looking
+            // it up against `t`'s own DB would recurse: we're inside the
+            // factory call that would build that DB's context.
+            if (TenantSlugCache.HasTenant(TenantSlugCache.DefaultDbKey, t))
             {
                 _logger.LogWarning("🏢 Tenant '{Tenant}' is valid but no dedicated DB is configured ({EnvKey}); using default shared DB", t, envKey);
                 return _defaultConnectionString;

@@ -1089,7 +1089,7 @@ app.MapGet("/api/debug/tenant", (HttpContext context, ITenantDbContextFactory fa
     return new
     {
         detectedTenant = tenant ?? "(none)",
-        knownTenant = !string.IsNullOrWhiteSpace(tenant) && TenantSlugCache.HasTenant(tenant, tenant),
+        knownTenant = !string.IsNullOrWhiteSpace(tenant) && TenantSlugCache.HasTenant(TenantSlugCache.DefaultDbKey, tenant),
         envVarName = envKey,
         envVarExists = !string.IsNullOrEmpty(envValue),
         dedicatedDbConfigured = !string.IsNullOrWhiteSpace(tenant) && TenantConnectionResolver.HasDedicatedConnectionString(tenant),
