@@ -67,6 +67,14 @@ namespace MyApi.Modules.WorkflowEngine.Services
             var consistencyFixes = await ReconcileStatusConsistencyAsync(db, cancellationToken);
             _logger.LogInformation("[WORKFLOW-POLLING] Phase 1 - Consistency fixes: {Fixes}", consistencyFixes);
 
+            // ═══ PHASE 1.5: Resume delayed executions whose ResumeAt has passed ═══
+            var resumed = await ResumeDueDelayedExecutionsAsync(db, graphExecutor, cancellationToken);
+            _logger.LogInformation("[WORKFLOW-POLLING] Phase 1.5 - Delayed executions resumed: {Count}", resumed);
+
+            // ═══ PHASE 1.6: Fire scheduled-trigger nodes whose interval is due ═══
+            var scheduled = await FireDueScheduledTriggersAsync(db, graphExecutor, cancellationToken);
+            _logger.LogInformation("[WORKFLOW-POLLING] Phase 1.6 - Scheduled triggers fired: {Count}", scheduled);
+
             // ═══ PHASE 2: Trigger-based workflow execution (existing logic) ═══
             // Get all active triggers with their workflows
             var triggers = await db.WorkflowTriggers
@@ -101,6 +109,210 @@ namespace MyApi.Modules.WorkflowEngine.Services
             _logger.LogInformation("[WORKFLOW-POLLING] Polling cycle complete. Consistency fixes: {ConsistencyFixes}, Entities checked: {Processed}, Workflows triggered: {Triggered}",
                 consistencyFixes, totalProcessed, totalTriggered);
             _logger.LogInformation("[WORKFLOW-POLLING] ═══════════════════════════════════════════════════════════════");
+        }
+
+        /// <summary>
+        /// Find executions parked on a delay node whose ResumeAt is past, and resume the
+        /// graph from successors of the waiting node.
+        /// </summary>
+        private async Task<int> ResumeDueDelayedExecutionsAsync(
+            ApplicationDbContext db,
+            IWorkflowGraphExecutor graphExecutor,
+            CancellationToken ct)
+        {
+            var now = DateTime.UtcNow;
+            var due = await db.WorkflowExecutions
+                .Where(e => e.Status == "waiting_delay"
+                         && e.ResumeAt != null
+                         && e.ResumeAt <= now
+                         && e.WaitingNodeId != null)
+                .Take(50)
+                .ToListAsync(ct);
+
+            int resumed = 0;
+            foreach (var exec in due)
+            {
+                try
+                {
+                    _logger.LogInformation(
+                        "[WORKFLOW-POLLING] ⏰ Resuming execution {Id} (delay node {NodeId} due since {ResumeAt:o})",
+                        exec.Id, exec.WaitingNodeId, exec.ResumeAt);
+
+                    var pausedNodeId = exec.WaitingNodeId!;
+                    exec.Status = "running";
+                    exec.ResumeAt = null;
+                    exec.WaitingNodeId = null;
+                    await db.SaveChangesAsync(ct);
+
+                    Dictionary<string, object?> vars = new();
+                    try
+                    {
+                        if (!string.IsNullOrEmpty(exec.Context))
+                        {
+                            var parsed = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(exec.Context);
+                            if (parsed != null)
+                            {
+                                foreach (var kv in parsed) vars[kv.Key] = kv.Value;
+                            }
+                        }
+                    }
+                    catch { /* best-effort */ }
+
+                    var context = new WorkflowExecutionContext
+                    {
+                        WorkflowId = exec.WorkflowId,
+                        ExecutionId = exec.Id,
+                        TriggerEntityType = exec.TriggerEntityType,
+                        TriggerEntityId = exec.TriggerEntityId,
+                        UserId = exec.TriggeredBy,
+                        Variables = vars
+                    };
+
+                    var result = await graphExecutor.ResumeAfterNodeAsync(
+                        exec.WorkflowId, exec.Id, pausedNodeId, context);
+
+                    exec.Status = result.FinalStatus;
+                    exec.Error = Truncate(result.Error, 1000);
+                    if (result.FinalStatus == "completed" || result.FinalStatus == "failed")
+                    {
+                        exec.CompletedAt = DateTime.UtcNow;
+                    }
+                    await db.SaveChangesAsync(ct);
+                    resumed++;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "[WORKFLOW-POLLING] Failed to resume delayed execution {Id}", exec.Id);
+                    try
+                    {
+                        db.ChangeTracker.Clear();
+                        var fresh = await db.WorkflowExecutions.FirstOrDefaultAsync(e => e.Id == exec.Id, ct);
+                        if (fresh != null)
+                        {
+                            fresh.Status = "failed";
+                            fresh.Error = Truncate(ex.Message, 1000);
+                            fresh.CompletedAt = DateTime.UtcNow;
+                            await db.SaveChangesAsync(ct);
+                        }
+                    }
+                    catch { /* swallow */ }
+                }
+            }
+            return resumed;
+        }
+
+        /// <summary>
+        /// Walk active workflow definitions for scheduled-trigger nodes and fire them when
+        /// their intervalMinutes has elapsed since the last scheduled execution. The last-fire
+        /// marker is the max(StartedAt) of WorkflowExecutions whose TriggeredBy starts with
+        /// "scheduled:{nodeId}".
+        /// </summary>
+        private async Task<int> FireDueScheduledTriggersAsync(
+            ApplicationDbContext db,
+            IWorkflowGraphExecutor graphExecutor,
+            CancellationToken ct)
+        {
+            int fired = 0;
+            var now = DateTime.UtcNow;
+
+            var workflows = await db.WorkflowDefinitions
+                .Where(w => w.IsActive && !w.IsDeleted)
+                .ToListAsync(ct);
+
+            foreach (var workflow in workflows)
+            {
+                List<JsonElement>? nodes = null;
+                try { nodes = JsonSerializer.Deserialize<List<JsonElement>>(workflow.Nodes); }
+                catch { continue; }
+                if (nodes == null) continue;
+
+                foreach (var nodeEl in nodes)
+                {
+                    var nodeId = nodeEl.TryGetProperty("id", out var idEl) ? idEl.GetString() : null;
+                    if (string.IsNullOrEmpty(nodeId)) continue;
+
+                    // Determine business type
+                    string nodeType = "";
+                    if (nodeEl.TryGetProperty("data", out var dataEl) && dataEl.ValueKind == JsonValueKind.Object)
+                    {
+                        if (dataEl.TryGetProperty("type", out var dtEl)) nodeType = dtEl.GetString() ?? "";
+                    }
+                    if (string.IsNullOrEmpty(nodeType) && nodeEl.TryGetProperty("type", out var tEl)) nodeType = tEl.GetString() ?? "";
+                    if (!nodeType.Contains("scheduled", StringComparison.OrdinalIgnoreCase)) continue;
+
+                    // Read interval (default 60 minutes)
+                    int intervalMinutes = 60;
+                    if (nodeEl.TryGetProperty("data", out var d2) && d2.ValueKind == JsonValueKind.Object)
+                    {
+                        if (d2.TryGetProperty("intervalMinutes", out var iEl) && iEl.ValueKind == JsonValueKind.Number)
+                            intervalMinutes = iEl.GetInt32();
+                        else if (d2.TryGetProperty("config", out var cEl) && cEl.ValueKind == JsonValueKind.Object
+                                 && cEl.TryGetProperty("intervalMinutes", out var ciEl) && ciEl.ValueKind == JsonValueKind.Number)
+                            intervalMinutes = ciEl.GetInt32();
+                    }
+                    if (intervalMinutes < 1) intervalMinutes = 1;
+
+                    var marker = $"scheduled:{nodeId}";
+                    var lastFired = await db.WorkflowExecutions
+                        .Where(e => e.WorkflowId == workflow.Id && e.TriggeredBy == marker)
+                        .OrderByDescending(e => e.StartedAt)
+                        .Select(e => (DateTime?)e.StartedAt)
+                        .FirstOrDefaultAsync(ct);
+
+                    if (lastFired.HasValue && lastFired.Value.AddMinutes(intervalMinutes) > now) continue;
+
+                    try
+                    {
+                        var exec = new WorkflowExecution
+                        {
+                            WorkflowId = workflow.Id,
+                            TriggerEntityType = "scheduled",
+                            TriggerEntityId = 0,
+                            Status = "running",
+                            CurrentNodeId = nodeId,
+                            Context = JsonSerializer.Serialize(new { source = "scheduler", nodeId, intervalMinutes, firedAt = now }),
+                            StartedAt = now,
+                            TriggeredBy = marker
+                        };
+                        db.WorkflowExecutions.Add(exec);
+                        await db.SaveChangesAsync(ct);
+
+                        var context = new WorkflowExecutionContext
+                        {
+                            WorkflowId = workflow.Id,
+                            ExecutionId = exec.Id,
+                            TriggerEntityType = "scheduled",
+                            TriggerEntityId = 0,
+                            UserId = marker,
+                            Variables = new Dictionary<string, object?>
+                            {
+                                ["triggerSource"] = "scheduler",
+                                ["scheduledNodeId"] = nodeId,
+                                ["intervalMinutes"] = intervalMinutes
+                            }
+                        };
+
+                        var result = await graphExecutor.ExecuteGraphAsync(workflow.Id, exec.Id, nodeId!, context);
+
+                        exec.Status = result.FinalStatus;
+                        exec.Error = Truncate(result.Error, 1000);
+                        if (result.FinalStatus == "completed" || result.FinalStatus == "failed")
+                            exec.CompletedAt = DateTime.UtcNow;
+                        await db.SaveChangesAsync(ct);
+
+                        fired++;
+                        _logger.LogInformation(
+                            "[WORKFLOW-POLLING] ⏱️  Fired scheduled trigger '{NodeId}' in workflow #{WorkflowId} (interval={Interval}m, result={Status})",
+                            nodeId, workflow.Id, intervalMinutes, result.FinalStatus);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "[WORKFLOW-POLLING] Failed to fire scheduled trigger '{NodeId}' in workflow #{WorkflowId}", nodeId, workflow.Id);
+                    }
+                }
+            }
+
+            return fired;
         }
 
         /// <summary>

@@ -42,6 +42,19 @@ namespace MyApi.Modules.WorkflowEngine.Models
         [MaxLength(100)]
         public string? TriggeredBy { get; set; }
 
+        /// <summary>
+        /// When a long delay node should resume execution.
+        /// Used together with Status = "waiting_delay" so the polling
+        /// service can pick it up and call ResumeAfterNodeAsync.
+        /// </summary>
+        public DateTime? ResumeAt { get; set; }
+
+        /// <summary>
+        /// The node ID the execution is currently parked on (delay or approval).
+        /// </summary>
+        [MaxLength(50)]
+        public string? WaitingNodeId { get; set; }
+
         // Navigation properties
         [ForeignKey("WorkflowId")]
         public virtual WorkflowDefinition? Workflow { get; set; }

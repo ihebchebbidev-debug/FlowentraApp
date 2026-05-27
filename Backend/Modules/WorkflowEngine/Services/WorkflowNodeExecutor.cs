@@ -5,6 +5,16 @@ using MyApi.Modules.Offers.Models;
 using MyApi.Modules.Sales.Models;
 using MyApi.Modules.ServiceOrders.Models;
 using MyApi.Modules.Dispatches.Models;
+using MyApi.Modules.Notifications.DTOs;
+using MyApi.Modules.Notifications.Services;
+using MailKit.Net.Smtp;
+using MimeKit;
+using Microsoft.Extensions.Configuration;
+using System.Data;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Diagnostics;
 using System.Text.Json;
 
@@ -15,15 +25,24 @@ namespace MyApi.Modules.WorkflowEngine.Services
         private readonly ApplicationDbContext _db;
         private readonly ILogger<WorkflowNodeExecutor> _logger;
         private readonly IBusinessWorkflowService _businessWorkflowService;
+        private readonly IConfiguration _configuration;
+        private readonly INotificationService _notificationService;
+        private readonly IHttpClientFactory _httpClientFactory;
 
         public WorkflowNodeExecutor(
             ApplicationDbContext db,
             ILogger<WorkflowNodeExecutor> logger,
-            IBusinessWorkflowService businessWorkflowService)
+            IBusinessWorkflowService businessWorkflowService,
+            IConfiguration configuration,
+            INotificationService notificationService,
+            IHttpClientFactory httpClientFactory)
         {
             _db = db;
             _logger = logger;
             _businessWorkflowService = businessWorkflowService;
+            _configuration = configuration;
+            _notificationService = notificationService;
+            _httpClientFactory = httpClientFactory;
         }
 
         public async Task<NodeExecutionResult> ExecuteNodeAsync(
@@ -933,62 +952,219 @@ namespace MyApi.Modules.WorkflowEngine.Services
 
         #region Action Nodes
 
-        private Task<NodeExecutionResult> ExecuteSendEmailAsync(WorkflowNode node, WorkflowExecutionContext context)
+        private async Task<NodeExecutionResult> ExecuteSendEmailAsync(WorkflowNode node, WorkflowExecutionContext context)
         {
-            var to = GetNodeDataString(node, "to") ?? GetNodeDataString(node, "recipient") ?? GetNodeDataString(node, "recipientType");
-            var subject = GetNodeDataString(node, "subject") ?? GetNodeDataString(node, "emailSubject");
-            var template = GetNodeDataString(node, "template") ?? GetNodeDataString(node, "emailTemplate");
+            var toRaw = GetNodeDataString(node, "to") ?? GetNodeDataString(node, "recipient") ?? GetNodeDataString(node, "recipientEmail");
+            var subject = ResolveVariables(GetNodeDataString(node, "subject") ?? GetNodeDataString(node, "emailSubject") ?? "(no subject)", context);
+            var body = ResolveVariables(GetNodeDataString(node, "body") ?? GetNodeDataString(node, "message") ?? GetNodeDataString(node, "template") ?? GetNodeDataString(node, "emailTemplate") ?? "", context);
+            var fromName = GetNodeDataString(node, "fromName") ?? _configuration["Smtp:FromName"] ?? "Flowentra";
+            var isHtml = (GetNodeDataString(node, "isHtml") ?? "true").ToLower() != "false";
 
-            _logger.LogInformation(
-                "Email action: To={To}, Subject={Subject}, Template={Template}",
-                to, subject, template);
-
-            // TODO: Integrate with email service
-            return Task.FromResult(new NodeExecutionResult
+            if (string.IsNullOrWhiteSpace(toRaw))
             {
-                Success = true,
-                Status = "completed",
-                Output = new Dictionary<string, object?>
+                return new NodeExecutionResult { Success = false, Status = "failed", Error = "send-email: no recipient configured" };
+            }
+            var to = ResolveVariables(toRaw, context);
+
+            // SMTP config: appsettings override, fall back to existing OVH transport already used by ForgotEmailService.
+            var host = _configuration["Smtp:Host"] ?? "ssl0.ovh.net";
+            var port = int.TryParse(_configuration["Smtp:Port"], out var p) ? p : 465;
+            var user = _configuration["Smtp:Username"] ?? "testadminsupportgermararaza@spadadibattaglia.com";
+            var pass = _configuration["Smtp:Password"] ?? "Dadouhibou2025";
+            var useSsl = !(bool.TryParse(_configuration["Smtp:UseSsl"], out var ssl) && ssl == false);
+
+            try
+            {
+                var email = new MimeMessage();
+                email.From.Add(new MailboxAddress(fromName, user));
+                foreach (var addr in to.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries))
                 {
-                    ["action"] = "send_email",
-                    ["to"] = to,
-                    ["subject"] = subject,
-                    ["template"] = template,
-                    ["status"] = "simulated"
+                    var trimmed = addr.Trim();
+                    if (trimmed.Length == 0) continue;
+                    email.To.Add(MailboxAddress.Parse(trimmed));
                 }
-            });
+                if (email.To.Count == 0)
+                {
+                    return new NodeExecutionResult { Success = false, Status = "failed", Error = "send-email: no valid recipient addresses" };
+                }
+                email.Subject = subject;
+                email.Body = new BodyBuilder { HtmlBody = isHtml ? body : null, TextBody = isHtml ? null : body }.ToMessageBody();
+
+                using var client = new SmtpClient();
+                await client.ConnectAsync(host, port, useSsl);
+                await client.AuthenticateAsync(user, pass);
+                await client.SendAsync(email);
+                await client.DisconnectAsync(true);
+
+                _logger.LogInformation("[WORKFLOW-EMAIL] Sent to {To} subject='{Subject}'", to, subject);
+
+                return new NodeExecutionResult
+                {
+                    Success = true,
+                    Status = "completed",
+                    Output = new Dictionary<string, object?>
+                    {
+                        ["action"] = "send_email",
+                        ["to"] = to,
+                        ["subject"] = subject,
+                        ["status"] = "sent"
+                    }
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[WORKFLOW-EMAIL] Failed to send email to {To}", to);
+                return new NodeExecutionResult { Success = false, Status = "failed", Error = $"send-email failed: {ex.Message}" };
+            }
         }
 
-        private Task<NodeExecutionResult> ExecuteSendSmsAsync(WorkflowNode node, WorkflowExecutionContext context)
+        private async Task<NodeExecutionResult> ExecuteSendSmsAsync(WorkflowNode node, WorkflowExecutionContext context)
         {
-            var to = GetNodeDataString(node, "to") ?? GetNodeDataString(node, "phone");
-            var message = GetNodeDataString(node, "message");
+            var to = ResolveVariables(GetNodeDataString(node, "to") ?? GetNodeDataString(node, "phone") ?? "", context);
+            var message = ResolveVariables(GetNodeDataString(node, "message") ?? "", context);
 
-            _logger.LogInformation("SMS action: To={To}", to);
-
-            // TODO: Integrate with SMS service
-            return Task.FromResult(new NodeExecutionResult
+            if (string.IsNullOrWhiteSpace(to) || string.IsNullOrWhiteSpace(message))
             {
-                Success = true,
-                Status = "completed",
-                Output = new Dictionary<string, object?>
+                return new NodeExecutionResult { Success = false, Status = "failed", Error = "send-sms: 'to' and 'message' are required" };
+            }
+
+            // Twilio is the only SMS transport we wire; if not configured, fail explicitly so the
+            // workflow author sees the misconfiguration instead of a silent simulated success.
+            var accountSid = _configuration["Twilio:AccountSid"];
+            var authToken = _configuration["Twilio:AuthToken"];
+            var from = _configuration["Twilio:From"];
+
+            if (string.IsNullOrEmpty(accountSid) || string.IsNullOrEmpty(authToken) || string.IsNullOrEmpty(from))
+            {
+                _logger.LogWarning("[WORKFLOW-SMS] Twilio not configured (Twilio:AccountSid / AuthToken / From). Skipping send to {To}.", to);
+                return new NodeExecutionResult
                 {
-                    ["action"] = "send_sms",
-                    ["to"] = to,
-                    ["status"] = "simulated"
+                    Success = true,
+                    Status = "completed",
+                    Output = new Dictionary<string, object?>
+                    {
+                        ["action"] = "send_sms",
+                        ["to"] = to,
+                        ["status"] = "no_provider_configured",
+                        ["hint"] = "Set Twilio:AccountSid, Twilio:AuthToken and Twilio:From in configuration to enable SMS."
+                    }
+                };
+            }
+
+            try
+            {
+                var client = _httpClientFactory.CreateClient();
+                var url = $"https://api.twilio.com/2010-04-01/Accounts/{accountSid}/Messages.json";
+                var content = new FormUrlEncodedContent(new[]
+                {
+                    new KeyValuePair<string, string>("To", to),
+                    new KeyValuePair<string, string>("From", from),
+                    new KeyValuePair<string, string>("Body", message)
+                });
+                var creds = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{accountSid}:{authToken}"));
+                var req = new HttpRequestMessage(HttpMethod.Post, url) { Content = content };
+                req.Headers.Authorization = new AuthenticationHeaderValue("Basic", creds);
+                var resp = await client.SendAsync(req);
+                var respBody = await resp.Content.ReadAsStringAsync();
+
+                if (!resp.IsSuccessStatusCode)
+                {
+                    return new NodeExecutionResult { Success = false, Status = "failed", Error = $"Twilio {(int)resp.StatusCode}: {respBody}" };
                 }
-            });
+
+                return new NodeExecutionResult
+                {
+                    Success = true,
+                    Status = "completed",
+                    Output = new Dictionary<string, object?>
+                    {
+                        ["action"] = "send_sms",
+                        ["to"] = to,
+                        ["status"] = "sent",
+                        ["providerResponse"] = respBody
+                    }
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[WORKFLOW-SMS] Twilio request failed");
+                return new NodeExecutionResult { Success = false, Status = "failed", Error = $"send-sms failed: {ex.Message}" };
+            }
         }
 
-        private Task<NodeExecutionResult> ExecuteNotificationAsync(WorkflowNode node, WorkflowExecutionContext context)
+        private async Task<NodeExecutionResult> ExecuteNotificationAsync(WorkflowNode node, WorkflowExecutionContext context)
         {
-            var title = GetNodeDataString(node, "title") ?? GetNodeDataString(node, "notificationTitle");
-            var message = GetNodeDataString(node, "message") ?? GetNodeDataString(node, "notificationMessage");
-            var recipients = GetNodeDataString(node, "recipients") ?? GetNodeDataString(node, "recipientType");
+            var title = ResolveVariables(GetNodeDataString(node, "title") ?? GetNodeDataString(node, "notificationTitle") ?? "Workflow notification", context);
+            var message = ResolveVariables(GetNodeDataString(node, "message") ?? GetNodeDataString(node, "notificationMessage") ?? "", context);
+            var type = GetNodeDataString(node, "notificationType") ?? GetNodeDataString(node, "type") ?? "info";
+            var category = GetNodeDataString(node, "category") ?? "workflow";
+            var link = GetNodeDataString(node, "link");
+            var recipients = GetNodeDataString(node, "recipients")
+                          ?? GetNodeDataString(node, "userIds")
+                          ?? GetNodeDataString(node, "recipientType")
+                          ?? context.UserId;
 
-            _logger.LogInformation("Notification action: Title={Title}", title);
+            // Resolve target user IDs. Supports: explicit comma-separated user IDs,
+            // "triggerUser" (the user that fired the workflow), or numeric value.
+            var userIds = new List<int>();
+            if (!string.IsNullOrWhiteSpace(recipients))
+            {
+                if (recipients.Equals("triggerUser", StringComparison.OrdinalIgnoreCase) ||
+                    recipients.Equals("self", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (int.TryParse(context.UserId, out var uid)) userIds.Add(uid);
+                }
+                else
+                {
+                    foreach (var raw in recipients.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        if (int.TryParse(raw.Trim(), out var uid)) userIds.Add(uid);
+                    }
+                }
+            }
 
-            return Task.FromResult(new NodeExecutionResult
+            if (userIds.Count == 0)
+            {
+                _logger.LogWarning("[WORKFLOW-NOTIFICATION] No resolvable user IDs from recipients='{R}' (context user='{U}')",
+                    recipients, context.UserId);
+                return new NodeExecutionResult
+                {
+                    Success = true,
+                    Status = "completed",
+                    Output = new Dictionary<string, object?>
+                    {
+                        ["action"] = "notification",
+                        ["status"] = "no_recipients",
+                        ["title"] = title
+                    }
+                };
+            }
+
+            int created = 0;
+            foreach (var uid in userIds.Distinct())
+            {
+                try
+                {
+                    await _notificationService.CreateNotificationAsync(new CreateNotificationDto
+                    {
+                        UserId = uid,
+                        Title = title,
+                        Description = message,
+                        Type = type,
+                        Category = category,
+                        Link = link,
+                        RelatedEntityId = context.TriggerEntityId,
+                        RelatedEntityType = context.TriggerEntityType
+                    });
+                    created++;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "[WORKFLOW-NOTIFICATION] Failed to create notification for user {UserId}", uid);
+                }
+            }
+
+            return new NodeExecutionResult
             {
                 Success = true,
                 Status = "completed",
@@ -996,10 +1172,10 @@ namespace MyApi.Modules.WorkflowEngine.Services
                 {
                     ["action"] = "notification",
                     ["title"] = title,
-                    ["message"] = message,
-                    ["status"] = "simulated"
+                    ["recipients"] = userIds,
+                    ["delivered"] = created
                 }
-            });
+            };
         }
 
         #endregion
@@ -1195,24 +1371,78 @@ namespace MyApi.Modules.WorkflowEngine.Services
             };
         }
 
-        private Task<NodeExecutionResult> ExecuteWebhookAsync(WorkflowNode node, WorkflowExecutionContext context)
+        private async Task<NodeExecutionResult> ExecuteWebhookAsync(WorkflowNode node, WorkflowExecutionContext context)
         {
-            var url = GetNodeDataString(node, "url") ?? GetNodeDataString(node, "webhookUrl");
+            var url = ResolveVariables(GetNodeDataString(node, "url") ?? GetNodeDataString(node, "webhookUrl") ?? "", context);
+            var method = (GetNodeDataString(node, "method") ?? "POST").ToUpperInvariant();
+            var bodyRaw = GetNodeDataString(node, "body") ?? GetNodeDataString(node, "payload");
 
-            _logger.LogInformation("Webhook action: Url={Url}", url);
-
-            // TODO: Actually send webhook
-            return Task.FromResult(new NodeExecutionResult
+            if (string.IsNullOrWhiteSpace(url))
             {
-                Success = true,
-                Status = "completed",
-                Output = new Dictionary<string, object?>
+                return new NodeExecutionResult { Success = false, Status = "failed", Error = "webhook: 'url' is required" };
+            }
+
+            string body;
+            if (!string.IsNullOrEmpty(bodyRaw))
+            {
+                body = ResolveVariables(bodyRaw, context);
+            }
+            else
+            {
+                // Default payload: full execution context envelope
+                body = JsonSerializer.Serialize(new
                 {
-                    ["action"] = "webhook",
-                    ["url"] = url,
-                    ["status"] = "simulated"
+                    workflowId = context.WorkflowId,
+                    executionId = context.ExecutionId,
+                    entityType = context.TriggerEntityType,
+                    entityId = context.TriggerEntityId,
+                    userId = context.UserId,
+                    variables = context.Variables,
+                    triggeredAt = DateTime.UtcNow
+                });
+            }
+
+            try
+            {
+                var client = _httpClientFactory.CreateClient("ext-webhook");
+                var req = new HttpRequestMessage(new HttpMethod(method), url);
+                if (method != "GET" && method != "DELETE")
+                {
+                    req.Content = new StringContent(body, Encoding.UTF8, "application/json");
                 }
-            });
+
+                // Optional auth header
+                var authHeader = GetNodeDataString(node, "authorization");
+                if (!string.IsNullOrEmpty(authHeader))
+                {
+                    req.Headers.TryAddWithoutValidation("Authorization", ResolveVariables(authHeader, context));
+                }
+
+                var resp = await client.SendAsync(req);
+                var respBody = await resp.Content.ReadAsStringAsync();
+
+                _logger.LogInformation("[WORKFLOW-WEBHOOK] {Method} {Url} -> {Status}", method, url, (int)resp.StatusCode);
+
+                return new NodeExecutionResult
+                {
+                    Success = resp.IsSuccessStatusCode,
+                    Status = resp.IsSuccessStatusCode ? "completed" : "failed",
+                    Error = resp.IsSuccessStatusCode ? null : $"Webhook {(int)resp.StatusCode}: {respBody}",
+                    Output = new Dictionary<string, object?>
+                    {
+                        ["action"] = "webhook",
+                        ["url"] = url,
+                        ["method"] = method,
+                        ["statusCode"] = (int)resp.StatusCode,
+                        ["responseBody"] = respBody
+                    }
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[WORKFLOW-WEBHOOK] Request to {Url} failed", url);
+                return new NodeExecutionResult { Success = false, Status = "failed", Error = $"webhook failed: {ex.Message}" };
+            }
         }
 
         #endregion
@@ -1472,35 +1702,59 @@ namespace MyApi.Modules.WorkflowEngine.Services
                 }
             }
 
-            // For production: schedule a background job for long delays
-            // For short delays (< 30s), wait inline
+            // Short delays (≤ 30s) wait inline. Longer delays persist a ResumeAt timestamp on
+            // the execution and stop the graph; WorkflowPollingService.PHASE 3 will resume the
+            // graph after the delay node when ResumeAt is reached.
             if (delayMs <= 30000)
             {
                 await Task.Delay(delayMs);
+                return new NodeExecutionResult
+                {
+                    Success = true,
+                    Status = "completed",
+                    Output = new Dictionary<string, object?>
+                    {
+                        ["action"] = "delay",
+                        ["delayMs"] = delayMs,
+                        ["mode"] = "inline"
+                    }
+                };
             }
-            else
+
+            var resumeAt = DateTime.UtcNow.AddMilliseconds(delayMs);
+            try
             {
-                // For longer delays, store the resume time and mark as waiting
-                var resumeAt = DateTime.UtcNow.AddMilliseconds(delayMs);
-                context.Variables["__delay_resume_at"] = resumeAt.ToString("O");
-                
-                // In production, a background scheduler would pick this up
-                // For now, cap at 30 seconds for safety
-                await Task.Delay(Math.Min(delayMs, 30000));
+                var exec = await _db.WorkflowExecutions.FirstOrDefaultAsync(e => e.Id == context.ExecutionId);
+                if (exec != null)
+                {
+                    exec.Status = "waiting_delay";
+                    exec.WaitingNodeId = node.Id;
+                    exec.CurrentNodeId = node.Id;
+                    exec.ResumeAt = resumeAt;
+                    await _db.SaveChangesAsync();
+                }
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[WORKFLOW-DELAY] Failed to persist ResumeAt for execution {ExecutionId}", context.ExecutionId);
+                return new NodeExecutionResult { Success = false, Status = "failed", Error = $"delay persist failed: {ex.Message}" };
+            }
+
+            _logger.LogInformation(
+                "[WORKFLOW-DELAY] Execution {ExecutionId} parked on node {NodeId} until {ResumeAt:o}",
+                context.ExecutionId, node.Id, resumeAt);
 
             return new NodeExecutionResult
             {
                 Success = true,
-                Status = "completed",
+                Status = "waiting_delay",
+                ShouldStop = true,
                 Output = new Dictionary<string, object?>
                 {
                     ["action"] = "delay",
                     ["delayMs"] = delayMs,
-                    ["delayValue"] = delayValue ?? delayMs,
-                    ["delayUnit"] = delayUnit,
-                    ["delayMode"] = delayMode,
-                    ["completedAt"] = DateTime.UtcNow.ToString("O")
+                    ["resumeAt"] = resumeAt.ToString("O"),
+                    ["mode"] = "scheduled"
                 }
             };
         }
@@ -1510,18 +1764,51 @@ namespace MyApi.Modules.WorkflowEngine.Services
             var expression = GetNodeDataString(node, "expression");
             var resultVar = GetNodeDataString(node, "resultVariable") ?? "result";
 
-            // TODO: Implement expression evaluation
-            return Task.FromResult(new NodeExecutionResult
+            if (string.IsNullOrWhiteSpace(expression))
             {
-                Success = true,
-                Status = "completed",
-                Output = new Dictionary<string, object?>
+                return Task.FromResult(new NodeExecutionResult { Success = false, Status = "failed", Error = "calculate: 'expression' is required" });
+            }
+
+            // Substitute variables ({{name}} → numeric value) before handing off to DataTable.Compute,
+            // which evaluates standard arithmetic expressions (+ - * / %, parentheses, IIF, etc.).
+            var resolved = ResolveVariables(expression, context);
+
+            try
+            {
+                using var table = new DataTable();
+                var raw = table.Compute(resolved, string.Empty);
+                object? value = raw;
+                if (raw is IConvertible)
                 {
-                    ["action"] = "calculate",
-                    ["expression"] = expression,
-                    ["result"] = 0 // Placeholder
+                    try { value = Convert.ToDouble(raw, System.Globalization.CultureInfo.InvariantCulture); }
+                    catch { /* keep raw */ }
                 }
-            });
+
+                context.Variables[resultVar] = value;
+
+                return Task.FromResult(new NodeExecutionResult
+                {
+                    Success = true,
+                    Status = "completed",
+                    Output = new Dictionary<string, object?>
+                    {
+                        ["action"] = "calculate",
+                        ["expression"] = expression,
+                        ["resolvedExpression"] = resolved,
+                        ["resultVariable"] = resultVar,
+                        ["result"] = value
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                return Task.FromResult(new NodeExecutionResult
+                {
+                    Success = false,
+                    Status = "failed",
+                    Error = $"calculate failed for '{resolved}': {ex.Message}"
+                });
+            }
         }
 
         private Task<NodeExecutionResult> ExecuteSetVariableAsync(WorkflowNode node, WorkflowExecutionContext context)
