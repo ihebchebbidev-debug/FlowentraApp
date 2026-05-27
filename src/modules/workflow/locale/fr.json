@@ -1284,9 +1284,9 @@
       "s18": "Cliquez sur Enregistrer pour sauvegarder votre workflow.",
       "s19": "Activez-le pour qu'il se déclenche sur les vrais événements.",
       "s20": "Lancez Tester pour l'exécuter une fois et voir chaque nœud s'exécuter en direct.",
-      "welcome": "Bienvenue — construisons ensemble un workflow réel complet. Vous pouvez mettre en pause, sauter une étape ou aller à un chapitre.",
-      "layout": "La palette de gauche contient tous les types de nœuds, classés en 7 catégories. La recherche en haut filtre en direct.",
-      "toolbarTour": "Barre haute : Test run (essai à blanc sur des données réelles), Save (enregistre le brouillon), Activate (active sur les vrais événements).",
+      "welcome": "Bienvenue. En quelques minutes vous verrez exactement ce qu'est un workflow, comment il s'exécute, et comment en construire un — aucune connaissance préalable nécessaire.",
+      "layout": "Disposition : à gauche la Palette (chaque étape disponible), au centre le Canevas (où vous dessinez le flux), à droite le panneau qui s'ouvre quand vous configurez une étape.",
+      "toolbarTour": "Barre du haut : Enregistrer crée une nouvelle version · Activer met le workflow en marche sur les événements réels · Tester l'exécute une fois sur des données d'exemple pour voir les journaux.",
       "cancel": "Annuler",
       "applyChanges": "Appliquer",
       "nodesLabel": "Nœuds",
@@ -1314,7 +1314,18 @@
         "approval": "Approbations",
         "ai": "Nœuds IA",
         "integration": "Intégration",
-        "publish": "Publication"
+        "publish": "Publication",
+        "delay": "Délais et temporisation",
+        "loop": "Boucles",
+        "switch": "Aiguillage",
+        "scheduled": "Planifié",
+        "webhook": "Webhooks",
+        "code": "Code personnalisé",
+        "errors": "Gestion des erreurs",
+        "variables": "Variables",
+        "shortcuts": "Recherche et raccourcis",
+        "next": "Étapes suivantes",
+        "concepts": "Concepts"
       },
       "trig": {
         "openCat": "Ouvrez la catégorie Déclencheurs. Seuls les déclencheurs peuvent démarrer un workflow.",
@@ -1365,7 +1376,93 @@
       "pub": {
         "save": "Cliquez Enregistrer dans la barre. Cela persiste le brouillon — il ne s'exécute pas encore.",
         "activate": "Activez pour mettre le workflow en ligne. À partir de maintenant, les vrais événements le déclencheront.",
-        "test": "Test run déclenche le workflow une fois avec des données d'exemple. Le statut s'affiche en bas — vert = ok, orange = attente, rouge = échec. Cliquez un nœud pour voir son entrée/sortie."
+        "test": "Test run déclenche le workflow une fois avec des données d'exemple. Le statut s'affiche en bas — vert = ok, orange = attente, rouge = échec. Cliquez un nœud pour voir son entrée/sortie.",
+        "review": "Avant publication — revue visuelle rapide. Vérifiez que chaque branche se termine, que chaque nœud asynchrone a un délai d'expiration, et qu'aucun secret n'est codé en dur.",
+        "versioning": "Chaque enregistrement crée une nouvelle version immuable. Vous pouvez revenir en arrière, comparer deux versions ou épingler une version à un tenant.",
+        "activeExplain": "Une fois actif, les événements réels déclenchent le workflow. Le désactiver le met en pause instantanément — les exécutions en cours terminent leur nœud actuel puis s'arrêtent.",
+        "logsExplain": "Légende des statuts — vert : ok · ambre : en attente · bleu : en cours · rouge : échoué. Cliquez sur un nœud pour inspecter ses entrées, sorties, durée, tentatives et journaux.",
+        "monitoring": "Toutes les exécutions sont conservées 30 jours dans Exécutions → Historique, avec des filtres par statut, entité déclencheuse, version et utilisateur. Les exécutions échouées peuvent être relancées en un clic."
+      },
+      "delay": {
+        "intro": "Les nœuds Délai mettent le workflow en pause pour une durée ou jusqu'à une condition. Ils sont persistés — les redémarrages et déploiements ne perdent pas l'état.",
+        "grab": "Saisissez Délai depuis Communication.",
+        "drop": "Déposez-le après le nœud IA — nous voulons attendre avant d'envoyer une relance.",
+        "openConfig": "Modes : durée relative, date absolue, heures ouvrables, ou attente jusqu'à correspondance d'un champ.",
+        "advancedTab": "Avancé — définissez un plafond de sécurité et comment le délai réagit si l'entité en amont change.",
+        "save": "Appliquer les changements — les délais sont durables : le workflow dort côté serveur jusqu'à ce qu'il soit prêt."
+      },
+      "loop": {
+        "intro": "Boucle itère sur n'importe quel tableau et exécute sa branche interne pour chaque élément.",
+        "grab": "Saisissez Boucle depuis Conditions.",
+        "drop": "Déposez-la — connectez au déclencheur pour traiter chaque ligne d'offre.",
+        "openConfig": "Pointez Collection source vers n'importe quelle variable de type tableau. L'alias d'élément est exposé aux nœuds internes sous {{ item }}.",
+        "outputs": "Séquentiel conserve l'ordre ; Parallèle est plus rapide mais l'ordre n'est pas garanti. Itérations max est un garde-fou.",
+        "save": "Appliquer — le nœud boucle expose une poignée pour la branche interne et une poignée 'fait' pour après toutes les itérations."
+      },
+      "switch": {
+        "grab": "Saisissez Aiguillage — utilisez-le quand Si/Sinon a trop de branches.",
+        "drop": "Déposez-le. Chaque cas devient sa propre poignée de sortie.",
+        "openConfig": "Choisissez le champ à tester, puis listez les cas. 'default' attrape tout ce qui ne correspond pas.",
+        "casesExplain": "Les cas acceptent une correspondance exacte, une regex (/^EU/), ou une liste (TN,FR,DE). L'ordre compte — premier match gagne sauf si Fallthrough est activé.",
+        "save": "Appliquer — chaque cas a désormais sa propre poignée pour le chaînage."
+      },
+      "sched": {
+        "intro": "Les déclencheurs planifiés sont le rythme cardiaque du workflow — parfaits pour les digests, rappels et nettoyages.",
+        "grab": "Saisissez Planifié (cron) depuis Déclencheurs.",
+        "drop": "Déposez-le sur le canevas. Les déclencheurs planifiés n'ont pas besoin d'entité en amont.",
+        "openConfig": "Choisissez un préréglage de fréquence ou écrivez une expression cron. Le fuseau horaire compte pour les heures ouvrables.",
+        "cronExplain": "Syntaxe cron : minute heure jour mois jour-semaine. '0 9 * * 1' = 09h00 chaque lundi. Raccourcis @hourly / @daily / @weekly disponibles.",
+        "save": "Appliquer — la prochaine exécution s'affiche sur l'en-tête du nœud."
+      },
+      "web": {
+        "grab": "Saisissez Webhook depuis Déclencheurs — laissez les systèmes externes vous pousser des événements.",
+        "drop": "Déposez-le. Une URL unique signée est générée automatiquement.",
+        "openConfig": "Configurez la méthode, l'authentification (HMAC, Bearer, liste IP) et la manière d'accuser réception.",
+        "advanced": "Avancé — activez l'idempotence, la limitation de débit et la vérification de signature avant traitement.",
+        "save": "Appliquer — copiez l'URL dans le système source (Stripe, GitHub, Zapier, etc.)."
+      },
+      "code": {
+        "grab": "Saisissez Code personnalisé depuis Intégration — pour les transformations au-delà des nœuds intégrés.",
+        "drop": "Déposez-le après Requête HTTP pour post-traiter la réponse.",
+        "openConfig": "Écrivez du JavaScript avec accès complet aux variables amont via `ctx`. Retournez un JSON — il devient disponible en aval via {{ code.* }}.",
+        "save": "Appliquer — le code s'exécute dans un bac à sable avec timeout de 5s et sans réseau par défaut."
+      },
+      "err": {
+        "intro": "Ouvrez le nœud Requête HTTP et passez à l'onglet Avancé pour configurer la résilience.",
+        "retryExplain": "Le backoff exponentiel double l'attente entre les tentatives (2s → 4s → 8s …) jusqu'à Backoff max, puis alerte.",
+        "fallback": "En cas d'échec final vous pouvez : arrêter tout le workflow, marquer ce nœud comme échoué et continuer, brancher vers un chemin d'erreur, ou appeler un nœud de repli.",
+        "save": "Appliquer — tentatives et échecs sont enregistrés dans les journaux d'exécution avec les payloads complets requête/réponse."
+      },
+      "var": {
+        "intro": "Chaque nœud expose sa sortie comme variable nommée, disponible en aval via {{ … }}.",
+        "trigger": "Variables du déclencheur : {{ trigger.entity }}, {{ trigger.contact }}, {{ trigger.user }}, {{ trigger.eventType }}, {{ trigger.timestamp }}.",
+        "nodes": "Les sorties d'action sont nommées par id de nœud : {{ email.messageId }}, {{ http.response.body }}, {{ ai.text }}, {{ code.tier }}.",
+        "secrets": "Utilisez {{ secrets.MON_TOKEN }} pour injecter des valeurs depuis Paramètres → Secrets. Les secrets sont chiffrés au repos et n'apparaissent jamais dans les journaux.",
+        "helpers": "Aides : {{ now() }}, {{ formatDate(date, 'YYYY-MM-DD') }}, {{ upper(text) }}, {{ json(obj) }}, {{ default(value, 'repli') }}."
+      },
+      "kbd": {
+        "search": "Tapez dans la recherche de palette pour filtrer les nœuds de toutes les catégories à la fois.",
+        "results": "Les nœuds correspondants sont mis en évidence. Appuyez sur Entrée pour saisir le premier résultat.",
+        "clear": "Appuyez sur Échap ou videz le champ pour restaurer la palette complète.",
+        "canvas": "Raccourcis du canevas : Espace = déplacer · molette = zoom · Cmd/Ctrl+A = tout sélectionner · Suppr = supprimer · Cmd/Ctrl+D = dupliquer.",
+        "undoRedo": "Cmd/Ctrl+Z = annuler · Cmd/Ctrl+Maj+Z = rétablir · Cmd/Ctrl+S = enregistrer · Cmd/Ctrl+Entrée = exécution de test."
+      },
+      "next": {
+        "recap": "Vous avez vu les 7 catégories, les paramètres avancés, les tentatives, les variables, la planification, les webhooks et l'observabilité.",
+        "templates": "Démarrez plus vite : ouvrez Modèles depuis le tableau de bord pour des playbooks prêts à l'emploi (nurturing, expédition, rappels, escalades).",
+        "collab": "Les workflows sont partagés par tenant. Utilisez les accès basés sur les rôles pour limiter qui peut éditer, activer ou voir les journaux.",
+        "docs": "Référence complète : la Documentation couvre chaque type de nœud, chaque champ, codes d'erreur et schémas de payload des webhooks.",
+        "replay": "Cliquez sur le bouton d'aide (en bas à droite de toute page workflow) à tout moment pour rejouer ce tour ou aller à un chapitre."
+      },
+      "concepts": {
+        "what": "Un workflow est une recette que votre application exécute automatiquement quand quelque chose se passe — par exemple : « quand une offre est envoyée, envoyer un email au client, attendre 2 jours, puis demander au manager d'approuver une remise ».",
+        "graph": "Il est dessiné comme un graphe. Les boîtes sont des étapes (appelées nœuds), les flèches montrent l'ordre d'exécution (appelées arêtes). Le workflow part du début et parcourt les boîtes une par une.",
+        "trigger": "Chaque workflow commence par un Déclencheur — l'événement qui le réveille. Un changement de statut, un webhook d'un autre système, un horaire planifié, ou un clic manuel.",
+        "actions": "Les Actions sont les étapes qui FONT quelque chose — envoyer un email, créer un enregistrement, appeler une API, exécuter de l'IA, mettre à jour un statut. La majorité de votre workflow est faite d'actions.",
+        "conditions": "Les Conditions choisissent le chemin — Si/Sinon pour deux branches, Aiguillage pour plusieurs, Boucle pour répéter par élément. Elles transforment une ligne droite en vraie logique métier.",
+        "variables": "Chaque étape expose sa sortie comme variable. Utilisez {{ trigger.offer.total }} ou {{ ai.text }} dans n'importe quelle étape suivante — c'est ainsi que les données circulent d'une boîte à l'autre.",
+        "executions": "Chaque fois que le déclencheur s'active, une nouvelle Exécution est créée et suivie de bout en bout. Vous voyez exactement quelle étape a tourné, sa durée, les entrées, sorties, tentatives et erreurs.",
+        "mental": "Modèle mental : le Déclencheur s'active → le moteur parcourt le graphe → chaque nœud lit les variables, fait son travail, écrit ses propres variables → les conditions choisissent le chemin suivant → l'exécution se termine quand tous les chemins sont finis. C'est tout."
       }
     }
   },

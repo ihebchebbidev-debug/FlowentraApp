@@ -1272,9 +1272,9 @@
       "s18": "Click Save to persist your workflow.",
       "s19": "Toggle Activate to make it run on real events.",
       "s20": "Hit Test run to fire it once and watch each node execute live.",
-      "welcome": "Welcome — let's build a complete real-world workflow together. Watch every click; you can pause, skip, or jump to any chapter below.",
-      "layout": "The left palette holds every node type, organized into 7 categories. Search at the top filters them live.",
-      "toolbarTour": "Top-right toolbar: Test run (dry-run on real data), Save (persist the draft), Activate (turn it on for real events).",
+      "welcome": "Welcome. In the next few minutes you'll see exactly what a workflow is, how it runs, and how to build one — no prior knowledge needed.",
+      "layout": "Layout: the left panel is the Palette (every step you can use), the middle is the Canvas (where you draw the flow), the right opens when you configure a step.",
+      "toolbarTour": "Top bar: Save snapshots a new version · Activate turns the workflow on for real events · Test runs it once on sample data so you can see the logs.",
       "cancel": "Cancel",
       "applyChanges": "Apply changes",
       "nodesLabel": "Nodes",
@@ -1312,7 +1312,8 @@
         "variables": "Variables",
         "shortcuts": "Search & shortcuts",
         "publish": "Save & Run",
-        "next": "Next steps"
+        "next": "Next steps",
+        "concepts": "Concepts"
       },
       "trig": {
         "openCat": "Open the Triggers category. Triggers are the only nodes that can start a workflow.",
@@ -1440,6 +1441,16 @@
         "collab": "Workflows are shared per tenant. Use role-based access to limit who can edit, activate or view execution logs.",
         "docs": "Full reference: Documentation covers every node type, every field, error codes and webhook payload schemas.",
         "replay": "Tap the help button (bottom-right of any workflow page) anytime to replay this tour or jump to a specific chapter."
+      },
+      "concepts": {
+        "what": "A workflow is a recipe your app runs automatically when something happens — for example: 'when an offer is sent, email the customer, wait 2 days, then ask the manager to approve a discount'.",
+        "graph": "It's drawn as a graph. Boxes are steps (called nodes), arrows show the order things run in (called edges). The workflow walks from the start, one box at a time.",
+        "trigger": "Every workflow starts with a Trigger — the event that wakes it up. A status change, a webhook from another system, a scheduled time, or a manual click.",
+        "actions": "Actions are the steps that DO something — send an email, create a record, call an API, run AI, update a status. The bulk of your workflow is actions.",
+        "conditions": "Conditions decide which path to take — If/Else for two branches, Switch for many, Loop to repeat per item. They turn a straight line into real business logic.",
+        "variables": "Every step exposes its output as a variable. Use {{ trigger.offer.total }} or {{ ai.text }} inside any later step — that's how data flows from one box to the next.",
+        "executions": "Each time the trigger fires, a new Execution is created and tracked end-to-end. You can see exactly which step ran, how long it took, the inputs, outputs, retries and errors.",
+        "mental": "Mental model: Trigger fires → engine walks the graph → each node reads variables, does its job, writes its own variables → conditions pick the next path → execution ends when all paths finish. That's it."
       }
     }
   },

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ReactFlow, Background, BackgroundVariant, ReactFlowProvider, Controls, MiniMap } from '@xyflow/react';
+import { ReactFlow, Background, BackgroundVariant, ReactFlowProvider, Controls, MiniMap, useReactFlow, MarkerType } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import { Volume2, VolumeX } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Play, Pause, SkipForward, RotateCcw, X, ChevronDown,
@@ -24,6 +25,18 @@ import {
 } from './autopilotScript';
 
 const nodeTypes = { demo: DemoNode };
+
+// Auto re-fit canvas whenever the node set changes so all nodes stay visible.
+function FitOnChange({ nodeCount, hasPanel }: { nodeCount: number; hasPanel: boolean }) {
+  const rf = useReactFlow();
+  useEffect(() => {
+    const t = setTimeout(() => {
+      rf.fitView({ padding: 0.22, duration: 600, maxZoom: 0.85, minZoom: 0.25 });
+    }, 80);
+    return () => clearTimeout(t);
+  }, [nodeCount, hasPanel, rf]);
+  return null;
+}
 
 // ─── PALETTE — mirrors src/modules/workflow/components/panels/NodePalette.tsx ──
 interface PaletteItem {
@@ -178,11 +191,12 @@ interface Props {
 }
 
 export function WorkflowAutopilotDemo({ open, onClose }: Props) {
-  const { t } = useTranslation('workflow');
+  const { t, i18n } = useTranslation('workflow');
   const [stepIndex, setStepIndex] = useState(0);
   const [state, setState] = useState<DemoState>(initialDemoState);
   const [playing, setPlaying] = useState(true);
-  const [speed, setSpeed] = useState(1);
+  const [speed, setSpeed] = useState(0.6);
+  const [speechOn, setSpeechOn] = useState(true);
   const [clicking, setClicking] = useState(false);
   const [cursorPos, setCursorPos] = useState({ x: 80, y: 80 });
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -191,7 +205,10 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
   useEffect(() => {
     if (open) {
       setStepIndex(0); setState(initialDemoState); setPlaying(true);
-    } else if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    } else {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+    }
   }, [open]);
 
   const computeCursorFor = useCallback((targetId: string, offset?: { x: number; y: number }) => {
@@ -238,8 +255,8 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
       setClicking(true);
       setTimeout(() => setClicking(false), 500);
     }
-    const halfway = setTimeout(() => setState(s => step.apply(s)), Math.max(200, step.duration / 2));
-    const dur = Math.max(400, step.duration / speed);
+    const halfway = setTimeout(() => setState(s => step.apply(s)), Math.max(300, (step.duration / speed) / 2));
+    const dur = Math.max(900, step.duration / speed);
     timeoutRef.current = setTimeout(() => setStepIndex(i => i + 1), dur);
     return () => { clearTimeout(halfway); if (timeoutRef.current) clearTimeout(timeoutRef.current); };
   }, [stepIndex, playing, open, speed]);
@@ -268,6 +285,29 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
     const key = steps[Math.min(stepIndex, steps.length - 1)]?.caption;
     return key ? t(key) : '';
   }, [stepIndex, t]);
+
+  // Native Web Speech narration — speaks the current caption.
+  useEffect(() => {
+    if (!open || !speechOn || !playing) return;
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    if (!currentCaption) return;
+    const synth = window.speechSynthesis;
+    synth.cancel();
+    const u = new SpeechSynthesisUtterance(currentCaption);
+    const lang = (i18n.language || 'en').toLowerCase().startsWith('fr') ? 'fr-FR' : 'en-US';
+    u.lang = lang;
+    u.rate = 0.95;
+    u.pitch = 1;
+    u.volume = 1;
+    try { synth.speak(u); } catch { /* ignore */ }
+    return () => { try { synth.cancel(); } catch { /* ignore */ } };
+  }, [currentCaption, open, speechOn, playing, i18n.language]);
+
+  useEffect(() => {
+    if ((!playing || !open) && typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+  }, [playing, open]);
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(true); }}>
@@ -428,7 +468,15 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
                 edges={state.edges}
                 nodeTypes={nodeTypes}
                 fitView
-                fitViewOptions={{ padding: 0.25, maxZoom: 1, minZoom: 0.5 }}
+                fitViewOptions={{ padding: 0.22, maxZoom: 0.85, minZoom: 0.25 }}
+                minZoom={0.2}
+                maxZoom={1}
+                defaultEdgeOptions={{
+                  type: 'smoothstep',
+                  animated: true,
+                  style: { strokeWidth: 1.75 },
+                  markerEnd: { type: MarkerType.ArrowClosed, width: 18, height: 18 },
+                }}
                 nodesDraggable={false}
                 nodesConnectable={false}
                 elementsSelectable={false}
@@ -441,6 +489,7 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
                 <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
                 <Controls showInteractive={false} className="!bg-card !border-border !shadow-sm" />
                 <MiniMap pannable={false} zoomable={false} className="!bg-card/80 !border-border" />
+                <FitOnChange nodeCount={state.nodes.length} hasPanel={!!state.configPanel} />
               </ReactFlow>
             </ReactFlowProvider>
 
@@ -661,15 +710,28 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
               >
                 <SkipForward className="h-4 w-4" />
               </Button>
+              <Button
+                variant="ghost" size="icon-sm"
+                onClick={() => {
+                  setSpeechOn(v => {
+                    if (v && typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+                    return !v;
+                  });
+                }}
+                aria-label={speechOn ? 'Mute narration' : 'Unmute narration'}
+              >
+                {speechOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+              </Button>
               <Select value={String(speed)} onValueChange={(v) => setSpeed(Number(v))}>
-                <SelectTrigger className="ml-1 h-7 w-[64px] text-xs" aria-label={t('onboarding.demo.speed')}>
+                <SelectTrigger className="ml-1 h-7 w-[72px] text-xs" aria-label={t('onboarding.demo.speed')}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="0.5">0.5×</SelectItem>
+                  <SelectItem value="0.4">0.4×</SelectItem>
+                  <SelectItem value="0.6">0.6×</SelectItem>
+                  <SelectItem value="0.8">0.8×</SelectItem>
                   <SelectItem value="1">1×</SelectItem>
                   <SelectItem value="1.5">1.5×</SelectItem>
-                  <SelectItem value="2">2×</SelectItem>
                 </SelectContent>
               </Select>
               <Button variant="outline" size="sm" onClick={() => onClose(true)} className="ml-2 text-xs">

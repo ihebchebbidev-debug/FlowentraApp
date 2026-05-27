@@ -111,11 +111,23 @@ function chapter(id: string, titleKey: string, build: () => Step[]) {
   _chapters.push({ id, titleKey, start, end: _steps.length });
 }
 
+// ── Chapter 0: CONCEPTS — what a workflow is, in plain language ──────────────
+chapter('concepts', 'onboarding.demo.chapter.concepts', () => [
+  { caption: 'onboarding.demo.concepts.what',       target: 'canvas',         duration: 2200, apply: s => s },
+  { caption: 'onboarding.demo.concepts.graph',      target: 'canvas',         duration: 2200, apply: s => s },
+  { caption: 'onboarding.demo.concepts.trigger',    target: 'cat-triggers',   duration: 2000, apply: s => s },
+  { caption: 'onboarding.demo.concepts.actions',    target: 'cat-actions',    duration: 2000, apply: s => s },
+  { caption: 'onboarding.demo.concepts.conditions', target: 'cat-conditions', duration: 2000, apply: s => s },
+  { caption: 'onboarding.demo.concepts.variables',  target: 'palette-search', duration: 2200, apply: s => s },
+  { caption: 'onboarding.demo.concepts.executions', target: 'btn-test',       duration: 2200, apply: s => s },
+  { caption: 'onboarding.demo.concepts.mental',     target: 'canvas',         duration: 2600, apply: s => s },
+]);
+
 // ── Chapter 1: Welcome / Overview ────────────────────────────────────────────
 chapter('overview', 'onboarding.demo.chapter.overview', () => [
-  { caption: 'onboarding.demo.welcome', target: 'canvas', duration: 1400, apply: s => s },
-  { caption: 'onboarding.demo.layout', target: 'palette-header', duration: 1100, apply: s => s },
-  { caption: 'onboarding.demo.toolbarTour', target: 'btn-save', duration: 1100, apply: s => s },
+  { caption: 'onboarding.demo.welcome',     target: 'canvas',         duration: 2000, apply: s => s },
+  { caption: 'onboarding.demo.layout',      target: 'palette-header', duration: 1800, apply: s => s },
+  { caption: 'onboarding.demo.toolbarTour', target: 'btn-save',       duration: 1800, apply: s => s },
 ]);
 
 // ── Chapter 2: TRIGGERS ──────────────────────────────────────────────────────
