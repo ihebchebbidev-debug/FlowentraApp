@@ -602,10 +602,12 @@ namespace MyApi.Modules.WorkflowEngine.Services
 
         private static string? GetEntityTypeFromNodeType(string nodeType)
         {
+            // Check most specific first to avoid substring collisions
+            if (nodeType.Contains("service-order") || nodeType.Contains("service_order")) return "service_order";
+            if (nodeType.Contains("dispatch")) return "dispatch";
+            if (nodeType.Contains("job")) return "job";
             if (nodeType.Contains("offer")) return "offer";
             if (nodeType.Contains("sale")) return "sale";
-            if (nodeType.Contains("service-order")) return "service_order";
-            if (nodeType.Contains("dispatch")) return "dispatch";
             return null;
         }
 

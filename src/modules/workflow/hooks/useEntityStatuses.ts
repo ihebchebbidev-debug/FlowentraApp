@@ -117,13 +117,15 @@ export function useAllEntityStatuses(): Record<EntityType, StatusOption[]> {
   const { statuses: saleStatuses } = useEntityStatuses('sale');
   const { statuses: serviceOrderStatuses } = useEntityStatuses('service_order');
   const { statuses: dispatchStatuses } = useEntityStatuses('dispatch');
+  const { statuses: jobStatuses } = useEntityStatuses('job');
 
   return useMemo(() => ({
     offer: offerStatuses,
     sale: saleStatuses,
     service_order: serviceOrderStatuses,
     dispatch: dispatchStatuses,
-  }), [offerStatuses, saleStatuses, serviceOrderStatuses, dispatchStatuses]);
+    job: jobStatuses,
+  }), [offerStatuses, saleStatuses, serviceOrderStatuses, dispatchStatuses, jobStatuses]);
 }
 
 // Utility function to invalidate the cache (useful after status updates)

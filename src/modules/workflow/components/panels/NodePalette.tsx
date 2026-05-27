@@ -20,7 +20,7 @@ export interface NodeTemplate {
   description: string;
   icon: React.ComponentType<any>;
   category: string;
-  entityType?: 'offer' | 'sale' | 'service_order' | 'dispatch';
+  entityType?: 'offer' | 'sale' | 'service_order' | 'dispatch' | 'job';
   isTrigger?: boolean;
   isAction?: boolean;
   defaultConfig?: Record<string, any>;
@@ -123,6 +123,15 @@ const nodeTemplates: NodeTemplate[] = [
     icon: Truck,
     category: 'triggers',
     entityType: 'dispatch',
+    isTrigger: true,
+  },
+  {
+    type: 'job-status-trigger',
+    label: 'node.job-status-trigger.label',
+    description: 'node.job-status-trigger.desc',
+    icon: Truck,
+    category: 'triggers',
+    entityType: 'job',
     isTrigger: true,
   },
   {
@@ -259,6 +268,15 @@ const nodeTemplates: NodeTemplate[] = [
     icon: Truck,
     category: 'actions',
     entityType: 'dispatch',
+    isAction: true,
+  },
+  {
+    type: 'update-job-status',
+    label: 'node.update-job-status.label',
+    description: 'node.update-job-status.desc',
+    icon: Truck,
+    category: 'actions',
+    entityType: 'job',
     isAction: true,
   },
 

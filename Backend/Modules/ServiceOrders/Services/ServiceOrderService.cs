@@ -2008,10 +2008,30 @@ namespace MyApi.Modules.ServiceOrders.Services
             var job = await _context.ServiceOrderJobs.FirstOrDefaultAsync(j => j.Id == jobId && j.ServiceOrderId == serviceOrderId);
             if (job == null)
                 throw new KeyNotFoundException($"Job {jobId} not found for service order {serviceOrderId}");
+            var oldStatus = job.Status;
             job.Status = dto.Status;
             job.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
             _logger.LogInformation("Job {JobId} status set to {Status} on service order {ServiceOrderId} by {UserId}", jobId, dto.Status, serviceOrderId, userId);
+
+            // Fire workflow trigger for job status change
+            if (_workflowTriggerService != null && oldStatus != job.Status)
+            {
+                try
+                {
+                    await _workflowTriggerService.TriggerStatusChangeAsync(
+                        "job",
+                        jobId,
+                        oldStatus,
+                        job.Status,
+                        userId,
+                        new { jobId, serviceOrderId, title = job.Title });
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to fire job workflow trigger for job {JobId}", jobId);
+                }
+            }
             return MapServiceOrderJobToDto(job, null);
         }
 
@@ -2020,6 +2040,7 @@ namespace MyApi.Modules.ServiceOrders.Services
             var job = await _context.ServiceOrderJobs.FirstOrDefaultAsync(j => j.Id == jobId && j.ServiceOrderId == serviceOrderId);
             if (job == null)
                 throw new KeyNotFoundException($"Job {jobId} not found for service order {serviceOrderId}");
+            var oldStatus = job.Status;
             if (dto.Status != null) job.Status = dto.Status;
             if (dto.Title != null) job.Title = dto.Title;
             if (dto.Description != null) job.Description = dto.Description;
@@ -2031,6 +2052,24 @@ namespace MyApi.Modules.ServiceOrders.Services
             job.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
             _logger.LogInformation("Job {JobId} updated on service order {ServiceOrderId} by {UserId}", jobId, serviceOrderId, userId);
+
+            if (_workflowTriggerService != null && dto.Status != null && oldStatus != job.Status)
+            {
+                try
+                {
+                    await _workflowTriggerService.TriggerStatusChangeAsync(
+                        "job",
+                        jobId,
+                        oldStatus,
+                        job.Status,
+                        userId,
+                        new { jobId, serviceOrderId, title = job.Title });
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to fire job workflow trigger for job {JobId}", jobId);
+                }
+            }
             return MapServiceOrderJobToDto(job, null);
         }
 

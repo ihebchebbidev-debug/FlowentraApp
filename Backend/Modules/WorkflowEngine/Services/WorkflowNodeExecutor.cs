@@ -426,6 +426,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
                 "sale" => await UpdateSaleStatusAsync(entityId, newStatus, context.UserId),
                 "service_order" => await UpdateServiceOrderStatusAsync(entityId, newStatus, context.UserId),
                 "dispatch" => await UpdateDispatchStatusAsync(entityId, newStatus, context.UserId),
+                "job" => await UpdateJobStatusAsync(entityId, newStatus, context.UserId),
                 _ => false
             };
 
@@ -2154,6 +2155,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
             var lower = nodeType.ToLower();
             if (lower.Contains("service-order") || lower.Contains("service_order")) return "service_order";
             if (lower.Contains("dispatch")) return "dispatch";
+            if (lower.Contains("job")) return "job";
             if (lower.Contains("sale")) return "sale";
             if (lower.Contains("offer")) return "offer";
             return null;
@@ -2361,6 +2363,36 @@ namespace MyApi.Modules.WorkflowEngine.Services
             offer.ModifiedDate = DateTime.UtcNow;
             offer.ModifiedBy = userId;
             await _db.SaveChangesAsync();
+            return true;
+        }
+
+        private async Task<bool> UpdateJobStatusAsync(int id, string newStatus, string? userId)
+        {
+            var job = await _db.ServiceOrderJobs.FindAsync(id);
+            if (job == null)
+            {
+                _logger.LogError("[WORKFLOW-UPDATE-JOB] Job #{Id} not found!", id);
+                return false;
+            }
+
+            var oldStatus = job.Status;
+            job.Status = newStatus;
+            job.UpdatedAt = DateTime.UtcNow;
+
+            var lower = newStatus.ToLower();
+            if (lower == "completed" && !job.CompletedDate.HasValue)
+            {
+                job.CompletedDate = DateTime.UtcNow;
+                if (!job.CompletionPercentage.HasValue || job.CompletionPercentage < 100)
+                    job.CompletionPercentage = 100;
+            }
+
+            await _db.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "[WORKFLOW-UPDATE-JOB] Job #{Id} status '{OldStatus}' -> '{NewStatus}' (by {UserId})",
+                id, oldStatus, newStatus, userId ?? "system");
+
             return true;
         }
 

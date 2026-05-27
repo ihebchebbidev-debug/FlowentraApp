@@ -43,15 +43,17 @@ export const offerStatuses: StatusOption[] = toStatusOptions(entityStatusConfigs
 export const saleStatuses: StatusOption[] = toStatusOptions(entityStatusConfigs.sale);
 export const serviceOrderStatuses: StatusOption[] = toStatusOptions(entityStatusConfigs.service_order);
 export const dispatchStatuses: StatusOption[] = toStatusOptions(entityStatusConfigs.dispatch);
+export const jobStatuses: StatusOption[] = toStatusOptions(entityStatusConfigs.job);
 
-// Re-export EntityType (workflow module only uses these 4)
-export type EntityType = 'offer' | 'sale' | 'service_order' | 'dispatch';
+// Re-export EntityType (workflow module uses these 5)
+export type EntityType = 'offer' | 'sale' | 'service_order' | 'dispatch' | 'job';
 
 export const entityTypes: { value: EntityType; labelKey: string }[] = [
   { value: 'offer', labelKey: 'entity.offer' },
   { value: 'sale', labelKey: 'entity.sale' },
   { value: 'service_order', labelKey: 'entity.serviceOrder' },
   { value: 'dispatch', labelKey: 'entity.dispatch' },
+  { value: 'job', labelKey: 'entity.job' },
 ];
 
 // ============================================================================
@@ -64,6 +66,8 @@ export const getStatusesByEntityType = (entityType: EntityType): StatusOption[] 
 };
 
 export const getEntityTypeFromNodeType = (nodeType: string): EntityType | null => {
+  // Order matters: check most specific first (service-order before service, job before others)
+  if (nodeType.includes('job')) return 'job';
   if (nodeType.includes('offer')) return 'offer';
   if (nodeType.includes('sale')) return 'sale';
   if (nodeType.includes('service-order')) return 'service_order';
@@ -88,7 +92,8 @@ export const statusTriggerNodes = [
   'offer-status-trigger',
   'sale-status-trigger', 
   'service-order-status-trigger',
-  'dispatch-status-trigger'
+  'dispatch-status-trigger',
+  'job-status-trigger',
 ] as const;
 
 export const statusActionNodes = [
@@ -96,6 +101,7 @@ export const statusActionNodes = [
   'update-sale-status',
   'update-service-order-status',
   'update-dispatch-status',
+  'update-job-status',
 ] as const;
 
 // Non-status action nodes (communication, approvals) — separate from status actions

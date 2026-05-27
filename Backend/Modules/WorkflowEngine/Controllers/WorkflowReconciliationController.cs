@@ -31,6 +31,7 @@ namespace MyApi.Modules.WorkflowEngine.Controllers
             public int SalesFixed { get; set; }
             public int ServiceOrdersFixed { get; set; }
             public int DispatchesFixed { get; set; }
+            public int JobsFixed { get; set; }
             public int ConsistencyFixes { get; set; }
             public int TotalFixed { get; set; }
             public string Message { get; set; } = "";
@@ -87,6 +88,7 @@ namespace MyApi.Modules.WorkflowEngine.Controllers
             int salesFixed = 0;
             int serviceOrdersFixed = 0;
             int dispatchesFixed = 0;
+            int jobsFixed = 0;
 
             foreach (var trigger in triggers)
             {
@@ -118,6 +120,9 @@ namespace MyApi.Modules.WorkflowEngine.Controllers
                         case "dispatch":
                             dispatchesFixed += triggered;
                             break;
+                        case "job":
+                            jobsFixed += triggered;
+                            break;
                     }
                 }
                 catch (Exception ex)
@@ -137,6 +142,7 @@ namespace MyApi.Modules.WorkflowEngine.Controllers
                 SalesFixed = salesFixed,
                 ServiceOrdersFixed = serviceOrdersFixed,
                 DispatchesFixed = dispatchesFixed,
+                JobsFixed = jobsFixed,
                 ConsistencyFixes = consistencyFixes,
                 TotalFixed = totalTriggered + consistencyFixes,
                 Message = $"Reconciliation complete in {(endedAt - startedAt).TotalSeconds:F1}s. Consistency fixes: {consistencyFixes}. Entities checked: {totalProcessed}. Workflows triggered: {totalTriggered}."
@@ -412,6 +418,21 @@ namespace MyApi.Modules.WorkflowEngine.Controllers
                         Context = null
                     }));
                     break;
+
+                case "job":
+                    var jobs = await db.ServiceOrderJobs
+                        .AsNoTracking()
+                        .Where(j => targetStatus == null || j.Status == targetStatus)
+                        .Select(j => new { j.Id, j.Status, j.ServiceOrderId })
+                        .ToListAsync(cancellationToken);
+
+                    results.AddRange(jobs.Select(j => new EntityStatusInfo
+                    {
+                        Id = j.Id,
+                        Status = j.Status ?? "",
+                        Context = new { j.ServiceOrderId }
+                    }));
+                    break;
             }
 
             return results;
@@ -564,6 +585,25 @@ namespace MyApi.Modules.WorkflowEngine.Controllers
                             if (offerSo != null)
                             {
                                 variables["serviceOrderId"] = offerSo.Id;
+                            }
+                        }
+                        break;
+
+                    case "job":
+                        // Job → ServiceOrder → Sale → Offer
+                        var jobEntity = await db.ServiceOrderJobs.FindAsync(new object[] { entityId }, cancellationToken);
+                        if (jobEntity != null)
+                        {
+                            variables["serviceOrderId"] = jobEntity.ServiceOrderId;
+                            var jobSo = await db.ServiceOrders.FindAsync(new object[] { jobEntity.ServiceOrderId }, cancellationToken);
+                            if (jobSo?.SaleId != null && int.TryParse(jobSo.SaleId, out var jobSaleId))
+                            {
+                                variables["saleId"] = jobSaleId;
+                                var jobSale = await db.Sales.FindAsync(new object[] { jobSaleId }, cancellationToken);
+                                if (jobSale?.OfferId != null && int.TryParse(jobSale.OfferId, out var jobOfferId))
+                                {
+                                    variables["offerId"] = jobOfferId;
+                                }
                             }
                         }
                         break;
@@ -971,6 +1011,12 @@ namespace MyApi.Modules.WorkflowEngine.Controllers
                     "accepted" => 3, "won" => 3,
                     "declined" => -1, "rejected" => -1, "expired" => -1, "lost" => -1, "cancelled" => -1, _ => 0
                 },
+                "job" => status switch
+                {
+                    // Aligned with src/config/entity-statuses/job.config.ts
+                    "unscheduled" => 0, "scheduled" => 1, "in_progress" => 2, "on_hold" => 2,
+                    "completed" => 3, "cancelled" => -1, _ => 0
+                },
                 _ => 0
             };
         }
@@ -983,8 +1029,8 @@ namespace MyApi.Modules.WorkflowEngine.Controllers
         private bool IsUpdateStatusNodeType(string type) { var t = type.ToLower(); return t.Contains("update-") && t.Contains("status"); }
         private bool IsYesBranch(ReconcileEdge e) { var h = e.SourceHandle?.ToLower() ?? ""; var l = e.Label?.ToLower() ?? ""; return h == "yes" || h == "true" || l == "yes" || l == "true"; }
         private bool IsNoBranch(ReconcileEdge e) { var h = e.SourceHandle?.ToLower() ?? ""; var l = e.Label?.ToLower() ?? ""; return h == "no" || h == "false" || l == "no" || l == "false"; }
-        private string? InferEntityTypeFromNodeType(string t) { t = t.ToLower(); if (t.Contains("service-order") || t.Contains("service_order")) return "service_order"; if (t.Contains("dispatch")) return "dispatch"; if (t.Contains("sale")) return "sale"; if (t.Contains("offer")) return "offer"; return null; }
-        private string? ResolveEntityType(string p) { if (p.Contains("serviceorder") || p.Contains("service_order")) return "service_order"; if (p.Contains("sale")) return "sale"; if (p.Contains("offer")) return "offer"; if (p.Contains("dispatch")) return "dispatch"; return null; }
+        private string? InferEntityTypeFromNodeType(string t) { t = t.ToLower(); if (t.Contains("service-order") || t.Contains("service_order")) return "service_order"; if (t.Contains("dispatch")) return "dispatch"; if (t.Contains("job")) return "job"; if (t.Contains("sale")) return "sale"; if (t.Contains("offer")) return "offer"; return null; }
+        private string? ResolveEntityType(string p) { if (p.Contains("serviceorder") || p.Contains("service_order")) return "service_order"; if (p.Contains("sale")) return "sale"; if (p.Contains("offer")) return "offer"; if (p.Contains("dispatch")) return "dispatch"; if (p.Contains("job")) return "job"; return null; }
 
         #endregion
 
