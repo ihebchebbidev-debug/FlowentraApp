@@ -45,18 +45,21 @@ axiosInstance.interceptors.request.use((config) => {
   const method = (config.method || "GET").toUpperCase();
   const isMutation = ["POST", "PUT", "PATCH", "DELETE"].includes(method);
 
+  // Always emit X-Target-Tenant for row-level company scoping on EVERY request
+  // (GET + mutations). In view-all mode, getTargetTenantHeaders() returns {} so
+  // the backend reads union across companies. Existing explicit header wins.
+  const existingTarget = (config.headers as Record<string, unknown>)?.[TARGET_TENANT_HEADER];
+  if (existingTarget == null || existingTarget === "") {
+    Object.entries(getTargetTenantHeaders()).forEach(([key, value]) => {
+      config.headers[key] = value;
+    });
+  }
+
   if (isViewAllMode()) {
     Object.entries(getTenantRequestHeaders()).forEach(([key, value]) => {
       if (key === TENANT_HEADER || (config.headers as Record<string, unknown>)?.[key] == null) {
         config.headers[key] = value;
       }
-    });
-  }
-
-  const existingTarget = (config.headers as Record<string, unknown>)?.[TARGET_TENANT_HEADER];
-  if (isMutation && (existingTarget == null || existingTarget === "")) {
-    Object.entries(getTargetTenantHeaders()).forEach(([key, value]) => {
-      config.headers[key] = value;
     });
   }
 
