@@ -27,7 +27,7 @@ import {
   Calendar, Database, FileText, Clipboard,
   Menu, RotateCcw, Split, Shield, Download, Upload, Square, Wifi, WifiOff, Bug, RefreshCw,
   Edit3, Save, Loader2, X, Copy, Check, ClipboardList, PauseCircle, ArrowLeftRight, Globe, Wand2, Code,
-  FolderOpen
+  FolderOpen, Layers
 } from "lucide-react";
 import { WorkflowNode, NodeExecutionState } from '../small-components/WorkflowNode';
 import { WorkflowToolbar } from '../small-components/WorkflowToolbar';
@@ -68,6 +68,7 @@ import { AddButtonEdge } from './edges/AddButtonEdge';
 import { WorkflowVersionBadge, type WorkflowVersionStatus } from './panels/WorkflowVersionBadge';
 import { WorkflowDebugConsole } from './WorkflowDebugConsole';
 import { AIWorkflowBuilder } from './AIWorkflowBuilder';
+import { WorkflowTemplatesGallery } from './WorkflowTemplatesGallery';
 import { AiLogoIcon } from '@/components/ai-assistant/AiLogoIcon';
 import { WorkflowGroupsManager } from './WorkflowGroupsManager';
 import { useAiAssistantAvailable } from '@/hooks/useAiAssistantAvailable';
@@ -125,6 +126,7 @@ export function WorkflowBuilder() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Track changes
   const [isCopied, setIsCopied] = useState(false); // Copy feedback
   const [aiBuilderOpen, setAiBuilderOpen] = useState(false); // AI workflow builder
+  const [templatesOpen, setTemplatesOpen] = useState(false); // Templates gallery
   const [groupsManagerOpen, setGroupsManagerOpen] = useState(false); // Workflow groups manager
 
   const aiAssistantAvailable = useAiAssistantAvailable();
@@ -2030,6 +2032,10 @@ export function WorkflowBuilder() {
                     <Plus className="h-4 w-4" />
                     {t('emptyAddTrigger')}
                   </Button>
+                  <Button onClick={() => setTemplatesOpen(true)} size="lg" variant="outline" className="gap-2 border-primary/20 hover:border-primary/40">
+                    <Layers className="h-4 w-4" />
+                    Browse templates
+                  </Button>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -2303,6 +2309,17 @@ export function WorkflowBuilder() {
         onOpenChange={setGroupsManagerOpen}
         onLoadWorkflow={handleLoadWorkflow}
         onNewWorkflow={handleNewWorkflow}
+      />
+
+      {/* Templates gallery */}
+      <WorkflowTemplatesGallery
+        open={templatesOpen}
+        onOpenChange={setTemplatesOpen}
+        onPick={(tNodes, tEdges, tpl) => {
+          setNodes(tNodes as any);
+          setEdges(tEdges as any);
+          toast(`Loaded template: ${tpl.name}`, { duration: 2000 });
+        }}
       />
     </div>
   );
