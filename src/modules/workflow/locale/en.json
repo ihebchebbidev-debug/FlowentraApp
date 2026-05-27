@@ -1302,7 +1302,17 @@
         "approval": "Approvals",
         "ai": "AI nodes",
         "integration": "Integration",
-        "publish": "Save & Run"
+        "delay": "Delays & Timing",
+        "loop": "Loops",
+        "switch": "Switch",
+        "scheduled": "Scheduled",
+        "webhook": "Webhooks",
+        "code": "Custom Code",
+        "errors": "Error handling",
+        "variables": "Variables",
+        "shortcuts": "Search & shortcuts",
+        "publish": "Save & Run",
+        "next": "Next steps"
       },
       "trig": {
         "openCat": "Open the Triggers category. Triggers are the only nodes that can start a workflow.",
@@ -1351,9 +1361,85 @@
         "save": "Apply changes — secrets are encrypted at rest and never logged."
       },
       "pub": {
-        "save": "Click Save in the toolbar. This persists the draft — it does NOT run yet.",
-        "activate": "Toggle Activate to make the workflow live. From now on, real events will trigger it.",
-        "test": "Test run fires the workflow once with sample data. Live execution status shows below — green = ok, amber = waiting, red = failed. Click any node to see its input/output payload."
+        "review": "Before publishing — quick visual review. Validate that every branch ends, every async node has a timeout, and no secret is hard-coded.",
+        "save": "Click Save in the toolbar. This persists a new DRAFT version — it does not run yet.",
+        "versioning": "Every Save creates a new immutable version. You can roll back, diff two versions, or pin a specific version to a tenant.",
+        "activate": "Toggle Activate to publish the current draft as the live version.",
+        "activeExplain": "When active, real events trigger the workflow. Toggling off pauses it instantly — running executions finish their current node and then halt.",
+        "test": "Test run fires the workflow once with sample data. The execution panel slides up showing each node's status.",
+        "logsExplain": "Status legend — green: ok · amber: waiting · blue: running · red: failed. Click any node to inspect its input, output, duration, retries and logs.",
+        "monitoring": "All runs are kept for 30 days under Executions → History, with filters by status, trigger entity, version and user. Failed runs can be retried in one click."
+      },
+      "delay": {
+        "intro": "Delay nodes pause the workflow for a duration or until a condition. They are checkpointed — restarts and deploys do not lose state.",
+        "grab": "Grab Delay from Communication.",
+        "drop": "Drop it after the AI node — we want to wait before sending a follow-up.",
+        "openConfig": "Modes: relative duration, absolute date, business hours, or wait-until-field-matches.",
+        "advancedTab": "Advanced — set a max wait safety cap and how the delay reacts if the upstream entity changes.",
+        "save": "Apply changes — delays are durable: the workflow sleeps server-side until ready."
+      },
+      "loop": {
+        "intro": "Loop iterates over any array and runs its inner branch per item.",
+        "grab": "Grab Loop from Conditions.",
+        "drop": "Drop it — connect to the trigger to process every offer line.",
+        "openConfig": "Point Source collection at any array variable. The Item alias is exposed to inner nodes as {{ item }}.",
+        "outputs": "Sequential keeps order; Parallel is faster but order is not guaranteed. Max iterations is a runaway-guard.",
+        "save": "Apply changes — the loop node exposes both an inner branch handle and a 'done' handle for after all iterations."
+      },
+      "switch": {
+        "grab": "Grab Switch — use it when If/Else has too many branches.",
+        "drop": "Drop it. Each case becomes its own output handle.",
+        "openConfig": "Pick the field to switch on, then list cases. 'default' catches anything that doesn't match.",
+        "casesExplain": "Cases support exact match, regex (/^EU/), or value list (TN,FR,DE). Order matters — first match wins unless Fallthrough is on.",
+        "save": "Apply changes — every case now has its own handle for chaining."
+      },
+      "sched": {
+        "intro": "Scheduled triggers are the workflow's heartbeat — perfect for digests, reminders, and cleanups.",
+        "grab": "Grab Scheduled (cron) from Triggers.",
+        "drop": "Drop it on the canvas. Scheduled triggers don't need an upstream entity.",
+        "openConfig": "Pick a frequency preset or write a cron expression. Timezone matters for business hours.",
+        "cronExplain": "Cron syntax: minute hour day month weekday. '0 9 * * 1' = 09:00 every Monday. Add @hourly / @daily / @weekly shortcuts too.",
+        "save": "Apply changes — next run timestamp is visible on the node header."
+      },
+      "web": {
+        "grab": "Grab Webhook from Triggers — let external systems push events to you.",
+        "drop": "Drop it. A unique signed URL is auto-generated.",
+        "openConfig": "Configure method, auth (HMAC, Bearer, IP allowlist), and how to acknowledge the caller.",
+        "advanced": "Advanced — enable idempotency, rate-limiting and signature verification before processing.",
+        "save": "Apply changes — copy the URL into the source system (Stripe, GitHub, Zapier, etc.)."
+      },
+      "code": {
+        "grab": "Grab Custom Code from Integration — for transformations beyond what built-in nodes offer.",
+        "drop": "Drop it after HTTP Request to post-process the response.",
+        "openConfig": "Write JavaScript with full access to upstream variables via `ctx`. Return any JSON — it becomes available as {{ code.* }} downstream.",
+        "save": "Apply changes — code runs in a sandbox with 5s timeout and no network by default."
+      },
+      "err": {
+        "intro": "Open the HTTP Request node and switch to the Advanced tab to configure resilience.",
+        "retryExplain": "Exponential backoff doubles the wait between retries (2s → 4s → 8s …) up to Max backoff, then alerts.",
+        "fallback": "On final failure you can: stop the whole workflow, mark this node failed and continue, branch into an error-handling path, or call a fallback node.",
+        "save": "Apply changes — retries and failures are recorded in execution logs with full request/response payloads."
+      },
+      "var": {
+        "intro": "Every node exposes its output as a namespaced variable, available downstream via {{ … }}.",
+        "trigger": "Trigger variables: {{ trigger.entity }}, {{ trigger.contact }}, {{ trigger.user }}, {{ trigger.eventType }}, {{ trigger.timestamp }}.",
+        "nodes": "Action outputs are namespaced by node id: {{ email.messageId }}, {{ http.response.body }}, {{ ai.text }}, {{ code.tier }}.",
+        "secrets": "Use {{ secrets.MY_TOKEN }} to inject values from Settings → Secrets. Secrets are encrypted at rest and never appear in logs.",
+        "helpers": "Helpers: {{ now() }}, {{ formatDate(date, 'YYYY-MM-DD') }}, {{ upper(text) }}, {{ json(obj) }}, {{ default(value, 'fallback') }}."
+      },
+      "kbd": {
+        "search": "Type in the palette search to filter nodes across every category at once.",
+        "results": "Matched nodes are highlighted. Hit Enter to grab the first result.",
+        "clear": "Press Esc or clear the field to restore the full palette.",
+        "canvas": "Canvas shortcuts: Space = pan · scroll = zoom · Cmd/Ctrl+A = select all · Del = delete · Cmd/Ctrl+D = duplicate.",
+        "undoRedo": "Cmd/Ctrl+Z = undo · Cmd/Ctrl+Shift+Z = redo · Cmd/Ctrl+S = save · Cmd/Ctrl+Enter = test run."
+      },
+      "next": {
+        "recap": "You've seen all 7 categories, advanced settings, retries, variables, scheduling, webhooks and observability.",
+        "templates": "Start faster: open Templates from the dashboard for ready-made playbooks (lead nurturing, dispatch, reminders, escalations).",
+        "collab": "Workflows are shared per tenant. Use role-based access to limit who can edit, activate or view execution logs.",
+        "docs": "Full reference: Documentation covers every node type, every field, error codes and webhook payload schemas.",
+        "replay": "Tap the help button (bottom-right of any workflow page) anytime to replay this tour or jump to a specific chapter."
       }
     }
   },

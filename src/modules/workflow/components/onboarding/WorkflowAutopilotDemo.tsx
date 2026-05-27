@@ -334,10 +334,10 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
               <h3 className="text-sm font-semibold text-foreground mb-2">
                 {t('onboarding.demo.nodesLabel')}
               </h3>
-              <div className="relative">
+              <div className="relative" data-demo-target="palette-search">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
                 <div className="h-7 rounded-md border border-border bg-background pl-7 pr-2 flex items-center text-[11px] text-muted-foreground/70">
-                  {t('onboarding.demo.searchPlaceholder')}
+                  {state.paletteSearch || t('onboarding.demo.searchPlaceholder')}
                 </div>
               </div>
             </div>
@@ -452,6 +452,13 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
             <div data-demo-target="drop-5" className="absolute pointer-events-none" style={{ left: '78%', top: '20%', width: 1, height: 1 }} />
             <div data-demo-target="drop-6" className="absolute pointer-events-none" style={{ left: '50%', top: '78%', width: 1, height: 1 }} />
             <div data-demo-target="drop-7" className="absolute pointer-events-none" style={{ left: '92%', top: '28%', width: 1, height: 1 }} />
+            <div data-demo-target="drop-8" className="absolute pointer-events-none" style={{ left: '35%', top: '15%', width: 1, height: 1 }} />
+            <div data-demo-target="drop-9" className="absolute pointer-events-none" style={{ left: '65%', top: '40%', width: 1, height: 1 }} />
+            <div data-demo-target="drop-10" className="absolute pointer-events-none" style={{ left: '25%', top: '70%', width: 1, height: 1 }} />
+            <div data-demo-target="drop-11" className="absolute pointer-events-none" style={{ left: '70%', top: '65%', width: 1, height: 1 }} />
+            <div data-demo-target="drop-12" className="absolute pointer-events-none" style={{ left: '88%', top: '55%', width: 1, height: 1 }} />
+            <div data-demo-target="drop-13" className="absolute pointer-events-none" style={{ left: '15%', top: '50%', width: 1, height: 1 }} />
+            <div data-demo-target="drop-14" className="absolute pointer-events-none" style={{ left: '45%', top: '88%', width: 1, height: 1 }} />
 
             {state.nodes.length === 0 && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -541,6 +548,7 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
                     {(['general', 'settings', 'advanced'] as const).map(tab => (
                       <div
                         key={tab}
+                        data-demo-target={`tab-${tab}`}
                         className={cn(
                           'px-3 py-1.5 text-[11px] font-medium rounded-md cursor-default',
                           state.configPanel?.tab === tab

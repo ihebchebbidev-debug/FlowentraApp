@@ -473,18 +473,428 @@ chapter('integration', 'onboarding.demo.chapter.integration', () => [
   },
 ]);
 
+// ── Chapter 7b: DELAY · WAIT · TIMING ────────────────────────────────────────
+chapter('delay', 'onboarding.demo.chapter.delay', () => [
+  {
+    caption: 'onboarding.demo.delay.intro',
+    target: 'cat-communication', click: true, duration: 900,
+    apply: s => ({ ...s, paletteCategory: 'communication' }),
+  },
+  {
+    caption: 'onboarding.demo.delay.grab',
+    target: 'palette-delay', duration: 800,
+    apply: s => ({ ...s, grabbingItemId: 'delay' }),
+  },
+  {
+    caption: 'onboarding.demo.delay.drop',
+    target: 'drop-9', duration: 1000,
+    apply: s => ({
+      ...s,
+      grabbingItemId: null,
+      nodes: [...s.nodes, mkNode('delay-1', 'communication', 460, 380, 'Delay', 'Clock')],
+      edges: [...s.edges, { id: 'e8', source: 'ai-1', target: 'delay-1', animated: true, type: 'smoothstep' }],
+    }),
+  },
+  {
+    caption: 'onboarding.demo.delay.openConfig',
+    target: 'node-delay-1', click: true, duration: 900,
+    apply: s => ({
+      ...s,
+      configPanel: {
+        nodeId: 'delay-1',
+        title: 'Delay',
+        subtitle: 'Pause the workflow for a fixed duration or until a specific moment',
+        icon: 'Clock', iconColor: '#06b6d4',
+        tab: 'general',
+        fields: [
+          { type: 'input', label: 'Node name', value: 'Wait before follow-up' },
+          { type: 'select', label: 'Delay mode', value: 'Relative duration', options: ['Relative duration', 'Until date/time', 'Until business hours', 'Until field value matches'] },
+          { type: 'number', label: 'Amount', value: '2' },
+          { type: 'select', label: 'Unit', value: 'days', options: ['minutes', 'hours', 'days', 'weeks'] },
+          { type: 'switch', label: 'Skip on weekends', value: 'on' },
+          { type: 'switch', label: 'Respect contact timezone', value: 'on' },
+        ],
+      },
+    }),
+  },
+  {
+    caption: 'onboarding.demo.delay.advancedTab',
+    target: 'tab-advanced', click: true, duration: 900,
+    apply: s => s.configPanel ? ({
+      ...s,
+      configPanel: {
+        ...s.configPanel,
+        tab: 'advanced',
+        fields: [
+          { type: 'number', label: 'Max wait (hours)', value: '168', hint: 'Safety cap — workflow cancels if exceeded' },
+          { type: 'switch', label: 'Cancel if upstream entity changes status', value: 'on' },
+          { type: 'select', label: 'On cancel', value: 'Skip to next node', options: ['Skip to next node', 'End workflow', 'Branch to error path'] },
+        ],
+      },
+    }) : s,
+  },
+  {
+    caption: 'onboarding.demo.delay.save',
+    target: 'config-save', click: true, duration: 800,
+    apply: s => ({
+      ...s,
+      configPanel: null,
+      nodes: s.nodes.map(n => n.id === 'delay-1' ? { ...n, data: { ...n.data, subtitle: 'Wait 2 days · skip weekends' } } : n),
+    }),
+  },
+]);
+
+// ── Chapter 7c: LOOP — iterate over a collection ─────────────────────────────
+chapter('loop', 'onboarding.demo.chapter.loop', () => [
+  {
+    caption: 'onboarding.demo.loop.intro',
+    target: 'cat-conditions', click: true, duration: 900,
+    apply: s => ({ ...s, paletteCategory: 'conditions' }),
+  },
+  {
+    caption: 'onboarding.demo.loop.grab',
+    target: 'palette-loop', duration: 800,
+    apply: s => ({ ...s, grabbingItemId: 'loop' }),
+  },
+  {
+    caption: 'onboarding.demo.loop.drop',
+    target: 'drop-10', duration: 1000,
+    apply: s => ({
+      ...s,
+      grabbingItemId: null,
+      nodes: [...s.nodes, mkNode('loop-1', 'condition', 200, 540, 'Loop · For each item', 'Repeat')],
+      edges: [...s.edges, { id: 'e9', source: 'trigger-1', target: 'loop-1', animated: true, type: 'smoothstep' }],
+    }),
+  },
+  {
+    caption: 'onboarding.demo.loop.openConfig',
+    target: 'node-loop-1', click: true, duration: 900,
+    apply: s => ({
+      ...s,
+      configPanel: {
+        nodeId: 'loop-1',
+        title: 'Loop · For each item',
+        subtitle: 'Iterate over an array and run the inner branch for every element',
+        icon: 'Repeat', iconColor: '#f59e0b',
+        tab: 'general',
+        fields: [
+          { type: 'input', label: 'Node name', value: 'For each offer line' },
+          { type: 'select', label: 'Source collection', value: '{{ offer.items }}', options: ['{{ offer.items }}', '{{ sale.lines }}', '{{ dispatch.stops }}', '{{ http.response.data }}'] },
+          { type: 'input', label: 'Item alias', value: 'item' },
+          { type: 'input', label: 'Index alias', value: 'i' },
+          { type: 'select', label: 'Mode', value: 'Sequential', options: ['Sequential', 'Parallel (max 5)', 'Parallel (unlimited)'] },
+          { type: 'number', label: 'Max iterations', value: '500', hint: 'Safety guard against runaway loops' },
+          { type: 'switch', label: 'Continue on item error', value: 'off' },
+        ],
+      },
+    }),
+  },
+  {
+    caption: 'onboarding.demo.loop.outputs',
+    target: 'config-field-4', duration: 1400, apply: s => s,
+  },
+  {
+    caption: 'onboarding.demo.loop.save',
+    target: 'config-save', click: true, duration: 800,
+    apply: s => ({
+      ...s, configPanel: null,
+      nodes: s.nodes.map(n => n.id === 'loop-1' ? { ...n, data: { ...n.data, subtitle: 'offer.items · sequential' } } : n),
+    }),
+  },
+]);
+
+// ── Chapter 7d: SWITCH — multi-way branching ─────────────────────────────────
+chapter('switch', 'onboarding.demo.chapter.switch', () => [
+  {
+    caption: 'onboarding.demo.switch.grab',
+    target: 'palette-switch', duration: 800,
+    apply: s => ({ ...s, paletteCategory: 'conditions', grabbingItemId: 'switch' }),
+  },
+  {
+    caption: 'onboarding.demo.switch.drop',
+    target: 'drop-11', duration: 1000,
+    apply: s => ({
+      ...s,
+      grabbingItemId: null,
+      nodes: [...s.nodes, mkNode('switch-1', 'condition', 700, 500, 'Switch · by country', 'Split')],
+      edges: [...s.edges, { id: 'e10', source: 'loop-1', target: 'switch-1', animated: true, type: 'smoothstep' }],
+    }),
+  },
+  {
+    caption: 'onboarding.demo.switch.openConfig',
+    target: 'node-switch-1', click: true, duration: 900,
+    apply: s => ({
+      ...s,
+      configPanel: {
+        nodeId: 'switch-1',
+        title: 'Switch',
+        subtitle: 'Route to one of many branches based on a value',
+        icon: 'Split', iconColor: '#f59e0b',
+        tab: 'settings',
+        fields: [
+          { type: 'input', label: 'Node name', value: 'Route by country' },
+          { type: 'select', label: 'Source field', value: '{{ contact.country }}', options: ['{{ contact.country }}', '{{ offer.currency }}', '{{ user.role }}', '{{ trigger.eventType }}'] },
+          { type: 'tag', label: 'Cases', value: 'TN · FR · DE · US · default' },
+          { type: 'switch', label: 'Case insensitive', value: 'on' },
+          { type: 'switch', label: 'Fallthrough on no match', value: 'off' },
+        ],
+      },
+    }),
+  },
+  {
+    caption: 'onboarding.demo.switch.casesExplain',
+    target: 'config-field-2', duration: 1400, apply: s => s,
+  },
+  {
+    caption: 'onboarding.demo.switch.save',
+    target: 'config-save', click: true, duration: 800,
+    apply: s => ({ ...s, configPanel: null }),
+  },
+]);
+
+// ── Chapter 7e: SCHEDULED TRIGGER — cron-based ───────────────────────────────
+chapter('scheduled', 'onboarding.demo.chapter.scheduled', () => [
+  {
+    caption: 'onboarding.demo.sched.intro',
+    target: 'cat-triggers', click: true, duration: 900,
+    apply: s => ({ ...s, paletteCategory: 'triggers' }),
+  },
+  {
+    caption: 'onboarding.demo.sched.grab',
+    target: 'palette-scheduled-trigger', duration: 800,
+    apply: s => ({ ...s, grabbingItemId: 'scheduled-trigger' }),
+  },
+  {
+    caption: 'onboarding.demo.sched.drop',
+    target: 'drop-13', duration: 1000,
+    apply: s => ({
+      ...s,
+      grabbingItemId: null,
+      nodes: [...s.nodes, mkNode('sched-1', 'trigger', 40, 450, 'Scheduled · Every Monday 9am', 'Calendar', { isTrigger: true })],
+    }),
+  },
+  {
+    caption: 'onboarding.demo.sched.openConfig',
+    target: 'node-sched-1', click: true, duration: 900,
+    apply: s => ({
+      ...s,
+      configPanel: {
+        nodeId: 'sched-1',
+        title: 'Scheduled Trigger',
+        subtitle: 'Fires the workflow on a recurring schedule (cron)',
+        icon: 'Calendar', iconColor: '#ff6d5a',
+        tab: 'general',
+        fields: [
+          { type: 'input', label: 'Node name', value: 'Weekly report' },
+          { type: 'select', label: 'Frequency', value: 'Weekly', options: ['Every minute', 'Hourly', 'Daily', 'Weekly', 'Monthly', 'Custom cron'] },
+          { type: 'input', label: 'Cron expression', value: '0 9 * * 1', hint: 'min hour day month weekday — 09:00 every Monday' },
+          { type: 'select', label: 'Timezone', value: 'Africa/Tunis', options: ['UTC', 'Africa/Tunis', 'Europe/Paris', 'America/New_York', 'Asia/Tokyo'] },
+          { type: 'select', label: 'Catchup mode', value: 'Skip missed runs', options: ['Skip missed runs', 'Run all missed', 'Run last only'] },
+          { type: 'switch', label: 'Pause on holidays', value: 'on' },
+        ],
+      },
+    }),
+  },
+  {
+    caption: 'onboarding.demo.sched.cronExplain',
+    target: 'config-field-2', duration: 1500, apply: s => s,
+  },
+  {
+    caption: 'onboarding.demo.sched.save',
+    target: 'config-save', click: true, duration: 800,
+    apply: s => ({
+      ...s, configPanel: null,
+      nodes: s.nodes.map(n => n.id === 'sched-1' ? { ...n, data: { ...n.data, subtitle: '0 9 * * 1 · Africa/Tunis' } } : n),
+    }),
+  },
+]);
+
+// ── Chapter 7f: WEBHOOK TRIGGER — external systems push to us ────────────────
+chapter('webhook', 'onboarding.demo.chapter.webhook', () => [
+  {
+    caption: 'onboarding.demo.web.grab',
+    target: 'palette-webhook-trigger', duration: 800,
+    apply: s => ({ ...s, paletteCategory: 'triggers', grabbingItemId: 'webhook-trigger' }),
+  },
+  {
+    caption: 'onboarding.demo.web.drop',
+    target: 'drop-8', duration: 1000,
+    apply: s => ({
+      ...s,
+      grabbingItemId: null,
+      nodes: [...s.nodes, mkNode('hook-1', 'trigger', 260, 10, 'Webhook · Stripe payment', 'Webhook', { isTrigger: true })],
+    }),
+  },
+  {
+    caption: 'onboarding.demo.web.openConfig',
+    target: 'node-hook-1', click: true, duration: 900,
+    apply: s => ({
+      ...s,
+      configPanel: {
+        nodeId: 'hook-1',
+        title: 'Webhook Trigger',
+        subtitle: 'Listen for HTTP requests on a unique URL',
+        icon: 'Webhook', iconColor: '#ff6d5a',
+        tab: 'general',
+        fields: [
+          { type: 'input', label: 'Node name', value: 'Stripe payment_succeeded' },
+          { type: 'input', label: 'Webhook URL (read-only)', value: 'https://api.app.tn/hooks/wf_8a3f...' },
+          { type: 'select', label: 'Method', value: 'POST', options: ['POST', 'PUT', 'GET', 'Any'] },
+          { type: 'select', label: 'Auth', value: 'HMAC signature', options: ['None', 'HMAC signature', 'Bearer token', 'Basic auth', 'IP allowlist'] },
+          { type: 'input', label: 'Signing secret', value: '{{ secrets.STRIPE_WHSEC }}' },
+          { type: 'input', label: 'Header to verify', value: 'Stripe-Signature' },
+          { type: 'select', label: 'Response mode', value: 'Acknowledge immediately (202)', options: ['Acknowledge immediately (202)', 'Wait for workflow (200)', 'Return last-node output'] },
+        ],
+      },
+    }),
+  },
+  {
+    caption: 'onboarding.demo.web.advanced',
+    target: 'tab-advanced', click: true, duration: 900,
+    apply: s => s.configPanel ? ({
+      ...s, configPanel: {
+        ...s.configPanel, tab: 'advanced',
+        fields: [
+          { type: 'switch', label: 'Idempotency (dedupe by event id)', value: 'on' },
+          { type: 'input', label: 'Dedupe key path', value: '$.body.id' },
+          { type: 'number', label: 'Rate limit (req/min)', value: '120' },
+          { type: 'switch', label: 'Log raw payload (PII risk)', value: 'off' },
+          { type: 'select', label: 'On invalid signature', value: 'Reject 401', options: ['Reject 401', 'Log and continue', 'Branch to error path'] },
+        ],
+      },
+    }) : s,
+  },
+  {
+    caption: 'onboarding.demo.web.save',
+    target: 'config-save', click: true, duration: 800,
+    apply: s => ({ ...s, configPanel: null }),
+  },
+]);
+
+// ── Chapter 7g: CUSTOM CODE — sandboxed JavaScript ───────────────────────────
+chapter('code', 'onboarding.demo.chapter.code', () => [
+  {
+    caption: 'onboarding.demo.code.grab',
+    target: 'palette-code', duration: 800,
+    apply: s => ({ ...s, paletteCategory: 'integration', grabbingItemId: 'code' }),
+  },
+  {
+    caption: 'onboarding.demo.code.drop',
+    target: 'drop-12', duration: 1000,
+    apply: s => ({
+      ...s,
+      grabbingItemId: null,
+      nodes: [...s.nodes, mkNode('code-1', 'integration', 900, 480, 'Custom Code · JS', 'Code')],
+      edges: [...s.edges, { id: 'e11', source: 'http-1', target: 'code-1', animated: true, type: 'smoothstep' }],
+    }),
+  },
+  {
+    caption: 'onboarding.demo.code.openConfig',
+    target: 'node-code-1', click: true, duration: 900,
+    apply: s => ({
+      ...s,
+      configPanel: {
+        nodeId: 'code-1',
+        title: 'Custom Code',
+        subtitle: 'Run sandboxed JavaScript with full access to upstream variables',
+        icon: 'Code', iconColor: '#64748b',
+        tab: 'general',
+        fields: [
+          { type: 'input', label: 'Node name', value: 'Compute discount tier' },
+          { type: 'select', label: 'Language', value: 'JavaScript (ES2022)', options: ['JavaScript (ES2022)', 'TypeScript', 'JsonLogic'] },
+          { type: 'textarea', label: 'Code', value: 'const total = ctx.offer.totalAmount;\nlet tier = "bronze";\nif (total > 50000) tier = "gold";\nelse if (total > 10000) tier = "silver";\nreturn { tier, total };' },
+          { type: 'tag', label: 'Returns', value: 'tier · total' },
+          { type: 'number', label: 'Timeout (ms)', value: '5000' },
+          { type: 'switch', label: 'Allow network (fetch)', value: 'off', hint: 'Disabled in sandbox by default for safety' },
+        ],
+      },
+    }),
+  },
+  {
+    caption: 'onboarding.demo.code.save',
+    target: 'config-save', click: true, duration: 800,
+    apply: s => ({
+      ...s, configPanel: null,
+      nodes: s.nodes.map(n => n.id === 'code-1' ? { ...n, data: { ...n.data, subtitle: 'JS · returns { tier, total }' } } : n),
+    }),
+  },
+]);
+
+// ── Chapter 7h: ERROR HANDLING — retry, catch, fallback ──────────────────────
+chapter('errors', 'onboarding.demo.chapter.errors', () => [
+  {
+    caption: 'onboarding.demo.err.intro',
+    target: 'node-http-1', click: true, duration: 900,
+    apply: s => ({
+      ...s,
+      configPanel: {
+        nodeId: 'http-1',
+        title: 'HTTP Request',
+        subtitle: 'Configuring resilience for an external API call',
+        icon: 'Globe', iconColor: '#64748b',
+        tab: 'advanced',
+        fields: [
+          { type: 'select', label: 'Retry policy', value: 'Exponential backoff', options: ['None', 'Fixed interval', 'Exponential backoff', 'Custom schedule'] },
+          { type: 'number', label: 'Max retries', value: '5' },
+          { type: 'number', label: 'Initial backoff (s)', value: '2' },
+          { type: 'number', label: 'Max backoff (s)', value: '300' },
+          { type: 'tag', label: 'Retry on status', value: '408 · 429 · 500 · 502 · 503 · 504' },
+          { type: 'select', label: 'On final failure', value: 'Branch to error path', options: ['Stop workflow', 'Continue (mark failed)', 'Branch to error path', 'Run fallback node'] },
+          { type: 'switch', label: 'Circuit breaker', value: 'on' },
+          { type: 'number', label: 'Breaker threshold (failures/min)', value: '10' },
+        ],
+      },
+    }),
+  },
+  {
+    caption: 'onboarding.demo.err.retryExplain',
+    target: 'config-field-2', duration: 1500, apply: s => s,
+  },
+  {
+    caption: 'onboarding.demo.err.fallback',
+    target: 'config-field-5', duration: 1400, apply: s => s,
+  },
+  {
+    caption: 'onboarding.demo.err.save',
+    target: 'config-save', click: true, duration: 800,
+    apply: s => ({ ...s, configPanel: null }),
+  },
+]);
+
+// ── Chapter 7i: VARIABLES & EXPRESSIONS reference ────────────────────────────
+chapter('variables', 'onboarding.demo.chapter.variables', () => [
+  { caption: 'onboarding.demo.var.intro', target: 'palette-search', duration: 1300, apply: s => ({ ...s, paletteSearch: '{{ }}' }) },
+  { caption: 'onboarding.demo.var.trigger', target: 'node-trigger-1', duration: 1400, apply: s => s },
+  { caption: 'onboarding.demo.var.nodes', target: 'node-email-1', duration: 1400, apply: s => s },
+  { caption: 'onboarding.demo.var.secrets', target: 'node-http-1', duration: 1400, apply: s => s },
+  { caption: 'onboarding.demo.var.helpers', target: 'node-code-1', duration: 1500, apply: s => ({ ...s, paletteSearch: '' }) },
+]);
+
+// ── Chapter 7j: SEARCH & KEYBOARD shortcuts ──────────────────────────────────
+chapter('shortcuts', 'onboarding.demo.chapter.shortcuts', () => [
+  { caption: 'onboarding.demo.kbd.search', target: 'palette-search', duration: 1200, apply: s => ({ ...s, paletteSearch: 'email' }) },
+  { caption: 'onboarding.demo.kbd.results', target: 'palette-send-email', duration: 1200, apply: s => s },
+  { caption: 'onboarding.demo.kbd.clear', target: 'palette-search', duration: 900, apply: s => ({ ...s, paletteSearch: '' }) },
+  { caption: 'onboarding.demo.kbd.canvas', target: 'canvas', duration: 1300, apply: s => s },
+  { caption: 'onboarding.demo.kbd.undoRedo', target: 'btn-save', duration: 1300, apply: s => s },
+]);
+
 // ── Chapter 8: SAVE · ACTIVATE · TEST RUN ────────────────────────────────────
+
 chapter('publish', 'onboarding.demo.chapter.publish', () => [
+  { caption: 'onboarding.demo.pub.review', target: 'canvas', duration: 1300, apply: s => s },
   {
     caption: 'onboarding.demo.pub.save',
     target: 'btn-save', click: true, duration: 900,
     apply: s => ({ ...s, saved: true }),
   },
+  { caption: 'onboarding.demo.pub.versioning', target: 'btn-save', duration: 1300, apply: s => s },
   {
     caption: 'onboarding.demo.pub.activate',
-    target: 'btn-activate', click: true, duration: 800,
+    target: 'btn-activate', click: true, duration: 900,
     apply: s => ({ ...s, active: true }),
   },
+  { caption: 'onboarding.demo.pub.activeExplain', target: 'btn-activate', duration: 1400, apply: s => s },
   {
     caption: 'onboarding.demo.pub.test',
     target: 'btn-test', click: true, duration: 1000,
@@ -496,11 +906,24 @@ chapter('publish', 'onboarding.demo.chapter.publish', () => [
         { node: 'If / Else', status: 'ok', ms: 3 },
         { node: 'Send Email', status: 'ok', ms: 312 },
         { node: 'AI · Email Writer', status: 'ok', ms: 1820 },
+        { node: 'Delay', status: 'wait' },
         { node: 'Request Approval', status: 'wait' },
         { node: 'HTTP Request', status: 'ok', ms: 442 },
+        { node: 'Custom Code', status: 'running' },
       ],
     }),
   },
+  { caption: 'onboarding.demo.pub.logsExplain', target: 'canvas', offset: { x: 0, y: 200 }, duration: 1500, apply: s => s },
+  { caption: 'onboarding.demo.pub.monitoring', target: 'canvas', offset: { x: 0, y: 200 }, duration: 1500, apply: s => s },
+]);
+
+// ── Chapter 9: NEXT STEPS — recap & where to go from here ────────────────────
+chapter('next', 'onboarding.demo.chapter.next', () => [
+  { caption: 'onboarding.demo.next.recap', target: 'canvas', duration: 1500, apply: s => s },
+  { caption: 'onboarding.demo.next.templates', target: 'btn-save', duration: 1400, apply: s => s },
+  { caption: 'onboarding.demo.next.collab', target: 'btn-activate', duration: 1400, apply: s => s },
+  { caption: 'onboarding.demo.next.docs', target: 'btn-test', duration: 1500, apply: s => s },
+  { caption: 'onboarding.demo.next.replay', target: 'palette-header', duration: 1400, apply: s => s },
 ]);
 
 export const steps = _steps;
