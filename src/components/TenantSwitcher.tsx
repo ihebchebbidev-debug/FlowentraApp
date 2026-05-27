@@ -17,7 +17,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { tenantsApi, type Tenant } from '@/services/api/tenantsApi';
-import { getCurrentTenant, setTenantOverride, isViewAllMode, VIEW_ALL_SENTINEL } from '@/utils/tenant';
+import { isViewAllMode } from '@/utils/tenant';
+import { setActiveCompany, getActiveCompanyId } from '@/utils/targetTenant';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
@@ -32,7 +33,7 @@ export function TenantSwitcher() {
   const [uploadingId, setUploadingId] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadTargetRef = useRef<Tenant | null>(null);
-  const currentSlug = getCurrentTenant();
+  const activeId = getActiveCompanyId();
   const viewAll = isViewAllMode();
 
   const loadTenants = () => {
@@ -54,19 +55,18 @@ export function TenantSwitcher() {
 
   const currentTenant = viewAll
     ? null
-    : tenants.find(t => t.slug === currentSlug)
+    : tenants.find(t => t.id === activeId)
       || tenants.find(t => t.isDefault)
       || tenants[0];
 
   const handleSwitch = (tenant: Tenant) => {
-    const targetSlug = tenant.slug;
-    if (targetSlug === currentSlug) return;
-    setTenantOverride(targetSlug);
+    if (!viewAll && tenant.id === activeId) return;
+    setActiveCompany({ id: tenant.id, reload: true });
   };
 
   const handleViewAll = () => {
     if (viewAll) return;
-    setTenantOverride(VIEW_ALL_SENTINEL);
+    setActiveCompany({ viewAll: true, reload: true });
   };
 
   const handleUploadClick = (e: React.MouseEvent, tenant: Tenant) => {
@@ -170,7 +170,7 @@ export function TenantSwitcher() {
               {!tenant.isActive && (
                 <Badge variant="outline" className="text-[10px] h-4 px-1">Inactive</Badge>
               )}
-              {!viewAll && tenant.slug === currentSlug && (
+              {!viewAll && tenant.id === activeId && (
                 <Check className="h-4 w-4 text-primary shrink-0" />
               )}
               <button

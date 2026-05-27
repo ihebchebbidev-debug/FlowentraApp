@@ -103,15 +103,24 @@ export function getTenantFromHostname(hostname: string = window.location.hostnam
   return null;
 }
 
+/** Sentinel value sent in X-Tenant header for legacy cross-company view */
+export const VIEW_ALL_SENTINEL = '__all__';
+
 /**
  * Returns true when the user is in "View All Companies" mode.
+ * Source of truth is the new active-company store (localStorage). The legacy
+ * X-Tenant sentinel is kept as a fallback for back-compat.
  */
 export function isViewAllMode(): boolean {
-  return getCurrentTenant() === '__all__';
+  if (typeof window !== 'undefined') {
+    try {
+      if (window.localStorage.getItem('active_company_view_all') === 'true') return true;
+    } catch {
+      /* ignore */
+    }
+  }
+  return getCurrentTenant() === VIEW_ALL_SENTINEL;
 }
-
-/** Sentinel value sent in X-Tenant header for cross-company view */
-export const VIEW_ALL_SENTINEL = '__all__';
 
 /**
  * Returns the current tenant identifier (cached per page load).

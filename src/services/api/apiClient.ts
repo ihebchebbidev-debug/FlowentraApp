@@ -163,13 +163,11 @@ export const apiFetch = async <T>(
   
   const makeRequest = async (): Promise<Response> => {
     const fetchFn = method === 'GET' ? dedupFetch : fetch;
-    // Auto-attach latest active-company tenant headers in view-all mode.
-    // This narrows reads via X-Tenant and targets mutations via X-Target-Tenant.
+    // Always attach X-Target-Tenant when an active company is selected (reads + writes).
     let tenantRequestHeaders: Record<string, string> = {};
     try {
-      const { getTenantRequestHeaders, getTargetTenantHeaders } = await import('@/utils/targetTenant');
-      tenantRequestHeaders = getTenantRequestHeaders();
-      if (isMutation) tenantRequestHeaders = { ...getTargetTenantHeaders(), ...tenantRequestHeaders };
+      const { getTargetTenantHeaders } = await import('@/utils/targetTenant');
+      tenantRequestHeaders = getTargetTenantHeaders();
     } catch {}
     return fetchFn(url, {
       ...options,

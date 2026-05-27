@@ -1,28 +1,30 @@
 /**
- * Global target tenant state for multi-company mutations.
+ * Active-company / target-tenant state for multi-company row-level scoping.
  *
- * Forms set this via setTargetTenantId() when user picks a company.
- * apiClient.ts reads it via getTargetTenantHeaders() and auto-attaches
- * X-Target-Tenant header to mutation requests.
+ * Two-layer tenancy model:
+ *   • X-Tenant         → app/database (krossier, demo, dev) — pinned from URL/env.
+ *   • X-Target-Tenant  → row-level TenantId of the active company inside that DB.
+ *
+ * The in-app company picker now writes ONLY to the active-company store here;
+ * it never touches the X-Tenant header. As a result, switching companies stays
+ * inside the same DB and properly exercises EF global query filters + the
+ * ModuleScope (shared vs per_company) attribute system.
  */
-import { getCurrentTenant, isViewAllMode, TARGET_TENANT_HEADER } from '@/utils/tenant';
+import { getCurrentTenant, TARGET_TENANT_HEADER } from '@/utils/tenant';
 
-/** In-memory target tenant for the current form session */
-let _targetTenantId: number | undefined;
+/** localStorage keys */
+const ACTIVE_COMPANY_ID_KEY = 'active_company_id';
+const ACTIVE_COMPANY_VIEW_ALL_KEY = 'active_company_view_all';
 const TENANT_ID_SLUG_CACHE_KEY = 'tenant_id_slug_map_v1';
 const COMPANY_FILTER_PREFIX = 'companyFilter:';
 
-/** Tenant.Id → slug cache so API clients can turn the header picker's id into X-Tenant. */
-const _tenantSlugsById = new Map<number, string>();
-/** Tenant.slug → Tenant.Id cache so mutation requests can send numeric company ids. */
-const _tenantIdsBySlug = new Map<string, number>();
+/** In-memory mirror so synchronous reads in headers/interceptors are cheap. */
+let _activeCompanyId: number | undefined;
+let _activeCompanyViewAll: boolean | undefined;
 
-/**
- * Real Tenant.Id values that map to the data-table TenantId 0 on the backend
- * (tenants flagged isDefault=true). The backend stamps default-tenant rows
- * with TenantId=0, so X-Target-Tenant must also send 0 for those tenants.
- * TenantMapContext populates this on load.
- */
+/** Tenant.Id → slug cache so API clients can resolve names from ids. */
+const _tenantSlugsById = new Map<number, string>();
+const _tenantIdsBySlug = new Map<string, number>();
 const _defaultTenantIds = new Set<number>();
 
 export function registerDefaultTenantIds(ids: number[]): void {
@@ -30,7 +32,9 @@ export function registerDefaultTenantIds(ids: number[]): void {
   ids.forEach(id => _defaultTenantIds.add(id));
 }
 
-export function registerTenantHeaderMetadata(tenants: Array<{ id: number; slug: string; isDefault?: boolean }>): void {
+export function registerTenantHeaderMetadata(
+  tenants: Array<{ id: number; slug: string; isDefault?: boolean }>,
+): void {
   _tenantSlugsById.clear();
   _tenantIdsBySlug.clear();
   tenants.forEach((tenant) => {
@@ -42,9 +46,12 @@ export function registerTenantHeaderMetadata(tenants: Array<{ id: number; slug: 
   });
   registerDefaultTenantIds(tenants.filter(t => t.isDefault).map(t => t.id));
   try {
-    window.localStorage.setItem(TENANT_ID_SLUG_CACHE_KEY, JSON.stringify(Array.from(_tenantSlugsById.entries())));
+    window.localStorage.setItem(
+      TENANT_ID_SLUG_CACHE_KEY,
+      JSON.stringify(Array.from(_tenantSlugsById.entries())),
+    );
   } catch {
-    // ignore storage failures
+    /* ignore storage failures */
   }
 }
 
@@ -62,13 +69,8 @@ function ensureTenantSlugCacheLoaded(): void {
       }
     });
   } catch {
-    // ignore malformed cache
+    /* ignore malformed cache */
   }
-}
-
-function getTenantSlugForId(tenantId: number): string | undefined {
-  ensureTenantSlugCacheLoaded();
-  return _tenantSlugsById.get(tenantId);
 }
 
 function getTenantIdForSlug(slug: string): number | undefined {
@@ -76,35 +78,115 @@ function getTenantIdForSlug(slug: string): number | undefined {
   return _tenantIdsBySlug.get(slug.trim().toLowerCase());
 }
 
-/** Translate a frontend Tenant.Id to the data-table TenantId the backend expects. */
+/** Translate a real Tenant.Id to the data-table TenantId (default → 0). */
 function toDataTenantId(realId: number): number {
   return _defaultTenantIds.has(realId) ? 0 : realId;
 }
 
-/**
- * Notify same-tab listeners (e.g. useCreateActionGuard) that the
- * target-tenant selection changed. Kept inline to avoid an import cycle
- * with the hooks layer.
- */
+// ─── Active company persistence ─────────────────────────────────────────────
+
 const TARGET_TENANT_CHANGED_EVENT = 'flowentra:target-tenant-changed';
 function notifyTargetTenantChanged(): void {
   if (typeof window === 'undefined') return;
   try {
     window.dispatchEvent(new CustomEvent(TARGET_TENANT_CHANGED_EVENT));
   } catch {
-    // ignore older browsers
+    /* ignore older browsers */
   }
 }
 
+function hydrateActiveCompanyFromStorage(): void {
+  if (_activeCompanyId !== undefined || _activeCompanyViewAll !== undefined) return;
+  if (typeof window === 'undefined') return;
+  try {
+    const va = window.localStorage.getItem(ACTIVE_COMPANY_VIEW_ALL_KEY);
+    _activeCompanyViewAll = va === 'true';
+    const raw = window.localStorage.getItem(ACTIVE_COMPANY_ID_KEY);
+    if (raw !== null && raw !== '') {
+      const n = Number(raw);
+      if (Number.isFinite(n)) _activeCompanyId = n;
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+function clearReactQueryCaches(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem('company-logo');
+    localStorage.removeItem('company-logo-blob-data');
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('flowentra-query-cache-v1')) keysToRemove.push(key);
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Set the active company for row-level scoping.
+ * Pass {viewAll:true} to enter cross-company audit mode (MainAdmin only).
+ * Pass {id:null} to clear.
+ */
+export function setActiveCompany(
+  payload: { id?: number | null; viewAll?: boolean; reload?: boolean } = {},
+): void {
+  const { id, viewAll = false, reload = false } = payload;
+  _activeCompanyViewAll = viewAll;
+  _activeCompanyId = viewAll ? undefined : (id ?? undefined);
+
+  if (typeof window !== 'undefined') {
+    try {
+      if (viewAll) {
+        window.localStorage.setItem(ACTIVE_COMPANY_VIEW_ALL_KEY, 'true');
+        window.localStorage.removeItem(ACTIVE_COMPANY_ID_KEY);
+      } else {
+        window.localStorage.removeItem(ACTIVE_COMPANY_VIEW_ALL_KEY);
+        if (id === null || id === undefined) {
+          window.localStorage.removeItem(ACTIVE_COMPANY_ID_KEY);
+        } else {
+          window.localStorage.setItem(ACTIVE_COMPANY_ID_KEY, String(id));
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  clearReactQueryCaches();
+  notifyTargetTenantChanged();
+
+  if (reload && typeof window !== 'undefined') {
+    window.location.replace('/dashboard');
+  }
+}
+
+export function clearActiveCompany(): void {
+  setActiveCompany({ id: null, viewAll: false });
+}
+
+export function getActiveCompanyId(): number | undefined {
+  hydrateActiveCompanyFromStorage();
+  return _activeCompanyId;
+}
+
+export function isActiveCompanyViewAll(): boolean {
+  hydrateActiveCompanyFromStorage();
+  return _activeCompanyViewAll === true;
+}
+
+// ─── Legacy in-memory target (kept for form-level overrides) ────────────────
+
+let _targetTenantId: number | undefined;
 export function setTargetTenantId(tenantId: number | undefined): void {
   _targetTenantId = tenantId;
   notifyTargetTenantChanged();
 }
-
-export function getTargetTenantId(): number | undefined {
-  return _targetTenantId;
-}
-
+export function getTargetTenantId(): number | undefined { return _targetTenantId; }
 export function clearTargetTenant(): void {
   _targetTenantId = undefined;
   notifyTargetTenantChanged();
@@ -126,7 +208,6 @@ function readActiveCompanyFilterTenantId(): number | undefined {
       const id = readKey(key);
       if (id !== undefined) return id;
     }
-
     for (let i = 0; i < window.localStorage.length; i++) {
       const key = window.localStorage.key(i);
       if (!key?.startsWith(COMPANY_FILTER_PREFIX)) continue;
@@ -134,62 +215,60 @@ function readActiveCompanyFilterTenantId(): number | undefined {
       if (id !== undefined) return id;
     }
   } catch {
-    // ignore storage/path failures
+    /* ignore */
   }
-
   return undefined;
 }
 
+/**
+ * Resolve the company id to send as X-Target-Tenant.
+ * Priority: explicit arg → form-level override → active company → per-module filter → X-Tenant slug.
+ * Returns undefined in view-all mode (caller should not send the header).
+ */
 export function getSelectedTargetTenantId(tenantId?: number): number | undefined {
-  const selected = tenantId ?? _targetTenantId ?? readActiveCompanyFilterTenantId();
-  if (selected !== undefined && selected !== null) return selected;
+  if (isActiveCompanyViewAll()) return undefined;
+  const explicit = tenantId ?? _targetTenantId;
+  if (explicit !== undefined && explicit !== null) return explicit;
+
+  const activeId = getActiveCompanyId();
+  if (activeId !== undefined) return activeId;
+
+  const filterId = readActiveCompanyFilterTenantId();
+  if (filterId !== undefined) return filterId;
 
   const currentTenant = getCurrentTenant();
   if (!currentTenant || currentTenant === '__all__') return undefined;
-
   return getTenantIdForSlug(currentTenant);
 }
 
-/**
- * Same as getSelectedTargetTenantId(), but defaults to 0 (the default company /
- * data-table TenantId 0 bucket) instead of undefined. Use this in API plumbing
- * so view-all mutations never miss the X-Target-Tenant header — that header
- * being absent causes a 400 from TenantMiddleware.
- */
+/** Same as getSelectedTargetTenantId but defaults to 0 (default-company bucket). */
 export function getSelectedTargetTenantIdOrDefault(tenantId?: number): number {
   const id = getSelectedTargetTenantId(tenantId);
   return id === undefined || id === null ? 0 : id;
 }
 
 /**
- * Returns headers object with X-Target-Tenant set whenever a numeric company id
- * can be resolved for the current mutation context.
- * The id is remapped so the header matches the backend's data-table TenantId
- * convention (default tenant → 0). Falls back to TenantId=0 only in view-all
- * mode so mutations there never miss a target company header.
+ * Headers to attach for row-level company scoping.
+ * Emits X-Target-Tenant on EVERY request when an active company is selected
+ * (incl. id 0 for the default company). In view-all mode, emits nothing so
+ * the backend returns rows across all companies.
  */
 export function getTargetTenantHeaders(tenantId?: number): Record<string, string> {
-  const id = getSelectedTargetTenantIdOrDefault(tenantId);
-  if (!isViewAllMode() && id === 0) return {};
+  if (isActiveCompanyViewAll()) return {};
+  const id = getSelectedTargetTenantId(tenantId);
+  if (id === undefined || id === null) return {};
   return { [TARGET_TENANT_HEADER]: String(toDataTenantId(id)) };
 }
 
 /**
- * Headers for the currently selected active company while the app is in view-all mode.
- * X-Tenant is reserved for app/database slugs (krossier/demo/dev); company
- * scoping always travels through X-Target-Tenant.
+ * Legacy alias kept for callers that historically used a separate "view-all
+ * read" header path. Both helpers now resolve to the same set.
  */
 export function getTenantRequestHeaders(tenantId?: number): Record<string, string> {
-  if (!isViewAllMode()) return {};
-  const id = getSelectedTargetTenantId(tenantId);
-  if (id === undefined || id === null) return {};
-
-  return getTargetTenantHeaders(id);
+  return getTargetTenantHeaders(tenantId);
 }
 
-/**
- * Merges target tenant headers into an existing AxiosRequestConfig headers object.
- */
+/** Merges target tenant headers into an existing AxiosRequestConfig headers object. */
 export function withTargetTenant(tenantId?: number): { headers: Record<string, string> } | undefined {
   const headers = getTargetTenantHeaders(tenantId);
   if (Object.keys(headers).length === 0) return undefined;

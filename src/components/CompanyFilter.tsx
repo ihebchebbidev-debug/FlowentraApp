@@ -21,7 +21,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useTenantMap } from '@/contexts/TenantMapContext';
-import { getCurrentTenant, isViewAllMode, setTenantOverride, VIEW_ALL_SENTINEL } from '@/utils/tenant';
+import { isViewAllMode } from '@/utils/tenant';
+import { setActiveCompany, getActiveCompanyId } from '@/utils/targetTenant';
 import { usePermissions } from '@/hooks/usePermissions';
 import { cn } from '@/lib/utils';
 import { useEffect, useMemo, useState } from 'react';
@@ -155,7 +156,7 @@ export function CompanyFilter({
   const { tenants } = useTenantMap();
   const { isMainAdmin } = usePermissions();
   const viewAll = isViewAllMode();
-  const currentSlug = getCurrentTenant();
+  const activeId = getActiveCompanyId();
 
   // Fix #4: instead of disappearing on single-tenant accounts, render a
   // compact disabled chip so the header layout stays stable across users.
@@ -178,9 +179,9 @@ export function CompanyFilter({
   }
   void isMainAdmin; // kept for future role-specific UI tweaks
 
-  // In pinned-company mode, reflect the actual current tenant in the trigger
+  // In pinned-company mode, reflect the actual active company in the trigger
   // and let the user jump to any other company (or back to "All companies").
-  const currentTenant = !viewAll ? tenants.find(t => t.slug === currentSlug) : undefined;
+  const currentTenant = !viewAll ? tenants.find(t => t.id === activeId) : undefined;
   const selectValue = viewAll
     ? (value === 'all' ? 'all' : String(value))
     : (currentTenant ? String(currentTenant.id) : 'all');
@@ -192,12 +193,12 @@ export function CompanyFilter({
     }
     // Pinned-company mode → behave as a tenant switcher
     if (v === 'all') {
-      setTenantOverride(VIEW_ALL_SENTINEL);
+      setActiveCompany({ viewAll: true, reload: true });
       return;
     }
     const target = tenants.find(t => t.id === Number(v));
-    if (target && target.slug !== currentSlug) {
-      setTenantOverride(target.slug);
+    if (target && target.id !== activeId) {
+      setActiveCompany({ id: target.id, reload: true });
     }
   };
 

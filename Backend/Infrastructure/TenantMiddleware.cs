@@ -159,7 +159,23 @@ public class TenantMiddleware
         }
         else
         {
-            context.Items["TenantId"] = 0;
+            // No X-Tenant header (preview/dev hosts) — still honor X-Target-Tenant
+            // so company-row scoping works the same way it does on real subdomains.
+            var tenantId = 0;
+            var targetTenantHeader = context.Request.Headers[TargetTenantHeaderName].FirstOrDefault();
+            if (!string.IsNullOrEmpty(targetTenantHeader) && int.TryParse(targetTenantHeader, out var targetTenantId))
+            {
+                if (!TenantSlugCache.IsValidTenantId(targetTenantId))
+                {
+                    _logger.LogWarning("🚫 TENANT-MIDDLEWARE: X-Target-Tenant {TenantId} is invalid or inactive", targetTenantId);
+                    context.Response.StatusCode = 404;
+                    await context.Response.WriteAsJsonAsync(new { error = $"Target company {targetTenantId} does not exist or is inactive." });
+                    return;
+                }
+                tenantId = TenantSlugCache.ToDataTenantId(targetTenantId);
+                context.Items["TenantTargetOverride"] = true;
+            }
+            context.Items["TenantId"] = tenantId;
         }
 
         await _next(context);

@@ -65,89 +65,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const resolveDefaultTenant = async (isMain: boolean) => {
     try {
-      const {
-        getCurrentTenant,
-        setTenantOverrideWithoutReload,
-        VIEW_ALL_SENTINEL,
-      } = await import('@/utils/tenant');
+      const { getActiveCompanyId, isActiveCompanyViewAll, setActiveCompany } = await import('@/utils/targetTenant');
 
-      const current = getCurrentTenant();
-
-      // If we already have a slug, validate it against the real tenant list.
-      // A stale override (e.g. 'default' left from a previous session) can point
-      // to an empty/non-existent tenant and cause "no data" symptoms even though
-      // X-Tenant is being sent. We auto-correct here.
-      if (current && current !== VIEW_ALL_SENTINEL) {
-        if (isMain) {
-          try {
-            const { tenantsApi } = await import('@/services/api/tenantsApi');
-            const tenants = await tenantsApi.list();
-            const matched = tenants.find(
-              (t) => t.slug?.toLowerCase() === current.toLowerCase() && t.isActive,
-            );
-            if (matched) return; // override is valid
-
-            // Stale override → switch to the real default tenant (or first active)
-            const fallback =
-              tenants.find((t) => t.isDefault && t.isActive) ||
-              tenants.find((t) => t.isActive) ||
-              tenants[0];
-            if (fallback) {
-              console.info(
-                `[Auth] Stale tenant override "${current}" → switching to "${fallback.slug}"`,
-              );
-              setTenantOverrideWithoutReload(fallback.slug);
-              return;
-            }
-            // No tenants returned → fall through to view-all
-            setTenantOverrideWithoutReload(VIEW_ALL_SENTINEL);
-            return;
-          } catch (innerErr) {
-            console.warn(
-              '[Auth] tenantsApi.list failed while validating override, keeping current',
-              innerErr,
-            );
-            return; // keep whatever the user had
-          }
-        }
-        // Non-admin: trust the slug (subdomain or env-driven)
+      // Already picked a company (or opted into view-all) → nothing to do.
+      if (getActiveCompanyId() !== undefined || isActiveCompanyViewAll()) {
         return;
       }
 
-      // No tenant resolved yet.
-      //
-      // We deliberately DO NOT auto-pin VIEW_ALL_SENTINEL for main admins
-      // anymore — leaving the tenant unset routes them through the mandatory
-      // /select-company picker (RequireCompany guard) so every record they
-      // create is tagged to a concrete company. They can still opt into
-      // "View all companies" from the picker for audit work.
-      if (isMain) {
-        return;
-      }
-
-      // Regular (non-admin) user on a tenantless host (e.g. Lovable preview):
-      // try to fetch the public tenant list and pin them to the default
-      // company so their data loads on first login. They can switch later
-      // via the TenantSwitcher (admins only) or by visiting their subdomain.
-      // We DO NOT use VIEW_ALL_SENTINEL here — the backend rejects it for
-      // non-MainAdmin users (403), which manifests as "no data loads".
+      // Main admin with multiple companies → leave unset so RequireCompany
+      // routes them through /select-company.
       try {
         const { tenantsApi } = await import('@/services/api/tenantsApi');
         const tenants = await tenantsApi.list();
-        const defaultTenant =
-          tenants.find((t) => t.isDefault && t.isActive) ||
-          tenants.find((t) => t.isActive) ||
-          tenants[0];
-        if (defaultTenant) {
-          setTenantOverrideWithoutReload(defaultTenant.slug);
+        const active = tenants.filter(t => t.isActive !== false);
+
+        if (isMain && active.length > 1) {
           return;
         }
-      } catch {
-        // tenantsApi may be admin-only; fall through to slug 'default'
+
+        const fallback =
+          active.find(t => t.isDefault) ||
+          active[0] ||
+          tenants.find(t => t.isDefault) ||
+          tenants[0];
+
+        if (fallback) {
+          setActiveCompany({ id: fallback.id });
+          return;
+        }
+      } catch (innerErr) {
+        console.warn('[Auth] tenantsApi.list failed during bootstrap', innerErr);
       }
-      // Last-resort: send slug 'default' so middleware resolves TenantId=0
-      // (the legacy default bucket) instead of view-all.
-      setTenantOverrideWithoutReload('default');
     } catch (e) {
       console.warn('Failed to auto-resolve default tenant', e);
     }

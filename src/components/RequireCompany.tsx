@@ -15,7 +15,7 @@
 import { type ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { getCurrentTenant } from "@/utils/tenant";
+import { getActiveCompanyId, isActiveCompanyViewAll } from "@/utils/targetTenant";
 
 export function RequireCompany({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -25,8 +25,10 @@ export function RequireCompany({ children }: { children: ReactNode }) {
   if (isLoading) return <>{children}</>;
   if (!isAuthenticated) return <>{children}</>;
 
-  const current = getCurrentTenant();
-  if (current) return <>{children}</>;
+  // Pass-through if the user has picked a company OR opted into view-all.
+  if (getActiveCompanyId() !== undefined || isActiveCompanyViewAll()) {
+    return <>{children}</>;
+  }
 
   return (
     <Navigate

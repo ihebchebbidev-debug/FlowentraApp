@@ -5,8 +5,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
 import { tenantsApi, type Tenant } from '@/services/api/tenantsApi';
 import { useAuth } from '@/contexts/AuthContext';
-import { registerTenantHeaderMetadata } from '@/utils/targetTenant';
-import { isViewAllMode, setTenantOverrideWithoutReload, VIEW_ALL_SENTINEL } from '@/utils/tenant';
+import { registerTenantHeaderMetadata, setActiveCompany, getActiveCompanyId, isActiveCompanyViewAll } from '@/utils/targetTenant';
 
 interface TenantMapContextValue {
   /** Resolve a tenantId to its company name. Returns "Company #id" as fallback. */
@@ -98,9 +97,9 @@ export function TenantMapProvider({ children }: { children: ReactNode }) {
         setTenantMap(map);
         writeCache(active);
         registerTenantHeaderMetadata(active.map(t => ({ id: t.id, slug: t.slug, isDefault: t.isDefault })));
-        if (active.length <= 1 && isViewAllMode()) {
-          const only = active[0];
-          setTenantOverrideWithoutReload(only?.slug ?? null);
+        // Single-tenant accounts: auto-pin so the user skips /select-company.
+        if (active.length === 1 && getActiveCompanyId() === undefined && !isActiveCompanyViewAll()) {
+          setActiveCompany({ id: active[0].id });
         }
       })
       .catch((err) => {

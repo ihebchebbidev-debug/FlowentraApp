@@ -13,10 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenantMap } from "@/contexts/TenantMapContext";
-import {
-  setTenantOverrideWithoutReload,
-  VIEW_ALL_SENTINEL,
-} from "@/utils/tenant";
+import { setActiveCompany } from "@/utils/targetTenant";
 import { useUserType } from "@/hooks/useUserType";
 
 export default function SelectCompany() {
@@ -40,17 +37,15 @@ export default function SelectCompany() {
     [tenants]
   );
 
-  const pick = (slug: string, label: string) => {
+  const pick = (tenantId: number, label: string) => {
     setBusy(label);
-    setTenantOverrideWithoutReload(slug);
-    // Hard reload so every cached query rehydrates against the new tenant header.
-    window.location.replace("/dashboard");
+    // Row-level switch: keep X-Tenant (subdomain/DB) untouched, set X-Target-Tenant.
+    setActiveCompany({ id: tenantId, reload: true });
   };
 
   const pickViewAll = () => {
     setBusy("__all__");
-    setTenantOverrideWithoutReload(VIEW_ALL_SENTINEL);
-    window.location.replace("/dashboard");
+    setActiveCompany({ viewAll: true, reload: true });
   };
 
   return (
@@ -89,7 +84,7 @@ export default function SelectCompany() {
                   key={t.id}
                   type="button"
                   disabled={!!busy}
-                  onClick={() => pick(t.slug, label)}
+                  onClick={() => pick(t.id, label)}
                   className="group text-left"
                 >
                   <Card className="transition-all border-border hover:border-primary/60 hover:shadow-lg disabled:opacity-50">

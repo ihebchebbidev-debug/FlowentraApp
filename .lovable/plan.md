@@ -1,46 +1,66 @@
-# Fix the remaining flow issues
+## Goal
 
-Three changes, shipped in this order so we can verify each before the next.
+Keep the two layers cleanly separated:
 
-## 1. Require a company before the user lands on anything else
+- **X-Tenant** = subdomain/app database (krossier / demo / dev). Set ONCE from the URL or env. Never changed by the in-app company picker.
+- **X-Target-Tenant** = numeric `TenantId` of the active company inside that DB (default = 0). Set/changed by the company picker, sent on **every** request (GET + mutations), drives row-level filtering and ModuleScope (shared vs per_company).
 
-Right now the app boots in **"All companies"** view, every "Add" button is disabled with a tooltip, and the Service Orders / Offers / Sales lists silently filter to zero rows. We will make company selection a hard gate.
+Today the company picker overwrites X-Tenant with the company slug — so switching companies actually switches DB, which is wrong, and ModuleScope can never be observed.
 
-- On login, if the user belongs to more than one company **and** has not picked one yet, redirect to a new `/select-company` screen (cards: company name, role, last accessed). No sidebar, no dashboard until a pick is made.
-- Selection is persisted (the existing `targetTenantId` storage) and restored on next visit, so returning users skip the screen.
-- A new "Switch company" button in the top bar opens the same picker as a modal — replaces today's "All companies" dropdown for non-admins.
-- Admins keep the "All companies" toggle (they need it to audit), but it now requires an explicit click — it is no longer the boot default.
-- Every "Add Offer / Add Sale / Add Service Order" button drops its disabled+tooltip pattern, because a company is always selected.
+## What changes
 
-## 2. Sales routes work on direct load
+### Frontend
 
-`/sales` and `/sales/:id` currently 404 on refresh because the Sales module is mounted only inside the dashboard shell.
+1. **New `activeCompany` store** (in `src/utils/targetTenant.ts`):
+   - `setActiveCompanyId(id: number | null, viewAll?: boolean)` → persists to `localStorage` keys `active_company_id` and `active_company_view_all`.
+   - `getActiveCompanyId()` / `isActiveCompanyViewAll()`.
+   - `getSelectedTargetTenantId()` now reads `active_company_id` first.
+   - `getTargetTenantHeaders()` emits `X-Target-Tenant` on **every** request whenever an active company is set (including reads, including value 0 for the default company). View-all → no `X-Target-Tenant` (acts like "all rows").
 
-- Re-export the Sales routes at the top level alongside Offers and Service Orders so `BrowserRouter` resolves them on a cold load.
-- Keep the sidebar entry pointing at the same path — no UX change for users who navigate from the menu.
+2. **`isViewAllMode()` (in `src/utils/tenant.ts`)** reads `active_company_view_all` instead of the X-Tenant sentinel. `VIEW_ALL_SENTINEL` is kept only as the value sent in `X-Tenant` for backwards-compatible main-admin audit mode if needed — but the picker no longer relies on it.
 
-## 3. Planned Times & Expenses editor on Offer + Sale items
+3. **`getCurrentTenant()`** stays exactly as today (subdomain/env override → DB selector). It is never touched by company switching.
 
-The `PlannedLineEntries` backend and `plannedEntriesService` frontend already exist, but the item modal never lets a user author them, so the dispatcher's overrun guard and the plan-vs-actual report have nothing to compare against.
+4. **Company picker call sites** stop calling `setTenantOverride` for company selection. They call `setActiveCompanyId(tenant.id)` (or `setActiveCompanyId(null, true)` for view-all):
+   - `src/modules/auth/pages/SelectCompany.tsx`
+   - `src/components/TenantSwitcher.tsx`
+   - `src/components/CompanyFilter.tsx`
+   - `src/contexts/TenantMapContext.tsx` (single-tenant collapse path)
+   - `src/contexts/AuthContext.tsx` (login bootstrap → set active company id from the user's default tenant; only call `setTenantOverrideWithoutReload` to pin the **subdomain** for preview hosts where there is no real subdomain).
 
-Add a collapsible **"Planning"** section to the existing Offer item modal (and the matching Sale item modal):
+5. **apiClient** always merges `getTargetTenantHeaders()` (GET + mutations). Already does for mutations; extend to GET.
 
-- **Time** rows: planned minutes, technician count, hourly rate, optional note.
-- **Expense** rows: type (travel / per-diem / materials / subcontractor), planned amount, currency, optional note.
-- "Add time" / "Add expense" buttons, inline delete.
-- On save, call `plannedEntriesService` with `parentType=offer_item` (or `sale_item`) and the item id; the backend's existing `CopyAsync` propagates them through sale → service_order_job, preserving `OriginOfferItemId`.
-- On edit, list existing rows from `GetForParentAsync` so the user sees what was authored before.
+6. **Cache invalidation on switch**: clear react-query cache and company-logo cache (today's `clearLogoCaches`) when `active_company_id` changes; trigger a soft reload so all queries refetch with the new header.
 
-## Technical notes
+### Backend
 
-- `targetTenant.ts` already exposes `setTargetTenantId / clearTargetTenant / isViewAllMode`. The gate is implemented in a top-level `<RequireCompany>` wrapper around the dashboard routes, reading `getSelectedTargetTenantId()`.
-- Sales routes: move the `<Route path="sales/*">` block out of `DashboardContent` and into the top-level router alongside `OffersModule`, while keeping it inside the same authenticated layout.
-- Planned editor: new component `PlannedEntriesEditor.tsx` reused by both `OfferItemModal` and `SaleItemModal`. No new API endpoints needed.
-- No schema migrations.
+`Backend/Infrastructure/TenantMiddleware.cs`:
+
+- When **no** `X-Tenant` header is sent (preview/dev hosts), if `X-Target-Tenant` is present and valid, use it as `TenantId` (currently it's ignored and falls through to TenantId=0).
+- Existing behavior for explicit `X-Tenant: krossier` + optional `X-Target-Tenant` stays unchanged.
+
+### Out of scope
+
+- No changes to `[ModuleScope]` attributes or `ApplicationDbContext` filters — they already work the moment `TenantId` is correctly stamped per request.
+- No DB migration. No new tables.
 
 ## Verification
 
-After each step:
-1. Log in as `testadmin@gmail.com`, confirm the company picker appears, pick "Company A", land on dashboard with company pinned.
-2. Hit `/dashboard/sales/9` directly in the URL bar — page loads.
-3. Open an offer item, add 60 min × 2 techs @ 80 TND/h plus a 50 TND travel expense, save, reopen, values persist; convert offer → sale, open sale item, values are copied.
+After applying:
+
+1. Log in on the preview, pick Krossier → `X-Tenant` unchanged (whatever the preview resolves), `X-Target-Tenant: <KrossierId>` on every request.
+2. Switch to FixPaint → `X-Tenant` still unchanged, `X-Target-Tenant: <FixPaintId>` on every request. Contact list count differs from Krossier's.
+3. Toggle a module to `shared` in Settings → Module Data Scope. Reads on that module return the union across companies for both companies.
+4. Toggle back to `per_company` → data isolates again.
+
+## Files touched
+
+- `src/utils/targetTenant.ts` (new active-company store + always-on header)
+- `src/utils/tenant.ts` (`isViewAllMode` reads new flag)
+- `src/services/api/apiClient.ts` (apply header to GETs too)
+- `src/modules/auth/pages/SelectCompany.tsx`
+- `src/components/TenantSwitcher.tsx`
+- `src/components/CompanyFilter.tsx`
+- `src/contexts/TenantMapContext.tsx`
+- `src/contexts/AuthContext.tsx`
+- `Backend/Infrastructure/TenantMiddleware.cs`
