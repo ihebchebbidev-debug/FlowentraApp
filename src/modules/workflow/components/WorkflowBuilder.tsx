@@ -2316,9 +2316,42 @@ export function WorkflowBuilder() {
         open={templatesOpen}
         onOpenChange={setTemplatesOpen}
         onPick={(tNodes, tEdges, tpl) => {
-          setNodes(tNodes as any);
+          // Normalize template node data.type aliases → canonical types the
+          // runtime + WorkflowNode renderer understand, then set node.type via
+          // getNodeType so entity triggers / switch / loop render with the
+          // correct dedicated component.
+          const aliasMap: Record<string, string> = {
+            'webhook-trigger': 'webhook',
+            'scheduled-trigger': 'scheduled',
+            'contact-trigger': 'trigger',
+            'form-trigger': 'webhook',
+            'ai-analyzer': 'llm-analyzer',
+            'ai-email-writer': 'email-llm',
+            'ai-writer': 'llm-writer',
+            'sms': 'notification',
+            'http': 'api',
+          };
+          const normNodes = tNodes.map((n: any) => {
+            const rawType = n?.data?.type ?? 'action';
+            const canonical = aliasMap[rawType] ?? rawType;
+            return {
+              ...n,
+              type: getNodeType(canonical),
+              data: {
+                ...n.data,
+                type: canonical,
+                label: n?.data?.label ?? getNodeLabel(canonical),
+                icon: n?.data?.icon ?? getNodeIcon(canonical),
+                config: n?.data?.config ?? {},
+                executionState: 'idle' as NodeExecutionState,
+              },
+            };
+          });
+          setNodes(normNodes as any);
           setEdges(tEdges as any);
-          toast(`Loaded template: ${tpl.name}`, { duration: 2000 });
+          setHasUnsavedChanges(true);
+          if (!isEditMode) setIsEditMode(true);
+          toast.success(t('templateLoaded', { name: tpl.name, defaultValue: `Loaded template: ${tpl.name}` }), { duration: 2000 });
         }}
       />
     </div>

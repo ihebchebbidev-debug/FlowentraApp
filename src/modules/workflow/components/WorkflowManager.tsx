@@ -163,6 +163,147 @@ export function WorkflowManager({ nodes, edges, onLoadWorkflow, onNewWorkflow }:
       )}
 
 
+      {/* Manage workflows (load / play / pause / duplicate / delete) */}
+      <Dialog open={loadDialogOpen} onOpenChange={setLoadDialogOpen}>
+        <DialogTrigger asChild>
+          <Button variant="outline" size="sm">
+            <FolderOpen className="h-4 w-4 mr-2" />
+            {t('myWorkflows', { defaultValue: 'My workflows' })}
+            {workflows.length > 0 && (
+              <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-[10px]">
+                {workflows.length}
+              </Badge>
+            )}
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{t('myWorkflows', { defaultValue: 'My workflows' })}</DialogTitle>
+            <DialogDescription>
+              {t('myWorkflowsDescription', {
+                defaultValue: 'Pause or resume any workflow, load it onto the canvas, duplicate or delete it.',
+              })}
+            </DialogDescription>
+          </DialogHeader>
+
+          <ScrollArea className="max-h-[60vh] pr-2">
+            {loading ? (
+              <div className="flex items-center justify-center py-10 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                {t('loading', { defaultValue: 'Loading…' })}
+              </div>
+            ) : workflows.length === 0 ? (
+              <div className="text-center py-10 text-sm text-muted-foreground">
+                <Workflow className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                {t('noWorkflowsYet', { defaultValue: 'No saved workflows yet.' })}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {workflows.map((wf) => {
+                  const isCurrent = currentWorkflow?.id === wf.id;
+                  return (
+                    <Card
+                      key={wf.id}
+                      className={`transition-colors ${isCurrent ? 'border-primary/60 bg-primary/5' : ''}`}
+                    >
+                      <CardContent className="p-3 flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const next = !wf.isActive;
+                            const ok = next
+                              ? await activateWorkflow(wf.id)
+                              : await deactivateWorkflow(wf.id);
+                            if (ok) {
+                              toast.success(
+                                next
+                                  ? t('workflowStarted', { defaultValue: 'Workflow resumed' })
+                                  : t('workflowPaused', { defaultValue: 'Workflow paused' }),
+                              );
+                            } else {
+                              toast.error(t('toast.error', { defaultValue: 'Something went wrong' }));
+                            }
+                          }}
+                          className={`h-9 w-9 rounded-full flex items-center justify-center transition-colors shrink-0 ${
+                            wf.isActive
+                              ? 'bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/25'
+                              : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                          }`}
+                          title={
+                            wf.isActive
+                              ? t('pauseWorkflow', { defaultValue: 'Pause workflow' })
+                              : t('resumeWorkflow', { defaultValue: 'Resume workflow' })
+                          }
+                        >
+                          {wf.isActive ? <Power className="h-4 w-4" /> : <PowerOff className="h-4 w-4" />}
+                        </button>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium truncate">{wf.name}</span>
+                            <Badge
+                              variant={wf.isActive ? 'default' : 'secondary'}
+                              className="text-[10px] px-1.5 py-0 h-4"
+                            >
+                              {wf.isActive
+                                ? t('active', { defaultValue: 'Active' })
+                                : t('paused', { defaultValue: 'Paused' })}
+                            </Badge>
+                            {isCurrent && (
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">
+                                {t('current', { defaultValue: 'Open' })}
+                              </Badge>
+                            )}
+                          </div>
+                          {wf.description && (
+                            <div className="text-xs text-muted-foreground truncate">{wf.description}</div>
+                          )}
+                          <div className="text-[10px] text-muted-foreground mt-0.5">
+                            {t('updated', { defaultValue: 'Updated' })}{' '}
+                            {formatDistanceToNow(new Date(wf.updatedAt), { addSuffix: true })}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button size="sm" variant="outline" onClick={() => handleLoad(wf)}>
+                            <FolderOpen className="h-3.5 w-3.5 mr-1" />
+                            {t('open', { defaultValue: 'Open' })}
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleDuplicate(wf.id)}>
+                                <Copy className="h-3.5 w-3.5 mr-2" />
+                                {t('duplicate', { defaultValue: 'Duplicate' })}
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="text-destructive focus:text-destructive"
+                                onClick={async () => {
+                                  await deleteWorkflow(wf.id);
+                                  toast.success(t('deleted', { defaultValue: 'Deleted' }));
+                                }}
+                              >
+                                <Trash2 className="h-3.5 w-3.5 mr-2" />
+                                {t('delete', { defaultValue: 'Delete' })}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
       {/* Execution History Button */}
       {currentWorkflow && !isNaN(Number(currentWorkflow.id)) && (
         <Button variant="outline" size="sm" onClick={() => setHistoryDialogOpen(true)}>
