@@ -1251,7 +1251,7 @@
       "speed": "Playback speed",
       "dismiss": "Skip tour",
       "done": "Got it",
-      "finished": "That's it — you're ready to build your own workflows. Click the help button anytime to replay this demo.",
+      "finished": "That's the full tour — Triggers, Actions, Conditions, Approvals, AI, Integrations and Publishing. Click the help button anytime to replay or jump to a chapter.",
       "s1": "Welcome. Let's build a workflow together — watch how it's done.",
       "s2": "The left palette holds every node type. We start with triggers.",
       "s3": "Grab a Status Change trigger from the palette…",
@@ -1271,7 +1271,90 @@
       "s17": "Approvals wait for a manager — the workflow resumes once they decide.",
       "s18": "Click Save to persist your workflow.",
       "s19": "Toggle Activate to make it run on real events.",
-      "s20": "Hit Test run to fire it once and watch each node execute live."
+      "s20": "Hit Test run to fire it once and watch each node execute live.",
+      "welcome": "Welcome — let's build a complete real-world workflow together. Watch every click; you can pause, skip, or jump to any chapter below.",
+      "layout": "The left palette holds every node type, organized into 7 categories. Search at the top filters them live.",
+      "toolbarTour": "Top-right toolbar: Test run (dry-run on real data), Save (persist the draft), Activate (turn it on for real events).",
+      "cancel": "Cancel",
+      "applyChanges": "Apply changes",
+      "nodesLabel": "Nodes",
+      "searchPlaceholder": "Search nodes…",
+      "nextRun": "Next poll",
+      "cat": {
+        "triggers": "Triggers",
+        "entities": "Entities",
+        "actions": "Actions",
+        "conditions": "Conditions",
+        "communication": "Communication",
+        "ai": "AI",
+        "integration": "Integration"
+      },
+      "tab": {
+        "general": "General",
+        "settings": "Settings",
+        "advanced": "Advanced"
+      },
+      "chapter": {
+        "overview": "Overview",
+        "triggers": "Triggers",
+        "actions": "Actions",
+        "conditions": "Conditions",
+        "approval": "Approvals",
+        "ai": "AI nodes",
+        "integration": "Integration",
+        "publish": "Save & Run"
+      },
+      "trig": {
+        "openCat": "Open the Triggers category. Triggers are the only nodes that can start a workflow.",
+        "itemList": "There are 6 trigger types: status changes on Offer / Sale / Service Order / Dispatch, plus Webhook and Scheduled.",
+        "grab": "Click + drag the Offer · Status Change trigger from the palette…",
+        "drop": "…and drop it on the canvas. Every workflow must start with exactly one trigger.",
+        "openConfig": "Double-click the node to open its configuration panel on the right.",
+        "fieldsExplain": "Pick the entity (Offer), the From status (draft, or any) and the To status (sent). The trigger fires the moment that transition happens in the app.",
+        "save": "Click Apply changes to save the trigger config — the node now shows the status pill 'draft → sent'."
+      },
+      "act": {
+        "openCat": "Open Communication. This holds Send Email, In-app Notification, Approval, Delay, Human Input Form and Wait for Event.",
+        "grab": "Grab Send Email…",
+        "drop": "…and drop it next to the trigger.",
+        "connect": "Connect the trigger's right handle to the email's left handle — that's how data flows.",
+        "openConfig": "Open the email config. Every field supports {{ variables }} from previous nodes.",
+        "variables": "Recipient, Subject and Body all accept variables like {{ trigger.contact.email }} or {{ offer.totalAmount }}. Toggle 'Attach PDF of entity' to include the generated PDF.",
+        "save": "Apply changes — the node now summarises its config below the title."
+      },
+      "cond": {
+        "openCat": "Open Conditions. If/Else branches the flow, Switch handles many cases, Loop iterates over arrays.",
+        "grab": "Grab If/Else…",
+        "drop": "…and drop it below the trigger. It auto-connects from the trigger.",
+        "openConfig": "Open the config. Pick a Field (any value from previous nodes), an Operator and a Value.",
+        "save": "Apply changes — the condition now has 'true' and 'false' output handles.",
+        "branches": "Add a Send SMS on the 'true' branch and an In-app Notification on 'false'. Each branch runs independently."
+      },
+      "appr": {
+        "grab": "Grab Request Approval from Communication — it pauses the workflow until a human decides.",
+        "drop": "Drop it after Send Email. The workflow halts at this node until approval.",
+        "openConfig": "Configure: approver role (Sales Manager, Operations Lead, Finance, Admin or specific user), timeout in hours, and what happens on timeout (auto-reject / auto-approve / escalate).",
+        "save": "Apply changes — approvers see this in their 'Pending Approvals' inbox and get an email."
+      },
+      "ai": {
+        "openCat": "Open AI. These nodes use Lovable AI Gateway — no API keys needed.",
+        "grab": "Grab AI · Email Writer to generate personalised email bodies on the fly.",
+        "drop": "Drop it. AI nodes work like any other action — they can be chained, branched, looped.",
+        "openConfig": "Pick a model (Gemini Flash is fast & cheap, GPT-5 is most capable), a Tone preset, write your prompt with {{ variables }}, and optionally translate the output.",
+        "save": "Apply changes — the AI node will run on each trigger event and pass its output to downstream nodes."
+      },
+      "int": {
+        "openCat": "Open Integration. HTTP Request calls any external API; Dynamic Form opens a form to a user; Data Transfer copies fields between entities; Custom Code runs sandboxed JavaScript.",
+        "grab": "Grab HTTP Request to push the approved offer to your ERP.",
+        "drop": "Drop it after Approval.",
+        "openConfig": "Choose method, URL, auth scheme. Use {{ secrets.MY_TOKEN }} to inject secrets stored in Settings → Secrets. The response is available downstream as {{ http.response }}.",
+        "save": "Apply changes — secrets are encrypted at rest and never logged."
+      },
+      "pub": {
+        "save": "Click Save in the toolbar. This persists the draft — it does NOT run yet.",
+        "activate": "Toggle Activate to make the workflow live. From now on, real events will trigger it.",
+        "test": "Test run fires the workflow once with sample data. Live execution status shows below — green = ok, amber = waiting, red = failed. Click any node to see its input/output payload."
+      }
     }
   },
   "plugin": {

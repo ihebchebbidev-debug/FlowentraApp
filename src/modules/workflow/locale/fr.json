@@ -1240,30 +1240,30 @@
       "docs": "Documentation"
     },
     "demo": {
-      "title": "Comment créer un workflow",
+      "title": "Comment construire un workflow",
       "stepLabel": "Étape {{current}} sur {{total}}",
       "paletteTitle": "Palette de nœuds",
-      "canvasEmpty": "Canevas vide — déposez les nœuds ici",
-      "executionTitle": "Test — exécution en direct",
+      "canvasEmpty": "Canvas vide — déposez des nœuds ici",
+      "executionTitle": "Exécution test — en direct",
       "btnSave": "Enregistrer",
       "btnActivate": "Activer",
       "btnActive": "Actif",
-      "btnTest": "Tester",
+      "btnTest": "Test",
       "category": {
         "triggers": "Déclencheurs",
         "actions": "Actions",
         "logic": "Logique",
         "integrations": "Intégrations"
       },
-      "play": "Lecture",
+      "play": "Lire",
       "pause": "Pause",
       "prev": "Étape précédente",
       "skip": "Étape suivante",
       "replay": "Rejouer",
       "speed": "Vitesse",
-      "dismiss": "Passer",
+      "dismiss": "Quitter",
       "done": "Compris",
-      "finished": "C'est tout — vous êtes prêt à créer vos propres workflows. Cliquez sur l'aide à tout moment pour rejouer cette démo.",
+      "finished": "Fin du tour — Déclencheurs, Actions, Conditions, Approbations, IA, Intégrations et Publication. Cliquez sur le bouton d'aide pour rejouer ou aller à un chapitre.",
       "s1": "Bienvenue. Construisons un workflow ensemble — regardez comment faire.",
       "s2": "La palette de gauche contient tous les types de nœuds. Commençons par les déclencheurs.",
       "s3": "Saisissez un déclencheur Changement de statut dans la palette…",
@@ -1283,7 +1283,90 @@
       "s17": "L'approbation attend un manager — le workflow reprend ensuite.",
       "s18": "Cliquez sur Enregistrer pour sauvegarder votre workflow.",
       "s19": "Activez-le pour qu'il se déclenche sur les vrais événements.",
-      "s20": "Lancez Tester pour l'exécuter une fois et voir chaque nœud s'exécuter en direct."
+      "s20": "Lancez Tester pour l'exécuter une fois et voir chaque nœud s'exécuter en direct.",
+      "welcome": "Bienvenue — construisons ensemble un workflow réel complet. Vous pouvez mettre en pause, sauter une étape ou aller à un chapitre.",
+      "layout": "La palette de gauche contient tous les types de nœuds, classés en 7 catégories. La recherche en haut filtre en direct.",
+      "toolbarTour": "Barre haute : Test run (essai à blanc sur des données réelles), Save (enregistre le brouillon), Activate (active sur les vrais événements).",
+      "cancel": "Annuler",
+      "applyChanges": "Appliquer",
+      "nodesLabel": "Nœuds",
+      "searchPlaceholder": "Rechercher…",
+      "nextRun": "Prochain scan",
+      "cat": {
+        "triggers": "Déclencheurs",
+        "entities": "Entités",
+        "actions": "Actions",
+        "conditions": "Conditions",
+        "communication": "Communication",
+        "ai": "IA",
+        "integration": "Intégration"
+      },
+      "tab": {
+        "general": "Général",
+        "settings": "Paramètres",
+        "advanced": "Avancé"
+      },
+      "chapter": {
+        "overview": "Vue d'ensemble",
+        "triggers": "Déclencheurs",
+        "actions": "Actions",
+        "conditions": "Conditions",
+        "approval": "Approbations",
+        "ai": "Nœuds IA",
+        "integration": "Intégration",
+        "publish": "Publication"
+      },
+      "trig": {
+        "openCat": "Ouvrez la catégorie Déclencheurs. Seuls les déclencheurs peuvent démarrer un workflow.",
+        "itemList": "Il y a 6 déclencheurs : changements de statut sur Offre / Vente / Bon de service / Dispatch, Webhook et Planifié.",
+        "grab": "Glissez le déclencheur Offre · Changement de statut…",
+        "drop": "…et déposez-le sur le canvas. Chaque workflow commence par un seul déclencheur.",
+        "openConfig": "Double-cliquez sur le nœud pour ouvrir le panneau de configuration à droite.",
+        "fieldsExplain": "Choisissez l'entité (Offre), le statut De (brouillon, ou tout) et Vers (envoyée). Le déclencheur se déclenche dès cette transition.",
+        "save": "Cliquez Appliquer — le nœud affiche maintenant la pastille 'brouillon → envoyée'."
+      },
+      "act": {
+        "openCat": "Ouvrez Communication : Envoyer Email, Notification, Approbation, Délai, Formulaire humain, Attendre événement.",
+        "grab": "Glissez Envoyer Email…",
+        "drop": "…et déposez à côté du déclencheur.",
+        "connect": "Reliez la sortie droite du déclencheur à l'entrée gauche de l'email — c'est ainsi que les données circulent.",
+        "openConfig": "Ouvrez la config. Tous les champs acceptent les {{ variables }} des nœuds précédents.",
+        "variables": "Destinataire, Sujet et Corps acceptent {{ trigger.contact.email }} ou {{ offer.totalAmount }}. Activez 'Joindre le PDF' pour inclure le document généré.",
+        "save": "Appliquez — le nœud résume sa config sous le titre."
+      },
+      "cond": {
+        "openCat": "Ouvrez Conditions. Si/Sinon branche le flux, Switch gère plusieurs cas, Loop itère sur des tableaux.",
+        "grab": "Glissez Si/Sinon…",
+        "drop": "…déposez sous le déclencheur. Il se connecte automatiquement.",
+        "openConfig": "Ouvrez la config. Choisissez un Champ (toute valeur des nœuds précédents), un Opérateur et une Valeur.",
+        "save": "Appliquez — la condition a maintenant deux sorties 'true' et 'false'.",
+        "branches": "Ajoutez un SMS sur 'true' et une Notification sur 'false'. Chaque branche s'exécute indépendamment."
+      },
+      "appr": {
+        "grab": "Glissez Demande d'approbation depuis Communication — met le workflow en pause jusqu'à décision humaine.",
+        "drop": "Déposez après Envoyer Email. Le workflow se met en pause à ce nœud.",
+        "openConfig": "Configurez : rôle approbateur (Manager Ventes, Ops, Finance, Admin, utilisateur précis), délai en heures, action sur expiration (auto-rejet / auto-approbation / escalade).",
+        "save": "Appliquez — les approbateurs voient cela dans leur boîte 'Approbations en attente' et reçoivent un email."
+      },
+      "ai": {
+        "openCat": "Ouvrez IA. Ces nœuds utilisent Lovable AI Gateway — aucune clé API nécessaire.",
+        "grab": "Glissez IA · Rédacteur Email pour générer des emails personnalisés.",
+        "drop": "Déposez. Les nœuds IA s'enchaînent, se branchent, se bouclent comme les autres.",
+        "openConfig": "Choisissez un modèle (Gemini Flash rapide et économique, GPT-5 le plus puissant), un ton, écrivez votre prompt avec {{ variables }}, traduisez si besoin.",
+        "save": "Appliquez — le nœud IA s'exécute à chaque déclenchement et transmet sa sortie aux nœuds suivants."
+      },
+      "int": {
+        "openCat": "Ouvrez Intégration. HTTP Request appelle toute API externe ; Formulaire dynamique ouvre un formulaire à un utilisateur ; Transfert de données copie des champs entre entités ; Code personnalisé exécute du JavaScript en sandbox.",
+        "grab": "Glissez HTTP Request pour envoyer l'offre approuvée à votre ERP.",
+        "drop": "Déposez après Approbation.",
+        "openConfig": "Choisissez la méthode, l'URL, l'auth. Utilisez {{ secrets.MON_TOKEN }} pour injecter les secrets stockés dans Paramètres → Secrets. La réponse est disponible en aval via {{ http.response }}.",
+        "save": "Appliquez — les secrets sont chiffrés au repos et jamais loggés."
+      },
+      "pub": {
+        "save": "Cliquez Enregistrer dans la barre. Cela persiste le brouillon — il ne s'exécute pas encore.",
+        "activate": "Activez pour mettre le workflow en ligne. À partir de maintenant, les vrais événements le déclencheront.",
+        "test": "Test run déclenche le workflow une fois avec des données d'exemple. Le statut s'affiche en bas — vert = ok, orange = attente, rouge = échec. Cliquez un nœud pour voir son entrée/sortie."
+      }
     }
   },
   "plugin": {
