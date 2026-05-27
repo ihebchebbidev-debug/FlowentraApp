@@ -610,18 +610,26 @@ namespace MyApi.Modules.Offers.Services
             int? saleId = null;
             int? serviceOrderId = null;
             int formDocumentsCopied = 0;
+            MyApi.Modules.Sales.Models.Sale? createdSale = null;
 
-            // ── Create Sale if requested ──
+            // ── Atomic DB writes: sale + items + planned entries + offer status ──
+            // Wrapped in a transaction so a mid-conversion failure does NOT leave a
+            // partially-built Sale or an offer flipped to "accepted" without a Sale.
+            await using var tx = await _context.Database.BeginTransactionAsync();
+            try
+            {
             if (convertDto.ConvertToSale)
             {
                 string saleNum;
                 try
                 {
-                    saleNum = _numberingService != null ? await _numberingService.GetNextAsync("Sale") : $"SALE-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString().Substring(0, 5).ToUpper()}";
+                    saleNum = _numberingService != null
+                        ? await _numberingService.GetNextAsync("Sale")
+                        : MyApi.Modules.Numbering.Services.NumberingFallback.Generate("Sale");
                 }
                 catch
                 {
-                    saleNum = $"SALE-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString().Substring(0, 5).ToUpper()}";
+                    saleNum = MyApi.Modules.Numbering.Services.NumberingFallback.Generate("Sale");
                 }
 
                 var sale = new MyApi.Modules.Sales.Models.Sale
@@ -664,6 +672,7 @@ namespace MyApi.Modules.Offers.Services
                 _context.Sales.Add(sale);
                 await _context.SaveChangesAsync();
                 saleId = sale.Id;
+                createdSale = sale;
 
                 // Auto-note on the project (deal won)
                 ProjectAutoNote.Add(_context, offer.ProjectId,
@@ -707,55 +716,18 @@ namespace MyApi.Modules.Offers.Services
                 await _context.SaveChangesAsync();
 
                 // Carry planned time/expenses from offer items → new sale items (Stage 2).
+                // Inside the transaction: a copy failure here MUST roll back the Sale so
+                // we never end up with sale items but no planned budget.
                 if (_plannedEntries != null && offer.Items != null && offer.Items.Any())
                 {
-                    try
+                    var srcOfferItems = offer.Items.ToList();
+                    var newSaleItems = await _context.SaleItems
+                        .Where(si => si.SaleId == sale.Id)
+                        .OrderBy(si => si.Id)
+                        .ToListAsync();
+                    for (int i = 0; i < srcOfferItems.Count && i < newSaleItems.Count; i++)
                     {
-                        var srcOfferItems = offer.Items.ToList();
-                        var newSaleItems = await _context.SaleItems
-                            .Where(si => si.SaleId == sale.Id)
-                            .OrderBy(si => si.Id)
-                            .ToListAsync();
-                        for (int i = 0; i < srcOfferItems.Count && i < newSaleItems.Count; i++)
-                        {
-                            await _plannedEntries.CopyAsync("offer_item", srcOfferItems[i].Id, "sale_item", newSaleItems[i].Id, userId);
-                        }
-                    }
-                    catch (Exception planEx)
-                    {
-                        _logger.LogWarning(planEx, "Failed to copy planned entries during offer→sale conversion (offer {OfferId})", id);
-                    }
-                }
-
-
-                // Copy form documents from offer to sale
-                try
-                {
-                    formDocumentsCopied = await _formDocumentService.CopyDocumentsToEntityAsync(
-                        "offer", id, "sale", sale.Id, userId);
-                    _logger.LogInformation(
-                        "Copied {Count} form documents from Offer {OfferId} to Sale {SaleId}",
-                        formDocumentsCopied, id, sale.Id);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex,
-                        "Failed to copy form documents from Offer {OfferId} to Sale {SaleId}",
-                        id, sale.Id);
-                }
-
-                // Trigger workflow for the new sale (use status change: "" → "created")
-                if (_workflowTriggerService != null)
-                {
-                    try
-                    {
-                        await _workflowTriggerService.TriggerStatusChangeAsync(
-                            "sale", sale.Id, "", "created", userId,
-                            new { saleId = sale.Id, saleNumber = sale.SaleNumber, title = sale.Title, fromOfferId = id });
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Failed to trigger workflow for sale {SaleId} created from offer {OfferId}", sale.Id, id);
+                        await _plannedEntries.CopyAsync("offer_item", srcOfferItems[i].Id, "sale_item", newSaleItems[i].Id, userId);
                     }
                 }
             }
@@ -777,6 +749,46 @@ namespace MyApi.Modules.Offers.Services
             });
 
             await _context.SaveChangesAsync();
+                await tx.CommitAsync();
+            }
+            catch
+            {
+                await tx.RollbackAsync();
+                throw;
+            }
+
+            // ── Post-commit side effects (must NOT roll back the conversion) ──
+            if (createdSale != null)
+            {
+                try
+                {
+                    formDocumentsCopied = await _formDocumentService.CopyDocumentsToEntityAsync(
+                        "offer", id, "sale", createdSale.Id, userId);
+                    _logger.LogInformation(
+                        "Copied {Count} form documents from Offer {OfferId} to Sale {SaleId}",
+                        formDocumentsCopied, id, createdSale.Id);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex,
+                        "Failed to copy form documents from Offer {OfferId} to Sale {SaleId}",
+                        id, createdSale.Id);
+                }
+
+                if (_workflowTriggerService != null)
+                {
+                    try
+                    {
+                        await _workflowTriggerService.TriggerStatusChangeAsync(
+                            "sale", createdSale.Id, "", "created", userId,
+                            new { saleId = createdSale.Id, saleNumber = createdSale.SaleNumber, title = createdSale.Title, fromOfferId = id });
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to trigger workflow for sale {SaleId} created from offer {OfferId}", createdSale.Id, id);
+                    }
+                }
+            }
 
             // Trigger workflow for the offer status change
             if (_workflowTriggerService != null)

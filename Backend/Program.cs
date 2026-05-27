@@ -215,9 +215,17 @@ builder.Services.AddScoped<ApplicationDbContext>(sp =>
     if (tenantId == null)
     {
         var targetTenantHeader = httpContext?.Request.Headers[TenantMiddleware.TargetTenantHeaderName].FirstOrDefault();
-        tenantId = int.TryParse(targetTenantHeader, out var targetTenantId)
-            ? TenantSlugCache.ToDataTenantId(targetTenantId)
-            : 0;
+        if (int.TryParse(targetTenantHeader, out var targetTenantId)
+            && TenantSlugCache.IsValidTenantId(tenant, targetTenantId))
+        {
+            // Validate against the CURRENT X-Tenant DB cache (Fix #3) — never
+            // accept an unvalidated integer from the wire.
+            tenantId = TenantSlugCache.ToDataTenantId(tenant, targetTenantId);
+        }
+        else
+        {
+            tenantId = 0;
+        }
     }
 
     ApplicationDbContext ctx;
@@ -1081,7 +1089,7 @@ app.MapGet("/api/debug/tenant", (HttpContext context, ITenantDbContextFactory fa
     return new
     {
         detectedTenant = tenant ?? "(none)",
-        knownTenant = !string.IsNullOrWhiteSpace(tenant) && TenantSlugCache.HasTenant(tenant),
+        knownTenant = !string.IsNullOrWhiteSpace(tenant) && TenantSlugCache.HasTenant(tenant, tenant),
         envVarName = envKey,
         envVarExists = !string.IsNullOrEmpty(envValue),
         dedicatedDbConfigured = !string.IsNullOrWhiteSpace(tenant) && TenantConnectionResolver.HasDedicatedConnectionString(tenant),

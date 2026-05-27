@@ -58,12 +58,12 @@ namespace MyApi.Modules.ServiceOrders.Services
             {
                 orderNumber = _numberingService != null
                     ? await _numberingService.GetNextAsync("ServiceOrder")
-                    : $"SO-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString().Substring(0, 5).ToUpper()}";
+                    : MyApi.Modules.Numbering.Services.NumberingFallback.Generate("ServiceOrder");
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Numbering service failed for direct ServiceOrder, using GUID fallback");
-                orderNumber = $"SO-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString().Substring(0, 6).ToUpper()}";
+                orderNumber = MyApi.Modules.Numbering.Services.NumberingFallback.Generate("ServiceOrder");
             }
 
             // --- materials (optional) --------------------------------------
@@ -209,12 +209,12 @@ namespace MyApi.Modules.ServiceOrders.Services
             {
                 saleNumber = _numberingService != null
                     ? await _numberingService.GetNextAsync("Sale")
-                    : $"SALE-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString().Substring(0, 5).ToUpper()}";
+                    : MyApi.Modules.Numbering.Services.NumberingFallback.Generate("Sale");
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Numbering service failed for shadow Sale, using GUID fallback");
-                saleNumber = $"SALE-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString().Substring(0, 5).ToUpper()}";
+                saleNumber = MyApi.Modules.Numbering.Services.NumberingFallback.Generate("Sale");
             }
 
             var sale = new Sale
@@ -286,6 +286,10 @@ namespace MyApi.Modules.ServiceOrders.Services
         {
             try
             {
+            // Atomic creation: ServiceOrder + jobs + planned entries + materials + sale flags
+            // must all succeed together. A mid-flow failure would otherwise leave a SO
+            // with jobs but no planned budget, or sale items wrongly marked as converted.
+            await using var tx = await _context.Database.BeginTransactionAsync();
             // Verify sale exists with its items
                 var sale = await _context.Sales
                     .Include(s => s.Items)
@@ -308,12 +312,14 @@ namespace MyApi.Modules.ServiceOrders.Services
                 string orderNumber;
                 try
                 {
-                    orderNumber = _numberingService != null ? await _numberingService.GetNextAsync("ServiceOrder") : $"SO-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString().Substring(0, 5).ToUpper()}";
+                    orderNumber = _numberingService != null
+                        ? await _numberingService.GetNextAsync("ServiceOrder")
+                        : MyApi.Modules.Numbering.Services.NumberingFallback.Generate("ServiceOrder");
                 }
                 catch (Exception ex)
                 {
                     _logger.LogWarning(ex, "Numbering service failed for ServiceOrder, using GUID fallback");
-                    orderNumber = $"SO-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString().Substring(0, 6).ToUpper()}";
+                    orderNumber = MyApi.Modules.Numbering.Services.NumberingFallback.Generate("ServiceOrder");
                 }
 
                 var serviceOrder = new ServiceOrder
@@ -486,14 +492,9 @@ namespace MyApi.Modules.ServiceOrders.Services
                             {
                                 if (int.TryParse(part.Trim(), out var saleItemId))
                                 {
-                                    try
-                                    {
-                                        await _plannedEntries.CopyAsync("sale_item", saleItemId, "service_order_job", j.Id, userId);
-                                    }
-                                    catch (Exception planEx)
-                                    {
-                                        _logger.LogWarning(planEx, "Failed to copy planned entries from sale_item {SaleItemId} to job {JobId}", saleItemId, j.Id);
-                                    }
+                                    // Inside the transaction: a failure here MUST roll back
+                                    // so we never end up with jobs missing planned budget.
+                                    await _plannedEntries.CopyAsync("sale_item", saleItemId, "service_order_job", j.Id, userId);
                                 }
                             }
                         }
@@ -545,6 +546,8 @@ namespace MyApi.Modules.ServiceOrders.Services
                 sale.ServiceOrdersStatus = "created";
                 sale.LastActivity = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
+
+                await tx.CommitAsync();
 
                 var result = await GetServiceOrderByIdAsync(serviceOrder.Id);
                 return result!;
@@ -977,7 +980,7 @@ namespace MyApi.Modules.ServiceOrders.Services
 
             if (completeDto.GenerateInvoice)
             {
-                serviceOrder.InvoiceNumber = $"INV-{DateTime.UtcNow:yyyy-MM-dd}-{Guid.NewGuid().ToString().Substring(0, 5).ToUpper()}";
+                serviceOrder.InvoiceNumber = MyApi.Modules.Numbering.Services.NumberingFallback.Generate("Invoice");
                 serviceOrder.InvoiceDate = DateTime.UtcNow;
             }
 

@@ -104,12 +104,14 @@ namespace MyApi.Modules.Dispatches.Services
             string dispatchNumber;
             try
             {
-                dispatchNumber = _numberingService != null ? await _numberingService.GetNextAsync("Dispatch") : $"DISP-{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid().ToString()[..4].ToUpper()}";
+                dispatchNumber = _numberingService != null
+                    ? await _numberingService.GetNextAsync("Dispatch")
+                    : MyApi.Modules.Numbering.Services.NumberingFallback.Generate("Dispatch");
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Numbering service failed for Dispatch, using GUID fallback");
-                dispatchNumber = $"DISP-{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid().ToString()[..4].ToUpper()}";
+                dispatchNumber = MyApi.Modules.Numbering.Services.NumberingFallback.Generate("Dispatch");
             }
 
             var dispatch = new Dispatch
@@ -232,12 +234,12 @@ namespace MyApi.Modules.Dispatches.Services
             {
                 dispatchNumber = _numberingService != null
                     ? await _numberingService.GetNextAsync("Dispatch")
-                    : $"DISP-{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid().ToString()[..4].ToUpper()}";
+                    : MyApi.Modules.Numbering.Services.NumberingFallback.Generate("Dispatch");
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Numbering service failed for Dispatch, using GUID fallback");
-                dispatchNumber = $"DISP-{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid().ToString()[..4].ToUpper()}";
+                dispatchNumber = MyApi.Modules.Numbering.Services.NumberingFallback.Generate("Dispatch");
             }
 
             var dispatch = new Dispatch
@@ -343,6 +345,16 @@ namespace MyApi.Modules.Dispatches.Services
                 .Select(n => n!.Value)
                 .ToList();
 
+            // ── Concurrency guard ────────────────────────────────────────────
+            // Two simultaneous merge calls for the same (installation, date) could both
+            // miss the candidate query and create duplicate dispatches. Acquire a
+            // transaction-scoped Postgres advisory lock so they serialize. The lock is
+            // released automatically on COMMIT/ROLLBACK. Key = (installationId << 32) | dayNumber.
+            await using var tx = await _db.Database.BeginTransactionAsync();
+            long lockKey = ((long)installationId << 32)
+                         | (uint)(scheduledDate.Date - new DateTime(1970, 1, 1)).Days;
+            await _db.Database.ExecuteSqlRawAsync("SELECT pg_advisory_xact_lock({0})", lockKey);
+
             // Look for an existing non-deleted dispatch on the same date for this installation
             // whose technician set matches the requested set (when technicians are provided).
             var openStatuses = new[] { "planned", "assigned", "scheduled" };
@@ -425,6 +437,7 @@ namespace MyApi.Modules.Dispatches.Services
                     .Include(d => d.DispatchJobs)
                     .FirstAsync(d => d.Id == existing.Id);
                 var nameMap = await GetTechnicianNameMapForDispatchAsync(reloaded.Id);
+                await tx.CommitAsync();
                 return DispatchMapping.ToDto(reloaded, nameMap);
             }
 
@@ -444,7 +457,11 @@ namespace MyApi.Modules.Dispatches.Services
                 ContactId = contactId,
                 ServiceOrderId = serviceOrderId,
             };
-            return await CreateFromInstallationAsync(createDto, userId);
+            // CreateFromInstallationAsync uses the same DbContext / connection and will
+            // enlist in this transaction so its writes are covered by the advisory lock too.
+            var created = await CreateFromInstallationAsync(createDto, userId);
+            await tx.CommitAsync();
+            return created;
         }
 
         public async Task<PagedResult<DispatchListItemDto>> GetAllAsync(DispatchQueryParams query)

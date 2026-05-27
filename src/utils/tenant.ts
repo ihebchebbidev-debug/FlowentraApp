@@ -22,6 +22,11 @@ export const TENANT_HEADER = 'X-Tenant';
 /** Header for targeting a specific tenant during mutations in view-all mode */
 export const TARGET_TENANT_HEADER = 'X-Target-Tenant';
 
+/** Header signalling that a MainAdmin wants cross-company rows INSIDE the
+ *  current per-tenant database. Replaces the legacy X-Tenant=__all__ which
+ *  also re-pointed the request at the default DB. */
+export const VIEW_ALL_HEADER = 'X-View-All';
+
 function getConfiguredBaseDomains(): string[] {
   const raw = import.meta.env.VITE_TENANT_BASE_DOMAINS as string | undefined;
   const configured = raw

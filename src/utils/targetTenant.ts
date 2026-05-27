@@ -10,7 +10,7 @@
  * inside the same DB and properly exercises EF global query filters + the
  * ModuleScope (shared vs per_company) attribute system.
  */
-import { getCurrentTenant, TARGET_TENANT_HEADER } from '@/utils/tenant';
+import { getCurrentTenant, TARGET_TENANT_HEADER, VIEW_ALL_HEADER } from '@/utils/tenant';
 
 /** localStorage keys */
 const ACTIVE_COMPANY_ID_KEY = 'active_company_id';
@@ -254,7 +254,12 @@ export function getSelectedTargetTenantIdOrDefault(tenantId?: number): number {
  * the backend returns rows across all companies.
  */
 export function getTargetTenantHeaders(tenantId?: number): Record<string, string> {
-  if (isActiveCompanyViewAll()) return {};
+  if (isActiveCompanyViewAll()) {
+    // Keep X-Tenant pinned to the current subdomain (so we stay in the
+    // right DB) and tell the backend to bypass the row-level company filter
+    // for this MainAdmin request.
+    return { [VIEW_ALL_HEADER]: 'true' };
+  }
   const id = getSelectedTargetTenantId(tenantId);
   if (id === undefined || id === null) return {};
   return { [TARGET_TENANT_HEADER]: String(toDataTenantId(id)) };

@@ -63,7 +63,7 @@ public class TenantDbContextFactory : ITenantDbContextFactory
             }
 
             var envKey = TenantConnectionResolver.GetEnvironmentVariableName(t);
-            if (TenantSlugCache.HasTenant(t))
+            if (TenantSlugCache.HasTenant(t, t))
             {
                 _logger.LogWarning("🏢 Tenant '{Tenant}' is valid but no dedicated DB is configured ({EnvKey}); using default shared DB", t, envKey);
                 return _defaultConnectionString;

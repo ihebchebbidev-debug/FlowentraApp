@@ -134,12 +134,14 @@ namespace MyApi.Modules.Sales.Services
             string saleNumber;
             try
             {
-                saleNumber = _numberingService != null ? await _numberingService.GetNextAsync("Sale") : $"SALE-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString().Substring(0, 5).ToUpper()}";
+                saleNumber = _numberingService != null
+                    ? await _numberingService.GetNextAsync("Sale")
+                    : MyApi.Modules.Numbering.Services.NumberingFallback.Generate("Sale");
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Numbering service failed for Sale, using GUID fallback");
-                saleNumber = $"SALE-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString().Substring(0, 5).ToUpper()}";
+                saleNumber = MyApi.Modules.Numbering.Services.NumberingFallback.Generate("Sale");
             }
 
             var sale = new Sale
@@ -240,12 +242,14 @@ namespace MyApi.Modules.Sales.Services
             string saleNumber2;
             try
             {
-                saleNumber2 = _numberingService != null ? await _numberingService.GetNextAsync("Sale") : $"SALE-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString().Substring(0, 5).ToUpper()}";
+                saleNumber2 = _numberingService != null
+                    ? await _numberingService.GetNextAsync("Sale")
+                    : MyApi.Modules.Numbering.Services.NumberingFallback.Generate("Sale");
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Numbering service failed for Sale (from offer), using GUID fallback");
-                saleNumber2 = $"SALE-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString().Substring(0, 5).ToUpper()}";
+                saleNumber2 = MyApi.Modules.Numbering.Services.NumberingFallback.Generate("Sale");
             }
 
             var sale = new Sale

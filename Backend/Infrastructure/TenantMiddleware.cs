@@ -20,6 +20,7 @@ public class TenantMiddleware
 {
     public const string TenantHeaderName = "X-Tenant";
     public const string TargetTenantHeaderName = "X-Target-Tenant";
+    public const string ViewAllHeaderName = "X-View-All";
     public const string ViewAllSentinel = "__all__";
 
     private readonly RequestDelegate _next;
@@ -33,30 +34,89 @@ public class TenantMiddleware
         _environment = environment;
     }
 
+    private static bool IsMainAdmin(HttpContext ctx)
+    {
+        var claims = ctx.User?.Claims;
+        if (claims == null) return false;
+        return claims.Any(c =>
+            (string.Equals(c.Type, "UserType", StringComparison.OrdinalIgnoreCase) &&
+             string.Equals(c.Value, "MainAdminUser", StringComparison.OrdinalIgnoreCase)) ||
+            (string.Equals(c.Type, "user_type", StringComparison.OrdinalIgnoreCase) &&
+             string.Equals(c.Value, "MainAdminUser", StringComparison.OrdinalIgnoreCase)) ||
+            (string.Equals(c.Type, "login_type", StringComparison.OrdinalIgnoreCase) &&
+             string.Equals(c.Value, "admin", StringComparison.OrdinalIgnoreCase)));
+    }
+
+    /// <summary>
+    /// Endpoints that legitimately operate WITHOUT a row-level company
+    /// selection — auth, tenant directory, profile/me, system logs, swagger,
+    /// health checks. Everything else inside /api/* must have an active
+    /// company once the user is authenticated (Fix #4).
+    /// </summary>
+    private static bool IsCompanyOptionalPath(string path)
+    {
+        if (string.IsNullOrEmpty(path)) return true;
+        if (!path.StartsWith("/api/", StringComparison.OrdinalIgnoreCase)) return true;
+        return path.Contains("/api/auth", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/api/tenants", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/api/systemlogs", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/api/logs", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/api/profile", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/api/users/me", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/api/me", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/api/health", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/swagger", StringComparison.OrdinalIgnoreCase);
+    }
+
     public async Task InvokeAsync(HttpContext context)
     {
         var tenant = context.Request.Headers[TenantHeaderName].FirstOrDefault()?.Trim().ToLowerInvariant();
+        var dbSlug = string.IsNullOrEmpty(tenant) ? null : tenant;
+
+        // Lazily load the per-DB slug cache so X-Target-Tenant validation runs
+        // against the SAME database EF will hit (Fix #1).
+        try
+        {
+            TenantSlugCache.EnsureInitialized(dbSlug, context.RequestServices);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "🏢 TENANT-MIDDLEWARE: Could not initialize tenant cache for db='{Db}'", dbSlug ?? "default");
+        }
+
+        // ── Fix #2: explicit X-View-All header on a real subdomain ──
+        // The picker keeps X-Tenant pinned to the subdomain (so the per-DB
+        // selection stays correct) and signals "see everything inside this
+        // DB" with X-View-All:true. Only MainAdminUser may opt in.
+        var viewAllHeader = context.Request.Headers[ViewAllHeaderName].FirstOrDefault();
+        var isExplicitViewAll = string.Equals(viewAllHeader, "true", StringComparison.OrdinalIgnoreCase)
+                              || string.Equals(viewAllHeader, "1", StringComparison.Ordinal);
+        if (isExplicitViewAll)
+        {
+            if (!IsMainAdmin(context))
+            {
+                _logger.LogWarning("🚫 TENANT-MIDDLEWARE: Non-MainAdmin attempted X-View-All on db='{Db}'", dbSlug ?? "default");
+                context.Response.StatusCode = 403;
+                await context.Response.WriteAsJsonAsync(new { error = "Only MainAdminUser can use view-all mode" });
+                return;
+            }
+
+            context.Items["Tenant"] = tenant ?? string.Empty;
+            context.Items["TenantId"] = -1;
+            context.Items["TenantViewAll"] = true;
+            _logger.LogDebug("🏢 TENANT-MIDDLEWARE: VIEW-ALL on db='{Db}' (TenantId=-1, bypass row filter)", dbSlug ?? "default");
+            await _next(context);
+            return;
+        }
 
         if (string.Equals(tenant, ViewAllSentinel, StringComparison.OrdinalIgnoreCase))
         {
-            // Accept several historical spellings of the user-type claim. The token
-            // generator emits "UserType" + "login_type=admin"; older code/tests used
-            // "user_type". Be permissive so the gate keys off the JWT, not the header.
-            var claims = context.User?.Claims;
-            var isMainAdmin = claims != null && claims.Any(c =>
-                (string.Equals(c.Type, "UserType", StringComparison.OrdinalIgnoreCase) &&
-                 string.Equals(c.Value, "MainAdminUser", StringComparison.OrdinalIgnoreCase)) ||
-                (string.Equals(c.Type, "user_type", StringComparison.OrdinalIgnoreCase) &&
-                 string.Equals(c.Value, "MainAdminUser", StringComparison.OrdinalIgnoreCase)) ||
-                (string.Equals(c.Type, "login_type", StringComparison.OrdinalIgnoreCase) &&
-                 string.Equals(c.Value, "admin", StringComparison.OrdinalIgnoreCase)));
-
-            if (!isMainAdmin)
+            if (!IsMainAdmin(context))
             {
                 _logger.LogWarning(
                     "🚫 TENANT-MIDDLEWARE: Non-MainAdmin attempted __all__ mode (IsAuthenticated={Auth}, ClaimCount={Count})",
                     context.User?.Identity?.IsAuthenticated ?? false,
-                    claims?.Count() ?? 0);
+                    context.User?.Claims?.Count() ?? 0);
                 context.Response.StatusCode = 403;
                 await context.Response.WriteAsJsonAsync(new { error = "Only MainAdminUser can use view-all mode" });
                 return;
@@ -90,7 +150,7 @@ public class TenantMiddleware
                         return;
                     }
 
-                    var validTenantId = TenantSlugCache.IsValidTenantId(targetTenantId);
+                    var validTenantId = TenantSlugCache.IsValidTenantId(dbSlug, targetTenantId);
                     if (!validTenantId)
                     {
                         _logger.LogWarning("🚫 TENANT-MIDDLEWARE: X-Target-Tenant {TenantId} is invalid or inactive", targetTenantId);
@@ -99,10 +159,7 @@ public class TenantMiddleware
                         return;
                     }
 
-                    // Translate the real Tenant.Id sent by the frontend into
-                    // the data-table TenantId used by EF global query filters
-                    // (default tenant collapses to 0; all others pass through).
-                    var dataTenantId = TenantSlugCache.ToDataTenantId(targetTenantId);
+                    var dataTenantId = TenantSlugCache.ToDataTenantId(dbSlug, targetTenantId);
                     context.Items["Tenant"] = ViewAllSentinel;
                     context.Items["TenantId"] = dataTenantId;
                     context.Items["TenantViewAll"] = true;
@@ -123,7 +180,7 @@ public class TenantMiddleware
         }
         else if (!string.IsNullOrEmpty(tenant))
         {
-            var knownTenant = TenantSlugCache.HasTenant(tenant);
+            var knownTenant = TenantSlugCache.HasTenant(dbSlug, tenant);
             var hasDedicatedDb = TenantConnectionResolver.HasDedicatedConnectionString(tenant);
 
             if (!knownTenant && !hasDedicatedDb)
@@ -140,42 +197,79 @@ public class TenantMiddleware
             // app database, rows default to company TenantId=0 unless the company
             // switcher sends X-Target-Tenant.
             var tenantId = 0;
+            var hasTargetOverride = false;
             var targetTenantHeader = context.Request.Headers[TargetTenantHeaderName].FirstOrDefault();
             if (!string.IsNullOrEmpty(targetTenantHeader) && int.TryParse(targetTenantHeader, out var targetTenantId))
             {
-                if (!TenantSlugCache.IsValidTenantId(targetTenantId))
+                if (!TenantSlugCache.IsValidTenantId(dbSlug, targetTenantId))
                 {
                     _logger.LogWarning("🚫 TENANT-MIDDLEWARE: X-Target-Tenant {TenantId} is invalid or inactive", targetTenantId);
                     context.Response.StatusCode = 404;
                     await context.Response.WriteAsJsonAsync(new { error = $"Target company {targetTenantId} does not exist or is inactive." });
                     return;
                 }
-                tenantId = TenantSlugCache.ToDataTenantId(targetTenantId);
+                tenantId = TenantSlugCache.ToDataTenantId(dbSlug, targetTenantId);
                 context.Items["TenantTargetOverride"] = true;
+                hasTargetOverride = true;
             }
             context.Items["TenantId"] = tenantId;
             _logger.LogDebug("🏢 TENANT-MIDDLEWARE: Request {Method} {Path} → app tenant='{Tenant}' (CompanyTenantId={TenantId}, KnownTenant={KnownTenant}, DedicatedDb={DedicatedDb})",
                 context.Request.Method, context.Request.Path, tenant, tenantId, knownTenant, hasDedicatedDb);
+
+            // Fix #4: authenticated user on a data endpoint without an active
+            // company → fail fast instead of silently serving TenantId=0 rows.
+            if (!hasTargetOverride
+                && (context.User?.Identity?.IsAuthenticated ?? false)
+                && !IsCompanyOptionalPath(context.Request.Path.Value ?? string.Empty))
+            {
+                _logger.LogWarning("🚫 TENANT-MIDDLEWARE: Authenticated request to {Path} without active company on db='{Db}'",
+                    context.Request.Path, dbSlug);
+                context.Response.StatusCode = 428; // Precondition Required
+                await context.Response.WriteAsJsonAsync(new
+                {
+                    error = "company_required",
+                    message = "Select an active company before calling this endpoint."
+                });
+                return;
+            }
         }
         else
         {
             // No X-Tenant header (preview/dev hosts) — still honor X-Target-Tenant
             // so company-row scoping works the same way it does on real subdomains.
             var tenantId = 0;
+            var hasTargetOverride = false;
             var targetTenantHeader = context.Request.Headers[TargetTenantHeaderName].FirstOrDefault();
             if (!string.IsNullOrEmpty(targetTenantHeader) && int.TryParse(targetTenantHeader, out var targetTenantId))
             {
-                if (!TenantSlugCache.IsValidTenantId(targetTenantId))
+                if (!TenantSlugCache.IsValidTenantId(dbSlug, targetTenantId))
                 {
                     _logger.LogWarning("🚫 TENANT-MIDDLEWARE: X-Target-Tenant {TenantId} is invalid or inactive", targetTenantId);
                     context.Response.StatusCode = 404;
                     await context.Response.WriteAsJsonAsync(new { error = $"Target company {targetTenantId} does not exist or is inactive." });
                     return;
                 }
-                tenantId = TenantSlugCache.ToDataTenantId(targetTenantId);
+                tenantId = TenantSlugCache.ToDataTenantId(dbSlug, targetTenantId);
                 context.Items["TenantTargetOverride"] = true;
+                hasTargetOverride = true;
             }
             context.Items["TenantId"] = tenantId;
+
+            // Fix #4 (preview/dev hosts with no X-Tenant): same guard.
+            if (!hasTargetOverride
+                && (context.User?.Identity?.IsAuthenticated ?? false)
+                && !IsCompanyOptionalPath(context.Request.Path.Value ?? string.Empty))
+            {
+                _logger.LogWarning("🚫 TENANT-MIDDLEWARE: Authenticated request to {Path} without active company (no X-Tenant)",
+                    context.Request.Path);
+                context.Response.StatusCode = 428;
+                await context.Response.WriteAsJsonAsync(new
+                {
+                    error = "company_required",
+                    message = "Select an active company before calling this endpoint."
+                });
+                return;
+            }
         }
 
         await _next(context);
