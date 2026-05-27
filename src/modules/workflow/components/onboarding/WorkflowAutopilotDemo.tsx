@@ -1,14 +1,17 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ReactFlow, Background, BackgroundVariant, ReactFlowProvider } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Play, Pause, SkipForward, RotateCcw, X, ChevronLeft, ChevronRight,
   Zap, Mail, Send, GitBranch, Bell, Shield, Clock, Calendar, Webhook, Sparkles,
-  Save, Power, FlaskConical, CheckCircle2, Loader2, PauseCircle,
+  Save, Power, FlaskConical, CheckCircle2, Loader2, PauseCircle, Search,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 import { DemoNode } from './DemoNode';
@@ -17,26 +20,46 @@ import { steps, initialDemoState, type DemoState, type PaletteCategory } from '.
 
 const nodeTypes = { demo: DemoNode };
 
-const PALETTE: Record<PaletteCategory, { id: string; label: string; icon: any; color: string }[]> = {
-  triggers: [
-    { id: 'trigger-status', label: 'Status Change', icon: Zap, color: 'text-amber-500' },
-    { id: 'trigger-schedule', label: 'Scheduled', icon: Calendar, color: 'text-amber-500' },
-    { id: 'trigger-webhook', label: 'Webhook', icon: Webhook, color: 'text-amber-500' },
-  ],
-  actions: [
-    { id: 'action-email', label: 'Send Email', icon: Mail, color: 'text-sky-500' },
-    { id: 'action-sms', label: 'Send SMS', icon: Send, color: 'text-emerald-500' },
-    { id: 'action-notif', label: 'Notification', icon: Bell, color: 'text-rose-500' },
-    { id: 'action-webhook', label: 'Webhook call', icon: Webhook, color: 'text-sky-500' },
-  ],
-  logic: [
-    { id: 'logic-condition', label: 'Condition', icon: GitBranch, color: 'text-violet-500' },
-    { id: 'logic-delay', label: 'Delay', icon: Clock, color: 'text-violet-500' },
-    { id: 'logic-approval', label: 'Approval', icon: Shield, color: 'text-orange-500' },
-  ],
-  integrations: [
-    { id: 'int-ai', label: 'AI', icon: Sparkles, color: 'text-fuchsia-500' },
-  ],
+interface PaletteItem {
+  id: string;
+  label: string;
+  icon: any;
+  color: string;
+  targetId: string;
+}
+
+const PALETTE: Record<PaletteCategory, { targetId: string; items: PaletteItem[] }> = {
+  triggers: {
+    targetId: 'cat-triggers',
+    items: [
+      { id: 'trigger-status', label: 'Status Change', icon: Zap, color: '#ff6d5a', targetId: 'palette-trigger-status' },
+      { id: 'trigger-schedule', label: 'Scheduled', icon: Calendar, color: '#ff6d5a', targetId: 'palette-trigger-schedule' },
+      { id: 'trigger-webhook', label: 'Webhook', icon: Webhook, color: '#ff6d5a', targetId: 'palette-trigger-webhook' },
+    ],
+  },
+  actions: {
+    targetId: 'cat-actions',
+    items: [
+      { id: 'action-email', label: 'Send Email', icon: Mail, color: '#3b82f6', targetId: 'palette-action-email' },
+      { id: 'action-sms', label: 'Send SMS', icon: Send, color: '#06b6d4', targetId: 'palette-action-sms' },
+      { id: 'action-notif', label: 'Notification', icon: Bell, color: '#06b6d4', targetId: 'palette-action-notif' },
+      { id: 'action-webhook', label: 'Webhook call', icon: Webhook, color: '#3b82f6', targetId: 'palette-action-webhook' },
+    ],
+  },
+  logic: {
+    targetId: 'cat-logic',
+    items: [
+      { id: 'logic-condition', label: 'Condition', icon: GitBranch, color: '#f59e0b', targetId: 'palette-logic-condition' },
+      { id: 'logic-delay', label: 'Delay', icon: Clock, color: '#f59e0b', targetId: 'palette-logic-delay' },
+      { id: 'logic-approval', label: 'Approval', icon: Shield, color: '#f97316', targetId: 'palette-logic-approval' },
+    ],
+  },
+  integrations: {
+    targetId: 'cat-integrations',
+    items: [
+      { id: 'int-ai', label: 'AI Action', icon: Sparkles, color: '#8b5cf6', targetId: 'palette-int-ai' },
+    ],
+  },
 };
 
 interface Props {
@@ -51,34 +74,76 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
   const [playing, setPlaying] = useState(true);
   const [speed, setSpeed] = useState(1);
   const [clicking, setClicking] = useState(false);
-  const [cursorPos, setCursorPos] = useState({ x: 60, y: 60 });
+  const [cursorPos, setCursorPos] = useState({ x: 80, y: 80 });
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bodyRef = useRef<HTMLDivElement | null>(null);
 
-  // Reset state when modal opens
+  // Reset everything when modal opens
   useEffect(() => {
     if (open) {
       setStepIndex(0);
       setState(initialDemoState);
-      setCursorPos({ x: 60, y: 60 });
       setPlaying(true);
-    } else {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    } else if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
     }
   }, [open]);
 
-  // Run step when index changes & playing
+  /**
+   * Compute the cursor target position from a `data-demo-target` element.
+   * Position is relative to the modal body container, so the cursor stays
+   * pixel-accurate regardless of viewport size.
+   */
+  const computeCursorFor = useCallback((targetId: string, offset?: { x: number; y: number }) => {
+    const body = bodyRef.current;
+    if (!body) return null;
+    const el = body.querySelector<HTMLElement>(`[data-demo-target="${CSS.escape(targetId)}"]`);
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    const b = body.getBoundingClientRect();
+    return {
+      x: r.left - b.left + r.width / 2 + (offset?.x ?? 0),
+      y: r.top - b.top + r.height / 2 + (offset?.y ?? 0),
+    };
+  }, []);
+
+  // Re-position cursor whenever step changes or the layout settles
+  useLayoutEffect(() => {
+    if (!open || stepIndex >= steps.length) return;
+    const step = steps[stepIndex];
+    // First try immediately, then again on next frame (after DOM updates).
+    const tryPosition = () => {
+      const next = computeCursorFor(step.target, step.offset);
+      if (next) setCursorPos(next);
+    };
+    tryPosition();
+    const raf = requestAnimationFrame(tryPosition);
+    return () => cancelAnimationFrame(raf);
+  }, [stepIndex, open, computeCursorFor, state.paletteCategory, state.nodes.length, state.configModal]);
+
+  // Reposition on window resize too
+  useEffect(() => {
+    if (!open) return;
+    const onResize = () => {
+      if (stepIndex >= steps.length) return;
+      const step = steps[stepIndex];
+      const next = computeCursorFor(step.target, step.offset);
+      if (next) setCursorPos(next);
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [open, stepIndex, computeCursorFor]);
+
+  // Drive playback
   useEffect(() => {
     if (!open || !playing) return;
     if (stepIndex >= steps.length) return;
     const step = steps[stepIndex];
-    setCursorPos(step.cursor);
     if (step.click) {
       setClicking(true);
       setTimeout(() => setClicking(false), 500);
     }
-    // Apply mid-step
     const halfway = setTimeout(() => setState((s) => step.apply(s)), Math.max(200, step.duration / 2));
-    // Advance after duration
     const dur = Math.max(400, step.duration / speed);
     timeoutRef.current = setTimeout(() => setStepIndex((i) => i + 1), dur);
     return () => {
@@ -98,7 +163,6 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
 
   const skipForward = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    // Apply current step immediately and advance
     if (stepIndex < steps.length) {
       setState((s) => steps[stepIndex].apply(s));
       setStepIndex((i) => i + 1);
@@ -107,7 +171,6 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
 
   const stepBack = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    // Recompute state from scratch up to (stepIndex-1)
     const target = Math.max(0, stepIndex - 1);
     let s = initialDemoState;
     for (let i = 0; i < target; i++) s = steps[i].apply(s);
@@ -121,23 +184,32 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
     return key ? t(key) : '';
   }, [stepIndex, t]);
 
-  if (!open) return null;
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(true); }}>
+      <DialogContent
+        className="max-w-[1100px] w-[96vw] h-[min(92vh,720px)] p-0 gap-0 overflow-hidden flex flex-col"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
+        <DialogTitle className="sr-only">{t('onboarding.demo.title')}</DialogTitle>
+        <DialogDescription className="sr-only">
+          {t('onboarding.demo.s1')}
+        </DialogDescription>
 
-  const modal = (
-    <div className="fixed inset-0 z-[55] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in-0">
-      <div className="relative w-full max-w-[1040px] h-[640px] rounded-xl bg-card border border-border shadow-2xl overflow-hidden flex flex-col">
-        {/* Top bar */}
+        {/* Top bar — mirrors real WorkflowBuilder top toolbar */}
         <div className="h-12 border-b border-border bg-muted/40 flex items-center justify-between px-4 shrink-0">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" />
-            <span className="text-sm font-semibold">{t('onboarding.demo.title')}</span>
-            <span className="text-xs text-muted-foreground ml-2">
-              {t('onboarding.demo.stepLabel', { current: Math.min(stepIndex + 1, steps.length), total: steps.length })}
+          <div className="flex items-center gap-2 min-w-0">
+            <Sparkles className="h-4 w-4 text-primary shrink-0" />
+            <span className="text-sm font-semibold truncate">{t('onboarding.demo.title')}</span>
+            <span className="text-xs text-muted-foreground ml-2 shrink-0">
+              {t('onboarding.demo.stepLabel', {
+                current: Math.min(stepIndex + 1, steps.length),
+                total: steps.length,
+              })}
             </span>
           </div>
           <div className="flex items-center gap-1">
-            {/* Mock builder action buttons (visual only) */}
             <button
+              data-demo-target="btn-test"
               className={cn(
                 'flex items-center gap-1 rounded-md px-2 py-1 text-xs border border-border bg-background transition-all',
                 state.showExecutions && 'ring-2 ring-primary',
@@ -146,6 +218,7 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
               <FlaskConical className="h-3 w-3" /> {t('onboarding.demo.btnTest')}
             </button>
             <button
+              data-demo-target="btn-save"
               className={cn(
                 'flex items-center gap-1 rounded-md px-2 py-1 text-xs border border-border bg-background transition-all',
                 state.saved && 'ring-2 ring-emerald-500',
@@ -155,84 +228,106 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
               {state.saved && <CheckCircle2 className="h-3 w-3 text-emerald-500" />}
             </button>
             <button
+              data-demo-target="btn-activate"
               className={cn(
                 'flex items-center gap-1 rounded-md px-2 py-1 text-xs border border-border bg-background transition-all',
                 state.active && 'bg-emerald-500 text-white border-emerald-500',
               )}
             >
-              <Power className="h-3 w-3" /> {state.active ? t('onboarding.demo.btnActive') : t('onboarding.demo.btnActivate')}
+              <Power className="h-3 w-3" />
+              {state.active ? t('onboarding.demo.btnActive') : t('onboarding.demo.btnActivate')}
             </button>
-            <Button variant="ghost" size="icon-sm" onClick={() => onClose(true)} className="ml-2">
+            <Button variant="ghost" size="icon-sm" onClick={() => onClose(true)} className="ml-2" aria-label={t('onboarding.demo.dismiss')}>
               <X className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
-        {/* Body: palette + canvas */}
-        <div className="flex-1 relative flex min-h-0">
-          {/* Palette */}
-          <div className="w-[220px] border-r border-border bg-muted/20 p-2 overflow-y-auto shrink-0">
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 pt-1 pb-2 font-semibold">
-              {t('onboarding.demo.paletteTitle')}
-            </div>
-            {(Object.keys(PALETTE) as PaletteCategory[]).map((cat) => {
-              const isOpen = state.paletteCategory === cat;
-              return (
-                <div key={cat} className="mb-1">
-                  <div
-                    className={cn(
-                      'flex items-center justify-between px-2 py-1.5 rounded-md text-xs font-medium cursor-default transition-colors',
-                      isOpen ? 'bg-primary/10 text-primary' : 'text-foreground/80 hover:bg-muted',
-                    )}
-                  >
-                    <span>{t(`onboarding.demo.category.${cat}`)}</span>
-                    <ChevronRight className={cn('h-3 w-3 transition-transform', isOpen && 'rotate-90')} />
-                  </div>
-                  <AnimatePresence>
-                    {isOpen && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="pl-2 py-1 space-y-1">
-                          {PALETTE[cat].map((it) => {
-                            const Icon = it.icon;
-                            const grabbing = state.grabbingItemId === it.id;
-                            return (
-                              <div
-                                key={it.id}
-                                className={cn(
-                                  'flex items-center gap-2 px-2 py-1.5 rounded-md text-[11px] border transition-all',
-                                  grabbing
-                                    ? 'border-primary bg-primary/10 scale-95 opacity-60'
-                                    : 'border-border bg-background hover:border-primary/40',
-                                )}
-                              >
-                                <Icon className={cn('h-3 w-3', it.color)} />
-                                <span>{it.label}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+        {/* Body — palette + canvas with cursor anchor */}
+        <div ref={bodyRef} className="flex-1 relative flex min-h-0">
+          {/* Palette — visually inspired by real NodePalette */}
+          <aside className="w-[240px] border-r border-border bg-muted/20 flex flex-col shrink-0 min-w-0">
+            {/* Mock search */}
+            <div className="p-2 border-b border-border/60">
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                <div className="h-7 rounded-md border border-border bg-background pl-7 pr-2 flex items-center text-[11px] text-muted-foreground/70">
+                  Search nodes…
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-2 space-y-1">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 pb-1 font-semibold">
+                {t('onboarding.demo.paletteTitle')}
+              </div>
+              {(Object.keys(PALETTE) as PaletteCategory[]).map((cat) => {
+                const isOpen = state.paletteCategory === cat;
+                const entry = PALETTE[cat];
+                return (
+                  <div key={cat}>
+                    <div
+                      data-demo-target={entry.targetId}
+                      className={cn(
+                        'flex items-center justify-between px-2 py-1.5 rounded-md text-xs font-medium cursor-default transition-colors select-none',
+                        isOpen ? 'bg-primary/10 text-primary' : 'text-foreground/80 hover:bg-muted',
+                      )}
+                    >
+                      <span>{t(`onboarding.demo.category.${cat}`)}</span>
+                      <ChevronRight className={cn('h-3 w-3 transition-transform', isOpen && 'rotate-90')} />
+                    </div>
+                    <AnimatePresence initial={false}>
+                      {isOpen && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="pl-2 py-1 space-y-1">
+                            {entry.items.map((it) => {
+                              const Icon = it.icon;
+                              const grabbing = state.grabbingItemId === it.id;
+                              return (
+                                <div
+                                  key={it.id}
+                                  data-demo-target={it.targetId}
+                                  className={cn(
+                                    'flex items-center gap-2 px-2 py-1.5 rounded-md text-[11px] border transition-all',
+                                    grabbing
+                                      ? 'border-primary bg-primary/10 scale-95 opacity-60'
+                                      : 'border-border bg-background hover:border-primary/40',
+                                  )}
+                                >
+                                  <div
+                                    className="w-5 h-5 rounded flex items-center justify-center"
+                                    style={{ background: `${it.color}1a`, border: `1px solid ${it.color}55` }}
+                                  >
+                                    <Icon className="h-3 w-3" style={{ color: it.color }} />
+                                  </div>
+                                  <span className="truncate">{it.label}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              })}
+            </div>
+          </aside>
 
           {/* Canvas */}
-          <div className="flex-1 relative bg-background min-w-0">
+          <div className="flex-1 relative bg-background min-w-0" data-demo-target="canvas">
             <ReactFlowProvider>
               <ReactFlow
                 nodes={state.nodes}
                 edges={state.edges}
                 nodeTypes={nodeTypes}
                 fitView
-                fitViewOptions={{ padding: 0.3, maxZoom: 1.1 }}
+                fitViewOptions={{ padding: 0.3, maxZoom: 1.1, minZoom: 0.6 }}
                 nodesDraggable={false}
                 nodesConnectable={false}
                 elementsSelectable={false}
@@ -246,21 +341,28 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
               </ReactFlow>
             </ReactFlowProvider>
 
-            {/* Empty state */}
+            {/* Invisible drop-target anchors so the cursor lands accurately */}
+            <div data-demo-target="canvas-drop-1" className="absolute pointer-events-none" style={{ left: '20%', top: '30%', width: 1, height: 1 }} />
+            <div data-demo-target="canvas-drop-2" className="absolute pointer-events-none" style={{ left: '55%', top: '30%', width: 1, height: 1 }} />
+            <div data-demo-target="canvas-drop-3" className="absolute pointer-events-none" style={{ left: '55%', top: '55%', width: 1, height: 1 }} />
+            <div data-demo-target="canvas-drop-4" className="absolute pointer-events-none" style={{ left: '82%', top: '45%', width: 1, height: 1 }} />
+            <div data-demo-target="canvas-drop-5" className="absolute pointer-events-none" style={{ left: '82%', top: '70%', width: 1, height: 1 }} />
+            <div data-demo-target="canvas-drop-6" className="absolute pointer-events-none" style={{ left: '82%', top: '20%', width: 1, height: 1 }} />
+
             {state.nodes.length === 0 && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="text-xs text-muted-foreground/60 italic">{t('onboarding.demo.canvasEmpty')}</div>
               </div>
             )}
 
-            {/* Drag ghost when grabbing */}
+            {/* Drag ghost follows cursor while grabbing */}
             {state.grabbingItemId && (
               <motion.div
                 key={`ghost-${state.grabbingItemId}`}
                 initial={{ opacity: 0 }}
-                animate={{ opacity: 0.7 }}
-                className="absolute pointer-events-none rounded-md border border-primary bg-primary/10 px-2 py-1 text-[11px] font-medium text-primary z-50"
-                style={{ left: cursorPos.x - 220 + 8, top: cursorPos.y + 8 }}
+                animate={{ opacity: 0.85 }}
+                className="absolute pointer-events-none rounded-md border border-primary bg-primary/10 px-2 py-1 text-[11px] font-medium text-primary z-50 shadow-md"
+                style={{ left: cursorPos.x - 240 + 12, top: cursorPos.y + 12 }}
               >
                 {state.grabbingItemId}
               </motion.div>
@@ -273,7 +375,7 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
-                  className="absolute right-6 top-6 w-[280px] rounded-lg border border-border bg-card shadow-xl p-3 z-40"
+                  className="absolute right-4 top-4 w-[280px] rounded-lg border border-border bg-card shadow-xl p-3 z-40"
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div className="text-xs font-semibold">{state.configModal.title}</div>
@@ -288,7 +390,10 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
                     ))}
                   </div>
                   <div className="flex justify-end gap-1 mt-3">
-                    <button className="rounded-md bg-primary text-primary-foreground px-2 py-1 text-[11px] font-medium">
+                    <button
+                      data-demo-target="config-save"
+                      className="rounded-md bg-primary text-primary-foreground px-2 py-1 text-[11px] font-medium"
+                    >
                       {t('onboarding.demo.btnSave')}
                     </button>
                   </div>
@@ -335,7 +440,7 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
             </AnimatePresence>
           </div>
 
-          {/* Virtual cursor — positioned relative to body */}
+          {/* Virtual cursor — body-relative, always pixel-accurate */}
           <VirtualCursor x={cursorPos.x} y={cursorPos.y} clicking={clicking} />
         </div>
 
@@ -354,7 +459,6 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
                   {finished ? t('onboarding.demo.finished') : currentCaption}
                 </motion.p>
               </AnimatePresence>
-              {/* Progress bar */}
               <div className="mt-2 h-1 w-full bg-muted rounded-full overflow-hidden">
                 <motion.div
                   className="h-full bg-primary"
@@ -364,43 +468,40 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
               </div>
             </div>
 
-            {/* Controls */}
             <div className="flex items-center gap-1 shrink-0">
-              <Button variant="ghost" size="icon-sm" onClick={stepBack} disabled={stepIndex === 0} title={t('onboarding.demo.prev')}>
+              <Button variant="ghost" size="icon-sm" onClick={stepBack} disabled={stepIndex === 0} aria-label={t('onboarding.demo.prev')}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               {finished ? (
-                <Button variant="ghost" size="icon-sm" onClick={restart} title={t('onboarding.demo.replay')}>
+                <Button variant="ghost" size="icon-sm" onClick={restart} aria-label={t('onboarding.demo.replay')}>
                   <RotateCcw className="h-4 w-4" />
                 </Button>
               ) : (
-                <Button variant="ghost" size="icon-sm" onClick={() => setPlaying((p) => !p)} title={playing ? t('onboarding.demo.pause') : t('onboarding.demo.play')}>
+                <Button variant="ghost" size="icon-sm" onClick={() => setPlaying((p) => !p)} aria-label={playing ? t('onboarding.demo.pause') : t('onboarding.demo.play')}>
                   {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                 </Button>
               )}
-              <Button variant="ghost" size="icon-sm" onClick={skipForward} disabled={finished} title={t('onboarding.demo.skip')}>
+              <Button variant="ghost" size="icon-sm" onClick={skipForward} disabled={finished} aria-label={t('onboarding.demo.skip')}>
                 <SkipForward className="h-4 w-4" />
               </Button>
-              <select
-                value={speed}
-                onChange={(e) => setSpeed(Number(e.target.value))}
-                className="ml-1 h-7 rounded-md border border-border bg-background text-xs px-1.5"
-                title={t('onboarding.demo.speed')}
-              >
-                <option value={0.5}>0.5×</option>
-                <option value={1}>1×</option>
-                <option value={1.5}>1.5×</option>
-                <option value={2}>2×</option>
-              </select>
+              <Select value={String(speed)} onValueChange={(v) => setSpeed(Number(v))}>
+                <SelectTrigger className="ml-1 h-7 w-[68px] text-xs" aria-label={t('onboarding.demo.speed')}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0.5">0.5×</SelectItem>
+                  <SelectItem value="1">1×</SelectItem>
+                  <SelectItem value="1.5">1.5×</SelectItem>
+                  <SelectItem value="2">2×</SelectItem>
+                </SelectContent>
+              </Select>
               <Button variant="outline" size="sm" onClick={() => onClose(true)} className="ml-2">
                 {finished ? t('onboarding.demo.done') : t('onboarding.demo.dismiss')}
               </Button>
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
-
-  return createPortal(modal, document.body);
 }
