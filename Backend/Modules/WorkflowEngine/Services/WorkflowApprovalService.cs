@@ -9,11 +9,16 @@ namespace MyApi.Modules.WorkflowEngine.Services
     {
         private readonly ApplicationDbContext _db;
         private readonly ILogger<WorkflowApprovalService> _logger;
+        private readonly IWorkflowGraphExecutor _graphExecutor;
 
-        public WorkflowApprovalService(ApplicationDbContext db, ILogger<WorkflowApprovalService> logger)
+        public WorkflowApprovalService(
+            ApplicationDbContext db,
+            ILogger<WorkflowApprovalService> logger,
+            IWorkflowGraphExecutor graphExecutor)
         {
             _db = db;
             _logger = logger;
+            _graphExecutor = graphExecutor;
         }
 
         public async Task<IEnumerable<WorkflowApprovalDto>> GetPendingApprovalsAsync(string userId, string? role = null)
@@ -79,6 +84,62 @@ namespace MyApi.Modules.WorkflowEngine.Services
             }
 
             await _db.SaveChangesAsync();
+
+            // Actually resume the graph after the approval node (was previously a no-op,
+            // leaving approved executions stuck in "running" forever).
+            if (response.Approved && approval.Execution != null && !string.IsNullOrEmpty(approval.NodeId))
+            {
+                try
+                {
+                    var execution = approval.Execution;
+                    var context = new WorkflowExecutionContext
+                    {
+                        WorkflowId = execution.WorkflowId,
+                        ExecutionId = execution.Id,
+                        TriggerEntityType = execution.TriggerEntityType,
+                        TriggerEntityId = execution.TriggerEntityId,
+                        UserId = userId,
+                        Variables = new Dictionary<string, object?>
+                        {
+                            ["entityType"] = execution.TriggerEntityType,
+                            ["entityId"] = execution.TriggerEntityId,
+                            ["approvalId"] = approval.Id,
+                            ["approvedBy"] = userId,
+                            ["approvalNote"] = response.Note ?? string.Empty
+                        }
+                    };
+
+                    var result = await _graphExecutor.ResumeAfterNodeAsync(
+                        execution.WorkflowId,
+                        execution.Id,
+                        approval.NodeId,
+                        context);
+
+                    execution.Status = result.FinalStatus;
+                    execution.Error = result.Error;
+                    if (result.FinalStatus == "completed" || result.FinalStatus == "failed")
+                    {
+                        execution.CompletedAt = DateTime.UtcNow;
+                    }
+
+                    await _db.SaveChangesAsync();
+
+                    _logger.LogInformation(
+                        "[WORKFLOW-APPROVAL] Resumed execution {ExecutionId} after approval {ApprovalId}: status={Status}, executed={Count}",
+                        execution.Id, approvalId, result.FinalStatus, result.NodesExecuted);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex,
+                        "[WORKFLOW-APPROVAL] Failed to resume execution {ExecutionId} after approval {ApprovalId}",
+                        approval.ExecutionId, approvalId);
+                    approval.Execution.Status = "failed";
+                    approval.Execution.Error = $"Resume failed: {ex.Message}";
+                    approval.Execution.CompletedAt = DateTime.UtcNow;
+                    await _db.SaveChangesAsync();
+                }
+            }
+
             return true;
         }
 

@@ -244,6 +244,69 @@ namespace MyApi.Modules.WorkflowEngine.Services
             return result;
         }
 
+        public async Task<GraphExecutionResult> ResumeAfterNodeAsync(
+            int workflowId,
+            int executionId,
+            string pausedNodeId,
+            WorkflowExecutionContext context)
+        {
+            // Load the workflow to find successors of the paused node
+            var workflow = await _db.WorkflowDefinitions
+                .FirstOrDefaultAsync(w => w.Id == workflowId && !w.IsDeleted);
+
+            if (workflow == null)
+            {
+                return new GraphExecutionResult
+                {
+                    Success = false,
+                    FinalStatus = "failed",
+                    Error = $"Workflow {workflowId} not found"
+                };
+            }
+
+            var edges = ParseEdges(workflow.Edges);
+            var successors = edges
+                .Where(e => e.Source == pausedNodeId)
+                .Select(e => e.Target)
+                .Distinct()
+                .ToList();
+
+            if (successors.Count == 0)
+            {
+                _logger.LogInformation(
+                    "[WORKFLOW-RESUME] No successors after node {NodeId}; marking execution {ExecutionId} completed",
+                    pausedNodeId, executionId);
+                return new GraphExecutionResult { Success = true, FinalStatus = "completed" };
+            }
+
+            var aggregate = new GraphExecutionResult { Success = true, FinalStatus = "completed" };
+            foreach (var startNodeId in successors)
+            {
+                var branchResult = await ExecuteGraphAsync(workflowId, executionId, startNodeId, context);
+                aggregate.NodesExecuted += branchResult.NodesExecuted;
+                aggregate.NodesFailed += branchResult.NodesFailed;
+                aggregate.NodesSkipped += branchResult.NodesSkipped;
+                aggregate.TotalDurationMs += branchResult.TotalDurationMs;
+                aggregate.NodeResults.AddRange(branchResult.NodeResults);
+
+                if (!branchResult.Success)
+                {
+                    aggregate.Success = false;
+                    aggregate.FinalStatus = branchResult.FinalStatus;
+                    aggregate.Error = branchResult.Error;
+                    break;
+                }
+
+                // If a downstream branch paused again (e.g. another approval), propagate that status.
+                if (branchResult.FinalStatus != "completed")
+                {
+                    aggregate.FinalStatus = branchResult.FinalStatus;
+                }
+            }
+
+            return aggregate;
+        }
+
         private List<WorkflowNode> ParseNodes(string nodesJson)
         {
             try

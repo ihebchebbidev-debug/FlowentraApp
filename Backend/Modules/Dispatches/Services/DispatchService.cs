@@ -1104,7 +1104,7 @@ namespace MyApi.Modules.Dispatches.Services
                     try
                     {
                         await _workflowTriggerService.TriggerStatusChangeAsync(
-                            "serviceOrder",
+                            "service_order",
                             serviceOrderId,
                             oldStatus,
                             newStatus,

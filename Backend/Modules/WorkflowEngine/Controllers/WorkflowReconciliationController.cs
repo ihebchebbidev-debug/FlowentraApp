@@ -955,13 +955,21 @@ namespace MyApi.Modules.WorkflowEngine.Controllers
                 "sale" => status switch { "created" => 0, "in_progress" => 1, "partially_invoiced" => 2, "invoiced" => 3, "closed" => 4, "cancelled" => -1, _ => 0 },
                 "dispatch" => status switch
                 {
-                    "pending" => 0, "planned" => 1, "assigned" => 2, "acknowledged" => 3, "en_route" => 4,
-                    "on_site" => 5, "in_progress" => 6, "technically_completed" => 7, "completed" => 8, "cancelled" => -1, _ => 0
+                    // Aligned with src/config/entity-statuses/dispatch.config.ts
+                    // Flow: pending → planned → confirmed → in_progress → completed
+                    "pending" => 0, "planned" => 1, "confirmed" => 2, "in_progress" => 3, "completed" => 4,
+                    "rejected" => -1, "cancelled" => -1, _ => 0
                 },
                 "offer" => status switch
                 {
-                    "draft" => 0, "sent" => 1, "pending" => 2, "negotiation" => 3, "accepted" => 4,
-                    "won" => 5, "lost" => -1, "cancelled" => -1, "rejected" => -1, "expired" => -1, "declined" => -1, "modified" => 3, _ => 0
+                    // Aligned with src/config/entity-statuses/offer.config.ts
+                    // Primary statuses: draft, sent, modified, accepted, declined, cancelled
+                    // Aliases (kept for legacy data): created→draft, pending/negotiation→sent, won→accepted, rejected/expired/lost→declined
+                    "draft" => 0, "created" => 0,
+                    "sent" => 1, "pending" => 1, "negotiation" => 1,
+                    "modified" => 2,
+                    "accepted" => 3, "won" => 3,
+                    "declined" => -1, "rejected" => -1, "expired" => -1, "lost" => -1, "cancelled" => -1, _ => 0
                 },
                 _ => 0
             };

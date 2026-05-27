@@ -13,6 +13,17 @@ namespace MyApi.Modules.WorkflowEngine.Services
             int executionId,
             string startNodeId,
             WorkflowExecutionContext context);
+
+        /// <summary>
+        /// Resume execution AFTER a paused node (typically an approval node).
+        /// Looks up outgoing edges from <paramref name="pausedNodeId"/> and continues
+        /// the graph from each successor. The paused node itself is NOT re-executed.
+        /// </summary>
+        Task<GraphExecutionResult> ResumeAfterNodeAsync(
+            int workflowId,
+            int executionId,
+            string pausedNodeId,
+            WorkflowExecutionContext context);
     }
 
     /// <summary>
