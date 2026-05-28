@@ -116,7 +116,7 @@ export default function SelectCompany() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="flex flex-wrap justify-center gap-4">
             {activeTenants.map((t) => {
               const label = t.companyName || t.slug;
               const isBusy = busy === label;
@@ -133,7 +133,7 @@ export default function SelectCompany() {
                   type="button"
                   disabled={!!busy}
                   onClick={() => pick(t.id, label)}
-                  className="group relative text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-xl"
+                  className="group relative text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-xl w-full sm:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.667rem)] max-w-sm"
                   aria-label={`Open workspace ${label}`}
                 >
                   <Card
