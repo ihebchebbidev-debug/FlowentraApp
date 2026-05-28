@@ -5,6 +5,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
 import { tenantsApi, type Tenant } from '@/services/api/tenantsApi';
 import { useAuth } from '@/contexts/AuthContext';
+import { getCurrentTenant } from '@/utils/tenant';
 import { registerTenantHeaderMetadata, setActiveCompany, getActiveCompanyId, isActiveCompanyViewAll } from '@/utils/targetTenant';
 
 interface TenantMapContextValue {
@@ -14,15 +15,27 @@ interface TenantMapContextValue {
   tenants: Tenant[];
   /** Whether the map has loaded */
   loaded: boolean;
+  /** Force a refetch (e.g. after creating a company). */
+  refetch: () => Promise<void>;
 }
 
 const TenantMapContext = createContext<TenantMapContextValue>({
   getCompanyName: (id) => `#${id}`,
   tenants: [],
   loaded: false,
+  refetch: async () => {},
 });
 
-const CACHE_KEY = 'tenants:cache:v1';
+const CACHE_KEY_PREFIX = 'tenants:cache:v2:';
+
+/**
+ * Cache is keyed by the X-Tenant slug (i.e. the database) so a user who
+ * switches subdomain never reads another DB's company list. The old
+ * 'tenants:cache:v1' key was global and caused cross-DB bleed in production.
+ */
+function cacheKeyFor(slug: string | null): string {
+  return `${CACHE_KEY_PREFIX}${slug ?? '__default__'}`;
+}
 
 function getStoredAccessToken(): string | null {
   if (typeof window === 'undefined') return null;
@@ -36,10 +49,10 @@ function getStoredAccessToken(): string | null {
   );
 }
 
-function readCache(): Tenant[] | null {
+function readCache(slug: string | null): Tenant[] | null {
   if (typeof window === 'undefined') return null;
   try {
-    const raw = window.localStorage.getItem(CACHE_KEY);
+    const raw = window.localStorage.getItem(cacheKeyFor(slug));
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : null;
@@ -48,10 +61,12 @@ function readCache(): Tenant[] | null {
   }
 }
 
-function writeCache(tenants: Tenant[]): void {
+function writeCache(slug: string | null, tenants: Tenant[]): void {
   if (typeof window === 'undefined') return;
   try {
-    window.localStorage.setItem(CACHE_KEY, JSON.stringify(tenants));
+    window.localStorage.setItem(cacheKeyFor(slug), JSON.stringify(tenants));
+    // Best-effort: drop the legacy v1 key so we never read stale cross-DB data again.
+    window.localStorage.removeItem('tenants:cache:v1');
   } catch {
     /* ignore */
   }
@@ -59,9 +74,12 @@ function writeCache(tenants: Tenant[]): void {
 
 export function TenantMapProvider({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading, user } = useAuth();
+  const currentSlug = getCurrentTenant();
 
-  // Fix #5: hydrate from cache so the switcher doesn't flash empty on reload.
-  const initialCache = readCache() ?? [];
+  // Hydrate from the slug-scoped cache so the switcher doesn't flash empty on
+  // reload. If the user just switched subdomains, the previous DB's cache key
+  // is different and won't bleed across.
+  const initialCache = readCache(currentSlug) ?? [];
   const [tenantMap, setTenantMap] = useState<Map<number, string>>(() => {
     const m = new Map<number, string>();
     initialCache.forEach(t => m.set(t.id, t.companyName));
@@ -70,14 +88,7 @@ export function TenantMapProvider({ children }: { children: ReactNode }) {
   const [tenants, setTenants] = useState<Tenant[]>(initialCache);
   const [loaded, setLoaded] = useState(initialCache.length > 0);
 
-  useEffect(() => {
-    // Fix #1: fetch for ANY authenticated user. Backend already scopes the
-    // returned list to tenants the user actually belongs to, so regular
-    // multi-company users now see the switcher too.
-    // Fix #2: depend on userId as well so the effect re-runs once auth
-    // data lands (closing the isMainAdmin race on first paint).
-    if (isLoading) return;
-
+  const fetchTenants = useCallback(async (): Promise<void> => {
     const token = getStoredAccessToken();
     if (!isAuthenticated || !token) {
       setTenants([]);
@@ -85,31 +96,30 @@ export function TenantMapProvider({ children }: { children: ReactNode }) {
       setLoaded(true);
       return;
     }
+    try {
+      const data = await tenantsApi.list();
+      const active = data.filter(t => t.isActive);
+      setTenants(active);
+      const map = new Map<number, string>();
+      active.forEach(t => map.set(t.id, t.companyName));
+      setTenantMap(map);
+      writeCache(currentSlug, active);
+      registerTenantHeaderMetadata(active.map(t => ({ id: t.id, slug: t.slug, isDefault: t.isDefault })));
+      if (active.length === 1 && getActiveCompanyId() === undefined && !isActiveCompanyViewAll()) {
+        setActiveCompany({ id: active[0].id });
+      }
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn('[TenantMapContext] Failed to load tenant list:', err);
+    } finally {
+      setLoaded(true);
+    }
+  }, [isAuthenticated, currentSlug]);
 
-    setLoaded(initialCache.length > 0);
-
-    tenantsApi.list()
-      .then((data) => {
-        const active = data.filter(t => t.isActive);
-        setTenants(active);
-        const map = new Map<number, string>();
-        active.forEach(t => map.set(t.id, t.companyName));
-        setTenantMap(map);
-        writeCache(active);
-        registerTenantHeaderMetadata(active.map(t => ({ id: t.id, slug: t.slug, isDefault: t.isDefault })));
-        // Single-tenant accounts: auto-pin so the user skips /select-company.
-        if (active.length === 1 && getActiveCompanyId() === undefined && !isActiveCompanyViewAll()) {
-          setActiveCompany({ id: active[0].id });
-        }
-      })
-      .catch((err) => {
-        // Fix #3: surface failures instead of silently swallowing — keeps
-        // 401/403/500 visible during QA without breaking the app.
-        // eslint-disable-next-line no-console
-        console.warn('[TenantMapContext] Failed to load tenant list:', err);
-      })
-      .finally(() => setLoaded(true));
-  }, [isAuthenticated, isLoading, user?.id]);
+  useEffect(() => {
+    if (isLoading) return;
+    void fetchTenants();
+  }, [isAuthenticated, isLoading, user?.id, fetchTenants]);
 
   const getCompanyName = useCallback(
     (tenantId: number): string => {
@@ -119,7 +129,7 @@ export function TenantMapProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <TenantMapContext.Provider value={{ getCompanyName, tenants, loaded }}>
+    <TenantMapContext.Provider value={{ getCompanyName, tenants, loaded, refetch: fetchTenants }}>
       {children}
     </TenantMapContext.Provider>
   );

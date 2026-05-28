@@ -9,28 +9,18 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 )
 
-// Register Service Worker for offline support and smart caching (production only)
-// In Lovable preview/sandbox iframes the SW cannot be served, which produces
-// spurious 404s and registration retries. Skip in dev.
-if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js', { scope: '/' })
-      .then((reg) => {
-        console.log('Service Worker registered:', reg);
-        
-        // Check for updates periodically
-        setInterval(() => {
-          reg.update();
-        }, 60000); // Check every minute
-      })
-      .catch((error) => {
-        console.error('Service Worker registration failed:', error);
-      });
-  });
-
-  // Listen for controller change (new SW became active)
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    console.log('New Service Worker activated');
-  });
+// Service Worker intentionally disabled. The previous /sw.js cache layer was a
+// major source of stale-bundle bugs in production (users seeing a UI from a
+// previous deploy with new backend contracts) and produced spurious update
+// errors in preview iframes. We aggressively unregister any SW that a
+// returning user might still have installed, and purge its caches.
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations()
+    .then((regs) => Promise.all(regs.map((r) => r.unregister())))
+    .catch(() => { /* ignore */ });
+  if (typeof caches !== 'undefined') {
+    caches.keys()
+      .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+      .catch(() => { /* ignore */ });
+  }
 }
-

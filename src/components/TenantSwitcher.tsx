@@ -3,7 +3,7 @@
  * Only visible to MainAdminUser when multiple tenants exist.
  * Includes "All Companies" option for cross-company view mode.
  */
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Building2, ChevronDown, Check, Plus, Layers, Upload, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { buildAssetUrl } from '@/config/api';
@@ -20,6 +20,7 @@ import { tenantsApi, type Tenant } from '@/services/api/tenantsApi';
 import { isViewAllMode } from '@/utils/tenant';
 import { setActiveCompany, getActiveCompanyId } from '@/utils/targetTenant';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useTenantMap } from '@/contexts/TenantMapContext';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 
@@ -28,30 +29,19 @@ export function TenantSwitcher() {
   const navigate = useNavigate();
   const { t } = useTranslation('settings');
   const { toast } = useToast();
-  const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Single source of truth: share TenantMapContext's fetch instead of
+  // duplicating it here. Eliminates two-call race + stale view after CRUD.
+  const { tenants: ctxTenants, loaded, refetch } = useTenantMap();
+  const [localTenants, setLocalTenants] = useState<Tenant[] | null>(null);
+  const tenants = localTenants ?? ctxTenants;
   const [uploadingId, setUploadingId] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadTargetRef = useRef<Tenant | null>(null);
   const activeId = getActiveCompanyId();
   const viewAll = isViewAllMode();
 
-  const loadTenants = () => {
-    return tenantsApi.list()
-      .then(data => setTenants(data))
-      .catch(() => setTenants([]));
-  };
-
-  useEffect(() => {
-    if (!isMainAdmin) {
-      setLoading(false);
-      return;
-    }
-    loadTenants().finally(() => setLoading(false));
-  }, [isMainAdmin]);
-
   // Don't render if not admin or fewer than two tenants exist (active or not)
-  if (!isMainAdmin || loading || tenants.length <= 1) return null;
+  if (!isMainAdmin || !loaded || tenants.length <= 1) return null;
 
   const currentTenant = viewAll
     ? null
@@ -95,7 +85,10 @@ export function TenantSwitcher() {
     setUploadingId(target.id);
     try {
       const updated = await tenantsApi.uploadLogo(target.id, file);
-      setTenants(prev => prev.map(t => t.id === updated.id ? updated : t));
+      // Optimistically reflect the new logo locally and refresh the shared
+      // tenant map so the rest of the app sees it too.
+      setLocalTenants(prev => (prev ?? ctxTenants).map(t => t.id === updated.id ? updated : t));
+      void refetch();
       toast({ title: 'Logo updated', description: `${target.companyName} logo uploaded.` });
     } catch (err) {
       console.error('[TenantSwitcher] logo upload failed', err);

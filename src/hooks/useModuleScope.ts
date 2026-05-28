@@ -36,17 +36,28 @@ export type ModuleKey =
   | 'dynamic_forms'
   | 'dashboards';
 
-const CACHE_KEY = 'module-scope-cache-v2';
+const CACHE_KEY_PREFIX = 'module-scope-cache-v3:';
+const LEGACY_CACHE_KEY = 'module-scope-cache-v2';
 const EVENT = 'module-scope-changed';
 
 const DEFAULT: ModuleScope = 'per_company';
 
 type ScopeMap = Record<string, ModuleScope>;
 
+/**
+ * Scope is a property of the database (X-Tenant), not the row-level company.
+ * Keying by tenant slug prevents the krossier DB's scope settings from
+ * leaking onto demo/dev when a user hops subdomains in the same browser.
+ */
+function cacheKey(): string {
+  const slug = getCurrentTenant() ?? '__default__';
+  return `${CACHE_KEY_PREFIX}${slug}`;
+}
+
 function readCache(): ScopeMap {
   if (typeof window === 'undefined') return {};
   try {
-    const raw = localStorage.getItem(CACHE_KEY);
+    const raw = localStorage.getItem(cacheKey());
     return raw ? JSON.parse(raw) : {};
   } catch {
     return {};
@@ -54,7 +65,9 @@ function readCache(): ScopeMap {
 }
 
 function writeCache(map: ScopeMap) {
-  localStorage.setItem(CACHE_KEY, JSON.stringify(map));
+  localStorage.setItem(cacheKey(), JSON.stringify(map));
+  // Drop the global legacy key the first time we write — it caused cross-DB bleed.
+  try { localStorage.removeItem(LEGACY_CACHE_KEY); } catch { /* ignore */ }
   window.dispatchEvent(new CustomEvent(EVENT));
 }
 
@@ -67,11 +80,13 @@ function authHeaders(extra: Record<string, string> = {}): Record<string, string>
   return h;
 }
 
-let hydrated = false;
+// Hydration state is keyed by tenant slug too, so switching subdomain re-hydrates.
+const hydratedBySlug = new Set<string>();
 let inflight: Promise<void> | null = null;
 
 async function hydrateOnce(): Promise<void> {
-  if (hydrated) return;
+  const slug = getCurrentTenant() ?? '__default__';
+  if (hydratedBySlug.has(slug)) return;
   if (inflight) return inflight;
   inflight = (async () => {
     try {
@@ -81,10 +96,10 @@ async function hydrateOnce(): Promise<void> {
       const map: ScopeMap = {};
       rows.forEach(r => { map[r.moduleKey] = r.scope; });
       writeCache(map);
-      hydrated = true;
+      hydratedBySlug.add(slug);
     } catch {
       // Backend not migrated yet → keep whatever is cached, no error noise.
-      hydrated = true;
+      hydratedBySlug.add(slug);
     } finally {
       inflight = null;
     }
@@ -94,7 +109,8 @@ async function hydrateOnce(): Promise<void> {
 
 /** Synchronous read (uses cache; triggers a background hydrate on first call). */
 export function getModuleScope(key: ModuleKey): ModuleScope {
-  if (!hydrated) void hydrateOnce();
+  const slug = getCurrentTenant() ?? '__default__';
+  if (!hydratedBySlug.has(slug)) void hydrateOnce();
   return readCache()[key] ?? DEFAULT;
 }
 

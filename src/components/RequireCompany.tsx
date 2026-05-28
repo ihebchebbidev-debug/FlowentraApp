@@ -15,17 +15,23 @@
 import { type ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTenantMap } from "@/contexts/TenantMapContext";
 import { getActiveCompanyId, isActiveCompanyViewAll } from "@/utils/targetTenant";
 
 export function RequireCompany({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
+  const { loaded: tenantsLoaded } = useTenantMap();
   const location = useLocation();
 
-  // Wait for auth resolution before deciding.
-  if (isLoading) return <>{children}</>;
+  // Wait for auth + tenant map. Returning children while loading caused the
+  // dashboard to mount before headers were resolvable, producing the brief
+  // 428 "company_required" burst on every reload.
+  if (isLoading) return null;
   if (!isAuthenticated) return <>{children}</>;
+  if (!tenantsLoaded) return null;
 
-  // Pass-through if the user has picked a company OR opted into view-all.
+  // Pass-through if the user has picked a company OR opted into view-all
+  // (TenantMapContext auto-pins single-tenant accounts before this runs).
   if (getActiveCompanyId() !== undefined || isActiveCompanyViewAll()) {
     return <>{children}</>;
   }

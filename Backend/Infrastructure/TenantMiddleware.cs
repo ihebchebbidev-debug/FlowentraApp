@@ -64,6 +64,7 @@ public class TenantMiddleware
             || path.Contains("/api/profile", StringComparison.OrdinalIgnoreCase)
             || path.Contains("/api/users/me", StringComparison.OrdinalIgnoreCase)
             || path.Contains("/api/me", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/api/module-scope", StringComparison.OrdinalIgnoreCase)
             || path.Contains("/api/health", StringComparison.OrdinalIgnoreCase)
             || path.Contains("/swagger", StringComparison.OrdinalIgnoreCase);
     }
@@ -99,6 +100,50 @@ public class TenantMiddleware
                 context.Response.StatusCode = 403;
                 await context.Response.WriteAsJsonAsync(new { error = "Only MainAdminUser can use view-all mode" });
                 return;
+            }
+
+            // Hardened write guard (parity with __all__ branch): in view-all mode
+            // mutations MUST target a specific company via X-Target-Tenant, or
+            // they would silently write at TenantId=-1 and corrupt scoping.
+            var vaMethod = context.Request.Method.ToUpperInvariant();
+            var vaIsMutation = vaMethod is "POST" or "PUT" or "PATCH" or "DELETE";
+            if (vaIsMutation)
+            {
+                var vaPath = context.Request.Path.Value?.ToLowerInvariant() ?? "";
+                var vaIsSafeEndpoint = vaPath.Contains("/api/tenants")
+                    || vaPath.Contains("/api/auth")
+                    || vaPath.Contains("/api/systemlogs")
+                    || vaPath.Contains("/api/logs")
+                    || vaPath.Contains("/api/module-scope");
+
+                if (!vaIsSafeEndpoint)
+                {
+                    var vaTargetHeader = context.Request.Headers[TargetTenantHeaderName].FirstOrDefault();
+                    if (string.IsNullOrEmpty(vaTargetHeader) || !int.TryParse(vaTargetHeader, out var vaTargetId))
+                    {
+                        _logger.LogWarning("🚫 TENANT-MIDDLEWARE: X-View-All mutation without valid X-Target-Tenant on db='{Db}', path={Path}", dbSlug ?? "default", vaPath);
+                        context.Response.StatusCode = 400;
+                        await context.Response.WriteAsJsonAsync(new { error = "X-Target-Tenant header with a valid tenant ID is required for mutations in view-all mode." });
+                        return;
+                    }
+                    if (!TenantSlugCache.IsValidTenantId(dbSlug, vaTargetId))
+                    {
+                        _logger.LogWarning("🚫 TENANT-MIDDLEWARE: X-View-All X-Target-Tenant {TenantId} invalid/inactive on db='{Db}'", vaTargetId, dbSlug ?? "default");
+                        context.Response.StatusCode = 404;
+                        await context.Response.WriteAsJsonAsync(new { error = $"Target tenant {vaTargetId} does not exist or is inactive." });
+                        return;
+                    }
+
+                    var vaDataTenantId = TenantSlugCache.ToDataTenantId(dbSlug, vaTargetId);
+                    context.Items["Tenant"] = tenant ?? string.Empty;
+                    context.Items["TenantId"] = vaDataTenantId;
+                    context.Items["TenantViewAll"] = true;
+                    context.Items["TenantTargetOverride"] = true;
+                    _logger.LogDebug("🏢 TENANT-MIDDLEWARE: {Method} {Path} → VIEW-ALL mutation scoped to TenantId={TenantId} (header={Header})",
+                        vaMethod, context.Request.Path, vaDataTenantId, vaTargetId);
+                    await _next(context);
+                    return;
+                }
             }
 
             context.Items["Tenant"] = tenant ?? string.Empty;
