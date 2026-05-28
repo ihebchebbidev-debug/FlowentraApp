@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Sale } from "../types";
 import { ServiceOrderConfigModal, ServiceOrderConfig } from "./ServiceOrderConfigModal";
 import { useWorkflowStatus } from "@/modules/workflow/hooks/useWorkflowStatus";
+import { useSkipServiceOrder } from "../hooks/useSkipServiceOrder";
 import { Receipt } from "lucide-react";
 import {
   saleStatusConfig,
@@ -40,6 +41,7 @@ export function SaleStatusFlow({
   const { t } = useTranslation("sales");
   const workflowStatus = useWorkflowStatus();
   const [showServiceOrderConfig, setShowServiceOrderConfig] = useState(false);
+  const { skip: skipServiceOrder } = useSkipServiceOrder(sale?.id);
 
   const hasServiceItems = sale?.items?.some((item) => item.type === "service") || false;
   const isAlreadyConverted = !!sale?.convertedToServiceOrderId;
@@ -52,7 +54,12 @@ export function SaleStatusFlow({
   const handleAdvance = (statusId: string) => {
     // Special: created → in_progress may need service order config
     if (currentNormalized === 'created' && statusId === 'in_progress') {
-      if (workflowStatus.isActive && hasServiceItems && !isAlreadyConverted) {
+      if (
+        workflowStatus.isActive &&
+        hasServiceItems &&
+        !isAlreadyConverted &&
+        !skipServiceOrder
+      ) {
         setShowServiceOrderConfig(true);
         return;
       }

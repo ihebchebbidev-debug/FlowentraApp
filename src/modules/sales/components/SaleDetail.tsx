@@ -32,6 +32,7 @@ import {
 
 import { Sale } from "../types";
 import { SalesService } from "../services/sales.service";
+import { useSkipServiceOrder } from "../hooks/useSkipServiceOrder";
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { toast } from "sonner";
 import { SalePDFPreviewModal } from "./SalePDFPreviewModal";
@@ -79,6 +80,7 @@ export function SaleDetail() {
   // Check if sale has service items and conversion status
   const hasServiceItems = sale?.items?.some((item) => item.type === "service") || false;
   const isAlreadyConverted = !!sale?.convertedToServiceOrderId;
+  const { skip: skipServiceOrder, setSkip: setSkipServiceOrder } = useSkipServiceOrder(id);
 
   const fetchSale = async () => {
     if (!id) return;
@@ -279,10 +281,31 @@ export function SaleDetail() {
                   <>
                     <DropdownMenuSeparator />
                     {!isAlreadyConverted ? (
-                      <DropdownMenuItem onClick={handleConvertToServiceOrder} className="gap-2 text-primary">
-                        <Wrench className="h-4 w-4" />
-                        {t('detail.convertToServiceOrder')}
-                      </DropdownMenuItem>
+                      <>
+                        <DropdownMenuItem onClick={handleConvertToServiceOrder} className="gap-2 text-primary">
+                          <Wrench className="h-4 w-4" />
+                          {skipServiceOrder
+                            ? t('detail.convertAnyway', 'Convert anyway')
+                            : t('detail.convertToServiceOrder')}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            const next = !skipServiceOrder;
+                            setSkipServiceOrder(next);
+                            toast.success(
+                              next
+                                ? t('detail.skipServiceOrderEnabled', 'This sale will stay in Sales only')
+                                : t('detail.skipServiceOrderDisabled', 'Service Order conversion re-enabled')
+                            );
+                          }}
+                          className="gap-2"
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                          {skipServiceOrder
+                            ? t('detail.enableServiceOrder', 'Enable Service Order conversion')
+                            : t('detail.skipServiceOrder', 'Keep in Sales only (skip Service Order)')}
+                        </DropdownMenuItem>
+                      </>
                     ) : (
                       <DropdownMenuItem
                         onClick={() => navigate(`/dashboard/field/service-orders/${sale.convertedToServiceOrderId}`)}
@@ -469,14 +492,18 @@ export function SaleDetail() {
                   <p className="text-sm font-medium text-foreground">
                     {isAlreadyConverted
                       ? t('serviceOrderCreatedBanner')
-                      : workflowStatus.isActive
+                      : skipServiceOrder
+                        ? t('detail.salesOnlyBanner', 'Service Order skipped — Sales only')
+                        : workflowStatus.isActive
                         ? t('sales:workflowAutoConversion', 'Workflow automation active')
                         : t('containsServiceItems')}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {isAlreadyConverted
                       ? t('serviceOrderCreatedDescription', { id: sale.convertedToServiceOrderId })
-                      : workflowStatus.isActive
+                      : skipServiceOrder
+                        ? t('detail.salesOnlyBannerDesc', 'This sale will be completed entirely in Sales. No Service Order will be created.')
+                        : workflowStatus.isActive
                         ? t('sales:workflowAutoConversionDesc', 'Service order will be created automatically when status changes to "In Progress"')
                         : t('createServiceOrderPrompt')
                     }
@@ -493,21 +520,64 @@ export function SaleDetail() {
                   <ExternalLink className="h-4 w-4" />
                   {t('viewServiceOrder')}
                 </Button>
+              ) : skipServiceOrder ? (
+                <div className="flex items-center gap-2 shrink-0">
+                  <Badge variant="outline" className="gap-1 text-muted-foreground border-border bg-muted/30">
+                    <CheckCircle className="h-3 w-3" />
+                    {t('detail.salesOnly', 'Sales only')}
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSkipServiceOrder(false);
+                      toast.success(t('detail.skipServiceOrderDisabled', 'Service Order conversion re-enabled'));
+                    }}
+                  >
+                    {t('detail.undo', 'Undo')}
+                  </Button>
+                </div>
               ) : !workflowStatus.isActive ? (
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={handleConvertToServiceOrder}
-                  className="gap-2 shrink-0"
-                >
-                  <Wrench className="h-4 w-4" />
-                  {t('convertToServiceOrder')}
-                </Button>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSkipServiceOrder(true);
+                      toast.success(t('detail.skipServiceOrderEnabled', 'This sale will stay in Sales only'));
+                    }}
+                    className="text-muted-foreground"
+                  >
+                    {t('detail.skipServiceOrderShort', 'Skip')}
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={handleConvertToServiceOrder}
+                    className="gap-2"
+                  >
+                    <Wrench className="h-4 w-4" />
+                    {t('convertToServiceOrder')}
+                  </Button>
+                </div>
               ) : (
-                <Badge variant="outline" className="gap-1 text-warning border-warning/30 bg-warning/10 shrink-0">
-                  <Zap className="h-3 w-3" />
-                  {t('sales:autoMode', 'Auto')}
-                </Badge>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSkipServiceOrder(true);
+                      toast.success(t('detail.skipServiceOrderEnabled', 'This sale will stay in Sales only'));
+                    }}
+                    className="text-muted-foreground"
+                  >
+                    {t('detail.skipServiceOrderShort', 'Skip')}
+                  </Button>
+                  <Badge variant="outline" className="gap-1 text-warning border-warning/30 bg-warning/10">
+                    <Zap className="h-3 w-3" />
+                    {t('sales:autoMode', 'Auto')}
+                  </Badge>
+                </div>
               )}
             </div>
           </div>
