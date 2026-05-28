@@ -108,7 +108,7 @@ export function BatchAssignmentModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Package className="h-5 w-5 text-primary" />
@@ -154,8 +154,8 @@ export function BatchAssignmentModal({
                 {t('dispatcher.jobs_to_assign')}
               </h4>
             </div>
-            <ScrollArea className="max-h-[250px]">
-              <div className="divide-y divide-border">
+            <ScrollArea className="max-h-[200px]">
+              <div className="p-2 grid grid-cols-1 md:grid-cols-2 gap-2">
                 {serviceOrder.jobs.map((job, index) => {
                   // Calculate individual job time slot
                   const jobStartOffset = serviceOrder.jobs
@@ -165,11 +165,11 @@ export function BatchAssignmentModal({
                   const jobEnd = new Date(jobStart.getTime() + (job.estimatedDuration || 60) * 60 * 1000);
                   
                   return (
-                    <div key={job.id} className="p-3 space-y-2">
-                      <div className="flex items-center justify-between gap-3">
+                    <div key={job.id} className="p-2 rounded-md border border-border bg-muted/30">
+                      <div className="flex items-center justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">{job.title}</p>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-xs text-muted-foreground truncate">
                             {format(jobStart, 'HH:mm')} - {format(jobEnd, 'HH:mm')} ({Math.round((job.estimatedDuration || 60) / 60 * 10) / 10}{t('dispatcher.hours_short')})
                           </p>
                         </div>
@@ -177,29 +177,21 @@ export function BatchAssignmentModal({
                           value={jobPriorities[job.id] || 'medium'} 
                           onValueChange={(val) => handlePriorityChange(job.id, val as DispatchPriority)}
                         >
-                          <SelectTrigger className="w-[130px] h-8 text-xs bg-background border-border">
+                          <SelectTrigger className="w-[110px] h-8 text-xs bg-background border-border shrink-0">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent className="bg-background z-50">
                             <SelectItem value="low">
-                              <div className="flex items-center gap-2">
-                                <Badge variant="outline" className="text-[10px] px-1.5">{t('dispatcher.priority_low')}</Badge>
-                              </div>
+                              <Badge variant="outline" className="text-[10px] px-1.5">{t('dispatcher.priority_low')}</Badge>
                             </SelectItem>
                             <SelectItem value="medium">
-                              <div className="flex items-center gap-2">
-                                <Badge variant="secondary" className="text-[10px] px-1.5">{t('dispatcher.priority_medium')}</Badge>
-                              </div>
+                              <Badge variant="secondary" className="text-[10px] px-1.5">{t('dispatcher.priority_medium')}</Badge>
                             </SelectItem>
                             <SelectItem value="high">
-                              <div className="flex items-center gap-2">
-                                <Badge variant="default" className="text-[10px] px-1.5">{t('dispatcher.priority_high')}</Badge>
-                              </div>
+                              <Badge variant="default" className="text-[10px] px-1.5">{t('dispatcher.priority_high')}</Badge>
                             </SelectItem>
                             <SelectItem value="urgent">
-                              <div className="flex items-center gap-2">
-                                <Badge variant="destructive" className="text-[10px] px-1.5">{t('dispatcher.priority_urgent')}</Badge>
-                              </div>
+                              <Badge variant="destructive" className="text-[10px] px-1.5">{t('dispatcher.priority_urgent')}</Badge>
                             </SelectItem>
                           </SelectContent>
                         </Select>
@@ -209,6 +201,7 @@ export function BatchAssignmentModal({
                 })}
               </div>
             </ScrollArea>
+
           </div>
           
           {/* Assignment details */}

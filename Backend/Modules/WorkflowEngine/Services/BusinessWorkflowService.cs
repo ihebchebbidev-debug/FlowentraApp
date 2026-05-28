@@ -7,6 +7,8 @@ using MyApi.Modules.Dispatches.Models;
 using MyApi.Modules.Offers.Models;
 using MyApi.Modules.Contacts.Models;
 using System.Text.Json;
+using MyApi.Modules.Settings.Services;
+
 
 namespace MyApi.Modules.WorkflowEngine.Services
 {
@@ -18,6 +20,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
         private readonly IWorkflowNotificationService _notificationService;
         private readonly MyApi.Modules.Numbering.Services.INumberingService? _numberingService;
         private readonly MyApi.Modules.Planning.Services.IPlannedLineEntryService? _plannedEntries;
+        private readonly IAppSettingsService? _appSettingsService;
 
         public BusinessWorkflowService(
             ApplicationDbContext db,
@@ -25,7 +28,8 @@ namespace MyApi.Modules.WorkflowEngine.Services
             IWorkflowTriggerService triggerService,
             IWorkflowNotificationService notificationService,
             MyApi.Modules.Numbering.Services.INumberingService? numberingService = null,
-            MyApi.Modules.Planning.Services.IPlannedLineEntryService? plannedEntries = null)
+            MyApi.Modules.Planning.Services.IPlannedLineEntryService? plannedEntries = null,
+            IAppSettingsService? appSettingsService = null)
         {
             _db = db;
             _logger = logger;
@@ -33,7 +37,9 @@ namespace MyApi.Modules.WorkflowEngine.Services
             _notificationService = notificationService;
             _numberingService = numberingService;
             _plannedEntries = plannedEntries;
+            _appSettingsService = appSettingsService;
         }
+
 
         /// <summary>
         /// Offer accepted → Create Sale automatically
@@ -170,21 +176,17 @@ namespace MyApi.Modules.WorkflowEngine.Services
                     await _db.SaveChangesAsync();
 
                     // Carry planned time/expenses from offer items → sale items (Stage 2).
+                    // Propagate failures: a missing plan is a data-integrity bug, not a warning.
+                    // The outer catch will mark the workflow step failed and notify the user.
                     if (_plannedEntries != null)
                     {
                         foreach (var (offerItemId, saleItem) in offerItemToSaleItem)
                         {
-                            try
-                            {
-                                await _plannedEntries.CopyAsync("offer_item", offerItemId, "sale_item", saleItem.Id, userId ?? "system");
-                            }
-                            catch (Exception planEx)
-                            {
-                                _logger.LogWarning(planEx, "Failed to copy planned entries from offer_item {OfferItemId} to sale_item {SaleItemId}", offerItemId, saleItem.Id);
-                            }
+                            await _plannedEntries.CopyAsync("offer_item", offerItemId, "sale_item", saleItem.Id, userId ?? "system");
                         }
                     }
                 }
+
 
                 // Update offer status
                 offer.Status = "accepted";
@@ -362,48 +364,130 @@ namespace MyApi.Modules.WorkflowEngine.Services
                 _db.ServiceOrders.Add(serviceOrder);
                 await _db.SaveChangesAsync();
 
-                // Create service order jobs for each service item
-                var saleItemToJob = new List<(int SaleItemId, ServiceOrderJob Job)>();
-                foreach (var serviceItem in serviceItems)
+                // Determine job conversion mode: AppSettings > default "installation".
+                // Mirrors ServiceOrderService.CreateFromSaleAsync so manual + workflow
+                // paths produce identical SO structures from the same sale.
+                string? jobConversionMode = null;
+                if (_appSettingsService != null)
                 {
-                    var job = new ServiceOrderJob
-                    {
-                        ServiceOrderId = serviceOrder.Id,
-                        SaleItemId = serviceItem.Id.ToString(),
-                        Title = serviceItem.ItemName ?? serviceItem.Description ?? "Service Job",
-                        Description = serviceItem.Description ?? "",
-                        JobDescription = serviceItem.Description ?? serviceItem.ItemName ?? "Service job from sale",
-                        InstallationId = serviceItem.InstallationId,
-                        InstallationName = serviceItem.InstallationName,
-                        Status = "unscheduled",
-                        EstimatedCost = serviceItem.LineTotal,
-                        Priority = priority ?? "medium",
-                        WorkType = "maintenance"
-                    };
-                    _db.ServiceOrderJobs.Add(job);
-                    saleItemToJob.Add((serviceItem.Id, job));
-
-                    // Mark the sale item as service order generated
-                    serviceItem.ServiceOrderGenerated = true;
-                    serviceItem.ServiceOrderId = serviceOrder.Id.ToString();
+                    jobConversionMode = await _appSettingsService.GetSettingAsync("JobConversionMode");
                 }
-                await _db.SaveChangesAsync();
+                jobConversionMode ??= "installation";
 
-                // Carry planned time/expenses from sale items → service order jobs (Stage 2).
-                if (_plannedEntries != null)
+                // Create service order jobs. In installation mode, sale items sharing
+                // the same InstallationId collapse into a single job whose SaleItemId
+                // is the CSV of constituent sale-item IDs (matches manual path).
+                var jobs = new List<ServiceOrderJob>();
+                // (saleItemId, job) pairs used to propagate planned entries — only
+                // the primary (first) sale item of each job seeds planned entries
+                // to avoid stacking duplicates on installation-grouped jobs.
+                var planSeeds = new List<(int SaleItemId, ServiceOrderJob Job)>();
+
+                if (jobConversionMode == "installation")
                 {
-                    foreach (var (saleItemId, job) in saleItemToJob)
+                    var groupedByInstallation = serviceItems
+                        .Where(i => !string.IsNullOrEmpty(i.InstallationId))
+                        .GroupBy(i => i.InstallationId!)
+                        .ToList();
+                    var orphanItems = serviceItems
+                        .Where(i => string.IsNullOrEmpty(i.InstallationId))
+                        .ToList();
+
+                    foreach (var group in groupedByInstallation)
                     {
-                        try
+                        var items = group.ToList();
+                        var installationName = items.First().InstallationName ?? $"Installation #{group.Key}";
+                        var serviceNames = items.Select(i => i.ItemName ?? "Service").ToList();
+                        var totalCost = items.Sum(i => i.LineTotal > 0 ? i.LineTotal : (i.UnitPrice * i.Quantity));
+                        var job = new ServiceOrderJob
                         {
-                            await _plannedEntries.CopyAsync("sale_item", saleItemId, "service_order_job", job.Id, userId ?? "system");
-                        }
-                        catch (Exception planEx)
+                            ServiceOrderId = serviceOrder.Id,
+                            SaleItemId = string.Join(",", items.Select(i => i.Id)),
+                            Title = installationName,
+                            JobDescription = "Services: " + string.Join(", ", serviceNames),
+                            Description = string.Join("\n", items.Select(i =>
+                                $"- {i.ItemName}: {i.Quantity} x {i.UnitPrice:F2} = {(i.LineTotal > 0 ? i.LineTotal : i.UnitPrice * i.Quantity):F2}")),
+                            InstallationId = group.Key,
+                            InstallationName = installationName,
+                            Status = "unscheduled",
+                            EstimatedCost = totalCost,
+                            Priority = priority ?? "medium",
+                            WorkType = "maintenance",
+                            CompletionPercentage = 0
+                        };
+                        jobs.Add(job);
+                        planSeeds.Add((items.First().Id, job));
+                        foreach (var item in items)
                         {
-                            _logger.LogWarning(planEx, "Failed to copy planned entries from sale_item {SaleItemId} to job {JobId}", saleItemId, job.Id);
+                            item.ServiceOrderGenerated = true;
+                            item.ServiceOrderId = serviceOrder.Id.ToString();
                         }
                     }
+
+                    foreach (var item in orphanItems)
+                    {
+                        var job = new ServiceOrderJob
+                        {
+                            ServiceOrderId = serviceOrder.Id,
+                            SaleItemId = item.Id.ToString(),
+                            Title = item.ItemName ?? "Service Job",
+                            JobDescription = item.Description ?? item.ItemName ?? "Service job from sale",
+                            Description = item.Description ?? "",
+                            InstallationId = null,
+                            InstallationName = null,
+                            Status = "unscheduled",
+                            EstimatedCost = item.LineTotal,
+                            Priority = priority ?? "medium",
+                            WorkType = "maintenance",
+                            CompletionPercentage = 0
+                        };
+                        jobs.Add(job);
+                        planSeeds.Add((item.Id, job));
+                        item.ServiceOrderGenerated = true;
+                        item.ServiceOrderId = serviceOrder.Id.ToString();
+                    }
                 }
+                else
+                {
+                    // SERVICE-BASED: one job per service item (legacy behavior)
+                    foreach (var serviceItem in serviceItems)
+                    {
+                        var job = new ServiceOrderJob
+                        {
+                            ServiceOrderId = serviceOrder.Id,
+                            SaleItemId = serviceItem.Id.ToString(),
+                            Title = serviceItem.ItemName ?? serviceItem.Description ?? "Service Job",
+                            Description = serviceItem.Description ?? "",
+                            JobDescription = serviceItem.Description ?? serviceItem.ItemName ?? "Service job from sale",
+                            InstallationId = serviceItem.InstallationId,
+                            InstallationName = serviceItem.InstallationName,
+                            Status = "unscheduled",
+                            EstimatedCost = serviceItem.LineTotal,
+                            Priority = priority ?? "medium",
+                            WorkType = "maintenance",
+                            CompletionPercentage = 0
+                        };
+                        jobs.Add(job);
+                        planSeeds.Add((serviceItem.Id, job));
+                        serviceItem.ServiceOrderGenerated = true;
+                        serviceItem.ServiceOrderId = serviceOrder.Id.ToString();
+                    }
+                }
+
+                _db.ServiceOrderJobs.AddRange(jobs);
+                await _db.SaveChangesAsync();
+
+                // Carry planned time/expenses from primary sale item → service order job.
+                // Propagate failures so the workflow step fails visibly rather than
+                // silently producing jobs without their planned budget.
+                if (_plannedEntries != null)
+                {
+                    foreach (var (saleItemId, job) in planSeeds)
+                    {
+                        await _plannedEntries.CopyAsync("sale_item", saleItemId, "service_order_job", job.Id, userId ?? "system");
+                    }
+                }
+
 
                 // Copy article/material items from sale to service order materials
                 var materialItems = sale.Items?.Where(i => i.Type == "article").ToList() ?? new List<SaleItem>();

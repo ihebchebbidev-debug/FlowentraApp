@@ -82,30 +82,40 @@ export function useDispatcherProgressiveLoad(): UseDispatcherProgressiveLoadRetu
         });
       }
 
-      // Phase 1: Load users (fastest - typically <500ms)
-      const fetchedTechnicians = await DispatcherService.fetchTechnicians(forceRefresh);
-      setTechnicians(fetchedTechnicians);
-      
-      setLoadingState(prev => ({
-        ...prev,
-        phase: 'dispatches',
-        progress: 35,
-        usersLoaded: true,
-      }));
+      // Parallel fetch: technicians, dispatches cache pre-warm, and unassigned jobs all in flight at once.
+      // Each phase still updates the UI as it resolves so users see techs/jobs the instant they arrive.
+      const techniciansPromise = DispatcherService.fetchTechnicians(forceRefresh).then(fetched => {
+        setTechnicians(fetched);
+        setLoadingState(prev => ({
+          ...prev,
+          phase: prev.serviceOrdersLoaded ? 'complete' : 'dispatches',
+          progress: Math.max(prev.progress, 40),
+          usersLoaded: true,
+        }));
+        return fetched;
+      });
 
-      // Phase 2: Pre-warm dispatches cache
-      await DispatcherService.fetchDispatchesCached();
-      
-      setLoadingState(prev => ({
-        ...prev,
-        phase: 'serviceOrders',
-        progress: 55,
-        dispatchesLoaded: true,
-      }));
+      const dispatchesPromise = DispatcherService.fetchDispatchesCached().then(res => {
+        setLoadingState(prev => ({
+          ...prev,
+          progress: Math.max(prev.progress, 55),
+          dispatchesLoaded: true,
+        }));
+        return res;
+      });
 
-      // Phase 3: Load service orders with unassigned jobs
-      const unassignedJobsResult = await DispatcherService.fetchServiceOrdersWithUnassignedJobs(forceRefresh);
-      setJobs(unassignedJobsResult.jobs);
+      const serviceOrdersPromise = DispatcherService.fetchServiceOrdersWithUnassignedJobs(forceRefresh).then(result => {
+        setJobs(result.jobs);
+        setLoadingState(prev => ({
+          ...prev,
+          phase: prev.usersLoaded ? 'complete' : 'serviceOrders',
+          progress: Math.max(prev.progress, 80),
+          serviceOrdersLoaded: true,
+        }));
+        return result;
+      });
+
+      await Promise.all([techniciansPromise, dispatchesPromise, serviceOrdersPromise]);
 
       setLoadingState({
         phase: 'complete',
@@ -114,6 +124,7 @@ export function useDispatcherProgressiveLoad(): UseDispatcherProgressiveLoadRetu
         dispatchesLoaded: true,
         serviceOrdersLoaded: true,
       });
+
 
     } catch (error) {
       console.error('Failed to load dispatcher data:', error);

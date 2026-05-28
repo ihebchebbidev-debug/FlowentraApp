@@ -76,7 +76,7 @@ export function InstallationAssignmentModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5 text-primary" />
@@ -107,10 +107,10 @@ export function InstallationAssignmentModal({
             <Label className="text-sm font-medium">
               {t('dispatcher.installation_jobs_included', 'Jobs Included')} ({installationGroup.jobs.length})
             </Label>
-            <ScrollArea className="max-h-48 rounded-lg border border-border">
-              <div className="p-2 space-y-1.5">
+            <ScrollArea className="max-h-32 rounded-lg border border-border">
+              <div className="p-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
                 {installationGroup.jobs.map((job) => (
-                  <div key={job.id} className="flex items-center justify-between py-1.5 px-2 rounded bg-muted/30 text-sm">
+                  <div key={job.id} className="flex items-center justify-between py-1.5 px-2 rounded bg-muted/30 text-sm min-w-0">
                     <div className="flex items-center gap-2 min-w-0">
                       <Wrench className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                       <span className="truncate font-medium">{job.title}</span>
@@ -122,6 +122,7 @@ export function InstallationAssignmentModal({
                 ))}
               </div>
             </ScrollArea>
+
             <div className="flex items-center gap-2 text-sm text-muted-foreground pt-1">
               <Clock className="h-3.5 w-3.5" />
               <span>{t('dispatcher.total_duration', 'Total Duration')}: <span className="font-semibold text-foreground">{durationHours}h ({totalDuration}min)</span></span>

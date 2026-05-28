@@ -16,20 +16,24 @@ namespace MyApi.Modules.Sales.Services
         private readonly IStockTransactionService? _stockTransactionService;
         private readonly IWorkflowTriggerService? _workflowTriggerService;
         private readonly MyApi.Modules.Numbering.Services.INumberingService? _numberingService;
+        private readonly MyApi.Modules.Planning.Services.IPlannedLineEntryService? _plannedEntries;
 
         public SaleService(
             ApplicationDbContext context, 
             ILogger<SaleService> logger,
             IStockTransactionService? stockTransactionService = null,
             IWorkflowTriggerService? workflowTriggerService = null,
-            MyApi.Modules.Numbering.Services.INumberingService? numberingService = null)
+            MyApi.Modules.Numbering.Services.INumberingService? numberingService = null,
+            MyApi.Modules.Planning.Services.IPlannedLineEntryService? plannedEntries = null)
         {
             _context = context;
             _logger = logger;
             _stockTransactionService = stockTransactionService;
             _workflowTriggerService = workflowTriggerService;
             _numberingService = numberingService;
+            _plannedEntries = plannedEntries;
         }
+
 
         public async Task<PaginatedSaleResponse> GetSalesAsync(
             string? status = null,
@@ -252,6 +256,10 @@ namespace MyApi.Modules.Sales.Services
                 saleNumber2 = MyApi.Modules.Numbering.Services.NumberingFallback.Generate("Sale");
             }
 
+            // Wrap the whole conversion in a transaction so a partial copy
+            // (e.g. planned-entry CopyAsync failure) rolls everything back.
+            using var tx = await _context.Database.BeginTransactionAsync();
+
             var sale = new Sale
             {
                 SaleNumber = saleNumber2,
@@ -298,29 +306,46 @@ namespace MyApi.Modules.Sales.Services
                 $"Offer #{offer.OfferNumber} won → Sale #{sale.SaleNumber} created (deal, total {sale.TotalAmount} {sale.Currency}).",
                 userId);
 
-            // Copy items
+            // Copy items — track (offerItem, saleItem) pairs so we can copy
+            // PlannedLineEntries with stable OriginOfferItemId lineage.
+            var itemPairs = new List<(MyApi.Modules.Offers.Models.OfferItem Src, SaleItem Dst)>();
             if (offer.Items != null && offer.Items.Any())
             {
-                var saleItems = offer.Items.Select(offerItem => new SaleItem
+                foreach (var offerItem in offer.Items)
                 {
-                    SaleId = sale.Id,
-                    Type = offerItem.Type,
-                    ArticleId = offerItem.ArticleId,
-                    ItemName = offerItem.ItemName,
-                    ItemCode = offerItem.ItemCode,
-                    Description = offerItem.Description ?? offerItem.ItemName ?? "Item",
-                    Quantity = offerItem.Quantity,
-                    UnitPrice = offerItem.UnitPrice,
-                    Discount = offerItem.Discount,
-                    DiscountType = offerItem.DiscountType ?? "percentage",
-                    InstallationId = offerItem.InstallationId,
-                    InstallationName = offerItem.InstallationName,
-                    RequiresServiceOrder = offerItem.Type == "service",
-                    FulfillmentStatus = "pending",
-                    TaxRate = 0
-                }).ToList();
+                    var saleItem = new SaleItem
+                    {
+                        SaleId = sale.Id,
+                        Type = offerItem.Type,
+                        ArticleId = offerItem.ArticleId,
+                        ItemName = offerItem.ItemName,
+                        ItemCode = offerItem.ItemCode,
+                        Description = offerItem.Description ?? offerItem.ItemName ?? "Item",
+                        Quantity = offerItem.Quantity,
+                        UnitPrice = offerItem.UnitPrice,
+                        Discount = offerItem.Discount,
+                        DiscountType = offerItem.DiscountType ?? "percentage",
+                        InstallationId = offerItem.InstallationId,
+                        InstallationName = offerItem.InstallationName,
+                        RequiresServiceOrder = offerItem.Type == "service",
+                        FulfillmentStatus = "pending",
+                        TaxRate = 0
+                    };
+                    _context.SaleItems.Add(saleItem);
+                    itemPairs.Add((offerItem, saleItem));
+                }
+                await _context.SaveChangesAsync();
+            }
 
-                _context.SaleItems.AddRange(saleItems);
+            // Propagate planned time/expenses from offer_item → sale_item.
+            // Inside the transaction: any failure rolls the whole conversion back
+            // so we never end up with a Sale that lost its plan.
+            if (_plannedEntries != null && itemPairs.Count > 0)
+            {
+                foreach (var (src, dst) in itemPairs)
+                {
+                    await _plannedEntries.CopyAsync("offer_item", src.Id, "sale_item", dst.Id, userId);
+                }
             }
 
             // Update offer status
@@ -341,10 +366,12 @@ namespace MyApi.Modules.Sales.Services
             _context.SaleActivities.Add(creationActivity);
 
             await _context.SaveChangesAsync();
+            await tx.CommitAsync();
 
             var createdSale = await GetSaleByIdAsync(sale.Id);
             return createdSale!;
         }
+
 
         public async Task<SaleDto> UpdateSaleAsync(int id, UpdateSaleDto updateDto, string userId)
         {

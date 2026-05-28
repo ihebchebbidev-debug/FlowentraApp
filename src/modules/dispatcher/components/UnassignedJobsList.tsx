@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { Skeleton } from "@/components/ui/skeleton";
 import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
 import { 
@@ -56,7 +58,10 @@ export function UnassignedJobsList({
   const [expandedServiceOrders, setExpandedServiceOrders] = useState<Set<string>>(new Set());
   const [expandedInstallations, setExpandedInstallations] = useState<Set<string>>(new Set(['__all__']));
   const [searchTerm, setSearchTerm] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [_isDragging, setIsDragging] = useState(false);
+
+
   
   // Group from the jobs prop itself: it is the source of truth used by Suggest/Auto-fill.
   // Service-order cache is only used for extra display metadata, so a stale/missing SO cache
@@ -93,6 +98,7 @@ export function UnassignedJobsList({
         };
       })
       .filter(order => {
+        if (priorityFilter !== 'all' && (order.priority || 'medium') !== priorityFilter) return false;
         if (!searchLower) return true;
         const matchesOrderId = order.id.toLowerCase().includes(searchLower);
         const matchesOrderTitle = order.title.toLowerCase().includes(searchLower);
@@ -102,7 +108,8 @@ export function UnassignedJobsList({
         return matchesOrderId || matchesOrderTitle || matchesJobTitle;
       });
     // jobs reference changes whenever the parent reloads unassigned jobs (= SO cache version).
-  }, [jobs, searchTerm]);
+  }, [jobs, searchTerm, priorityFilter]);
+
 
   // Group jobs by installation within a service order (used when conversionMode === 'installation')
   const getInstallationGroups = (soJobs: Job[]) => {
@@ -482,16 +489,31 @@ export function UnassignedJobsList({
 
 
         
-        {/* Search Input */}
-        <div className="relative mt-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder={t('dispatcher.search_placeholder')}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 h-9"
-          />
+        {/* Search Input + Priority Filter */}
+        <div className="mt-1 flex items-center gap-2">
+          <div className="relative flex-1 min-w-0">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={t('dispatcher.search_placeholder')}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 h-9"
+            />
+          </div>
+          <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+            <SelectTrigger className="h-9 w-[120px] shrink-0 bg-background">
+              <SelectValue placeholder={t('dispatcher.by_priority', 'Priority')} />
+            </SelectTrigger>
+            <SelectContent className="bg-popover border shadow-md z-50">
+              <SelectItem value="all">{t('dispatcher.by_priority', 'Priority')}</SelectItem>
+              <SelectItem value="urgent">{t('dispatcher.priority_urgent', 'Urgent')}</SelectItem>
+              <SelectItem value="high">{t('dispatcher.priority_high', 'High')}</SelectItem>
+              <SelectItem value="medium">{t('dispatcher.priority_medium', 'Medium')}</SelectItem>
+              <SelectItem value="low">{t('dispatcher.priority_low', 'Low')}</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
+
       </CardHeader>
       <CardContent className="p-0">
         <ScrollArea className="h-full">

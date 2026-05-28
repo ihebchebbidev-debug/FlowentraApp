@@ -483,22 +483,27 @@ namespace MyApi.Modules.ServiceOrders.Services
 
                     // Carry planned time/expenses from sale items → service order jobs (Stage 2).
                     // A job may aggregate multiple sale items (installation-grouped); SaleItemId stores "1,2,3".
+                    // Copy ONLY from the primary (first) sale item to avoid stacking duplicate
+                    // planned budgets when several lines share an installation. The lineage anchor
+                    // OriginOfferItemId is preserved on the copied rows.
                     if (_plannedEntries != null)
                     {
                         foreach (var j in jobs)
                         {
                             if (string.IsNullOrWhiteSpace(j.SaleItemId)) continue;
-                            foreach (var part in j.SaleItemId.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                            var firstPart = j.SaleItemId
+                                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                .Select(p => p.Trim())
+                                .FirstOrDefault();
+                            if (firstPart != null && int.TryParse(firstPart, out var primarySaleItemId))
                             {
-                                if (int.TryParse(part.Trim(), out var saleItemId))
-                                {
-                                    // Inside the transaction: a failure here MUST roll back
-                                    // so we never end up with jobs missing planned budget.
-                                    await _plannedEntries.CopyAsync("sale_item", saleItemId, "service_order_job", j.Id, userId);
-                                }
+                                // Inside the transaction: a failure here MUST roll back
+                                // so we never end up with jobs missing planned budget.
+                                await _plannedEntries.CopyAsync("sale_item", primarySaleItemId, "service_order_job", j.Id, userId);
                             }
                         }
                     }
+
 
 
                     // Update sale items with service order information
