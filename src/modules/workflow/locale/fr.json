@@ -1387,7 +1387,10 @@
         "versioning": "Chaque enregistrement crée une nouvelle version immuable. Vous pouvez revenir en arrière, comparer deux versions ou épingler une version à un tenant.",
         "activeExplain": "Une fois actif, les événements réels déclenchent le workflow. Le désactiver le met en pause instantanément — les exécutions en cours terminent leur nœud actuel puis s'arrêtent.",
         "logsExplain": "Légende des statuts — vert : ok · ambre : en attente · bleu : en cours · rouge : échoué. Cliquez sur un nœud pour inspecter ses entrées, sorties, durée, tentatives et journaux.",
-        "monitoring": "Toutes les exécutions sont conservées 30 jours dans Exécutions → Historique, avec des filtres par statut, entité déclencheuse, version et utilisateur. Les exécutions échouées peuvent être relancées en un clic."
+        "monitoring": "Toutes les exécutions sont conservées 30 jours dans Exécutions → Historique, avec des filtres par statut, entité déclencheuse, version et utilisateur. Les exécutions échouées peuvent être relancées en un clic.",
+        "saveIntro": "Place à la publication. On commence par Enregistrer — le canvas est stocké comme nouvelle version immuable.",
+        "activateIntro": "Le workflow est enregistré mais encore inactif. Pour qu’il réagisse aux événements réels, il faut l’Activer.",
+        "testIntro": "Avant d’y envoyer de vrais utilisateurs, lançons un Test — données d’exemple, aucun effet de bord, télémétrie complète par nœud."
       },
       "delay": {
         "intro": "Les nœuds Délai mettent le workflow en pause pour une durée ou jusqu'à une condition. Ils sont persistés — les redémarrages et déploiements ne perdent pas l'état.",
@@ -1469,6 +1472,30 @@
         "variables": "Chaque étape expose sa sortie comme variable. Utilisez {{ trigger.offer.total }} ou {{ ai.text }} dans n'importe quelle étape suivante — c'est ainsi que les données circulent d'une boîte à l'autre.",
         "executions": "Chaque fois que le déclencheur s'active, une nouvelle Exécution est créée et suivie de bout en bout. Vous voyez exactement quelle étape a tourné, sa durée, les entrées, sorties, tentatives et erreurs.",
         "mental": "Modèle mental : le Déclencheur s'active → le moteur parcourt le graphe → chaque nœud lit les variables, fait son travail, écrit ses propres variables → les conditions choisissent le chemin suivant → l'exécution se termine quand tous les chemins sont finis. C'est tout."
+      },
+      "tb": {
+        "intro": "À droite, les actions du workflow, dans l’ordre : IA, Debug, Copier, Importer, Exporter, Groupes, Workflows, Test, Annuler/Enregistrer et Activer.",
+        "test": "Test exécute le workflow une fois sur un payload d’exemple — aucun email réel, aucun changement de statut — avec les logs nœud par nœud pour vérifier avant la mise en production.",
+        "save": "Enregistrer fige le canvas comme nouvelle version immuable. Les anciennes versions sont conservées indéfiniment — restauration en un clic.",
+        "activate": "Activer bascule le workflow en mode réel. À partir de cet instant, chaque événement correspondant au déclencheur exécute ce workflow.",
+        "counter": "Le compteur dans la pastille en haut à gauche indique votre progression dans la démo — numéro d’étape sur le total.",
+        "status": "En haut à gauche, l’état SignalR : un point vert clignotant indique que le moteur de workflow est connecté et prêt à recevoir des événements.",
+        "version": "Juste à côté, le badge de version. Chaque Enregistrer crée une nouvelle version (v1, v2, v3…) — vous pouvez revenir en arrière en un clic.",
+        "editPill": "La pastille orange « Mode édition » signale que le canvas contient des modifications non enregistrées. Le point clignote pour vous rappeler de sauvegarder.",
+        "ai": "Build with AI ouvre un assistant qui transforme une description en français en workflow complet — nœuds, connexions et configurations.",
+        "debug": "Le Debug Console diffuse les exécutions en direct, permet d’inspecter les entrées/sorties de chaque nœud et de rejouer les payloads. Indispensable en production.",
+        "copy": "Copier la configuration place le workflow entier au format JSON dans le presse-papiers — pratique pour un chat, un ticket ou Git.",
+        "import": "Importer permet de coller un JSON de workflow pour le recréer instantanément — idéal pour déplacer un workflow entre tenants ou environnements.",
+        "export": "Exporter télécharge le workflow sous forme de fichier JSON portable, incluant nœuds, liens et configurations.",
+        "groups": "Les Groupes de workflows permettent d’organiser de grands catalogues par équipe, domaine ou cas d’usage.",
+        "manager": "Le gestionnaire de Workflows liste tous les workflows enregistrés du tenant — ouvrir, renommer, dupliquer, archiver ou charger sur le canvas.",
+        "cancel": "Annuler abandonne vos modifications non enregistrées et restaure la dernière version sauvegardée. Votre filet de sécurité pendant l’expérimentation.",
+        "stop": "Une fois actif, Activer devient Stop. Cliquez pour mettre en pause sans perdre la version — idéal pour une coupure de sécurité.",
+        "nextRunIn": "Prochaine exécution dans",
+        "vActive": "Actif",
+        "vDraft": "Brouillon enregistré",
+        "vEditing": "En édition",
+        "demoPill": "Visite guidée"
       }
     }
   },

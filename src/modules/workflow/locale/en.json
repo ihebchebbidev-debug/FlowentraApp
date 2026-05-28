@@ -1375,7 +1375,10 @@
         "activeExplain": "When active, real events trigger the workflow. Toggling off pauses it instantly — running executions finish their current node and then halt.",
         "test": "Test run fires the workflow once with sample data. The execution panel slides up showing each node's status.",
         "logsExplain": "Status legend — green: ok · amber: waiting · blue: running · red: failed. Click any node to inspect its input, output, duration, retries and logs.",
-        "monitoring": "All runs are kept for 30 days under Executions → History, with filters by status, trigger entity, version and user. Failed runs can be retried in one click."
+        "monitoring": "All runs are kept for 30 days under Executions → History, with filters by status, trigger entity, version and user. Failed runs can be retried in one click.",
+        "saveIntro": "Time to publish. First we Save — this stores the current canvas as a new immutable version.",
+        "activateIntro": "The workflow is saved but still dormant. To make it react to real events we have to Activate it.",
+        "testIntro": "Before sending real users into it, let’s do a Test run — sample data, no side effects, full per-node telemetry."
       },
       "delay": {
         "intro": "Delay nodes pause the workflow for a duration or until a condition. They are checkpointed — restarts and deploys do not lose state.",
@@ -1457,6 +1460,30 @@
         "variables": "Every step exposes its output as a variable. Use {{ trigger.offer.total }} or {{ ai.text }} inside any later step — that's how data flows from one box to the next.",
         "executions": "Each time the trigger fires, a new Execution is created and tracked end-to-end. You can see exactly which step ran, how long it took, the inputs, outputs, retries and errors.",
         "mental": "Mental model: Trigger fires → engine walks the graph → each node reads variables, does its job, writes its own variables → conditions pick the next path → execution ends when all paths finish. That's it."
+      },
+      "tb": {
+        "intro": "On the right are the workflow actions, in order: AI builder, Debug, Copy, Import, Export, Groups, Workflows, Test, Cancel/Save and Activate.",
+        "test": "Test run executes the workflow once on a sample payload — no real emails, no real status changes — and shows you the per-node logs so you can verify the flow before going live.",
+        "save": "Save commits the current canvas as a new immutable version. Older versions stay around forever — rollback is one click away.",
+        "activate": "Activate flips the workflow into live mode. From that moment, every real event matching the trigger will fire this workflow.",
+        "counter": "The counter in the top-left pill shows your progress through the demo — step number out of the total.",
+        "status": "Top-left you see the live SignalR status — a green pulse means the workflow runtime is connected and ready to receive events.",
+        "version": "Right next to it sits the version badge. Every Save mints a new version (v1, v2, v3…) — so you can roll back instantly if anything goes wrong.",
+        "editPill": "The orange \"Edit mode\" pill warns you that the canvas has unsaved changes. The dot pulses to remind you to Save before leaving.",
+        "ai": "Build with AI opens an assistant that turns a plain-English description into a complete workflow — nodes, connections, configs and all.",
+        "debug": "Debug Console streams live executions, lets you inspect every node’s input/output and replay payloads. Indispensable when something misbehaves in production.",
+        "copy": "Copy Config copies the entire workflow as JSON to your clipboard — handy for pasting into a chat, a ticket or version control.",
+        "import": "Import lets you paste a workflow JSON to recreate it instantly — great for moving workflows between tenants or environments.",
+        "export": "Export downloads the workflow as a portable JSON file, including all nodes, edges and node configs.",
+        "groups": "Workflow Groups let you organise large catalogues of workflows into folders by team, domain or use-case.",
+        "manager": "The Workflows manager lists every saved workflow on this tenant — open, rename, duplicate, archive or load any of them onto the canvas.",
+        "cancel": "Cancel discards your unsaved edits and reverts the canvas to the last saved version. It’s your safety net while experimenting.",
+        "stop": "Once active, Activate becomes Stop. Click it to instantly pause execution without losing the version — perfect for a quick safety break.",
+        "nextRunIn": "Next run in",
+        "vActive": "Active",
+        "vDraft": "Draft saved",
+        "vEditing": "Editing",
+        "demoPill": "Guided tour"
       }
     }
   },

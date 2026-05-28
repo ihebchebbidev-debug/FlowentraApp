@@ -123,11 +123,29 @@ chapter('concepts', 'onboarding.demo.chapter.concepts', () => [
   { caption: 'onboarding.demo.concepts.mental',     target: 'canvas',         duration: 2600, apply: s => s },
 ]);
 
-// ── Chapter 1: Welcome / Overview ────────────────────────────────────────────
+// ── Chapter 1: Welcome / Overview — full top-bar tour ───────────────────────
 chapter('overview', 'onboarding.demo.chapter.overview', () => [
-  { caption: 'onboarding.demo.welcome',     target: 'canvas',         duration: 2000, apply: s => s },
-  { caption: 'onboarding.demo.layout',      target: 'palette-header', duration: 1800, apply: s => s },
-  { caption: 'onboarding.demo.toolbarTour', target: 'btn-save',       duration: 1800, apply: s => s },
+  { caption: 'onboarding.demo.welcome',       target: 'canvas',         duration: 2000, apply: s => s },
+  { caption: 'onboarding.demo.layout',        target: 'palette-header', duration: 1800, apply: s => s },
+  // LEFT side of top bar
+  { caption: 'onboarding.demo.tb.status',     target: 'tb-status',      duration: 1900, apply: s => s },
+  { caption: 'onboarding.demo.tb.version',    target: 'tb-version',     duration: 2100, apply: s => s },
+  { caption: 'onboarding.demo.tb.editPill',   target: 'tb-edit-pill',   duration: 1900, apply: s => s },
+  // RIGHT side of top bar — every action button explained
+  { caption: 'onboarding.demo.tb.intro',      target: 'btn-ai',         duration: 1700, apply: s => s },
+  { caption: 'onboarding.demo.tb.ai',         target: 'btn-ai',         duration: 2200, apply: s => s },
+  { caption: 'onboarding.demo.tb.debug',      target: 'btn-debug',      duration: 2000, apply: s => s },
+  { caption: 'onboarding.demo.tb.copy',       target: 'btn-copy',       duration: 1900, apply: s => s },
+  { caption: 'onboarding.demo.tb.import',     target: 'btn-import',     duration: 1900, apply: s => s },
+  { caption: 'onboarding.demo.tb.export',     target: 'btn-export',     duration: 1900, apply: s => s },
+  { caption: 'onboarding.demo.tb.groups',     target: 'btn-groups',     duration: 2000, apply: s => s },
+  { caption: 'onboarding.demo.tb.manager',    target: 'btn-manager',    duration: 2100, apply: s => s },
+  { caption: 'onboarding.demo.tb.test',       target: 'btn-test',       duration: 2400, apply: s => s },
+  { caption: 'onboarding.demo.tb.cancel',     target: 'btn-cancel',     duration: 1900, apply: s => s },
+  { caption: 'onboarding.demo.tb.save',       target: 'btn-save',       duration: 2400, apply: s => s },
+  { caption: 'onboarding.demo.tb.activate',   target: 'btn-activate',   duration: 2600, apply: s => s },
+  { caption: 'onboarding.demo.tb.stop',       target: 'btn-activate',   duration: 2000, apply: s => s },
+  { caption: 'onboarding.demo.tb.counter',    target: 'palette-header', duration: 1800, apply: s => s },
 ]);
 
 // ── Chapter 2: TRIGGERS ──────────────────────────────────────────────────────
@@ -894,22 +912,31 @@ chapter('shortcuts', 'onboarding.demo.chapter.shortcuts', () => [
 // ── Chapter 8: SAVE · ACTIVATE · TEST RUN ────────────────────────────────────
 
 chapter('publish', 'onboarding.demo.chapter.publish', () => [
-  { caption: 'onboarding.demo.pub.review', target: 'canvas', duration: 1300, apply: s => s },
+  { caption: 'onboarding.demo.pub.review', target: 'canvas', duration: 1400, apply: s => s },
+
+  // SAVE
+  { caption: 'onboarding.demo.pub.saveIntro', target: 'btn-save', duration: 1800, apply: s => s },
   {
     caption: 'onboarding.demo.pub.save',
-    target: 'btn-save', click: true, duration: 900,
+    target: 'btn-save', click: true, duration: 1100,
     apply: s => ({ ...s, saved: true }),
   },
-  { caption: 'onboarding.demo.pub.versioning', target: 'btn-save', duration: 1300, apply: s => s },
+  { caption: 'onboarding.demo.pub.versioning', target: 'btn-save', duration: 1700, apply: s => s },
+
+  // ACTIVATE
+  { caption: 'onboarding.demo.pub.activateIntro', target: 'btn-activate', duration: 1800, apply: s => s },
   {
     caption: 'onboarding.demo.pub.activate',
-    target: 'btn-activate', click: true, duration: 900,
+    target: 'btn-activate', click: true, duration: 1100,
     apply: s => ({ ...s, active: true }),
   },
-  { caption: 'onboarding.demo.pub.activeExplain', target: 'btn-activate', duration: 1400, apply: s => s },
+  { caption: 'onboarding.demo.pub.activeExplain', target: 'btn-activate', duration: 1800, apply: s => s },
+
+  // TEST RUN
+  { caption: 'onboarding.demo.pub.testIntro', target: 'btn-test', duration: 1800, apply: s => s },
   {
     caption: 'onboarding.demo.pub.test',
-    target: 'btn-test', click: true, duration: 1000,
+    target: 'btn-test', click: true, duration: 1100,
     apply: s => ({
       ...s,
       showExecutions: true,
@@ -925,8 +952,8 @@ chapter('publish', 'onboarding.demo.chapter.publish', () => [
       ],
     }),
   },
-  { caption: 'onboarding.demo.pub.logsExplain', target: 'canvas', offset: { x: 0, y: 200 }, duration: 1500, apply: s => s },
-  { caption: 'onboarding.demo.pub.monitoring', target: 'canvas', offset: { x: 0, y: 200 }, duration: 1500, apply: s => s },
+  { caption: 'onboarding.demo.pub.logsExplain', target: 'canvas', offset: { x: 0, y: 200 }, duration: 1700, apply: s => s },
+  { caption: 'onboarding.demo.pub.monitoring',  target: 'canvas', offset: { x: 0, y: 200 }, duration: 1700, apply: s => s },
 ]);
 
 // ── Chapter 9: NEXT STEPS — recap & where to go from here ────────────────────
