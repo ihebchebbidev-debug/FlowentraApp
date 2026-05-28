@@ -82,29 +82,36 @@ function authHeaders(extra: Record<string, string> = {}): Record<string, string>
 
 // Hydration state is keyed by tenant slug too, so switching subdomain re-hydrates.
 const hydratedBySlug = new Set<string>();
-let inflight: Promise<void> | null = null;
+const inflightBySlug = new Map<string, Promise<void>>();
 
 async function hydrateOnce(): Promise<void> {
   const slug = getCurrentTenant() ?? '__default__';
   if (hydratedBySlug.has(slug)) return;
-  if (inflight) return inflight;
-  inflight = (async () => {
+  const existing = inflightBySlug.get(slug);
+  if (existing) return existing;
+  const p = (async () => {
     try {
       const res = await fetch(`${API_URL}/api/module-scope`, { headers: authHeaders() });
       if (!res.ok) throw new Error(String(res.status));
       const rows: { moduleKey: string; scope: ModuleScope }[] = await res.json();
       const map: ScopeMap = {};
       rows.forEach(r => { map[r.moduleKey] = r.scope; });
-      writeCache(map);
+      // Write under the slug we started with, not whatever cacheKey() resolves to now.
+      try {
+        localStorage.setItem(`${CACHE_KEY_PREFIX}${slug}`, JSON.stringify(map));
+        localStorage.removeItem(LEGACY_CACHE_KEY);
+      } catch { /* ignore */ }
+      window.dispatchEvent(new CustomEvent(EVENT));
       hydratedBySlug.add(slug);
     } catch {
       // Backend not migrated yet → keep whatever is cached, no error noise.
       hydratedBySlug.add(slug);
     } finally {
-      inflight = null;
+      inflightBySlug.delete(slug);
     }
   })();
-  return inflight;
+  inflightBySlug.set(slug, p);
+  return p;
 }
 
 /** Synchronous read (uses cache; triggers a background hydrate on first call). */
