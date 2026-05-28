@@ -535,16 +535,22 @@ export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries
         date: expenseFormData.date,
       };
 
-      await serviceOrdersApi.addExpense(Number(serviceOrder.id), expenseData);
+      // G7: route expenses through the selected dispatch so the overrun gate fires;
+      // fall back to SO-direct only when no dispatch is available.
+      if (selectedDispatchId) {
+        await dispatchesApi.addExpense(selectedDispatchId, expenseData);
+      } else {
+        await serviceOrdersApi.addExpense(Number(serviceOrder.id), expenseData);
+      }
       toast.success(t('expense_booking.added_success', 'Expense added'));
       
       setIsExpenseDialogOpen(false);
       setEditingExpenseId(null);
       resetExpenseForm();
       onUpdate?.();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save expense:', error);
-      toast.error(t('expense_booking.save_failed', 'Failed to save expense'));
+      toast.error(error?.message || t('expense_booking.save_failed', 'Failed to save expense'));
     } finally {
       setIsSubmitting(false);
     }

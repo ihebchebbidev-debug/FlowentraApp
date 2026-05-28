@@ -159,6 +159,35 @@ namespace MyApi.Modules.Planning.Services
                 }
             }
 
+            // G6: also include SO-direct time/expenses (logged against the parent ServiceOrder, not a dispatch).
+            var serviceOrderId = await _db.Set<MyApi.Modules.ServiceOrders.Models.ServiceOrderJob>()
+                .Where(j => j.Id == serviceOrderJobId)
+                .Select(j => (int?)j.ServiceOrderId)
+                .FirstOrDefaultAsync();
+            if (serviceOrderId.HasValue)
+            {
+                // Only attribute SO-direct actuals to this job when it's the only job on the SO
+                // (otherwise we'd double-count the same totals across every sibling job).
+                var jobCount = await _db.Set<MyApi.Modules.ServiceOrders.Models.ServiceOrderJob>()
+                    .CountAsync(j => j.ServiceOrderId == serviceOrderId.Value);
+                if (jobCount == 1)
+                {
+                    actualMinutes += (int)await _db.Set<MyApi.Modules.ServiceOrders.Models.ServiceOrderTimeEntry>()
+                        .Where(t => t.ServiceOrderId == serviceOrderId.Value)
+                        .SumAsync(t => (int?)t.Duration ?? 0);
+
+                    var soExpenses = await _db.Set<MyApi.Modules.ServiceOrders.Models.ServiceOrderExpense>()
+                        .Where(e => e.ServiceOrderId == serviceOrderId.Value)
+                        .ToListAsync();
+                    foreach (var e in soExpenses)
+                    {
+                        var key = (e.Type ?? "other").ToLower();
+                        actualExpenseByType.TryGetValue(key, out var cur);
+                        actualExpenseByType[key] = cur + e.Amount;
+                    }
+                }
+            }
+
             var allTypes = plannedExpenseByType.Keys.Union(actualExpenseByType.Keys, StringComparer.OrdinalIgnoreCase).ToList();
             var buckets = allTypes.Select(t => new PlanVsActualExpenseBucket
             {

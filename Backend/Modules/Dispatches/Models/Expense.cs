@@ -24,6 +24,10 @@ namespace MyApi.Modules.Dispatches.Models
         [MaxLength(50)]
         public string ExpenseType { get; set; } = string.Empty;
 
+        [Column("TechnicianId")]
+        [MaxLength(50)]
+        public string? TechnicianId { get; set; }
+
         [Required]
         [Column("Amount", TypeName = "decimal(18,2)")]
         public decimal Amount { get; set; }

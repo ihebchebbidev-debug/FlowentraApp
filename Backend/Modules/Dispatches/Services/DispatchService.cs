@@ -1183,7 +1183,21 @@ namespace MyApi.Modules.Dispatches.Services
                 .Select(dj => dj.JobId)
                 .Distinct()
                 .ToListAsync();
-            if (jobIds.Count == 0) return (0, 0);
+
+            // G5 fallback: legacy dispatches have no DispatchJob rows — parse Dispatch.JobId (CSV-capable string).
+            if (jobIds.Count == 0)
+            {
+                var legacy = await _db.Dispatches
+                    .Where(x => x.Id == dispatchId)
+                    .Select(x => x.JobId)
+                    .FirstOrDefaultAsync();
+                if (!string.IsNullOrWhiteSpace(legacy))
+                {
+                    foreach (var part in legacy.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                        if (int.TryParse(part, out var jid)) jobIds.Add(jid);
+                }
+                if (jobIds.Count == 0) return (0, 0);
+            }
 
             var planned = await _db.Set<MyApi.Modules.Planning.Models.PlannedLineEntry>()
                 .Where(p => p.ParentType == "service_order_job" && jobIds.Contains(p.ParentId) && p.Kind == "time")
@@ -1235,7 +1249,9 @@ namespace MyApi.Modules.Dispatches.Services
                 EndTime = t.EndTime,
                 Duration = (int)(t.Duration ?? 0), 
                 Description = t.Description,
-                CreatedAt = t.CreatedDate 
+                CreatedAt = t.CreatedDate,
+                OverrunFlag = t.OverrunFlag,
+                OverrunReason = t.OverrunReason,
             }).ToList();
         }
 
@@ -1307,6 +1323,7 @@ namespace MyApi.Modules.Dispatches.Services
             {
                 DispatchId = dispatchId,
                 ExpenseType = dto.Type,
+                TechnicianId = dto.TechnicianId,
                 Amount = dto.Amount,
                 Description = dto.Description,
                 ExpenseDate = dto.Date ?? DateTime.UtcNow,
@@ -1325,7 +1342,7 @@ namespace MyApi.Modules.Dispatches.Services
             { 
                 Id = exp.Id, 
                 DispatchId = exp.DispatchId, 
-                TechnicianId = dto.TechnicianId ?? userId, 
+                TechnicianId = exp.TechnicianId ?? dto.TechnicianId ?? userId, 
                 Type = exp.ExpenseType, 
                 Amount = exp.Amount,
                 Currency = dto.Currency,
@@ -1345,13 +1362,15 @@ namespace MyApi.Modules.Dispatches.Services
             { 
                 Id = e.Id, 
                 DispatchId = e.DispatchId, 
-                TechnicianId = e.RecordedBy, 
+                TechnicianId = e.TechnicianId ?? e.RecordedBy, 
                 Type = e.ExpenseType, 
                 Amount = e.Amount,
                 Description = e.Description,
                 Date = e.ExpenseDate,
                 Status = "pending", 
-                CreatedAt = e.CreatedDate 
+                CreatedAt = e.CreatedDate,
+                OverrunFlag = e.OverrunFlag,
+                OverrunReason = e.OverrunReason,
             }).ToList();
         }
 
@@ -1368,6 +1387,7 @@ namespace MyApi.Modules.Dispatches.Services
             if (exp == null) throw new KeyNotFoundException("Expense not found");
 
             if (dto.Type != null) exp.ExpenseType = dto.Type;
+            if (dto.TechnicianId != null) exp.TechnicianId = dto.TechnicianId;
             if (dto.Amount.HasValue) exp.Amount = dto.Amount.Value;
             if (dto.Description != null) exp.Description = dto.Description;
             if (dto.Date.HasValue) exp.ExpenseDate = dto.Date.Value;

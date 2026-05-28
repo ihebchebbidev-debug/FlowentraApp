@@ -350,12 +350,18 @@ export class DispatchOperationsService {
       if (jobIds.length === 0) throw new Error('No valid job IDs found');
 
       const firstJob = installationGroup.jobs[0];
+      // G10: include scheduledStartTime / scheduledEndTime as TimeSpan "HH:mm:ss"
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const startTimeStr = `${pad(scheduledStart.getHours())}:${pad(scheduledStart.getMinutes())}:00`;
+      const endTimeStr = `${pad(scheduledEnd.getHours())}:${pad(scheduledEnd.getMinutes())}:00`;
       const dispatch = await dispatchesApi.createFromInstallation({
         installationId: parseInt(installationGroup.installationId, 10),
         installationName: installationGroup.installationName,
         jobIds,
         assignedTechnicianIds: [backendTechId],
         scheduledDate: scheduledStart.toISOString(),
+        scheduledStartTime: startTimeStr,
+        scheduledEndTime: endTimeStr,
         priority,
         notes: `Installation: ${installationGroup.installationName}\n${jobIds.length} jobs\nScheduled: ${scheduledStart.toLocaleTimeString()} - ${scheduledEnd.toLocaleTimeString()}`,
         siteAddress: firstJob?.location?.address,

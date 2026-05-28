@@ -28,6 +28,7 @@ import { ServiceOrderActivityTab } from "../components/ServiceOrderActivityTab";
 import { DocumentsTab } from "../components/DocumentsTab";
 import { ChecklistsSection } from "@/modules/shared/components/documents";
 import PlanVsActualPanel from "@/shared/components/planning/PlanVsActualPanel";
+import { PlannedEntriesEditor } from "@/shared/components/planning/PlannedEntriesEditor";
 import { cn } from "@/lib/utils";
 import { CompanyBadge } from "@/components/CompanyBadge";
 import { TenantSelector } from "@/components/TenantSelector";
@@ -1368,6 +1369,25 @@ export default function ServiceOrderDetail() {
                     <PlanVsActualPanel key={j.id} serviceOrderJobId={j.id} />
                   ))}
                 </div>
+              )}
+              {/* G11: planned-entry editor per job — critical for direct/solo SOs that never had upstream planning */}
+              {mappedJobs.length > 0 && (
+                <Card>
+                  <CardContent className="pt-6 space-y-6">
+                    {mappedJobs.map(j => (
+                      <div key={`planned-${j.id}`} className="space-y-2">
+                        <div className="text-sm font-medium text-muted-foreground">
+                          {j.title || `Job #${j.id}`}
+                        </div>
+                        <PlannedEntriesEditor
+                          parentType="service_order_job"
+                          parentId={Number(j.id)}
+                          currency={(serviceOrderForComponents as any)?.currency || 'TND'}
+                        />
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
               )}
               <Card>
                 <CardContent className="pt-6">
