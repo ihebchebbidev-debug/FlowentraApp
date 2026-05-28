@@ -516,15 +516,19 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
   };
 
   // Handle confirmed assignment with priority
-  const handleConfirmAssignment = async (priority: DispatchPriority) => {
+  const handleConfirmAssignment = async (
+    priority: DispatchPriority,
+    scheduledStart: Date,
+    scheduledEnd: Date,
+  ) => {
     if (!pendingAssignment) return;
-    
+
     setIsAssigning(true);
-    
+
     try {
-      const { job, technicianId, technician, scheduledStart, scheduledEnd } = pendingAssignment;
+      const { job, technicianId, technician } = pendingAssignment;
       const technicianName = technician ? `${technician.firstName} ${technician.lastName}` : undefined;
-      
+
       console.log('Confirming assignment:', {
         jobId: job.id,
         technicianId,
@@ -533,7 +537,7 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
         scheduledStart: scheduledStart.toISOString(),
         scheduledEnd: scheduledEnd.toISOString()
       });
-      
+
       await DispatcherService.assignJob(job.id, technicianId, scheduledStart, scheduledEnd, technicianName, priority);
       onJobAssignment(job.id, technicianId, scheduledStart, scheduledEnd);
       
@@ -602,13 +606,16 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
   };
 
   // Handle confirmed batch assignment (service order)
-  const handleConfirmBatchAssignment = async (jobPriorities: Array<{ jobId: string; priority: 'low' | 'medium' | 'high' | 'urgent' }>) => {
+  const handleConfirmBatchAssignment = async (
+    jobPriorities: Array<{ jobId: string; priority: 'low' | 'medium' | 'high' | 'urgent' }>,
+    scheduledStart: Date,
+  ) => {
     if (!pendingBatchAssignment) return;
-    
+
     setIsBatchAssigning(true);
-    
+
     try {
-      const { serviceOrder, technicianId, technician, scheduledStart } = pendingBatchAssignment;
+      const { serviceOrder, technicianId, technician } = pendingBatchAssignment;
       const technicianName = technician ? `${technician.firstName} ${technician.lastName}` : undefined;
       
       // Create a map for quick priority lookup
@@ -673,13 +680,17 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
   };
 
   // Handle confirmed installation assignment
-  const handleConfirmInstallationAssignment = async (priority: 'low' | 'medium' | 'high' | 'urgent') => {
+  const handleConfirmInstallationAssignment = async (
+    priority: 'low' | 'medium' | 'high' | 'urgent',
+    scheduledStart: Date,
+    scheduledEnd: Date,
+  ) => {
     if (!pendingInstallationAssignment) return;
 
     setIsInstallationAssigning(true);
 
     try {
-      const { group, technicianId, technician, scheduledStart, scheduledEnd } = pendingInstallationAssignment;
+      const { group, technicianId, technician } = pendingInstallationAssignment;
       const technicianName = technician ? `${technician.firstName} ${technician.lastName}` : undefined;
 
       await DispatcherService.assignInstallationGroup(group, technicianId, scheduledStart, scheduledEnd, technicianName, priority);

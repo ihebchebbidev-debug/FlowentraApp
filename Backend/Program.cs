@@ -336,6 +336,7 @@ builder.Services.AddScoped<MyApi.Modules.Dispatches.Services.IDispatchService, M
 // Planning Module Services
 builder.Services.AddScoped<IPlanningService, PlanningService>();
 builder.Services.AddScoped<MyApi.Modules.Planning.Services.IPlannedLineEntryService, MyApi.Modules.Planning.Services.PlannedLineEntryService>();
+builder.Services.AddScoped<MyApi.Modules.PlanningProfiles.Services.IPlanningProfileService, MyApi.Modules.PlanningProfiles.Services.PlanningProfileService>();
 builder.Services.AddScoped<IHrService, HrService>();
 builder.Services.AddScoped<ISyncService, SyncService>();
 

@@ -86,9 +86,10 @@ namespace MyApi.Modules.WorkflowEngine.Services
             // Create execution for each matching workflow
             foreach (var trigger in triggers)
             {
+                WorkflowExecution? execution = null;
                 try
                 {
-                    var execution = new WorkflowExecution
+                    execution = new WorkflowExecution
                     {
                         WorkflowId = trigger.WorkflowId,
                         TriggerEntityType = entityType,
@@ -210,10 +211,33 @@ namespace MyApi.Modules.WorkflowEngine.Services
                         "Error executing workflow {WorkflowId} for trigger {TriggerId}", 
                         trigger.WorkflowId, trigger.Id);
 
-                    // Notify about the error
+                    // BUG FIX: previously the execution row was never updated, leaving it
+                    // stuck in "running" until manual cleanup; the notification also
+                    // reported executionId=0 which clients cannot map to a real row.
+                    var executionId = execution?.Id ?? 0;
+                    if (execution != null)
+                    {
+                        try
+                        {
+                            _db.ChangeTracker.Clear();
+                            var fresh = await _db.WorkflowExecutions.FirstOrDefaultAsync(e => e.Id == execution.Id);
+                            if (fresh != null)
+                            {
+                                fresh.Status = "failed";
+                                fresh.Error = ex.Message.Length > 1000 ? ex.Message.Substring(0, 1000) : ex.Message;
+                                fresh.CompletedAt = DateTime.UtcNow;
+                                await _db.SaveChangesAsync();
+                            }
+                        }
+                        catch (Exception saveEx)
+                        {
+                            _logger.LogError(saveEx, "Failed to mark execution {ExecutionId} as failed after trigger error", execution.Id);
+                        }
+                    }
+
                     await _notificationService.NotifyExecutionErrorAsync(
                         trigger.WorkflowId,
-                        0,
+                        executionId,
                         trigger.NodeId,
                         ex.Message);
                 }

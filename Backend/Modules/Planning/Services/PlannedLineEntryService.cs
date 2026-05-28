@@ -36,7 +36,8 @@ namespace MyApi.Modules.Planning.Services
             ValidateParent(parentType);
             ValidateKind(dto);
 
-            int? origin = parentType.Equals("offer_item", StringComparison.OrdinalIgnoreCase) ? parentId : null;
+            int? origin = await ResolveOriginAsync(parentType, parentId);
+
 
             var entity = new PlannedLineEntry
             {
@@ -181,6 +182,39 @@ namespace MyApi.Modules.Planning.Services
         {
             if (!ValidParents.Contains(parentType))
                 throw new ArgumentException($"Invalid parentType '{parentType}'. Allowed: offer_item, sale_item, service_order_job");
+        }
+
+        /// <summary>
+        /// Resolve OriginOfferItemId for a new direct-create entry by walking the lineage:
+        /// offer_item → self; otherwise inherit from any sibling entry already linked to its origin,
+        /// or for service_order_job fall back to siblings of its source sale_item.
+        /// </summary>
+        private async Task<int?> ResolveOriginAsync(string parentType, int parentId)
+        {
+            if (parentType.Equals("offer_item", StringComparison.OrdinalIgnoreCase))
+                return parentId;
+
+            var pt = parentType.ToLower();
+            var siblingOrigin = await _db.Set<PlannedLineEntry>()
+                .Where(p => p.ParentType == pt && p.ParentId == parentId && p.OriginOfferItemId != null)
+                .Select(p => p.OriginOfferItemId)
+                .FirstOrDefaultAsync();
+            if (siblingOrigin != null) return siblingOrigin;
+
+            if (parentType.Equals("service_order_job", StringComparison.OrdinalIgnoreCase))
+            {
+                var job = await _db.ServiceOrderJobs.FirstOrDefaultAsync(j => j.Id == parentId);
+                if (job != null && !string.IsNullOrEmpty(job.SaleItemId) && int.TryParse(job.SaleItemId, out var sid))
+                {
+                    var saleOrigin = await _db.Set<PlannedLineEntry>()
+                        .Where(p => p.ParentType == "sale_item" && p.ParentId == sid && p.OriginOfferItemId != null)
+                        .Select(p => p.OriginOfferItemId)
+                        .FirstOrDefaultAsync();
+                    if (saleOrigin != null) return saleOrigin;
+                }
+            }
+
+            return null;
         }
 
         private static void ValidateKind(CreatePlannedLineEntryDto dto)

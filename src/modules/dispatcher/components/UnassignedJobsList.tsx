@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
 import { 
   Clock, 
   Building2, 
@@ -15,6 +16,7 @@ import {
   ChevronRight,
   Package,
   Search,
+  MapPin,
 } from "lucide-react";
 
 import type { Job, ServiceOrder, InstallationGroup } from "../types";
@@ -362,93 +364,114 @@ export function UnassignedJobsList({
     target.classList.remove('drag-ready');
   };
 
-  // Render a single job row
+  // Render a single job row (compact) with hover popup showing full details
   const renderJobRow = (job: Job) => {
     // Individual job dragging only when conversionMode=service and planningMode=job
     const isJobDraggable = !isMobile && planningMode === 'job' && conversionMode === 'service';
-    return (
-    <div
-      key={job.id}
-      draggable={isJobDraggable}
-      onDragStart={(e) => handleJobDragStart(e, job)}
-      onDragEnd={handleDragEnd}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onClick={() => isMobile && onJobClick?.(job)}
-      className={`dispatcher-job-item p-2 border rounded bg-card transition-all ${
-        isMobile 
-          ? 'mobile cursor-pointer hover:shadow-sm' 
-          : isJobDraggable ? 'cursor-grab hover:shadow-md' : ''
-      } hover:border-primary/50`}
-    >
-      <div className="flex items-start gap-1.5">
-        {isJobDraggable && (
-          <GripVertical 
-            className="grip-icon h-3 w-3 text-muted-foreground mt-0.5 flex-shrink-0 opacity-60" 
-          />
-        )}
-        
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between mb-1">
-            <h4 className="font-medium text-xs leading-tight">
-              {job.title}
-            </h4>
-            <Badge variant={getPriorityColor(job.priority)} className="text-[0.65rem] px-1.5 py-0 h-[18px] flex items-center gap-0.5">
-              {job.priority === 'urgent' && <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />}
-              {t(`dispatcher.priority_${job.priority}`)}
-            </Badge>
-          </div>
-          
-          {job.description && (
-            <p className="text-muted-foreground mb-1 leading-tight text-[0.7rem]">
-              {job.description}
-            </p>
+    const hours = Math.floor(job.estimatedDuration / 60);
+    const mins = job.estimatedDuration % 60;
+
+    const row = (
+      <div
+        key={job.id}
+        draggable={isJobDraggable}
+        onDragStart={(e) => handleJobDragStart(e, job)}
+        onDragEnd={handleDragEnd}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onClick={() => isMobile && onJobClick?.(job)}
+        className={`dispatcher-job-item p-2 border rounded bg-card transition-all ${
+          isMobile 
+            ? 'mobile cursor-pointer hover:shadow-sm' 
+            : isJobDraggable ? 'cursor-grab hover:shadow-md' : ''
+        } hover:border-primary/50`}
+      >
+        <div className="flex items-center gap-1.5">
+          {isJobDraggable && (
+            <GripVertical 
+              className="grip-icon h-3 w-3 text-muted-foreground flex-shrink-0 opacity-60" 
+            />
           )}
-          
-          <div className="space-y-0.5">
-            <div className="flex items-center gap-1.5 text-muted-foreground text-[0.7rem]">
-              <User className="h-2.5 w-2.5 flex-shrink-0" />
-              <span className="truncate">{job.customerName}</span>
-            </div>
-            
-            {planningMode === 'job' && conversionMode === 'service' && (job.installationName || job.installationId) && (
-              <div className="flex items-center gap-1.5 text-muted-foreground text-[0.7rem]">
-                <Building2 className="h-2.5 w-2.5 flex-shrink-0" />
-                <span className="truncate">
-                  {job.installationName || t('dispatcher.loading_installation')}
-                </span>
-              </div>
-            )}
-            
-            <div className="flex items-center gap-1.5 text-muted-foreground text-[0.7rem]">
-              <Clock className="h-2.5 w-2.5 flex-shrink-0" />
-              <span>
-                {Math.floor(job.estimatedDuration / 60)}{t('dispatcher.hours_short')} {job.estimatedDuration % 60}{t('dispatcher.minutes_short')}
-              </span>
-            </div>
-          </div>
-          
-          {job.requiredSkills && job.requiredSkills.length > 0 && (
-            <div className="mt-1">
-              <div className="flex flex-wrap gap-0.5">
-                {job.requiredSkills.slice(0, 2).map((skill) => (
-                  <Badge key={skill} variant="outline" className="text-[0.65rem] px-1 py-0 h-[16px]">
-                    {skill}
-                  </Badge>
-                ))}
-                {job.requiredSkills.length > 2 && (
-                  <Badge variant="outline" className="text-[0.65rem] px-1 py-0 h-[16px]">
-                    +{job.requiredSkills.length - 2}
-                  </Badge>
-                )}
-              </div>
-            </div>
-          )}
+          <h4 className="font-medium text-xs leading-tight flex-1 min-w-0 truncate">
+            {job.title}
+          </h4>
+          <Badge variant={getPriorityColor(job.priority)} className="text-[0.65rem] px-1.5 py-0 h-[18px] flex items-center gap-0.5 flex-shrink-0">
+            {job.priority === 'urgent' && <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />}
+            {t(`dispatcher.priority_${job.priority}`)}
+          </Badge>
         </div>
       </div>
-    </div>
-  );
+    );
+
+    if (isMobile) return row;
+
+    return (
+      <HoverCard key={job.id} openDelay={250} closeDelay={80}>
+        <HoverCardTrigger asChild>{row}</HoverCardTrigger>
+        <HoverCardContent side="right" align="start" className="w-72 p-3">
+          <div className="space-y-2">
+            <div className="flex items-start justify-between gap-2">
+              <h4 className="font-semibold text-sm leading-tight">{job.title}</h4>
+              <Badge variant={getPriorityColor(job.priority)} className="text-[0.65rem] px-1.5 py-0 h-[18px] flex-shrink-0">
+                {t(`dispatcher.priority_${job.priority}`)}
+              </Badge>
+            </div>
+
+            {job.description && (
+              <p className="text-xs text-muted-foreground leading-snug">{job.description}</p>
+            )}
+
+            <div className="space-y-1 pt-1">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <User className="h-3 w-3 flex-shrink-0" />
+                <span className="truncate">{job.customerName}</span>
+              </div>
+
+              {(job.installationName || job.installationId) && (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Building2 className="h-3 w-3 flex-shrink-0" />
+                  <span className="truncate">
+                    {job.installationName || t('dispatcher.loading_installation')}
+                  </span>
+                </div>
+              )}
+
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Clock className="h-3 w-3 flex-shrink-0" />
+                <span>
+                  {hours}{t('dispatcher.hours_short')} {mins}{t('dispatcher.minutes_short')}
+                </span>
+              </div>
+
+              {job.location?.address && (
+                <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                  <MapPin className="h-3 w-3 flex-shrink-0 mt-0.5" />
+                  <span className="leading-snug">{job.location.address}</span>
+                </div>
+              )}
+            </div>
+
+            {job.requiredSkills && job.requiredSkills.length > 0 && (
+              <div className="pt-1 border-t border-border/60">
+                <p className="text-[0.65rem] uppercase tracking-wide text-muted-foreground mb-1">
+                  {t('dispatcher.required_skills', 'Required skills')}
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {job.requiredSkills.map((skill) => (
+                    <Badge key={skill} variant="outline" className="text-[0.65rem] px-1 py-0 h-[16px]">
+                      {skill}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </HoverCardContent>
+      </HoverCard>
+    );
   };
+
+
 
 
   return (
@@ -516,41 +539,86 @@ export function UnassignedJobsList({
                   }}
                   onDragEnd={handleDragEnd}
                 >
-                  {/* Service Order Header */}
-                  <div 
-                    className="p-2.5 border-b bg-muted/30 transition-colors cursor-pointer hover:bg-muted/40"
-                    onClick={() => toggleServiceOrder(serviceOrderData.id)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        {planningMode === 'serviceOrder' && !isMobile && (
-                          <GripVertical className="h-3.5 w-3.5 text-primary flex-shrink-0" />
-                        )}
-                        <Package className="h-3.5 w-3.5 text-primary flex-shrink-0" />
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium truncate text-xs">
+                  {/* Service Order Header (compact) — hover for full details */}
+                  <HoverCard openDelay={250} closeDelay={80}>
+                    <HoverCardTrigger asChild>
+                      <div 
+                        className="p-2.5 border-b bg-muted/30 transition-colors cursor-pointer hover:bg-muted/40"
+                        onClick={() => toggleServiceOrder(serviceOrderData.id)}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            {planningMode === 'serviceOrder' && !isMobile && (
+                              <GripVertical className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                            )}
+                            <Package className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                            <span className="font-medium truncate text-xs flex-1 min-w-0">
                               {serviceOrderData.title || `SO-${serviceOrderData.id}`}
                             </span>
                           </div>
-                          <div className="text-muted-foreground text-[0.7rem]">
-                            {serviceOrderData.customerName} • {serviceOrderData.unassignedJobs.length} {t('dispatcher.jobs')}
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <Badge variant={getPriorityColor(serviceOrderData.priority)} className="text-[0.65rem] px-1.5 py-0 h-[18px] flex items-center gap-0.5">
+                              {serviceOrderData.priority === 'urgent' && <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />}
+                              {t(`dispatcher.priority_${serviceOrderData.priority}`)}
+                            </Badge>
+                            <ChevronDown 
+                              className={`h-3 w-3 transition-transform text-muted-foreground ${
+                                expandedServiceOrders.has(serviceOrderData.id) ? 'rotate-180' : ''
+                              }`} 
+                            />
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <Badge variant={getPriorityColor(serviceOrderData.priority)} className="text-[0.65rem] px-1.5 py-0 h-[18px] flex items-center gap-0.5">
-                          {serviceOrderData.priority === 'urgent' && <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />}
-                          {t(`dispatcher.priority_${serviceOrderData.priority}`)}
-                        </Badge>
-                        <ChevronDown 
-                          className={`h-3 w-3 transition-transform text-muted-foreground ${
-                            expandedServiceOrders.has(serviceOrderData.id) ? 'rotate-180' : ''
-                          }`} 
-                        />
-                      </div>
-                    </div>
-                  </div>
+                    </HoverCardTrigger>
+                    {!isMobile && (
+                      <HoverCardContent side="right" align="start" className="w-80 p-3">
+                        <div className="space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <h4 className="font-semibold text-sm leading-tight">
+                                {serviceOrderData.title || `SO-${serviceOrderData.id}`}
+                              </h4>
+                              <p className="text-[0.7rem] text-muted-foreground mt-0.5">
+                                {t(`serviceOrders.status.${serviceOrderData.status}`, serviceOrderData.status)}
+                              </p>
+                            </div>
+                            <Badge variant={getPriorityColor(serviceOrderData.priority)} className="text-[0.65rem] px-1.5 py-0 h-[18px] flex-shrink-0">
+                              {t(`dispatcher.priority_${serviceOrderData.priority}`)}
+                            </Badge>
+                          </div>
+
+                          <div className="space-y-1 pt-1">
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <User className="h-3 w-3 flex-shrink-0" />
+                              <span className="truncate">{serviceOrderData.customerName}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <Package className="h-3 w-3 flex-shrink-0" />
+                              <span>
+                                {serviceOrderData.unassignedJobs.length} {t('dispatcher.jobs')}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <Clock className="h-3 w-3 flex-shrink-0" />
+                              <span>
+                                {Math.floor((serviceOrderData.totalEstimatedDuration || 0) / 60)}
+                                {t('dispatcher.hours_short')}{' '}
+                                {(serviceOrderData.totalEstimatedDuration || 0) % 60}
+                                {t('dispatcher.minutes_short')}
+                              </span>
+                            </div>
+                            {serviceOrderData.location?.address && (
+                              <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                                <MapPin className="h-3 w-3 flex-shrink-0 mt-0.5" />
+                                <span className="leading-snug">{serviceOrderData.location.address}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </HoverCardContent>
+                    )}
+                  </HoverCard>
+
 
                   {/* Expanded content - grouped by installation or flat based on conversionMode */}
                   {expandedServiceOrders.has(serviceOrderData.id) && (

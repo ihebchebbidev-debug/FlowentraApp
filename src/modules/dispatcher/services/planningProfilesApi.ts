@@ -81,9 +81,10 @@ export const planningProfilesApi = {
   },
 
   async setActive(id: string): Promise<void> {
-    const ok = await tryBackend<unknown>(() => apiFetch(`${BASE}/active/${id}`, { method: 'PUT' }));
-    if (!ok) localStorage.setItem(ACTIVE_KEY, id);
-    else localStorage.setItem(ACTIVE_KEY, id);
+    // Mirror to localStorage regardless of backend success so the fallback path
+    // (used when the backend is unreachable) stays consistent on next read.
+    await tryBackend<unknown>(() => apiFetch(`${BASE}/active/${id}`, { method: 'PUT' }));
+    localStorage.setItem(ACTIVE_KEY, id);
   },
 
   async create(dto: CreatePlanningProfileDto): Promise<PlanningProfile> {

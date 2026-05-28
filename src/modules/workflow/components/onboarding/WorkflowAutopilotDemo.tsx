@@ -9,7 +9,7 @@ import {
   Sparkles, Save, Power, FlaskConical, CheckCircle2, Loader2, PauseCircle,
   Search, FileText, DollarSign, ShoppingCart, Truck, Users, Database, Play as PlayIcon,
   Brain, Bot, Globe, Code, FormInput, ArrowLeftRight, Split, Repeat, ClipboardList,
-  Settings2, Settings,
+  Settings2, Settings, Plus, Layers,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -23,6 +23,7 @@ import {
   steps, chapters, initialDemoState,
   type DemoState, type PaletteCategory, type ConfigField,
 } from './autopilotScript';
+import { pickBestVoice, splitForSpeech, languageTagFor } from './narrationVoice';
 
 const nodeTypes = { demo: DemoNode };
 
@@ -248,19 +249,6 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
     return () => window.removeEventListener('resize', onResize);
   }, [open, stepIndex, computeCursorFor]);
 
-  useEffect(() => {
-    if (!open || !playing || stepIndex >= steps.length) return;
-    const step = steps[stepIndex];
-    if (step.click) {
-      setClicking(true);
-      setTimeout(() => setClicking(false), 500);
-    }
-    const halfway = setTimeout(() => setState(s => step.apply(s)), Math.max(300, (step.duration / speed) / 2));
-    const dur = Math.max(900, step.duration / speed);
-    timeoutRef.current = setTimeout(() => setStepIndex(i => i + 1), dur);
-    return () => { clearTimeout(halfway); if (timeoutRef.current) clearTimeout(timeoutRef.current); };
-  }, [stepIndex, playing, open, speed]);
-
   const finished = stepIndex >= steps.length;
 
   const restart = () => {
@@ -286,22 +274,89 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
     return key ? t(key) : '';
   }, [stepIndex, t]);
 
-  // Native Web Speech narration — speaks the current caption.
+
+  // Unified narration + step-advance loop:
+  // - speaks the caption with Web Speech API (slow, clear rate)
+  // - waits for the full utterance to finish before moving to the next step
+  // - falls back to a timer when speech is muted or unsupported
   useEffect(() => {
-    if (!open || !speechOn || !playing) return;
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-    if (!currentCaption) return;
-    const synth = window.speechSynthesis;
-    synth.cancel();
-    const u = new SpeechSynthesisUtterance(currentCaption);
-    const lang = (i18n.language || 'en').toLowerCase().startsWith('fr') ? 'fr-FR' : 'en-US';
-    u.lang = lang;
-    u.rate = 0.95;
-    u.pitch = 1;
-    u.volume = 1;
-    try { synth.speak(u); } catch { /* ignore */ }
-    return () => { try { synth.cancel(); } catch { /* ignore */ } };
-  }, [currentCaption, open, speechOn, playing, i18n.language]);
+    if (!open || !playing || stepIndex >= steps.length) return;
+    const step = steps[stepIndex];
+
+    // visual click pulse
+    if (step.click) {
+      setClicking(true);
+      setTimeout(() => setClicking(false), 500);
+    }
+
+    // apply state change at the halfway point so the UI mutation lines up with the narration
+    const baseDur = Math.max(1400, step.duration / speed);
+    const halfway = setTimeout(() => setState(s => step.apply(s)), baseDur / 2);
+
+    const advance = () => setStepIndex(i => i + 1);
+
+    const synthSupported = typeof window !== 'undefined' && 'speechSynthesis' in window;
+    const caption = step.caption ? t(step.caption) : '';
+
+    if (speechOn && synthSupported && caption) {
+      const synth = window.speechSynthesis;
+      synth.cancel();
+
+      const { code, bcp47 } = languageTagFor(i18n.language);
+      const voice = pickBestVoice(code);
+      const chunks = splitForSpeech(caption);
+
+      let advanced = false;
+      const doAdvance = () => {
+        if (advanced) return;
+        advanced = true;
+        timeoutRef.current = setTimeout(advance, 420); // breath before next step
+      };
+
+      // Queue every sentence so the engine pauses naturally between them.
+      chunks.forEach((chunk, idx) => {
+        const u = new SpeechSynthesisUtterance(chunk);
+        u.lang = bcp47;
+        if (voice) u.voice = voice;
+        // Slow, warm, slightly varied — sounds less robotic than a flat read.
+        u.rate = 0.86;
+        u.pitch = idx % 2 === 0 ? 1.02 : 0.98;
+        u.volume = 1;
+        if (idx === chunks.length - 1) {
+          u.onend = doAdvance;
+          u.onerror = doAdvance;
+        }
+        try { synth.speak(u); } catch { /* fall through to safety net */ }
+      });
+
+      // safety net so a stuck/blocked TTS engine never freezes the tour
+      const safetyMs = Math.max(baseDur, caption.length * 110 + 1800);
+      const safety = setTimeout(doAdvance, safetyMs);
+
+      // Chrome bug: speechSynthesis pauses after ~15s — keep it awake.
+      const keepAlive = setInterval(() => {
+        if (synth.speaking && !synth.paused) {
+          synth.pause();
+          synth.resume();
+        }
+      }, 10000);
+
+      return () => {
+        clearTimeout(halfway);
+        clearTimeout(safety);
+        clearInterval(keepAlive);
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        try { synth.cancel(); } catch { /* ignore */ }
+      };
+    }
+
+    // no speech → plain timer
+    timeoutRef.current = setTimeout(advance, baseDur);
+    return () => {
+      clearTimeout(halfway);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, [stepIndex, playing, open, speed, speechOn, i18n.language, t]);
 
   useEffect(() => {
     if ((!playing || !open) && typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -510,8 +565,50 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
             <div data-demo-target="drop-14" className="absolute pointer-events-none" style={{ left: '45%', top: '88%', width: 1, height: 1 }} />
 
             {state.nodes.length === 0 && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="text-xs text-muted-foreground/60 italic">{t('onboarding.demo.canvasEmpty')}</div>
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                {/* decorative floats */}
+                <div className="absolute inset-0 overflow-hidden">
+                  <div className="absolute top-[15%] left-[12%] w-24 h-10 rounded-xl bg-primary/[0.05] border border-primary/10" />
+                  <div className="absolute top-[25%] right-[15%] w-20 h-8 rounded-xl bg-emerald-500/[0.05] border border-emerald-500/10" />
+                  <div className="absolute bottom-[22%] left-[18%] w-16 h-8 rounded-xl bg-amber-500/[0.05] border border-amber-500/10" />
+                  <div className="absolute bottom-[30%] right-[12%] w-28 h-10 rounded-xl bg-violet-500/[0.05] border border-violet-500/10" />
+                  <svg className="absolute inset-0 w-full h-full opacity-[0.07]" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M 180 130 C 320 130, 320 260, 460 260" stroke="currentColor" fill="none" strokeWidth="2" strokeDasharray="6 4" />
+                    <path d="M 540 180 C 680 180, 680 360, 820 360" stroke="currentColor" fill="none" strokeWidth="2" strokeDasharray="6 4" />
+                  </svg>
+                </div>
+
+                <div className="relative text-center max-w-md px-6">
+                  <div className="relative mb-5 flex items-center justify-center">
+                    <div className="absolute w-20 h-20 rounded-full bg-primary/[0.08] animate-pulse" />
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center shadow-sm">
+                      <Zap className="h-6 w-6 text-primary" />
+                    </div>
+                  </div>
+                  <h3 className="text-lg font-bold text-foreground mb-1.5 tracking-tight">
+                    {t('onboarding.demo.emptyTitle', 'Get started')}
+                  </h3>
+                  <p className="text-[12.5px] text-muted-foreground mb-5 leading-relaxed">
+                    {t('onboarding.demo.emptyDesc', 'Start by adding a trigger node to begin your workflow. Drag components from the toolbar and connect them.')}
+                  </p>
+                  <div className="flex items-center gap-2 justify-center flex-wrap">
+                    <div data-demo-target="empty-add-trigger" className="inline-flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-[11.5px] font-medium shadow-sm">
+                      <Plus className="h-3.5 w-3.5" />
+                      {t('onboarding.demo.emptyAddTrigger', 'Add a trigger')}
+                    </div>
+                    <div data-demo-target="empty-browse-templates" className="inline-flex items-center gap-1.5 rounded-md border border-primary/25 bg-background px-3 py-1.5 text-[11.5px] font-medium">
+                      <Layers className="h-3.5 w-3.5" />
+                      {t('onboarding.demo.emptyBrowseTemplates', 'Browse templates')}
+                    </div>
+                    <div data-demo-target="empty-build-ai" className="inline-flex items-center gap-1.5 rounded-md border border-primary/25 bg-background px-3 py-1.5 text-[11.5px] font-medium">
+                      <Sparkles className="h-3.5 w-3.5 text-primary" />
+                      {t('onboarding.demo.emptyBuildAI', 'Build with AI')}
+                    </div>
+                  </div>
+                  <p className="text-[10.5px] text-muted-foreground/60 mt-3 italic">
+                    {t('onboarding.demo.emptyHint', 'Or drag a node from the panel on the left')}
+                  </p>
+                </div>
               </div>
             )}
 

@@ -153,7 +153,13 @@ namespace MyApi.Modules.WorkflowEngine.Services
                         _logger.LogInformation(
                             "Execution stopped at node {NodeId} with status {Status}",
                             node.Id, nodeResult.Status);
-                        
+
+                        // BUG FIX: persist accumulated Variables back to execution.Context
+                        // so that approval/delay resume can re-hydrate entity IDs and
+                        // outputs from previously executed nodes. Without this, every
+                        // downstream node after a pause loses created_*_id and similar.
+                        await PersistContextAsync(executionId, context);
+
                         result.FinalStatus = nodeResult.Status;
                         break;
                     }
@@ -210,8 +216,13 @@ namespace MyApi.Modules.WorkflowEngine.Services
                                 executed.Remove(nextNodeId);
                                 queue.Enqueue(nextNodeId);
                             }
-                            // Also re-allow the loop node itself for next check
+                            // BUG FIX: also re-queue the loop node itself so the iteration
+                            // counter is re-evaluated after the body finishes. Previously
+                            // the node was only removed from `executed`, but since edges
+                            // point forward (DAG), nothing pointed back to it, so loops
+                            // executed exactly once regardless of maxIterations.
                             executed.Remove(node.Id);
+                            queue.Enqueue(node.Id);
                         }
                     }
                 }
@@ -242,6 +253,21 @@ namespace MyApi.Modules.WorkflowEngine.Services
             result.TotalDurationMs = (int)stopwatch.ElapsedMilliseconds;
 
             return result;
+        }
+
+        private async Task PersistContextAsync(int executionId, WorkflowExecutionContext context)
+        {
+            try
+            {
+                var exec = await _db.WorkflowExecutions.FirstOrDefaultAsync(e => e.Id == executionId);
+                if (exec == null) return;
+                exec.Context = JsonSerializer.Serialize(context.Variables);
+                await _db.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "[WORKFLOW-GRAPH] Failed to persist context for execution {ExecutionId}", executionId);
+            }
         }
 
         public async Task<GraphExecutionResult> ResumeAfterNodeAsync(
@@ -461,10 +487,28 @@ namespace MyApi.Modules.WorkflowEngine.Services
                     }
                 }
 
-                // If no specific match found and yes, follow all edges as fallback
-                if (!nextNodes.Any() && selectedBranch == "yes")
+                // BUG FIX: previously, if no edge matched and branch == "yes" we followed
+                // ALL outgoing edges, which caused both YES and NO branches to fire when
+                // edges lacked a sourceHandle. Now we only fall back to UNLABELED edges
+                // (handle == null AND label == null), which preserves single-edge flows
+                // while never bleeding into the opposite branch.
+                if (!nextNodes.Any())
                 {
-                    nextNodes.AddRange(outgoingEdges.Select(e => e.Target));
+                    foreach (var edge in outgoingEdges)
+                    {
+                        var hasHandle = !string.IsNullOrEmpty(edge.SourceHandle);
+                        var hasLabel = !string.IsNullOrEmpty(edge.Label);
+                        if (!hasHandle && !hasLabel)
+                        {
+                            nextNodes.Add(edge.Target);
+                        }
+                    }
+                    if (!nextNodes.Any())
+                    {
+                        _logger.LogWarning(
+                            "[WORKFLOW-GRAPH] Condition node {NodeId}: branch '{Branch}' matched no outgoing edge; halting branch.",
+                            node.Id, selectedBranch);
+                    }
                 }
             }
             // For switch nodes, filter by case

@@ -44,7 +44,8 @@ namespace MyApi.Modules.Planning.Services
                 TechnicianIds = dto.TechnicianIds,
                 ScheduledDate = dto.ScheduledDate,
                 ScheduledStartTime = dto.ScheduledStartTime,
-                ScheduledEndTime = dto.ScheduledEndTime
+                ScheduledEndTime = dto.ScheduledEndTime,
+                AllowOverlap = dto.AllowOverlap
             });
 
             if (!validation.IsValid)
@@ -243,8 +244,8 @@ namespace MyApi.Modules.Planning.Services
                     continue;
                 }
 
-                // 4. Check time conflicts with existing dispatches
-                var conflictingDispatches = await _db.Dispatches
+                // 4. Check time conflicts with existing dispatches (overlap by time window)
+                var sameDayDispatches = await _db.Dispatches
                     .Include(d => d.AssignedTechnicians)
                     .Where(d =>
                         d.AssignedTechnicians.Any(at => at.TechnicianId == userIdInt) &&
@@ -254,9 +255,30 @@ namespace MyApi.Modules.Planning.Services
                         d.Status != "completed")
                     .ToListAsync();
 
+                var conflictingDispatches = sameDayDispatches
+                    .Where(d =>
+                    {
+                        var s = d.ScheduledStartTime ?? TimeSpan.Zero;
+                        var e = d.ScheduledEndTime ?? TimeSpan.Zero;
+                        if (e <= s) return true; // unknown window — treat as conflict
+                        return s < dto.ScheduledEndTime && dto.ScheduledStartTime < e;
+                    })
+                    .ToList();
+
                 foreach (var cd in conflictingDispatches)
                 {
-                    result.Warnings.Add($"User {user.FirstName} {user.LastName} already has dispatch {cd.DispatchNumber} scheduled on {dto.ScheduledDate:yyyy-MM-dd}");
+                    var msg = $"User {user.FirstName} {user.LastName} already has dispatch {cd.DispatchNumber} scheduled on {dto.ScheduledDate:yyyy-MM-dd}";
+                    result.Warnings.Add(msg);
+                    if (!dto.AllowOverlap)
+                    {
+                        result.IsValid = false;
+                        result.Conflicts.Add(new AssignmentConflict
+                        {
+                            Type = "time_overlap",
+                            Message = msg,
+                            ConflictingData = new { cd.Id, cd.DispatchNumber, cd.ScheduledDate, cd.ScheduledStartTime, cd.ScheduledEndTime }
+                        });
+                    }
                 }
             }
 
@@ -279,6 +301,14 @@ namespace MyApi.Modules.Planning.Services
 
             if (!string.IsNullOrEmpty(serviceOrderId) && int.TryParse(serviceOrderId, out int soId))
                 query = query.Where(j => j.ServiceOrderId == soId);
+
+            // Apply required-skills filter (any overlap between job-required skills and requested skills)
+            if (requiredSkills != null && requiredSkills.Count > 0)
+            {
+                query = query.Where(j =>
+                    j.RequiredSkills != null &&
+                    j.RequiredSkills.Any(rs => requiredSkills.Contains(rs)));
+            }
 
             var total = await query.CountAsync();
 
@@ -367,41 +397,60 @@ namespace MyApi.Modules.Planning.Services
                 .Where(u => u.Role == "technician" && u.IsActive)
                 .ToListAsync();
 
-            var availabilityList = new List<UserAvailabilityDto>();
+            // Pre-filter by required skills (in-memory: skills is a JSON/CSV string)
+            if (requiredSkills != null && requiredSkills.Count > 0)
+            {
+                users = users.Where(u =>
+                {
+                    var s = ParseSkillsString(u.Skills);
+                    return requiredSkills.All(rs => s.Contains(rs));
+                }).ToList();
+            }
 
+            if (users.Count == 0) return new List<UserAvailabilityDto>();
+
+            var userIds = users.Select(u => u.Id).ToList();
+            var dayOfWeek = (int)date.DayOfWeek;
+
+            // Batch: leaves, dispatches, working hours — one round trip each
+            var onLeaveIds = await _db.Set<UserLeave>()
+                .Where(l =>
+                    userIds.Contains(l.UserId) &&
+                    l.Status == "approved" &&
+                    l.StartDate <= date.Date &&
+                    l.EndDate >= date.Date)
+                .Select(l => l.UserId)
+                .ToListAsync();
+
+            var allDispatches = await _db.Dispatches
+                .Include(d => d.AssignedTechnicians)
+                .Where(d =>
+                    d.ScheduledDate.Date == date.Date &&
+                    !d.IsDeleted &&
+                    d.Status != "cancelled" &&
+                    d.Status != "completed" &&
+                    d.AssignedTechnicians.Any(at => userIds.Contains(at.TechnicianId)))
+                .ToListAsync();
+
+            var workingHoursList = await _db.Set<UserWorkingHours>()
+                .Where(wh => userIds.Contains(wh.UserId) && wh.DayOfWeek == dayOfWeek && wh.IsActive)
+                .ToListAsync();
+            var whByUser = workingHoursList.ToDictionary(w => w.UserId);
+
+            var availabilityList = new List<UserAvailabilityDto>();
             foreach (var user in users)
             {
-                // Check if on leave
-                var onLeave = await _db.Set<UserLeave>()
-                    .AnyAsync(l =>
-                        l.UserId == user.Id &&
-                        l.Status == "approved" &&
-                        l.StartDate <= date.Date &&
-                        l.EndDate >= date.Date);
+                if (onLeaveIds.Contains(user.Id)) continue;
 
-                if (onLeave) continue;
+                var dispatches = allDispatches
+                    .Where(d => d.AssignedTechnicians.Any(at => at.TechnicianId == user.Id))
+                    .ToList();
 
-                // Get scheduled dispatches for that day
-                var dispatches = await _db.Dispatches
-                    .Include(d => d.AssignedTechnicians)
-                    .Where(d =>
-                        d.AssignedTechnicians.Any(at => at.TechnicianId == user.Id) &&
-                        d.ScheduledDate.Date == date.Date &&
-                        !d.IsDeleted &&
-                        d.Status != "cancelled" &&
-                        d.Status != "completed")
-                    .ToListAsync();
-
-                // Calculate scheduled minutes from actual duration
                 var scheduledMinutes = dispatches
                     .Where(d => d.ActualDuration.HasValue)
                     .Sum(d => d.ActualDuration!.Value);
 
-                // Get working hours for this day
-                var dayOfWeek = (int)date.DayOfWeek;
-                var workingHoursEntry = await _db.Set<UserWorkingHours>()
-                    .FirstOrDefaultAsync(wh => wh.UserId == user.Id && wh.DayOfWeek == dayOfWeek && wh.IsActive);
-
+                whByUser.TryGetValue(user.Id, out var workingHoursEntry);
                 var availableMinutes = workingHoursEntry != null
                     ? (workingHoursEntry.EndTime - workingHoursEntry.StartTime).TotalMinutes - scheduledMinutes
                     : 0;
@@ -484,8 +533,8 @@ namespace MyApi.Modules.Planning.Services
                 JobTitle = dispatch.DispatchNumber,
                 ServiceOrderId = dispatch.ServiceOrderId,
                 ScheduledDate = dispatch.ScheduledDate,
-                ScheduledStartTime = TimeSpan.Zero,
-                ScheduledEndTime = TimeSpan.Zero,
+                ScheduledStartTime = dispatch.ScheduledStartTime ?? TimeSpan.Zero,
+                ScheduledEndTime = dispatch.ScheduledEndTime ?? TimeSpan.Zero,
                 EstimatedDuration = dispatch.ActualDuration ?? 0,
                 Status = dispatch.Status,
                 Priority = dispatch.Priority
@@ -733,7 +782,7 @@ namespace MyApi.Modules.Planning.Services
                 StartDate = dto.StartDate,
                 EndDate = dto.EndDate,
                 Reason = dto.Reason,
-                Status = "approved",
+                Status = string.IsNullOrWhiteSpace(dto.Status) ? "pending" : dto.Status!.ToLowerInvariant(),
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };

@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using MyApi.Modules.Planning.DTOs;
@@ -11,6 +12,7 @@ using MyApi.Modules.Shared.Services;
 namespace MyApi.Modules.Planning.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/planning")]
     public class PlanningController : ControllerBase
     {

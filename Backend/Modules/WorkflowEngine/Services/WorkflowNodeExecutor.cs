@@ -1662,23 +1662,27 @@ namespace MyApi.Modules.WorkflowEngine.Services
             var delayUnit = GetNodeDataString(node, "delayUnit") ?? "minutes";
             var delayMode = GetNodeDataString(node, "delayMode") ?? "relative";
 
-            int delayMs;
+            // BUG FIX: use long arithmetic to avoid int overflow for delays >= ~25 days
+            // (25 * 24 * 60 * 60 * 1000 > int.MaxValue → wrapped negative → Task.Delay throws).
+            long delayMsLong;
             if (delayValue.HasValue)
             {
-                delayMs = delayUnit switch
+                long v = delayValue.Value;
+                delayMsLong = delayUnit switch
                 {
-                    "seconds" => delayValue.Value * 1000,
-                    "minutes" => delayValue.Value * 60 * 1000,
-                    "hours" => delayValue.Value * 60 * 60 * 1000,
-                    "days" => delayValue.Value * 24 * 60 * 60 * 1000,
-                    _ => delayValue.Value * 60 * 1000
+                    "seconds" => v * 1000L,
+                    "minutes" => v * 60L * 1000L,
+                    "hours"   => v * 60L * 60L * 1000L,
+                    "days"    => v * 24L * 60L * 60L * 1000L,
+                    _         => v * 60L * 1000L
                 };
             }
             else
             {
-                // Legacy: direct delayMs
-                delayMs = GetNodeDataInt(node, "delayMs") ?? GetNodeDataInt(node, "delay") ?? 1000;
+                delayMsLong = GetNodeDataInt(node, "delayMs") ?? GetNodeDataInt(node, "delay") ?? 1000;
             }
+            if (delayMsLong < 0) delayMsLong = 0;
+            int delayMs = delayMsLong > int.MaxValue ? int.MaxValue : (int)delayMsLong;
 
             _logger.LogInformation(
                 "Delay node: {Value} {Unit} (mode={Mode}, totalMs={Ms})",

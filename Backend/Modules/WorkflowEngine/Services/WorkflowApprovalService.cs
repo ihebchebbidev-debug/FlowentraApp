@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 using MyApi.Data;
 using MyApi.Modules.WorkflowEngine.DTOs;
 using MyApi.Modules.WorkflowEngine.Models;
@@ -92,6 +93,35 @@ namespace MyApi.Modules.WorkflowEngine.Services
                 try
                 {
                     var execution = approval.Execution;
+
+                    // BUG FIX: re-hydrate Variables from the persisted Context so that
+                    // entity IDs and node outputs created BEFORE the approval pause
+                    // are still available to downstream nodes.
+                    var variables = new Dictionary<string, object?>
+                    {
+                        ["entityType"] = execution.TriggerEntityType,
+                        ["entityId"] = execution.TriggerEntityId,
+                        ["approvalId"] = approval.Id,
+                        ["approvedBy"] = userId,
+                        ["approvalNote"] = response.Note ?? string.Empty
+                    };
+                    if (!string.IsNullOrEmpty(execution.Context))
+                    {
+                        try
+                        {
+                            var saved = JsonSerializer.Deserialize<Dictionary<string, object?>>(execution.Context);
+                            if (saved != null)
+                            {
+                                foreach (var kv in saved)
+                                {
+                                    if (!variables.ContainsKey(kv.Key))
+                                        variables[kv.Key] = kv.Value;
+                                }
+                            }
+                        }
+                        catch { /* best-effort */ }
+                    }
+
                     var context = new WorkflowExecutionContext
                     {
                         WorkflowId = execution.WorkflowId,
@@ -99,14 +129,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
                         TriggerEntityType = execution.TriggerEntityType,
                         TriggerEntityId = execution.TriggerEntityId,
                         UserId = userId,
-                        Variables = new Dictionary<string, object?>
-                        {
-                            ["entityType"] = execution.TriggerEntityType,
-                            ["entityId"] = execution.TriggerEntityId,
-                            ["approvalId"] = approval.Id,
-                            ["approvedBy"] = userId,
-                            ["approvalNote"] = response.Note ?? string.Empty
-                        }
+                        Variables = variables
                     };
 
                     var result = await _graphExecutor.ResumeAfterNodeAsync(

@@ -4,13 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MapPin, Clock, User, Calendar, CheckCircle, AlertTriangle, AlertCircle, ChevronDown } from "lucide-react";
+import { Clock, User, Calendar, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
 import { fr, enUS } from "date-fns/locale";
 import { useTranslation } from "react-i18next";
 import type { Job, Technician } from "../types";
 import { TenantSelector } from '@/components/TenantSelector';
 import { useTargetTenant } from '@/hooks/useTargetTenant';
+import { ScheduleTimeEditor, buildDateFromStrings } from "./ScheduleTimeEditor";
 
 export type DispatchPriority = 'low' | 'medium' | 'high' | 'urgent';
 
@@ -22,7 +23,7 @@ interface AssignmentConfirmationModalProps {
   scheduledEnd: Date | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (priority: DispatchPriority) => void;
+  onConfirm: (priority: DispatchPriority, scheduledStart: Date, scheduledEnd: Date) => void;
   onCancel: () => void;
   isLoading?: boolean;
 }
@@ -45,12 +46,22 @@ export function AssignmentConfirmationModal({
   // Initialize priority from job's priority
   const [selectedPriority, setSelectedPriority] = useState<DispatchPriority>('medium');
 
-  // Reset priority when modal opens with a new job
+  // Editable schedule state (same UX as the edit modal)
+  const [editedDate, setEditedDate] = useState('');
+  const [editedStartTime, setEditedStartTime] = useState('');
+  const [editedEndTime, setEditedEndTime] = useState('');
+
+  // Reset state when modal opens with a new job/slot
   useEffect(() => {
     if (job && open) {
       setSelectedPriority((job.priority as DispatchPriority) || 'medium');
     }
-  }, [job, open]);
+    if (open && scheduledStart && scheduledEnd) {
+      setEditedDate(format(scheduledStart, 'yyyy-MM-dd'));
+      setEditedStartTime(format(scheduledStart, 'HH:mm'));
+      setEditedEndTime(format(scheduledEnd, 'HH:mm'));
+    }
+  }, [job, open, scheduledStart, scheduledEnd]);
 
   if (!job || !technician || !scheduledStart || !scheduledEnd) return null;
 
@@ -64,32 +75,24 @@ export function AssignmentConfirmationModal({
     }
   };
 
-  const getPriorityIcon = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return <AlertTriangle className="h-3 w-3" />;
-      case 'high': return <AlertCircle className="h-3 w-3" />;
-      default: return null;
-    }
-  };
-
   const getPriorityLabel = (priority: string) => {
     return t(`dispatcher.priority_${priority}`, priority);
   };
 
-  const getPriorityDescription = (priority: string) => {
-    switch (priority) {
-      case 'low': return t('dispatcher.priority_standard');
-      case 'medium': return t('dispatcher.priority_normal');
-      case 'high': return t('dispatcher.priority_important');
-      case 'urgent': return t('dispatcher.priority_immediate');
-      default: return '';
-    }
-  };
-
-  const duration = Math.round((scheduledEnd.getTime() - scheduledStart.getTime()) / (1000 * 60 * 60) * 10) / 10;
+  // Compute the final start/end from the editor; fall back to the dropped values.
+  const finalStart = editedDate && editedStartTime
+    ? buildDateFromStrings(editedDate, editedStartTime)
+    : scheduledStart;
+  const finalEnd = editedDate && editedEndTime
+    ? buildDateFromStrings(editedDate, editedEndTime)
+    : scheduledEnd;
+  const durationMs = finalEnd.getTime() - finalStart.getTime();
+  const isInvalid = durationMs <= 0;
+  const duration = Math.round(durationMs / (1000 * 60 * 60) * 10) / 10;
 
   const handleConfirm = () => {
-    onConfirm(selectedPriority);
+    if (isInvalid) return;
+    onConfirm(selectedPriority, finalStart, finalEnd);
   };
 
   return (
@@ -156,25 +159,34 @@ export function AssignmentConfirmationModal({
           {/* Assignment details */}
           <div className="border border-border rounded-lg p-4 space-y-3">
             <h4 className="font-medium text-sm">{t('dispatcher.assignment_details')}</h4>
-            
-            <div className="grid grid-cols-1 gap-2.5">
-              <div className="flex items-center gap-2 text-sm">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">{t('dispatcher.assigned_technician')}:</span>
-                <span className="font-medium">{technician.firstName} {technician.lastName}</span>
-              </div>
-              
-              <div className="flex items-center gap-2 text-sm">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">{t('dispatcher.scheduled_date')}:</span>
-                <span className="font-medium">{format(scheduledStart, 'EEEE, MMMM dd, yyyy', { locale: dateLocale })}</span>
-              </div>
-              
-              <div className="flex items-center gap-2 text-sm">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">{t('dispatcher.scheduled_time')}:</span>
-                <span className="font-medium">{format(scheduledStart, 'HH:mm')} - {format(scheduledEnd, 'HH:mm')} ({duration}{t('dispatcher.hours_short')})</span>
-              </div>
+
+            <div className="flex items-center gap-2 text-sm">
+              <User className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">{t('dispatcher.assigned_technician')}:</span>
+              <span className="font-medium">{technician.firstName} {technician.lastName}</span>
+            </div>
+
+            {/* Editable schedule — same UX as the edit modal */}
+            <ScheduleTimeEditor
+              date={editedDate}
+              startTime={editedStartTime}
+              endTime={editedEndTime}
+              onDateChange={setEditedDate}
+              onStartTimeChange={setEditedStartTime}
+              onEndTimeChange={setEditedEndTime}
+              disabled={isLoading}
+            />
+
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Calendar className="h-3.5 w-3.5" />
+              <span>{format(finalStart, 'EEEE, MMMM dd, yyyy', { locale: dateLocale })}</span>
+              <span>·</span>
+              <Clock className="h-3.5 w-3.5" />
+              <span>
+                {isInvalid
+                  ? t('dispatcher.invalid_time_range', 'End time must be after start time')
+                  : `${format(finalStart, 'HH:mm')} - ${format(finalEnd, 'HH:mm')} (${duration}${t('dispatcher.hours_short')})`}
+              </span>
             </div>
           </div>
 
@@ -222,7 +234,7 @@ export function AssignmentConfirmationModal({
           <Button variant="outline" onClick={onCancel} disabled={isLoading}>
             {t('dispatcher.cancel')}
           </Button>
-          <Button onClick={handleConfirm} disabled={isLoading || isTenantRequired}>
+          <Button onClick={handleConfirm} disabled={isLoading || isTenantRequired || isInvalid}>
             {isLoading ? t('dispatcher.creating') : t('dispatcher.confirm_assignment_btn')}
           </Button>
         </DialogFooter>

@@ -28,6 +28,9 @@ namespace MyApi.Modules.Planning.DTOs
         public string? Notes { get; set; }
 
         public bool AutoCreateDispatch { get; set; } = true;
+
+        /// <summary>If true, skip hard-fail on overlapping dispatches (overlaps still reported as warnings).</summary>
+        public bool AllowOverlap { get; set; } = false;
     }
 
     public class AssignJobResponseDto
@@ -69,6 +72,7 @@ namespace MyApi.Modules.Planning.DTOs
         public DateTime ScheduledDate { get; set; }
         public TimeSpan ScheduledStartTime { get; set; }
         public TimeSpan ScheduledEndTime { get; set; }
+        public bool AllowOverlap { get; set; } = false;
     }
 
     public class AssignmentValidationResult
@@ -183,6 +187,9 @@ namespace MyApi.Modules.Planning.DTOs
         public DateTime EndDate { get; set; }
         
         public string? Reason { get; set; }
+
+        /// <summary>Optional initial status — defaults to "pending" (awaiting approval).</summary>
+        public string? Status { get; set; }
     }
 
     public class UpdateLeaveDto

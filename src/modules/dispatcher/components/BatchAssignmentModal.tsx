@@ -8,9 +8,10 @@ import { Clock, User, Calendar, Package, Briefcase } from "lucide-react";
 import { format } from "date-fns";
 import { fr, enUS } from "date-fns/locale";
 import { useTranslation } from "react-i18next";
-import type { Job, Technician, ServiceOrder } from "../types";
+import type { Technician, ServiceOrder } from "../types";
 import { TenantSelector } from '@/components/TenantSelector';
 import { useTargetTenant } from '@/hooks/useTargetTenant';
+import { ScheduleTimeEditor, buildDateFromStrings } from "./ScheduleTimeEditor";
 
 export type DispatchPriority = 'low' | 'medium' | 'high' | 'urgent';
 
@@ -25,7 +26,7 @@ interface BatchAssignmentModalProps {
   scheduledStart: Date | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (jobPriorities: JobPriority[]) => void;
+  onConfirm: (jobPriorities: JobPriority[], scheduledStart: Date) => void;
   onCancel: () => void;
   isLoading?: boolean;
 }
@@ -47,7 +48,11 @@ export function BatchAssignmentModal({
   // Track priority for each job
   const [jobPriorities, setJobPriorities] = useState<Record<string, DispatchPriority>>({});
 
-  // Initialize priorities when modal opens with new service order
+  // Editable schedule (start only — end is computed from jobs' total duration)
+  const [editedDate, setEditedDate] = useState('');
+  const [editedStartTime, setEditedStartTime] = useState('');
+
+  // Initialize state when modal opens with new service order / slot
   useEffect(() => {
     if (serviceOrder && open) {
       const initialPriorities: Record<string, DispatchPriority> = {};
@@ -56,7 +61,11 @@ export function BatchAssignmentModal({
       });
       setJobPriorities(initialPriorities);
     }
-  }, [serviceOrder, open]);
+    if (open && scheduledStart) {
+      setEditedDate(format(scheduledStart, 'yyyy-MM-dd'));
+      setEditedStartTime(format(scheduledStart, 'HH:mm'));
+    }
+  }, [serviceOrder, open, scheduledStart]);
 
   if (!serviceOrder || !technician || !scheduledStart) return null;
 
@@ -81,18 +90,21 @@ export function BatchAssignmentModal({
     }));
   };
 
+  // Calculate total duration and end time using the (possibly edited) start
+  const totalDuration = serviceOrder.jobs.reduce((sum, job) => sum + (job.estimatedDuration || 60), 0);
+  const finalStart = editedDate && editedStartTime
+    ? buildDateFromStrings(editedDate, editedStartTime)
+    : scheduledStart;
+  const scheduledEnd = new Date(finalStart.getTime() + totalDuration * 60 * 1000);
+  const totalHours = Math.round(totalDuration / 60 * 10) / 10;
+
   const handleConfirm = () => {
     const priorities: JobPriority[] = serviceOrder.jobs.map(job => ({
       jobId: job.id,
       priority: jobPriorities[job.id] || 'medium'
     }));
-    onConfirm(priorities);
+    onConfirm(priorities, finalStart);
   };
-
-  // Calculate total duration and end time
-  const totalDuration = serviceOrder.jobs.reduce((sum, job) => sum + (job.estimatedDuration || 60), 0);
-  const scheduledEnd = new Date(scheduledStart.getTime() + totalDuration * 60 * 1000);
-  const totalHours = Math.round(totalDuration / 60 * 10) / 10;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -149,7 +161,7 @@ export function BatchAssignmentModal({
                   const jobStartOffset = serviceOrder.jobs
                     .slice(0, index)
                     .reduce((sum, j) => sum + (j.estimatedDuration || 60), 0);
-                  const jobStart = new Date(scheduledStart.getTime() + jobStartOffset * 60 * 1000);
+                  const jobStart = new Date(finalStart.getTime() + jobStartOffset * 60 * 1000);
                   const jobEnd = new Date(jobStart.getTime() + (job.estimatedDuration || 60) * 60 * 1000);
                   
                   return (
@@ -204,25 +216,29 @@ export function BatchAssignmentModal({
             <h4 className="font-medium text-sm">
               {t('dispatcher.assignment_details_title')}
             </h4>
-            
-            <div className="grid grid-cols-1 gap-2.5">
-              <div className="flex items-center gap-2 text-sm">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">{t('dispatcher.technician_label')}:</span>
-                <span className="font-medium">{technician.firstName} {technician.lastName}</span>
-              </div>
-              
-              <div className="flex items-center gap-2 text-sm">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">{t('dispatcher.date_label')}:</span>
-                <span className="font-medium">{format(scheduledStart, 'EEEE, MMMM dd, yyyy', { locale: dateLocale })}</span>
-              </div>
-              
-              <div className="flex items-center gap-2 text-sm">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">{t('dispatcher.time_range')}:</span>
-                <span className="font-medium">{format(scheduledStart, 'HH:mm')} - {format(scheduledEnd, 'HH:mm')} ({totalHours}{t('dispatcher.hours_short')})</span>
-              </div>
+
+            <div className="flex items-center gap-2 text-sm">
+              <User className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">{t('dispatcher.technician_label')}:</span>
+              <span className="font-medium">{technician.firstName} {technician.lastName}</span>
+            </div>
+
+            {/* Editable start date/time — end is computed from total duration */}
+            <ScheduleTimeEditor
+              date={editedDate}
+              startTime={editedStartTime}
+              onDateChange={setEditedDate}
+              onStartTimeChange={setEditedStartTime}
+              showEnd={false}
+              disabled={isLoading}
+            />
+
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Calendar className="h-3.5 w-3.5" />
+              <span>{format(finalStart, 'EEEE, MMMM dd, yyyy', { locale: dateLocale })}</span>
+              <span>·</span>
+              <Clock className="h-3.5 w-3.5" />
+              <span>{format(finalStart, 'HH:mm')} - {format(scheduledEnd, 'HH:mm')} ({totalHours}{t('dispatcher.hours_short')})</span>
             </div>
           </div>
         </div>

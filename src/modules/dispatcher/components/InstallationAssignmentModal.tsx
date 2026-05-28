@@ -5,13 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Building2, Clock, User, Calendar, CheckCircle, AlertTriangle, AlertCircle, Wrench } from "lucide-react";
+import { Building2, Clock, User, Calendar, Wrench } from "lucide-react";
 import { format } from "date-fns";
 import { fr, enUS } from "date-fns/locale";
 import { useTranslation } from "react-i18next";
 import type { InstallationGroup, Technician } from "../types";
 import { TenantSelector } from '@/components/TenantSelector';
 import { useTargetTenant } from '@/hooks/useTargetTenant';
+import { ScheduleTimeEditor, buildDateFromStrings } from "./ScheduleTimeEditor";
 
 type DispatchPriority = 'low' | 'medium' | 'high' | 'urgent';
 
@@ -22,7 +23,7 @@ interface InstallationAssignmentModalProps {
   scheduledEnd: Date | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (priority: DispatchPriority) => void;
+  onConfirm: (priority: DispatchPriority, scheduledStart: Date, scheduledEnd: Date) => void;
   onCancel: () => void;
   isLoading?: boolean;
 }
@@ -43,18 +44,35 @@ export function InstallationAssignmentModal({
   const { viewAll, targetTenantId, handleTenantChange, isTenantRequired } = useTargetTenant();
   const [selectedPriority, setSelectedPriority] = useState<DispatchPriority>('medium');
 
-  // Reset priority when modal opens
+  // Editable schedule state — same UX as the edit modal
+  const [editedDate, setEditedDate] = useState('');
+  const [editedStartTime, setEditedStartTime] = useState('');
+  const [editedEndTime, setEditedEndTime] = useState('');
+
   useEffect(() => {
     if (installationGroup && open) {
       const firstJobPriority = installationGroup.jobs[0]?.priority as DispatchPriority;
       setSelectedPriority(firstJobPriority || 'medium');
     }
-  }, [installationGroup, open]);
+    if (open && scheduledStart && scheduledEnd) {
+      setEditedDate(format(scheduledStart, 'yyyy-MM-dd'));
+      setEditedStartTime(format(scheduledStart, 'HH:mm'));
+      setEditedEndTime(format(scheduledEnd, 'HH:mm'));
+    }
+  }, [installationGroup, open, scheduledStart, scheduledEnd]);
 
   if (!installationGroup || !technician || !scheduledStart || !scheduledEnd) return null;
 
   const totalDuration = installationGroup.jobs.reduce((sum, j) => sum + (j.estimatedDuration || 60), 0);
   const durationHours = Math.round(totalDuration / 60 * 10) / 10;
+
+  const finalStart = editedDate && editedStartTime
+    ? buildDateFromStrings(editedDate, editedStartTime)
+    : scheduledStart;
+  const finalEnd = editedDate && editedEndTime
+    ? buildDateFromStrings(editedDate, editedEndTime)
+    : scheduledEnd;
+  const isInvalid = finalEnd.getTime() - finalStart.getTime() <= 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -113,22 +131,32 @@ export function InstallationAssignmentModal({
           {/* Assignment details */}
           <div className="border border-border rounded-lg p-4 space-y-3">
             <h4 className="font-medium text-sm">{t('dispatcher.assignment_details')}</h4>
-            <div className="grid grid-cols-1 gap-2.5">
-              <div className="flex items-center gap-2 text-sm">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">{t('dispatcher.assigned_technician')}:</span>
-                <span className="font-medium">{technician.firstName} {technician.lastName}</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">{t('dispatcher.scheduled_date')}:</span>
-                <span className="font-medium">{format(scheduledStart, 'EEEE, MMMM dd, yyyy', { locale: dateLocale })}</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">{t('dispatcher.scheduled_time')}:</span>
-                <span className="font-medium">{format(scheduledStart, 'HH:mm')} - {format(scheduledEnd, 'HH:mm')} ({durationHours}{t('dispatcher.hours_short')})</span>
-              </div>
+            <div className="flex items-center gap-2 text-sm">
+              <User className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">{t('dispatcher.assigned_technician')}:</span>
+              <span className="font-medium">{technician.firstName} {technician.lastName}</span>
+            </div>
+
+            <ScheduleTimeEditor
+              date={editedDate}
+              startTime={editedStartTime}
+              endTime={editedEndTime}
+              onDateChange={setEditedDate}
+              onStartTimeChange={setEditedStartTime}
+              onEndTimeChange={setEditedEndTime}
+              disabled={isLoading}
+            />
+
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Calendar className="h-3.5 w-3.5" />
+              <span>{format(finalStart, 'EEEE, MMMM dd, yyyy', { locale: dateLocale })}</span>
+              <span>·</span>
+              <Clock className="h-3.5 w-3.5" />
+              <span>
+                {isInvalid
+                  ? t('dispatcher.invalid_time_range', 'End time must be after start time')
+                  : `${format(finalStart, 'HH:mm')} - ${format(finalEnd, 'HH:mm')}`}
+              </span>
             </div>
           </div>
 
@@ -175,7 +203,7 @@ export function InstallationAssignmentModal({
           <Button variant="outline" onClick={onCancel} disabled={isLoading}>
             {t('dispatcher.cancel')}
           </Button>
-          <Button onClick={() => onConfirm(selectedPriority)} disabled={isLoading || isTenantRequired}>
+          <Button onClick={() => !isInvalid && onConfirm(selectedPriority, finalStart, finalEnd)} disabled={isLoading || isTenantRequired || isInvalid}>
             {isLoading ? t('dispatcher.creating') : t('dispatcher.confirm_assignment_btn')}
           </Button>
         </DialogFooter>

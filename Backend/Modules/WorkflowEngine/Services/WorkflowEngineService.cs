@@ -9,10 +9,66 @@ namespace MyApi.Modules.WorkflowEngine.Services
     public class WorkflowEngineService : IWorkflowEngineService
     {
         private readonly ApplicationDbContext _db;
+        private readonly IServiceProvider _serviceProvider;
+        private readonly ILogger<WorkflowEngineService>? _logger;
 
-        public WorkflowEngineService(ApplicationDbContext db)
+        public WorkflowEngineService(
+            ApplicationDbContext db,
+            IServiceProvider serviceProvider,
+            ILogger<WorkflowEngineService>? logger = null)
         {
             _db = db;
+            _serviceProvider = serviceProvider;
+            _logger = logger;
+        }
+
+        /// <summary>
+        /// Runs the workflow graph for the given execution and updates final status.
+        /// Resolved lazily via IServiceProvider to avoid a circular dependency between
+        /// IWorkflowEngineService and IWorkflowGraphExecutor.
+        /// </summary>
+        private async Task RunGraphAsync(
+            WorkflowExecution execution,
+            string startNodeId,
+            Dictionary<string, object?> variables)
+        {
+            try
+            {
+                var graphExecutor = _serviceProvider.GetRequiredService<IWorkflowGraphExecutor>();
+                var ctx = new WorkflowExecutionContext
+                {
+                    WorkflowId = execution.WorkflowId,
+                    ExecutionId = execution.Id,
+                    TriggerEntityType = execution.TriggerEntityType,
+                    TriggerEntityId = execution.TriggerEntityId,
+                    UserId = execution.TriggeredBy,
+                    Variables = variables,
+                };
+
+                var result = await graphExecutor.ExecuteGraphAsync(
+                    execution.WorkflowId,
+                    execution.Id,
+                    startNodeId,
+                    ctx);
+
+                execution.Status = result.FinalStatus;
+                execution.Error = result.Error;
+                if (result.FinalStatus == "completed" || result.FinalStatus == "failed")
+                {
+                    execution.CompletedAt = DateTime.UtcNow;
+                }
+                await _db.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex,
+                    "Graph execution failed for execution {ExecutionId} on workflow {WorkflowId}",
+                    execution.Id, execution.WorkflowId);
+                execution.Status = "failed";
+                execution.Error = ex.Message;
+                execution.CompletedAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+            }
         }
 
         public async Task<IEnumerable<WorkflowDefinitionDto>> GetAllWorkflowsAsync()
@@ -434,11 +490,37 @@ namespace MyApi.Modules.WorkflowEngine.Services
                 return false;
             }
 
-            // Note: The actual graph re-execution should be triggered by the caller 
-            // (controller or trigger service) using IWorkflowGraphExecutor.
-            // We set the state here; the controller should resolve graph executor and call ExecuteGraphAsync.
             execution.CurrentNodeId = restartNodeId;
             await _db.SaveChangesAsync();
+
+            // Actually re-run the graph from the restart node so the execution
+            // doesn't stay stuck in "running" forever.
+            var variables = new Dictionary<string, object?>
+            {
+                ["entityId"] = execution.TriggerEntityId,
+                ["entityType"] = execution.TriggerEntityType,
+                ["retry"] = true,
+            };
+            // BUG FIX: re-hydrate Variables from the persisted Context so retried
+            // executions still have access to created_*_id values produced before
+            // the failure. Without this, downstream status nodes target entity #0.
+            if (!string.IsNullOrEmpty(execution.Context))
+            {
+                try
+                {
+                    var saved = JsonSerializer.Deserialize<Dictionary<string, object?>>(execution.Context);
+                    if (saved != null)
+                    {
+                        foreach (var kv in saved)
+                        {
+                            if (!variables.ContainsKey(kv.Key))
+                                variables[kv.Key] = kv.Value;
+                        }
+                    }
+                }
+                catch { /* best-effort hydrate */ }
+            }
+            await RunGraphAsync(execution, restartNodeId, variables);
 
             return true;
         }
@@ -515,8 +597,19 @@ namespace MyApi.Modules.WorkflowEngine.Services
             
             _db.WorkflowExecutionLogs.Add(triggerLog);
             await _db.SaveChangesAsync();
-            
-            // Return the execution (caller should invoke graph executor if needed)
+
+            // Actually execute the workflow graph starting from the trigger node.
+            // Without this the execution row would stay "running" forever until
+            // CleanupStuckExecutionsAsync marks it failed.
+            var variables = new Dictionary<string, object?>
+            {
+                ["entityId"] = entityId,
+                ["entityType"] = entityType,
+                ["triggerSource"] = "manual",
+                ["userId"] = userId,
+            };
+            await RunGraphAsync(execution, startNodeId, variables);
+
             return MapExecutionToDto(execution);
         }
 
