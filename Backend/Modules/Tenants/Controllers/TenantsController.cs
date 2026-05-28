@@ -45,23 +45,70 @@ namespace MyApi.Modules.Tenants.Controllers
         }
 
         /// <summary>
-        /// GET /api/Tenants — List all tenants for the current MainAdminUser.
+        /// Returns the authenticated regular user's id (login_type=user), if any.
+        /// Regular users are created inside ONE company (Users.TenantId) and may
+        /// only see that single company in the picker — never switch.
+        /// </summary>
+        private int? GetRegularUserId()
+        {
+            var loginType = User.FindFirst("login_type")?.Value;
+            if (loginType != "user") return null;
+
+            var userIdClaim = User.FindFirst("UserId")?.Value
+                           ?? User.FindFirst("user_id")?.Value
+                           ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                           ?? User.FindFirst("sub")?.Value;
+
+            return int.TryParse(userIdClaim, out var userId) ? userId : (int?)null;
+        }
+
+        /// <summary>
+        /// GET /api/Tenants — List companies the caller can access.
+        ///  - MainAdminUser: every tenant they own in this database.
+        ///  - RegularUser:   ONLY the tenant their account belongs to
+        ///                   (Users.TenantId → Tenant row in current DB).
+        ///                   For TenantId=0 we resolve to the default tenant.
         /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
             var adminId = GetMainAdminUserId();
-            if (adminId == null)
-                return Forbid();
+            if (adminId != null)
+            {
+                var tenants = await _context.Tenants
+                    .Where(t => t.MainAdminUserId == adminId.Value)
+                    .OrderByDescending(t => t.IsDefault)
+                    .ThenBy(t => t.CompanyName)
+                    .ToListAsync();
 
-            var tenants = await _context.Tenants
-                .Where(t => t.MainAdminUserId == adminId.Value)
-                .OrderByDescending(t => t.IsDefault)
-                .ThenBy(t => t.CompanyName)
-                .ToListAsync();
+                return Ok(tenants);
+            }
 
-            return Ok(tenants);
+            var regularUserId = GetRegularUserId();
+            if (regularUserId != null)
+            {
+                // IgnoreQueryFilters: middleware sets TenantId=0 on this bootstrap
+                // call (no X-Target-Tenant yet), which would otherwise filter the
+                // user out if they belong to a non-default company.
+                var user = await _context.Users
+                    .IgnoreQueryFilters()
+                    .Where(u => u.Id == regularUserId.Value && u.IsActive && !u.IsDeleted)
+                    .Select(u => new { u.TenantId })
+                    .FirstOrDefaultAsync();
+
+                if (user == null) return Ok(Array.Empty<object>());
+
+                // TenantId=0 in data rows → the default tenant of this database.
+                var match = user.TenantId == 0
+                    ? await _context.Tenants.FirstOrDefaultAsync(t => t.IsActive && t.IsDefault)
+                    : await _context.Tenants.FirstOrDefaultAsync(t => t.IsActive && t.Id == user.TenantId);
+
+                return Ok(match == null ? Array.Empty<object>() : new[] { match });
+            }
+
+            return Forbid();
         }
+
 
         /// <summary>
         /// GET /api/Tenants/{id} — Get a single tenant by ID.
