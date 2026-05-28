@@ -22,9 +22,10 @@ import { DemoNode, CATEGORY_COLOR } from './DemoNode';
 import { VirtualCursor } from './VirtualCursor';
 import {
   steps, chapters, initialDemoState,
-  type DemoState, type PaletteCategory, type ConfigField,
+  type DemoState, type PaletteCategory, type ConfigField, type OpenPanel,
 } from './autopilotScript';
 import { pickBestVoice, splitForSpeech, languageTagFor } from './narrationVoice';
+
 
 const nodeTypes = { demo: DemoNode };
 
@@ -187,10 +188,244 @@ function FieldRow({ field, idx }: { field: ConfigField; idx: number }) {
   );
 }
 
+// ─── Floating panel that anchors under a top-bar button ──────────────────────
+const PANEL_ANCHOR: Record<Exclude<OpenPanel, null>, string> = {
+  ai: 'btn-ai',
+  debug: 'btn-debug',
+  copy: 'btn-copy',
+  import: 'btn-import',
+  export: 'btn-export',
+  groups: 'btn-groups',
+  manager: 'btn-manager',
+  version: 'tb-version',
+};
+
+function FloatingPanel({
+  bodyRef, anchorId, children, width = 280, align = 'right',
+}: {
+  bodyRef: React.RefObject<HTMLDivElement>;
+  anchorId: string;
+  children: React.ReactNode;
+  width?: number;
+  align?: 'left' | 'right';
+}) {
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  useLayoutEffect(() => {
+    const measure = () => {
+      const body = bodyRef.current;
+      if (!body) return;
+      const el = body.querySelector<HTMLElement>(`[data-demo-target="${CSS.escape(anchorId)}"]`);
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const b = body.getBoundingClientRect();
+      const top = r.bottom - b.top + 8;
+      const left = align === 'right'
+        ? Math.max(8, Math.min(b.width - width - 8, r.right - b.left - width))
+        : Math.max(8, r.left - b.left);
+      setPos({ top, left });
+    };
+    measure();
+    const id = requestAnimationFrame(measure);
+    const t = setTimeout(measure, 60);
+    window.addEventListener('resize', measure);
+    return () => { cancelAnimationFrame(id); clearTimeout(t); window.removeEventListener('resize', measure); };
+  }, [bodyRef, anchorId, width, align]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -6, scale: 0.96 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -6, scale: 0.96 }}
+      transition={{ type: 'spring', stiffness: 380, damping: 28 }}
+      className="absolute z-50 rounded-lg border border-border bg-popover shadow-2xl text-popover-foreground overflow-hidden"
+      style={{ top: pos?.top ?? -9999, left: pos?.left ?? -9999, width }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+function PanelContent({ kind, t }: { kind: Exclude<OpenPanel, null>; t: (k: string, d?: string) => string }) {
+  switch (kind) {
+    case 'ai':
+      return (
+        <div className="p-3 space-y-2">
+          <div className="flex items-center gap-2 pb-2 border-b border-border">
+            <div className="w-7 h-7 rounded-md bg-primary/15 border border-primary/30 flex items-center justify-center">
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+            </div>
+            <div>
+              <div className="text-[12px] font-semibold">{t('onboarding.demo.panel.ai.title', 'Build with AI')}</div>
+              <div className="text-[10px] text-muted-foreground">{t('onboarding.demo.panel.ai.sub', 'Describe what should happen — AI builds the graph')}</div>
+            </div>
+          </div>
+          <div className="rounded-md border border-border bg-background px-2 py-1.5 text-[11px] text-foreground/90 font-mono leading-snug">
+            When an offer is accepted, send an email to the customer, request manager approval over 10k, then create a Sale.
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {['Email on accept', 'SLA reminder', 'Auto Service Order', 'Slack alert'].map(s => (
+              <span key={s} className="text-[10px] px-1.5 py-0.5 rounded border border-border bg-muted/40">{s}</span>
+            ))}
+          </div>
+          <div className="flex justify-end">
+            <div className="h-6 px-2 rounded-md bg-primary text-primary-foreground text-[10.5px] font-medium inline-flex items-center gap-1">
+              <Sparkles className="h-3 w-3" /> {t('onboarding.demo.panel.ai.generate', 'Generate')}
+            </div>
+          </div>
+        </div>
+      );
+    case 'debug':
+      return (
+        <div className="p-3">
+          <div className="flex items-center gap-2 pb-2 border-b border-border mb-2">
+            <Bug className="h-3.5 w-3.5 text-primary" />
+            <div className="text-[12px] font-semibold">{t('onboarding.demo.panel.debug.title', 'Debug console')}</div>
+          </div>
+          <div className="font-mono text-[10.5px] leading-tight space-y-0.5 max-h-40 overflow-hidden">
+            {[
+              { lvl: 'INFO', msg: 'trigger.fired offer-status-change id=OFF-2138' },
+              { lvl: 'OK',   msg: 'condition.evaluated totalAmount > 10000 → true' },
+              { lvl: 'OK',   msg: 'send_email queued to alice@acme.com' },
+              { lvl: 'WAIT', msg: 'request_approval pending · Sales Manager' },
+              { lvl: 'WARN', msg: 'http_request retry 1/5 in 2s' },
+            ].map((l, i) => (
+              <div key={i} className="flex gap-2">
+                <span className={cn(
+                  'shrink-0 w-9 text-[9.5px] font-bold tabular-nums',
+                  l.lvl === 'OK' && 'text-emerald-500',
+                  l.lvl === 'WAIT' && 'text-amber-500',
+                  l.lvl === 'WARN' && 'text-orange-500',
+                  l.lvl === 'INFO' && 'text-muted-foreground',
+                )}>{l.lvl}</span>
+                <span className="text-foreground/80 truncate">{l.msg}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    case 'copy':
+      return (
+        <div className="p-2.5 flex items-center gap-2">
+          <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+          <div>
+            <div className="text-[12px] font-semibold">{t('onboarding.demo.panel.copy.title', 'Configuration copied')}</div>
+            <div className="text-[10.5px] text-muted-foreground">{t('onboarding.demo.panel.copy.sub', 'Workflow JSON is on your clipboard — paste to share or back up')}</div>
+          </div>
+        </div>
+      );
+    case 'import':
+      return (
+        <div className="p-3 space-y-2">
+          <div className="flex items-center gap-2 pb-2 border-b border-border">
+            <Upload className="h-3.5 w-3.5 text-primary" />
+            <div className="text-[12px] font-semibold">{t('onboarding.demo.panel.import.title', 'Import workflow')}</div>
+          </div>
+          <div className="rounded-md border border-dashed border-border bg-muted/30 p-3 text-center text-[11px] text-muted-foreground">
+            {t('onboarding.demo.panel.import.drop', 'Drop a .json file or paste JSON below')}
+          </div>
+          <div className="rounded-md border border-border bg-background p-1.5 font-mono text-[10px] text-muted-foreground/80 leading-tight max-h-16 overflow-hidden">
+            {'{ "name": "Offer → Sale flow", "nodes": [...], "edges": [...] }'}
+          </div>
+        </div>
+      );
+    case 'export':
+      return (
+        <div className="py-1.5">
+          <div className="px-3 pb-1.5 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold border-b border-border">
+            {t('onboarding.demo.panel.export.title', 'Export as')}
+          </div>
+          {[
+            { i: Code,     l: 'JSON',          d: 'Full workflow definition' },
+            { i: FileText, l: 'YAML',          d: 'Human-readable format' },
+            { i: Download, l: 'PNG snapshot',  d: 'Visual diagram of the canvas' },
+            { i: Copy,     l: 'Markdown docs', d: 'Auto-generated documentation' },
+          ].map((o, i) => (
+            <div key={i} className="flex items-center gap-2 px-3 py-1.5 hover:bg-muted/50">
+              <o.i className="h-3.5 w-3.5 text-muted-foreground" />
+              <div className="flex-1">
+                <div className="text-[11.5px] font-medium">{o.l}</div>
+                <div className="text-[10px] text-muted-foreground">{o.d}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    case 'groups':
+      return (
+        <div className="p-2">
+          <div className="px-1 pb-1.5 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+            {t('onboarding.demo.panel.groups.title', 'Workflow groups')}
+          </div>
+          {[
+            { n: 'Sales pipeline', c: 8, on: 6 },
+            { n: 'Field service',  c: 5, on: 5 },
+            { n: 'Finance & billing', c: 3, on: 2 },
+            { n: 'Internal ops',   c: 4, on: 1 },
+          ].map((g, i) => (
+            <div key={i} className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50">
+              <FolderOpen className="h-3.5 w-3.5 text-primary" />
+              <span className="text-[11.5px] font-medium flex-1">{g.n}</span>
+              <span className="text-[10px] text-muted-foreground tabular-nums">{g.on}/{g.c}</span>
+            </div>
+          ))}
+        </div>
+      );
+    case 'manager':
+      return (
+        <div className="p-2">
+          <div className="px-1 pb-1.5 flex items-center justify-between">
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+              {t('onboarding.demo.panel.manager.title', 'All workflows')}
+            </span>
+            <span className="text-[10px] text-muted-foreground tabular-nums">24 total</span>
+          </div>
+          {[
+            { n: 'Offer → Sale handoff',     s: 'active',  r: '2m ago' },
+            { n: 'Overdue invoice reminder', s: 'active',  r: '14m ago' },
+            { n: 'New SO → tech dispatch',   s: 'draft',   r: '—' },
+            { n: 'Weekly KPI digest',        s: 'paused',  r: '3d ago' },
+          ].map((w, i) => (
+            <div key={i} className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50">
+              <FolderTree className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-[11.5px] font-medium flex-1 truncate">{w.n}</span>
+              <span className={cn(
+                'text-[9.5px] px-1.5 py-0.5 rounded-full font-semibold',
+                w.s === 'active' && 'bg-emerald-500/15 text-emerald-600',
+                w.s === 'draft'  && 'bg-amber-500/15 text-amber-600',
+                w.s === 'paused' && 'bg-muted text-muted-foreground',
+              )}>{w.s}</span>
+              <span className="text-[10px] text-muted-foreground tabular-nums w-12 text-right">{w.r}</span>
+            </div>
+          ))}
+        </div>
+      );
+    case 'version':
+      return (
+        <div className="p-2.5 space-y-1.5">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold pb-1">
+            {t('onboarding.demo.panel.version.title', 'Version history')}
+          </div>
+          {[
+            { v: 'v3', when: 'now',     who: 'You',          tag: 'Editing' },
+            { v: 'v2', when: '2h ago',  who: 'Sara Khelifi', tag: 'Active' },
+            { v: 'v1', when: 'Mon',     who: 'Imen B.',      tag: 'Archived' },
+          ].map((r, i) => (
+            <div key={i} className="flex items-center gap-2 px-1.5 py-1 rounded hover:bg-muted/50">
+              <span className="text-[11px] font-bold tabular-nums w-6">{r.v}</span>
+              <span className="text-[10.5px] text-muted-foreground flex-1 truncate">{r.who} · {r.when}</span>
+              <span className="text-[9.5px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-semibold">{r.tag}</span>
+            </div>
+          ))}
+        </div>
+      );
+  }
+}
+
 interface Props {
   open: boolean;
   onClose: (markSeen?: boolean) => void;
 }
+
 
 export function WorkflowAutopilotDemo({ open, onClose }: Props) {
   const { t, i18n } = useTranslation('workflow');
@@ -835,6 +1070,21 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
                   </button>
                 </div>
               </motion.aside>
+            )}
+          </AnimatePresence>
+
+          {/* Floating toolbar panels — opened in sync with the narration */}
+          <AnimatePresence>
+            {state.openPanel && (
+              <FloatingPanel
+                key={state.openPanel}
+                bodyRef={bodyRef}
+                anchorId={PANEL_ANCHOR[state.openPanel]}
+                width={state.openPanel === 'copy' ? 260 : state.openPanel === 'export' || state.openPanel === 'version' ? 240 : 300}
+                align={state.openPanel === 'version' ? 'left' : 'right'}
+              >
+                <PanelContent kind={state.openPanel} t={t as any} />
+              </FloatingPanel>
             )}
           </AnimatePresence>
 

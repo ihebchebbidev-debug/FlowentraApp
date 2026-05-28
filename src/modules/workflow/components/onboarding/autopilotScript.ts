@@ -30,6 +30,17 @@ export interface ConfigPanelState {
   fields: ConfigField[];
 }
 
+export type OpenPanel =
+  | 'ai'
+  | 'debug'
+  | 'copy'
+  | 'import'
+  | 'export'
+  | 'groups'
+  | 'manager'
+  | 'version'
+  | null;
+
 export interface DemoState {
   paletteCategory: PaletteCategory | null;
   paletteSearch: string;
@@ -42,6 +53,8 @@ export interface DemoState {
   active: boolean;
   showExecutions: boolean;
   executionLogs: { node: string; status: 'ok' | 'running' | 'wait' | 'failed'; ms?: number }[];
+  /** Floating toolbar panel currently shown (in sync with narration). */
+  openPanel: OpenPanel;
 }
 
 export const initialDemoState: DemoState = {
@@ -56,7 +69,9 @@ export const initialDemoState: DemoState = {
   active: false,
   showExecutions: false,
   executionLogs: [],
+  openPanel: null,
 };
+
 
 export interface Step {
   /** i18n key under onboarding.demo */
@@ -123,30 +138,38 @@ chapter('concepts', 'onboarding.demo.chapter.concepts', () => [
   { caption: 'onboarding.demo.concepts.mental',     target: 'canvas',         duration: 2600, apply: s => s },
 ]);
 
-// ── Chapter 1: Welcome / Overview — full top-bar tour ───────────────────────
 chapter('overview', 'onboarding.demo.chapter.overview', () => [
-  { caption: 'onboarding.demo.welcome',       target: 'canvas',         duration: 2000, apply: s => s },
+  { caption: 'onboarding.demo.welcome',       target: 'canvas',         duration: 2000, apply: s => ({ ...s, openPanel: null, showExecutions: false }) },
   { caption: 'onboarding.demo.layout',        target: 'palette-header', duration: 1800, apply: s => s },
   // LEFT side of top bar
-  { caption: 'onboarding.demo.tb.status',     target: 'tb-status',      duration: 1900, apply: s => s },
-  { caption: 'onboarding.demo.tb.version',    target: 'tb-version',     duration: 2100, apply: s => s },
-  { caption: 'onboarding.demo.tb.editPill',   target: 'tb-edit-pill',   duration: 1900, apply: s => s },
-  // RIGHT side of top bar — every action button explained
-  { caption: 'onboarding.demo.tb.intro',      target: 'btn-ai',         duration: 1700, apply: s => s },
-  { caption: 'onboarding.demo.tb.ai',         target: 'btn-ai',         duration: 2200, apply: s => s },
-  { caption: 'onboarding.demo.tb.debug',      target: 'btn-debug',      duration: 2000, apply: s => s },
-  { caption: 'onboarding.demo.tb.copy',       target: 'btn-copy',       duration: 1900, apply: s => s },
-  { caption: 'onboarding.demo.tb.import',     target: 'btn-import',     duration: 1900, apply: s => s },
-  { caption: 'onboarding.demo.tb.export',     target: 'btn-export',     duration: 1900, apply: s => s },
-  { caption: 'onboarding.demo.tb.groups',     target: 'btn-groups',     duration: 2000, apply: s => s },
-  { caption: 'onboarding.demo.tb.manager',    target: 'btn-manager',    duration: 2100, apply: s => s },
-  { caption: 'onboarding.demo.tb.test',       target: 'btn-test',       duration: 2400, apply: s => s },
-  { caption: 'onboarding.demo.tb.cancel',     target: 'btn-cancel',     duration: 1900, apply: s => s },
-  { caption: 'onboarding.demo.tb.save',       target: 'btn-save',       duration: 2400, apply: s => s },
-  { caption: 'onboarding.demo.tb.activate',   target: 'btn-activate',   duration: 2600, apply: s => s },
-  { caption: 'onboarding.demo.tb.stop',       target: 'btn-activate',   duration: 2000, apply: s => s },
-  { caption: 'onboarding.demo.tb.counter',    target: 'palette-header', duration: 1800, apply: s => s },
+  { caption: 'onboarding.demo.tb.status',     target: 'tb-status',      duration: 1900, apply: s => ({ ...s, openPanel: null }) },
+  { caption: 'onboarding.demo.tb.version',    target: 'tb-version',     duration: 2100, apply: s => ({ ...s, openPanel: 'version' }) },
+  { caption: 'onboarding.demo.tb.editPill',   target: 'tb-edit-pill',   duration: 1900, apply: s => ({ ...s, openPanel: null }) },
+  // RIGHT side of top bar — every action button explained, and every panel is actually opened in sync
+  { caption: 'onboarding.demo.tb.intro',      target: 'btn-ai',         duration: 1700, apply: s => ({ ...s, openPanel: null }) },
+  { caption: 'onboarding.demo.tb.ai',         target: 'btn-ai',         click: true, duration: 2400, apply: s => ({ ...s, openPanel: 'ai' }) },
+  { caption: 'onboarding.demo.tb.debug',      target: 'btn-debug',      click: true, duration: 2200, apply: s => ({ ...s, openPanel: 'debug' }) },
+  { caption: 'onboarding.demo.tb.copy',       target: 'btn-copy',       click: true, duration: 2000, apply: s => ({ ...s, openPanel: 'copy' }) },
+  { caption: 'onboarding.demo.tb.import',     target: 'btn-import',     click: true, duration: 2100, apply: s => ({ ...s, openPanel: 'import' }) },
+  { caption: 'onboarding.demo.tb.export',     target: 'btn-export',     click: true, duration: 2100, apply: s => ({ ...s, openPanel: 'export' }) },
+  { caption: 'onboarding.demo.tb.groups',     target: 'btn-groups',     click: true, duration: 2200, apply: s => ({ ...s, openPanel: 'groups' }) },
+  { caption: 'onboarding.demo.tb.manager',    target: 'btn-manager',    click: true, duration: 2300, apply: s => ({ ...s, openPanel: 'manager' }) },
+  { caption: 'onboarding.demo.tb.test',       target: 'btn-test',       click: true, duration: 2600, apply: s => ({
+      ...s, openPanel: null, showExecutions: true,
+      executionLogs: [
+        { node: 'Offer · Status Change', status: 'ok', ms: 6 },
+        { node: 'If / Else', status: 'ok', ms: 3 },
+        { node: 'Send Email', status: 'running' },
+        { node: 'AI · Email Writer', status: 'wait' },
+      ],
+    }) },
+  { caption: 'onboarding.demo.tb.cancel',     target: 'btn-cancel',     duration: 1900, apply: s => ({ ...s, openPanel: null, showExecutions: false }) },
+  { caption: 'onboarding.demo.tb.save',       target: 'btn-save',       duration: 2400, apply: s => ({ ...s, openPanel: null }) },
+  { caption: 'onboarding.demo.tb.activate',   target: 'btn-activate',   duration: 2400, apply: s => ({ ...s, openPanel: null, active: false }) },
+  { caption: 'onboarding.demo.tb.stop',       target: 'btn-activate',   duration: 2200, apply: s => ({ ...s, active: true }) },
+  { caption: 'onboarding.demo.tb.counter',    target: 'palette-header', duration: 1800, apply: s => ({ ...s, openPanel: null, active: false, showExecutions: false }) },
 ]);
+
 
 // ── Chapter 2: TRIGGERS ──────────────────────────────────────────────────────
 chapter('triggers', 'onboarding.demo.chapter.triggers', () => [
