@@ -42,9 +42,9 @@ export interface Technician {
   skills: string[];
   status: 'available' | 'busy' | 'offline' | 'on_leave' | 'not_working' | 'over_capacity';
   location?: {
-    lat: number;
-    lng: number;
-    address: string;
+    lat?: number;
+    lng?: number;
+    address?: string;
   };
   avatar?: string;
   workingHours: {

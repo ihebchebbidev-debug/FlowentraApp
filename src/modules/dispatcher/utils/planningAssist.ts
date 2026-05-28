@@ -158,6 +158,7 @@ export async function autoFillDay(
   const cursors = new Map<string, Date>();
   const endTimes = new Map<string, Date>();
   const existingByTech = new Map<string, Job[]>();
+  const skipTech = new Set<string>();
   const now = new Date();
   const isToday = startOfDay.getTime() === todayStart.getTime();
   const buffer = (opts.bufferMinutes ?? 0) * 60_000;
@@ -169,10 +170,19 @@ export async function autoFillDay(
     // §3.1: fetch what's already on this tech's calendar today, so we never
     // overwrite or double-book existing assignments.
     let existing: Job[] = [];
+    let fetchFailed = false;
     try {
       existing = await DispatcherService.getAssignedJobsForTechnician(t.id, day);
     } catch (e) {
       console.error(`[autoFillDay] failed to load existing jobs for ${t.id}`, e);
+      fetchFailed = true;
+    }
+    if (fetchFailed) {
+      // §3.1 safety: if we can't see existing assignments, skip this tech entirely
+      // rather than risk double-booking.
+      skipTech.add(t.id);
+      result.errors.push(`Skipped ${t.firstName} ${t.lastName}: could not load existing schedule`);
+      continue;
     }
     existingByTech.set(t.id, existing);
 
@@ -194,7 +204,8 @@ export async function autoFillDay(
 
   for (const job of jobs) {
     // §3.9: pass current per-tech counts so ranker applies load-balancing penalty.
-    const ranked = rankTechniciansForJob(job, technicians, counts);
+    const eligible = technicians.filter(t => !skipTech.has(t.id));
+    const ranked = rankTechniciansForJob(job, eligible, counts);
     const duration = (job.estimatedDuration || 60) * 60_000;
     const durationMin = Math.ceil(duration / 60_000);
     let placed = false;

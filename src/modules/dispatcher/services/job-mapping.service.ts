@@ -177,6 +177,23 @@ export class JobMappingService {
       (contact?.firstName && contact?.lastName ? `${contact.firstName} ${contact.lastName}` : null) ||
       contact?.company || 'Unknown Customer';
 
+    const jobAny = job as any;
+    const soLoc = (so as any).location || {};
+    const jobLoc = jobAny.location || {};
+    const lat = jobLoc.lat ?? jobLoc.latitude ?? soLoc.lat ?? soLoc.latitude;
+    const lng = jobLoc.lng ?? jobLoc.lon ?? jobLoc.longitude ?? soLoc.lng ?? soLoc.lon ?? soLoc.longitude;
+    const rawSkills =
+      jobAny.requiredSkills ||
+      jobAny.required_skills ||
+      jobAny.skills ||
+      (so as any).requiredSkills ||
+      [];
+    const requiredSkills = Array.isArray(rawSkills)
+      ? rawSkills.map((s: any) => (typeof s === 'string' ? s : s?.name || s?.skill || '')).filter(Boolean)
+      : typeof rawSkills === 'string'
+        ? rawSkills.split(',').map((s: string) => s.trim()).filter(Boolean)
+        : [];
+
     return {
       id: String(job.id),
       serviceOrderId: String(so.id),
@@ -188,10 +205,13 @@ export class JobMappingService {
       priority: (job.priority || so.priority || 'medium') as any,
       estimatedDuration: job.estimatedDuration || 60,
       originalDuration: (job as any).originalDuration || job.estimatedDuration || 60,
-      requiredSkills: [],
+      requiredSkills,
       installationId: job.installationId,
       installationName: job.installationName,
-      location: { address: job.installationName || so.notes || 'No address' },
+      location: {
+        address: job.installationName || so.notes || 'No address',
+        ...(typeof lat === 'number' && typeof lng === 'number' ? { lat, lng } : {}),
+      },
       customerName,
       customerPhone: contact?.phone || contact?.phoneNumber || soAny.contactPhone || undefined,
       customerEmail: contact?.email || soAny.contactEmail || undefined,

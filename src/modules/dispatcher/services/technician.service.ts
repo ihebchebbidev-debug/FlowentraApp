@@ -35,7 +35,17 @@ export class TechnicianService {
           ? usersResponse
           : (usersResponse as any).users || [];
 
-        const technicians: Technician[] = users.map((user: any) => ({
+        const technicians: Technician[] = users.map((user: any) => {
+          const lat = user.lat ?? user.latitude ?? user.homeLat ?? user.location?.lat ?? user.location?.latitude;
+          const lng = user.lng ?? user.longitude ?? user.homeLng ?? user.location?.lng ?? user.location?.longitude;
+          const address = user.address || user.homeAddress || user.location?.address;
+          const location =
+            typeof lat === 'number' && typeof lng === 'number'
+              ? { lat, lng, address }
+              : address
+                ? { address }
+                : undefined;
+          return {
           id: String(user.id),
           firstName: user.firstName || user.first_name || '',
           lastName: user.lastName || user.last_name || '',
@@ -48,7 +58,9 @@ export class TechnicianService {
             end: user.workingHoursEnd || '17:00',
           },
           avatar: user.profilePictureUrl || user.avatar || undefined,
-        }));
+          location,
+          };
+        });
 
         // Add admin user if fetched successfully
         if (adminResponse && adminResponse.ok) {

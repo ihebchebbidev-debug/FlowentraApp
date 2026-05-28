@@ -123,6 +123,11 @@ export function DispatchingInterface() {
       setAutoFillOpen(false);
       return;
     }
+    if (!profileSettings.allowSchedulingJobs) {
+      toast.error(t('dispatcher.autofill.not_allowed', { defaultValue: 'Scheduling is disabled in this profile.' }));
+      setAutoFillOpen(false);
+      return;
+    }
     setAutoFilling(true);
     try {
       const today = new Date();
@@ -132,7 +137,16 @@ export function DispatchingInterface() {
       });
       if (res.assigned > 0) toast.success(t('dispatcher.autofill.success', { defaultValue: '{{n}} job(s) auto-scheduled', n: res.assigned }));
       if (res.skipped > 0) toast.warning(t('dispatcher.autofill.skipped', { defaultValue: '{{n}} job(s) could not be placed', n: res.skipped }));
-      if (res.errors.length > 0) console.warn('Auto-fill errors:', res.errors);
+      if (res.errors.length > 0) {
+        console.warn('Auto-fill errors:', res.errors);
+        toast.error(t('dispatcher.autofill.errors', {
+          defaultValue: '{{n}} issue(s) during auto-fill — see console for details',
+          n: res.errors.length,
+        }));
+      }
+      if (res.assigned === 0 && res.skipped === 0 && res.errors.length === 0) {
+        toast.info(t('dispatcher.autofill.nothing', { defaultValue: 'Nothing to schedule.' }));
+      }
       await handleRefresh();
     } catch (e) {
       console.error(e);
