@@ -16,6 +16,7 @@ import {
   ChevronRight,
   MapPin,
   Check,
+  ImageOff,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -144,7 +145,19 @@ export default function SelectCompany() {
                     )}
                   >
                     {/* Logo banner */}
-                    <div className="relative h-24 bg-gradient-to-br from-muted/60 via-muted/30 to-background border-b border-border/60 flex items-center justify-center">
+                    <div className="relative h-28 bg-gradient-to-br from-muted/60 via-muted/30 to-background border-b border-border/60 flex items-center justify-center overflow-hidden">
+                      {/* Subtle dotted pattern for empty-logo state */}
+                      {!showLogo && (
+                        <div
+                          aria-hidden
+                          className="absolute inset-0 opacity-[0.5]"
+                          style={{
+                            backgroundImage:
+                              "radial-gradient(hsl(var(--muted-foreground) / 0.18) 1px, transparent 1px)",
+                            backgroundSize: "14px 14px",
+                          }}
+                        />
+                      )}
                       {showLogo ? (
                         <img
                           src={logoUrl!}
@@ -156,8 +169,18 @@ export default function SelectCompany() {
                           loading="lazy"
                         />
                       ) : (
-                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary font-semibold text-lg tracking-wide">
-                          {initialsOf(label)}
+                        <div className="relative flex flex-col items-center gap-1.5">
+                          <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-dashed border-border bg-card/80 shadow-sm">
+                            <span className="text-base font-semibold text-foreground/80 tracking-wide">
+                              {initialsOf(label)}
+                            </span>
+                            <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-sm">
+                              <ImageOff className="h-3 w-3" />
+                            </span>
+                          </div>
+                          <span className="text-[10px] uppercase tracking-wider text-muted-foreground/80">
+                            No logo uploaded
+                          </span>
                         </div>
                       )}
                       {t.isDefault && (
