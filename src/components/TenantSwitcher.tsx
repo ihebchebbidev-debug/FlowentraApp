@@ -25,7 +25,7 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 
 export function TenantSwitcher() {
-  const { isMainAdmin } = usePermissions();
+  const { isMainAdmin, hasPermission } = usePermissions();
   const navigate = useNavigate();
   const { t } = useTranslation('settings');
   const { toast } = useToast();
@@ -40,8 +40,12 @@ export function TenantSwitcher() {
   const activeId = getActiveCompanyId();
   const viewAll = isViewAllMode();
 
-  // Don't render if not admin or fewer than two tenants exist (active or not)
-  if (!isMainAdmin || !loaded || tenants.length <= 1) return null;
+  // Non-admin regular users need the explicit 'settings.switch_company' grant.
+  const canSwitchCompany = isMainAdmin || hasPermission('settings', 'switch_company');
+
+  // Don't render if the user can't switch, or fewer than two tenants exist.
+  if (!canSwitchCompany || !loaded || tenants.length <= 1) return null;
+
 
   const currentTenant = viewAll
     ? null
@@ -123,22 +127,27 @@ export function TenantSwitcher() {
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-64">
-        {/* All Companies option */}
-        <DropdownMenuItem
-          onClick={handleViewAll}
-          className="flex items-center gap-2 cursor-pointer"
-        >
-          <Layers className="h-4 w-4 text-muted-foreground shrink-0" />
-          <span className="truncate flex-1">{t('tenant.allCompanies', 'All Companies')}</span>
-          {viewAll && (
-            <Check className="h-4 w-4 text-primary shrink-0" />
-          )}
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
+        {/* All Companies option — admin-only */}
+        {isMainAdmin && (
+          <>
+            <DropdownMenuItem
+              onClick={handleViewAll}
+              className="flex items-center gap-2 cursor-pointer"
+            >
+              <Layers className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span className="truncate flex-1">{t('tenant.allCompanies', 'All Companies')}</span>
+              {viewAll && (
+                <Check className="h-4 w-4 text-primary shrink-0" />
+              )}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
 
         {tenants.map(tenant => {
           const logoSrc = tenant.companyLogoUrl ? buildAssetUrl(tenant.companyLogoUrl) : null;
           const isUploading = uploadingId === tenant.id;
+
           return (
             <DropdownMenuItem
               key={tenant.id}
@@ -166,31 +175,39 @@ export function TenantSwitcher() {
               {!viewAll && tenant.id === activeId && (
                 <Check className="h-4 w-4 text-primary shrink-0" />
               )}
-              <button
-                type="button"
-                onClick={(e) => handleUploadClick(e, tenant)}
-                disabled={isUploading}
-                title={t('tenant.uploadLogo', 'Upload logo')}
-                className="ml-1 p-1 rounded hover:bg-accent disabled:opacity-50 shrink-0"
-              >
-                {isUploading ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Upload className="h-3.5 w-3.5 text-muted-foreground" />
-                )}
-              </button>
+              {isMainAdmin && (
+                <button
+                  type="button"
+                  onClick={(e) => handleUploadClick(e, tenant)}
+                  disabled={isUploading}
+                  title={t('tenant.uploadLogo', 'Upload logo')}
+                  className="ml-1 p-1 rounded hover:bg-accent disabled:opacity-50 shrink-0"
+                >
+                  {isUploading ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Upload className="h-3.5 w-3.5 text-muted-foreground" />
+                  )}
+                </button>
+              )}
             </DropdownMenuItem>
           );
         })}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onClick={() => navigate('/dashboard/settings', { state: { section: 'companies' } })}
-          className="flex items-center gap-2 cursor-pointer text-muted-foreground"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Manage Companies</span>
-        </DropdownMenuItem>
+        {isMainAdmin && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => navigate('/dashboard/settings', { state: { section: 'companies' } })}
+              className="flex items-center gap-2 cursor-pointer text-muted-foreground"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Manage Companies</span>
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
+
+
       <input
         ref={fileInputRef}
         type="file"

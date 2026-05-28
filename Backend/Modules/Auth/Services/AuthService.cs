@@ -103,7 +103,9 @@ namespace MyApi.Modules.Auth.Services
 
                 if (user != null && VerifyPassword(loginDto.Password, user.PasswordHash))
                 {
-                    var (accessToken, refreshToken, expiresAt) = GenerateUserTokensAsync(user);
+                    var canSwitchLoginAsync = await UserCanSwitchCompanyAsync(user.Id);
+                    var (accessToken, refreshToken, expiresAt) = GenerateUserTokensAsync(user, canSwitchLoginAsync);
+
 
                     // Update regular user login info
                     user.LastLoginAt = DateTime.UtcNow;
@@ -187,7 +189,8 @@ namespace MyApi.Modules.Auth.Services
                     user.Role = userRole;
                 }
 
-                var (accessToken, refreshToken, expiresAt) = GenerateUserTokensAsync(user);
+                var canSwitchCompany = await UserCanSwitchCompanyAsync(user.Id);
+                var (accessToken, refreshToken, expiresAt) = GenerateUserTokensAsync(user, canSwitchCompany);
 
                 // Update user login info
                 user.LastLoginAt = DateTime.UtcNow;
@@ -196,6 +199,7 @@ namespace MyApi.Modules.Auth.Services
                 user.TokenExpiresAt = expiresAt;
                 user.ModifiedDate = DateTime.UtcNow;
                 user.ModifiedBy = user.Email;
+
 
                 await _context.SaveChangesAsync();
 
@@ -581,7 +585,9 @@ namespace MyApi.Modules.Auth.Services
                         };
                     }
 
-                    var (userAccessToken, userRefreshToken, userExpiresAt) = GenerateUserTokensAsync(regularUser);
+                    var canSwitchRefresh = await UserCanSwitchCompanyAsync(regularUser.Id);
+                    var (userAccessToken, userRefreshToken, userExpiresAt) = GenerateUserTokensAsync(regularUser, canSwitchRefresh);
+
 
                     regularUser.AccessToken = userAccessToken;
                     regularUser.RefreshToken = userRefreshToken;
@@ -1077,7 +1083,7 @@ namespace MyApi.Modules.Auth.Services
         }
 
         // Generate tokens for regular Users (Id >= 2)
-        private (string accessToken, string refreshToken, DateTime expiresAt) GenerateUserTokensAsync(User user)
+        private (string accessToken, string refreshToken, DateTime expiresAt) GenerateUserTokensAsync(User user, bool canSwitchCompany = false)
         {
             var jwtKey = _configuration["Jwt:Key"] ?? "YourSuperSecretKeyHere12345";
             var jwtIssuer = _configuration["Jwt:Issuer"] ?? "FlowServiceBackend";
@@ -1093,7 +1099,11 @@ namespace MyApi.Modules.Auth.Services
                 new Claim("LastName", user.LastName),
                 new Claim("Role", user.Role ?? "User"),
                 new Claim("UserType", "RegularUser"),
-                new Claim("login_type", "user")
+                new Claim("login_type", "user"),
+                // tenant_id = the user's bound company (data-table TenantId, 0 = default)
+                new Claim("tenant_id", user.TenantId.ToString()),
+                // can_switch_company = role-granted permission (settings.switch_company)
+                new Claim("can_switch_company", canSwitchCompany ? "true" : "false")
             };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
@@ -1114,6 +1124,26 @@ namespace MyApi.Modules.Auth.Services
 
             return (accessToken, refreshToken, expiresAt);
         }
+
+        /// <summary>
+        /// True if any of the user's active roles grants settings.switch_company.
+        /// Cached at token-generation time only — revoking the permission takes
+        /// effect on next login / refresh (acceptable for company switching).
+        /// </summary>
+        private async Task<bool> UserCanSwitchCompanyAsync(int userId)
+        {
+            var roleIds = await _context.UserRoles
+                .Where(ur => ur.UserId == userId && ur.IsActive)
+                .Select(ur => ur.RoleId)
+                .ToListAsync();
+            if (roleIds.Count == 0) return false;
+            return await _context.RolePermissions.AnyAsync(rp =>
+                roleIds.Contains(rp.RoleId) &&
+                rp.Module == "settings" &&
+                rp.Action == "switch_company" &&
+                rp.Granted);
+        }
+
 
         /// <summary>
         /// Initiates forgot password process by sending OTP via email

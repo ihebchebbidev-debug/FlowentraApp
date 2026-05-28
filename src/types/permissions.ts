@@ -49,7 +49,9 @@ export type PermissionAction =
   | 'bulk_delete'
   | 'add_stock'
   | 'remove_stock'
-  | 'read_logs';
+  | 'read_logs'
+  | 'switch_company';
+
 
 // A single permission entry
 export interface Permission {
@@ -205,9 +207,10 @@ export const PERMISSION_MODULES: {
     module: 'settings',
     label: 'Settings & Preferences',
     description: 'Access and modify system settings and configuration',
-    actions: ['create', 'read', 'update', 'delete'],
+    actions: ['create', 'read', 'update', 'delete', 'switch_company'],
     category: 'Administration'
   },
+
   {
     module: 'audit_logs',
     label: 'Logs',
@@ -284,8 +287,10 @@ export const ACTION_LABELS: Record<PermissionAction, string> = {
   bulk_delete: 'Bulk Delete',
   add_stock: 'Add Stock',
   remove_stock: 'Remove Stock',
-  read_logs: 'View Logs'
+  read_logs: 'View Logs',
+  switch_company: 'Switch Company'
 };
+
 
 // Get modules grouped by category
 export function getModulesByCategory(): Record<string, typeof PERMISSION_MODULES> {

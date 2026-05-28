@@ -29,7 +29,7 @@ namespace MyApi.Modules.Roles.Services
             // Administration
             { "users", new[] { "create", "read", "update", "delete", "assign", "archive", "restore", "bulk_edit" } },
             { "roles", new[] { "create", "read", "update", "delete", "assign", "manage" } },
-            { "settings", new[] { "read", "update", "configure", "manage" } },
+            { "settings", new[] { "read", "update", "configure", "manage", "switch_company" } },
             { "audit_logs", new[] { "read", "export", "delete" } },
             { "documents", new[] { "read" } }
         };

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MyApi.Data;
 using MyApi.Infrastructure;
+using MyApi.Modules.Roles.Services;
 using MyApi.Modules.Tenants.Models;
 using MyApi.Modules.Tenants.Services;
 
@@ -16,13 +17,20 @@ namespace MyApi.Modules.Tenants.Controllers
         private readonly ApplicationDbContext _context;
         private readonly ILogger<TenantsController> _logger;
         private readonly TenantSeeder _tenantSeeder;
+        private readonly IPermissionService _permissionService;
 
-        public TenantsController(ApplicationDbContext context, ILogger<TenantsController> logger, TenantSeeder tenantSeeder)
+        public TenantsController(
+            ApplicationDbContext context,
+            ILogger<TenantsController> logger,
+            TenantSeeder tenantSeeder,
+            IPermissionService permissionService)
         {
             _context = context;
             _logger = logger;
             _tenantSeeder = tenantSeeder;
+            _permissionService = permissionService;
         }
+
 
         /// <summary>
         /// Get the MainAdminUser ID from JWT claims.
@@ -65,9 +73,13 @@ namespace MyApi.Modules.Tenants.Controllers
         /// <summary>
         /// GET /api/Tenants — List companies the caller can access.
         ///  - MainAdminUser: every tenant they own in this database.
-        ///  - RegularUser:   ONLY the tenant their account belongs to
+        ///  - RegularUser without 'settings.switch_company' permission:
+        ///                   ONLY the tenant their account belongs to
         ///                   (Users.TenantId → Tenant row in current DB).
         ///                   For TenantId=0 we resolve to the default tenant.
+        ///  - RegularUser WITH 'settings.switch_company' permission:
+        ///                   every active tenant in the current DB (so the
+        ///                   header switcher lets them pick another company).
         /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetAll()
@@ -98,6 +110,22 @@ namespace MyApi.Modules.Tenants.Controllers
 
                 if (user == null) return Ok(Array.Empty<object>());
 
+                // Default behaviour: a regular user is bound to ONE company
+                // and cannot switch — unless their role explicitly grants
+                // settings.switch_company.
+                var canSwitch = await _permissionService.UserHasPermissionAsync(
+                    regularUserId.Value, "settings", "switch_company");
+
+                if (canSwitch)
+                {
+                    var allTenants = await _context.Tenants
+                        .Where(t => t.IsActive)
+                        .OrderByDescending(t => t.IsDefault)
+                        .ThenBy(t => t.CompanyName)
+                        .ToListAsync();
+                    return Ok(allTenants);
+                }
+
                 // TenantId=0 in data rows → the default tenant of this database.
                 var match = user.TenantId == 0
                     ? await _context.Tenants.FirstOrDefaultAsync(t => t.IsActive && t.IsDefault)
@@ -108,6 +136,7 @@ namespace MyApi.Modules.Tenants.Controllers
 
             return Forbid();
         }
+
 
 
         /// <summary>

@@ -48,6 +48,30 @@ public class TenantMiddleware
     }
 
     /// <summary>
+    /// Regular users (login_type=user) are pinned to ONE company (JWT
+    /// tenant_id claim, data-table TenantId — 0 = default). They may only
+    /// pass an X-Target-Tenant that matches their pinned company, unless
+    /// their role grants settings.switch_company (JWT can_switch_company
+    /// claim = "true"). MainAdminUsers are unrestricted.
+    /// </summary>
+    private static bool IsRegularUserAllowedToTarget(HttpContext ctx, int dataTenantId)
+    {
+        if (ctx.User?.Identity?.IsAuthenticated != true) return true;
+        var loginType = ctx.User.FindFirst("login_type")?.Value;
+        if (!string.Equals(loginType, "user", StringComparison.OrdinalIgnoreCase)) return true;
+
+        var canSwitch = ctx.User.FindFirst("can_switch_company")?.Value;
+        if (string.Equals(canSwitch, "true", StringComparison.OrdinalIgnoreCase)) return true;
+
+        var claim = ctx.User.FindFirst("tenant_id")?.Value;
+        // Legacy tokens (issued before this claim existed) cannot be validated
+        // — allow them through so existing sessions don't 403 mid-flight.
+        if (string.IsNullOrEmpty(claim)) return true;
+        return int.TryParse(claim, out var boundTenantId) && boundTenantId == dataTenantId;
+    }
+
+
+    /// <summary>
     /// Endpoints that legitimately operate WITHOUT a row-level company
     /// selection — auth, tenant directory, profile/me, system logs, swagger,
     /// health checks. Everything else inside /api/* must have an active
@@ -254,10 +278,23 @@ public class TenantMiddleware
                     return;
                 }
                 tenantId = TenantSlugCache.ToDataTenantId(dbSlug, targetTenantId);
+
+                // Regular-user company-lock: a non-admin can only target the
+                // company their account is bound to (JWT tenant_id claim)
+                // unless their role grants settings.switch_company.
+                if (!IsRegularUserAllowedToTarget(context, tenantId))
+                {
+                    _logger.LogWarning("🚫 TENANT-MIDDLEWARE: regular user attempted to switch to company {TenantId} without permission", tenantId);
+                    context.Response.StatusCode = 403;
+                    await context.Response.WriteAsJsonAsync(new { error = "You do not have permission to switch companies." });
+                    return;
+                }
+
                 context.Items["TenantTargetOverride"] = true;
                 hasTargetOverride = true;
             }
             context.Items["TenantId"] = tenantId;
+
             _logger.LogDebug("🏢 TENANT-MIDDLEWARE: Request {Method} {Path} → app tenant='{Tenant}' (CompanyTenantId={TenantId}, KnownTenant={KnownTenant}, DedicatedDb={DedicatedDb})",
                 context.Request.Method, context.Request.Path, tenant, tenantId, knownTenant, hasDedicatedDb);
 
@@ -295,9 +332,19 @@ public class TenantMiddleware
                     return;
                 }
                 tenantId = TenantSlugCache.ToDataTenantId(dbSlug, targetTenantId);
+
+                if (!IsRegularUserAllowedToTarget(context, tenantId))
+                {
+                    _logger.LogWarning("🚫 TENANT-MIDDLEWARE: regular user attempted to switch to company {TenantId} without permission", tenantId);
+                    context.Response.StatusCode = 403;
+                    await context.Response.WriteAsJsonAsync(new { error = "You do not have permission to switch companies." });
+                    return;
+                }
+
                 context.Items["TenantTargetOverride"] = true;
                 hasTargetOverride = true;
             }
+
             context.Items["TenantId"] = tenantId;
 
             // Fix #4 (preview/dev hosts with no X-Tenant): same guard.
