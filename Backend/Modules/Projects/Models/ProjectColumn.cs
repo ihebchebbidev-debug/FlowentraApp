@@ -28,6 +28,5 @@ namespace MyApi.Modules.Projects.Models
 
         [ForeignKey("ProjectId")]
         public virtual Project Project { get; set; } = null!;
-        public virtual ICollection<ProjectTask> Tasks { get; set; } = new List<ProjectTask>();
     }
 }

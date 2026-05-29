@@ -30,6 +30,7 @@ import { ProjectDocumentsTab } from '../components/project-detail/ProjectDocumen
 import { ProjectActivityTab } from '../components/project-detail/ProjectActivityTab';
 import { ProjectOffersTab } from '../components/project-detail/ProjectOffersTab';
 import { ProjectSummaryTab } from '../components/project-detail/ProjectSummaryTab';
+import { ProjectSettingsTab } from '../components/project-detail/ProjectSettingsTab';
 
 // Interface for technician/assignable users
 interface Technician {
@@ -427,10 +428,11 @@ export default function ProjectTasksPage() {
                   <SelectItem value="notes">{t('projects.detail.tabs.notes')}</SelectItem>
                   <SelectItem value="documents">{t('projects.detail.tabs.documents')}</SelectItem>
                   <SelectItem value="activity">{t('projects.detail.tabs.activity')}</SelectItem>
+                  <SelectItem value="settings">{t('projects.detail.tabs.settings', 'Settings')}</SelectItem>
                 </SelectContent>
               </Select>
             ) : (
-              <TabsList className="w-full h-auto p-1 bg-muted/50 rounded-lg grid grid-cols-9">
+              <TabsList className="w-full h-auto p-1 bg-muted/50 rounded-lg grid grid-cols-10">
                 <TabsTrigger value="overview" className="px-2 py-2 text-xs sm:text-sm font-medium">
                   {t('projects.detail.tabs.overview')}
                 </TabsTrigger>
@@ -457,6 +459,9 @@ export default function ProjectTasksPage() {
                 </TabsTrigger>
                 <TabsTrigger value="activity" className="px-2 py-2 text-xs sm:text-sm font-medium">
                   {t('projects.detail.tabs.activity')}
+                </TabsTrigger>
+                <TabsTrigger value="settings" className="px-2 py-2 text-xs sm:text-sm font-medium">
+                  {t('projects.detail.tabs.settings', 'Settings')}
                 </TabsTrigger>
               </TabsList>
             )}
@@ -531,6 +536,7 @@ export default function ProjectTasksPage() {
                   project={project}
                   technicians={technicians}
                   tasksState={tasksState}
+                  onTeamUpdated={fetchProject}
                 />
               </TabsContent>
 
@@ -544,6 +550,10 @@ export default function ProjectTasksPage() {
 
               <TabsContent value="activity" className="mt-0">
                 <ProjectActivityTab project={project} />
+              </TabsContent>
+
+              <TabsContent value="settings" className="mt-0">
+                <ProjectSettingsTab />
               </TabsContent>
             </div>
           </div>

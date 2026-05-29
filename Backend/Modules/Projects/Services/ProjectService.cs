@@ -398,6 +398,18 @@ namespace MyApi.Modules.Projects.Services
                 _context.Set<ProjectNote>().Add(note);
                 await _context.SaveChangesAsync();
 
+                await _context.Set<ProjectActivity>().AddAsync(new ProjectActivity
+                {
+                    ProjectId = projectId,
+                    ActionType = "note_added",
+                    Description = "Note added",
+                    CreatedDate = DateTime.UtcNow,
+                    CreatedBy = createdByUser,
+                    RelatedEntityId = note.Id,
+                    RelatedEntityType = "Note"
+                });
+                await _context.SaveChangesAsync();
+
                 return new ProjectNoteDto
                 {
                     Id = note.Id,
@@ -423,6 +435,10 @@ namespace MyApi.Modules.Projects.Services
                 var note = await _context.Set<ProjectNote>().FindAsync(noteId);
                 if (note == null)
                     return false;
+
+                // Authorization: only the note creator may delete (server-side enforcement).
+                if (!string.Equals(note.CreatedBy, deletedByUser, StringComparison.OrdinalIgnoreCase))
+                    throw new UnauthorizedAccessException("Only the note creator can delete this note.");
 
                 _context.Set<ProjectNote>().Remove(note);
                 await _context.SaveChangesAsync();
@@ -612,6 +628,64 @@ namespace MyApi.Modules.Projects.Services
             await _context.SaveChangesAsync();
 
             return dto;
+        }
+
+        public async Task<List<int>> GetTeamMembersAsync(int projectId)
+        {
+            var project = await _context.Projects.AsNoTracking().FirstOrDefaultAsync(p => p.Id == projectId);
+            if (project == null) throw new KeyNotFoundException($"Project {projectId} not found");
+            return DeserializeTeamMembers(project.TeamMembers);
+        }
+
+        public async Task<bool> AssignTeamMemberAsync(int projectId, AssignTeamMemberRequestDto dto, string userId)
+        {
+            var project = await _context.Projects.FirstOrDefaultAsync(p => p.Id == projectId);
+            if (project == null) throw new KeyNotFoundException($"Project {projectId} not found");
+
+            var members = DeserializeTeamMembers(project.TeamMembers);
+            if (members.Contains(dto.UserId)) return true;
+            members.Add(dto.UserId);
+            project.TeamMembers = SerializeTeamMembers(members);
+            project.ModifiedBy = userId;
+            project.ModifiedDate = DateTime.UtcNow;
+
+            await _context.Set<ProjectActivity>().AddAsync(new ProjectActivity
+            {
+                ProjectId = projectId,
+                ActionType = "member_added",
+                Description = $"Team member {(string.IsNullOrEmpty(dto.UserName) ? $"#{dto.UserId}" : dto.UserName)} added",
+                CreatedDate = DateTime.UtcNow,
+                CreatedBy = userId,
+                RelatedEntityId = dto.UserId,
+                RelatedEntityType = "TeamMember"
+            });
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> RemoveTeamMemberAsync(int projectId, int userIdToRemove, string userId)
+        {
+            var project = await _context.Projects.FirstOrDefaultAsync(p => p.Id == projectId);
+            if (project == null) throw new KeyNotFoundException($"Project {projectId} not found");
+
+            var members = DeserializeTeamMembers(project.TeamMembers);
+            if (!members.Remove(userIdToRemove)) return false;
+            project.TeamMembers = SerializeTeamMembers(members);
+            project.ModifiedBy = userId;
+            project.ModifiedDate = DateTime.UtcNow;
+
+            await _context.Set<ProjectActivity>().AddAsync(new ProjectActivity
+            {
+                ProjectId = projectId,
+                ActionType = "member_removed",
+                Description = $"Team member #{userIdToRemove} removed",
+                CreatedDate = DateTime.UtcNow,
+                CreatedBy = userId,
+                RelatedEntityId = userIdToRemove,
+                RelatedEntityType = "TeamMember"
+            });
+            await _context.SaveChangesAsync();
+            return true;
         }
 
         private ProjectResponseDto MapToProjectDto(Project project)

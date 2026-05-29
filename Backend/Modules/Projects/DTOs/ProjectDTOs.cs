@@ -148,6 +148,19 @@ namespace MyApi.Modules.Projects.DTOs
         public int EntityId { get; set; }
     }
 
+    public class AssignTeamMemberRequestDto
+    {
+        [Required]
+        public int UserId { get; set; }
+        public string? UserName { get; set; }
+    }
+
+    public class RemoveTeamMemberRequestDto
+    {
+        [Required]
+        public int UserId { get; set; }
+    }
+
     public class ProjectSettingsDto
     {
         public bool AutoLinkConvertedEntities { get; set; } = true;

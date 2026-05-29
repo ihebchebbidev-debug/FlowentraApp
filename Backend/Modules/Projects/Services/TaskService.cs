@@ -81,6 +81,22 @@ namespace MyApi.Modules.Projects.Services
                 _context.ProjectTasks.Add(task);
                 await _context.SaveChangesAsync();
 
+                // Activity log: a task targeting a project shows up on that project's timeline.
+                if (string.Equals(task.RelatedEntityType, "project", StringComparison.OrdinalIgnoreCase) && task.RelatedEntityId.HasValue)
+                {
+                    _context.Set<ProjectActivity>().Add(new ProjectActivity
+                    {
+                        ProjectId = task.RelatedEntityId.Value,
+                        ActionType = "task_added",
+                        Description = $"Task '{task.Title}' added",
+                        CreatedDate = DateTime.UtcNow,
+                        CreatedBy = createdByUser,
+                        RelatedEntityId = task.Id,
+                        RelatedEntityType = "Task"
+                    });
+                    await _context.SaveChangesAsync();
+                }
+
                 // Reload task with related data
                 var createdTask = await GetProjectTaskByIdAsync(task.Id);
                 _logger.LogInformation("Project task created successfully with ID {TaskId}", task.Id);
@@ -134,6 +150,25 @@ namespace MyApi.Modules.Projects.Services
                 task.ModifiedDate = DateTime.UtcNow;
 
                 await _context.SaveChangesAsync();
+
+                // Activity log when a task is marked completed on a project.
+                if (!string.IsNullOrEmpty(updateDto.Status)
+                    && updateDto.Status.Equals("completed", StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(task.RelatedEntityType, "project", StringComparison.OrdinalIgnoreCase)
+                    && task.RelatedEntityId.HasValue)
+                {
+                    _context.Set<ProjectActivity>().Add(new ProjectActivity
+                    {
+                        ProjectId = task.RelatedEntityId.Value,
+                        ActionType = "task_completed",
+                        Description = $"Task '{task.Title}' completed",
+                        CreatedDate = DateTime.UtcNow,
+                        CreatedBy = modifiedByUser,
+                        RelatedEntityId = task.Id,
+                        RelatedEntityType = "Task"
+                    });
+                    await _context.SaveChangesAsync();
+                }
 
                 // Reload task with related data
                 var updatedTask = await GetProjectTaskByIdAsync(id);

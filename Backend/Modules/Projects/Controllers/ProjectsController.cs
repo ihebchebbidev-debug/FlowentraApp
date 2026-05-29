@@ -393,6 +393,35 @@ namespace MyApi.Modules.Projects.Controllers
             }
         }
 
+        [HttpGet("{projectId}/team-members")]
+        public async Task<ActionResult<List<int>>> GetTeamMembers(int projectId)
+        {
+            try { return Ok(await _projectService.GetTeamMembersAsync(projectId)); }
+            catch (KeyNotFoundException ex) { return NotFound(ex.Message); }
+            catch (Exception ex) { _logger.LogError(ex, "Error getting team members"); return StatusCode(500, "Error"); }
+        }
+
+        [HttpPost("{projectId}/team-members")]
+        public async Task<ActionResult> AssignTeamMember(int projectId, [FromBody] AssignTeamMemberRequestDto dto)
+        {
+            try { await _projectService.AssignTeamMemberAsync(projectId, dto, GetCurrentUser()); return NoContent(); }
+            catch (KeyNotFoundException ex) { return NotFound(ex.Message); }
+            catch (Exception ex) { _logger.LogError(ex, "Error assigning team member"); return StatusCode(500, "Error"); }
+        }
+
+        [HttpDelete("{projectId}/team-members")]
+        public async Task<ActionResult> RemoveTeamMember(int projectId, [FromBody] RemoveTeamMemberRequestDto dto)
+        {
+            try
+            {
+                var ok = await _projectService.RemoveTeamMemberAsync(projectId, dto.UserId, GetCurrentUser());
+                if (!ok) return NotFound("Team member not found on project");
+                return NoContent();
+            }
+            catch (KeyNotFoundException ex) { return NotFound(ex.Message); }
+            catch (Exception ex) { _logger.LogError(ex, "Error removing team member"); return StatusCode(500, "Error"); }
+        }
+
         private string GetCurrentUser()
         {
             return User.FindFirst(ClaimTypes.Email)?.Value ?? 

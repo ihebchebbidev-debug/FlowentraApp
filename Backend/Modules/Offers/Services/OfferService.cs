@@ -590,6 +590,27 @@ namespace MyApi.Modules.Offers.Services
             if (!string.IsNullOrEmpty(offer.ConvertedToSaleId))
                 throw new InvalidOperationException($"Offer {id} has already been converted to Sale {offer.ConvertedToSaleId}");
 
+            // Honor project-level conversion settings (single per-tenant row).
+            var projectSettingsRow = await _context.Set<MyApi.Modules.Projects.Models.ProjectSettings>()
+                .FirstOrDefaultAsync();
+            var projectSettings = new MyApi.Modules.Projects.DTOs.ProjectSettingsDto();
+            if (projectSettingsRow != null)
+            {
+                try
+                {
+                    projectSettings = System.Text.Json.JsonSerializer
+                        .Deserialize<MyApi.Modules.Projects.DTOs.ProjectSettingsDto>(projectSettingsRow.SettingsJson)
+                        ?? new MyApi.Modules.Projects.DTOs.ProjectSettingsDto();
+                }
+                catch { /* fall back to defaults */ }
+            }
+
+            if (projectSettings.RequireProjectBeforeConvertingOffer && !offer.ProjectId.HasValue)
+                throw new InvalidOperationException("This offer must be linked to a project before it can be converted (project settings).");
+
+            // When auto-link is disabled, do not carry the offer's project onto the sale.
+            var saleProjectId = projectSettings.AutoLinkConvertedEntities ? offer.ProjectId : null;
+
             // Resolve user name
             string createdByName = userId;
             var adminUser = await _context.MainAdminUsers.FirstOrDefaultAsync(u => u.Id.ToString() == userId);
@@ -657,8 +678,8 @@ namespace MyApi.Modules.Offers.Services
                     AssignedToName = offer.AssignedToName,
                     Tags = offer.Tags != null ? offer.Tags.Concat(new[] { "Converted" }).ToArray() : new[] { "Converted" },
                     OfferId = id.ToString(),
-                    ProjectId = offer.ProjectId,
-                    IsDeal = offer.ProjectId.HasValue,
+                    ProjectId = saleProjectId,
+                    IsDeal = saleProjectId.HasValue,
                     ConvertedFromOfferAt = DateTime.UtcNow,
                     CreatedBy = userId,
                     CreatedByName = createdByName,

@@ -29,5 +29,10 @@ namespace MyApi.Modules.Projects.Services
         Task<ProjectLinksDto> UnlinkEntityFromProjectAsync(int projectId, string entityType, int entityId, string userId);
         Task<ProjectSettingsDto> GetProjectSettingsAsync();
         Task<ProjectSettingsDto> UpdateProjectSettingsAsync(ProjectSettingsDto dto, string userId);
+
+        // Team members
+        Task<List<int>> GetTeamMembersAsync(int projectId);
+        Task<bool> AssignTeamMemberAsync(int projectId, AssignTeamMemberRequestDto dto, string userId);
+        Task<bool> RemoveTeamMemberAsync(int projectId, int userIdToRemove, string userId);
     }
 }

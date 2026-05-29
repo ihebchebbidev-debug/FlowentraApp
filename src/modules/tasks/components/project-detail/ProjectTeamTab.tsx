@@ -29,6 +29,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Project } from "../../types";
+import { ProjectsService } from "../../services/projects.service";
+import { toast } from "@/hooks/use-toast";
 
 interface Technician {
   id: string;
@@ -90,15 +92,33 @@ export function ProjectTeamTab({
 
   const handleAddMember = async () => {
     if (!selectedMemberToAdd) return;
-    // TODO: Call ProjectsService.assignTeamMember(project.id, selectedMemberToAdd)
-    // Then call onTeamUpdated() to refresh
-    setSelectedMemberToAdd("");
+    const user = technicians.find((t) => t.id === selectedMemberToAdd);
+    if (!user) return;
+    const ok = await ProjectsService.assignTeamMember(
+      Number(project.id),
+      Number(selectedMemberToAdd),
+      user.name,
+      project.name
+    );
+    if (ok) {
+      toast({ title: "Member added", description: `${user.name} added to the project.` });
+      setSelectedMemberToAdd("");
+      onTeamUpdated?.();
+    } else {
+      toast({ title: "Failed to add member", variant: "destructive" });
+    }
   };
 
   const handleRemoveMember = async () => {
     if (!selectedMemberToRemove) return;
-    // TODO: Call ProjectsService.removeTeamMember(project.id, selectedMemberToRemove)
-    // Then call onTeamUpdated() to refresh
+    const memberId = selectedMemberToRemove;
+    const ok = await ProjectsService.removeTeamMember(Number(project.id), Number(memberId));
+    if (ok) {
+      toast({ title: "Member removed" });
+      onTeamUpdated?.();
+    } else {
+      toast({ title: "Failed to remove member", variant: "destructive" });
+    }
     setSelectedMemberToRemove(null);
   };
 
