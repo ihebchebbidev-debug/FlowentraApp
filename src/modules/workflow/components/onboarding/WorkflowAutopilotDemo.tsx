@@ -622,7 +622,7 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
             <div
               data-demo-target="tb-version"
               className={cn(
-                'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[11px] font-medium shrink-0',
+                'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-medium shrink-0',
                 state.active
                   ? 'bg-success/15 text-success border-success/30'
                   : 'bg-warning/15 text-warning border-warning/30',
