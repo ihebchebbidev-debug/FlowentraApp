@@ -128,6 +128,7 @@ namespace MyApi.Data
         public DbSet<RecurringTask> RecurringTasks { get; set; }
         public DbSet<RecurringTaskLog> RecurringTaskLogs { get; set; }
         public DbSet<ProjectSettings> ProjectSettings { get; set; }
+        public DbSet<ProjectColumn> ProjectColumns { get; set; }
 
         // Lookups Module
         public DbSet<LookupItem> LookupItems { get; set; }
