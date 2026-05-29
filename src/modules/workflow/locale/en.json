@@ -1481,9 +1481,17 @@
         "stop": "Once active, Activate becomes Stop. Click it to instantly pause execution without losing the version — perfect for a quick safety break.",
         "nextRunIn": "Next run in",
         "vActive": "Active",
-        "vDraft": "Draft saved",
+        "vDraft": "Draft",
         "vEditing": "Editing",
-        "demoPill": "Guided tour"
+        "demoPill": "Guided tour",
+        "aiLabel": "Build with AI",
+        "managerLabel": "My workflows",
+        "stopLabel": "Stop",
+        "saveLabel": "Save",
+        "editLabel": "Edit",
+        "testLabel": "Test",
+        "cancelLabel": "Cancel",
+        "activateLabel": "Activate"
       }
     }
   },

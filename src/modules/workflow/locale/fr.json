@@ -1493,9 +1493,17 @@
         "stop": "Une fois actif, Activer devient Stop. Cliquez pour mettre en pause sans perdre la version — idéal pour une coupure de sécurité.",
         "nextRunIn": "Prochaine exécution dans",
         "vActive": "Actif",
-        "vDraft": "Brouillon enregistré",
-        "vEditing": "En édition",
-        "demoPill": "Visite guidée"
+        "vDraft": "Brouillon",
+        "vEditing": "Édition",
+        "demoPill": "Visite guidée",
+        "aiLabel": "Build with AI",
+        "managerLabel": "Mes workflows",
+        "stopLabel": "Stop",
+        "saveLabel": "Enregistrer",
+        "editLabel": "Modifier",
+        "testLabel": "Test",
+        "cancelLabel": "Annuler",
+        "activateLabel": "Activer"
       }
     }
   },

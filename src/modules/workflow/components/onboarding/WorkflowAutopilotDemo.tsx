@@ -610,59 +610,51 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
         <DialogDescription className="sr-only">{t('onboarding.demo.welcome')}</DialogDescription>
 
         {/* TOP BAR — 1-to-1 mirror of the real WorkflowBuilder toolbar */}
-        <div className="border-b border-border/60 bg-card/80 backdrop-blur-xl px-3 py-1.5 shrink-0 flex items-center justify-between gap-2">
-          {/* LEFT: status + version + demo marker */}
-          <div className="flex items-center gap-2 min-w-0">
-            {/* Connection dot */}
+        <div className="border-b border-border/60 bg-card/80 backdrop-blur-xl px-4 py-2 shrink-0 flex items-center justify-between gap-2">
+          {/* LEFT: connection · version badge · history */}
+          <div className="flex items-center gap-2.5 min-w-0">
             <div data-demo-target="tb-status" className="flex items-center gap-1.5 shrink-0">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
               <span className="text-[11px] text-muted-foreground font-medium">{t('connected', 'Connected')}</span>
             </div>
-            {/* Version badge */}
+
+            {/* Version badge — mirrors WorkflowVersionBadge: [icon] Active v1 */}
             <div
               data-demo-target="tb-version"
               className={cn(
-                'flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10.5px] font-medium tabular-nums shrink-0',
+                'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[11px] font-medium shrink-0',
                 state.active
-                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
-                  : state.saved
-                    ? 'border-primary/30 bg-primary/10 text-primary'
-                    : 'border-border bg-muted/40 text-muted-foreground',
+                  ? 'bg-success/15 text-success border-success/30'
+                  : 'bg-warning/15 text-warning border-warning/30',
               )}
             >
-              <span>v{state.saved ? 3 : 2}</span>
-              <span className="opacity-50">·</span>
+              {state.active ? <CheckCircle2 className="h-3 w-3" /> : <Edit3 className="h-3 w-3" />}
               <span>
                 {state.active
                   ? t('onboarding.demo.tb.vActive', 'Active')
                   : state.saved
-                    ? t('onboarding.demo.tb.vDraft', 'Draft saved')
+                    ? t('onboarding.demo.tb.vDraft', 'Draft')
                     : t('onboarding.demo.tb.vEditing', 'Editing')}
               </span>
+              <span className="text-[10px] opacity-70 tabular-nums">v{state.saved ? 3 : 2}</span>
             </div>
-            {/* Demo title pill (small, so it's clear this is a tour, not the real app) */}
-            <span className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-primary/30 bg-primary/5 text-[10px] font-semibold text-primary shrink-0">
-              <Sparkles className="h-3 w-3" />
-              {t('onboarding.demo.tb.demoPill', 'Guided tour')}
-              <span className="opacity-60 tabular-nums ml-1">
-                {Math.min(stepIndex + 1, steps.length)}/{steps.length}
-              </span>
-            </span>
+
+            <button className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-muted/50 text-muted-foreground" aria-label="History">
+              <RotateCcw className="h-3.5 w-3.5" />
+            </button>
           </div>
 
           {/* RIGHT: actions */}
-          <div className="flex items-center gap-1 shrink-0">
-            {/* Edit mode pill — visible until saved */}
+          <div className="flex items-center gap-1.5 shrink-0">
             {!state.saved && (
-              <div data-demo-target="tb-edit-pill" className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-[10.5px] text-amber-700 dark:text-amber-400 font-semibold mr-1">
+              <div data-demo-target="tb-edit-pill" className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-warning/15 border border-warning/30 text-[11px] text-warning font-semibold mr-1">
                 <Edit3 className="h-3 w-3" />
                 <span>{t('editMode', 'Edit mode')}</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-warning animate-pulse" />
               </div>
             )}
-            {/* Next run pill — only when saved (mirrors real toolbar) */}
             {state.saved && (
-              <div data-demo-target="tb-nextrun" className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-muted/40 text-[10.5px] text-muted-foreground mr-1">
+              <div data-demo-target="tb-nextrun" className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-muted/40 text-[11px] text-muted-foreground mr-1">
                 <span>{t('onboarding.demo.tb.nextRunIn', 'Next run in')}</span>
                 <span className="font-semibold text-foreground tabular-nums">04:21</span>
               </div>
@@ -670,90 +662,88 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
 
             <div className="w-px h-5 bg-border mx-0.5" />
 
-            {/* Build with AI */}
             <button
               data-demo-target="btn-ai"
-              className="h-7 inline-flex items-center gap-1.5 rounded-md px-2 text-[11px] font-medium bg-primary text-primary-foreground border border-primary/30 shadow-sm"
+              className="h-8 inline-flex items-center gap-1.5 rounded-md px-2.5 text-xs font-medium bg-primary text-primary-foreground border border-primary/30 shadow-sm whitespace-nowrap"
             >
-              <Sparkles className="h-3 w-3" />
-              <span className="hidden sm:inline">{t('onboarding.demo.tb.ai', 'Build with AI')}</span>
+              <Sparkles className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">{t('onboarding.demo.tb.aiLabel', 'Build with AI')}</span>
             </button>
-            {/* Debug console */}
-            <button data-demo-target="btn-debug" className="h-7 w-7 inline-flex items-center justify-center rounded-md border border-border bg-background" aria-label="Debug">
-              <Bug className="h-3.5 w-3.5" />
+            <button data-demo-target="btn-debug" className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-border bg-background hover:bg-muted/40" aria-label="Debug">
+              <Bug className="h-4 w-4" />
             </button>
-            {/* Copy config */}
-            <button data-demo-target="btn-copy" className="h-7 w-7 inline-flex items-center justify-center rounded-md border border-border bg-background" aria-label="Copy">
-              <Copy className="h-3.5 w-3.5" />
+            <button data-demo-target="btn-copy" className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-border bg-background hover:bg-muted/40" aria-label="Copy">
+              <Copy className="h-4 w-4" />
             </button>
-            {/* Import */}
-            <button data-demo-target="btn-import" className="h-7 w-7 inline-flex items-center justify-center rounded-md border border-border bg-background" aria-label="Import">
-              <Upload className="h-3.5 w-3.5" />
+            <button data-demo-target="btn-import" className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-border bg-background hover:bg-muted/40" aria-label="Import">
+              <Upload className="h-4 w-4" />
             </button>
-            {/* Export */}
-            <button data-demo-target="btn-export" className="h-7 w-7 inline-flex items-center justify-center rounded-md border border-border bg-background" aria-label="Export">
-              <Download className="h-3.5 w-3.5" />
+            <button data-demo-target="btn-export" className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-border bg-background hover:bg-muted/40" aria-label="Export">
+              <Download className="h-4 w-4" />
             </button>
-            {/* Workflow Groups */}
-            <button data-demo-target="btn-groups" className="h-7 w-7 inline-flex items-center justify-center rounded-md border border-border bg-background" aria-label="Groups">
-              <FolderOpen className="h-3.5 w-3.5" />
-            </button>
-            {/* Workflow Manager */}
-            <button data-demo-target="btn-manager" className="h-7 inline-flex items-center gap-1.5 rounded-md px-2 text-[11px] font-medium border border-border bg-background">
-              <FolderTree className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">{t('onboarding.demo.tb.manager', 'Workflows')}</span>
+            <button data-demo-target="btn-groups" className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-border bg-background hover:bg-muted/40" aria-label="Groups">
+              <FolderOpen className="h-4 w-4" />
             </button>
 
-            {/* TEST */}
+            <button data-demo-target="btn-manager" className="h-8 inline-flex items-center gap-1.5 rounded-md px-2.5 text-xs font-medium border border-border bg-background hover:bg-muted/40 whitespace-nowrap">
+              <FolderTree className="h-4 w-4" />
+              <span className="hidden sm:inline">{t('onboarding.demo.tb.managerLabel', 'My workflows')}</span>
+            </button>
+
             <button
               data-demo-target="btn-test"
               className={cn(
-                'h-7 inline-flex items-center gap-1.5 rounded-md px-2 text-[11px] font-medium border border-border bg-background transition-all',
+                'h-8 inline-flex items-center gap-1.5 rounded-md px-2.5 text-xs font-medium border border-border bg-background hover:bg-muted/40 whitespace-nowrap transition-all',
                 state.showExecutions && 'ring-2 ring-primary',
               )}
             >
-              <FlaskConical className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">{t('onboarding.demo.btnTest')}</span>
+              <FlaskConical className="h-4 w-4" />
+              <span className="hidden sm:inline">{t('onboarding.demo.tb.testLabel', 'Test')}</span>
             </button>
 
-            {/* EDIT / CANCEL — Save toggle pattern (real builder: Cancel + Save when editing, Edit otherwise) */}
             {!state.saved ? (
               <>
-                <button data-demo-target="btn-cancel" className="h-7 inline-flex items-center gap-1.5 rounded-md px-2 text-[11px] font-medium border border-border bg-background">
-                  <X className="h-3.5 w-3.5" /> {t('onboarding.demo.cancel')}
+                <button data-demo-target="btn-cancel" className="h-8 inline-flex items-center gap-1.5 rounded-md px-2.5 text-xs font-medium border border-border bg-background hover:bg-muted/40 whitespace-nowrap">
+                  <X className="h-4 w-4" /> {t('onboarding.demo.tb.cancelLabel', 'Cancel')}
                 </button>
                 <button
                   data-demo-target="btn-save"
-                  className="h-7 inline-flex items-center gap-1.5 rounded-md px-2 text-[11px] font-medium bg-primary text-primary-foreground shadow-sm"
+                  className="h-8 inline-flex items-center gap-1.5 rounded-md px-2.5 text-xs font-medium bg-primary text-primary-foreground border border-primary/30 shadow-sm whitespace-nowrap"
                 >
-                  <Save className="h-3.5 w-3.5" /> {t('onboarding.demo.btnSave')}
+                  <Save className="h-4 w-4" /> {t('onboarding.demo.tb.saveLabel', 'Save')}
                 </button>
               </>
             ) : (
               <button
                 data-demo-target="btn-save"
-                className="h-7 inline-flex items-center gap-1.5 rounded-md px-2 text-[11px] font-medium border border-border bg-background"
+                className="h-8 inline-flex items-center gap-1.5 rounded-md px-2.5 text-xs font-medium border border-border bg-background hover:bg-muted/40 whitespace-nowrap"
               >
-                <Edit3 className="h-3.5 w-3.5" /> {t('common.edit', 'Edit')}
-                <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                <Edit3 className="h-4 w-4" />
+                {t('onboarding.demo.tb.editLabel', 'Edit')}
               </button>
             )}
 
-            {/* ACTIVATE / STOP */}
             <button
               data-demo-target="btn-activate"
               className={cn(
-                'h-7 inline-flex items-center gap-1.5 rounded-md px-2 text-[11px] font-medium border shadow-sm transition-all',
+                'h-8 inline-flex items-center gap-1.5 rounded-md px-2.5 text-xs font-medium border shadow-sm whitespace-nowrap transition-all',
                 state.active
-                  ? 'bg-destructive text-destructive-foreground border-destructive/30'
-                  : 'bg-primary text-primary-foreground border-primary/30',
+                  ? 'bg-destructive text-destructive-foreground border-destructive/30 hover:bg-destructive/90'
+                  : 'bg-primary text-primary-foreground border-primary/30 hover:bg-primary/90',
               )}
             >
-              {state.active ? <Square className="h-3.5 w-3.5" /> : <Power className="h-3.5 w-3.5" />}
+              {state.active ? <Square className="h-4 w-4" /> : <Power className="h-4 w-4" />}
               <span className="hidden sm:inline">
-                {state.active ? t('onboarding.demo.tb.stop', 'Stop') : t('onboarding.demo.btnActivate')}
+                {state.active ? t('onboarding.demo.tb.stopLabel', 'Stop') : t('onboarding.demo.tb.activateLabel', 'Activate')}
               </span>
             </button>
+
+            <div className="w-px h-5 bg-border mx-0.5" />
+
+            <span className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-primary/30 bg-primary/5 text-[10px] font-semibold text-primary shrink-0">
+              <Sparkles className="h-3 w-3" />
+              <span className="tabular-nums">{Math.min(stepIndex + 1, steps.length)}/{steps.length}</span>
+            </span>
 
             <Button variant="ghost" size="icon-sm" onClick={() => onClose(true)} aria-label={t('onboarding.demo.dismiss')} className="ml-1">
               <X className="h-4 w-4" />
