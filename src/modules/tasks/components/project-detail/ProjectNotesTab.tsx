@@ -36,6 +36,28 @@ export function ProjectNotesTab({ project }: ProjectNotesTabProps) {
   const [isLoadingNotes, setIsLoadingNotes] = useState(false);
   const [selectedNoteToDelete, setSelectedNoteToDelete] = useState<number | null>(null);
 
+  // Load notes from API — must be defined before useEffect
+  const loadNotes = async () => {
+    if (!project) return;
+    setIsLoadingNotes(true);
+    try {
+      const projectId = typeof project.id === 'string' ? parseInt(project.id) : project.id;
+      const response = await projectsApi.getProjectNotes(projectId);
+      setNotes(response);
+    } catch (error) {
+      console.error("Failed to load notes:", error);
+      toast.error(t("projects.detail.notes.loadError", "Failed to load notes"));
+    } finally {
+      setIsLoadingNotes(false);
+    }
+  };
+
+  // Hook must be declared before any early return (React hooks rules)
+  useEffect(() => {
+    if (!project) return;
+    loadNotes();
+  }, [project?.id]);
+
   if (!project) return null;
 
   // Get current user from localStorage
@@ -54,25 +76,6 @@ export function ProjectNotesTab({ project }: ProjectNotesTabProps) {
     }
     return { id: "unknown", name: "You" };
   };
-
-  // Load notes from API
-  const loadNotes = async () => {
-    setIsLoadingNotes(true);
-    try {
-      const projectId = typeof project.id === 'string' ? parseInt(project.id) : project.id;
-      const response = await projectsApi.getProjectNotes(projectId);
-      setNotes(response);
-    } catch (error) {
-      console.error("Failed to load notes:", error);
-      toast.error(t("projects.detail.notes.loadError", "Failed to load notes"));
-    } finally {
-      setIsLoadingNotes(false);
-    }
-  };
-
-  useEffect(() => {
-    loadNotes();
-  }, [project.id]);
 
   const handlePostNote = async () => {
     if (!noteContent.trim()) {

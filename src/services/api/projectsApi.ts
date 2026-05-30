@@ -1,6 +1,6 @@
 // Projects API Service - Backend Integration
 import type { Project, Column, ProjectStats } from '@/modules/tasks/types';
-import { getAuthHeaders, getMutationHeaders, getMutationHeadersNoContentType } from '@/utils/apiHeaders';
+import { getAuthHeaders, getMutationHeaders } from '@/utils/apiHeaders';
 
 import { API_URL } from '@/config/api';
 import {
