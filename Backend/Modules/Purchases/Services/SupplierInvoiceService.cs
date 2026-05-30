@@ -336,8 +336,9 @@ namespace MyApi.Modules.Purchases.Services
                 {
                     // Postgres row-level lock; serializes any concurrent UpdateInvoiceAsync
                     // for the same invoice id. Other invoices remain unblocked.
+                    var tenantId = _context.GetTenantId();
                     var invoice = await _context.SupplierInvoices
-                        .FromSqlInterpolated($"SELECT * FROM \"SupplierInvoices\" WHERE \"Id\" = {id} AND \"IsDeleted\" = false FOR UPDATE")
+                        .FromSqlInterpolated($"SELECT * FROM \"SupplierInvoices\" WHERE \"Id\" = {id} AND \"TenantId\" = {tenantId} AND \"IsDeleted\" = false FOR UPDATE")
                         .FirstOrDefaultAsync()
                         ?? throw new KeyNotFoundException($"SupplierInvoice {id} not found");
 
