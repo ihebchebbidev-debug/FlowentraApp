@@ -374,13 +374,26 @@ namespace MyApi.Modules.Planning.Services
                     l.EndDate >= startDate.Date)
                 .ToListAsync();
 
+            // Resolve actual job titles in one batch query
+            var jobIds = dispatches
+                .Where(d => !string.IsNullOrEmpty(d.JobId) && int.TryParse(d.JobId, out _))
+                .Select(d => int.Parse(d.JobId!))
+                .Distinct()
+                .ToList();
+
+            var jobTitles = jobIds.Count > 0
+                ? await _db.ServiceOrderJobs
+                    .Where(j => jobIds.Contains(j.Id))
+                    .ToDictionaryAsync(j => j.Id, j => j.Title ?? string.Empty)
+                : new Dictionary<int, string>();
+
             // Build response
             return new UserScheduleDto
             {
                 UserId = userId,
                 UserName = $"{user.FirstName} {user.LastName}",
                 WorkingHours = BuildWorkingHoursDict(workingHours),
-                Dispatches = dispatches.Select(MapDispatchToScheduleDto).ToList(),
+                Dispatches = dispatches.Select(d => MapDispatchToScheduleDto(d, jobTitles)).ToList(),
                 Leaves = leaves.Select(MapLeaveToDto).ToList(),
                 TotalScheduledHours = CalculateTotalScheduledHours(dispatches),
                 AvailableHours = CalculateAvailableHours(workingHours, dispatches, startDate, endDate)
@@ -523,14 +536,19 @@ namespace MyApi.Modules.Planning.Services
             return dict;
         }
 
-        private DispatchScheduleDto MapDispatchToScheduleDto(Dispatch dispatch)
+        private DispatchScheduleDto MapDispatchToScheduleDto(Dispatch dispatch, Dictionary<int, string>? jobTitles = null)
         {
+            var jobId = int.TryParse(dispatch.JobId, out var jid) ? jid : (int?)null;
+            var jobTitle = jobId.HasValue && jobTitles != null && jobTitles.TryGetValue(jobId.Value, out var t) && !string.IsNullOrEmpty(t)
+                ? t
+                : dispatch.DispatchNumber;
+
             return new DispatchScheduleDto
             {
                 Id = dispatch.Id,
                 DispatchNumber = dispatch.DispatchNumber,
-                JobId = int.TryParse(dispatch.JobId, out var jid) ? jid : null,
-                JobTitle = dispatch.DispatchNumber,
+                JobId = jobId,
+                JobTitle = jobTitle,
                 ServiceOrderId = dispatch.ServiceOrderId,
                 ScheduledDate = dispatch.ScheduledDate,
                 ScheduledStartTime = dispatch.ScheduledStartTime ?? TimeSpan.Zero,
@@ -549,7 +567,8 @@ namespace MyApi.Modules.Planning.Services
                 LeaveType = leave.LeaveType,
                 StartDate = leave.StartDate,
                 EndDate = leave.EndDate,
-                Status = leave.Status
+                Status = leave.Status,
+                Reason = leave.Reason
             };
         }
 

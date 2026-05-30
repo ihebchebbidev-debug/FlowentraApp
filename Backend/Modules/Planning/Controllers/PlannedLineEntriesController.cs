@@ -43,5 +43,17 @@ namespace MyApi.Modules.Planning.Controllers
         [HttpGet("plan-vs-actual/{serviceOrderJobId:int}")]
         public async Task<IActionResult> PlanVsActual(int serviceOrderJobId)
             => Ok(await _svc.GetPlanVsActualAsync(serviceOrderJobId));
+
+        /// <summary>Copy all planned entries from one parent to another.</summary>
+        [HttpPost("copy")]
+        public async Task<IActionResult> Copy(
+            [FromQuery] string sourceParentType,
+            [FromQuery] int sourceParentId,
+            [FromQuery] string targetParentType,
+            [FromQuery] int targetParentId)
+        {
+            await _svc.CopyAsync(sourceParentType, sourceParentId, targetParentType, targetParentId, UserId);
+            return NoContent();
+        }
     }
 }
