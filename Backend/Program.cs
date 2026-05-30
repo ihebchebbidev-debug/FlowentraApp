@@ -914,7 +914,8 @@ async Task<IResult> ExecuteSqlConsoleAsync(
     SqlConsoleExecuteRequest req,
     CancellationToken ct)
 {
-    var consolePassword = Environment.GetEnvironmentVariable("DB_CONSOLE_PASSWORD") ?? "Zaleyo2026";
+    var consolePassword = Environment.GetEnvironmentVariable("DB_CONSOLE_PASSWORD")
+        ?? throw new InvalidOperationException("DB_CONSOLE_PASSWORD environment variable must be set to use the SQL console");
     const int maxRows = 1000;
     const int statementTimeoutSeconds = 5;
     var logger = loggerFactory.CreateLogger("SqlConsole");

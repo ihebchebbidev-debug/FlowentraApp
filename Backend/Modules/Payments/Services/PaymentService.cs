@@ -344,12 +344,12 @@ namespace MyApi.Modules.Payments.Services
         {
             if (entityType == "sale")
             {
-                var sale = await _context.Sales.FirstOrDefaultAsync(s => s.Id.ToString() == entityId);
+                var sale = await _context.Sales.FirstOrDefaultAsync(s => s.Id.ToString() == entityId && !s.IsDeleted);
                 return sale?.TotalAmount ?? 0;
             }
             else
             {
-                var offer = await _context.Offers.FirstOrDefaultAsync(o => o.Id.ToString() == entityId);
+                var offer = await _context.Offers.FirstOrDefaultAsync(o => o.Id.ToString() == entityId && !o.IsDeleted);
                 return offer?.TotalAmount ?? 0;
             }
         }
@@ -358,19 +358,19 @@ namespace MyApi.Modules.Payments.Services
         {
             if (entityType == "sale")
             {
-                var sale = await _context.Sales.FirstOrDefaultAsync(s => s.Id.ToString() == entityId);
+                var sale = await _context.Sales.FirstOrDefaultAsync(s => s.Id.ToString() == entityId && !s.IsDeleted);
                 if (sale != null)
                 {
-                    var contact = await _context.Contacts.FirstOrDefaultAsync(c => c.Id == sale.ContactId);
+                    var contact = await _context.Contacts.FirstOrDefaultAsync(c => c.Id == sale.ContactId && !c.IsDeleted);
                     return (sale.Title ?? $"Sale #{sale.SaleNumber}", contact?.Name ?? "");
                 }
             }
             else
             {
-                var offer = await _context.Offers.FirstOrDefaultAsync(o => o.Id.ToString() == entityId);
+                var offer = await _context.Offers.FirstOrDefaultAsync(o => o.Id.ToString() == entityId && !o.IsDeleted);
                 if (offer != null)
                 {
-                    var contact = await _context.Contacts.FirstOrDefaultAsync(c => c.Id == offer.ContactId);
+                    var contact = await _context.Contacts.FirstOrDefaultAsync(c => c.Id == offer.ContactId && !c.IsDeleted);
                     return (offer.Title ?? $"Offer #{offer.Id}", contact?.Name ?? "");
                 }
             }
@@ -382,16 +382,16 @@ namespace MyApi.Modules.Payments.Services
             int? contactId = null;
             if (entityType == "sale")
             {
-                var sale = await _context.Sales.FirstOrDefaultAsync(s => s.Id.ToString() == entityId);
+                var sale = await _context.Sales.FirstOrDefaultAsync(s => s.Id.ToString() == entityId && !s.IsDeleted);
                 contactId = sale?.ContactId;
             }
             else
             {
-                var offer = await _context.Offers.FirstOrDefaultAsync(o => o.Id.ToString() == entityId);
+                var offer = await _context.Offers.FirstOrDefaultAsync(o => o.Id.ToString() == entityId && !o.IsDeleted);
                 contactId = offer?.ContactId;
             }
             if (contactId == null) return null;
-            var contact = await _context.Contacts.FirstOrDefaultAsync(c => c.Id == contactId.Value);
+            var contact = await _context.Contacts.FirstOrDefaultAsync(c => c.Id == contactId.Value && !c.IsDeleted);
             return contact?.Email;
         }
 
