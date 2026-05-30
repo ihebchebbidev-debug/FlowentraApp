@@ -89,7 +89,7 @@ export function ActivityTab({ sale, onDataChange }: ActivityTabProps) {
         if (name) {
           setMainAdminNames(prev => ({ ...prev, [userId]: name }));
         }
-      });
+      }).catch(() => {});
       return `User ${userId}`;
     }
     

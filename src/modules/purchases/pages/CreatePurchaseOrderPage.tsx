@@ -52,10 +52,12 @@ export default function CreatePurchaseOrderPage() {
   // because the chosen supplier belongs to a different tenant than the
   // X-Target-Tenant header sent on submit.
   useEffect(() => {
-    // Reset previously selected supplier when the target tenant changes —
-    // its id won't be valid in the new tenant's scope.
+    // Reset previously selected supplier and all line items when the target
+    // tenant changes — supplier IDs and article IDs from the old company are
+    // not valid in the new tenant's scope and would cause 404s on submit.
     setSupplierId('');
     setSupplierArticles([]);
+    setItems([]);
     apiFetch<any>('/api/contacts?type=supplier&limit=500').then(res => {
       const raw = res?.data?.contacts || res?.data || [];
       // The backend may return either { name } (already concatenated) or
@@ -98,7 +100,9 @@ export default function CreatePurchaseOrderPage() {
       }
       unique.sort((a, b) => a.name.localeCompare(b.name));
       setSuppliers(unique);
-    }).catch(() => {});
+    }).catch(() => {
+      toast.error(t('common.error', 'Failed to load suppliers'));
+    });
   }, [targetTenantId]);
 
   // Fetch supplier articles when supplier changes

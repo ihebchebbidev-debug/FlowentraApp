@@ -255,20 +255,15 @@ export function ProjectManager({ onSwitchToTasks: _onSwitchToTasks }: ProjectMan
 
   const handleCreateProject = async (projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
-      const currentUser = getCurrentUser();
-      
       const createRequest: CreateProjectRequestDto = {
         name: projectData.name,
         description: projectData.description,
-        ownerId: typeof currentUser.id === 'string' ? parseInt(currentUser.id, 10) : currentUser.id,
-        ownerName: currentUser.name,
-        type: projectData.type || 'internal',
+        projectKind: projectData.type || 'internal',
         status: projectData.status || 'active',
         priority: projectData.priority || 'medium',
         startDate: projectData.startDate?.toISOString(),
         endDate: projectData.endDate?.toISOString(),
         teamMembers: projectData.teamMembers?.map(id => typeof id === 'string' ? parseInt(id, 10) : id).filter(id => !isNaN(id)),
-        tags: projectData.tags,
       };
       
       // Backend automatically creates default columns (To Do, In Progress, Review, Done)
@@ -316,12 +311,10 @@ export function ProjectManager({ onSwitchToTasks: _onSwitchToTasks }: ProjectMan
         name: updates.name,
         description: updates.description,
         status: updates.status,
-        type: updates.type,
+        projectKind: updates.type,
         priority: updates.priority,
         startDate: updates.startDate?.toISOString(),
         endDate: updates.endDate?.toISOString(),
-        progress: updates.progress,
-        tags: updates.tags,
       };
       
       const updatedProject = await ProjectsService.updateProject(numId, updateRequest);

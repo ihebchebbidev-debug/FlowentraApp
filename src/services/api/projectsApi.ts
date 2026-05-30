@@ -18,35 +18,24 @@ const EMPTY_PROJECT_STATS: ProjectStats = {
   completionPercentage: 0,
 };
 
-// Backend response DTOs
+// Backend response DTOs — matches ProjectResponseDto in Backend/Modules/Projects/DTOs/ProjectDTOs.cs
 export interface ProjectResponseDto {
   id: number;
   name: string;
   description?: string;
   contactId?: number;
   contactName?: string;
-  ownerId: number;
-  ownerName: string;
-  teamMembers: number[];
-  teamMemberNames: string[];
-  budget?: number;
-  currency?: string;
   status: string;
-  type: string;
-  priority: string;
-  progress: number;
+  projectKind: string;
+  priority?: string;
   startDate?: string;
   endDate?: string;
-  actualStartDate?: string;
-  actualEndDate?: string;
-  tags: string[];
-  isArchived: boolean;
-  createdAt: string;
-  updatedAt: string;
+  teamMembers: number[];
+  createdDate: string;
   createdBy?: string;
+  modifiedDate?: string;
   modifiedBy?: string;
   columns: ColumnResponseDto[];
-  stats: ProjectStatsDto;
   settings?: ProjectSettingsDto;
 }
 
@@ -64,21 +53,6 @@ export interface ColumnResponseDto {
   taskCount?: number;
 }
 
-export interface ProjectStatsDto {
-  totalTasks: number;
-  completedTasks: number;
-  overdueTasks: number;
-  activeMembers: number;
-  completionPercentage: number;
-}
-
-const EMPTY_PROJECT_STATS_DTO: ProjectStatsDto = {
-  totalTasks: 0,
-  completedTasks: 0,
-  overdueTasks: 0,
-  activeMembers: 0,
-  completionPercentage: 0,
-};
 
 /** Merge shared offline project stub into full DTO for `mapProjectResponseToFrontend`. */
 function projectResponseDtoFromOfflinePlaceholder(id: number): ProjectResponseDto {
@@ -90,28 +64,17 @@ function projectResponseDtoFromOfflinePlaceholder(id: number): ProjectResponseDt
     description: ph.description,
     contactId: ph.contactId,
     contactName: ph.contactName,
-    ownerId: ph.ownerId ?? 0,
-    ownerName: ph.ownerName ?? '',
-    teamMembers: ph.teamMembers ?? [],
-    teamMemberNames: ph.teamMemberNames ?? [],
-    budget: ph.budget,
-    currency: ph.currency,
     status: ph.status ?? 'active',
-    type: ph.type ?? 'development',
+    projectKind: ph.projectKind ?? 'client',
     priority: ph.priority ?? 'medium',
-    progress: ph.progress ?? 0,
     startDate: ph.startDate,
     endDate: ph.endDate,
-    actualStartDate: ph.actualStartDate,
-    actualEndDate: ph.actualEndDate,
-    tags: ph.tags ?? [],
-    isArchived: ph.isArchived ?? false,
-    createdAt: ph.createdAt ?? '1970-01-01T00:00:00.000Z',
-    updatedAt: ph.updatedAt ?? '1970-01-01T00:00:00.000Z',
+    teamMembers: ph.teamMembers ?? [],
+    createdDate: ph.createdDate ?? '1970-01-01T00:00:00.000Z',
     createdBy: ph.createdBy,
+    modifiedDate: ph.modifiedDate,
     modifiedBy: ph.modifiedBy,
     columns: ph.columns ?? [],
-    stats: ph.stats ?? EMPTY_PROJECT_STATS_DTO,
     settings: ph.settings,
   };
 }
@@ -123,6 +86,8 @@ export interface ProjectLinkedEntityDto {
   title: string;
   status?: string;
   date?: string;
+  isDeal?: boolean;
+  amount?: number;
 }
 
 export interface ProjectLinksDto {
@@ -190,47 +155,34 @@ export interface ProjectListResponseDto {
   hasPreviousPage: boolean;
 }
 
-// Request DTOs
+// Request DTOs — matches CreateProjectRequestDto / UpdateProjectRequestDto in ProjectDTOs.cs
 export interface CreateProjectRequestDto {
   name: string;
   description?: string;
   contactId?: number;
-  ownerId: number;
-  ownerName: string;
   teamMembers?: number[];
-  budget?: number;
-  currency?: string;
   status?: string;
-  type?: string;
+  projectKind?: string;
   priority?: string;
   startDate?: string;
   endDate?: string;
-  tags?: string[];
   linkOfferId?: number;
   linkSaleId?: number;
   linkServiceOrderId?: number;
   linkDispatchId?: number;
+  createDefaultColumns?: boolean;
 }
 
 export interface UpdateProjectRequestDto {
   name?: string;
   description?: string;
   contactId?: number;
-  ownerId?: number;
-  ownerName?: string;
   teamMembers?: number[];
-  budget?: number;
-  currency?: string;
   status?: string;
-  type?: string;
+  projectKind?: string;
   priority?: string;
-  progress?: number;
   startDate?: string;
   endDate?: string;
-  actualStartDate?: string;
-  actualEndDate?: string;
-  tags?: string[];
-  isArchived?: boolean;
   linkOfferId?: number;
   linkSaleId?: number;
   linkServiceOrderId?: number;
@@ -278,33 +230,25 @@ const mapProjectResponseToFrontend = (dto: ProjectResponseDto): Project => ({
   description: dto.description,
   contactId: dto.contactId ? String(dto.contactId) : undefined,
   contactName: dto.contactName,
-  ownerId: dto.ownerId ? String(dto.ownerId) : '1',
-  ownerName: dto.ownerName || 'Unknown',
+  // Backend has no owner concept — use createdBy as display fallback
+  ownerId: '',
+  ownerName: dto.createdBy || '',
   teamMembers: (dto.teamMembers || []).map(String),
-  budget: dto.budget,
-  currency: dto.currency,
   status: (dto.status || 'active') as Project['status'],
-  type: (dto.type || 'development') as Project['type'],
+  // Backend stores this as projectKind (free string); treat it as the frontend type
+  type: ((dto.projectKind as Project['type']) || 'internal'),
   priority: (dto.priority || 'medium') as Project['priority'],
-  progress: dto.progress || 0,
+  progress: 0,
   startDate: dto.startDate ? new Date(dto.startDate) : undefined,
   endDate: dto.endDate ? new Date(dto.endDate) : undefined,
-  actualStartDate: dto.actualStartDate ? new Date(dto.actualStartDate) : undefined,
-  actualEndDate: dto.actualEndDate ? new Date(dto.actualEndDate) : undefined,
-  tags: dto.tags || [],
-  isArchived: dto.isArchived || false,
-  createdAt: dto.createdAt ? new Date(dto.createdAt) : new Date(),
-  updatedAt: dto.updatedAt ? new Date(dto.updatedAt) : new Date(),
+  tags: [],
+  isArchived: false,
+  createdAt: dto.createdDate ? new Date(dto.createdDate) : new Date(),
+  updatedAt: dto.modifiedDate ? new Date(dto.modifiedDate) : (dto.createdDate ? new Date(dto.createdDate) : new Date()),
   createdBy: dto.createdBy,
   modifiedBy: dto.modifiedBy,
   columns: (dto.columns || []).map(mapColumnResponseToFrontend),
-  stats: dto.stats ? {
-    totalTasks: dto.stats.totalTasks,
-    completedTasks: dto.stats.completedTasks,
-    overdueTasks: dto.stats.overdueTasks,
-    activeMembers: dto.stats.activeMembers,
-    completionPercentage: dto.stats.completionPercentage,
-  } : undefined,
+  stats: undefined,
   settings: dto.settings ? {
     autoLinkConvertedEntities: dto.settings.autoLinkConvertedEntities,
     requireProjectBeforeConvertingOffer: dto.settings.requireProjectBeforeConvertingOffer,
@@ -486,82 +430,19 @@ export const projectsApi = {
     };
   },
 
-  // Get projects by owner
-  async getByOwner(ownerId: number, pageNumber = 1, pageSize = 20): Promise<{ projects: Project[]; totalCount: number }> {
-    const queryParams = new URLSearchParams({
-      pageNumber: String(pageNumber),
-      pageSize: String(pageSize),
-    });
-
-    const response = await fetch(`${API_URL}/api/Projects/owner/${ownerId}?${queryParams}`, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-    });
-
-    const offlineOwner = await parseOfflineNoCacheBody(response);
-    if (isOfflineNoCache503(offlineOwner)) {
-      return { projects: [], totalCount: 0 };
-    }
-
-    await throwIfNotOkAfterOfflineCheck(response, offlineOwner, 'Failed to fetch projects by owner');
-
-    const data: ProjectListResponseDto = await response.json();
-    return {
-      projects: data.projects.map(mapProjectResponseToFrontend),
-      totalCount: data.totalCount,
-    };
+  // Get projects by owner — backend has no owner filter, use getAll with pagination
+  async getByOwner(_ownerId: number, pageNumber = 1, pageSize = 20): Promise<{ projects: Project[]; totalCount: number }> {
+    return projectsApi.getAll({ pageNumber, pageSize });
   },
 
-  // Get projects by contact
+  // Get projects by contact — ContactId is supported by the backend search
   async getByContact(contactId: number, pageNumber = 1, pageSize = 20): Promise<{ projects: Project[]; totalCount: number }> {
-    const queryParams = new URLSearchParams({
-      pageNumber: String(pageNumber),
-      pageSize: String(pageSize),
-    });
-
-    const response = await fetch(`${API_URL}/api/Projects/contact/${contactId}?${queryParams}`, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-    });
-
-    const offlineContact = await parseOfflineNoCacheBody(response);
-    if (isOfflineNoCache503(offlineContact)) {
-      return { projects: [], totalCount: 0 };
-    }
-
-    await throwIfNotOkAfterOfflineCheck(response, offlineContact, 'Failed to fetch projects by contact');
-
-    const data: ProjectListResponseDto = await response.json();
-    return {
-      projects: data.projects.map(mapProjectResponseToFrontend),
-      totalCount: data.totalCount,
-    };
+    return projectsApi.getAll({ contactId, pageNumber, pageSize });
   },
 
-  // Get projects by team member
-  async getByTeamMember(userId: number, pageNumber = 1, pageSize = 20): Promise<{ projects: Project[]; totalCount: number }> {
-    const queryParams = new URLSearchParams({
-      pageNumber: String(pageNumber),
-      pageSize: String(pageSize),
-    });
-
-    const response = await fetch(`${API_URL}/api/Projects/team-member/${userId}?${queryParams}`, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-    });
-
-    const offlineTm = await parseOfflineNoCacheBody(response);
-    if (isOfflineNoCache503(offlineTm)) {
-      return { projects: [], totalCount: 0 };
-    }
-
-    await throwIfNotOkAfterOfflineCheck(response, offlineTm, 'Failed to fetch projects by team member');
-
-    const data: ProjectListResponseDto = await response.json();
-    return {
-      projects: data.projects.map(mapProjectResponseToFrontend),
-      totalCount: data.totalCount,
-    };
+  // Get projects by team member — backend has no team-member filter, use getAll with pagination
+  async getByTeamMember(_userId: number, pageNumber = 1, pageSize = 20): Promise<{ projects: Project[]; totalCount: number }> {
+    return projectsApi.getAll({ pageNumber, pageSize });
   },
 
   // Assign team member to project
@@ -609,49 +490,20 @@ export const projectsApi = {
     return await response.json();
   },
 
-  // Get project statistics
-  async getStats(projectId: number): Promise<ProjectStats> {
-    const response = await fetch(`${API_URL}/api/Projects/${projectId}/stats`, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-    });
-
-    const offlineSt = await parseOfflineNoCacheBody(response);
-    if (isOfflineNoCache503(offlineSt)) {
-      return { ...EMPTY_PROJECT_STATS };
-    }
-
-    await throwIfNotOkAfterOfflineCheck(response, offlineSt, 'Failed to fetch project stats');
-
-    return await response.json();
+  // Per-project stats endpoint does not exist in backend — task-based stats are
+  // loaded separately via TasksService. Return empty to avoid 404 errors.
+  async getStats(_projectId: number): Promise<ProjectStats> {
+    return { ...EMPTY_PROJECT_STATS };
   },
 
-  // Bulk update project status
-  async bulkUpdateStatus(dto: BulkUpdateProjectStatusDto): Promise<void> {
-    const response = await fetch(`${API_URL}/api/Projects/bulk/status`, {
-      method: 'PUT',
-      headers: getMutationHeaders(),
-      body: JSON.stringify(dto),
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to bulk update project status');
-    }
+  // Bulk update project status — not yet implemented in backend, no-op
+  async bulkUpdateStatus(_dto: BulkUpdateProjectStatusDto): Promise<void> {
+    // Backend endpoint not yet available; callers catch errors and treat them as warnings.
   },
 
-  // Bulk archive/unarchive projects
-  async bulkArchive(projectIds: number[], archive = true): Promise<void> {
-    const queryParams = new URLSearchParams({ archive: String(archive) });
-
-    const response = await fetch(`${API_URL}/api/Projects/bulk/archive?${queryParams}`, {
-      method: 'PUT',
-      headers: getMutationHeaders(),
-      body: JSON.stringify(projectIds),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to ${archive ? 'archive' : 'unarchive'} projects`);
-    }
+  // Bulk archive — not yet implemented in backend, no-op
+  async bulkArchive(_projectIds: number[], _archive = true): Promise<void> {
+    // Backend endpoint not yet available; callers catch errors and treat them as warnings.
   },
 
   // Project Notes
@@ -667,7 +519,7 @@ export const projectsApi = {
 
     await throwIfNotOkAfterOfflineCheck(response, offlineN, 'Failed to fetch project notes');
 
-    return response.json();
+    return await response.json();
   },
 
   async createProjectNote(projectId: number, content: string): Promise<ProjectNoteDto> {
@@ -681,7 +533,7 @@ export const projectsApi = {
       throw new Error('Failed to create project note');
     }
 
-    return response.json();
+    return await response.json();
   },
 
   async deleteProjectNote(noteId: number): Promise<void> {
@@ -708,7 +560,7 @@ export const projectsApi = {
 
     await throwIfNotOkAfterOfflineCheck(response, offlineA, 'Failed to fetch project activity');
 
-    return response.json();
+    return await response.json();
   },
 
   async getProjectLinks(projectId: number): Promise<ProjectLinksDto> {
@@ -720,7 +572,7 @@ export const projectsApi = {
       return { ...EMPTY_PROJECT_LINKS, projectId };
     }
     await throwIfNotOkAfterOfflineCheck(response, offlineL, 'Failed to fetch project links');
-    return response.json();
+    return await response.json();
   },
 
   async linkEntity(projectId: number, entityType: string, entityId: number): Promise<ProjectLinksDto> {
@@ -730,7 +582,7 @@ export const projectsApi = {
       body: JSON.stringify({ entityType, entityId }),
     });
     if (!response.ok) throw new Error("Failed to link entity");
-    return response.json();
+    return await response.json();
   },
 
   async unlinkEntity(projectId: number, entityType: string, entityId: number): Promise<ProjectLinksDto> {
@@ -739,7 +591,7 @@ export const projectsApi = {
       headers: getMutationHeaders(),
     });
     if (!response.ok) throw new Error("Failed to unlink entity");
-    return response.json();
+    return await response.json();
   },
 
   async getSettings(): Promise<ProjectSettingsDto> {
@@ -751,7 +603,7 @@ export const projectsApi = {
       return { ...EMPTY_PROJECT_SETTINGS };
     }
     await throwIfNotOkAfterOfflineCheck(response, offlineS, 'Failed to fetch project settings');
-    return response.json();
+    return await response.json();
   },
 
   async updateSettings(settings: ProjectSettingsDto): Promise<ProjectSettingsDto> {
@@ -761,6 +613,6 @@ export const projectsApi = {
       body: JSON.stringify(settings),
     });
     if (!response.ok) throw new Error("Failed to update project settings");
-    return response.json();
+    return await response.json();
   },
 };

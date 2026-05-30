@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenantMap } from "@/contexts/TenantMapContext";
 import { setActiveCompany } from "@/utils/targetTenant";
+import { setCompanyLogo, setCompanyLogoExplicitNone } from "@/hooks/useCompanyLogo";
 import { useUserType } from "@/hooks/useUserType";
 import { cn } from "@/lib/utils";
 
@@ -60,6 +61,12 @@ export default function SelectCompany() {
 
   const pick = (tenantId: number, label: string) => {
     setBusy(label);
+    // Pre-write the logo so bootstrap reads it on the next page load before
+    // the network resolves — must happen before setActiveCompany clears caches.
+    const tenant = activeTenants.find((t) => t.id === tenantId);
+    const logoUrl = (tenant as any)?.companyLogoUrl as string | null | undefined;
+    if (logoUrl) setCompanyLogo(logoUrl);
+    else setCompanyLogoExplicitNone();
     // Row-level switch: keep X-Tenant (subdomain/DB) untouched, set X-Target-Tenant.
     setActiveCompany({ id: tenantId, reload: true });
   };

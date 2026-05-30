@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace MyApi.Modules.Payments.DTOs
 {
     // ── Payment DTOs ──────────────────────────────────
@@ -25,6 +27,7 @@ namespace MyApi.Modules.Payments.DTOs
 
     public class CreatePaymentDto
     {
+        [Range(0.01, (double)decimal.MaxValue, ErrorMessage = "Amount must be greater than zero")]
         public decimal Amount { get; set; }
         public string Currency { get; set; } = "TND";
         public string PaymentMethod { get; set; } = "cash";
@@ -50,7 +53,9 @@ namespace MyApi.Modules.Payments.DTOs
     {
         public string ItemId { get; set; } = string.Empty;
         public string ItemName { get; set; } = string.Empty;
+        [Range(0.01, (double)decimal.MaxValue, ErrorMessage = "Allocated amount must be greater than zero")]
         public decimal AllocatedAmount { get; set; }
+        [Range(0.01, (double)decimal.MaxValue, ErrorMessage = "Item total must be greater than zero")]
         public decimal ItemTotal { get; set; }
     }
 
@@ -97,6 +102,7 @@ namespace MyApi.Modules.Payments.DTOs
 
     public class CreateInstallmentDto
     {
+        [Range(0.01, (double)decimal.MaxValue, ErrorMessage = "Installment amount must be greater than zero")]
         public decimal Amount { get; set; }
         public DateTime DueDate { get; set; }
     }

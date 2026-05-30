@@ -84,10 +84,11 @@ export function ConvertToServiceOrderDialog({
     },
     enabled: open && !isAlreadyConverted,
     staleTime: 30000,
+    retry: 1,
   });
 
   // Fetch installations from API
-  const { data: installationsData, isLoading: isLoadingInstallations } = useQuery({
+  const { data: installationsData, isLoading: isLoadingInstallations, isError: isInstallationsError } = useQuery({
     queryKey: ['installations-for-conversion'],
     queryFn: async () => {
       const response = await installationsApi.getAll({ pageSize: 200 });
@@ -100,6 +101,7 @@ export function ConvertToServiceOrderDialog({
     },
     enabled: open && !isAlreadyConverted && itemsNeedingInstallation.length > 0,
     staleTime: 30000,
+    retry: 1,
   });
 
   const installations = installationsData || [];
@@ -381,6 +383,10 @@ export function ConvertToServiceOrderDialog({
                         {isLoadingInstallations ? (
                           <div className="flex items-center justify-center py-4">
                             <ContentSkeleton rows={2} className="p-0" />
+                          </div>
+                        ) : isInstallationsError ? (
+                          <div className="py-4 px-2 text-center text-sm text-destructive">
+                            {t('common.failedToLoad', 'Failed to load installations')}
                           </div>
                         ) : installations.length === 0 ? (
                           <div className="py-4 px-2 text-center text-sm text-muted-foreground">

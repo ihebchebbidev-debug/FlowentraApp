@@ -25,10 +25,9 @@ export function ProjectActivityTab({ project }: ProjectActivityTabProps) {
   const [logs, setLogs] = useState<ProjectActivityDto[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  if (!project) return null;
-
-  // Load activity logs from API
+  // Load activity logs from API — hook must be declared before any early return
   useEffect(() => {
+    if (!project) return;
     const loadLogs = async () => {
       setIsLoading(true);
       try {
@@ -43,7 +42,9 @@ export function ProjectActivityTab({ project }: ProjectActivityTabProps) {
     };
 
     loadLogs();
-  }, [project.id]);
+  }, [project?.id]);
+
+  if (!project) return null;
 
   const getActionIcon = (actionType: string) => {
     switch (actionType) {

@@ -136,7 +136,17 @@ namespace MyApi.Modules.Dispatches.Services
 
             _db.Dispatches.Add(dispatch);
             await _db.SaveChangesAsync();
-            
+
+            // Always insert a DispatchJob row so GetPlanVsActualAsync (which queries
+            // through the join table) can aggregate actual time/expenses for this job.
+            _db.Set<DispatchJob>().Add(new DispatchJob
+            {
+                DispatchId = dispatch.Id,
+                JobId = jobId,
+                CreatedDate = DateTime.UtcNow
+            });
+            await _db.SaveChangesAsync();
+
             // Add assigned technicians to the DispatchTechnicians table
             if (hasTechnicians)
             {
@@ -155,7 +165,7 @@ namespace MyApi.Modules.Dispatches.Services
                     }
                 }
                 await _db.SaveChangesAsync();
-                
+
                 // Update job status to dispatched
                 job.Status = "dispatched";
                 await _db.SaveChangesAsync();
@@ -183,6 +193,9 @@ namespace MyApi.Modules.Dispatches.Services
                 .Include(j => j.ServiceOrder)
                 .Where(j => dto.JobIds.Contains(j.Id))
                 .ToListAsync();
+
+            if (dto.JobIds.Count == 0)
+                throw new ArgumentException("At least one job is required to create an installation dispatch");
 
             if (jobs.Count != dto.JobIds.Count)
             {
@@ -266,46 +279,61 @@ namespace MyApi.Modules.Dispatches.Services
                 DispatchedAt = DateTime.UtcNow
             };
 
-            _db.Dispatches.Add(dispatch);
-            await _db.SaveChangesAsync();
-
-            // Insert all jobs into DispatchJobs join table
-            foreach (var jobId in dto.JobIds)
+            var strategy = _db.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
             {
-                _db.Set<DispatchJob>().Add(new DispatchJob
+                using var tx = await _db.Database.BeginTransactionAsync();
+                try
                 {
-                    DispatchId = dispatch.Id,
-                    JobId = jobId,
-                    CreatedDate = DateTime.UtcNow
-                });
-            }
-            await _db.SaveChangesAsync();
+                    _db.Dispatches.Add(dispatch);
+                    await _db.SaveChangesAsync();
 
-            // Add assigned technicians
-            if (hasTechnicians)
-            {
-                foreach (var techIdStr in dto.AssignedTechnicianIds!)
-                {
-                    if (int.TryParse(techIdStr, out var techId))
+                    // Insert all jobs into DispatchJobs join table
+                    foreach (var jobId in dto.JobIds)
                     {
-                        _db.Set<DispatchTechnician>().Add(new DispatchTechnician
+                        _db.Set<DispatchJob>().Add(new DispatchJob
                         {
                             DispatchId = dispatch.Id,
-                            TechnicianId = techId,
-                            AssignedDate = DateTime.UtcNow,
-                            Role = "technician"
+                            JobId = jobId,
+                            CreatedDate = DateTime.UtcNow
                         });
                     }
-                }
-                await _db.SaveChangesAsync();
+                    await _db.SaveChangesAsync();
 
-                // Update all jobs' status to dispatched
-                foreach (var job in jobs)
-                {
-                    job.Status = "dispatched";
+                    // Add assigned technicians
+                    if (hasTechnicians)
+                    {
+                        foreach (var techIdStr in dto.AssignedTechnicianIds!)
+                        {
+                            if (int.TryParse(techIdStr, out var techId))
+                            {
+                                _db.Set<DispatchTechnician>().Add(new DispatchTechnician
+                                {
+                                    DispatchId = dispatch.Id,
+                                    TechnicianId = techId,
+                                    AssignedDate = DateTime.UtcNow,
+                                    Role = "technician"
+                                });
+                            }
+                        }
+                        await _db.SaveChangesAsync();
+
+                        // Update all jobs' status to dispatched
+                        foreach (var job in jobs)
+                        {
+                            job.Status = "dispatched";
+                        }
+                        await _db.SaveChangesAsync();
+                    }
+
+                    await tx.CommitAsync();
                 }
-                await _db.SaveChangesAsync();
-            }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
+            });
 
             _logger.LogInformation(
                 "Dispatch created from installation {InstallationId} with ID {DispatchId}, {JobCount} jobs, Status: {Status}",

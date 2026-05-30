@@ -114,7 +114,9 @@ function hydrateActiveCompanyFromStorage(): void {
 function clearReactQueryCaches(): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.removeItem('company-logo');
+    // company-logo must survive the reload — it's read by bootstrap to show
+    // the tenant's logo before the network resolves. Only the PDF blob cache
+    // and React Query persistence keys need clearing on company switch.
     localStorage.removeItem('company-logo-blob-data');
     const keysToRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
