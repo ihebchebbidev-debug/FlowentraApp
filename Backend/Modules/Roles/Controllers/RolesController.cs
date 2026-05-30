@@ -34,6 +34,27 @@ namespace MyApi.Modules.Roles.Controllers
             }
         }
 
+        /// <summary>
+        /// Returns a dictionary mapping userId -> list of roles. Used by the team-member
+        /// picker and admin user-list views to avoid N+1 per-user lookups.
+        /// Must be declared BEFORE the generic [HttpGet("{id}")] route, otherwise
+        /// "all-user-roles" gets routed to GetRole(int id) and returns 400 Bad Request.
+        /// </summary>
+        [HttpGet("all-user-roles")]
+        public async Task<ActionResult<ApiResponse<Dictionary<string, IEnumerable<RoleDto>>>>> GetAllUserRoles()
+        {
+            try
+            {
+                var result = await _roleService.GetAllUserRolesAsync();
+                return Ok(ApiResponse<Dictionary<string, IEnumerable<RoleDto>>>.SuccessResponse(result, "User roles retrieved successfully"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving all user roles");
+                return StatusCode(500, ApiResponse<object>.ErrorResponse("Failed to retrieve user roles"));
+            }
+        }
+
         [HttpGet("{id}")]
         public async Task<ActionResult<ApiResponse<RoleDto>>> GetRole(int id)
         {

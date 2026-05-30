@@ -204,5 +204,36 @@ namespace MyApi.Modules.Roles.Services
                 })
                 .ToListAsync();
         }
+
+        /// <summary>
+        /// Batch fetch of role assignments for every user. Returns a dictionary keyed by
+        /// user id (as string for easy JSON consumption). Replaces N per-user lookups.
+        /// </summary>
+        public async Task<Dictionary<string, IEnumerable<RoleDto>>> GetAllUserRolesAsync()
+        {
+            var rows = await _context.UserRoles
+                .AsNoTracking()
+                .Where(ur => ur.IsActive && ur.Role != null && ur.Role.IsActive)
+                .Include(ur => ur.Role)
+                .Select(ur => new
+                {
+                    ur.UserId,
+                    Role = new RoleDto
+                    {
+                        Id = ur.Role!.Id,
+                        Name = ur.Role!.Name,
+                        Description = ur.Role!.Description,
+                        CreatedAt = ur.Role!.CreatedAt,
+                        UpdatedAt = ur.Role!.UpdatedAt,
+                        IsActive = ur.Role!.IsActive,
+                        UserCount = 0
+                    }
+                })
+                .ToListAsync();
+
+            return rows
+                .GroupBy(x => x.UserId)
+                .ToDictionary(g => g.Key.ToString(), g => (IEnumerable<RoleDto>)g.Select(x => x.Role).ToList());
+        }
     }
 }

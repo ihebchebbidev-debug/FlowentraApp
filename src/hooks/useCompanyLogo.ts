@@ -42,22 +42,45 @@ function buildLogoUrl(ref: string): string {
   return `${API_URL}/${ref.replace(/^\//, '')}`;
 }
 
+/**
+ * Sentinel stored in LOGO_STORAGE_KEY to mean "the active tenant has no
+ * logo — do NOT fall back to the MainAdmin's logo from user_data."
+ */
+const NO_LOGO_SENTINEL = '__none__';
+
+/** True when a per-tenant active company is currently selected. */
+function hasActiveCompanyContext(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    if (window.localStorage.getItem('active_company_view_all') === 'true') return true;
+    const raw = window.localStorage.getItem('active_company_id');
+    return raw !== null && raw !== '';
+  } catch {
+    return false;
+  }
+}
+
 /** Resolve the current logo ref from localStorage */
 function resolveLogoRef(): string | null {
-  let ref = localStorage.getItem(LOGO_STORAGE_KEY);
-  if (!ref) {
-    try {
-      const userData = localStorage.getItem('user_data');
-      if (userData) {
-        const parsed = JSON.parse(userData);
-        if (parsed.companyLogoUrl) {
-          ref = parsed.companyLogoUrl;
-          localStorage.setItem(LOGO_STORAGE_KEY, ref!);
-        }
+  const stored = localStorage.getItem(LOGO_STORAGE_KEY);
+  if (stored === NO_LOGO_SENTINEL) return null;
+  if (stored) return stored;
+
+  // When a per-tenant company is active, NEVER fall back to the MainAdmin's
+  // logo stored in user_data — that would override the active tenant logo.
+  if (hasActiveCompanyContext()) return null;
+
+  try {
+    const userData = localStorage.getItem('user_data');
+    if (userData) {
+      const parsed = JSON.parse(userData);
+      if (parsed.companyLogoUrl) {
+        localStorage.setItem(LOGO_STORAGE_KEY, parsed.companyLogoUrl);
+        return parsed.companyLogoUrl;
       }
-    } catch { /* ignore */ }
-  }
-  return ref || null;
+    }
+  } catch { /* ignore */ }
+  return null;
 }
 
 /**
@@ -272,6 +295,22 @@ export function setCompanyLogo(ref: string | null) {
   } else {
     localStorage.removeItem(LOGO_STORAGE_KEY);
   }
+  // Drop cached PDF base64 so reports re-fetch the new logo.
+  try { localStorage.removeItem('company-logo-blob-data'); } catch { /* ignore */ }
   globalLogoRef = null; // Force re-resolve
+  globalLogoUrl = '';
   window.dispatchEvent(new CustomEvent(LOGO_EVENT, { detail: ref || '' }));
+}
+
+/**
+ * Mark "the active tenant explicitly has no logo" so the singleton uses the
+ * default flowentra logo and does NOT fall back to the MainAdmin's user_data
+ * logo. Use this when switching to a tenant whose companyLogoUrl is empty.
+ */
+export function setCompanyLogoExplicitNone() {
+  localStorage.setItem(LOGO_STORAGE_KEY, NO_LOGO_SENTINEL);
+  try { localStorage.removeItem('company-logo-blob-data'); } catch { /* ignore */ }
+  globalLogoRef = null;
+  globalLogoUrl = '';
+  window.dispatchEvent(new CustomEvent(LOGO_EVENT, { detail: '' }));
 }

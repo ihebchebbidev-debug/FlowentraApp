@@ -19,10 +19,21 @@ import { useNavigate } from 'react-router-dom';
 import { tenantsApi, type Tenant } from '@/services/api/tenantsApi';
 import { isViewAllMode } from '@/utils/tenant';
 import { setActiveCompany, getActiveCompanyId } from '@/utils/targetTenant';
+import { setCompanyLogo, setCompanyLogoExplicitNone } from '@/hooks/useCompanyLogo';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useTenantMap } from '@/contexts/TenantMapContext';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
+
+/** Apply the per-tenant logo to the global singleton (sidebar/header/PDFs). */
+function applyTenantLogo(tenant: Tenant | null | undefined) {
+  if (!tenant) {
+    setCompanyLogoExplicitNone();
+    return;
+  }
+  if (tenant.companyLogoUrl) setCompanyLogo(tenant.companyLogoUrl);
+  else setCompanyLogoExplicitNone();
+}
 
 export function TenantSwitcher() {
   const { isMainAdmin, hasPermission } = usePermissions();
@@ -55,13 +66,20 @@ export function TenantSwitcher() {
 
   const handleSwitch = (tenant: Tenant) => {
     if (!viewAll && tenant.id === activeId) return;
+    // Pre-write the new tenant logo so the post-reload bootstrap of
+    // useCompanyLogo picks it up instantly (sidebar/header/PDF stay in sync).
+    applyTenantLogo(tenant);
     setActiveCompany({ id: tenant.id, reload: true });
   };
 
   const handleViewAll = () => {
     if (viewAll) return;
+    // In cross-company view, no single tenant logo applies — fall back to the
+    // default flowentra logo (not the MainAdmin's personal logo).
+    setCompanyLogoExplicitNone();
     setActiveCompany({ viewAll: true, reload: true });
   };
+
 
   const handleUploadClick = (e: React.MouseEvent, tenant: Tenant) => {
     e.preventDefault();
@@ -93,6 +111,12 @@ export function TenantSwitcher() {
       // tenant map so the rest of the app sees it too.
       setLocalTenants(prev => (prev ?? ctxTenants).map(t => t.id === updated.id ? updated : t));
       void refetch();
+      // If the uploaded logo belongs to the currently active company,
+      // push it through the global singleton so sidebar/header/PDFs refresh
+      // immediately without requiring a page reload.
+      if (!viewAll && updated.id === activeId) {
+        applyTenantLogo(updated);
+      }
       toast({ title: 'Logo updated', description: `${target.companyName} logo uploaded.` });
     } catch (err) {
       console.error('[TenantSwitcher] logo upload failed', err);

@@ -332,6 +332,9 @@ const App = () => {
                     <Route path="/calendar" element={<Navigate to="/dashboard/calendar" replace />} />
                     <Route path="/calendar/*" element={<PrefixRedirect to="/dashboard/calendar" />} />
                     <Route path="/ticketsadmin" element={<Navigate to="/dashboard/ticketsadmin" replace />} />
+                   <Route path="/projects" element={<Navigate to="/dashboard/tasks/projects" replace />} />
+                   <Route path="/projects/*" element={<PrefixRedirect to="/dashboard/tasks/projects" />} />
+
                    <Route path="/select-company" element={<SelectCompany />} />
                    <Route path="/dashboard/*" element={<RequireCompany><DashboardGate /></RequireCompany>} />
                     {/* Customer Support Module */}

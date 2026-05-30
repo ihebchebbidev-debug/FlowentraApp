@@ -336,10 +336,11 @@ export function CreateProjectModal({
                   </Link>
                 </div>
                 <Select 
-                  value={formData.type} 
+                  value={formData.type || undefined} 
                   onValueChange={(value: Project['type']) => setFormData({ ...formData, type: value })}
                   disabled={isLoadingProjectTypes}
                 >
+
                   <SelectTrigger>
                     {isLoadingProjectTypes ? (
                       <div className="flex items-center gap-2">
@@ -413,7 +414,7 @@ export function CreateProjectModal({
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label>{t('projects.createModal.teamMembers')}</Label>
-                <Select key={memberSelectKey} onValueChange={addMember} value="">
+                <Select key={memberSelectKey} onValueChange={addMember}>
                   <SelectTrigger>
                     {isLoadingUsers ? (
                       <div className="flex items-center gap-2">

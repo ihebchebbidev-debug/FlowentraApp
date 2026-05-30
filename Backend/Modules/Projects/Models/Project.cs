@@ -59,6 +59,11 @@ namespace MyApi.Modules.Projects.Models
         public string? ModifiedBy { get; set; }
 
         // Navigation properties
+        // ProjectTask has no ProjectId FK (refactored to entity-agnostic Activity using
+        // RelatedEntityType/RelatedEntityId). The collection is kept for API compatibility
+        // but must NOT be mapped by EF — otherwise EF creates a shadow ProjectId column
+        // that breaks every Project save (e.g. team-member add, settings update).
+        [NotMapped]
         public virtual ICollection<ProjectTask> Tasks { get; set; } = new List<ProjectTask>();
         public virtual Contact? Contact { get; set; }
     }

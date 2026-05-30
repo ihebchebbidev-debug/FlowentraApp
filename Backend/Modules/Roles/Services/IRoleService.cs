@@ -14,5 +14,6 @@ namespace MyApi.Modules.Roles.Services
         Task<bool> AssignRoleToUserAsync(int userId, int roleId, string assignedBy);
         Task<bool> RemoveRoleFromUserAsync(int userId, int roleId);
         Task<IEnumerable<RoleDto>> GetUserRolesAsync(int userId);
+        Task<Dictionary<string, IEnumerable<RoleDto>>> GetAllUserRolesAsync();
     }
 }

@@ -541,6 +541,88 @@ namespace MyApi.Modules.Projects.Controllers
 
         #endregion
 
+        #region Statistics
+
+        /// <summary>
+        /// Get status counts for tasks related to a project (RelatedEntityType="project").
+        /// Always returns a dictionary (never 404) so dashboards don't break for empty projects.
+        /// </summary>
+        [HttpGet("project/{projectId}/status-counts")]
+        public async Task<ActionResult<Dictionary<string, int>>> GetProjectStatusCounts(int projectId)
+        {
+            try
+            {
+                var stats = await _taskService.GetTaskStatisticsAsync("project", projectId);
+                return Ok(stats.TasksByStatus ?? new Dictionary<string, int>());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting project status counts for {ProjectId}", projectId);
+                return Ok(new Dictionary<string, int>());
+            }
+        }
+
+        /// <summary>
+        /// Completion percentage (0-100) for project tasks. Returns 0 when no tasks exist.
+        /// </summary>
+        [HttpGet("project/{projectId}/completion-percentage")]
+        public async Task<ActionResult<double>> GetProjectCompletionPercentage(int projectId)
+        {
+            try
+            {
+                var stats = await _taskService.GetTaskStatisticsAsync("project", projectId);
+                if (stats.TotalTasks <= 0) return Ok(0d);
+                var completed = stats.TasksByStatus != null && stats.TasksByStatus.TryGetValue("completed", out var c) ? c : 0;
+                return Ok(Math.Round((double)completed / stats.TotalTasks * 100d, 2));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting completion percentage for {ProjectId}", projectId);
+                return Ok(0d);
+            }
+        }
+
+        /// <summary>
+        /// Status counts for tasks assigned to a user.
+        /// </summary>
+        [HttpGet("user/{userId}/status-counts")]
+        public async Task<ActionResult<Dictionary<string, int>>> GetUserStatusCounts(int userId)
+        {
+            try
+            {
+                var tasks = await _taskService.GetTasksByAssigneeAsync(userId);
+                var counts = tasks
+                    .GroupBy(t => string.IsNullOrEmpty(t.Status) ? "open" : t.Status)
+                    .ToDictionary(g => g.Key, g => g.Count());
+                return Ok(counts);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting user status counts for {UserId}", userId);
+                return Ok(new Dictionary<string, int>());
+            }
+        }
+
+        /// <summary>
+        /// Overdue task count for a user.
+        /// </summary>
+        [HttpGet("user/{userId}/overdue-count")]
+        public async Task<ActionResult<int>> GetUserOverdueCount(int userId)
+        {
+            try
+            {
+                var overdue = await _taskService.GetOverdueTasksAsync(assigneeId: userId);
+                return Ok(overdue?.Count ?? 0);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting overdue count for {UserId}", userId);
+                return Ok(0);
+            }
+        }
+
+        #endregion
+
         private string GetCurrentUser()
         {
             return User.FindFirst(ClaimTypes.Email)?.Value ?? 

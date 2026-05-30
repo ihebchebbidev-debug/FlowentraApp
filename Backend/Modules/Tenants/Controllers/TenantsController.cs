@@ -299,6 +299,73 @@ namespace MyApi.Modules.Tenants.Controllers
 
             return Ok(new { message = "Default company updated." });
         }
+
+        /// <summary>
+        /// POST /api/Tenants/{id}/logo — Upload a logo image for a tenant.
+        /// Accepts multipart/form-data with a "file" field. Saves the image to
+        /// /uploads/company-logos/{tenantId}_{guid}{ext} and stores the relative
+        /// path on Tenant.CompanyLogoUrl. Returns the updated tenant.
+        /// </summary>
+        [HttpPost("{id}/logo")]
+        [RequestSizeLimit(10 * 1024 * 1024)] // 10 MB
+        public async Task<IActionResult> UploadLogo(int id, IFormFile? file)
+        {
+            var adminId = GetMainAdminUserId();
+            if (adminId == null) return Forbid();
+
+            var tenant = await _context.Tenants
+                .FirstOrDefaultAsync(t => t.Id == id && t.MainAdminUserId == adminId.Value);
+            if (tenant == null) return NotFound();
+
+            if (file == null || file.Length == 0)
+                return BadRequest(new { message = "No file provided." });
+
+            var allowed = new[] { ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg" };
+            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (string.IsNullOrEmpty(ext) || !allowed.Contains(ext))
+                return BadRequest(new { message = "Unsupported image type. Use PNG, JPG, GIF, WEBP or SVG." });
+
+            // Uploads root: one level above the backend folder (same convention as DocumentsController)
+            var backendDir = Directory.GetCurrentDirectory();
+            var parentDir = Directory.GetParent(backendDir)?.FullName ?? backendDir;
+            var uploadsDir = Path.Combine(parentDir, "uploads", "company-logos");
+            if (!Directory.Exists(uploadsDir))
+                Directory.CreateDirectory(uploadsDir);
+
+            var uniqueName = $"{tenant.Id}_{Guid.NewGuid():N}{ext}";
+            var diskPath = Path.Combine(uploadsDir, uniqueName);
+
+            await using (var stream = new FileStream(diskPath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            // Delete previous logo file when it was managed by this endpoint
+            if (!string.IsNullOrEmpty(tenant.CompanyLogoUrl))
+            {
+                try
+                {
+                    var old = tenant.CompanyLogoUrl.TrimStart('/');
+                    if (old.StartsWith("uploads/company-logos/", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var oldDisk = Path.Combine(parentDir, old.Replace('/', Path.DirectorySeparatorChar));
+                        if (System.IO.File.Exists(oldDisk)) System.IO.File.Delete(oldDisk);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to delete previous tenant logo for {TenantId}", tenant.Id);
+                }
+            }
+
+            tenant.CompanyLogoUrl = $"uploads/company-logos/{uniqueName}";
+            tenant.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            TenantSlugCache.Refresh(_context);
+
+            _logger.LogInformation("🖼️ Tenant {TenantId} logo updated by admin {AdminId}", tenant.Id, adminId.Value);
+            return Ok(tenant);
+        }
     }
 
     // ─── Request DTOs ───

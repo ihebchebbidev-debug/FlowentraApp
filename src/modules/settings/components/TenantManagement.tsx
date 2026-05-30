@@ -144,40 +144,7 @@ export function TenantManagement() {
 
     setSaving(true);
     try {
-      let uploadedLogoUrl = form.companyLogoUrl;
-
-      // Handle Logo Upload via API if a new file is picked
-      if (logoFile) {
-        const uploadFormData = new FormData();
-        uploadFormData.append('files', logoFile);
-        uploadFormData.append('moduleType', 'company');
-        uploadFormData.append('category', 'company-logo');
-        uploadFormData.append('description', 'Company Logo');
-
-        const uploadRes = await fetch(`${API_URL}/api/Documents/upload`, {
-          method: 'POST',
-          headers: getMutationHeadersNoContentType(),
-          body: uploadFormData,
-        });
-
-        if (uploadRes.ok) {
-          const result = await uploadRes.json();
-          const docs = result.documents || result.data || (Array.isArray(result) ? result : [result]);
-          const uploadedDoc = docs[0];
-          const filePath = uploadedDoc?.filePath || uploadedDoc?.FilePath || uploadedDoc?.path || uploadedDoc?.Path;
-          const docId = uploadedDoc?.id || uploadedDoc?.Id;
-
-          if (filePath) {
-            uploadedLogoUrl = filePath.replace(/^\//, '');
-          } else if (docId) {
-            uploadedLogoUrl = `api/Documents/download/${docId}`;
-          }
-        } else {
-          toast({ title: 'Upload Failed', description: 'Could not upload the logo image.', variant: 'destructive' });
-          setSaving(false);
-          return;
-        }
-      }
+      let savedTenant: Tenant | null = null;
 
       if (editingTenant) {
         const update: UpdateTenantRequest = {
@@ -187,14 +154,41 @@ export function TenantManagement() {
           companyAddress: form.companyAddress || undefined,
           companyCountry: form.companyCountry || undefined,
           industry: form.industry || undefined,
-          companyLogoUrl: uploadedLogoUrl ?? '',
+          // Only send logoUrl if user removed it (empty string) and didn't pick a new file.
+          // If a new file is picked, the upload endpoint will set it.
+          ...(logoFile ? {} : { companyLogoUrl: form.companyLogoUrl ?? '' }),
         };
-        await tenantsApi.update(editingTenant.id, update);
-        toast({ title: 'Updated', description: t('companies.editSuccess', { companyName: form.companyName }) });
+        savedTenant = await tenantsApi.update(editingTenant.id, update);
       } else {
-        await tenantsApi.create({ ...form, companyLogoUrl: uploadedLogoUrl ?? '' });
-        toast({ title: 'Created', description: t('companies.createSuccess', { companyName: form.companyName }) });
+        savedTenant = await tenantsApi.create({
+          ...form,
+          companyLogoUrl: logoFile ? undefined : (form.companyLogoUrl || undefined),
+        });
       }
+
+      // Upload the logo file (if any) via the dedicated endpoint now that we have a tenant id
+      if (logoFile && savedTenant) {
+        try {
+          await tenantsApi.uploadLogo(savedTenant.id, logoFile);
+        } catch (uploadErr: any) {
+          toast({
+            title: 'Logo upload failed',
+            description: uploadErr?.response?.data?.message
+              || uploadErr?.message
+              || 'Could not upload the logo image.',
+            variant: 'destructive',
+          });
+          // Keep the rest of the save successful — don't return early
+        }
+      }
+
+      toast({
+        title: editingTenant ? 'Updated' : 'Created',
+        description: t(
+          editingTenant ? 'companies.editSuccess' : 'companies.createSuccess',
+          { companyName: form.companyName },
+        ),
+      });
       setDialogOpen(false);
       setLogoFile(null);
       setLogoPreview(null);

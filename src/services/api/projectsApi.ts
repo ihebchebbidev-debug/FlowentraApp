@@ -573,8 +573,10 @@ export const projectsApi = {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to assign team member');
+      const text = await response.text().catch(() => '');
+      throw new Error(`Failed to assign team member (${response.status})${text ? `: ${text}` : ''}`);
     }
+
   },
 
   // Remove team member from project

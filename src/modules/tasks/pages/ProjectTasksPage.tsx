@@ -277,8 +277,15 @@ export default function ProjectTasksPage() {
   };
 
   const handleAddTask = () => {
+    if (activeTab !== 'tasks') setActiveTab('tasks');
     setIsQuickTaskModalOpen(true);
   };
+
+  const handleOpenColumnEditor = () => {
+    if (activeTab !== 'tasks') setActiveTab('tasks');
+    setIsColumnEditorOpen(true);
+  };
+
 
   const handleTaskComplete = (taskId: string) => {
     console.log('Complete task:', taskId);
@@ -350,7 +357,7 @@ export default function ProjectTasksPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setIsColumnEditorOpen(true)} className="gap-2">
+          <Button variant="outline" size="sm" onClick={handleOpenColumnEditor} className="gap-2">
             <Settings className="h-4 w-4" />
             {t('projects.header.manage')}
           </Button>
@@ -372,7 +379,7 @@ export default function ProjectTasksPage() {
             {t('projects.header.backShort')}
           </Button>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setIsColumnEditorOpen(true)} className="h-8 w-8 p-0">
+            <Button variant="outline" size="sm" onClick={handleOpenColumnEditor} className="h-8 w-8 p-0">
               <Settings className="h-4 w-4" />
             </Button>
             <Button 

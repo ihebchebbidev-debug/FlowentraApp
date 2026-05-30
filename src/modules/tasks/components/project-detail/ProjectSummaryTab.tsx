@@ -88,7 +88,7 @@ export function ProjectSummaryTab({ project, projectLinks }: Props) {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
           <div>
             <div className="text-muted-foreground">{t('projects.detail.summary.kind')}</div>
-            <div className="font-medium">{project?.projectKind ?? 'client'}</div>
+            <div className="font-medium">{project?.type ?? project?.projectKind ?? '-'}</div>
           </div>
           <div>
             <div className="text-muted-foreground">{t('projects.detail.summary.priority')}</div>

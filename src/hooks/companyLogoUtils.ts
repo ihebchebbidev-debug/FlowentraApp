@@ -3,6 +3,23 @@ import { getCurrentTenant, TENANT_HEADER } from '@/utils/tenant';
 import { API_URL } from '@/config/api';
 
 /**
+ * True when an explicit active company (or "view all") is currently selected.
+ * Used to PREVENT the MainAdmin's global logo from leaking into a tenant's
+ * PDF when that tenant has no logo of its own.
+ */
+function hasActiveCompanyContext(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    if (window.localStorage.getItem('active_company_view_all') === 'true') return true;
+    const raw = window.localStorage.getItem('active_company_id');
+    return raw !== null && raw !== '';
+  } catch {
+    return false;
+  }
+}
+
+
+/**
  * Get the company logo reference from localStorage.
  */
 export function getCompanyLogoRef(): string {
@@ -159,11 +176,14 @@ function waitForResolvedLogo(maxWaitMs = 3000): Promise<string> {
 
 const LOGO_B64_CACHE_KEY = 'company-logo-blob-data';
 
-/** Save base64 logo to localStorage cache */
-function cacheBase64(base64: string) {
+/** Save base64 logo to localStorage cache (with optional source URL for invalidation) */
+function cacheBase64(base64: string, sourceUrl?: string) {
   if (!base64 || !base64.startsWith('data:image/')) return;
   try {
-    localStorage.setItem(LOGO_B64_CACHE_KEY, JSON.stringify({ dataUrl: base64, ts: Date.now() }));
+    localStorage.setItem(
+      LOGO_B64_CACHE_KEY,
+      JSON.stringify({ dataUrl: base64, sourceUrl: sourceUrl || '', ts: Date.now() }),
+    );
   } catch { /* quota exceeded */ }
 }
 
@@ -181,6 +201,18 @@ function readCachedBase64(): string {
   }
 }
 
+/** Read the source URL recorded when the cached base64 was stored, if any. */
+function readCachedBase64Source(): string {
+  try {
+    const raw = localStorage.getItem(LOGO_B64_CACHE_KEY);
+    if (!raw) return '';
+    const parsed = JSON.parse(raw);
+    return parsed?.sourceUrl || '';
+  } catch {
+    return '';
+  }
+}
+
 /**
  * Get company logo as base64 for use in PDFs and reports.
  * Uses multiple strategies with proper fallback chain.
@@ -191,32 +223,54 @@ export async function getCompanyLogoBase64(preloadedLogo?: string): Promise<stri
   if (preloadedLogo?.startsWith('data:image/')) return preloadedLogo;
 
   // === STRATEGY 1: Cached base64 from previous successful conversion ===
+  // Only trust the cache when no explicit preloadedLogo is given, OR when the
+  // cached URL matches the preloaded one. Otherwise switching companies could
+  // serve the previous tenant's cached logo in the new tenant's report.
   const cached = readCachedBase64();
-  if (cached) return cached;
+  const cachedSourceUrl = readCachedBase64Source();
+  if (cached) {
+    if (!preloadedLogo || !preloadedLogo.startsWith('http')) return cached;
+    if (cachedSourceUrl && cachedSourceUrl === preloadedLogo) return cached;
+    // Otherwise: stale cache for a different tenant — ignore it.
+  }
 
-  // === STRATEGY 2: Fetch base64 directly from backend API (CORS-safe, no static file issues) ===
+  // === STRATEGY 2: If a preloaded tenant URL was provided, fetch THAT first.
+  // This is the active company's logo (sidebar/header) — we want PDFs to
+  // match it, NOT the MainAdmin's global logo from /api/Auth/company-logo-base64.
+  if (preloadedLogo && (preloadedLogo.startsWith('http') || preloadedLogo.startsWith('/'))) {
+    // Same-origin paths (bundled frontend assets like the default flowentra
+    // logo from `@/assets/...`) must NOT be prefixed with API_URL — they live
+    // on the current origin, not the backend.
+    const url = preloadedLogo.startsWith('/')
+      ? `${window.location.origin}${preloadedLogo}`
+      : preloadedLogo;
+    const fetched = await fetchImageAsBase64(url);
+    if (fetched) { cacheBase64(fetched, preloadedLogo); return fetched; }
+    const canvasResult = await convertViaCanvas(url);
+    if (canvasResult && canvasResult.startsWith('data:image/')) {
+      cacheBase64(canvasResult, preloadedLogo);
+      return canvasResult;
+    }
+  }
+
+  // When an active tenant (or view-all) is selected, do NOT fall back to the
+  // MainAdmin's global logo endpoints — that would leak the wrong logo into a
+  // tenant's PDF when the tenant intentionally has no logo configured.
+  if (hasActiveCompanyContext()) return '';
+
+  // === STRATEGY 3: Fetch base64 from backend (MainAdmin global logo fallback) ===
   const apiBase64 = await fetchLogoBase64FromApi();
   if (apiBase64) { cacheBase64(apiBase64); return apiBase64; }
 
-  // === STRATEGY 3: Legacy fallback — fetch via /api/Auth/company-logo (image binary only) ===
+  // === STRATEGY 4: Legacy fallback — /api/Auth/company-logo (image binary) ===
   const apiResult = await fetchLogoViaApi();
   if (apiResult && apiResult.startsWith('data:image/')) { cacheBase64(apiResult); return apiResult; }
-
-  // === STRATEGY 4: Convert the preloaded URL directly to base64 via fetch ===
-  if (preloadedLogo && (preloadedLogo.startsWith('http') || preloadedLogo.startsWith('/'))) {
-    const url = preloadedLogo.startsWith('/') ? `${API_URL}${preloadedLogo}` : preloadedLogo;
-    const fetched = await fetchImageAsBase64(url);
-    if (fetched) { cacheBase64(fetched); return fetched; }
-    // Last resort: try canvas-based conversion (works for same-origin or CORS-enabled)
-    const canvasResult = await convertViaCanvas(url);
-    if (canvasResult && canvasResult.startsWith('data:image/')) { cacheBase64(canvasResult); return canvasResult; }
-  }
 
   // === STRATEGY 5: Try the global singleton logo URL ===
   const resolvedLogo = getResolvedLogo();
   if (resolvedLogo && !resolvedLogo.startsWith('data:') && resolvedLogo.startsWith('http')) {
     const fetched = await fetchImageAsBase64(resolvedLogo);
-    if (fetched) { cacheBase64(fetched); return fetched; }
+    if (fetched) { cacheBase64(fetched, resolvedLogo); return fetched; }
   }
 
   return '';

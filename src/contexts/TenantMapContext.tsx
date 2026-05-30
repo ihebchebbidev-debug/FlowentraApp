@@ -7,6 +7,7 @@ import { tenantsApi, type Tenant } from '@/services/api/tenantsApi';
 import { useAuth } from '@/contexts/AuthContext';
 import { getCurrentTenant } from '@/utils/tenant';
 import { registerTenantHeaderMetadata, setActiveCompany, getActiveCompanyId, isActiveCompanyViewAll } from '@/utils/targetTenant';
+import { setCompanyLogo, setCompanyLogoExplicitNone } from '@/hooks/useCompanyLogo';
 
 interface TenantMapContextValue {
   /** Resolve a tenantId to its company name. Returns "Company #id" as fallback. */
@@ -108,6 +109,23 @@ export function TenantMapProvider({ children }: { children: ReactNode }) {
       if (active.length === 1 && getActiveCompanyId() === undefined && !isActiveCompanyViewAll()) {
         setActiveCompany({ id: active[0].id });
       }
+      // Keep the global logo singleton in sync with the active tenant's
+      // companyLogoUrl — covers reloads, direct URL navigation, and cases
+      // where the active company changed via something other than the
+      // TenantSwitcher (SelectCompany screen, single-tenant auto-pick, etc.).
+      try {
+        if (isActiveCompanyViewAll()) {
+          setCompanyLogoExplicitNone();
+        } else {
+          const targetId = getActiveCompanyId()
+            ?? (active.length === 1 ? active[0].id : undefined);
+          const target = targetId !== undefined ? active.find(t => t.id === targetId) : undefined;
+          if (target) {
+            if (target.companyLogoUrl) setCompanyLogo(target.companyLogoUrl);
+            else setCompanyLogoExplicitNone();
+          }
+        }
+      } catch { /* non-fatal */ }
     } catch (err) {
       // eslint-disable-next-line no-console
       console.warn('[TenantMapContext] Failed to load tenant list:', err);

@@ -117,9 +117,11 @@ export class ProjectsService {
       }
       
       return true;
-    } catch {
+    } catch (err) {
+      console.error('assignTeamMember failed:', err);
       return false;
     }
+
   }
 
   // Remove team member
