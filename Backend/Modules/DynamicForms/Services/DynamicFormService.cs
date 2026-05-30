@@ -155,6 +155,11 @@ namespace MyApi.Modules.DynamicForms.Services
                 form.Status = status;
             }
 
+            if (dto.ThankYouSettings != null)
+            {
+                form.ThankYouSettings = JsonSerializer.Serialize(dto.ThankYouSettings, _jsonOptions);
+            }
+
             if (shouldIncrementVersion)
             {
                 form.Version++;
@@ -207,6 +212,7 @@ namespace MyApi.Modules.DynamicForms.Services
                 Status = FormStatus.Draft,
                 Version = 1,
                 Fields = original.Fields,
+                ThankYouSettings = original.ThankYouSettings,
                 CreatedUser = userId,
                 CreatedAt = DateTime.UtcNow,
                 IsActive = true,
@@ -309,6 +315,7 @@ namespace MyApi.Modules.DynamicForms.Services
 
             var response = new DynamicFormResponse
             {
+                TenantId = form.TenantId,
                 FormId = form.Id,
                 FormVersion = form.Version,
                 Responses = JsonSerializer.Serialize(dto.Responses, _jsonOptions),
@@ -377,6 +384,16 @@ namespace MyApi.Modules.DynamicForms.Services
             }
             catch { }
 
+            ThankYouSettingsDto? thankYouSettings = null;
+            if (!string.IsNullOrEmpty(form.ThankYouSettings))
+            {
+                try
+                {
+                    thankYouSettings = JsonSerializer.Deserialize<ThankYouSettingsDto>(form.ThankYouSettings, _jsonOptions);
+                }
+                catch { }
+            }
+
             return new DynamicFormDto
             {
                 Id = form.Id,
@@ -389,10 +406,11 @@ namespace MyApi.Modules.DynamicForms.Services
                 Category = form.Category,
                 IsPublic = form.IsPublic,
                 PublicSlug = form.PublicSlug,
-                PublicUrl = form.IsPublic && !string.IsNullOrEmpty(form.PublicSlug) 
-                    ? $"/public/forms/{form.PublicSlug}" 
+                PublicUrl = form.IsPublic && !string.IsNullOrEmpty(form.PublicSlug)
+                    ? $"/public/forms/{form.PublicSlug}"
                     : null,
                 Fields = fields,
+                ThankYouSettings = thankYouSettings,
                 CreatedBy = form.CreatedUser,
                 ModifiedBy = form.ModifyUser,
                 CreatedAt = form.CreatedAt,

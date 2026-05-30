@@ -104,6 +104,17 @@ namespace MyApi.Modules.DynamicForms.DTOs
     }
 
     /// <summary>
+    /// DTO for cascading/dependent field configuration
+    /// </summary>
+    public class FieldDependencyDto
+    {
+        public string ParentFieldId { get; set; } = string.Empty;
+        public string ParentValueField { get; set; } = string.Empty;
+        public string FilterField { get; set; } = string.Empty;
+        public bool ClearOnParentChange { get; set; } = true;
+    }
+
+    /// <summary>
     /// DTO for field condition
     /// </summary>
     public class FieldConditionDto
@@ -166,6 +177,9 @@ namespace MyApi.Modules.DynamicForms.DTOs
         // Conditional logic
         public FieldConditionDto? Condition { get; set; }
         public string? ConditionAction { get; set; }
+
+        // Cascading/dependent dropdown configuration
+        public FieldDependencyDto? Dependency { get; set; }
     }
 
     /// <summary>

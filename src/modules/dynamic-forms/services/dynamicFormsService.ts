@@ -1,14 +1,15 @@
 import { apiFetch } from '@/services/api/apiClient';
-import { 
-  DynamicForm, 
-  DynamicFormResponse, 
-  CreateDynamicFormDto, 
-  UpdateDynamicFormDto, 
-  SubmitFormResponseDto, 
+import {
+  DynamicForm,
+  DynamicFormResponse,
+  CreateDynamicFormDto,
+  UpdateDynamicFormDto,
+  SubmitFormResponseDto,
   PublicSubmitFormResponseDto,
   FormStatus,
   FormField,
-  FieldOption
+  FieldOption,
+  ThankYouSettings
 } from '../types';
 
 const BASE_URL = '/api/DynamicForms';
@@ -177,6 +178,38 @@ const transformFieldFromBackend = (field: any): FormField => ({
   } : undefined,
 });
 
+const transformThankYouSettingsFromBackend = (settings: any): ThankYouSettings | undefined => {
+  if (!settings) return undefined;
+  const dm = settings.defaultMessage || settings.DefaultMessage;
+  return {
+    default_message: {
+      title_en: dm?.titleEn || dm?.TitleEn,
+      title_fr: dm?.titleFr || dm?.TitleFr,
+      message_en: dm?.messageEn || dm?.MessageEn,
+      message_fr: dm?.messageFr || dm?.MessageFr,
+      enable_redirect: dm?.enableRedirect ?? dm?.EnableRedirect,
+      redirect_url: dm?.redirectUrl || dm?.RedirectUrl,
+      redirect_delay: dm?.redirectDelay ?? dm?.RedirectDelay,
+    },
+    rules: (settings.rules || settings.Rules)?.map((rule: any) => ({
+      id: rule.id || rule.Id || '',
+      name: rule.name || rule.Name || '',
+      condition: {
+        field_id: rule.condition?.fieldId || rule.condition?.field_id || rule.Condition?.FieldId || '',
+        operator: rule.condition?.operator || rule.Condition?.Operator || 'equals',
+        value: rule.condition?.value ?? rule.Condition?.Value,
+      },
+      title_en: rule.titleEn || rule.TitleEn,
+      title_fr: rule.titleFr || rule.TitleFr,
+      message_en: rule.messageEn || rule.MessageEn || '',
+      message_fr: rule.messageFr || rule.MessageFr || '',
+      redirect_url: rule.redirectUrl || rule.RedirectUrl,
+      redirect_delay: rule.redirectDelay ?? rule.RedirectDelay,
+      priority: rule.priority ?? rule.Priority ?? 1,
+    })),
+  };
+};
+
 const transformFormFromBackend = (data: any): DynamicForm => ({
   id: data.id || data.Id,
   name_en: data.nameEn || data.NameEn || '',
@@ -190,6 +223,7 @@ const transformFormFromBackend = (data: any): DynamicForm => ({
   is_public: data.isPublic ?? data.IsPublic ?? false,
   public_slug: data.publicSlug || data.PublicSlug,
   public_url: data.publicUrl || data.PublicUrl,
+  thank_you_settings: transformThankYouSettingsFromBackend(data.thankYouSettings || data.ThankYouSettings),
   created_by: data.createdBy || data.CreatedBy || '',
   modified_by: data.modifiedBy || data.ModifiedBy,
   created_at: data.createdAt || data.CreatedAt || new Date().toISOString(),
