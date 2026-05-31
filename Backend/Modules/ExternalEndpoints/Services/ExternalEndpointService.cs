@@ -669,7 +669,11 @@ namespace MyApi.Modules.ExternalEndpoints.Services
                         CreatedAt = DateTime.UtcNow,
                     };
                     _context.WebhookForwardJobs.Add(job);
-                    await _context.SaveChangesAsync();
+                    try { await _context.SaveChangesAsync(); }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to persist webhook forward job for log {LogId} — forward will not be attempted", log.Id);
+                    }
 
                     if (_forwardQueue != null)
                     {

@@ -60,17 +60,16 @@ namespace MyApi.Modules.WebsiteBuilder.Services
                     CreatedAt = DateTime.UtcNow
                 };
 
-                _context.WBPages.Add(page);
-                await _context.SaveChangesAsync();
-
-                // Update site's UpdatedAt
+                // Pre-load site so both the new page and the site timestamp
+                // are committed in a single save — if either fails, neither persists.
                 var site = await _context.WBSites.FindAsync(createDto.SiteId);
                 if (site != null)
                 {
                     site.UpdatedAt = DateTime.UtcNow;
                     site.ModifiedBy = createdByUser;
-                    await _context.SaveChangesAsync();
                 }
+                _context.WBPages.Add(page);
+                await _context.SaveChangesAsync();
 
                 await _activityLog.LogActivityAsync(createDto.SiteId, page.Id, "create", "page", $"Page '{page.Title}' created", createdByUser);
 
@@ -318,17 +317,28 @@ namespace MyApi.Modules.WebsiteBuilder.Services
 
             if (page == null) return false;
 
-            // Save current state as a new version before restoring
-            await SavePageVersionAsync(pageId, new CreateWBPageVersionRequestDto
+            // Wrap auto-save + restore in a transaction: if the restore save fails,
+            // the auto-saved version is rolled back so we don't produce a dangling snapshot.
+            await using var tx = await _context.Database.BeginTransactionAsync();
+            try
             {
-                ChangeMessage = $"Auto-save before restoring to version {version.VersionNumber}"
-            }, modifiedByUser);
+                await SavePageVersionAsync(pageId, new CreateWBPageVersionRequestDto
+                {
+                    ChangeMessage = $"Auto-save before restoring to version {version.VersionNumber}"
+                }, modifiedByUser);
 
-            page.ComponentsJson = version.ComponentsJson;
-            page.ModifiedBy = modifiedByUser;
-            page.UpdatedAt = DateTime.UtcNow;
+                page.ComponentsJson = version.ComponentsJson;
+                page.ModifiedBy = modifiedByUser;
+                page.UpdatedAt = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync();
+                await tx.CommitAsync();
+            }
+            catch
+            {
+                await tx.RollbackAsync();
+                throw;
+            }
 
             await _activityLog.LogActivityAsync(page.SiteId, page.Id, "restore", "page",
                 $"Page '{page.Title}' restored to version {version.VersionNumber}", modifiedByUser);

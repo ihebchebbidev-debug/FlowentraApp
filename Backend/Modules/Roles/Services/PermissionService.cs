@@ -233,25 +233,23 @@ namespace MyApi.Modules.Roles.Services
             if (role == null)
                 return false;
 
+            var existingMap = await _context.RolePermissions
+                .Where(rp => rp.RoleId == roleId)
+                .ToDictionaryAsync(rp => (rp.Module, rp.Action));
+
             foreach (var module in AvailablePermissions)
             {
                 foreach (var action in module.Value)
                 {
-                    var existingPermission = await _context.RolePermissions
-                        .FirstOrDefaultAsync(rp => 
-                            rp.RoleId == roleId && 
-                            rp.Module == module.Key && 
-                            rp.Action == action);
-
-                    if (existingPermission != null)
+                    if (existingMap.TryGetValue((module.Key, action), out var existing))
                     {
-                        existingPermission.Granted = true;
-                        existingPermission.UpdatedAt = DateTime.UtcNow;
-                        existingPermission.ModifiedBy = modifiedBy;
+                        existing.Granted = true;
+                        existing.UpdatedAt = DateTime.UtcNow;
+                        existing.ModifiedBy = modifiedBy;
                     }
                     else
                     {
-                        var newPermission = new RolePermission
+                        _context.RolePermissions.Add(new RolePermission
                         {
                             RoleId = roleId,
                             Module = module.Key,
@@ -259,8 +257,7 @@ namespace MyApi.Modules.Roles.Services
                             Granted = true,
                             CreatedAt = DateTime.UtcNow,
                             CreatedBy = modifiedBy
-                        };
-                        _context.RolePermissions.Add(newPermission);
+                        });
                     }
                 }
             }
@@ -298,15 +295,13 @@ namespace MyApi.Modules.Roles.Services
             if (!AvailablePermissions.ContainsKey(module))
                 return false;
 
+            var existingMap = await _context.RolePermissions
+                .Where(rp => rp.RoleId == roleId && rp.Module == module)
+                .ToDictionaryAsync(rp => rp.Action);
+
             foreach (var action in AvailablePermissions[module])
             {
-                var existingPermission = await _context.RolePermissions
-                    .FirstOrDefaultAsync(rp => 
-                        rp.RoleId == roleId && 
-                        rp.Module == module && 
-                        rp.Action == action);
-
-                if (existingPermission != null)
+                if (existingMap.TryGetValue(action, out var existingPermission))
                 {
                     existingPermission.Granted = true;
                     existingPermission.UpdatedAt = DateTime.UtcNow;
@@ -314,7 +309,7 @@ namespace MyApi.Modules.Roles.Services
                 }
                 else
                 {
-                    var newPermission = new RolePermission
+                    _context.RolePermissions.Add(new RolePermission
                     {
                         RoleId = roleId,
                         Module = module,
@@ -322,8 +317,7 @@ namespace MyApi.Modules.Roles.Services
                         Granted = true,
                         CreatedAt = DateTime.UtcNow,
                         CreatedBy = modifiedBy
-                    };
-                    _context.RolePermissions.Add(newPermission);
+                    });
                 }
             }
 

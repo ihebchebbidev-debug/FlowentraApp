@@ -553,11 +553,20 @@ namespace MyApi.Modules.RetenueSource.Services
                 CreatedBy = userId
             };
 
-            _db.RSRecords.Add(record);
-            await _db.SaveChangesAsync();
-
-            invoice.RsRecordId = record.Id;
-            await _db.SaveChangesAsync();
+            await using var tx = await _db.Database.BeginTransactionAsync();
+            try
+            {
+                _db.RSRecords.Add(record);
+                await _db.SaveChangesAsync();
+                invoice.RsRecordId = record.Id;
+                await _db.SaveChangesAsync();
+                await tx.CommitAsync();
+            }
+            catch
+            {
+                await tx.RollbackAsync();
+                throw;
+            }
 
             _logger.LogInformation(
                 "Supplier invoice {Invoice} synced to TEJ: RSRecord={RsId}, OpCode={OpCode}, RS={RS}",
