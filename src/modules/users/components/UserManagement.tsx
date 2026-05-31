@@ -16,6 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { usersApi, User as UserType } from "@/services/usersApi";
 import { AddUserModal } from "./AddUserModal";
+import { EditUserModal } from "./EditUserModal";
 import { RoleAssignmentModal } from "./RoleAssignmentModal";
 import {
   AlertDialog,
@@ -35,6 +36,7 @@ export function UserManagement() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
   const [userToDelete, setUserToDelete] = useState<UserType | null>(null);
@@ -177,7 +179,10 @@ export function UserManagement() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem className="gap-2">
+                      <DropdownMenuItem
+                        className="gap-2"
+                        onClick={() => { setSelectedUser(user); setShowEditModal(true); }}
+                      >
                         <Edit className="h-4 w-4" />
                         Edit User
                       </DropdownMenuItem>
@@ -268,6 +273,14 @@ export function UserManagement() {
         open={showAddModal}
         onOpenChange={setShowAddModal}
         onUserAdded={loadUsers}
+      />
+
+      {/* Edit User Modal */}
+      <EditUserModal
+        open={showEditModal}
+        onOpenChange={setShowEditModal}
+        user={selectedUser}
+        onUserUpdated={loadUsers}
       />
 
       {/* Role Assignment Modal */}
