@@ -34,7 +34,39 @@
     "description": "Update user information and manage password for {{firstName}} {{lastName}}",
     "tabs": {
       "details": "Details",
+      "skills": "Skills",
       "password": "Reset Password"
+    },
+    "skills": {
+      "assignedTitle": "Assigned Skills",
+      "loading": "Loading skills…",
+      "emptyTitle": "No skills assigned yet.",
+      "emptyHint": "Use the form below to add skills.",
+      "addTitle": "Add Skill",
+      "skillLabel": "Skill",
+      "selectPlaceholder": "Select a skill…",
+      "noCatalog": "No skills in catalog yet.",
+      "allAssigned": "All skills already assigned.",
+      "proficiencyLabel": "Proficiency",
+      "yearsExpLabel": "Years exp. (optional)",
+      "yearsExpPlaceholder": "e.g. 3",
+      "yearsExpSuffix": "y exp",
+      "adding": "Adding…",
+      "addButton": "Add Skill",
+      "proficiencyLabels": {
+        "beginner": "Beginner",
+        "intermediate": "Intermediate",
+        "advanced": "Advanced",
+        "expert": "Expert"
+      },
+      "toast": {
+        "assigned": "Skill assigned",
+        "assignedDesc": "The skill has been added to this user.",
+        "assignFailed": "Failed to assign skill",
+        "tryAgain": "Please try again.",
+        "removed": "Skill removed",
+        "removeFailed": "Failed to remove skill"
+      }
     },
     "firstName": "First Name",
     "lastName": "Last Name",

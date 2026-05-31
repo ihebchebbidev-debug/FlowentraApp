@@ -76,6 +76,16 @@ export const en = {
     no_unassigned_jobs_description: "All jobs are currently assigned to technicians",
     no_service_orders: "No service orders",
     no_service_orders_description: "No pending service orders requiring assignment",
+    no_jobs: "No jobs",
+    all_jobs_assigned: "All jobs are assigned ✓",
+    empty_state_hint: "Create a new service order to generate jobs for planning.",
+    no_installation_assigned: "No installation assigned",
+
+    // Planned orders toggle
+    show_planned: "Show Planned Orders",
+    hide_planned: "Hide Planned Orders",
+    planned_orders: "Planned Orders",
+    no_planned_orders: "No planned orders found",
     
     // Actions
     assign: "Assign",

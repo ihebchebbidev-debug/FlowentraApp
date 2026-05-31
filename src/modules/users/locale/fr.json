@@ -34,7 +34,39 @@
     "description": "Mettre à jour les informations et gérer le mot de passe de {{firstName}} {{lastName}}",
     "tabs": {
       "details": "Détails",
+      "skills": "Compétences",
       "password": "Réinitialiser le mot de passe"
+    },
+    "skills": {
+      "assignedTitle": "Compétences attribuées",
+      "loading": "Chargement des compétences…",
+      "emptyTitle": "Aucune compétence attribuée.",
+      "emptyHint": "Utilisez le formulaire ci-dessous pour ajouter des compétences.",
+      "addTitle": "Ajouter une compétence",
+      "skillLabel": "Compétence",
+      "selectPlaceholder": "Sélectionner une compétence…",
+      "noCatalog": "Aucune compétence dans le catalogue.",
+      "allAssigned": "Toutes les compétences sont déjà attribuées.",
+      "proficiencyLabel": "Niveau",
+      "yearsExpLabel": "Années d'exp. (optionnel)",
+      "yearsExpPlaceholder": "ex : 3",
+      "yearsExpSuffix": "ans exp.",
+      "adding": "Ajout…",
+      "addButton": "Ajouter la compétence",
+      "proficiencyLabels": {
+        "beginner": "Débutant",
+        "intermediate": "Intermédiaire",
+        "advanced": "Avancé",
+        "expert": "Expert"
+      },
+      "toast": {
+        "assigned": "Compétence attribuée",
+        "assignedDesc": "La compétence a été ajoutée à cet utilisateur.",
+        "assignFailed": "Échec de l'attribution",
+        "tryAgain": "Veuillez réessayer.",
+        "removed": "Compétence retirée",
+        "removeFailed": "Échec du retrait de la compétence"
+      }
     },
     "firstName": "Prénom",
     "lastName": "Nom",

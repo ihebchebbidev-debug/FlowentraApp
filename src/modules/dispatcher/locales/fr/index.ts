@@ -76,6 +76,16 @@ export const fr = {
     no_unassigned_jobs_description: "Toutes les tâches sont actuellement assignées aux techniciens",
     no_service_orders: "Aucun ordre de service",
     no_service_orders_description: "Aucun ordre de service en attente d'assignation",
+    no_jobs: "Aucune tâche",
+    all_jobs_assigned: "Toutes les tâches sont assignées ✓",
+    empty_state_hint: "Créez un nouvel ordre de service pour générer des tâches à planifier.",
+    no_installation_assigned: "Aucune installation attribuée",
+
+    // Planned orders toggle
+    show_planned: "Afficher les ordres planifiés",
+    hide_planned: "Masquer les ordres planifiés",
+    planned_orders: "Ordres planifiés",
+    no_planned_orders: "Aucun ordre planifié trouvé",
     
     // Actions
     assign: "Assigner",

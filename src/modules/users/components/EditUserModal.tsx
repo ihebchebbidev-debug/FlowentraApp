@@ -157,11 +157,11 @@ export function EditUserModal({ open, onOpenChange, user, onUserUpdated }: EditU
         proficiencyLevel: newProficiency,
         yearsOfExperience: newYearsExp ? Number(newYearsExp) : undefined,
       });
-      toast({ title: 'Skill assigned', description: 'The skill has been added to this user.' });
+      toast({ title: t('editUser.skills.toast.assigned'), description: t('editUser.skills.toast.assignedDesc') });
       setNewSkillId(''); setNewYearsExp(''); setNewProficiency('intermediate');
       await loadUserSkills();
     } catch {
-      toast({ title: 'Failed to assign skill', description: 'Please try again.', variant: 'destructive' });
+      toast({ title: t('editUser.skills.toast.assignFailed'), description: t('editUser.skills.toast.tryAgain'), variant: 'destructive' });
     } finally {
       setIsAssigning(false);
     }
@@ -172,10 +172,10 @@ export function EditUserModal({ open, onOpenChange, user, onUserUpdated }: EditU
     setRemovingSkillId(skillId);
     try {
       await skillsApi.removeFromUser(skillId, user.id);
-      toast({ title: 'Skill removed' });
+      toast({ title: t('editUser.skills.toast.removed') });
       setUserSkills(prev => prev.filter(s => s.skillId !== skillId));
     } catch {
-      toast({ title: 'Failed to remove skill', variant: 'destructive' });
+      toast({ title: t('editUser.skills.toast.removeFailed'), variant: 'destructive' });
     } finally {
       setRemovingSkillId(null);
     }
@@ -203,7 +203,7 @@ export function EditUserModal({ open, onOpenChange, user, onUserUpdated }: EditU
             </TabsTrigger>
             <TabsTrigger value="skills" className="flex items-center gap-2">
               <GraduationCap className="h-4 w-4" />
-              Skills
+              {t('editUser.tabs.skills')}
               {userSkills.length > 0 && (
                 <Badge variant="secondary" className="h-4 px-1 text-[10px] ml-0.5">{userSkills.length}</Badge>
               )}
@@ -331,18 +331,18 @@ export function EditUserModal({ open, onOpenChange, user, onUserUpdated }: EditU
 
             {/* Assigned skills list */}
             <div className="space-y-2">
-              <h4 className="text-sm font-medium text-foreground">Assigned Skills</h4>
+              <h4 className="text-sm font-medium text-foreground">{t('editUser.skills.assignedTitle')}</h4>
 
               {isLoadingSkills ? (
                 <div className="flex items-center justify-center py-8 text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Loading skills…
+                  {t('editUser.skills.loading')}
                 </div>
               ) : userSkills.length === 0 ? (
                 <div className="text-center py-6 text-muted-foreground border border-dashed rounded-lg">
                   <Wrench className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                  <p className="text-sm">No skills assigned yet.</p>
-                  <p className="text-xs mt-0.5">Use the form below to add skills.</p>
+                  <p className="text-sm">{t('editUser.skills.emptyTitle')}</p>
+                  <p className="text-xs mt-0.5">{t('editUser.skills.emptyHint')}</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -364,10 +364,10 @@ export function EditUserModal({ open, onOpenChange, user, onUserUpdated }: EditU
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border ${proficiencyBadgeClass[profLevel] ?? proficiencyBadgeClass.beginner}`}>
-                            {us.proficiencyLevel ?? 'beginner'}
+                            {t(`editUser.skills.proficiencyLabels.${profLevel}`, us.proficiencyLevel ?? 'beginner')}
                           </span>
                           {us.yearsOfExperience && (
-                            <span className="text-[11px] text-muted-foreground">{us.yearsOfExperience}y exp</span>
+                            <span className="text-[11px] text-muted-foreground">{us.yearsOfExperience} {t('editUser.skills.yearsExpSuffix')}</span>
                           )}
                           <Button
                             variant="ghost"
@@ -392,21 +392,21 @@ export function EditUserModal({ open, onOpenChange, user, onUserUpdated }: EditU
             <div className="border border-border rounded-lg p-4 space-y-3 bg-muted/5">
               <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
                 <Plus className="h-4 w-4" />
-                Add Skill
+                {t('editUser.skills.addTitle')}
               </h4>
 
               <div className="grid grid-cols-2 gap-3">
                 {/* Skill selector */}
                 <div className="col-span-2 space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">Skill</Label>
+                  <Label className="text-xs text-muted-foreground">{t('editUser.skills.skillLabel')}</Label>
                   <Select value={newSkillId} onValueChange={setNewSkillId}>
                     <SelectTrigger className="h-9 bg-background">
-                      <SelectValue placeholder="Select a skill…" />
+                      <SelectValue placeholder={t('editUser.skills.selectPlaceholder')} />
                     </SelectTrigger>
                     <SelectContent className="bg-popover border shadow-md z-50">
                       {availableSkills.length === 0 ? (
                         <div className="px-3 py-4 text-sm text-center text-muted-foreground">
-                          {allSkills.length === 0 ? 'No skills in catalog yet.' : 'All skills already assigned.'}
+                          {allSkills.length === 0 ? t('editUser.skills.noCatalog') : t('editUser.skills.allAssigned')}
                         </div>
                       ) : (
                         availableSkills.map(skill => (
@@ -426,7 +426,7 @@ export function EditUserModal({ open, onOpenChange, user, onUserUpdated }: EditU
 
                 {/* Proficiency */}
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">Proficiency</Label>
+                  <Label className="text-xs text-muted-foreground">{t('editUser.skills.proficiencyLabel')}</Label>
                   <Select value={newProficiency} onValueChange={(v) => setNewProficiency(v as ProficiencyLevel)}>
                     <SelectTrigger className="h-9 bg-background">
                       <SelectValue />
@@ -435,7 +435,7 @@ export function EditUserModal({ open, onOpenChange, user, onUserUpdated }: EditU
                       {PROFICIENCY_LEVELS.map(level => (
                         <SelectItem key={level} value={level}>
                           <span className={`capitalize px-1.5 py-0.5 rounded text-[11px] font-medium ${proficiencyBadgeClass[level]}`}>
-                            {level}
+                            {t(`editUser.skills.proficiencyLabels.${level}`, level)}
                           </span>
                         </SelectItem>
                       ))}
@@ -445,12 +445,12 @@ export function EditUserModal({ open, onOpenChange, user, onUserUpdated }: EditU
 
                 {/* Years of experience */}
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">Years exp. (optional)</Label>
+                  <Label className="text-xs text-muted-foreground">{t('editUser.skills.yearsExpLabel')}</Label>
                   <Input
                     type="number"
                     min="0"
                     max="50"
-                    placeholder="e.g. 3"
+                    placeholder={t('editUser.skills.yearsExpPlaceholder')}
                     value={newYearsExp}
                     onChange={(e) => setNewYearsExp(e.target.value)}
                     className="h-9"
@@ -464,9 +464,9 @@ export function EditUserModal({ open, onOpenChange, user, onUserUpdated }: EditU
                 disabled={!newSkillId || isAssigning}
               >
                 {isAssigning ? (
-                  <><Loader2 className="h-4 w-4 animate-spin" />Adding…</>
+                  <><Loader2 className="h-4 w-4 animate-spin" />{t('editUser.skills.adding')}</>
                 ) : (
-                  <><Plus className="h-4 w-4" />Add Skill</>
+                  <><Plus className="h-4 w-4" />{t('editUser.skills.addButton')}</>
                 )}
               </Button>
             </div>
