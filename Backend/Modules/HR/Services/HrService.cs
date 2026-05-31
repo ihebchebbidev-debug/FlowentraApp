@@ -57,10 +57,12 @@ namespace MyApi.Modules.HR.Services
                 .ToListAsync();
 
             var userIds = users.Select(u => u.Id).ToList();
-            var salaryConfigMap = await _db.Set<HrEmployeeSalaryConfig>()
+            var salaryConfigMap = (await _db.Set<HrEmployeeSalaryConfig>()
                 .AsNoTracking()
                 .Where(x => userIds.Contains(x.UserId))
-                .ToDictionaryAsync(x => x.UserId);
+                .ToListAsync())
+                .GroupBy(x => x.UserId)
+                .ToDictionary(g => g.Key, g => g.First());
 
             return users.Select(u =>
             {
@@ -433,7 +435,7 @@ namespace MyApi.Modules.HR.Services
             var users = await _db.Users.AsNoTracking().Where(u => u.IsActive && !u.IsDeleted).ToListAsync();
             var userIds = users.Select(u => u.Id).ToList();
             var salaryConfigMap = (await _db.Set<HrEmployeeSalaryConfig>().AsNoTracking().Where(x => userIds.Contains(x.UserId)).ToListAsync())
-                .ToDictionary(x => x.UserId);
+                .GroupBy(x => x.UserId).ToDictionary(g => g.Key, g => g.First());
             var leaves = await _db.Set<UserLeave>().AsNoTracking()
                 .Where(x => (x.StartDate.Month == dto.Month && x.StartDate.Year == dto.Year) || (x.EndDate.Month == dto.Month && x.EndDate.Year == dto.Year))
                 .ToListAsync();
