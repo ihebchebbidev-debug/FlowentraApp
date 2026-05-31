@@ -564,7 +564,7 @@ export const dispatchesApi = {
 // Activity log type
 export interface DispatchActivityLog {
   id: number;
-  dispatchId: string;
+  dispatchId: number;
   action: string;
   oldValue?: string;
   newValue?: string;

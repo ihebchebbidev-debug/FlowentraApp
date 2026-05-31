@@ -76,31 +76,13 @@ export const articlesApi = {
   },
 
   async getById(id: string): Promise<Article> {
-    // Fetch from list and find by ID (direct endpoint may not exist)
-    console.log('Fetching article by ID:', id);
-    const listResponse = await fetch(`${API_URL}/api/articles?`, {
+    const response = await fetch(`${API_URL}/api/articles/${id}`, {
       method: 'GET',
       headers: getAuthHeaders(),
     });
-
-    const listResult = await parseArticleListResponse(listResponse, 1, 20);
-    console.log('Articles list response:', listResult);
-    const articles = listResult.data;
-    
-    if (!Array.isArray(articles)) {
-      console.error('Articles response is not an array:', articles);
-      throw new Error('Invalid articles response');
-    }
-    
-    const article = articles.find((a: any) => String(a.id) === String(id));
-    
-    if (!article) {
-      console.error('Article not found in list. Looking for ID:', id, 'Available IDs:', articles.map((a: any) => a.id));
-      throw new Error('Article not found');
-    }
-    
-    console.log('Article found:', article);
-    return article;
+    if (!response.ok) throw new Error(`Article not found (${response.status})`);
+    const result = await response.json();
+    return result.data ?? result;
   },
 
   async create(request: CreateArticleRequest): Promise<Article> {

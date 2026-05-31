@@ -280,7 +280,7 @@ namespace MyApi.Modules.Offers.Controllers
         {
             try
             {
-                var userId = User.FindFirst("UserId")?.Value ?? "system";
+                var userId = GetCurrentUserId();
                 var activity = await _offerService.AddOfferActivityAsync(id, activityDto, userId);
 
                 await _systemLogService.LogSuccessAsync($"Activity added to offer {id}: {activityDto.Type}", "Offers", "create", GetCurrentUserId(), GetCurrentUserName(), "OfferActivity", activity.Id.ToString());

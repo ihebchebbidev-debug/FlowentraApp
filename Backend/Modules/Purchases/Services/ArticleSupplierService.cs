@@ -139,7 +139,17 @@ namespace MyApi.Modules.Purchases.Services
             entity.ModifiedDate = DateTime.UtcNow;
             entity.ModifiedBy = userId;
 
-            await _context.SaveChangesAsync();
+            await using var tx2 = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+                await tx2.CommitAsync();
+            }
+            catch
+            {
+                await tx2.RollbackAsync();
+                throw;
+            }
             return (await GetByIdAsync(id))!;
         }
 

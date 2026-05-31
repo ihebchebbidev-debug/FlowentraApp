@@ -753,8 +753,12 @@ useEffect(() => {
                     dispatches={filteredDispatches}
                     onDispatchClick={(id) => handleDispatchClick(id)}
                     onStatusChange={async (dispatchId, newStatus) => {
-                      // Status change via drag - dispatches may need specific API
-                      console.log('Dispatch status change:', dispatchId, newStatus);
+                      try {
+                        await dispatchesApi.updateStatus(Number(dispatchId), newStatus);
+                        await fetchDispatches();
+                      } catch (err) {
+                        console.error('Failed to update dispatch status:', err);
+                      }
                     }}
                   />
                 ) : viewMode === 'table' ? (

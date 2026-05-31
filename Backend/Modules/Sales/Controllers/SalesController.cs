@@ -253,16 +253,11 @@ namespace MyApi.Modules.Sales.Controllers
                     CreatedByName = userName
                 };
 
+                // Update sale's LastActivity and persist activity in a single save
+                var saleEntity = await _context.Sales.FindAsync(id);
+                if (saleEntity != null) saleEntity.LastActivity = DateTime.UtcNow;
                 _context.SaleActivities.Add(activity);
                 await _context.SaveChangesAsync();
-                
-                // Update sale's LastActivity
-                var saleEntity = await _context.Sales.FindAsync(id);
-                if (saleEntity != null)
-                {
-                    saleEntity.LastActivity = DateTime.UtcNow;
-                    await _context.SaveChangesAsync();
-                }
 
                 await _systemLogService.LogSuccessAsync($"Activity added to sale {id}: {activityDto.Type}", "Sales", "create", userId, userName, "SaleActivity", activity.Id.ToString());
 
