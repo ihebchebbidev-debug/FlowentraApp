@@ -36,6 +36,8 @@ export interface PayrollRun {
   entries: PayrollEntry[];
   totalGross: number;
   totalNet: number;
+  totalCnss?: number;
+  totalEmployerCnss?: number;
   createdBy: number;
   createdAt: string;
   confirmedAt?: string;

@@ -871,16 +871,27 @@ namespace MyApi.Modules.Auth.Services
         {
             try
             {
-                var user = await _context.MainAdminUsers
+                var adminUser = await _context.MainAdminUsers
                     .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
 
-                if (user != null)
+                if (adminUser != null)
                 {
-                    user.AccessToken = null;
-                    user.RefreshToken = null;
-                    user.TokenExpiresAt = null;
-                    user.UpdatedAt = DateTime.UtcNow;
+                    adminUser.AccessToken = null;
+                    adminUser.RefreshToken = null;
+                    adminUser.TokenExpiresAt = null;
+                    adminUser.UpdatedAt = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+                    return true;
+                }
 
+                var regularUser = await _context.Users
+                    .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive && !u.IsDeleted);
+
+                if (regularUser != null)
+                {
+                    regularUser.AccessToken = null;
+                    regularUser.RefreshToken = null;
+                    regularUser.ModifiedDate = DateTime.UtcNow;
                     await _context.SaveChangesAsync();
                 }
 

@@ -298,11 +298,12 @@ export const dispatchesApi = {
     return dispatch;
   },
 
-  async complete(id: number, actualEndTime?: string, notes?: string): Promise<Dispatch> {
+  async complete(id: number, actualEndTime?: string, notes?: string, completionPercentage = 100): Promise<Dispatch> {
     const result = await apiFetch<any>(`/api/dispatches/${id}/complete`, {
       method: 'POST',
       body: JSON.stringify({
         actualEndTime: actualEndTime || new Date().toISOString(),
+        completionPercentage,
         completionNotes: notes,
       }),
     });
@@ -367,7 +368,10 @@ export const dispatchesApi = {
   },
 
   async approveTimeEntry(dispatchId: number, timeEntryId: number): Promise<void> {
-    const result = await apiFetch<any>(`/api/dispatches/${dispatchId}/time-entries/${timeEntryId}/approve`, { method: 'POST' });
+    const result = await apiFetch<any>(`/api/dispatches/${dispatchId}/time-entries/${timeEntryId}/approve`, {
+      method: 'POST',
+      body: JSON.stringify({ approvedBy: getUserName() }),
+    });
     if (result.error) throw new Error(result.error || 'Failed to approve time entry');
   },
 
@@ -430,7 +434,10 @@ export const dispatchesApi = {
   },
 
   async approveExpense(dispatchId: number, expenseId: number): Promise<void> {
-    const result = await apiFetch<any>(`/api/dispatches/${dispatchId}/expenses/${expenseId}/approve`, { method: 'POST' });
+    const result = await apiFetch<any>(`/api/dispatches/${dispatchId}/expenses/${expenseId}/approve`, {
+      method: 'POST',
+      body: JSON.stringify({ approvedBy: getUserName() }),
+    });
     if (result.error) throw new Error(result.error || 'Failed to approve expense');
   },
 
@@ -487,7 +494,10 @@ export const dispatchesApi = {
   },
 
   async approveMaterial(dispatchId: number, materialId: number): Promise<void> {
-    const result = await apiFetch<any>(`/api/dispatches/${dispatchId}/materials/${materialId}/approve`, { method: 'POST' });
+    const result = await apiFetch<any>(`/api/dispatches/${dispatchId}/materials/${materialId}/approve`, {
+      method: 'POST',
+      body: JSON.stringify({ approvedBy: getUserName() }),
+    });
     if (result.error) throw new Error(result.error || 'Failed to approve material');
   },
 

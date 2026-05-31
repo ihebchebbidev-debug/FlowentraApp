@@ -563,11 +563,12 @@ namespace MyApi.Modules.Auth.Controllers
         }
 
         /// <summary>
-        /// Get user information by user ID (no authorization required)
+        /// Get user information by user ID
         /// </summary>
         /// <param name="userId">User ID</param>
         /// <returns>User data</returns>
         [HttpGet("user/{userId}")]
+        [Authorize]
         public async Task<ActionResult<UserDto>> GetUser(string userId)
         {
             try
@@ -645,12 +646,13 @@ namespace MyApi.Modules.Auth.Controllers
         }
 
         /// <summary>
-        /// Update user information by user ID (no authorization required)
+        /// Update user information by user ID
         /// </summary>
         /// <param name="userId">User ID</param>
         /// <param name="updateRequest">User update data</param>
         /// <returns>Updated user data</returns>
         [HttpPut("user/{userId}")]
+        [Authorize]
         public async Task<ActionResult<AuthResponseDto>> UpdateUser(string userId, [FromBody] UpdateUserRequestDto updateRequest)
         {
             try
@@ -689,6 +691,7 @@ namespace MyApi.Modules.Auth.Controllers
         /// Update profile picture for a specific user (MainAdminUser)
         /// </summary>
         [HttpPut("user/{userId}/profile-picture")]
+        [Authorize]
         public async Task<ActionResult<AuthResponseDto>> UpdateUserProfilePicture(string userId, [FromBody] UpdateProfilePictureRequestDto request)
         {
             try
