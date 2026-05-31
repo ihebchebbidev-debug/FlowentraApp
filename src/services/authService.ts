@@ -658,19 +658,23 @@ class AuthService {
       localStorage.removeItem(key);
       sessionStorage.removeItem(key);
     });
-    // Clear tenant-scoped HR keys and dynamic employee document keys
-    const toRemove: string[] = [];
+    // Clear tenant-scoped HR keys and dynamic employee document keys from both storages
+    const matchesHrPattern = (key: string) =>
+      /^t:[^:]+:hr_/.test(key) || key.includes('hr_docs_') || key.includes(':hr_docs_');
+
+    const lsRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && (
-        /^t:[^:]+:hr_/.test(key) ||
-        key.includes('hr_docs_') ||
-        key.includes(':hr_docs_')
-      )) {
-        toRemove.push(key);
-      }
+      if (key && matchesHrPattern(key)) lsRemove.push(key);
     }
-    toRemove.forEach(key => localStorage.removeItem(key));
+    lsRemove.forEach(key => localStorage.removeItem(key));
+
+    const ssRemove: string[] = [];
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i);
+      if (key && matchesHrPattern(key)) ssRemove.push(key);
+    }
+    ssRemove.forEach(key => sessionStorage.removeItem(key));
   }
 
   getAccessToken(): string | null {

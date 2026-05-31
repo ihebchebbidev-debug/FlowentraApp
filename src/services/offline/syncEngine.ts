@@ -938,8 +938,12 @@ export async function syncNow(): Promise<{ synced: number; failed: number }> {
   }
   const succeeded = results.filter((r) => r.status === "applied" || r.status === "duplicate").map((r) => r.opId);
   const failed = results.filter((r) => r.status !== "applied" && r.status !== "duplicate");
+  // Permanently failed ops (validation rejected, unresolvable conflict) will never succeed on retry — dequeue them now.
+  const permanentlyFailed = failed
+    .filter((r) => r.status === "rejected" || r.status === "conflict")
+    .map((r) => r.opId);
 
-  await removeOperations(succeeded);
+  await removeOperations([...succeeded, ...permanentlyFailed]);
   localStorage.setItem(scopedKey(LAST_SYNC_AT_KEY), new Date().toISOString());
 
   const failedOperations: OfflineSyncFailureItem[] = failed.map((r) => {

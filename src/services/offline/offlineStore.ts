@@ -24,15 +24,31 @@ function openDb(): Promise<IDBDatabase> {
   });
 }
 
+const MAX_QUEUE_SIZE = 500;
+
 export async function enqueueOperation(op: OfflineOperation): Promise<void> {
   const db = await openDb();
-  await new Promise<void>((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, "readwrite");
-    tx.objectStore(STORE_NAME).put(op);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-  db.close();
+  try {
+    const count = await new Promise<number>((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, "readonly");
+      const req = tx.objectStore(STORE_NAME).count();
+      req.onsuccess = () => resolve(req.result as number);
+      req.onerror = () => reject(tx.error);
+    });
+    if (count >= MAX_QUEUE_SIZE) {
+      throw new Error(
+        `Offline queue is full (${MAX_QUEUE_SIZE} operations). Please sync your changes before continuing.`,
+      );
+    }
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, "readwrite");
+      tx.objectStore(STORE_NAME).put(op);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } finally {
+    db.close();
+  }
 }
 
 export async function listOperations(): Promise<OfflineOperation[]> {
