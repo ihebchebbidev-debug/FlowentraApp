@@ -47,13 +47,14 @@ namespace MyApi.Modules.Plugins.Services
                 var dependents = KnownPlugins.Dependents(code).Select(d => d.Code).ToList();
                 if (dependents.Any())
                 {
-                    var rows = await _db.ActivatedModules
+                    var rowMap = (await _db.ActivatedModules
                         .Where(a => dependents.Contains(a.PluginCode))
-                        .ToListAsync();
+                        .ToListAsync())
+                        .ToDictionary(a => a.PluginCode);
                     var blocking = dependents
                         .Where(dc =>
                         {
-                            var r = rows.FirstOrDefault(x => x.PluginCode == dc);
+                            rowMap.TryGetValue(dc, out var r);
                             return r == null || r.IsEnabled; // default-on or explicitly on
                         })
                         .ToList();

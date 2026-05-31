@@ -632,7 +632,7 @@ namespace MyApi.Modules.Sales.Services
 
         public async Task<SaleStatsDto> GetSaleStatsAsync(DateTime? dateFrom = null, DateTime? dateTo = null)
         {
-            var query = _context.Sales.AsQueryable();
+            var query = _context.Sales.AsNoTracking().Where(s => !s.IsDeleted).AsQueryable();
 
             if (dateFrom.HasValue)
                 query = query.Where(s => s.CreatedDate >= dateFrom.Value);

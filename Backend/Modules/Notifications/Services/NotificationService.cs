@@ -144,69 +144,62 @@ namespace MyApi.Modules.Notifications.Services
         // Auto-generation methods for workflow events
         public async Task GenerateSaleNotificationAsync(int saleId, string saleNumber, string? contactName, int? assignedUserId = null)
         {
-            // Get all admin users to notify (or specific assigned user)
-            var userIds = assignedUserId.HasValue 
+            var userIds = assignedUserId.HasValue
                 ? new List<int> { assignedUserId.Value }
                 : await GetAdminUserIdsAsync();
 
-            foreach (var userId in userIds)
+            var desc = $"Sale {saleNumber}{(contactName != null ? $" for {contactName}" : "")} has been created.";
+            await BulkCreateNotificationsAsync(userIds.Select(uid => new CreateNotificationDto
             {
-                await CreateNotificationAsync(new CreateNotificationDto
-                {
-                    UserId = userId,
-                    Title = "New Sale Created",
-                    Description = $"Sale {saleNumber}{(contactName != null ? $" for {contactName}" : "")} has been created.",
-                    Type = "success",
-                    Category = "sale",
-                    Link = $"/dashboard/sales/{saleId}",
-                    RelatedEntityId = saleId,
-                    RelatedEntityType = "Sale"
-                });
-            }
+                UserId = uid,
+                Title = "New Sale Created",
+                Description = desc,
+                Type = "success",
+                Category = "sale",
+                Link = $"/dashboard/sales/{saleId}",
+                RelatedEntityId = saleId,
+                RelatedEntityType = "Sale"
+            }));
         }
 
         public async Task GenerateOfferNotificationAsync(int offerId, string offerNumber, string? contactName, int? assignedUserId = null)
         {
-            var userIds = assignedUserId.HasValue 
+            var userIds = assignedUserId.HasValue
                 ? new List<int> { assignedUserId.Value }
                 : await GetAdminUserIdsAsync();
 
-            foreach (var userId in userIds)
+            var desc = $"Offer {offerNumber}{(contactName != null ? $" for {contactName}" : "")} has been created.";
+            await BulkCreateNotificationsAsync(userIds.Select(uid => new CreateNotificationDto
             {
-                await CreateNotificationAsync(new CreateNotificationDto
-                {
-                    UserId = userId,
-                    Title = "New Offer Created",
-                    Description = $"Offer {offerNumber}{(contactName != null ? $" for {contactName}" : "")} has been created.",
-                    Type = "info",
-                    Category = "offer",
-                    Link = $"/dashboard/offers/{offerId}",
-                    RelatedEntityId = offerId,
-                    RelatedEntityType = "Offer"
-                });
-            }
+                UserId = uid,
+                Title = "New Offer Created",
+                Description = desc,
+                Type = "info",
+                Category = "offer",
+                Link = $"/dashboard/offers/{offerId}",
+                RelatedEntityId = offerId,
+                RelatedEntityType = "Offer"
+            }));
         }
 
         public async Task GenerateServiceOrderNotificationAsync(int serviceOrderId, string serviceOrderNumber, string? contactName, int? assignedUserId = null)
         {
-            var userIds = assignedUserId.HasValue 
+            var userIds = assignedUserId.HasValue
                 ? new List<int> { assignedUserId.Value }
                 : await GetAdminUserIdsAsync();
 
-            foreach (var userId in userIds)
+            var desc = $"Service Order {serviceOrderNumber}{(contactName != null ? $" for {contactName}" : "")} has been created.";
+            await BulkCreateNotificationsAsync(userIds.Select(uid => new CreateNotificationDto
             {
-                await CreateNotificationAsync(new CreateNotificationDto
-                {
-                    UserId = userId,
-                    Title = "New Service Order",
-                    Description = $"Service Order {serviceOrderNumber}{(contactName != null ? $" for {contactName}" : "")} has been created.",
-                    Type = "info",
-                    Category = "service_order",
-                    Link = $"/dashboard/field/service-orders/{serviceOrderId}",
-                    RelatedEntityId = serviceOrderId,
-                    RelatedEntityType = "ServiceOrder"
-                });
-            }
+                UserId = uid,
+                Title = "New Service Order",
+                Description = desc,
+                Type = "info",
+                Category = "service_order",
+                Link = $"/dashboard/field/service-orders/{serviceOrderId}",
+                RelatedEntityId = serviceOrderId,
+                RelatedEntityType = "ServiceOrder"
+            }));
         }
 
         public async Task GenerateTaskDueNotificationAsync(int taskId, string taskTitle, int userId)
@@ -258,15 +251,33 @@ namespace MyApi.Modules.Notifications.Services
             });
         }
 
+        private async Task BulkCreateNotificationsAsync(IEnumerable<CreateNotificationDto> dtos)
+        {
+            var notifications = dtos.Select(dto => new Notification
+            {
+                UserId = dto.UserId,
+                Title = dto.Title,
+                Description = dto.Description,
+                Type = dto.Type,
+                Category = dto.Category,
+                Link = dto.Link,
+                RelatedEntityId = dto.RelatedEntityId,
+                RelatedEntityType = dto.RelatedEntityType,
+                IsRead = false,
+                CreatedAt = DateTime.UtcNow
+            }).ToList();
+
+            if (notifications.Count == 0) return;
+
+            _context.Notifications.AddRange(notifications);
+            await _context.SaveChangesAsync();
+        }
+
         private async Task<List<int>> GetAdminUserIdsAsync()
         {
-            // Get MainAdminUser IDs
-            var adminIds = await _context.MainAdminUsers
+            return await _context.MainAdminUsers
                 .Select(u => u.Id)
-                .Take(10)
                 .ToListAsync();
-
-            return adminIds;
         }
 
         private static NotificationDto MapToDto(Notification n) => new()

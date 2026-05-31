@@ -134,51 +134,57 @@ namespace MyApi.Modules.Dispatches.Services
                 DispatchedAt = DateTime.UtcNow
             };
 
-            _db.Dispatches.Add(dispatch);
-            await _db.SaveChangesAsync();
-
-            // Always insert a DispatchJob row so GetPlanVsActualAsync (which queries
-            // through the join table) can aggregate actual time/expenses for this job.
-            _db.Set<DispatchJob>().Add(new DispatchJob
+            await using var tx = await _db.Database.BeginTransactionAsync();
+            try
             {
-                DispatchId = dispatch.Id,
-                JobId = jobId,
-                CreatedDate = DateTime.UtcNow
-            });
-            await _db.SaveChangesAsync();
+                _db.Dispatches.Add(dispatch);
+                await _db.SaveChangesAsync();
 
-            // Add assigned technicians to the DispatchTechnicians table
-            if (hasTechnicians)
-            {
-                foreach (var techIdStr in dto.AssignedTechnicianIds!)
+                // Always insert a DispatchJob row so GetPlanVsActualAsync (which queries
+                // through the join table) can aggregate actual time/expenses for this job.
+                _db.Set<DispatchJob>().Add(new DispatchJob
                 {
-                    if (int.TryParse(techIdStr, out var techId))
-                    {
-                        var dispatchTechnician = new DispatchTechnician
-                        {
-                            DispatchId = dispatch.Id,
-                            TechnicianId = techId,
-                            AssignedDate = DateTime.UtcNow,
-                            Role = "technician"
-                        };
-                        _db.Set<DispatchTechnician>().Add(dispatchTechnician);
-                    }
-                }
-                await _db.SaveChangesAsync();
+                    DispatchId = dispatch.Id,
+                    JobId = jobId,
+                    CreatedDate = DateTime.UtcNow
+                });
 
-                // Update job status to dispatched
-                job.Status = "dispatched";
+                // Add assigned technicians to the DispatchTechnicians table
+                if (hasTechnicians)
+                {
+                    foreach (var techIdStr in dto.AssignedTechnicianIds!)
+                    {
+                        if (int.TryParse(techIdStr, out var techId))
+                        {
+                            _db.Set<DispatchTechnician>().Add(new DispatchTechnician
+                            {
+                                DispatchId = dispatch.Id,
+                                TechnicianId = techId,
+                                AssignedDate = DateTime.UtcNow,
+                                Role = "technician"
+                            });
+                        }
+                    }
+                    job.Status = "dispatched";
+                }
+
                 await _db.SaveChangesAsync();
+                await tx.CommitAsync();
             }
-            
-            _logger.LogInformation("Dispatch created from job {JobId} with ID {DispatchId}, Status: {Status}, Technicians: {TechCount}", 
+            catch
+            {
+                await tx.RollbackAsync();
+                throw;
+            }
+
+            _logger.LogInformation("Dispatch created from job {JobId} with ID {DispatchId}, Status: {Status}, Technicians: {TechCount}",
                 jobId, dispatch.Id, status, dto.AssignedTechnicianIds?.Count ?? 0);
 
             // Reload dispatch with technicians for the DTO mapping
             var createdDispatch = await _db.Dispatches
                 .Include(d => d.AssignedTechnicians)
                 .FirstAsync(d => d.Id == dispatch.Id);
-            
+
             var nameMap = await GetTechnicianNameMapForDispatchAsync(createdDispatch.Id);
             return DispatchMapping.ToDto(createdDispatch, nameMap);
         }

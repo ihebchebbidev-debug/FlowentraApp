@@ -43,35 +43,45 @@ namespace MyApi.Modules.Purchases.Services
             if (await _context.ArticleSuppliers.AnyAsync(a => a.ArticleId == dto.ArticleId && a.SupplierId == dto.SupplierId && !a.IsDeleted))
                 throw new InvalidOperationException("This supplier is already linked to the article");
 
-            if (dto.IsPreferred)
-            {
-                var others = await _context.ArticleSuppliers
-                    .Where(a => a.ArticleId == dto.ArticleId && a.IsPreferred && !a.IsDeleted)
-                    .ToListAsync();
-                foreach (var other in others) other.IsPreferred = false;
-            }
-
-            var entity = new ArticleSupplier
-            {
-                ArticleId = dto.ArticleId, SupplierId = dto.SupplierId,
-                SupplierRef = dto.SupplierRef, PurchasePrice = dto.PurchasePrice,
-                Currency = dto.Currency, MinOrderQty = dto.MinOrderQty,
-                LeadTimeDays = dto.LeadTimeDays, IsPreferred = dto.IsPreferred,
-                Notes = dto.Notes, IsActive = true, CreatedBy = userId, CreatedDate = DateTime.UtcNow
-            };
-            _context.ArticleSuppliers.Add(entity);
+            await using var tx = await _context.Database.BeginTransactionAsync();
             try
             {
-                await _context.SaveChangesAsync();
+                if (dto.IsPreferred)
+                {
+                    var others = await _context.ArticleSuppliers
+                        .Where(a => a.ArticleId == dto.ArticleId && a.IsPreferred && !a.IsDeleted)
+                        .ToListAsync();
+                    foreach (var other in others) other.IsPreferred = false;
+                }
+
+                var entity = new ArticleSupplier
+                {
+                    ArticleId = dto.ArticleId, SupplierId = dto.SupplierId,
+                    SupplierRef = dto.SupplierRef, PurchasePrice = dto.PurchasePrice,
+                    Currency = dto.Currency, MinOrderQty = dto.MinOrderQty,
+                    LeadTimeDays = dto.LeadTimeDays, IsPreferred = dto.IsPreferred,
+                    Notes = dto.Notes, IsActive = true, CreatedBy = userId, CreatedDate = DateTime.UtcNow
+                };
+                _context.ArticleSuppliers.Add(entity);
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("ux_article_suppliers_tenant_article_supplier") == true)
+                {
+                    // Race: another concurrent request created the same (Article, Supplier)
+                    // link between our pre-check and SaveChanges. The partial unique index
+                    // (see migration 20260524_Purchases_QA_Hardening.sql) caught it.
+                    throw new InvalidOperationException("This supplier is already linked to the article");
+                }
+                await tx.CommitAsync();
+                return (await GetByIdAsync(entity.Id))!;
             }
-            catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("ux_article_suppliers_tenant_article_supplier") == true)
+            catch
             {
-                // Race: another concurrent request created the same (Article, Supplier)
-                // link between our pre-check and SaveChanges. The partial unique index
-                // (see migration 20260524_Purchases_QA_Hardening.sql) caught it.
-                throw new InvalidOperationException("This supplier is already linked to the article");
+                await tx.RollbackAsync();
+                throw;
             }
-            return (await GetByIdAsync(entity.Id))!;
         }
 
 
@@ -100,10 +110,27 @@ namespace MyApi.Modules.Purchases.Services
             {
                 if (dto.IsPreferred.Value)
                 {
-                    var others = await _context.ArticleSuppliers
-                        .Where(a => a.ArticleId == entity.ArticleId && a.Id != id && a.IsPreferred && !a.IsDeleted)
-                        .ToListAsync();
-                    foreach (var other in others) other.IsPreferred = false;
+                    await using var tx = await _context.Database.BeginTransactionAsync();
+                    try
+                    {
+                        var others = await _context.ArticleSuppliers
+                            .Where(a => a.ArticleId == entity.ArticleId && a.Id != id && a.IsPreferred && !a.IsDeleted)
+                            .ToListAsync();
+                        foreach (var other in others) other.IsPreferred = false;
+                        entity.IsPreferred = true;
+                        if (dto.IsActive.HasValue) entity.IsActive = dto.IsActive.Value;
+                        if (dto.Notes != null) entity.Notes = dto.Notes;
+                        entity.ModifiedDate = DateTime.UtcNow;
+                        entity.ModifiedBy = userId;
+                        await _context.SaveChangesAsync();
+                        await tx.CommitAsync();
+                    }
+                    catch
+                    {
+                        await tx.RollbackAsync();
+                        throw;
+                    }
+                    return (await GetByIdAsync(id))!;
                 }
                 entity.IsPreferred = dto.IsPreferred.Value;
             }
