@@ -30,6 +30,7 @@ using MyApi.Modules.Dispatches.Data;
 using MyApi.Modules.ServiceOrders.Models;
 using MyApi.Modules.ServiceOrders.Data;
 using MyApi.Modules.Planning.Models;
+using MyApi.Modules.PlanningProfiles.Models;
 using MyApi.Modules.Notifications.Models;
 using MyApi.Modules.Notifications.Data;
 using MyApi.Modules.Shared.Models;
@@ -171,6 +172,11 @@ namespace MyApi.Data
         public DbSet<UserLeave> UserLeaves { get; set; }
         public DbSet<UserStatusHistory> UserStatusHistory { get; set; }
         public DbSet<DispatchHistory> DispatchHistory { get; set; }
+        public DbSet<TechnicianStatusHistory> TechnicianStatusHistory { get; set; }
+
+        // Planning Profiles Module
+        public DbSet<PlanningProfile> PlanningProfiles { get; set; }
+        public DbSet<UserActivePlanningProfile> UserActivePlanningProfiles { get; set; }
         
         // HR Module
         public DbSet<HrEmployeeSalaryConfig> HrEmployeeSalaryConfigs { get; set; }
@@ -602,6 +608,7 @@ namespace MyApi.Data
             ConfigureLookupEntities(modelBuilder);
             ConfigureTasksEntities(modelBuilder);
             ConfigurePlanningEntities(modelBuilder);
+            ConfigurePlanningProfileEntities(modelBuilder);
             ConfigureHrEntities(modelBuilder);
 
             // Website Builder Module configurations
@@ -1040,6 +1047,32 @@ namespace MyApi.Data
         /// user_id can reference either MainAdminUsers (id=1) or Users (id>=2).
         /// We must explicitly tell EF Core to ignore the convention-based FK.
         /// </summary>
+        private void ConfigurePlanningProfileEntities(ModelBuilder modelBuilder)
+        {
+            // planning_profiles table: snake_case column names including tenant_id
+            modelBuilder.Entity<PlanningProfile>(entity =>
+            {
+                entity.ToTable("planning_profiles");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.TenantId).HasColumnName("tenant_id");
+                // All other properties carry explicit [Column] annotations
+                entity.HasIndex(e => new { e.TenantId, e.OwnerUserId })
+                    .HasFilter("deleted_at IS NULL");
+                entity.HasIndex(e => new { e.TenantId, e.IsShared })
+                    .HasFilter("deleted_at IS NULL");
+            });
+
+            // user_active_planning_profile: composite PK (user_id, tenant_id)
+            modelBuilder.Entity<UserActivePlanningProfile>(entity =>
+            {
+                entity.ToTable("user_active_planning_profile");
+                entity.HasKey(e => new { e.UserId, e.TenantId });
+                entity.Property(e => e.TenantId).HasColumnName("tenant_id");
+                // UserId, ProfileId, UpdatedAt all carry [Column] annotations
+                entity.HasIndex(e => e.ProfileId);
+            });
+        }
+
         private void ConfigurePlanningEntities(ModelBuilder modelBuilder)
         {
             // UserLeave - no FK on UserId (supports both MainAdminUsers and Users)
@@ -1098,6 +1131,23 @@ namespace MyApi.Data
                 entity.Property(e => e.ChangedBy).HasColumnName("changed_by");
 
                 entity.HasIndex(e => e.UserId);
+            });
+
+            // TechnicianStatusHistory - snake_case table, no FK on TechnicianId
+            modelBuilder.Entity<TechnicianStatusHistory>(entity =>
+            {
+                entity.ToTable("technician_status_history");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasColumnName("id");
+                entity.Property(e => e.TechnicianId).HasColumnName("technician_id").IsRequired();
+                entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(50).IsRequired();
+                entity.Property(e => e.ChangedFrom).HasColumnName("changed_from").HasMaxLength(50);
+                entity.Property(e => e.ChangedAt).HasColumnName("changed_at");
+                entity.Property(e => e.ChangedBy).HasColumnName("changed_by");
+                entity.Property(e => e.Reason).HasColumnName("reason");
+                entity.Property(e => e.MetadataJson).HasColumnName("metadata").HasColumnType("jsonb");
+
+                entity.HasIndex(e => e.TechnicianId);
             });
         }
 

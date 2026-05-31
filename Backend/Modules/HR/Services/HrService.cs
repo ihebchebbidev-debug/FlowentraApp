@@ -194,24 +194,21 @@ namespace MyApi.Modules.HR.Services
         // ===========================================================================
         public async Task<List<HrLeaveBalanceDto>> GetLeaveBalancesAsync(int year)
         {
-            var balances = await _db.Set<HrLeaveBalance>().Where(x => x.Year == year).ToListAsync();
-            var leaves = await _db.Set<UserLeave>()
+            var balances = await _db.Set<HrLeaveBalance>().AsNoTracking().Where(x => x.Year == year).ToListAsync();
+            var leaves = await _db.Set<UserLeave>().AsNoTracking()
                 .Where(x => x.StartDate.Year == year || x.EndDate.Year == year)
                 .ToListAsync();
 
-            foreach (var bal in balances)
+            return balances.Select(bal =>
             {
                 var related = leaves.Where(x => x.UserId == bal.UserId && x.LeaveType == bal.LeaveType).ToList();
-                bal.Used = related.Where(x => x.Status == "approved").Sum(x => (decimal)(x.EndDate.Date - x.StartDate.Date).TotalDays + 1);
-                bal.Pending = related.Where(x => x.Status == "pending").Sum(x => (decimal)(x.EndDate.Date - x.StartDate.Date).TotalDays + 1);
-                bal.Remaining = bal.AnnualAllowance - bal.Used - bal.Pending;
-            }
-            await _db.SaveChangesAsync();
-
-            return balances.Select(x => new HrLeaveBalanceDto
-            {
-                UserId = x.UserId, LeaveType = x.LeaveType, AnnualAllowance = x.AnnualAllowance,
-                Used = x.Used, Pending = x.Pending, Remaining = x.Remaining
+                var used = related.Where(x => x.Status == "approved").Sum(x => (decimal)(x.EndDate.Date - x.StartDate.Date).TotalDays + 1);
+                var pending = related.Where(x => x.Status == "pending").Sum(x => (decimal)(x.EndDate.Date - x.StartDate.Date).TotalDays + 1);
+                return new HrLeaveBalanceDto
+                {
+                    UserId = bal.UserId, LeaveType = bal.LeaveType, AnnualAllowance = bal.AnnualAllowance,
+                    Used = used, Pending = pending, Remaining = bal.AnnualAllowance - used - pending
+                };
             }).ToList();
         }
 
@@ -540,17 +537,16 @@ namespace MyApi.Modules.HR.Services
 
         public async Task<HrPayrollRunDto> GetPayrollRunAsync(int id)
         {
-            var run = await _db.Set<HrPayrollRun>().FirstOrDefaultAsync(x => x.Id == id);
+            var run = await _db.Set<HrPayrollRun>().AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
             if (run == null) throw new KeyNotFoundException("Payroll run not found");
 
-            var entries = await _db.Set<HrPayrollEntry>().Where(x => x.PayrollRunId == id).ToListAsync();
+            var entries = await _db.Set<HrPayrollEntry>().AsNoTracking().Where(x => x.PayrollRunId == id).ToListAsync();
             var userMap = await _db.Users
                 .Where(u => entries.Select(e => e.UserId).Contains(u.Id))
                 .ToDictionaryAsync(u => u.Id, u => $"{u.FirstName} {u.LastName}".Trim());
 
             run.TotalGross = entries.Sum(x => x.GrossSalary);
             run.TotalNet = entries.Sum(x => x.NetSalary);
-            await _db.SaveChangesAsync();
 
             return MapPayrollRunDto(run, entries, userMap);
         }
@@ -667,6 +663,8 @@ namespace MyApi.Modules.HR.Services
 
         public async Task<HrBonusCostDto> CreateBonusCostAsync(UpsertBonusCostDto dto, int actorUserId)
         {
+            if (dto.Amount < 0)
+                throw new ArgumentException("bonus.negative_amount", nameof(dto.Amount));
             var row = new HrBonusCost
             {
                 UserId = dto.UserId, Kind = dto.Kind, Category = dto.Category, Label = dto.Label,
@@ -682,6 +680,8 @@ namespace MyApi.Modules.HR.Services
 
         public async Task<HrBonusCostDto> UpdateBonusCostAsync(int id, UpsertBonusCostDto dto, int actorUserId)
         {
+            if (dto.Amount < 0)
+                throw new ArgumentException("bonus.negative_amount", nameof(dto.Amount));
             var row = await _db.Set<HrBonusCost>().FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
             if (row == null) throw new KeyNotFoundException("Bonus/cost not found");
             row.UserId = dto.UserId; row.Kind = dto.Kind; row.Category = dto.Category;

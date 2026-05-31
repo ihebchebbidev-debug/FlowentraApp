@@ -115,11 +115,17 @@ namespace MyApi.Modules.HR.Controllers
 
         [HttpPost("bonuses")]
         public async Task<IActionResult> CreateBonus([FromBody] UpsertBonusCostDto dto)
-            => Ok(new { success = true, data = await _hr.CreateBonusCostAsync(dto, GetActorId()) });
+        {
+            try { return Ok(new { success = true, data = await _hr.CreateBonusCostAsync(dto, GetActorId()) }); }
+            catch (ArgumentException ex) { return BadRequest(new { success = false, errorCode = ex.Message, field = ex.ParamName }); }
+        }
 
         [HttpPut("bonuses/{id:int}")]
         public async Task<IActionResult> UpdateBonus(int id, [FromBody] UpsertBonusCostDto dto)
-            => Ok(new { success = true, data = await _hr.UpdateBonusCostAsync(id, dto, GetActorId()) });
+        {
+            try { return Ok(new { success = true, data = await _hr.UpdateBonusCostAsync(id, dto, GetActorId()) }); }
+            catch (ArgumentException ex) { return BadRequest(new { success = false, errorCode = ex.Message, field = ex.ParamName }); }
+        }
 
         [HttpDelete("bonuses/{id:int}")]
         public async Task<IActionResult> DeleteBonus(int id) { await _hr.DeleteBonusCostAsync(id, GetActorId()); return Ok(new { success = true }); }

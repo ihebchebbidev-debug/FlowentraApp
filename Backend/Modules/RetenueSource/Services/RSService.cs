@@ -15,13 +15,18 @@ namespace MyApi.Modules.RetenueSource.Services
         private readonly ILogger<RSService> _logger;
         private readonly IWebHostEnvironment _env;
 
-        // RS rates by type code
+        // RS rates by type code — legacy 2-digit codes + P-series (Tunisian DGI v1.0)
         private static readonly Dictionary<string, decimal> RS_RATES = new()
         {
             { "10", 10m },
             { "05", 0.5m },
             { "03", 3m },
-            { "20", 20m }
+            { "20", 20m },
+            { "P1", 1.5m },
+            { "P2", 5m },
+            { "P3", 10m },
+            { "P4", 15m },
+            { "P5", 25m },
         };
 
         public RSService(ApplicationDbContext db, ILogger<RSService> logger, IWebHostEnvironment env)

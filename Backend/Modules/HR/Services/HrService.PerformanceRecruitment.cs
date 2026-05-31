@@ -235,9 +235,75 @@ namespace MyApi.Modules.HR.Services
             if (userId.HasValue) q = q.Where(r => r.UserId == userId.Value);
             if (!string.IsNullOrWhiteSpace(status)) q = q.Where(r => r.Status == status);
             var rows = await q.OrderByDescending(r => r.CreatedAt).ToListAsync();
-            var result = new List<HrPerformanceReviewDto>(rows.Count);
-            foreach (var r in rows) result.Add(await MapReviewAsync(r));
-            return result;
+            if (rows.Count == 0) return new List<HrPerformanceReviewDto>();
+
+            // Batch: all users referenced by reviews (reviewee + reviewer)
+            var allUserIds = rows
+                .SelectMany(r => r.ReviewerUserId.HasValue ? new[] { r.UserId, r.ReviewerUserId.Value } : new[] { r.UserId })
+                .Distinct();
+            var names = await GetUserNamesAsync(allUserIds);
+
+            // Batch: cycle names for all cycles referenced by reviews
+            var reviewCycleIds = rows.Select(r => r.CycleId).Distinct().ToList();
+            var cycles = await _db.HrReviewCycles
+                .Where(c => reviewCycleIds.Contains(c.Id))
+                .ToDictionaryAsync(c => c.Id, c => c.Name);
+
+            // Batch: all goals for all reviewees (filtered per-review in-memory)
+            var revieweeIds = rows.Select(r => r.UserId).Distinct().ToList();
+            var allGoals = await _db.HrGoals
+                .Where(g => !g.IsDeleted && revieweeIds.Contains(g.UserId))
+                .ToListAsync();
+
+            // Batch: user names for goal owners (may overlap with review users)
+            var goalUserIds = allGoals.Select(g => g.UserId).Distinct().Except(names.Keys);
+            var extraGoalNames = await GetUserNamesAsync(goalUserIds);
+            var goalNames = names.Concat(extraGoalNames).GroupBy(kv => kv.Key).ToDictionary(g => g.Key, g => g.First().Value);
+
+            // Batch: cycle names for cycles referenced by goals (may add new ones)
+            var goalCycleIds = allGoals.Where(g => g.CycleId.HasValue).Select(g => g.CycleId!.Value).Distinct().Except(cycles.Keys).ToList();
+            if (goalCycleIds.Count > 0)
+            {
+                var extraCycles = await _db.HrReviewCycles
+                    .Where(c => goalCycleIds.Contains(c.Id))
+                    .ToDictionaryAsync(c => c.Id, c => c.Name);
+                foreach (var kv in extraCycles) cycles[kv.Key] = kv.Value;
+            }
+
+            return rows.Select(r =>
+            {
+                var goals = allGoals
+                    .Where(g => g.UserId == r.UserId && g.CycleId == r.CycleId)
+                    .Select(g => new HrGoalDto
+                    {
+                        Id = g.Id, UserId = g.UserId,
+                        UserName = goalNames.TryGetValue(g.UserId, out var gn) ? gn : $"#{g.UserId}",
+                        CycleId = g.CycleId,
+                        CycleName = g.CycleId.HasValue && cycles.TryGetValue(g.CycleId.Value, out var gcn) ? gcn : null,
+                        Title = g.Title, Description = g.Description, Category = g.Category,
+                        Weight = g.Weight, TargetValue = g.TargetValue,
+                        Progress = g.Progress, Status = g.Status,
+                        DueDate = g.DueDate, Score = g.Score, CreatedAt = g.CreatedAt,
+                    }).ToList();
+
+                return new HrPerformanceReviewDto
+                {
+                    Id = r.Id, UserId = r.UserId,
+                    UserName = names.TryGetValue(r.UserId, out var un) ? un : $"#{r.UserId}",
+                    CycleId = r.CycleId, CycleName = cycles.TryGetValue(r.CycleId, out var cn) ? cn : null,
+                    ReviewerUserId = r.ReviewerUserId,
+                    ReviewerName = r.ReviewerUserId.HasValue && names.TryGetValue(r.ReviewerUserId.Value, out var rn) ? rn : null,
+                    Status = r.Status,
+                    SelfAssessment = r.SelfAssessment,
+                    SelfAssessmentSubmittedAt = r.SelfAssessmentSubmittedAt,
+                    ManagerComments = r.ManagerComments,
+                    OverallScore = r.OverallScore, Rating = r.Rating,
+                    Strengths = r.Strengths, Improvements = r.Improvements,
+                    DevelopmentPlan = r.DevelopmentPlan,
+                    CompletedAt = r.CompletedAt, AcknowledgedAt = r.AcknowledgedAt,
+                    Goals = goals,
+                };
+            }).ToList();
         }
 
         public async Task<HrPerformanceReviewDto> GetReviewAsync(int id)
@@ -339,9 +405,39 @@ namespace MyApi.Modules.HR.Services
             var q = _db.HrJobOpenings.Where(o => !o.IsDeleted);
             if (!string.IsNullOrWhiteSpace(status)) q = q.Where(o => o.Status == status);
             var rows = await q.OrderByDescending(o => o.CreatedAt).ToListAsync();
-            var list = new List<HrJobOpeningDto>(rows.Count);
-            foreach (var o in rows) list.Add(await MapOpeningAsync(o));
-            return list;
+            if (rows.Count == 0) return new List<HrJobOpeningDto>();
+
+            var deptIds = rows.Where(o => o.DepartmentId.HasValue).Select(o => o.DepartmentId!.Value).Distinct().ToList();
+            var deptNames = deptIds.Count > 0
+                ? await _db.HrDepartments.Where(d => deptIds.Contains(d.Id)).ToDictionaryAsync(d => d.Id, d => d.Name)
+                : new Dictionary<int, string>();
+
+            var hmUserIds = rows.Where(o => o.HiringManagerUserId.HasValue).Select(o => o.HiringManagerUserId!.Value).Distinct();
+            var hmNames = await GetUserNamesAsync(hmUserIds);
+
+            var openingIds = rows.Select(o => o.Id).ToList();
+            var applicantStats = await _db.HrApplicants
+                .Where(a => openingIds.Contains(a.OpeningId) && !a.IsDeleted)
+                .GroupBy(a => a.OpeningId)
+                .Select(g => new { OpeningId = g.Key, Total = g.Count(), Hired = g.Count(x => x.Stage == "hired") })
+                .ToDictionaryAsync(g => g.OpeningId);
+
+            return rows.Select(o => new HrJobOpeningDto
+            {
+                Id = o.Id, Title = o.Title,
+                DepartmentId = o.DepartmentId,
+                DepartmentName = o.DepartmentId.HasValue && deptNames.TryGetValue(o.DepartmentId.Value, out var dn) ? dn : null,
+                Location = o.Location, ContractType = o.ContractType, Seniority = o.Seniority,
+                Description = o.Description, Requirements = o.Requirements,
+                SalaryMin = o.SalaryMin, SalaryMax = o.SalaryMax, Currency = o.Currency,
+                OpeningsCount = o.OpeningsCount, Status = o.Status,
+                HiringManagerUserId = o.HiringManagerUserId,
+                HiringManagerName = o.HiringManagerUserId.HasValue && hmNames.TryGetValue(o.HiringManagerUserId.Value, out var hmn) ? hmn : null,
+                OpenedAt = o.OpenedAt, ClosedAt = o.ClosedAt,
+                ApplicantsCount = applicantStats.TryGetValue(o.Id, out var s) ? s.Total : 0,
+                HiredCount = applicantStats.TryGetValue(o.Id, out var s2) ? s2.Hired : 0,
+                CreatedAt = o.CreatedAt,
+            }).ToList();
         }
 
         public async Task<HrJobOpeningDto> GetJobOpeningAsync(int id)
@@ -443,9 +539,39 @@ namespace MyApi.Modules.HR.Services
             if (openingId.HasValue) q = q.Where(a => a.OpeningId == openingId.Value);
             if (!string.IsNullOrWhiteSpace(stage)) q = q.Where(a => a.Stage == stage);
             var rows = await q.OrderByDescending(a => a.CreatedAt).ToListAsync();
-            var list = new List<HrApplicantDto>(rows.Count);
-            foreach (var a in rows) list.Add(await MapApplicantAsync(a));
-            return list;
+            if (rows.Count == 0) return new List<HrApplicantDto>();
+
+            var openingIds = rows.Select(a => a.OpeningId).Distinct().ToList();
+            var openingTitles = await _db.HrJobOpenings
+                .Where(o => openingIds.Contains(o.Id))
+                .ToDictionaryAsync(o => o.Id, o => o.Title);
+
+            var applicantIds = rows.Select(a => a.Id).ToList();
+            var interviewCounts = await _db.HrInterviews
+                .Where(i => applicantIds.Contains(i.ApplicantId) && !i.IsDeleted)
+                .GroupBy(i => i.ApplicantId)
+                .Select(g => new { ApplicantId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(g => g.ApplicantId, g => g.Count);
+
+            var noteCounts = await _db.HrApplicantNotes
+                .Where(n => applicantIds.Contains(n.ApplicantId))
+                .GroupBy(n => n.ApplicantId)
+                .Select(g => new { ApplicantId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(g => g.ApplicantId, g => g.Count);
+
+            return rows.Select(a => new HrApplicantDto
+            {
+                Id = a.Id, OpeningId = a.OpeningId,
+                OpeningTitle = openingTitles.TryGetValue(a.OpeningId, out var ot) ? ot : null,
+                FirstName = a.FirstName, LastName = a.LastName,
+                Email = a.Email, Phone = a.Phone, Source = a.Source,
+                ResumeUrl = a.ResumeUrl, ResumeFileName = a.ResumeFileName,
+                Stage = a.Stage, Rating = a.Rating, ExpectedSalary = a.ExpectedSalary,
+                AvailableFrom = a.AvailableFrom, RejectionReason = a.RejectionReason,
+                CreatedAt = a.CreatedAt,
+                InterviewsCount = interviewCounts.TryGetValue(a.Id, out var ic) ? ic : 0,
+                NotesCount = noteCounts.TryGetValue(a.Id, out var nc) ? nc : 0,
+            }).ToList();
         }
 
         public async Task<HrApplicantDto> GetApplicantAsync(int id)
@@ -550,9 +676,27 @@ namespace MyApi.Modules.HR.Services
             if (from.HasValue) q = q.Where(i => i.ScheduledAt >= from.Value);
             if (to.HasValue) q = q.Where(i => i.ScheduledAt <= to.Value);
             var rows = await q.OrderBy(i => i.ScheduledAt).ToListAsync();
-            var list = new List<HrInterviewDto>(rows.Count);
-            foreach (var i in rows) list.Add(await MapInterviewAsync(i));
-            return list;
+            if (rows.Count == 0) return new List<HrInterviewDto>();
+
+            var applicantIds = rows.Select(i => i.ApplicantId).Distinct().ToList();
+            var applicantNames = await _db.HrApplicants
+                .Where(a => applicantIds.Contains(a.Id))
+                .Select(a => new { a.Id, a.FirstName, a.LastName })
+                .ToDictionaryAsync(a => a.Id, a => $"{a.FirstName} {a.LastName}".Trim());
+
+            var interviewerIds = rows.Where(i => i.InterviewerUserId.HasValue).Select(i => i.InterviewerUserId!.Value).Distinct();
+            var interviewerNames = await GetUserNamesAsync(interviewerIds);
+
+            return rows.Select(i => new HrInterviewDto
+            {
+                Id = i.Id, ApplicantId = i.ApplicantId,
+                ApplicantName = applicantNames.TryGetValue(i.ApplicantId, out var an) ? an : null,
+                Kind = i.Kind, ScheduledAt = i.ScheduledAt, DurationMinutes = i.DurationMinutes,
+                InterviewerUserId = i.InterviewerUserId,
+                InterviewerName = i.InterviewerUserId.HasValue && interviewerNames.TryGetValue(i.InterviewerUserId.Value, out var inn) ? inn : null,
+                Location = i.Location, MeetingUrl = i.MeetingUrl,
+                Status = i.Status, Score = i.Score, Feedback = i.Feedback, Recommendation = i.Recommendation,
+            }).ToList();
         }
 
         public async Task<HrInterviewDto> CreateInterviewAsync(UpsertHrInterviewDto dto, int actorUserId)

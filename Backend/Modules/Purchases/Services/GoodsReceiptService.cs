@@ -127,6 +127,7 @@ namespace MyApi.Modules.Purchases.Services
                         DeliveryNoteRef = dto.DeliveryNoteRef,
                         Notes = dto.Notes,
                         ReceivedBy = userId,
+                        ReceivedByName = userName,
                         CreatedBy = userId,
                         CreatedDate = DateTime.UtcNow
                     };

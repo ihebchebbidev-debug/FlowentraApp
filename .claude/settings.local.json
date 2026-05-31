@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem \"c:\\\\Users\\\\ihebc\\\\OneDrive\\\\Desktop\\\\FlowentraApp\\\\Backend\\\\Modules\" -Directory)",
+      "Bash(Sort-Object Name)"
+    ]
+  }
+}
