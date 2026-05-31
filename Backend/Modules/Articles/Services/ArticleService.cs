@@ -466,6 +466,19 @@ namespace MyApi.Modules.Articles.Services
                     var newArticles = new List<Article>();
                     var articlesToUpdate = new List<(Article existing, CreateArticleRequestDto dto)>();
 
+                    // Pre-collect IDs of articles in this batch that need updating, then batch-load them
+                    var updatePairs = new List<(int id, CreateArticleRequestDto dto)>();
+                    foreach (var dto in batch)
+                    {
+                        var articleNumber = dto.ArticleNumber?.ToLower();
+                        if (!string.IsNullOrEmpty(articleNumber) && existingArticleNumbers.TryGetValue(articleNumber, out var id) && importRequest.UpdateExisting)
+                            updatePairs.Add((id, dto));
+                    }
+                    var updateIds = updatePairs.Select(p => p.id).Distinct().ToList();
+                    var existingByIdMap = updateIds.Count > 0
+                        ? await _context.Set<Article>().Where(a => updateIds.Contains(a.Id)).ToDictionaryAsync(a => a.Id)
+                        : new Dictionary<int, Article>();
+
                     foreach (var dto in batch)
                     {
                         try
@@ -487,8 +500,7 @@ namespace MyApi.Modules.Articles.Services
                                 }
                                 else if (importRequest.UpdateExisting)
                                 {
-                                    var existing = await _context.Set<Article>().FindAsync(existingId.Value);
-                                    if (existing != null)
+                                    if (existingByIdMap.TryGetValue(existingId.Value, out var existing))
                                     {
                                         articlesToUpdate.Add((existing, dto));
                                     }
@@ -570,7 +582,7 @@ namespace MyApi.Modules.Articles.Services
                         {
                             result.ImportedArticles.Add(new ArticleResponseDto
                             {
-                                Id = Guid.Empty, // Convert int to display
+                                Id = article.Id,
                                 Name = article.Name,
                                 Type = article.Type,
                                 Status = article.IsActive ? "active" : "inactive"

@@ -211,23 +211,33 @@ namespace MyApi.Modules.Contacts.Services
                     IsActive = true
                 };
 
-                _context.Contacts.Add(contact);
-                await _context.SaveChangesAsync();
-
-                // Assign tags if provided
-                if (createDto.TagIds.Any())
+                await using var tx = await _context.Database.BeginTransactionAsync();
+                try
                 {
-                    foreach (var tagId in createDto.TagIds)
-                    {
-                        var tagAssignment = new ContactTagAssignment
-                        {
-                            ContactId = contact.Id,
-                            TagId = tagId,
-                            AssignedDate = DateTime.UtcNow
-                        };
-                        _context.Set<ContactTagAssignment>().Add(tagAssignment);
-                    }
+                    _context.Contacts.Add(contact);
                     await _context.SaveChangesAsync();
+
+                    // Assign tags if provided — contact.Id is available after the first save
+                    if (createDto.TagIds.Any())
+                    {
+                        foreach (var tagId in createDto.TagIds)
+                        {
+                            _context.Set<ContactTagAssignment>().Add(new ContactTagAssignment
+                            {
+                                ContactId = contact.Id,
+                                TagId = tagId,
+                                AssignedDate = DateTime.UtcNow
+                            });
+                        }
+                        await _context.SaveChangesAsync();
+                    }
+
+                    await tx.CommitAsync();
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
                 }
 
                 // Reload contact with related data
@@ -266,8 +276,12 @@ namespace MyApi.Modules.Contacts.Services
                         updateDto.LastName = nameParts[1];
                 }
 
-                // Check email uniqueness if email is being changed
-                if (!string.IsNullOrEmpty(updateDto.Email) && 
+                await using var tx = await _context.Database.BeginTransactionAsync();
+                try
+                {
+
+                // Check email uniqueness if email is being changed — done inside transaction to prevent TOCTOU race
+                if (!string.IsNullOrEmpty(updateDto.Email) &&
                     (contact.Email == null || updateDto.Email.ToLower() != contact.Email.ToLower()))
                 {
                     var existingContact = await _context.Contacts
@@ -380,11 +394,19 @@ namespace MyApi.Modules.Contacts.Services
                 }
 
                 await _context.SaveChangesAsync();
+                await tx.CommitAsync();
+
+                } // end transaction try
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
 
                 // Reload contact with related data
                 var updatedContact = await GetContactByIdAsync(id);
                 _logger.LogInformation("Contact updated successfully with ID {ContactId}", id);
-                
+
                 return updatedContact;
             }
             catch (Exception ex)
@@ -484,6 +506,16 @@ namespace MyApi.Modules.Contacts.Services
                     var newContacts = new List<Contact>();
                     var contactsToUpdate = new List<(Contact existing, CreateContactRequestDto dto)>();
 
+                    // Batch-load all contacts in this batch that need updating to avoid N+1
+                    var batchUpdateIds = batch
+                        .Where(c => !string.IsNullOrEmpty(c.Email) && existingEmails.ContainsKey(c.Email.ToLower()))
+                        .Select(c => existingEmails[c.Email!.ToLower()])
+                        .Distinct()
+                        .ToList();
+                    var existingContactsMap = batchUpdateIds.Count > 0 && importRequest.UpdateExisting
+                        ? await _context.Contacts.Where(c => batchUpdateIds.Contains(c.Id)).ToDictionaryAsync(c => c.Id)
+                        : new Dictionary<int, Contact>();
+
                     foreach (var contactDto in batch)
                     {
                         try
@@ -504,8 +536,7 @@ namespace MyApi.Modules.Contacts.Services
                                 }
                                 else if (importRequest.UpdateExisting)
                                 {
-                                    var existingContact = await _context.Contacts.FindAsync(existingContactId.Value);
-                                    if (existingContact != null)
+                                    if (existingContactsMap.TryGetValue(existingContactId.Value, out var existingContact))
                                     {
                                         contactsToUpdate.Add((existingContact, contactDto));
                                     }
