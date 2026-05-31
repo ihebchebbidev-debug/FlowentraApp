@@ -645,12 +645,32 @@ class AuthService {
   }
 
   private clearUserSession(): void {
-    // Clear from both storage types to ensure complete logout
-    const keys = ['access_token', 'refresh_token', 'token_expires_at', 'user_data', 'onboarding-completed', 'auth_storage_type', 'login_type'];
+    const keys = [
+      'access_token', 'refresh_token', 'token_expires_at', 'user_data',
+      'onboarding-completed', 'auth_storage_type', 'login_type',
+      // HR module — sensitive payroll/bonus data must not persist between sessions
+      'hr_payroll_draft_runs_v1', 'hr_bonuses_v1', 'hr_cnss_rates_v1',
+      'hr_departments_v1', 'hr_public_holidays_v1',
+      // Workflow definitions
+      'lovable-workflows',
+    ];
     keys.forEach(key => {
       localStorage.removeItem(key);
       sessionStorage.removeItem(key);
     });
+    // Clear tenant-scoped HR keys and dynamic employee document keys
+    const toRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (
+        /^t:[^:]+:hr_/.test(key) ||
+        key.includes('hr_docs_') ||
+        key.includes(':hr_docs_')
+      )) {
+        toRemove.push(key);
+      }
+    }
+    toRemove.forEach(key => localStorage.removeItem(key));
   }
 
   getAccessToken(): string | null {

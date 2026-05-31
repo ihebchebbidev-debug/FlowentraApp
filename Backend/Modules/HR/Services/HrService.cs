@@ -51,18 +51,20 @@ namespace MyApi.Modules.HR.Services
         public async Task<List<object>> GetEmployeesAsync()
         {
             var users = await _db.Users
+                .AsNoTracking()
                 .Where(u => u.IsActive && !u.IsDeleted)
                 .OrderBy(u => u.FirstName).ThenBy(u => u.LastName)
                 .ToListAsync();
 
             var userIds = users.Select(u => u.Id).ToList();
-            var salaryConfigs = await _db.Set<HrEmployeeSalaryConfig>()
+            var salaryConfigMap = await _db.Set<HrEmployeeSalaryConfig>()
+                .AsNoTracking()
                 .Where(x => userIds.Contains(x.UserId))
-                .ToListAsync();
+                .ToDictionaryAsync(x => x.UserId);
 
             return users.Select(u =>
             {
-                var cfg = salaryConfigs.FirstOrDefault(s => s.UserId == u.Id);
+                salaryConfigMap.TryGetValue(u.Id, out var cfg);
                 return new
                 {
                     user = MapSafeUser(u),
@@ -199,9 +201,13 @@ namespace MyApi.Modules.HR.Services
                 .Where(x => x.StartDate.Year == year || x.EndDate.Year == year)
                 .ToListAsync();
 
+            var leavesByKey = leaves
+                .GroupBy(x => (x.UserId, x.LeaveType))
+                .ToDictionary(g => g.Key, g => g.ToList());
+
             return balances.Select(bal =>
             {
-                var related = leaves.Where(x => x.UserId == bal.UserId && x.LeaveType == bal.LeaveType).ToList();
+                var related = leavesByKey.TryGetValue((bal.UserId, bal.LeaveType), out var list) ? list : new List<UserLeave>();
                 var used = related.Where(x => x.Status == "approved").Sum(x => (decimal)(x.EndDate.Date - x.StartDate.Date).TotalDays + 1);
                 var pending = related.Where(x => x.Status == "pending").Sum(x => (decimal)(x.EndDate.Date - x.StartDate.Date).TotalDays + 1);
                 return new HrLeaveBalanceDto
@@ -424,26 +430,29 @@ namespace MyApi.Modules.HR.Services
             _db.Set<HrPayrollRun>().Add(run);
             await _db.SaveChangesAsync();
 
-            var users = await _db.Users.Where(u => u.IsActive && !u.IsDeleted).ToListAsync();
+            var users = await _db.Users.AsNoTracking().Where(u => u.IsActive && !u.IsDeleted).ToListAsync();
             var userIds = users.Select(u => u.Id).ToList();
-            var salaryConfigs = await _db.Set<HrEmployeeSalaryConfig>().Where(x => userIds.Contains(x.UserId)).ToListAsync();
-            var leaves = await _db.Set<UserLeave>()
+            var salaryConfigMap = (await _db.Set<HrEmployeeSalaryConfig>().AsNoTracking().Where(x => userIds.Contains(x.UserId)).ToListAsync())
+                .ToDictionary(x => x.UserId);
+            var leaves = await _db.Set<UserLeave>().AsNoTracking()
                 .Where(x => (x.StartDate.Month == dto.Month && x.StartDate.Year == dto.Year) || (x.EndDate.Month == dto.Month && x.EndDate.Year == dto.Year))
                 .ToListAsync();
-            var bonuses = await _db.Set<HrBonusCost>()
+            var bonusesByUser = (await _db.Set<HrBonusCost>().AsNoTracking()
                 .Where(x => !x.IsDeleted && x.Year == dto.Year && x.Month == dto.Month && x.AffectsPayroll)
-                .ToListAsync();
-            var attendance = await _db.Set<HrAttendance>()
+                .ToListAsync())
+                .GroupBy(b => b.UserId).ToDictionary(g => g.Key, g => g.ToList());
+            var attendanceByUser = (await _db.Set<HrAttendance>().AsNoTracking()
                 .Where(x => x.Date.Year == dto.Year && x.Date.Month == dto.Month)
-                .ToListAsync();
+                .ToListAsync())
+                .GroupBy(a => a.UserId).ToDictionary(g => g.Key, g => g.ToList());
 
             foreach (var user in users)
             {
-                var cfg = salaryConfigs.FirstOrDefault(x => x.UserId == user.Id);
+                salaryConfigMap.TryGetValue(user.Id, out var cfg);
                 var baseGross = cfg?.GrossSalary ?? 0m;
-                var userAttendance = attendance.Where(a => a.UserId == user.Id).ToList();
+                var userAttendance = attendanceByUser.TryGetValue(user.Id, out var att) ? att : new List<HrAttendance>();
 
-                var userBonuses = bonuses.Where(b => b.UserId == user.Id).ToList();
+                var userBonuses = bonusesByUser.TryGetValue(user.Id, out var bon) ? bon : new List<HrBonusCost>();
                 var allowances = userBonuses.Where(b => b.Kind == "allowance").Sum(b => b.Amount);
                 var bonusAmount = userBonuses.Where(b => b.Kind == "bonus").Sum(b => b.Amount);
                 var subjectExtra = userBonuses.Where(b => b.SubjectToCnss).Sum(b => b.Amount);
@@ -525,6 +534,7 @@ namespace MyApi.Modules.HR.Services
             var entries = await _db.Set<HrPayrollEntry>().AsNoTracking().Where(x => runIds.Contains(x.PayrollRunId)).ToListAsync();
             var userIds = entries.Select(e => e.UserId).Distinct().ToList();
             var userMap = await _db.Users
+                .AsNoTracking()
                 .Where(u => userIds.Contains(u.Id))
                 .ToDictionaryAsync(u => u.Id, u => $"{u.FirstName} {u.LastName}".Trim());
 
@@ -542,8 +552,10 @@ namespace MyApi.Modules.HR.Services
             if (run == null) throw new KeyNotFoundException("Payroll run not found");
 
             var entries = await _db.Set<HrPayrollEntry>().AsNoTracking().Where(x => x.PayrollRunId == id).ToListAsync();
+            var entryUserIds = entries.Select(e => e.UserId).Distinct().ToList();
             var userMap = await _db.Users
-                .Where(u => entries.Select(e => e.UserId).Contains(u.Id))
+                .AsNoTracking()
+                .Where(u => entryUserIds.Contains(u.Id))
                 .ToDictionaryAsync(u => u.Id, u => $"{u.FirstName} {u.LastName}".Trim());
 
             run.TotalGross = entries.Sum(x => x.GrossSalary);
@@ -648,9 +660,9 @@ namespace MyApi.Modules.HR.Services
             if (month.HasValue) q = q.Where(x => x.Month == month.Value);
             if (!string.IsNullOrWhiteSpace(kind)) q = q.Where(x => x.Kind == kind);
 
-            var rows = await q.OrderByDescending(x => x.Year).ThenByDescending(x => x.Month).ThenByDescending(x => x.CreatedAt).ToListAsync();
+            var rows = await q.AsNoTracking().OrderByDescending(x => x.Year).ThenByDescending(x => x.Month).ThenByDescending(x => x.CreatedAt).ToListAsync();
             var ids = rows.Select(r => r.UserId).Distinct().ToList();
-            var users = await _db.Users.Where(u => ids.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => $"{u.FirstName} {u.LastName}".Trim());
+            var users = await _db.Users.AsNoTracking().Where(u => ids.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => $"{u.FirstName} {u.LastName}".Trim());
 
             return rows.Select(r => new HrBonusCostDto
             {

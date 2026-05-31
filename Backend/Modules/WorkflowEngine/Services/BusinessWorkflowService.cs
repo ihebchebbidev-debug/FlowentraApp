@@ -141,6 +141,9 @@ namespace MyApi.Modules.WorkflowEngine.Services
                     ContactHasLocation = contact?.HasLocation ?? offer.ContactHasLocation
                 };
 
+                await using var tx = await _db.Database.BeginTransactionAsync();
+                try
+                {
                 _db.Sales.Add(sale);
                 await _db.SaveChangesAsync();
 
@@ -187,37 +190,38 @@ namespace MyApi.Modules.WorkflowEngine.Services
                     }
                 }
 
-
                 // Update offer status
                 offer.Status = "accepted";
                 offer.ConvertedToSaleId = sale.Id.ToString();
                 offer.ConvertedAt = DateTime.UtcNow;
                 offer.UpdatedAt = DateTime.UtcNow;
-                await _db.SaveChangesAsync();
 
-                // Create SaleActivity for sale creation
-                var saleActivity = new SaleActivity
+                // Stage activities alongside the final state update — one atomic commit
+                _db.SaleActivities.Add(new SaleActivity
                 {
                     SaleId = sale.Id,
                     Type = "created",
                     Description = $"Sale created from accepted offer #{offerId}",
                     CreatedAt = DateTime.UtcNow,
                     CreatedByName = sale.AssignedToName ?? "System"
-                };
-                _db.SaleActivities.Add(saleActivity);
-
-                // Create OfferActivity for conversion
-                var offerActivity = new OfferActivity
+                });
+                _db.OfferActivities.Add(new OfferActivity
                 {
                     OfferId = offerId,
                     Type = "converted",
                     Description = $"Offer converted to sale #{sale.Id}",
                     CreatedAt = DateTime.UtcNow,
                     CreatedByName = sale.AssignedToName ?? "System"
-                };
-                _db.OfferActivities.Add(offerActivity);
-                
+                });
+
                 await _db.SaveChangesAsync();
+                await tx.CommitAsync();
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
 
                 // Log workflow note
                 await LogWorkflowNoteAsync("sale", sale.Id, null, "created", userId, 

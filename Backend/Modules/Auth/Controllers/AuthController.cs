@@ -387,34 +387,23 @@ namespace MyApi.Modules.Auth.Controllers
             try
             {
                 if (string.IsNullOrWhiteSpace(request?.Email))
-                {
-                    return BadRequest(new { exists = false, message = "Email is required" });
-                }
+                    return BadRequest(new { exists = false });
 
-                var emailLower = request.Email.ToLower();
+                var emailLower = request.Email.Trim().ToLower();
 
-                // Check MainAdminUsers first
-                var adminUser = await _authService.GetUserByEmailAsync(request.Email);
-                if (adminUser != null)
-                {
-                    return Ok(new { exists = true, message = "Admin user found" });
-                }
+                var adminExists = await _authService.GetUserByEmailAsync(request.Email) != null;
+                if (adminExists)
+                    return Ok(new { exists = true });
 
-                // Check regular Users table
-                var regularUser = await _context.Users
-                    .FirstOrDefaultAsync(u => u.Email.ToLower() == emailLower && u.IsActive && !u.IsDeleted);
+                var regularExists = await _context.Users
+                    .AnyAsync(u => u.Email.ToLower() == emailLower && u.IsActive && !u.IsDeleted);
 
-                if (regularUser != null)
-                {
-                    return Ok(new { exists = true, message = "User found" });
-                }
-
-                return Ok(new { exists = false, message = "Email not found" });
+                return Ok(new { exists = regularExists });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error checking email existence");
-                return StatusCode(500, new { exists = false, message = "Error checking email" });
+                return StatusCode(500, new { exists = false });
             }
         }
 

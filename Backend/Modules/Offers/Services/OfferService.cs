@@ -338,55 +338,50 @@ namespace MyApi.Modules.Offers.Services
             offer.ModifiedBy = userId;
             offer.ModifiedDate = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
-
-            // Log status change activity if status was modified
+            // Stage the activity alongside the offer update so both commit atomically
             if (updateDto.Status != null && oldStatus != updateDto.Status)
             {
-                var statusActivity = new OfferActivity
+                _context.OfferActivities.Add(new OfferActivity
                 {
                     OfferId = id,
                     Type = "status_changed",
                     Description = $"Status changed from '{oldStatus}' to '{updateDto.Status}'",
                     CreatedAt = DateTime.UtcNow,
                     CreatedByName = userId
-                };
-                _context.OfferActivities.Add(statusActivity);
-                await _context.SaveChangesAsync();
-
-                // Trigger workflow automation for status change
-                if (_workflowTriggerService != null)
-                {
-                    try
-                    {
-                        await _workflowTriggerService.TriggerStatusChangeAsync(
-                            "offer",
-                            id,
-                            oldStatus ?? "",
-                            updateDto.Status,
-                            userId,
-                            new { offerId = id, offerNumber = offer.OfferNumber, title = offer.Title }
-                        );
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Failed to trigger workflow for offer {OfferId} status change", id);
-                    }
-                }
+                });
             }
             else
             {
-                // Log general update activity
-                var updateActivity = new OfferActivity
+                _context.OfferActivities.Add(new OfferActivity
                 {
                     OfferId = id,
                     Type = "updated",
                     Description = "Offer details were updated",
                     CreatedAt = DateTime.UtcNow,
                     CreatedByName = userId
-                };
-                _context.OfferActivities.Add(updateActivity);
-                await _context.SaveChangesAsync();
+                });
+            }
+
+            await _context.SaveChangesAsync();
+
+            // Trigger workflow automation for status change (after commit — fire-and-forget style)
+            if (updateDto.Status != null && oldStatus != updateDto.Status && _workflowTriggerService != null)
+            {
+                try
+                {
+                    await _workflowTriggerService.TriggerStatusChangeAsync(
+                        "offer",
+                        id,
+                        oldStatus ?? "",
+                        updateDto.Status,
+                        userId,
+                        new { offerId = id, offerNumber = offer.OfferNumber, title = offer.Title }
+                    );
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to trigger workflow for offer {OfferId} status change", id);
+                }
             }
 
             // ── Sync changes to linked Sale if offer was converted ──
@@ -839,7 +834,7 @@ namespace MyApi.Modules.Offers.Services
 
         public async Task<OfferStatsDto> GetOfferStatsAsync(DateTime? dateFrom = null, DateTime? dateTo = null)
         {
-            var query = _context.Offers.AsQueryable();
+            var query = _context.Offers.AsNoTracking().Where(o => !o.IsDeleted).AsQueryable();
 
             if (dateFrom.HasValue)
                 query = query.Where(o => o.CreatedDate >= dateFrom.Value);

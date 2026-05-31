@@ -3,7 +3,8 @@
     "allow": [
       "Bash(xargs wc *)",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\ihebc\\\\OneDrive\\\\Desktop\\\\FlowentraApp\" -Directory)",
-      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\ihebc\\\\OneDrive\\\\Desktop\\\\FlowentraApp\" -Recurse -Include \"*anning*\" -ErrorAction SilentlyContinue)"
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\ihebc\\\\OneDrive\\\\Desktop\\\\FlowentraApp\" -Recurse -Include \"*anning*\" -ErrorAction SilentlyContinue)",
+      "PowerShell(Head -30)"
     ]
   }
 }
