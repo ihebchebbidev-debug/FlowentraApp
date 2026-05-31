@@ -222,6 +222,59 @@ export class JobMappingService {
     };
   }
 
+  // ── Fetch already-planned/scheduled service orders ──
+
+  static async fetchPlannedServiceOrders(): Promise<ServiceOrder[]> {
+    const ordersResponse = await serviceOrdersApi.getAll({ pageSize: 200 });
+    const orders = ordersResponse.data.serviceOrders || [];
+    const plannedStatuses = ['scheduled', 'in_progress', 'planned', 'assigned', 'technically_completed'];
+    const filtered = orders.filter((so: any) => plannedStatuses.includes(so.status));
+
+    const result: ServiceOrder[] = [];
+    const batchSize = 20;
+    for (let i = 0; i < filtered.length; i += batchSize) {
+      const batch = filtered.slice(i, i + batchSize);
+      const settled = await Promise.allSettled(
+        batch.map(async (so: any) => {
+          try {
+            const fullOrder = await serviceOrdersApi.getById(so.id, true);
+            return { so, fullOrder };
+          } catch {
+            return null;
+          }
+        })
+      );
+
+      for (const res of settled) {
+        if (res.status !== 'fulfilled' || !res.value) continue;
+        const { so, fullOrder } = res.value;
+        const soJobs = (fullOrder.jobs || []).map((j: any) =>
+          JobMappingService.mapApiJobToLocal(j, fullOrder)
+        );
+        const soAny = so as any;
+        const customerName =
+          so.contactName ||
+          soAny.contact?.name ||
+          (soAny.contact?.firstName && soAny.contact?.lastName
+            ? `${soAny.contact.firstName} ${soAny.contact.lastName}`
+            : soAny.contact?.company || 'Unknown Customer');
+
+        result.push({
+          id: String(so.id),
+          title: so.title || so.orderNumber || `SO-${so.id}`,
+          customerName,
+          status: so.status as any,
+          priority: (so.priority || 'medium') as any,
+          jobs: soJobs,
+          totalEstimatedDuration: soJobs.reduce((sum: number, j: Job) => sum + (j.estimatedDuration || 0), 0),
+          location: { address: so.notes || fullOrder.notes || 'No address specified' },
+          createdAt: new Date(so.createdDate || Date.now()),
+        });
+      }
+    }
+    return result;
+  }
+
   static getServiceOrders(): ServiceOrder[] {
     return cacheService.serviceOrders;
   }

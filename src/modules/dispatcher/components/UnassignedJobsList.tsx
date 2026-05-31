@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
@@ -8,10 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
-import { 
-  Clock, 
-  Building2, 
-  User, 
+import {
+  Clock,
+  Building2,
+  User,
   Wrench,
   GripVertical,
   ChevronDown,
@@ -19,10 +20,14 @@ import {
   Package,
   Search,
   MapPin,
+  Eye,
+  EyeOff,
+  CheckCircle2,
 } from "lucide-react";
 
 import type { Job, ServiceOrder, InstallationGroup } from "../types";
 import { DispatcherService } from "../services/dispatcher.service";
+import { JobMappingService } from "../services/job-mapping.service";
 import { cn } from "@/lib/utils";
 import './dispatcher-drag.css';
 
@@ -60,6 +65,9 @@ export function UnassignedJobsList({
   const [searchTerm, setSearchTerm] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [_isDragging, setIsDragging] = useState(false);
+  const [showPlanned, setShowPlanned] = useState(false);
+  const [plannedOrders, setPlannedOrders] = useState<ServiceOrder[]>([]);
+  const [isLoadingPlanned, setIsLoadingPlanned] = useState(false);
 
 
   
@@ -141,6 +149,19 @@ export function UnassignedJobsList({
       setExpandedServiceOrders(new Set(groupedData.map(so => so.id)));
     }
   }, [planningMode, groupedData.length]);
+
+  // Fetch planned orders when toggle is activated
+  useEffect(() => {
+    if (!showPlanned) {
+      setPlannedOrders([]);
+      return;
+    }
+    setIsLoadingPlanned(true);
+    JobMappingService.fetchPlannedServiceOrders()
+      .then(setPlannedOrders)
+      .catch(console.error)
+      .finally(() => setIsLoadingPlanned(false));
+  }, [showPlanned]);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -371,6 +392,77 @@ export function UnassignedJobsList({
     target.classList.remove('drag-ready');
   };
 
+  const getStatusColor = (status: string): string => {
+    switch (status) {
+      case 'scheduled': return 'text-blue-500 border-blue-300';
+      case 'in_progress': return 'text-orange-500 border-orange-300';
+      case 'planned': return 'text-purple-500 border-purple-300';
+      case 'assigned': return 'text-teal-500 border-teal-300';
+      case 'technically_completed': return 'text-green-600 border-green-400';
+      default: return 'text-muted-foreground border-border';
+    }
+  };
+
+  const renderPlannedOrder = (so: ServiceOrder) => {
+    const key = `planned_${so.id}`;
+    const isExpanded = expandedServiceOrders.has(key);
+    const colorClass = getStatusColor(so.status);
+
+    return (
+      <div key={key} className="border rounded-lg bg-muted/10 overflow-hidden">
+        <div
+          className="p-2.5 border-b bg-muted/20 cursor-pointer hover:bg-muted/30 transition-colors"
+          onClick={() => toggleServiceOrder(key)}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <CheckCircle2 className="h-3.5 w-3.5 text-success flex-shrink-0" />
+              <span className="font-medium truncate text-xs flex-1 min-w-0 text-muted-foreground">
+                {so.title || `SO-${so.id}`}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <Badge variant="outline" className={`text-[0.65rem] px-1.5 py-0 h-[18px] ${colorClass}`}>
+                {t(`serviceOrders.status.${so.status}`, so.status.replace(/_/g, ' '))}
+              </Badge>
+              <ChevronDown
+                className={`h-3 w-3 transition-transform text-muted-foreground ${isExpanded ? 'rotate-180' : ''}`}
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 text-[0.65rem] text-muted-foreground mt-1 pl-5">
+            <User className="h-2.5 w-2.5 flex-shrink-0" />
+            <span className="truncate">{so.customerName}</span>
+            <span className="ml-auto flex-shrink-0">{so.jobs.length} {t('dispatcher.jobs', 'jobs')}</span>
+          </div>
+        </div>
+
+        {isExpanded && (
+          <div className="bg-background/30 space-y-1 p-2">
+            {so.jobs.length === 0 ? (
+              <p className="text-[0.65rem] text-muted-foreground text-center py-1">
+                {t('dispatcher.no_jobs', 'No jobs')}
+              </p>
+            ) : (
+              so.jobs.map(job => (
+                <div
+                  key={job.id}
+                  className="p-2 border rounded bg-muted/10 flex items-center gap-1.5"
+                >
+                  <Wrench className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                  <span className="text-xs text-muted-foreground truncate flex-1">{job.title}</span>
+                  <Badge variant="outline" className={`text-[0.6rem] px-1 py-0 h-[15px] flex-shrink-0 ${getStatusColor(job.status)}`}>
+                    {job.status}
+                  </Badge>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // Render a single job row (compact) with hover popup showing full details
   const renderJobRow = (job: Job) => {
     // Individual job dragging only when conversionMode=service and planningMode=job
@@ -513,6 +605,22 @@ export function UnassignedJobsList({
             </SelectContent>
           </Select>
         </div>
+
+        {/* Show Planned Toggle */}
+        <Button
+          variant={showPlanned ? "default" : "outline"}
+          size="sm"
+          onClick={() => setShowPlanned(prev => !prev)}
+          className="mt-2 h-7 w-full text-xs gap-1.5"
+          disabled={isLoadingPlanned}
+        >
+          {showPlanned ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+          {isLoadingPlanned
+            ? t('common.loading', 'Loading…')
+            : showPlanned
+              ? t('dispatcher.hide_planned', 'Hide Planned Orders')
+              : t('dispatcher.show_planned', 'Show Planned Orders')}
+        </Button>
 
       </CardHeader>
       <CardContent className="p-0">
@@ -722,6 +830,37 @@ export function UnassignedJobsList({
                   )}
                 </div>
               ))
+            )}
+            {/* Planned Orders Section */}
+            {showPlanned && (
+              <div className="mt-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="h-px flex-1 bg-border" />
+                  <span className="text-[0.6rem] uppercase tracking-wide text-muted-foreground font-medium flex items-center gap-1 whitespace-nowrap">
+                    <CheckCircle2 className="h-2.5 w-2.5 text-success" />
+                    {t('dispatcher.planned_orders', 'Planned Orders')}
+                  </span>
+                  <div className="h-px flex-1 bg-border" />
+                </div>
+                {isLoadingPlanned ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map(i => (
+                      <div key={i} className="border rounded-lg p-3 space-y-2">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-3 w-32" />
+                      </div>
+                    ))}
+                  </div>
+                ) : plannedOrders.length === 0 ? (
+                  <p className="text-center text-xs text-muted-foreground py-4">
+                    {t('dispatcher.no_planned_orders', 'No planned orders found')}
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {plannedOrders.map(so => renderPlannedOrder(so))}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </ScrollArea>
