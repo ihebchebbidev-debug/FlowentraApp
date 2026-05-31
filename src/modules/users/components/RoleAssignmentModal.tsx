@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { rolesApi } from "@/services/rolesApi";
 import { User, Role } from "@/types/users";
@@ -18,6 +18,7 @@ interface RoleAssignmentModalProps {
 }
 
 export function RoleAssignmentModal({ open, onOpenChange, user, onRoleAssigned }: RoleAssignmentModalProps) {
+  const { t } = useTranslation('users');
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [roles, setRoles] = useState<Role[]>([]);
@@ -37,12 +38,8 @@ export function RoleAssignmentModal({ open, onOpenChange, user, onRoleAssigned }
       setRolesLoading(true);
       const response = await rolesApi.getAll();
       setRoles(response.filter((role: Role) => role.isActive));
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to fetch roles",
-        variant: "destructive"
-      });
+    } catch {
+      toast({ title: t('common.error'), description: t('roleAssignment.toast.fetchFailed'), variant: "destructive" });
     } finally {
       setRolesLoading(false);
     }
@@ -53,34 +50,26 @@ export function RoleAssignmentModal({ open, onOpenChange, user, onRoleAssigned }
     try {
       const data = await rolesApi.getUserRoles(user.id);
       setUserRoles(data);
-    } catch (error) {
-      console.error("Failed to fetch user roles:", error);
+    } catch {
       setUserRoles([]);
     }
   };
 
   const handleAssignRole = async () => {
     if (!selectedRoleId || !user) return;
-
     try {
       setLoading(true);
       await rolesApi.assignToUser(parseInt(selectedRoleId), user.id);
-      toast({
-        title: "Success",
-        description: "Role assigned successfully"
-      });
-      
-      // Broadcast permission change so the user gets updated permissions in real-time
+      toast({ title: t('common.success'), description: t('roleAssignment.toast.assigned') });
       broadcastPermissionChange();
-      
       setSelectedRoleId("");
       fetchUserRoles();
       onRoleAssigned();
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error?.response?.data?.message || "Failed to assign role",
-        variant: "destructive"
+        title: t('common.error'),
+        description: error?.response?.data?.message || t('roleAssignment.toast.assignFailed'),
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -89,31 +78,22 @@ export function RoleAssignmentModal({ open, onOpenChange, user, onRoleAssigned }
 
   const handleRemoveRole = async (roleId: number) => {
     if (!user) return;
-
     try {
       await rolesApi.removeFromUser(roleId, user.id);
-      toast({
-        title: "Success",
-        description: "Role removed successfully"
-      });
-      
-      // Broadcast permission change so the user gets updated permissions in real-time
+      toast({ title: t('common.success'), description: t('roleAssignment.toast.removed') });
       broadcastPermissionChange();
-      
       fetchUserRoles();
       onRoleAssigned();
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error?.response?.data?.message || "Failed to remove role",
-        variant: "destructive"
+        title: t('common.error'),
+        description: error?.response?.data?.message || t('roleAssignment.toast.removeFailed'),
+        variant: "destructive",
       });
     }
   };
 
-  const availableRoles = roles.filter(role => 
-    !userRoles.some(userRole => userRole.id === role.id)
-  );
+  const availableRoles = roles.filter(role => !userRoles.some(userRole => userRole.id === role.id));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -121,17 +101,17 @@ export function RoleAssignmentModal({ open, onOpenChange, user, onRoleAssigned }
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold flex items-center gap-2">
             <Shield className="h-5 w-5 text-chart-1" />
-            Manage Roles
+            {t('roleAssignment.title')}
           </DialogTitle>
           <DialogDescription>
-            Assign and manage roles for {user?.firstName} {user?.lastName}
+            {t('roleAssignment.description', { firstName: user?.firstName, lastName: user?.lastName })}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
           {/* Current Roles */}
           <div className="space-y-3">
-            <Label className="text-sm font-medium">Current Roles</Label>
+            <Label className="text-sm font-medium">{t('roleAssignment.currentRoles')}</Label>
             {userRoles.length > 0 ? (
               <div className="space-y-2">
                 {userRoles.map((role) => (
@@ -158,25 +138,25 @@ export function RoleAssignmentModal({ open, onOpenChange, user, onRoleAssigned }
               </div>
             ) : (
               <div className="text-center py-4 text-muted-foreground text-sm bg-muted/10 rounded-lg">
-                No roles assigned
+                {t('roleAssignment.noRoles')}
               </div>
             )}
           </div>
 
           {/* Assign New Role */}
           <div className="space-y-3">
-            <Label className="text-sm font-medium">Assign New Role</Label>
+            <Label className="text-sm font-medium">{t('roleAssignment.assignNew')}</Label>
             <div className="flex gap-2">
-              <Select 
-                value={selectedRoleId} 
+              <Select
+                value={selectedRoleId}
                 onValueChange={setSelectedRoleId}
                 disabled={rolesLoading || availableRoles.length === 0}
               >
                 <SelectTrigger className="flex-1">
                   <SelectValue placeholder={
-                    rolesLoading ? "Loading roles..." : 
-                    availableRoles.length === 0 ? "No available roles" :
-                    "Select a role"
+                    rolesLoading ? t('roleAssignment.loadingRoles') :
+                    availableRoles.length === 0 ? t('roleAssignment.noAvailableRoles') :
+                    t('roleAssignment.selectRole')
                   } />
                 </SelectTrigger>
                 <SelectContent>
@@ -192,13 +172,9 @@ export function RoleAssignmentModal({ open, onOpenChange, user, onRoleAssigned }
                   ))}
                 </SelectContent>
               </Select>
-              <Button 
-                onClick={handleAssignRole}
-                disabled={!selectedRoleId || loading}
-                className="gradient-primary"
-              >
+              <Button onClick={handleAssignRole} disabled={!selectedRoleId || loading} className="gradient-primary">
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Assign
+                {t('roleAssignment.assign')}
               </Button>
             </div>
           </div>
@@ -206,7 +182,7 @@ export function RoleAssignmentModal({ open, onOpenChange, user, onRoleAssigned }
 
         <div className="flex justify-end gap-3 pt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Close
+            {t('roleAssignment.close')}
           </Button>
         </div>
       </DialogContent>

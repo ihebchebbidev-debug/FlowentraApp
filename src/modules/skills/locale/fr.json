@@ -1,6 +1,14 @@
 {
   "common": {
     "skills": "Compétences",
+    "managementTitle": "Gestion des compétences",
+    "managementDescription": "Gérer les compétences disponibles et leurs catégories",
+    "loading": "Chargement des compétences...",
+    "inactive": "Inactif",
+    "noResultsSearch": "Aucune compétence trouvée pour cette recherche.",
+    "noSkills": "Aucune compétence disponible.",
+    "userCount": "{{count}} utilisateur",
+    "userCountPlural": "{{count}} utilisateurs",
     "addSkill": "Ajouter une compétence",
     "editSkill": "Modifier la compétence",
     "deleteSkill": "Supprimer la compétence",

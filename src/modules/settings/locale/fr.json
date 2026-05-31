@@ -148,6 +148,13 @@
     "deleteFailed": "Échec de la suppression de l'utilisateur",
     "noUsersFound": "Aucun utilisateur trouvé.",
     "noUsersMatchingSearch": "Aucun utilisateur correspondant à votre recherche.",
+    "loading": "Chargement des utilisateurs...",
+    "noRole": "Sans rôle",
+    "editUser": "Modifier l'utilisateur",
+    "changeRole": "Changer de rôle",
+    "removeUser": "Supprimer l'utilisateur",
+    "deleteTitle": "Êtes-vous sûr ?",
+    "deleteDesc": "Cela supprimera définitivement {{firstName}} {{lastName}} ({{email}}). Cette action est irréversible.",
     "table": {
       "name": "Nom",
       "email": "E-mail",

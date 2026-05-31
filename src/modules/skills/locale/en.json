@@ -1,7 +1,15 @@
 {
   "common": {
     "skills": "Skills",
-    "addSkill": "Add skill",
+    "managementTitle": "Skills Management",
+    "managementDescription": "Manage available skills and their categories",
+    "loading": "Loading skills...",
+    "inactive": "Inactive",
+    "noResultsSearch": "No skills found matching your search.",
+    "noSkills": "No skills available.",
+    "userCount": "{{count}} user",
+    "userCountPlural": "{{count}} users",
+    "addSkill": "Add Skill",
     "editSkill": "Edit skill",
     "deleteSkill": "Delete skill",
     "name": "Name",

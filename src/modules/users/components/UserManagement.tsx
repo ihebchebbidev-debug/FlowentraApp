@@ -109,7 +109,7 @@ export function UserManagement() {
         <Card className="shadow-card border-0 bg-card">
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-center h-32">
-              <div className="animate-pulse text-muted-foreground">Loading users...</div>
+              <div className="animate-pulse text-muted-foreground">{t('users.loading')}</div>
             </div>
           </CardContent>
         </Card>
@@ -124,28 +124,28 @@ export function UserManagement() {
             <div className="p-2 rounded-lg bg-chart-2/10">
               <Users className="h-4 w-4 sm:h-5 sm:w-5 text-chart-2" />
             </div>
-            User Management
+            {t('users.managementTitle')}
           </CardTitle>
-          <CardDescription>Manage users, their roles, and permissions</CardDescription>
+          <CardDescription>{t('users.managementDesc')}</CardDescription>
         </CardHeader>
         <CardContent className="p-4 sm:p-6 space-y-4">
           {/* Search and Add User */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
           <div className="relative flex-1 w-full">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="Search users..." 
+            <Input
+              placeholder={t('users.searchUsers')}
               className="pl-10 h-9 sm:h-10"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Button 
+          <Button
             className="gradient-primary text-white shadow-medium hover-lift flex items-center gap-2 w-full sm:w-auto"
             onClick={() => setShowAddModal(true)}
           >
             <Plus className="h-4 w-4" />
-            Add User
+            {t('users.addUser')}
           </Button>
           </div>
 
@@ -167,9 +167,9 @@ export function UserManagement() {
                 </div>
                 <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-xs capitalize">{user.role || 'No Role'}</Badge>
+                    <Badge variant="outline" className="text-xs capitalize">{user.role || t('users.noRole')}</Badge>
                     <Badge className={user.isActive ? "status-success" : "status-warning"}>
-                      {user.isActive ? 'Active' : 'Inactive'}
+                      {user.isActive ? t('users.status.active') : t('users.status.inactive')}
                     </Badge>
                   </div>
                   <DropdownMenu>
@@ -184,21 +184,21 @@ export function UserManagement() {
                         onClick={() => { setSelectedUser(user); setShowEditModal(true); }}
                       >
                         <Edit className="h-4 w-4" />
-                        Edit User
+                        {t('users.editUser')}
                       </DropdownMenuItem>
-                      <DropdownMenuItem 
+                      <DropdownMenuItem
                         className="gap-2"
                         onClick={() => handleChangeRole(user)}
                       >
                         <Shield className="h-4 w-4" />
-                        Change Role
+                        {t('users.changeRole')}
                       </DropdownMenuItem>
-                      <DropdownMenuItem 
+                      <DropdownMenuItem
                         className="gap-2 text-destructive"
                         onClick={() => setUserToDelete(user)}
                       >
                         <Trash2 className="h-4 w-4" />
-                        Remove User
+                        {t('users.removeUser')}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -295,19 +295,22 @@ export function UserManagement() {
       <AlertDialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>{t('users.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete {userToDelete?.firstName} {userToDelete?.lastName} 
-              ({userToDelete?.email}). This action cannot be undone.
+              {t('users.deleteDesc', {
+                firstName: userToDelete?.firstName,
+                lastName: userToDelete?.lastName,
+                email: userToDelete?.email,
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => userToDelete && handleDeleteUser(userToDelete)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              {t('delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

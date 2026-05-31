@@ -132,7 +132,7 @@ export function SkillsManagement() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-muted-foreground">Loading skills...</div>
+        <div className="text-muted-foreground">{t('common.loading')}</div>
       </div>
     );
   }
@@ -145,28 +145,28 @@ export function SkillsManagement() {
             <div className="p-2 rounded-lg bg-chart-3/10">
               <Wrench className="h-4 w-4 sm:h-5 sm:w-5 text-chart-3" />
             </div>
-            Skills Management
+            {t('common.managementTitle')}
           </CardTitle>
-          <CardDescription>Manage available skills and their categories</CardDescription>
+          <CardDescription>{t('common.managementDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="p-4 sm:p-6 space-y-4">
           {/* Search and Add Skill */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
             <div className="relative flex-1 w-full">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Search skills..." 
-                className="pl-10 h-9 sm:h-10" 
+              <Input
+                placeholder={t('common.searchPlaceholder')}
+                className="pl-10 h-9 sm:h-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <Button 
+            <Button
               onClick={handleAddSkill}
               className="gradient-primary text-primary-foreground shadow-medium hover-lift flex items-center gap-2 w-full sm:w-auto"
             >
               <Plus className="h-4 w-4" />
-              Add Skill
+              {t('common.addSkill')}
             </Button>
           </div>
 
@@ -174,7 +174,7 @@ export function SkillsManagement() {
           <div className="space-y-3">
             {filteredSkills.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                {searchTerm ? "No skills found matching your search." : "No skills available."}
+                {searchTerm ? t('common.noResultsSearch') : t('common.noSkills')}
               </div>
             ) : (
               filteredSkills.map((skill) => (
@@ -187,22 +187,22 @@ export function SkillsManagement() {
                       <div className="flex items-center gap-2 mb-1">
                         <p className="font-medium text-foreground text-sm sm:text-base">{skill.name}</p>
                         {!skill.isActive && (
-                          <Badge variant="secondary" className="text-xs">Inactive</Badge>
+                          <Badge variant="secondary" className="text-xs">{t('common.inactive')}</Badge>
                         )}
                       </div>
                       {skill.description && (
                         <p className="text-sm text-muted-foreground mb-2">{skill.description}</p>
                       )}
                       <div className="flex flex-wrap gap-2">
-                        <Badge 
-                          variant="outline" 
+                        <Badge
+                          variant="outline"
                           className={`text-xs ${categoryColors[skill.category] || categoryColors.General}`}
                         >
                           {skill.category}
                         </Badge>
                         {skill.level && (
-                          <Badge 
-                            variant="outline" 
+                          <Badge
+                            variant="outline"
                             className={`text-xs ${levelStyles[skill.level] || 'bg-muted text-muted-foreground'}`}
                           >
                             {skill.level}
@@ -210,7 +210,9 @@ export function SkillsManagement() {
                         )}
                         {skill.userCount > 0 && (
                           <Badge variant="outline" className="text-xs">
-                            {skill.userCount} user{skill.userCount !== 1 ? 's' : ''}
+                            {skill.userCount === 1
+                              ? t('common.userCount', { count: skill.userCount })
+                              : t('common.userCountPlural', { count: skill.userCount })}
                           </Badge>
                         )}
                       </div>
@@ -224,19 +226,13 @@ export function SkillsManagement() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem 
-                          className="gap-2"
-                          onClick={() => handleEditSkill(skill)}
-                        >
+                        <DropdownMenuItem className="gap-2" onClick={() => handleEditSkill(skill)}>
                           <Edit className="h-4 w-4" />
-                          Edit Skill
+                          {t('common.editSkill')}
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          className="gap-2 text-destructive"
-                          onClick={() => handleDeleteSkill(skill)}
-                        >
+                        <DropdownMenuItem className="gap-2 text-destructive" onClick={() => handleDeleteSkill(skill)}>
                           <Trash2 className="h-4 w-4" />
-                          Delete Skill
+                          {t('common.deleteSkill')}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

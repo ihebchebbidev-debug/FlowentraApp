@@ -181,7 +181,7 @@ export function TechnicianDetailModal({
                 {isLoadingSkills ? (
                   <div className="flex items-center gap-2 text-muted-foreground text-sm">
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    Loading skills…
+                    {t('dispatcher.loading_skills')}
                   </div>
                 ) : userSkills.length > 0 ? (
                   <div className="space-y-1.5">

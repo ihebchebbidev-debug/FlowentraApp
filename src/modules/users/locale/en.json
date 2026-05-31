@@ -12,6 +12,9 @@
     "cancel": "Cancel",
     "creating": "Creating...",
     "createUser": "Create User",
+    "role": "Role",
+    "selectCountry": "Select country",
+    "selectRole": "Select role",
     "checkingEmail": "Checking email availability...",
     "placeholders": {
       "firstName": "John",
@@ -22,7 +25,14 @@
       "country": "US"
     },
     "errors": {
-      "fillRequired": "Please fill in all required fields"
+      "fillRequired": "Please fill in all required fields",
+      "emailRequired": "Email is required",
+      "emailInvalid": "Email is invalid",
+      "passwordRequired": "Password is required",
+      "passwordTooShort": "Password must be at least 8 characters",
+      "firstNameRequired": "First name is required",
+      "lastNameRequired": "Last name is required",
+      "countryRequired": "Country is required"
     },
     "success": {
       "title": "Success",
@@ -101,6 +111,25 @@
     "success": {
       "title": "Success",
       "message": "User updated successfully"
+    }
+  },
+  "roleAssignment": {
+    "title": "Manage Roles",
+    "description": "Assign and manage roles for {{firstName}} {{lastName}}",
+    "currentRoles": "Current Roles",
+    "noRoles": "No roles assigned",
+    "assignNew": "Assign New Role",
+    "loadingRoles": "Loading roles...",
+    "noAvailableRoles": "No available roles",
+    "selectRole": "Select a role",
+    "assign": "Assign",
+    "close": "Close",
+    "toast": {
+      "fetchFailed": "Failed to fetch roles",
+      "assigned": "Role assigned successfully",
+      "assignFailed": "Failed to assign role",
+      "removed": "Role removed successfully",
+      "removeFailed": "Failed to remove role"
     }
   },
   "common": {

@@ -252,6 +252,19 @@ export const en = {
     dispatch_deleted_success: "Dispatch deleted! Job is now available for reassignment.",
     failed_to_delete_dispatch: "Failed to delete dispatch",
     
+    // Skills loading
+    loading_skills: "Loading skills…",
+
+    // Overlap dialog
+    overlap_detected: "Overlap detected",
+    overlap_slot: "The slot {{start}} – {{end}} overlaps with {{count}} existing job(s):",
+    overlap_suggested: "Suggested next free slot: {{time}}",
+    overlap_stacks: "Overlapping jobs will stack visually under the technician row.",
+    overlap_auto_shift: "Auto-shift to {{time}}",
+    overlap_keep: "Keep overlap anyway",
+    overlap_more: "+{{count}} more",
+    job_number: "Job #{{id}}",
+
     // Loading overlay
     preparing_dispatch_board: "Preparing Dispatch Board",
     loading_resources: "Loading resources for optimal performance",

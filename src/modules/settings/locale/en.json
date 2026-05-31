@@ -148,6 +148,13 @@
     "deleteFailed": "Failed to delete user",
     "noUsersFound": "No users found.",
     "noUsersMatchingSearch": "No users found matching your search.",
+    "loading": "Loading users...",
+    "noRole": "No Role",
+    "editUser": "Edit User",
+    "changeRole": "Change Role",
+    "removeUser": "Remove User",
+    "deleteTitle": "Are you sure?",
+    "deleteDesc": "This will permanently delete {{firstName}} {{lastName}} ({{email}}). This action cannot be undone.",
     "table": {
       "name": "Name",
       "email": "Email",

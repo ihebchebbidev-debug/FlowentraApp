@@ -252,6 +252,19 @@ export const fr = {
     dispatch_deleted_success: "Intervention supprimée ! La tâche est maintenant disponible pour réaffectation.",
     failed_to_delete_dispatch: "Échec de la suppression de l'intervention",
     
+    // Skills loading
+    loading_skills: "Chargement des compétences…",
+
+    // Overlap dialog
+    overlap_detected: "Chevauchement détecté",
+    overlap_slot: "Le créneau {{start}} – {{end}} chevauche {{count}} tâche(s) existante(s) :",
+    overlap_suggested: "Prochain créneau libre suggéré : {{time}}",
+    overlap_stacks: "Les tâches qui se chevauchent seront empilées visuellement sous la rangée du technicien.",
+    overlap_auto_shift: "Décaler à {{time}}",
+    overlap_keep: "Garder quand même",
+    overlap_more: "+{{count}} de plus",
+    job_number: "Tâche #{{id}}",
+
     // Loading overlay
     preparing_dispatch_board: "Préparation du Tableau de Répartition",
     loading_resources: "Chargement des ressources pour des performances optimales",

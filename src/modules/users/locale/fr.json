@@ -12,6 +12,9 @@
     "cancel": "Annuler",
     "creating": "Création...",
     "createUser": "Créer l'utilisateur",
+    "role": "Rôle",
+    "selectCountry": "Sélectionner un pays",
+    "selectRole": "Sélectionner un rôle",
     "checkingEmail": "Vérification de la disponibilité de l'e-mail...",
     "placeholders": {
       "firstName": "Jean",
@@ -22,7 +25,14 @@
       "country": "FR"
     },
     "errors": {
-      "fillRequired": "Veuillez remplir tous les champs obligatoires"
+      "fillRequired": "Veuillez remplir tous les champs obligatoires",
+      "emailRequired": "L'e-mail est requis",
+      "emailInvalid": "L'e-mail est invalide",
+      "passwordRequired": "Le mot de passe est requis",
+      "passwordTooShort": "Le mot de passe doit contenir au moins 8 caractères",
+      "firstNameRequired": "Le prénom est requis",
+      "lastNameRequired": "Le nom est requis",
+      "countryRequired": "Le pays est requis"
     },
     "success": {
       "title": "Succès",
@@ -101,6 +111,25 @@
     "success": {
       "title": "Succès",
       "message": "Utilisateur mis à jour avec succès"
+    }
+  },
+  "roleAssignment": {
+    "title": "Gérer les rôles",
+    "description": "Assigner et gérer les rôles de {{firstName}} {{lastName}}",
+    "currentRoles": "Rôles actuels",
+    "noRoles": "Aucun rôle attribué",
+    "assignNew": "Attribuer un nouveau rôle",
+    "loadingRoles": "Chargement des rôles...",
+    "noAvailableRoles": "Aucun rôle disponible",
+    "selectRole": "Sélectionner un rôle",
+    "assign": "Attribuer",
+    "close": "Fermer",
+    "toast": {
+      "fetchFailed": "Échec du chargement des rôles",
+      "assigned": "Rôle attribué avec succès",
+      "assignFailed": "Échec de l'attribution du rôle",
+      "removed": "Rôle retiré avec succès",
+      "removeFailed": "Échec du retrait du rôle"
     }
   },
   "common": {
