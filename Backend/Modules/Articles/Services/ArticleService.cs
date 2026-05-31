@@ -241,29 +241,23 @@ namespace MyApi.Modules.Articles.Services
         {
             var result = new BatchOperationResultDto { Success = true };
 
+            var ids = dto.Items.Select(i => i.Id).ToList();
+            var articles = await _context.Set<Article>()
+                .Where(a => ids.Contains(a.Id))
+                .ToDictionaryAsync(a => a.Id);
+
             foreach (var item in dto.Items)
             {
-                try
+                if (articles.TryGetValue(item.Id, out var article))
                 {
-                    var article = await _context.Set<Article>()
-                        .FirstOrDefaultAsync(a => a.Id == item.Id);
-
-                    if (article != null)
-                    {
-                        article.StockQuantity = item.StockQuantity;
-                        article.ModifiedDate = DateTime.UtcNow;
-                        result.Updated++;
-                    }
-                    else
-                    {
-                        result.Failed++;
-                        result.Errors.Add($"Article {item.Id} not found");
-                    }
+                    article.StockQuantity = item.StockQuantity;
+                    article.ModifiedDate = DateTime.UtcNow;
+                    result.Updated++;
                 }
-                catch (Exception ex)
+                else
                 {
                     result.Failed++;
-                    result.Errors.Add($"Error updating article {item.Id}: {ex.Message}");
+                    result.Errors.Add($"Article {item.Id} not found");
                 }
             }
 

@@ -288,10 +288,9 @@ namespace MyApi.Modules.Projects.Services
                     CreatedDate = DateTime.UtcNow
                 };
 
+                // Stage both the creation and the item removal in one save so that
+                // a failure cannot leave a new task without removing the checklist item.
                 _context.ProjectTasks.Add(newTask);
-                await _context.SaveChangesAsync();
-
-                // Delete the original item
                 _context.TaskChecklistItems.Remove(item);
                 await _context.SaveChangesAsync();
 
@@ -301,7 +300,7 @@ namespace MyApi.Modules.Projects.Services
             {
                 // Create a new DailyTask
                 var parentDailyTask = await _context.DailyTasks.FindAsync(checklist.DailyTaskId.Value);
-                
+
                 var newTask = new DailyTask
                 {
                     Title = item.Title,
@@ -314,10 +313,8 @@ namespace MyApi.Modules.Projects.Services
                     CreatedDate = DateTime.UtcNow
                 };
 
+                // Same: stage both operations atomically.
                 _context.DailyTasks.Add(newTask);
-                await _context.SaveChangesAsync();
-
-                // Delete the original item
                 _context.TaskChecklistItems.Remove(item);
                 await _context.SaveChangesAsync();
 
