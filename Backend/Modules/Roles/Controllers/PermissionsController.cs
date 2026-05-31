@@ -8,6 +8,7 @@ namespace MyApi.Modules.Roles.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class PermissionsController : ControllerBase
     {
         private readonly IPermissionService _permissionService;
@@ -18,6 +19,11 @@ namespace MyApi.Modules.Roles.Controllers
             _permissionService = permissionService;
             _logger = logger;
         }
+
+        private string GetCurrentUserIdentity() =>
+            User?.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
+            ?? User?.FindFirst("UserId")?.Value
+            ?? "system";
 
         /// <summary>
         /// Get all permissions for a specific role
@@ -51,7 +57,7 @@ namespace MyApi.Modules.Roles.Controllers
         {
             try
             {
-                var modifiedBy = "System"; // TODO: Get from authenticated user
+                var modifiedBy = GetCurrentUserIdentity();
                 var permissions = await _permissionService.UpdateRolePermissionsAsync(roleId, request, modifiedBy);
                 return Ok(ApiResponse<RolePermissionsDto>.SuccessResponse(permissions, "Role permissions updated successfully"));
             }
@@ -81,7 +87,7 @@ namespace MyApi.Modules.Roles.Controllers
                     return BadRequest(ApiResponse<object>.ErrorResponse("Module and action are required"));
                 }
 
-                var modifiedBy = "System"; // TODO: Get from authenticated user
+                var modifiedBy = GetCurrentUserIdentity();
                 var permission = await _permissionService.SetPermissionAsync(roleId, request, modifiedBy);
                 return Ok(ApiResponse<PermissionDto>.SuccessResponse(permission, "Permission set successfully"));
             }
@@ -175,7 +181,7 @@ namespace MyApi.Modules.Roles.Controllers
         {
             try
             {
-                var modifiedBy = "System"; // TODO: Get from authenticated user
+                var modifiedBy = GetCurrentUserIdentity();
                 var success = await _permissionService.GrantAllPermissionsAsync(roleId, modifiedBy);
                 if (!success)
                 {
@@ -198,7 +204,7 @@ namespace MyApi.Modules.Roles.Controllers
         {
             try
             {
-                var modifiedBy = "System"; // TODO: Get from authenticated user
+                var modifiedBy = GetCurrentUserIdentity();
                 var success = await _permissionService.RevokeAllPermissionsAsync(roleId, modifiedBy);
                 return Ok(ApiResponse<object>.SuccessResponse(null, "All permissions revoked successfully"));
             }
@@ -217,7 +223,7 @@ namespace MyApi.Modules.Roles.Controllers
         {
             try
             {
-                var modifiedBy = "System"; // TODO: Get from authenticated user
+                var modifiedBy = GetCurrentUserIdentity();
                 var success = await _permissionService.GrantModulePermissionsAsync(roleId, module, modifiedBy);
                 if (!success)
                 {
@@ -240,7 +246,7 @@ namespace MyApi.Modules.Roles.Controllers
         {
             try
             {
-                var modifiedBy = "System"; // TODO: Get from authenticated user
+                var modifiedBy = GetCurrentUserIdentity();
                 var success = await _permissionService.RevokeModulePermissionsAsync(roleId, module, modifiedBy);
                 return Ok(ApiResponse<object>.SuccessResponse(null, $"All {module} permissions revoked successfully"));
             }

@@ -80,15 +80,13 @@ namespace MyApi.Modules.Roles.Services
             if (role == null)
                 throw new ArgumentException("Role not found");
 
+            var existingMap = await _context.RolePermissions
+                .Where(rp => rp.RoleId == roleId)
+                .ToDictionaryAsync(rp => (rp.Module, rp.Action));
+
             foreach (var permRequest in request.Permissions)
             {
-                var existingPermission = await _context.RolePermissions
-                    .FirstOrDefaultAsync(rp => 
-                        rp.RoleId == roleId && 
-                        rp.Module == permRequest.Module && 
-                        rp.Action == permRequest.Action);
-
-                if (existingPermission != null)
+                if (existingMap.TryGetValue((permRequest.Module, permRequest.Action), out var existingPermission))
                 {
                     existingPermission.Granted = permRequest.Granted;
                     existingPermission.UpdatedAt = DateTime.UtcNow;
@@ -96,7 +94,7 @@ namespace MyApi.Modules.Roles.Services
                 }
                 else
                 {
-                    var newPermission = new RolePermission
+                    _context.RolePermissions.Add(new RolePermission
                     {
                         RoleId = roleId,
                         Module = permRequest.Module,
@@ -104,8 +102,7 @@ namespace MyApi.Modules.Roles.Services
                         Granted = permRequest.Granted,
                         CreatedAt = DateTime.UtcNow,
                         CreatedBy = modifiedBy
-                    };
-                    _context.RolePermissions.Add(newPermission);
+                    });
                 }
             }
 

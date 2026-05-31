@@ -8,6 +8,7 @@ namespace MyApi.Modules.Roles.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class RolesController : ControllerBase
     {
         private readonly IRoleService _roleService;
@@ -18,6 +19,11 @@ namespace MyApi.Modules.Roles.Controllers
             _roleService = roleService;
             _logger = logger;
         }
+
+        private string GetCurrentUserIdentity() =>
+            User?.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
+            ?? User?.FindFirst("UserId")?.Value
+            ?? "system";
 
         [HttpGet]
         public async Task<ActionResult<ApiResponse<IEnumerable<RoleDto>>>> GetAllRoles()
@@ -90,7 +96,7 @@ namespace MyApi.Modules.Roles.Controllers
                     return BadRequest(ApiResponse<object>.ErrorResponse("A role with this name already exists"));
                 }
 
-                var createdBy = "System"; // TODO: Get from authenticated user
+                var createdBy = GetCurrentUserIdentity();
                 var role = await _roleService.CreateRoleAsync(request, createdBy);
 
                 return CreatedAtAction(nameof(GetRole), new { id = role.Id }, 
@@ -118,7 +124,7 @@ namespace MyApi.Modules.Roles.Controllers
                     return BadRequest(ApiResponse<object>.ErrorResponse("A role with this name already exists"));
                 }
 
-                var modifiedBy = "System"; // TODO: Get from authenticated user
+                var modifiedBy = GetCurrentUserIdentity();
                 var role = await _roleService.UpdateRoleAsync(id, request, modifiedBy);
 
                 return Ok(ApiResponse<RoleDto>.SuccessResponse(role, "Role updated successfully"));
@@ -159,7 +165,7 @@ namespace MyApi.Modules.Roles.Controllers
         {
             try
             {
-                var assignedBy = "System"; // TODO: Get from authenticated user
+                var assignedBy = GetCurrentUserIdentity();
                 var success = await _roleService.AssignRoleToUserAsync(userId, roleId, assignedBy);
                 
                 return Ok(ApiResponse<object>.SuccessResponse(null, "Role assigned to user successfully"));

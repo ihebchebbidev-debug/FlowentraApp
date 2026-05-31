@@ -32,19 +32,19 @@ namespace MyApi.Modules.Users.Services
         {
             try
             {
-                var users = await _context.Users
-                    .AsNoTracking()
-                    .Where(u => !u.IsDeleted)
-                    .OrderByDescending(u => u.CreatedDate)
-                    .Take(500) // ✅ Safety cap — prevents OOM on large datasets
-                    .ToListAsync();
+                var baseQuery = _context.Users.AsNoTracking().Where(u => !u.IsDeleted);
 
-                var userDtos = users.Select(u => MapToUserDto(u)).ToList();
+                var totalCount = await baseQuery.CountAsync();
+
+                var users = await baseQuery
+                    .OrderByDescending(u => u.CreatedDate)
+                    .Take(500)
+                    .ToListAsync();
 
                 return new UserListResponseDto
                 {
-                    Users = userDtos,
-                    TotalCount = userDtos.Count
+                    Users = users.Select(u => MapToUserDto(u)).ToList(),
+                    TotalCount = totalCount
                 };
             }
             catch (Exception ex)
@@ -412,8 +412,8 @@ namespace MyApi.Modules.Users.Services
                     return (false, "No account found with this email address");
                 }
 
-                // Generate 6-digit OTP
-                var otpCode = new Random().Next(100000, 999999).ToString();
+                // Generate cryptographically secure 6-digit OTP
+                var otpCode = RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
                 user.OtpCode = otpCode;
                 user.OtpExpiresAt = DateTime.UtcNow.AddMinutes(5);
                 user.ModifiedDate = DateTime.UtcNow;

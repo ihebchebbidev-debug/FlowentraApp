@@ -1316,96 +1316,96 @@ namespace MyApi.Modules.Auth.Services
         {
             try
             {
-                _logger.LogInformation($"[VERIFY_OTP] Starting OTP verification for email: {request.Email}, OTP code provided: {request.OtpCode}");
+                _logger.LogInformation($"[VERIFY_OTP] Starting OTP verification for email: {request.Email}");
 
+                var emailLower = request.Email.ToLower().Trim();
+
+                // Try MainAdminUsers first
                 var admin = await _context.MainAdminUsers
-                    .FirstOrDefaultAsync(u => u.Email.ToLower() == request.Email.ToLower());
+                    .FirstOrDefaultAsync(u => u.Email.ToLower() == emailLower);
 
-                if (admin == null)
+                if (admin != null)
                 {
-                    _logger.LogWarning($"[VERIFY_OTP] User not found for email: {request.Email}");
-                    return new VerifyOtpResponseDto
+                    _logger.LogInformation($"[VERIFY_OTP] Admin user found with ID: {admin.Id}");
+
+                    if (string.IsNullOrEmpty(admin.OtpCode) || admin.OtpExpiresAt == null)
                     {
-                        Success = false,
-                        Message = "User account not found"
-                    };
-                }
+                        return new VerifyOtpResponseDto { Success = false, Message = "No OTP found. Please request a new password reset." };
+                    }
 
-                _logger.LogInformation($"[VERIFY_OTP] User found with ID: {admin.Id}");
-
-                // Check if OTP exists and is not expired
-                if (string.IsNullOrEmpty(admin.OtpCode) || admin.OtpExpiresAt == null)
-                {
-                    _logger.LogWarning($"[VERIFY_OTP] No OTP found for user {admin.Id}. OtpCode: {(string.IsNullOrEmpty(admin.OtpCode) ? "NULL" : "SET")}, OtpExpiresAt: {(admin.OtpExpiresAt?.ToString("O") ?? "NULL")}");
-                    return new VerifyOtpResponseDto
+                    if (DateTime.UtcNow > admin.OtpExpiresAt)
                     {
-                        Success = false,
-                        Message = "No OTP found. Please request a new password reset."
-                    };
-                }
+                        admin.OtpCode = null;
+                        admin.OtpExpiresAt = null;
+                        await _context.SaveChangesAsync();
+                        return new VerifyOtpResponseDto { Success = false, Message = "OTP has expired. Please request a new password reset." };
+                    }
 
-                _logger.LogInformation($"[VERIFY_OTP] OTP found for user {admin.Id}. Current time: {DateTime.UtcNow:O}, OTP expires: {admin.OtpExpiresAt?.ToString("O")}");
+                    if (admin.OtpCode != request.OtpCode)
+                    {
+                        return new VerifyOtpResponseDto { Success = false, Message = "Invalid OTP code. Please check and try again." };
+                    }
 
-                if (DateTime.UtcNow > admin.OtpExpiresAt)
-                {
-                    var timeExpiredSinceNow = DateTime.UtcNow.Subtract(admin.OtpExpiresAt.Value).TotalSeconds;
-                    _logger.LogWarning($"[VERIFY_OTP] OTP expired for user {admin.Id}. Expired {timeExpiredSinceNow:F0} seconds ago.");
-                    
-                    // Clear expired OTP
+                    var resetToken = GenerateRefreshToken();
+                    admin.PasswordResetToken = resetToken;
+                    admin.PasswordResetTokenExpiresAt = DateTime.UtcNow.AddHours(1);
                     admin.OtpCode = null;
                     admin.OtpExpiresAt = null;
+                    admin.UpdatedAt = DateTime.UtcNow;
+
                     await _context.SaveChangesAsync();
-                    _logger.LogInformation($"[VERIFY_OTP] Cleared expired OTP from database for user {admin.Id}");
+                    _logger.LogInformation($"[VERIFY_OTP] Reset token generated for admin user {admin.Id}");
 
-                    return new VerifyOtpResponseDto
-                    {
-                        Success = false,
-                        Message = $"OTP has expired (expired {timeExpiredSinceNow:F0} seconds ago). Please request a new password reset."
-                    };
+                    return new VerifyOtpResponseDto { Success = true, Message = "OTP verified successfully. You can now reset your password.", ResetToken = resetToken };
                 }
 
-                var timeRemainingSeconds = admin.OtpExpiresAt!.Value.Subtract(DateTime.UtcNow).TotalSeconds;
-                _logger.LogInformation($"[VERIFY_OTP] OTP still valid for user {admin.Id}. {timeRemainingSeconds:F0} seconds remaining.");
+                // Fallback: check regular Users table (handles users who used /api/Auth/forgot-password)
+                var regularUser = await _context.Users
+                    .FirstOrDefaultAsync(u => u.Email.ToLower() == emailLower && u.IsActive && !u.IsDeleted);
 
-                // Verify OTP matches
-                if (admin.OtpCode != request.OtpCode)
+                if (regularUser != null)
                 {
-                    _logger.LogWarning($"[VERIFY_OTP] OTP mismatch for user {admin.Id}. Expected: {admin.OtpCode}, Received: {request.OtpCode}");
-                    return new VerifyOtpResponseDto
+                    _logger.LogInformation($"[VERIFY_OTP] Regular user found with ID: {regularUser.Id}");
+
+                    if (string.IsNullOrEmpty(regularUser.OtpCode) || regularUser.OtpExpiresAt == null)
                     {
-                        Success = false,
-                        Message = "Invalid OTP code. Please check and try again."
-                    };
+                        return new VerifyOtpResponseDto { Success = false, Message = "No OTP found. Please request a new password reset." };
+                    }
+
+                    if (DateTime.UtcNow > regularUser.OtpExpiresAt)
+                    {
+                        regularUser.OtpCode = null;
+                        regularUser.OtpExpiresAt = null;
+                        await _context.SaveChangesAsync();
+                        return new VerifyOtpResponseDto { Success = false, Message = "OTP has expired. Please request a new password reset." };
+                    }
+
+                    if (regularUser.OtpCode != request.OtpCode)
+                    {
+                        return new VerifyOtpResponseDto { Success = false, Message = "Invalid OTP code. Please check and try again." };
+                    }
+
+                    var resetToken = GenerateRefreshToken();
+                    regularUser.PasswordResetToken = resetToken;
+                    regularUser.PasswordResetTokenExpiresAt = DateTime.UtcNow.AddHours(1);
+                    regularUser.OtpCode = null;
+                    regularUser.OtpExpiresAt = null;
+                    regularUser.ModifyDate = DateTime.UtcNow;
+                    regularUser.ModifyUser = "system";
+
+                    await _context.SaveChangesAsync();
+                    _logger.LogInformation($"[VERIFY_OTP] Reset token generated for regular user {regularUser.Id}");
+
+                    return new VerifyOtpResponseDto { Success = true, Message = "OTP verified successfully. You can now reset your password.", ResetToken = resetToken };
                 }
 
-                _logger.LogInformation($"[VERIFY_OTP] OTP matched! Generating reset token for user {admin.Id}");
-
-                // Generate secure reset token (expires in 1 hour)
-                var resetToken = GenerateRefreshToken();
-                admin.PasswordResetToken = resetToken;
-                admin.PasswordResetTokenExpiresAt = DateTime.UtcNow.AddHours(1);
-                admin.OtpCode = null; // Clear OTP after verification
-                admin.OtpExpiresAt = null;
-                admin.UpdatedAt = DateTime.UtcNow;
-
-                await _context.SaveChangesAsync();
-                _logger.LogInformation($"[VERIFY_OTP] Reset token generated and saved for user {admin.Id}. Token expires: {admin.PasswordResetTokenExpiresAt?.ToString("O")}");
-
-                return new VerifyOtpResponseDto
-                {
-                    Success = true,
-                    Message = "OTP verified successfully. You can now reset your password.",
-                    ResetToken = resetToken
-                };
+                _logger.LogWarning($"[VERIFY_OTP] No user found for email: {request.Email}");
+                return new VerifyOtpResponseDto { Success = false, Message = "User account not found" };
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"[VERIFY_OTP] CRITICAL ERROR during OTP verification for {request.Email}: {ex.Message}\nStack Trace: {ex.StackTrace}");
-                return new VerifyOtpResponseDto
-                {
-                    Success = false,
-                    Message = "An error occurred during OTP verification. Please try again later."
-                };
+                _logger.LogError(ex, $"[VERIFY_OTP] Error during OTP verification for {request.Email}");
+                return new VerifyOtpResponseDto { Success = false, Message = "An error occurred during OTP verification. Please try again later." };
             }
         }
 
@@ -1441,72 +1441,73 @@ namespace MyApi.Modules.Auth.Services
 
                 _logger.LogInformation($"[RESET_PASSWORD] Password validation passed. Looking up user by reset token");
 
-                // Find user by reset token
+                // Find user by reset token — check MainAdminUsers first, then regular Users
                 var admin = await _context.MainAdminUsers
                     .FirstOrDefaultAsync(u => u.PasswordResetToken == request.ResetToken);
 
-                if (admin == null)
+                if (admin != null)
                 {
-                    _logger.LogWarning($"[RESET_PASSWORD] No user found with the provided reset token");
-                    return new AuthResponseDto
+                    _logger.LogInformation($"[RESET_PASSWORD] Admin user found with ID: {admin.Id}");
+
+                    if (admin.PasswordResetTokenExpiresAt == null || DateTime.UtcNow > admin.PasswordResetTokenExpiresAt)
                     {
-                        Success = false,
-                        Message = "Invalid reset token. Please request a new password reset."
-                    };
-                }
+                        admin.PasswordResetToken = null;
+                        admin.PasswordResetTokenExpiresAt = null;
+                        await _context.SaveChangesAsync();
+                        return new AuthResponseDto { Success = false, Message = "Reset token has expired. Please request a new password reset." };
+                    }
 
-                _logger.LogInformation($"[RESET_PASSWORD] User found with ID: {admin.Id}, Email: {admin.Email}");
-
-                // Check if token is expired
-                if (admin.PasswordResetTokenExpiresAt == null)
-                {
-                    _logger.LogWarning($"[RESET_PASSWORD] Reset token expiry is null for user {admin.Id}");
-                    return new AuthResponseDto
-                    {
-                        Success = false,
-                        Message = "Reset token is invalid. Please request a new password reset."
-                    };
-                }
-
-                if (DateTime.UtcNow > admin.PasswordResetTokenExpiresAt)
-                {
-                    var timeExpiredSinceNow = DateTime.UtcNow.Subtract(admin.PasswordResetTokenExpiresAt.Value).TotalSeconds;
-                    _logger.LogWarning($"[RESET_PASSWORD] Reset token expired for user {admin.Id}. Expired {timeExpiredSinceNow:F0} seconds ago.");
-                    
-                    // Clear expired token
+                    admin.PasswordHash = HashPassword(request.NewPassword);
                     admin.PasswordResetToken = null;
                     admin.PasswordResetTokenExpiresAt = null;
-                    await _context.SaveChangesAsync();
-                    _logger.LogInformation($"[RESET_PASSWORD] Cleared expired reset token from database for user {admin.Id}");
+                    admin.AccessToken = null;
+                    admin.RefreshToken = null;
+                    admin.TokenExpiresAt = null;
+                    admin.UpdatedAt = DateTime.UtcNow;
 
-                    return new AuthResponseDto
-                    {
-                        Success = false,
-                        Message = $"Reset token has expired (expired {timeExpiredSinceNow:F0} seconds ago). Please request a new password reset."
-                    };
+                    await _context.SaveChangesAsync();
+                    _logger.LogInformation($"[RESET_PASSWORD] Password reset successfully for admin user {admin.Id}");
+
+                    return new AuthResponseDto { Success = true, Message = "Password reset successfully. Please login with your new password." };
                 }
 
-                var timeRemainingSeconds = admin.PasswordResetTokenExpiresAt.Value.Subtract(DateTime.UtcNow).TotalSeconds;
-                _logger.LogInformation($"[RESET_PASSWORD] Reset token valid for user {admin.Id}. {timeRemainingSeconds:F0} seconds remaining. Hashing new password.");
+                // Fallback: check regular Users table
+                var regularUser = await _context.Users
+                    .IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(u => u.PasswordResetToken == request.ResetToken && u.IsActive && !u.IsDeleted);
 
-                // Update password
-                var oldPasswordHash = admin.PasswordHash;
-                admin.PasswordHash = HashPassword(request.NewPassword);
-                admin.PasswordResetToken = null;
-                admin.PasswordResetTokenExpiresAt = null;
-                admin.AccessToken = null; // Invalidate all existing tokens
-                admin.RefreshToken = null;
-                admin.TokenExpiresAt = null;
-                admin.UpdatedAt = DateTime.UtcNow;
+                if (regularUser != null)
+                {
+                    _logger.LogInformation($"[RESET_PASSWORD] Regular user found with ID: {regularUser.Id}");
 
-                await _context.SaveChangesAsync();
+                    if (regularUser.PasswordResetTokenExpiresAt == null || DateTime.UtcNow > regularUser.PasswordResetTokenExpiresAt)
+                    {
+                        regularUser.PasswordResetToken = null;
+                        regularUser.PasswordResetTokenExpiresAt = null;
+                        await _context.SaveChangesAsync();
+                        return new AuthResponseDto { Success = false, Message = "Reset token has expired. Please request a new password reset." };
+                    }
 
-                _logger.LogInformation($"[RESET_PASSWORD] Password reset successfully for user ID: {admin.Id}. Password hash updated, all tokens cleared, user session invalidated.");
+                    regularUser.PasswordHash = HashPassword(request.NewPassword);
+                    regularUser.PasswordResetToken = null;
+                    regularUser.PasswordResetTokenExpiresAt = null;
+                    regularUser.AccessToken = null;
+                    regularUser.RefreshToken = null;
+                    regularUser.TokenExpiresAt = null;
+                    regularUser.ModifyDate = DateTime.UtcNow;
+                    regularUser.ModifyUser = "system";
 
+                    await _context.SaveChangesAsync();
+                    _logger.LogInformation($"[RESET_PASSWORD] Password reset successfully for regular user {regularUser.Id}");
+
+                    return new AuthResponseDto { Success = true, Message = "Password reset successfully. Please login with your new password." };
+                }
+
+                _logger.LogWarning($"[RESET_PASSWORD] No user found with the provided reset token");
                 return new AuthResponseDto
                 {
-                    Success = true,
-                    Message = "Password reset successfully. Please login with your new password."
+                    Success = false,
+                    Message = "Invalid reset token. Please request a new password reset."
                 };
             }
             catch (Exception ex)
@@ -1523,10 +1524,7 @@ namespace MyApi.Modules.Auth.Services
         /// <summary>
         /// Generates a random 6-digit OTP
         /// </summary>
-        private string GenerateOtp()
-        {
-            var random = new Random();
-            return random.Next(100000, 999999).ToString();
-        }
+        private static string GenerateOtp() =>
+            RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
     }
 }
