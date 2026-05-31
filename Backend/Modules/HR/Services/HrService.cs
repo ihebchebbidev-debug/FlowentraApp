@@ -516,12 +516,13 @@ namespace MyApi.Modules.HR.Services
         public async Task<List<HrPayrollRunDto>> ListPayrollRunsAsync(int year)
         {
             var runs = await _db.Set<HrPayrollRun>()
+                .AsNoTracking()
                 .Where(x => x.Year == year)
                 .OrderByDescending(x => x.Year).ThenByDescending(x => x.Month)
                 .ToListAsync();
 
             var runIds = runs.Select(x => x.Id).ToList();
-            var entries = await _db.Set<HrPayrollEntry>().Where(x => runIds.Contains(x.PayrollRunId)).ToListAsync();
+            var entries = await _db.Set<HrPayrollEntry>().AsNoTracking().Where(x => runIds.Contains(x.PayrollRunId)).ToListAsync();
             var userIds = entries.Select(e => e.UserId).Distinct().ToList();
             var userMap = await _db.Users
                 .Where(u => userIds.Contains(u.Id))

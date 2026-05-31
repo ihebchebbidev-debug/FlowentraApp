@@ -2,7 +2,15 @@
   "permissions": {
     "allow": [
       "Bash(Get-ChildItem \"c:\\\\Users\\\\ihebc\\\\OneDrive\\\\Desktop\\\\FlowentraApp\\\\Backend\\\\Modules\" -Directory)",
-      "Bash(Sort-Object Name)"
+      "Bash(Sort-Object Name)",
+      "Bash(ls -la \"c:\\\\\\\\Users\\\\\\\\ihebc\\\\\\\\OneDrive\\\\\\\\Desktop\\\\\\\\FlowentraApp\")",
+      "Bash(find \"c:\\\\\\\\Users\\\\\\\\ihebc\\\\\\\\OneDrive\\\\\\\\Desktop\\\\\\\\FlowentraApp\\\\\\\\src\" -type d -name \"workflow\" -o -name \"Workflow\")",
+      "Bash(ls -la \"c:\\\\\\\\Users\\\\\\\\ihebc\\\\\\\\OneDrive\\\\\\\\Desktop\\\\\\\\FlowentraApp\\\\\\\\Backend\")",
+      "Bash(ls -la \"c:\\\\\\\\Users\\\\\\\\ihebc\\\\\\\\OneDrive\\\\\\\\Desktop\\\\\\\\FlowentraApp\\\\\\\\src\\\\\\\\modules\\\\\\\\workflow\")",
+      "Bash(grep -r \"SaveChangesAsync\" \"c:\\\\\\\\Users\\\\\\\\ihebc\\\\\\\\OneDrive\\\\\\\\Desktop\\\\\\\\FlowentraApp\\\\\\\\Backend\\\\\\\\Modules\\\\\\\\WorkflowEngine\\\\\\\\Services\" --include=\"*.cs\")",
+      "Bash(grep -n \"GetPendingApprovalsAsync\" \"c:\\\\\\\\Users\\\\\\\\ihebc\\\\\\\\OneDrive\\\\\\\\Desktop\\\\\\\\FlowentraApp\\\\\\\\Backend\\\\\\\\Modules\\\\\\\\WorkflowEngine\\\\\\\\Services\\\\\\\\WorkflowApprovalService.cs\")",
+      "Bash(grep -rn \"TenantId\" \"c:\\\\\\\\Users\\\\\\\\ihebc\\\\\\\\OneDrive\\\\\\\\Desktop\\\\\\\\FlowentraApp\\\\\\\\Backend\\\\\\\\Modules\\\\\\\\WorkflowEngine\\\\\\\\Services\\\\\\\\WorkflowEngineService.cs\")",
+      "Bash(grep -n \"catch\" \"c:\\\\\\\\Users\\\\\\\\ihebc\\\\\\\\OneDrive\\\\\\\\Desktop\\\\\\\\FlowentraApp\\\\\\\\src\\\\\\\\modules\\\\\\\\workflow\\\\\\\\services\\\\\\\\workflow.service.ts\")"
     ]
   }
 }

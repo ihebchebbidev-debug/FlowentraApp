@@ -152,15 +152,24 @@ namespace MyApi.Modules.WorkflowEngine.Services
 
             await _db.SaveChangesAsync();
 
-            // Re-extract and register triggers if nodes changed
+            // Re-extract and register triggers if nodes changed.
+            // Wrapped in a transaction: if re-registration fails after deletion,
+            // the rollback restores the old triggers instead of leaving none.
             if (dto.Nodes != null)
             {
-                // Remove old triggers
-                _db.WorkflowTriggers.RemoveRange(workflow.Triggers);
-                await _db.SaveChangesAsync();
-                
-                // Register new triggers
-                await ExtractAndRegisterTriggersAsync(workflow);
+                await using var tx = await _db.Database.BeginTransactionAsync();
+                try
+                {
+                    _db.WorkflowTriggers.RemoveRange(workflow.Triggers);
+                    await _db.SaveChangesAsync();
+                    await ExtractAndRegisterTriggersAsync(workflow);
+                    await tx.CommitAsync();
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
             }
 
             return MapToDto(workflow);
@@ -314,10 +323,21 @@ namespace MyApi.Modules.WorkflowEngine.Services
 
             await _db.SaveChangesAsync();
 
-            // Re-extract triggers to make sure they're current with the nodes
-            _db.WorkflowTriggers.RemoveRange(workflow.Triggers ?? Enumerable.Empty<WorkflowTrigger>());
-            await _db.SaveChangesAsync();
-            await ExtractAndRegisterTriggersAsync(workflow);
+            // Re-extract triggers in a transaction so a registration failure
+            // cannot leave the promoted workflow with zero active triggers.
+            await using var tx = await _db.Database.BeginTransactionAsync();
+            try
+            {
+                _db.WorkflowTriggers.RemoveRange(workflow.Triggers ?? Enumerable.Empty<WorkflowTrigger>());
+                await _db.SaveChangesAsync();
+                await ExtractAndRegisterTriggersAsync(workflow);
+                await tx.CommitAsync();
+            }
+            catch
+            {
+                await tx.RollbackAsync();
+                throw;
+            }
 
             // Reload
             var result = await _db.WorkflowDefinitions
@@ -471,16 +491,15 @@ namespace MyApi.Modules.WorkflowEngine.Services
             execution.Status = "running";
             execution.Error = null;
             execution.CompletedAt = null;
-            await _db.SaveChangesAsync();
 
             // Determine the node to restart from: the last failed node, or the first node
             var lastFailedLog = execution.Logs?
                 .Where(l => l.Status == "failed")
                 .OrderByDescending(l => l.Timestamp)
                 .FirstOrDefault();
-            
+
             var restartNodeId = lastFailedLog?.NodeId ?? execution.CurrentNodeId;
-            
+
             if (string.IsNullOrEmpty(restartNodeId))
             {
                 // If no node to restart from, fail gracefully
@@ -490,6 +509,8 @@ namespace MyApi.Modules.WorkflowEngine.Services
                 return false;
             }
 
+            // Single save: status=running and CurrentNodeId set atomically so that
+            // CleanupStuckExecutionsAsync never sees running+old-node between two saves.
             execution.CurrentNodeId = restartNodeId;
             await _db.SaveChangesAsync();
 
