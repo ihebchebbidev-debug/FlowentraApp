@@ -2,6 +2,7 @@ import { logger } from '@/hooks/useLogger';
 import { getCurrentTenant, TENANT_HEADER } from '@/utils/tenant';
 import { API_URL } from '@/config/api';
 import { dedupFetch } from '@/utils/requestDedup';
+import { clearHydrationPreferencesMemory } from '@/services/offline/offlineHydrationPreferences';
 
 type AdminPrefs = {
   theme?: string;
@@ -675,6 +676,9 @@ class AuthService {
       if (key && matchesHrPattern(key)) ssRemove.push(key);
     }
     ssRemove.forEach(key => sessionStorage.removeItem(key));
+
+    // Flush in-memory hydration preferences cache so next user starts clean
+    clearHydrationPreferencesMemory();
   }
 
   getAccessToken(): string | null {

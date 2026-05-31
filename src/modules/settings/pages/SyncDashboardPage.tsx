@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { AlertTriangle, CheckCircle2, Clock3, RefreshCw, Search, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock3, CloudDownload, RefreshCw, Search, XCircle } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { getSyncHistory, retrySyncItem, type SyncHistoryItem } from "@/services/offline/syncDashboardApi";
 import { useToast } from "@/hooks/use-toast";
 import { HydrationLastRunPanel } from "@/components/offline/HydrationLastRunPanel";
+import { useOffline } from "@/contexts/OfflineContext";
 
 function statusIcon(status: string) {
   if (status === "applied" || status === "duplicate") return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
@@ -29,6 +30,8 @@ export default function SyncDashboardPage() {
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const pageSize = 20;
   const inspectMode = params.get("inspectSync") === "1";
+
+  const { syncNow, hydrateNow, syncing, hydrating, online, enabled: offlineEnabled } = useOffline();
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ["sync-history", status, search, page],
@@ -75,8 +78,34 @@ export default function SyncDashboardPage() {
       <HydrationLastRunPanel variant="compact" />
       <Card className="border-0 shadow-card">
         <CardHeader>
-          <CardTitle>{t("syncDashboard.title")}</CardTitle>
-          <CardDescription>{t("syncDashboard.desc")}</CardDescription>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <CardTitle>{t("syncDashboard.title")}</CardTitle>
+              <CardDescription>{t("syncDashboard.desc")}</CardDescription>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5"
+                onClick={() => void syncNow()}
+                disabled={!online || syncing || offlineEnabled}
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
+                {syncing ? t("syncDashboard.syncingBtn", "Syncing…") : t("syncDashboard.syncNowBtn", "Sync Now")}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5"
+                onClick={() => void hydrateNow()}
+                disabled={!online || hydrating}
+              >
+                <CloudDownload className={`h-3.5 w-3.5 ${hydrating ? "animate-pulse" : ""}`} />
+                {hydrating ? t("syncDashboard.cachingBtn", "Caching…") : t("syncDashboard.refreshCacheBtn", "Refresh Cache")}
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">

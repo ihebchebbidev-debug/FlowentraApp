@@ -47,6 +47,7 @@ import { logger } from "./hooks/useLogger";
 import { DeploymentNotificationSystem } from "./components/DeploymentNotificationSystem";
 import { OfflineSyncRedirector } from "./components/offline/OfflineSyncRedirector";
 import { OfflineSyncLoadingOverlay } from "./components/offline/OfflineSyncLoadingOverlay";
+import { OfflineSyncCenter } from "./components/offline/OfflineSyncCenter";
 import { installOfflineFetchGuard } from "./services/offline/offlineFetchGuard";
 import { getCurrentTenant } from "./utils/tenant";
 
@@ -311,6 +312,7 @@ const App = () => {
               <BrowserRouter>
                 <OfflineSyncRedirector />
                 <OfflineSyncLoadingOverlay />
+                <OfflineSyncCenter />
                 <ScrollToTop />
                 <AppErrorBoundary>
                   <Suspense fallback={<AppLoader />}>

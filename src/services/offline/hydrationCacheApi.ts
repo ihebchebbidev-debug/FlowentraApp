@@ -1,10 +1,21 @@
 /**
  * Secondary offline layer: Cache API for larger GET responses than fit comfortably in IndexedDB.
  * Scoped per tenant + user (same hash as hydration IndexedDB).
+ * Cached entries are tagged with X-Cache-Added and expire after CACHE_TTL_MS.
  */
 import { API_URL } from "@/config/api";
 import { HYDRATION_CACHE_API_MAX_BYTES } from "./hydrationLimits";
 import { getOfflineScopeKey } from "./syncEngine";
+
+/** 24 hours — cached hydration responses older than this are treated as expired. */
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const CACHE_ADDED_HEADER = "X-Cache-Added";
+
+function isCacheEntryExpired(response: Response): boolean {
+  const added = response.headers.get(CACHE_ADDED_HEADER);
+  if (!added) return false; // no header = legacy entry; keep serving it
+  return Date.now() - Number(added) > CACHE_TTL_MS;
+}
 
 function scopeHash(scope: string): string {
   let h = 2166136261;
@@ -50,7 +61,7 @@ export async function putCachedTextInCacheApi(
     const req = new Request(url, { method: "GET" });
     const res = new Response(bodyText, {
       status,
-      headers: { "Content-Type": contentType },
+      headers: { "Content-Type": contentType, [CACHE_ADDED_HEADER]: String(Date.now()) },
     });
     await cache.put(req, res);
   } catch {
@@ -71,7 +82,9 @@ export async function putCachedBufferInCacheApi(
     const url = toAbsoluteUrl(requestUrl);
     const cache = await caches.open(getHydrationCacheApiName());
     const req = new Request(url, { method: "GET" });
-    const res = new Response(body, { status, headers: new Headers(headers) });
+    const stamped = new Headers(headers);
+    stamped.set(CACHE_ADDED_HEADER, String(Date.now()));
+    const res = new Response(body, { status, headers: stamped });
     await cache.put(req, res);
   } catch {
     // Quota / private mode / blocked Cache API — ignore; IDB path may still work for smaller payloads.
@@ -84,7 +97,8 @@ export async function matchCachedResponseInCacheApi(requestUrl: string): Promise
     const url = toAbsoluteUrl(requestUrl);
     const cache = await caches.open(getHydrationCacheApiName());
     const hit = await cache.match(new Request(url, { method: "GET" }), { ignoreSearch: false });
-    return hit ?? null;
+    if (!hit || isCacheEntryExpired(hit)) return null;
+    return hit;
   } catch {
     return null;
   }
@@ -99,7 +113,8 @@ export async function matchCachedResponseInCacheApiIgnoreSearch(requestUrl: stri
     const url = toAbsoluteUrl(requestUrl);
     const cache = await caches.open(getHydrationCacheApiName());
     const hit = await cache.match(new Request(url, { method: "GET" }), { ignoreSearch: true });
-    return hit ?? null;
+    if (!hit || isCacheEntryExpired(hit)) return null;
+    return hit;
   } catch {
     return null;
   }
