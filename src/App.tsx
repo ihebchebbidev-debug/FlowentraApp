@@ -312,7 +312,7 @@ const App = () => {
               <BrowserRouter>
                 <OfflineSyncRedirector />
                 <OfflineSyncLoadingOverlay />
-                <OfflineSyncCenter />
+                {/* <OfflineSyncCenter /> — hidden per product decision */}
                 <ScrollToTop />
                 <AppErrorBoundary>
                   <Suspense fallback={<AppLoader />}>
