@@ -148,6 +148,14 @@ export function setActiveCompany(
         window.localStorage.removeItem(ACTIVE_COMPANY_ID_KEY);
       } else {
         window.localStorage.removeItem(ACTIVE_COMPANY_VIEW_ALL_KEY);
+        // Scrub the legacy X-Tenant=__all__ sentinel left behind by the old
+        // TenantManagement "view all" toggle. Without this, isViewAllMode()
+        // keeps returning true via getCurrentTenant() and the UI stays stuck
+        // on "Viewing all companies" even after picking a specific one.
+        const legacyOverride = window.localStorage.getItem('tenant_override');
+        if (legacyOverride && legacyOverride.trim().toLowerCase() === '__all__') {
+          window.localStorage.removeItem('tenant_override');
+        }
         if (id === null || id === undefined) {
           window.localStorage.removeItem(ACTIVE_COMPANY_ID_KEY);
         } else {

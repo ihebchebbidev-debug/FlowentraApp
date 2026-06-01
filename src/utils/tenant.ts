@@ -120,6 +120,12 @@ export function isViewAllMode(): boolean {
   if (typeof window !== 'undefined') {
     try {
       if (window.localStorage.getItem('active_company_view_all') === 'true') return true;
+      // A picked active company ALWAYS wins over the legacy X-Tenant=__all__
+      // sentinel — otherwise a stale `tenant_override` from the old
+      // TenantManagement "view all" toggle keeps the UI stuck in view-all
+      // even after the user switches company from the header.
+      const activeId = window.localStorage.getItem('active_company_id');
+      if (activeId !== null && activeId !== '') return false;
     } catch {
       /* ignore */
     }
