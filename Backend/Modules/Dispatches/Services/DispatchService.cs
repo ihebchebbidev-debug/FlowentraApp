@@ -134,48 +134,53 @@ namespace MyApi.Modules.Dispatches.Services
                 DispatchedAt = DateTime.UtcNow
             };
 
-            await using var tx = await _db.Database.BeginTransactionAsync();
-            try
+            // Wrap in execution strategy to be compatible with EnableRetryOnFailure
+            var strategy = _db.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
             {
-                _db.Dispatches.Add(dispatch);
-                await _db.SaveChangesAsync();
-
-                // Always insert a DispatchJob row so GetPlanVsActualAsync (which queries
-                // through the join table) can aggregate actual time/expenses for this job.
-                _db.Set<DispatchJob>().Add(new DispatchJob
+                await using var tx = await _db.Database.BeginTransactionAsync();
+                try
                 {
-                    DispatchId = dispatch.Id,
-                    JobId = jobId,
-                    CreatedDate = DateTime.UtcNow
-                });
+                    _db.Dispatches.Add(dispatch);
+                    await _db.SaveChangesAsync();
 
-                // Add assigned technicians to the DispatchTechnicians table
-                if (hasTechnicians)
-                {
-                    foreach (var techIdStr in dto.AssignedTechnicianIds!)
+                    // Always insert a DispatchJob row so GetPlanVsActualAsync (which queries
+                    // through the join table) can aggregate actual time/expenses for this job.
+                    _db.Set<DispatchJob>().Add(new DispatchJob
                     {
-                        if (int.TryParse(techIdStr, out var techId))
-                        {
-                            _db.Set<DispatchTechnician>().Add(new DispatchTechnician
-                            {
-                                DispatchId = dispatch.Id,
-                                TechnicianId = techId,
-                                AssignedDate = DateTime.UtcNow,
-                                Role = "technician"
-                            });
-                        }
-                    }
-                    job.Status = "dispatched";
-                }
+                        DispatchId = dispatch.Id,
+                        JobId = jobId,
+                        CreatedDate = DateTime.UtcNow
+                    });
 
-                await _db.SaveChangesAsync();
-                await tx.CommitAsync();
-            }
-            catch
-            {
-                await tx.RollbackAsync();
-                throw;
-            }
+                    // Add assigned technicians to the DispatchTechnicians table
+                    if (hasTechnicians)
+                    {
+                        foreach (var techIdStr in dto.AssignedTechnicianIds!)
+                        {
+                            if (int.TryParse(techIdStr, out var techId))
+                            {
+                                _db.Set<DispatchTechnician>().Add(new DispatchTechnician
+                                {
+                                    DispatchId = dispatch.Id,
+                                    TechnicianId = techId,
+                                    AssignedDate = DateTime.UtcNow,
+                                    Role = "technician"
+                                });
+                            }
+                        }
+                        job.Status = "dispatched";
+                    }
+
+                    await _db.SaveChangesAsync();
+                    await tx.CommitAsync();
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
+            });
 
             _logger.LogInformation("Dispatch created from job {JobId} with ID {DispatchId}, Status: {Status}, Technicians: {TechCount}",
                 jobId, dispatch.Id, status, dto.AssignedTechnicianIds?.Count ?? 0);
@@ -384,118 +389,123 @@ namespace MyApi.Modules.Dispatches.Services
             // miss the candidate query and create duplicate dispatches. Acquire a
             // transaction-scoped Postgres advisory lock so they serialize. The lock is
             // released automatically on COMMIT/ROLLBACK. Key = (installationId << 32) | dayNumber.
-            await using var tx = await _db.Database.BeginTransactionAsync();
-            long lockKey = ((long)installationId << 32)
-                         | (uint)(scheduledDate.Date - new DateTime(1970, 1, 1)).Days;
-            await _db.Database.ExecuteSqlRawAsync("SELECT pg_advisory_xact_lock({0})", lockKey);
-
-            // Look for an existing non-deleted dispatch on the same date for this installation
-            // whose technician set matches the requested set (when technicians are provided).
-            var openStatuses = new[] { "planned", "assigned", "scheduled" };
-
-            var candidates = await _db.Dispatches
-                .Include(d => d.AssignedTechnicians)
-                .Include(d => d.DispatchJobs)
-                .Where(d => !d.IsDeleted
-                    && d.InstallationId == installationId
-                    && d.ScheduledDate.Date == scheduledDate.Date
-                    && openStatuses.Contains(d.Status))
-                .ToListAsync();
-
-            Dispatch? existing = null;
-            if (techIdInts.Count == 0)
+            // Wrap in execution strategy to be compatible with EnableRetryOnFailure
+            var strategy = _db.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(async () =>
             {
-                existing = candidates.FirstOrDefault();
-            }
-            else
-            {
-                existing = candidates.FirstOrDefault(d =>
-                {
-                    var ids = d.AssignedTechnicians.Select(at => at.TechnicianId).ToHashSet();
-                    return techIdInts.All(id => ids.Contains(id));
-                });
-            }
+                await using var tx = await _db.Database.BeginTransactionAsync();
+                long lockKey = ((long)installationId << 32)
+                             | (uint)(scheduledDate.Date - new DateTime(1970, 1, 1)).Days;
+                await _db.Database.ExecuteSqlRawAsync("SELECT pg_advisory_xact_lock({0})", lockKey);
 
-            if (existing != null)
-            {
-                // Skip jobs already attached to this dispatch
-                var alreadyAttached = existing.DispatchJobs.Select(dj => dj.JobId).ToHashSet();
-                var newJobIds = jobIds.Where(id => !alreadyAttached.Contains(id)).ToList();
+                // Look for an existing non-deleted dispatch on the same date for this installation
+                // whose technician set matches the requested set (when technicians are provided).
+                var openStatuses = new[] { "planned", "assigned", "scheduled" };
 
-                if (newJobIds.Count > 0)
-                {
-                    // Make sure these jobs are not attached to ANOTHER non-deleted dispatch
-                    var conflicts = await _db.Set<DispatchJob>()
-                        .Where(dj => newJobIds.Contains(dj.JobId) && dj.DispatchId != existing.Id)
-                        .Join(_db.Dispatches.Where(d => !d.IsDeleted), dj => dj.DispatchId, d => d.Id, (dj, d) => dj.JobId)
-                        .ToListAsync();
-
-                    if (conflicts.Any())
-                        throw new InvalidOperationException($"Jobs already dispatched: {string.Join(", ", conflicts)}");
-
-                    var legacyConflicts = await _db.Dispatches
-                        .Where(d => !d.IsDeleted
-                            && d.Id != existing.Id
-                            && d.JobId != null
-                            && newJobIds.Select(i => i.ToString()).Contains(d.JobId))
-                        .Select(d => d.JobId)
-                        .ToListAsync();
-                    if (legacyConflicts.Any())
-                        throw new InvalidOperationException($"Jobs already dispatched (legacy): {string.Join(", ", legacyConflicts)}");
-
-                    foreach (var jid in newJobIds)
-                    {
-                        _db.Set<DispatchJob>().Add(new DispatchJob
-                        {
-                            DispatchId = existing.Id,
-                            JobId = jid,
-                            CreatedDate = DateTime.UtcNow
-                        });
-                    }
-
-                    // Mark jobs dispatched
-                    var jobsToUpdate = await _db.ServiceOrderJobs.Where(j => newJobIds.Contains(j.Id)).ToListAsync();
-                    foreach (var job in jobsToUpdate) job.Status = "dispatched";
-
-                    existing.ModifiedBy = userId;
-                    existing.ModifiedDate = DateTime.UtcNow;
-                    await _db.SaveChangesAsync();
-
-                    _logger.LogInformation(
-                        "Appended {Count} job(s) to existing installation dispatch {DispatchId} (installation {InstallationId})",
-                        newJobIds.Count, existing.Id, installationId);
-                }
-
-                var reloaded = await _db.Dispatches
+                var candidates = await _db.Dispatches
                     .Include(d => d.AssignedTechnicians)
                     .Include(d => d.DispatchJobs)
-                    .FirstAsync(d => d.Id == existing.Id);
-                var nameMap = await GetTechnicianNameMapForDispatchAsync(reloaded.Id);
-                await tx.CommitAsync();
-                return DispatchMapping.ToDto(reloaded, nameMap);
-            }
+                    .Where(d => !d.IsDeleted
+                        && d.InstallationId == installationId
+                        && d.ScheduledDate.Date == scheduledDate.Date
+                        && openStatuses.Contains(d.Status))
+                    .ToListAsync();
 
-            // No existing dispatch — create a new one via the canonical path.
-            var createDto = new CreateDispatchFromInstallationDto
-            {
-                InstallationId = installationId,
-                InstallationName = installationName,
-                JobIds = jobIds,
-                AssignedTechnicianIds = technicianIds ?? new List<string>(),
-                ScheduledDate = scheduledDate,
-                ScheduledStartTime = scheduledStartTime,
-                ScheduledEndTime = scheduledEndTime,
-                Priority = priority ?? "medium",
-                Notes = notes,
-                SiteAddress = siteAddress,
-                ContactId = contactId,
-                ServiceOrderId = serviceOrderId,
-            };
-            // CreateFromInstallationAsync uses the same DbContext / connection and will
-            // enlist in this transaction so its writes are covered by the advisory lock too.
-            var created = await CreateFromInstallationAsync(createDto, userId);
-            await tx.CommitAsync();
-            return created;
+                Dispatch? existing = null;
+                if (techIdInts.Count == 0)
+                {
+                    existing = candidates.FirstOrDefault();
+                }
+                else
+                {
+                    existing = candidates.FirstOrDefault(d =>
+                    {
+                        var ids = d.AssignedTechnicians.Select(at => at.TechnicianId).ToHashSet();
+                        return techIdInts.All(id => ids.Contains(id));
+                    });
+                }
+
+                if (existing != null)
+                {
+                    // Skip jobs already attached to this dispatch
+                    var alreadyAttached = existing.DispatchJobs.Select(dj => dj.JobId).ToHashSet();
+                    var newJobIds = jobIds.Where(id => !alreadyAttached.Contains(id)).ToList();
+
+                    if (newJobIds.Count > 0)
+                    {
+                        // Make sure these jobs are not attached to ANOTHER non-deleted dispatch
+                        var conflicts = await _db.Set<DispatchJob>()
+                            .Where(dj => newJobIds.Contains(dj.JobId) && dj.DispatchId != existing.Id)
+                            .Join(_db.Dispatches.Where(d => !d.IsDeleted), dj => dj.DispatchId, d => d.Id, (dj, d) => dj.JobId)
+                            .ToListAsync();
+
+                        if (conflicts.Any())
+                            throw new InvalidOperationException($"Jobs already dispatched: {string.Join(", ", conflicts)}");
+
+                        var legacyConflicts = await _db.Dispatches
+                            .Where(d => !d.IsDeleted
+                                && d.Id != existing.Id
+                                && d.JobId != null
+                                && newJobIds.Select(i => i.ToString()).Contains(d.JobId))
+                            .Select(d => d.JobId)
+                            .ToListAsync();
+                        if (legacyConflicts.Any())
+                            throw new InvalidOperationException($"Jobs already dispatched (legacy): {string.Join(", ", legacyConflicts)}");
+
+                        foreach (var jid in newJobIds)
+                        {
+                            _db.Set<DispatchJob>().Add(new DispatchJob
+                            {
+                                DispatchId = existing.Id,
+                                JobId = jid,
+                                CreatedDate = DateTime.UtcNow
+                            });
+                        }
+
+                        // Mark jobs dispatched
+                        var jobsToUpdate = await _db.ServiceOrderJobs.Where(j => newJobIds.Contains(j.Id)).ToListAsync();
+                        foreach (var job in jobsToUpdate) job.Status = "dispatched";
+
+                        existing.ModifiedBy = userId;
+                        existing.ModifiedDate = DateTime.UtcNow;
+                        await _db.SaveChangesAsync();
+
+                        _logger.LogInformation(
+                            "Appended {Count} job(s) to existing installation dispatch {DispatchId} (installation {InstallationId})",
+                            newJobIds.Count, existing.Id, installationId);
+                    }
+
+                    var reloaded = await _db.Dispatches
+                        .Include(d => d.AssignedTechnicians)
+                        .Include(d => d.DispatchJobs)
+                        .FirstAsync(d => d.Id == existing.Id);
+                    var nameMap = await GetTechnicianNameMapForDispatchAsync(reloaded.Id);
+                    await tx.CommitAsync();
+                    return DispatchMapping.ToDto(reloaded, nameMap);
+                }
+
+                // No existing dispatch — create a new one via the canonical path.
+                var createDto = new CreateDispatchFromInstallationDto
+                {
+                    InstallationId = installationId,
+                    InstallationName = installationName,
+                    JobIds = jobIds,
+                    AssignedTechnicianIds = technicianIds ?? new List<string>(),
+                    ScheduledDate = scheduledDate,
+                    ScheduledStartTime = scheduledStartTime,
+                    ScheduledEndTime = scheduledEndTime,
+                    Priority = priority ?? "medium",
+                    Notes = notes,
+                    SiteAddress = siteAddress,
+                    ContactId = contactId,
+                    ServiceOrderId = serviceOrderId,
+                };
+                // CreateFromInstallationAsync uses the same DbContext / connection and will
+                // enlist in this transaction so its writes are covered by the advisory lock too.
+                var created = await CreateFromInstallationAsync(createDto, userId);
+                await tx.CommitAsync();
+                return created;
+            });
         }
 
         public async Task<PagedResult<DispatchListItemDto>> GetAllAsync(DispatchQueryParams query)

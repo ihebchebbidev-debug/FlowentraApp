@@ -631,147 +631,152 @@ namespace MyApi.Modules.Offers.Services
             // ── Atomic DB writes: sale + items + planned entries + offer status ──
             // Wrapped in a transaction so a mid-conversion failure does NOT leave a
             // partially-built Sale or an offer flipped to "accepted" without a Sale.
-            await using var tx = await _context.Database.BeginTransactionAsync();
-            try
+            // Wrap in execution strategy to be compatible with EnableRetryOnFailure
+            var strategy = _context.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
             {
-            if (convertDto.ConvertToSale)
-            {
-                string saleNum;
+                await using var tx = await _context.Database.BeginTransactionAsync();
                 try
                 {
-                    saleNum = _numberingService != null
-                        ? await _numberingService.GetNextAsync("Sale")
-                        : MyApi.Modules.Numbering.Services.NumberingFallback.Generate("Sale");
-                }
-                catch
+                if (convertDto.ConvertToSale)
                 {
-                    saleNum = MyApi.Modules.Numbering.Services.NumberingFallback.Generate("Sale");
-                }
+                    string saleNum;
+                    try
+                    {
+                        saleNum = _numberingService != null
+                            ? await _numberingService.GetNextAsync("Sale")
+                            : MyApi.Modules.Numbering.Services.NumberingFallback.Generate("Sale");
+                    }
+                    catch
+                    {
+                        saleNum = MyApi.Modules.Numbering.Services.NumberingFallback.Generate("Sale");
+                    }
 
-                var sale = new MyApi.Modules.Sales.Models.Sale
-                {
-                    SaleNumber = saleNum,
-                    Title = offer.Title,
-                    Description = offer.Description,
-                    ContactId = offer.ContactId,
-                    Status = "created",
-                    Stage = "offer",
-                    Priority = "medium",
-                    Currency = offer.Currency ?? "TND",
-                    BillingAddress = offer.BillingAddress,
-                    BillingPostalCode = offer.BillingPostalCode,
-                    BillingCountry = offer.BillingCountry,
-                    DeliveryAddress = offer.DeliveryAddress,
-                    DeliveryPostalCode = offer.DeliveryPostalCode,
-                    DeliveryCountry = offer.DeliveryCountry,
-                    Taxes = offer.Taxes ?? 0,
-                    TaxType = offer.TaxType ?? "percentage",
-                    Discount = offer.Discount ?? 0,
-                    FiscalStamp = offer.FiscalStamp ?? 1.000m,
-                    TotalAmount = offer.TotalAmount,
-                    AssignedTo = offer.AssignedTo,
-                    AssignedToName = offer.AssignedToName,
-                    Tags = offer.Tags != null ? offer.Tags.Concat(new[] { "Converted" }).ToArray() : new[] { "Converted" },
-                    OfferId = id.ToString(),
-                    ProjectId = saleProjectId,
-                    IsDeal = saleProjectId.HasValue,
-                    ConvertedFromOfferAt = DateTime.UtcNow,
-                    CreatedBy = userId,
-                    CreatedByName = createdByName,
-                    CreatedDate = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow,
-                    ContactLatitude = contact?.Latitude ?? offer.ContactLatitude,
-                    ContactLongitude = contact?.Longitude ?? offer.ContactLongitude,
-                    ContactHasLocation = contact?.HasLocation ?? offer.ContactHasLocation
-                };
+                    var sale = new MyApi.Modules.Sales.Models.Sale
+                    {
+                        SaleNumber = saleNum,
+                        Title = offer.Title,
+                        Description = offer.Description,
+                        ContactId = offer.ContactId,
+                        Status = "created",
+                        Stage = "offer",
+                        Priority = "medium",
+                        Currency = offer.Currency ?? "TND",
+                        BillingAddress = offer.BillingAddress,
+                        BillingPostalCode = offer.BillingPostalCode,
+                        BillingCountry = offer.BillingCountry,
+                        DeliveryAddress = offer.DeliveryAddress,
+                        DeliveryPostalCode = offer.DeliveryPostalCode,
+                        DeliveryCountry = offer.DeliveryCountry,
+                        Taxes = offer.Taxes ?? 0,
+                        TaxType = offer.TaxType ?? "percentage",
+                        Discount = offer.Discount ?? 0,
+                        FiscalStamp = offer.FiscalStamp ?? 1.000m,
+                        TotalAmount = offer.TotalAmount,
+                        AssignedTo = offer.AssignedTo,
+                        AssignedToName = offer.AssignedToName,
+                        Tags = offer.Tags != null ? offer.Tags.Concat(new[] { "Converted" }).ToArray() : new[] { "Converted" },
+                        OfferId = id.ToString(),
+                        ProjectId = saleProjectId,
+                        IsDeal = saleProjectId.HasValue,
+                        ConvertedFromOfferAt = DateTime.UtcNow,
+                        CreatedBy = userId,
+                        CreatedByName = createdByName,
+                        CreatedDate = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow,
+                        ContactLatitude = contact?.Latitude ?? offer.ContactLatitude,
+                        ContactLongitude = contact?.Longitude ?? offer.ContactLongitude,
+                        ContactHasLocation = contact?.HasLocation ?? offer.ContactHasLocation
+                    };
 
-                _context.Sales.Add(sale);
-                await _context.SaveChangesAsync();
-                saleId = sale.Id;
-                createdSale = sale;
+                    _context.Sales.Add(sale);
+                    await _context.SaveChangesAsync();
+                    saleId = sale.Id;
+                    createdSale = sale;
 
-                // Auto-note on the project (deal won)
-                ProjectAutoNote.Add(_context, offer.ProjectId,
-                    $"Offer #{offer.OfferNumber} won → Sale #{sale.SaleNumber} created (deal, total {sale.TotalAmount} {sale.Currency}).",
-                    userId);
+                    // Auto-note on the project (deal won)
+                    ProjectAutoNote.Add(_context, offer.ProjectId,
+                        $"Offer #{offer.OfferNumber} won → Sale #{sale.SaleNumber} created (deal, total {sale.TotalAmount} {sale.Currency}).",
+                        userId);
 
-                // Copy offer items → sale items
-                if (offer.Items != null && offer.Items.Any())
-                {
-                    var saleItems = offer.Items.Select(oi => new MyApi.Modules.Sales.Models.SaleItem
+                    // Copy offer items → sale items
+                    if (offer.Items != null && offer.Items.Any())
+                    {
+                        var saleItems = offer.Items.Select(oi => new MyApi.Modules.Sales.Models.SaleItem
+                        {
+                            SaleId = sale.Id,
+                            Type = oi.Type,
+                            ArticleId = oi.ArticleId,
+                            ItemName = oi.ItemName,
+                            ItemCode = oi.ItemCode,
+                            Description = oi.Description ?? oi.ItemName ?? "Item",
+                            Quantity = oi.Quantity,
+                            UnitPrice = oi.UnitPrice,
+                            Discount = oi.Discount,
+                            DiscountType = oi.DiscountType ?? "percentage",
+                            InstallationId = oi.InstallationId,
+                            InstallationName = oi.InstallationName,
+                            RequiresServiceOrder = oi.Type == "service",
+                            FulfillmentStatus = "pending",
+                            TaxRate = 0
+                        }).ToList();
+                        _context.SaleItems.AddRange(saleItems);
+                    }
+
+                    // Log sale creation activity
+                    _context.SaleActivities.Add(new MyApi.Modules.Sales.Models.SaleActivity
                     {
                         SaleId = sale.Id,
-                        Type = oi.Type,
-                        ArticleId = oi.ArticleId,
-                        ItemName = oi.ItemName,
-                        ItemCode = oi.ItemCode,
-                        Description = oi.Description ?? oi.ItemName ?? "Item",
-                        Quantity = oi.Quantity,
-                        UnitPrice = oi.UnitPrice,
-                        Discount = oi.Discount,
-                        DiscountType = oi.DiscountType ?? "percentage",
-                        InstallationId = oi.InstallationId,
-                        InstallationName = oi.InstallationName,
-                        RequiresServiceOrder = oi.Type == "service",
-                        FulfillmentStatus = "pending",
-                        TaxRate = 0
-                    }).ToList();
-                    _context.SaleItems.AddRange(saleItems);
+                        Type = "created",
+                        Description = $"Sale order created from Offer #{offer.OfferNumber}",
+                        CreatedAt = DateTime.UtcNow,
+                        CreatedByName = createdByName
+                    });
+
+                    await _context.SaveChangesAsync();
+
+                    // Carry planned time/expenses from offer items → new sale items (Stage 2).
+                    // Inside the transaction: a copy failure here MUST roll back the Sale so
+                    // we never end up with sale items but no planned budget.
+                    if (_plannedEntries != null && offer.Items != null && offer.Items.Any())
+                    {
+                        var srcOfferItems = offer.Items.ToList();
+                        var newSaleItems = await _context.SaleItems
+                            .Where(si => si.SaleId == sale.Id)
+                            .OrderBy(si => si.Id)
+                            .ToListAsync();
+                        for (int i = 0; i < srcOfferItems.Count && i < newSaleItems.Count; i++)
+                        {
+                            await _plannedEntries.CopyAsync("offer_item", srcOfferItems[i].Id, "sale_item", newSaleItems[i].Id, userId);
+                        }
+                    }
                 }
 
-                // Log sale creation activity
-                _context.SaleActivities.Add(new MyApi.Modules.Sales.Models.SaleActivity
+                // ── Update offer status and conversion tracking ──
+                offer.Status = "accepted";
+                offer.ConvertedToSaleId = saleId?.ToString();
+                offer.ConvertedAt = DateTime.UtcNow;
+                offer.UpdatedAt = DateTime.UtcNow;
+
+                // Log conversion activity on the offer
+                _context.OfferActivities.Add(new OfferActivity
                 {
-                    SaleId = sale.Id,
-                    Type = "created",
-                    Description = $"Sale order created from Offer #{offer.OfferNumber}",
+                    OfferId = id,
+                    Type = "status_changed",
+                    Description = $"Offer converted to Sale #{saleId}",
                     CreatedAt = DateTime.UtcNow,
                     CreatedByName = createdByName
                 });
 
                 await _context.SaveChangesAsync();
-
-                // Carry planned time/expenses from offer items → new sale items (Stage 2).
-                // Inside the transaction: a copy failure here MUST roll back the Sale so
-                // we never end up with sale items but no planned budget.
-                if (_plannedEntries != null && offer.Items != null && offer.Items.Any())
-                {
-                    var srcOfferItems = offer.Items.ToList();
-                    var newSaleItems = await _context.SaleItems
-                        .Where(si => si.SaleId == sale.Id)
-                        .OrderBy(si => si.Id)
-                        .ToListAsync();
-                    for (int i = 0; i < srcOfferItems.Count && i < newSaleItems.Count; i++)
-                    {
-                        await _plannedEntries.CopyAsync("offer_item", srcOfferItems[i].Id, "sale_item", newSaleItems[i].Id, userId);
-                    }
+                    await tx.CommitAsync();
                 }
-            }
-
-            // ── Update offer status and conversion tracking ──
-            offer.Status = "accepted";
-            offer.ConvertedToSaleId = saleId?.ToString();
-            offer.ConvertedAt = DateTime.UtcNow;
-            offer.UpdatedAt = DateTime.UtcNow;
-
-            // Log conversion activity on the offer
-            _context.OfferActivities.Add(new OfferActivity
-            {
-                OfferId = id,
-                Type = "status_changed",
-                Description = $"Offer converted to Sale #{saleId}",
-                CreatedAt = DateTime.UtcNow,
-                CreatedByName = createdByName
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
             });
-
-            await _context.SaveChangesAsync();
-                await tx.CommitAsync();
-            }
-            catch
-            {
-                await tx.RollbackAsync();
-                throw;
-            }
 
             // ── Post-commit side effects (must NOT roll back the conversion) ──
             if (createdSale != null)

@@ -157,19 +157,24 @@ namespace MyApi.Modules.WorkflowEngine.Services
             // the rollback restores the old triggers instead of leaving none.
             if (dto.Nodes != null)
             {
-                await using var tx = await _db.Database.BeginTransactionAsync();
-                try
+                // Wrap in execution strategy to be compatible with EnableRetryOnFailure
+                var strategy = _db.Database.CreateExecutionStrategy();
+                await strategy.ExecuteAsync(async () =>
                 {
-                    _db.WorkflowTriggers.RemoveRange(workflow.Triggers);
-                    await _db.SaveChangesAsync();
-                    await ExtractAndRegisterTriggersAsync(workflow);
-                    await tx.CommitAsync();
-                }
-                catch
-                {
-                    await tx.RollbackAsync();
-                    throw;
-                }
+                    await using var tx = await _db.Database.BeginTransactionAsync();
+                    try
+                    {
+                        _db.WorkflowTriggers.RemoveRange(workflow.Triggers);
+                        await _db.SaveChangesAsync();
+                        await ExtractAndRegisterTriggersAsync(workflow);
+                        await tx.CommitAsync();
+                    }
+                    catch
+                    {
+                        await tx.RollbackAsync();
+                        throw;
+                    }
+                });
             }
 
             return MapToDto(workflow);
@@ -325,19 +330,24 @@ namespace MyApi.Modules.WorkflowEngine.Services
 
             // Re-extract triggers in a transaction so a registration failure
             // cannot leave the promoted workflow with zero active triggers.
-            await using var tx = await _db.Database.BeginTransactionAsync();
-            try
+            // Wrap in execution strategy to be compatible with EnableRetryOnFailure
+            var strategy = _db.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
             {
-                _db.WorkflowTriggers.RemoveRange(workflow.Triggers ?? Enumerable.Empty<WorkflowTrigger>());
-                await _db.SaveChangesAsync();
-                await ExtractAndRegisterTriggersAsync(workflow);
-                await tx.CommitAsync();
-            }
-            catch
-            {
-                await tx.RollbackAsync();
-                throw;
-            }
+                await using var tx = await _db.Database.BeginTransactionAsync();
+                try
+                {
+                    _db.WorkflowTriggers.RemoveRange(workflow.Triggers ?? Enumerable.Empty<WorkflowTrigger>());
+                    await _db.SaveChangesAsync();
+                    await ExtractAndRegisterTriggersAsync(workflow);
+                    await tx.CommitAsync();
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
+            });
 
             // Reload
             var result = await _db.WorkflowDefinitions

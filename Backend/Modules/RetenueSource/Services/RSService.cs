@@ -553,20 +553,25 @@ namespace MyApi.Modules.RetenueSource.Services
                 CreatedBy = userId
             };
 
-            await using var tx = await _db.Database.BeginTransactionAsync();
-            try
+            // Wrap in execution strategy to be compatible with EnableRetryOnFailure
+            var strategy = _db.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
             {
-                _db.RSRecords.Add(record);
-                await _db.SaveChangesAsync();
-                invoice.RsRecordId = record.Id;
-                await _db.SaveChangesAsync();
-                await tx.CommitAsync();
-            }
-            catch
-            {
-                await tx.RollbackAsync();
-                throw;
-            }
+                await using var tx = await _db.Database.BeginTransactionAsync();
+                try
+                {
+                    _db.RSRecords.Add(record);
+                    await _db.SaveChangesAsync();
+                    invoice.RsRecordId = record.Id;
+                    await _db.SaveChangesAsync();
+                    await tx.CommitAsync();
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
+            });
 
             _logger.LogInformation(
                 "Supplier invoice {Invoice} synced to TEJ: RSRecord={RsId}, OpCode={OpCode}, RS={RS}",

@@ -211,34 +211,39 @@ namespace MyApi.Modules.Contacts.Services
                     IsActive = true
                 };
 
-                await using var tx = await _context.Database.BeginTransactionAsync();
-                try
+                // Wrap in execution strategy to be compatible with EnableRetryOnFailure
+                var strategy = _context.Database.CreateExecutionStrategy();
+                await strategy.ExecuteAsync(async () =>
                 {
-                    _context.Contacts.Add(contact);
-                    await _context.SaveChangesAsync();
-
-                    // Assign tags if provided — contact.Id is available after the first save
-                    if (createDto.TagIds.Any())
+                    await using var tx = await _context.Database.BeginTransactionAsync();
+                    try
                     {
-                        foreach (var tagId in createDto.TagIds)
-                        {
-                            _context.Set<ContactTagAssignment>().Add(new ContactTagAssignment
-                            {
-                                ContactId = contact.Id,
-                                TagId = tagId,
-                                AssignedDate = DateTime.UtcNow
-                            });
-                        }
+                        _context.Contacts.Add(contact);
                         await _context.SaveChangesAsync();
-                    }
 
-                    await tx.CommitAsync();
-                }
-                catch
-                {
-                    await tx.RollbackAsync();
-                    throw;
-                }
+                        // Assign tags if provided — contact.Id is available after the first save
+                        if (createDto.TagIds.Any())
+                        {
+                            foreach (var tagId in createDto.TagIds)
+                            {
+                                _context.Set<ContactTagAssignment>().Add(new ContactTagAssignment
+                                {
+                                    ContactId = contact.Id,
+                                    TagId = tagId,
+                                    AssignedDate = DateTime.UtcNow
+                                });
+                            }
+                            await _context.SaveChangesAsync();
+                        }
+
+                        await tx.CommitAsync();
+                    }
+                    catch
+                    {
+                        await tx.RollbackAsync();
+                        throw;
+                    }
+                });
 
                 // Reload contact with related data
                 var createdContact = await GetContactByIdAsync(contact.Id);
@@ -276,132 +281,138 @@ namespace MyApi.Modules.Contacts.Services
                         updateDto.LastName = nameParts[1];
                 }
 
-                await using var tx = await _context.Database.BeginTransactionAsync();
-                try
+                // Wrap in execution strategy to be compatible with EnableRetryOnFailure
+                var strategy = _context.Database.CreateExecutionStrategy();
+                await strategy.ExecuteAsync(async () =>
                 {
-
-                // Check email uniqueness if email is being changed — done inside transaction to prevent TOCTOU race
-                if (!string.IsNullOrEmpty(updateDto.Email) &&
-                    (contact.Email == null || updateDto.Email.ToLower() != contact.Email.ToLower()))
-                {
-                    var existingContact = await _context.Contacts
-                        .Where(c => c.Email != null && c.Email.ToLower() == updateDto.Email.ToLower() && c.IsActive && c.Id != id)
-                        .FirstOrDefaultAsync();
-
-                    if (existingContact != null)
+                    await using var tx = await _context.Database.BeginTransactionAsync();
+                    try
                     {
-                        throw new InvalidOperationException("A contact with this email already exists");
-                    }
 
-                    contact.Email = updateDto.Email.ToLower();
-                }
-
-                // Update fields if provided
-                if (!string.IsNullOrEmpty(updateDto.FirstName))
-                    contact.FirstName = updateDto.FirstName;
-
-                if (!string.IsNullOrEmpty(updateDto.LastName))
-                    contact.LastName = updateDto.LastName;
-
-                // Update Name field
-                contact.Name = $"{contact.FirstName} {contact.LastName}".Trim();
-
-                if (updateDto.Phone != null)
-                    contact.Phone = updateDto.Phone;
-
-                if (updateDto.Company != null)
-                    contact.Company = updateDto.Company;
-
-                if (updateDto.Position != null)
-                    contact.Position = updateDto.Position;
-
-                if (updateDto.Address != null)
-                    contact.Address = updateDto.Address;
-
-                if (updateDto.City != null)
-                    contact.City = updateDto.City;
-
-                if (updateDto.Country != null)
-                    contact.Country = updateDto.Country;
-
-                if (updateDto.PostalCode != null)
-                    contact.PostalCode = updateDto.PostalCode;
-
-                if (updateDto.Notes != null)
-                    contact.Notes = updateDto.Notes;
-
-                if (updateDto.IsActive.HasValue)
-                    contact.IsActive = updateDto.IsActive.Value;
-
-                // Update Status and Type fields
-                if (!string.IsNullOrEmpty(updateDto.Status))
-                    contact.Status = updateDto.Status;
-
-                if (!string.IsNullOrEmpty(updateDto.Type))
-                    contact.Type = updateDto.Type;
-
-                if (updateDto.Avatar != null)
-                    contact.Avatar = updateDto.Avatar;
-
-                if (updateDto.Favorite.HasValue)
-                    contact.Favorite = updateDto.Favorite.Value;
-
-                if (updateDto.LastContactDate.HasValue)
-                    contact.LastContactDate = updateDto.LastContactDate.Value;
-
-                // Update fiscal identification fields
-                if (updateDto.Cin != null)
-                    contact.Cin = updateDto.Cin;
-
-                if (updateDto.MatriculeFiscale != null)
-                    contact.MatriculeFiscale = updateDto.MatriculeFiscale;
-
-                // Update geolocation fields
-                if (updateDto.Latitude.HasValue)
-                    contact.Latitude = updateDto.Latitude;
-
-                if (updateDto.Longitude.HasValue)
-                    contact.Longitude = updateDto.Longitude;
-
-                // Auto-set HasLocation based on lat/lng presence
-                if (updateDto.Latitude.HasValue || updateDto.Longitude.HasValue)
-                    contact.HasLocation = (contact.Latitude.HasValue && contact.Longitude.HasValue) ? 1 : 0;
-
-                contact.ModifiedBy = modifiedByUser;
-                contact.ModifiedDate = DateTime.UtcNow;
-
-                // Update tags if provided
-                if (updateDto.TagIds != null)
-                {
-                    // Remove existing tag assignments
-                    var existingAssignments = await _context.Set<ContactTagAssignment>()
-                        .Where(ta => ta.ContactId == id)
-                        .ToListAsync();
-                    
-                    _context.Set<ContactTagAssignment>().RemoveRange(existingAssignments);
-
-                    // Add new tag assignments
-                    foreach (var tagId in updateDto.TagIds)
+                    // Check email uniqueness if email is being changed — done inside transaction to prevent TOCTOU race
+                    if (!string.IsNullOrEmpty(updateDto.Email) &&
+                        (contact.Email == null || updateDto.Email.ToLower() != contact.Email.ToLower()))
                     {
-                        var tagAssignment = new ContactTagAssignment
+                        var existingContact = await _context.Contacts
+                            .Where(c => c.Email != null && c.Email.ToLower() == updateDto.Email.ToLower() && c.IsActive && c.Id != id)
+                            .FirstOrDefaultAsync();
+
+                        if (existingContact != null)
                         {
-                            ContactId = id,
-                            TagId = tagId,
-                            AssignedDate = DateTime.UtcNow
-                        };
-                        _context.Set<ContactTagAssignment>().Add(tagAssignment);
+                            throw new InvalidOperationException("A contact with this email already exists");
+                        }
+
+                        contact.Email = updateDto.Email.ToLower();
                     }
-                }
 
-                await _context.SaveChangesAsync();
-                await tx.CommitAsync();
+                    // Update fields if provided
+                    if (!string.IsNullOrEmpty(updateDto.FirstName))
+                        contact.FirstName = updateDto.FirstName;
 
-                } // end transaction try
-                catch
-                {
-                    await tx.RollbackAsync();
-                    throw;
-                }
+                    if (!string.IsNullOrEmpty(updateDto.LastName))
+                        contact.LastName = updateDto.LastName;
+
+                    // Update Name field
+                    contact.Name = $"{contact.FirstName} {contact.LastName}".Trim();
+
+                    if (updateDto.Phone != null)
+                        contact.Phone = updateDto.Phone;
+
+                    if (updateDto.Company != null)
+                        contact.Company = updateDto.Company;
+
+                    if (updateDto.Position != null)
+                        contact.Position = updateDto.Position;
+
+                    if (updateDto.Address != null)
+                        contact.Address = updateDto.Address;
+
+                    if (updateDto.City != null)
+                        contact.City = updateDto.City;
+
+                    if (updateDto.Country != null)
+                        contact.Country = updateDto.Country;
+
+                    if (updateDto.PostalCode != null)
+                        contact.PostalCode = updateDto.PostalCode;
+
+                    if (updateDto.Notes != null)
+                        contact.Notes = updateDto.Notes;
+
+                    if (updateDto.IsActive.HasValue)
+                        contact.IsActive = updateDto.IsActive.Value;
+
+                    // Update Status and Type fields
+                    if (!string.IsNullOrEmpty(updateDto.Status))
+                        contact.Status = updateDto.Status;
+
+                    if (!string.IsNullOrEmpty(updateDto.Type))
+                        contact.Type = updateDto.Type;
+
+                    if (updateDto.Avatar != null)
+                        contact.Avatar = updateDto.Avatar;
+
+                    if (updateDto.Favorite.HasValue)
+                        contact.Favorite = updateDto.Favorite.Value;
+
+                    if (updateDto.LastContactDate.HasValue)
+                        contact.LastContactDate = updateDto.LastContactDate.Value;
+
+                    // Update fiscal identification fields
+                    if (updateDto.Cin != null)
+                        contact.Cin = updateDto.Cin;
+
+                    if (updateDto.MatriculeFiscale != null)
+                        contact.MatriculeFiscale = updateDto.MatriculeFiscale;
+
+                    // Update geolocation fields
+                    if (updateDto.Latitude.HasValue)
+                        contact.Latitude = updateDto.Latitude;
+
+                    if (updateDto.Longitude.HasValue)
+                        contact.Longitude = updateDto.Longitude;
+
+                    // Auto-set HasLocation based on lat/lng presence
+                    if (updateDto.Latitude.HasValue || updateDto.Longitude.HasValue)
+                        contact.HasLocation = (contact.Latitude.HasValue && contact.Longitude.HasValue) ? 1 : 0;
+
+                    contact.ModifiedBy = modifiedByUser;
+                    contact.ModifiedDate = DateTime.UtcNow;
+
+                    // Update tags if provided
+                    if (updateDto.TagIds != null)
+                    {
+                        // Remove existing tag assignments
+                        var existingAssignments = await _context.Set<ContactTagAssignment>()
+                            .Where(ta => ta.ContactId == id)
+                            .ToListAsync();
+
+                        _context.Set<ContactTagAssignment>().RemoveRange(existingAssignments);
+
+                        // Add new tag assignments
+                        foreach (var tagId in updateDto.TagIds)
+                        {
+                            var tagAssignment = new ContactTagAssignment
+                            {
+                                ContactId = id,
+                                TagId = tagId,
+                                AssignedDate = DateTime.UtcNow
+                            };
+                            _context.Set<ContactTagAssignment>().Add(tagAssignment);
+                        }
+                    }
+
+                    await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
+
+                    } // end transaction try
+                    catch
+                    {
+                        await tx.RollbackAsync();
+                        throw;
+                    }
+                });
+
 
                 // Reload contact with related data
                 var updatedContact = await GetContactByIdAsync(id);

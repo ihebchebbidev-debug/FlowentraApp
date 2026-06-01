@@ -141,87 +141,92 @@ namespace MyApi.Modules.WorkflowEngine.Services
                     ContactHasLocation = contact?.HasLocation ?? offer.ContactHasLocation
                 };
 
-                await using var tx = await _db.Database.BeginTransactionAsync();
-                try
+                // Wrap in execution strategy to be compatible with EnableRetryOnFailure
+                var strategy = _db.Database.CreateExecutionStrategy();
+                await strategy.ExecuteAsync(async () =>
                 {
-                _db.Sales.Add(sale);
-                await _db.SaveChangesAsync();
-
-                // Copy offer items to sale items with all fields
-                var offerItemToSaleItem = new List<(int OfferItemId, SaleItem SaleItem)>();
-                if (offer.Items != null && offer.Items.Any())
-                {
-                    foreach (var offerItem in offer.Items)
+                    await using var tx = await _db.Database.BeginTransactionAsync();
+                    try
                     {
-                        var saleItem = new SaleItem
-                        {
-                            SaleId = sale.Id,
-                            ArticleId = offerItem.ArticleId,
-                            Description = offerItem.Description ?? offerItem.ItemName ?? "Item",
-                            Quantity = offerItem.Quantity,
-                            UnitPrice = offerItem.UnitPrice,
-                            Discount = offerItem.Discount,
-                            TaxRate = offerItem.TaxRate,
-                            LineTotal = offerItem.LineTotal,
-                            DisplayOrder = offerItem.DisplayOrder,
-                            Type = offerItem.Type,
-                            ItemName = offerItem.ItemName,
-                            ItemCode = offerItem.ItemCode,
-                            DiscountType = offerItem.DiscountType ?? "percentage",
-                            InstallationId = offerItem.InstallationId,
-                            InstallationName = offerItem.InstallationName,
-                            RequiresServiceOrder = offerItem.Type == "service",
-                            FulfillmentStatus = "pending"
-                        };
-                        _db.SaleItems.Add(saleItem);
-                        offerItemToSaleItem.Add((offerItem.Id, saleItem));
-                    }
+                    _db.Sales.Add(sale);
                     await _db.SaveChangesAsync();
 
-                    // Carry planned time/expenses from offer items → sale items (Stage 2).
-                    // Propagate failures: a missing plan is a data-integrity bug, not a warning.
-                    // The outer catch will mark the workflow step failed and notify the user.
-                    if (_plannedEntries != null)
+                    // Copy offer items to sale items with all fields
+                    var offerItemToSaleItem = new List<(int OfferItemId, SaleItem SaleItem)>();
+                    if (offer.Items != null && offer.Items.Any())
                     {
-                        foreach (var (offerItemId, saleItem) in offerItemToSaleItem)
+                        foreach (var offerItem in offer.Items)
                         {
-                            await _plannedEntries.CopyAsync("offer_item", offerItemId, "sale_item", saleItem.Id, userId ?? "system");
+                            var saleItem = new SaleItem
+                            {
+                                SaleId = sale.Id,
+                                ArticleId = offerItem.ArticleId,
+                                Description = offerItem.Description ?? offerItem.ItemName ?? "Item",
+                                Quantity = offerItem.Quantity,
+                                UnitPrice = offerItem.UnitPrice,
+                                Discount = offerItem.Discount,
+                                TaxRate = offerItem.TaxRate,
+                                LineTotal = offerItem.LineTotal,
+                                DisplayOrder = offerItem.DisplayOrder,
+                                Type = offerItem.Type,
+                                ItemName = offerItem.ItemName,
+                                ItemCode = offerItem.ItemCode,
+                                DiscountType = offerItem.DiscountType ?? "percentage",
+                                InstallationId = offerItem.InstallationId,
+                                InstallationName = offerItem.InstallationName,
+                                RequiresServiceOrder = offerItem.Type == "service",
+                                FulfillmentStatus = "pending"
+                            };
+                            _db.SaleItems.Add(saleItem);
+                            offerItemToSaleItem.Add((offerItem.Id, saleItem));
+                        }
+                        await _db.SaveChangesAsync();
+
+                        // Carry planned time/expenses from offer items → sale items (Stage 2).
+                        // Propagate failures: a missing plan is a data-integrity bug, not a warning.
+                        // The outer catch will mark the workflow step failed and notify the user.
+                        if (_plannedEntries != null)
+                        {
+                            foreach (var (offerItemId, saleItem) in offerItemToSaleItem)
+                            {
+                                await _plannedEntries.CopyAsync("offer_item", offerItemId, "sale_item", saleItem.Id, userId ?? "system");
+                            }
                         }
                     }
-                }
 
-                // Update offer status
-                offer.Status = "accepted";
-                offer.ConvertedToSaleId = sale.Id.ToString();
-                offer.ConvertedAt = DateTime.UtcNow;
-                offer.UpdatedAt = DateTime.UtcNow;
+                    // Update offer status
+                    offer.Status = "accepted";
+                    offer.ConvertedToSaleId = sale.Id.ToString();
+                    offer.ConvertedAt = DateTime.UtcNow;
+                    offer.UpdatedAt = DateTime.UtcNow;
 
-                // Stage activities alongside the final state update — one atomic commit
-                _db.SaleActivities.Add(new SaleActivity
-                {
-                    SaleId = sale.Id,
-                    Type = "created",
-                    Description = $"Sale created from accepted offer #{offerId}",
-                    CreatedAt = DateTime.UtcNow,
-                    CreatedByName = sale.AssignedToName ?? "System"
+                    // Stage activities alongside the final state update — one atomic commit
+                    _db.SaleActivities.Add(new SaleActivity
+                    {
+                        SaleId = sale.Id,
+                        Type = "created",
+                        Description = $"Sale created from accepted offer #{offerId}",
+                        CreatedAt = DateTime.UtcNow,
+                        CreatedByName = sale.AssignedToName ?? "System"
+                    });
+                    _db.OfferActivities.Add(new OfferActivity
+                    {
+                        OfferId = offerId,
+                        Type = "converted",
+                        Description = $"Offer converted to sale #{sale.Id}",
+                        CreatedAt = DateTime.UtcNow,
+                        CreatedByName = sale.AssignedToName ?? "System"
+                    });
+
+                    await _db.SaveChangesAsync();
+                    await tx.CommitAsync();
+                    }
+                    catch
+                    {
+                        await tx.RollbackAsync();
+                        throw;
+                    }
                 });
-                _db.OfferActivities.Add(new OfferActivity
-                {
-                    OfferId = offerId,
-                    Type = "converted",
-                    Description = $"Offer converted to sale #{sale.Id}",
-                    CreatedAt = DateTime.UtcNow,
-                    CreatedByName = sale.AssignedToName ?? "System"
-                });
-
-                await _db.SaveChangesAsync();
-                await tx.CommitAsync();
-                }
-                catch
-                {
-                    await tx.RollbackAsync();
-                    throw;
-                }
 
                 // Log workflow note
                 await LogWorkflowNoteAsync("sale", sale.Id, null, "created", userId, 

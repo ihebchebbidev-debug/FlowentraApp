@@ -258,117 +258,124 @@ namespace MyApi.Modules.Sales.Services
 
             // Wrap the whole conversion in a transaction so a partial copy
             // (e.g. planned-entry CopyAsync failure) rolls everything back.
-            using var tx = await _context.Database.BeginTransactionAsync();
-
-            var sale = new Sale
+            // Wrap in execution strategy to be compatible with EnableRetryOnFailure.
+            int createdSaleId = 0;
+            var strategy = _context.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
             {
-                SaleNumber = saleNumber2,
-                Title = offer.Title,
-                Description = offer.Description,
-                ContactId = offer.ContactId,
-                ProjectId = offer.ProjectId,
-                IsDeal = offer.ProjectId.HasValue,
-                Status = "created",  // Start with 'created' status instead of 'won'
-                Stage = "offer",     // Start at 'offer' stage
-                Priority = "medium",
-                Currency = offer.Currency ?? "TND",
-                BillingAddress = offer.BillingAddress,
-                BillingPostalCode = offer.BillingPostalCode,
-                BillingCountry = offer.BillingCountry,
-                DeliveryAddress = offer.DeliveryAddress,
-                DeliveryPostalCode = offer.DeliveryPostalCode,
-                DeliveryCountry = offer.DeliveryCountry,
-                Taxes = offer.Taxes ?? 0,
-                TaxType = offer.TaxType ?? "percentage",
-                Discount = offer.Discount ?? 0,
-                FiscalStamp = offer.FiscalStamp ?? 1.000m,
-                TotalAmount = offer.TotalAmount,
-                AssignedTo = offer.AssignedTo,
-                AssignedToName = offer.AssignedToName,
-                Tags = offer.Tags != null ? offer.Tags.Concat(new[] { "Converted" }).ToArray() : new[] { "Converted" },
-                OfferId = offerId.ToString(),
-                ConvertedFromOfferAt = DateTime.UtcNow,
-                CreatedBy = userId,
-                CreatedByName = createdByName,
-                CreatedDate = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-                // Copy contact geolocation
-                ContactLatitude = contact?.Latitude ?? offer.ContactLatitude,
-                ContactLongitude = contact?.Longitude ?? offer.ContactLongitude,
-                ContactHasLocation = contact?.HasLocation ?? offer.ContactHasLocation
-            };
+                using var tx = await _context.Database.BeginTransactionAsync();
 
-            _context.Sales.Add(sale);
-            await _context.SaveChangesAsync();
-
-            // Auto-note on the project (deal won)
-            ProjectAutoNote.Add(_context, offer.ProjectId,
-                $"Offer #{offer.OfferNumber} won → Sale #{sale.SaleNumber} created (deal, total {sale.TotalAmount} {sale.Currency}).",
-                userId);
-
-            // Copy items — track (offerItem, saleItem) pairs so we can copy
-            // PlannedLineEntries with stable OriginOfferItemId lineage.
-            var itemPairs = new List<(MyApi.Modules.Offers.Models.OfferItem Src, SaleItem Dst)>();
-            if (offer.Items != null && offer.Items.Any())
-            {
-                foreach (var offerItem in offer.Items)
+                var sale = new Sale
                 {
-                    var saleItem = new SaleItem
-                    {
-                        SaleId = sale.Id,
-                        Type = offerItem.Type,
-                        ArticleId = offerItem.ArticleId,
-                        ItemName = offerItem.ItemName,
-                        ItemCode = offerItem.ItemCode,
-                        Description = offerItem.Description ?? offerItem.ItemName ?? "Item",
-                        Quantity = offerItem.Quantity,
-                        UnitPrice = offerItem.UnitPrice,
-                        Discount = offerItem.Discount,
-                        DiscountType = offerItem.DiscountType ?? "percentage",
-                        InstallationId = offerItem.InstallationId,
-                        InstallationName = offerItem.InstallationName,
-                        RequiresServiceOrder = offerItem.Type == "service",
-                        FulfillmentStatus = "pending",
-                        TaxRate = 0
-                    };
-                    _context.SaleItems.Add(saleItem);
-                    itemPairs.Add((offerItem, saleItem));
-                }
+                    SaleNumber = saleNumber2,
+                    Title = offer.Title,
+                    Description = offer.Description,
+                    ContactId = offer.ContactId,
+                    ProjectId = offer.ProjectId,
+                    IsDeal = offer.ProjectId.HasValue,
+                    Status = "created",  // Start with 'created' status instead of 'won'
+                    Stage = "offer",     // Start at 'offer' stage
+                    Priority = "medium",
+                    Currency = offer.Currency ?? "TND",
+                    BillingAddress = offer.BillingAddress,
+                    BillingPostalCode = offer.BillingPostalCode,
+                    BillingCountry = offer.BillingCountry,
+                    DeliveryAddress = offer.DeliveryAddress,
+                    DeliveryPostalCode = offer.DeliveryPostalCode,
+                    DeliveryCountry = offer.DeliveryCountry,
+                    Taxes = offer.Taxes ?? 0,
+                    TaxType = offer.TaxType ?? "percentage",
+                    Discount = offer.Discount ?? 0,
+                    FiscalStamp = offer.FiscalStamp ?? 1.000m,
+                    TotalAmount = offer.TotalAmount,
+                    AssignedTo = offer.AssignedTo,
+                    AssignedToName = offer.AssignedToName,
+                    Tags = offer.Tags != null ? offer.Tags.Concat(new[] { "Converted" }).ToArray() : new[] { "Converted" },
+                    OfferId = offerId.ToString(),
+                    ConvertedFromOfferAt = DateTime.UtcNow,
+                    CreatedBy = userId,
+                    CreatedByName = createdByName,
+                    CreatedDate = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                    // Copy contact geolocation
+                    ContactLatitude = contact?.Latitude ?? offer.ContactLatitude,
+                    ContactLongitude = contact?.Longitude ?? offer.ContactLongitude,
+                    ContactHasLocation = contact?.HasLocation ?? offer.ContactHasLocation
+                };
+
+                _context.Sales.Add(sale);
                 await _context.SaveChangesAsync();
-            }
 
-            // Propagate planned time/expenses from offer_item → sale_item.
-            // Inside the transaction: any failure rolls the whole conversion back
-            // so we never end up with a Sale that lost its plan.
-            if (_plannedEntries != null && itemPairs.Count > 0)
-            {
-                foreach (var (src, dst) in itemPairs)
+                // Auto-note on the project (deal won)
+                ProjectAutoNote.Add(_context, offer.ProjectId,
+                    $"Offer #{offer.OfferNumber} won → Sale #{sale.SaleNumber} created (deal, total {sale.TotalAmount} {sale.Currency}).",
+                    userId);
+
+                // Copy items — track (offerItem, saleItem) pairs so we can copy
+                // PlannedLineEntries with stable OriginOfferItemId lineage.
+                var itemPairs = new List<(MyApi.Modules.Offers.Models.OfferItem Src, SaleItem Dst)>();
+                if (offer.Items != null && offer.Items.Any())
                 {
-                    await _plannedEntries.CopyAsync("offer_item", src.Id, "sale_item", dst.Id, userId);
+                    foreach (var offerItem in offer.Items)
+                    {
+                        var saleItem = new SaleItem
+                        {
+                            SaleId = sale.Id,
+                            Type = offerItem.Type,
+                            ArticleId = offerItem.ArticleId,
+                            ItemName = offerItem.ItemName,
+                            ItemCode = offerItem.ItemCode,
+                            Description = offerItem.Description ?? offerItem.ItemName ?? "Item",
+                            Quantity = offerItem.Quantity,
+                            UnitPrice = offerItem.UnitPrice,
+                            Discount = offerItem.Discount,
+                            DiscountType = offerItem.DiscountType ?? "percentage",
+                            InstallationId = offerItem.InstallationId,
+                            InstallationName = offerItem.InstallationName,
+                            RequiresServiceOrder = offerItem.Type == "service",
+                            FulfillmentStatus = "pending",
+                            TaxRate = 0
+                        };
+                        _context.SaleItems.Add(saleItem);
+                        itemPairs.Add((offerItem, saleItem));
+                    }
+                    await _context.SaveChangesAsync();
                 }
-            }
 
-            // Update offer status
-            offer.Status = "accepted";
-            offer.ConvertedToSaleId = sale.Id.ToString();
-            offer.ConvertedAt = DateTime.UtcNow;
-            offer.UpdatedAt = DateTime.UtcNow;
+                // Propagate planned time/expenses from offer_item → sale_item.
+                // Inside the transaction: any failure rolls the whole conversion back
+                // so we never end up with a Sale that lost its plan.
+                if (_plannedEntries != null && itemPairs.Count > 0)
+                {
+                    foreach (var (src, dst) in itemPairs)
+                    {
+                        await _plannedEntries.CopyAsync("offer_item", src.Id, "sale_item", dst.Id, userId);
+                    }
+                }
 
-            // Log sale creation activity
-            var creationActivity = new SaleActivity
-            {
-                SaleId = sale.Id,
-                Type = "created",
-                Description = $"Sale order created from Offer #{offer.OfferNumber}",
-                CreatedAt = DateTime.UtcNow,
-                CreatedByName = createdByName
-            };
-            _context.SaleActivities.Add(creationActivity);
+                // Update offer status
+                offer.Status = "accepted";
+                offer.ConvertedToSaleId = sale.Id.ToString();
+                offer.ConvertedAt = DateTime.UtcNow;
+                offer.UpdatedAt = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
-            await tx.CommitAsync();
+                // Log sale creation activity
+                var creationActivity = new SaleActivity
+                {
+                    SaleId = sale.Id,
+                    Type = "created",
+                    Description = $"Sale order created from Offer #{offer.OfferNumber}",
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedByName = createdByName
+                };
+                _context.SaleActivities.Add(creationActivity);
 
-            var createdSale = await GetSaleByIdAsync(sale.Id);
+                await _context.SaveChangesAsync();
+                await tx.CommitAsync();
+                createdSaleId = sale.Id;
+            });
+
+            var createdSale = await GetSaleByIdAsync(createdSaleId);
             return createdSale!;
         }
 

@@ -319,26 +319,31 @@ namespace MyApi.Modules.WebsiteBuilder.Services
 
             // Wrap auto-save + restore in a transaction: if the restore save fails,
             // the auto-saved version is rolled back so we don't produce a dangling snapshot.
-            await using var tx = await _context.Database.BeginTransactionAsync();
-            try
+            // Wrap in execution strategy to be compatible with EnableRetryOnFailure
+            var strategy = _context.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
             {
-                await SavePageVersionAsync(pageId, new CreateWBPageVersionRequestDto
+                await using var tx = await _context.Database.BeginTransactionAsync();
+                try
                 {
-                    ChangeMessage = $"Auto-save before restoring to version {version.VersionNumber}"
-                }, modifiedByUser);
+                    await SavePageVersionAsync(pageId, new CreateWBPageVersionRequestDto
+                    {
+                        ChangeMessage = $"Auto-save before restoring to version {version.VersionNumber}"
+                    }, modifiedByUser);
 
-                page.ComponentsJson = version.ComponentsJson;
-                page.ModifiedBy = modifiedByUser;
-                page.UpdatedAt = DateTime.UtcNow;
+                    page.ComponentsJson = version.ComponentsJson;
+                    page.ModifiedBy = modifiedByUser;
+                    page.UpdatedAt = DateTime.UtcNow;
 
-                await _context.SaveChangesAsync();
-                await tx.CommitAsync();
-            }
-            catch
-            {
-                await tx.RollbackAsync();
-                throw;
-            }
+                    await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
+            });
 
             await _activityLog.LogActivityAsync(page.SiteId, page.Id, "restore", "page",
                 $"Page '{page.Title}' restored to version {version.VersionNumber}", modifiedByUser);

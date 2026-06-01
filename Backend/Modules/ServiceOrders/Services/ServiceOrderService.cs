@@ -289,7 +289,12 @@ namespace MyApi.Modules.ServiceOrders.Services
             // Atomic creation: ServiceOrder + jobs + planned entries + materials + sale flags
             // must all succeed together. A mid-flow failure would otherwise leave a SO
             // with jobs but no planned budget, or sale items wrongly marked as converted.
-            await using var tx = await _context.Database.BeginTransactionAsync();
+            int createdServiceOrderId = 0;
+            // Wrap in execution strategy to be compatible with EnableRetryOnFailure
+            var strategy = _context.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
+            {
+                await using var tx = await _context.Database.BeginTransactionAsync();
             // Verify sale exists with its items
                 var sale = await _context.Sales
                     .Include(s => s.Items)
@@ -553,8 +558,10 @@ namespace MyApi.Modules.ServiceOrders.Services
                 await _context.SaveChangesAsync();
 
                 await tx.CommitAsync();
+                createdServiceOrderId = serviceOrder.Id;
+            });
 
-                var result = await GetServiceOrderByIdAsync(serviceOrder.Id);
+                var result = await GetServiceOrderByIdAsync(createdServiceOrderId);
                 return result!;
             }
             catch (Exception ex)
