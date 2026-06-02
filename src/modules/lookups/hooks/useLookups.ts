@@ -1,11 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
-import { 
-  taskStatusesApi, 
-  eventTypesApi, 
-  serviceCategoriesApi, 
-  currenciesApi, 
+import {
+  taskStatusesApi,
+  eventTypesApi,
+  serviceCategoriesApi,
+  currenciesApi,
   prioritiesApi,
   articleCategoriesApi,
   locationsApi,
@@ -20,11 +20,12 @@ import {
   formCategoriesApi,
   documentTypesApi,
   articleGroupsApi,
-  type LookupItem, 
+  skillsApi,
+  type LookupItem,
   type Currency,
   type CreateLookupRequest,
   type UpdateLookupRequest,
-  handleApiError 
+  handleApiError
 } from '@/services/lookupsApi';
 
 export interface UseLookupHookReturn {
@@ -185,6 +186,7 @@ export const useExpenseTypes = createLookupHook('expenseTypes', expenseTypesApi)
 export const useProjectTypes = createLookupHook('projectTypes', projectTypesApi);
 export const useFormCategories = createLookupHook('formCategories', formCategoriesApi);
 export const useDocumentTypes = createLookupHook('documentTypes', documentTypesApi);
+export const useSkills = createLookupHook('skills', skillsApi);
 
 // Currency hook (special case)
 export function useCurrencies(): UseCurrencyHookReturn {

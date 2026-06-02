@@ -181,7 +181,14 @@ export function setActiveCompany(
   notifyTargetTenantChanged();
 
   if (reload && typeof window !== 'undefined') {
-    window.location.replace('/dashboard');
+    // Stay on the current page when already inside the dashboard so the admin
+    // doesn't lose their navigation context. Only redirect to /dashboard when
+    // switching from outside it (e.g. /select-company, /login).
+    if (window.location.pathname.startsWith('/dashboard')) {
+      window.location.reload();
+    } else {
+      window.location.replace('/dashboard');
+    }
   }
 }
 

@@ -31,7 +31,6 @@ import { cn } from "@/lib/utils";
 import { AccountSettings } from "./AccountSettings";
 import { UserManagement } from "@/modules/users";
 import { RoleManagement } from "./RoleManagement";
-import { SkillsManagement } from "@/modules/skills";
 import { ApplicationSettings } from "./ApplicationSettings";
 import { Preferences } from "./Preferences";
 import { ApiDocumentation } from "./ApiDocumentation";
@@ -119,7 +118,6 @@ export function SettingsLayoutNew() {
       subSections: [
         { id: 'users', label: 'Users', component: UserManagement },
         { id: 'roles', label: 'Roles & Permissions', component: RoleManagement },
-        { id: 'skills', label: 'Skills', component: SkillsManagement },
         { id: 'database', label: 'Database', component: DatabaseVisualization },
         { id: 'connections', label: 'Connection Logs', component: ConnectionLogs },
       ]

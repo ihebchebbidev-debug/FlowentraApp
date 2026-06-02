@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Settings, User, Users, Shield, Cog, Heart, FileText, Activity, Menu, Wrench, Database } from "lucide-react";
+import { Settings, User, Users, Shield, Cog, Heart, FileText, Activity, Menu, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -8,7 +8,6 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { AccountSettings } from "./AccountSettings";
 import { UserManagement } from "@/modules/users";
 import { RoleManagement } from "./RoleManagement";
-import { SkillsManagement } from "@/modules/skills";
 import { ApplicationSettings } from "./ApplicationSettings";
 import { Preferences } from "./Preferences";
 import { ApiDocumentation } from "./ApiDocumentation";
@@ -18,7 +17,7 @@ import { useNavigate } from "react-router-dom";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
 
-type SettingsSection = 'account' | 'users' | 'roles' | 'skills' | 'application' | 'preferences' | 'api' | 'database' | 'logs';
+type SettingsSection = 'account' | 'users' | 'roles' | 'application' | 'preferences' | 'api' | 'database' | 'logs';
 
 export function SettingsLayout() {
   const { t } = useTranslation('settings');
@@ -66,12 +65,6 @@ export function SettingsLayout() {
       description: 'roles'
     },
     {
-      id: 'skills' as SettingsSection,
-      label: 'skills',
-      icon: Wrench,
-      description: 'skills'
-    },
-    {
       id: 'application' as SettingsSection,
       label: 'application',
       icon: Cog,
@@ -112,8 +105,6 @@ export function SettingsLayout() {
         return <UserManagement />;
       case 'roles':
         return <RoleManagement />;
-      case 'skills':
-        return <SkillsManagement />;
       case 'application':
         return <ApplicationSettings />;
       case 'preferences':
@@ -145,8 +136,8 @@ export function SettingsLayout() {
 
   const SidebarContent = () => {
     // Separate buttons into sections
-    const mainButtons = settingsButtons.slice(0, 4); // account, users, roles, skills
-    const systemButtons = settingsButtons.slice(4); // application, preferences, api, logs
+    const mainButtons = settingsButtons.slice(0, 3); // account, users, roles
+    const systemButtons = settingsButtons.slice(3); // application, preferences, api, database, logs
 
     return (
       <div className="space-y-4 p-4 bg-white dark:bg-transparent">

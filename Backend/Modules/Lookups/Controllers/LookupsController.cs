@@ -1275,6 +1275,38 @@ namespace MyApi.Modules.Lookups.Controllers
             }
         }
 
+        [HttpPut("skills/{id}")]
+        public async Task<ActionResult<LookupItemDto>> UpdateSkill(int id, [FromBody] UpdateLookupItemRequestDto updateDto)
+        {
+            try
+            {
+                var result = await _lookupService.UpdateSkillAsync(id, updateDto, GetCurrentUser());
+                if (result == null) return NotFound();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating skill with ID: {Id}", id);
+                return StatusCode(500, "An error occurred while updating the skill.");
+            }
+        }
+
+        [HttpDelete("skills/{id}")]
+        public async Task<IActionResult> DeleteSkill(int id)
+        {
+            try
+            {
+                var result = await _lookupService.DeleteSkillAsync(id, GetCurrentUser());
+                if (!result) return NotFound();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting skill with ID: {Id}", id);
+                return StatusCode(500, "An error occurred while deleting the skill.");
+            }
+        }
+
         // Installation Types
         [HttpGet("installation-types")]
         public async Task<ActionResult<LookupListResponseDto>> GetInstallationTypes()

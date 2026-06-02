@@ -7,11 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertCircle, ChevronRight, ListChecks, Calendar, Folder, Flag, Package, MapPin, Clock, Coins, Tag, Megaphone, Wrench, DollarSign, FolderKanban, FileText, ArrowLeft } from 'lucide-react';
 import { LookupTable } from '../components/LookupTable';
-import { 
-  useTaskStatuses, 
-  // useEventTypes, // Commented out - not needed for now 
-  useServiceCategories, 
-  usePriorities, 
+import {
+  useTaskStatuses,
+  // useEventTypes, // Commented out - not needed for now
+  useServiceCategories,
+  usePriorities,
   useArticleCategories,
   useLocations,
   useArticleGroups,
@@ -25,7 +25,8 @@ import {
   useExpenseTypes,
   useProjectTypes,
   useFormCategories,
-  useDocumentTypes
+  useDocumentTypes,
+  useSkills
 } from '../hooks/useLookups';
 import { cn } from '@/lib/utils';
 
@@ -57,6 +58,7 @@ export default function LookupsPage() {
     'projectTypes': 'project-types',
     'formCategories': 'form-categories',
     'documentTypes': 'document-types',
+    'skills': 'skills',
     'salesCategories': 'offer-categories', // Sales uses same categories
     'salesSources': 'offer-sources', // Sales uses same sources
   };
@@ -107,6 +109,7 @@ export default function LookupsPage() {
   const projectTypes = useProjectTypes();
   const formCategories = useFormCategories();
   const documentTypes = useDocumentTypes();
+  const skills = useSkills();
 
   const lookupTypes = [
     {
@@ -246,6 +249,14 @@ export default function LookupsPage() {
       icon: FileText,
       hook: documentTypes,
       typeFields: {}
+    },
+    {
+      id: 'skills',
+      label: t('skills', 'Skills'),
+      description: t('selectLookup'),
+      icon: Wrench,
+      hook: skills,
+      typeFields: { category: true }
     },
     // Currencies commented out - not needed for now
     // {
