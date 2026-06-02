@@ -157,9 +157,30 @@ export function EditUserModal({ open, onOpenChange, user, onUserUpdated }: EditU
         proficiencyLevel: newProficiency,
         yearsOfExperience: newYearsExp ? Number(newYearsExp) : undefined,
       });
+
+      // Optimistic update: push the new skill into state immediately so the
+      // list updates without waiting for a server round-trip.  The server
+      // re-fetch below reconciles IDs if the backend stored a different one.
+      const addedSkill = allSkills.find(s => s.id === Number(newSkillId));
+      if (addedSkill) {
+        const optimistic: UserSkill = {
+          id: Date.now(),                             // temporary local id
+          skillId: addedSkill.id,
+          userId: user.id,
+          skillName: addedSkill.name,
+          skillCategory: addedSkill.category ?? '',
+          proficiencyLevel: newProficiency,
+          yearsOfExperience: newYearsExp ? Number(newYearsExp) : undefined,
+          assignedAt: new Date().toISOString(),
+        };
+        setUserSkills(prev => [...prev, optimistic]);
+      }
+
       toast({ title: t('editUser.skills.toast.assigned'), description: t('editUser.skills.toast.assignedDesc') });
       setNewSkillId(''); setNewYearsExp(''); setNewProficiency('intermediate');
-      await loadUserSkills();
+
+      // Background refresh to replace optimistic entry with the real server record
+      loadUserSkills();
     } catch {
       toast({ title: t('editUser.skills.toast.assignFailed'), description: t('editUser.skills.toast.tryAgain'), variant: 'destructive' });
     } finally {

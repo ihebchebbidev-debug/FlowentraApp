@@ -687,14 +687,21 @@ export function UnassignedJobsList({
                             </span>
                           </div>
                           <div className="flex items-center gap-1.5 flex-shrink-0">
-                            <Badge variant={getPriorityColor(serviceOrderData.priority)} className="text-[0.65rem] px-1.5 py-0 h-[18px] flex items-center gap-0.5">
-                              {serviceOrderData.priority === 'urgent' && <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />}
-                              {t(`dispatcher.priority_${serviceOrderData.priority}`)}
-                            </Badge>
-                            <ChevronDown 
+                            {/* Priority shown as a coloured dot to save space in narrow sidebar.
+                                Full label is in the HoverCard. */}
+                            <span
+                              title={t(`dispatcher.priority_${serviceOrderData.priority}`)}
+                              className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                                serviceOrderData.priority === 'urgent' ? 'bg-red-500 animate-pulse' :
+                                serviceOrderData.priority === 'high'   ? 'bg-orange-400' :
+                                serviceOrderData.priority === 'medium' ? 'bg-blue-400' :
+                                'bg-gray-300'
+                              }`}
+                            />
+                            <ChevronDown
                               className={`h-3 w-3 transition-transform text-muted-foreground ${
                                 expandedServiceOrders.has(serviceOrderData.id) ? 'rotate-180' : ''
-                              }`} 
+                              }`}
                             />
                           </div>
                         </div>
