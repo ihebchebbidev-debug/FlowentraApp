@@ -3,7 +3,7 @@
  * Only accessible by MainAdminUser.
  */
 import { useState, useEffect } from 'react';
-import { Building2, Plus, Save, Loader2, Trash2, Star, StarOff, Power, PowerOff, Pencil, Upload, X, Layers, Eye, Settings2 } from 'lucide-react';
+import { Building2, Plus, Save, Loader2, Trash2, Star, StarOff, Power, PowerOff, Pencil, Upload, X, Layers, Eye, Settings2, ImageOff } from 'lucide-react';
 import { ModuleScopeDialog } from './ModuleScopeDialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -36,6 +36,53 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { tenantsApi, type Tenant, type CreateTenantRequest, type UpdateTenantRequest } from '@/services/api/tenantsApi';
+
+/**
+ * Renders a company's real logo. Falls back to the default-company admin logo,
+ * then to a clean "no logo" placeholder (initials + indicator) — never a broken
+ * image. Logo-load failures are caught and downgraded to the placeholder.
+ */
+function CompanyAvatar({ tenant, adminLogoUrl }: { tenant: Tenant; adminLogoUrl?: string }) {
+  const [errored, setErrored] = useState(false);
+
+  // Priority: the tenant's own logo → (default company) the admin's logo.
+  const raw = tenant.companyLogoUrl || (tenant.isDefault ? (adminLogoUrl || '') : '');
+  const src = raw ? `${API_URL}/${String(raw).replace(/^\/+/, '')}` : '';
+
+  const initials =
+    (tenant.companyName || '?')
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map(w => w[0]?.toUpperCase() ?? '')
+      .join('') || '?';
+
+  if (src && !errored) {
+    return (
+      <div className="shrink-0 w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden border border-border/40 bg-background">
+        <img
+          src={src}
+          alt={tenant.companyName}
+          className="max-w-full max-h-full object-contain"
+          onError={() => setErrored(true)}
+        />
+      </div>
+    );
+  }
+
+  // No logo (or it failed to load) → placeholder with initials + "no logo" badge.
+  return (
+    <div
+      className="relative shrink-0 w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden border border-dashed border-border bg-muted/40"
+      title="No logo uploaded"
+    >
+      <span className="text-sm font-semibold text-muted-foreground tracking-wide">{initials}</span>
+      <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-background border border-border text-muted-foreground">
+        <ImageOff className="h-2.5 w-2.5" />
+      </span>
+    </div>
+  );
+}
 
 export function TenantManagement() {
   const { user } = useAuth();
@@ -391,37 +438,8 @@ export function TenantManagement() {
                     setTenantOverride(tenant.slug);
                   }}
                 >
-                  {/* Company Icon or Logo */}
-                  <div className="p-2 rounded-lg bg-primary/10 shrink-0 w-12 h-12 flex items-center justify-center overflow-hidden">
-                    {(() => {
-                      // 1. First priority: The tenant's own logo
-                      if (tenant.companyLogoUrl) {
-                        return (
-                          <img 
-                            src={`${API_URL}/${tenant.companyLogoUrl.replace(/^\/+/, '')}`} 
-                            alt={tenant.companyName} 
-                            className="max-w-full max-h-full object-contain"
-                          />
-                        );
-                      }
-                      
-                      // 2. Second priority: If it's the default company, fall back to the admin's logo
-                      if (tenant.isDefault && user?.companyLogoUrl) {
-                        return (
-                          <img 
-                            src={`${API_URL}/${user.companyLogoUrl.replace(/^\/+/, '')}`} 
-                            alt={tenant.companyName} 
-                            className="max-w-full max-h-full object-contain"
-                          />
-                        );
-                      }
-                      
-                      // 3. Last fallback: Building icon
-                      return (
-                        <Building2 className="h-5 w-5 text-primary" />
-                      );
-                    })()}
-                  </div>
+                  {/* Company Logo (real) or a clean "no logo" placeholder */}
+                  <CompanyAvatar tenant={tenant} adminLogoUrl={(user as any)?.companyLogoUrl} />
 
                   {/* Company Info */}
                   <div className="flex-1 min-w-0">

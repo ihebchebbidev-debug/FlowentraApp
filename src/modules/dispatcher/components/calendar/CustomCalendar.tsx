@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, useLayoutEffect } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { addHours, addDays, format, isSameDay, isWithinInterval, startOfDay, endOfDay, differenceInCalendarDays } from "date-fns";
 import { useTranslation } from "react-i18next";
 import type { CalendarViewType, Technician, Job, DragData, ServiceOrder, InstallationGroup } from "../../types";
@@ -95,19 +95,26 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view.type]);
 
-  // Measure the calendar's available width so day columns can be auto-fitted.
-  // Without this, ≤7-day views overflow (each column has a fixed minWidth) and
-  // only ~4 days are visible until the user zooms out.
+  // Measure the calendar's date area so day columns fit exactly. We measure the
+  // scroll VIEWPORT's clientWidth (which already excludes the vertical scrollbar,
+  // on every platform) and subtract the fixed technician column. No scrollbar
+  // guessing → no empty gap before the sidebar.
+  const TECH_COL_WIDTH = 208; // matches TechnicianList `w-52`
+  const MIN_HOUR_WIDTH = 11;  // smallest readable hour cell before falling back to scroll
   const calendarRootRef = useRef<HTMLDivElement>(null);
-  const [containerWidth, setContainerWidth] = useState(0);
-  useLayoutEffect(() => {
-    const el = calendarRootRef.current;
-    if (!el) return;
-    const measure = () => setContainerWidth(el.clientWidth);
+  const [dateAreaWidth, setDateAreaWidth] = useState(0);
+  const viewportRoRef = useRef<ResizeObserver | null>(null);
+  // Callback ref: (re)attaches a ResizeObserver to the scroll viewport whenever
+  // it mounts/unmounts (e.g. switching between detailed and overview modes).
+  const setViewportRef = useCallback((node: HTMLDivElement | null) => {
+    viewportRoRef.current?.disconnect();
+    viewportRoRef.current = null;
+    if (!node) return;
+    const measure = () => setDateAreaWidth(Math.max(0, node.clientWidth - TECH_COL_WIDTH));
     measure();
     const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
+    ro.observe(node);
+    viewportRoRef.current = ro;
   }, []);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -196,12 +203,9 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
   }, [dateRange]);
 
   // Get zoom-based dimensions that ONLY affect calendar grid.
-  // In auto mode (≤7 days) hourWidth is derived from the measured container so the
+  // In auto mode (≤7 days) hourWidth is derived from the measured date area so the
   // days fill the full width edge-to-edge — all days visible, no horizontal scroll,
   // no empty gap. Job blocks use this same hourWidth, so they stay pixel-aligned.
-  const TECH_COL_WIDTH = 208;   // matches TechnicianList `w-52`
-  const SCROLLBAR_BUFFER = 18;  // reserve room for the vertical scrollbar so the last column never clips
-  const MIN_HOUR_WIDTH = 11;    // smallest readable hour cell before we fall back to scroll
   const getZoomDimensions = (): ZoomDimensions => {
     const zoomMap = {
       xs:  { dateWidth: 180, hourWidth: 18, hourTextSize: '10px' },
@@ -224,7 +228,7 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
       return { dateWidth: z.dateWidth, hourWidth: z.hourWidth, widthMode: 'scroll', showHourLabels: true, hourTextSize: z.hourTextSize };
     }
 
-    const dateArea = containerWidth - TECH_COL_WIDTH - SCROLLBAR_BUFFER;
+    const dateArea = dateAreaWidth;
 
     // Not measured yet → fall back to nominal auto (corrected on next layout pass).
     if (dateArea <= 0) {
@@ -1089,7 +1093,7 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
             includeWeekends={settings.includeWeekends}
           />
           
-          <div className="flex-1 overflow-y-auto">
+          <div ref={setViewportRef} className="flex-1 overflow-y-auto">
             <div className="flex h-full">
               <TechnicianList technicians={displayedTechnicians} rowHeights={rowHeights} />
               
