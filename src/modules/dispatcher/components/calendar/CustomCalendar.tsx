@@ -224,7 +224,7 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
       return { dateWidth: z.dateWidth, hourWidth: z.hourWidth, widthMode: 'scroll', showHourLabels: true, hourTextSize: z.hourTextSize };
     }
 
-    const dateArea = containerWidth - TECH_COL_WIDTH;
+    const dateArea = containerWidth - TECH_COL_WIDTH - SCROLLBAR_BUFFER;
     const naturalTotal = dates.length * hours * z.hourWidth;
 
     // Not measured yet, or content already fits → use nominal sizing in auto mode.

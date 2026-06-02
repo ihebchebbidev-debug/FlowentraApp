@@ -43,24 +43,15 @@ export function CurrentTimeIndicator({ dates, workingHours, dateWidth, hourWidth
   const hoursFromStart = currentHour - firstHour;
   const minuteFraction = currentMinutes / 60;
   const positionWithinDay = (hoursFromStart + minuteFraction) * hourWidth;
-  
-  // Calculate total left position (date columns before today + position within today)
-  // For auto mode, we need percentage-based positioning
-  const leftPosition = widthMode === 'scroll' 
-    ? (todayIndex * dateWidth) + positionWithinDay
-    : null;
-  
-  const leftPercentage = widthMode === 'auto'
-    ? ((todayIndex + (hoursFromStart + minuteFraction) / workingHours.length) / dates.length) * 100
-    : null;
-  
+
+  // Day columns are fixed-width (dateWidth) in BOTH auto and scroll modes now, so
+  // pixel positioning is always correct and matches the job-block geometry.
+  const leftPosition = (todayIndex * dateWidth) + positionWithinDay;
+
   return (
-    <div 
+    <div
       className="absolute top-0 bottom-0 z-30 pointer-events-none flex flex-col items-center"
-      style={widthMode === 'scroll' 
-        ? { left: `${leftPosition}px` } 
-        : { left: `${leftPercentage}%` }
-      }
+      style={{ left: `${leftPosition}px` }}
     >
       {/* Time label */}
       <div className="bg-primary text-primary-foreground text-[10px] font-semibold px-1.5 py-0.5 rounded-b shadow-md whitespace-nowrap">
