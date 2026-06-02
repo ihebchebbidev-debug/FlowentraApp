@@ -36,6 +36,9 @@ export function ContactSelectorWithType({ onContactSelect, selectedContact, disa
   const [searchTerm, setSearchTerm] = useState("");
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [quickAddStep, setQuickAddStep] = useState<1 | 2 | 3>(1);
+  // Per-step inline validation errors (phone on step 1, email on step 2) so the
+  // user is corrected as they go, not only with a toast on the final step.
+  const [quickAddErrors, setQuickAddErrors] = useState<{ phone?: string; email?: string }>({});
   const [contacts, setContacts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [quickAddData, setQuickAddData] = useState({
@@ -100,6 +103,31 @@ export function ContactSelectorWithType({ onContactSelect, selectedContact, disa
   };
 
   const [quickAddLoading, setQuickAddLoading] = useState(false);
+
+  const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  const isValidPhone = (v: string) => /^[+]?[\d\s()./-]{6,}$/.test(v);
+
+  // Step 1 → 2: validate phone format (when provided) before advancing.
+  const goToStep2 = () => {
+    const phone = quickAddData.phone?.trim() || '';
+    if (phone && !isValidPhone(phone)) {
+      setQuickAddErrors(e => ({ ...e, phone: t('invalidPhone') || 'Please enter a valid phone number' }));
+      return;
+    }
+    setQuickAddErrors(e => ({ ...e, phone: undefined }));
+    setQuickAddStep(2);
+  };
+
+  // Step 2 → 3: validate email format (when provided) before advancing.
+  const goToStep3 = () => {
+    const email = quickAddData.email?.trim() || '';
+    if (email && !isValidEmail(email)) {
+      setQuickAddErrors(e => ({ ...e, email: t('invalidEmail') || 'Please enter a valid email address' }));
+      return;
+    }
+    setQuickAddErrors(e => ({ ...e, email: undefined }));
+    setQuickAddStep(3);
+  };
 
   const handleQuickAdd = async () => {
     const isCompany = quickAddData.type === 'company';
@@ -401,9 +429,13 @@ export function ContactSelectorWithType({ onContactSelect, selectedContact, disa
                   <Input
                     id="quick-phone"
                     value={quickAddData.phone}
-                    onChange={(e) => setQuickAddData(prev => ({ ...prev, phone: e.target.value }))}
+                    onChange={(e) => { setQuickAddData(prev => ({ ...prev, phone: e.target.value })); setQuickAddErrors(prev => ({ ...prev, phone: undefined })); }}
                     placeholder="+216 XX XXX XXX"
+                    className={quickAddErrors.phone ? 'border-destructive focus-visible:ring-destructive' : ''}
                   />
+                  {quickAddErrors.phone && (
+                    <p className="text-xs text-destructive">{quickAddErrors.phone}</p>
+                  )}
                 </div>
               </div>
             ) : (
@@ -446,9 +478,13 @@ export function ContactSelectorWithType({ onContactSelect, selectedContact, disa
                   id="quick-email"
                   type="email"
                   value={quickAddData.email}
-                  onChange={(e) => setQuickAddData(prev => ({ ...prev, email: e.target.value }))}
+                  onChange={(e) => { setQuickAddData(prev => ({ ...prev, email: e.target.value })); setQuickAddErrors(prev => ({ ...prev, email: undefined })); }}
                   placeholder={quickAddData.type === 'company' ? 'contact@company.com' : 'john@example.com'}
+                  className={quickAddErrors.email ? 'border-destructive focus-visible:ring-destructive' : ''}
                 />
+                {quickAddErrors.email && (
+                  <p className="text-xs text-destructive">{quickAddErrors.email}</p>
+                )}
               </div>
               {quickAddData.type === 'individual' && (
                 <div className="space-y-2">
@@ -560,7 +596,7 @@ export function ContactSelectorWithType({ onContactSelect, selectedContact, disa
             {quickAddStep === 1 ? (
               <Button
                 type="button"
-                onClick={() => setQuickAddStep(2)}
+                onClick={goToStep2}
                 disabled={!canProceedToStep2}
               >
                 {t('next')}
@@ -579,7 +615,7 @@ export function ContactSelectorWithType({ onContactSelect, selectedContact, disa
                 </Button>
                 <Button
                   type="button"
-                  onClick={() => setQuickAddStep(3)}
+                  onClick={goToStep3}
                 >
                   {t('next')}
                 </Button>
