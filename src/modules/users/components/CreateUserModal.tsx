@@ -9,6 +9,7 @@ import { AlertCircle, Loader2 } from "lucide-react";
 import { useEmailValidation } from "../hooks/useEmailValidation";
 import { useTranslation } from "react-i18next";
 import { ProfilePictureUpload } from "@/components/ui/profile-picture-upload";
+import { useTargetTenant } from "@/hooks/useTargetTenant";
 
 interface CreateUserModalProps {
   open: boolean;
@@ -34,6 +35,11 @@ export function CreateUserModal({ open, onOpenChange, onUserCreated }: CreateUse
   // Use debounced email validation hook
   const { isChecking, emailError, validateEmail } = useEmailValidation();
 
+  // Ensures X-Target-Tenant is set on the POST when in view-all mode.
+  // The GlobalCompanyFilter in the header handles company selection; this
+  // hook auto-picks the first tenant as a safety net and gates the submit.
+  const { viewAll, isTenantRequired } = useTargetTenant();
+
   // Reset form and validation when modal closes
   useEffect(() => {
     if (!open) {
@@ -58,6 +64,15 @@ export function CreateUserModal({ open, onOpenChange, onUserCreated }: CreateUse
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (isTenantRequired) {
+      toast({
+        title: t('common.error'),
+        description: 'Please select a target company first (use the company filter in the header).',
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!formData.email || !formData.password || !formData.firstName || !formData.lastName || !formData.country) {
       toast({
         title: t('common.error'),
@@ -239,7 +254,7 @@ export function CreateUserModal({ open, onOpenChange, onUserCreated }: CreateUse
             </Button>
             <Button
               type="submit"
-              disabled={isLoading || isChecking || !!emailError}
+              disabled={isLoading || isChecking || !!emailError || isTenantRequired}
               className="gradient-primary text-primary-foreground"
             >
               {isLoading ? t('createUser.creating') : t('createUser.createUser')}

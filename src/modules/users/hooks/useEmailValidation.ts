@@ -47,10 +47,10 @@ export function useEmailValidation(excludeUserId?: number): EmailValidationResul
       return;
     }
 
-    setIsChecking(true);
-
-    // Debounce the API call
+    // Debounce the API call — only show the spinner once the request actually fires,
+    // not on every keystroke, so the submit button is never blocked mid-typing.
     debounceRef.current = setTimeout(async () => {
+      setIsChecking(true);
       try {
         // Ensure excludeUserId is passed as a number
         const excludeId = excludeUserId ? Number(excludeUserId) : undefined;
