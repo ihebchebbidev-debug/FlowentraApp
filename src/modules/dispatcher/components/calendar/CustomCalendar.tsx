@@ -81,11 +81,19 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
   // Calendar settings are now sourced from the active planning profile
   const settings: CalendarSettings = { includeWeekends: profileSettings.includeWeekends };
   const [showSettings, setShowSettings] = useState(false);
-  // Date range state: default to today + 3 day window
-  const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>(() => {
-    const today = new Date();
-    return { from: today, to: addDays(today, 2) };
-  });
+  // Initialise the visible date window from the view prop so "7d" is shown on first
+  // open (previously hardcoded to today+2 = only 3 days, ignoring the view prop).
+  const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>(() => ({
+    from: view.startDate,
+    to: view.endDate,
+  }));
+
+  // Reset the date window when the profile's default view type changes (day ↔ week).
+  // We only watch view.type, NOT the date values, so user navigation isn't undone.
+  useEffect(() => {
+    setDateRange({ from: view.startDate, to: view.endDate });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view.type]);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   

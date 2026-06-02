@@ -47,7 +47,8 @@ export function DispatchingInterface() {
     if (profileSettings.defaultView === 'day') {
       return { type: 'day', startDate: today, endDate: addDays(today, 0) };
     }
-    return { type: 'week', startDate: startOfWeek(today), endDate: endOfWeek(today) };
+    // weekStartsOn: 1 = Monday — business week starts Monday, not Sunday
+    return { type: 'week', startDate: startOfWeek(today, { weekStartsOn: 1 }), endDate: endOfWeek(today, { weekStartsOn: 1 }) };
   }, [profileSettings.defaultView]);
 
   // Trigger for refreshing calendar assigned jobs
