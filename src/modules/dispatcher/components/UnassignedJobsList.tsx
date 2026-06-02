@@ -479,25 +479,31 @@ export function UnassignedJobsList({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onClick={() => isMobile && onJobClick?.(job)}
-        className={`dispatcher-job-item p-2 border rounded bg-card transition-all ${
-          isMobile 
-            ? 'mobile cursor-pointer hover:shadow-sm' 
+        className={`dispatcher-job-item p-1.5 border rounded bg-card transition-all ${
+          isMobile
+            ? 'mobile cursor-pointer hover:shadow-sm'
             : isJobDraggable ? 'cursor-grab hover:shadow-md' : ''
         } hover:border-primary/50`}
       >
         <div className="flex items-center gap-1.5">
           {isJobDraggable && (
-            <GripVertical 
-              className="grip-icon h-3 w-3 text-muted-foreground flex-shrink-0 opacity-60" 
+            <GripVertical
+              className="grip-icon h-3 w-3 text-muted-foreground flex-shrink-0 opacity-60"
             />
           )}
           <h4 className="font-medium text-xs leading-tight flex-1 min-w-0 truncate">
             {job.title}
           </h4>
-          <Badge variant={getPriorityColor(job.priority)} className="text-[0.65rem] px-1.5 py-0 h-[18px] flex items-center gap-0.5 flex-shrink-0">
-            {job.priority === 'urgent' && <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />}
-            {t(`dispatcher.priority_${job.priority}`)}
-          </Badge>
+          {/* Priority dot — saves space in narrow sidebar; full label is in the HoverCard */}
+          <span
+            title={t(`dispatcher.priority_${job.priority}`)}
+            className={`w-2 h-2 rounded-full flex-shrink-0 ${
+              job.priority === 'urgent' ? 'bg-red-500 animate-pulse' :
+              job.priority === 'high'   ? 'bg-orange-400' :
+              job.priority === 'medium' ? 'bg-blue-400' :
+              'bg-gray-300'
+            }`}
+          />
         </div>
       </div>
     );
@@ -575,8 +581,8 @@ export function UnassignedJobsList({
 
   return (
     <Card className="h-full rounded-none border-0">
-      <CardHeader className="pb-3">
-        <h3 className="text-sm font-semibold mb-2">{t('dispatcher.service_orders')}</h3>
+      <CardHeader className="p-3 pb-2">
+        <h3 className="text-sm font-semibold mb-1.5">{t('dispatcher.service_orders')}</h3>
         
 
 
@@ -625,7 +631,7 @@ export function UnassignedJobsList({
       </CardHeader>
       <CardContent className="p-0">
         <ScrollArea className="h-full">
-          <div className="space-y-2 p-4 pt-0">
+          <div className="space-y-1.5 p-2 pt-0">
             {isLoading ? (
               <div className="space-y-3">
                 {[1, 2, 3].map((i) => (
@@ -672,16 +678,16 @@ export function UnassignedJobsList({
                   {/* Service Order Header (compact) — hover for full details */}
                   <HoverCard openDelay={250} closeDelay={80}>
                     <HoverCardTrigger asChild>
-                      <div 
-                        className="p-2.5 border-b bg-muted/30 transition-colors cursor-pointer hover:bg-muted/40"
+                      <div
+                        className="p-2 border-b bg-muted/30 transition-colors cursor-pointer hover:bg-muted/40"
                         onClick={() => toggleServiceOrder(serviceOrderData.id)}
                       >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1.5">
+                          <div className="flex items-center gap-1.5 flex-1 min-w-0">
                             {planningMode === 'serviceOrder' && !isMobile && (
-                              <GripVertical className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                              <GripVertical className="h-3 w-3 text-primary flex-shrink-0" />
                             )}
-                            <Package className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                            <Package className="h-3 w-3 text-primary flex-shrink-0" />
                             <span className="font-medium truncate text-xs flex-1 min-w-0">
                               {serviceOrderData.title || `SO-${serviceOrderData.id}`}
                             </span>
@@ -784,9 +790,9 @@ export function UnassignedJobsList({
                                     >
                                       <div
                                         onClick={(e) => { e.stopPropagation(); toggleInstallation(group.installationId); }}
-                                        className="w-full flex flex-col gap-1 px-2.5 py-2 bg-muted/20 hover:bg-muted/40 transition-colors text-left cursor-pointer"
+                                        className="w-full flex flex-col gap-0.5 px-2 py-1.5 bg-muted/20 hover:bg-muted/40 transition-colors text-left cursor-pointer"
                                       >
-                                        <div className="flex items-center gap-2 w-full">
+                                        <div className="flex items-center gap-1.5 w-full">
                                           {!isMobile && (
                                             <GripVertical className="h-3 w-3 text-primary flex-shrink-0 cursor-grab" />
                                           )}
