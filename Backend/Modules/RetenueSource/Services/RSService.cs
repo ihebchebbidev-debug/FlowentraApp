@@ -485,18 +485,18 @@ namespace MyApi.Modules.RetenueSource.Services
                 throw new InvalidOperationException(
                     $"Invoice {invoice.InvoiceNumber}: RS is not applicable or RsAmount is zero — nothing to declare to TEJ");
 
-            if (invoice.AmountPaid <= 0)
-                throw new InvalidOperationException(
-                    $"Invoice {invoice.InvoiceNumber}: cannot create an RS record before any payment is recorded");
-
-            // RS is declared on the basis actually paid. We pro-rate RsAmount to AmountPaid
-            // so partial payments produce a proportional RS line (matches Tunisian practice).
-            var paidRatio = invoice.GrandTotal > 0
+            // RS is declared on the amount actually paid when a payment exists (partial
+            // payments pro-rate the RS line). When nothing has been paid yet, the
+            // declaration is made on the FULL invoice — TEJ allows declaring the
+            // withholding on the invoice itself, so no payment is required first.
+            var hasPayment = invoice.AmountPaid > 0;
+            var basis      = hasPayment ? invoice.AmountPaid : invoice.GrandTotal;
+            var paidRatio  = (hasPayment && invoice.GrandTotal > 0)
                 ? Math.Min(invoice.AmountPaid / invoice.GrandTotal, 1m)
                 : 1m;
             var declaredRs    = Math.Round(invoice.RsAmount    * paidRatio, 2);
             var declaredRsTva = Math.Round(invoice.RsTvaAmount * paidRatio, 2);
-            var netServi      = Math.Round(invoice.AmountPaid - declaredRs - declaredRsTva, 2);
+            var netServi      = Math.Round(basis - declaredRs - declaredRsTva, 2);
 
             var operationCode = invoice.RsOperationCode
                 ?? Constants.TejOperationCodes.LegacyToOperationCode(invoice.RsTypeCode);
@@ -514,7 +514,8 @@ namespace MyApi.Modules.RetenueSource.Services
                 InvoiceDate = invoice.InvoiceDate,
                 InvoiceAmount = invoice.GrandTotal,
                 PaymentDate = paymentDate,
-                AmountPaid = invoice.AmountPaid,
+                // Declared gross basis: amount paid if any, otherwise the full invoice.
+                AmountPaid = basis,
                 RSAmount = declaredRs,
                 RSTypeCode = invoice.RsTypeCode ?? "10",
                 SupplierName = supplier.Name ?? supplier.Company ?? $"{supplier.FirstName} {supplier.LastName}".Trim(),

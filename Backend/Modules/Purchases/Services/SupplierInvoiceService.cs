@@ -49,8 +49,9 @@ namespace MyApi.Modules.Purchases.Services
 
             if (!invoice.RsApplicable)
                 throw new InvalidOperationException("RS is not applicable on this invoice — nothing to sync");
-            if (invoice.AmountPaid <= 0)
-                throw new InvalidOperationException("Cannot sync to TEJ before any payment is recorded");
+            // Note: TEJ/RS is computed on the invoice amount and does not require a
+            // payment to have been recorded first — the withholding is declared on the
+            // invoice itself. (Previous guard requiring AmountPaid > 0 removed.)
 
             // Idempotency guard: if this invoice already has a successful RS record,
             // do NOT create a duplicate. Just refresh the timestamp and return.
