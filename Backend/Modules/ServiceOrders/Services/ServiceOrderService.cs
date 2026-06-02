@@ -384,6 +384,32 @@ namespace MyApi.Modules.ServiceOrders.Services
                 {
                     var jobs = new List<ServiceOrderJob>();
 
+                    // Pre-fetch required skills from each service article so they propagate
+                    // to the jobs — the dispatcher uses this for technician matching.
+                    var serviceArticleIds = serviceItems
+                        .Where(i => i.ArticleId.HasValue)
+                        .Select(i => i.ArticleId!.Value)
+                        .Distinct()
+                        .ToList();
+                    var articleSkillsById = new Dictionary<int, string[]>();
+                    if (serviceArticleIds.Count > 0)
+                    {
+                        var articleRows = await _context.Articles
+                            .Where(a => serviceArticleIds.Contains(a.Id) && !a.IsDeleted)
+                            .Select(a => new { a.Id, a.SkillsRequired })
+                            .ToListAsync();
+                        foreach (var row in articleRows)
+                        {
+                            if (string.IsNullOrEmpty(row.SkillsRequired)) continue;
+                            try
+                            {
+                                var parsed = System.Text.Json.JsonSerializer.Deserialize<string[]>(row.SkillsRequired);
+                                if (parsed?.Length > 0) articleSkillsById[row.Id] = parsed;
+                            }
+                            catch { /* skip malformed JSON */ }
+                        }
+                    }
+
                     if (jobConversionMode == "installation")
                     {
                         // INSTALLATION-BASED: Group service items by InstallationId
@@ -423,9 +449,14 @@ namespace MyApi.Modules.ServiceOrders.Services
                                 EstimatedCost = totalCost,
                                 CompletionPercentage = 0,
                                 AssignedTechnicianIds = createDto.AssignedTechnicianIds?.Select(id => id.ToString()).ToArray(),
-                                Notes = System.Text.Json.JsonSerializer.Serialize(items.Select(i => new { 
-                                    itemName = i.ItemName, 
-                                    quantity = i.Quantity, 
+                                RequiredSkills = items
+                                    .Where(i => i.ArticleId.HasValue && articleSkillsById.ContainsKey(i.ArticleId.Value))
+                                    .SelectMany(i => articleSkillsById[i.ArticleId!.Value])
+                                    .Distinct()
+                                    .ToArray() is { Length: > 0 } gs ? gs : null,
+                                Notes = System.Text.Json.JsonSerializer.Serialize(items.Select(i => new {
+                                    itemName = i.ItemName,
+                                    quantity = i.Quantity,
                                     unitPrice = i.UnitPrice,
                                     lineTotal = i.LineTotal > 0 ? i.LineTotal : i.UnitPrice * i.Quantity
                                 })),
@@ -454,6 +485,7 @@ namespace MyApi.Modules.ServiceOrders.Services
                                 EstimatedCost = item.LineTotal > 0 ? item.LineTotal : (item.UnitPrice * item.Quantity),
                                 CompletionPercentage = 0,
                                 AssignedTechnicianIds = createDto.AssignedTechnicianIds?.Select(id => id.ToString()).ToArray(),
+                                RequiredSkills = item.ArticleId.HasValue && articleSkillsById.TryGetValue(item.ArticleId.Value, out var ors) ? ors : null,
                                 UpdatedAt = DateTime.UtcNow
                             });
                         }
@@ -479,6 +511,7 @@ namespace MyApi.Modules.ServiceOrders.Services
                             EstimatedCost = item.LineTotal > 0 ? item.LineTotal : (item.UnitPrice * item.Quantity),
                             CompletionPercentage = 0,
                             AssignedTechnicianIds = createDto.AssignedTechnicianIds?.Select(id => id.ToString()).ToArray(),
+                            RequiredSkills = item.ArticleId.HasValue && articleSkillsById.TryGetValue(item.ArticleId.Value, out var sbs) ? sbs : null,
                             UpdatedAt = DateTime.UtcNow
                         }).ToList();
                     }
@@ -2100,6 +2133,7 @@ namespace MyApi.Modules.ServiceOrders.Services
                 EstimatedCost = j.EstimatedCost,
                 CompletionPercentage = j.CompletionPercentage,
                 AssignedTechnicianIds = j.AssignedTechnicianIds,
+                RequiredSkills = j.RequiredSkills,
                 AssignedTechnicians = j.AssignedTechnicianIds?.Select(id => new UserLightDto
                 {
                     Id = int.TryParse(id, out var parsedId) ? parsedId : 0,

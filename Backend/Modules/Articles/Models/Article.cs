@@ -62,6 +62,9 @@ namespace MyApi.Modules.Articles.Models
 
         public int? Duration { get; set; }  // Duration in minutes for service-type articles
 
+        [Column("skills_required")]
+        public string? SkillsRequired { get; set; }  // JSON-encoded string[] of required skill names
+
         [Column(TypeName = "decimal(5,2)")]
         public decimal TvaRate { get; set; } = 19.00m;  // TVA/VAT rate in percentage (default 19%)
 

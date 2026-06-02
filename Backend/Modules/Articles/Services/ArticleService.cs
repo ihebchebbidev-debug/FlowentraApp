@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using MyApi.Modules.Articles.Models;
 using MyApi.Modules.Articles.DTOs;
@@ -130,7 +131,8 @@ namespace MyApi.Modules.Articles.Services
                 GroupId = dto.GroupId,
                 Supplier = dto.Supplier,
                 Type = dto.Type ?? "material",
-                Duration = dto.Duration,  // Map duration for services
+                Duration = dto.Duration,
+                SkillsRequired = dto.SkillsRequired != null ? JsonSerializer.Serialize(dto.SkillsRequired) : null,
                 TvaRate = dto.TvaRate,
                 IsActive = dto.IsActive,
                 CreatedDate = DateTime.UtcNow,
@@ -169,7 +171,8 @@ namespace MyApi.Modules.Articles.Services
             if (dto.GroupId.HasValue) article.GroupId = dto.GroupId;
             if (dto.Supplier != null) article.Supplier = dto.Supplier;
             if (!string.IsNullOrEmpty(dto.Type)) article.Type = dto.Type;
-            if (dto.Duration.HasValue) article.Duration = dto.Duration;  // Map duration for services
+            if (dto.Duration.HasValue) article.Duration = dto.Duration;
+            if (dto.SkillsRequired != null) article.SkillsRequired = JsonSerializer.Serialize(dto.SkillsRequired);
             if (dto.TvaRate.HasValue) article.TvaRate = dto.TvaRate.Value;
             if (dto.IsActive.HasValue) article.IsActive = dto.IsActive.Value;
 
@@ -406,7 +409,10 @@ namespace MyApi.Modules.Articles.Services
                 GroupId = article.GroupId,
                 Supplier = article.Supplier,
                 Type = article.Type ?? "material",
-                Duration = article.Duration,  // Map duration for services
+                Duration = article.Duration,
+                SkillsRequired = !string.IsNullOrEmpty(article.SkillsRequired)
+                    ? JsonSerializer.Deserialize<string[]>(article.SkillsRequired)
+                    : null,
                 TvaRate = article.TvaRate,
                 IsActive = article.IsActive,
                 CreatedDate = article.CreatedDate,

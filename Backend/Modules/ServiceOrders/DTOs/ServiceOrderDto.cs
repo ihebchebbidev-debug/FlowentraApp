@@ -186,6 +186,7 @@ namespace MyApi.Modules.ServiceOrders.DTOs
         public decimal? EstimatedCost { get; set; }
         public int? CompletionPercentage { get; set; }
         public string[]? AssignedTechnicianIds { get; set; }
+        public string[]? RequiredSkills { get; set; }
         public List<UserLightDto>? AssignedTechnicians { get; set; }
         public List<MyApi.Modules.Planning.DTOs.PlannedLineEntryDto>? PlannedEntries { get; set; }
     }
