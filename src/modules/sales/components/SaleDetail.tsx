@@ -26,7 +26,6 @@ import {
   CheckCircle,
   Zap,
   Info,
-  Receipt,
   MoreVertical
 } from "lucide-react";
 
@@ -50,8 +49,6 @@ import { NotesTab } from "./tabs/NotesTab";
 import { ChecklistsTab } from "./tabs/ChecklistsTab";
 import { DocumentsTab } from "./tabs/DocumentsTab";
 import { PaymentsTab } from "@/modules/payments/components/PaymentsTab";
-import { RSRecordModal } from "@/modules/shared/components/RSRecordModal";
-import { TEJExportModal } from "@/modules/shared/components/TEJExportModal";
 import { EditableEntityNumber } from "@/components/shared/EditableEntityNumber";
 import { salesApi } from "@/services/api/salesApi";
 import { checkDuplicateDocumentNumber } from "@/services/documentNumberValidator";
@@ -73,8 +70,6 @@ export function SaleDetail() {
   const [activeTab, setActiveTab] = useState("overview");
   const [showServiceOrderDialog, setShowServiceOrderDialog] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
-  const [showRSModal, setShowRSModal] = useState(false);
-  const [showTEJExport, setShowTEJExport] = useState(false);
   const [hasShownAutoPrompt, setHasShownAutoPrompt] = useState(false);
 
   // Check if sale has service items and conversion status
@@ -264,15 +259,6 @@ export function SaleDetail() {
                   {t('detail.sendInvoice')}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                {/*  <DropdownMenuItem onClick={() => setShowRSModal(true)} className="gap-2">
-                  <Receipt className="h-4 w-4" />
-                  {t('rs.addRS', 'Retenue à la Source')}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setShowTEJExport(true)} className="gap-2">
-                  <FileDown className="h-4 w-4" />
-                  {t('rs.exportTEJ', 'Exporter TEJ XML')}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator /> */}
                 <DropdownMenuItem onClick={handleDeleteSale} className="gap-2 text-destructive">
                   <Trash2 className="h-4 w-4" />
                   {t('deleteSale')}
@@ -446,23 +432,7 @@ export function SaleDetail() {
                           <TooltipContent side="bottom">{t('downloadPdf')}</TooltipContent>
                         </Tooltip>
 
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon-sm" onClick={() => setShowRSModal(true)} className="text-muted-foreground hover:text-foreground hover:bg-accent">
-                              <Receipt className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="bottom">{t('rs.addRS', 'Retenue à la Source')}</TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon-sm" onClick={() => setShowTEJExport(true)} className="text-muted-foreground hover:text-foreground hover:bg-accent">
-                              <FileDown className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="bottom">{t('rs.exportTEJ', 'Exporter TEJ XML')}</TooltipContent>
-                        </Tooltip>
+                        {/* Retenue à la Source (RS) + TEJ XML export are purchases-only — removed from sales. */}
 
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -702,32 +672,6 @@ export function SaleDetail() {
         />
       )}
 
-      {/* RS Record Modal */}
-      {sale && (
-        <RSRecordModal
-          open={showRSModal}
-          onOpenChange={setShowRSModal}
-          entityType="sale"
-          entityId={sale.id}
-          entityNumber={sale.saleNumber ?? sale.id}
-          entityAmount={calculateEntityTotal(sale).total || sale.totalAmount || sale.amount || 0}
-          contactName={sale.contactName}
-          contactTaxId={sale.contactMatriculeFiscale}
-          contactAddress={sale.contactAddress}
-          onSuccess={fetchSale}
-        />
-      )}
-
-      {/* TEJ Export Modal */}
-      {sale && (
-        <TEJExportModal
-          open={showTEJExport}
-          onOpenChange={setShowTEJExport}
-          entityType="sale"
-          entityId={Number(sale.id)}
-          onExportComplete={() => { }}
-        />
-      )}
     </div>
   );
 }
