@@ -299,7 +299,7 @@ export function CalendarGrid({
               return (
                 <div
                   key={format(date, 'yyyy-MM-dd')}
-                  className={`flex border-r last:border-r-0 flex-shrink-0 relative ${
+                  className={`flex border-r last:border-r-0 relative ${widthMode === 'auto' ? 'flex-1 min-w-0' : 'flex-shrink-0'} ${
                     isOnLeave || techUnavailable
                       ? 'bg-success/10'
                       : !isWorkingDay
@@ -310,7 +310,7 @@ export function CalendarGrid({
                             ? 'bg-muted/10'
                             : heatmapClass
                   } ${isDayNotPlannable ? 'pointer-events-none' : ''}`}
-                  style={{ width: `${dateWidth}px` }}
+                  style={widthMode === 'scroll' ? { width: `${dateWidth}px` } : undefined}
                 >
                   {/* Workload heatmap indicator with label */}
                   {workloadLevel && !isDayNotPlannable && (
@@ -361,7 +361,7 @@ export function CalendarGrid({
                     return (
                       <div
                         key={hour}
-                        className={`calendar-drop-zone border-r last:border-r-0 transition-all duration-200 relative group ${
+                        className={`calendar-drop-zone flex-1 min-w-0 border-r last:border-r-0 transition-all duration-200 relative group ${
                           isHourDisabled
                             ? 'cursor-not-allowed'
                             : 'cursor-pointer'
@@ -372,7 +372,6 @@ export function CalendarGrid({
                               ? ''
                               : 'hover:bg-gradient-to-br hover:from-accent/20 hover:to-accent/10'
                         }`}
-                        style={{ width: `${dimensions.hourWidth}px` }}
                         onDragOver={(e) => !isHourDisabled && onDragOver(e, technician.id, date, hour)}
                         onDragLeave={(e) => !isHourDisabled && onDragLeave(e)}
                         onDrop={(e) => !isHourDisabled && onDrop(e, technician.id, date, hour)}
