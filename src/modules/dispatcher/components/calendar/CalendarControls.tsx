@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ZoomIn, ZoomOut, Settings2, ChevronLeft, ChevronRight, Filter, CalendarIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { format } from "date-fns";
+import { format, addDays, startOfDay, differenceInCalendarDays } from "date-fns";
 import { fr as frLocale, enUS } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
@@ -73,11 +73,14 @@ export function CalendarControls({
     }
   };
 
+  // Use calendar-day math (not raw milliseconds) so DST shifts and time-of-day
+  // components never cause an off-by-one. Clicking "7d" yields exactly 7 days.
   const setDayCount = (count: number) => {
-    onDateRangeChange({ from: dateRange.from, to: new Date(dateRange.from.getTime() + (count - 1) * 24 * 60 * 60 * 1000) });
+    const from = startOfDay(dateRange.from);
+    onDateRangeChange({ from, to: addDays(from, count - 1) });
   };
 
-  const currentDayCount = Math.round((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+  const currentDayCount = differenceInCalendarDays(dateRange.to, dateRange.from) + 1;
 
   return (
     <div className="flex items-center justify-between p-4 border-b bg-card/50 backdrop-blur-sm">
