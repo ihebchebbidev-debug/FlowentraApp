@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useLayoutEffect } from "react";
 import { addHours, addDays, format, isSameDay, isWithinInterval, startOfDay, endOfDay, differenceInCalendarDays } from "date-fns";
 import { useTranslation } from "react-i18next";
 import type { CalendarViewType, Technician, Job, DragData, ServiceOrder, InstallationGroup } from "../../types";
@@ -94,6 +94,21 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
     setDateRange({ from: view.startDate, to: view.endDate });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view.type]);
+
+  // Measure the calendar's available width so day columns can be auto-fitted.
+  // Without this, ≤7-day views overflow (each column has a fixed minWidth) and
+  // only ~4 days are visible until the user zooms out.
+  const calendarRootRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+  useLayoutEffect(() => {
+    const el = calendarRootRef.current;
+    if (!el) return;
+    const measure = () => setContainerWidth(el.clientWidth);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   
@@ -180,18 +195,51 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
     return Array.from({ length: Math.max(1, dayCount) }, (_, i) => addDays(dateRange.from, i));
   }, [dateRange]);
 
-  // Get zoom-based dimensions that ONLY affect calendar grid
+  // Get zoom-based dimensions that ONLY affect calendar grid.
+  // In auto mode (≤7 days) we shrink hourWidth so the whole window fits the
+  // measured container — guaranteeing all selected days are visible without
+  // horizontal scrolling. Job blocks use this same hourWidth, so they stay aligned.
+  const TECH_COL_WIDTH = 208;   // matches TechnicianList `w-52`
+  const SCROLLBAR_BUFFER = 18;  // reserve room for the vertical scrollbar so the last column never clips
+  const MIN_HOUR_WIDTH = 11;    // smallest readable hour cell before we fall back to scroll
   const getZoomDimensions = (): ZoomDimensions => {
-    const availableWidth = dates.length <= 7 ? 'auto' : 'scroll';
-    
-    switch (zoomLevel) {
-      case 'xs': return { dateWidth: 180, hourWidth: 18, widthMode: availableWidth, showHourLabels: true, hourTextSize: '10px' };
-      case 'sm': return { dateWidth: 220, hourWidth: 22, widthMode: availableWidth, showHourLabels: true, hourTextSize: '11px' };
-      case 'md': return { dateWidth: 280, hourWidth: 28, widthMode: availableWidth, showHourLabels: true, hourTextSize: '12px' };
-      case 'lg': return { dateWidth: 340, hourWidth: 34, widthMode: availableWidth, showHourLabels: true, hourTextSize: '13px' };
-      case 'xl': return { dateWidth: 400, hourWidth: 40, widthMode: 'scroll', showHourLabels: true, hourTextSize: '14px' };
-      case 'xxl': return { dateWidth: 500, hourWidth: 50, widthMode: 'scroll', showHourLabels: true, hourTextSize: '15px' };
+    const zoomMap = {
+      xs:  { dateWidth: 180, hourWidth: 18, hourTextSize: '10px' },
+      sm:  { dateWidth: 220, hourWidth: 22, hourTextSize: '11px' },
+      md:  { dateWidth: 280, hourWidth: 28, hourTextSize: '12px' },
+      lg:  { dateWidth: 340, hourWidth: 34, hourTextSize: '13px' },
+      xl:  { dateWidth: 400, hourWidth: 40, hourTextSize: '14px' },
+      xxl: { dateWidth: 500, hourWidth: 50, hourTextSize: '15px' },
+    } as const;
+    const z = zoomMap[zoomLevel];
+    const hours = Math.max(1, workingHours.length);
+
+    // xl / xxl are explicit "zoom in" levels → always horizontal scroll.
+    if (zoomLevel === 'xl' || zoomLevel === 'xxl') {
+      return { dateWidth: z.dateWidth, hourWidth: z.hourWidth, widthMode: 'scroll', showHourLabels: true, hourTextSize: z.hourTextSize };
     }
+
+    // More than 7 days → overview grid handles layout; keep nominal scroll sizing.
+    if (dates.length > 7) {
+      return { dateWidth: z.dateWidth, hourWidth: z.hourWidth, widthMode: 'scroll', showHourLabels: true, hourTextSize: z.hourTextSize };
+    }
+
+    const dateArea = containerWidth - TECH_COL_WIDTH;
+    const naturalTotal = dates.length * hours * z.hourWidth;
+
+    // Not measured yet, or content already fits → use nominal sizing in auto mode.
+    if (dateArea <= 0 || naturalTotal <= dateArea) {
+      return { dateWidth: z.dateWidth, hourWidth: z.hourWidth, widthMode: 'auto', showHourLabels: true, hourTextSize: z.hourTextSize };
+    }
+
+    // Content is wider than the container → shrink hourWidth to fit all days.
+    const fitHour = Math.floor(dateArea / (dates.length * hours));
+    if (fitHour >= MIN_HOUR_WIDTH) {
+      return { dateWidth: fitHour * hours, hourWidth: fitHour, widthMode: 'auto', showHourLabels: true, hourTextSize: z.hourTextSize };
+    }
+
+    // Even the minimum readable width won't fit → fall back to horizontal scroll.
+    return { dateWidth: MIN_HOUR_WIDTH * hours, hourWidth: MIN_HOUR_WIDTH, widthMode: 'scroll', showHourLabels: true, hourTextSize: z.hourTextSize };
   };
 
   const dimensions = getZoomDimensions();
@@ -995,7 +1043,7 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
   const isOverviewMode = dates.length > 7;
 
   return (
-    <div className="h-full flex flex-col overflow-hidden bg-background">
+    <div ref={calendarRootRef} className="h-full flex flex-col overflow-hidden bg-background">
       <CalendarControls
         zoomLevel={zoomLevel}
         setZoomLevel={setZoomLevel}

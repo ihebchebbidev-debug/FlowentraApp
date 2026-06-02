@@ -47,10 +47,10 @@ export function CalendarHeader({ dates, workingHours, dimensions, includeWeekend
             const weekend = isWeekend(date);
             const weekendDisabled = weekend && !includeWeekends;
             return (
-            <div 
-              key={format(date, 'yyyy-MM-dd')} 
-              className={`border-r last:border-r-0 flex-shrink-0 ${widthMode === 'auto' ? 'flex-1' : ''} ${weekendDisabled ? 'bg-destructive/10 dark:bg-destructive/15 relative' : ''}`}
-              style={widthMode === 'scroll' ? { width: `${dateWidth}px` } : { minWidth: `${dateWidth}px` }}
+            <div
+              key={format(date, 'yyyy-MM-dd')}
+              className={`border-r last:border-r-0 flex-shrink-0 ${weekendDisabled ? 'bg-destructive/10 dark:bg-destructive/15 relative' : ''}`}
+              style={{ width: `${dateWidth}px` }}
             >
               {weekendDisabled && (
                 <div className="absolute inset-0 pointer-events-none opacity-60 bg-[repeating-linear-gradient(45deg,transparent,transparent_8px,rgba(255,0,0,0.10)_8px,rgba(255,0,0,0.10)_16px)]" />
@@ -69,8 +69,8 @@ export function CalendarHeader({ dates, workingHours, dimensions, includeWeekend
                   return (
                     <div
                       key={hour}
-                      className="flex-1 border-r last:border-r-0 flex items-center justify-center font-medium text-muted-foreground hover:bg-primary/5 transition-colors"
-                      style={{ minWidth: `${hourWidth}px`, fontSize: hourTextSize }}
+                      className="border-r last:border-r-0 flex items-center justify-center font-medium text-muted-foreground hover:bg-primary/5 transition-colors"
+                      style={{ width: `${hourWidth}px`, fontSize: hourTextSize }}
                     >
                       {showHourLabels && isMilestone
                         ? (dimensions.dateWidth >= 400

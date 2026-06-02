@@ -297,20 +297,20 @@ export function CalendarGrid({
               const heatmapDotColor = getHeatmapDotColor(workloadLevel);
               
               return (
-                <div 
-                  key={format(date, 'yyyy-MM-dd')} 
-                  className={`flex border-r last:border-r-0 flex-shrink-0 relative ${widthMode === 'auto' ? 'flex-1' : ''} ${
+                <div
+                  key={format(date, 'yyyy-MM-dd')}
+                  className={`flex border-r last:border-r-0 flex-shrink-0 relative ${
                     isOnLeave || techUnavailable
-                      ? 'bg-success/10' 
+                      ? 'bg-success/10'
                       : !isWorkingDay
                         ? 'bg-destructive/10 dark:bg-destructive/15'
-                        : weekendDisabled 
-                          ? 'bg-destructive/10 dark:bg-destructive/15' 
-                          : weekend 
-                            ? 'bg-muted/10' 
+                        : weekendDisabled
+                          ? 'bg-destructive/10 dark:bg-destructive/15'
+                          : weekend
+                            ? 'bg-muted/10'
                             : heatmapClass
                   } ${isDayNotPlannable ? 'pointer-events-none' : ''}`}
-                  style={widthMode === 'scroll' ? { width: `${dateWidth}px` } : { minWidth: `${dateWidth}px` }}
+                  style={{ width: `${dateWidth}px` }}
                 >
                   {/* Workload heatmap indicator with label */}
                   {workloadLevel && !isDayNotPlannable && (
@@ -361,18 +361,18 @@ export function CalendarGrid({
                     return (
                       <div
                         key={hour}
-                        className={`calendar-drop-zone flex-1 border-r last:border-r-0 transition-all duration-200 relative group ${
+                        className={`calendar-drop-zone border-r last:border-r-0 transition-all duration-200 relative group ${
                           isHourDisabled
                             ? 'cursor-not-allowed'
                             : 'cursor-pointer'
                         } ${
-                          isHighlighted 
-                            ? 'drag-over bg-gradient-to-br from-primary/20 to-primary/10 border-primary/40' 
+                          isHighlighted
+                            ? 'drag-over bg-gradient-to-br from-primary/20 to-primary/10 border-primary/40'
                             : isHourDisabled
                               ? ''
                               : 'hover:bg-gradient-to-br hover:from-accent/20 hover:to-accent/10'
                         }`}
-                        style={{ minWidth: `${dimensions.hourWidth}px` }}
+                        style={{ width: `${dimensions.hourWidth}px` }}
                         onDragOver={(e) => !isHourDisabled && onDragOver(e, technician.id, date, hour)}
                         onDragLeave={(e) => !isHourDisabled && onDragLeave(e)}
                         onDrop={(e) => !isHourDisabled && onDrop(e, technician.id, date, hour)}
