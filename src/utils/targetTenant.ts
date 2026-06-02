@@ -260,14 +260,20 @@ export function getSelectedTargetTenantIdOrDefault(tenantId?: number): number {
 /**
  * Headers to attach for row-level company scoping.
  * Emits X-Target-Tenant on EVERY request when an active company is selected
- * (incl. id 0 for the default company). In view-all mode, emits nothing so
- * the backend returns rows across all companies.
+ * (incl. id 0 for the default company). In view-all mode emits X-View-All
+ * so the backend returns rows across all companies — UNLESS an explicit
+ * tenantId is provided (e.g. from a create/edit form), in which case we
+ * scope the mutation to that specific company even in view-all mode.
  */
 export function getTargetTenantHeaders(tenantId?: number): Record<string, string> {
   if (isActiveCompanyViewAll()) {
-    // Keep X-Tenant pinned to the current subdomain (so we stay in the
-    // right DB) and tell the backend to bypass the row-level company filter
-    // for this MainAdmin request.
+    // An explicit form-level target takes priority over the view-all flag so
+    // that mutations in view-all mode are properly scoped to the company the
+    // user selected in the form (backend requires X-Target-Tenant for writes).
+    const explicit = tenantId !== undefined && tenantId !== null ? tenantId : _targetTenantId;
+    if (explicit !== undefined && explicit !== null) {
+      return { [TARGET_TENANT_HEADER]: String(toDataTenantId(explicit)) };
+    }
     return { [VIEW_ALL_HEADER]: 'true' };
   }
   const id = getSelectedTargetTenantId(tenantId);

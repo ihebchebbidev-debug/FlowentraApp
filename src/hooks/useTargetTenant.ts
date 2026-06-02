@@ -54,11 +54,13 @@ export function useTargetTenant(initialTenantId?: number) {
    * Returns true if a target tenant is required but not selected.
    * Use in form submit handlers to block submission.
    *
-   * Resolved via getSelectedTargetTenantId() so an active company
-   * filter (header dropdown) counts as a valid selection, even when
-   * the form's local state hasn't been touched.
+   * We check targetTenantId directly instead of going through
+   * getSelectedTargetTenantId() because that function always returns
+   * undefined in view-all mode (by design — it signals "no single
+   * company" to the interceptor). What we want here is simply: did the
+   * user pick a company in this form yet?
    */
-  const isTenantRequired = viewAll && getSelectedTargetTenantId(targetTenantId) === undefined;
+  const isTenantRequired = viewAll && (targetTenantId === undefined || targetTenantId === null);
 
   return {
     viewAll,
