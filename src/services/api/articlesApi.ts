@@ -154,6 +154,12 @@ export const articlesApi = {
       }
     }
 
+    // Required skills — send as a string[] (backend CreateArticleDto.SkillsRequired
+    // is string[] and is stored as a JSON array, which the dispatcher reads back).
+    if (Array.isArray(request.skillsRequired) && request.skillsRequired.length > 0) {
+      backendRequest.skillsRequired = request.skillsRequired;
+    }
+
     // TVA rate - send for both material and service
     const tvaRate = (request as any).tvaRate;
     if (tvaRate !== undefined && tvaRate !== null && tvaRate !== '') {
@@ -289,7 +295,13 @@ export const articlesApi = {
       backendRequest.unit = reqUnit;
     }
     
-    if (request.skillsRequired) backendRequest.skillsRequired = Array.isArray(request.skillsRequired) ? request.skillsRequired.join(',') : request.skillsRequired;
+    // Required skills — backend UpdateArticleDto.SkillsRequired is string[] (stored as
+    // a JSON array). Send the array as-is; an empty array clears the skills.
+    if (request.skillsRequired !== undefined) {
+      backendRequest.skillsRequired = Array.isArray(request.skillsRequired)
+        ? request.skillsRequired
+        : [request.skillsRequired].filter(Boolean);
+    }
     if (request.materialsNeeded) backendRequest.materialsNeeded = Array.isArray(request.materialsNeeded) ? request.materialsNeeded.join(',') : request.materialsNeeded;
     if (request.preferredUsers) backendRequest.preferredUsers = Array.isArray(request.preferredUsers) ? request.preferredUsers.join(',') : request.preferredUsers;
 

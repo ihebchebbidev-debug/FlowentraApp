@@ -70,7 +70,12 @@
     "save_material": "Enregistrer le Matériel",
     "save_service": "Enregistrer le Service",
     "unit": "Unité",
-    "select_unit": "Sélectionner l'unité"
+    "select_unit": "Sélectionner l'unité",
+    "skills_required": "Compétences requises",
+    "optional": "optionnel",
+    "select_skill": "Ajouter une compétence…",
+    "no_skills": "Aucune compétence dans le catalogue. Ajoutez-les via Référentiels → Compétences.",
+    "all_skills_added": "Toutes les compétences ont été ajoutées."
   },
   "stats": {
     "total_items": "Total Articles",

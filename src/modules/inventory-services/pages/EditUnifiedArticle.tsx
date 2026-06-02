@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Save, Package, Wrench, Minus, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, Package, Wrench, Minus, Loader2, X, GraduationCap, Settings2 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 import technicianData from "@/data/mock/technicians.json";
 import { articlesApi } from "@/services/api/articlesApi";
-import { articleCategoriesApi, serviceCategoriesApi, locationsApi, articleGroupsApi, LookupItem } from "@/services/api/lookupsApi";
+import { articleCategoriesApi, serviceCategoriesApi, locationsApi, articleGroupsApi, skillsApi, LookupItem } from "@/services/api/lookupsApi";
 import { UNIT_OPTIONS, isDecimalUnit } from "@/constants/units";
 
 
@@ -52,7 +52,9 @@ const EditUnifiedArticle = () => {
   const [loadingLocations, setLoadingLocations] = useState(false);
   const [groups, setGroups] = useState<LookupItem[]>([]);
   const [loadingGroups, setLoadingGroups] = useState(false);
-  
+  const [skills, setSkills] = useState<LookupItem[]>([]);
+  const [loadingSkills, setLoadingSkills] = useState(false);
+
   const [formData, setFormData] = useState({
     name: "",
     sku: "",
@@ -122,7 +124,7 @@ const EditUnifiedArticle = () => {
     loadLocations();
   }, [articleType]);
 
-  // Load groups for all article types  
+  // Load groups for all article types
   useEffect(() => {
     const loadGroups = async () => {
       setLoadingGroups(true);
@@ -137,6 +139,23 @@ const EditUnifiedArticle = () => {
       }
     };
     loadGroups();
+  }, []);
+
+  // Load skills catalog (from Lookups → Skills) for the service skills picker
+  useEffect(() => {
+    const loadSkills = async () => {
+      setLoadingSkills(true);
+      try {
+        const response = await skillsApi.getAll();
+        setSkills((response.items || []).filter(s => s.isActive !== false));
+      } catch (error) {
+        console.error('Failed to load skills:', error);
+        setSkills([]);
+      } finally {
+        setLoadingSkills(false);
+      }
+    };
+    loadSkills();
   }, []);
 
   useEffect(() => {
@@ -570,6 +589,7 @@ const EditUnifiedArticle = () => {
               </div>
               </>
             ) : (
+              <>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="basePrice">Prix HT (TND) *</Label>
@@ -624,6 +644,69 @@ const EditUnifiedArticle = () => {
                   />
                 </div>
               </div>
+
+              {/* Required Skills — optional, used for technician matching on the planning board */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-1.5">
+                    <GraduationCap className="h-4 w-4 text-muted-foreground" />
+                    {t('addForm.skills_required', 'Required Skills')}
+                    <span className="text-xs font-normal text-muted-foreground">({t('addForm.optional', 'optional')})</span>
+                  </Label>
+                  <Link
+                    to="/dashboard/lookups?tab=skills"
+                    className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors"
+                  >
+                    <Settings2 className="h-3 w-3" />
+                    {t('addForm.manage')}
+                  </Link>
+                </div>
+
+                {formData.skillsRequired.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {formData.skillsRequired.map((skill) => (
+                      <Badge key={skill} variant="secondary" className="gap-1 pr-1">
+                        {skill}
+                        <button
+                          type="button"
+                          onClick={() => removeFromArray('skillsRequired', skill, formData.skillsRequired)}
+                          className="rounded-sm hover:bg-destructive/20 p-0.5"
+                          aria-label={`Remove ${skill}`}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+
+                <Select value="" onValueChange={(value) => addToArray('skillsRequired', value, formData.skillsRequired)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={loadingSkills ? t('addForm.loading') : t('addForm.select_skill', 'Add a skill…')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {skills.filter(s => s.name && !formData.skillsRequired.includes(s.name!)).length === 0 ? (
+                      <div className="px-3 py-4 text-sm text-center text-muted-foreground">
+                        {skills.length === 0
+                          ? t('addForm.no_skills', 'No skills in catalog. Add them via Lookups → Skills.')
+                          : t('addForm.all_skills_added', 'All skills added.')}
+                      </div>
+                    ) : (
+                      skills
+                        .filter(s => s.name && !formData.skillsRequired.includes(s.name!))
+                        .map((s) => (
+                          <SelectItem key={String(s.id)} value={s.name!}>
+                            <span className="flex items-center gap-2">
+                              {s.name}
+                              {s.category && <span className="text-[10px] text-muted-foreground">· {s.category}</span>}
+                            </span>
+                          </SelectItem>
+                        ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              </>
             )}
           </CardContent>
         </Card>

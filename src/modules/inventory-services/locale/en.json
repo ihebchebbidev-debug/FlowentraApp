@@ -70,7 +70,12 @@
     "save_material": "Save Material",
     "save_service": "Save Service",
     "unit": "Unit",
-    "select_unit": "Select unit"
+    "select_unit": "Select unit",
+    "skills_required": "Required Skills",
+    "optional": "optional",
+    "select_skill": "Add a skill…",
+    "no_skills": "No skills in catalog. Add them via Lookups → Skills.",
+    "all_skills_added": "All skills added."
   },
   "stats": {
     "total_items": "Total Items",
