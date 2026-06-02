@@ -13,7 +13,8 @@
       "Bash(grep -n \"catch\" \"c:\\\\\\\\Users\\\\\\\\ihebc\\\\\\\\OneDrive\\\\\\\\Desktop\\\\\\\\FlowentraApp\\\\\\\\src\\\\\\\\modules\\\\\\\\workflow\\\\\\\\services\\\\\\\\workflow.service.ts\")",
       "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\iheb.chebbi\\\\Desktop\\\\FlowentraApp\" -Directory)",
       "Bash(Select-Object Name)",
-      "Bash(xargs grep -l \"subdomain\")"
+      "Bash(xargs grep -l \"subdomain\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\iheb.chebbi\\\\Desktop\\\\FlowentraApp\" -Directory -Force)"
     ]
   }
 }

@@ -117,7 +117,9 @@ export interface Project {
   budget?: number;
   currency?: string;
   status: 'active' | 'completed' | 'on-hold' | 'cancelled';
-  type: 'service' | 'sales' | 'internal' | 'custom';
+  // Mapped from the backend `ProjectKind` field. "client" / "internal" are the
+  // real backend values; the rest are legacy/UI categories kept for compatibility.
+  type: 'client' | 'internal' | 'service' | 'sales' | 'custom';
   priority?: 'low' | 'medium' | 'high' | 'urgent';
   progress?: number; // 0-100
   startDate?: Date;

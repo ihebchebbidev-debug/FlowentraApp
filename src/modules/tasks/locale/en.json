@@ -208,17 +208,21 @@
         "due": "Due:"
       },
       "status": {
-        "active": "active",
-        "completed": "completed",
-        "on-hold": "on-hold",
-        "cancelled": "cancelled"
+        "active": "Active",
+        "completed": "Completed",
+        "on-hold": "On Hold",
+        "on_hold": "On Hold",
+        "cancelled": "Cancelled",
+        "planning": "Planning",
+        "in_progress": "In Progress"
       },
       "type": {
-        "service": "service",
-        "sales": "sales",
-        "internal": "internal",
-        "custom": "custom",
-        "development": "development"
+        "client": "Client",
+        "internal": "Internal",
+        "service": "Service",
+        "sales": "Sales",
+        "custom": "Custom",
+        "development": "Development"
       },
       "detail": {
         "tabs": {

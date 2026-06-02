@@ -208,17 +208,21 @@
         "due": "Échéance :"
       },
       "status": {
-        "active": "actif",
-        "completed": "terminé",
-        "on-hold": "en pause",
-        "cancelled": "annulé"
+        "active": "Actif",
+        "completed": "Terminé",
+        "on-hold": "En pause",
+        "on_hold": "En pause",
+        "cancelled": "Annulé",
+        "planning": "Planification",
+        "in_progress": "En cours"
       },
       "type": {
-        "service": "service",
-        "sales": "vente",
-        "internal": "interne",
-        "custom": "personnalisé",
-        "development": "développement"
+        "client": "Client",
+        "internal": "Interne",
+        "service": "Service",
+        "sales": "Vente",
+        "custom": "Personnalisé",
+        "development": "Développement"
       },
       "detail": {
         "tabs": {

@@ -46,6 +46,7 @@ const getStatusColor = (status: Project['status']) => {
 
 const getTypeColor = (type: Project['type']) => {
   switch (type) {
+    case 'client': return 'bg-primary/10 text-primary';
     case 'service': return 'bg-primary/10 text-primary';
     case 'sales': return 'bg-success/10 text-success';
     case 'internal': return 'bg-secondary text-secondary-foreground';

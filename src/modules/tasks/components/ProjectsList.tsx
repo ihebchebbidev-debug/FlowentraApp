@@ -38,6 +38,7 @@ const getStatusColor = (status: Project['status']) => {
 
 const getTypeColor = (type: Project['type']) => {
   switch (type) {
+    case 'client': return 'bg-primary/10 text-primary';
     case 'service': return 'bg-primary/10 text-primary';
     case 'sales': return 'bg-success/10 text-success';
     case 'internal': return 'bg-secondary text-secondary-foreground';
@@ -87,11 +88,11 @@ export function ProjectsList({
                     <div className="flex items-center gap-2">
                       <h3 className="text-foreground text-xs sm:text-sm truncate">{project.name}</h3>
                       <Badge className={`${getStatusColor(project.status)} text-xs`}>
-                        {t(`projects.list.status.${project.status}`)}
+                        {t(`projects.list.status.${project.status}`, { defaultValue: project.status })}
                       </Badge>
                     </div>
                     <Badge className={`${getTypeColor(project.type)} text-xs`}>
-                      {t(`projects.list.type.${project.type}`)}
+                      {t(`projects.list.type.${project.type}`, { defaultValue: project.type })}
                     </Badge>
                   </div>
                   {project.description && (
