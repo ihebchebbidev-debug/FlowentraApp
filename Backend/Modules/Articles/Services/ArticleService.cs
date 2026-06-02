@@ -410,9 +410,7 @@ namespace MyApi.Modules.Articles.Services
                 Supplier = article.Supplier,
                 Type = article.Type ?? "material",
                 Duration = article.Duration,
-                SkillsRequired = !string.IsNullOrEmpty(article.SkillsRequired)
-                    ? JsonSerializer.Deserialize<string[]>(article.SkillsRequired)
-                    : null,
+                SkillsRequired = ParseSkillsJson(article.SkillsRequired),
                 TvaRate = article.TvaRate,
                 IsActive = article.IsActive,
                 CreatedDate = article.CreatedDate,
@@ -420,6 +418,13 @@ namespace MyApi.Modules.Articles.Services
                 CreatedBy = article.CreatedBy,
                 ModifiedBy = article.ModifiedBy
             };
+        }
+
+        private static string[]? ParseSkillsJson(string? json)
+        {
+            if (string.IsNullOrEmpty(json)) return null;
+            try { return JsonSerializer.Deserialize<string[]>(json); }
+            catch { return null; }
         }
 
         // =====================================================
