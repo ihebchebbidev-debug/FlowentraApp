@@ -156,6 +156,16 @@ export function setActiveCompany(
         if (legacyOverride && legacyOverride.trim().toLowerCase() === '__all__') {
           window.localStorage.removeItem('tenant_override');
         }
+        // Clear any stale companyFilter:* keys so readActiveCompanyFilterTenantId
+        // never returns an old selection and creates a ghost X-Target-Tenant header.
+        try {
+          const filterKeysToRemove: string[] = [];
+          for (let i = 0; i < window.localStorage.length; i++) {
+            const k = window.localStorage.key(i);
+            if (k && k.startsWith(COMPANY_FILTER_PREFIX)) filterKeysToRemove.push(k);
+          }
+          filterKeysToRemove.forEach(k => window.localStorage.removeItem(k));
+        } catch { /* ignore */ }
         if (id === null || id === undefined) {
           window.localStorage.removeItem(ACTIVE_COMPANY_ID_KEY);
         } else {
