@@ -196,9 +196,9 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
   }, [dateRange]);
 
   // Get zoom-based dimensions that ONLY affect calendar grid.
-  // In auto mode (≤7 days) we shrink hourWidth so the whole window fits the
-  // measured container — guaranteeing all selected days are visible without
-  // horizontal scrolling. Job blocks use this same hourWidth, so they stay aligned.
+  // In auto mode (≤7 days) hourWidth is derived from the measured container so the
+  // days fill the full width edge-to-edge — all days visible, no horizontal scroll,
+  // no empty gap. Job blocks use this same hourWidth, so they stay pixel-aligned.
   const TECH_COL_WIDTH = 208;   // matches TechnicianList `w-52`
   const SCROLLBAR_BUFFER = 18;  // reserve room for the vertical scrollbar so the last column never clips
   const MIN_HOUR_WIDTH = 11;    // smallest readable hour cell before we fall back to scroll
@@ -225,21 +225,24 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
     }
 
     const dateArea = containerWidth - TECH_COL_WIDTH - SCROLLBAR_BUFFER;
-    const naturalTotal = dates.length * hours * z.hourWidth;
 
-    // Not measured yet, or content already fits → use nominal sizing in auto mode.
-    if (dateArea <= 0 || naturalTotal <= dateArea) {
+    // Not measured yet → fall back to nominal auto (corrected on next layout pass).
+    if (dateArea <= 0) {
       return { dateWidth: z.dateWidth, hourWidth: z.hourWidth, widthMode: 'auto', showHourLabels: true, hourTextSize: z.hourTextSize };
     }
 
-    // Content is wider than the container → shrink hourWidth to fit all days.
-    const fitHour = Math.floor(dateArea / (dates.length * hours));
-    if (fitHour >= MIN_HOUR_WIDTH) {
-      return { dateWidth: fitHour * hours, hourWidth: fitHour, widthMode: 'auto', showHourLabels: true, hourTextSize: z.hourTextSize };
+    // Distribute the FULL available width across all visible days so the grid
+    // always fills edge-to-edge (no empty gap before the sidebar). Fractional
+    // px is fine — job blocks use this same hourWidth, so alignment is exact.
+    const fillHour = dateArea / (dates.length * hours);
+
+    // Too cramped to read at this many days → horizontal scroll at min width.
+    if (fillHour < MIN_HOUR_WIDTH) {
+      return { dateWidth: MIN_HOUR_WIDTH * hours, hourWidth: MIN_HOUR_WIDTH, widthMode: 'scroll', showHourLabels: true, hourTextSize: z.hourTextSize };
     }
 
-    // Even the minimum readable width won't fit → fall back to horizontal scroll.
-    return { dateWidth: MIN_HOUR_WIDTH * hours, hourWidth: MIN_HOUR_WIDTH, widthMode: 'scroll', showHourLabels: true, hourTextSize: z.hourTextSize };
+    const hourTextSize = fillHour >= 34 ? '13px' : fillHour >= 26 ? '12px' : fillHour >= 20 ? '11px' : '10px';
+    return { dateWidth: fillHour * hours, hourWidth: fillHour, widthMode: 'auto', showHourLabels: true, hourTextSize };
   };
 
   const dimensions = getZoomDimensions();
