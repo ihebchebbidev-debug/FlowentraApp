@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { CalendarDays, Plus, Copy, Trash2, Star, Share2, Check, Loader2, Package, Building2, List } from 'lucide-react';
+import { CalendarDays, Plus, Copy, Trash2, Star, Share2, Check, Loader2, Package, Building2, List, GraduationCap } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -236,6 +236,15 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
                     <TabsList className="mx-6 mt-3 self-start">
                       <TabsTrigger value="general">{t('dispatcher.profiles.tab_general', { defaultValue: 'General' })}</TabsTrigger>
                       <TabsTrigger value="users">{t('dispatcher.profiles.tab_users', { defaultValue: 'Visible users' })}</TabsTrigger>
+                      <TabsTrigger value="skills" className="gap-1.5">
+                        <GraduationCap className="h-3.5 w-3.5" />
+                        {t('dispatcher.profiles.tab_skills', { defaultValue: 'Skills filter' })}
+                        {(draft.requiredSkillIds?.length ?? 0) > 0 && (
+                          <Badge variant="default" className="h-4 px-1 text-[10px] ml-0.5">
+                            {draft.requiredSkillIds!.length}
+                          </Badge>
+                        )}
+                      </TabsTrigger>
                       <TabsTrigger value="display">{t('dispatcher.profiles.tab_display', { defaultValue: 'Display' })}</TabsTrigger>
                       <TabsTrigger value="permissions">{t('dispatcher.profiles.tab_permissions', { defaultValue: 'Permissions' })}</TabsTrigger>
                     </TabsList>
@@ -325,6 +334,17 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
                             label={t('dispatcher.profiles.hide_on_leave', { defaultValue: 'Hide users on leave today' })}
                             checked={draft.settings.hideUsersOnLeaveToday}
                             onChange={v => updateSetting('hideUsersOnLeaveToday', v)}
+                          />
+                        </TabsContent>
+
+                        <TabsContent value="skills" className="space-y-4 mt-0">
+                          <SkillsFilterTab
+                            requiredSkillIds={draft.requiredSkillIds ?? []}
+                            onChange={ids => setDraft({ ...draft, requiredSkillIds: ids })}
+                            skillFilterMode={draft.settings.skillFilterMode ?? 'any'}
+                            onFilterModeChange={v => updateSetting('skillFilterMode', v)}
+                            sortBySkillMatch={draft.settings.sortBySkillMatch ?? false}
+                            onSortChange={v => updateSetting('sortBySkillMatch', v)}
                           />
                         </TabsContent>
 
@@ -489,6 +509,188 @@ function ToggleRow({ label, hint, checked, onChange }: { label: string; hint?: s
         {hint && <p className="text-xs text-muted-foreground mt-0.5">{hint}</p>}
       </div>
       <Switch checked={checked} onCheckedChange={onChange} />
+    </div>
+  );
+}
+
+function SkillsFilterTab({
+  requiredSkillIds,
+  onChange,
+  skillFilterMode,
+  onFilterModeChange,
+  sortBySkillMatch,
+  onSortChange,
+}: {
+  requiredSkillIds: string[];
+  onChange: (names: string[]) => void;
+  skillFilterMode: 'any' | 'all';
+  onFilterModeChange: (v: 'any' | 'all') => void;
+  sortBySkillMatch: boolean;
+  onSortChange: (v: boolean) => void;
+}) {
+  const { t } = useTranslation();
+  const [skills, setSkills] = useState<Array<{ id: string; name: string; category: string }>>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        // Load from the lookup-based skills API (same source as /dashboard/lookups → Skills)
+        const { skillsApi: lookupSkillsApi } = await import('@/services/lookupsApi');
+        const res = await lookupSkillsApi.getAll();
+        if (cancelled) return;
+        const items: Array<{ id: string; name: string; category: string }> = (res.items ?? [])
+          .filter((s: any) => s.isActive !== false)
+          .map((s: any) => ({
+            id: s.name as string,       // store by name so filter matches Technician.skills (also by name)
+            name: s.name as string,
+            category: (s.category as string) || 'General',
+          }));
+        setSkills(items);
+      } catch {
+        if (!cancelled) setSkills([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const grouped = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const filtered = q
+      ? skills.filter(s => s.name.toLowerCase().includes(q) || s.category.toLowerCase().includes(q))
+      : skills;
+    const map = new Map<string, typeof skills>();
+    filtered.forEach(s => {
+      const cat = s.category;
+      if (!map.has(cat)) map.set(cat, []);
+      map.get(cat)!.push(s);
+    });
+    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
+  }, [skills, search]);
+
+  const toggle = (name: string) => {
+    onChange(
+      requiredSkillIds.includes(name)
+        ? requiredSkillIds.filter(x => x !== name)
+        : [...requiredSkillIds, name],
+    );
+  };
+
+  return (
+    <div className="space-y-4">
+      <p className="text-xs text-muted-foreground">
+        {t('dispatcher.profiles.skills_hint', {
+          defaultValue:
+            'Select skills to filter which technicians appear on the planning board. Leave empty to show all technicians regardless of skills.',
+        })}
+      </p>
+
+      {/* Match mode + sort */}
+      <div className="rounded-md border p-3 bg-muted/30 space-y-3">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1">
+            <Label className="text-sm font-medium">
+              {t('dispatcher.profiles.skill_filter_mode', { defaultValue: 'Match mode' })}
+            </Label>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {skillFilterMode === 'any'
+                ? t('dispatcher.profiles.skill_filter_any_hint', {
+                    defaultValue: 'Show technicians who have at least one of the selected skills.',
+                  })
+                : t('dispatcher.profiles.skill_filter_all_hint', {
+                    defaultValue: 'Show only technicians who have every selected skill.',
+                  })}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0 pt-0.5">
+            <span className={`text-xs ${skillFilterMode === 'any' ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
+              {t('dispatcher.profiles.match_any', { defaultValue: 'Any' })}
+            </span>
+            <Switch
+              checked={skillFilterMode === 'all'}
+              onCheckedChange={v => onFilterModeChange(v ? 'all' : 'any')}
+            />
+            <span className={`text-xs ${skillFilterMode === 'all' ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
+              {t('dispatcher.profiles.match_all', { defaultValue: 'All' })}
+            </span>
+          </div>
+        </div>
+
+        <ToggleRow
+          label={t('dispatcher.profiles.sort_by_skill_match', { defaultValue: 'Sort technicians by skill match score' })}
+          hint={t('dispatcher.profiles.sort_by_skill_match_hint', {
+            defaultValue: 'Technicians with the most matching skills appear first on the board.',
+          })}
+          checked={sortBySkillMatch}
+          onChange={onSortChange}
+        />
+      </div>
+
+      {/* Search + clear */}
+      <div className="flex gap-2">
+        <Input
+          placeholder={t('dispatcher.profiles.search_skills', { defaultValue: 'Search skills…' })}
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
+        {requiredSkillIds.length > 0 && (
+          <Button variant="outline" size="sm" onClick={() => onChange([])}>
+            {t('dispatcher.profiles.clear_all', { defaultValue: 'Clear all' })}
+          </Button>
+        )}
+      </div>
+
+      {requiredSkillIds.length > 0 && (
+        <p className="text-xs text-primary font-medium">
+          {t('dispatcher.profiles.skills_selected', {
+            count: requiredSkillIds.length,
+            defaultValue: '{{count}} skill(s) required',
+          })}
+        </p>
+      )}
+
+      {/* Skills grouped by category */}
+      <div className="border rounded-md max-h-72 overflow-auto">
+        {loading ? (
+          <div className="p-4 text-sm text-muted-foreground">{t('common.loading', { defaultValue: 'Loading…' })}</div>
+        ) : grouped.length === 0 ? (
+          <div className="p-4 text-center space-y-1">
+            <GraduationCap className="h-5 w-5 mx-auto text-muted-foreground/50" />
+            <p className="text-sm text-muted-foreground">
+              {t('dispatcher.profiles.no_skills_found', { defaultValue: 'No skills found. Add skills via Dashboard → Lookups → Skills.' })}
+            </p>
+          </div>
+        ) : (
+          grouped.map(([category, catSkills]) => (
+            <div key={category}>
+              <div className="px-3 py-1.5 bg-muted/60 text-xs font-semibold uppercase tracking-wide text-muted-foreground border-b sticky top-0 z-10">
+                {category}
+              </div>
+              {catSkills.map(skill => (
+                <label
+                  key={skill.id}
+                  className="flex items-center gap-2 px-3 py-2 hover:bg-accent/50 cursor-pointer border-b last:border-b-0 transition-colors"
+                >
+                  <input
+                    type="checkbox"
+                    checked={requiredSkillIds.includes(skill.name)}
+                    onChange={() => toggle(skill.name)}
+                    className="h-4 w-4"
+                  />
+                  <span className="text-sm">{skill.name}</span>
+                  {requiredSkillIds.includes(skill.name) && (
+                    <Check className="h-3.5 w-3.5 text-primary ml-auto flex-shrink-0" />
+                  )}
+                </label>
+              ))}
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }

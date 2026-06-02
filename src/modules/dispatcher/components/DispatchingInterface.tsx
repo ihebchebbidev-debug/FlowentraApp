@@ -37,7 +37,7 @@ export function DispatchingInterface() {
   const { technicians, jobs, loadingState, isFullyLoaded, refresh } = useDispatcherProgressiveLoad();
 
   // Active planning profile drives board behavior
-  const { profile: activeProfile, settings: profileSettings, visibleUserIds } = useActivePlanningProfile();
+  const { profile: activeProfile, settings: profileSettings, visibleUserIds, requiredSkillIds } = useActivePlanningProfile();
 
   const [selectedTechnician] = useState<string | null>(null);
 
@@ -77,21 +77,48 @@ export function DispatchingInterface() {
     profileSettings.mode === 'service_orders' ? 'service' :
     (conversionModeRaw || 'installation');
 
-  // Filter visible technicians by active profile
+  // Filter and sort visible technicians by active profile
   const visibleTechnicians = useMemo<Technician[]>(() => {
     let list = technicians;
+
+    // 1. Explicit user list (manual selection in profile)
     if (visibleUserIds && visibleUserIds.length > 0) {
       const set = new Set(visibleUserIds.map(String));
       list = list.filter(tech => set.has(String(tech.id)) || set.has(tech.id.match(/\d+/)?.[0] ?? ''));
     }
+
+    // 2. Working-hours filter
     if (profileSettings.hideUsersWithoutWorkingHours) {
       list = list.filter(tech => {
         const wh = tech.workingHours;
         return wh && wh.start && wh.end && wh.start !== wh.end;
       });
     }
+
+    // 3. Skills filter — keep only technicians who match the profile's required skills
+    if (requiredSkillIds && requiredSkillIds.length > 0) {
+      const requiredLower = requiredSkillIds.map(s => s.toLowerCase());
+      const mode = profileSettings.skillFilterMode ?? 'any';
+      list = list.filter(tech => {
+        const techSkillsLower = (tech.skills ?? []).map(s => s.toLowerCase());
+        return mode === 'all'
+          ? requiredLower.every(req => techSkillsLower.includes(req))
+          : requiredLower.some(req => techSkillsLower.includes(req));
+      });
+    }
+
+    // 4. Sort by skill match score (most matching skills first)
+    if (profileSettings.sortBySkillMatch && requiredSkillIds && requiredSkillIds.length > 0) {
+      const requiredLower = requiredSkillIds.map(s => s.toLowerCase());
+      list = [...list].sort((a, b) => {
+        const scoreA = (a.skills ?? []).filter(s => requiredLower.includes(s.toLowerCase())).length;
+        const scoreB = (b.skills ?? []).filter(s => requiredLower.includes(s.toLowerCase())).length;
+        return scoreB - scoreA;
+      });
+    }
+
     return list;
-  }, [technicians, visibleUserIds, profileSettings.hideUsersWithoutWorkingHours]);
+  }, [technicians, visibleUserIds, profileSettings.hideUsersWithoutWorkingHours, profileSettings.skillFilterMode, profileSettings.sortBySkillMatch, requiredSkillIds]);
   
   // Track if we're refreshing (separate from initial load)
   const [isRefreshing, setIsRefreshing] = useState(false);

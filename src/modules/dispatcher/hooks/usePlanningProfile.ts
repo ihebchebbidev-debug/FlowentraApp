@@ -31,6 +31,7 @@ export function useActivePlanningProfile() {
     profile: q.data,
     settings: q.data?.settings ?? DEFAULT_PLANNING_SETTINGS,
     visibleUserIds: q.data?.visibleUserIds ?? [],
+    requiredSkillIds: q.data?.requiredSkillIds ?? [],
   };
 }
 
