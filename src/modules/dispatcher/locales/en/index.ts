@@ -386,7 +386,51 @@ export const en = {
       no_active_profile: "No active profile",
       change_profile: "Change profile",
       manage_profiles: "Manage planning profiles",
-      currently_active: "Currently active"
+      currently_active: "Currently active",
+
+      // Skills filter tab
+      tab_skills: "Skills filter",
+      skills_hint: "Select skills to filter which technicians appear on the planning board. Leave empty to show all technicians regardless of skills.",
+      skill_filter_mode: "Match mode",
+      skill_filter_any_hint: "Show technicians who have at least one of the selected skills.",
+      skill_filter_all_hint: "Show only technicians who have every selected skill.",
+      match_any: "Any",
+      match_all: "All",
+      sort_by_skill_match: "Sort technicians by skill match score",
+      sort_by_skill_match_hint: "Technicians with the most matching skills appear first on the board.",
+      search_skills: "Search skills…",
+      skills_selected: "{{count}} skill(s) required",
+      no_skills_found: "No skills found. Add skills via Dashboard → Lookups → Skills.",
+
+      // General tab — planning mode
+      planning_mode_label: "Planning mode",
+      planning_mode_hint: "How items are dragged onto the board. Matches the toggle above the unassigned jobs list."
+    },
+
+    // Smart planning toolbar
+    smart_planning: "Smart Planning",
+    suggest: {
+      button: "Suggest",
+      title: "Best-fit technicians",
+      subtitle: "Top picks for your unassigned jobs (skills + availability + distance).",
+      empty: "No unassigned jobs to suggest for.",
+      no_tech: "No technicians available"
+    },
+
+    // Auto-fill day
+    autofill: {
+      button: "Auto-fill day",
+      no_jobs: "No unassigned jobs to plan.",
+      no_techs: "No visible technicians in this profile.",
+      not_allowed: "Scheduling new jobs is disabled in your planning profile.",
+      success: "{{n}} job(s) auto-scheduled",
+      skipped: "{{n}} job(s) could not be placed",
+      errors: "{{n}} issue(s) during auto-fill — see console for details",
+      nothing: "Nothing to schedule.",
+      failed: "Auto-fill failed",
+      run: "Run auto-fill",
+      confirm_title: "Auto-fill today's planning?",
+      confirm_desc: "This will assign up to {{n}} unassigned job(s) to your {{m}} visible technician(s), placed back-to-back inside their working hours. You can adjust afterwards."
     }
   }
 };

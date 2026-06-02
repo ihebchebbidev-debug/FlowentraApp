@@ -32,7 +32,8 @@
       "passwordTooShort": "Password must be at least 8 characters",
       "firstNameRequired": "First name is required",
       "lastNameRequired": "Last name is required",
-      "countryRequired": "Country is required"
+      "countryRequired": "Country is required",
+      "selectTenant": "Please select a target company first (use the company filter in the header)."
     },
     "success": {
       "title": "Success",

@@ -32,7 +32,8 @@
       "passwordTooShort": "Le mot de passe doit contenir au moins 8 caractères",
       "firstNameRequired": "Le prénom est requis",
       "lastNameRequired": "Le nom est requis",
-      "countryRequired": "Le pays est requis"
+      "countryRequired": "Le pays est requis",
+      "selectTenant": "Veuillez d'abord sélectionner une société cible (utilisez le filtre de société dans l'en-tête)."
     },
     "success": {
       "title": "Succès",

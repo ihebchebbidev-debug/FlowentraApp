@@ -386,7 +386,51 @@ export const fr = {
       no_active_profile: "Aucun profil actif",
       change_profile: "Changer de profil",
       manage_profiles: "Gérer les profils de planification",
-      currently_active: "Actuellement actif"
+      currently_active: "Actuellement actif",
+
+      // Onglet filtre par compétences
+      tab_skills: "Filtre compétences",
+      skills_hint: "Sélectionnez des compétences pour filtrer les techniciens affichés sur le tableau. Laissez vide pour afficher tous les techniciens.",
+      skill_filter_mode: "Mode de correspondance",
+      skill_filter_any_hint: "Afficher les techniciens ayant au moins une des compétences sélectionnées.",
+      skill_filter_all_hint: "Afficher uniquement les techniciens possédant toutes les compétences sélectionnées.",
+      match_any: "Au moins une",
+      match_all: "Toutes",
+      sort_by_skill_match: "Trier les techniciens par score de compétences",
+      sort_by_skill_match_hint: "Les techniciens ayant le plus de compétences correspondantes apparaissent en premier.",
+      search_skills: "Rechercher des compétences…",
+      skills_selected: "{{count}} compétence(s) requise(s)",
+      no_skills_found: "Aucune compétence trouvée. Ajoutez des compétences via Tableau de bord → Référentiels → Compétences.",
+
+      // Onglet général — mode de planification
+      planning_mode_label: "Mode de planification",
+      planning_mode_hint: "Comment les éléments sont déplacés sur le tableau. Correspond au bouton au-dessus de la liste des tâches non assignées."
+    },
+
+    // Barre d'outils planification intelligente
+    smart_planning: "Planification intelligente",
+    suggest: {
+      button: "Suggérer",
+      title: "Meilleurs techniciens",
+      subtitle: "Meilleures suggestions pour vos tâches non assignées (compétences + disponibilité + distance).",
+      empty: "Aucune tâche non assignée à suggérer.",
+      no_tech: "Aucun technicien disponible"
+    },
+
+    // Auto-remplissage de la journée
+    autofill: {
+      button: "Remplissage auto",
+      no_jobs: "Aucune tâche non assignée à planifier.",
+      no_techs: "Aucun technicien visible dans ce profil.",
+      not_allowed: "La planification de nouvelles tâches est désactivée dans votre profil de planification.",
+      success: "{{n}} tâche(s) planifiée(s) automatiquement",
+      skipped: "{{n}} tâche(s) impossible(s) à placer",
+      errors: "{{n}} problème(s) lors du remplissage automatique — voir la console",
+      nothing: "Rien à planifier.",
+      failed: "Échec du remplissage automatique",
+      run: "Lancer le remplissage",
+      confirm_title: "Remplissage automatique de la journée ?",
+      confirm_desc: "Cela assignera jusqu'à {{n}} tâche(s) non assignée(s) à vos {{m}} technicien(s) visible(s), placées consécutivement dans leurs heures de travail. Vous pourrez ajuster ensuite."
     }
   }
 };

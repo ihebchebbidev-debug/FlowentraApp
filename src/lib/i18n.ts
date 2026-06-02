@@ -147,15 +147,15 @@ const dottedFromMergedExcludingRoot = (merged: any, rootName: string) => {
   return out;
 };
 const handleDispatcher = (mod: any) => {
-  const out: Record<string, any> = {};
   const nested = mod || {};
   if (nested.dispatcher && typeof nested.dispatcher === 'object') {
-    Object.keys(nested.dispatcher).forEach(k => { out[`dispatcher.${k}`] = nested.dispatcher[k]; });
-    if (nested.dispatcher.title && typeof nested.dispatcher.title === 'string') out['dispatcher'] = nested.dispatcher.title;
-  } else {
-    Object.assign(out, nested);
+    // Deep-flatten so nested keys like dispatcher.profiles.tab_skills resolve correctly.
+    // The old shallow approach created "dispatcher.profiles" = object, which i18next
+    // couldn't navigate into — so all profiles.* keys were silently falling back to
+    // their defaultValue English strings and French was never shown.
+    return flattenToDotted(nested.dispatcher, 'dispatcher');
   }
-  return out;
+  return { ...nested };
 };
 
 // Helper merges: build dotted keys where needed to avoid exposing nested objects

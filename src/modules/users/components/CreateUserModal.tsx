@@ -67,7 +67,7 @@ export function CreateUserModal({ open, onOpenChange, onUserCreated }: CreateUse
     if (isTenantRequired) {
       toast({
         title: t('common.error'),
-        description: 'Please select a target company first (use the company filter in the header).',
+        description: t('createUser.errors.selectTenant'),
         variant: "destructive"
       });
       return;
