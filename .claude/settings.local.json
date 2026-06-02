@@ -14,7 +14,9 @@
       "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\iheb.chebbi\\\\Desktop\\\\FlowentraApp\" -Directory)",
       "Bash(Select-Object Name)",
       "Bash(xargs grep -l \"subdomain\")",
-      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\iheb.chebbi\\\\Desktop\\\\FlowentraApp\" -Directory -Force)"
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\iheb.chebbi\\\\Desktop\\\\FlowentraApp\" -Directory -Force)",
+      "Bash(Select-String -Pattern \"\\(Task|Todo|Deal\\)\")",
+      "Bash(Select-Object -ExpandProperty Path)"
     ]
   }
 }

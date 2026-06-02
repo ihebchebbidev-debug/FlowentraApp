@@ -17,7 +17,7 @@ export function ProjectDocumentsTab({ project }: ProjectDocumentsTabProps) {
         entityType="project"
         entityId={project.id}
         moduleType="projects"
-        showFileUpload={false}
+        showFileUpload={true}
       />
     </div>
   );

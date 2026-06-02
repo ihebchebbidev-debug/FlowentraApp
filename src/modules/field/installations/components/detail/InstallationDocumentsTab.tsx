@@ -12,7 +12,7 @@ export function InstallationDocumentsTab({ installationId, installationName }: I
       entityId={installationId}
       moduleType="field"
       moduleName={installationName || `Installation-${installationId}`}
-      showFileUpload={false}
+      showFileUpload={true}
     />
   );
 }

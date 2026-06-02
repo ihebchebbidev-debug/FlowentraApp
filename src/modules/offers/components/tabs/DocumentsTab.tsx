@@ -31,7 +31,7 @@ export function DocumentsTab({ offer }: DocumentsTabProps) {
       moduleType="offers"
       moduleName={offer.title}
       relatedEntities={relatedEntities}
-      showFileUpload={false}
+      showFileUpload={true}
     />
   );
 }

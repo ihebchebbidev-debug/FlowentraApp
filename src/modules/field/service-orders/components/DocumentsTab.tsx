@@ -30,7 +30,7 @@ export function DocumentsTab({ serviceOrderId, saleId, offerId }: DocumentsTabPr
       entityId={serviceOrderId}
       moduleType="services"
       relatedEntities={relatedEntities}
-      showFileUpload={false}
+      showFileUpload={true}
     />
   );
 }

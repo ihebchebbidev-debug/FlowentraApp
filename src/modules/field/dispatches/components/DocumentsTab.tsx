@@ -37,7 +37,7 @@ export function DocumentsTab({ dispatchId, serviceOrderId, saleId, offerId }: Do
       entityId={dispatchId}
       moduleType="field"
       relatedEntities={relatedEntities}
-      showFileUpload={false}
+      showFileUpload={true}
     />
   );
 }

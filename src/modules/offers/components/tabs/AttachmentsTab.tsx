@@ -12,7 +12,7 @@ export function AttachmentsTab({ offer }: AttachmentsTabProps) {
       entityId={offer.id}
       moduleType="offers"
       moduleName={offer.title}
-      showFileUpload={false}
+      showFileUpload={true}
     />
   );
 }
