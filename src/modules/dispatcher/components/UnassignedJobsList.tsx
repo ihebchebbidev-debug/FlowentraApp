@@ -65,7 +65,7 @@ export function UnassignedJobsList({
   const [searchTerm, setSearchTerm] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [_isDragging, setIsDragging] = useState(false);
-  const [showPlanned, setShowPlanned] = useState(false);
+  const [showPlanned, setShowPlanned] = useState(true);
   const [plannedOrders, setPlannedOrders] = useState<ServiceOrder[]>([]);
   const [isLoadingPlanned, setIsLoadingPlanned] = useState(false);
 
@@ -581,19 +581,19 @@ export function UnassignedJobsList({
 
 
         
-        {/* Search Input + Priority Filter */}
-        <div className="mt-1 flex items-center gap-2">
-          <div className="relative flex-1 min-w-0">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        {/* Search Input + Priority Filter — stacked to fit narrow sidebar */}
+        <div className="mt-1 flex flex-col gap-1.5">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
               placeholder={t('dispatcher.search_placeholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 h-9"
+              className="pl-8 h-8 text-xs"
             />
           </div>
           <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-            <SelectTrigger className="h-9 w-[120px] shrink-0 bg-background">
+            <SelectTrigger className="h-8 w-full bg-background text-xs">
               <SelectValue placeholder={t('dispatcher.by_priority', 'Priority')} />
             </SelectTrigger>
             <SelectContent className="bg-popover border shadow-md z-50">
@@ -611,15 +611,15 @@ export function UnassignedJobsList({
           variant={showPlanned ? "default" : "outline"}
           size="sm"
           onClick={() => setShowPlanned(prev => !prev)}
-          className="mt-2 h-7 w-full text-xs gap-1.5"
+          className="mt-1.5 h-7 w-full text-[0.7rem] gap-1"
           disabled={isLoadingPlanned}
         >
-          {showPlanned ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+          {showPlanned ? <EyeOff className="h-3 w-3 shrink-0" /> : <Eye className="h-3 w-3 shrink-0" />}
           {isLoadingPlanned
             ? t('common.loading', 'Loading…')
             : showPlanned
-              ? t('dispatcher.hide_planned', 'Hide Planned Orders')
-              : t('dispatcher.show_planned', 'Show Planned Orders')}
+              ? t('dispatcher.hide_planned', 'Hide Planned')
+              : t('dispatcher.show_planned', 'Show Planned')}
         </Button>
 
       </CardHeader>

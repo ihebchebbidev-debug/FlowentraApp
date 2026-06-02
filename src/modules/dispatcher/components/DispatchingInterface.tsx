@@ -366,7 +366,7 @@ export function DispatchingInterface() {
           {viewMode === 'calendar' ? (
             <>
               {/* Center - Calendar with horizontal scroll container */}
-              <div className="flex-1 min-w-0 max-w-[calc(100vw-288px)]">
+              <div className="flex-1 min-w-0 max-w-[calc(100vw-240px)]">
                 <CustomCalendar
                   view={calendarView}
                   technicians={visibleTechnicians}
@@ -379,7 +379,7 @@ export function DispatchingInterface() {
               </div>
 
               {/* Right Sidebar - Always visible, fixed width */}
-              <div className="w-72 max-w-72 border-l bg-card flex-shrink-0 overflow-hidden">
+              <div className="w-60 max-w-60 border-l bg-card flex-shrink-0 overflow-hidden">
                 <UnassignedJobsList
                   jobs={jobs}
                   isLoading={!loadingState.serviceOrdersLoaded || isRefreshing}
