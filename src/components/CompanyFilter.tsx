@@ -188,7 +188,19 @@ export function CompanyFilter({
 
   const handleChange = (v: string) => {
     if (viewAll) {
-      onChange(v === 'all' ? 'all' : Number(v));
+      if (v === 'all') {
+        // Already in view-all — just clear the per-page row filter
+        onChange('all');
+        return;
+      }
+      // Picking a specific company while in view-all mode: exit view-all and
+      // switch to that company so every API request sends X-Target-Tenant and
+      // the page data actually changes. Client-side filter alone is not enough
+      // because React Query cache still holds cross-company results.
+      const target = tenants.find(t => t.id === Number(v));
+      if (target) {
+        setActiveCompany({ id: target.id, reload: true });
+      }
       return;
     }
     // Pinned-company mode → behave as a tenant switcher
