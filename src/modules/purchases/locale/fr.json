@@ -205,6 +205,11 @@
     "tejSynced": "Synchronisé avec TEJ",
     "factureEnLigneSent": "Envoyé à FactureEnLigne"
   },
+  "tej": {
+    "missingTitle": "Informations requises pour le XML TEJ",
+    "missingDescription": "Veuillez compléter les éléments suivants avant de télécharger le XML TEJ, puis réessayez.",
+    "missingGotIt": "Compris"
+  },
   "detail": {
     "supplierInfo": "Informations fournisseur",
     "orderSummary": "Résumé de la commande",

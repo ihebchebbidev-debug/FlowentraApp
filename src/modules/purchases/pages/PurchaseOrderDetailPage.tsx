@@ -16,6 +16,7 @@ import { PurchaseErrorBoundary, PurchaseErrorFallback } from "../components/Purc
 import { DetailSkeleton } from "../components/PurchaseSkeletons";
 import { PurchaseOrderPDFPreviewModal } from "../components/PurchaseOrderPDFPreviewModal";
 import { PurchaseOrderStatusFlow } from "../components/PurchaseOrderStatusFlow";
+import { TejMissingInfoDialog } from "../components/TejMissingInfoDialog";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { UNIT_OPTIONS, getUnitLabel } from "@/constants/units";
 import { toast } from "sonner";
@@ -51,6 +52,8 @@ function PurchaseOrderDetailPage() {
   const [draftItems, setDraftItems] = useState<Partial<PurchaseOrderItem>[]>([]);
   const [savingItems, setSavingItems] = useState(false);
   const [downloadingTej, setDownloadingTej] = useState(false);
+  const [tejMissing, setTejMissing] = useState<string[]>([]);
+  const [tejMissingOpen, setTejMissingOpen] = useState(false);
 
   const handleDownloadTejXml = async () => {
     if (!id) return;
@@ -61,14 +64,8 @@ function PurchaseOrderDetailPage() {
     } catch (e: any) {
       const missing: string[] = e?.missing || [];
       if (missing.length > 0) {
-        toast.error(e?.message || t('actions.tejXmlIncomplete', 'Missing information for the TEJ XML'), {
-          duration: 8000,
-          description: (
-            <ul className="mt-1 list-disc pl-4 space-y-0.5 text-xs">
-              {missing.map((m, i) => <li key={i}>{m}</li>)}
-            </ul>
-          ),
-        });
+        setTejMissing(missing);
+        setTejMissingOpen(true);
       } else {
         toast.error(e?.message || t('common.error', 'Failed to generate the TEJ XML'));
       }
@@ -543,6 +540,12 @@ function PurchaseOrderDetailPage() {
         onClose={() => setIsPdfOpen(false)}
         order={po}
         formatCurrency={formatCurrency}
+      />
+
+      <TejMissingInfoDialog
+        open={tejMissingOpen}
+        onOpenChange={setTejMissingOpen}
+        missing={tejMissing}
       />
     </div>
   );
