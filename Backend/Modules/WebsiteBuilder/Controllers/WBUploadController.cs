@@ -458,9 +458,6 @@ namespace MyApi.Modules.WebsiteBuilder.Controllers
                 return false;
             }
         }
-                   User.FindFirst("email")?.Value ??
-                   "system";
-        }
     }
 
     // ── Upload-specific DTOs ──

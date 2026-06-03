@@ -802,7 +802,7 @@ namespace MyApi.Modules.RetenueSource.Services
         /// <summary>
         /// Generate TEJ XML conformant with the official DGI / RiTEJ cahier de charges v1.0.
         /// Key rules:
-        ///   * Root element <DeclarationsRS VersionSchema="1.0">
+        ///   * Root element <c>&lt;DeclarationsRS VersionSchema="1.0"&gt;</c>
         ///   * Dates formatted DD/MM/YYYY
         ///   * Amounts in MILLIMES (xs:integer = value * 1000), no decimals
         ///   * Structured Beneficiaire: TypeIdentifiant + Identifiant + CategorieContribuable + Resident
