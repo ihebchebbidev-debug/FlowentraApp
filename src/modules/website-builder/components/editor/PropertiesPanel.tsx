@@ -30,6 +30,7 @@ import { LanguageSwitcherEditor } from './LanguageSwitcherEditor';
 import { NavbarStylePresets } from './NavbarStylePresets';
 import { FooterStylePresets } from './FooterStylePresets';
 import { BlockStylePresets } from './BlockStylePresets';
+import { CatalogSyncEditor, CATALOG_SYNC_BLOCKS } from './CatalogSyncEditor';
 import {
   TESTIMONIALS_PRESETS, TESTIMONIALS_VARIANTS,
   PRICING_PRESETS, PRICING_VARIANTS,
@@ -187,6 +188,14 @@ export function PropertiesPanel({ component, onUpdate, onUpdateStyles, onUpdateA
             <Trash2 className="h-3 w-3" />
           </Button>
         </div>
+
+        {/* Catalog sync — pull real products/services from the Inventory module */}
+        {CATALOG_SYNC_BLOCKS.has(component.type) && (
+          <CatalogSyncEditor
+            componentType={component.type}
+            onApply={(props) => onUpdate(component.id, props)}
+          />
+        )}
 
         {/* Logo */}
         {logoProps.length > 0 && (

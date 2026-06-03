@@ -7,10 +7,18 @@ import React, { useRef, useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Upload, X, Type, Image as ImageIcon } from 'lucide-react';
+import { Upload, X, Type, Image as ImageIcon, Building2 } from 'lucide-react';
 import { readFileAsDataUrl, getImageLabel, isImageSrc } from '../../utils/imageUtils';
+import { useCompanyLogoWithDefault } from '@/hooks/useCompanyLogo';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+
+/** Resolve a logo ref to an absolute URL so it renders on the published site too. */
+function toAbsoluteUrl(value: string): string {
+  if (!value) return value;
+  if (/^(https?:|data:|blob:)/i.test(value)) return value;
+  return `${window.location.origin}/${value.replace(/^\//, '')}`;
+}
 
 type LogoMode = 'text' | 'image' | 'both';
 
@@ -42,6 +50,15 @@ function detectMode(text: string, image: string): LogoMode {
 export function LogoEditor({ logoText, logoImage, onTextChange, onImageChange }: LogoEditorProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [mode, setMode] = useState<LogoMode>(() => detectMode(logoText, logoImage));
+  const { logo: companyLogo, isDefault: isDefaultCompanyLogo } = useCompanyLogoWithDefault();
+
+  const handleUseCompanyLogo = () => {
+    const resolved = toAbsoluteUrl(companyLogo);
+    if (!resolved) { toast.error('No company logo found'); return; }
+    onImageChange(resolved);
+    setMode(logoText.trim() && !looksLikeImagePath(logoText) ? 'both' : 'image');
+    toast.success('Company logo applied');
+  };
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -88,6 +105,18 @@ export function LogoEditor({ logoText, logoImage, onTextChange, onImageChange }:
           </button>
         ))}
       </div>
+
+      {/* Auto-brand: pull the active company's logo (Settings → Companies) */}
+      {!isDefaultCompanyLogo && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full h-7 text-[10px] gap-1.5 border-border/40"
+          onClick={handleUseCompanyLogo}
+        >
+          <Building2 className="h-3 w-3" /> Use company logo
+        </Button>
+      )}
 
       {/* Text input */}
       {(mode === 'text' || mode === 'both') && (
