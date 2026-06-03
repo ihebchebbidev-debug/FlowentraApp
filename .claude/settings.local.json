@@ -37,7 +37,8 @@
       "Bash(node -e 'JSON.parse\\(require\\('\\\\''fs'\\\\''\\).readFileSync\\('\\\\''__TRACKED_VAR__'\\\\'','\\\\''utf8'\\\\''\\)\\); console.log\\('\\\\''__TRACKED_VAR__ OK'\\\\''\\)')",
       "Bash(NODE_OPTIONS=--max-old-space-size=6144 npx vite build)",
       "Bash(sed -n '55,75p' services/apiImageProvider.ts)",
-      "Bash(sed -n '168,178p' services/imageService.ts)"
+      "Bash(sed -n '168,178p' services/imageService.ts)",
+      "Bash(npx vitest *)"
     ]
   }
 }

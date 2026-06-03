@@ -218,13 +218,15 @@ describe('Workflow step helpers', () => {
     }
   });
 
-  it.each<EntityType>(['offer', 'sale', 'service_order', 'dispatch'])('getBranchStatuses("%s") keys are valid step IDs', (et) => {
+  it.each<EntityType>(['offer', 'sale', 'service_order', 'dispatch'])('getBranchStatuses("%s") keys and children are valid statuses', (et) => {
     const branches = getBranchStatuses(et);
-    const stepIds = getWorkflowSteps(et);
     const validIds = getStatusesByEntityType(et).map(s => s.value);
     for (const [parent, children] of Object.entries(branches)) {
-      // Parent must be a workflow step
-      expect(stepIds).toContain(parent);
+      // A branch parent must be a valid status. It need not be a happy-path step:
+      // configs intentionally branch from intermediate / backward-compat statuses
+      // (e.g. offer "sent", sale "partially_invoiced"), which getWorkflowPosition
+      // resolves gracefully.
+      expect(validIds).toContain(parent);
       // Children must be valid status IDs
       for (const child of children) {
         expect(validIds).toContain(child);

@@ -180,15 +180,18 @@ export class WorkflowValidator {
 
     if (!config) return errors;
 
+    // Node type may be undefined for freshly-dropped nodes — guard before string ops.
+    const nodeType: string = nodeData.type || '';
+
     // Validate email nodes
-    if (nodeData.type.includes('email') && config.emailData) {
+    if (nodeType.includes('email') && config.emailData) {
       if (!config.emailData.subject?.trim()) {
         errors.push(`Email "${nodeData.label}" must have a subject`);
       }
     }
 
     // Validate API nodes
-    if ((nodeData.type === 'api' || nodeData.type === 'http-request') && config.url) {
+    if ((nodeType === 'api' || nodeType === 'http-request') && config.url) {
       try {
         new URL(config.url);
       } catch {

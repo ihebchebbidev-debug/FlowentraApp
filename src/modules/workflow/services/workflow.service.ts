@@ -99,7 +99,9 @@ export class WorkflowService {
       title: `Devis pour ${data.items[0]?.itemName || 'Services'}`,
       contactId: parseInt(data.contactId, 10) || 0,
       status: 'draft',
-      currency: 'USD',
+      // Match the app-wide default currency (Tunisian Dinar) used by every other
+      // offer/sale create flow — hardcoding USD produced quotes in the wrong currency.
+      currency: 'TND',
       taxes: data.pricing.taxes,
       discount: data.pricing.discount,
       items: data.items.map(item => ({
