@@ -20,7 +20,11 @@
       "Bash(cd \"c:/Users/iheb.chebbi/Desktop/FlowentraApp/Backend\" && grep -rn \"SupplierInvoices\" Modules/Purchases/Database/migration.sql | grep -i \"status\\\\|check\\\\|CREATE TABLE\" | head -20; echo \"---- model status ----\"; grep -rn \"Status\" Modules/Purchases/Models/SupplierInvoice.cs | head; echo \"---- validate frontend ----\"; grep -rn \"validate\\\\|Status.*=.*'\\\\|status:\" ../src/modules/purchases/pages/*Invoice* 2>/dev/null | grep -i status | head -20)",
       "Read(//c/Users/iheb.chebbi/Desktop/src/modules/purchases/pages/**)",
       "Bash(python3 -c \"import json;d=json.load\\(open\\('en.json'\\)\\);print\\('additionalInfo' in d, 'optionalDetails' in d\\); print\\([k for k in d.keys\\(\\)][:20]\\)\")",
-      "Bash(node -e \"const d=require\\('./en.json'\\);console.log\\('top-level additionalInfo:',d.additionalInfo!==undefined,'optionalDetails:',d.optionalDetails!==undefined\\)\")"
+      "Bash(node -e \"const d=require\\('./en.json'\\);console.log\\('top-level additionalInfo:',d.additionalInfo!==undefined,'optionalDetails:',d.optionalDetails!==undefined\\)\")",
+      "Bash(npm install *)",
+      "Bash(npx cap *)",
+      "Bash(npm run *)",
+      "Bash(NODE_OPTIONS=--max-old-space-size=6144 npm run build)"
     ]
   }
 }

@@ -300,18 +300,57 @@ namespace MyApi.Modules.RetenueSource.Services
 
             foreach (var record in records)
             {
+                var tag = $"Invoice {record.InvoiceNumber}";
+
+                // ── Required-field validation (so the generated XML is never
+                //    structurally invalid / rejected by TEJ for empty mandatory nodes) ──
+                if (string.IsNullOrWhiteSpace(record.SupplierTaxId))
+                    complianceErrors.Add($"{tag}: beneficiary identifier (Matricule Fiscal / CIN) is missing");
+                if (string.IsNullOrWhiteSpace(record.SupplierName))
+                    complianceErrors.Add($"{tag}: beneficiary name (raison sociale) is missing");
+                if (string.IsNullOrWhiteSpace(record.PayerTaxId))
+                    complianceErrors.Add($"{tag}: declarant Matricule Fiscal is missing");
+                if (string.IsNullOrWhiteSpace(record.InvoiceNumber))
+                    complianceErrors.Add($"{tag}: invoice number is missing");
+                if (record.InvoiceDate == default)
+                    complianceErrors.Add($"{tag}: invoice date is missing");
+                if (record.PaymentDate == default)
+                    complianceErrors.Add($"{tag}: payment date is missing");
+                if (record.RSAmount <= 0)
+                    complianceErrors.Add($"{tag}: withheld amount (RS) must be positive");
+                if (record.AmountPaid <= 0)
+                    complianceErrors.Add($"{tag}: gross amount must be positive");
+                if (record.RSAmount > record.AmountPaid)
+                    complianceErrors.Add($"{tag}: withholding exceeds the gross amount");
+                if (!string.IsNullOrEmpty(record.BeneficiaireCategorie)
+                    && record.BeneficiaireCategorie != "PM" && record.BeneficiaireCategorie != "PP")
+                    complianceErrors.Add($"{tag}: CategorieContribuable must be 'PM' or 'PP'");
+                if (string.IsNullOrWhiteSpace(record.OperationCode)
+                    && string.IsNullOrWhiteSpace(record.RSTypeCode))
+                    complianceErrors.Add($"{tag}: operation type (IdTypeOperation) is missing");
+
                 // Check for overdue records
                 if (record.IsOverdue)
-                    complianceErrors.Add($"Invoice {record.InvoiceNumber}: Past declaration deadline by {record.DaysLate} days (penalty: {record.PenaltyAmount:F2} TND)");
+                    complianceErrors.Add($"{tag}: Past declaration deadline by {record.DaysLate} days (penalty: {record.PenaltyAmount:F2} TND)");
 
                 // Check declaration deadline is set
                 if (record.DeclarationDeadline == null)
-                    complianceErrors.Add($"Invoice {record.InvoiceNumber}: Declaration deadline not calculated");
+                    complianceErrors.Add($"{tag}: Declaration deadline not calculated");
 
                 // Warn if supplier type not classified (medium priority, not blocking)
                 if (string.IsNullOrEmpty(record.SupplierType))
                     _logger.LogWarning("RS Record {Invoice}: Supplier type not classified", record.InvoiceNumber);
             }
+
+            // Duplicate certificates: same invoice number + payment date → TEJ rejects the file.
+            var dupKeys = records
+                .GroupBy(r => $"{r.InvoiceNumber}|{r.PaymentDate:yyyy-MM-dd}")
+                .Where(g => g.Count() > 1)
+                .Select(g => g.Key.Split('|')[0])
+                .Distinct()
+                .ToList();
+            if (dupKeys.Count > 0)
+                complianceErrors.Add($"Duplicate certificates detected for invoice(s): {string.Join(", ", dupKeys)}");
 
             // Block export if critical compliance issues found
             if (complianceErrors.Count > 0)
