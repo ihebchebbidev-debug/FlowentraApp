@@ -196,13 +196,10 @@
     "exportPdf": "Exporter PDF",
     "print": "Imprimer",
     "recordPayment": "Enregistrer un paiement",
-    "syncTej": "Synchroniser TEJ",
     "downloadTejXml": "Télécharger XML TEJ",
     "tejXmlDownloaded": "XML TEJ téléchargé",
-    "tejXmlIncomplete": "Des informations requises pour le XML TEJ sont manquantes",
     "sendFactureEnLigne": "Envoyer Facture en Ligne",
     "cancel": "Annuler",
-    "tejSynced": "Synchronisé avec TEJ",
     "factureEnLigneSent": "Envoyé à FactureEnLigne"
   },
   "tej": {

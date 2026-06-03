@@ -766,37 +766,6 @@ namespace MyApi.Modules.RetenueSource.Services
             return new TejInvoiceXmlResult { Ok = true, Xml = xml, FileName = fileName };
         }
 
-        /// <summary>
-        /// Create an RSRecord from a paid supplier invoice. Called by SupplierInvoiceService.SyncTejAsync.
-        /// Idempotent: if invoice.RsRecordId is already set we just return the existing record.
-        /// </summary>
-        public async Task<RSRecordDto> CreateForSupplierInvoiceAsync(
-            int supplierInvoiceId,
-            MyApi.Modules.Purchases.Models.SupplierInvoice invoice,
-            MyApi.Modules.Contacts.Models.Contact supplier,
-            TEJDeclarantDto declarant,
-            string userId)
-        {
-            if (invoice.RsRecordId.HasValue)
-            {
-                var existing = await _db.RSRecords.FindAsync(invoice.RsRecordId.Value);
-                if (existing != null) return MapToDto(existing);
-            }
-
-            if (!invoice.RsApplicable || invoice.RsAmount <= 0)
-                throw new InvalidOperationException(
-                    $"Invoice {invoice.InvoiceNumber}: RS is not applicable or RsAmount is zero — nothing to declare to TEJ");
-
-            var record = BuildRsRecordFromInvoice(supplierInvoiceId, invoice, supplier, declarant, userId);
-            var persisted = await EnsureRsRecordPersistedAsync(supplierInvoiceId, record);
-
-            _logger.LogInformation(
-                "Supplier invoice {Invoice} registered for TEJ: RSRecord={RsId}, OpCode={OpCode}, RS={RS}",
-                invoice.InvoiceNumber, persisted.Id, persisted.OperationCode, persisted.RSAmount);
-
-            return MapToDto(persisted);
-        }
-
         // ─── Stats ───
 
         public async Task<RSStatsDto> GetRSStatsAsync(string? entityType, int? entityId, int? month, int? year)

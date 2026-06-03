@@ -178,12 +178,10 @@
     "receiveGoods": "استلام البضائع",
     "createInvoice": "إنشاء فاتورة",
     "cancel": "إلغاء",
-    "tejSynced": "تمت المزامنة مع TEJ",
     "factureEnLigneSent": "تم الإرسال إلى FactureEnLigne",
     "exportPdf": "تصدير PDF",
     "print": "طباعة",
     "recordPayment": "تسجيل دفعة",
-    "syncTej": "مزامنة مع TEJ",
     "sendFactureEnLigne": "إرسال إلى FactureEnLigne"
   },
   "tabs": {

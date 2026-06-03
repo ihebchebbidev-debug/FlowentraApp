@@ -304,13 +304,11 @@ export const supplierInvoiceService = {
   recordPayment: (id: string, data: { amountPaid: number; paymentMethod: string; paymentDate: string }) =>
     extract<SupplierInvoice>(apiFetch(`/api/supplier-invoices/${id}`, { method: 'PATCH', body: JSON.stringify(data) }), 'Failed'),
 
-  // TEJ + Facture-en-ligne use dedicated sub-endpoints (added on backend) so
-  // those fields actually persist instead of being silently dropped by
-  // UpdateSupplierInvoiceDto, which doesn't include them.
-  syncTej: (id: string) =>
-    extract<SupplierInvoice>(apiFetch(`/api/supplier-invoices/${id}/tej-sync`, { method: 'POST' }), 'Failed'),
-
-  /** Download the TEJ/RiTEJ XML for a single invoice on demand. */
+  /**
+   * Download the TEJ/RiTEJ XML for a single invoice on demand. This also registers
+   * the declaration (idempotent) so it counts toward the monthly TEJ file — there is
+   * no separate "sync" step. Facture-en-ligne keeps its own dedicated sub-endpoint.
+   */
   downloadTejXml: (id: string): Promise<void> =>
     downloadTejXmlFile(`/api/supplier-invoices/${id}/tej-xml`, `RS-invoice-${id}.xml`),
 

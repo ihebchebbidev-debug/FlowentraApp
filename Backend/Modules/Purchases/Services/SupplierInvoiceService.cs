@@ -21,118 +21,15 @@ namespace MyApi.Modules.Purchases.Services
         private readonly ApplicationDbContext _context;
         private readonly ILogger<SupplierInvoiceService> _logger;
         private readonly MyApi.Modules.Numbering.Services.INumberingService? _numberingService;
-        private readonly MyApi.Modules.RetenueSource.Services.IRSService? _rsService;
 
         public SupplierInvoiceService(ApplicationDbContext context, ILogger<SupplierInvoiceService> logger,
-            MyApi.Modules.Numbering.Services.INumberingService? numberingService = null,
-            MyApi.Modules.RetenueSource.Services.IRSService? rsService = null)
+            MyApi.Modules.Numbering.Services.INumberingService? numberingService = null)
         {
             _context = context;
             _logger = logger;
             _numberingService = numberingService;
-            _rsService = rsService;
         }
 
-        // ─── TEJ sync ───
-        // Creates an RSRecord (entity_type = supplier_invoice) snapshotted from the
-        // invoice + supplier, links the resulting record id back onto the invoice,
-        // and marks tej_synced fields. Idempotent: if invoice.RsRecordId is already
-        // set we just refresh the sync timestamp.
-        public async Task<SupplierInvoiceDto> SyncTejAsync(int invoiceId, string userId, string? userName = null)
-        {
-            if (_rsService == null)
-                throw new InvalidOperationException("IRSService is not registered; cannot sync to TEJ");
-
-            var invoice = await _context.SupplierInvoices
-                .FirstOrDefaultAsync(i => i.Id == invoiceId && !i.IsDeleted)
-                ?? throw new KeyNotFoundException($"SupplierInvoice {invoiceId} not found");
-
-            if (!invoice.RsApplicable)
-                throw new InvalidOperationException("RS is not applicable on this invoice — nothing to sync");
-            // Note: TEJ/RS is computed on the invoice amount and does not require a
-            // payment to have been recorded first — the withholding is declared on the
-            // invoice itself. (Previous guard requiring AmountPaid > 0 removed.)
-
-            // Idempotency guard: if this invoice already has a successful RS record,
-            // do NOT create a duplicate. Just refresh the timestamp and return.
-            // Re-sync is only allowed when previous attempt errored (no RsRecordId set,
-            // or status='error').
-            if (invoice.TejSynced
-                && invoice.RsRecordId.HasValue && invoice.RsRecordId.Value > 0
-                && string.Equals(invoice.TejSyncStatus, "synced", StringComparison.OrdinalIgnoreCase))
-            {
-                invoice.TejSyncDate = DateTime.UtcNow;
-                invoice.ModifiedDate = DateTime.UtcNow;
-                invoice.ModifiedBy = userId;
-                await _context.SaveChangesAsync();
-                return (await GetInvoiceByIdAsync(invoiceId))!;
-            }
-
-            var supplier = await _context.Contacts.FirstOrDefaultAsync(c => c.Id == invoice.SupplierId)
-                ?? throw new KeyNotFoundException($"Supplier {invoice.SupplierId} not found");
-
-            // Declarant MUST be the tenant's own company (the buyer/withholder), never
-            // the supplier. Falling back to the supplier produced semantically wrong
-            // TEJ filings. If no company contact is configured, fail loudly so the
-            // tenant fixes their settings instead of pushing bad data to DGI/TTN.
-            var settingsCompany = await _context.Contacts.AsNoTracking()
-                .Where(c => !c.IsDeleted && c.Type == "company" && !string.IsNullOrEmpty(c.MatriculeFiscale))
-                .OrderBy(c => c.Id)
-                .FirstOrDefaultAsync()
-                ?? throw new InvalidOperationException(
-                    "TEJ declarant not configured: create a company contact with a Matricule Fiscale in Settings before syncing.");
-
-            var declarant = new MyApi.Modules.RetenueSource.DTOs.TEJDeclarantDto
-            {
-                Name = settingsCompany.Name,
-                TaxId = settingsCompany.MatriculeFiscale ?? "",
-                Address = settingsCompany.Address ?? "",
-                Email = settingsCompany.Email,
-                Phone = settingsCompany.Phone
-            };
-
-            try
-            {
-                var rsDto = await _rsService.CreateForSupplierInvoiceAsync(
-                    invoiceId, invoice, supplier, declarant, userId);
-
-                invoice.TejSynced = true;
-                invoice.TejSyncDate = DateTime.UtcNow;
-                invoice.TejSyncStatus = "synced";
-                invoice.TejErrorMessage = null;
-                invoice.RsRecordId = rsDto.Id;
-                invoice.ModifiedDate = DateTime.UtcNow;
-                invoice.ModifiedBy = userId;
-
-                _context.PurchaseActivities.Add(new PurchaseActivity
-                {
-                    EntityType = "supplier_invoice", EntityId = invoiceId, ActivityType = "tej_synced",
-                    Description = $"Invoice {invoice.InvoiceNumber} synced to TEJ (RS record #{rsDto.Id})",
-                    PerformedBy = userId, PerformedByName = userName, PerformedAt = DateTime.UtcNow
-                });
-                await _context.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                invoice.TejSyncStatus = "error";
-                invoice.TejErrorMessage = ex.Message;
-                invoice.ModifiedDate = DateTime.UtcNow;
-                invoice.ModifiedBy = userId;
-
-                // Audit failed attempts too — forensic trail must include errors,
-                // not just successes.
-                _context.PurchaseActivities.Add(new PurchaseActivity
-                {
-                    EntityType = "supplier_invoice", EntityId = invoiceId, ActivityType = "tej_sync_failed",
-                    Description = $"TEJ sync failed for invoice {invoice.InvoiceNumber}: {ex.Message}",
-                    PerformedBy = userId, PerformedByName = userName, PerformedAt = DateTime.UtcNow
-                });
-                await _context.SaveChangesAsync();
-                throw;
-            }
-
-            return (await GetInvoiceByIdAsync(invoiceId))!;
-        }
 
 
         public async Task<PaginatedSupplierInvoiceResponse> GetInvoicesAsync(

@@ -36,14 +36,6 @@ namespace MyApi.Modules.RetenueSource.Services
         // Build the TEJ XML for a purchase order (aggregates its RS-applicable invoices).
         Task<TejInvoiceXmlResult> BuildTejXmlForPurchaseOrderAsync(int purchaseOrderId, string userId);
 
-        // ─── Cross-module: create an RS record from a paid supplier invoice ───
-        Task<RSRecordDto> CreateForSupplierInvoiceAsync(
-            int supplierInvoiceId,
-            MyApi.Modules.Purchases.Models.SupplierInvoice invoice,
-            MyApi.Modules.Contacts.Models.Contact supplier,
-            TEJDeclarantDto declarant,
-            string userId);
-
         // ─── Stats ───
         Task<RSStatsDto> GetRSStatsAsync(string? entityType = null, int? entityId = null, int? month = null, int? year = null);
     }
