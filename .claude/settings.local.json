@@ -35,7 +35,9 @@
       "Bash(rm -f sales.json offers.json contacts.json projects.json serviceOrders.json articles.json services.json fieldCustomers.json technicians.json contactTasks.json dispatches.json calendarData.json projectTasks.json)",
       "Bash(grep -rln \"mock/\\\\\\(sales\\\\|offers\\\\|contacts\\\\|projects\\\\|serviceOrders\\\\|articles\\\\|services\\\\|fieldCustomers\\\\|technicians\\\\|contactTasks\\\\|dispatches\\\\|calendarData\\\\|projectTasks\\\\\\)\\\\.json\" src/ --include=*.ts --include=*.tsx)",
       "Bash(node -e 'JSON.parse\\(require\\('\\\\''fs'\\\\''\\).readFileSync\\('\\\\''__TRACKED_VAR__'\\\\'','\\\\''utf8'\\\\''\\)\\); console.log\\('\\\\''__TRACKED_VAR__ OK'\\\\''\\)')",
-      "Bash(NODE_OPTIONS=--max-old-space-size=6144 npx vite build)"
+      "Bash(NODE_OPTIONS=--max-old-space-size=6144 npx vite build)",
+      "Bash(sed -n '55,75p' services/apiImageProvider.ts)",
+      "Bash(sed -n '168,178p' services/imageService.ts)"
     ]
   }
 }
