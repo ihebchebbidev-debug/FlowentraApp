@@ -35,8 +35,6 @@ function getHiddenSidebarUrls(): Set<string> {
     '/dashboard/settings/logs',
     // Emails module hidden for now – re-enable when ready
     '/dashboard/email-calendar/emails',
-    // Website builder hidden for now – re-enable when ready
-    '/dashboard/website-builder',
   ]);
   // HR module hidden ONLY for krossier tenant
   if (!isHrEnabledForCurrentTenant()) {
