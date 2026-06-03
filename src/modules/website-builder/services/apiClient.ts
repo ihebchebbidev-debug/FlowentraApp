@@ -6,7 +6,7 @@
  */
 import axios, { AxiosError, type AxiosInstance, type InternalAxiosRequestConfig } from 'axios';
 import { API_CONFIG } from '@/config/api.config';
-import { getCurrentTenant, TENANT_HEADER } from '@/utils/tenant';
+import { getCurrentTenant, TENANT_HEADER, TARGET_TENANT_HEADER } from '@/utils/tenant';
 import { getTargetTenantHeaders } from '@/utils/targetTenant';
 import type {
   WebsiteSite, SitePage, SiteTheme, BuilderComponent,
@@ -35,6 +35,12 @@ wbApi.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     config.headers[TENANT_HEADER] = tenant;
   }
   const targetHeaders = getTargetTenantHeaders();
+  const method = (config.method || 'GET').toUpperCase();
+  const isMutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
+  if (isMutation && !targetHeaders[TARGET_TENANT_HEADER] && targetHeaders['X-View-All']) {
+    targetHeaders[TARGET_TENANT_HEADER] = '0';
+  }
+
   if (config.headers) {
     Object.entries(targetHeaders).forEach(([key, value]) => {
       if (!config.headers?.[key]) {
@@ -43,7 +49,6 @@ wbApi.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     });
   }
 
-  const method = (config.method || 'GET').toUpperCase();
   const bypassOfflineQueue = (config.headers as Record<string, string> | undefined)?.['X-Bypass-Offline-Queue'] === 'true';
   if (shouldQueueOfflineWrites() && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method) && !bypassOfflineQueue) {
     return queueHttpOperation({
