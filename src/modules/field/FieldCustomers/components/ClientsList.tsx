@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 // Import mock data from JSON file
-import fieldCustomersData from "@/data/mock/fieldCustomers.json";
+import { useContacts } from "@/modules/contacts/hooks/useContacts";
 import { getInitialViewMode } from '../../../../hooks/getInitialViewMode';
 
 interface Client {
@@ -55,7 +55,21 @@ export default function ClientsList() {
     navigate(`/dashboard/field/customers/${client.id}`);
   };
 
-  const clients: Client[] = fieldCustomersData as Client[];
+  // Real, tenant-scoped customers (sourced from contacts; searched server-side).
+  const { contacts } = useContacts(query ? { searchTerm: query } : undefined);
+  const clients: Client[] = (contacts as any[]).map((c) => ({
+    id: Number(c.id),
+    name: c.name,
+    email: c.email || '',
+    phone: c.phone || '',
+    company: c.company || '',
+    status: (c.status as Client['status']) || 'Customer',
+    type: (c.type as Client['type']) || 'individual',
+    keyUsers: [],
+    tags: c.tags || [],
+    lastContact: c.lastContact || c.updatedAt || '',
+    favorite: c.favorite ?? false,
+  }));
 
   const filtered = useMemo(() => {
     return clients.filter(c => {

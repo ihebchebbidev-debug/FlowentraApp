@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   ArrowLeft, Globe, Search, Layers, Eye, Check, X,
-  FileText, Palette, MonitorPlay, AlertCircle,
+  FileText, Palette, MonitorPlay, AlertCircle, Loader2, Plus,
 } from 'lucide-react';
 import { TemplateLivePreview } from './TemplateLivePreview';
 import { TemplateThumbnail } from './TemplateThumbnail';
@@ -86,6 +86,16 @@ export function TemplateGalleryPage({ onSelect, onBack }: TemplateGalleryPagePro
     onSelect('blank', name);
   };
 
+  /** Create directly from a card without opening the preview screen. */
+  const handleUseTemplate = (tmpl: SiteTemplate) => {
+    if (creating) return;
+    const name = siteName.trim() || tmpl.name;
+    if (!validateSiteName(name)) return;
+    setSelectedTemplateId(tmpl.id);
+    setCreating(true);
+    onSelect(tmpl.id, name);
+  };
+
   const getCategoryIcon = (cat: string) => {
     const icons: Record<string, string> = {
       'Automotive': '🔧', 'Food & Drink': '🍽️', 'Creative': '🎨', 'Healthcare': '🏥',
@@ -133,8 +143,8 @@ export function TemplateGalleryPage({ onSelect, onBack }: TemplateGalleryPagePro
                 )}
               </div>
               <Button onClick={handleCreate} disabled={creating || !siteName.trim() || !!siteNameError} className="bg-primary text-primary-foreground">
-                <Check className="h-4 w-4 mr-2" />
-                Create Site
+                {creating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
+                {creating ? 'Creating…' : 'Create Site'}
               </Button>
             </div>
 
@@ -182,8 +192,8 @@ export function TemplateGalleryPage({ onSelect, onBack }: TemplateGalleryPagePro
               )}
             </div>
             <Button onClick={handleCreate} disabled={creating || !siteName.trim() || !!siteNameError} className="bg-primary text-primary-foreground">
-              <Check className="h-4 w-4 mr-2" />
-              Create Site
+              {creating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
+              {creating ? 'Creating…' : 'Create Site'}
             </Button>
 
           </div>
@@ -362,9 +372,12 @@ export function TemplateGalleryPage({ onSelect, onBack }: TemplateGalleryPagePro
           <Button
             variant="outline"
             onClick={handleCreateBlank}
+            disabled={creating}
             className="hidden sm:flex"
           >
-            <Globe className="h-4 w-4 mr-2" />
+            {creating && selectedTemplateId === null
+              ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              : <Globe className="h-4 w-4 mr-2" />}
             Blank Site
           </Button>
         </div>
@@ -448,12 +461,18 @@ export function TemplateGalleryPage({ onSelect, onBack }: TemplateGalleryPagePro
           {/* Blank site card */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             <Card
-              className={`overflow-hidden cursor-pointer transition-all hover:shadow-lg group ${
+              role="button"
+              tabIndex={0}
+              aria-label="Start from a blank site"
+              className={`overflow-hidden cursor-pointer transition-all hover:shadow-lg focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none group ${
                 selectedTemplateId === null ? 'ring-2 ring-primary' : ''
               }`}
               onClick={() => {
                 setSelectedTemplateId(null);
                 setSiteName(siteName || 'My Website');
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleCreateBlank(); }
               }}
             >
               <div className="h-44 bg-muted/30 flex flex-col items-center justify-center border-b border-border">
@@ -474,10 +493,19 @@ export function TemplateGalleryPage({ onSelect, onBack }: TemplateGalleryPagePro
             {filteredTemplates.map(tmpl => (
               <Card
                 key={tmpl.id}
-                className={`overflow-hidden cursor-pointer transition-all hover:shadow-lg group ${
+                role="button"
+                tabIndex={0}
+                aria-label={`${tmpl.name} template`}
+                className={`overflow-hidden cursor-pointer transition-all hover:shadow-lg focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none group ${
                   selectedTemplateId === tmpl.id ? 'ring-2 ring-primary' : ''
                 }`}
                 onClick={() => handleSelectTemplate(tmpl)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleSelectTemplate(tmpl);
+                  }
+                }}
               >
                 {/* Template Preview - Live Rendered */}
                 <div
@@ -486,7 +514,7 @@ export function TemplateGalleryPage({ onSelect, onBack }: TemplateGalleryPagePro
                 >
                   <TemplateThumbnail template={tmpl} className="w-full h-full" />
                   {/* Hover overlay */}
-                  <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/5 transition-colors flex items-center justify-center">
+                  <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/5 transition-colors flex items-center justify-center gap-2">
                     <Button
                       variant="secondary"
                       size="sm"
@@ -500,6 +528,17 @@ export function TemplateGalleryPage({ onSelect, onBack }: TemplateGalleryPagePro
                     >
                       <Eye className="h-3.5 w-3.5 mr-1.5" />
                       Preview
+                    </Button>
+                    <Button
+                      size="sm"
+                      disabled={creating}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity shadow-lg text-xs bg-primary text-primary-foreground"
+                      onClick={(e) => { e.stopPropagation(); handleUseTemplate(tmpl); }}
+                    >
+                      {creating && selectedTemplateId === tmpl.id
+                        ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                        : <Plus className="h-3.5 w-3.5 mr-1.5" />}
+                      Use
                     </Button>
                   </div>
                 </div>

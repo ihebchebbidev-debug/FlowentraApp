@@ -33,7 +33,9 @@ interface SiteEditorProps {
 export function SiteEditor({ site, onBack, onSiteUpdate }: SiteEditorProps) {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
-  const [currentPageId, setCurrentPageId] = useState(site.pages[0]?.id || '');
+  const [currentPageId, setCurrentPageId] = useState(
+    () => (site.pages.find(p => p.isHomePage) || site.pages[0])?.id || ''
+  );
   const [showPageDialog, setShowPageDialog] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [rightPanel, setRightPanel] = useState<RightPanel>('properties');
@@ -233,7 +235,7 @@ export function SiteEditor({ site, onBack, onSiteUpdate }: SiteEditorProps) {
         onUndo={editor.undo}
         onRedo={editor.redo}
         onPreview={() => setShowPreview(true)}
-        onPublish={() => setShowPublish(true)}
+        onPublish={async () => { await siteActions.flushNow(); setShowPublish(true); }}
         isPublished={site.published}
         pageName={currentPage?.title || ''}
         siteName={site.name}
@@ -247,6 +249,7 @@ export function SiteEditor({ site, onBack, onSiteUpdate }: SiteEditorProps) {
         onToggleRightPanel={() => setMobileRightOpen(prev => !prev)}
         isRtlPreview={isRtlPreview}
         onToggleRtlPreview={() => setIsRtlPreview(prev => !prev)}
+        saveStatus={siteActions.saveStatus}
       />
 
       <div className="flex-1 flex overflow-hidden">

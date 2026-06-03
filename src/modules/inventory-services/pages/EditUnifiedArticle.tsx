@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
-import technicianData from "@/data/mock/technicians.json";
 import { articlesApi } from "@/services/api/articlesApi";
 import { articleCategoriesApi, serviceCategoriesApi, locationsApi, articleGroupsApi, skillsApi, LookupItem } from "@/services/api/lookupsApi";
 import { UNIT_OPTIONS, isDecimalUnit } from "@/constants/units";

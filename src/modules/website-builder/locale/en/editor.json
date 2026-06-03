@@ -1,5 +1,8 @@
 {
   "editorPanel": "Editor Panel",
+  "saving": "Saving…",
+  "saved": "Saved",
+  "saveError": "Unsaved",
   "closePreview": "Close Preview",
   "seoSettings": "SEO Settings",
   "globalBlocks": "Global Blocks",

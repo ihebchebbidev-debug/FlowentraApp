@@ -8,7 +8,9 @@ import {
   PanelRightOpen,
   Palette, Search, Globe, ShieldCheck, Layers, Paintbrush,
   MoreHorizontal, Upload, Inbox, Languages, History,
+  Loader2, Check, CloudOff,
 } from 'lucide-react';
+import type { SaveStatus } from '../../hooks/useSiteActions';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
@@ -43,6 +45,27 @@ interface EditorToolbarProps {
   onToggleRightPanel?: () => void;
   isRtlPreview?: boolean;
   onToggleRtlPreview?: () => void;
+  saveStatus?: SaveStatus;
+}
+
+/** Compact autosave status pill shown in the toolbar. */
+function SaveStatusIndicator({ status, compact }: { status: SaveStatus; compact?: boolean }) {
+  const { t } = useTranslation();
+  if (status === 'idle') return null;
+
+  const map = {
+    saving: { icon: Loader2, label: t('wb:editor.saving', 'Saving…'), cls: 'text-muted-foreground', spin: true },
+    saved: { icon: Check, label: t('wb:editor.saved', 'Saved'), cls: 'text-emerald-600 dark:text-emerald-400', spin: false },
+    error: { icon: CloudOff, label: t('wb:editor.saveError', 'Unsaved'), cls: 'text-destructive', spin: false },
+  } as const;
+  const { icon: Icon, label, cls, spin } = map[status];
+
+  return (
+    <span className={`inline-flex items-center gap-1 text-[11px] font-medium ${cls}`} aria-live="polite">
+      <Icon className={`h-3.5 w-3.5 ${spin ? 'animate-spin' : ''}`} />
+      {!compact && <span className="hidden sm:inline">{label}</span>}
+    </span>
+  );
 }
 
 function ToolbarIconButton({
@@ -98,6 +121,7 @@ export function EditorToolbar({
   onToggleRightPanel,
   isRtlPreview = false,
   onToggleRtlPreview,
+  saveStatus = 'idle',
 }: EditorToolbarProps) {
   const { t } = useTranslation();
 
@@ -116,6 +140,7 @@ export function EditorToolbar({
             {isSidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
           </Button>
           <span className="text-xs font-semibold truncate max-w-[100px]">{siteName}</span>
+          <SaveStatusIndicator status={saveStatus} compact />
         </div>
         <div className="flex items-center gap-0.5">
           <Button variant="ghost" size="icon" className="h-7 w-7" disabled={!canUndo} onClick={onUndo}>
@@ -182,6 +207,9 @@ export function EditorToolbar({
             <span className="font-semibold truncate max-w-[120px]">{siteName}</span>
             <span className="text-muted-foreground/40">/</span>
             <span className="text-muted-foreground truncate max-w-[100px] text-xs">{pageName}</span>
+          </div>
+          <div className="ml-2 pl-2 border-l border-border/50">
+            <SaveStatusIndicator status={saveStatus} />
           </div>
         </div>
 

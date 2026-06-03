@@ -30,7 +30,11 @@
       "Bash(npx tsc *)",
       "Bash(node -e ' *)",
       "Bash(rm -f src/modules/dashboard/components/kpi/KpiBuilderDialog.tsx)",
-      "Bash(rmdir src/modules/dashboard/components/kpi)"
+      "Bash(rmdir src/modules/dashboard/components/kpi)",
+      "Bash(grep -rln 'mock/__TRACKED_VAR__\\\\.json' src/)",
+      "Bash(rm -f sales.json offers.json contacts.json projects.json serviceOrders.json articles.json services.json fieldCustomers.json technicians.json contactTasks.json dispatches.json calendarData.json projectTasks.json)",
+      "Bash(grep -rln \"mock/\\\\\\(sales\\\\|offers\\\\|contacts\\\\|projects\\\\|serviceOrders\\\\|articles\\\\|services\\\\|fieldCustomers\\\\|technicians\\\\|contactTasks\\\\|dispatches\\\\|calendarData\\\\|projectTasks\\\\\\)\\\\.json\" src/ --include=*.ts --include=*.tsx)",
+      "Bash(node -e 'JSON.parse\\(require\\('\\\\''fs'\\\\''\\).readFileSync\\('\\\\''__TRACKED_VAR__'\\\\'','\\\\''utf8'\\\\''\\)\\); console.log\\('\\\\''__TRACKED_VAR__ OK'\\\\''\\)')"
     ]
   }
 }

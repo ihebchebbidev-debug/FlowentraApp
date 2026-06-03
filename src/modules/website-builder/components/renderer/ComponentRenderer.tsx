@@ -23,14 +23,17 @@ interface ComponentRendererProps {
 function ComponentRendererInner({
   component, device, theme, isEditing = false, isSelected = false, activeLanguage, onSelect, onUpdate, renderChildren,
 }: ComponentRendererProps) {
+  // Hooks must run unconditionally (Rules of Hooks) — call before any early
+  // return so toggling `hidden`/block type never changes the hook count.
   const Block = BLOCK_MAP[component.type];
-  if (!Block) return null;
-  if (component.hidden?.[device]) return null;
 
   // Animation — only apply in non-editing mode (preview / published)
   const { ref: animRef, style: animStyle } = useAnimationObserver(
     isEditing ? undefined : component.animation
   );
+
+  if (!Block) return null;
+  if (component.hidden?.[device]) return null;
 
   const baseStyles = component.styles?.desktop || {};
   const deviceStyles = component.styles?.[device] || {};

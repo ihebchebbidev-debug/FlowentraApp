@@ -8,6 +8,7 @@ import { PluginGate } from "@/modules/shared/plugins";
 
 export function WebsiteBuilderModule() {
   const [editingSite, setEditingSite] = useState<WebsiteSite | null>(null);
+  const [providersReady, setProvidersReady] = useState(false);
 
   // Collapse main app sidebar when entering the editor, restore on exit
   let sidebar: ReturnType<typeof useSidebar> | null = null;
@@ -15,9 +16,12 @@ export function WebsiteBuilderModule() {
 
   const prevOpenRef = useRef<boolean | null>(null);
 
-  // Initialize API providers on first mount
+  // Initialize API providers before any data fetch — avoids the SiteManager
+  // briefly reading the synchronous localStorage fallback provider.
   useEffect(() => {
-    initApiProviders();
+    let active = true;
+    initApiProviders().finally(() => { if (active) setProvidersReady(true); });
+    return () => { active = false; };
   }, []);
 
   useEffect(() => {
@@ -68,6 +72,14 @@ export function WebsiteBuilderModule() {
         </div>
         </PluginGate>
   );
+  }
+
+  if (!providersReady) {
+    return (
+      <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
+        <div className="h-8 w-8 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+      </div>
+    );
   }
 
   return <SiteManager onEditSite={handleEditSite} />;

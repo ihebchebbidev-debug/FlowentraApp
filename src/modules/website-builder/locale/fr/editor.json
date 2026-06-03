@@ -1,5 +1,8 @@
 {
   "editorPanel": "Panneau Éditeur",
+  "saving": "Enregistrement…",
+  "saved": "Enregistré",
+  "saveError": "Non enregistré",
   "closePreview": "Fermer l'Aperçu",
   "seoSettings": "Paramètres SEO",
   "globalBlocks": "Blocs Globaux",

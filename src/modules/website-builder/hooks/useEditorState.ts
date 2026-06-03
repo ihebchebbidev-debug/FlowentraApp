@@ -91,12 +91,13 @@ export function useEditorState({ initialComponents, onSave, resetKey }: UseEdito
     };
     const comps = componentsRef.current;
     const sid = selectedIdRef.current;
+    const idx = sid ? comps.findIndex(c => c.id === sid) : -1;
     let updated: BuilderComponent[];
-    if (sid) {
-      const idx = comps.findIndex(c => c.id === sid);
+    if (idx !== -1) {
       updated = [...comps];
       updated.splice(idx + 1, 0, newComp);
     } else {
+      // No (valid) selection — append at the bottom.
       updated = [...comps, newComp];
     }
     commit(updated);
@@ -263,9 +264,9 @@ export function useEditorState({ initialComponents, onSave, resetKey }: UseEdito
     };
     const comps = componentsRef.current;
     const sid = selectedIdRef.current;
+    const idx = sid ? comps.findIndex(c => c.id === sid) : -1;
     let updated: BuilderComponent[];
-    if (sid) {
-      const idx = comps.findIndex(c => c.id === sid);
+    if (idx !== -1) {
       updated = [...comps];
       updated.splice(idx + 1, 0, pasted);
     } else {
