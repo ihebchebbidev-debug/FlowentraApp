@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Calendar, FileText, Shield, CheckCircle, AlertTriangle, XCircle, Download, Pencil, Plus, Trash2, Save, X, Loader2, Send, Cloud } from "lucide-react";
+import { Building2, Calendar, FileText, Shield, CheckCircle, AlertTriangle, XCircle, Download, Pencil, Plus, Trash2, Save, X, Loader2, Send, Cloud, FileDown } from "lucide-react";
 import { supplierInvoiceService } from "../services/purchaseService";
 import { RS_TRANSACTION_TYPES } from "@/modules/shared/types/retenue-source";
 import { PurchasePageHeader } from "../components/PurchasePageHeader";
@@ -183,6 +183,31 @@ function SupplierInvoiceDetailContent() {
     }
   };
 
+  const handleDownloadTejXml = async () => {
+    if (!id) return;
+    setActionLoading('tejxml');
+    try {
+      await supplierInvoiceService.downloadTejXml(id);
+      toast.success(t('actions.tejXmlDownloaded', 'TEJ XML downloaded'));
+    } catch (e: any) {
+      const missing: string[] = e?.missing || [];
+      if (missing.length > 0) {
+        toast.error(e?.message || t('actions.tejXmlIncomplete', 'Missing information for the TEJ XML'), {
+          duration: 8000,
+          description: (
+            <ul className="mt-1 list-disc pl-4 space-y-0.5 text-xs">
+              {missing.map((m, i) => <li key={i}>{m}</li>)}
+            </ul>
+          ),
+        });
+      } else {
+        toast.error(e?.message || t('common.error', 'Failed to generate the TEJ XML'));
+      }
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const handleSendFactureEnLigne = async () => {
     if (!id) return;
     setActionLoading('fel');
@@ -227,6 +252,14 @@ function SupplierInvoiceDetailContent() {
               <Button size="sm" variant="outline" onClick={handleSyncTej} disabled={actionLoading !== null}>
                 {actionLoading === 'tej' ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Cloud className="h-3.5 w-3.5 mr-1" />}
                 {t('actions.syncTej', 'Sync TEJ')}
+              </Button>
+            )}
+            {/* Download the TEJ/RiTEJ XML for this invoice at any time. If info is
+                missing the user is told exactly what to fill. */}
+            {inv.rsApplicable && inv.status !== 'draft' && (
+              <Button size="sm" variant="outline" onClick={handleDownloadTejXml} disabled={actionLoading !== null}>
+                {actionLoading === 'tejxml' ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <FileDown className="h-3.5 w-3.5 mr-1" />}
+                {t('actions.downloadTejXml', 'Download TEJ XML')}
               </Button>
             )}
             {inv.status !== 'draft' && inv.status !== 'cancelled' && inv.factureEnLigneStatus !== 'sent' && inv.factureEnLigneStatus !== 'validated' && (

@@ -302,32 +302,10 @@ namespace MyApi.Modules.RetenueSource.Services
             {
                 var tag = $"Invoice {record.InvoiceNumber}";
 
-                // ── Required-field validation (so the generated XML is never
-                //    structurally invalid / rejected by TEJ for empty mandatory nodes) ──
-                if (string.IsNullOrWhiteSpace(record.SupplierTaxId))
-                    complianceErrors.Add($"{tag}: beneficiary identifier (Matricule Fiscal / CIN) is missing");
-                if (string.IsNullOrWhiteSpace(record.SupplierName))
-                    complianceErrors.Add($"{tag}: beneficiary name (raison sociale) is missing");
-                if (string.IsNullOrWhiteSpace(record.PayerTaxId))
-                    complianceErrors.Add($"{tag}: declarant Matricule Fiscal is missing");
-                if (string.IsNullOrWhiteSpace(record.InvoiceNumber))
-                    complianceErrors.Add($"{tag}: invoice number is missing");
-                if (record.InvoiceDate == default)
-                    complianceErrors.Add($"{tag}: invoice date is missing");
-                if (record.PaymentDate == default)
-                    complianceErrors.Add($"{tag}: payment date is missing");
-                if (record.RSAmount <= 0)
-                    complianceErrors.Add($"{tag}: withheld amount (RS) must be positive");
-                if (record.AmountPaid <= 0)
-                    complianceErrors.Add($"{tag}: gross amount must be positive");
-                if (record.RSAmount > record.AmountPaid)
-                    complianceErrors.Add($"{tag}: withholding exceeds the gross amount");
-                if (!string.IsNullOrEmpty(record.BeneficiaireCategorie)
-                    && record.BeneficiaireCategorie != "PM" && record.BeneficiaireCategorie != "PP")
-                    complianceErrors.Add($"{tag}: CategorieContribuable must be 'PM' or 'PP'");
-                if (string.IsNullOrWhiteSpace(record.OperationCode)
-                    && string.IsNullOrWhiteSpace(record.RSTypeCode))
-                    complianceErrors.Add($"{tag}: operation type (IdTypeOperation) is missing");
+                // Required-field validation (same rules as the per-invoice download) so
+                // the generated XML is never structurally invalid / rejected by TEJ.
+                foreach (var fieldErr in CollectRecordFieldErrors(record))
+                    complianceErrors.Add($"{tag}: {fieldErr}");
 
                 // Check for overdue records
                 if (record.IsOverdue)
@@ -504,6 +482,171 @@ namespace MyApi.Modules.RetenueSource.Services
         // ─── Cross-module: Supplier Invoice → RS Record ───
 
         /// <summary>
+        /// Build an RSRecord from a supplier invoice (NOT persisted). Shared by the
+        /// TEJ sync (which saves it) and the per-invoice XML download (which uses a
+        /// transient copy). RS is declared on the amount paid when a payment exists,
+        /// otherwise on the full invoice.
+        /// </summary>
+        private RSRecord BuildRsRecordFromInvoice(
+            int supplierInvoiceId,
+            MyApi.Modules.Purchases.Models.SupplierInvoice invoice,
+            MyApi.Modules.Contacts.Models.Contact supplier,
+            TEJDeclarantDto declarant,
+            string userId)
+        {
+            var hasPayment = invoice.AmountPaid > 0;
+            var basis      = hasPayment ? invoice.AmountPaid : invoice.GrandTotal;
+            var paidRatio  = (hasPayment && invoice.GrandTotal > 0)
+                ? Math.Min(invoice.AmountPaid / invoice.GrandTotal, 1m)
+                : 1m;
+            var declaredRs    = Math.Round(invoice.RsAmount    * paidRatio, 2);
+            var declaredRsTva = Math.Round(invoice.RsTvaAmount * paidRatio, 2);
+            var netServi      = Math.Round(basis - declaredRs - declaredRsTva, 2);
+
+            var operationCode = invoice.RsOperationCode
+                ?? Constants.TejOperationCodes.LegacyToOperationCode(invoice.RsTypeCode);
+
+            var paymentDate = invoice.PaymentDate ?? DateTime.UtcNow;
+            var declarationDeadline = new DateTime(
+                paymentDate.AddMonths(1).Year, paymentDate.AddMonths(1).Month, 20);
+
+            return new RSRecord
+            {
+                EntityType = "supplier_invoice",
+                EntityId = supplierInvoiceId,
+                EntityNumber = invoice.InvoiceNumber,
+                InvoiceNumber = invoice.SupplierInvoiceRef ?? invoice.InvoiceNumber,
+                InvoiceDate = invoice.InvoiceDate,
+                InvoiceAmount = invoice.GrandTotal,
+                PaymentDate = paymentDate,
+                AmountPaid = basis,
+                RSAmount = declaredRs,
+                RSTypeCode = invoice.RsTypeCode ?? "10",
+                SupplierName = supplier.Name ?? supplier.Company ?? $"{supplier.FirstName} {supplier.LastName}".Trim(),
+                SupplierTaxId = supplier.MatriculeFiscale ?? supplier.Cin ?? "",
+                SupplierAddress = supplier.Address,
+                PayerName = declarant.Name,
+                PayerTaxId = declarant.TaxId,
+                PayerAddress = declarant.Address,
+                Status = "pending",
+                TEJExported = false,
+                DeclarationDeadline = declarationDeadline,
+                IsOverdue = DateTime.UtcNow > declarationDeadline,
+                DaysLate = DateTime.UtcNow > declarationDeadline
+                    ? (int)(DateTime.UtcNow - declarationDeadline).TotalDays : 0,
+                PenaltyAmount = 0m,
+                OperationCode = operationCode,
+                Cnpc = invoice.Cnpc,
+                PriseEnCharge = invoice.PriseEnCharge,
+                AnneeFacturation = invoice.AnneeFacturation ?? invoice.InvoiceDate.Year,
+                RefCertifChezDeclarant = invoice.RefCertifChezDeclarant ?? $"SI-{invoice.Id}",
+                RsTvaCode = invoice.RsTvaCode,
+                RsTvaTaux = invoice.RsTvaTaux,
+                RsTvaAmount = declaredRsTva,
+                MontantNetServi = netServi,
+                BeneficiaireCategorie = supplier.CategorieContribuable ?? "PM",
+                BeneficiaireIsResident = supplier.IsResident,
+                BeneficiaireIdType = supplier.IdTaxpayerType ?? 1,
+                BeneficiaireDateNaissance = supplier.DateNaissance,
+                BeneficiairePaysCode = supplier.PaysCode ?? "TN",
+                Acte = invoice.TejActe,
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = userId
+            };
+        }
+
+        /// <summary>
+        /// Collect human-readable "please fill X" messages for any TEJ-required field
+        /// that is missing/invalid on a record. Empty list = ready to export.
+        /// </summary>
+        private static List<string> CollectRecordFieldErrors(RSRecord r)
+        {
+            var e = new List<string>();
+            if (string.IsNullOrWhiteSpace(r.SupplierTaxId))
+                e.Add("Supplier is missing a Matricule Fiscal / CIN — edit the supplier and add it.");
+            if (string.IsNullOrWhiteSpace(r.SupplierName))
+                e.Add("Supplier name (raison sociale) is missing.");
+            if (string.IsNullOrWhiteSpace(r.PayerTaxId))
+                e.Add("Your company (TEJ declarant) needs a Matricule Fiscal — set it on your company contact in Settings.");
+            if (string.IsNullOrWhiteSpace(r.InvoiceNumber))
+                e.Add("Invoice number is missing.");
+            if (r.InvoiceDate == default)
+                e.Add("Invoice date is missing.");
+            if (r.PaymentDate == default)
+                e.Add("Payment date is missing.");
+            if (r.RSAmount <= 0)
+                e.Add("Withheld amount (RS) must be positive — set the Retenue à la Source type/amount.");
+            if (r.AmountPaid <= 0)
+                e.Add("Gross amount must be positive.");
+            if (r.RSAmount > r.AmountPaid)
+                e.Add("The withholding exceeds the gross amount — check the RS configuration.");
+            if (!string.IsNullOrEmpty(r.BeneficiaireCategorie)
+                && r.BeneficiaireCategorie != "PM" && r.BeneficiaireCategorie != "PP")
+                e.Add("Supplier tax category must be PM (legal entity) or PP (individual).");
+            if (string.IsNullOrWhiteSpace(r.OperationCode) && string.IsNullOrWhiteSpace(r.RSTypeCode))
+                e.Add("RS operation type is missing.");
+            return e;
+        }
+
+        /// <summary>
+        /// Build the TEJ/RiTEJ XML for a SINGLE supplier invoice, on demand. Returns the
+        /// list of missing fields (so the UI can tell the user what to fill) when the
+        /// invoice isn't ready, or the ready-to-download XML when it is. Does NOT persist
+        /// anything — this is a download helper that works at any time.
+        /// </summary>
+        public async Task<TejInvoiceXmlResult> BuildTejXmlForSupplierInvoiceAsync(int supplierInvoiceId, string userId)
+        {
+            var invoice = await _db.SupplierInvoices
+                .FirstOrDefaultAsync(i => i.Id == supplierInvoiceId && !i.IsDeleted)
+                ?? throw new KeyNotFoundException($"SupplierInvoice {supplierInvoiceId} not found");
+
+            var missing = new List<string>();
+
+            if (!invoice.RsApplicable || invoice.RsAmount <= 0)
+                missing.Add("Retenue à la Source is not enabled on this invoice — set the RS type so an amount is computed.");
+
+            var supplier = await _db.Contacts.AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == invoice.SupplierId);
+            if (supplier == null)
+                missing.Add("Supplier (beneficiary) not found.");
+
+            // Declarant = the tenant's own company contact (the withholder), needs an MF.
+            var settingsCompany = await _db.Contacts.AsNoTracking()
+                .Where(c => !c.IsDeleted && c.Type == "company" && !string.IsNullOrEmpty(c.MatriculeFiscale))
+                .OrderBy(c => c.Id)
+                .FirstOrDefaultAsync();
+            if (settingsCompany == null)
+                missing.Add("No TEJ declarant configured — create a company contact with a Matricule Fiscal in Settings.");
+
+            // If we can't even build the record, return what's missing so far.
+            if (supplier == null || settingsCompany == null || !invoice.RsApplicable || invoice.RsAmount <= 0)
+                return new TejInvoiceXmlResult { Ok = false, Missing = missing };
+
+            var declarant = new TEJDeclarantDto
+            {
+                Name = settingsCompany.Name,
+                TaxId = settingsCompany.MatriculeFiscale ?? "",
+                Address = settingsCompany.Address ?? "",
+                Email = settingsCompany.Email,
+                Phone = settingsCompany.Phone
+            };
+
+            var record = BuildRsRecordFromInvoice(supplierInvoiceId, invoice, supplier, declarant, userId);
+
+            // Field-level completeness (same rules used by the monthly export).
+            missing.AddRange(CollectRecordFieldErrors(record));
+            if (missing.Count > 0)
+                return new TejInvoiceXmlResult { Ok = false, Missing = missing.Distinct().ToList() };
+
+            var xml = GenerateTEJXml(declarant, new List<RSRecord> { record });
+            var safeNumber = string.Concat((invoice.InvoiceNumber ?? $"SI{invoice.Id}")
+                .Where(ch => char.IsLetterOrDigit(ch) || ch == '-' || ch == '_'));
+            var fileName = $"RS-{safeNumber}-{record.PaymentDate:yyyy-MM}.xml";
+
+            return new TejInvoiceXmlResult { Ok = true, Xml = xml, FileName = fileName };
+        }
+
+        /// <summary>
         /// Create an RSRecord from a paid supplier invoice. Called by SupplierInvoiceService.SyncTejAsync.
         /// Idempotent: if invoice.RsRecordId is already set we just return the existing record.
         /// </summary>
@@ -524,74 +667,9 @@ namespace MyApi.Modules.RetenueSource.Services
                 throw new InvalidOperationException(
                     $"Invoice {invoice.InvoiceNumber}: RS is not applicable or RsAmount is zero — nothing to declare to TEJ");
 
-            // RS is declared on the amount actually paid when a payment exists (partial
-            // payments pro-rate the RS line). When nothing has been paid yet, the
-            // declaration is made on the FULL invoice — TEJ allows declaring the
-            // withholding on the invoice itself, so no payment is required first.
-            var hasPayment = invoice.AmountPaid > 0;
-            var basis      = hasPayment ? invoice.AmountPaid : invoice.GrandTotal;
-            var paidRatio  = (hasPayment && invoice.GrandTotal > 0)
-                ? Math.Min(invoice.AmountPaid / invoice.GrandTotal, 1m)
-                : 1m;
-            var declaredRs    = Math.Round(invoice.RsAmount    * paidRatio, 2);
-            var declaredRsTva = Math.Round(invoice.RsTvaAmount * paidRatio, 2);
-            var netServi      = Math.Round(basis - declaredRs - declaredRsTva, 2);
-
-            var operationCode = invoice.RsOperationCode
-                ?? Constants.TejOperationCodes.LegacyToOperationCode(invoice.RsTypeCode);
-
-            var paymentDate = invoice.PaymentDate ?? DateTime.UtcNow;
-            var declarationDeadline = new DateTime(
-                paymentDate.AddMonths(1).Year, paymentDate.AddMonths(1).Month, 20);
-
-            var record = new RSRecord
-            {
-                EntityType = "supplier_invoice",
-                EntityId = supplierInvoiceId,
-                EntityNumber = invoice.InvoiceNumber,
-                InvoiceNumber = invoice.SupplierInvoiceRef ?? invoice.InvoiceNumber,
-                InvoiceDate = invoice.InvoiceDate,
-                InvoiceAmount = invoice.GrandTotal,
-                PaymentDate = paymentDate,
-                // Declared gross basis: amount paid if any, otherwise the full invoice.
-                AmountPaid = basis,
-                RSAmount = declaredRs,
-                RSTypeCode = invoice.RsTypeCode ?? "10",
-                SupplierName = supplier.Name ?? supplier.Company ?? $"{supplier.FirstName} {supplier.LastName}".Trim(),
-                SupplierTaxId = supplier.MatriculeFiscale ?? supplier.Cin ?? "",
-                SupplierAddress = supplier.Address,
-                PayerName = declarant.Name,
-                PayerTaxId = declarant.TaxId,
-                PayerAddress = declarant.Address,
-                Status = "pending",
-                TEJExported = false,
-                DeclarationDeadline = declarationDeadline,
-                IsOverdue = DateTime.UtcNow > declarationDeadline,
-                DaysLate = DateTime.UtcNow > declarationDeadline
-                    ? (int)(DateTime.UtcNow - declarationDeadline).TotalDays : 0,
-                PenaltyAmount = 0m,
-
-                // TEJ / RiTEJ
-                OperationCode = operationCode,
-                Cnpc = invoice.Cnpc,
-                PriseEnCharge = invoice.PriseEnCharge,
-                AnneeFacturation = invoice.AnneeFacturation ?? invoice.InvoiceDate.Year,
-                RefCertifChezDeclarant = invoice.RefCertifChezDeclarant ?? $"SI-{invoice.Id}",
-                RsTvaCode = invoice.RsTvaCode,
-                RsTvaTaux = invoice.RsTvaTaux,
-                RsTvaAmount = declaredRsTva,
-                MontantNetServi = netServi,
-
-                BeneficiaireCategorie = supplier.CategorieContribuable ?? "PM",
-                BeneficiaireIsResident = supplier.IsResident,
-                BeneficiaireIdType = supplier.IdTaxpayerType ?? 1,
-                BeneficiaireDateNaissance = supplier.DateNaissance,
-                BeneficiairePaysCode = supplier.PaysCode ?? "TN",
-                Acte = invoice.TejActe,
-
-                CreatedAt = DateTime.UtcNow,
-                CreatedBy = userId
-            };
+            var record = BuildRsRecordFromInvoice(supplierInvoiceId, invoice, supplier, declarant, userId);
+            var operationCode = record.OperationCode;
+            var declaredRs = record.RSAmount;
 
             // Wrap in execution strategy to be compatible with EnableRetryOnFailure
             var strategy = _db.Database.CreateExecutionStrategy();

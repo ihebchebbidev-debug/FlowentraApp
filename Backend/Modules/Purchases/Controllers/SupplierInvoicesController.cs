@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyApi.Modules.Purchases.DTOs;
 using MyApi.Modules.Purchases.Services;
+using MyApi.Modules.RetenueSource.Services;
 using MyApi.Modules.Shared.Services;
 using System.Security.Claims;
 
@@ -14,13 +15,52 @@ namespace MyApi.Modules.Purchases.Controllers
     {
         private readonly ISupplierInvoiceService _service;
         private readonly ISystemLogService _systemLogService;
+        private readonly IRSService _rsService;
         private readonly ILogger<SupplierInvoicesController> _logger;
 
-        public SupplierInvoicesController(ISupplierInvoiceService service, ISystemLogService systemLogService, ILogger<SupplierInvoicesController> logger)
+        public SupplierInvoicesController(ISupplierInvoiceService service, ISystemLogService systemLogService, IRSService rsService, ILogger<SupplierInvoicesController> logger)
         {
             _service = service;
             _systemLogService = systemLogService;
+            _rsService = rsService;
             _logger = logger;
+        }
+
+        /// <summary>
+        /// GET /api/supplier-invoices/{id}/tej-xml — download the TEJ/RiTEJ XML for this
+        /// invoice on demand. Returns 400 with a `missing` list if info still needs filling.
+        /// </summary>
+        [HttpGet("{id:int}/tej-xml")]
+        public async Task<IActionResult> DownloadTejXml(int id)
+        {
+            try
+            {
+                var result = await _rsService.BuildTejXmlForSupplierInvoiceAsync(id, GetUserId());
+                if (!result.Ok)
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        error = new
+                        {
+                            code = "TEJ_INCOMPLETE",
+                            message = "Some information required for the TEJ XML is missing. Please complete it and try again.",
+                            missing = result.Missing
+                        }
+                    });
+                }
+                var bytes = System.Text.Encoding.UTF8.GetBytes(result.Xml!);
+                return File(bytes, "application/xml", result.FileName);
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = "Invoice not found" } });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating TEJ XML for supplier invoice {Id}", id);
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.Message } });
+            }
         }
 
         private string GetUserId() => User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "anonymous";

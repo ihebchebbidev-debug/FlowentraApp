@@ -29,6 +29,10 @@ namespace MyApi.Modules.RetenueSource.Services
         Task<TEJExportResponseDto> ExportTEJAsync(TEJExportRequestDto request, string userId);
         Task<List<TEJExportLogDto>> GetTEJExportLogsAsync(int? year = null);
 
+        // Build the TEJ XML for a single supplier invoice on demand (download-any-time).
+        // Returns missing-field messages when the invoice isn't ready, or the XML when it is.
+        Task<TejInvoiceXmlResult> BuildTejXmlForSupplierInvoiceAsync(int supplierInvoiceId, string userId);
+
         // ─── Cross-module: create an RS record from a paid supplier invoice ───
         Task<RSRecordDto> CreateForSupplierInvoiceAsync(
             int supplierInvoiceId,

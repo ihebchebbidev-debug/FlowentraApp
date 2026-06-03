@@ -269,6 +269,43 @@ export const supplierInvoiceService = {
   syncTej: (id: string) =>
     extract<SupplierInvoice>(apiFetch(`/api/supplier-invoices/${id}/tej-sync`, { method: 'POST' }), 'Failed'),
 
+  /**
+   * Download the TEJ/RiTEJ XML for a single invoice on demand. Triggers a browser
+   * download on success. On a 400 the thrown error carries `.missing: string[]` so
+   * the caller can tell the user exactly what to fill.
+   */
+  downloadTejXml: async (id: string): Promise<void> => {
+    const { API_URL } = await import('@/config/api');
+    const { getAuthHeaders } = await import('@/utils/apiHeaders');
+    const res = await fetch(`${API_URL}/api/supplier-invoices/${id}/tej-xml`, {
+      method: 'GET',
+      headers: getAuthHeaders() as Record<string, string>,
+    });
+    if (!res.ok) {
+      let message = 'Failed to generate the TEJ XML';
+      let missing: string[] = [];
+      try {
+        const body = await res.json();
+        message = body?.error?.message || message;
+        missing = body?.error?.missing || [];
+      } catch { /* non-JSON error */ }
+      const err = new Error(message) as Error & { missing?: string[] };
+      err.missing = missing;
+      throw err;
+    }
+    const blob = await res.blob();
+    const cd = res.headers.get('content-disposition') || '';
+    const fileName = cd.match(/filename="?([^"]+)"?/)?.[1] || `RS-invoice-${id}.xml`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  },
+
   sendFactureEnLigne: (id: string) =>
     extract<SupplierInvoice>(apiFetch(`/api/supplier-invoices/${id}/facture-en-ligne`, { method: 'POST' }), 'Failed'),
 

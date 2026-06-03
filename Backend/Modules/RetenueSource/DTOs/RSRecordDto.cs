@@ -171,6 +171,19 @@ namespace MyApi.Modules.RetenueSource.DTOs
         public int? DocumentId { get; set; }
     }
 
+    /// <summary>
+    /// Result of building the TEJ XML for a single supplier invoice on demand.
+    /// Ok=false → Missing lists the user-actionable "please fill X" items.
+    /// Ok=true  → Xml + FileName are ready to download.
+    /// </summary>
+    public class TejInvoiceXmlResult
+    {
+        public bool Ok { get; set; }
+        public List<string> Missing { get; set; } = new();
+        public string? Xml { get; set; }
+        public string? FileName { get; set; }
+    }
+
     // ─── TEJ Export Log Response ───
 
     public class TEJExportLogDto
