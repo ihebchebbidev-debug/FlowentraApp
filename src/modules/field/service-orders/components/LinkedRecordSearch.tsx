@@ -6,8 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import offers from '@/data/mock/offers.json';
-import sales from '@/data/mock/sales.json';
+import { OffersService } from "@/modules/offers/services/offers.service";
+import { SalesService } from "@/modules/sales/services/sales.service";
 import { format } from "date-fns";
 
 interface LinkedRecord {
@@ -31,30 +31,34 @@ export default function LinkedRecordSearch({ onSelect, selectedRecord }: Props) 
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState<'offers' | 'sales'>('offers');
   const [filteredRecords, setFilteredRecords] = useState<LinkedRecord[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    let records: LinkedRecord[] = [];
-    
-    switch (activeTab) {
-      case 'offers':
-        records = offers.filter(offer => 
-          offer.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          offer.contactName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          offer.contactCompany.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          offer.id.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-        break;
-      case 'sales':
-        records = sales.filter(sale => 
-          sale.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          sale.contactName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          sale.contactCompany.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          sale.id.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-        break;
-    }
-    
-    setFilteredRecords(records);
+    let active = true;
+    setLoading(true);
+
+    const toRecord = (r: any): LinkedRecord => ({
+      id: String(r.id),
+      title: r.title,
+      contactName: r.contactName || '',
+      contactCompany: r.contactCompany || '',
+      amount: r.amount ?? r.totalAmount ?? 0,
+      currency: r.currency || 'TND',
+      status: r.status,
+      validUntil: r.validUntil ? new Date(r.validUntil).toISOString() : undefined,
+      actualCloseDate: r.actualCloseDate ? new Date(r.actualCloseDate).toISOString() : undefined,
+    });
+
+    const fetcher = activeTab === 'offers'
+      ? OffersService.getOffers(searchTerm ? { search: searchTerm } : undefined)
+      : SalesService.getSales(searchTerm ? { search: searchTerm } : undefined);
+
+    Promise.resolve(fetcher)
+      .then((list: any[]) => { if (active) setFilteredRecords(list.map(toRecord)); })
+      .catch(() => { if (active) setFilteredRecords([]); })
+      .finally(() => { if (active) setLoading(false); });
+
+    return () => { active = false; };
   }, [searchTerm, activeTab]);
 
   const getStatusColor = (status: string) => {
@@ -163,9 +167,11 @@ export default function LinkedRecordSearch({ onSelect, selectedRecord }: Props) 
               </TabsList>
 
               <TabsContent value="offers" className="space-y-2 max-h-60 overflow-y-auto">
-                {filteredRecords.length === 0 ? (
+                {loading ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">Searching…</p>
+                ) : filteredRecords.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-4">
-                    {searchTerm ? 'No offers found matching your search.' : 'Start typing to search offers...'}
+                    {searchTerm ? 'No offers found matching your search.' : 'No offers available.'}
                   </p>
                 ) : (
                   filteredRecords.map((record) => (
@@ -200,9 +206,11 @@ export default function LinkedRecordSearch({ onSelect, selectedRecord }: Props) 
               </TabsContent>
 
               <TabsContent value="sales" className="space-y-2 max-h-60 overflow-y-auto">
-                {filteredRecords.length === 0 ? (
+                {loading ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">Searching…</p>
+                ) : filteredRecords.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-4">
-                    {searchTerm ? 'No sales found matching your search.' : 'Start typing to search sales...'}
+                    {searchTerm ? 'No sales found matching your search.' : 'No sales available.'}
                   </p>
                 ) : (
                   filteredRecords.map((record) => (

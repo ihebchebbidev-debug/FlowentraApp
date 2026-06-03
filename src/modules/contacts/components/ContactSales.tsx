@@ -1,15 +1,18 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { 
-  TrendingUp, 
-  Eye, 
-  Target, 
-  Calendar, 
-  User
+import {
+  TrendingUp,
+  Eye,
+  Target,
+  Calendar,
+  User,
+  Loader2
 } from "lucide-react";
 
-import salesData from "@/data/mock/sales.json";
+import { SalesService } from "@/modules/sales/services/sales.service";
+import type { Sale } from "@/modules/sales/types";
 import { useCurrency } from '@/shared/hooks/useCurrency';
 
 interface ContactSalesProps {
@@ -20,17 +23,28 @@ interface ContactSalesProps {
 export function ContactSales({ contactId, contactName: _contactName }: ContactSalesProps) {
   const navigate = useNavigate();
 
-  const contactSales = salesData.filter((sale: any) => sale.contactId === contactId);
+  const [contactSales, setContactSales] = useState<Sale[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    SalesService.getByContact(contactId)
+      .then(list => { if (active) setContactSales(list); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [contactId]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'won':
+      case 'closed':
         return 'status-success';
-      case 'new_offer':
+      case 'invoiced':
+      case 'partially_invoiced':
         return 'status-info';
-      case 'redefined':
+      case 'in_progress':
         return 'status-warning';
-      case 'lost':
+      case 'cancelled':
         return 'status-destructive';
       default:
         return 'status-info';
@@ -62,6 +76,15 @@ export function ContactSales({ contactId, contactName: _contactName }: ContactSa
     navigate(`/dashboard/sales/${saleId}`);
   };
 
+  if (loading) {
+    return (
+      <div className="text-center py-8">
+        <Loader2 className="h-8 w-8 text-muted-foreground mx-auto mb-2 animate-spin" />
+        <p className="text-sm text-muted-foreground">Loading sales…</p>
+      </div>
+    );
+  }
+
   if (contactSales.length === 0) {
     return (
       <div className="text-center py-8">
@@ -83,8 +106,8 @@ export function ContactSales({ contactId, contactName: _contactName }: ContactSa
   }
 
   const totalSalesValue = contactSales.reduce((sum, sale: any) => sum + sale.amount, 0);
-  const activeSales = contactSales.filter((sale: any) => sale.status === 'new_offer' || sale.status === 'redefined');
-  const wonSales = contactSales.filter((sale: any) => sale.status === 'won');
+  const activeSales = contactSales.filter((sale) => sale.status === 'created' || sale.status === 'in_progress');
+  const wonSales = contactSales.filter((sale) => sale.status === 'closed');
 
   return (
     <div className="space-y-6">

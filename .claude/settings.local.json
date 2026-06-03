@@ -27,7 +27,10 @@
       "Bash(NODE_OPTIONS=--max-old-space-size=6144 npm run build)",
       "Bash(sed -i '36,135d' \"Backend/Modules/Purchases/Services/SupplierInvoiceService.cs\")",
       "Bash(sed -n '20,40p' \"Backend/Modules/Purchases/Services/SupplierInvoiceService.cs\")",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(node -e ' *)",
+      "Bash(rm -f src/modules/dashboard/components/kpi/KpiBuilderDialog.tsx)",
+      "Bash(rmdir src/modules/dashboard/components/kpi)"
     ]
   }
 }

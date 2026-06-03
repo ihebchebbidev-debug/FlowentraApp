@@ -219,6 +219,22 @@ export class SalesService {
     }
   }
 
+  // Sales for a single contact — server-side filtered via the contact_id query
+  // param (tenant-scoped through salesApi/apiFetch). Used by the contact detail.
+  static async getByContact(contactId: string): Promise<Sale[]> {
+    const numId = parseInt(contactId, 10);
+    if (isNaN(numId)) return [];
+    try {
+      const response = await salesApi.getAll({ page: 1, limit: 1000, contactId: numId });
+      return response.data.sales
+        .map(mapApiToLocal)
+        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    } catch (error) {
+      console.error('Failed to fetch sales for contact:', error);
+      return [];
+    }
+  }
+
   static async getSaleById(id: string): Promise<Sale | null> {
     try {
       const numId = parseInt(id, 10);

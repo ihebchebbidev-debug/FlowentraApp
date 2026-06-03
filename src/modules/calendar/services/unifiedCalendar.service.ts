@@ -1,7 +1,8 @@
 /**
  * Unified Calendar Service
  * Aggregates data from tasks, dispatches, offers, sales, and service orders
- * via real API calls — falls back to mock data if backend is unavailable.
+ * via real, tenant-scoped API calls. If a source is unavailable it contributes
+ * no events (we never substitute mock/sample data).
  */
 import type { CalendarEvent } from '../types';
 import { startOfDay, endOfDay, addMinutes, parseISO, isValid } from 'date-fns';
@@ -74,17 +75,17 @@ async function loadTasks(): Promise<CalendarEvent[]> {
     // The API may not support this, so we'll try and fall back
     const { getAuthToken } = await import('@/utils/apiHeaders');
     const token = getAuthToken();
-    if (!token) return loadTasksFallback();
-    
+    if (!token) return [];
+
     const { API_URL } = await import('@/config/api');
     const { getAuthHeaders } = await import('@/utils/apiHeaders');
-    
+
     const res = await fetch(`${API_URL}/api/Tasks/daily`, {
       method: 'GET',
       headers: getAuthHeaders(),
     });
-    
-    if (!res.ok) return loadTasksFallback();
+
+    if (!res.ok) return [];
     
     const tasks: any[] = await res.json();
     return tasks
@@ -113,29 +114,9 @@ async function loadTasks(): Promise<CalendarEvent[]> {
       })
       .filter(Boolean) as CalendarEvent[];
   } catch (err) {
-    console.warn('[UnifiedCalendar] API failed for tasks, using fallback:', err);
-    return loadTasksFallback();
+    console.warn('[UnifiedCalendar] API failed for tasks:', err);
+    return [];
   }
-}
-
-async function loadTasksFallback(): Promise<CalendarEvent[]> {
-  try {
-    const tasks = (await import('@/data/mock/contactTasks.json')).default as any[];
-    return tasks
-      .filter((t: any) => t.dueDate)
-      .map((t: any) => {
-        const due = safeParse(t.dueDate);
-        if (!due) return null;
-        const start = startOfDay(due);
-        const end = t.estimatedHours ? addMinutes(start, (t.estimatedHours as number) * 60) : endOfDay(due);
-        return toCalendarEvent(`task-${t.id}`, t.title, start, end, 'task', {
-          description: t.description,
-          priority: t.priority || 'medium',
-          status: t.status === 'Done' ? 'completed' : 'scheduled',
-        });
-      })
-      .filter(Boolean) as CalendarEvent[];
-  } catch { return []; }
 }
 
 async function loadDispatches(): Promise<CalendarEvent[]> {
@@ -177,31 +158,9 @@ async function loadDispatches(): Promise<CalendarEvent[]> {
       })
       .filter(Boolean) as CalendarEvent[];
   } catch (err) {
-    console.warn('[UnifiedCalendar] API failed for dispatches, using fallback:', err);
-    return loadDispatchesFallback();
+    console.warn('[UnifiedCalendar] API failed for dispatches:', err);
+    return [];
   }
-}
-
-async function loadDispatchesFallback(): Promise<CalendarEvent[]> {
-  try {
-    const dispatches = (await import('@/data/mock/dispatches.json')).default as any[];
-    return dispatches
-      .filter((d: any) => d.scheduledAt)
-      .map((d: any) => {
-        const start = safeParse(d.scheduledAt);
-        if (!start) return null;
-        const end = addMinutes(start, d.estimatedDuration || 60);
-        return toCalendarEvent(`dispatch-${d.id}`, d.title, start, end, 'dispatch', {
-          description: d.description,
-          priority: d.priority || 'medium',
-          status: d.status || 'scheduled',
-          location: d.customer?.address ? `${d.customer.address.street}, ${d.customer.address.city}` : undefined,
-          relatedType: 'service_order',
-          relatedId: d.serviceOrderId,
-        });
-      })
-      .filter(Boolean) as CalendarEvent[];
-  } catch { return []; }
 }
 
 async function loadOffers(): Promise<CalendarEvent[]> {
@@ -242,29 +201,9 @@ async function loadOffers(): Promise<CalendarEvent[]> {
       })
       .filter(Boolean) as CalendarEvent[];
   } catch (err) {
-    console.warn('[UnifiedCalendar] API failed for offers, using fallback:', err);
-    return loadOffersFallback();
+    console.warn('[UnifiedCalendar] API failed for offers:', err);
+    return [];
   }
-}
-
-async function loadOffersFallback(): Promise<CalendarEvent[]> {
-  try {
-    const offers = (await import('@/data/mock/offers.json')).default as any[];
-    return offers
-      .filter((o: any) => o.validUntil || o.createdAt)
-      .map((o: any) => {
-        const date = safeParse(o.validUntil || o.createdAt);
-        if (!date) return null;
-        return toCalendarEvent(`offer-${o.id}`, `📋 ${o.title}`, startOfDay(date), endOfDay(date), 'offer', {
-          allDay: true,
-          description: `${o.description || ''}\nAmount: ${o.amount} ${o.currency}\nContact: ${o.contactName}`.trim(),
-          status: o.status,
-          relatedType: 'offer',
-          relatedId: o.id,
-        });
-      })
-      .filter(Boolean) as CalendarEvent[];
-  } catch { return []; }
 }
 
 async function loadSales(): Promise<CalendarEvent[]> {
@@ -305,30 +244,9 @@ async function loadSales(): Promise<CalendarEvent[]> {
       })
       .filter(Boolean) as CalendarEvent[];
   } catch (err) {
-    console.warn('[UnifiedCalendar] API failed for sales, using fallback:', err);
-    return loadSalesFallback();
+    console.warn('[UnifiedCalendar] API failed for sales:', err);
+    return [];
   }
-}
-
-async function loadSalesFallback(): Promise<CalendarEvent[]> {
-  try {
-    const sales = (await import('@/data/mock/sales.json')).default as any[];
-    return sales
-      .filter((s: any) => s.estimatedCloseDate || s.actualCloseDate || s.createdAt)
-      .map((s: any) => {
-        const date = safeParse(s.estimatedCloseDate || s.actualCloseDate || s.createdAt);
-        if (!date) return null;
-        return toCalendarEvent(`sale-${s.id}`, `💰 ${s.title}`, startOfDay(date), endOfDay(date), 'sale', {
-          allDay: true,
-          description: `${s.description || ''}\nAmount: ${s.amount} ${s.currency}\nContact: ${s.contactName}`.trim(),
-          priority: s.priority || 'medium',
-          status: s.status,
-          relatedType: 'sale',
-          relatedId: s.id,
-        });
-      })
-      .filter(Boolean) as CalendarEvent[];
-  } catch { return []; }
 }
 
 async function loadServiceOrders(): Promise<CalendarEvent[]> {
@@ -369,31 +287,9 @@ async function loadServiceOrders(): Promise<CalendarEvent[]> {
       })
       .filter(Boolean) as CalendarEvent[];
   } catch (err) {
-    console.warn('[UnifiedCalendar] API failed for service orders, using fallback:', err);
-    return loadServiceOrdersFallback();
+    console.warn('[UnifiedCalendar] API failed for service orders:', err);
+    return [];
   }
-}
-
-async function loadServiceOrdersFallback(): Promise<CalendarEvent[]> {
-  try {
-    const orders = (await import('@/data/mock/serviceOrders.json')).default as any[];
-    return orders
-      .filter((so: any) => so.scheduledAt || so.createdAt)
-      .map((so: any) => {
-        const start = safeParse(so.scheduledAt || so.createdAt);
-        if (!start) return null;
-        const end = addMinutes(start, so.estimatedDuration || 60);
-        return toCalendarEvent(`so-${so.id}`, `🔧 ${so.title}`, start, end, 'service_order', {
-          description: so.description || so.notes,
-          priority: so.priority || 'medium',
-          status: so.status || 'scheduled',
-          location: so.customer?.address ? `${so.customer.address.street}, ${so.customer.address.city}` : undefined,
-          relatedType: 'service_order',
-          relatedId: so.id,
-        });
-      })
-      .filter(Boolean) as CalendarEvent[];
-  } catch { return []; }
 }
 
 // ── Public API ───────────────────────────────────────────

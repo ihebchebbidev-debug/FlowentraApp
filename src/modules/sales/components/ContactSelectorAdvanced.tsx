@@ -6,9 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-
-// Mock contacts data - in real app this would come from an API
-import contactsData from "@/data/mock/contacts.json";
+import { useContacts } from "@/modules/contacts/hooks/useContacts";
 
 interface Contact {
   id: string;
@@ -32,11 +30,8 @@ export function ContactSelectorAdvanced({ onContactSelect, selectedContact }: Co
   const [searchTerm, setSearchTerm] = useState("");
   const [showContacts, setShowContacts] = useState(true);
 
-  const filteredContacts = contactsData.filter(contact =>
-    contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (contact.email ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (contact.company ?? '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Real, tenant-scoped contacts (searched server-side as the user types).
+  const { contacts: filteredContacts } = useContacts(searchTerm ? { searchTerm } : undefined);
 
   const handleSelectContact = (contact: any) => {
     onContactSelect({

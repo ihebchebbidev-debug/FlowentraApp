@@ -1,6 +1,4 @@
 {
-  "cockpitTitle": "المشتريات",
-  "cockpitSubtitle": "الطلبات، الاستلام، الفواتير، الامتثال والتحليلات",
   "newOrder": "طلب جديد",
   "newReceipt": "استلام جديد",
   "newInvoice": "فاتورة جديدة",
@@ -9,15 +7,9 @@
     "orders": "الطلبات",
     "receipts": "الاستلامات",
     "invoices": "الفواتير",
-    "insights": "التحليلات"
-  },
-  "insights": {
-    "reports": "التقارير",
     "compliance": "الامتثال",
-    "performance": "أداء الموردين",
-    "price": "تطور الأسعار",
-    "aging": "تقادم الفواتير",
-    "audit": "سجل التدقيق"
+    "reports": "التقارير",
+    "audit": "السجل"
   },
   "dashboard": {
     "title": "المشتريات",
@@ -183,14 +175,6 @@
     "print": "طباعة",
     "recordPayment": "تسجيل دفعة",
     "sendFactureEnLigne": "إرسال إلى FactureEnLigne"
-  },
-  "tabs": {
-    "overview": "نظرة عامة",
-    "items": "المواد",
-    "receipts": "الاستلامات",
-    "invoices": "الفواتير",
-    "activity": "النشاط",
-    "compliance": "الامتثال"
   },
   "detail": {
     "supplierInfo": "معلومات المورد",

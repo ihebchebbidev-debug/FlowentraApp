@@ -1,71 +1,48 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { 
-  CheckSquare, 
-  PlusCircle, 
-  Calendar, 
+import {
+  CheckSquare,
+  PlusCircle,
+  Calendar,
   Clock,
   FolderOpen,
   User,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  Loader2
 } from "lucide-react";
-import contactTasksData from "@/data/mock/contactTasks.json";
-import projectsData from "@/data/mock/projects.json";
-import technicianData from "@/data/mock/technicians.json";
+import { TasksService } from "@/modules/tasks/services/tasks.service";
+import type { Task } from "@/modules/tasks/types";
 
 interface ContactTasksManagerProps {
   contactId: string;
   contactName: string;
 }
 
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  status: string;
-  priority: "low" | "medium" | "high";
-  assigneeId: string;
-  assigneeName: string;
-  projectId?: string;
-  contactId: string;
-  dueDate: string;
-  tags: string[];
-  estimatedHours?: number;
-  actualHours?: number;
-  columnId: string;
-  position: number;
-  createdAt: string;
-  updatedAt: string;
-  completedAt?: string;
-}
-
 export function ContactTasksManager({ contactId, contactName }: ContactTasksManagerProps) {
   const [activeTasksTab, setActiveTasksTab] = useState("all");
+  const [contactTasks, setContactTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Filter tasks for this contact
-  const contactTasks = contactTasksData
-    .filter(task => task.contactId === contactId)
-    .map(task => ({
-      ...task,
-      dueDate: new Date(task.dueDate).toISOString(),
-      createdAt: new Date(task.createdAt).toISOString(),
-      updatedAt: new Date(task.updatedAt).toISOString(),
-      completedAt: task.completedAt ? new Date(task.completedAt).toISOString() : undefined
-    })) as Task[];
+  useEffect(() => {
+    let active = true;
+    const numId = parseInt(contactId, 10);
+    if (isNaN(numId)) { setContactTasks([]); setLoading(false); return; }
+    setLoading(true);
+    TasksService.getTasksByContact(numId)
+      .then(list => { if (active) setContactTasks(list); })
+      .catch(() => { if (active) setContactTasks([]); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [contactId]);
 
-  // Get project-related tasks
+  // Project-related vs standalone tasks
   const projectTasks = contactTasks.filter(task => task.projectId);
-  
-  // Get standalone tasks (not related to any project)
   const standaloneTasks = contactTasks.filter(task => !task.projectId);
-
-  // Get projects for this contact
-  const contactProjects = projectsData.filter(project => project.contactId === contactId);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -99,14 +76,8 @@ export function ContactTasksManager({ contactId, contactName }: ContactTasksMana
     }
   };
 
-  const getProjectName = (projectId: string) => {
-    const project = contactProjects.find(p => p.id === projectId);
-    return project?.name || "Unknown Project";
-  };
-
-  const getAssigneeTechnician = (assigneeId: string) => {
-    return technicianData.find(tech => tech.id === assigneeId);
-  };
+  const initials = (name?: string) =>
+    (name || '').split(' ').map(n => n[0]).filter(Boolean).join('').slice(0, 2) || '?';
 
   const renderTaskCard = (task: Task, showProject = false) => (
     <Card key={task.id} className="hover:shadow-md transition-shadow">
@@ -133,10 +104,12 @@ export function ContactTasksManager({ contactId, contactName }: ContactTasksMana
             )}
             
             <div className="flex items-center gap-6 text-sm text-muted-foreground mb-2">
-              <div className="flex items-center gap-1">
-                <Calendar className="h-4 w-4" />
-                <span>Due: {new Date(task.dueDate).toLocaleDateString()}</span>
-              </div>
+              {task.dueDate && (
+                <div className="flex items-center gap-1">
+                  <Calendar className="h-4 w-4" />
+                  <span>Due: {new Date(task.dueDate).toLocaleDateString()}</span>
+                </div>
+              )}
               
               {task.estimatedHours && (
                 <div className="flex items-center gap-1">
@@ -149,12 +122,12 @@ export function ContactTasksManager({ contactId, contactName }: ContactTasksMana
             {showProject && task.projectId && (
               <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
                 <FolderOpen className="h-3 w-3" />
-                <span>Project: {getProjectName(task.projectId)}</span>
+                <span>Project: {task.projectName || "Unknown Project"}</span>
               </div>
             )}
 
             <div className="flex flex-wrap gap-1">
-              {task.tags.map((tag, index) => (
+              {(task.tags || []).map((tag, index) => (
                 <Badge key={index} variant="outline" className="text-xs">
                   {tag}
                 </Badge>
@@ -163,15 +136,15 @@ export function ContactTasksManager({ contactId, contactName }: ContactTasksMana
           </div>
           
           <div className="flex items-center gap-2 ml-4">
-            {task.assigneeId && (
+            {(task.assigneeId || task.assigneeName) && (
               <div className="flex items-center gap-2">
                 <Avatar className="h-6 w-6">
                   <AvatarFallback className="text-xs">
-                    {getAssigneeTechnician(task.assigneeId)?.name.split(' ').map(n => n[0]).join('') || task.assigneeName.split(' ').map(n => n[0]).join('')}
+                    {initials(task.assigneeName)}
                   </AvatarFallback>
                 </Avatar>
                 <span className="text-xs text-muted-foreground">
-                  {getAssigneeTechnician(task.assigneeId)?.name || task.assigneeName}
+                  {task.assigneeName || 'Unassigned'}
                 </span>
               </div>
             )}
@@ -222,6 +195,15 @@ export function ContactTasksManager({ contactId, contactName }: ContactTasksMana
       </div>
     );
   };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 text-muted-foreground mb-3 animate-spin" />
+        <p className="text-sm text-muted-foreground">Loading tasks…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -9,8 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SaleItem } from "../types";
-import articlesData from "@/data/mock/articles.json";
-import servicesData from "@/data/mock/services.json";
+import { useArticles } from "@/modules/articles/hooks/useArticles";
 import itemTypes from '@/data/mock/offer-item-types.json';
 
 interface AddSaleItemModalProps {
@@ -28,25 +27,25 @@ export function AddSaleItemModal({ isOpen, onClose, onAddItem, existingItems }: 
   const [quantity, setQuantity] = useState(1);
   const [customPrice, setCustomPrice] = useState<number | null>(null);
 
-  const articles = articlesData.filter(article => 
-    article.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    article.sku.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Real, tenant-scoped catalog (articles + services share the unified endpoint).
+  const { articles: allArticles, isLoading } = useArticles();
+  const priceOf = (item: any) => item?.sellPrice ?? item?.basePrice ?? 0;
 
-  const services = servicesData.filter(service => 
-    service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    service.serviceCode.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const term = searchTerm.toLowerCase();
+  const matches = (a: any) =>
+    a.name?.toLowerCase().includes(term) || (a.sku || '').toLowerCase().includes(term);
+  const articles = allArticles.filter((a: any) => a.type !== 'service' && matches(a));
+  const services = allArticles.filter((a: any) => a.type === 'service' && matches(a));
 
   const handleSelectItem = (item: any) => {
     setSelectedItem(item);
-    setCustomPrice(selectedType === 'article' ? item.sellPrice : item.basePrice);
+    setCustomPrice(priceOf(item));
   };
 
   const handleAddItem = () => {
     if (!selectedItem) return;
 
-    const unitPrice = customPrice || (selectedType === 'article' ? selectedItem.sellPrice : selectedItem.basePrice);
+    const unitPrice = customPrice || priceOf(selectedItem);
     const totalPrice = unitPrice * quantity;
 
     const newItem: SaleItem = {
@@ -55,7 +54,7 @@ export function AddSaleItemModal({ isOpen, onClose, onAddItem, existingItems }: 
       type: selectedType,
       itemId: selectedItem.id,
       itemName: selectedItem.name,
-      itemCode: selectedType === 'article' ? selectedItem.sku : selectedItem.serviceCode,
+      itemCode: selectedItem.sku || '',
       quantity,
       unitPrice,
       totalPrice,
@@ -155,12 +154,12 @@ export function AddSaleItemModal({ isOpen, onClose, onAddItem, existingItems }: 
                           </div>
                           <div>
                             <p className="font-medium">{article.name}</p>
-                            <p className="text-sm text-muted-foreground">SKU: {article.sku}</p>
-                            <p className="text-xs text-muted-foreground">Stock: {article.stock} units</p>
+                            <p className="text-sm text-muted-foreground">SKU: {article.sku || '—'}</p>
+                            <p className="text-xs text-muted-foreground">Stock: {article.stock ?? 0} units</p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold">${article.sellPrice}</p>
+                          <p className="font-semibold">{priceOf(article).toFixed(2)} TND</p>
                           <Badge variant="outline" className="text-xs">
                             {article.category}
                           </Badge>
@@ -169,7 +168,7 @@ export function AddSaleItemModal({ isOpen, onClose, onAddItem, existingItems }: 
                     </CardContent>
                   </Card>
                 )) : (
-                  <p className="text-center text-muted-foreground py-4">{t('addItemModal.noArticlesFound')}</p>
+                  <p className="text-center text-muted-foreground py-4">{isLoading ? '…' : t('addItemModal.noArticlesFound')}</p>
                 )
               ) : (
                 services.length > 0 ? services.map((service) => (
@@ -188,12 +187,14 @@ export function AddSaleItemModal({ isOpen, onClose, onAddItem, existingItems }: 
                           </div>
                           <div>
                             <p className="font-medium">{service.name}</p>
-                            <p className="text-sm text-muted-foreground">{t('addItemModal.code')}: {service.serviceCode}</p>
-                            <p className="text-xs text-muted-foreground">{service.estimatedDuration}</p>
+                            <p className="text-sm text-muted-foreground">{t('addItemModal.code')}: {service.sku || '—'}</p>
+                            {service.duration != null && (
+                              <p className="text-xs text-muted-foreground">{service.duration} min</p>
+                            )}
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold">${service.basePrice}</p>
+                          <p className="font-semibold">{priceOf(service).toFixed(2)} TND</p>
                           <Badge variant="outline" className="text-xs">
                             {service.category}
                           </Badge>
@@ -202,7 +203,7 @@ export function AddSaleItemModal({ isOpen, onClose, onAddItem, existingItems }: 
                     </CardContent>
                   </Card>
                 )) : (
-                  <p className="text-center text-muted-foreground py-4">{t('addItemModal.noServicesFound')}</p>
+                  <p className="text-center text-muted-foreground py-4">{isLoading ? '…' : t('addItemModal.noServicesFound')}</p>
                 )
               )}
             </div>

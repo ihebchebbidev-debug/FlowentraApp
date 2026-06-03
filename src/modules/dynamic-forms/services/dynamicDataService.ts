@@ -197,15 +197,10 @@ async function fetchServiceOrders(): Promise<any[]> {
     const response = await fetch(`${API_URL}/api/service-orders?limit=1000`, {
       headers: getAuthHeaders(),
     });
-    
-    if (!response.ok) {
-      // Fallback to mock data if API not available
-      const mockData = await import('@/data/mock/serviceOrders.json');
-      const serviceOrders = (mockData.default || []).map((so: any) => normalizeServiceOrder(so));
-      setCache(cacheKey, serviceOrders);
-      return serviceOrders;
-    }
-    
+
+    // No mock fallback — surface real data only (empty when unavailable).
+    if (!response.ok) return [];
+
     const data = await response.json();
     // Normalize field names for consistent access
     const serviceOrders = (data.data?.serviceOrders || data.serviceOrders || data.data || []).map((so: any) => normalizeServiceOrder(so));
@@ -213,15 +208,7 @@ async function fetchServiceOrders(): Promise<any[]> {
     return serviceOrders;
   } catch (error) {
     console.error('Failed to fetch service orders for dynamic data:', error);
-    // Fallback to mock data on error
-    try {
-      const mockData = await import('@/data/mock/serviceOrders.json');
-      const serviceOrders = (mockData.default || []).map((so: any) => normalizeServiceOrder(so));
-      setCache(cacheKey, serviceOrders);
-      return serviceOrders;
-    } catch {
-      return [];
-    }
+    return [];
   }
 }
 

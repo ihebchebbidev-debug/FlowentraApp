@@ -2,26 +2,17 @@
   "hub": {
     "overview": "Aperçu"
   },
-  "cockpitTitle": "Achats",
-  "cockpitSubtitle": "Commandes, réceptions, factures, conformité et analyses",
   "newOrder": "Nouvelle commande",
   "newReceipt": "Nouvelle réception",
   "newInvoice": "Nouvelle facture",
   "tabs": {
     "overview": "Aperçu",
-    "items": "Articles",
+    "orders": "Commandes",
     "receipts": "Réceptions",
     "invoices": "Factures",
-    "activity": "Activité",
-    "compliance": "Conformité"
-  },
-  "insights": {
-    "reports": "Rapports",
     "compliance": "Conformité",
-    "performance": "Perf. fourn.",
-    "price": "Évolution des prix",
-    "aging": "Antériorité factures",
-    "audit": "Journal d'audit"
+    "reports": "Rapports",
+    "audit": "Audit"
   },
   "dashboard": {
     "title": "Achats",

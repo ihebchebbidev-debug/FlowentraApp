@@ -12,10 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { SaleItem } from "../types";
 import { InstallationSelector } from "@/modules/field/installations/components/InstallationSelector";
 import { CreateInstallationModal } from "@/modules/field/installations/components/CreateInstallationModal";
-
-// Import articles and services data
-import articlesData from "@/data/mock/articles.json";
-import servicesData from "@/data/mock/services.json";
+import { useArticles } from "@/modules/articles/hooks/useArticles";
 
 interface SaleItemsSelectorAdvancedProps {
   items: SaleItem[];
@@ -40,20 +37,20 @@ export function SaleItemsSelectorAdvanced({ items, onUpdateItems, currency = 'TN
     }).format(amount);
   };
 
-  const filteredArticles = articlesData.filter(article => 
-    article.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    article.sku.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Real, tenant-scoped catalog (articles + services share the unified endpoint).
+  const { articles: allArticles } = useArticles();
+  const priceOf = (item: any) => item?.sellPrice ?? item?.basePrice ?? 0;
 
-  const filteredServices = servicesData.filter(service => 
-    service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    service.serviceCode.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const term = searchTerm.toLowerCase();
+  const matches = (a: any) =>
+    a.name?.toLowerCase().includes(term) || (a.sku || '').toLowerCase().includes(term);
+  const filteredArticles = allArticles.filter((a: any) => a.type !== 'service' && matches(a));
+  const filteredServices = allArticles.filter((a: any) => a.type === 'service' && matches(a));
 
   const availableItems = selectedType === 'article' ? filteredArticles : filteredServices;
 
   const handleSelectItem = (item: any) => {
-    const unitPrice = selectedType === 'article' ? item.sellPrice : item.basePrice;
+    const unitPrice = priceOf(item);
     const totalPrice = unitPrice * selectedQuantity;
 
     const newSaleItem: SaleItem = {
@@ -62,7 +59,7 @@ export function SaleItemsSelectorAdvanced({ items, onUpdateItems, currency = 'TN
       type: selectedType,
       itemId: item.id,
       itemName: item.name,
-      itemCode: selectedType === 'article' ? item.sku : item.serviceCode,
+      itemCode: item.sku || '',
       quantity: selectedQuantity,
       unitPrice: unitPrice,
       totalPrice: totalPrice,
@@ -268,14 +265,14 @@ export function SaleItemsSelectorAdvanced({ items, onUpdateItems, currency = 'TN
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium break-words line-clamp-2">{item.name}</h4>
                         <p className="text-sm text-muted-foreground">
-                          {selectedType === 'article' ? item.sku : item.serviceCode}
+                          {item.sku || '—'}
                         </p>
                         <p className="text-sm font-medium text-primary">
-                          {formatCurrency(selectedType === 'article' ? item.sellPrice : item.basePrice)}
+                          {formatCurrency(priceOf(item))}
                         </p>
                         {selectedType === 'article' && (
                           <p className="text-xs text-muted-foreground">
-                            Stock: {item.stock}
+                            Stock: {item.stock ?? 0}
                           </p>
                         )}
                       </div>

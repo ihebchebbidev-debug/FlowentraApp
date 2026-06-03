@@ -1,18 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CreateContactProjectModal } from "./CreateContactProjectModal";
-import { 
-  PlusCircle, 
-  Calendar, 
-  Users, 
+import {
+  PlusCircle,
+  Calendar,
+  Users,
   MoreHorizontal,
-  FolderOpen
+  FolderOpen,
+  Loader2
 } from "lucide-react";
 import { Project } from "@/modules/tasks/types";
-import projectsData from "@/data/mock/projects.json";
+import { ProjectsService } from "@/modules/tasks/services/projects.service";
 
 interface ContactProjectsManagerProps {
   contactId: string;
@@ -22,21 +24,23 @@ interface ContactProjectsManagerProps {
 export function ContactProjectsManager({ contactId, contactName }: ContactProjectsManagerProps) {
   const navigate = useNavigate();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [contactProjects, setContactProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Filter projects for this contact
-  const contactProjects = projectsData
-    .filter(project => project.contactId === contactId)
-    .map(project => ({
-      ...project,
-      startDate: project.startDate ? new Date(project.startDate) : undefined,
-      endDate: project.endDate ? new Date(project.endDate) : undefined,
-      createdAt: new Date(project.createdAt),
-      updatedAt: new Date(project.updatedAt),
-      columns: project.columns.map(col => ({
-        ...col,
-        createdAt: new Date(col.createdAt)
-      }))
-    })) as Project[];
+  const loadProjects = useCallback(async () => {
+    const numId = parseInt(contactId, 10);
+    if (isNaN(numId)) { setContactProjects([]); setLoading(false); return; }
+    setLoading(true);
+    try {
+      setContactProjects(await ProjectsService.getProjectsByContact(numId));
+    } catch {
+      setContactProjects([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [contactId]);
+
+  useEffect(() => { loadProjects(); }, [loadProjects]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -69,14 +73,9 @@ export function ContactProjectsManager({ contactId, contactName }: ContactProjec
   // };
 
   const calculateProgress = (project: Project) => {
-    // Mock calculation - in real app, calculate based on completed tasks
-    const progressMap = {
-      'active': Math.floor(Math.random() * 70) + 20, // 20-90%
-      'completed': 100,
-      'on-hold': Math.floor(Math.random() * 50) + 10, // 10-60%
-      'cancelled': Math.floor(Math.random() * 30) + 5, // 5-35%
-    };
-    return progressMap[project.status as keyof typeof progressMap] || 0;
+    // Real progress from the backend (0-100); completed projects are always 100%.
+    if (project.status === 'completed') return 100;
+    return Math.max(0, Math.min(100, project.progress ?? 0));
   };
 
   const handleProjectClick = (project: Project) => {
@@ -84,10 +83,33 @@ export function ContactProjectsManager({ contactId, contactName }: ContactProjec
     navigate(`/dashboard/tasks/projects/${project.id}`);
   };
 
-  const handleCreateProject = (projectData: Partial<Project>) => {
-    console.log('Creating project for contact:', contactId, projectData);
-    // In real app, this would create the project and refresh the list
+  const handleCreateProject = async (projectData: Partial<Project>) => {
+    try {
+      await ProjectsService.createProject({
+        name: projectData.name || '',
+        description: projectData.description,
+        contactId: parseInt(contactId, 10) || undefined,
+        status: projectData.status || 'active',
+        projectKind: projectData.type,
+        startDate: projectData.startDate ? new Date(projectData.startDate).toISOString() : undefined,
+        endDate: projectData.endDate ? new Date(projectData.endDate).toISOString() : undefined,
+        createDefaultColumns: true,
+      });
+      toast.success('Project created');
+      await loadProjects();
+    } catch {
+      toast.error('Failed to create project');
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 text-muted-foreground mb-3 animate-spin" />
+        <p className="text-sm text-muted-foreground">Loading projects…</p>
+      </div>
+    );
+  }
 
   if (contactProjects.length === 0) {
     return (

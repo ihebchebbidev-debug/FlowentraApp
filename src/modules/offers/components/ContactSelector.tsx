@@ -7,9 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useTranslation } from "react-i18next";
-
-// Mock contacts data - in real app this would come from an API
-import contactsData from "@/data/mock/contacts.json";
+import { useContacts } from "@/modules/contacts/hooks/useContacts";
 
 interface Contact {
   id: string;
@@ -44,10 +42,9 @@ export function ContactSelector({ onContactSelect, selectedContact }: ContactSel
     matriculeFiscale: ""
   });
 
-  const filteredContacts = contactsData.filter(contact =>
-    contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    contact.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    contact.company.toLowerCase().includes(searchTerm.toLowerCase())
+  // Real, tenant-scoped contacts — searched server-side as the user types.
+  const { contacts: filteredContacts, isLoading: contactsLoading } = useContacts(
+    searchTerm ? { searchTerm } : undefined
   );
 
   const handleSelectContact = (contact: any) => {
@@ -249,7 +246,9 @@ export function ContactSelector({ onContactSelect, selectedContact }: ContactSel
       {showContacts && searchTerm && (
         <Card className="max-h-64 overflow-y-auto">
           <CardContent className="p-0">
-            {filteredContacts.length > 0 ? (
+            {contactsLoading ? (
+              <div className="p-4 text-center text-muted-foreground text-sm">Searching…</div>
+            ) : filteredContacts.length > 0 ? (
               <div className="divide-y">
                 {filteredContacts.slice(0, 10).map((contact) => (
                   <div
@@ -268,9 +267,11 @@ export function ContactSelector({ onContactSelect, selectedContact }: ContactSel
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <h4 className="font-medium">{contact.name}</h4>
-                          <Badge variant="outline" className="text-xs">
-                            {contact.status}
-                          </Badge>
+                          {(contact as any).status && (
+                            <Badge variant="outline" className="text-xs">
+                              {(contact as any).status}
+                            </Badge>
+                          )}
                         </div>
                         <p className="text-sm text-muted-foreground">{contact.company}</p>
                         <p className="text-sm text-muted-foreground">{contact.email}</p>

@@ -119,7 +119,17 @@
       "empty": "No suppliers assigned to this article",
       "selectSupplier": "Select a supplier",
       "priceHistory": "Price History",
-      "noPriceHistory": "No price history available"
+      "noPriceHistory": "No price history available",
+      "loading": "Loading suppliers…",
+      "loadError": "Failed to load suppliers",
+      "saved": "Supplier linked to article",
+      "saveError": "Failed to save supplier",
+      "deleted": "Supplier removed",
+      "deleteError": "Failed to remove supplier",
+      "priceRequired": "Enter a valid purchase price",
+      "supplierRequired": "Select a supplier",
+      "remove": "Remove",
+      "saving": "Saving…"
     }
   },
   "add": {

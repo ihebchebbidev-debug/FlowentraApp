@@ -119,7 +119,17 @@
       "empty": "Aucun fournisseur assigné à cet article",
       "selectSupplier": "Sélectionner un fournisseur",
       "priceHistory": "Historique des Prix",
-      "noPriceHistory": "Aucun historique de prix disponible"
+      "noPriceHistory": "Aucun historique de prix disponible",
+      "loading": "Chargement des fournisseurs…",
+      "loadError": "Échec du chargement des fournisseurs",
+      "saved": "Fournisseur associé à l'article",
+      "saveError": "Échec de l'enregistrement du fournisseur",
+      "deleted": "Fournisseur retiré",
+      "deleteError": "Échec de la suppression du fournisseur",
+      "priceRequired": "Saisissez un prix d'achat valide",
+      "supplierRequired": "Sélectionnez un fournisseur",
+      "remove": "Retirer",
+      "saving": "Enregistrement…"
     }
   },
   "add": {

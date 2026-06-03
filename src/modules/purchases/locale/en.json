@@ -2,26 +2,17 @@
   "hub": {
     "overview": "Overview"
   },
-  "cockpitTitle": "Purchases",
-  "cockpitSubtitle": "Orders, receipts, invoices, compliance & insights",
   "newOrder": "New Order",
   "newReceipt": "New Receipt",
   "newInvoice": "New Invoice",
   "tabs": {
     "overview": "Overview",
-    "items": "Items",
+    "orders": "Orders",
     "receipts": "Receipts",
     "invoices": "Invoices",
-    "activity": "Activity",
-    "compliance": "Compliance"
-  },
-  "insights": {
-    "reports": "Reports",
     "compliance": "Compliance",
-    "performance": "Supplier Perf.",
-    "price": "Price Evolution",
-    "aging": "Invoice Aging",
-    "audit": "Audit Log"
+    "reports": "Reports",
+    "audit": "Audit"
   },
   "dashboard": {
     "title": "Purchases",
