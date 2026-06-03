@@ -389,11 +389,21 @@ export function TemplateGalleryPage({ onSelect, onBack }: TemplateGalleryPagePro
           <div className="relative mb-3">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search..."
+              placeholder="Search templates..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 h-9"
+              className="pl-9 pr-8 h-9"
             />
+            {search && (
+              <button
+                type="button"
+                aria-label="Clear search"
+                onClick={() => setSearch('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
           <ScrollArea className="flex-1">
             <div className="space-y-0.5">
@@ -439,8 +449,18 @@ export function TemplateGalleryPage({ onSelect, onBack }: TemplateGalleryPagePro
                 placeholder="Search..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-7 h-8 text-xs"
+                className="pl-7 pr-7 h-8 text-xs"
               />
+              {search && (
+                <button
+                  type="button"
+                  aria-label="Clear search"
+                  onClick={() => setSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
             </div>
             {categories.map(cat => (
               <Button
@@ -458,8 +478,30 @@ export function TemplateGalleryPage({ onSelect, onBack }: TemplateGalleryPagePro
 
         {/* Template Grid */}
         <div className="flex-1 overflow-auto p-4 sm:p-6">
-          {/* Blank site card */}
+          {/* Results bar */}
+          <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
+            <p className="text-xs text-muted-foreground">
+              <span className="text-foreground font-medium">{filteredTemplates.length}</span>{' '}
+              {filteredTemplates.length === 1 ? 'template' : 'templates'}
+              {selectedCategory !== 'all' && <> in <span className="text-foreground font-medium">{selectedCategory}</span></>}
+              {search && <> matching “<span className="text-foreground font-medium">{search}</span>”</>}
+            </p>
+            {(search || selectedCategory !== 'all') && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs text-muted-foreground"
+                onClick={() => { setSearch(''); setSelectedCategory('all'); }}
+              >
+                <X className="h-3.5 w-3.5 mr-1" />
+                Clear filters
+              </Button>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {/* Blank site card — hidden while searching so results stay focused */}
+            {!search && (
             <Card
               role="button"
               tabIndex={0}
@@ -489,6 +531,7 @@ export function TemplateGalleryPage({ onSelect, onBack }: TemplateGalleryPagePro
                 </div>
               </CardContent>
             </Card>
+            )}
 
             {filteredTemplates.map(tmpl => (
               <Card
