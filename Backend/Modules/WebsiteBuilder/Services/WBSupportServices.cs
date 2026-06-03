@@ -278,7 +278,8 @@ namespace MyApi.Modules.WebsiteBuilder.Services
         {
             var query = _context.WBFormSubmissions
                 .AsNoTracking()
-                .Where(s => s.SiteId == siteId)
+                // Wave 2: filter out soft-deleted submissions
+                .Where(s => s.SiteId == siteId && !s.IsDeleted)
                 .OrderByDescending(s => s.SubmittedAt);
 
             var totalCount = await query.CountAsync();
@@ -339,26 +340,36 @@ namespace MyApi.Modules.WebsiteBuilder.Services
             };
         }
 
+        // Wave 2: soft-delete (GDPR audit trail).
         public async Task<bool> DeleteSubmissionAsync(int id)
         {
-            var submission = await _context.WBFormSubmissions.FindAsync(id);
+            var submission = await _context.WBFormSubmissions
+                .Where(s => s.Id == id && !s.IsDeleted)
+                .FirstOrDefaultAsync();
             if (submission == null) return false;
 
-            _context.WBFormSubmissions.Remove(submission);
+            submission.IsDeleted = true;
+            submission.DeletedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
             return true;
         }
 
         public async Task<bool> ClearSubmissionsAsync(int siteId, string? formComponentId = null)
         {
-            var query = _context.WBFormSubmissions.Where(s => s.SiteId == siteId);
+            var query = _context.WBFormSubmissions
+                .Where(s => s.SiteId == siteId && !s.IsDeleted);
             if (!string.IsNullOrEmpty(formComponentId))
             {
                 query = query.Where(s => s.FormComponentId == formComponentId);
             }
 
             var submissions = await query.ToListAsync();
-            _context.WBFormSubmissions.RemoveRange(submissions);
+            var now = DateTime.UtcNow;
+            foreach (var s in submissions)
+            {
+                s.IsDeleted = true;
+                s.DeletedAt = now;
+            }
             await _context.SaveChangesAsync();
             return true;
         }

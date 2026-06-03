@@ -80,9 +80,11 @@ export async function updatePageComponents(
   siteId: string,
   pageId: string,
   components: BuilderComponent[],
-  language?: string
-): Promise<ServiceResult<void>> {
-  return getStorageProvider().updatePageComponents(siteId, pageId, components, language);
+  language?: string,
+  /** Wave 2 — last known UpdatedAt for optimistic concurrency. */
+  expectedUpdatedAt?: string,
+): Promise<ServiceResult<{ updatedAt: string }>> {
+  return getStorageProvider().updatePageComponents(siteId, pageId, components, language, expectedUpdatedAt);
 }
 
 // ══════════════════════════════════════════════════════════════════

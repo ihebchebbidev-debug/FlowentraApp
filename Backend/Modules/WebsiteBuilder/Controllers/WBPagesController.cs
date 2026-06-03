@@ -60,6 +60,7 @@ namespace MyApi.Modules.WebsiteBuilder.Controllers
                 var page = await _pageService.CreatePageAsync(createDto, GetCurrentUser());
                 return CreatedAtAction(nameof(GetPage), new { id = page.Id }, page);
             }
+            catch (WBSlugConflictException ex) { return Conflict(new { error = ex.Message }); }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating page for site {SiteId}", createDto.SiteId);
@@ -77,6 +78,11 @@ namespace MyApi.Modules.WebsiteBuilder.Controllers
                 if (page == null) return NotFound($"Page with ID {id} not found");
                 return Ok(page);
             }
+            catch (WBConcurrencyException ex)
+            {
+                return Conflict(new { error = ex.Message, currentUpdatedAt = ex.CurrentUpdatedAt });
+            }
+            catch (WBSlugConflictException ex) { return Conflict(new { error = ex.Message }); }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating page {PageId}", id);
@@ -85,14 +91,24 @@ namespace MyApi.Modules.WebsiteBuilder.Controllers
         }
 
         [HttpPut("{id}/components")]
-        public async Task<ActionResult> UpdatePageComponents(int id, [FromBody] UpdateWBPageComponentsRequestDto updateDto)
+        public async Task<ActionResult<WBPageSaveResultDto>> UpdatePageComponents(int id, [FromBody] UpdateWBPageComponentsRequestDto updateDto)
         {
             try
             {
                 if (!ModelState.IsValid) return BadRequest(ModelState);
-                var success = await _pageService.UpdatePageComponentsAsync(id, updateDto, GetCurrentUser());
-                if (!success) return NotFound($"Page with ID {id} not found");
-                return NoContent();
+                var result = await _pageService.UpdatePageComponentsAsync(id, updateDto, GetCurrentUser());
+                if (result == null) return NotFound($"Page with ID {id} not found");
+                return Ok(result);
+            }
+            catch (WBConcurrencyException ex)
+            {
+                // 409 Conflict — surface current server timestamp so the client
+                // can refetch the latest page state and retry from there.
+                return Conflict(new { error = ex.Message, currentUpdatedAt = ex.CurrentUpdatedAt });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { error = ex.Message });
             }
             catch (Exception ex)
             {

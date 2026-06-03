@@ -79,11 +79,13 @@ export interface IStorageProvider {
   
   // Component operations
   updatePageComponents(
-    siteId: string, 
-    pageId: string, 
+    siteId: string,
+    pageId: string,
     components: BuilderComponent[],
-    language?: string
-  ): Promise<StorageResult<void>>;
+    language?: string,
+    /** Wave 2 — last known UpdatedAt for the page (optimistic concurrency token). */
+    expectedUpdatedAt?: string,
+  ): Promise<StorageResult<{ updatedAt: string }>>;
   
   // Publishing
   publishSite(siteId: string): Promise<StorageResult<{ url: string; publishedAt: string }>>;
@@ -374,11 +376,12 @@ export class LocalStorageProvider implements IStorageProvider {
   }
 
   async updatePageComponents(
-    siteId: string, 
-    pageId: string, 
+    siteId: string,
+    pageId: string,
     components: BuilderComponent[],
-    language?: string
-  ): Promise<StorageResult<void>> {
+    language?: string,
+    _expectedUpdatedAt?: string,
+  ): Promise<StorageResult<{ updatedAt: string }>> {
     try {
       const result = await this.getSite(siteId);
       if (!result.success || !result.data) {
@@ -398,7 +401,8 @@ export class LocalStorageProvider implements IStorageProvider {
       }
 
       await this.updateSite({ id: siteId, pages: site.pages });
-      return { data: null, error: null, success: true };
+      const nowIso = new Date().toISOString();
+      return { data: { updatedAt: nowIso }, error: null, success: true };
     } catch (error) {
       return { data: null, error: 'Failed to update components', success: false };
     }

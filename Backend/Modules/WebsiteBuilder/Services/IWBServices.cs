@@ -23,7 +23,8 @@ namespace MyApi.Modules.WebsiteBuilder.Services
         Task<WBPageResponseDto?> GetPageByIdAsync(int id);
         Task<WBPageResponseDto> CreatePageAsync(CreateWBPageRequestDto createDto, string createdByUser);
         Task<WBPageResponseDto?> UpdatePageAsync(int id, UpdateWBPageRequestDto updateDto, string modifiedByUser);
-        Task<bool> UpdatePageComponentsAsync(int id, UpdateWBPageComponentsRequestDto updateDto, string modifiedByUser);
+        /// <summary>Wave 2: returns the new UpdatedAt on success, or throws WBConcurrencyException when the optimistic-concurrency check fails.</summary>
+        Task<WBPageSaveResultDto?> UpdatePageComponentsAsync(int id, UpdateWBPageComponentsRequestDto updateDto, string modifiedByUser);
         Task<bool> DeletePageAsync(int id, string deletedByUser);
         Task<bool> ReorderPagesAsync(ReorderWBPagesRequestDto reorderDto, string modifiedByUser);
         

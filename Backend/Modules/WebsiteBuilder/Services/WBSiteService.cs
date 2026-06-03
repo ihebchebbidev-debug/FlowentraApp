@@ -133,7 +133,7 @@ namespace MyApi.Modules.WebsiteBuilder.Services
                     .Where(s => s.Slug == slug && !s.IsDeleted && s.Published)
                     .FirstOrDefaultAsync();
 
-                return site != null ? MapToSiteDto(site) : null;
+                return site != null ? MapToSiteDto(site, publicSnapshot: true) : null;
             }
             catch (Exception ex)
             {
@@ -148,7 +148,10 @@ namespace MyApi.Modules.WebsiteBuilder.Services
             {
                 var slug = GenerateSlug(createDto.Name);
 
-                // Ensure unique slug
+                // Best-effort uniqueness check inside current tenant (the global
+                // query filter scopes to TenantId automatically). The DB-level
+                // partial unique index (TenantId, Slug) WHERE NOT IsDeleted is
+                // the authoritative guard against races.
                 var existingSlug = await _context.WBSites.AnyAsync(s => s.Slug == slug && !s.IsDeleted);
                 if (existingSlug)
                 {
@@ -167,7 +170,14 @@ namespace MyApi.Modules.WebsiteBuilder.Services
                 };
 
                 _context.WBSites.Add(site);
-                await _context.SaveChangesAsync();
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateException ex) when (IsUniqueViolation(ex))
+                {
+                    throw new WBSlugConflictException($"A site with slug '{slug}' already exists.");
+                }
 
                 // Create pages
                 if (createDto.Pages != null && createDto.Pages.Any())
@@ -191,7 +201,6 @@ namespace MyApi.Modules.WebsiteBuilder.Services
                 }
                 else
                 {
-                    // Create default Home page
                     _context.WBPages.Add(new WBPage
                     {
                         SiteId = site.Id,
@@ -206,18 +215,33 @@ namespace MyApi.Modules.WebsiteBuilder.Services
                     });
                 }
 
-                await _context.SaveChangesAsync();
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateException ex) when (IsUniqueViolation(ex))
+                {
+                    throw new WBSlugConflictException("Two pages in this site share the same slug.");
+                }
 
                 await _activityLog.LogActivityAsync(site.Id, null, "create", "site", $"Site '{site.Name}' created", createdByUser);
 
                 _logger.LogInformation("WB Site created with ID {SiteId}", site.Id);
                 return (await GetSiteByIdAsync(site.Id))!;
             }
+            catch (WBSlugConflictException) { throw; }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating WB site");
                 throw;
             }
+        }
+
+        /// <summary>True when a DbUpdateException is a PostgreSQL 23505 unique-violation.</summary>
+        private static bool IsUniqueViolation(DbUpdateException ex)
+        {
+            var msg = ex.InnerException?.Message ?? ex.Message ?? string.Empty;
+            return msg.Contains("23505") || msg.Contains("duplicate key value violates unique constraint");
         }
 
         public async Task<WBSiteResponseDto?> UpdateSiteAsync(int id, UpdateWBSiteRequestDto updateDto, string modifiedByUser)
@@ -366,15 +390,50 @@ namespace MyApi.Modules.WebsiteBuilder.Services
 
                 if (site == null) return null;
 
-                site.Published = true;
-                site.PublishedAt = DateTime.UtcNow;
-                site.PublishedUrl = $"/public/sites/{site.Slug}";
-                site.ModifiedBy = publishedByUser;
-                site.UpdatedAt = DateTime.UtcNow;
+                var pages = await _context.WBPages
+                    .Where(p => p.SiteId == site.Id && !p.IsDeleted)
+                    .ToListAsync();
 
-                await _context.SaveChangesAsync();
+                var now = DateTime.UtcNow;
 
-                await _activityLog.LogActivityAsync(site.Id, null, "publish", "site", $"Site '{site.Name}' published", publishedByUser);
+                // ── Wave 2: atomic publish snapshot ──
+                // Freeze every live page's content into its Published* columns
+                // inside a single transaction. The public renderer reads from
+                // these columns, so the live site only flips when EVERY page
+                // has been snapshotted successfully. Falls back to retry-safe
+                // execution strategy for EnableRetryOnFailure.
+                var strategy = _context.Database.CreateExecutionStrategy();
+                await strategy.ExecuteAsync(async () =>
+                {
+                    await using var tx = await _context.Database.BeginTransactionAsync();
+                    try
+                    {
+                        foreach (var p in pages)
+                        {
+                            p.PublishedComponentsJson = p.ComponentsJson;
+                            p.PublishedSeoJson = p.SeoJson;
+                            p.PublishedTranslationsJson = p.TranslationsJson;
+                            p.PublishedAt = now;
+                        }
+
+                        site.Published = true;
+                        site.PublishedAt = now;
+                        site.PublishedUrl = $"/public/sites/{site.Slug}";
+                        site.ModifiedBy = publishedByUser;
+                        site.UpdatedAt = now;
+
+                        await _context.SaveChangesAsync();
+                        await tx.CommitAsync();
+                    }
+                    catch
+                    {
+                        await tx.RollbackAsync();
+                        throw;
+                    }
+                });
+
+                await _activityLog.LogActivityAsync(site.Id, null, "publish", "site",
+                    $"Site '{site.Name}' published ({pages.Count} pages snapshotted)", publishedByUser);
 
                 return await GetSiteByIdAsync(id);
             }
@@ -415,7 +474,7 @@ namespace MyApi.Modules.WebsiteBuilder.Services
 
         // ── Helpers ──
 
-        private static WBSiteResponseDto MapToSiteDto(WBSite site)
+        private static WBSiteResponseDto MapToSiteDto(WBSite site, bool publicSnapshot = false)
         {
             return new WBSiteResponseDto
             {
@@ -440,14 +499,25 @@ namespace MyApi.Modules.WebsiteBuilder.Services
                     SiteId = p.SiteId,
                     Title = p.Title,
                     Slug = p.Slug,
-                    ComponentsJson = p.ComponentsJson,
-                    SeoJson = p.SeoJson,
-                    TranslationsJson = p.TranslationsJson,
+                    // ── Wave 2: when serving the public renderer, return the
+                    // frozen Published* snapshot so editor saves never leak
+                    // into the live site mid-edit. Fall back to live values
+                    // for legacy pages that haven't been re-published yet.
+                    ComponentsJson = publicSnapshot
+                        ? (p.PublishedComponentsJson ?? p.ComponentsJson)
+                        : p.ComponentsJson,
+                    SeoJson = publicSnapshot
+                        ? (p.PublishedSeoJson ?? p.SeoJson)
+                        : p.SeoJson,
+                    TranslationsJson = publicSnapshot
+                        ? (p.PublishedTranslationsJson ?? p.TranslationsJson)
+                        : p.TranslationsJson,
                     IsHomePage = p.IsHomePage,
                     SortOrder = p.SortOrder,
                     CreatedAt = p.CreatedAt,
                     UpdatedAt = p.UpdatedAt,
                     CreatedBy = p.CreatedBy,
+                    PublishedAt = p.PublishedAt,
                 }).OrderBy(p => p.SortOrder).ToList()
             };
         }

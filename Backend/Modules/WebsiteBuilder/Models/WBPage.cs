@@ -33,6 +33,22 @@ namespace MyApi.Modules.WebsiteBuilder.Models
         [Column("TranslationsJson", TypeName = "jsonb")]
         public string? TranslationsJson { get; set; }
 
+        // ── Published snapshot (Wave 2 — atomic publishing) ──
+        // When a site is published, the live ComponentsJson / SeoJson /
+        // TranslationsJson are copied into these columns and frozen.
+        // The public renderer reads from the *Published* columns so editor
+        // saves never bleed into the live site mid-edit.
+        [Column("PublishedComponentsJson", TypeName = "jsonb")]
+        public string? PublishedComponentsJson { get; set; }
+
+        [Column("PublishedSeoJson", TypeName = "jsonb")]
+        public string? PublishedSeoJson { get; set; }
+
+        [Column("PublishedTranslationsJson", TypeName = "jsonb")]
+        public string? PublishedTranslationsJson { get; set; }
+
+        public DateTime? PublishedAt { get; set; }
+
         public bool IsHomePage { get; set; } = false;
 
         public int SortOrder { get; set; } = 0;

@@ -76,6 +76,7 @@ namespace MyApi.Modules.WebsiteBuilder.Controllers
                 var site = await _siteService.CreateSiteAsync(createDto, GetCurrentUser());
                 return CreatedAtAction(nameof(GetSite), new { id = site.Id }, site);
             }
+            catch (WBSlugConflictException ex) { return Conflict(new { error = ex.Message }); }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating WB site");
@@ -93,6 +94,7 @@ namespace MyApi.Modules.WebsiteBuilder.Controllers
                 if (site == null) return NotFound($"Site with ID {id} not found");
                 return Ok(site);
             }
+            catch (WBSlugConflictException ex) { return Conflict(new { error = ex.Message }); }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating WB site {SiteId}", id);

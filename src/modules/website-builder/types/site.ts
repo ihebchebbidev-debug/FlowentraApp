@@ -28,6 +28,11 @@ export interface SitePage {
   isHomePage?: boolean;
   order: number;
   translations?: Record<string, PageTranslation>;
+  /** Wave 2 — last UpdatedAt observed from the server. Used as an
+   *  optimistic-concurrency token on the next save. */
+  updatedAt?: string;
+  /** Wave 2 — last PublishedAt observed from the server. */
+  publishedAt?: string;
 }
 
 /** Global site theme */

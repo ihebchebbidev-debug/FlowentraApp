@@ -163,25 +163,25 @@ export class ApiStorageProvider implements IStorageProvider {
           // Backend IDs are small integers (e.g., "6", "7")
           const isClientSideId = page.id.includes('-') || toBackendId(page.id) > 1_000_000_000;
           const pageId = toBackendId(page.id);
-          
+
           // Build page body with only valid fields
           const pageBody: Record<string, any> = {};
-          
+
           if (page.title !== undefined) pageBody.title = page.title;
           if (page.slug !== undefined) pageBody.slug = page.slug;
           if (page.isHomePage !== undefined) pageBody.isHomePage = page.isHomePage;
           if (page.order !== undefined) pageBody.sortOrder = page.order;
-          
+
           // Only include components if they exist and are an array
           if (page.components !== undefined && Array.isArray(page.components)) {
             pageBody.componentsJson = JSON.stringify(page.components);
           }
-          
+
           // Only include seo if it exists
           if (page.seo !== undefined && page.seo !== null) {
             pageBody.seoJson = JSON.stringify(page.seo);
           }
-          
+
           // Only include translations if they exist
           if (page.translations !== undefined && page.translations !== null) {
             pageBody.translationsJson = JSON.stringify(page.translations);
@@ -189,10 +189,26 @@ export class ApiStorageProvider implements IStorageProvider {
 
           // Only send if there's something to update
           if (Object.keys(pageBody).length === 0) continue;
-          
+
           if (!isClientSideId && pageId > 0) {
-            // Update existing page (backend ID)
-            await wbApi.put(`/api/WBPages/${pageId}`, pageBody);
+            // ── Wave 2: optimistic concurrency token ──
+            // Forward the last known UpdatedAt so the server can reject the
+            // save (409) if another tab/user already modified this page.
+            if (page.updatedAt) pageBody.expectedUpdatedAt = page.updatedAt;
+
+            try {
+              await wbApi.put(`/api/WBPages/${pageId}`, pageBody);
+            } catch (err: any) {
+              if (err?.status === 409) {
+                // Bubble the conflict upward so the editor can refetch + warn
+                // the user instead of silently losing local changes.
+                return fail(
+                  err.message || 'This page was modified elsewhere. Reload to load the latest version.',
+                  { operation: 'save', entityType: 'page', code: 'conflict' } as any,
+                );
+              }
+              throw err;
+            }
           } else {
             // Create new page - add siteId for creation
             pageBody.siteId = toBackendId(input.id);
@@ -202,13 +218,14 @@ export class ApiStorageProvider implements IStorageProvider {
             if (pageBody.sortOrder === undefined) pageBody.sortOrder = input.pages.indexOf(page);
             if (!pageBody.componentsJson) pageBody.componentsJson = '[]';
             if (!pageBody.seoJson) pageBody.seoJson = '{}';
-            
+
             await wbApi.post('/api/WBPages', pageBody);
           }
         }
       }
 
-      // Re-fetch to get the full updated site with any new page IDs
+      // Re-fetch to get the full updated site with any new page IDs *and*
+      // refreshed UpdatedAt values to use as the next concurrency token.
       return this.getSite(input.id);
     } catch (err: any) {
       return fail(err.message || 'Failed to update site', { operation: 'update', entityType: 'site' });
@@ -320,15 +337,29 @@ export class ApiStorageProvider implements IStorageProvider {
     siteId: string,
     pageId: string,
     components: BuilderComponent[],
-    language?: string
-  ): Promise<StorageResult<void>> {
+    language?: string,
+    expectedUpdatedAt?: string,
+  ): Promise<StorageResult<{ updatedAt: string }>> {
     try {
-      await wbApi.put(`/api/WBPages/${toBackendId(pageId)}/components`, {
-        componentsJson: JSON.stringify(components),
-        language: language || null,
-      });
-      return ok(undefined as any);
+      const { data } = await wbApi.put<{ pageId: number; updatedAt: string }>(
+        `/api/WBPages/${toBackendId(pageId)}/components`,
+        {
+          componentsJson: JSON.stringify(components),
+          language: language || null,
+          expectedUpdatedAt: expectedUpdatedAt || null,
+        },
+      );
+      return ok({ updatedAt: data?.updatedAt || new Date().toISOString() });
     } catch (err: any) {
+      // Wave 2 — 409 Conflict surfaces the concurrency clash distinctly so the
+      // editor can refetch and prompt the user instead of silently overwriting.
+      if (err?.status === 409) {
+        return fail(err.message || 'Page was modified elsewhere.', {
+          operation: 'save',
+          entityType: 'page',
+          code: 'conflict',
+        } as any);
+      }
       return fail(err.message || 'Failed to save components', { operation: 'save', entityType: 'page' });
     }
   }

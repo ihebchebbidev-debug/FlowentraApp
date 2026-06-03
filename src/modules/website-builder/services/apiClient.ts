@@ -148,6 +148,15 @@ export interface WBPageDto {
   createdAt: string;
   updatedAt?: string;
   createdBy?: string;
+  /** Wave 2 — timestamp the page was last published (snapshot frozen) */
+  publishedAt?: string;
+}
+
+/** Wave 2 — returned by PUT /api/WBPages/{id}/components so the client can
+ *  refresh its optimistic-concurrency token for the next save. */
+export interface WBPageSaveResultDto {
+  pageId: number;
+  updatedAt: string;
 }
 
 export interface WBPageVersionDto {
@@ -307,6 +316,8 @@ export function mapPageDtoToFrontend(dto: WBPageDto): SitePage {
     translations: safeParseJson<Record<string, PageTranslation>>(dto.translationsJson, undefined),
     isHomePage: dto.isHomePage,
     order: dto.sortOrder,
+    updatedAt: dto.updatedAt,
+    publishedAt: dto.publishedAt,
   };
 }
 

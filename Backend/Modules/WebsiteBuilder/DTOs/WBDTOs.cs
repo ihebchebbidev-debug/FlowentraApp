@@ -104,6 +104,8 @@ namespace MyApi.Modules.WebsiteBuilder.DTOs
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public string? CreatedBy { get; set; }
+        /// <summary>Wave 2: timestamp the page was last published (snapshot frozen).</summary>
+        public DateTime? PublishedAt { get; set; }
     }
 
     public class CreateWBPageRequestDto
@@ -144,6 +146,13 @@ namespace MyApi.Modules.WebsiteBuilder.DTOs
         public bool? IsHomePage { get; set; }
 
         public int? SortOrder { get; set; }
+
+        /// <summary>
+        /// Wave 2 — optimistic concurrency token. If set, the server compares
+        /// against the row's current UpdatedAt; mismatch → 409 Conflict.
+        /// Optional for backward compatibility.
+        /// </summary>
+        public DateTime? ExpectedUpdatedAt { get; set; }
     }
 
     public class UpdateWBPageComponentsRequestDto
@@ -155,6 +164,26 @@ namespace MyApi.Modules.WebsiteBuilder.DTOs
         /// If set, updates the translation for this language instead of the base components.
         /// </summary>
         public string? Language { get; set; }
+
+        /// <summary>
+        /// Wave 2 — optimistic concurrency token. Client sends the `UpdatedAt`
+        /// it last received for the page. If the DB row has been updated since
+        /// (different `UpdatedAt`), the server returns 409 Conflict instead of
+        /// silently overwriting another tab's changes. Optional for backward
+        /// compatibility — clients that omit it get the legacy last-writer-wins
+        /// behaviour.
+        /// </summary>
+        public DateTime? ExpectedUpdatedAt { get; set; }
+    }
+
+    /// <summary>
+    /// Wave 2 — returned by the components-update endpoint so the client can
+    /// refresh its concurrency token (UpdatedAt) for the next save.
+    /// </summary>
+    public class WBPageSaveResultDto
+    {
+        public int PageId { get; set; }
+        public DateTime UpdatedAt { get; set; }
     }
 
     public class ReorderWBPagesRequestDto

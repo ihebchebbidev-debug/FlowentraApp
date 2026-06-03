@@ -45,6 +45,14 @@ namespace MyApi.Modules.WebsiteBuilder.Models
         [MaxLength(45)]
         public string? IpAddress { get; set; }
 
+        // ── Wave 2: soft-delete (GDPR audit trail) ──
+        public bool IsDeleted { get; set; } = false;
+
+        public DateTime? DeletedAt { get; set; }
+
+        [MaxLength(100)]
+        public string? DeletedBy { get; set; }
+
         // Navigation properties
         [ForeignKey("SiteId")]
         public virtual WBSite? Site { get; set; }

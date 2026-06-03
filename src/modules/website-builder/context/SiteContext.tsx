@@ -99,18 +99,52 @@ export function SiteProvider({
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
-    
+
     saveTimeoutRef.current = setTimeout(async () => {
       const site = siteRef.current;
       if (!site || isSavingRef.current) return;
-      
+
       isSavingRef.current = true;
       setState(s => ({ ...s, isSaving: true }));
-      
+
       try {
         const provider = getStorageProvider();
-        await provider.updateSite({ id: site.id, ...site });
-        setState(s => ({ ...s, isDirty: false, isSaving: false }));
+        const result = await provider.updateSite({ id: site.id, ...site });
+
+        // ── Wave 2: optimistic concurrency conflict (HTTP 409) ──
+        // The backend rejected our save because the page was modified
+        // elsewhere. Refetch the latest server state, warn the user, and
+        // discard local changes for that page to prevent silent overwrite.
+        if (!result.success && (result as any)?.error?.toString?.().toLowerCase?.().includes?.('modified elsewhere')) {
+          toast.error('This page was changed in another tab. Reloading the latest version…');
+          const fresh = await provider.getSite(site.id);
+          if (fresh.success && fresh.data) {
+            setState(s => ({ ...s, site: fresh.data!, isDirty: false, isSaving: false }));
+          } else {
+            setState(s => ({ ...s, isSaving: false }));
+          }
+        } else if (result.success && result.data) {
+          // Refresh per-page UpdatedAt tokens from the server response so the
+          // next save sends the fresh value. Preserve the user's currentPage.
+          setState(s => {
+            if (!s.site) return { ...s, isSaving: false };
+            const fresh = result.data!;
+            const refreshedPages = s.site.pages.map(local => {
+              const remote = fresh.pages.find(p => p.id === local.id);
+              return remote ? { ...local, updatedAt: remote.updatedAt, publishedAt: remote.publishedAt } : local;
+            });
+            const newSite = { ...s.site, pages: refreshedPages };
+            return {
+              ...s,
+              site: newSite,
+              currentPage: s.currentPageId ? refreshedPages.find(p => p.id === s.currentPageId) || null : null,
+              isDirty: false,
+              isSaving: false,
+            };
+          });
+        } else {
+          setState(s => ({ ...s, isDirty: false, isSaving: false }));
+        }
       } catch (error) {
         console.error('Auto-save failed:', error);
         setState(s => ({ ...s, isSaving: false }));

@@ -60,8 +60,6 @@ namespace MyApi.Modules.WebsiteBuilder.Services
                     CreatedAt = DateTime.UtcNow
                 };
 
-                // Pre-load site so both the new page and the site timestamp
-                // are committed in a single save — if either fails, neither persists.
                 var site = await _context.WBSites.FindAsync(createDto.SiteId);
                 if (site != null)
                 {
@@ -69,13 +67,21 @@ namespace MyApi.Modules.WebsiteBuilder.Services
                     site.ModifiedBy = createdByUser;
                 }
                 _context.WBPages.Add(page);
-                await _context.SaveChangesAsync();
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateException ex) when (IsUniqueViolation(ex))
+                {
+                    throw new WBSlugConflictException($"A page with slug '{page.Slug}' already exists in this site.");
+                }
 
                 await _activityLog.LogActivityAsync(createDto.SiteId, page.Id, "create", "page", $"Page '{page.Title}' created", createdByUser);
 
                 _logger.LogInformation("WB Page created with ID {PageId} for site {SiteId}", page.Id, createDto.SiteId);
                 return MapToPageDto(page);
             }
+            catch (WBSlugConflictException) { throw; }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating WB page for site {SiteId}", createDto.SiteId);
@@ -93,6 +99,19 @@ namespace MyApi.Modules.WebsiteBuilder.Services
 
                 if (page == null) return null;
 
+                // ── Wave 2: optimistic concurrency on the hot-path autosave ──
+                if (updateDto.ExpectedUpdatedAt.HasValue && page.UpdatedAt.HasValue)
+                {
+                    var delta = (page.UpdatedAt.Value - updateDto.ExpectedUpdatedAt.Value).Duration();
+                    if (delta > TimeSpan.FromMilliseconds(50))
+                    {
+                        throw new WBConcurrencyException(
+                            "This page was modified elsewhere. Refresh to load the latest version.",
+                            page.UpdatedAt);
+                    }
+                }
+
+
                 if (!string.IsNullOrEmpty(updateDto.Title)) page.Title = updateDto.Title;
                 if (updateDto.Slug != null) page.Slug = updateDto.Slug;
                 if (updateDto.ComponentsJson != null) page.ComponentsJson = updateDto.ComponentsJson;
@@ -104,12 +123,20 @@ namespace MyApi.Modules.WebsiteBuilder.Services
                 page.ModifiedBy = modifiedByUser;
                 page.UpdatedAt = DateTime.UtcNow;
 
-                await _context.SaveChangesAsync();
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateException ex) when (IsUniqueViolation(ex))
+                {
+                    throw new WBSlugConflictException($"A page with slug '{page.Slug}' already exists in this site.");
+                }
 
                 await _activityLog.LogActivityAsync(page.SiteId, page.Id, "update", "page", $"Page '{page.Title}' updated", modifiedByUser);
 
                 return MapToPageDto(page);
             }
+            catch (WBSlugConflictException) { throw; }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating WB page {PageId}", id);
@@ -117,7 +144,13 @@ namespace MyApi.Modules.WebsiteBuilder.Services
             }
         }
 
-        public async Task<bool> UpdatePageComponentsAsync(int id, UpdateWBPageComponentsRequestDto updateDto, string modifiedByUser)
+        private static bool IsUniqueViolation(DbUpdateException ex)
+        {
+            var msg = ex.InnerException?.Message ?? ex.Message ?? string.Empty;
+            return msg.Contains("23505") || msg.Contains("duplicate key value violates unique constraint");
+        }
+
+        public async Task<WBPageSaveResultDto?> UpdatePageComponentsAsync(int id, UpdateWBPageComponentsRequestDto updateDto, string modifiedByUser)
         {
             try
             {
@@ -125,7 +158,23 @@ namespace MyApi.Modules.WebsiteBuilder.Services
                     .Where(p => p.Id == id && !p.IsDeleted)
                     .FirstOrDefaultAsync();
 
-                if (page == null) return false;
+                if (page == null) return null;
+
+                // ── Wave 2: optimistic concurrency check ──
+                // If the client sent the UpdatedAt it last knew, compare it to the
+                // current DB value. Reject the save if they no longer match so a
+                // stale tab cannot silently overwrite a fresher save. Compare with
+                // ~50 ms tolerance to absorb PG/EF timestamp serialization noise.
+                if (updateDto.ExpectedUpdatedAt.HasValue && page.UpdatedAt.HasValue)
+                {
+                    var delta = (page.UpdatedAt.Value - updateDto.ExpectedUpdatedAt.Value).Duration();
+                    if (delta > TimeSpan.FromMilliseconds(50))
+                    {
+                        throw new WBConcurrencyException(
+                            "This page was modified elsewhere. Refresh to load the latest version.",
+                            page.UpdatedAt);
+                    }
+                }
 
                 if (!string.IsNullOrEmpty(updateDto.Language))
                 {
@@ -144,7 +193,6 @@ namespace MyApi.Modules.WebsiteBuilder.Services
                         }
                     }
 
-                    // Parse the incoming components and wrap them in a translation object
                     var langData = System.Text.Json.JsonSerializer.Deserialize<object>(
                         $"{{\"components\":{updateDto.ComponentsJson}}}");
                     translations[updateDto.Language] = langData!;
@@ -153,6 +201,10 @@ namespace MyApi.Modules.WebsiteBuilder.Services
                 }
                 else
                 {
+                    // ── Validate the incoming JSON before persisting ──
+                    try { _ = System.Text.Json.JsonDocument.Parse(updateDto.ComponentsJson ?? "[]"); }
+                    catch { throw new InvalidOperationException("componentsJson is not valid JSON."); }
+
                     page.ComponentsJson = updateDto.ComponentsJson;
                 }
 
@@ -162,8 +214,9 @@ namespace MyApi.Modules.WebsiteBuilder.Services
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation("WB Page {PageId} components updated (language: {Lang})", id, updateDto.Language ?? "base");
-                return true;
+                return new WBPageSaveResultDto { PageId = page.Id, UpdatedAt = page.UpdatedAt.Value };
             }
+            catch (WBConcurrencyException) { throw; }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating WB page components {PageId}", id);
@@ -387,6 +440,7 @@ namespace MyApi.Modules.WebsiteBuilder.Services
                 CreatedAt = page.CreatedAt,
                 UpdatedAt = page.UpdatedAt,
                 CreatedBy = page.CreatedBy,
+                PublishedAt = page.PublishedAt,
             };
         }
 
