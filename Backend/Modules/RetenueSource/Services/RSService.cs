@@ -556,6 +556,49 @@ namespace MyApi.Modules.RetenueSource.Services
         }
 
         /// <summary>
+        /// Persist a built RS record for an invoice (idempotent) and mark the invoice
+        /// as registered for TEJ. If the invoice already has a record, that existing
+        /// "declaration of record" is returned unchanged (no duplicate). This is what
+        /// makes the on-demand download ALSO count toward the monthly declaration +
+        /// deadline tracking — so a separate "Sync TEJ" step is no longer needed.
+        /// </summary>
+        private async Task<RSRecord> EnsureRsRecordPersistedAsync(int supplierInvoiceId, RSRecord builtRecord)
+        {
+            var trackedInvoice = await _db.SupplierInvoices.FirstOrDefaultAsync(i => i.Id == supplierInvoiceId);
+            if (trackedInvoice?.RsRecordId is int existingId)
+            {
+                var existing = await _db.RSRecords.FindAsync(existingId);
+                if (existing != null) return existing;
+            }
+
+            var strategy = _db.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
+            {
+                await using var tx = await _db.Database.BeginTransactionAsync();
+                try
+                {
+                    _db.RSRecords.Add(builtRecord);
+                    await _db.SaveChangesAsync();
+                    if (trackedInvoice != null)
+                    {
+                        trackedInvoice.RsRecordId = builtRecord.Id;
+                        trackedInvoice.TejSynced = true;
+                        trackedInvoice.TejSyncDate = DateTime.UtcNow;
+                        trackedInvoice.TejSyncStatus = "synced";
+                    }
+                    await _db.SaveChangesAsync();
+                    await tx.CommitAsync();
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
+            });
+            return builtRecord;
+        }
+
+        /// <summary>
         /// Collect human-readable "please fill X" messages for any TEJ-required field
         /// that is missing/invalid on a record. Empty list = ready to export.
         /// </summary>
@@ -638,6 +681,10 @@ namespace MyApi.Modules.RetenueSource.Services
             if (missing.Count > 0)
                 return new TejInvoiceXmlResult { Ok = false, Missing = missing.Distinct().ToList() };
 
+            // Register the declaration (idempotent) so it also counts toward the
+            // monthly TEJ file + deadline tracking — the download IS the sync now.
+            record = await EnsureRsRecordPersistedAsync(supplierInvoiceId, record);
+
             var xml = GenerateTEJXml(declarant, new List<RSRecord> { record });
             var safeNumber = string.Concat((invoice.InvoiceNumber ?? $"SI{invoice.Id}")
                 .Where(ch => char.IsLetterOrDigit(ch) || ch == '-' || ch == '_'));
@@ -707,7 +754,8 @@ namespace MyApi.Modules.RetenueSource.Services
                 if (errs.Count > 0)
                     missing.AddRange(errs.Select(e => $"Invoice {inv.InvoiceNumber}: {e}"));
                 else
-                    records.Add(rec);
+                    // Register each invoice's declaration (idempotent) as we include it.
+                    records.Add(await EnsureRsRecordPersistedAsync(inv.Id, rec));
             }
 
             if (missing.Count > 0 || records.Count == 0)
@@ -740,34 +788,13 @@ namespace MyApi.Modules.RetenueSource.Services
                     $"Invoice {invoice.InvoiceNumber}: RS is not applicable or RsAmount is zero — nothing to declare to TEJ");
 
             var record = BuildRsRecordFromInvoice(supplierInvoiceId, invoice, supplier, declarant, userId);
-            var operationCode = record.OperationCode;
-            var declaredRs = record.RSAmount;
-
-            // Wrap in execution strategy to be compatible with EnableRetryOnFailure
-            var strategy = _db.Database.CreateExecutionStrategy();
-            await strategy.ExecuteAsync(async () =>
-            {
-                await using var tx = await _db.Database.BeginTransactionAsync();
-                try
-                {
-                    _db.RSRecords.Add(record);
-                    await _db.SaveChangesAsync();
-                    invoice.RsRecordId = record.Id;
-                    await _db.SaveChangesAsync();
-                    await tx.CommitAsync();
-                }
-                catch
-                {
-                    await tx.RollbackAsync();
-                    throw;
-                }
-            });
+            var persisted = await EnsureRsRecordPersistedAsync(supplierInvoiceId, record);
 
             _logger.LogInformation(
-                "Supplier invoice {Invoice} synced to TEJ: RSRecord={RsId}, OpCode={OpCode}, RS={RS}",
-                invoice.InvoiceNumber, record.Id, operationCode, declaredRs);
+                "Supplier invoice {Invoice} registered for TEJ: RSRecord={RsId}, OpCode={OpCode}, RS={RS}",
+                invoice.InvoiceNumber, persisted.Id, persisted.OperationCode, persisted.RSAmount);
 
-            return MapToDto(record);
+            return MapToDto(persisted);
         }
 
         // ─── Stats ───

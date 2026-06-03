@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Calendar, FileText, Shield, CheckCircle, AlertTriangle, XCircle, Download, Pencil, Plus, Trash2, Save, X, Loader2, Send, Cloud, FileDown } from "lucide-react";
+import { Building2, Calendar, FileText, Shield, CheckCircle, AlertTriangle, XCircle, Download, Pencil, Plus, Trash2, Save, X, Loader2, Send, FileDown } from "lucide-react";
 import { supplierInvoiceService } from "../services/purchaseService";
 import { RS_TRANSACTION_TYPES } from "@/modules/shared/types/retenue-source";
 import { PurchasePageHeader } from "../components/PurchasePageHeader";
@@ -172,26 +172,13 @@ function SupplierInvoiceDetailContent() {
     }
   };
 
-  const handleSyncTej = async () => {
-    if (!id) return;
-    setActionLoading('tej');
-    try {
-      const updated = await supplierInvoiceService.syncTej(id);
-      setInv(updated);
-      toast.success(t('actions.tejSynced', 'Synced to TEJ'));
-    } catch (e: any) {
-      toast.error(e?.message || t('common.error', 'TEJ sync failed'));
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
   const handleDownloadTejXml = async () => {
     if (!id) return;
     setActionLoading('tejxml');
     try {
       await supplierInvoiceService.downloadTejXml(id);
       toast.success(t('actions.tejXmlDownloaded', 'TEJ XML downloaded'));
+      fetchData(); // refresh so the "registered for TEJ" state reflects immediately
     } catch (e: any) {
       const missing: string[] = e?.missing || [];
       if (missing.length > 0) {
@@ -245,14 +232,10 @@ function SupplierInvoiceDetailContent() {
                 {t('actions.validate', 'Validate')}
               </Button>
             )}
-            {inv.status !== 'draft' && inv.status !== 'cancelled' && !inv.tejSynced && (
-              <Button size="sm" variant="outline" onClick={handleSyncTej} disabled={actionLoading !== null}>
-                {actionLoading === 'tej' ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Cloud className="h-3.5 w-3.5 mr-1" />}
-                {t('actions.syncTej', 'Sync TEJ')}
-              </Button>
-            )}
-            {/* Download the TEJ/RiTEJ XML for this invoice at any time. If info is
-                missing the user is told exactly what to fill. */}
+            {/* Download the TEJ/RiTEJ XML for this invoice at any time. This also
+                registers the declaration (for the monthly TEJ file + deadline
+                tracking), so a separate "Sync TEJ" step is no longer needed. If
+                info is missing the user is told exactly what to fill. */}
             {inv.rsApplicable && inv.status !== 'draft' && (
               <Button size="sm" variant="outline" onClick={handleDownloadTejXml} disabled={actionLoading !== null}>
                 {actionLoading === 'tejxml' ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <FileDown className="h-3.5 w-3.5 mr-1" />}

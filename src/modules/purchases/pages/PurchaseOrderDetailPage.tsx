@@ -61,6 +61,7 @@ function PurchaseOrderDetailPage() {
     try {
       await purchaseOrderService.downloadTejXml(id);
       toast.success(t('actions.tejXmlDownloaded', 'TEJ XML downloaded'));
+      fetchData(); // refresh so linked invoices show as registered for TEJ
     } catch (e: any) {
       const missing: string[] = e?.missing || [];
       if (missing.length > 0) {
