@@ -413,19 +413,19 @@ namespace MyApi.Modules.WebsiteBuilder.Controllers
                     "image/png" => StartsWith(0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A),
                     "image/gif" => StartsWith(0x47, 0x49, 0x46, 0x38), // GIF8
                     "image/webp" => StartsWith(0x52, 0x49, 0x46, 0x46) // RIFF....WEBP
-                                    && head.Length >= 12
-                                    && head.Slice(8, 4).SequenceEqual(new byte[] { 0x57, 0x45, 0x42, 0x50 }),
-                    "image/avif" => head.Length >= 12
-                                    && head.Slice(4, 4).SequenceEqual(new byte[] { 0x66, 0x74, 0x79, 0x70 }), // ftyp
+                                    && head.Span.Length >= 12
+                                    && head.Span.Slice(8, 4).SequenceEqual(new byte[] { 0x57, 0x45, 0x42, 0x50 }),
+                    "image/avif" => head.Span.Length >= 12
+                                    && head.Span.Slice(4, 4).SequenceEqual(new byte[] { 0x66, 0x74, 0x79, 0x70 }), // ftyp
                     "image/svg+xml" => true, // validated separately below (text-based)
                     "application/pdf" => StartsWith(0x25, 0x50, 0x44, 0x46), // %PDF
-                    "video/mp4" => head.Length >= 12
-                                    && head.Slice(4, 4).SequenceEqual(new byte[] { 0x66, 0x74, 0x79, 0x70 }),
+                    "video/mp4" => head.Span.Length >= 12
+                                    && head.Span.Slice(4, 4).SequenceEqual(new byte[] { 0x66, 0x74, 0x79, 0x70 }),
                     "video/webm" => StartsWith(0x1A, 0x45, 0xDF, 0xA3),
                     "audio/mpeg" => StartsWith(0xFF, 0xFB) || StartsWith(0xFF, 0xF3) || StartsWith(0xFF, 0xF2) || StartsWith(0x49, 0x44, 0x33),
                     "audio/wav" => StartsWith(0x52, 0x49, 0x46, 0x46)
-                                    && head.Length >= 12
-                                    && head.Slice(8, 4).SequenceEqual(new byte[] { 0x57, 0x41, 0x56, 0x45 }),
+                                    && head.Span.Length >= 12
+                                    && head.Span.Slice(8, 4).SequenceEqual(new byte[] { 0x57, 0x41, 0x56, 0x45 }),
                     "audio/ogg" => StartsWith(0x4F, 0x67, 0x67, 0x53),
                     "font/woff" or "application/font-woff" => StartsWith(0x77, 0x4F, 0x46, 0x46),
                     "font/woff2" or "application/font-woff2" => StartsWith(0x77, 0x4F, 0x46, 0x32),
