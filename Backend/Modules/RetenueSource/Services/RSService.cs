@@ -647,6 +647,78 @@ namespace MyApi.Modules.RetenueSource.Services
         }
 
         /// <summary>
+        /// Build the TEJ/RiTEJ XML for a purchase order, on demand. RS is declared on
+        /// invoices, so this aggregates every RS-applicable supplier invoice generated
+        /// from the PO into one declaration. Returns user-actionable "please fill X"
+        /// messages when nothing is ready. Does NOT persist anything.
+        /// </summary>
+        public async Task<TejInvoiceXmlResult> BuildTejXmlForPurchaseOrderAsync(int purchaseOrderId, string userId)
+        {
+            var invoices = await _db.SupplierInvoices.AsNoTracking()
+                .Where(i => i.PurchaseOrderId == purchaseOrderId && !i.IsDeleted)
+                .OrderBy(i => i.Id)
+                .ToListAsync();
+
+            if (invoices.Count == 0)
+                return new TejInvoiceXmlResult { Ok = false, Missing = new()
+                {
+                    "No supplier invoice has been created from this purchase order yet. Create the supplier invoice (where Retenue à la Source is configured), then download the TEJ XML."
+                } };
+
+            var rsInvoices = invoices.Where(i => i.RsApplicable && i.RsAmount > 0).ToList();
+            if (rsInvoices.Count == 0)
+                return new TejInvoiceXmlResult { Ok = false, Missing = new()
+                {
+                    "None of the invoices for this order have Retenue à la Source enabled — open the invoice and set the RS type."
+                } };
+
+            var settingsCompany = await _db.Contacts.AsNoTracking()
+                .Where(c => !c.IsDeleted && c.Type == "company" && !string.IsNullOrEmpty(c.MatriculeFiscale))
+                .OrderBy(c => c.Id)
+                .FirstOrDefaultAsync();
+            if (settingsCompany == null)
+                return new TejInvoiceXmlResult { Ok = false, Missing = new()
+                {
+                    "No TEJ declarant configured — create a company contact with a Matricule Fiscal in Settings."
+                } };
+
+            var declarant = new TEJDeclarantDto
+            {
+                Name = settingsCompany.Name,
+                TaxId = settingsCompany.MatriculeFiscale ?? "",
+                Address = settingsCompany.Address ?? "",
+                Email = settingsCompany.Email,
+                Phone = settingsCompany.Phone
+            };
+
+            var missing = new List<string>();
+            var records = new List<RSRecord>();
+            foreach (var inv in rsInvoices)
+            {
+                var supplier = await _db.Contacts.AsNoTracking()
+                    .FirstOrDefaultAsync(c => c.Id == inv.SupplierId);
+                if (supplier == null)
+                {
+                    missing.Add($"Invoice {inv.InvoiceNumber}: supplier not found.");
+                    continue;
+                }
+                var rec = BuildRsRecordFromInvoice(inv.Id, inv, supplier, declarant, userId);
+                var errs = CollectRecordFieldErrors(rec);
+                if (errs.Count > 0)
+                    missing.AddRange(errs.Select(e => $"Invoice {inv.InvoiceNumber}: {e}"));
+                else
+                    records.Add(rec);
+            }
+
+            if (missing.Count > 0 || records.Count == 0)
+                return new TejInvoiceXmlResult { Ok = false, Missing = missing.Distinct().ToList() };
+
+            var xml = GenerateTEJXml(declarant, records);
+            var fileName = $"RS-PO{purchaseOrderId}-{records[0].PaymentDate:yyyy-MM}.xml";
+            return new TejInvoiceXmlResult { Ok = true, Xml = xml, FileName = fileName };
+        }
+
+        /// <summary>
         /// Create an RSRecord from a paid supplier invoice. Called by SupplierInvoiceService.SyncTejAsync.
         /// Idempotent: if invoice.RsRecordId is already set we just return the existing record.
         /// </summary>

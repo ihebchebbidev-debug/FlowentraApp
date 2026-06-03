@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyApi.Modules.Purchases.DTOs;
 using MyApi.Modules.Purchases.Services;
+using MyApi.Modules.RetenueSource.Services;
 using MyApi.Modules.Shared.Services;
 using System.Security.Claims;
 
@@ -14,17 +15,53 @@ namespace MyApi.Modules.Purchases.Controllers
     {
         private readonly IPurchaseOrderService _service;
         private readonly ISystemLogService _systemLogService;
+        private readonly IRSService _rsService;
         private readonly ILogger<PurchaseOrdersController> _logger;
 
-        public PurchaseOrdersController(IPurchaseOrderService service, ISystemLogService systemLogService, ILogger<PurchaseOrdersController> logger)
+        public PurchaseOrdersController(IPurchaseOrderService service, ISystemLogService systemLogService, IRSService rsService, ILogger<PurchaseOrdersController> logger)
         {
             _service = service;
             _systemLogService = systemLogService;
+            _rsService = rsService;
             _logger = logger;
         }
 
         private string GetUserId() => User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "anonymous";
         private string GetUserName() => User.FindFirst(ClaimTypes.Name)?.Value ?? User.FindFirst(ClaimTypes.Email)?.Value ?? "anonymous";
+
+        /// <summary>
+        /// GET /api/purchase-orders/{id}/tej-xml — download the TEJ/RiTEJ XML aggregated
+        /// from this order's RS-applicable supplier invoices. Returns 400 with a `missing`
+        /// list (e.g. "create the invoice first") when nothing is ready to declare.
+        /// </summary>
+        [HttpGet("{id:int}/tej-xml")]
+        public async Task<IActionResult> DownloadTejXml(int id)
+        {
+            try
+            {
+                var result = await _rsService.BuildTejXmlForPurchaseOrderAsync(id, GetUserId());
+                if (!result.Ok)
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        error = new
+                        {
+                            code = "TEJ_INCOMPLETE",
+                            message = "Some information required for the TEJ XML is missing. Please complete it and try again.",
+                            missing = result.Missing
+                        }
+                    });
+                }
+                var bytes = System.Text.Encoding.UTF8.GetBytes(result.Xml!);
+                return File(bytes, "application/xml", result.FileName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating TEJ XML for purchase order {Id}", id);
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.Message } });
+            }
+        }
 
         [HttpGet]
         public async Task<IActionResult> GetOrders(

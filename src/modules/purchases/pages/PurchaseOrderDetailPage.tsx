@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Send, Package, FileText, CheckCircle, User, Building2, MapPin, ClipboardList, Download, Pencil, Plus, Trash2, Save, X, Loader2 } from "lucide-react";
+import { Send, Package, FileText, CheckCircle, User, Building2, MapPin, ClipboardList, Download, Pencil, Plus, Trash2, Save, X, Loader2, FileDown } from "lucide-react";
 import { purchaseOrderService, goodsReceiptService, supplierInvoiceService } from "../services/purchaseService";
 import { PurchasePageHeader } from "../components/PurchasePageHeader";
 import { PurchaseErrorBoundary, PurchaseErrorFallback } from "../components/PurchaseErrorBoundary";
@@ -50,6 +50,32 @@ function PurchaseOrderDetailPage() {
   const [isEditingItems, setIsEditingItems] = useState(false);
   const [draftItems, setDraftItems] = useState<Partial<PurchaseOrderItem>[]>([]);
   const [savingItems, setSavingItems] = useState(false);
+  const [downloadingTej, setDownloadingTej] = useState(false);
+
+  const handleDownloadTejXml = async () => {
+    if (!id) return;
+    setDownloadingTej(true);
+    try {
+      await purchaseOrderService.downloadTejXml(id);
+      toast.success(t('actions.tejXmlDownloaded', 'TEJ XML downloaded'));
+    } catch (e: any) {
+      const missing: string[] = e?.missing || [];
+      if (missing.length > 0) {
+        toast.error(e?.message || t('actions.tejXmlIncomplete', 'Missing information for the TEJ XML'), {
+          duration: 8000,
+          description: (
+            <ul className="mt-1 list-disc pl-4 space-y-0.5 text-xs">
+              {missing.map((m, i) => <li key={i}>{m}</li>)}
+            </ul>
+          ),
+        });
+      } else {
+        toast.error(e?.message || t('common.error', 'Failed to generate the TEJ XML'));
+      }
+    } finally {
+      setDownloadingTej(false);
+    }
+  };
 
   const fetchData = useCallback(async () => {
     if (!id) return;
@@ -246,6 +272,14 @@ function PurchaseOrderDetailPage() {
             <Button size="sm" variant="outline" onClick={() => setIsPdfOpen(true)}>
               <Download className="h-3.5 w-3.5 mr-1" /> {t('actions.exportPdf')}
             </Button>
+            {/* TEJ XML aggregated from this order's RS-applicable invoices. Tells the
+                user what to fill (e.g. create the invoice) if nothing is ready. */}
+            {invoices.length > 0 && (
+              <Button size="sm" variant="outline" onClick={handleDownloadTejXml} disabled={downloadingTej}>
+                {downloadingTej ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <FileDown className="h-3.5 w-3.5 mr-1" />}
+                {t('actions.downloadTejXml', 'Download TEJ XML')}
+              </Button>
+            )}
             {po.status === 'draft' && <Button size="sm" variant="outline" onClick={handleValidate}><CheckCircle className="h-3.5 w-3.5 mr-1" /> {t('actions.validate')}</Button>}
             {po.status === 'validated' && <Button size="sm" onClick={handleSendToSupplier}><Send className="h-3.5 w-3.5 mr-1" /> {t('actions.sendToSupplier')}</Button>}
             {['ordered', 'partially_received'].includes(po.status) && <Button size="sm" onClick={() => navigate(`/dashboard/purchases/receipts/add?poId=${id}`)}><Package className="h-3.5 w-3.5 mr-1" /> {t('actions.receiveGoods')}</Button>}

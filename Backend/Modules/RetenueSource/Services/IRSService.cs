@@ -33,6 +33,9 @@ namespace MyApi.Modules.RetenueSource.Services
         // Returns missing-field messages when the invoice isn't ready, or the XML when it is.
         Task<TejInvoiceXmlResult> BuildTejXmlForSupplierInvoiceAsync(int supplierInvoiceId, string userId);
 
+        // Build the TEJ XML for a purchase order (aggregates its RS-applicable invoices).
+        Task<TejInvoiceXmlResult> BuildTejXmlForPurchaseOrderAsync(int purchaseOrderId, string userId);
+
         // ─── Cross-module: create an RS record from a paid supplier invoice ───
         Task<RSRecordDto> CreateForSupplierInvoiceAsync(
             int supplierInvoiceId,
