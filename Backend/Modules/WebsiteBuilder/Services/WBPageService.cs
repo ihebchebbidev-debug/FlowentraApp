@@ -274,21 +274,39 @@ namespace MyApi.Modules.WebsiteBuilder.Services
                 CreatedAt = DateTime.UtcNow
             };
 
-            _context.WBPageVersions.Add(version);
-            await _context.SaveChangesAsync();
-
-            // Keep only last 50 versions per page
-            var oldVersions = await _context.WBPageVersions
-                .Where(v => v.PageId == pageId)
-                .OrderByDescending(v => v.VersionNumber)
-                .Skip(50)
-                .ToListAsync();
-
-            if (oldVersions.Any())
+            // Insert + trim-to-50 must be atomic. A crash between the two saves
+            // previously left orphaned versions over the cap and skewed the
+            // "latest version" counter on next save. Use an execution strategy
+            // so this composes with EnableRetryOnFailure.
+            var strategy = _context.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
             {
-                _context.WBPageVersions.RemoveRange(oldVersions);
-                await _context.SaveChangesAsync();
-            }
+                await using var tx = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    _context.WBPageVersions.Add(version);
+                    await _context.SaveChangesAsync();
+
+                    var oldVersions = await _context.WBPageVersions
+                        .Where(v => v.PageId == pageId)
+                        .OrderByDescending(v => v.VersionNumber)
+                        .Skip(50)
+                        .ToListAsync();
+
+                    if (oldVersions.Any())
+                    {
+                        _context.WBPageVersions.RemoveRange(oldVersions);
+                        await _context.SaveChangesAsync();
+                    }
+
+                    await tx.CommitAsync();
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
+            });
 
             return new WBPageVersionResponseDto
             {

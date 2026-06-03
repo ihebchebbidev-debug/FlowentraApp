@@ -117,6 +117,31 @@ namespace MyApi.Modules.WebsiteBuilder.Services
             }
         }
 
+        /// <summary>
+        /// Public render path. Bypasses the tenant query filter (anonymous
+        /// requests carry no tenant header) but enforces Published==true so
+        /// only opted-in sites are exposed. Pages are still soft-delete filtered.
+        /// </summary>
+        public async Task<WBSiteResponseDto?> GetPublishedSiteBySlugAsync(string slug)
+        {
+            try
+            {
+                var site = await _context.WBSites
+                    .IgnoreQueryFilters()
+                    .AsNoTracking()
+                    .Include(s => s.Pages.Where(p => !p.IsDeleted).OrderBy(p => p.SortOrder))
+                    .Where(s => s.Slug == slug && !s.IsDeleted && s.Published)
+                    .FirstOrDefaultAsync();
+
+                return site != null ? MapToSiteDto(site) : null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting published WB site by slug {Slug}", slug);
+                throw;
+            }
+        }
+
         public async Task<WBSiteResponseDto> CreateSiteAsync(CreateWBSiteRequestDto createDto, string createdByUser)
         {
             try

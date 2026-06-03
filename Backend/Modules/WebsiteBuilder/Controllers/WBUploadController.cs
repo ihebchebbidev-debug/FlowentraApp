@@ -193,7 +193,11 @@ namespace MyApi.Modules.WebsiteBuilder.Controllers
         {
             try
             {
-                var media = await _mediaService.GetMediaByIdInternalAsync(mediaId);
+                // Use the public lookup: it bypasses the tenant filter (anonymous
+                // = no tenant context) but enforces that the owning site is
+                // currently Published. Prevents cross-tenant file disclosure by
+                // simply guessing a numeric mediaId.
+                var media = await _mediaService.GetPublicMediaByIdAsync(mediaId);
                 if (media == null)
                     return NotFound(new { error = "File not found" });
 
@@ -285,6 +289,20 @@ namespace MyApi.Modules.WebsiteBuilder.Controllers
             try
             {
                 var contentType = file.ContentType ?? "application/octet-stream";
+
+                // ── Magic-byte signature validation ──
+                // Client-supplied Content-Type cannot be trusted. Verify the actual
+                // file bytes match a known signature for the claimed type. Prevents
+                // executables masquerading as images/PDFs.
+                if (!await IsValidFileSignatureAsync(file, contentType))
+                {
+                    return new WBUploadResponseDto
+                    {
+                        Success = false,
+                        Error = $"File content does not match declared type '{contentType}'."
+                    };
+                }
+
                 var subFolder = folder ?? "general";
                 var targetDir = Path.Combine(GetUploadsRoot(), subFolder);
                 if (!Directory.Exists(targetDir))
@@ -366,6 +384,80 @@ namespace MyApi.Modules.WebsiteBuilder.Controllers
         {
             return User.FindFirst(ClaimTypes.Email)?.Value ??
                    User.FindFirst(ClaimTypes.Name)?.Value ??
+                   User.FindFirst("email")?.Value ??
+                   "system";
+        }
+
+        /// <summary>
+        /// Magic-byte / file-signature validation. The browser-supplied
+        /// Content-Type header is trivially spoofable; this checks the actual
+        /// leading bytes of the file. SVG additionally gets a script-tag scan
+        /// to prevent stored-XSS via uploaded <see langword="image/svg+xml" />.
+        /// </summary>
+        private static async Task<bool> IsValidFileSignatureAsync(IFormFile file, string contentType)
+        {
+            try
+            {
+                await using var stream = file.OpenReadStream();
+                var buffer = new byte[16];
+                var read = await stream.ReadAsync(buffer.AsMemory(0, buffer.Length));
+                if (read == 0) return false;
+                var head = buffer.AsSpan(0, read);
+
+                bool StartsWith(params byte[] sig) => head.Length >= sig.Length && head.Slice(0, sig.Length).SequenceEqual(sig);
+
+                var ct = contentType.ToLowerInvariant();
+                var ok = ct switch
+                {
+                    "image/jpeg" => StartsWith(0xFF, 0xD8, 0xFF),
+                    "image/png" => StartsWith(0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A),
+                    "image/gif" => StartsWith(0x47, 0x49, 0x46, 0x38), // GIF8
+                    "image/webp" => StartsWith(0x52, 0x49, 0x46, 0x46) // RIFF....WEBP
+                                    && head.Length >= 12
+                                    && head.Slice(8, 4).SequenceEqual(new byte[] { 0x57, 0x45, 0x42, 0x50 }),
+                    "image/avif" => head.Length >= 12
+                                    && head.Slice(4, 4).SequenceEqual(new byte[] { 0x66, 0x74, 0x79, 0x70 }), // ftyp
+                    "image/svg+xml" => true, // validated separately below (text-based)
+                    "application/pdf" => StartsWith(0x25, 0x50, 0x44, 0x46), // %PDF
+                    "video/mp4" => head.Length >= 12
+                                    && head.Slice(4, 4).SequenceEqual(new byte[] { 0x66, 0x74, 0x79, 0x70 }),
+                    "video/webm" => StartsWith(0x1A, 0x45, 0xDF, 0xA3),
+                    "audio/mpeg" => StartsWith(0xFF, 0xFB) || StartsWith(0xFF, 0xF3) || StartsWith(0xFF, 0xF2) || StartsWith(0x49, 0x44, 0x33),
+                    "audio/wav" => StartsWith(0x52, 0x49, 0x46, 0x46)
+                                    && head.Length >= 12
+                                    && head.Slice(8, 4).SequenceEqual(new byte[] { 0x57, 0x41, 0x56, 0x45 }),
+                    "audio/ogg" => StartsWith(0x4F, 0x67, 0x67, 0x53),
+                    "font/woff" or "application/font-woff" => StartsWith(0x77, 0x4F, 0x46, 0x46),
+                    "font/woff2" or "application/font-woff2" => StartsWith(0x77, 0x4F, 0x46, 0x32),
+                    _ => false
+                };
+
+                if (!ok) return false;
+
+                // SVG sanity check — reject embedded scripts / handlers / external entities.
+                if (ct == "image/svg+xml")
+                {
+                    stream.Position = 0;
+                    using var reader = new StreamReader(stream, leaveOpen: false);
+                    var content = await reader.ReadToEndAsync();
+                    var lower = content.ToLowerInvariant();
+                    if (lower.Contains("<script") ||
+                        lower.Contains("javascript:") ||
+                        lower.Contains("<!entity") ||
+                        System.Text.RegularExpressions.Regex.IsMatch(lower, @"on\w+\s*="))
+                    {
+                        return false;
+                    }
+                    if (!lower.Contains("<svg")) return false;
+                }
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
                    User.FindFirst("email")?.Value ??
                    "system";
         }

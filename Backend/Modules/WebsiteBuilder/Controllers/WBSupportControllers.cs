@@ -337,6 +337,12 @@ namespace MyApi.Modules.WebsiteBuilder.Controllers
         private readonly IWBFormSubmissionService _formService;
         private readonly ILogger<WBPublicSiteController> _logger;
 
+        // ── Anti-abuse: in-memory sliding-window throttle for the public form
+        // submission endpoint. Keyed by client IP. Replace with a distributed
+        // store (Redis) once horizontal scaling is enabled.
+        private const int FormSubmissionsPerMinutePerIp = 5;
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, System.Collections.Concurrent.ConcurrentQueue<DateTime>> _formHits = new();
+
         public WBPublicSiteController(
             IWBSiteService siteService,
             IWBFormSubmissionService formService,
@@ -349,16 +355,17 @@ namespace MyApi.Modules.WebsiteBuilder.Controllers
 
         /// <summary>
         /// Get a published site by slug — public, no auth required.
-        /// Returns full site data (pages, theme, etc.) for client-side rendering.
+        /// Uses the published-only lookup which bypasses the global tenant
+        /// filter safely (anonymous requests have no tenant header) while
+        /// guaranteeing only opted-in sites are exposed.
         /// </summary>
         [HttpGet("{slug}")]
         public async Task<ActionResult<WBSiteResponseDto>> GetPublishedSite(string slug)
         {
             try
             {
-                var site = await _siteService.GetSiteBySlugAsync(slug);
+                var site = await _siteService.GetPublishedSiteBySlugAsync(slug);
                 if (site == null) return NotFound(new { error = $"Site '{slug}' not found" });
-                if (!site.Published) return NotFound(new { error = "Site is not published" });
                 return Ok(site);
             }
             catch (Exception ex)
@@ -370,6 +377,10 @@ namespace MyApi.Modules.WebsiteBuilder.Controllers
 
         /// <summary>
         /// Submit a form on a published site — public, no auth required.
+        /// Protected by:
+        ///   1. Honeypot: if the request body contains a non-empty "_hp" field
+        ///      (a hidden input that humans never fill in) we silently 200.
+        ///   2. Per-IP sliding-window throttle (5 submissions/min/IP).
         /// </summary>
         [HttpPost("{slug}/forms")]
         public async Task<ActionResult<WBFormSubmissionResponseDto>> SubmitForm(
@@ -378,15 +389,40 @@ namespace MyApi.Modules.WebsiteBuilder.Controllers
         {
             try
             {
-                // Verify site exists and is published
-                var site = await _siteService.GetSiteBySlugAsync(slug);
-                if (site == null || !site.Published)
+                var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+                // ── Rate limit ──
+                var queue = _formHits.GetOrAdd(ipAddress, _ => new System.Collections.Concurrent.ConcurrentQueue<DateTime>());
+                var now = DateTime.UtcNow;
+                var cutoff = now.AddMinutes(-1);
+                while (queue.TryPeek(out var oldest) && oldest < cutoff) queue.TryDequeue(out _);
+                if (queue.Count >= FormSubmissionsPerMinutePerIp)
+                {
+                    _logger.LogWarning("Public form rate-limit hit for IP {Ip} on site {Slug}", ipAddress, slug);
+                    return StatusCode(429, new { error = "Too many submissions. Please wait a minute and try again." });
+                }
+
+                // ── Verify site is published (bypass tenant filter safely) ──
+                var site = await _siteService.GetPublishedSiteBySlugAsync(slug);
+                if (site == null)
                     return NotFound(new { error = "Site not found or not published" });
+
+                // ── Honeypot check: if "_hp" key exists with any value, drop. ──
+                // We accept silently (200) so bots can't distinguish success from rejection.
+                if (!string.IsNullOrEmpty(dto.DataJson) && LooksLikeHoneypotHit(dto.DataJson))
+                {
+                    _logger.LogInformation("Honeypot triggered for IP {Ip} on site {Slug}", ipAddress, slug);
+                    return Ok(new WBFormSubmissionResponseDto { Id = 0, SiteId = site.Id, SubmittedAt = now });
+                }
+
+                // ── Validate DataJson is well-formed JSON before persisting ──
+                try { _ = System.Text.Json.JsonDocument.Parse(dto.DataJson ?? "{}"); }
+                catch { return BadRequest(new { error = "Invalid form payload" }); }
 
                 // Override SiteId to match the slug (prevent spoofing)
                 dto.SiteId = site.Id;
 
-                var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+                queue.Enqueue(now);
                 var submission = await _formService.CreateSubmissionAsync(dto, ipAddress);
                 return Ok(submission);
             }
@@ -395,6 +431,28 @@ namespace MyApi.Modules.WebsiteBuilder.Controllers
                 _logger.LogError(ex, "Error submitting form on public site {Slug}", slug);
                 return StatusCode(500, new { error = "Error submitting form" });
             }
+        }
+
+        private static bool LooksLikeHoneypotHit(string dataJson)
+        {
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(dataJson);
+                if (doc.RootElement.ValueKind != System.Text.Json.JsonValueKind.Object) return false;
+                foreach (var prop in doc.RootElement.EnumerateObject())
+                {
+                    if (prop.NameEquals("_hp") || prop.NameEquals("website_url") || prop.NameEquals("hp_field"))
+                    {
+                        if (prop.Value.ValueKind == System.Text.Json.JsonValueKind.String &&
+                            !string.IsNullOrWhiteSpace(prop.Value.GetString()))
+                        {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+            catch { return false; }
         }
     }
 }

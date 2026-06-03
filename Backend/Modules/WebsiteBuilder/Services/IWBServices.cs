@@ -7,6 +7,8 @@ namespace MyApi.Modules.WebsiteBuilder.Services
         Task<WBSiteListResponseDto> GetAllSitesAsync(WBSiteSearchRequestDto? searchRequest = null);
         Task<WBSiteResponseDto?> GetSiteByIdAsync(int id);
         Task<WBSiteResponseDto?> GetSiteBySlugAsync(string slug);
+        /// <summary>Public render path — bypasses the global tenant filter; only returns published sites.</summary>
+        Task<WBSiteResponseDto?> GetPublishedSiteBySlugAsync(string slug);
         Task<WBSiteResponseDto> CreateSiteAsync(CreateWBSiteRequestDto createDto, string createdByUser);
         Task<WBSiteResponseDto?> UpdateSiteAsync(int id, UpdateWBSiteRequestDto updateDto, string modifiedByUser);
         Task<bool> DeleteSiteAsync(int id, string deletedByUser);
@@ -66,6 +68,8 @@ namespace MyApi.Modules.WebsiteBuilder.Services
         /// Returns internal DTO including FilePath for disk operations (upload controller, delete).
         /// </summary>
         Task<WBMediaInternalDto?> GetMediaByIdInternalAsync(int id);
+        /// <summary>Public render path — bypasses the global tenant filter; only returns media whose owning site is published (or unassigned).</summary>
+        Task<WBMediaInternalDto?> GetPublicMediaByIdAsync(int id);
         Task<WBMediaResponseDto> CreateMediaAsync(CreateWBMediaRequestDto createDto, string uploadedByUser);
         Task<bool> UpdateFileUrlAsync(int id, string fileUrl);
         Task<bool> DeleteMediaAsync(int id);

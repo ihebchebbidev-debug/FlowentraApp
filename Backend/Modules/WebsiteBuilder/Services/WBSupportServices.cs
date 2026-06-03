@@ -431,6 +431,42 @@ namespace MyApi.Modules.WebsiteBuilder.Services
             };
         }
 
+        /// <summary>
+        /// Public render path for &lt;img src&gt; references on published sites.
+        /// Bypasses the tenant filter (no auth context) but only serves media
+        /// whose owning site is currently Published. Site-less media
+        /// (SiteId == null, e.g. tenant logos uploaded outside a site) is
+        /// NOT exposed via this path to avoid cross-tenant ID-guessing leaks.
+        /// </summary>
+        public async Task<WBMediaInternalDto?> GetPublicMediaByIdAsync(int id)
+        {
+            var record = await _context.WBMedia
+                .IgnoreQueryFilters()
+                .AsNoTracking()
+                .Where(m => m.Id == id && !m.IsDeleted)
+                .Select(m => new
+                {
+                    Media = m,
+                    SitePublished = m.SiteId != null && _context.WBSites
+                        .IgnoreQueryFilters()
+                        .Any(s => s.Id == m.SiteId && !s.IsDeleted && s.Published)
+                })
+                .FirstOrDefaultAsync();
+
+            if (record == null || !record.SitePublished) return null;
+
+            var media = record.Media;
+            return new WBMediaInternalDto
+            {
+                Id = media.Id,
+                FileName = media.FileName,
+                OriginalName = media.OriginalName,
+                FilePath = media.FilePath,
+                FileUrl = media.FileUrl,
+                ContentType = media.ContentType,
+            };
+        }
+
         public async Task<WBMediaResponseDto> CreateMediaAsync(CreateWBMediaRequestDto createDto, string uploadedByUser)
         {
             var media = new WBMedia
