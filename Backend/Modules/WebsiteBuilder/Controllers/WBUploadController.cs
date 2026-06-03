@@ -402,9 +402,9 @@ namespace MyApi.Modules.WebsiteBuilder.Controllers
                 var buffer = new byte[16];
                 var read = await stream.ReadAsync(buffer.AsMemory(0, buffer.Length));
                 if (read == 0) return false;
-                var head = buffer.AsSpan(0, read);
+                var head = buffer.AsMemory(0, read);
 
-                bool StartsWith(params byte[] sig) => head.Length >= sig.Length && head.Slice(0, sig.Length).SequenceEqual(sig);
+                bool StartsWith(params byte[] sig) => head.Span.Length >= sig.Length && head.Span.Slice(0, sig.Length).SequenceEqual(sig);
 
                 var ct = contentType.ToLowerInvariant();
                 var ok = ct switch

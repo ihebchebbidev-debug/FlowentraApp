@@ -68,7 +68,7 @@ namespace MyApi.Modules.WebsiteBuilder.Services
 
                 return new WBSiteListResponseDto
                 {
-                    Sites = sites.Select(MapToSiteDto).ToList(),
+                    Sites = sites.Select(site => MapToSiteDto(site)).ToList(),
                     TotalCount = totalCount
                 };
             }
