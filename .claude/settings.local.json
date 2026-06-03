@@ -26,7 +26,8 @@
       "Bash(npm run *)",
       "Bash(NODE_OPTIONS=--max-old-space-size=6144 npm run build)",
       "Bash(sed -i '36,135d' \"Backend/Modules/Purchases/Services/SupplierInvoiceService.cs\")",
-      "Bash(sed -n '20,40p' \"Backend/Modules/Purchases/Services/SupplierInvoiceService.cs\")"
+      "Bash(sed -n '20,40p' \"Backend/Modules/Purchases/Services/SupplierInvoiceService.cs\")",
+      "Bash(npx tsc *)"
     ]
   }
 }
