@@ -7,6 +7,7 @@
 import axios, { AxiosError, type AxiosInstance, type InternalAxiosRequestConfig } from 'axios';
 import { API_CONFIG } from '@/config/api.config';
 import { getCurrentTenant, TENANT_HEADER } from '@/utils/tenant';
+import { getTargetTenantHeaders } from '@/utils/targetTenant';
 import type {
   WebsiteSite, SitePage, SiteTheme, BuilderComponent,
   PageSEO, PageTranslation, SiteLanguage,
@@ -33,6 +34,15 @@ wbApi.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (tenant && config.headers) {
     config.headers[TENANT_HEADER] = tenant;
   }
+  const targetHeaders = getTargetTenantHeaders();
+  if (config.headers) {
+    Object.entries(targetHeaders).forEach(([key, value]) => {
+      if (!config.headers?.[key]) {
+        config.headers[key] = value;
+      }
+    });
+  }
+
   const method = (config.method || 'GET').toUpperCase();
   const bypassOfflineQueue = (config.headers as Record<string, string> | undefined)?.['X-Bypass-Offline-Queue'] === 'true';
   if (shouldQueueOfflineWrites() && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method) && !bypassOfflineQueue) {
