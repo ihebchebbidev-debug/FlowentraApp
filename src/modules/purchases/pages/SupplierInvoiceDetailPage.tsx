@@ -46,6 +46,7 @@ function SupplierInvoiceDetailContent() {
   const [savingItems, setSavingItems] = useState(false);
   const [tejMissing, setTejMissing] = useState<string[]>([]);
   const [tejMissingOpen, setTejMissingOpen] = useState(false);
+  const [tejApplying, setTejApplying] = useState(false);
 
   const fetchData = useCallback(() => {
     if (!id) return;
@@ -192,6 +193,32 @@ function SupplierInvoiceDetailContent() {
     }
   };
 
+  // Inline fix from the missing-info dialog: enable Retenue à la Source with the
+  // chosen type (the backend recomputes the RS amount), then retry the download.
+  // If other fields are still missing, the dialog list updates so the user knows.
+  const handleApplyRsAndDownload = async (rsTypeCode: string) => {
+    if (!id) return;
+    setTejApplying(true);
+    try {
+      await supplierInvoiceService.update(id, { rsApplicable: true, rsTypeCode } as Partial<SupplierInvoice>);
+      await fetchData();
+      await supplierInvoiceService.downloadTejXml(id);
+      toast.success(t('actions.tejXmlDownloaded', 'TEJ XML downloaded'));
+      setTejMissing([]);
+      setTejMissingOpen(false);
+    } catch (e: any) {
+      await fetchData();
+      const missing: string[] = e?.missing || [];
+      if (missing.length > 0) {
+        setTejMissing(missing); // keep the dialog open and surface what's still needed
+      } else {
+        toast.error(e?.message || t('common.error', 'Failed to generate the TEJ XML'));
+      }
+    } finally {
+      setTejApplying(false);
+    }
+  };
+
   const handleSendFactureEnLigne = async () => {
     if (!id) return;
     setActionLoading('fel');
@@ -236,7 +263,7 @@ function SupplierInvoiceDetailContent() {
                 registers the declaration (for the monthly TEJ file + deadline
                 tracking), so a separate "Sync TEJ" step is no longer needed. If
                 info is missing the user is told exactly what to fill. */}
-            {inv.rsApplicable && inv.status !== 'draft' && (
+            {inv.status !== 'draft' && (
               <Button size="sm" variant="outline" onClick={handleDownloadTejXml} disabled={actionLoading !== null}>
                 {actionLoading === 'tejxml' ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <FileDown className="h-3.5 w-3.5 mr-1" />}
                 {t('actions.downloadTejXml', 'Download TEJ XML')}
@@ -447,6 +474,10 @@ function SupplierInvoiceDetailContent() {
         open={tejMissingOpen}
         onOpenChange={setTejMissingOpen}
         missing={tejMissing}
+        rsApplicable={inv.rsApplicable}
+        rsTypeCode={inv.rsTypeCode}
+        onApplyRs={handleApplyRsAndDownload}
+        applying={tejApplying}
       />
     </div>
   );

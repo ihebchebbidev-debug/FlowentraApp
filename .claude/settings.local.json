@@ -40,7 +40,8 @@
       "Bash(sed -n '168,178p' services/imageService.ts)",
       "Bash(npx vitest *)",
       "Bash(grep -viE \"using|//\")",
-      "Bash(grep -viE \"import|type |interface |labelKey|//|locale\")"
+      "Bash(grep -viE \"import|type |interface |labelKey|//|locale\")",
+      "Bash(node -e 'JSON.parse\\(require\\('\\\\''fs'\\\\''\\).readFileSync\\('\\\\''__TRACKED_VAR__'\\\\'','\\\\''utf8'\\\\''\\)\\);console.log\\('\\\\''__TRACKED_VAR__ OK'\\\\''\\)')"
     ]
   }
 }

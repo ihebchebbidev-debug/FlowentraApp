@@ -196,7 +196,12 @@
   "tej": {
     "missingTitle": "Information needed for the TEJ XML",
     "missingDescription": "Please complete the following before downloading the TEJ XML, then try again.",
-    "missingGotIt": "Got it"
+    "missingGotIt": "Got it",
+    "activateTitle": "Activate Retenue à la Source",
+    "activateDescription": "Choose the withholding type — we'll apply it to this invoice (the amount is computed automatically) and generate the XML.",
+    "rsType": "Withholding type",
+    "applyAndDownload": "Apply & Download XML",
+    "applying": "Applying…"
   },
   "detail": {
     "supplierInfo": "Supplier Information",

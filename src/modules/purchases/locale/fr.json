@@ -196,7 +196,12 @@
   "tej": {
     "missingTitle": "Informations requises pour le XML TEJ",
     "missingDescription": "Veuillez compléter les éléments suivants avant de télécharger le XML TEJ, puis réessayez.",
-    "missingGotIt": "Compris"
+    "missingGotIt": "Compris",
+    "activateTitle": "Activer la Retenue à la Source",
+    "activateDescription": "Choisissez le type de retenue — nous l'appliquons à cette facture (le montant est calculé automatiquement) et générons le XML.",
+    "rsType": "Type de retenue",
+    "applyAndDownload": "Appliquer & Télécharger le XML",
+    "applying": "Application…"
   },
   "detail": {
     "supplierInfo": "Informations fournisseur",
