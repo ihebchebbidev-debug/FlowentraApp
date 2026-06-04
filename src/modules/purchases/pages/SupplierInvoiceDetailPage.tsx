@@ -263,7 +263,7 @@ function SupplierInvoiceDetailContent() {
                 registers the declaration (for the monthly TEJ file + deadline
                 tracking), so a separate "Sync TEJ" step is no longer needed. If
                 info is missing the user is told exactly what to fill. */}
-            {inv.status !== 'draft' && (
+            {inv.status !== 'draft' && inv.status !== 'cancelled' && (
               <Button size="sm" variant="outline" onClick={handleDownloadTejXml} disabled={actionLoading !== null}>
                 {actionLoading === 'tejxml' ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <FileDown className="h-3.5 w-3.5 mr-1" />}
                 {t('actions.downloadTejXml', 'Download TEJ XML')}

@@ -59,6 +59,9 @@ export function WorkflowFilters({
   filterType,
   onFilterTypeChange
 }: WorkflowFiltersProps) {
+  // Hooks must run unconditionally — calling useLookups() inside the conditional
+  // filter-bar JSX changed the hook count when it toggled and crashed the render.
+  const { priorities } = useLookups();
   const [showFilterBar, setShowFilterBar] = useState(false);
   const [localStatus, setLocalStatus] = useState<string>(filterStatus || 'all');
   const [localPriority, setLocalPriority] = useState<string>(filterPriority || 'all');
@@ -119,8 +122,7 @@ export function WorkflowFilters({
               <div className="relative">
                 <select className="border rounded px-3 py-2 pr-10 appearance-none bg-background text-foreground w-full text-sm" value={localPriority} onChange={e => { setLocalPriority(e.target.value); onFilterPriorityChange(e.target.value); }}>
                   <option value="all">{t('all')}</option>
-                  {/** Use lookup priorities (seeded from mock JSON) */}
-                  {useLookups().priorities.map(p => (
+                  {priorities.map(p => (
                     <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
                 </select>

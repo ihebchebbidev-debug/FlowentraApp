@@ -41,7 +41,12 @@
       "Bash(npx vitest *)",
       "Bash(grep -viE \"using|//\")",
       "Bash(grep -viE \"import|type |interface |labelKey|//|locale\")",
-      "Bash(node -e 'JSON.parse\\(require\\('\\\\''fs'\\\\''\\).readFileSync\\('\\\\''__TRACKED_VAR__'\\\\'','\\\\''utf8'\\\\''\\)\\);console.log\\('\\\\''__TRACKED_VAR__ OK'\\\\''\\)')"
+      "Bash(node -e 'JSON.parse\\(require\\('\\\\''fs'\\\\''\\).readFileSync\\('\\\\''__TRACKED_VAR__'\\\\'','\\\\''utf8'\\\\''\\)\\);console.log\\('\\\\''__TRACKED_VAR__ OK'\\\\''\\)')",
+      "Bash(xargs cat)",
+      "Bash(npx eslint *)",
+      "Bash(grep -oE \"[a-z@-]+/[a-z-]+$|no-[a-z-]+$|[a-z-]+-[a-z-]+$\")",
+      "Bash(grep -E \"^/Users|^/c|\\\\.tsx|\\\\.ts$|rules-of-hooks\")",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{const r=JSON.parse\\(d\\);for\\(const f of r\\){for\\(const m of f.messages\\){if\\(m.ruleId==='react-hooks/rules-of-hooks'\\)console.log\\(f.filePath.replace\\(process.cwd\\(\\),''\\)+':'+m.line\\)}}}\\)\")"
     ]
   }
 }
