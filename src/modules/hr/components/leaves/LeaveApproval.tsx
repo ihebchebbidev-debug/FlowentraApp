@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTranslation } from 'react-i18next';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -47,6 +47,8 @@ export function LeaveApproval() {
       .filter((u: any) => Number.isFinite(u.id) && u.id > 0);
   }, [employeesQuery.data]);
 
+  const queryClient = useQueryClient();
+
   const leavesQuery = useQuery({
     queryKey: ['hr', 'leaveApprovals', users.map(u => u.id)],
     enabled: users.length > 0,
@@ -72,14 +74,22 @@ export function LeaveApproval() {
       .sort((a, b) => (String(a.startDate) > String(b.startDate) ? 1 : -1));
   }, [leavesQuery.data]);
 
+  // Approving/rejecting moves a leave between pending → approved/none, which
+  // changes used/pending/remaining — refresh the balances views too.
+  const refreshAfterDecision = () => Promise.all([
+    leavesQuery.refetch(),
+    queryClient.invalidateQueries({ queryKey: ['hr', 'leaveBalances'] }),
+    queryClient.invalidateQueries({ queryKey: ['hr', 'planningLeavesCalendar'] }),
+  ]);
+
   const approveMutation = useMutation({
     mutationFn: async (leaveId: number) => schedulesApi.updateLeave(leaveId, { status: 'approved' }),
-    onSuccess: () => leavesQuery.refetch(),
+    onSuccess: refreshAfterDecision,
   });
 
   const rejectMutation = useMutation({
     mutationFn: async (leaveId: number) => schedulesApi.updateLeave(leaveId, { status: 'rejected' }),
-    onSuccess: () => leavesQuery.refetch(),
+    onSuccess: refreshAfterDecision,
   });
 
   const formatRange = (start: string, end: string) => {

@@ -38,7 +38,9 @@
       "Bash(NODE_OPTIONS=--max-old-space-size=6144 npx vite build)",
       "Bash(sed -n '55,75p' services/apiImageProvider.ts)",
       "Bash(sed -n '168,178p' services/imageService.ts)",
-      "Bash(npx vitest *)"
+      "Bash(npx vitest *)",
+      "Bash(grep -viE \"using|//\")",
+      "Bash(grep -viE \"import|type |interface |labelKey|//|locale\")"
     ]
   }
 }

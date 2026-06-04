@@ -137,7 +137,12 @@ export function LeavesPage() {
               reason: values.reason,
             });
             toast.success(t('leavesPage.created', 'Leave request created'));
-            await queryClient.invalidateQueries({ queryKey: ['hr', 'planningLeavesCalendar'] });
+            // Refresh both the calendar AND the balances tab — a new request
+            // changes the pending/remaining totals (prefix-matches every year).
+            await Promise.all([
+              queryClient.invalidateQueries({ queryKey: ['hr', 'planningLeavesCalendar'] }),
+              queryClient.invalidateQueries({ queryKey: ['hr', 'leaveBalances'] }),
+            ]);
           } catch (e: any) {
             toast.error(e?.message || t('leavesPage.createFailed', 'Failed to create leave request'));
             throw e;
