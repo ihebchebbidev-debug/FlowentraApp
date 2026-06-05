@@ -20,6 +20,8 @@ export function useEditorState({ initialComponents, onSave, resetKey }: UseEdito
   const [components, setComponents] = useState<BuilderComponent[]>(initialComponents);
   const [selectedId, setSelectedIdRaw] = useState<string | null>(null);
   const [device, setDevice] = useState<DeviceView>('desktop');
+  /** Signal for the canvas to scroll a freshly-added block into view. */
+  const [lastAddedId, setLastAddedId] = useState<string | null>(null);
   const [clipboard, setClipboard] = useState<BuilderComponent | null>(null);
   const [hasPendingPropChanges, setHasPendingPropChanges] = useState(false);
 
@@ -102,6 +104,7 @@ export function useEditorState({ initialComponents, onSave, resetKey }: UseEdito
     }
     commit(updated);
     setSelectedId(newComp.id);
+    setLastAddedId(newComp.id);
   }, [commit]);
 
   /** Insert a component at a specific index */
@@ -119,11 +122,13 @@ export function useEditorState({ initialComponents, onSave, resetKey }: UseEdito
     updated.splice(index, 0, newComp);
     commit(updated);
     setSelectedId(newComp.id);
+    setLastAddedId(newComp.id);
   }, [commit]);
 
   const insertComponent = useCallback((comp: BuilderComponent) => {
     commit([...componentsRef.current, comp]);
     setSelectedId(comp.id);
+    setLastAddedId(comp.id);
   }, [commit]);
 
   const removeComponent = useCallback((id: string) => {
@@ -289,6 +294,7 @@ export function useEditorState({ initialComponents, onSave, resetKey }: UseEdito
     }
     commit(updated);
     setSelectedId(pasted.id);
+    setLastAddedId(pasted.id);
     toast.success(`"${pasted.label}" pasted`);
   }, [clipboard, commit]);
 
@@ -301,6 +307,7 @@ export function useEditorState({ initialComponents, onSave, resetKey }: UseEdito
     components,
     selectedId,
     selectedComponent,
+    lastAddedId,
     device,
     setDevice,
     setSelectedId,

@@ -43,6 +43,7 @@ export function WebsiteAutopilotDemo({ open, onClose, onStart }: Props) {
   const [cursor, setCursor] = useState<{ x: number; y: number; clicking: boolean }>({ x: -100, y: -100, clicking: false });
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clickRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
 
   const finished = stepIndex >= WB_STEPS.length;
 
@@ -75,6 +76,18 @@ export function WebsiteAutopilotDemo({ open, onClose, onStart }: Props) {
     const t = setTimeout(place, 140);
     return () => clearTimeout(t);
   }, [stepIndex, open, finished, step?.target, state.panel, state.device, state.components.length]);
+
+  // Scroll the demo canvas to the freshly-added block (mirrors the real editor).
+  useEffect(() => {
+    if (!open || state.phase !== 'editor') return;
+    const el = canvasRef.current;
+    if (!el) return;
+    const t = setTimeout(() => {
+      const blocks = el.querySelectorAll('[data-demo-block]');
+      (blocks[blocks.length - 1] as HTMLElement | undefined)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 90);
+    return () => clearTimeout(t);
+  }, [state.components.length, state.phase, open]);
 
   // Voices load asynchronously — warm them up so pickBestVoice() resolves.
   useEffect(() => {
@@ -234,7 +247,7 @@ export function WebsiteAutopilotDemo({ open, onClose, onStart }: Props) {
         </div>
 
         {/* Canvas */}
-        <div id="demo-canvas" className="flex-1 min-w-0 overflow-y-auto bg-muted/20 p-4 sm:p-6 flex justify-center">
+        <div ref={canvasRef} id="demo-canvas" className="flex-1 min-w-0 overflow-y-auto bg-muted/20 p-4 sm:p-6 flex justify-center">
           <div
             className="bg-white shadow-xl rounded-xl overflow-hidden transition-all duration-500 w-full"
             // translateZ(0) makes this a containing block so any `position: fixed`
@@ -249,7 +262,7 @@ export function WebsiteAutopilotDemo({ open, onClose, onStart }: Props) {
               </div>
             ) : (
               state.components.map(comp => (
-                <div key={comp.id} className={`relative animate-in fade-in slide-in-from-bottom-2 duration-500 ${state.selectedId === comp.id ? 'ring-2 ring-primary ring-inset' : ''}`}>
+                <div key={comp.id} data-demo-block className={`relative animate-in fade-in slide-in-from-bottom-2 duration-500 ${state.selectedId === comp.id ? 'ring-2 ring-primary ring-inset' : ''}`}>
                   <ComponentRenderer component={comp} device={state.device} theme={state.theme} isEditing={false} />
                 </div>
               ))

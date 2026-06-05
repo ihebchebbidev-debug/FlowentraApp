@@ -52,7 +52,8 @@
       "Bash(sed -n '/export interface BuilderComponent/,/^}/p' types/component.ts)",
       "Bash(grep -nA4 \"type: 'hero'\" utils/palette/layout.ts)",
       "Bash(awk '{s+=$1} END{print s}')",
-      "Bash(grep -nE \"import|icon|Icon|category|CATEGORIES|categoryLabel|categoryOrder|LucideIcon|\\\\\\\\* as|COMPONENT_PALETTE|grouped|filter\" components/editor/ComponentPalette.tsx)"
+      "Bash(grep -nE \"import|icon|Icon|category|CATEGORIES|categoryLabel|categoryOrder|LucideIcon|\\\\\\\\* as|COMPONENT_PALETTE|grouped|filter\" components/editor/ComponentPalette.tsx)",
+      "Bash(grep -nE \"pasteComponent|setSelectedId\\\\\\(pasted.id\\\\\\)|insertComponentAt,|return \\\\{|insertComponent,$\" hooks/useEditorState.ts)"
     ]
   }
 }

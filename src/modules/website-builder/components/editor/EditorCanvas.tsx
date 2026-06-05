@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -36,6 +36,8 @@ interface EditorCanvasProps {
   onInsertAt?: (index: number) => void;
   /** Insert a specific block type at an index (used by palette drag-drop) */
   onDropBlockAt?: (blockType: string, index: number) => void;
+  /** Id of the most recently added block — the canvas scrolls it into view. */
+  lastAddedId?: string | null;
   isRtlPreview?: boolean;
 }
 
@@ -185,7 +187,7 @@ function SortableComponent({
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="relative group/block">
+    <div ref={setNodeRef} data-block-id={component.id} style={style} className="relative group/block">
       {/* Drop indicator line — shows when another canvas block hovers above this one */}
       {isOver && !isDragging && (
         <div className="absolute -top-[1px] inset-x-0 z-30 pointer-events-none">
@@ -310,6 +312,7 @@ export function EditorCanvas({
   onReorder,
   onInsertAt,
   onDropBlockAt,
+  lastAddedId,
   isRtlPreview = false,
 }: EditorCanvasProps) {
   const pointerSensor = useSensor(PointerSensor, { activationConstraint: { distance: 5 } });
@@ -317,6 +320,16 @@ export function EditorCanvas({
   const sensors = useSensors(pointerSensor, keyboardSensor);
 
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
+
+  // Scroll a freshly-added block into view so the user always sees what they added.
+  useEffect(() => {
+    if (!lastAddedId) return;
+    const t = setTimeout(() => {
+      const el = document.querySelector(`[data-block-id="${lastAddedId}"]`);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 70);
+    return () => clearTimeout(t);
+  }, [lastAddedId]);
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveDragId(String(event.active.id));

@@ -286,6 +286,7 @@ export function SiteEditor({ site, onBack, onSiteUpdate }: SiteEditorProps) {
               onDropBlockAt={(blockType: string, index: number) => {
                 editor.insertComponentAt(blockType, index);
               }}
+              lastAddedId={editor.lastAddedId}
               isRtlPreview={isRtlPreview}
             />
             {editor.hasClipboard && (
