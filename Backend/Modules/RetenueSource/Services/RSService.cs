@@ -494,6 +494,15 @@ namespace MyApi.Modules.RetenueSource.Services
             TEJDeclarantDto declarant,
             string userId)
         {
+            static DateTime ToUtcKind(DateTime dt) => dt.Kind switch
+            {
+                DateTimeKind.Utc => dt,
+                DateTimeKind.Local => dt.ToUniversalTime(),
+                _ => DateTime.SpecifyKind(dt, DateTimeKind.Utc)
+            };
+
+            static DateTime? ToUtcKind(DateTime? dt) => dt.HasValue ? ToUtcKind(dt.Value) : null;
+
             var hasPayment = invoice.AmountPaid > 0;
             var basis      = hasPayment ? invoice.AmountPaid : invoice.GrandTotal;
             var paidRatio  = (hasPayment && invoice.GrandTotal > 0)
@@ -506,9 +515,10 @@ namespace MyApi.Modules.RetenueSource.Services
             var operationCode = invoice.RsOperationCode
                 ?? Constants.TejOperationCodes.LegacyToOperationCode(invoice.RsTypeCode);
 
-            var paymentDate = invoice.PaymentDate ?? DateTime.UtcNow;
-            var declarationDeadline = new DateTime(
-                paymentDate.AddMonths(1).Year, paymentDate.AddMonths(1).Month, 20);
+            var paymentDate = invoice.PaymentDate.HasValue ? ToUtcKind(invoice.PaymentDate.Value) : DateTime.UtcNow;
+            var invoiceDate = ToUtcKind(invoice.InvoiceDate);
+            var declarationDeadline = ToUtcKind(new DateTime(
+                paymentDate.AddMonths(1).Year, paymentDate.AddMonths(1).Month, 20));
 
             return new RSRecord
             {
@@ -516,7 +526,7 @@ namespace MyApi.Modules.RetenueSource.Services
                 EntityId = supplierInvoiceId,
                 EntityNumber = invoice.InvoiceNumber,
                 InvoiceNumber = invoice.SupplierInvoiceRef ?? invoice.InvoiceNumber,
-                InvoiceDate = invoice.InvoiceDate,
+                InvoiceDate = invoiceDate,
                 InvoiceAmount = invoice.GrandTotal,
                 PaymentDate = paymentDate,
                 AmountPaid = basis,
@@ -547,7 +557,7 @@ namespace MyApi.Modules.RetenueSource.Services
                 BeneficiaireCategorie = supplier.CategorieContribuable ?? "PM",
                 BeneficiaireIsResident = supplier.IsResident,
                 BeneficiaireIdType = supplier.IdTaxpayerType ?? 1,
-                BeneficiaireDateNaissance = supplier.DateNaissance,
+                BeneficiaireDateNaissance = ToUtcKind(supplier.DateNaissance),
                 BeneficiairePaysCode = supplier.PaysCode ?? "TN",
                 Acte = invoice.TejActe,
                 CreatedAt = DateTime.UtcNow,
