@@ -162,6 +162,9 @@ export function SiteEditor({ site, onBack, onSiteUpdate }: SiteEditorProps) {
     } else {
       editor.addComponent(type);
     }
+    // Open the new block's settings immediately, like Shopify / WordPress. (On
+    // mobile we leave the drawer closed so the canvas auto-scroll stays visible.)
+    setRightPanel('properties');
   }, [editor.addComponent, editor.insertComponentAt, insertAtIndex]);
 
   const leftPanelProps = useMemo(() => ({
@@ -285,6 +288,7 @@ export function SiteEditor({ site, onBack, onSiteUpdate }: SiteEditorProps) {
               }}
               onDropBlockAt={(blockType: string, index: number) => {
                 editor.insertComponentAt(blockType, index);
+                setRightPanel('properties');
               }}
               lastAddedId={editor.lastAddedId}
               isRtlPreview={isRtlPreview}
