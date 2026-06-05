@@ -501,8 +501,6 @@ namespace MyApi.Modules.RetenueSource.Services
                 _ => DateTime.SpecifyKind(dt, DateTimeKind.Utc)
             };
 
-            static DateTime? ToUtcKind(DateTime? dt) => dt.HasValue ? ToUtcKind(dt.Value) : null;
-
             var hasPayment = invoice.AmountPaid > 0;
             var basis      = hasPayment ? invoice.AmountPaid : invoice.GrandTotal;
             var paidRatio  = (hasPayment && invoice.GrandTotal > 0)
@@ -557,7 +555,7 @@ namespace MyApi.Modules.RetenueSource.Services
                 BeneficiaireCategorie = supplier.CategorieContribuable ?? "PM",
                 BeneficiaireIsResident = supplier.IsResident,
                 BeneficiaireIdType = supplier.IdTaxpayerType ?? 1,
-                BeneficiaireDateNaissance = ToUtcKind(supplier.DateNaissance),
+                BeneficiaireDateNaissance = supplier.DateNaissance.HasValue ? ToUtcKind(supplier.DateNaissance.Value) : null,
                 BeneficiairePaysCode = supplier.PaysCode ?? "TN",
                 Acte = invoice.TejActe,
                 CreatedAt = DateTime.UtcNow,
