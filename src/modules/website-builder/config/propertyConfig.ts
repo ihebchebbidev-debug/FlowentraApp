@@ -61,6 +61,7 @@ export const SELECT_OPTIONS: Record<string, { label: string; value: string }[]> 
   columns: [{ label: '1 Column', value: '1' }, { label: '2 Columns', value: '2' }, { label: '3 Columns', value: '3' }, { label: '4 Columns', value: '4' }],
   fontSize: [{ label: 'Small', value: 'sm' }, { label: 'Normal', value: 'base' }, { label: 'Large', value: 'lg' }, { label: 'Extra Large', value: 'xl' }],
   position: [{ label: 'Top', value: 'top' }, { label: 'Bottom', value: 'bottom' }],
+  corner: [{ label: 'Top Right', value: 'top-right' }, { label: 'Top Left', value: 'top-left' }, { label: 'Bottom Right', value: 'bottom-right' }, { label: 'Bottom Left', value: 'bottom-left' }],
   stickyPosition: [{ label: 'Top', value: 'top' }, { label: 'Bottom', value: 'bottom' }],
   displayMode: [{ label: 'Floating', value: 'floating' }, { label: 'Sticky Bar', value: 'sticky-bar' }, { label: 'Inline Button', value: 'inline-button' }, { label: 'Sticky Side', value: 'sticky-side' }],
   iconSize: [{ label: 'Small', value: 'sm' }, { label: 'Medium', value: 'md' }, { label: 'Large', value: 'lg' }],

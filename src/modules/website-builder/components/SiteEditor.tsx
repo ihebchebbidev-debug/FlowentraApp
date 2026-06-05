@@ -124,6 +124,7 @@ export function SiteEditor({ site, onBack, onSiteUpdate }: SiteEditorProps) {
     onInsertBlock: editor.insertComponent,
     onUpdateProps: handleUpdateComponentProps,
     onUpdateStyles: editor.updateComponentStyles,
+    onUpdateVisibility: editor.updateComponentVisibility,
     onUpdateAnimation: editor.updateComponentAnimation,
     onRemove: editor.removeComponent,
     onDuplicate: editor.duplicateComponent,
@@ -149,7 +150,7 @@ export function SiteEditor({ site, onBack, onSiteUpdate }: SiteEditorProps) {
     rightPanel, site, currentPage, activeLanguage,
     editor.components, editor.selectedComponent,
     editor.setSelectedId, editor.insertComponent, handleUpdateComponentProps,
-    editor.updateComponentStyles, editor.updateComponentAnimation,
+    editor.updateComponentStyles, editor.updateComponentVisibility, editor.updateComponentAnimation,
     editor.removeComponent, editor.duplicateComponent, editor.copyComponent,
     editor.moveComponent, siteActions, isMobile,
   ]);

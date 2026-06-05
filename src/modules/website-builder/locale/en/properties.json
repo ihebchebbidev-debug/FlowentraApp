@@ -1,4 +1,8 @@
 {
+  "visibility": "Visibility",
+  "visibilityHint": "Hide this block on specific screen sizes. It stays in the layout on the others.",
+  "hidden": "Hidden",
+  "shown": "Shown",
   "noBlockSelected": "No block selected",
   "noBlockSelectedDesc": "Click on a block in the canvas to view and edit its properties.",
   "up": "Up",

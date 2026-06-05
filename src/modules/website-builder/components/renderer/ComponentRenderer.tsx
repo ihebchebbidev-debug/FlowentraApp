@@ -6,7 +6,7 @@ import { BlockErrorBoundary } from './BlockErrorBoundary';
 import { useAnimationObserver } from '../../hooks/useAnimationObserver';
 
 /** Component types that render as fixed/floating overlays, not inline blocks */
-const FLOATING_TYPES = new Set(['whatsapp-button', 'scroll-to-top', 'floating-cta']);
+const FLOATING_TYPES = new Set(['whatsapp-button', 'scroll-to-top', 'floating-cta', 'mini-cart']);
 
 interface ComponentRendererProps {
   component: BuilderComponent;
@@ -33,7 +33,10 @@ function ComponentRendererInner({
   );
 
   if (!Block) return null;
-  if (component.hidden?.[device]) return null;
+  // Hidden on this device: truly removed in preview/published, but kept visible
+  // (dimmed + badged) while editing so it stays selectable to toggle back.
+  const hiddenHere = !!component.hidden?.[device];
+  if (!isEditing && hiddenHere) return null;
 
   const baseStyles = component.styles?.desktop || {};
   const deviceStyles = component.styles?.[device] || {};
@@ -110,13 +113,19 @@ function ComponentRendererInner({
       onClick={handleClick}
       className={`relative group transition-all duration-150 ${
         isSelected ? 'ring-2 ring-primary ring-offset-2' : 'hover:ring-1 hover:ring-primary/40 hover:ring-offset-1'
-      }`}
+      } ${hiddenHere ? 'opacity-40' : ''}`}
     >
       <div className={`absolute -top-5 left-1 text-[10px] font-medium px-1.5 py-0.5 rounded-t z-10 transition-opacity ${
         isSelected ? 'bg-primary text-primary-foreground opacity-100' : 'bg-muted text-muted-foreground opacity-0 group-hover:opacity-100'
       }`}>
         {component.label}
       </div>
+      {hiddenHere && (
+        <div className="absolute -top-5 right-1 z-10 flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-t bg-amber-500 text-white">
+          <svg className="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m2 2 20 20M6.7 6.7A10 10 0 0 0 2 12s3 7 10 7a9.3 9.3 0 0 0 5.3-1.7M9.9 4.2A10 10 0 0 1 12 5c7 0 10 7 10 7a13.2 13.2 0 0 1-1.7 2.7" /></svg>
+          Hidden on {device}
+        </div>
+      )}
       {content}
     </div>
   );

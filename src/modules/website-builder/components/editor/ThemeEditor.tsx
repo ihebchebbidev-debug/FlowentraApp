@@ -8,8 +8,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import {
   Palette, Type, Maximize2, Languages, Navigation,
-  ChevronDown, Sparkles, MousePointer2, LetterText, Settings2,
+  ChevronDown, Sparkles, MousePointer2, LetterText, Settings2, Banknote,
 } from 'lucide-react';
+
+/** Common store currencies (symbol/code shown with prices). */
+const CURRENCY_PRESETS = ['$', '€', '£', 'TND', 'DH', 'DA', 'AED', '﷼'];
 
 interface ThemeEditorProps {
   theme: SiteTheme;
@@ -465,6 +468,54 @@ export function ThemeEditor({ theme, onChange }: ThemeEditorProps) {
               <span>{t('wb:theme.normal')}</span>
               <span>{t('wb:theme.spacious')}</span>
             </div>
+          </div>
+        </Section>
+
+        {/* ─── STORE CURRENCY ─── */}
+        <Section title={t('wb:theme.storeCurrency', 'Store Currency')} icon={Banknote} defaultOpen={false}>
+          <p className="text-[10px] text-muted-foreground/60 leading-snug mb-1">
+            {t('wb:theme.storeCurrencyHint', 'Used by the cart, checkout and mini-cart totals across the whole store.')}
+          </p>
+          <div className="grid grid-cols-4 gap-1.5">
+            {CURRENCY_PRESETS.map((cur) => (
+              <Button
+                key={cur}
+                variant={(theme.currency || '$') === cur ? 'default' : 'outline'}
+                size="sm"
+                className="h-8 text-xs"
+                onClick={() => update('currency', cur)}
+              >
+                {cur}
+              </Button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2 mt-2">
+            <Label className="text-[10px] text-muted-foreground/70 shrink-0">{t('wb:theme.customCurrency', 'Custom')}</Label>
+            <Input
+              value={theme.currency || ''}
+              onChange={(e) => update('currency', e.target.value)}
+              placeholder="$"
+              maxLength={6}
+              className="h-8 text-xs"
+            />
+          </div>
+          <div className="flex gap-1.5 mt-2">
+            <Button
+              variant={(theme.currencyPosition || 'before') === 'before' ? 'default' : 'outline'}
+              size="sm"
+              className="flex-1 h-8 text-xs"
+              onClick={() => update('currencyPosition', 'before')}
+            >
+              {(theme.currency || '$')}10
+            </Button>
+            <Button
+              variant={theme.currencyPosition === 'after' ? 'default' : 'outline'}
+              size="sm"
+              className="flex-1 h-8 text-xs"
+              onClick={() => update('currencyPosition', 'after')}
+            >
+              10 {(theme.currency || '$')}
+            </Button>
           </div>
         </Section>
 

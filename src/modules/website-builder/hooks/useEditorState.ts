@@ -180,6 +180,21 @@ export function useEditorState({ initialComponents, onSave, resetKey }: UseEdito
     setHasPendingPropChanges(true);
   }, []);
 
+  /** Per-device visibility — hide a block on desktop / tablet / mobile. */
+  const updateComponentVisibility = useCallback((id: string, dev: DeviceView, hidden: boolean) => {
+    const updated = componentsRef.current.map(c => {
+      if (c.id !== id) return c;
+      const nextHidden: Partial<Record<DeviceView, boolean>> = { ...(c.hidden || {}) };
+      if (hidden) nextHidden[dev] = true;
+      else delete nextHidden[dev];
+      return { ...c, hidden: Object.keys(nextHidden).length ? nextHidden : undefined };
+    });
+    setComponents(updated);
+    componentsRef.current = updated;
+    onSaveRef.current(updated);
+    setHasPendingPropChanges(true);
+  }, []);
+
   const reorderComponents = useCallback((activeId: string, overId: string) => {
     const comps = componentsRef.current;
     const oldIndex = comps.findIndex(c => c.id === activeId);
@@ -294,6 +309,7 @@ export function useEditorState({ initialComponents, onSave, resetKey }: UseEdito
     insertComponentAt,
     removeComponent,
     updateComponentProps,
+    updateComponentVisibility,
     commitPropsToHistory,
     updateComponentStyles,
     updateComponentAnimation,

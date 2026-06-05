@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { SiteTheme } from '../../../types';
 import { useEcommerceStore } from '../../../hooks/useEcommerceStore';
+import { formatStorePrice } from '../../../utils/storeCurrency';
 import { submitFormData } from '../../../utils/formSubmissionHelper';
 import { fireWebhook } from '../../../utils/formSubmissions';
 import { toast } from 'sonner';
@@ -119,8 +120,8 @@ export function CheckoutBlock({
       : items,
     [useGlobalCart, cart, items]
   );
-  const displaySubtotal = useGlobalCart ? `$${cartTotal.toFixed(2)}` : subtotal;
-  const displayTotal = useGlobalCart ? `$${cartTotal.toFixed(2)}` : total;
+  const displaySubtotal = useGlobalCart ? formatStorePrice(cartTotal, theme) : subtotal;
+  const displayTotal = useGlobalCart ? formatStorePrice(cartTotal, theme) : total;
 
   const {
     webhookUrl,

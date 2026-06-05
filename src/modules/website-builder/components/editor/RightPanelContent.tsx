@@ -2,7 +2,7 @@
  * Right panel content — switches between all right-panel views.
  */
 import React from 'react';
-import { WebsiteSite, SitePage, BuilderComponent, SiteTheme, PageSEO, AnimationSettings } from '../../types';
+import { WebsiteSite, SitePage, BuilderComponent, SiteTheme, PageSEO, AnimationSettings, DeviceView } from '../../types';
 import { ThemeEditor } from './ThemeEditor';
 import { SeoPanel } from './SeoPanel';
 import { ValidationPanel } from './ValidationPanel';
@@ -32,6 +32,7 @@ interface RightPanelContentProps {
   onInsertBlock: (comp: BuilderComponent) => void;
   onUpdateProps: (id: string, props: Record<string, any>) => void;
   onUpdateStyles: (id: string, styles: Record<string, any>) => void;
+  onUpdateVisibility: (id: string, device: DeviceView, hidden: boolean) => void;
   onUpdateAnimation: (id: string, animation: AnimationSettings) => void;
   onRemove: (id: string) => void;
   onDuplicate: (id: string) => void;
@@ -62,6 +63,7 @@ export function RightPanelContent({
   onInsertBlock,
   onUpdateProps,
   onUpdateStyles,
+  onUpdateVisibility,
   onUpdateAnimation,
   onRemove,
   onDuplicate,
@@ -159,7 +161,10 @@ export function RightPanelContent({
         component={selectedComponent}
         onUpdate={onUpdateProps}
         onUpdateStyles={onUpdateStyles}
+        onUpdateVisibility={onUpdateVisibility}
         onUpdateAnimation={onUpdateAnimation}
+        storeCurrency={site.theme.currency}
+        storeCurrencyPosition={site.theme.currencyPosition}
         onRemove={onRemove}
         onDuplicate={onDuplicate}
         onCopy={onCopy}

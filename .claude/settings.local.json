@@ -46,7 +46,9 @@
       "Bash(npx eslint *)",
       "Bash(grep -oE \"[a-z@-]+/[a-z-]+$|no-[a-z-]+$|[a-z-]+-[a-z-]+$\")",
       "Bash(grep -E \"^/Users|^/c|\\\\.tsx|\\\\.ts$|rules-of-hooks\")",
-      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{const r=JSON.parse\\(d\\);for\\(const f of r\\){for\\(const m of f.messages\\){if\\(m.ruleId==='react-hooks/rules-of-hooks'\\)console.log\\(f.filePath.replace\\(process.cwd\\(\\),''\\)+':'+m.line\\)}}}\\)\")"
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{const r=JSON.parse\\(d\\);for\\(const f of r\\){for\\(const m of f.messages\\){if\\(m.ruleId==='react-hooks/rules-of-hooks'\\)console.log\\(f.filePath.replace\\(process.cwd\\(\\),''\\)+':'+m.line\\)}}}\\)\")",
+      "Bash(grep -viE \"hidden\\\\?\\\\.\\\\[device\\\\]|overflow|//\")",
+      "Bash(grep -rnE \"\\\\\\\\\\\\$\\\\{|'\\\\\\\\\\\\$'|\\\\\"\\\\\\\\\\\\$\\\\\"|\\\\\\\\\\\\$\\\\{cartTotal|\\\\\\\\\\\\$\\\\{.*toFixed\" components/renderer/blocks/CartBlock.tsx components/renderer/blocks/CheckoutBlock.tsx components/renderer/blocks/ProductCardBlock.tsx components/renderer/blocks/ProductCarouselBlock.tsx components/renderer/blocks/ProductDetailBlock.tsx)"
     ]
   }
 }

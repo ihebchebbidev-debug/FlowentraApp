@@ -1,4 +1,8 @@
 {
+  "visibility": "Visibilité",
+  "visibilityHint": "Masquez ce bloc sur certaines tailles d'écran. Il reste dans la mise en page sur les autres.",
+  "hidden": "Masqué",
+  "shown": "Affiché",
   "noBlockSelected": "Aucun bloc sélectionné",
   "noBlockSelectedDesc": "Cliquez sur un bloc dans le canevas pour voir et modifier ses propriétés.",
   "up": "Haut",

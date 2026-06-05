@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BuilderComponent, AnimationSettings } from '../../types';
+import { BuilderComponent, AnimationSettings, DeviceView } from '../../types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,7 +8,7 @@ import { RichTextInput } from './RichTextInput';
 import { BackgroundEditor } from './BackgroundEditor';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
-import { Trash2, Copy, ChevronUp, ChevronDown, X, MousePointerClick, Settings2, ClipboardCopy } from 'lucide-react';
+import { Trash2, Copy, ChevronUp, ChevronDown, X, MousePointerClick, Settings2, ClipboardCopy, Monitor, Tablet, Smartphone, Eye, EyeOff } from 'lucide-react';
 import {
   ColorPicker,
   FontSelect,
@@ -65,7 +65,11 @@ interface PropertiesPanelProps {
   component: BuilderComponent | null;
   onUpdate: (id: string, props: Record<string, any>) => void;
   onUpdateStyles: (id: string, styles: Record<string, any>) => void;
+  onUpdateVisibility: (id: string, device: DeviceView, hidden: boolean) => void;
   onUpdateAnimation: (id: string, animation: AnimationSettings) => void;
+  /** Store currency from the site theme — used to format catalog-synced prices. */
+  storeCurrency?: string;
+  storeCurrencyPosition?: 'before' | 'after';
   onRemove: (id: string) => void;
   onDuplicate: (id: string) => void;
   onCopy?: (id: string) => void;
@@ -97,7 +101,7 @@ function renderNumberProp(key: string, value: number, onChange: (v: number) => v
   );
 }
 
-export function PropertiesPanel({ component, onUpdate, onUpdateStyles, onUpdateAnimation, onRemove, onDuplicate, onCopy, onMove, onDeselect }: PropertiesPanelProps) {
+export function PropertiesPanel({ component, onUpdate, onUpdateStyles, onUpdateVisibility, onUpdateAnimation, onRemove, onDuplicate, onCopy, onMove, onDeselect, storeCurrency, storeCurrencyPosition }: PropertiesPanelProps) {
   const { t } = useTranslation();
   // Memoize prop categorization — only recomputes when component props change
   const categories = useMemo(
@@ -194,6 +198,8 @@ export function PropertiesPanel({ component, onUpdate, onUpdateStyles, onUpdateA
           <CatalogSyncEditor
             componentType={component.type}
             onApply={(props) => onUpdate(component.id, props)}
+            currency={storeCurrency}
+            currencyPosition={storeCurrencyPosition}
           />
         )}
 
@@ -340,6 +346,37 @@ export function PropertiesPanel({ component, onUpdate, onUpdateStyles, onUpdateA
             styles={component.styles || {}}
             onChange={(newStyles) => onUpdateStyles(component.id, newStyles)}
           />
+        </EditorSection>
+
+        {/* Responsive visibility — hide this block per device (like WordPress) */}
+        <EditorSection title={t('wb:properties.visibility', 'Visibility')} defaultOpen={false}>
+          <p className="text-[10px] text-muted-foreground/60 leading-snug mb-1">
+            {t('wb:properties.visibilityHint', 'Hide this block on specific screen sizes. It stays in the layout on the others.')}
+          </p>
+          {([
+            { device: 'desktop' as DeviceView, icon: Monitor, label: t('wb:editor.desktop', 'Desktop') },
+            { device: 'tablet' as DeviceView, icon: Tablet, label: t('wb:editor.tablet', 'Tablet') },
+            { device: 'mobile' as DeviceView, icon: Smartphone, label: t('wb:editor.mobile', 'Mobile') },
+          ]).map(({ device, icon: Icon, label }) => {
+            const isHidden = !!component.hidden?.[device];
+            return (
+              <div key={device} className="flex items-center justify-between py-1">
+                <Label className="text-[11px] font-medium text-foreground/70 flex items-center gap-1.5">
+                  <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                  {label}
+                  <span className={`flex items-center gap-1 text-[10px] ${isHidden ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                    {isHidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                    {isHidden ? t('wb:properties.hidden', 'Hidden') : t('wb:properties.shown', 'Shown')}
+                  </span>
+                </Label>
+                <Switch
+                  checked={!isHidden}
+                  onCheckedChange={(shown) => onUpdateVisibility(component.id, device, !shown)}
+                  aria-label={`${label} visibility`}
+                />
+              </div>
+            );
+          })}
         </EditorSection>
 
         {/* Colors */}

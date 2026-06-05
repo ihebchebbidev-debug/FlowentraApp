@@ -1,6 +1,7 @@
 import React from 'react';
 import { SiteTheme } from '../../../types';
 import { useEcommerceStore } from '../../../hooks/useEcommerceStore';
+import { formatStorePrice } from '../../../utils/storeCurrency';
 import { Minus, Plus, X, ShoppingCart } from 'lucide-react';
 
 interface CartBlockProps {
@@ -37,8 +38,8 @@ export function CartBlock({
     imageUrl: it.imageUrl,
   }));
 
-  const displaySubtotal = useGlobal ? `$${cartTotal.toFixed(2)}` : staticSubtotal;
-  const displayTotal = useGlobal ? `$${cartTotal.toFixed(2)}` : staticTotal;
+  const displaySubtotal = useGlobal ? formatStorePrice(cartTotal, theme) : staticSubtotal;
+  const displayTotal = useGlobal ? formatStorePrice(cartTotal, theme) : staticTotal;
 
   return (
     <section className="py-12 px-6" style={{ fontFamily: theme.bodyFont, ...style }}>

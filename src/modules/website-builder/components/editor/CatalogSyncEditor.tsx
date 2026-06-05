@@ -15,6 +15,7 @@ import { RefreshCw, Loader2, PackageCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { articlesApi } from '@/services/api/articlesApi';
 import { EditorSection } from './property-editors';
+import { formatStorePrice } from '../../utils/storeCurrency';
 
 /** Block types that consume a `services` array vs a `products` array. */
 const SERVICE_BLOCKS = new Set(['service-card']);
@@ -25,15 +26,15 @@ export const CATALOG_SYNC_BLOCKS = new Set(['product-card', 'product-carousel', 
 interface CatalogSyncEditorProps {
   componentType: string;
   onApply: (props: Record<string, any>) => void;
+  /** Store currency from the site theme, so synced prices match cart/checkout. */
+  currency?: string;
+  currencyPosition?: 'before' | 'after';
 }
 
-function formatPrice(value?: number): string {
-  if (value == null || Number.isNaN(value)) return '';
-  return `${value.toLocaleString('fr-TN')} TND`;
-}
-
-export function CatalogSyncEditor({ componentType, onApply }: CatalogSyncEditorProps) {
+export function CatalogSyncEditor({ componentType, onApply, currency, currencyPosition }: CatalogSyncEditorProps) {
   const isService = SERVICE_BLOCKS.has(componentType);
+  const formatPrice = (value?: number): string =>
+    value == null || Number.isNaN(value) ? '' : formatStorePrice(value, { currency, currencyPosition });
   const [search, setSearch] = useState('');
   const [limit, setLimit] = useState(8);
   const [loading, setLoading] = useState(false);

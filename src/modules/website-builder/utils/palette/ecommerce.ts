@@ -141,6 +141,20 @@ export const ECOMMERCE_PALETTE: PaletteItem[] = [
     },
   },
 
+  // ── Mini Cart (persistent floating cart) ──
+  {
+    type: 'mini-cart', label: 'Mini Cart (Floating)', icon: 'ShoppingCart', category: 'business',
+    description: 'Persistent cart icon + slide-out drawer, synced across pages',
+    defaultProps: {
+      corner: 'top-right',
+      title: 'Your Cart',
+      checkoutLink: '#checkout',
+      checkoutText: 'Checkout',
+      emptyText: 'Your cart is empty',
+      showWhenEmpty: true,
+    },
+  },
+
   // ── Product Filter & Sort ──
   {
     type: 'product-filter', label: 'Product Filter Bar', icon: 'SlidersHorizontal', category: 'business',

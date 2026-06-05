@@ -61,6 +61,10 @@ export interface SiteTheme {
   linkStyle?: 'underline' | 'none' | 'hover-underline';
   /** Heading text-transform */
   headingTransform?: 'none' | 'uppercase' | 'capitalize';
+  /** Store currency symbol or code shown with prices/totals (e.g. "$", "€", "TND"). */
+  currency?: string;
+  /** Whether the currency sits before ("$10") or after ("10 TND") the amount. */
+  currencyPosition?: 'before' | 'after';
 }
 
 export const DEFAULT_THEME: SiteTheme = {
@@ -80,6 +84,8 @@ export const DEFAULT_THEME: SiteTheme = {
   letterSpacing: 0,
   linkStyle: 'hover-underline',
   headingTransform: 'none',
+  currency: '$',
+  currencyPosition: 'before',
 };
 
 /** Top-level site model */

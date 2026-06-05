@@ -128,6 +128,7 @@ const ECOMMERCE_BLOCKS: Record<string, LazyBlock> = {
   'quick-view':       lazyBlock(() => import('./blocks/QuickViewBlock'), 'QuickViewBlock'),
   'wishlist-grid':    lazyBlock(() => import('./blocks/WishlistGridBlock'), 'WishlistGridBlock'),
   cart:               lazyBlock(() => import('./blocks/CartBlock'), 'CartBlock'),
+  'mini-cart':        lazyBlock(() => import('./blocks/MiniCartBlock'), 'MiniCartBlock'),
   'product-filter':   lazyBlock(() => import('./blocks/ProductFilterBlock'), 'ProductFilterBlock'),
   checkout:           lazyBlock(() => import('./blocks/CheckoutBlock'), 'CheckoutBlock'),
 };
