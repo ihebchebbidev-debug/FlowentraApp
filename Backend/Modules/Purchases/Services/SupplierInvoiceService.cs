@@ -172,8 +172,8 @@ namespace MyApi.Modules.Purchases.Services
                         var items = dto.Items.Select((item, idx) => new SupplierInvoiceItem
                         {
                             SupplierInvoiceId = invoice.Id,
-                            PurchaseOrderItemId = item.PurchaseOrderItemId,
-                            ArticleId = item.ArticleId,
+                            PurchaseOrderItemId = item.PurchaseOrderItemId.HasValue ? item.PurchaseOrderItemId.Value.ToString() : null,
+                            ArticleId = item.ArticleId.HasValue ? item.ArticleId.Value.ToString() : null,
                             ArticleName = item.ArticleName,
                             Description = item.Description,
                             Quantity = item.Quantity,
@@ -474,8 +474,8 @@ namespace MyApi.Modules.Purchases.Services
             var item = new SupplierInvoiceItem
             {
                 SupplierInvoiceId = invoiceId,
-                PurchaseOrderItemId = dto.PurchaseOrderItemId,
-                ArticleId = dto.ArticleId,
+                PurchaseOrderItemId = dto.PurchaseOrderItemId.HasValue ? dto.PurchaseOrderItemId.Value.ToString() : null,
+                ArticleId = dto.ArticleId.HasValue ? dto.ArticleId.Value.ToString() : null,
                 ArticleName = dto.ArticleName,
                 Description = dto.Description,
                 Quantity = dto.Quantity,
@@ -501,7 +501,7 @@ namespace MyApi.Modules.Purchases.Services
             var item = invoice.Items?.FirstOrDefault(i => i.Id == itemId)
                 ?? throw new KeyNotFoundException($"Item {itemId} not found");
 
-            item.ArticleId = dto.ArticleId;
+            item.ArticleId = dto.ArticleId.HasValue ? dto.ArticleId.Value.ToString() : null;
             item.ArticleName = dto.ArticleName;
             item.Description = dto.Description;
             item.Quantity = dto.Quantity;
@@ -582,13 +582,24 @@ namespace MyApi.Modules.Purchases.Services
             await _context.SaveChangesAsync();
         }
 
-        private static SupplierInvoiceItemDto MapItemToDto(SupplierInvoiceItem i) => new()
+        private static SupplierInvoiceItemDto MapItemToDto(SupplierInvoiceItem i)
         {
-            Id = i.Id, SupplierInvoiceId = i.SupplierInvoiceId, PurchaseOrderItemId = i.PurchaseOrderItemId,
-            ArticleId = i.ArticleId, ArticleName = i.ArticleName, Description = i.Description,
-            Quantity = i.Quantity, UnitPrice = i.UnitPrice, TaxRate = i.TaxRate,
-            LineTotal = i.LineTotal, DisplayOrder = i.DisplayOrder
-        };
+            int? ParseInt(string? s) => !string.IsNullOrEmpty(s) && int.TryParse(s, out var v) ? v : (int?)null;
+            return new SupplierInvoiceItemDto
+            {
+                Id = i.Id,
+                SupplierInvoiceId = i.SupplierInvoiceId,
+                PurchaseOrderItemId = ParseInt(i.PurchaseOrderItemId),
+                ArticleId = ParseInt(i.ArticleId),
+                ArticleName = i.ArticleName,
+                Description = i.Description,
+                Quantity = i.Quantity,
+                UnitPrice = i.UnitPrice,
+                TaxRate = i.TaxRate,
+                LineTotal = i.LineTotal,
+                DisplayOrder = i.DisplayOrder
+            };
+        }
 
         private static SupplierInvoiceDto MapToDto(SupplierInvoice inv, string? poNumber) => new()
         {
@@ -612,13 +623,7 @@ namespace MyApi.Modules.Purchases.Services
             FactureEnLigneSentAt = inv.FactureEnLigneSentAt,
             TejSynced = inv.TejSynced, TejSyncDate = inv.TejSyncDate, TejSyncStatus = inv.TejSyncStatus,
             TejErrorMessage = inv.TejErrorMessage,
-            Items = inv.Items?.Select(i => new SupplierInvoiceItemDto
-            {
-                Id = i.Id, SupplierInvoiceId = i.SupplierInvoiceId, PurchaseOrderItemId = i.PurchaseOrderItemId,
-                ArticleId = i.ArticleId, ArticleName = i.ArticleName, Description = i.Description,
-                Quantity = i.Quantity, UnitPrice = i.UnitPrice, TaxRate = i.TaxRate,
-                LineTotal = i.LineTotal, DisplayOrder = i.DisplayOrder
-            }).ToList(),
+            Items = inv.Items?.Select(i => MapItemToDto(i)).ToList(),
             CreatedDate = inv.CreatedDate, CreatedBy = inv.CreatedBy, ModifiedDate = inv.ModifiedDate, ModifiedBy = inv.ModifiedBy
         };
     }
