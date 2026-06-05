@@ -74,6 +74,21 @@ namespace MyApi.Modules.Purchases.Data
                 entity.ToTable("SupplierInvoices");
                 entity.HasKey(e => e.Id);
                 entity.HasMany(e => e.Items).WithOne(i => i.SupplierInvoice).HasForeignKey(i => i.SupplierInvoiceId).OnDelete(DeleteBehavior.Cascade);
+
+                // Some tenants store FK columns as varchar (schema drift). Configure
+                // safe value converters so EF reads the DB text and converts to CLR ints
+                // without causing Npgsql to attempt GetInt32 on a varchar column.
+                var intToString = new Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<int, string>(
+                    v => v.ToString(),
+                    s => int.TryParse(s, out var x) ? x : 0);
+                var nullableIntToString = new Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<int?, string?>(
+                    v => v.HasValue ? v.Value.ToString() : null,
+                    s => string.IsNullOrEmpty(s) ? (int?)null : (int.TryParse(s, out var x) ? x : (int?)null));
+
+                entity.Property(e => e.SupplierId).HasConversion(intToString).HasColumnType("character varying");
+                entity.Property(e => e.PurchaseOrderId).HasConversion(nullableIntToString).HasColumnType("character varying");
+                entity.Property(e => e.GoodsReceiptId).HasConversion(nullableIntToString).HasColumnType("character varying");
+                entity.Property(e => e.RsRecordId).HasConversion(nullableIntToString).HasColumnType("character varying");
             });
         }
     }
