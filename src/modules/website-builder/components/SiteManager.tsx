@@ -12,9 +12,10 @@ import { Badge } from '@/components/ui/badge';
 import { CollapsibleSearch } from '@/components/ui/collapsible-search';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Plus, Globe, Filter, X,
+  Plus, Globe, Filter, X, PlayCircle,
   List, Table, FileText, Eye, LayoutGrid, Search, Loader2,
 } from 'lucide-react';
+import { WebsiteAutopilotDemo } from './onboarding/WebsiteAutopilotDemo';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,6 +49,7 @@ export function SiteManager({ onEditSite }: SiteManagerProps) {
   const [sites, setSites] = useState<WebsiteSite[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  const [showDemo, setShowDemo] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
@@ -209,11 +211,19 @@ export function SiteManager({ onEditSite }: SiteManagerProps) {
             <p className="text-[11px] text-muted-foreground">{t('wb:common.subtitle')}</p>
           </div>
         </div>
-        <Button className="bg-primary text-white hover:bg-primary/90 shadow-md" onClick={() => setShowCreate(true)}>
-          <Plus className="h-4 w-4 sm:mr-2" />
-          <span className="hidden sm:inline">{t('wb:common.newSite')}</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" className="shadow-sm" onClick={() => setShowDemo(true)}>
+            <PlayCircle className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">{t('wb:common.watchDemo', 'Watch demo')}</span>
+          </Button>
+          <Button className="bg-primary text-white hover:bg-primary/90 shadow-md" onClick={() => setShowCreate(true)}>
+            <Plus className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">{t('wb:common.newSite')}</span>
+          </Button>
+        </div>
       </div>
+
+      <WebsiteAutopilotDemo open={showDemo} onClose={() => setShowDemo(false)} onStart={() => setShowCreate(true)} />
 
       {/* Stats */}
       <div className="p-3 sm:p-4 border-b border-border">
