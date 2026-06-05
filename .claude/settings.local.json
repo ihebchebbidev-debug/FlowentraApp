@@ -50,7 +50,9 @@
       "Bash(grep -viE \"hidden\\\\?\\\\.\\\\[device\\\\]|overflow|//\")",
       "Bash(grep -rnE \"\\\\\\\\\\\\$\\\\{|'\\\\\\\\\\\\$'|\\\\\"\\\\\\\\\\\\$\\\\\"|\\\\\\\\\\\\$\\\\{cartTotal|\\\\\\\\\\\\$\\\\{.*toFixed\" components/renderer/blocks/CartBlock.tsx components/renderer/blocks/CheckoutBlock.tsx components/renderer/blocks/ProductCardBlock.tsx components/renderer/blocks/ProductCarouselBlock.tsx components/renderer/blocks/ProductDetailBlock.tsx)",
       "Bash(sed -n '/export interface BuilderComponent/,/^}/p' types/component.ts)",
-      "Bash(grep -nA4 \"type: 'hero'\" utils/palette/layout.ts)"
+      "Bash(grep -nA4 \"type: 'hero'\" utils/palette/layout.ts)",
+      "Bash(awk '{s+=$1} END{print s}')",
+      "Bash(grep -nE \"import|icon|Icon|category|CATEGORIES|categoryLabel|categoryOrder|LucideIcon|\\\\\\\\* as|COMPONENT_PALETTE|grouped|filter\" components/editor/ComponentPalette.tsx)"
     ]
   }
 }
