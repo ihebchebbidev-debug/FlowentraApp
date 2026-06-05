@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AlertTriangle, CheckCircle2, Loader2, FileDown, Sparkles } from "lucide-react";
 import {
@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -35,6 +36,11 @@ interface TejMissingInfoDialogProps {
   onApplyRs?: (rsTypeCode: string) => Promise<void>;
   /** True while an apply+download is in flight. */
   applying?: boolean;
+  /** Current supplier fiscal fields so they can be edited inline when missing. */
+  supplierCin?: string;
+  supplierMatriculeFiscale?: string;
+  onSaveSupplier?: (payload: { cin?: string; matriculeFiscale?: string }) => Promise<void>;
+  savingSupplier?: boolean;
 }
 
 /**
@@ -51,15 +57,30 @@ export function TejMissingInfoDialog({
   rsTypeCode,
   onApplyRs,
   applying = false,
+  supplierCin,
+  supplierMatriculeFiscale,
+  onSaveSupplier,
+  savingSupplier = false,
 }: TejMissingInfoDialogProps) {
   const { t } = useTranslation("purchases");
   const [selectedType, setSelectedType] = useState<string>(rsTypeCode || "10");
+  const [cin, setCin] = useState<string>(supplierCin || "");
+  const [matriculeFiscale, setMatriculeFiscale] = useState<string>(supplierMatriculeFiscale || "");
 
-  // Offer inline RS activation when the page supports it and RS isn't set up yet.
+  useEffect(() => {
+    setCin(supplierCin || "");
+  }, [supplierCin]);
+
+  useEffect(() => {
+    setMatriculeFiscale(supplierMatriculeFiscale || "");
+  }, [supplierMatriculeFiscale]);
+
   const canActivateRs = !!onApplyRs && (!rsApplicable || !rsTypeCode);
+  const canEditSupplier = !!onSaveSupplier && missing.some((item) => /matricule fiscal|cin/i.test(item));
+  const saveSupplierDisabled = applying || savingSupplier || (!matriculeFiscale.trim() && !cin.trim());
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!applying) onOpenChange(o); }}>
+    <Dialog open={open} onOpenChange={(o) => { if (!applying && !savingSupplier) onOpenChange(o); }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -128,8 +149,53 @@ export function TejMissingInfoDialog({
           </div>
         )}
 
+        {canEditSupplier && (
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-3">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Sparkles className="h-4 w-4 text-primary" />
+              {t("tej.supplierInfoTitle", "Supplier fiscal information")}
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {t(
+                "tej.supplierInfoDescription",
+                "Update the supplier's fiscal identifier here and retry downloading the TEJ XML. This saves the information for future exports.",
+              )}
+            </p>
+            <div className="grid gap-3">
+              <div>
+                <Label className="text-xs text-muted-foreground">{t("fields.matriculeFiscale", "Matricule fiscale")}</Label>
+                <Input
+                  className="h-9"
+                  value={matriculeFiscale}
+                  onChange={(e) => setMatriculeFiscale(e.target.value)}
+                  disabled={savingSupplier || applying}
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">{t("fields.cin", "CIN")}</Label>
+                <Input
+                  className="h-9"
+                  value={cin}
+                  onChange={(e) => setCin(e.target.value)}
+                  disabled={savingSupplier || applying}
+                />
+              </div>
+            </div>
+            <Button
+              className="w-full gap-1.5"
+              disabled={saveSupplierDisabled}
+              onClick={() => onSaveSupplier?.({ cin: cin.trim() || undefined, matriculeFiscale: matriculeFiscale.trim() || undefined })}
+            >
+              {savingSupplier ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+              {savingSupplier
+                ? t("tej.savingSupplier", "Saving…")
+                : t("tej.saveSupplierAndRetry", "Save supplier & retry")}
+            </Button>
+          </div>
+        )}
+
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={applying}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={applying || savingSupplier}>
             {t("tej.missingGotIt", "Got it")}
           </Button>
         </DialogFooter>

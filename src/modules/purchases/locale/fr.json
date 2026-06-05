@@ -168,6 +168,8 @@
     "amountPaid": "Payé",
     "balance": "Solde",
     "netPayable": "Net à payer",
+    "matriculeFiscale": "Matricule fiscale",
+    "cin": "CIN",
     "unit": "Unité"
   },
   "filters": {
@@ -201,7 +203,12 @@
     "activateDescription": "Choisissez le type de retenue — nous l'appliquons à cette facture (le montant est calculé automatiquement) et générons le XML.",
     "rsType": "Type de retenue",
     "applyAndDownload": "Appliquer & Télécharger le XML",
-    "applying": "Application…"
+    "applying": "Application…",
+    "supplierInfoTitle": "Informations fiscales du fournisseur",
+    "supplierInfoDescription": "Mettez à jour l'identifiant fiscal du fournisseur ici et réessayez de télécharger le XML TEJ. Cela enregistre l'information pour les exports futurs.",
+    "saveSupplierAndRetry": "Enregistrer le fournisseur & réessayer",
+    "savingSupplier": "Enregistrement…",
+    "supplierSaved": "Informations fiscales du fournisseur enregistrées"
   },
   "detail": {
     "supplierInfo": "Informations fournisseur",

@@ -168,6 +168,8 @@
     "amountPaid": "Paid",
     "balance": "Balance",
     "netPayable": "Net Payable",
+    "matriculeFiscale": "Matricule fiscale",
+    "cin": "CIN",
     "unit": "Unit"
   },
   "filters": {
@@ -201,7 +203,12 @@
     "activateDescription": "Choose the withholding type — we'll apply it to this invoice (the amount is computed automatically) and generate the XML.",
     "rsType": "Withholding type",
     "applyAndDownload": "Apply & Download XML",
-    "applying": "Applying…"
+    "applying": "Applying…",
+    "supplierInfoTitle": "Supplier fiscal information",
+    "supplierInfoDescription": "Update the supplier's fiscal identifier here and retry downloading the TEJ XML. This saves the information for future exports.",
+    "saveSupplierAndRetry": "Save supplier & retry",
+    "savingSupplier": "Saving…",
+    "supplierSaved": "Supplier fiscal details saved"
   },
   "detail": {
     "supplierInfo": "Supplier Information",

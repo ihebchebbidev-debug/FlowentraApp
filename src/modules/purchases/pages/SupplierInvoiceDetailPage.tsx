@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Building2, Calendar, FileText, Shield, CheckCircle, AlertTriangle, XCircle, Download, Pencil, Plus, Trash2, Save, X, Loader2, Send, FileDown } from "lucide-react";
 import { supplierInvoiceService } from "../services/purchaseService";
+import { contactsApi } from "@/services/api/contactsApi";
 import { RS_TRANSACTION_TYPES } from "@/modules/shared/types/retenue-source";
 import { PurchasePageHeader } from "../components/PurchasePageHeader";
 import { PurchaseErrorBoundary, PurchaseErrorFallback } from "../components/PurchaseErrorBoundary";
@@ -47,6 +48,9 @@ function SupplierInvoiceDetailContent() {
   const [tejMissing, setTejMissing] = useState<string[]>([]);
   const [tejMissingOpen, setTejMissingOpen] = useState(false);
   const [tejApplying, setTejApplying] = useState(false);
+  const [supplierCin, setSupplierCin] = useState<string>('');
+  const [supplierMatriculeFiscale, setSupplierMatriculeFiscale] = useState<string>('');
+  const [savingSupplierFiscalInfo, setSavingSupplierFiscalInfo] = useState(false);
 
   const fetchData = useCallback(() => {
     if (!id) return;
@@ -59,6 +63,46 @@ function SupplierInvoiceDetailContent() {
   }, [id]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const hasSupplierFiscalMissing = (missing: string[]) => missing.some((item) => /matricule fiscal|cin/i.test(item));
+
+  const loadSupplierFiscalInfo = async (supplierId: string) => {
+    try {
+      const contact = await contactsApi.getById(Number(supplierId));
+      setSupplierCin(contact.cin || '');
+      setSupplierMatriculeFiscale(contact.matriculeFiscale || '');
+    } catch (e: any) {
+      console.warn('Failed to load supplier fiscal info for TEJ export', e);
+    }
+  };
+
+  const saveSupplierFiscalInfo = async (payload: { cin?: string; matriculeFiscale?: string }) => {
+    if (!id || !inv?.supplierId) return;
+    setSavingSupplierFiscalInfo(true);
+    try {
+      await contactsApi.update(Number(inv.supplierId), payload);
+      toast.success(t('tej.supplierSaved', 'Supplier fiscal details saved'));
+      await loadSupplierFiscalInfo(inv.supplierId);
+      try {
+        await supplierInvoiceService.downloadTejXml(id);
+        toast.success(t('actions.tejXmlDownloaded', 'TEJ XML downloaded'));
+        setTejMissing([]);
+        setTejMissingOpen(false);
+        fetchData();
+      } catch (e: any) {
+        const missing: string[] = e?.missing || [];
+        if (missing.length > 0) {
+          setTejMissing(missing);
+        } else {
+          toast.error(e?.message || t('common.error', 'Failed to generate the TEJ XML'));
+        }
+      }
+    } catch (e: any) {
+      toast.error(e?.message || t('common.error', 'Failed to save supplier fiscal info'));
+    } finally {
+      setSavingSupplierFiscalInfo(false);
+    }
+  };
 
   // ── Items edit helpers ──
   const startEditItems = () => {
@@ -183,6 +227,9 @@ function SupplierInvoiceDetailContent() {
     } catch (e: any) {
       const missing: string[] = e?.missing || [];
       if (missing.length > 0) {
+        if (inv?.supplierId && hasSupplierFiscalMissing(missing)) {
+          await loadSupplierFiscalInfo(inv.supplierId);
+        }
         setTejMissing(missing);
         setTejMissingOpen(true);
       } else {
@@ -478,6 +525,10 @@ function SupplierInvoiceDetailContent() {
         rsTypeCode={inv.rsTypeCode}
         onApplyRs={handleApplyRsAndDownload}
         applying={tejApplying}
+        supplierCin={supplierCin}
+        supplierMatriculeFiscale={supplierMatriculeFiscale}
+        onSaveSupplier={saveSupplierFiscalInfo}
+        savingSupplier={savingSupplierFiscalInfo}
       />
     </div>
   );
