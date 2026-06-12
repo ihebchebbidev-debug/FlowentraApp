@@ -12,17 +12,20 @@ namespace MyApi.Modules.WorkflowEngine.Services
         private readonly ILogger<WorkflowGraphExecutor> _logger;
         private readonly IWorkflowNodeExecutor _nodeExecutor;
         private readonly IWorkflowNotificationService _notificationService;
+        private readonly IServiceScopeFactory _scopeFactory;
 
         public WorkflowGraphExecutor(
             ApplicationDbContext db,
             ILogger<WorkflowGraphExecutor> logger,
             IWorkflowNodeExecutor nodeExecutor,
-            IWorkflowNotificationService notificationService)
+            IWorkflowNotificationService notificationService,
+            IServiceScopeFactory scopeFactory)
         {
             _db = db;
             _logger = logger;
             _nodeExecutor = nodeExecutor;
             _notificationService = notificationService;
+            _scopeFactory = scopeFactory;
         }
 
         public async Task<GraphExecutionResult> ExecuteGraphAsync(
@@ -181,7 +184,88 @@ namespace MyApi.Modules.WorkflowEngine.Services
                         node.Id, 
                         string.Join(", ", nextNodes),
                         nodeResult.SelectedBranch ?? "N/A");
-                    
+
+                    // PARALLEL EXECUTION: if this node is a Parallel/fork node, run each
+                    // outgoing branch concurrently on its own DbContext scope, then merge
+                    // results back into the aggregate and mark all branch-touched nodes as
+                    // executed so the main queue doesn't re-run them.
+                    if (node.Type.Contains("parallel") && nextNodes.Count > 1)
+                    {
+                        var maxConcurrency = 5;
+                        var waitForAll = true;
+                        if (context.Variables.TryGetValue($"{node.Id}_maxConcurrency", out var mc) && mc is int mci) maxConcurrency = mci;
+                        if (context.Variables.TryGetValue($"{node.Id}_waitForAll", out var wfa) && wfa is bool wfab) waitForAll = wfab;
+                        if (maxConcurrency < 1) maxConcurrency = 1;
+
+                        _logger.LogInformation(
+                            "[WORKFLOW-GRAPH] Parallel fork at {NodeId}: {Count} branches, maxConcurrency={Max}, waitForAll={Wait}",
+                            node.Id, nextNodes.Count, maxConcurrency, waitForAll);
+
+                        using var sem = new SemaphoreSlim(maxConcurrency);
+                        var branchTasks = nextNodes.Select(async startId =>
+                        {
+                            await sem.WaitAsync();
+                            try
+                            {
+                                // Snapshot variables for this branch so concurrent mutation is safe.
+                                var branchCtx = new WorkflowExecutionContext
+                                {
+                                    WorkflowId = context.WorkflowId,
+                                    ExecutionId = context.ExecutionId,
+                                    TriggerEntityType = context.TriggerEntityType,
+                                    TriggerEntityId = context.TriggerEntityId,
+                                    UserId = context.UserId,
+                                    Variables = new Dictionary<string, object?>(context.Variables),
+                                    NodeOutputs = new Dictionary<string, object?>(context.NodeOutputs),
+                                    StartedAt = context.StartedAt
+                                };
+
+                                // Each branch gets its own DI scope (and DbContext + executor)
+                                // because EF Core DbContext is not thread-safe.
+                                using var scope = _scopeFactory.CreateScope();
+                                var branchExecutor = scope.ServiceProvider.GetRequiredService<IWorkflowGraphExecutor>();
+                                return new { StartId = startId, Result = await branchExecutor.ExecuteGraphAsync(workflowId, executionId, startId, branchCtx), Ctx = branchCtx };
+                            }
+                            finally { sem.Release(); }
+                        }).ToList();
+
+                        var branchResults = waitForAll
+                            ? await Task.WhenAll(branchTasks)
+                            : new[] { await await Task.WhenAny(branchTasks) };
+
+                        // Merge branch results and variables back.
+                        foreach (var br in branchResults)
+                        {
+                            result.NodesExecuted += br.Result.NodesExecuted;
+                            result.NodesFailed   += br.Result.NodesFailed;
+                            result.NodesSkipped  += br.Result.NodesSkipped;
+                            result.NodeResults.AddRange(br.Result.NodeResults);
+                            foreach (var kvp in br.Ctx.Variables) context.Variables[kvp.Key] = kvp.Value;
+                            foreach (var kvp in br.Ctx.NodeOutputs) context.NodeOutputs[kvp.Key] = kvp.Value;
+
+                            if (!br.Result.Success)
+                            {
+                                result.Success = false;
+                                result.FinalStatus = br.Result.FinalStatus;
+                                result.Error = br.Result.Error;
+                            }
+                            else if (br.Result.FinalStatus != "completed" && string.IsNullOrEmpty(result.FinalStatus))
+                            {
+                                result.FinalStatus = br.Result.FinalStatus;
+                            }
+                        }
+
+                        // Mark branch start-nodes as executed in the outer traversal so the
+                        // main queue doesn't run them sequentially after the fork.
+                        foreach (var startId in nextNodes) executed.Add(startId);
+
+                        // If any branch failed and we were waiting for all, stop the fork.
+                        if (!result.Success) break;
+
+                        // Skip the normal enqueue path — parallel branches handled it.
+                        continue;
+                    }
+
                     foreach (var nextNodeId in nextNodes)
                     {
                         if (!executed.Contains(nextNodeId))

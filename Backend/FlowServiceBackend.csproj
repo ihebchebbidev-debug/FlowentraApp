@@ -35,6 +35,7 @@
     <PackageReference Include="StackExchange.Redis" Version="2.7.33" />
     <PackageReference Include="MailKit" Version="4.13.0" />
     <PackageReference Include="MimeKit" Version="4.13.0" />
+    <PackageReference Include="Jint" Version="4.0.3" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="wwwroot\swagger-ui\" />

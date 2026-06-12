@@ -86,6 +86,23 @@ namespace MyApi.Modules.WorkflowEngine.Services
             // Create execution for each matching workflow
             foreach (var trigger in triggers)
             {
+                // RELIABILITY (BUG-1): skip if there is already an in-flight execution
+                // for the same (workflow, entity). Rapid back-to-back status changes
+                // could otherwise spawn duplicate parallel executions that fight each
+                // other (e.g. both create a child offer, both send the same email).
+                var alreadyRunning = await _db.WorkflowExecutions.AnyAsync(e =>
+                    e.WorkflowId == trigger.WorkflowId &&
+                    e.TriggerEntityType == entityType &&
+                    e.TriggerEntityId == entityId &&
+                    (e.Status == "running" || e.Status == "waiting_approval" || e.Status == "waiting_delay"));
+                if (alreadyRunning)
+                {
+                    _logger.LogInformation(
+                        "[WORKFLOW-TRIGGER] Skipping duplicate execution for workflow {WorkflowId} on {EntityType} #{EntityId} — an execution is already in-flight",
+                        trigger.WorkflowId, entityType, entityId);
+                    continue;
+                }
+
                 WorkflowExecution? execution = null;
                 try
                 {
@@ -243,6 +260,159 @@ namespace MyApi.Modules.WorkflowEngine.Services
                 }
             }
         }
+
+        public async Task<int?> TriggerWebhookAsync(
+            string path,
+            string? token,
+            JsonElement payload,
+            string? userId = null)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                _logger.LogWarning("[WORKFLOW-WEBHOOK] Empty path on inbound webhook");
+                return null;
+            }
+
+            // Webhook triggers are stored as EntityType="webhook", FromStatus=path,
+            // ToStatus=optional secret token. This reuses the existing schema, no migration.
+            var trigger = await _db.WorkflowTriggers
+                .Include(t => t.Workflow)
+                .FirstOrDefaultAsync(t => t.IsActive
+                    && t.EntityType == "webhook"
+                    && t.FromStatus == path
+                    && (t.Workflow == null || (t.Workflow.IsActive && !t.Workflow.IsDeleted)));
+
+            if (trigger == null)
+            {
+                _logger.LogWarning("[WORKFLOW-WEBHOOK] No active trigger for path '{Path}'", path);
+                return null;
+            }
+
+            // Token validation: if the trigger has a token configured (ToStatus), require it.
+            if (!string.IsNullOrEmpty(trigger.ToStatus))
+            {
+                if (string.IsNullOrEmpty(token) || !string.Equals(trigger.ToStatus, token, StringComparison.Ordinal))
+                {
+                    _logger.LogWarning("[WORKFLOW-WEBHOOK] Invalid token for webhook path '{Path}'", path);
+                    return null;
+                }
+            }
+
+            // Concurrency guard: a webhook can legitimately fire many times, so we don't
+            // dedupe by entity; we still dedupe by (workflow, path) within the last 2 seconds
+            // to swallow accidental double-deliveries.
+            var since = DateTime.UtcNow.AddSeconds(-2);
+            var recentDuplicate = await _db.WorkflowExecutions.AnyAsync(e =>
+                e.WorkflowId == trigger.WorkflowId &&
+                e.TriggerEntityType == "webhook" &&
+                e.StartedAt >= since);
+            if (recentDuplicate)
+            {
+                _logger.LogInformation("[WORKFLOW-WEBHOOK] Duplicate inbound webhook for workflow {WorkflowId} within debounce window; skipping", trigger.WorkflowId);
+                return null;
+            }
+
+            var payloadJson = payload.ValueKind == JsonValueKind.Undefined ? "{}" : payload.GetRawText();
+            WorkflowExecution? execution = null;
+            try
+            {
+                execution = new WorkflowExecution
+                {
+                    WorkflowId = trigger.WorkflowId,
+                    TriggerEntityType = "webhook",
+                    TriggerEntityId = 0,
+                    Status = "running",
+                    CurrentNodeId = trigger.NodeId,
+                    Context = JsonSerializer.Serialize(new
+                    {
+                        source = "webhook",
+                        path,
+                        triggeredAt = DateTime.UtcNow,
+                        payload = payloadJson
+                    }),
+                    StartedAt = DateTime.UtcNow,
+                    TriggeredBy = userId
+                };
+                _db.WorkflowExecutions.Add(execution);
+                await _db.SaveChangesAsync();
+
+                await _notificationService.NotifyExecutionStartedAsync(
+                    trigger.WorkflowId, execution.Id, "webhook", 0, userId);
+                await _notificationService.NotifyNodeExecutingAsync(
+                    trigger.WorkflowId, execution.Id, trigger.NodeId, "webhook-trigger");
+
+                _db.WorkflowExecutionLogs.Add(new WorkflowExecutionLog
+                {
+                    ExecutionId = execution.Id,
+                    NodeId = trigger.NodeId,
+                    NodeType = "webhook-trigger",
+                    Status = "completed",
+                    Input = payloadJson.Length > 8000 ? payloadJson.Substring(0, 8000) : payloadJson,
+                    Output = JsonSerializer.Serialize(new { triggered = true, path }),
+                    Timestamp = DateTime.UtcNow
+                });
+                await _db.SaveChangesAsync();
+
+                await _notificationService.NotifyNodeCompletedAsync(
+                    trigger.WorkflowId, execution.Id, trigger.NodeId, "webhook-trigger", true, null,
+                    JsonSerializer.Serialize(new { triggered = true }));
+
+                var execContext = new WorkflowExecutionContext
+                {
+                    WorkflowId = trigger.WorkflowId,
+                    ExecutionId = execution.Id,
+                    TriggerEntityType = "webhook",
+                    TriggerEntityId = 0,
+                    UserId = userId,
+                    Variables = new Dictionary<string, object?>
+                    {
+                        ["source"] = "webhook",
+                        ["webhookPath"] = path,
+                        ["payload"] = payloadJson
+                    }
+                };
+
+                var graphExecutor = _serviceProvider.GetRequiredService<IWorkflowGraphExecutor>();
+                var graphResult = await graphExecutor.ExecuteGraphAsync(
+                    trigger.WorkflowId, execution.Id, trigger.NodeId, execContext);
+
+                execution.Status = graphResult.FinalStatus;
+                execution.Error = graphResult.Error;
+                if (graphResult.FinalStatus == "completed" || graphResult.FinalStatus == "failed")
+                {
+                    execution.CompletedAt = DateTime.UtcNow;
+                }
+                await _db.SaveChangesAsync();
+
+                await _notificationService.NotifyExecutionCompletedAsync(
+                    trigger.WorkflowId, execution.Id, graphResult.FinalStatus,
+                    graphResult.NodesExecuted, graphResult.NodesFailed);
+
+                return execution.Id;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[WORKFLOW-WEBHOOK] Error executing webhook workflow {WorkflowId}", trigger.WorkflowId);
+                if (execution != null)
+                {
+                    try
+                    {
+                        _db.ChangeTracker.Clear();
+                        var fresh = await _db.WorkflowExecutions.FirstOrDefaultAsync(e => e.Id == execution.Id);
+                        if (fresh != null)
+                        {
+                            fresh.Status = "failed";
+                            fresh.Error = ex.Message.Length > 1000 ? ex.Message.Substring(0, 1000) : ex.Message;
+                            fresh.CompletedAt = DateTime.UtcNow;
+                            await _db.SaveChangesAsync();
+                        }
+                    }
+                    catch { /* swallow */ }
+                }
+                return execution?.Id;
+            }
+        }
+
 
         public async Task<int> GetPendingExecutionsCountAsync(string entityType, int entityId)
         {

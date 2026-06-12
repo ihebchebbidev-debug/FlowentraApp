@@ -51,7 +51,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
             return approval == null ? null : MapToDto(approval);
         }
 
-        public async Task<bool> RespondToApprovalAsync(int approvalId, ApprovalResponseDto response, string userId)
+        public async Task<bool> RespondToApprovalAsync(int approvalId, ApprovalResponseDto response, string userId, IEnumerable<string>? callerRoles = null)
         {
             var approval = await _db.WorkflowApprovals
                 .Include(a => a.Execution)
@@ -59,6 +59,27 @@ namespace MyApi.Modules.WorkflowEngine.Services
 
             if (approval == null || approval.Status != "pending")
                 return false;
+
+            // SECURITY FIX (SEC-2): enforce ApproverRole. Previously any authenticated user
+            // could approve/reject any pending request regardless of their role.
+            if (!string.IsNullOrWhiteSpace(approval.ApproverRole))
+            {
+                var roles = callerRoles?.Where(r => !string.IsNullOrWhiteSpace(r))
+                                       .Select(r => r.Trim())
+                                       .ToList() ?? new List<string>();
+                var allowed = roles.Any(r => string.Equals(r, approval.ApproverRole, StringComparison.OrdinalIgnoreCase))
+                              || roles.Any(r => string.Equals(r, "admin", StringComparison.OrdinalIgnoreCase));
+                if (!allowed)
+                {
+                    _logger.LogWarning(
+                        "[WORKFLOW-APPROVAL] User {UserId} attempted to respond to approval {ApprovalId} requiring role '{Role}' but only has [{Roles}]",
+                        userId, approvalId, approval.ApproverRole, string.Join(",", roles));
+                    throw new UnauthorizedAccessException(
+                        $"This approval requires role '{approval.ApproverRole}'.");
+                }
+            }
+
+
 
             approval.Status = response.Approved ? "approved" : "rejected";
             approval.ResponseNote = response.Note;

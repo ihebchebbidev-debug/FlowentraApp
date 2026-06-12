@@ -52,9 +52,18 @@ namespace MyApi.Modules.WorkflowEngine.Controllers
             var response = dto ?? new ApprovalResponseDto { Approved = true };
             response.Approved = true;
 
-            var success = await _approvalService.RespondToApprovalAsync(id, response, userId);
-            if (!success)
-                return NotFound(new { message = $"Approval {id} not found or already processed" });
+            // SEC-2: pass caller roles so the service can enforce ApproverRole.
+            var roles = User.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
+            try
+            {
+                var success = await _approvalService.RespondToApprovalAsync(id, response, userId, roles);
+                if (!success)
+                    return NotFound(new { message = $"Approval {id} not found or already processed" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
 
             return Ok(new { message = "Request approved" });
         }
@@ -69,9 +78,17 @@ namespace MyApi.Modules.WorkflowEngine.Controllers
             var response = dto ?? new ApprovalResponseDto { Approved = false };
             response.Approved = false;
 
-            var success = await _approvalService.RespondToApprovalAsync(id, response, userId);
-            if (!success)
-                return NotFound(new { message = $"Approval {id} not found or already processed" });
+            var roles = User.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
+            try
+            {
+                var success = await _approvalService.RespondToApprovalAsync(id, response, userId, roles);
+                if (!success)
+                    return NotFound(new { message = $"Approval {id} not found or already processed" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
 
             return Ok(new { message = "Request rejected" });
         }

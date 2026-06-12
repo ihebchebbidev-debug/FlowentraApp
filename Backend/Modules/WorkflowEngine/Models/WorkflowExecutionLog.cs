@@ -33,7 +33,9 @@ namespace MyApi.Modules.WorkflowEngine.Models
         [Column(TypeName = "jsonb")]
         public string? Output { get; set; }
 
-        [MaxLength(500)]
+        // OBS-3: stack traces and remote API error bodies routinely exceed 500 chars.
+        // Use unbounded text so we keep the full error for diagnostics.
+        [Column(TypeName = "text")]
         public string? Error { get; set; }
 
         public int? Duration { get; set; } // milliseconds

@@ -112,12 +112,20 @@ namespace MyApi.Modules.WorkflowEngine.Services
 
         public async Task<WorkflowDefinitionDto> CreateWorkflowAsync(CreateWorkflowDto dto, string createdBy)
         {
+            var nodesJson = JsonSerializer.Serialize(dto.Nodes);
+            var edgesJson = JsonSerializer.Serialize(dto.Edges);
+
+            // RELIABILITY: reject obviously broken graphs at save-time so users can't
+            // build workflows that will never run (no nodes, no trigger, edges that
+            // point to missing nodes, etc.). Throws InvalidOperationException.
+            ValidateGraphOrThrow(nodesJson, edgesJson);
+
             var workflow = new WorkflowDefinition
             {
                 Name = dto.Name,
                 Description = dto.Description,
-                Nodes = JsonSerializer.Serialize(dto.Nodes),
-                Edges = JsonSerializer.Serialize(dto.Edges),
+                Nodes = nodesJson,
+                Edges = edgesJson,
                 IsActive = dto.IsActive,
                 CreatedBy = createdBy,
                 CreatedAt = DateTime.UtcNow
@@ -142,8 +150,16 @@ namespace MyApi.Modules.WorkflowEngine.Services
 
             if (dto.Name != null) workflow.Name = dto.Name;
             if (dto.Description != null) workflow.Description = dto.Description;
-            if (dto.Nodes != null) workflow.Nodes = JsonSerializer.Serialize(dto.Nodes);
-            if (dto.Edges != null) workflow.Edges = JsonSerializer.Serialize(dto.Edges);
+            if (dto.Nodes != null || dto.Edges != null)
+            {
+                var nextNodes = dto.Nodes != null ? JsonSerializer.Serialize(dto.Nodes) : workflow.Nodes;
+                var nextEdges = dto.Edges != null ? JsonSerializer.Serialize(dto.Edges) : workflow.Edges;
+                // RELIABILITY: validate the resulting graph before persisting so the user
+                // never ends up with a workflow that cannot fire (or fires nowhere).
+                ValidateGraphOrThrow(nextNodes, nextEdges);
+                workflow.Nodes = nextNodes;
+                workflow.Edges = nextEdges;
+            }
             if (dto.IsActive.HasValue) workflow.IsActive = dto.IsActive.Value;
 
             workflow.UpdatedAt = DateTime.UtcNow;
@@ -371,10 +387,15 @@ namespace MyApi.Modules.WorkflowEngine.Services
 
             if (workflow == null) return false;
 
-            // Safety: don't archive if there are running executions
-            var hasRunning = workflow.Executions?.Any(e => e.Status == "running" || e.Status == "waiting_approval") ?? false;
+            // Safety: don't archive if there are running executions.
+            // BUG FIX (BUG-6): also block when executions are parked on a delay node
+            // (waiting_delay); archiving them silently abandons in-flight work.
+            var hasRunning = workflow.Executions?.Any(e =>
+                e.Status == "running" ||
+                e.Status == "waiting_approval" ||
+                e.Status == "waiting_delay") ?? false;
             if (hasRunning)
-                throw new InvalidOperationException("Cannot archive a workflow with running executions. Cancel them first.");
+                throw new InvalidOperationException("Cannot archive a workflow with running, waiting-for-approval, or delayed executions. Cancel them first.");
 
             // Deactivate and soft-delete
             workflow.IsActive = false;
@@ -733,6 +754,83 @@ namespace MyApi.Modules.WorkflowEngine.Services
             if (nodeType.Contains("offer")) return "offer";
             if (nodeType.Contains("sale")) return "sale";
             return null;
+        }
+
+        /// <summary>
+        /// Save-time graph validation. Guarantees that any workflow accepted by the
+        /// engine can be executed:
+        ///   - JSON is parseable
+        ///   - At least one node exists
+        ///   - Every node has a non-empty id (duplicates are rejected)
+        ///   - Every edge references real source/target node ids
+        ///   - At least one trigger node is present (otherwise the workflow can never fire)
+        /// Throws <see cref="InvalidOperationException"/> with a human-readable message on failure.
+        /// </summary>
+        private static void ValidateGraphOrThrow(string nodesJson, string edgesJson)
+        {
+            List<JsonElement> nodes;
+            List<JsonElement> edges;
+            try
+            {
+                nodes = JsonSerializer.Deserialize<List<JsonElement>>(nodesJson) ?? new();
+                edges = JsonSerializer.Deserialize<List<JsonElement>>(edgesJson) ?? new();
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Workflow graph is not valid JSON: {ex.Message}");
+            }
+
+            if (nodes.Count == 0)
+                throw new InvalidOperationException("Workflow must contain at least one node.");
+
+            var ids = new HashSet<string>(StringComparer.Ordinal);
+            var hasTrigger = false;
+
+            foreach (var node in nodes)
+            {
+                var id = node.TryGetProperty("id", out var idEl) ? idEl.GetString() : null;
+                if (string.IsNullOrWhiteSpace(id))
+                    throw new InvalidOperationException("Every node must have a non-empty 'id'.");
+                if (!ids.Add(id))
+                    throw new InvalidOperationException($"Duplicate node id '{id}'.");
+
+                // Resolve the business type (data.type takes precedence, then top-level type)
+                string? nodeType = null;
+                if (node.TryGetProperty("data", out var dataEl) &&
+                    dataEl.TryGetProperty("type", out var dataTypeEl))
+                {
+                    nodeType = dataTypeEl.GetString();
+                }
+                if (string.IsNullOrEmpty(nodeType) && node.TryGetProperty("type", out var topTypeEl))
+                {
+                    nodeType = topTypeEl.GetString();
+                }
+
+                if (!string.IsNullOrEmpty(nodeType) &&
+                    (nodeType.Contains("trigger", StringComparison.OrdinalIgnoreCase) ||
+                     string.Equals(nodeType, "entityTrigger", StringComparison.OrdinalIgnoreCase)))
+                {
+                    hasTrigger = true;
+                }
+            }
+
+            if (!hasTrigger)
+                throw new InvalidOperationException(
+                    "Workflow must contain at least one trigger node — otherwise it can never fire.");
+
+            foreach (var edge in edges)
+            {
+                var source = edge.TryGetProperty("source", out var sEl) ? sEl.GetString() : null;
+                var target = edge.TryGetProperty("target", out var tEl) ? tEl.GetString() : null;
+                if (string.IsNullOrWhiteSpace(source) || string.IsNullOrWhiteSpace(target))
+                    throw new InvalidOperationException("Every edge must have a 'source' and a 'target'.");
+                if (!ids.Contains(source))
+                    throw new InvalidOperationException($"Edge references missing source node '{source}'.");
+                if (!ids.Contains(target))
+                    throw new InvalidOperationException($"Edge references missing target node '{target}'.");
+                if (string.Equals(source, target, StringComparison.Ordinal))
+                    throw new InvalidOperationException($"Edge cannot connect node '{source}' to itself.");
+            }
         }
 
         private static WorkflowDefinitionDto MapToDto(WorkflowDefinition workflow)

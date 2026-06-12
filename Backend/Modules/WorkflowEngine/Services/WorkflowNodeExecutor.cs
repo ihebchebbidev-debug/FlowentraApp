@@ -202,20 +202,21 @@ namespace MyApi.Modules.WorkflowEngine.Services
 
         private Task<NodeExecutionResult> ExecuteCreateOfferAsync(WorkflowNode node, WorkflowExecutionContext context)
         {
-            // This would create an offer based on node configuration
-            // For now, log and return success
-            _logger.LogInformation("Create Offer node executed for context {EntityType}:{EntityId}", 
-                context.TriggerEntityType, context.TriggerEntityId);
-
+            // RELIABILITY FIX (BUG-2): previously this stub returned Success=true with
+            // status="simulated", so workflows containing a Create-Offer node looked
+            // healthy while the offer was never created. Fail loudly so users notice
+            // the limitation instead of trusting a silent no-op.
+            const string message =
+                "create-offer node is not implemented yet — workflow halted to avoid a silent no-op. " +
+                "Remove the node, or create the offer manually via the Offers module.";
+            _logger.LogError("[WORKFLOW] {Message} (execution context: {EntityType}:{EntityId})",
+                message, context.TriggerEntityType, context.TriggerEntityId);
             return Task.FromResult(new NodeExecutionResult
             {
-                Success = true,
-                Status = "completed",
-                Output = new Dictionary<string, object?>
-                {
-                    ["action"] = "create_offer",
-                    ["status"] = "simulated"
-                }
+                Success = false,
+                Status = "failed",
+                Error = message,
+                ShouldStop = true
             });
         }
 
@@ -966,11 +967,19 @@ namespace MyApi.Modules.WorkflowEngine.Services
             }
             var to = ResolveVariables(toRaw, context);
 
-            // SMTP config: appsettings override, fall back to existing OVH transport already used by ForgotEmailService.
-            var host = _configuration["Smtp:Host"] ?? "ssl0.ovh.net";
-            var port = int.TryParse(_configuration["Smtp:Port"], out var p) ? p : 465;
-            var user = _configuration["Smtp:Username"] ?? "testadminsupportgermararaza@spadadibattaglia.com";
-            var pass = _configuration["Smtp:Password"] ?? "Dadouhibou2025";
+            // SMTP config: must be supplied via configuration / environment / secret store.
+            // SECURITY FIX: no hardcoded credential fallbacks — those leaked a real mailbox password
+            // into source control. Fail loudly when the SMTP transport is not configured.
+            var host = _configuration["Smtp:Host"];
+            var portRaw = _configuration["Smtp:Port"];
+            var user = _configuration["Smtp:Username"];
+            var pass = _configuration["Smtp:Password"];
+            if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(pass))
+            {
+                _logger.LogError("[WORKFLOW-EMAIL] SMTP is not configured (Smtp:Host / Smtp:Username / Smtp:Password). Skipping send-email node.");
+                return new NodeExecutionResult { Success = false, Status = "failed", Error = "send-email: SMTP transport is not configured on the server" };
+            }
+            var port = int.TryParse(portRaw, out var p) ? p : 465;
             var useSsl = !(bool.TryParse(_configuration["Smtp:UseSsl"], out var ssl) && ssl == false);
 
             try
@@ -1231,7 +1240,11 @@ namespace MyApi.Modules.WorkflowEngine.Services
                 attempt++;
                 try
                 {
-                    using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(timeout) };
+                    // PERF-6: reuse the pooled HttpMessageHandler via IHttpClientFactory
+                    // instead of allocating a fresh HttpClient per attempt, which leaks
+                    // sockets and exhausts ephemeral ports under load.
+                    var httpClient = _httpClientFactory.CreateClient();
+                    httpClient.Timeout = TimeSpan.FromSeconds(timeout);
 
                     // Set auth headers
                     switch (authType)
@@ -1697,7 +1710,12 @@ namespace MyApi.Modules.WorkflowEngine.Services
                     var now = DateTime.UtcNow;
                     if (targetTime > now)
                     {
-                        delayMs = (int)(targetTime - now).TotalMilliseconds;
+                        // BUG FIX (BUG-5): use long arithmetic + clamp; (int) cast of a
+                        // TotalMilliseconds value >24 days wraps to a negative int and
+                        // Task.Delay throws ArgumentOutOfRangeException.
+                        var remainingMs = (long)(targetTime - now).TotalMilliseconds;
+                        if (remainingMs < 0) remainingMs = 0;
+                        delayMs = remainingMs > int.MaxValue ? int.MaxValue : (int)remainingMs;
                     }
                     else
                     {
@@ -1843,20 +1861,17 @@ namespace MyApi.Modules.WorkflowEngine.Services
             var operation = GetNodeDataString(node, "operation") ?? "read";
             var table = GetNodeDataString(node, "table");
 
-            _logger.LogInformation("Database operation: {Operation} on {Table}", operation, table);
-
-            // TODO: Implement database operations
+            // RELIABILITY FIX: the database node was a silent stub. Fail loudly so
+            // workflows do not appear to succeed while no DB work happened.
+            var message =
+                $"database node is not implemented yet (operation={operation}, table={table ?? "?"}) — workflow halted to avoid a silent no-op.";
+            _logger.LogError("[WORKFLOW] {Message}", message);
             return Task.FromResult(new NodeExecutionResult
             {
-                Success = true,
-                Status = "completed",
-                Output = new Dictionary<string, object?>
-                {
-                    ["action"] = "database",
-                    ["operation"] = operation,
-                    ["table"] = table,
-                    ["status"] = "simulated"
-                }
+                Success = false,
+                Status = "failed",
+                Error = message,
+                ShouldStop = true
             });
         }
 
@@ -1873,10 +1888,13 @@ namespace MyApi.Modules.WorkflowEngine.Services
                 node.Id, node.Label);
 
             var code = GetNodeDataString(node, "code") ?? GetConfigString(node, "code") ?? "";
-            var continueOnError = GetNodeDataString(node, "continueOnError")?.ToLower() == "true" 
+            var continueOnError = GetNodeDataString(node, "continueOnError")?.ToLower() == "true"
                                || GetConfigString(node, "continueOnError")?.ToLower() == "true";
-            var logOutput = GetNodeDataString(node, "logOutput")?.ToLower() != "false" 
+            var logOutput = GetNodeDataString(node, "logOutput")?.ToLower() != "false"
                          && GetConfigString(node, "logOutput")?.ToLower() != "false";
+            var timeoutMs = GetNodeDataInt(node, "timeoutMs") ?? GetNodeDataInt(node, "timeout") ?? 2000;
+            if (timeoutMs <= 0) timeoutMs = 2000;
+            if (timeoutMs > 30000) timeoutMs = 30000; // hard cap: 30s
 
             if (string.IsNullOrWhiteSpace(code))
             {
@@ -1894,108 +1912,153 @@ namespace MyApi.Modules.WorkflowEngine.Services
                 });
             }
 
+            var logs = new List<string>();
+            var sw = Stopwatch.StartNew();
+
+            // Build the input object exposed to JS
+            var input = new Dictionary<string, object?>();
+            input["trigger"] = new Dictionary<string, object?>
+            {
+                ["entityType"] = context.TriggerEntityType,
+                ["entityId"] = context.TriggerEntityId,
+                ["status"] = context.Variables.TryGetValue("triggerStatus", out var ts) ? ts : null,
+                ["fromStatus"] = context.Variables.TryGetValue("fromStatus", out var fs) ? fs : null,
+                ["toStatus"] = context.Variables.TryGetValue("toStatus", out var tos) ? tos : null,
+            };
+            foreach (var kvp in context.Variables)
+            {
+                if (!input.ContainsKey(kvp.Key)) input[kvp.Key] = kvp.Value;
+            }
+
             try
             {
-                // Build the input object from context variables (outputs of previous nodes)
-                var input = new Dictionary<string, object?>();
-                
-                // Add trigger data
-                input["trigger"] = new Dictionary<string, object?>
+                // SAFE SANDBOX: Jint with strict CPU/memory limits and no host bindings.
+                // No AllowClr → user JS cannot access .NET types, the filesystem, or sockets.
+                using var cts = new System.Threading.CancellationTokenSource(timeoutMs + 500);
+                var engine = new Jint.Engine(options =>
                 {
-                    ["entityType"] = context.TriggerEntityType,
-                    ["entityId"] = context.TriggerEntityId,
-                    ["status"] = context.Variables.TryGetValue("triggerStatus", out var ts) ? ts : null,
-                    ["fromStatus"] = context.Variables.TryGetValue("fromStatus", out var fs) ? fs : null,
-                    ["toStatus"] = context.Variables.TryGetValue("toStatus", out var tos) ? tos : null,
+                    options.LimitRecursion(64);
+                    options.MaxStatements(100_000);
+                    options.TimeoutInterval(TimeSpan.FromMilliseconds(timeoutMs));
+                    options.CancellationToken(cts.Token);
+                });
+
+                // Capturing console.log/warn/error — the only host binding we expose.
+                var consoleObj = new Dictionary<string, object?>
+                {
+                    ["log"]   = new Action<object?>(o => { if (logs.Count < 500) logs.Add(o?.ToString() ?? "null"); }),
+                    ["warn"]  = new Action<object?>(o => { if (logs.Count < 500) logs.Add("[warn] " + (o?.ToString() ?? "null")); }),
+                    ["error"] = new Action<object?>(o => { if (logs.Count < 500) logs.Add("[error] " + (o?.ToString() ?? "null")); })
                 };
-
-                // Add all context variables as accessible input
-                foreach (var kvp in context.Variables)
+                engine.SetValue("console", consoleObj);
+                engine.SetValue("__input", JsonSerializer.Serialize(input));
+                engine.SetValue("__context", JsonSerializer.Serialize(new Dictionary<string, object?>
                 {
-                    if (!input.ContainsKey(kvp.Key))
-                    {
-                        input[kvp.Key] = kvp.Value;
-                    }
-                }
+                    ["executionId"] = context.ExecutionId,
+                    ["workflowId"]  = context.WorkflowId,
+                    ["userId"]      = context.UserId,
+                    ["timestamp"]   = DateTime.UtcNow.ToString("O")
+                }));
 
-                // Build context metadata
-                var contextMeta = new Dictionary<string, object?>
-                {
-                    ["executionId"] = context.Variables.TryGetValue("executionId", out var eid) ? eid : null,
-                    ["userId"] = context.UserId,
-                    ["timestamp"] = DateTime.UtcNow.ToString("O"),
-                };
+                // Wrap user code so they can `return` from the top level. `input` and
+                // `context` are parsed JSON snapshots — the user cannot mutate engine state.
+                var wrapped = "(function(){ var input = JSON.parse(__input); var context = JSON.parse(__context); " + code + " })();";
 
-                // Log code execution (truncated for safety)
-                var codePreview = code.Length > 200 ? code.Substring(0, 200) + "..." : code;
-                _logger.LogInformation("[WORKFLOW-CODE] Running code ({Length} chars): {Preview}", 
-                    code.Length, codePreview);
+                var jsResult = engine.Evaluate(wrapped);
+                sw.Stop();
 
-                // Server-side JavaScript execution is handled by the workflow engine's
-                // script sandbox. For now, we simulate execution by:
-                // 1. Storing the code + input as the node output
-                // 2. Marking the node as completed
-                // 3. Making the input/context available for downstream nodes
-                //
-                // In production, this would use Jint (JS interpreter for .NET) or similar.
-                // The frontend can also execute code locally for preview/testing.
-
-                var logs = new List<string>();
-                logs.Add($"Code node executed at {DateTime.UtcNow:O}");
-                logs.Add($"Input keys: {string.Join(", ", input.Keys)}");
-                logs.Add($"Code length: {code.Length} characters");
+                object? resultValue = null;
+                try { resultValue = jsResult.IsUndefined() || jsResult.IsNull() ? null : jsResult.ToObject(); }
+                catch { resultValue = jsResult.ToString(); }
 
                 if (logOutput)
                 {
-                    _logger.LogInformation("[WORKFLOW-CODE] Node {NodeId} completed. Input keys: [{Keys}]",
-                        node.Id, string.Join(", ", input.Keys));
+                    _logger.LogInformation(
+                        "[WORKFLOW-CODE] Node {NodeId} completed in {Ms}ms ({LogCount} log lines)",
+                        node.Id, sw.ElapsedMilliseconds, logs.Count);
                 }
+
+                // Persist the result for downstream nodes.
+                context.Variables[$"{node.Id}_result"] = resultValue;
 
                 return Task.FromResult(new NodeExecutionResult
                 {
                     Success = true,
                     Status = "completed",
+                    DurationMs = (int)sw.ElapsedMilliseconds,
                     Output = new Dictionary<string, object?>
                     {
-                        ["result"] = input, // Pass through all input data as result for downstream nodes
-                        ["logs"] = logs,
-                        ["error"] = (object?)null,
-                        ["code"] = code,
+                        ["result"]     = resultValue,
+                        ["logs"]       = logs,
+                        ["error"]      = (object?)null,
                         ["executedAt"] = DateTime.UtcNow.ToString("O"),
-                        ["inputKeys"] = input.Keys.ToList()
+                        ["durationMs"] = sw.ElapsedMilliseconds
                     }
                 });
             }
-            catch (Exception ex)
+            catch (Jint.Runtime.JavaScriptException jsEx)
             {
-                _logger.LogError(ex, "[WORKFLOW-CODE] Error executing code node {NodeId}", node.Id);
-                
+                sw.Stop();
+                _logger.LogWarning("[WORKFLOW-CODE] JS error in node {NodeId}: {Msg}", node.Id, jsEx.Message);
+                logs.Add($"JS error: {jsEx.Message}");
                 if (continueOnError)
                 {
                     return Task.FromResult(new NodeExecutionResult
                     {
-                        Success = true,
-                        Status = "completed",
-                        Output = new Dictionary<string, object?>
-                        {
-                            ["result"] = null,
-                            ["logs"] = new List<string> { $"Error (continued): {ex.Message}" },
-                            ["error"] = ex.Message
-                        }
+                        Success = true, Status = "completed",
+                        DurationMs = (int)sw.ElapsedMilliseconds,
+                        Output = new Dictionary<string, object?> { ["result"] = null, ["logs"] = logs, ["error"] = jsEx.Message }
                     });
                 }
-
                 return Task.FromResult(new NodeExecutionResult
                 {
-                    Success = false,
-                    Status = "failed",
-                    Error = ex.Message,
-                    Output = new Dictionary<string, object?>
+                    Success = false, Status = "failed", ShouldStop = true,
+                    Error = $"code node JS error: {jsEx.Message}",
+                    DurationMs = (int)sw.ElapsedMilliseconds,
+                    Output = new Dictionary<string, object?> { ["logs"] = logs, ["error"] = jsEx.Message }
+                });
+            }
+            catch (Exception ex) when (ex is TimeoutException
+                                    || ex is OperationCanceledException
+                                    || ex.GetType().FullName?.StartsWith("Jint.Runtime.") == true)
+            {
+                sw.Stop();
+                _logger.LogWarning(ex, "[WORKFLOW-CODE] Sandbox limit hit in node {NodeId}", node.Id);
+                var msg = $"code sandbox limit exceeded ({ex.GetType().Name}): {ex.Message}";
+                logs.Add(msg);
+                if (continueOnError)
+                {
+                    return Task.FromResult(new NodeExecutionResult
                     {
-                        ["result"] = null,
-                        ["logs"] = new List<string> { $"Error: {ex.Message}" },
-                        ["error"] = ex.Message
-                    }
+                        Success = true, Status = "completed",
+                        DurationMs = (int)sw.ElapsedMilliseconds,
+                        Output = new Dictionary<string, object?> { ["result"] = null, ["logs"] = logs, ["error"] = msg }
+                    });
+                }
+                return Task.FromResult(new NodeExecutionResult
+                {
+                    Success = false, Status = "failed", ShouldStop = true,
+                    Error = msg, DurationMs = (int)sw.ElapsedMilliseconds,
+                    Output = new Dictionary<string, object?> { ["logs"] = logs, ["error"] = msg }
+                });
+            }
+            catch (Exception ex)
+            {
+                sw.Stop();
+                _logger.LogError(ex, "[WORKFLOW-CODE] Unexpected error in code node {NodeId}", node.Id);
+                if (continueOnError)
+                {
+                    return Task.FromResult(new NodeExecutionResult
+                    {
+                        Success = true, Status = "completed",
+                        Output = new Dictionary<string, object?> { ["result"] = null, ["logs"] = new List<string> { $"Error (continued): {ex.Message}" }, ["error"] = ex.Message }
+                    });
+                }
+                return Task.FromResult(new NodeExecutionResult
+                {
+                    Success = false, Status = "failed", ShouldStop = true,
+                    Error = $"code node error: {ex.Message}",
+                    Output = new Dictionary<string, object?> { ["error"] = ex.Message }
                 });
             }
         }

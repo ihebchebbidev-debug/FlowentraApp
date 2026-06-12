@@ -32,7 +32,8 @@ namespace MyApi.Modules.WorkflowEngine.Controllers
         /// Gets the default active workflow (application-wide, always running)
         /// </summary>
         [HttpGet("default")]
-        [AllowAnonymous] // Default workflow is accessible to all
+        // SECURITY FIX: previously [AllowAnonymous]. Workflow graphs contain recipient lists,
+        // endpoint URLs, and node-level credentials and must require authentication.
         public async Task<ActionResult<WorkflowDefinitionDto>> GetDefault()
         {
             var workflow = await _workflowService.GetDefaultWorkflowAsync();
@@ -62,8 +63,16 @@ namespace MyApi.Modules.WorkflowEngine.Controllers
         public async Task<ActionResult<WorkflowDefinitionDto>> Create([FromBody] CreateWorkflowDto dto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "system";
-            var workflow = await _workflowService.CreateWorkflowAsync(dto, userId);
-            return CreatedAtAction(nameof(GetById), new { id = workflow.Id }, workflow);
+            try
+            {
+                var workflow = await _workflowService.CreateWorkflowAsync(dto, userId);
+                return CreatedAtAction(nameof(GetById), new { id = workflow.Id }, workflow);
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Save-time graph validation rejected the workflow
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         /// <summary>
@@ -73,12 +82,17 @@ namespace MyApi.Modules.WorkflowEngine.Controllers
         public async Task<ActionResult<WorkflowDefinitionDto>> Update(int id, [FromBody] UpdateWorkflowDto dto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "system";
-            var workflow = await _workflowService.UpdateWorkflowAsync(id, dto, userId);
-            
-            if (workflow == null)
-                return NotFound(new { message = $"Workflow {id} not found" });
-
-            return Ok(workflow);
+            try
+            {
+                var workflow = await _workflowService.UpdateWorkflowAsync(id, dto, userId);
+                if (workflow == null)
+                    return NotFound(new { message = $"Workflow {id} not found" });
+                return Ok(workflow);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         /// <summary>

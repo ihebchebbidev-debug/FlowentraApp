@@ -27,6 +27,19 @@ namespace MyApi.Modules.WorkflowEngine.Services
         );
 
         /// <summary>
+        /// Starts a workflow execution from an inbound HTTP webhook. Looks up an active
+        /// trigger registered as EntityType="webhook" with FromStatus matching the path slug,
+        /// and (if configured) validates the provided token against ToStatus.
+        /// Returns the new execution id, or null if no matching trigger.
+        /// </summary>
+        Task<int?> TriggerWebhookAsync(
+            string path,
+            string? token,
+            System.Text.Json.JsonElement payload,
+            string? userId = null
+        );
+
+        /// <summary>
         /// Gets the count of pending workflow executions for an entity.
         /// </summary>
         Task<int> GetPendingExecutionsCountAsync(string entityType, int entityId);
