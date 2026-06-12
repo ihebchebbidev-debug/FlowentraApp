@@ -13,8 +13,9 @@ REM    7. Starts the BACKEND (http://localhost:5000) and FRONTEND (http://localh
 REM       each in its own window, so everything runs locally in a single run.
 REM
 REM  Usage:
-REM    watcher.bat              -> full setup, skip schema load if DB already loaded
-REM    watcher.bat --reset      -> DROP and recreate the database, reload schema
+REM    watcher.bat              -> full setup against remote Neon DB by default
+REM    watcher.bat --local-db   -> install/run against a local PostgreSQL DB instead
+REM    watcher.bat --reset      -> DROP and recreate the local database, reload schema
 REM    watcher.bat --skip-install  -> do not try to install tools (just run)
 REM
 REM  Run it from the project root (the folder that contains this file).
@@ -36,6 +37,8 @@ set "PGPASSWORD=postgres"
 set "DB_NAME=flowentra"
 set "BACKEND_URL=http://localhost:5000"
 set "FRONTEND_PORT=8080"
+set "DB_MODE=remote"
+set "USE_LOCAL_DB=0"
 
 REM  Connection string passed to the .NET backend (key=value form -> used as-is)
 set "DOTNET_DB_CONN=Host=%PGHOST%;Port=%PGPORT%;Database=%DB_NAME%;Username=%PGUSER%;Password=%PGPASSWORD%;SSL Mode=Disable;Trust Server Certificate=true"
@@ -47,6 +50,10 @@ set "DO_INSTALL=1"
 if "%~1"=="" goto argdone
 if /I "%~1"=="--reset" set "DO_RESET=1"
 if /I "%~1"=="--skip-install" set "DO_INSTALL=0"
+if /I "%~1"=="--local-db" (
+    set "DB_MODE=local"
+    set "USE_LOCAL_DB=1"
+)
 shift
 goto argloop
 :argdone
@@ -56,9 +63,14 @@ echo ============================================================
 echo   FLOWENTRA  -  LOCAL ENVIRONMENT BOOTSTRAP
 echo ============================================================
 echo   Project root : %ROOT%
-echo   Database     : %DB_NAME% on %PGHOST%:%PGPORT% (user %PGUSER%)
-echo   Backend      : %BACKEND_URL%   (Swagger at %BACKEND_URL%/swagger)
-echo   Frontend     : http://localhost:%FRONTEND_PORT%
+echo   Database mode : %DB_MODE%
+if /I "%DB_MODE%"=="local" (
+    echo   Database      : %DB_NAME% on %PGHOST%:%PGPORT% (user %PGUSER%)
+) else (
+    echo   Database      : remote Neon DB (no local Postgres required)
+)
+echo   Backend       : %BACKEND_URL%   (Swagger at %BACKEND_URL%/swagger)
+echo   Frontend      : http://localhost:%FRONTEND_PORT%
 echo ============================================================
 echo.
 
@@ -75,7 +87,11 @@ REM --- winget availability -------------------------------------------------
 where winget >nul 2>&1
 if errorlevel 1 (
     echo   [WARN] winget not found. Cannot auto-install tools.
-    echo          Please install manually: Node.js LTS, .NET 8 SDK, PostgreSQL 16.
+    if /I "%DB_MODE%"=="local" (
+        echo          Please install manually: Node.js LTS, .NET 8 SDK, PostgreSQL 16.
+    ) else (
+        echo          Please install manually: Node.js LTS, .NET 8 SDK.
+    )
     echo          Then re-run:  watcher.bat --skip-install
 ) else (
     REM --- Node.js ---------------------------------------------------------
@@ -101,12 +117,16 @@ if errorlevel 1 (
     )
 
     REM --- PostgreSQL ------------------------------------------------------
-    where psql >nul 2>&1
-    if errorlevel 1 (
-        echo   - Installing PostgreSQL 16 (unattended, superuser password = %PGPASSWORD%)...
-        winget install -e --id PostgreSQL.PostgreSQL.16 --silent --accept-source-agreements --accept-package-agreements --override "--mode unattended --unattendedmodeui none --superpassword %PGPASSWORD% --serverport %PGPORT% --servicename postgresql-x64-16"
+    if /I "%DB_MODE%"=="local" (
+        where psql >nul 2>&1
+        if errorlevel 1 (
+            echo   - Installing PostgreSQL 16 (unattended, superuser password = %PGPASSWORD%)...
+            winget install -e --id PostgreSQL.PostgreSQL.16 --silent --accept-source-agreements --accept-package-agreements --override "--mode unattended --unattendedmodeui none --superpassword %PGPASSWORD% --serverport %PGPORT% --servicename postgresql-x64-16"
+        ) else (
+            echo   - PostgreSQL client already installed
+        )
     ) else (
-        echo   - PostgreSQL client already installed
+        echo   - Remote DB mode selected, skipping local PostgreSQL installation.
     )
 )
 
@@ -123,7 +143,9 @@ set "MISSING=0"
 where node    >nul 2>&1 || (echo   [ERROR] node not found on PATH   & set "MISSING=1")
 where npm     >nul 2>&1 || (echo   [ERROR] npm not found on PATH    & set "MISSING=1")
 where dotnet  >nul 2>&1 || (echo   [ERROR] dotnet not found on PATH & set "MISSING=1")
-where psql    >nul 2>&1 || (echo   [ERROR] psql not found on PATH   & set "MISSING=1")
+if /I "%DB_MODE%"=="local" (
+    where psql    >nul 2>&1 || (echo   [ERROR] psql not found on PATH   & set "MISSING=1")
+)
 if "%MISSING%"=="1" (
     echo.
     echo   Some tools are not visible yet. This usually means an installer just
@@ -133,7 +155,18 @@ if "%MISSING%"=="1" (
     pause
     exit /b 1
 )
-echo   - All tools available: node, npm, dotnet, psql
+if /I "%DB_MODE%"=="local" (
+    echo   - All tools available: node, npm, dotnet, psql
+) else (
+    echo   - All tools available: node, npm, dotnet
+)
+
+if /I "%DB_MODE%" NEQ "local" (
+    echo.
+    echo [STEP 2/7] Remote DB mode selected — skipping local PostgreSQL checks and schema bootstrap.
+    echo.
+    goto after_local_db
+)
 
 REM ===========================================================================
 echo.
@@ -233,6 +266,8 @@ echo   - Schema load finished (errors on already-applied statements are expected
 
 :schema_done
 
+after_local_db
+
 REM ===========================================================================
 echo.
 echo [STEP 5/7] Pointing the frontend at the local backend (.env.local)...
@@ -277,6 +312,8 @@ REM ===========================================================================
 echo.
 echo [STEP 7/7] Starting BACKEND and FRONTEND...
 REM ===========================================================================
+if /I "%DB_MODE%"=="local" set "USE_LOCAL_DB=1"
+if /I "%DB_MODE%" NEQ "local" set "USE_LOCAL_DB=0"
 echo   - Launching backend window  -^> %BACKEND_URL%
 start "Flowentra BACKEND" cmd /k "%ROOT%run-backend.bat"
 
