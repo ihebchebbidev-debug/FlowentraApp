@@ -23,6 +23,7 @@ import { PurchaseErrorBoundary, PurchaseErrorFallback } from "../components/Purc
 import { ListTableSkeleton } from "../components/PurchaseSkeletons";
 import { PullToRefreshIndicator } from "../components/PullToRefreshIndicator";
 import { BulkActionBar } from "../components/BulkActionBar";
+import { SavedViewsBar, type SavedViewFilters } from "../components/SavedViewsBar";
 import { runBulkDelete, restoreRowsAtOriginalIndex } from "../utils/bulkDelete";
 import { PurchaseOrdersHeader } from "../components/PurchaseOrdersHeader";
 import { PurchaseOrdersStats } from "../components/PurchaseOrdersStats";
@@ -72,6 +73,7 @@ function PurchaseOrderListContent() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [paymentFilter, setPaymentFilter] = useState<string>("all");
   const [selectedStat, setSelectedStat] = useState<string>("all");
+  const [activeSmartFilter, setActiveSmartFilter] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'table'>(() => getInitialViewMode(['list','table'] as const, 'table'));
   const [showExport, setShowExport] = useState(false);
@@ -91,6 +93,7 @@ function PurchaseOrderListContent() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [busyAction, setBusyAction] = useState<"approve" | "send" | "close" | "export" | "delete" | null>(null);
 
   const fetchOrders = useCallback(
     async (pageNum: number, append = false) => {
@@ -145,9 +148,42 @@ function PurchaseOrderListContent() {
 
   const { containerRef, pullDistance, refreshing } = usePullToRefresh({ onRefresh: handleRefresh });
 
-  // Apply local filters (payment / stat) and company filter on top of server-side search/status
+  // Threshold for the "high value (top 10%)" smart filter, derived from the
+  // currently loaded orders. 0 disables the filter when there is nothing to rank.
+  const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+  const highValueThreshold = useMemo(() => {
+    if (activeSmartFilter !== "high-value") return 0;
+    const values = orders.map((o) => o.grandTotal || 0).sort((a, b) => b - a);
+    if (values.length === 0) return 0;
+    const idx = Math.max(0, Math.floor(values.length * 0.1) - 1);
+    return values[idx];
+  }, [orders, activeSmartFilter]);
+
+  // Extra client-side predicate for smart filters whose criteria go beyond the
+  // server-side status/payment filters they already set (age, value ranking).
+  const matchesSmartFilter = useCallback(
+    (o: PurchaseOrder): boolean => {
+      switch (activeSmartFilter) {
+        case "awaiting-receipt":
+          return (
+            ["ordered", "partially_received"].includes(o.status) &&
+            Date.now() - new Date(o.orderDate).getTime() > SEVEN_DAYS_MS
+          );
+        case "unpaid-overdue":
+          return o.paymentStatus !== "paid";
+        case "high-value":
+          return highValueThreshold > 0 && (o.grandTotal || 0) >= highValueThreshold;
+        default:
+          return true;
+      }
+    },
+    [activeSmartFilter, highValueThreshold, SEVEN_DAYS_MS],
+  );
+
+  // Apply local filters (payment / stat / smart) on top of server-side search/status
   const filteredOrders = useMemo(() => {
     return orders.filter((o) => {
+      if (!matchesSmartFilter(o)) return false;
       const matchesPayment = paymentFilter === "all" || o.paymentStatus === paymentFilter;
       if (selectedStat === "open")
         return matchesPayment && ["draft", "validated", "ordered", "partially_received"].includes(o.status);
@@ -156,7 +192,7 @@ function PurchaseOrderListContent() {
       if (selectedStat === "unpaid") return matchesPayment && o.paymentStatus !== "paid";
       return matchesPayment;
     });
-  }, [orders, paymentFilter, selectedStat]);
+  }, [orders, paymentFilter, selectedStat, matchesSmartFilter]);
 
   // Tenant scoping is handled server-side via the header company switcher,
   // so the list renders whatever the API returns — no extra client filter.
@@ -246,6 +282,57 @@ function PurchaseOrderListContent() {
     setSelectedIds(failed > 0 ? new Set(failedIds) : new Set());
   };
 
+  // Apply a saved view or smart filter — pushes its filters into the live state.
+  // Manual filter changes (below) clear the smart-filter highlight.
+  const handleApplyView = (f: SavedViewFilters) => {
+    setSearch(f.search ?? "");
+    setStatusFilter(f.statusFilter ?? "all");
+    setPaymentFilter(f.paymentFilter ?? "all");
+    setSelectedStat(f.selectedStat ?? "all");
+    setActiveSmartFilter(f.smart ?? null);
+  };
+
+  const currentFilters: SavedViewFilters = {
+    search,
+    statusFilter,
+    paymentFilter,
+    selectedStat,
+    smart: activeSmartFilter,
+  };
+
+  // Shared runner for bulk lifecycle PATCHes (approve / send / close). Optimistically
+  // patches the affected rows, then reconciles against the server result: failed ids
+  // stay selected and the list is refetched so their real status is restored.
+  const runBulkLifecycle = async (
+    action: "approve" | "send" | "close",
+    patch: Partial<Pick<PurchaseOrder, "status">>,
+  ) => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    setBusyAction(action);
+    setOrders((prev) => prev.map((o) => (selectedIds.has(o.id) ? { ...o, ...patch } : o)));
+    const { succeeded, failed, failedIds } = await purchaseOrderService.bulkUpdate(ids, patch);
+    if (failed === 0) {
+      toast.success(t("bulk.actionSuccess", "{{count}} order(s) updated", { count: succeeded }));
+      setSelectedIds(new Set());
+    } else {
+      toast.error(
+        t("bulk.actionPartial", "{{success}} updated, {{failed}} failed", {
+          success: succeeded,
+          failed,
+        }),
+      );
+      setSelectedIds(new Set(failedIds));
+      fetchOrders(1); // reconcile optimistic rows that the server rejected
+    }
+    setBusyAction(null);
+  };
+
+  const handleBulkApprove = () => runBulkLifecycle("approve", { status: "validated" });
+  const handleBulkSend = () => runBulkLifecycle("send", { status: "ordered" });
+  const handleBulkClose = () => runBulkLifecycle("close", { status: "closed" });
+  const handleBulkExport = () => setShowExport(true);
+
   const fmt = (n: number) => n.toLocaleString("fr-TN", { minimumFractionDigits: 2 });
 
   // Stat cards — interactive (clicking one filters the list)
@@ -322,6 +409,13 @@ function PurchaseOrderListContent() {
   const viewAll = isViewAllMode();
   const hasActiveFilter = statusFilter !== "all" || paymentFilter !== "all" || selectedStat !== "all";
 
+  // Export the current selection when one exists (bulk "Export"), otherwise the
+  // whole visible/filtered list (header "Export").
+  const exportData =
+    selectedIds.size > 0
+      ? companyScopedOrders.filter((o) => selectedIds.has(o.id))
+      : companyScopedOrders;
+
   return (
     <div ref={containerRef} className="flex flex-col overflow-auto">
       <PurchaseOrdersHeader total={total} onExport={() => setShowExport(true)} />
@@ -336,23 +430,30 @@ function PurchaseOrderListContent() {
           totalValue: stats.totalValue,
         }}
         selected={selectedStat}
-        onSelect={setSelectedStat}
+        onSelect={(v) => { setSelectedStat(v); setActiveSmartFilter(null); }}
       />
 
       <PurchaseOrdersSearchControls
         search={search}
-        onSearchChange={setSearch}
+        onSearchChange={(v) => { setSearch(v); setActiveSmartFilter(null); }}
         showFilters={showFilters}
         onToggleFilters={() => setShowFilters((v) => !v)}
-        hasActiveFilter={hasActiveFilter}
+        hasActiveFilter={hasActiveFilter || !!activeSmartFilter}
         statusFilter={statusFilter}
-        onStatusChange={setStatusFilter}
+        onStatusChange={(v) => { setStatusFilter(v); setActiveSmartFilter(null); }}
         paymentFilter={paymentFilter}
-        onPaymentChange={setPaymentFilter}
+        onPaymentChange={(v) => { setPaymentFilter(v); setActiveSmartFilter(null); }}
         companyId={companyId}
         onCompanyChange={setCompanyId}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
+      />
+
+      <SavedViewsBar
+        storageKey="flowentra.purchases.po.savedViews"
+        currentFilters={currentFilters}
+        activeSmartFilter={activeSmartFilter}
+        onApply={handleApplyView}
       />
 
       <div className="px-3 sm:px-4 pb-3 sm:pb-4 space-y-3">
@@ -365,6 +466,11 @@ function PurchaseOrderListContent() {
           onToggleAll={handleToggleAll}
           onClear={() => setSelectedIds(new Set())}
           onDelete={() => setShowBulkDeleteDialog(true)}
+          onApprove={handleBulkApprove}
+          onSend={handleBulkSend}
+          onClose={handleBulkClose}
+          onExport={handleBulkExport}
+          busyAction={busyAction}
         />
 
         {loading && <ListTableSkeleton columns={8} rows={8} />}
@@ -621,7 +727,7 @@ function PurchaseOrderListContent() {
       <ExportModal
         open={showExport}
         onOpenChange={setShowExport}
-        data={companyScopedOrders}
+        data={exportData}
         moduleName="purchase-orders"
         moduleNameTranslated={t("orders.title", "Purchase Orders")}
         exportConfig={exportConfig}

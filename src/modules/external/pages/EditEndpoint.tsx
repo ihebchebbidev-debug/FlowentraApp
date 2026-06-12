@@ -20,6 +20,11 @@ import { TemplatesPicker } from '../components/TemplatesPicker';
 import type { EndpointTemplate } from '../utils/endpointTemplates';
 
 const METHODS = ['GET', 'POST', 'PUT'];
+const CONTENT_TYPES = [
+  { value: 'json',  label: 'JSON',            hint: 'application/json' },
+  { value: 'xml',   label: 'XML',             hint: 'application/xml, text/xml' },
+  { value: 'form',  label: 'Form-urlencoded', hint: 'application/x-www-form-urlencoded' },
+] as const;
 
 export function EditEndpoint() {
   useExternalTranslations();
@@ -36,6 +41,7 @@ export function EditEndpoint() {
     name: '', description: '', isActive: true,
     allowedMethods: 'POST', allowedOrigins: '',
     expectedSchema: '', responseTemplate: '', webhookForwardUrl: '',
+    acceptedContentTypes: 'any',
   });
 
   useEffect(() => {
@@ -47,6 +53,7 @@ export function EditEndpoint() {
         allowedMethods: ep.allowedMethods, allowedOrigins: ep.allowedOrigins || '',
         expectedSchema: ep.expectedSchema || '', responseTemplate: ep.responseTemplate || '',
         webhookForwardUrl: ep.webhookForwardUrl || '',
+        acceptedContentTypes: ep.acceptedContentTypes || 'any',
       });
       // Pre-seed the target tenant from the endpoint we're editing so the
       // form doesn't force the admin to manually pick a company that's
@@ -62,6 +69,13 @@ export function EditEndpoint() {
     const methods = selectedMethods.includes(method) ? selectedMethods.filter(m => m !== method) : [...selectedMethods, method];
     setForm(f => ({ ...f, allowedMethods: methods.join(',') }));
   };
+
+  const selectedContentTypes = form.acceptedContentTypes === 'any' ? [] : form.acceptedContentTypes.split(',').filter(Boolean);
+  const toggleContentType = (ct: string) => {
+    const next = selectedContentTypes.includes(ct) ? selectedContentTypes.filter(c => c !== ct) : [...selectedContentTypes, ct];
+    setForm(f => ({ ...f, acceptedContentTypes: next.length === 0 ? 'any' : next.join(',') }));
+  };
+  const acceptAll = form.acceptedContentTypes === 'any' || form.acceptedContentTypes === '';
 
   // Apply a template: keep current name (if user already named it) and active state,
   // overwrite the schema/methods/origins/response/description with the preset.
@@ -92,6 +106,7 @@ export function EditEndpoint() {
         expectedSchema: form.expectedSchema || undefined,
         responseTemplate: form.responseTemplate || undefined,
         webhookForwardUrl: form.webhookForwardUrl || undefined,
+        acceptedContentTypes: form.acceptedContentTypes || 'any',
       });
       navigate(`/dashboard/external/${id}`);
     } catch {} finally { setSaving(false); }
@@ -140,6 +155,36 @@ export function EditEndpoint() {
                 </label>
               ))}
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle className="text-base">{t('external.form.acceptedContentTypes', 'Accepted Content Types')}</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            <label className="flex items-center gap-2 text-sm font-medium">
+              <Checkbox
+                checked={acceptAll}
+                onCheckedChange={v => setForm(f => ({ ...f, acceptedContentTypes: v ? 'any' : '' }))}
+              />
+              {t('external.form.acceptAny', 'Accept any content type')}
+            </label>
+            {!acceptAll && (
+              <div className="flex flex-wrap gap-4 pl-1">
+                {CONTENT_TYPES.map(ct => (
+                  <label key={ct.value} className="flex items-center gap-2 text-sm">
+                    <Checkbox
+                      checked={selectedContentTypes.includes(ct.value)}
+                      onCheckedChange={() => toggleContentType(ct.value)}
+                    />
+                    <span className="font-medium">{ct.label}</span>
+                    <span className="text-xs text-muted-foreground">({ct.hint})</span>
+                  </label>
+                ))}
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              {t('external.form.acceptedContentTypesHint', 'Requests with a non-matching Content-Type will be rejected with HTTP 415.')}
+            </p>
           </CardContent>
         </Card>
 

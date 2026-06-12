@@ -71,8 +71,10 @@ export const externalEndpointsApi = {
     return unwrap(result, 'Failed to reveal key');
   },
 
-  async getLogs(endpointId: number, page = 1, limit = 20) {
-    const result = await apiFetch<any>(`/api/external-endpoints/${endpointId}/logs?page=${page}&limit=${limit}`);
+  async getLogs(endpointId: number, page = 1, limit = 20, companyId?: string) {
+    const qp = new URLSearchParams({ page: String(page), limit: String(limit) });
+    if (companyId) qp.append('companyId', companyId);
+    const result = await apiFetch<any>(`/api/external-endpoints/${endpointId}/logs?${qp.toString()}`);
     return unwrap(result, 'Failed to fetch logs');
   },
 

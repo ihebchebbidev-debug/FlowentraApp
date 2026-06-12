@@ -40,9 +40,11 @@ import {
   Plus,
   Trash2,
   MoreVertical,
-  Loader2
+  Loader2,
+  Play
 } from "lucide-react";
 import { mockDispatches } from "../data";
+import { DispatchesAutopilotDemo } from "../components/onboarding/DispatchesAutopilotDemo";
 import type { DispatchJob } from "../types";
 import { isViewAllMode } from '@/utils/tenant';
 import { CompanyBadge } from '@/components/CompanyBadge';
@@ -65,6 +67,7 @@ export default function DispatchesList() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showMap, setShowMap] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [demoOpen, setDemoOpen] = useState(false);
 
   // Single delete state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -228,15 +231,23 @@ export default function DispatchesList() {
               </div>
             </div>
             
-            {hasCreateAccess && (
-              <CreateActionButton onClick={() => navigate('/dashboard/field/dispatches/create')}>
-                <Plus className="h-4 w-4 mr-2" />
-                {t('dispatches.create_dispatch')}
-              </CreateActionButton>
-            )}
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="gap-1.5">
+                <Play className="h-3.5 w-3.5" /> {t('dispatches.watchDemo', 'Watch Demo')}
+              </Button>
+              {hasCreateAccess && (
+                <CreateActionButton onClick={() => navigate('/dashboard/field/dispatches/create')}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  {t('dispatches.create_dispatch')}
+                </CreateActionButton>
+              )}
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Autopilot product demo */}
+      <DispatchesAutopilotDemo open={demoOpen} onClose={() => setDemoOpen(false)} />
 
       <div className="px-4 py-6">
         {/* Filters */}

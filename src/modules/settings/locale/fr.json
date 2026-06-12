@@ -146,6 +146,7 @@
     "deleteErrorTitle": "Erreur",
     "deleteSuccess": "Utilisateur supprimé avec succès",
     "deleteFailed": "Échec de la suppression de l'utilisateur",
+    "failedToLoad": "Échec du chargement des utilisateurs",
     "noUsersFound": "Aucun utilisateur trouvé.",
     "noUsersMatchingSearch": "Aucun utilisateur correspondant à votre recherche.",
     "loading": "Chargement des utilisateurs...",

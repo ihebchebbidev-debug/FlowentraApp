@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Copy, Key, RefreshCw, Pencil, FlaskConical, Trash2, Globe, Zap } from 'lucide-react';
+import { ArrowLeft, Copy, Key, RefreshCw, Pencil, FlaskConical, Globe, Zap, ArrowDownLeft, SendHorizonal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -195,8 +195,73 @@ export function EndpointDetail() {
         </Card>
       </div>
 
+      {/* Data flow banner */}
+      <Card className="overflow-hidden">
+        <CardContent className="p-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            {/* Inbound side */}
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="h-10 w-10 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center shrink-0">
+                <ArrowDownLeft className="h-5 w-5 text-emerald-500" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground font-medium">{t('external.detail.flowInbound', 'Inbound')}</p>
+                <div className="flex items-baseline gap-2 mt-0.5">
+                  <span className="text-xl font-bold text-foreground">{endpoint.totalReceived}</span>
+                  <span className="text-xs text-muted-foreground">{t('external.detail.totalReceived', 'total')}</span>
+                  <span className="text-sm font-medium text-emerald-600">+{endpoint.receivedToday}</span>
+                  <span className="text-xs text-muted-foreground">{t('external.detail.receivedToday', 'today')}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Flow arrow */}
+            <div className="flex items-center gap-2 text-muted-foreground/40 shrink-0">
+              <div className="hidden sm:flex items-center gap-1.5">
+                <div className="h-px w-12 bg-muted-foreground/20" />
+                <div className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/50">
+                  <Zap className="h-3 w-3" /> Flowentra
+                </div>
+                <div className="h-px w-12 bg-muted-foreground/20" />
+              </div>
+            </div>
+
+            {/* Outbound side */}
+            <div className="flex items-center gap-3 min-w-0">
+              {endpoint.webhookForwardUrl ? (
+                <>
+                  <div className="h-10 w-10 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 flex items-center justify-center shrink-0">
+                    <SendHorizonal className="h-5 w-5 text-blue-500" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground font-medium">{t('external.detail.outboundUrl', 'Forwarding to')}</p>
+                    <div className="flex items-baseline gap-2 mt-0.5">
+                      <span className="text-xl font-bold text-foreground">{endpoint.totalSent}</span>
+                      <span className="text-xs text-muted-foreground">{t('external.detail.totalSent', 'forwarded')}</span>
+                      <span className="text-sm font-medium text-blue-600">+{endpoint.sentToday}</span>
+                      <span className="text-xs text-muted-foreground">{t('external.detail.sentToday', 'today')}</span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground truncate max-w-[200px] mt-0.5">{endpoint.webhookForwardUrl}</p>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center gap-3 opacity-40">
+                  <div className="h-10 w-10 rounded-lg border border-dashed border-muted-foreground/30 flex items-center justify-center shrink-0">
+                    <SendHorizonal className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground font-medium">{t('external.detail.flowInbound', 'Outbound')}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{t('external.form.webhookForwardUrlPlaceholder', 'No forwarding configured')}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card><CardContent className="p-4 text-center">
           <p className="text-2xl font-bold text-foreground">{endpoint.totalReceived}</p>
           <p className="text-xs text-muted-foreground">{t('external.detail.totalReceived')}</p>
@@ -204,6 +269,10 @@ export function EndpointDetail() {
         <Card><CardContent className="p-4 text-center">
           <p className="text-2xl font-bold text-foreground">{endpoint.receivedToday}</p>
           <p className="text-xs text-muted-foreground">{t('external.detail.receivedToday')}</p>
+        </CardContent></Card>
+        <Card><CardContent className="p-4 text-center">
+          <p className="text-2xl font-bold text-foreground">{endpoint.totalSent}</p>
+          <p className="text-xs text-muted-foreground">{t('external.detail.totalSent', 'Total Forwarded')}</p>
         </CardContent></Card>
         <Card><CardContent className="p-4 text-center">
           <p className="text-sm font-medium text-foreground">{endpoint.lastReceived ? new Date(endpoint.lastReceived).toLocaleString() : '—'}</p>

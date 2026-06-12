@@ -15,12 +15,16 @@ namespace MyApi.Modules.ExternalEndpoints.DTOs
         public string? WebhookForwardUrl { get; set; }
         /// <summary>Days to retain inbound logs (0 = forever). Pruned by background sweep.</summary>
         public int LogRetentionDays { get; set; }
+        /// <summary>Comma-separated accepted content types: "json", "xml", "form", "any".</summary>
+        public string AcceptedContentTypes { get; set; } = "any";
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public string CreatedBy { get; set; } = string.Empty;
         public int TotalReceived { get; set; }
         public int ReceivedToday { get; set; }
         public DateTime? LastReceived { get; set; }
+        public int TotalSent { get; set; }
+        public int SentToday { get; set; }
     }
 
     public class CreateExternalEndpointDto
@@ -35,6 +39,7 @@ namespace MyApi.Modules.ExternalEndpoints.DTOs
         public string? ResponseTemplate { get; set; }
         public string? WebhookForwardUrl { get; set; }
         public int LogRetentionDays { get; set; } = 30;
+        public string AcceptedContentTypes { get; set; } = "any";
     }
 
     public class UpdateExternalEndpointDto
@@ -48,6 +53,7 @@ namespace MyApi.Modules.ExternalEndpoints.DTOs
         public string? ResponseTemplate { get; set; }
         public string? WebhookForwardUrl { get; set; }
         public int? LogRetentionDays { get; set; }
+        public string? AcceptedContentTypes { get; set; }
     }
 
     /// <summary>Preview of how an inbound log payload maps onto offer/sale fields.
@@ -97,6 +103,10 @@ namespace MyApi.Modules.ExternalEndpoints.DTOs
         public DateTime ReceivedAt { get; set; }
         public DateTime? ProcessedAt { get; set; }
         public bool IsRead { get; set; }
+        /// <summary>MIME type of the inbound body (e.g. "application/json", "application/xml").</summary>
+        public string? ContentType { get; set; }
+        /// <summary>Company / tenant ID supplied by the sender for multi-company ERP setups.</summary>
+        public string? CompanyId { get; set; }
     }
 
     public class ExternalEndpointStatsDto
@@ -105,6 +115,8 @@ namespace MyApi.Modules.ExternalEndpoints.DTOs
         public int ActiveEndpoints { get; set; }
         public int TotalReceivedToday { get; set; }
         public int TotalReceivedAll { get; set; }
+        public int TotalSentToday { get; set; }
+        public int TotalSentAll { get; set; }
     }
 
     public class PaginatedEndpointResponse

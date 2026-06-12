@@ -1,6 +1,7 @@
-// Pick the best-sounding installed Web Speech voice for a given language.
-// Identical scoring to the Workflow autopilot so both tours narrate with the
-// same (warm, female-leaning) premium voice on a given machine.
+// Pick the best-sounding FEMALE Web Speech voice for a given language.
+// Identical scoring to the Workflow autopilot so every tour narrates with the
+// same warm female premium voice on a given machine. Male voices are penalised
+// so the picker never falls back to them when a female voice of any quality exists.
 //
 // Prefers premium Google / Microsoft Natural / Neural / Apple Enhanced voices
 // over basic eSpeak / Compact voices that ship with most OSes.
@@ -10,13 +11,27 @@ const PREMIUM_HINTS = [
   'google', 'microsoft',
 ];
 
-const FRIENDLY_NAME_BONUS_EN = [
-  'jenny', 'aria', 'guy', 'ava', 'samantha', 'serena', 'evelyn',
-  'libby', 'sonia', 'ryan', 'natasha',
+// Known female voice names (EN)
+const FEMALE_NAMES_EN = [
+  'jenny', 'aria', 'ava', 'samantha', 'serena', 'evelyn',
+  'libby', 'sonia', 'natasha', 'zira', 'karen', 'hazel',
+  'moira', 'fiona', 'tessa', 'alice', 'lisa', 'emma',
+  'emily', 'victoria', 'heather', 'cortana', 'elsa',
 ];
-const FRIENDLY_NAME_BONUS_FR = [
-  'denise', 'henri', 'brigitte', 'celeste', 'thomas', 'audrey',
-  'amelie', 'amélie', 'rémy', 'remy',
+
+// Known female voice names (FR)
+const FEMALE_NAMES_FR = [
+  'denise', 'brigitte', 'celeste', 'audrey', 'amelie', 'amélie',
+  'elise', 'julie', 'claire', 'lucie', 'camille',
+];
+
+// Known male voice names — these receive a penalty
+const MALE_NAMES_EN = [
+  'guy', 'ryan', 'david', 'mark', 'james', 'daniel',
+  'fred', 'george', 'paul', 'reed', 'liam',
+];
+const MALE_NAMES_FR = [
+  'henri', 'thomas', 'rémy', 'remy', 'nicolas', 'pierre', 'xavier',
 ];
 
 const BAD_HINTS = ['espeak', 'compact', 'novelty', 'whisper', 'organ', 'cellos'];
@@ -27,9 +42,23 @@ function scoreVoice(v: SpeechSynthesisVoice, lang: 'en' | 'fr'): number {
   if (!voiceLang.startsWith(lang)) return -Infinity;
 
   let score = 0;
+
+  // Explicitly labelled female/male (e.g. "Google UK English Female")
+  if (name.includes('female')) score += 20;
+  if (name.includes(' male') && !name.includes('female')) score -= 25;
+
+  // Premium quality hints
   PREMIUM_HINTS.forEach((h) => { if (name.includes(h)) score += 10; });
-  const friendly = lang === 'fr' ? FRIENDLY_NAME_BONUS_FR : FRIENDLY_NAME_BONUS_EN;
-  friendly.forEach((h) => { if (name.includes(h)) score += 6; });
+
+  // Female name bonuses
+  const femaleNames = lang === 'fr' ? FEMALE_NAMES_FR : FEMALE_NAMES_EN;
+  femaleNames.forEach((h) => { if (name.includes(h)) score += 8; });
+
+  // Male name penalties
+  const maleNames = lang === 'fr' ? MALE_NAMES_FR : MALE_NAMES_EN;
+  maleNames.forEach((h) => { if (name.includes(h)) score -= 12; });
+
+  // Quality penalties
   BAD_HINTS.forEach((h) => { if (name.includes(h)) score -= 15; });
 
   // Prefer non-local (cloud) Google/Microsoft voices — they're the high-quality ones.

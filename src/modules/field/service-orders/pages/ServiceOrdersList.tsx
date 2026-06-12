@@ -16,7 +16,7 @@ import {
   Trash2, Eye, Plus, MapPin, List, Table as TableIcon, LayoutGrid,
   ChevronDown, Map, Download,
   DollarSign, Target, CheckCircle, Clock, AlertTriangle, Loader2, ShieldAlert, Lock, FileText,
-  MoreVertical
+  MoreVertical, Play
 } from "lucide-react";
 import { TableRowActions } from '@/shared/components/TableRowActions';
 import { isViewAllMode } from '@/utils/tenant';
@@ -37,6 +37,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLookups } from '@/shared/contexts/LookupsContext';
 import serviceOrderStatuses from '@/data/mock/service-order-statuses.json';
 import { CreateActionButton } from '@/components/CreateActionButton';
+import { ServiceOrdersAutopilotDemo } from '../components/onboarding/ServiceOrdersAutopilotDemo';
 
 const timeframes = [
   { id: 'any', name: 'Any time' },
@@ -90,6 +91,7 @@ export default function ServiceOrdersList() {
   const viewAll = isViewAllMode();
   const hasReadAccess = isMainAdmin || canRead('service_orders');
   const hasCreateAccess = isMainAdmin || canCreate('service_orders');
+  const [demoOpen, setDemoOpen] = useState(false);
   const hasUpdateAccess = isMainAdmin || canUpdate('service_orders');
   const hasDeleteAccess = isMainAdmin || canDelete('service_orders');
 
@@ -393,8 +395,11 @@ export default function ServiceOrdersList() {
             <p className="text-[11px] text-muted-foreground">{t('list.subtitle')}</p>
           </div>
         </div>
-        {hasCreateAccess && (
-          <div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="gap-1.5">
+            <Play className="h-3.5 w-3.5" /> {t('watchDemo', 'Watch Demo')}
+          </Button>
+          {hasCreateAccess && (
             <CreateActionButton
               className="bg-primary text-white hover:bg-primary/90 shadow-medium hover-lift"
               onClick={() => navigate('/dashboard/field/service-orders/create')}
@@ -402,9 +407,12 @@ export default function ServiceOrdersList() {
               <Plus className="mr-2 h-4 w-4 text-white" />
               {t('list.create_service_order')}
             </CreateActionButton>
-          </div>
-        )}
+          )}
+        </div>
       </header>
+
+      {/* Autopilot product demo */}
+      <ServiceOrdersAutopilotDemo open={demoOpen} onClose={() => setDemoOpen(false)} />
 
       {/* Mobile Header */}
       <div className="md:hidden flex items-center justify-between p-4 border-b border-border bg-card/50 backdrop-blur">

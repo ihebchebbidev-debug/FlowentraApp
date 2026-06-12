@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -21,53 +22,91 @@ interface Props {
   onClose: () => void;
 }
 
-// Build a starter JSON body from the endpoint's expectedSchema. The backend
-// validates that every key in `required` is present and non-empty, so seeding
-// the body with exactly those keys removes guesswork during testing and
-// guarantees the test passes the schema validation step.
-function buildSeedBody(expectedSchema?: string | null): { body: string; required: string[] } {
-  const fallback = '{\n  "name": "Test",\n  "email": "test@example.com"\n}';
-  if (!expectedSchema) return { body: fallback, required: [] };
+const CONTENT_TYPES = [
+  { value: 'application/json', label: 'JSON', hint: 'application/json' },
+  { value: 'application/xml', label: 'XML', hint: 'application/xml' },
+  { value: 'application/x-www-form-urlencoded', label: 'Form', hint: 'application/x-www-form-urlencoded' },
+] as const;
+
+function extractRequiredFields(expectedSchema?: string | null): string[] {
+  if (!expectedSchema) return [];
   try {
     const parsed = JSON.parse(expectedSchema);
-    const required: string[] = Array.isArray(parsed?.required)
+    return Array.isArray(parsed?.required)
       ? parsed.required.filter((k: unknown): k is string => typeof k === 'string' && k.trim() !== '')
       : [];
-    if (required.length === 0) return { body: fallback, required: [] };
-    const sample: Record<string, unknown> = {};
-    for (const key of required) {
-      const lower = key.toLowerCase();
-      if (lower.includes('email')) sample[key] = 'test@example.com';
-      else if (lower.includes('phone')) sample[key] = '+1234567890';
-      else if (lower.includes('quantity') || lower.includes('qty') || lower.includes('count')) sample[key] = 1;
-      else if (lower.includes('price') || lower.includes('amount') || lower.includes('total')) sample[key] = 100;
-      else if (lower.includes('date')) sample[key] = new Date().toISOString();
-      else if (lower.includes('url')) sample[key] = 'https://example.com';
-      else if (lower.includes('id')) sample[key] = 'test-id';
-      else sample[key] = `Test ${key}`;
-    }
-    return { body: JSON.stringify(sample, null, 2), required };
   } catch {
-    return { body: fallback, required: [] };
+    return [];
   }
+}
+
+function sampleValue(key: string): string {
+  const lower = key.toLowerCase();
+  if (lower.includes('email')) return 'test@example.com';
+  if (lower.includes('phone')) return '+1234567890';
+  if (lower.includes('quantity') || lower.includes('qty') || lower.includes('count')) return '1';
+  if (lower.includes('price') || lower.includes('amount') || lower.includes('total')) return '100';
+  if (lower.includes('date')) return new Date().toISOString();
+  if (lower.includes('url')) return 'https://example.com';
+  if (lower.includes('id')) return 'test-id';
+  return `Test ${key}`;
+}
+
+function buildJsonBody(required: string[]): string {
+  if (required.length === 0) return '{\n  "name": "Test",\n  "email": "test@example.com"\n}';
+  const sample: Record<string, unknown> = {};
+  for (const key of required) {
+    const lower = key.toLowerCase();
+    if (lower.includes('email')) sample[key] = 'test@example.com';
+    else if (lower.includes('phone')) sample[key] = '+1234567890';
+    else if (lower.includes('quantity') || lower.includes('qty') || lower.includes('count')) sample[key] = 1;
+    else if (lower.includes('price') || lower.includes('amount') || lower.includes('total')) sample[key] = 100;
+    else if (lower.includes('date')) sample[key] = new Date().toISOString();
+    else if (lower.includes('url')) sample[key] = 'https://example.com';
+    else if (lower.includes('id')) sample[key] = 'test-id';
+    else sample[key] = `Test ${key}`;
+  }
+  return JSON.stringify(sample, null, 2);
+}
+
+function buildXmlBody(required: string[]): string {
+  const fields = required.length > 0
+    ? required.map(k => `  <${k}>${sampleValue(k)}</${k}>`).join('\n')
+    : '  <name>Test</name>\n  <email>test@example.com</email>';
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<payload>\n${fields}\n</payload>`;
+}
+
+function buildFormBody(required: string[]): string {
+  if (required.length === 0) return 'name=Test&email=test%40example.com';
+  return required.map(k => `${encodeURIComponent(k)}=${encodeURIComponent(sampleValue(k))}`).join('&');
+}
+
+function buildSeedBody(contentType: string, required: string[]): string {
+  if (contentType === 'application/xml') return buildXmlBody(required);
+  if (contentType === 'application/x-www-form-urlencoded') return buildFormBody(required);
+  return buildJsonBody(required);
 }
 
 /**
  * Tests an endpoint by POSTing directly to the public ingest URL with the
- * `X-API-Key` header. The previous backend `/test` route required the server
- * to know the plaintext key, which it doesn't (keys are stored hashed). This
- * approach uses whatever plaintext key the parent has cached (returned once
- * by create/regenerate) or lets the user paste one in.
+ * `X-API-Key` header. Supports JSON, XML, and form-urlencoded payloads.
  */
 export function TestEndpointModal({ endpointId: _endpointId, publicUrl, cachedApiKey, expectedSchema, onRegenerate, onClose }: Props) {
   const { t } = useTranslation();
-  const seed = buildSeedBody(expectedSchema);
-  const [body, setBody] = useState(seed.body);
+  const requiredFields = extractRequiredFields(expectedSchema);
+
+  const [contentType, setContentType] = useState<string>('application/json');
+  const [body, setBody] = useState(() => buildJsonBody(requiredFields));
   const [apiKey, setApiKey] = useState<string>(cachedApiKey ?? '');
   const [sending, setSending] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [response, setResponse] = useState<{ status: number; body: string } | null>(null);
-  const requiredFields = seed.required;
+
+  const handleContentTypeChange = (ct: string) => {
+    setContentType(ct);
+    setBody(buildSeedBody(ct, requiredFields));
+    setResponse(null);
+  };
 
   const handleRegenerate = async () => {
     setRegenerating(true);
@@ -77,9 +116,7 @@ export function TestEndpointModal({ endpointId: _endpointId, publicUrl, cachedAp
         setApiKey(fresh);
         toast.success(t('external.toast.keyRegenerated', 'API key regenerated'));
       } else {
-        toast.error(
-          t('external.test.noPlainKey', 'Backend did not return a plaintext key.'),
-        );
+        toast.error(t('external.test.noPlainKey', 'Backend did not return a plaintext key.'));
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to regenerate key';
@@ -100,14 +137,19 @@ export function TestEndpointModal({ endpointId: _endpointId, publicUrl, cachedAp
       return;
     }
 
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(body);
-    } catch {
-      toast.error(t('external.test.error', 'Test failed'), {
-        description: t('external.test.invalidJson', 'Request body is not valid JSON.'),
-      });
-      return;
+    // Validate JSON only when sending JSON
+    let sendBody = body;
+    if (contentType === 'application/json') {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(body);
+      } catch {
+        toast.error(t('external.test.error', 'Test failed'), {
+          description: t('external.test.invalidJson', 'Request body is not valid JSON.'),
+        });
+        return;
+      }
+      sendBody = JSON.stringify(parsed);
     }
 
     setSending(true);
@@ -116,29 +158,19 @@ export function TestEndpointModal({ endpointId: _endpointId, publicUrl, cachedAp
       const res = await fetch(publicUrl, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': contentType,
           'X-API-Key': apiKey.trim(),
         },
-        body: JSON.stringify(parsed),
+        body: sendBody,
       });
       const text = await res.text();
       let pretty = text;
-      try {
-        pretty = JSON.stringify(JSON.parse(text), null, 2);
-      } catch {
-        toast.error(t('external.test.error', 'Test failed'), {
-          description: t('external.test.invalidJson', 'Request body is not valid JSON.'),
-        });
-        setSending(false);
-        return;
-      }
+      try { pretty = JSON.stringify(JSON.parse(text), null, 2); } catch { /* keep raw text */ }
       setResponse({ status: res.status, body: pretty });
       if (res.ok) {
         toast.success(t('external.test.success', 'Test request sent'));
       } else {
-        toast.error(t('external.test.error', 'Test failed'), {
-          description: `HTTP ${res.status}`,
-        });
+        toast.error(t('external.test.error', 'Test failed'), { description: `HTTP ${res.status}` });
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Network error';
@@ -150,6 +182,7 @@ export function TestEndpointModal({ endpointId: _endpointId, publicUrl, cachedAp
   };
 
   const noKeyAvailable = !apiKey.trim();
+  const ctLabel = CONTENT_TYPES.find(c => c.value === contentType)?.label ?? 'JSON';
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -157,10 +190,7 @@ export function TestEndpointModal({ endpointId: _endpointId, publicUrl, cachedAp
         <DialogHeader>
           <DialogTitle>{t('external.test.title', 'Test Endpoint')}</DialogTitle>
           <p className="text-sm text-muted-foreground">
-            {t(
-              'external.test.descriptionDirect',
-              'Sends a real POST to the public URL with the X-API-Key header.',
-            )}
+            {t('external.test.descriptionDirect', 'Sends a real POST to the public URL with the X-API-Key header.')}
           </p>
         </DialogHeader>
 
@@ -211,8 +241,25 @@ export function TestEndpointModal({ endpointId: _endpointId, publicUrl, cachedAp
           </div>
 
           <div className="space-y-2">
+            <Label>{t('external.test.contentType', 'Content Type')}</Label>
+            <Select value={contentType} onValueChange={handleContentTypeChange}>
+              <SelectTrigger className="text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CONTENT_TYPES.map(ct => (
+                  <SelectItem key={ct.value} value={ct.value}>
+                    <span className="font-medium">{ct.label}</span>
+                    <span className="text-xs text-muted-foreground ml-2">({ct.hint})</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <Label>{t('external.test.body', 'Request Body (JSON)')}</Label>
+              <Label>{t('external.test.body', 'Request Body')} ({ctLabel})</Label>
               {requiredFields.length > 0 && (
                 <div className="flex items-center gap-1 flex-wrap">
                   <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -229,13 +276,13 @@ export function TestEndpointModal({ endpointId: _endpointId, publicUrl, cachedAp
               onChange={(e) => setBody(e.target.value)}
               rows={6}
               className="font-mono text-xs"
-              placeholder={t('external.test.bodyPlaceholder', 'Enter JSON payload')}
+              placeholder={t('external.test.bodyPlaceholder', 'Enter request payload')}
             />
             {requiredFields.length > 0 && (
               <p className="text-[11px] text-muted-foreground">
                 {t(
                   'external.test.bodySeededFromSchema',
-                  'Body pre-filled from this endpoint\'s expected schema. All listed fields must be present and non-empty.',
+                  "Body pre-filled from this endpoint's expected schema. All listed fields must be present and non-empty.",
                 )}
               </p>
             )}

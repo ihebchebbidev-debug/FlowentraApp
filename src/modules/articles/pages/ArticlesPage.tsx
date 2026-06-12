@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageSizeSelector } from '@/components/shared/PageSizeSelector';
-import { Plus, Search, Package, Wrench, AlertTriangle, History, Upload, ShoppingCart } from 'lucide-react';
+import { Plus, Search, Package, Wrench, AlertTriangle, History, Upload, ShoppingCart, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTranslation } from 'react-i18next';
@@ -46,6 +46,7 @@ import { useActionLogger } from '@/hooks/useActionLogger';
 import type { Article, ArticleType, ArticleStatus, CreateArticleRequest } from '@/types/articles';
 import { GenericImportModal, ImportConfig } from '@/shared/import';
 import { articlesBulkImportApi } from '@/services/api/articlesApi';
+import { ArticlesAutopilotDemo } from '../components/onboarding/ArticlesAutopilotDemo';
 
 export default function ArticlesPage() {
   const { t } = useTranslation('articles');
@@ -68,6 +69,7 @@ export default function ArticlesPage() {
   const [deleteArticleId, setDeleteArticleId] = useState<string | null>(null);
   const [transactionArticle, setTransactionArticle] = useState<Article | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [demoOpen, setDemoOpen] = useState(false);
 
   // Article import configuration
   const articleImportConfig: ImportConfig<any> = {
@@ -452,18 +454,23 @@ export default function ArticlesPage() {
           <h1 className="text-3xl font-bold">{t('title')}</h1>
           <p className="text-muted-foreground">{t('subtitle')}</p>
         </div>
-        {canCreate && (
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setShowImportModal(true)}>
-              <Upload className="mr-2 h-4 w-4" />
-              {t('bulkImport.title', 'Import')}
-            </Button>
-            <Button onClick={() => setShowCreateDialog(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              {t('add_article')}
-            </Button>
-          </div>
-        )}
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="gap-1.5">
+            <Play className="h-3.5 w-3.5" /> {t('watchDemo', 'Watch Demo')}
+          </Button>
+          {canCreate && (
+            <>
+              <Button variant="outline" onClick={() => setShowImportModal(true)}>
+                <Upload className="mr-2 h-4 w-4" />
+                {t('bulkImport.title', 'Import')}
+              </Button>
+              <Button onClick={() => setShowCreateDialog(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                {t('add_article')}
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -774,6 +781,9 @@ export default function ArticlesPage() {
         onImport={(items) => articlesBulkImportApi.bulkImport({ articles: items })}
         translationNamespace="articles"
       />
+
+      {/* Autopilot product demo */}
+      <ArticlesAutopilotDemo open={demoOpen} onClose={() => setDemoOpen(false)} />
     </div>
   );
 }

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, FileText, X } from 'lucide-react';
+import { Plus, FileText, X, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { DynamicFormsAutopilotDemo } from '../components/onboarding/DynamicFormsAutopilotDemo';
 import { CollapsibleSearch } from '@/components/ui/collapsible-search';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -29,6 +30,7 @@ export default function DynamicFormsPage() {
   
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<FormStatus | 'all'>('all');
+  const [demoOpen, setDemoOpen] = useState(false);
   
   // Permission checks
   const canView = isMainAdmin || hasPermission('dynamic_forms', 'read');
@@ -90,17 +92,25 @@ export default function DynamicFormsPage() {
             <p className="text-[11px] text-muted-foreground truncate">{t('header.subtitle')}</p>
           </div>
         </div>
-        <PermissionButton 
-          module="dynamic_forms"
-          action="create"
-          onClick={handleCreateClick}
-          className="gradient-primary"
-          tooltipWhenDisabled={t('common.no_create_permission', "You don't have permission to create forms")}
-        >
-          <Plus className="h-4 w-4 md:mr-2" />
-          <span className="hidden md:inline">{t('actions.create')}</span>
-        </PermissionButton>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="gap-1.5">
+            <Play className="h-3.5 w-3.5" /> <span className="hidden md:inline">{t('actions.watchDemo', 'Watch Demo')}</span>
+          </Button>
+          <PermissionButton
+            module="dynamic_forms"
+            action="create"
+            onClick={handleCreateClick}
+            className="gradient-primary"
+            tooltipWhenDisabled={t('common.no_create_permission', "You don't have permission to create forms")}
+          >
+            <Plus className="h-4 w-4 md:mr-2" />
+            <span className="hidden md:inline">{t('actions.create')}</span>
+          </PermissionButton>
+        </div>
       </header>
+
+      {/* Autopilot product demo */}
+      <DynamicFormsAutopilotDemo open={demoOpen} onClose={() => setDemoOpen(false)} />
       
       {/* Search and filters row */}
       <div className="p-3 sm:p-4 border-b border-border bg-card">

@@ -146,6 +146,7 @@
     "deleteErrorTitle": "Error",
     "deleteSuccess": "User deleted successfully",
     "deleteFailed": "Failed to delete user",
+    "failedToLoad": "Failed to load users",
     "noUsersFound": "No users found.",
     "noUsersMatchingSearch": "No users found matching your search.",
     "loading": "Loading users...",

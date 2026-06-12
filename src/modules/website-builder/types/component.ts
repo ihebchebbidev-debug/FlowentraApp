@@ -33,7 +33,7 @@ export type ComponentType =
   // Advanced
   | 'custom-html' | 'cookie-consent' | 'parallax'
   // Integrations & Widgets
-  | 'whatsapp-button' | 'facebook-pixel' | 'google-analytics' | 'loading-screen' | 'floating-cta' | 'scroll-to-top'
+  | 'whatsapp-button' | 'facebook-pixel' | 'google-analytics' | 'loading-screen' | 'floating-cta' | 'scroll-to-top' | 'mini-cart'
   // Legacy
   | 'carousel';
 

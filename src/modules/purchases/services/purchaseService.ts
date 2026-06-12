@@ -185,6 +185,42 @@ export const purchaseOrderService = {
   cancel: (id: string) =>
     extract<PurchaseOrder>(apiFetch(`/api/purchase-orders/${id}`, { method: 'PATCH', body: JSON.stringify({ status: 'cancelled' }) }), 'Failed'),
 
+  close: (id: string) =>
+    extract<PurchaseOrder>(apiFetch(`/api/purchase-orders/${id}`, { method: 'PATCH', body: JSON.stringify({ status: 'closed' }) }), 'Failed'),
+
+  /**
+   * Apply the same PATCH to many orders (bulk approve/send/close from the list).
+   * Runs with bounded concurrency so a large selection doesn't fan out hundreds of
+   * simultaneous requests, and reports which ids failed so the UI can keep them
+   * selected for a retry. Never throws — always resolves with a summary.
+   */
+  bulkUpdate: async (
+    ids: string[],
+    patch: Partial<Pick<PurchaseOrder, 'status' | 'paymentStatus'>>,
+    concurrency = 5,
+  ): Promise<{ succeeded: number; failed: number; failedIds: string[] }> => {
+    const failedIds: string[] = [];
+    let succeeded = 0;
+    let cursor = 0;
+    const body = JSON.stringify(patch);
+    const worker = async () => {
+      while (cursor < ids.length) {
+        const id = ids[cursor++];
+        try {
+          await extract<PurchaseOrder>(
+            apiFetch(`/api/purchase-orders/${id}`, { method: 'PATCH', body }),
+            'Failed',
+          );
+          succeeded++;
+        } catch {
+          failedIds.push(id);
+        }
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(concurrency, ids.length) }, worker));
+    return { succeeded, failed: failedIds.length, failedIds };
+  },
+
   addItem: (orderId: string, data: Record<string, unknown>) => {
     const payload: any = { ...data, articleId: toInt((data as any).articleId) };
     return extract<any>(apiFetch(`/api/purchase-orders/${orderId}/items`, { method: 'POST', body: JSON.stringify(payload) }), 'Failed');

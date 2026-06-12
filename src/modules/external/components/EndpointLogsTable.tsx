@@ -10,7 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Trash2, Eye, Inbox, ChevronLeft, ChevronRight, Wand2, FileText, TrendingUp, User, Mail, Phone, MapPin, Package, Pencil, Plus, X } from 'lucide-react';
+import { Trash2, Eye, Inbox, ChevronLeft, ChevronRight, Wand2, FileText, TrendingUp, User, Mail, Phone, MapPin, Package, Pencil, Plus, X, Building2, Code2 } from 'lucide-react';
 import { useEndpointLogs } from '../hooks/useEndpointLogs';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -19,11 +19,42 @@ import type { ExternalEndpointLog, ConvertLogPreview, FieldConfidence } from '..
 
 interface Props { endpointId: number; }
 
+// Derive a short human-readable label from a raw Content-Type string.
+function formatContentType(ct?: string): { label: string; color: string } | null {
+  if (!ct) return null;
+  const lower = ct.split(';')[0].trim().toLowerCase();
+  if (lower.includes('xml')) return { label: 'XML', color: 'text-orange-600 bg-orange-50 border-orange-200 dark:bg-orange-950/20 dark:border-orange-800 dark:text-orange-300' };
+  if (lower.includes('json')) return { label: 'JSON', color: 'text-blue-600 bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-800 dark:text-blue-300' };
+  if (lower.includes('form')) return { label: 'FORM', color: 'text-purple-600 bg-purple-50 border-purple-200 dark:bg-purple-950/20 dark:border-purple-800 dark:text-purple-300' };
+  return { label: lower.split('/').pop() ?? ct, color: 'text-muted-foreground bg-muted border-border' };
+}
+
+// Pretty-print body regardless of whether it's JSON or XML.
+function formatBody(body?: string, contentType?: string): string {
+  if (!body) return '';
+  const isXml = contentType?.includes('xml') || body.trimStart().startsWith('<');
+  if (isXml) {
+    // Simple XML pretty-printer: insert newlines after > and before <.
+    try {
+      return body
+        .replace(/></g, '>\n<')
+        .replace(/(<[^/][^>]*>)\n/g, '$1\n  ')
+        .trim();
+    } catch { return body; }
+  }
+  try { return JSON.stringify(JSON.parse(body), null, 2); } catch { return body; }
+}
+
 export function EndpointLogsTable({ endpointId }: Props) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [companyFilter, setCompanyFilter] = useState('');
   const { logs, loading, page, setPage, total, deleteLog, clearLogs, markAsRead } = useEndpointLogs(endpointId);
+
+  // Unique company IDs seen in current page — used for the filter dropdown.
+  const companyIds = Array.from(new Set(logs.map(l => l.companyId).filter(Boolean) as string[])).sort();
+  const filteredLogs = companyFilter ? logs.filter(l => l.companyId === companyFilter) : logs;
   const [selectedLog, setSelectedLog] = useState<ExternalEndpointLog | null>(null);
   const [showClearDialog, setShowClearDialog] = useState(false);
   const [convertingId, setConvertingId] = useState<number | null>(null);
@@ -125,11 +156,26 @@ export function EndpointLogsTable({ endpointId }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap justify-between items-center gap-3">
         <h3 className="font-medium text-foreground">{t('external.logs.title')} ({total})</h3>
-        <Button variant="outline" size="sm" className="text-destructive" onClick={() => setShowClearDialog(true)}>
-          <Trash2 className="h-3.5 w-3.5 mr-1" />{t('external.logs.clearAll')}
-        </Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          {companyIds.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+              <select
+                className="h-8 rounded-md border border-input bg-background px-2 text-xs text-foreground"
+                value={companyFilter}
+                onChange={e => setCompanyFilter(e.target.value)}
+              >
+                <option value="">{t('external.logs.allCompanies', 'All companies')}</option>
+                {companyIds.map(id => <option key={id} value={id}>{id}</option>)}
+              </select>
+            </div>
+          )}
+          <Button variant="outline" size="sm" className="text-destructive" onClick={() => setShowClearDialog(true)}>
+            <Trash2 className="h-3.5 w-3.5 mr-1" />{t('external.logs.clearAll')}
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -137,17 +183,31 @@ export function EndpointLogsTable({ endpointId }: Props) {
           <TableHeader>
             <TableRow>
               <TableHead>{t('external.logs.method')}</TableHead>
-              <TableHead>{t('external.logs.sourceIp')}</TableHead>
+              <TableHead className="hidden sm:table-cell">{t('external.logs.format', 'Format')}</TableHead>
+              <TableHead className="hidden md:table-cell">{t('external.logs.company', 'Company')}</TableHead>
               <TableHead>{t('external.logs.statusCode')}</TableHead>
               <TableHead>{t('external.logs.receivedAt')}</TableHead>
               <TableHead className="w-[80px]">{t('external.table.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {logs.map(log => (
+            {filteredLogs.map(log => {
+              const ctInfo = formatContentType(log.contentType);
+              return (
               <TableRow key={log.id} className={!log.isRead ? 'bg-primary/5' : ''}>
                 <TableCell><Badge variant="outline">{log.method}</Badge></TableCell>
-                <TableCell className="text-sm text-muted-foreground">{log.sourceIp || '—'}</TableCell>
+                <TableCell className="hidden sm:table-cell">
+                  {ctInfo
+                    ? <span className={`inline-flex items-center gap-1 text-[10px] font-medium border rounded px-1.5 py-0.5 ${ctInfo.color}`}><Code2 className="h-2.5 w-2.5" />{ctInfo.label}</span>
+                    : <span className="text-muted-foreground/50 text-xs">—</span>
+                  }
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  {log.companyId
+                    ? <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted rounded px-1.5 py-0.5"><Building2 className="h-3 w-3" />{log.companyId}</span>
+                    : <span className="text-muted-foreground/50 text-xs">—</span>
+                  }
+                </TableCell>
                 <TableCell><Badge variant={log.statusCode === 200 ? 'default' : 'destructive'}>{log.statusCode}</Badge></TableCell>
                 <TableCell className="text-sm text-muted-foreground">{new Date(log.receivedAt).toLocaleString()}</TableCell>
                 <TableCell>
@@ -179,7 +239,7 @@ export function EndpointLogsTable({ endpointId }: Props) {
                   </div>
                 </TableCell>
               </TableRow>
-            ))}
+            ); })}
           </TableBody>
         </Table>
       </Card>
@@ -200,12 +260,19 @@ export function EndpointLogsTable({ endpointId }: Props) {
           {selectedLog && (
             <ScrollArea className="max-h-[60vh]">
               <div className="space-y-4 text-sm">
-                <div><span className="text-muted-foreground font-medium">{t('external.logs.method')}:</span> <Badge variant="outline">{selectedLog.method}</Badge></div>
-                <div><span className="text-muted-foreground font-medium">{t('external.logs.sourceIp')}:</span> {selectedLog.sourceIp}</div>
-                <div><span className="text-muted-foreground font-medium">{t('external.logs.receivedAt')}:</span> {new Date(selectedLog.receivedAt).toLocaleString()}</div>
+                <div className="flex flex-wrap gap-4">
+                  <div><span className="text-muted-foreground font-medium">{t('external.logs.method')}:</span> <Badge variant="outline" className="ml-1">{selectedLog.method}</Badge></div>
+                  <div><Badge variant={selectedLog.statusCode === 200 ? 'default' : 'destructive'}>{selectedLog.statusCode}</Badge></div>
+                  {selectedLog.contentType && (() => { const ci = formatContentType(selectedLog.contentType); return ci ? <span className={`inline-flex items-center gap-1 text-[10px] font-medium border rounded px-1.5 py-0.5 ${ci.color}`}><Code2 className="h-2.5 w-2.5" />{ci.label}</span> : null; })()}
+                  {selectedLog.companyId && <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted rounded px-1.5 py-0.5"><Building2 className="h-3 w-3" />{t('external.logs.company', 'Company')}: <strong>{selectedLog.companyId}</strong></span>}
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                  <div><span className="font-medium">{t('external.logs.sourceIp')}:</span> {selectedLog.sourceIp || '—'}</div>
+                  <div><span className="font-medium">{t('external.logs.receivedAt')}:</span> {new Date(selectedLog.receivedAt).toLocaleString()}</div>
+                </div>
                 {selectedLog.queryString && <div><span className="text-muted-foreground font-medium">{t('external.logs.queryString')}:</span><pre className="mt-1 bg-muted p-2 rounded text-xs overflow-auto">{selectedLog.queryString}</pre></div>}
                 {selectedLog.headers && <div><span className="text-muted-foreground font-medium">{t('external.logs.headers')}:</span><pre className="mt-1 bg-muted p-2 rounded text-xs overflow-auto max-h-40">{(() => { try { return JSON.stringify(JSON.parse(selectedLog.headers), null, 2); } catch { return selectedLog.headers; } })()}</pre></div>}
-                {selectedLog.body && <div><span className="text-muted-foreground font-medium">{t('external.logs.body')}:</span><pre className="mt-1 bg-muted p-2 rounded text-xs overflow-auto max-h-60">{(() => { try { return JSON.stringify(JSON.parse(selectedLog.body), null, 2); } catch { return selectedLog.body; } })()}</pre></div>}
+                {selectedLog.body && <div><span className="text-muted-foreground font-medium">{t('external.logs.body')}:</span><pre className="mt-1 bg-muted p-2 rounded text-xs overflow-auto max-h-64 whitespace-pre-wrap break-all">{formatBody(selectedLog.body, selectedLog.contentType)}</pre></div>}
                 {selectedLog.responseBody && <div><span className="text-muted-foreground font-medium">{t('external.logs.response')}:</span><pre className="mt-1 bg-muted p-2 rounded text-xs overflow-auto">{selectedLog.responseBody}</pre></div>}
               </div>
             </ScrollArea>

@@ -39,7 +39,8 @@ import {
   Map, Download, Upload,
   ShieldAlert,
   Lock,
-  Loader2
+  Loader2,
+  Play
 } from "lucide-react";
 import { CollapsibleSearch } from "@/components/ui/collapsible-search";
 import { ChevronDown } from "lucide-react";
@@ -64,6 +65,7 @@ import { CompanyBadge } from '@/components/CompanyBadge';
 import { useFilteredByCompany } from '@/components/CompanyFilter';
 import { CreateActionButton } from '@/components/CreateActionButton';
 import { getInitialViewMode } from '../../../hooks/getInitialViewMode';
+import { OffersAutopilotDemo } from './onboarding/OffersAutopilotDemo';
 
 // Helper to calculate total amount from items including taxes
 // Business rule: Subtotal → Discount → Tax (on afterDiscount) → Fiscal Stamp
@@ -92,6 +94,7 @@ export function OffersList() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [offerToDelete, setOfferToDelete] = useState<string | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [demoOpen, setDemoOpen] = useState(false);
 
   // Bulk selection state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -566,7 +569,10 @@ export function OffersList() {
             <p className="text-[11px] text-muted-foreground">{t('subtitle', 'Manage quotes and proposals')}</p>
           </div>
         </div>
-        <div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="gap-1.5">
+            <Play className="h-3.5 w-3.5" /> {t('watchDemo', 'Watch Demo')}
+          </Button>
           {hasCreateAccess && (
             <CreateActionButton className="bg-primary text-white hover:bg-primary/90 shadow-medium hover-lift" onClick={handleAddOffer}>
               <Plus className="h-4 w-4 text-white mr-2" />
@@ -575,6 +581,9 @@ export function OffersList() {
           )}
         </div>
       </div>
+
+      {/* Autopilot product demo */}
+      <OffersAutopilotDemo open={demoOpen} onClose={() => setDemoOpen(false)} />
 
       {/* Mobile Header with Title */}
       <div className="md:hidden flex items-center justify-between p-4 border-b border-border bg-card/50 backdrop-blur">

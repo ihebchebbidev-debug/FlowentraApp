@@ -14,10 +14,12 @@ import {
   FileText,
   Gift,
   BarChart3,
+  Play,
 } from 'lucide-react';
 import { useEmployees } from '../hooks/useEmployees';
 import { HRPageHeader } from './HRPageHeader';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { HRAutopilotDemo } from './onboarding/HRAutopilotDemo';
 import { useQuery } from '@tanstack/react-query';
 import { schedulesApi, type UserLeave } from '@/services/api/schedulesApi';
 import dayjs from 'dayjs';
@@ -46,6 +48,7 @@ export function HRDashboard() {
   const { t } = useTranslation('hr');
   const { employeesQuery, tenantScope } = useEmployees();
   const { activeRateQuery } = useCnssRates();
+  const [demoOpen, setDemoOpen] = useState(false);
 
   // Single source of truth for normalizing the employees response.
   // Shared with EmployeeList so dashboard KPIs and the table can never
@@ -157,6 +160,9 @@ export function HRDashboard() {
         accentColor="chart-1"
         actions={
           <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="gap-1.5">
+              <Play className="h-3.5 w-3.5" /> Watch Demo
+            </Button>
             <Button asChild variant="outline" size="sm">
               <Link to="/dashboard/hr/employees" className="inline-flex items-center gap-2">
                 <Users className="h-4 w-4" />
@@ -382,6 +388,8 @@ export function HRDashboard() {
           </Button>
         </div>
       </div>
+
+      <HRAutopilotDemo open={demoOpen} onClose={() => setDemoOpen(false)} />
     </div>
   );
 }

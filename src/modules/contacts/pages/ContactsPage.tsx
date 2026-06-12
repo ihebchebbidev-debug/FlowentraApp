@@ -12,7 +12,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, Edit2, Trash2, Star, StarOff, Upload, ChevronLeft, ChevronRight, Loader2, Building2, User, Mail, Phone, Users, Filter, List, Table as TableIcon, Lock, Map } from 'lucide-react';
+import { Plus, Edit2, Trash2, Star, StarOff, Upload, ChevronLeft, ChevronRight, Loader2, Building2, User, Mail, Phone, Users, Filter, List, Table as TableIcon, Lock, Map, Play } from 'lucide-react';
 import { MapOverlay } from '@/components/shared/MapOverlay';
 import { mapContactsToMapItems } from '@/components/shared/mappers';
 import { useContacts } from '../hooks/useContacts';
@@ -25,6 +25,7 @@ import { useActionLogger } from '@/hooks/useActionLogger';
 import { isViewAllMode } from '@/utils/tenant';
 import { CompanyBadge } from '@/components/CompanyBadge';
 import { CreateActionButton } from '@/components/CreateActionButton';
+import { ContactsAutopilotDemo } from '../components/onboarding/ContactsAutopilotDemo';
 
 export default function ContactsPage() {
   const { t } = useTranslation('contacts');
@@ -81,6 +82,7 @@ export default function ContactsPage() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [demoOpen, setDemoOpen] = useState(false);
 
   // Bulk selection state
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -395,6 +397,9 @@ export default function ContactsPage() {
           </div>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="gap-1.5">
+            <Play className="h-3.5 w-3.5" /> {t('contacts.watchDemo', 'Watch Demo')}
+          </Button>
           {(isMainAdmin || canCreate('contacts')) && (
             <>
               <Button variant="outline" onClick={() => setShowImportModal(true)}>
@@ -803,6 +808,9 @@ export default function ContactsPage() {
 
       {/* Dialogs */}
       
+
+      {/* Autopilot product demo */}
+      <ContactsAutopilotDemo open={demoOpen} onClose={() => setDemoOpen(false)} />
 
       <ContactForm open={!!editingContact} onOpenChange={open => !open && setEditingContact(null)} onSubmit={handleUpdate} contact={editingContact} isLoading={isSubmitting} />
 

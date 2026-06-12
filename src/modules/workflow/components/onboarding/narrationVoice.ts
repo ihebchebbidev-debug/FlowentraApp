@@ -1,19 +1,34 @@
-// Pick the best-sounding installed Web Speech voice for a given language.
-// Prefers premium Google / Microsoft Natural / Neural / Apple Enhanced voices
-// over basic eSpeak / Compact voices that ship with most OSes.
+// Pick the best-sounding FEMALE Web Speech voice for a given language.
+// Priority: named female premium voices > generic female-labelled > any premium.
+// Male voices are penalised so the picker never falls back to them when a
+// female voice of any quality exists.
 
 const PREMIUM_HINTS = [
   'natural', 'neural', 'premium', 'enhanced', 'wavenet',
   'google', 'microsoft',
 ];
 
-const FRIENDLY_NAME_BONUS_EN = [
-  'jenny', 'aria', 'guy', 'ava', 'samantha', 'serena', 'evelyn',
-  'libby', 'sonia', 'ryan', 'natasha',
+// Known female voice names (EN)
+const FEMALE_NAMES_EN = [
+  'jenny', 'aria', 'ava', 'samantha', 'serena', 'evelyn',
+  'libby', 'sonia', 'natasha', 'zira', 'karen', 'hazel',
+  'moira', 'fiona', 'tessa', 'alice', 'lisa', 'emma',
+  'emily', 'victoria', 'heather', 'cortana', 'elsa',
 ];
-const FRIENDLY_NAME_BONUS_FR = [
-  'denise', 'henri', 'brigitte', 'celeste', 'thomas', 'audrey',
-  'amelie', 'amélie', 'rémy', 'remy',
+
+// Known female voice names (FR)
+const FEMALE_NAMES_FR = [
+  'denise', 'brigitte', 'celeste', 'audrey', 'amelie', 'amélie',
+  'elise', 'julie', 'claire', 'lucie', 'camille',
+];
+
+// Known male voice names — these receive a penalty
+const MALE_NAMES_EN = [
+  'guy', 'ryan', 'david', 'mark', 'james', 'daniel',
+  'fred', 'george', 'paul', 'reed', 'liam',
+];
+const MALE_NAMES_FR = [
+  'henri', 'thomas', 'rémy', 'remy', 'nicolas', 'pierre', 'xavier',
 ];
 
 const BAD_HINTS = ['espeak', 'compact', 'novelty', 'whisper', 'organ', 'cellos'];
@@ -24,14 +39,28 @@ function scoreVoice(v: SpeechSynthesisVoice, lang: 'en' | 'fr'): number {
   if (!voiceLang.startsWith(lang)) return -Infinity;
 
   let score = 0;
+
+  // Explicitly labelled female/male (e.g. "Google UK English Female")
+  if (name.includes('female')) score += 20;
+  if (name.includes(' male') && !name.includes('female')) score -= 25;
+
+  // Premium quality hints
   PREMIUM_HINTS.forEach((h) => { if (name.includes(h)) score += 10; });
-  const friendly = lang === 'fr' ? FRIENDLY_NAME_BONUS_FR : FRIENDLY_NAME_BONUS_EN;
-  friendly.forEach((h) => { if (name.includes(h)) score += 6; });
+
+  // Female name bonuses
+  const femaleNames = lang === 'fr' ? FEMALE_NAMES_FR : FEMALE_NAMES_EN;
+  femaleNames.forEach((h) => { if (name.includes(h)) score += 8; });
+
+  // Male name penalties
+  const maleNames = lang === 'fr' ? MALE_NAMES_FR : MALE_NAMES_EN;
+  maleNames.forEach((h) => { if (name.includes(h)) score -= 12; });
+
+  // Quality penalties
   BAD_HINTS.forEach((h) => { if (name.includes(h)) score -= 15; });
 
-  // Prefer non-local (cloud) Google/Microsoft voices — they're the high-quality ones.
+  // Prefer non-local (cloud) Google/Microsoft voices
   if (!v.localService && (name.includes('google') || name.includes('microsoft'))) score += 4;
-  // Prefer region-tagged voices (en-US, fr-FR) over generic 'en' / 'fr'.
+  // Prefer region-tagged voices (en-US, fr-FR) over generic 'en' / 'fr'
   if (voiceLang.length >= 5) score += 1;
 
   return score;
@@ -55,9 +84,9 @@ export function pickBestVoice(lang: 'en' | 'fr'): SpeechSynthesisVoice | null {
 export function splitForSpeech(text: string): string[] {
   return text
     // turn ellipses into a sentence boundary
-    .replace(/\u2026|\.{3}/g, '. ')
+    .replace(/…|\.{3}/g, '. ')
     // add a soft pause after colons / semicolons / em-dashes
-    .replace(/([:;\u2014])\s+/g, '$1. ')
+    .replace(/([:;—])\s+/g, '$1. ')
     .split(/(?<=[.!?])\s+(?=[A-ZÀ-Ý])/u)
     .map((s) => s.trim())
     .filter(Boolean);

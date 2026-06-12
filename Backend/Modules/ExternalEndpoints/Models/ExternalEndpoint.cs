@@ -65,6 +65,12 @@ namespace MyApi.Modules.ExternalEndpoints.Models
         [Column("LogRetentionDays")]
         public int LogRetentionDays { get; set; } = 30;
 
+        /// <summary>Comma-separated accepted content types: "json", "xml", "form", "any".
+        /// Empty / "any" means all content types are accepted. Unknown types fall through.</summary>
+        [Column("AcceptedContentTypes")]
+        [MaxLength(100)]
+        public string AcceptedContentTypes { get; set; } = "any";
+
         [Required]
         [Column("CreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

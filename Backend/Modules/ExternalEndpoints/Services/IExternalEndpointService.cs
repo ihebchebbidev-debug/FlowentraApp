@@ -14,7 +14,7 @@ namespace MyApi.Modules.ExternalEndpoints.Services
         Task<ExternalEndpointStatsDto> GetStatsAsync();
 
         // Logs
-        Task<PaginatedLogResponse> GetLogsAsync(int endpointId, int page = 1, int limit = 20);
+        Task<PaginatedLogResponse> GetLogsAsync(int endpointId, int page = 1, int limit = 20, string? companyId = null);
         Task<ExternalEndpointLogDto?> GetLogByIdAsync(int endpointId, int logId);
         Task<bool> DeleteLogAsync(int endpointId, int logId);
         Task<bool> ClearLogsAsync(int endpointId);
@@ -26,6 +26,6 @@ namespace MyApi.Modules.ExternalEndpoints.Services
         Task<ConvertLogPreviewDto?> PreviewConvertLogAsync(int endpointId, int logId);
 
         // Public receive
-        Task<(int statusCode, string responseBody)> ReceiveAsync(string slug, string method, string? headers, string? queryString, string? body, string? sourceIp, string? apiKey, string? originHeader = null);
+        Task<(int statusCode, string responseBody)> ReceiveAsync(string slug, string method, string? headers, string? queryString, string? body, string? sourceIp, string? apiKey, string? originHeader = null, string? contentType = null, string? companyId = null);
     }
 }

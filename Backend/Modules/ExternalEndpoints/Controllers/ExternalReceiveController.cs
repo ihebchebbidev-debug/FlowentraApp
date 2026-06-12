@@ -80,9 +80,18 @@ namespace MyApi.Modules.ExternalEndpoints.Controllers
                 var method = Request.Method;
                 var apiKey = Request.Headers["X-Api-Key"].FirstOrDefault();
                 var queryString = Request.QueryString.Value;
-                // Fix: Origin was previously never extracted, so any non-"*"
-                // AllowedOrigins on an endpoint silently 403'd every browser request.
                 var originHeader = Request.Headers["Origin"].FirstOrDefault();
+
+                // Normalise the Content-Type — strip parameters (charset, boundary)
+                // so downstream code does simple string comparisons.
+                var rawContentType = Request.ContentType ?? string.Empty;
+                var contentType = rawContentType.Split(';')[0].Trim().ToLowerInvariant();
+
+                // Multi-company routing: honour X-Company-ID header first, then
+                // the ?company_id= query param as a fallback for systems that can't
+                // set custom headers (e.g. some ERP webhook modules).
+                var companyId = Request.Headers["X-Company-ID"].FirstOrDefault()
+                    ?? Request.Query["company_id"].FirstOrDefault();
 
                 // Collect headers, redacting sensitive ones so credentials never
                 // end up in the ExternalEndpointLogs table.
@@ -113,7 +122,9 @@ namespace MyApi.Modules.ExternalEndpoints.Controllers
                 var sourceIp = HttpContext.Connection.RemoteIpAddress?.ToString();
 
                 var (statusCode, responseBody) = await _service.ReceiveAsync(
-                    slug, method, headers, queryString, body, sourceIp, apiKey, originHeader);
+                    slug, method, headers, queryString, body, sourceIp, apiKey, originHeader,
+                    contentType: string.IsNullOrEmpty(contentType) ? null : contentType,
+                    companyId: string.IsNullOrEmpty(companyId) ? null : companyId);
 
                 // CORS response headers — echo the matched origin back so the
                 // browser hands the response to the calling page.

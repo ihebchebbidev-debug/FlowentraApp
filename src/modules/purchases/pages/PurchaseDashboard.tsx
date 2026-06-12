@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ShoppingCart, Package, FileText, TrendingDown, Plus, ArrowRight, Clock, AlertTriangle, CheckCircle, DollarSign } from "lucide-react";
+import { ShoppingCart, Package, FileText, TrendingDown, Plus, ArrowRight, Clock, AlertTriangle, CheckCircle, DollarSign, Play } from "lucide-react";
 import { purchaseOrderService, purchaseStatsService } from "../services/purchaseService";
 import { PurchasePageHeader } from "../components/PurchasePageHeader";
 import { PurchaseErrorBoundary, PurchaseErrorFallback } from "../components/PurchaseErrorBoundary";
@@ -13,6 +13,7 @@ import { DashboardSkeleton } from "../components/PurchaseSkeletons";
 import type { PurchaseOrder, PurchaseStats } from "../types";
 import { CreateActionButton } from '@/components/CreateActionButton';
 import { cn } from "@/lib/utils";
+import { PurchaseAutopilotDemo } from "../components/onboarding/PurchaseAutopilotDemo";
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-muted text-muted-foreground',
@@ -31,6 +32,7 @@ function PurchaseDashboardContent() {
   const [pendingOrders, setPendingOrders] = useState<PurchaseOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [demoOpen, setDemoOpen] = useState(false);
 
   const load = async () => {
     setError(null);
@@ -71,6 +73,9 @@ function PurchaseDashboardContent() {
         icon={ShoppingCart}
         actions={
           <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="gap-1.5">
+              <Play className="h-3.5 w-3.5" /> Watch Demo
+            </Button>
             <Button variant="outline" size="sm" onClick={() => navigate('/dashboard/purchases/orders')}>
               <ShoppingCart className="h-4 w-4 mr-1" /> {t('dashboard.viewOrders')}
             </Button>
@@ -239,6 +244,8 @@ function PurchaseDashboardContent() {
           </div>
         </div>
       )}
+
+      <PurchaseAutopilotDemo open={demoOpen} onClose={() => setDemoOpen(false)} />
     </div>
   );
 }

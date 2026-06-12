@@ -231,7 +231,10 @@
     "notesPlaceholder": "Additional notes...",
     "invoiceInfo": "Invoice Information",
     "searchSuppliers": "Search suppliers…",
-    "noSuppliersMatch": "No suppliers match your search"
+    "noSuppliersMatch": "No suppliers match your search",
+    "shortcutsHint": "Alt+N add line · Enter next · Ctrl+S save",
+    "lastPrice": "Last: {{price}} {{currency}}",
+    "useLastPrice": "Use last price"
   },
   "paymentTermsOptions": {
     "immediate": "Immediate",
@@ -412,7 +415,49 @@
     "deleteDescription": "This will permanently delete the selected records.",
     "deleting": "Deleting…",
     "deleteSuccess": "Deleted {{count}} items",
-    "deletePartial": "Deleted {{ok}} of {{total}} items"
+    "deletePartial": "Deleted {{ok}} of {{total}} items",
+    "approveSelected": "Approve",
+    "approving": "Approving…",
+    "sendSelected": "Send to supplier",
+    "sending": "Sending…",
+    "closeSelected": "Close",
+    "closing": "Closing…",
+    "exportSelected": "Export",
+    "actionSuccess": "{{count}} order(s) updated",
+    "actionPartial": "{{success}} updated, {{failed}} failed"
+  },
+  "timeline": {
+    "title": "Activity",
+    "justNow": "just now",
+    "minutesAgo": "{{n}}m ago",
+    "hoursAgo": "{{n}}h ago",
+    "daysAgo": "{{n}}d ago",
+    "showMore": "Show {{n}} more",
+    "showLess": "Show less",
+    "invoiceCreated": "Invoice created",
+    "paymentRecorded": "Payment recorded: {{amount}} {{currency}}",
+    "felSent": "Facture-en-Ligne sent",
+    "tejRegistered": "Registered for TEJ declaration",
+    "invoiceCancelled": "Invoice cancelled"
+  },
+  "savedViews": {
+    "smartFilters": "Smart filters",
+    "title": "Saved views",
+    "empty": "None yet — save your current filters",
+    "save": "Save view",
+    "saved": "View saved",
+    "removed": "View removed",
+    "namePrompt": "Name this view",
+    "placeholder": "e.g. Awaiting GR — Acme",
+    "savesCurrentFilters": "Saves the current filters",
+    "delete": "Delete view"
+  },
+  "smartFilters": {
+    "awaitingReceipt": "Awaiting receipt > 7 days",
+    "unpaidOverdue": "Unpaid past due",
+    "myDrafts": "Drafts",
+    "partiallyReceived": "Partially received",
+    "highValue": "High value (top 10%)"
   },
   "items": {
     "updated": "Items updated",

@@ -5,8 +5,9 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, ChevronRight, ListChecks, Calendar, Folder, Flag, Package, MapPin, Clock, Coins, Tag, Megaphone, Wrench, DollarSign, FolderKanban, FileText, ArrowLeft } from 'lucide-react';
+import { AlertCircle, ChevronRight, ListChecks, Calendar, Folder, Flag, Package, MapPin, Clock, Coins, Tag, Megaphone, Wrench, DollarSign, FolderKanban, FileText, ArrowLeft, Play } from 'lucide-react';
 import { LookupTable } from '../components/LookupTable';
+import { LookupsAutopilotDemo } from '../components/onboarding/LookupsAutopilotDemo';
 import {
   useTaskStatuses,
   // useEventTypes, // Commented out - not needed for now
@@ -35,6 +36,7 @@ export default function LookupsPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [selectedLookup, setSelectedLookup] = useState<string | null>(null);
+  const [demoOpen, setDemoOpen] = useState(false);
   const { isMobile } = useLayoutModeContext();
   const contentRef = useRef<HTMLDivElement>(null);
   
@@ -296,13 +298,21 @@ export default function LookupsPage() {
             <p className="text-[11px] text-muted-foreground">{t('subtitle')}</p>
           </div>
         </div>
-        {returnUrl && (
-          <Button onClick={handleGoBack} variant="outline" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            {t('continueEditing')}
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="gap-1.5">
+            <Play className="h-3.5 w-3.5" /> {t('watchDemo', 'Watch Demo')}
           </Button>
-        )}
+          {returnUrl && (
+            <Button onClick={handleGoBack} variant="outline" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              {t('continueEditing')}
+            </Button>
+          )}
+        </div>
       </div>
+
+      {/* Autopilot product demo */}
+      <LookupsAutopilotDemo open={demoOpen} onClose={() => setDemoOpen(false)} />
 
       {/* Mobile Header */}
       <div className="md:hidden p-4 border-b border-border bg-card/50 backdrop-blur sticky top-0 z-20">

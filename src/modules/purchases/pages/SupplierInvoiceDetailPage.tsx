@@ -18,6 +18,7 @@ import { PurchaseErrorBoundary, PurchaseErrorFallback } from "../components/Purc
 import { DetailSkeleton } from "../components/PurchaseSkeletons";
 import { SupplierInvoicePDFPreviewModal } from "../components/SupplierInvoicePDFPreviewModal";
 import { SupplierInvoiceStatusFlow } from "../components/SupplierInvoiceStatusFlow";
+import { ActivityTimeline, type TimelineEvent } from "../components/ActivityTimeline";
 import { TejMissingInfoDialog } from "../components/TejMissingInfoDialog";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { toast } from "sonner";
@@ -287,6 +288,61 @@ function SupplierInvoiceDetailContent() {
   const fmt = (n: number) => n.toLocaleString('fr-TN', { minimumFractionDigits: 2 });
   const rsType = RS_TRANSACTION_TYPES.find(r => r.code === inv.rsTypeCode);
 
+  // Supplier invoices have no dedicated activity endpoint, so synthesise a timeline
+  // from the timestamped milestones already on the record. Only events with a real
+  // date are emitted, so the order is always truthful.
+  const timelineEvents: TimelineEvent[] = (() => {
+    const events: TimelineEvent[] = [];
+    if (inv.createdDate) {
+      events.push({
+        id: 'created',
+        action: 'created',
+        description: t('timeline.invoiceCreated', 'Invoice created'),
+        at: inv.createdDate,
+        by: inv.createdBy,
+      });
+    }
+    if (inv.amountPaid > 0 && inv.paymentDate) {
+      events.push({
+        id: 'payment',
+        action: 'payment',
+        description: t('timeline.paymentRecorded', 'Payment recorded: {{amount}} {{currency}}', {
+          amount: fmt(inv.amountPaid),
+          currency: inv.currency,
+        }),
+        at: inv.paymentDate,
+        newValue: inv.paymentMethod,
+      });
+    }
+    if (inv.factureEnLigneSentAt) {
+      events.push({
+        id: 'fel',
+        action: 'fel_sent',
+        description: t('timeline.felSent', 'Facture-en-Ligne sent'),
+        at: inv.factureEnLigneSentAt,
+        newValue: inv.factureEnLigneStatus,
+      });
+    }
+    if (inv.tejSyncDate) {
+      events.push({
+        id: 'tej',
+        action: 'tej_sync',
+        description: t('timeline.tejRegistered', 'Registered for TEJ declaration'),
+        at: inv.tejSyncDate,
+        newValue: inv.tejSyncStatus,
+      });
+    }
+    if (inv.status === 'cancelled' && inv.modifiedDate) {
+      events.push({
+        id: 'cancelled',
+        action: 'cancelled',
+        description: t('timeline.invoiceCancelled', 'Invoice cancelled'),
+        at: inv.modifiedDate,
+      });
+    }
+    return events;
+  })();
+
   return (
     <div className="flex flex-col">
       <PurchasePageHeader
@@ -379,6 +435,8 @@ function SupplierInvoiceDetailContent() {
                   <div className="flex justify-between font-medium"><span>{t('fields.balance')}</span><span className={inv.grandTotal - inv.amountPaid > 0 ? 'text-destructive' : 'text-green-600'}>{fmt(inv.grandTotal - inv.amountPaid)}</span></div>
                 </CardContent>
               </Card>
+              {/* Inline activity timeline — derived from the invoice's milestone timestamps */}
+              <ActivityTimeline events={timelineEvents} variant="inline" className="md:col-span-2" />
             </div>
           </TabsContent>
 

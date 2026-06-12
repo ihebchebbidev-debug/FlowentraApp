@@ -51,6 +51,17 @@ namespace MyApi.Modules.ExternalEndpoints.Models
         [Column("IsRead")]
         public bool IsRead { get; set; } = false;
 
+        /// <summary>MIME type of the inbound request body (e.g. "application/json", "application/xml", "application/x-www-form-urlencoded").</summary>
+        [Column("ContentType")]
+        [MaxLength(100)]
+        public string? ContentType { get; set; }
+
+        /// <summary>Company / tenant identifier supplied by the sender via the X-Company-ID header or ?company_id= query param.
+        /// Useful for multi-tenant ERP setups where one Flowentra endpoint handles traffic from multiple companies.</summary>
+        [Column("CompanyId")]
+        [MaxLength(100)]
+        public string? CompanyId { get; set; }
+
         // Navigation
         [ForeignKey("EndpointId")]
         public virtual ExternalEndpoint? Endpoint { get; set; }

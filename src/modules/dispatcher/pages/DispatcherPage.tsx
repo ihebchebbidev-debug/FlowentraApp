@@ -40,7 +40,8 @@ import {
   Loader2,
   Plus,
   ShieldAlert,
-  Trash2
+  Trash2,
+  Play
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useActionLogger } from "@/hooks/useActionLogger";
@@ -56,6 +57,7 @@ import { TechnicianDetailModal, type TechnicianInfo } from "../components/Techni
 import { useDispatchDeletion } from "@/modules/field/dispatches/hooks/useDispatchDeletion";
 import { DispatchesKanbanView } from "../components/DispatchesKanbanView";
 import { getInitialViewMode } from '../../../hooks/getInitialViewMode';
+import { PlanningAutopilotDemo } from "../components/onboarding/PlanningAutopilotDemo";
 
 // Extended dispatch type for display
 interface DisplayDispatch {
@@ -109,6 +111,7 @@ export function DispatcherPage() {
   });
   const [selectedStat, setSelectedStat] = useState<string>('all');
   const [showFilterBar, setShowFilterBar] = useState(false);
+  const [demoOpen, setDemoOpen] = useState(false);
 
   // Selection state for bulk actions
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -550,10 +553,13 @@ useEffect(() => {
   return (
     <div className="flex flex-col">
       {/* Header - match Service Orders style */}
-      <header className="flex items-center justify-between p-4 border-b border-border bg-card/50 backdrop-blur">
-        <div className="flex-1">
+      <header className="flex items-center justify-between gap-3 p-4 border-b border-border bg-card/50 backdrop-blur">
+        <div className="flex-1 min-w-0">
           <DispatcherHeader onDispatchJobs={handleDispatchJobs} hasCreateAccess={hasCreateAccess} />
         </div>
+        <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="gap-1.5 shrink-0">
+          <Play className="h-3.5 w-3.5" /> {t('dispatcher.watchDemo', 'Watch Demo')}
+        </Button>
       </header>
 
       {/* Stats Cards */}
@@ -866,6 +872,9 @@ useEffect(() => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Autopilot product demo */}
+      <PlanningAutopilotDemo open={demoOpen} onClose={() => setDemoOpen(false)} />
 
       {/* Technician Detail Modal */}
       <TechnicianDetailModal

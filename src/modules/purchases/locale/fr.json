@@ -231,7 +231,10 @@
     "notesPlaceholder": "Notes supplémentaires...",
     "invoiceInfo": "Informations facture",
     "searchSuppliers": "Rechercher un fournisseur…",
-    "noSuppliersMatch": "Aucun fournisseur ne correspond"
+    "noSuppliersMatch": "Aucun fournisseur ne correspond",
+    "shortcutsHint": "Alt+N ligne · Entrée suivant · Ctrl+S enregistrer",
+    "lastPrice": "Dernier : {{price}} {{currency}}",
+    "useLastPrice": "Utiliser le dernier prix"
   },
   "paymentTermsOptions": {
     "immediate": "Immédiat",
@@ -412,7 +415,49 @@
     "deleteDescription": "Les enregistrements sélectionnés seront supprimés définitivement.",
     "deleting": "Suppression…",
     "deleteSuccess": "{{count}} éléments supprimés",
-    "deletePartial": "{{ok}} sur {{total}} éléments supprimés"
+    "deletePartial": "{{ok}} sur {{total}} éléments supprimés",
+    "approveSelected": "Valider",
+    "approving": "Validation…",
+    "sendSelected": "Envoyer au fournisseur",
+    "sending": "Envoi…",
+    "closeSelected": "Clôturer",
+    "closing": "Clôture…",
+    "exportSelected": "Exporter",
+    "actionSuccess": "{{count}} commande(s) mise(s) à jour",
+    "actionPartial": "{{success}} mise(s) à jour, {{failed}} échec(s)"
+  },
+  "timeline": {
+    "title": "Activité",
+    "justNow": "à l’instant",
+    "minutesAgo": "il y a {{n}} min",
+    "hoursAgo": "il y a {{n}} h",
+    "daysAgo": "il y a {{n}} j",
+    "showMore": "Afficher {{n}} de plus",
+    "showLess": "Afficher moins",
+    "invoiceCreated": "Facture créée",
+    "paymentRecorded": "Paiement enregistré : {{amount}} {{currency}}",
+    "felSent": "Facture-en-Ligne envoyée",
+    "tejRegistered": "Enregistrée pour la déclaration TEJ",
+    "invoiceCancelled": "Facture annulée"
+  },
+  "savedViews": {
+    "smartFilters": "Filtres intelligents",
+    "title": "Vues enregistrées",
+    "empty": "Aucune — enregistrez vos filtres actuels",
+    "save": "Enregistrer la vue",
+    "saved": "Vue enregistrée",
+    "removed": "Vue supprimée",
+    "namePrompt": "Nommer cette vue",
+    "placeholder": "ex. Réception en attente — Acme",
+    "savesCurrentFilters": "Enregistre les filtres actuels",
+    "delete": "Supprimer la vue"
+  },
+  "smartFilters": {
+    "awaitingReceipt": "Réception en attente > 7 jours",
+    "unpaidOverdue": "Impayées en retard",
+    "myDrafts": "Brouillons",
+    "partiallyReceived": "Partiellement reçues",
+    "highValue": "Valeur élevée (top 10 %)"
   },
   "items": {
     "updated": "Articles mis à jour",

@@ -6,6 +6,7 @@ using MyApi.Modules.ExternalEndpoints.Models;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 
 namespace MyApi.Modules.ExternalEndpoints.Services
 {
@@ -74,7 +75,7 @@ namespace MyApi.Modules.ExternalEndpoints.Services
             return $"{prefix}••••••••••••{suffix}";
         }
 
-        private ExternalEndpointDto MapToDto(ExternalEndpoint e, int totalReceived = 0, int receivedToday = 0, DateTime? lastReceived = null)
+        private ExternalEndpointDto MapToDto(ExternalEndpoint e, int totalReceived = 0, int receivedToday = 0, DateTime? lastReceived = null, int totalSent = 0, int sentToday = 0)
         {
             return new ExternalEndpointDto
             {
@@ -90,12 +91,142 @@ namespace MyApi.Modules.ExternalEndpoints.Services
                 ResponseTemplate = e.ResponseTemplate,
                 WebhookForwardUrl = e.WebhookForwardUrl,
                 LogRetentionDays = e.LogRetentionDays,
+                AcceptedContentTypes = e.AcceptedContentTypes,
                 CreatedAt = e.CreatedAt,
                 UpdatedAt = e.UpdatedAt,
                 CreatedBy = e.CreatedBy,
                 TotalReceived = totalReceived,
                 ReceivedToday = receivedToday,
-                LastReceived = lastReceived
+                LastReceived = lastReceived,
+                TotalSent = totalSent,
+                SentToday = sentToday,
+            };
+        }
+
+        // ── Content-type helpers ────────────────────────────────────────────
+
+        // Resolve canonical content-type token ("json", "xml", "form", "other")
+        // from a raw MIME type string so the rest of the code never does
+        // substring checks on "application/x-www-form-urlencoded" inline.
+        private static string ResolveContentFormat(string? contentType)
+        {
+            if (string.IsNullOrEmpty(contentType)) return "json"; // default assumption
+            var ct = contentType.Split(';')[0].Trim().ToLowerInvariant();
+            if (ct.Contains("json")) return "json";
+            if (ct.Contains("xml")) return "xml";
+            if (ct.Contains("x-www-form-urlencoded") || ct.Contains("form")) return "form";
+            return "other";
+        }
+
+        // Returns true when the endpoint's AcceptedContentTypes allows the given format.
+        // "any" / empty = accept everything.
+        private static bool IsContentTypeAccepted(string acceptedContentTypes, string format)
+        {
+            if (string.IsNullOrWhiteSpace(acceptedContentTypes) || acceptedContentTypes.Trim() == "any") return true;
+            var accepted = acceptedContentTypes.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(s => s.ToLowerInvariant()).ToList();
+            if (accepted.Contains("any")) return true;
+            return accepted.Contains(format);
+        }
+
+        // ── XML / form-urlencoded → JSON conversion ──────────────────────────
+
+        // Convert an XML body to a flat JSON representation so the schema
+        // validator and conversion preview can use consistent JSON logic.
+        // The result is a JSON object whose keys mirror the XML child element
+        // names of the root node (one level deep). Nested elements are preserved
+        // as JSON objects. Attributes become "@attr" keys. Arrays are detected
+        // by repeated element names.
+        // Returns null when the input is not valid XML.
+        private static string? TryXmlToJson(string? xml)
+        {
+            if (string.IsNullOrWhiteSpace(xml)) return null;
+            try
+            {
+                var doc = XDocument.Parse(xml.Trim());
+                var root = doc.Root;
+                if (root == null) return null;
+                var obj = XElementToDict(root);
+                return System.Text.Json.JsonSerializer.Serialize(obj);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static Dictionary<string, object?> XElementToDict(XElement el)
+        {
+            var dict = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+
+            // Attributes → "@attrName"
+            foreach (var attr in el.Attributes())
+                dict[$"@{attr.Name.LocalName}"] = (object?)attr.Value;
+
+            var children = el.Elements().ToList();
+            if (children.Count == 0)
+            {
+                // Leaf node — return value under the "value" key if attributes exist,
+                // otherwise the caller will handle the text value.
+                dict["value"] = el.Value;
+                return dict;
+            }
+
+            // Group children by local name to detect repeated elements (arrays).
+            var groups = children.GroupBy(c => c.Name.LocalName).ToList();
+            foreach (var g in groups)
+            {
+                var items = g.ToList();
+                if (items.Count > 1)
+                {
+                    // Array
+                    dict[g.Key] = items.Select(i => {
+                        var sub = i.Elements().Any() ? (object?)XElementToDict(i) : (object?)i.Value;
+                        return sub;
+                    }).ToList();
+                }
+                else
+                {
+                    var child = items[0];
+                    if (child.Elements().Any())
+                        dict[g.Key] = XElementToDict(child);
+                    else
+                        dict[g.Key] = (object?)child.Value;
+                }
+            }
+            return dict;
+        }
+
+        // Convert application/x-www-form-urlencoded to a JSON object string.
+        private static string? TryFormToJson(string? body)
+        {
+            if (string.IsNullOrWhiteSpace(body)) return null;
+            try
+            {
+                var pairs = body.Split('&', StringSplitOptions.RemoveEmptyEntries);
+                var dict = new Dictionary<string, object?>();
+                foreach (var pair in pairs)
+                {
+                    var idx = pair.IndexOf('=');
+                    if (idx < 0) continue;
+                    var key = Uri.UnescapeDataString(pair[..idx].Replace('+', ' '));
+                    var val = Uri.UnescapeDataString(pair[(idx + 1)..].Replace('+', ' '));
+                    dict[key] = (object?)val;
+                }
+                return System.Text.Json.JsonSerializer.Serialize(dict);
+            }
+            catch { return null; }
+        }
+
+        // Normalise the raw body to JSON for downstream schema validation
+        // and conversion preview regardless of the original content-type.
+        private static string? NormaliseBodyToJson(string? body, string format)
+        {
+            return format switch
+            {
+                "xml" => TryXmlToJson(body),
+                "form" => TryFormToJson(body),
+                _ => body,   // already JSON (or "other" — passed through as-is)
             };
         }
 
@@ -314,10 +445,20 @@ namespace MyApi.Modules.ExternalEndpoints.Services
                     Last = g.Max(l => l.ReceivedAt)
                 }).ToListAsync();
 
+            var fwdStats = await _context.WebhookForwardJobs
+                .Where(j => endpointIds.Contains(j.EndpointId) && j.Status == "succeeded")
+                .GroupBy(j => j.EndpointId)
+                .Select(g => new {
+                    EndpointId = g.Key,
+                    Total = g.Count(),
+                    Today = g.Count(j => j.CompletedAt >= today)
+                }).ToListAsync();
+
             var dtos = endpoints.Select(e =>
             {
                 var stats = logStats.FirstOrDefault(s => s.EndpointId == e.Id);
-                return MapToDto(e, stats?.Total ?? 0, stats?.Today ?? 0, stats?.Last);
+                var fwd = fwdStats.FirstOrDefault(s => s.EndpointId == e.Id);
+                return MapToDto(e, stats?.Total ?? 0, stats?.Today ?? 0, stats?.Last, fwd?.Total ?? 0, fwd?.Today ?? 0);
             }).ToList();
 
             return new PaginatedEndpointResponse
@@ -338,7 +479,13 @@ namespace MyApi.Modules.ExternalEndpoints.Services
                 .Select(g => new { Total = g.Count(), Today = g.Count(l => l.ReceivedAt >= today), Last = g.Max(l => (DateTime?)l.ReceivedAt) })
                 .FirstOrDefaultAsync();
 
-            return MapToDto(e, stats?.Total ?? 0, stats?.Today ?? 0, stats?.Last);
+            var fwdStats = await _context.WebhookForwardJobs
+                .Where(j => j.EndpointId == id && j.Status == "succeeded")
+                .GroupBy(j => 1)
+                .Select(g => new { Total = g.Count(), Today = g.Count(j => j.CompletedAt >= today) })
+                .FirstOrDefaultAsync();
+
+            return MapToDto(e, stats?.Total ?? 0, stats?.Today ?? 0, stats?.Last, fwdStats?.Total ?? 0, fwdStats?.Today ?? 0);
         }
 
         public async Task<ExternalEndpointDto> CreateEndpointAsync(CreateExternalEndpointDto dto, string userId)
@@ -373,6 +520,7 @@ namespace MyApi.Modules.ExternalEndpoints.Services
                 WebhookForwardUrl = dto.WebhookForwardUrl,
                 ForwardSecret = forwardSecret,
                 LogRetentionDays = Math.Clamp(dto.LogRetentionDays, 0, 3650),
+                AcceptedContentTypes = string.IsNullOrWhiteSpace(dto.AcceptedContentTypes) ? "any" : dto.AcceptedContentTypes,
                 CreatedBy = userId,
                 CreatedAt = DateTime.UtcNow
             };
@@ -405,6 +553,7 @@ namespace MyApi.Modules.ExternalEndpoints.Services
             if (dto.ResponseTemplate != null) entity.ResponseTemplate = dto.ResponseTemplate;
             if (dto.WebhookForwardUrl != null) entity.WebhookForwardUrl = dto.WebhookForwardUrl;
             if (dto.LogRetentionDays.HasValue) entity.LogRetentionDays = Math.Clamp(dto.LogRetentionDays.Value, 0, 3650);
+            if (dto.AcceptedContentTypes != null) entity.AcceptedContentTypes = string.IsNullOrWhiteSpace(dto.AcceptedContentTypes) ? "any" : dto.AcceptedContentTypes;
             entity.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
@@ -485,15 +634,25 @@ namespace MyApi.Modules.ExternalEndpoints.Services
                 TotalEndpoints = await endpoints.CountAsync(),
                 ActiveEndpoints = await endpoints.CountAsync(e => e.IsActive),
                 TotalReceivedToday = await _context.ExternalEndpointLogs.CountAsync(l => l.ReceivedAt >= today),
-                TotalReceivedAll = await _context.ExternalEndpointLogs.CountAsync()
+                TotalReceivedAll = await _context.ExternalEndpointLogs.CountAsync(),
+                TotalSentToday = await _context.WebhookForwardJobs.CountAsync(j => j.Status == "succeeded" && j.CompletedAt >= today),
+                TotalSentAll = await _context.WebhookForwardJobs.CountAsync(j => j.Status == "succeeded"),
             };
         }
 
         // Logs
-        public async Task<PaginatedLogResponse> GetLogsAsync(int endpointId, int page = 1, int limit = 20)
+        private static ExternalEndpointLogDto MapLogToDto(ExternalEndpointLog l) => new()
+        {
+            Id = l.Id, EndpointId = l.EndpointId, Method = l.Method, Headers = l.Headers,
+            QueryString = l.QueryString, Body = l.Body, SourceIp = l.SourceIp,
+            StatusCode = l.StatusCode, ResponseBody = l.ResponseBody, ReceivedAt = l.ReceivedAt,
+            ProcessedAt = l.ProcessedAt, IsRead = l.IsRead,
+            ContentType = l.ContentType, CompanyId = l.CompanyId
+        };
+
+        public async Task<PaginatedLogResponse> GetLogsAsync(int endpointId, int page = 1, int limit = 20, string? companyId = null)
         {
             page = ClampPage(page); limit = ClampLimit(limit);
-            // Ownership guard — endpoint must exist for the calling tenant.
             if (!await CurrentTenantOwnsEndpointAsync(endpointId))
             {
                 return new PaginatedLogResponse
@@ -503,17 +662,16 @@ namespace MyApi.Modules.ExternalEndpoints.Services
                 };
             }
             var query = _context.ExternalEndpointLogs.AsNoTracking().Where(l => l.EndpointId == endpointId);
+
+            // Optional company filter — lets the UI show only logs for a specific company / ERP tenant.
+            if (!string.IsNullOrWhiteSpace(companyId))
+                query = query.Where(l => l.CompanyId == companyId);
+
             var total = await query.CountAsync();
             var logs = await query.OrderByDescending(l => l.ReceivedAt).Skip((page - 1) * limit).Take(limit).ToListAsync();
             return new PaginatedLogResponse
             {
-                Logs = logs.Select(l => new ExternalEndpointLogDto
-                {
-                    Id = l.Id, EndpointId = l.EndpointId, Method = l.Method, Headers = l.Headers,
-                    QueryString = l.QueryString, Body = l.Body, SourceIp = l.SourceIp,
-                    StatusCode = l.StatusCode, ResponseBody = l.ResponseBody, ReceivedAt = l.ReceivedAt,
-                    ProcessedAt = l.ProcessedAt, IsRead = l.IsRead
-                }).ToList(),
+                Logs = logs.Select(MapLogToDto).ToList(),
                 Pagination = new PaginationInfo { Page = page, Limit = limit, Total = total, TotalPages = (int)Math.Ceiling(total / (double)limit) }
             };
         }
@@ -523,13 +681,7 @@ namespace MyApi.Modules.ExternalEndpoints.Services
             if (!await CurrentTenantOwnsEndpointAsync(endpointId)) return null;
             var l = await _context.ExternalEndpointLogs.AsNoTracking().FirstOrDefaultAsync(x => x.Id == logId && x.EndpointId == endpointId);
             if (l == null) return null;
-            return new ExternalEndpointLogDto
-            {
-                Id = l.Id, EndpointId = l.EndpointId, Method = l.Method, Headers = l.Headers,
-                QueryString = l.QueryString, Body = l.Body, SourceIp = l.SourceIp,
-                StatusCode = l.StatusCode, ResponseBody = l.ResponseBody, ReceivedAt = l.ReceivedAt,
-                ProcessedAt = l.ProcessedAt, IsRead = l.IsRead
-            };
+            return MapLogToDto(l);
         }
 
         public async Task<bool> DeleteLogAsync(int endpointId, int logId)
@@ -567,7 +719,7 @@ namespace MyApi.Modules.ExternalEndpoints.Services
         // disambiguates by API key. Stamps the OWNING endpoint's TenantId on
         // the persisted log/job (the StampTenantIdOnNewEntities hook honors
         // explicit non-zero TenantIds for these two entity types).
-        public async Task<(int statusCode, string responseBody)> ReceiveAsync(string slug, string method, string? headers, string? queryString, string? body, string? sourceIp, string? apiKey, string? originHeader = null)
+        public async Task<(int statusCode, string responseBody)> ReceiveAsync(string slug, string method, string? headers, string? queryString, string? body, string? sourceIp, string? apiKey, string? originHeader = null, string? contentType = null, string? companyId = null)
         {
             // Rate-limit before doing any DB work.
             if (!RateLimitAllow(slug, sourceIp))
@@ -600,12 +752,25 @@ namespace MyApi.Modules.ExternalEndpoints.Services
             if (!allowedMethods.Contains(method.ToUpper()))
                 return (405, "{\"error\":\"Method not allowed\"}");
 
+            // Content-type check — only enforced when AcceptedContentTypes is not "any"
+            // and the request supplies a Content-Type header.
+            var format = ResolveContentFormat(contentType);
+            if (!string.IsNullOrWhiteSpace(contentType) && method.ToUpper() != "GET")
+            {
+                if (!IsContentTypeAccepted(endpoint.AcceptedContentTypes, format))
+                    return (415, $"{{\"error\":\"Content-Type '{contentType}' is not accepted by this endpoint\"}}");
+            }
+
+            // Normalise body to JSON for schema validation (XML and form-urlencoded → JSON).
+            // We keep the raw body in the log but validate against the normalised JSON.
+            var normalised = method.ToUpper() != "GET" ? NormaliseBodyToJson(body, format) : null;
+
             // ExpectedSchema validation (lightweight required-keys check). Only
             // enforced for body-bearing methods; GET ingest is treated as a
             // "ping" with no payload contract.
             if (method.ToUpper() != "GET")
             {
-                var (schemaOk, schemaErr) = ValidateAgainstSchema(endpoint.ExpectedSchema, body);
+                var (schemaOk, schemaErr) = ValidateAgainstSchema(endpoint.ExpectedSchema, normalised ?? body);
                 if (!schemaOk)
                 {
                     // Persist a 400 log so the tenant sees rejected attempts in their UI.
@@ -616,12 +781,14 @@ namespace MyApi.Modules.ExternalEndpoints.Services
                         Method = method.ToUpper(),
                         Headers = headers,
                         QueryString = queryString,
-                        Body = body,
+                        Body = body,          // preserve raw body
                         SourceIp = sourceIp,
                         StatusCode = 400,
                         ResponseBody = "{\"success\":false,\"error\":\"" + schemaErr?.Replace("\"", "'") + "\"}",
                         ReceivedAt = DateTime.UtcNow,
-                        ProcessedAt = DateTime.UtcNow
+                        ProcessedAt = DateTime.UtcNow,
+                        ContentType = contentType,
+                        CompanyId = companyId
                     };
                     _context.ExternalEndpointLogs.Add(rejected);
                     try { await _context.SaveChangesAsync(); }
@@ -637,11 +804,13 @@ namespace MyApi.Modules.ExternalEndpoints.Services
                 Method = method.ToUpper(),
                 Headers = headers,
                 QueryString = queryString,
-                Body = body,
+                Body = body,                  // store the original raw body (XML, JSON, form)
                 SourceIp = sourceIp,
                 StatusCode = 200,
                 ReceivedAt = DateTime.UtcNow,
-                ProcessedAt = DateTime.UtcNow
+                ProcessedAt = DateTime.UtcNow,
+                ContentType = contentType,
+                CompanyId = companyId
             };
 
             var responseBody = endpoint.ResponseTemplate ?? "{\"success\":true,\"message\":\"Data received\"}";
@@ -704,11 +873,16 @@ namespace MyApi.Modules.ExternalEndpoints.Services
             var preview = new ConvertLogPreviewDto { LogId = log.Id };
             if (string.IsNullOrWhiteSpace(log.Body)) return preview;
 
+            // Normalise to JSON before running heuristic extraction so the same
+            // logic handles JSON, XML, and form-urlencoded payloads uniformly.
+            var format = ResolveContentFormat(log.ContentType);
+            var jsonBody = NormaliseBodyToJson(log.Body, format) ?? log.Body;
+
             try
             {
-                using var doc = System.Text.Json.JsonDocument.Parse(log.Body);
+                using var doc = System.Text.Json.JsonDocument.Parse(jsonBody);
                 var root = doc.RootElement;
-                preview.RawJson = System.Text.Json.JsonSerializer.Deserialize<object>(log.Body);
+                preview.RawJson = System.Text.Json.JsonSerializer.Deserialize<object>(jsonBody);
 
                 // Try a list of keys, return value + which key matched (null if none).
                 (string? value, string? matchedKey) GetStr(params string[] keys)

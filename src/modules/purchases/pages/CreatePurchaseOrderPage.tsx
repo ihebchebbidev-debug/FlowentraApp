@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -187,6 +187,28 @@ export default function CreatePurchaseOrderPage() {
 
   const removeItem = (index: number) => setItems(items.filter((_, i) => i !== index));
 
+  // Keyboard-first PO builder. Global shortcuts use "latest ref" handlers so the
+  // single window-level listener always sees current state without re-binding.
+  const handleSaveRef = useRef<() => void>(() => {});
+  const addItemRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      // Ctrl/Cmd+S → save
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        handleSaveRef.current();
+        return;
+      }
+      // Alt+N → add a new line
+      if (e.altKey && e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        addItemRef.current();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   // Use the shared total calculator (same one used by offers/sales) so the rule
   // "Subtotal → Discount → TVA → Fiscal Stamp" stays consistent across modules.
   // Per-line tax rates are aggregated into a fixed taxAmount because the calculator
@@ -252,6 +274,10 @@ export default function CreatePurchaseOrderPage() {
       setSaving(false);
     }
   };
+
+  // Keep the global-shortcut refs pointing at the freshest closures every render.
+  handleSaveRef.current = () => { if (!saving) handleSave(); };
+  addItemRef.current = addItem;
 
   return (
     <div className="flex flex-col">
@@ -328,7 +354,12 @@ export default function CreatePurchaseOrderPage() {
         <Card>
           <CardHeader className="pb-2 flex flex-row items-center justify-between">
             <CardTitle className="text-sm">{t('create.items')}</CardTitle>
-            <Button size="sm" variant="outline" onClick={addItem}><Plus className="h-3.5 w-3.5 mr-1" /> {t('create.addItem')}</Button>
+            <div className="flex items-center gap-2">
+              <span className="hidden sm:inline text-[10px] text-muted-foreground">
+                {t('create.shortcutsHint', 'Alt+N add line · Enter next · Ctrl+S save')}
+              </span>
+              <Button size="sm" variant="outline" onClick={addItem}><Plus className="h-3.5 w-3.5 mr-1" /> {t('create.addItem')}</Button>
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             <Table>
@@ -370,7 +401,28 @@ export default function CreatePurchaseOrderPage() {
                         </SelectContent>
                       </Select>
                     </TableCell>
-                    <TableCell><Input type="number" min="0" step="0.01" className="h-7 text-xs w-20" value={item.unitPrice ?? ''} onChange={e => updateItem(idx, 'unitPrice', Number(e.target.value))} /></TableCell>
+                    <TableCell>
+                      <Input type="number" min="0" step="0.01" className="h-7 text-xs w-20" value={item.unitPrice ?? ''} onChange={e => updateItem(idx, 'unitPrice', Number(e.target.value))} />
+                      {(() => {
+                        // Last-price hint: the supplier catalogue price for this article.
+                        // Click to apply it to the line (one-tap correction).
+                        const sa = item.articleId
+                          ? supplierArticles.find(a => String(a.articleId) === String(item.articleId))
+                          : null;
+                        if (!sa || !sa.purchasePrice) return null;
+                        const differs = Number(item.unitPrice ?? 0) !== Number(sa.purchasePrice);
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => updateItem(idx, 'unitPrice', sa.purchasePrice)}
+                            title={t('create.useLastPrice', 'Use last price')}
+                            className={`block text-[10px] mt-0.5 hover:underline ${differs ? 'text-amber-600' : 'text-muted-foreground'}`}
+                          >
+                            {t('create.lastPrice', 'Last: {{price}} {{currency}}', { price: fmt(sa.purchasePrice), currency: sa.currency || 'TND' })}
+                          </button>
+                        );
+                      })()}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <Input type="number" min="0" step="0.01" className="h-7 text-xs w-14" value={item.discount ?? 0} onChange={e => updateItem(idx, 'discount', Number(e.target.value))} />
@@ -383,7 +435,21 @@ export default function CreatePurchaseOrderPage() {
                         </Select>
                       </div>
                     </TableCell>
-                    <TableCell><Input type="number" min="0" max="100" step="0.01" className="h-7 text-xs w-16" value={item.taxRate ?? 19} onChange={e => updateItem(idx, 'taxRate', Number(e.target.value))} /></TableCell>
+                    <TableCell>
+                      <Input
+                        type="number" min="0" max="100" step="0.01" className="h-7 text-xs w-16"
+                        value={item.taxRate ?? 19}
+                        onChange={e => updateItem(idx, 'taxRate', Number(e.target.value))}
+                        onKeyDown={e => {
+                          // Enter from the last cell of the last row appends a new line
+                          // (keyboard-first entry); on earlier rows it just blurs.
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (idx === items.length - 1) addItem();
+                          }
+                        }}
+                      />
+                    </TableCell>
                     <TableCell className="text-xs text-right font-medium">{fmt(item.lineTotal || 0)}</TableCell>
                     <TableCell><Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeItem(idx)}><Trash2 className="h-3 w-3 text-destructive" /></Button></TableCell>
                   </TableRow>

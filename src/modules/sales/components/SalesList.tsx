@@ -35,7 +35,8 @@ import {
   ShieldAlert,
   Lock,
   Loader2,
-  X
+  X,
+  Play
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CollapsibleSearch } from "@/components/ui/collapsible-search";
@@ -55,6 +56,7 @@ import { isViewAllMode } from '@/utils/tenant';
 import { CompanyBadge } from '@/components/CompanyBadge';
 import { useFilteredByCompany } from '@/components/CompanyFilter';
 import { CreateActionButton } from '@/components/CreateActionButton';
+import { SalesAutopilotDemo } from './onboarding/SalesAutopilotDemo';
 
 // Import types and services
 import { Sale } from "../types";
@@ -105,6 +107,7 @@ export function SalesList() {
   const [filterAssigned, setFilterAssigned] = useState<'all' | string>('all');
   const [selectedStat, setSelectedStat] = useState<string>('all');
   const [showFilterBar, setShowFilterBar] = useState(false);
+  const [demoOpen, setDemoOpen] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; sale: Sale | null }>({ open: false, sale: null });
@@ -424,7 +427,13 @@ export function SalesList() {
             <p className="text-[11px] text-muted-foreground">{t("manageSalesAndOffers")}</p>
           </div>
         </div>
+        <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="gap-1.5">
+          <Play className="h-3.5 w-3.5" /> {t('watchDemo', 'Watch Demo')}
+        </Button>
       </div>
+
+      {/* Autopilot product demo */}
+      <SalesAutopilotDemo open={demoOpen} onClose={() => setDemoOpen(false)} />
 
 
       {/* Stats Cards */}

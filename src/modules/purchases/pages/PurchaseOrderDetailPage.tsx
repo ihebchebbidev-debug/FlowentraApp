@@ -16,6 +16,7 @@ import { PurchaseErrorBoundary, PurchaseErrorFallback } from "../components/Purc
 import { DetailSkeleton } from "../components/PurchaseSkeletons";
 import { PurchaseOrderPDFPreviewModal } from "../components/PurchaseOrderPDFPreviewModal";
 import { PurchaseOrderStatusFlow } from "../components/PurchaseOrderStatusFlow";
+import { ActivityTimeline, type TimelineEvent } from "../components/ActivityTimeline";
 import { TejMissingInfoDialog } from "../components/TejMissingInfoDialog";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { UNIT_OPTIONS, getUnitLabel } from "@/constants/units";
@@ -246,6 +247,17 @@ function PurchaseOrderDetailPage() {
 
   const fmt = (n: number) => n.toLocaleString('fr-TN', { minimumFractionDigits: 2 });
 
+  // Map the backend audit trail onto the shared inline timeline shape.
+  const timelineEvents: TimelineEvent[] = activities.map((a) => ({
+    id: a.id,
+    action: a.action,
+    description: a.description,
+    at: a.performedAt,
+    by: a.performedByName,
+    oldValue: a.oldValue,
+    newValue: a.newValue,
+  }));
+
   const handleStatusChange = async (next: string) => {
     if (!id || next === po.status) return;
     try {
@@ -335,6 +347,8 @@ function PurchaseOrderDetailPage() {
                   <div className="flex justify-between font-bold text-sm"><span>{t('fields.grandTotal')}</span><span>{fmt(po.grandTotal)} {po.currency}</span></div>
                 </CardContent>
               </Card>
+              {/* Inline activity timeline — at-a-glance history without leaving Overview */}
+              <ActivityTimeline events={timelineEvents} variant="inline" className="md:col-span-2" />
             </div>
           </TabsContent>
 
@@ -515,21 +529,7 @@ function PurchaseOrderDetailPage() {
           <TabsContent value="activity" className="mt-4">
             <Card>
               <CardContent className="p-4">
-                <div className="space-y-4">
-                  {activities.map(a => (
-                    <div key={a.id} className="flex gap-3">
-                      <div className="flex flex-col items-center">
-                        <div className="rounded-full h-2 w-2 bg-primary mt-1.5" />
-                        <div className="w-px flex-1 bg-border" />
-                      </div>
-                      <div className="pb-4">
-                        <p className="text-xs font-medium">{a.description}</p>
-                        <p className="text-[10px] text-muted-foreground">{new Date(a.performedAt).toLocaleString()} &bull; {a.performedByName}</p>
-                      </div>
-                    </div>
-                  ))}
-                  {activities.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">{t('activity.empty')}</p>}
-                </div>
+                <ActivityTimeline events={timelineEvents} variant="tab" initialLimit={50} />
               </CardContent>
             </Card>
           </TabsContent>

@@ -7,7 +7,7 @@ import type { ExternalEndpoint, ExternalEndpointStats, CreateExternalEndpointDat
 export function useExternalEndpoints() {
   const { t } = useTranslation();
   const [endpoints, setEndpoints] = useState<ExternalEndpoint[]>([]);
-  const [stats, setStats] = useState<ExternalEndpointStats>({ totalEndpoints: 0, activeEndpoints: 0, totalReceivedToday: 0, totalReceivedAll: 0 });
+  const [stats, setStats] = useState<ExternalEndpointStats>({ totalEndpoints: 0, activeEndpoints: 0, totalReceivedToday: 0, totalReceivedAll: 0, totalSentToday: 0, totalSentAll: 0 });
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');

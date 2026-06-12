@@ -27,7 +27,10 @@
       "webhookForwardUrl": "Forward to URL",
       "webhookForwardUrlPlaceholder": "Optional: forward received data to another URL",
       "isActive": "Active",
-      "isActiveDesc": "Endpoint can receive data when active"
+      "isActiveDesc": "Endpoint can receive data when active",
+      "acceptedContentTypes": "Accepted Content Types",
+      "acceptAny": "Accept any content type",
+      "acceptedContentTypesHint": "Requests with a non-matching Content-Type will be rejected with HTTP 415. \"Accept any\" is recommended for maximum compatibility."
     },
     "detail": {
       "publicUrl": "Public URL",
@@ -43,6 +46,11 @@
       "lastReceived": "Last Received",
       "totalReceived": "Total Received",
       "receivedToday": "Received Today",
+      "totalSent": "Total Forwarded",
+      "sentToday": "Forwarded Today",
+      "flowInbound": "Inbound",
+      "flowBidirectional": "In + Out",
+      "outboundUrl": "Forwarding to",
       "tabs": {
         "logs": "Received Data",
         "settings": "Settings"
@@ -88,29 +96,44 @@
       "previewCurrency": "Currency",
       "confExact": "Direct match",
       "confInferred": "Best guess",
-      "confEdited": "Manually edited"
+      "confEdited": "Manually edited",
+      "format": "Format",
+      "company": "Company",
+      "allCompanies": "All companies"
     },
     "test": {
       "title": "Test Endpoint",
       "description": "Send a test request to this endpoint.",
+      "descriptionDirect": "Sends a real POST to the public URL with the X-API-Key header.",
       "method": "Method",
+      "contentType": "Content Type",
       "headers": "Headers",
       "addHeader": "Add Header",
       "headerKey": "Key",
       "headerValue": "Value",
-      "body": "Request Body (JSON)",
-      "bodyPlaceholder": "{\"name\": \"Test\", \"email\": \"test@example.com\"}",
+      "body": "Request Body",
+      "bodyPlaceholder": "Enter request payload",
       "send": "Send Test Request",
-      "sending": "Sending...",
+      "sending": "Sending…",
       "response": "Response",
-      "success": "Test request sent successfully",
-      "error": "Failed to send test request"
+      "success": "Test request sent",
+      "error": "Test failed",
+      "missingKey": "No API key available. Click \"Regenerate & use\" to obtain a fresh key, or paste one manually.",
+      "invalidJson": "Request body is not valid JSON.",
+      "noPlainKey": "Backend did not return a plaintext key.",
+      "noKeyHint": "The stored key is hashed and cannot be revealed. Click \"Regenerate & use\" to mint a fresh one (the old key will stop working).",
+      "regenerateAndUse": "Regenerate & use",
+      "keyPlaceholder": "Paste plaintext API key…",
+      "requiredFields": "Required",
+      "bodySeededFromSchema": "Body pre-filled from this endpoint's expected schema. All listed fields must be present and non-empty."
     },
     "stats": {
       "totalEndpoints": "Total Endpoints",
       "activeEndpoints": "Active",
       "totalReceivedToday": "Received Today",
-      "totalReceivedAll": "Total Received"
+      "totalReceivedAll": "Total Received",
+      "totalSentToday": "Sent Today",
+      "totalSentAll": "Total Sent"
     },
     "toast": {
       "created": "Endpoint Created",
@@ -152,6 +175,8 @@
       "slug": "Slug",
       "status": "Status",
       "received": "Received",
+      "sent": "Sent",
+      "direction": "Flow",
       "created": "Created",
       "actions": "Actions"
     },
@@ -169,9 +194,55 @@
     "creating": "Creating...",
     "updating": "Updating..."
   },
+  "hub": {
+    "title": "Integration Hub",
+    "description": "Connect Flowentra to your ERP, CRM, e-commerce, and other business systems.",
+    "tabs": {
+      "connections": "Connections",
+      "webhooks": "Webhooks"
+    },
+    "stats": {
+      "connections": "Connections"
+    },
+    "activeConnections": "Active Connections",
+    "addMore": "Add Another Integration",
+    "availableIntegrations": "Available Integrations",
+    "search": "Search integrations...",
+    "noResults": "No integrations match your search.",
+    "popular": "Popular",
+    "connect": "Connect",
+    "comingSoon": "Coming Soon",
+    "manage": "Manage",
+    "backToHub": "Back to Hub",
+    "endpointsActive": "webhook(s) active",
+    "totalEvents": "events total",
+    "lastEvent": "last",
+    "webhooksDesc": "Custom inbound endpoints — receive data from any HTTP-capable source."
+  },
+  "connection": {
+    "title": "Connect {{name}}",
+    "notFound": "Integration not found",
+    "notFoundDesc": "The requested integration connector does not exist.",
+    "selectEntities": "Select entities to sync",
+    "selectAll": "Select all",
+    "deselectAll": "Deselect all",
+    "willCreate": "What will be created",
+    "setupInstructions": "Setup Instructions",
+    "setupHint": "Shown after creation — click to preview now.",
+    "officialDocs": "Official documentation",
+    "signatureNote": "This connector supports HMAC signature verification via the {{header}} header.",
+    "create": "Create Integration",
+    "creating": "Creating...",
+    "minOneEntity": "Please select at least one entity to sync.",
+    "success": "Integration Created!",
+    "successDesc": "Your webhook endpoint(s) for {{name}} are ready. Follow the instructions below to finish the setup.",
+    "endpointsCreated": "{{count}} endpoint(s) created",
+    "apiKeyHint": "Reveal and copy the API key from the endpoint detail page, then add it as the X-API-Key header in your external system.",
+    "viewEndpoint": "View Endpoint"
+  },
   "plugin": {
-    "name": "External Endpoints",
-    "description": "Webhooks and external integrations.",
+    "name": "Integration Hub",
+    "description": "ERP, CRM, e-commerce connectors and custom webhooks.",
     "category": "System"
   }
 }

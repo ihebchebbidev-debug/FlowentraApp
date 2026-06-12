@@ -53,8 +53,8 @@ export function UserManagement() {
       setUsers(response.users || []);
     } catch (error) {
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to load users",
+        title: t('users.deleteErrorTitle'),
+        description: error instanceof Error ? error.message : t('users.failedToLoad'),
         variant: "destructive",
       });
     } finally {
@@ -66,15 +66,15 @@ export function UserManagement() {
     try {
       await usersApi.delete(user.id);
       toast({
-        title: "Success",
-        description: "User deleted successfully",
+        title: t('users.deleteSuccessTitle'),
+        description: t('users.deleteSuccess'),
       });
       setUserToDelete(null);
-      loadUsers(); // Refresh the list
+      loadUsers();
     } catch (error) {
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to delete user",
+        title: t('users.deleteErrorTitle'),
+        description: error instanceof Error ? error.message : t('users.deleteFailed'),
         variant: "destructive",
       });
     }
@@ -161,7 +161,7 @@ export function UserManagement() {
                     <p className="font-medium text-foreground text-sm sm:text-base">{user.firstName} {user.lastName}</p>
                     <p className="text-sm text-muted-foreground truncate">{user.email}</p>
                     <p className="text-xs text-muted-foreground truncate">
-                      Created: {new Date(user.createdDate).toLocaleDateString()}
+                      {t('users.table.created')}: {new Date(user.createdDate).toLocaleDateString()}
                     </p>
                   </div>
                 </div>

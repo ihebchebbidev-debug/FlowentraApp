@@ -18,20 +18,24 @@ import type { EndpointTemplate } from '../utils/endpointTemplates';
 import { toast } from 'sonner';
 
 const METHODS = ['GET', 'POST', 'PUT'];
+const CONTENT_TYPES = [
+  { value: 'json',  label: 'JSON',              hint: 'application/json' },
+  { value: 'xml',   label: 'XML',               hint: 'application/xml, text/xml' },
+  { value: 'form',  label: 'Form-urlencoded',   hint: 'application/x-www-form-urlencoded' },
+] as const;
 
 export function CreateEndpoint() {
   useExternalTranslations();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { createEndpoint } = useExternalEndpoints();
-  // View-all mode requires picking a target tenant before mutations
-  // (apiClient injects X-Target-Tenant from the global store set by useTargetTenant).
   const { targetTenantId, handleTenantChange, isTenantRequired } = useTargetTenant();
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     name: '', slug: '', description: '', isActive: true,
     allowedMethods: 'POST', allowedOrigins: '',
     expectedSchema: '', responseTemplate: '', webhookForwardUrl: '',
+    acceptedContentTypes: 'any',
   });
 
   const selectedMethods = form.allowedMethods.split(',').filter(Boolean);
@@ -41,6 +45,15 @@ export function CreateEndpoint() {
       : [...selectedMethods, method];
     setForm(f => ({ ...f, allowedMethods: methods.join(',') }));
   };
+
+  const selectedContentTypes = form.acceptedContentTypes === 'any' ? [] : form.acceptedContentTypes.split(',').filter(Boolean);
+  const toggleContentType = (ct: string) => {
+    const next = selectedContentTypes.includes(ct)
+      ? selectedContentTypes.filter(c => c !== ct)
+      : [...selectedContentTypes, ct];
+    setForm(f => ({ ...f, acceptedContentTypes: next.length === 0 ? 'any' : next.join(',') }));
+  };
+  const acceptAll = form.acceptedContentTypes === 'any' || form.acceptedContentTypes === '';
 
   // Apply a one-click template. Only overwrites fields the template owns;
   // anything the user already set (e.g. AllowedOrigins for their domain) and
@@ -97,6 +110,7 @@ export function CreateEndpoint() {
         expectedSchema: form.expectedSchema.trim() || undefined,
         responseTemplate: form.responseTemplate.trim() || undefined,
         webhookForwardUrl: webhook || undefined,
+        acceptedContentTypes: form.acceptedContentTypes || 'any',
       });
       navigate('/dashboard/external');
     } catch {
@@ -156,6 +170,38 @@ export function CreateEndpoint() {
                 </label>
               ))}
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle className="text-base">{t('external.form.acceptedContentTypes', 'Accepted Content Types')}</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <Checkbox
+                  checked={acceptAll}
+                  onCheckedChange={v => setForm(f => ({ ...f, acceptedContentTypes: v ? 'any' : '' }))}
+                />
+                {t('external.form.acceptAny', 'Accept any content type')}
+              </label>
+            </div>
+            {!acceptAll && (
+              <div className="flex flex-wrap gap-4 pl-1">
+                {CONTENT_TYPES.map(ct => (
+                  <label key={ct.value} className="flex items-center gap-2 text-sm">
+                    <Checkbox
+                      checked={selectedContentTypes.includes(ct.value)}
+                      onCheckedChange={() => toggleContentType(ct.value)}
+                    />
+                    <span className="font-medium">{ct.label}</span>
+                    <span className="text-xs text-muted-foreground">({ct.hint})</span>
+                  </label>
+                ))}
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              {t('external.form.acceptedContentTypesHint', 'Requests with a non-matching Content-Type will be rejected with HTTP 415. "Accept any" is recommended for maximum compatibility.')}
+            </p>
           </CardContent>
         </Card>
 

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, Search, Globe, Zap, BarChart3, Copy, MoreHorizontal, Eye, Pencil, Trash2, FlaskConical } from 'lucide-react';
+import { Plus, Search, Globe, Zap, BarChart3, Copy, MoreHorizontal, Eye, Pencil, Trash2, ArrowDownLeft, ArrowUpDown, SendHorizonal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -32,8 +32,12 @@ export function ExternalEndpointsList() {
   };
 
   const handleDelete = async () => {
-    if (deleteId) {
-      try { await deleteEndpoint(deleteId); } catch {}
+    if (!deleteId) return;
+    try {
+      await deleteEndpoint(deleteId);
+    } catch (e: any) {
+      toast.error(t('external.toast.error'), { description: e?.message });
+    } finally {
       setDeleteId(null);
     }
   };
@@ -69,12 +73,16 @@ export function ExternalEndpointsList() {
           <p className="text-2xl font-bold text-foreground mt-1">{stats.activeEndpoints}</p>
         </CardContent></Card>
         <Card><CardContent className="p-4">
-          <div className="flex items-center gap-2 text-muted-foreground text-xs font-medium"><BarChart3 className="h-3.5 w-3.5" />{t('external.stats.totalReceivedToday')}</div>
+          <div className="flex items-center gap-2 text-muted-foreground text-xs font-medium">
+            <ArrowDownLeft className="h-3.5 w-3.5 text-emerald-500" />{t('external.stats.totalReceivedToday')}
+          </div>
           <p className="text-2xl font-bold text-foreground mt-1">{stats.totalReceivedToday}</p>
         </CardContent></Card>
         <Card><CardContent className="p-4">
-          <div className="flex items-center gap-2 text-muted-foreground text-xs font-medium"><BarChart3 className="h-3.5 w-3.5" />{t('external.stats.totalReceivedAll')}</div>
-          <p className="text-2xl font-bold text-foreground mt-1">{stats.totalReceivedAll}</p>
+          <div className="flex items-center gap-2 text-muted-foreground text-xs font-medium">
+            <SendHorizonal className="h-3.5 w-3.5 text-blue-500" />{t('external.stats.totalSentToday')}
+          </div>
+          <p className="text-2xl font-bold text-foreground mt-1">{stats.totalSentToday}</p>
         </CardContent></Card>
       </div>
 
@@ -111,13 +119,17 @@ export function ExternalEndpointsList() {
                 <TableHead>{t('external.table.name')}</TableHead>
                 <TableHead>{t('external.table.slug')}</TableHead>
                 <TableHead>{t('external.table.status')}</TableHead>
+                <TableHead className="hidden sm:table-cell">{t('external.table.direction', 'Flow')}</TableHead>
                 <TableHead className="text-center">{t('external.table.received')}</TableHead>
+                <TableHead className="text-center hidden md:table-cell">{t('external.table.sent', 'Sent')}</TableHead>
                 <TableHead>{t('external.table.created')}</TableHead>
                 <TableHead className="w-[50px]">{t('external.table.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {endpoints.map((ep) => (
+              {endpoints.map((ep) => {
+                const isBidirectional = !!ep.webhookForwardUrl;
+                return (
                 <TableRow key={ep.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`${ep.id}`)}>
                   <TableCell className="font-medium">{ep.name}</TableCell>
                   <TableCell><code className="text-xs bg-muted px-1.5 py-0.5 rounded">{ep.slug}</code></TableCell>
@@ -126,7 +138,19 @@ export function ExternalEndpointsList() {
                       {ep.isActive ? t('external.detail.active') : t('external.detail.inactive')}
                     </Badge>
                   </TableCell>
+                  <TableCell className="hidden sm:table-cell">
+                    {isBidirectional ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-600 bg-blue-50 dark:bg-blue-950/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-full px-2 py-0.5">
+                        <ArrowUpDown className="h-3 w-3" />{t('external.detail.flowBidirectional', 'In + Out')}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-full px-2 py-0.5">
+                        <ArrowDownLeft className="h-3 w-3" />{t('external.detail.flowInbound', 'Inbound')}
+                      </span>
+                    )}
+                  </TableCell>
                   <TableCell className="text-center">{ep.totalReceived}</TableCell>
+                  <TableCell className="text-center hidden md:table-cell text-muted-foreground">{ep.totalSent > 0 ? ep.totalSent : '—'}</TableCell>
                   <TableCell className="text-muted-foreground text-sm">{new Date(ep.createdAt).toLocaleDateString()}</TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -150,7 +174,8 @@ export function ExternalEndpointsList() {
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
         </Card>

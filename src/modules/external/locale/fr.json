@@ -27,7 +27,10 @@
       "webhookForwardUrl": "Transférer vers l'URL",
       "webhookForwardUrlPlaceholder": "Optionnel : transférer les données reçues vers une autre URL",
       "isActive": "Actif",
-      "isActiveDesc": "Le point d'accès peut recevoir des données lorsqu'il est actif"
+      "isActiveDesc": "Le point d'accès peut recevoir des données lorsqu'il est actif",
+      "acceptedContentTypes": "Types de contenu acceptés",
+      "acceptAny": "Accepter tout type de contenu",
+      "acceptedContentTypesHint": "Les requêtes avec un Content-Type non correspondant seront rejetées avec HTTP 415. « Accepter tout » est recommandé pour une compatibilité maximale."
     },
     "detail": {
       "publicUrl": "URL publique",
@@ -43,6 +46,11 @@
       "lastReceived": "Dernier reçu",
       "totalReceived": "Total reçu",
       "receivedToday": "Reçu aujourd'hui",
+      "totalSent": "Total transféré",
+      "sentToday": "Transféré aujourd'hui",
+      "flowInbound": "Entrant",
+      "flowBidirectional": "Entrée + Sortie",
+      "outboundUrl": "Transfert vers",
       "tabs": {
         "logs": "Données reçues",
         "settings": "Paramètres"
@@ -88,29 +96,44 @@
       "previewCurrency": "Devise",
       "confExact": "Correspondance directe",
       "confInferred": "Meilleure estimation",
-      "confEdited": "Modifié manuellement"
+      "confEdited": "Modifié manuellement",
+      "format": "Format",
+      "company": "Entreprise",
+      "allCompanies": "Toutes les entreprises"
     },
     "test": {
       "title": "Tester le point d'accès",
       "description": "Envoyer une requête de test à ce point d'accès.",
+      "descriptionDirect": "Envoie un vrai POST à l'URL publique avec l'en-tête X-API-Key.",
       "method": "Méthode",
+      "contentType": "Type de contenu",
       "headers": "En-têtes",
       "addHeader": "Ajouter un en-tête",
       "headerKey": "Clé",
       "headerValue": "Valeur",
-      "body": "Corps de la requête (JSON)",
-      "bodyPlaceholder": "{\"nom\": \"Test\", \"email\": \"test@exemple.com\"}",
+      "body": "Corps de la requête",
+      "bodyPlaceholder": "Saisissez la charge utile",
       "send": "Envoyer la requête de test",
-      "sending": "Envoi en cours...",
+      "sending": "Envoi en cours…",
       "response": "Réponse",
-      "success": "Requête de test envoyée avec succès",
-      "error": "Échec de l'envoi de la requête de test"
+      "success": "Requête de test envoyée",
+      "error": "Échec du test",
+      "missingKey": "Aucune clé API disponible. Cliquez sur « Régénérer et utiliser » pour obtenir une nouvelle clé, ou collez-en une manuellement.",
+      "invalidJson": "Le corps de la requête n'est pas un JSON valide.",
+      "noPlainKey": "Le serveur n'a pas renvoyé de clé en clair.",
+      "noKeyHint": "La clé stockée est hachée et ne peut pas être révélée. Cliquez sur « Régénérer et utiliser » pour en créer une nouvelle (l'ancienne clé cessera de fonctionner).",
+      "regenerateAndUse": "Régénérer et utiliser",
+      "keyPlaceholder": "Collez la clé API en clair…",
+      "requiredFields": "Requis",
+      "bodySeededFromSchema": "Corps pré-rempli depuis le schéma attendu de ce point d'accès. Tous les champs listés doivent être présents et non vides."
     },
     "stats": {
       "totalEndpoints": "Total des points d'accès",
       "activeEndpoints": "Actifs",
       "totalReceivedToday": "Reçu aujourd'hui",
-      "totalReceivedAll": "Total reçu"
+      "totalReceivedAll": "Total reçu",
+      "totalSentToday": "Envoyé aujourd'hui",
+      "totalSentAll": "Total envoyé"
     },
     "toast": {
       "created": "Point d'accès créé",
@@ -152,6 +175,8 @@
       "slug": "Identifiant",
       "status": "Statut",
       "received": "Reçu",
+      "sent": "Envoyé",
+      "direction": "Flux",
       "created": "Créé",
       "actions": "Actions"
     },
@@ -169,9 +194,55 @@
     "creating": "Création...",
     "updating": "Mise à jour..."
   },
+  "hub": {
+    "title": "Hub d'intégration",
+    "description": "Connectez Flowentra à votre ERP, CRM, e-commerce et autres systèmes métier.",
+    "tabs": {
+      "connections": "Connexions",
+      "webhooks": "Webhooks"
+    },
+    "stats": {
+      "connections": "Connexions"
+    },
+    "activeConnections": "Connexions actives",
+    "addMore": "Ajouter une autre intégration",
+    "availableIntegrations": "Intégrations disponibles",
+    "search": "Rechercher des intégrations...",
+    "noResults": "Aucune intégration ne correspond à votre recherche.",
+    "popular": "Populaire",
+    "connect": "Connecter",
+    "comingSoon": "Bientôt disponible",
+    "manage": "Gérer",
+    "backToHub": "Retour au hub",
+    "endpointsActive": "webhook(s) actif(s)",
+    "totalEvents": "événements au total",
+    "lastEvent": "dernier",
+    "webhooksDesc": "Points d'accès entrants personnalisés — recevez des données de n'importe quelle source HTTP."
+  },
+  "connection": {
+    "title": "Connecter {{name}}",
+    "notFound": "Intégration introuvable",
+    "notFoundDesc": "Le connecteur d'intégration demandé n'existe pas.",
+    "selectEntities": "Sélectionner les entités à synchroniser",
+    "selectAll": "Tout sélectionner",
+    "deselectAll": "Tout désélectionner",
+    "willCreate": "Ce qui sera créé",
+    "setupInstructions": "Instructions de configuration",
+    "setupHint": "Affiché après la création — cliquez pour prévisualiser maintenant.",
+    "officialDocs": "Documentation officielle",
+    "signatureNote": "Ce connecteur prend en charge la vérification de signature HMAC via l'en-tête {{header}}.",
+    "create": "Créer l'intégration",
+    "creating": "Création en cours...",
+    "minOneEntity": "Veuillez sélectionner au moins une entité à synchroniser.",
+    "success": "Intégration créée !",
+    "successDesc": "Vos webhooks pour {{name}} sont prêts. Suivez les instructions ci-dessous pour terminer la configuration.",
+    "endpointsCreated": "{{count}} point(s) d'accès créé(s)",
+    "apiKeyHint": "Révélez et copiez la clé API depuis la page de détail du point d'accès, puis ajoutez-la comme en-tête X-API-Key dans votre système externe.",
+    "viewEndpoint": "Voir le point d'accès"
+  },
   "plugin": {
-    "name": "Endpoints externes",
-    "description": "Webhooks et intégrations externes.",
+    "name": "Hub d'intégration",
+    "description": "Connecteurs ERP, CRM, e-commerce et webhooks personnalisés.",
     "category": "Système"
   }
 }

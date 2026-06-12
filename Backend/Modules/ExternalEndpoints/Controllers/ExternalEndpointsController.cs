@@ -197,11 +197,11 @@ namespace MyApi.Modules.ExternalEndpoints.Controllers
         }
 
         [HttpGet("{id:int}/logs")]
-        public async Task<IActionResult> GetLogs(int id, [FromQuery] int page = 1, [FromQuery] int limit = 20)
+        public async Task<IActionResult> GetLogs(int id, [FromQuery] int page = 1, [FromQuery] int limit = 20, [FromQuery] string? companyId = null)
         {
             try
             {
-                var result = await _service.GetLogsAsync(id, page, limit);
+                var result = await _service.GetLogsAsync(id, page, limit, companyId);
                 return Ok(new { success = true, data = result });
             }
             catch (Exception ex)

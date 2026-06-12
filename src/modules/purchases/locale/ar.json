@@ -197,7 +197,10 @@
     "notesPlaceholder": "ملاحظات إضافية...",
     "invoiceInfo": "معلومات الفاتورة",
     "searchSuppliers": "ابحث عن مورد…",
-    "noSuppliersMatch": "لا يوجد مورد مطابق"
+    "noSuppliersMatch": "لا يوجد مورد مطابق",
+    "shortcutsHint": "Alt+N سطر · Enter التالي · Ctrl+S حفظ",
+    "lastPrice": "آخر سعر: {{price}} {{currency}}",
+    "useLastPrice": "استخدم آخر سعر"
   },
   "paymentTermsOptions": {
     "immediate": "فوري",
@@ -330,7 +333,49 @@
     "deleteDescription": "سيتم حذف السجلات المحددة نهائيًا.",
     "deleting": "جارٍ الحذف…",
     "deleteSuccess": "تم حذف {{count}} عنصرًا",
-    "deletePartial": "تم حذف {{ok}} من أصل {{total}} عنصرًا"
+    "deletePartial": "تم حذف {{ok}} من أصل {{total}} عنصرًا",
+    "approveSelected": "اعتماد",
+    "approving": "جارٍ الاعتماد…",
+    "sendSelected": "إرسال إلى المورد",
+    "sending": "جارٍ الإرسال…",
+    "closeSelected": "إغلاق",
+    "closing": "جارٍ الإغلاق…",
+    "exportSelected": "تصدير",
+    "actionSuccess": "تم تحديث {{count}} طلب(ات)",
+    "actionPartial": "تم تحديث {{success}}، وفشل {{failed}}"
+  },
+  "timeline": {
+    "title": "النشاط",
+    "justNow": "الآن",
+    "minutesAgo": "قبل {{n}} د",
+    "hoursAgo": "قبل {{n}} س",
+    "daysAgo": "قبل {{n}} ي",
+    "showMore": "عرض {{n}} إضافية",
+    "showLess": "عرض أقل",
+    "invoiceCreated": "تم إنشاء الفاتورة",
+    "paymentRecorded": "تم تسجيل الدفع: {{amount}} {{currency}}",
+    "felSent": "تم إرسال الفاتورة الإلكترونية",
+    "tejRegistered": "مُسجّلة في إقرار TEJ",
+    "invoiceCancelled": "تم إلغاء الفاتورة"
+  },
+  "savedViews": {
+    "smartFilters": "عوامل تصفية ذكية",
+    "title": "العروض المحفوظة",
+    "empty": "لا شيء بعد — احفظ عوامل التصفية الحالية",
+    "save": "حفظ العرض",
+    "saved": "تم حفظ العرض",
+    "removed": "تمت إزالة العرض",
+    "namePrompt": "سمِّ هذا العرض",
+    "placeholder": "مثال: بانتظار الاستلام — Acme",
+    "savesCurrentFilters": "يحفظ عوامل التصفية الحالية",
+    "delete": "حذف العرض"
+  },
+  "smartFilters": {
+    "awaitingReceipt": "بانتظار الاستلام > 7 أيام",
+    "unpaidOverdue": "غير مدفوعة ومتأخرة",
+    "myDrafts": "المسودات",
+    "partiallyReceived": "مستلمة جزئيًا",
+    "highValue": "قيمة عالية (أعلى 10%)"
   },
   "items": {
     "updated": "تم تحديث العناصر",

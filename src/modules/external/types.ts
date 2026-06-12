@@ -12,12 +12,16 @@ export interface ExternalEndpoint {
   webhookForwardUrl?: string;
   /** Days to retain inbound logs (0 = forever). Pruned by background sweep. */
   logRetentionDays: number;
+  /** Comma-separated accepted content types: "json", "xml", "form", "any". */
+  acceptedContentTypes: string;
   createdAt: string;
   updatedAt?: string;
   createdBy: string;
   totalReceived: number;
   receivedToday: number;
   lastReceived?: string;
+  totalSent: number;
+  sentToday: number;
 }
 
 export interface CreateExternalEndpointData {
@@ -32,6 +36,8 @@ export interface CreateExternalEndpointData {
   webhookForwardUrl?: string;
   /** Optional. Defaults to 30 server-side. 0 = forever. Clamped 0–3650. */
   logRetentionDays?: number;
+  /** Comma-separated accepted content types: "json", "xml", "form", "any". Default "any". */
+  acceptedContentTypes?: string;
 }
 
 export interface UpdateExternalEndpointData {
@@ -44,6 +50,7 @@ export interface UpdateExternalEndpointData {
   responseTemplate?: string;
   webhookForwardUrl?: string;
   logRetentionDays?: number;
+  acceptedContentTypes?: string;
 }
 
 export interface ExternalEndpointLog {
@@ -59,6 +66,10 @@ export interface ExternalEndpointLog {
   receivedAt: string;
   processedAt?: string;
   isRead: boolean;
+  /** MIME type of the inbound request (e.g. "application/json", "application/xml"). */
+  contentType?: string;
+  /** Company / tenant identifier provided by the sender via X-Company-ID header or ?company_id= query. */
+  companyId?: string;
 }
 
 export interface ExternalEndpointStats {
@@ -66,8 +77,22 @@ export interface ExternalEndpointStats {
   activeEndpoints: number;
   totalReceivedToday: number;
   totalReceivedAll: number;
+  totalSentToday: number;
+  totalSentAll: number;
 }
 
+// ─── Integration Hub ─────────────────────────────────────────────────────────
+
+/** Lightweight summary of a connector's contribution to the endpoint list. */
+export interface ConnectorGroup {
+  connectorId: string;
+  connectorName: string;
+  logo: string;
+  color: string;
+  endpoints: ExternalEndpoint[];
+}
+
+// ─── Conversion preview ───────────────────────────────────────────────────────
 // Conversion preview returned by GET /external-endpoints/{id}/logs/{logId}/convert-preview
 // Mirrors the backend's ConvertLogPreviewDto. All fields are optional because the
 // parser is heuristic — payloads vary per integration.
