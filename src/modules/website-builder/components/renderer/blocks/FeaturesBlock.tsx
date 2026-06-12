@@ -21,7 +21,7 @@ interface Feature {
   description: string;
 }
 
-type FeaturesVariant = 'grid' | 'list';
+type FeaturesVariant = 'grid' | 'list' | 'numbered-chapters';
 
 interface FeaturesBlockProps {
   title: string;
@@ -152,6 +152,126 @@ export function FeaturesBlock({
                   ) : (
                     <p className="leading-relaxed" style={featureDescStyle} dangerouslySetInnerHTML={{ __html: sanitizeHtml(f.description) }} />
                   )}
+                </div>
+              </div>
+            ))}
+          </div>
+          {addButton}
+        </div>
+      </section>
+    );
+  }
+
+  // ═══ NUMBERED CHAPTERS VARIANT — oversized numerals, editorial chapters ═══
+  if (variant === 'numbered-chapters') {
+    const accent = theme.primaryColor;
+    return (
+      <section dir={dir} style={sectionStyle}>
+        <div className="max-w-6xl mx-auto">
+          {/* Editorial header */}
+          <div className="mb-16 md:mb-24 max-w-3xl">
+            <div className="flex items-center gap-3 mb-6">
+              <span className="h-px w-12" style={{ backgroundColor: accent }} />
+              <span className="text-[11px] tracking-[0.35em] uppercase font-semibold" style={{ color: accent, fontFamily: theme.bodyFont }}>
+                {String(features.length).padStart(2, '0')} Chapters
+              </span>
+            </div>
+            {isEditing ? (
+              <h2
+                contentEditable suppressContentEditableWarning
+                onBlur={(e) => onUpdate?.({ title: e.currentTarget.textContent || '' })}
+                className="font-bold leading-[1] tracking-tight outline-none focus:ring-1 focus:ring-primary/30 rounded px-1"
+                style={{ ...getFullHeadingStyle(theme, 56, textColor), fontSize: 'clamp(36px, 6vw, 72px)', letterSpacing: '-0.025em' }}
+              >{title}</h2>
+            ) : (
+              <h2
+                className="font-bold leading-[1] tracking-tight"
+                style={{ ...getFullHeadingStyle(theme, 56, textColor), fontSize: 'clamp(36px, 6vw, 72px)', letterSpacing: '-0.025em' }}
+              >{title}</h2>
+            )}
+            {(subtitle || isEditing) && (
+              isEditing ? (
+                <p
+                  contentEditable suppressContentEditableWarning
+                  onBlur={(e) => onUpdate?.({ subtitle: e.currentTarget.textContent || '' })}
+                  className="mt-6 text-lg leading-relaxed outline-none focus:ring-1 focus:ring-primary/30 rounded px-1"
+                  style={subtitleStyle}
+                >{subtitle || 'Add subtitle...'}</p>
+              ) : subtitle ? (
+                <p className="mt-6 text-lg leading-relaxed" style={subtitleStyle}>{subtitle}</p>
+              ) : null
+            )}
+          </div>
+
+          {/* Chapters */}
+          <div className="divide-y" style={{ borderColor: subColor + '20' }}>
+            {features.map((f, i) => (
+              <div
+                key={i}
+                className="group/chapter relative grid grid-cols-12 gap-4 md:gap-8 py-10 md:py-14 transition-colors hover:bg-foreground/[0.015]"
+                style={{ borderTop: i === 0 ? `1px solid ${subColor}20` : undefined }}
+              >
+                {isEditing && (
+                  <button onClick={() => removeFeature(i)} className="absolute top-3 right-3 p-1 rounded-md bg-destructive/10 text-destructive opacity-0 group-hover/chapter:opacity-100 transition-opacity hover:bg-destructive/20 z-10">
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                )}
+
+                {/* Massive numeral */}
+                <div className="col-span-12 md:col-span-3 lg:col-span-2">
+                  <div
+                    className="font-bold leading-none tabular-nums select-none transition-transform duration-500 group-hover/chapter:translate-x-1"
+                    style={{
+                      fontFamily: theme.headingFont,
+                      color: accent,
+                      fontSize: 'clamp(72px, 9vw, 140px)',
+                      letterSpacing: '-0.04em',
+                      opacity: 0.95,
+                    }}
+                  >
+                    {String(i + 1).padStart(2, '0')}
+                  </div>
+                </div>
+
+                {/* Title */}
+                <div className="col-span-12 md:col-span-4 flex md:items-start">
+                  {isEditing ? (
+                    <h3
+                      contentEditable suppressContentEditableWarning
+                      onBlur={(e) => updateFeature(i, 'title', e.currentTarget.textContent || '')}
+                      className="font-bold leading-tight outline-none focus:ring-1 focus:ring-primary/30 rounded px-1"
+                      style={{ ...getFullHeadingStyle(theme, 28, textColor), fontSize: 'clamp(22px, 2.4vw, 32px)', letterSpacing: '-0.015em' }}
+                    >{f.title}</h3>
+                  ) : (
+                    <h3
+                      className="font-bold leading-tight"
+                      style={{ ...getFullHeadingStyle(theme, 28, textColor), fontSize: 'clamp(22px, 2.4vw, 32px)', letterSpacing: '-0.015em' }}
+                    >{f.title}</h3>
+                  )}
+                </div>
+
+                {/* Description + tiny icon */}
+                <div className="col-span-12 md:col-span-5 lg:col-span-6 flex gap-4 items-start">
+                  <div className="hidden md:flex w-10 h-10 rounded-full items-center justify-center shrink-0 mt-1" style={{ backgroundColor: accent + '12', color: accent }}>
+                    <DynamicIcon name={f.icon} className="h-4 w-4" />
+                  </div>
+                  <div className="flex-1">
+                    {isEditing ? (
+                      <p
+                        contentEditable suppressContentEditableWarning
+                        onBlur={(e) => updateFeature(i, 'description', e.currentTarget.innerHTML)}
+                        className="leading-relaxed outline-none focus:ring-1 focus:ring-primary/30 rounded px-1"
+                        style={{ ...featureDescStyle, fontSize: 16, opacity: 0.8 }}
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(f.description) }}
+                      />
+                    ) : (
+                      <p
+                        className="leading-relaxed"
+                        style={{ ...featureDescStyle, fontSize: 16, opacity: 0.8 }}
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(f.description) }}
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
             ))}

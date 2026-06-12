@@ -574,6 +574,13 @@ export function TemplateGalleryPage({ onSelect, onBack }: TemplateGalleryPagePro
                 >
                   <TemplateThumbnail template={tmpl} className="w-full h-full transition-transform duration-500 group-hover:scale-[1.03]" />
 
+                  {/* NEW badge */}
+                  {tmpl.isNew && (
+                    <div className="absolute top-2.5 left-2.5 z-10 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-primary to-primary/80 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary-foreground shadow-md ring-1 ring-primary/30">
+                      ✨ New
+                    </div>
+                  )}
+
                   {/* Selected check */}
                   {selectedTemplateId === tmpl.id && (
                     <div className="absolute top-2.5 right-2.5 z-10 h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md ring-2 ring-background">

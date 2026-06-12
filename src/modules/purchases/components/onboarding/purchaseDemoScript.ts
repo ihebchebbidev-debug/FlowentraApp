@@ -113,10 +113,11 @@ export const PO_STEPS: PurchaseDemoStep[] = [
   {
     target: 'po-demo-quick-links',
     caption:
-      'Quick-access buttons jump directly to Compliance, Reports, Audit Log, and the Suppliers directory — the four most-visited areas outside the core document flow.',
+      'Quick-access buttons jump directly to Compliance, Reports, Audit Log, and the Supplier Performance scorecard — the four most-visited areas outside the core document flow.',
     duration: 4000,
     apply: pure(() => ({})),
   },
+
 
   // ── Chapter 2 · Purchase Orders list ─────────────────────────────────────
   {
@@ -431,17 +432,18 @@ export const PO_STEPS: PurchaseDemoStep[] = [
   {
     target: 'po-demo-si-detail-fel',
     caption:
-      'The invoice detail shows the Facture en Ligne status — Flowentra tracks whether this invoice has been registered on the official Tunisian e-invoicing platform.',
+      'The invoice detail tracks a Facture en Ligne status field — Flowentra records whether your team has marked this invoice as submitted to the official Tunisian e-invoicing platform. (Direct DGI API integration is on the roadmap.)',
     duration: 5200,
     apply: pure(() => ({ page: 'invoice-detail' as const, paymentStep: 0, felSent: false })),
   },
   {
     target: 'po-demo-si-tej-sync',
     caption:
-      'The TEJ Sync badge shows whether this invoice has been exported and submitted. Pending syncs are highlighted in amber so nothing slips through your compliance checklist.',
+      'The TEJ Sync badge shows whether this invoice has had its XML exported. Pending syncs are highlighted in amber so nothing slips through your compliance checklist.',
     duration: 5000,
     apply: pure(() => ({})),
   },
+
 
   // ── Chapter 10 · Invoice payment + FEL + TEJ ─────────────────────────────
   {
@@ -461,10 +463,11 @@ export const PO_STEPS: PurchaseDemoStep[] = [
   {
     target: 'po-demo-si-fel-send',
     caption:
-      'With the invoice settled, send it to Facture en Ligne. The status flips to "Sent" with a timestamp and a tracking ID — your compliance dashboard updates in real time.',
+      'Once the invoice is settled, mark it as submitted to Facture en Ligne. The status flips to "Sent" with a timestamp — your compliance dashboard updates in real time so you always know what is still outstanding.',
     duration: 5200,
     apply: pure(() => ({ paymentStep: 0, felSent: true })),
   },
+
   {
     target: 'po-demo-si-tej-xml-btn',
     caption:
@@ -647,7 +650,7 @@ export const PO_STEPS: PurchaseDemoStep[] = [
   {
     target: 'po-demo-saved-views',
     caption:
-      'Any combination of filters can be saved as a named view — "Awaiting GR — Acme", "My team\'s drafts". They persist per user across reloads, so your daily workflow is one click away every morning.',
+      'Any combination of filters can be saved as a named view — "Awaiting GR — Acme", "My team\'s drafts". They persist locally in your browser, so your daily workflow is one click away every morning.',
     duration: 5200,
     apply: pure(() => ({})),
   },
@@ -668,7 +671,7 @@ export const PO_STEPS: PurchaseDemoStep[] = [
   {
     target: 'po-demo-shortcuts',
     caption:
-      'The PO builder is keyboard-first: Alt+N adds a line, Enter from the last cell drops a new row, and Ctrl+S saves — capture a long order without ever reaching for the mouse.',
+      'The PO builder is keyboard-first: Alt+N adds a line and Enter from the last cell drops a new row — capture a long order without ever reaching for the mouse.',
     duration: 5200,
     apply: pure(() => ({ page: 'order-create' as const, createFormStep: 2 })),
   },

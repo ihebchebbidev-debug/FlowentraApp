@@ -226,7 +226,7 @@ export const HR_STEPS: HRDemoStep[] = [
   {
     target: 'hr-demo-nav-payroll',
     caption:
-      'The Payroll page is where you run monthly payroll for the entire team. It applies Tunisian tax law automatically — CNSS contributions, IRPP brackets, and net salary calculation.',
+      'The Payroll page is where you run monthly payroll for the entire team. It applies Tunisian tax law automatically — CNSS contributions (9.18% employee, 16.57% employer), progressive IRPP brackets, CSS solidarity tax (1%) and net salary calculation.',
     duration: 5500,
     apply: pure(() => ({ page: 'payroll' as const, showPayrollRun: false, payrollStep: 0 })),
   },
@@ -254,21 +254,21 @@ export const HR_STEPS: HRDemoStep[] = [
   {
     target: 'hr-demo-payroll-step-preview',
     caption:
-      'The preview table shows every employee\'s gross salary, CNSS employee deduction, CNSS employer contribution, IRPP income tax, bonus additions, attendance deductions, and final net pay.',
+      'The preview table shows every employee\'s gross salary, CNSS employee deduction (9.18%), CNSS employer contribution (16.57%), progressive IRPP income tax, CSS solidarity tax (1% of taxable gross), bonus additions, attendance deductions, and final net pay.',
     duration: 5500,
     apply: pure(() => ({ payrollStep: 3, showPayrollRun: false })),
   },
   {
     target: 'hr-demo-payslip-detail',
     caption:
-      'Clicking an employee opens the full payslip detail — a line-by-line breakdown matching the official Tunisian payslip format, with all components clearly labelled.',
+      'Clicking an employee opens the full payslip detail — a line-by-line breakdown matching the official Tunisian payslip format, with all components (CNSS, IRPP, CSS, bonuses, deductions) clearly labelled.',
     duration: 5000,
     apply: pure(() => ({})),
   },
   {
     target: 'hr-demo-payslip-pdf',
     caption:
-      'The PDF export generates a professionally formatted payslip ready to hand to the employee or archive. Bulk export downloads payslips for all selected employees at once.',
+      'The PDF export generates a professionally formatted payslip ready to hand to the employee or archive. Selecting multiple employees downloads each payslip sequentially as an individual PDF file.',
     duration: 4500,
     apply: pure(() => ({})),
   },
@@ -298,10 +298,11 @@ export const HR_STEPS: HRDemoStep[] = [
   {
     target: 'hr-demo-cnss-table',
     caption:
-      'The CNSS table breaks down contributions per employee and per period. The active rate configuration ensures calculations always reflect the latest official CNSS percentages.',
+      'The CNSS table breaks down contributions per employee and per period. Rates are tenant-configured (employee 9.18%, employer 16.57%, CSS 1%) and versioned — update them once and every future payroll uses the new values.',
     duration: 5000,
     apply: pure(() => ({})),
   },
+
 
   // ── Chapter 7 · Departments ───────────────────────────────────────────────
   {

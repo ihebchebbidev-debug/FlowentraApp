@@ -1,52 +1,57 @@
+# Website Builder Awwwards Upgrade — Phased Plan
 
-## Goal
-Make the three Autopilot Demos (HR, Purchases, Dynamic Forms) production-quality: every step's target element actually exists in the rendered demo, captions match the visible UI, mock data is internally consistent (totals, dates, statuses), and translations cover every caption.
+You picked: **all three (templates + builder + components) in one sweep, Awwwards-grade, all 27 templates**. That's genuinely ~5–10K lines of high-craft work, so I'll run it in **5 passes**, shipping value at the end of each. You can react/redirect between passes.
 
-## Scope (3 modules only)
-- `src/modules/hr/components/onboarding/` (HRAutopilotDemo + script + translations)
-- `src/modules/purchases/components/onboarding/` (PurchaseAutopilotDemo + script + translations)
-- `src/modules/dynamic-forms/components/onboarding/` (DynamicFormsAutopilotDemo + script + translations)
+## Design language (locked across all 27 templates)
 
-No changes to real modules, services, or backend.
+A shared system so the catalog feels like one studio designed it, with per-vertical voice:
 
-## What "perfect" means here (checklist applied to each demo)
+- **Type:** display × body pairings chosen per vertical (Cormorant + Karla for luxury, Bebas + Barlow for sports, Instrument Serif + Work Sans for editorial, JetBrains Mono + Work Sans for tech, etc.)
+- **Color:** semantic tokens only, palettes from the curated presets per vertical
+- **Composition moves:** asymmetric hero, oversized type, sticky side-labels, sectioned numbered chapters (01/02/03), generous negative space, controlled density variant for ecommerce/dashboard
+- **Motion:** fade-in + scale-in on scroll, parallax accents, marquee/ticker for promos, hover-scale on cards
+- **Imagery:** real-feeling photography via existing `IMG`/`AVATAR` registries, expanded where needed
 
-1. **Target coverage** — every `target` string in `*DemoScript.ts` must match a `data-demo-id` (or equivalent id) actually rendered by the matching `*AutopilotDemo.tsx` for the current step's state. Missing targets cause the spotlight to fall back to the viewport — the #1 bug in this class of demo.
-2. **State transitions valid** — `apply()` reducers only set states the demo renderer reads. No orphan keys (e.g. setting `payrollStep: 3` when the wizard is closed).
-3. **Caption accuracy** — captions must describe what's on screen at that step, not aspirational features. Any mention of CNSS rates, IRPP brackets, TND amounts, three-way match, supplier scorecards, form-builder field types, etc. must match the mock data the component renders.
-4. **Mock-data consistency** — totals add up (line items → subtotal → tax → total), statuses and dates are coherent (e.g. an "Approved" PO has an approver and approval date; a "Received" PO has matching GR lines), employees referenced in payroll exist in the employee list, form submissions reference real form ids.
-5. **Translations parity** — every English caption has a French translation key in `*DemoTranslations.ts` (and vice-versa); no fallback to English in FR mode.
-6. **Chapter index integrity** — `*_CHAPTERS` `start`/`end` indices match real step positions; doc comments ("11 chapters, 54 steps") reflect reality.
-7. **Timing** — `duration` (ms) gives readers time to read the caption (~45ms per character, min 3500ms, max 7000ms).
-8. **A11y & polish** — spotlight target has stable ref; no layout shift between steps; demo can be paused, skipped per chapter, and replayed without stale state.
+## Pass 1 — Foundations (this turn)
 
-## Approach
+1. **Component library upgrades** — 3 new high-impact variants used across many templates:
+   - `Hero` → add `asymmetric-split`, `editorial-numbered`, `oversized-type` variants
+   - `Testimonials` → add `editorial-quote` (single huge pull-quote) and `logo-wall` variants
+   - `Features` → add `numbered-chapters` and `bento-mixed` variants
+2. **Builder polish (high-leverage only this pass):**
+   - `TemplateGalleryPage` — category filter chips, search, hover preview improvements, "new" badge
+   - `SiteEditor` — better empty state, breadcrumb header, refined inspector spacing
+3. **Re-expand the two minified templates** (`travelAgency`, `weddingPlanner`) to readable multi-line + apply new design language as the reference implementation.
 
-```text
-For each of HR / Purchases / Dynamic Forms:
-  1. Read the full script + autopilot component + translations.
-  2. Build a target→render map; flag every script target with no matching id.
-  3. Cross-check each step's `apply()` against the renderer's state branches.
-  4. Audit captions against rendered mock data; rewrite captions OR adjust mock data so they agree.
-  5. Recompute mock-data totals & statuses for internal consistency.
-  6. Fill missing FR translation keys; tighten EN copy.
-  7. Recompute chapter index ranges and the "N chapters, M steps" header comment.
-  8. Adjust durations using the 45ms/char rule.
-```
+## Pass 2 — Flagship template upgrades (5 templates)
 
-## Deliverables per module
-- Updated `*DemoScript.ts` (corrected targets, captions, chapter indices, durations)
-- Updated `*AutopilotDemo.tsx` (missing `data-demo-id`s added, mock data reconciled, no orphan state branches)
-- Updated `*DemoTranslations.ts` (full FR parity)
-- Short audit note appended to the chat summarising what was fixed per module
+`premiumEcommerce`, `saasStartup`, `realEstate`, `lawFirm`, `restaurant` — each rebuilt with its locked typography pair, palette, and at least 2 of the new section variants. These set the visual bar.
 
-## Out of scope
-- Real module UI/business logic
-- Backend, migrations, RLS
-- New demo chapters or features beyond what already exists
-- Other modules (Sales, Dispatches, Projects, etc.)
+## Pass 3 — Service & creative verticals (10 templates)
 
-## Risks / notes
-- These three files total ~5,900 lines. Expect 6–10 edit batches per module.
-- Where caption ↔ mock data disagree, I will prefer adjusting mock data (cheaper, keeps the narrative intact) unless the caption itself is misleading.
-- I will not invent compliance numbers (CNSS %, IRPP brackets, fiscal stamp). If a caption cites a specific rate, I will keep the rate already used elsewhere in the codebase.
+`creativeAgency`, `photography`, `portfolio`, `consulting`, `weddingPlanner`, `beautySalon`, `fashionBoutique`, `travelAgency`, `internationalBusiness`, `fitnessGym`.
+
+## Pass 4 — Local-business & care verticals (10 templates)
+
+`cafeBakery`, `carRepair`, `cleaningService`, `dentalOffice`, `medicalClinic`, `nonprofit`, `paintBodyShop`, `petCare`, `churchMinistry`, `education` + the 3 contact pages.
+
+## Pass 5 — Builder feature polish
+
+- Drag-drop affordance refinements in `SiteEditor`
+- Keyboard shortcuts panel (`?` overlay) — many shortcuts already exist in `useKeyboardShortcuts`, just need surfacing
+- Refined `PublishDialog` / `ExportOptionsDialog` UX
+- Live "device preview" toggle (desktop/tablet/mobile) in editor toolbar
+- Polished `SiteCards` (used by `SiteManager`)
+
+## Technical notes
+
+- All visual values go through existing semantic CSS tokens — no hardcoded `text-white`/`bg-black`.
+- New block variants are added to existing preset files, not new files, so the renderer auto-picks them up.
+- Templates import the same `IMG`/`AVATAR`/`themes` registries — no asset drift.
+- Each pass keeps the file shape backward-compatible so existing user sites don't break.
+
+## What I'll ship in this turn (Pass 1)
+
+End of this turn you'll see: 3 component variants live, gallery + editor polish, both stub templates expanded to ~250 lines using the new design language. Then I'll ping you to start Pass 2.
+
+Reply **"go"** to start Pass 1, or tell me to reorder/cut anything.

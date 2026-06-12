@@ -242,10 +242,10 @@ function PageDashboard({ state }: { state: PurchaseDemoState }) {
       {/* Quick links */}
       <div id="po-demo-quick-links" className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { icon: AlertTriangle, label: 'Compliance', color: 'text-amber-500' },
-          { icon: BarChart3,     label: 'Reports',    color: 'text-blue-500'  },
-          { icon: Clock,         label: 'Audit Log',  color: 'text-purple-500'},
-          { icon: CheckCircle,   label: 'Suppliers',  color: 'text-green-500' },
+          { icon: AlertTriangle, label: 'Compliance',       color: 'text-amber-500' },
+          { icon: BarChart3,     label: 'Reports',          color: 'text-blue-500'  },
+          { icon: Clock,         label: 'Audit Log',        color: 'text-purple-500'},
+          { icon: CheckCircle,   label: 'Supplier Perf.',   color: 'text-green-500' },
         ].map(q => (
           <div key={q.label} className="border border-border rounded-lg py-3 flex flex-col items-center gap-1.5 bg-card hover:bg-muted/40 cursor-default">
             <q.icon className={`h-5 w-5 ${q.color}`} />

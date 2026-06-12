@@ -23,4 +23,6 @@ export interface SiteTemplate {
   languages?: SiteLanguage[];
   /** Translation content keyed by language code */
   translations?: Record<string, Record<string, any>>;
+  /** Flag for newly added/refreshed templates — surfaces a NEW badge in the gallery. */
+  isNew?: boolean;
 }

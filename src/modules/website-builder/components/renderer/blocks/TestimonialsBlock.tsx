@@ -20,7 +20,7 @@ interface Testimonial {
   rating?: number;
 }
 
-type TestimonialVariant = 'grid' | 'carousel' | 'masonry' | 'bubble' | 'spotlight';
+type TestimonialVariant = 'grid' | 'carousel' | 'masonry' | 'bubble' | 'spotlight' | 'editorial-quote';
 
 interface TestimonialsBlockProps {
   title: string;
@@ -323,6 +323,19 @@ export function TestimonialsBlock({
     );
   }
 
+  // ═══ EDITORIAL QUOTE VARIANT — single massive pull-quote, thumbnail nav ═══
+  if (variant === 'editorial-quote' && testimonials.length > 0) {
+    return (
+      <EditorialQuoteTestimonials
+        testimonials={testimonials} theme={theme} isEditing={isEditing}
+        bgColor={bgColor} style={style} dir={dir} title={title} subtitle={subtitle}
+        onUpdate={onUpdate} addTestimonial={addTestimonial} removeTestimonial={removeTestimonial}
+        showRating={showRating}
+      />
+    );
+  }
+
+
   // ═══ DEFAULT GRID VARIANT ═══
   const colClass = { 1: 'grid-cols-1', 2: 'grid-cols-1 md:grid-cols-2', 3: 'grid-cols-1 md:grid-cols-3' }[columns] || 'grid-cols-1 md:grid-cols-2';
 
@@ -446,6 +459,181 @@ function CarouselTestimonials({
               <Plus className="h-3 w-3" /> Add Testimonial
             </button>
           </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/* ═══════════════════════════════════════
+   EDITORIAL QUOTE — single huge pull-quote with thumbnail navigation
+   ═══════════════════════════════════════ */
+function EditorialQuoteTestimonials({
+  testimonials, theme, isEditing, bgColor, style, dir, title, subtitle,
+  onUpdate, addTestimonial, removeTestimonial, showRating,
+}: {
+  testimonials: Testimonial[];
+  theme: SiteTheme;
+  isEditing?: boolean;
+  bgColor?: string;
+  style?: React.CSSProperties;
+  dir: string;
+  title: string;
+  subtitle?: string;
+  onUpdate?: (props: Record<string, any>) => void;
+  addTestimonial: () => void;
+  removeTestimonial: (i: number) => void;
+  showRating?: boolean;
+}) {
+  const [current, setCurrent] = useState(0);
+  const total = testimonials.length;
+  const t = testimonials[current] || testimonials[0];
+
+  if (!t) return null;
+
+  const isDark = isDarkColor(bgColor) || isDarkColor(theme.backgroundColor);
+  const textColor = isDark ? '#f1f5f9' : theme.textColor;
+  const mutedColor = isDark ? '#94a3b8' : theme.secondaryColor;
+
+  return (
+    <section
+      dir={dir}
+      className="py-20 md:py-28 px-6 relative overflow-hidden"
+      style={{ backgroundColor: bgColor || theme.backgroundColor, fontFamily: theme.bodyFont, ...style }}
+    >
+      {/* Massive faded background quote mark */}
+      <div
+        aria-hidden
+        className="absolute -top-8 left-4 md:left-12 select-none pointer-events-none font-bold leading-none"
+        style={{
+          fontFamily: theme.headingFont,
+          color: theme.primaryColor,
+          fontSize: 'clamp(280px, 40vw, 520px)',
+          opacity: 0.06,
+        }}
+      >
+        “
+      </div>
+
+      <div className="max-w-5xl mx-auto relative">
+        {/* Eyebrow */}
+        <div className="flex items-center gap-3 mb-8">
+          <span className="h-px w-12" style={{ backgroundColor: theme.primaryColor }} />
+          {isEditing ? (
+            <span
+              contentEditable suppressContentEditableWarning
+              onBlur={(e) => onUpdate?.({ title: e.currentTarget.textContent || '' })}
+              className="text-[11px] tracking-[0.35em] uppercase font-semibold outline-none focus:ring-1 focus:ring-primary/30 rounded px-1"
+              style={{ color: theme.primaryColor }}
+            >{title}</span>
+          ) : (
+            <span className="text-[11px] tracking-[0.35em] uppercase font-semibold" style={{ color: theme.primaryColor }}>{title}</span>
+          )}
+        </div>
+
+        {/* Quote text — oversized serif */}
+        <blockquote
+          className="font-bold leading-[1.05] tracking-tight mb-10"
+          style={{
+            fontFamily: theme.headingFont,
+            color: textColor,
+            fontSize: 'clamp(28px, 4.5vw, 56px)',
+            letterSpacing: '-0.02em',
+          }}
+        >
+          {isEditing ? (
+            <span
+              contentEditable suppressContentEditableWarning
+              onBlur={(e) => {
+                const updated = testimonials.map((tx, i) => i === current ? { ...tx, text: e.currentTarget.textContent || '' } : tx);
+                onUpdate?.({ testimonials: updated });
+              }}
+              className="outline-none focus:ring-1 focus:ring-primary/30 rounded px-1"
+            >“{t.text}”</span>
+          ) : (
+            <>“{t.text}”</>
+          )}
+        </blockquote>
+
+        {/* Attribution row */}
+        <div className="flex flex-wrap items-end justify-between gap-6 pb-8 border-b" style={{ borderColor: mutedColor + '30' }}>
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-full overflow-hidden shrink-0 ring-2 ring-offset-2" style={{ ringColor: theme.primaryColor } as React.CSSProperties}>
+              {t.avatar ? (
+                <img src={t.avatar} alt={t.name} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center font-bold" style={{ backgroundColor: theme.primaryColor + '20', color: theme.primaryColor }}>{t.name.charAt(0)}</div>
+              )}
+            </div>
+            <div>
+              <div className="text-base font-semibold" style={{ color: textColor, fontFamily: theme.headingFont }}>{t.name}</div>
+              <div className="text-xs tracking-wider uppercase opacity-60" style={{ color: mutedColor }}>{t.role}</div>
+            </div>
+          </div>
+          {showRating && t.rating !== undefined && (
+            <div className="flex items-center gap-1.5">
+              <div className="flex gap-0.5">
+                {Array.from({ length: 5 }).map((_, j) => (
+                  <span key={j} className={j < (t.rating ?? 0) ? 'text-amber-400' : 'text-muted-foreground/30'}>★</span>
+                ))}
+              </div>
+              <span className="text-[10px] tracking-widest uppercase opacity-50 ml-2" style={{ color: mutedColor }}>Verified</span>
+            </div>
+          )}
+        </div>
+
+        {/* Thumbnail navigator */}
+        {total > 1 && (
+          <div className="flex items-center gap-3 mt-8">
+            <span className="text-[10px] tracking-[0.3em] uppercase opacity-50 mr-3" style={{ color: mutedColor }}>
+              {String(current + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
+            </span>
+            <div className="flex items-center gap-2 flex-1 flex-wrap">
+              {testimonials.map((tx, i) => (
+                <button
+                  key={i}
+                  onClick={() => setCurrent(i)}
+                  className={`group/thumb relative transition-all ${i === current ? 'opacity-100 scale-100' : 'opacity-40 hover:opacity-80 scale-90'}`}
+                  aria-label={`View testimonial from ${tx.name}`}
+                >
+                  <div className="w-10 h-10 rounded-full overflow-hidden ring-1" style={{ ringColor: i === current ? theme.primaryColor : 'transparent' } as React.CSSProperties}>
+                    {tx.avatar ? (
+                      <img src={tx.avatar} alt={tx.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-xs font-bold" style={{ backgroundColor: theme.primaryColor + '20', color: theme.primaryColor }}>{tx.name.charAt(0)}</div>
+                    )}
+                  </div>
+                  {i === current && (
+                    <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: theme.primaryColor }} />
+                  )}
+                  {isEditing && total > 1 && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); removeTestimonial(i); if (current >= total - 1) setCurrent(Math.max(0, current - 1)); }}
+                      className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[10px] opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center"
+                    >×</button>
+                  )}
+                </button>
+              ))}
+              {isEditing && (
+                <button onClick={addTestimonial} className="w-10 h-10 rounded-full border-2 border-dashed border-primary/40 flex items-center justify-center text-primary hover:bg-primary/10 transition-colors">
+                  <Plus className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {(subtitle || isEditing) && (
+          isEditing ? (
+            <p
+              contentEditable suppressContentEditableWarning
+              onBlur={(e) => onUpdate?.({ subtitle: e.currentTarget.textContent || '' })}
+              className="text-sm max-w-md mt-8 opacity-60 outline-none focus:ring-1 focus:ring-primary/30 rounded px-1"
+              style={{ color: mutedColor }}
+            >{subtitle || 'Add subtitle...'}</p>
+          ) : subtitle ? (
+            <p className="text-sm max-w-md mt-8 opacity-60" style={{ color: mutedColor }}>{subtitle}</p>
+          ) : null
         )}
       </div>
     </section>

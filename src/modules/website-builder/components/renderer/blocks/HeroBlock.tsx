@@ -39,7 +39,7 @@ interface HeroSlide {
   subheadingColor?: string;
 }
 
-type HeroVariant = 'standard' | 'carousel' | 'split' | 'video-bg' | 'gradient';
+type HeroVariant = 'standard' | 'carousel' | 'split' | 'video-bg' | 'gradient' | 'editorial';
 type HeroAlignment = 'left' | 'center' | 'right';
 
 interface HeroBlockProps {
@@ -113,6 +113,9 @@ export function HeroBlock(props: HeroBlockProps) {
   }
   if (variant === 'video-bg' && videoUrl) {
     return <VideoHero {...props} />;
+  }
+  if (variant === 'editorial') {
+    return <EditorialHero {...props} />;
   }
 
   return <StandardHero {...props} />;
@@ -664,5 +667,190 @@ function HeroContent({
         </div>
       )}
     </div>
+  );
+}
+
+/* ═══════════════════════════════════════
+   EDITORIAL HERO — Awwwards-grade asymmetric layout
+   Oversized display type, side label, split image, generous whitespace
+   ═══════════════════════════════════════ */
+function EditorialHero({
+  heading, subheading, ctaText, ctaLink, secondaryCtaText, secondaryCtaLink,
+  buttons, backgroundImage, splitImage, splitPosition = 'right',
+  height = 'large', headingColor, subheadingColor, ctaColor, ctaTextColor,
+  theme, isEditing, onUpdate, style,
+}: HeroBlockProps) {
+  const dir = theme.direction || 'ltr';
+  const heightClass = getHeroHeightClass(height, theme);
+  const bColor = ctaColor || theme.primaryColor;
+  const bTextColor = ctaTextColor || '#ffffff';
+  const hColor = headingColor || theme.textColor;
+  const sColor = subheadingColor || theme.secondaryColor;
+  const accentImg = splitImage || backgroundImage;
+  const buttonList = buildHeroButtonList(buttons, ctaText, ctaLink, secondaryCtaText, secondaryCtaLink, bColor, bTextColor);
+
+  const fontScale = getFontScale(theme);
+  const displaySize = Math.round(96 * fontScale);
+
+  // Year/label corner accent
+  const year = new Date().getFullYear();
+
+  const content = (
+    <div className="flex-1 flex flex-col justify-center px-6 md:px-12 lg:px-20 py-16 md:py-24 relative">
+      {/* Side label — vertical text */}
+      <div
+        className="hidden lg:flex absolute left-4 top-0 bottom-0 items-center"
+        style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+      >
+        <span
+          className="text-[10px] tracking-[0.4em] uppercase opacity-50 font-medium"
+          style={{ color: theme.secondaryColor, fontFamily: theme.bodyFont }}
+        >
+          Est. {year} — Editorial Series
+        </span>
+      </div>
+
+      <div className="max-w-2xl space-y-8">
+        {/* Eyebrow */}
+        <div className="flex items-center gap-3">
+          <span className="h-px w-10" style={{ backgroundColor: theme.primaryColor }} />
+          <span
+            className="text-[11px] tracking-[0.3em] uppercase font-semibold"
+            style={{ color: theme.primaryColor, fontFamily: theme.bodyFont }}
+          >
+            {(subheading || '').split(' ').slice(0, 3).join(' ') || 'Featured Story'}
+          </span>
+        </div>
+
+        {isEditing ? (
+          <h1
+            contentEditable suppressContentEditableWarning
+            onBlur={(e) => onUpdate?.({ heading: e.currentTarget.innerHTML })}
+            className="font-bold leading-[0.95] tracking-tight outline-none focus:ring-1 focus:ring-primary/40 rounded px-1"
+            style={{
+              fontFamily: theme.headingFont,
+              color: hColor,
+              fontSize: `clamp(${Math.round(displaySize * 0.42)}px, 9vw, ${displaySize}px)`,
+              letterSpacing: '-0.03em',
+            }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(heading) }}
+          />
+        ) : (
+          <h1
+            className="font-bold leading-[0.95] tracking-tight"
+            style={{
+              fontFamily: theme.headingFont,
+              color: hColor,
+              fontSize: `clamp(${Math.round(displaySize * 0.42)}px, 9vw, ${displaySize}px)`,
+              letterSpacing: '-0.03em',
+            }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(heading) }}
+          />
+        )}
+
+        {isEditing ? (
+          <p
+            contentEditable suppressContentEditableWarning
+            onBlur={(e) => onUpdate?.({ subheading: e.currentTarget.innerHTML })}
+            className="text-lg md:text-xl leading-relaxed max-w-lg outline-none focus:ring-1 focus:ring-primary/40 rounded px-1"
+            style={{ color: sColor, fontFamily: theme.bodyFont, opacity: 0.85 }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(subheading) }}
+          />
+        ) : (
+          <p
+            className="text-lg md:text-xl leading-relaxed max-w-lg"
+            style={{ color: sColor, fontFamily: theme.bodyFont, opacity: 0.85 }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(subheading) }}
+          />
+        )}
+
+        {buttonList.length > 0 && (
+          <div className="flex flex-wrap gap-4 pt-4">
+            {buttonList.map((btn, i) => (
+              isEditing ? (
+                <span
+                  key={i}
+                  contentEditable suppressContentEditableWarning
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center gap-2 px-7 py-3.5 text-sm font-semibold rounded-none cursor-text outline-none focus:ring-2 focus:ring-primary/40"
+                  style={{
+                    ...getHeroButtonStyle(btn, theme, bColor, bTextColor),
+                    fontFamily: theme.bodyFont,
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {btn.text}
+                </span>
+              ) : (
+                <a
+                  key={i}
+                  href={btn.link}
+                  className="group/btn inline-flex items-center gap-2 px-7 py-3.5 text-sm font-semibold transition-all hover:gap-3"
+                  style={{
+                    ...getHeroButtonStyle(btn, theme, bColor, bTextColor),
+                    fontFamily: theme.bodyFont,
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {btn.text}
+                  <span className="transition-transform group-hover/btn:translate-x-1">→</span>
+                </a>
+              )
+            ))}
+          </div>
+        )}
+
+        {/* Bottom meta line */}
+        <div className="flex items-center gap-4 pt-6 text-[11px] tracking-widest uppercase opacity-50" style={{ color: theme.secondaryColor, fontFamily: theme.bodyFont }}>
+          <span>01 / Chapter</span>
+          <span className="h-px flex-1 max-w-[60px]" style={{ backgroundColor: theme.secondaryColor, opacity: 0.4 }} />
+          <span>Scroll ↓</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  const imagePane = (
+    <div className="flex-1 relative overflow-hidden min-h-[320px] md:min-h-0">
+      {accentImg ? (
+        <>
+          <img src={accentImg} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          {/* Soft duotone wash for editorial feel */}
+          <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${theme.primaryColor}18, transparent 60%)` }} />
+        </>
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center" style={{ backgroundColor: theme.primaryColor + '10' }}>
+          <ImageIcon className="h-16 w-16 opacity-20" style={{ color: theme.textColor }} />
+        </div>
+      )}
+      {/* Floating issue card */}
+      <div
+        className="hidden md:flex absolute bottom-6 left-6 right-6 lg:right-auto lg:max-w-xs items-center gap-3 px-4 py-3 backdrop-blur-md"
+        style={{ backgroundColor: theme.backgroundColor + 'dd', borderLeft: `2px solid ${theme.primaryColor}` }}
+      >
+        <div className="text-2xl font-bold leading-none" style={{ color: theme.primaryColor, fontFamily: theme.headingFont }}>№</div>
+        <div className="flex-1 min-w-0">
+          <div className="text-[10px] tracking-[0.25em] uppercase opacity-60" style={{ color: theme.secondaryColor, fontFamily: theme.bodyFont }}>Volume {year - 2017}</div>
+          <div className="text-xs font-semibold truncate" style={{ color: theme.textColor, fontFamily: theme.bodyFont }}>{(heading || '').slice(0, 36)}</div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <section
+      dir={dir}
+      className={`relative flex flex-col md:flex-row ${heightClass}`}
+      style={{ backgroundColor: theme.backgroundColor, ...style }}
+    >
+      {splitPosition === 'left' ? <>{imagePane}{content}</> : <>{content}{imagePane}</>}
+      {isEditing && (
+        <div className="absolute top-3 left-3 z-20 bg-black/60 text-white text-[10px] px-3 py-1.5 rounded-lg">
+          Editorial Hero • Image {splitPosition}
+        </div>
+      )}
+    </section>
   );
 }

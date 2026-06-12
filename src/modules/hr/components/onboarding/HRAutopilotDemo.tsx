@@ -23,12 +23,14 @@ interface Props {
 
 // ─── Demo data ────────────────────────────────────────────────────────────────
 
+// Net = gross − CNSS_employee (9.18%) − IRPP (progressive brackets) − CSS (1% of taxable gross) + bonus
+// Backend reference: HrService.cs:421-524 (formula version "tn_v2")
 const DEMO_EMPLOYEES = [
-  { id: 'amira',   name: 'Amira Ben Ali',      email: 'amira@flowentra.tn',   dept: 'Engineering', title: 'HR Manager',         gross: 4500, net: 3720, contract: 'CDI', hireDate: '2022-03-15', init: 'AB', color: 'bg-violet-500' },
-  { id: 'khalil',  name: 'Khalil Mansouri',     email: 'khalil@flowentra.tn',  dept: 'Engineering', title: 'Software Developer', gross: 3800, net: 3140, contract: 'CDI', hireDate: '2023-01-10', init: 'KM', color: 'bg-blue-500'   },
-  { id: 'sonia',   name: 'Sonia Trabelsi',      email: 'sonia@flowentra.tn',   dept: 'Sales',       title: 'Sales Rep.',         gross: 2800, net: 2310, contract: 'CDD', hireDate: '2024-02-01', init: 'ST', color: 'bg-rose-500'   },
-  { id: 'mohamed', name: 'Mohamed Chaabane',    email: 'mohamed@flowentra.tn', dept: 'Finance',     title: 'Accountant',         gross: 3200, net: 2640, contract: 'CDI', hireDate: '2021-06-20', init: 'MC', color: 'bg-amber-500'  },
-  { id: 'fatma',   name: 'Fatma Rezgui',        email: 'fatma@flowentra.tn',   dept: 'Operations',  title: 'Operations Lead',    gross: 3600, net: 2975, contract: 'CDI', hireDate: '2022-09-05', init: 'FR', color: 'bg-teal-500'   },
+  { id: 'amira',   name: 'Amira Ben Ali',      email: 'amira@flowentra.tn',   dept: 'Engineering', title: 'HR Manager',         gross: 4500, net: 3679, contract: 'CDI', hireDate: '2022-03-15', init: 'AB', color: 'bg-violet-500' },
+  { id: 'khalil',  name: 'Khalil Mansouri',     email: 'khalil@flowentra.tn',  dept: 'Engineering', title: 'Software Developer', gross: 3800, net: 3105, contract: 'CDI', hireDate: '2023-01-10', init: 'KM', color: 'bg-blue-500'   },
+  { id: 'sonia',   name: 'Sonia Trabelsi',      email: 'sonia@flowentra.tn',   dept: 'Sales',       title: 'Sales Rep.',         gross: 2800, net: 2285, contract: 'CDD', hireDate: '2024-02-01', init: 'ST', color: 'bg-rose-500'   },
+  { id: 'mohamed', name: 'Mohamed Chaabane',    email: 'mohamed@flowentra.tn', dept: 'Finance',     title: 'Accountant',         gross: 3200, net: 2611, contract: 'CDI', hireDate: '2021-06-20', init: 'MC', color: 'bg-amber-500'  },
+  { id: 'fatma',   name: 'Fatma Rezgui',        email: 'fatma@flowentra.tn',   dept: 'Operations',  title: 'Operations Lead',    gross: 3600, net: 2942, contract: 'CDI', hireDate: '2022-09-05', init: 'FR', color: 'bg-teal-500'   },
 ];
 
 const DEMO_DEPARTMENTS = [
@@ -46,12 +48,14 @@ const DEMO_LEAVES = [
   { id: 'l4', employee: 'Mohamed Chaabane',  type: 'Exceptional', start: '2025-06-12', end: '2025-06-12', days: 1,  status: 'approved' },
 ];
 
+// Payroll lines now include CSS (Contribution Sociale de Solidarité, 1% of taxable gross).
+// net = gross − cnssEmp − irpp − css + bonus  (matches HrService.cs:481)
 const DEMO_PAYROLL = [
-  { name: 'Amira Ben Ali',    gross: 4500, cnssEmp: 413, cnssEr: 746, irpp: 367, bonus: 0,   net: 3720 },
-  { name: 'Khalil Mansouri',  gross: 3800, cnssEmp: 349, cnssEr: 630, irpp: 311, bonus: 200, net: 3340 },
-  { name: 'Sonia Trabelsi',   gross: 2800, cnssEmp: 257, cnssEr: 464, irpp: 233, bonus: 0,   net: 2310 },
-  { name: 'Mohamed Chaabane', gross: 3200, cnssEmp: 294, cnssEr: 531, irpp: 266, bonus: 0,   net: 2640 },
-  { name: 'Fatma Rezgui',     gross: 3600, cnssEmp: 330, cnssEr: 597, irpp: 295, bonus: 150, net: 3075 },
+  { name: 'Amira Ben Ali',    gross: 4500, cnssEmp: 413, cnssEr: 746, irpp: 367, css: 41, bonus: 0,   net: 3679 },
+  { name: 'Khalil Mansouri',  gross: 3800, cnssEmp: 349, cnssEr: 630, irpp: 311, css: 35, bonus: 200, net: 3305 },
+  { name: 'Sonia Trabelsi',   gross: 2800, cnssEmp: 257, cnssEr: 464, irpp: 233, css: 25, bonus: 0,   net: 2285 },
+  { name: 'Mohamed Chaabane', gross: 3200, cnssEmp: 294, cnssEr: 531, irpp: 266, css: 29, bonus: 0,   net: 2611 },
+  { name: 'Fatma Rezgui',     gross: 3600, cnssEmp: 330, cnssEr: 597, irpp: 295, css: 33, bonus: 150, net: 3092 },
 ];
 
 const DEMO_BONUSES = [
@@ -459,13 +463,19 @@ function PageEmployeeDetail({ state }: { state: HRDemoState }) {
         <div className="grid md:grid-cols-2 gap-4">
           <div className="bg-card border border-border rounded-lg p-4 space-y-3 text-xs">
             <p className="text-xs font-semibold mb-2">Salary Configuration</p>
-            {[
-              ['Gross Salary',           `${fmtTnd(emp.gross)} TND`],
-              ['CNSS Employee (9.18%)',   `${fmtTnd(Math.round(emp.gross * 0.0918))} TND`],
-              ['CNSS Employer (16.57%)',  `${fmtTnd(Math.round(emp.gross * 0.1657))} TND`],
-              ['IRPP',                   `${fmtTnd(emp.gross - emp.net - Math.round(emp.gross * 0.0918))} TND`],
-              ['Net Salary (preview)',    `${fmtTnd(emp.net)} TND`],
-            ].map(([k, v]) => (
+            {(() => {
+              const cnssEmp = Math.round(emp.gross * 0.0918);
+              const css = Math.round((emp.gross - cnssEmp) * 0.01);
+              const irpp = emp.gross - emp.net - cnssEmp - css;
+              return [
+                ['Gross Salary',            `${fmtTnd(emp.gross)} TND`],
+                ['CNSS Employee (9.18%)',   `${fmtTnd(cnssEmp)} TND`],
+                ['CNSS Employer (16.57%)',  `${fmtTnd(Math.round(emp.gross * 0.1657))} TND`],
+                ['IRPP',                    `${fmtTnd(irpp)} TND`],
+                ['CSS Solidarity (1%)',     `${fmtTnd(css)} TND`],
+                ['Net Salary (preview)',    `${fmtTnd(emp.net)} TND`],
+              ];
+            })().map(([k, v]) => (
               <div key={k} className="flex justify-between">
                 <span className="text-muted-foreground">{k}</span>
                 <span className="font-medium text-foreground">{v}</span>
