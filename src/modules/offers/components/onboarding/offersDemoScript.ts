@@ -11,7 +11,7 @@ export interface OffersDemoState {
   selectedStat: 'all' | 'pipeline' | 'accepted';
   searchActive: boolean;
   showFilters: boolean;
-  listView: 'list' | 'table' | 'kanban';
+  listView: 'list' | 'table';
   showMap: boolean;
   showExport: boolean;
   // Create
@@ -120,7 +120,7 @@ export const OF_STEPS: OffersDemoStep[] = [
   {
     target: 'of-demo-views',
     caption:
-      'See your offers three ways: a dense Table for scanning, a roomy List for detail, and a Kanban board to drag deals through your pipeline.',
+      'See your offers two ways: a dense Table for scanning, or a roomy List for detail — pick the view that fits the task.',
     duration: 4800,
     apply: pure(() => ({ showFilters: false })),
   },
@@ -139,21 +139,6 @@ export const OF_STEPS: OffersDemoStep[] = [
     apply: pure(() => ({ showMap: false, showExport: true })),
   },
 
-  // ── Chapter 3 · Kanban pipeline ────────────────────────────────────────────
-  {
-    target: 'of-demo-kanban',
-    caption:
-      'The Kanban board is your pipeline made visual — columns for Draft, Sent, Negotiation, Accepted, and Lost, each showing its count and total value.',
-    duration: 5000,
-    apply: pure(() => ({ showExport: false, listView: 'kanban' as const })),
-  },
-  {
-    target: 'of-demo-kanban-drag',
-    caption:
-      'Drag a card from one column to the next to move the deal forward — the status updates instantly, and the activity log records the change.',
-    duration: 5000,
-    apply: pure(() => ({})),
-  },
 
   // ── Chapter 4 · Create an offer ────────────────────────────────────────────
   {
@@ -325,11 +310,10 @@ export const OF_STEPS: OffersDemoStep[] = [
 export const OF_CHAPTERS: OffersDemoChapter[] = [
   { id: 'overview', title: 'Overview',        start: 0,  end: 6  },
   { id: 'controls', title: 'Filters & Views', start: 6,  end: 11 },
-  { id: 'kanban',   title: 'Pipeline',        start: 11, end: 13 },
-  { id: 'create',   title: 'Build a Quote',   start: 13, end: 19 },
-  { id: 'detail',   title: 'Detail & Status', start: 19, end: 22 },
-  { id: 'tabs',     title: 'Deal Workspace',  start: 22, end: 27 },
-  { id: 'pdf',      title: 'Send & PDF',      start: 27, end: 31 },
-  { id: 'convert',  title: 'Convert',         start: 31, end: 33 },
-  { id: 'wrapup',   title: 'Wrap-up',         start: 33, end: OF_STEPS.length },
+  { id: 'create',   title: 'Build a Quote',   start: 11, end: 17 },
+  { id: 'detail',   title: 'Detail & Status', start: 17, end: 20 },
+  { id: 'tabs',     title: 'Deal Workspace',  start: 20, end: 25 },
+  { id: 'pdf',      title: 'Send & PDF',      start: 25, end: 29 },
+  { id: 'convert',  title: 'Convert',         start: 29, end: 31 },
+  { id: 'wrapup',   title: 'Wrap-up',         start: 31, end: OF_STEPS.length },
 ];

@@ -314,14 +314,24 @@ export function useSiteActions({
       toast.error('Cannot delete the last page');
       return;
     }
-    const updatedPages = s.pages.filter(p => p.id !== pageId);
+    const prevPages = s.pages;
+    const prevCurrentPageId = currentPageIdRef.current;
+    const updatedPages = prevPages.filter(p => p.id !== pageId);
+    // Optimistic update
     emitSite({ ...s, pages: updatedPages });
     if (currentPageIdRef.current === pageId) selectPage(updatedPages[0].id);
-    toast.success('Page deleted');
 
     if (!isClientSideId(pageId)) {
-      await runSave(() => getStorageProvider().deletePage(s.id, pageId));
+      const result = await runSave(() => getStorageProvider().deletePage(s.id, pageId));
+      if (!result.success) {
+        // Revert
+        emitSite({ ...siteRef.current, pages: prevPages });
+        if (prevCurrentPageId) selectPage(prevCurrentPageId);
+        toast.error('Failed to delete page — restored.');
+        return;
+      }
     }
+    toast.success('Page deleted');
   }, [emitSite, selectPage, runSave]);
 
   const handleDuplicatePage = useCallback(async (pageId: string) => {

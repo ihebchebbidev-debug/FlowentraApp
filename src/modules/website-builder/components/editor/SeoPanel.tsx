@@ -46,7 +46,9 @@ export function SeoPanel({ seo, slug, pageTitle, onChange, onSlugChange, onPageT
 
   const validateAndUpdatePageTitle = (value: string) => {
     const result = validateField(pageTitleSchema, value);
-    if (result.success === false) { setFieldError('pageTitle', result.error); } else { setFieldError('pageTitle', undefined); onPageTitleChange(value); }
+    setFieldError('pageTitle', result.success === false ? result.error : undefined);
+    // Always propagate input — never block typing. The error is shown inline.
+    onPageTitleChange(value);
   };
 
   const validateAndUpdateSlug = (value: string) => {

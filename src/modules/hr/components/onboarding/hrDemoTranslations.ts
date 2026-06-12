@@ -31,7 +31,7 @@ export const CHAPTER_TITLES: Record<DemoLang, Record<string, string>> = {
   },
 };
 
-// ─── Step captions (54 total) ─────────────────────────────────────────────────
+// ─── Step captions (63 total) ────────────────────────────────────────────────
 
 const CAPTIONS_FR: string[] = [
   'Bienvenue dans le module RH — votre centre complet de gestion des ressources humaines : employés, présence, congés, paie, primes, CNSS, performance et recrutement, tous connectés.',
@@ -84,6 +84,19 @@ const CAPTIONS_FR: string[] = [
   'La page Rapports vous donne des insights basés sur les données : effectif par département, distribution salariale, taux de présence, usage des congés, et tendance des coûts paie.',
   'Le graphique Effectif par Département montre votre distribution organisationnelle d\'un coup d\'œil — identifiant où la main-d\'œuvre est concentrée ou sous-effective.',
   'Le graphique Coût Mensuel de la Paie suit la dépense salariale dans le temps, aidant la finance à prévoir les budgets et repérer les anomalies avant escalade.',
+  'Les Paramètres RH permettent de configurer les types de congés avec leur droit annuel en jours, définir les jours fériés de l\'année, fixer les règles de calcul de paie et gérer les taux CNSS.',
+  'De retour sur un profil employé, l\'onglet CNSS stocke son numéro CNSS personnel, sa date d\'affiliation, ses personnes à charge et tout dépassement de cotisation — exactement ce qui est déclaré chaque trimestre.',
+  'L\'onglet Primes du profil liste chaque prime jamais reçue, avec le mois, le type, le montant et la paie qui l\'a versée — un historique complet de rémunération individuelle.',
+  'L\'onglet Congés du profil montre l\'historique personnel de congés et les soldes actuels par type — annuel, maladie, maternité, exceptionnel — d\'un coup d\'œil.',
+  'L\'onglet Historique est un journal d\'audit par employé : chaque modification de salaire, contrat, département ou statut est consignée avec date, auteur et valeur précédente conservée.',
+  'Dans Paie, le panneau Paramètres permet de régler les règles de calcul — coefficient heures supplémentaires, taux jour férié, base de jours ouvrés, politique d\'arrondi — appliqués uniformément à chaque paie.',
+  'Le bulletin PDF généré est bilingue français/arabe, inclut l\'en-tête de votre société, l\'identité fiscale, le bloc employé, la décomposition complète gains/retenues, le net en chiffres et en lettres, et un espace signature.',
+  'Le hub Rapports possède aussi un onglet Coût — coût total de la paie par employé avec brut, primes, retenues, part CNSS patronale, coût mensuel total et cumul année à date dans un seul tableau.',
+  'Deux autres onglets de rapport : CNSS agrège les cotisations patronales + salariales par mois pour vos déclarations DGI, et Absences montre le total de jours d\'absence par employé ventilés par type.',
+  'Les Paramètres RH regroupent trois onglets : taux CNSS (% patronal et salarié pour chaque période effective), Jours fériés (le calendrier officiel tunisien avec ajouts personnalisés), et règles générales de paie.',
+  'Voilà le tour complet du module RH — Employés avec profil détaillé, Présence, Congés, Paie avec loi fiscale tunisienne intégrée, Primes, CNSS, Départements, Performance et Recrutement.',
+  'Chaque section est connectée : un candidat embauché devient employé, son salaire alimente la paie, ses congés mettent à jour le calendrier de présence et ses évaluations nourrissent l\'historique de performance.',
+  'À vous de jouer. Ajoutez votre équipe, configurez les salaires, exécutez votre première paie, et laissez Flowentra gérer la conformité et le reporting automatiquement.',
 ];
 
 if (CAPTIONS_FR.length !== HR_STEPS.length) {

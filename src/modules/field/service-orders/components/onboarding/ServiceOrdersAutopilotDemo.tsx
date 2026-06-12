@@ -71,7 +71,7 @@ function PageList({ state }: { state: SODemoState }) {
           </div>
           <div id="so-demo-filters" className={`h-9 px-3 rounded-md border text-sm flex items-center gap-1.5 cursor-default ${state.showFilters ? 'border-primary text-primary bg-primary/5' : 'border-border text-muted-foreground'}`}><Filter className="h-4 w-4" /> Filters</div>
           <div id="so-demo-views" className="flex items-center gap-1 border border-border rounded-md overflow-hidden">
-            {([['table', TableIcon], ['list', List], ['kanban', LayoutGrid], ['map', Map]] as const).map(([m, Ic]) => (
+            {([['table', TableIcon], ['list', List], ['map', Map]] as const).map(([m, Ic]) => (
               <div key={m} className={`h-9 px-2.5 flex items-center cursor-default ${state.listView === m ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}><Ic className="h-4 w-4" /></div>
             ))}
           </div>

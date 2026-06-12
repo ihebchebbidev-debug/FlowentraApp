@@ -90,7 +90,7 @@ export const DP_STEPS: DPDemoStep[] = [
   // ── Chapter 7 · Attachments, Checklists, Notes ─────────────────────────────
   { target: 'dp-demo-tab-attachments', caption: 'Attachments hold the field evidence — before-and-after photos, the equipment nameplate, the delivery note — proof the job was done right.', duration: 4800, apply: pure(() => ({ activeTab: 'attachments' as const })) },
   { target: 'dp-demo-tab-checklists', caption: 'Checklists guide the technician through mandatory steps — safety isolation, test results, completion criteria — so every job meets the same standard.', duration: 4800, apply: pure(() => ({ activeTab: 'checklists' as const })) },
-  { target: 'dp-demo-notes', caption: 'Notes capture what the photos can’t — the customer’s comments, a follow-up needed, a tip for the next visit — shared instantly with the office.', duration: 4800, apply: pure(() => ({ notesOpen: true })) },
+  { target: 'dp-demo-notes-modal', caption: 'Notes capture what the photos can’t — the customer’s comments, a follow-up needed, a tip for the next visit — shared instantly with the office.', duration: 4800, apply: pure(() => ({ notesOpen: true })) },
 
   // ── Chapter 8 · Activity & sign-off ────────────────────────────────────────
   { target: 'dp-demo-tab-activity', caption: 'The Activity tab is the full timeline — confirmed, en route, on site, completed — each step time-stamped, an immutable record of the field day.', duration: 4800, apply: pure(() => ({ notesOpen: false, activeTab: 'activity' as const })) },

@@ -39,13 +39,6 @@ function Pill({ s }: { s: string }) {
 }
 const initials = (n: string) => n.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2);
 
-const KANBAN = [
-  { key: 'draft', label: 'Draft', items: [DEMO_OFFERS[3]] },
-  { key: 'sent', label: 'Sent', items: [DEMO_OFFERS[0]] },
-  { key: 'negotiation', label: 'Negotiation', items: [DEMO_OFFERS[1]] },
-  { key: 'accepted', label: 'Accepted', items: [DEMO_OFFERS[2]] },
-  { key: 'lost', label: 'Lost', items: [DEMO_OFFERS[4]] },
-];
 
 // ─── Page: list ─────────────────────────────────────────────────────────────
 
@@ -91,7 +84,7 @@ function PageList({ state }: { state: OffersDemoState }) {
           </div>
           <div id="of-demo-filters" className={`h-9 px-3 rounded-md border text-sm flex items-center gap-1.5 cursor-default ${state.showFilters ? 'border-primary text-primary bg-primary/5' : 'border-border text-muted-foreground'}`}><Filter className="h-4 w-4" /> Filters</div>
           <div id="of-demo-views" className="flex items-center gap-1 border border-border rounded-md overflow-hidden">
-            {([['list', List], ['table', TableIcon], ['kanban', LayoutGrid]] as const).map(([m, Ic]) => (
+            {([['list', List], ['table', TableIcon]] as const).map(([m, Ic]) => (
               <div key={m} className={`h-9 px-2.5 flex items-center cursor-default ${state.listView === m ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}><Ic className="h-4 w-4" /></div>
             ))}
           </div>
@@ -104,27 +97,7 @@ function PageList({ state }: { state: OffersDemoState }) {
         )}
       </div>
 
-      {state.listView === 'kanban' ? (
-        <div id="of-demo-kanban" className="p-4 flex gap-3 overflow-x-auto">
-          {KANBAN.map(col => (
-            <div key={col.key} className="w-44 shrink-0">
-              <div className="flex items-center justify-between mb-2 px-1">
-                <span className="text-xs font-semibold">{col.label}</span>
-                <span className="text-[10px] text-muted-foreground">{col.items.length}</span>
-              </div>
-              <div className="space-y-2 min-h-[120px] rounded-lg bg-muted/30 p-2">
-                {col.items.map(o => (
-                  <div key={o.id} id={col.key === 'sent' ? 'of-demo-kanban-drag' : undefined} className={`rounded-lg border bg-card p-2 ${col.key === 'sent' ? 'border-primary shadow-md ring-1 ring-primary/30' : 'border-border'}`}>
-                    <div className="text-[11px] font-medium truncate">{o.title}</div>
-                    <div className="text-[10px] text-muted-foreground truncate">{o.customer}</div>
-                    <div className="text-[11px] font-semibold mt-1">{fmt(o.amount)} TND</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : state.showMap ? (
+      {state.showMap ? (
         <div className="p-4"><div className="h-56 rounded-lg border border-border overflow-hidden relative bg-[linear-gradient(135deg,#e8f0e8_0%,#dce9f0_100%)] dark:bg-[linear-gradient(135deg,#1b2a1b_0%,#16242e_100%)]">
           <div className="absolute inset-0 opacity-40" style={{ backgroundImage: 'repeating-linear-gradient(0deg,transparent,transparent 28px,rgba(120,120,120,.25) 29px),repeating-linear-gradient(90deg,transparent,transparent 28px,rgba(120,120,120,.25) 29px)' }} />
           {[['28%', '40%'], ['62%', '55%'], ['46%', '70%']].map((p, i) => <div key={i} className="absolute -translate-x-1/2 -translate-y-full" style={{ left: p[0], top: p[1] }}><Map className="h-6 w-6 bg-primary text-white rounded-full p-1" /></div>)}

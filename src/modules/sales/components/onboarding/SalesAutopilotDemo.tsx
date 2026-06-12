@@ -40,12 +40,6 @@ function Pill({ s }: { s: string }) {
 const PRIO_CLS: Record<string, string> = { urgent: 'bg-red-500', high: 'bg-orange-400', medium: 'bg-blue-400', low: 'bg-gray-300' };
 const initials = (n: string) => n.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2);
 
-const KANBAN = [
-  { key: 'created', label: 'Created', items: [DEMO_SALES[2]] },
-  { key: 'in_progress', label: 'In Progress', items: [DEMO_SALES[1]] },
-  { key: 'invoiced', label: 'Invoiced', items: [DEMO_SALES[0], DEMO_SALES[4]] },
-  { key: 'closed', label: 'Closed', items: [DEMO_SALES[3]] },
-];
 
 function StatCard({ id, icon, label, value, active }: { id: string; icon: React.ReactNode; label: string; value: string; active?: boolean }) {
   return (
@@ -87,7 +81,7 @@ function PageList({ state }: { state: SalesDemoState }) {
           </div>
           <div id="sa-demo-filters" className={`h-9 px-3 rounded-md border text-sm flex items-center gap-1.5 cursor-default ${state.showFilters ? 'border-primary text-primary bg-primary/5' : 'border-border text-muted-foreground'}`}><Filter className="h-4 w-4" /> Filters</div>
           <div id="sa-demo-views" className="flex items-center gap-1 border border-border rounded-md overflow-hidden">
-            {([['list', List], ['table', TableIcon], ['kanban', LayoutGrid]] as const).map(([m, Ic]) => (
+            {([['list', List], ['table', TableIcon]] as const).map(([m, Ic]) => (
               <div key={m} className={`h-9 px-2.5 flex items-center cursor-default ${state.listView === m ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}><Ic className="h-4 w-4" /></div>
             ))}
           </div>
@@ -100,24 +94,7 @@ function PageList({ state }: { state: SalesDemoState }) {
         )}
       </div>
 
-      {state.listView === 'kanban' ? (
-        <div id="sa-demo-kanban" className="p-4 flex gap-3 overflow-x-auto">
-          {KANBAN.map(col => (
-            <div key={col.key} className="w-44 shrink-0">
-              <div className="flex items-center justify-between mb-2 px-1"><span className="text-xs font-semibold">{col.label}</span><span className="text-[10px] text-muted-foreground">{col.items.length}</span></div>
-              <div className="space-y-2 min-h-[120px] rounded-lg bg-muted/30 p-2">
-                {col.items.map(o => (
-                  <div key={o.id} id={col.key === 'in_progress' ? 'sa-demo-kanban-drag' : undefined} className={`rounded-lg border bg-card p-2 ${col.key === 'in_progress' ? 'border-primary shadow-md ring-1 ring-primary/30' : 'border-border'}`}>
-                    <div className="text-[11px] font-medium truncate">{o.title}</div>
-                    <div className="text-[10px] text-muted-foreground truncate">{o.customer}</div>
-                    <div className="text-[11px] font-semibold mt-1">{fmt(o.amount)} TND</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : state.showMap ? (
+      {state.showMap ? (
         <div className="p-4"><div className="h-56 rounded-lg border border-border overflow-hidden relative bg-[linear-gradient(135deg,#e8f0e8_0%,#dce9f0_100%)] dark:bg-[linear-gradient(135deg,#1b2a1b_0%,#16242e_100%)]">
           <div className="absolute inset-0 opacity-40" style={{ backgroundImage: 'repeating-linear-gradient(0deg,transparent,transparent 28px,rgba(120,120,120,.25) 29px),repeating-linear-gradient(90deg,transparent,transparent 28px,rgba(120,120,120,.25) 29px)' }} />
           {[['30%', '42%'], ['58%', '58%'], ['48%', '72%']].map((p, i) => <div key={i} className="absolute -translate-x-1/2 -translate-y-full" style={{ left: p[0], top: p[1] }}><Map className="h-6 w-6 bg-primary text-white rounded-full p-1" /></div>)}

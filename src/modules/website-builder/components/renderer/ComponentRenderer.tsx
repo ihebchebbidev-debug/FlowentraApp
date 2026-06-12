@@ -87,8 +87,13 @@ function ComponentRendererInner({
     </BlockErrorBoundary>
   );
 
-  // Non-editing: wrap with animation
+  // Non-editing: wrap with animation only if an animation is configured
   if (!isEditing) {
+    const anim = component.animation;
+    const hasAnimation = !!anim && (anim.entrance !== 'none' || anim.hover !== 'none');
+    if (!hasAnimation) {
+      return content;
+    }
     return (
       <div ref={animRef} style={animStyle}>
         {content}

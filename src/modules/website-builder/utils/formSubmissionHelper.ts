@@ -22,6 +22,7 @@ export interface SubmitFormOptions {
 
 export interface SubmitFormResult {
   success: boolean;
+  persisted: boolean;
   webhookStatus?: 'pending' | 'success' | 'failed';
   webhookResponse?: string;
   error?: string;
@@ -62,6 +63,7 @@ export async function submitFormData(opts: SubmitFormOptions): Promise<SubmitFor
   }
 
   // 2) Persist submission
+  let persisted = !collectSubmissions; // if we aren't collecting, "persisted" is trivially satisfied
   if (collectSubmissions) {
     // Try backend API first
     let backendSaved = false;
@@ -82,8 +84,10 @@ export async function submitFormData(opts: SubmitFormOptions): Promise<SubmitFor
       }
     }
 
-    // Fallback to localStorage if backend unavailable or no slug
-    if (!backendSaved) {
+    if (backendSaved) {
+      persisted = true;
+    } else {
+      // Fallback to localStorage if backend unavailable or no slug
       try {
         saveSubmission({
           id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -97,15 +101,23 @@ export async function submitFormData(opts: SubmitFormOptions): Promise<SubmitFor
           webhookResponse,
           source,
         });
+        persisted = true;
       } catch (err) {
         console.warn('[FormSubmission] localStorage fallback failed:', err);
+        persisted = false;
       }
     }
   }
 
+  // success requires: webhook didn't fail AND (we persisted OR a webhook succeeded)
+  const webhookOk = webhookStatus === 'success';
+  const success = webhookStatus !== 'failed' && (persisted || webhookOk);
+
   return {
-    success: webhookStatus !== 'failed',
+    success,
+    persisted,
     webhookStatus,
     webhookResponse,
+    error: success ? undefined : (webhookStatus === 'failed' ? 'Webhook delivery failed' : 'Failed to save submission'),
   };
 }

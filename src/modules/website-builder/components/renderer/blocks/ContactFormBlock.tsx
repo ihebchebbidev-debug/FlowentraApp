@@ -82,6 +82,27 @@ export function ContactFormBlock({
     e.preventDefault();
     if (isEditing) return;
 
+    // Honeypot — bots typically auto-fill all visible fields. If `website` is set, drop silently.
+    if ((formData as any)._website) {
+      setStatus('success');
+      return;
+    }
+
+    // Pre-submit validation: required fields cannot be empty/whitespace
+    const missing = fields.find(f => !(formData[f] || '').trim());
+    if (missing) {
+      toast.error(`Please fill in your ${missing}.`);
+      return;
+    }
+    // Lightweight email validation
+    if (fields.includes('email')) {
+      const email = (formData.email || '').trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        toast.error('Please enter a valid email address.');
+        return;
+      }
+    }
+
     setStatus('loading');
 
     const result = await submitFormData({
@@ -98,6 +119,7 @@ export function ContactFormBlock({
 
     if (!result.success) {
       setStatus('error');
+      if (result.error) toast.error(result.error);
     } else {
       setStatus('success');
       toast.success(successMessage);
@@ -200,15 +222,31 @@ export function ContactFormBlock({
         </div>
 
         {/* Form */}
-        <form className="space-y-4" onSubmit={handleSubmit}>
+        <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+          {/* Honeypot — hidden from real users, bots tend to fill it */}
+          <input
+            type="text"
+            name="_website"
+            tabIndex={-1}
+            autoComplete="off"
+            value={formData._website ?? ''}
+            onChange={e => handleChange('_website', e.target.value)}
+            aria-hidden="true"
+            className="absolute opacity-0 pointer-events-none h-0 w-0"
+            style={{ position: 'absolute', left: '-9999px' }}
+          />
           {fields.map((field) => (
             <div key={field}>
-              <label 
-                className="block font-medium mb-1 capitalize" 
+              <label
+                htmlFor={`${id || 'form'}-${field}`}
+                className="block font-medium mb-1 capitalize"
                 style={{ color: theme.textColor, fontSize: getScaledFontSize(14, theme) }}
               >{field}</label>
               {field === 'message' ? (
                 <textarea
+                  id={`${id || 'form'}-${field}`}
+                  required
+                  maxLength={2000}
                   className="w-full border p-3 bg-background focus:ring-2 focus:ring-primary/30 outline-none"
                   rows={4}
                   placeholder={`Your ${field}`}
@@ -219,6 +257,9 @@ export function ContactFormBlock({
                 />
               ) : (
                 <input
+                  id={`${id || 'form'}-${field}`}
+                  required
+                  maxLength={field === 'email' ? 254 : 200}
                   type={field === 'email' ? 'email' : field === 'phone' ? 'tel' : 'text'}
                   className="w-full border p-3 bg-background focus:ring-2 focus:ring-primary/30 outline-none"
                   placeholder={`Your ${field}`}

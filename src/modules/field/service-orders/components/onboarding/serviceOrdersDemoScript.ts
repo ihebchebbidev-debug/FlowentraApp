@@ -9,7 +9,7 @@ export interface SODemoState {
   selectedStat: 'all' | 'active' | 'completed';
   searchActive: boolean;
   showFilters: boolean;
-  listView: 'table' | 'list' | 'kanban' | 'map';
+  listView: 'table' | 'list' | 'map';
   bulkBar: boolean;
   createStep: number;          // 0..4
   activeTab: 'overview' | 'jobs' | 'dispatches' | 'time_expenses' | 'materials' | 'attachments' | 'checklists' | 'activity';
@@ -69,7 +69,7 @@ export const SO_STEPS: SODemoStep[] = [
   // ── Chapter 2 · Controls ───────────────────────────────────────────────────
   { target: 'so-demo-search', caption: 'Search instantly across order numbers, customers, and titles — find any job in seconds.', duration: 4000, apply: pure(() => ({ searchActive: true })) },
   { target: 'so-demo-filters', caption: 'Filters refine by status, priority, and date — surface the urgent jobs that must be scheduled or invoiced today.', duration: 4400, apply: pure(() => ({ searchActive: false, showFilters: true })) },
-  { target: 'so-demo-views', caption: 'See your orders four ways — a dense Table, a roomy List, a Kanban board by status, and a Map of every job site.', duration: 4800, apply: pure(() => ({ showFilters: false })) },
+  { target: 'so-demo-views', caption: 'See your orders three ways — a dense Table, a roomy List, and a Map of every job site.', duration: 4800, apply: pure(() => ({ showFilters: false })) },
   { target: 'so-demo-bulk', caption: 'Select several orders to act together — bulk-update status or export — with permissions respected.', duration: 4400, apply: pure(() => ({ bulkBar: true })) },
 
   // ── Chapter 3 · Map ────────────────────────────────────────────────────────

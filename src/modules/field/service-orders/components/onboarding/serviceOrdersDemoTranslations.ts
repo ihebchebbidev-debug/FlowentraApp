@@ -30,7 +30,7 @@ const CAPTIONS_FR: string[] = [
   'Le tableau des ordres liste chacun avec client, type, statut, priorité et date planifiée — coloré pour voir d’un coup ce qui est en attente, planifié, en cours ou terminé. Cliquez une ligne pour l’ouvrir.',
   'Recherchez instantanément par numéro d’ordre, client et titre — trouvez n’importe quelle intervention en quelques secondes.',
   'Les filtres affinent par statut, priorité et date — faites ressortir les jobs urgents à planifier ou facturer aujourd’hui.',
-  'Voyez vos ordres de quatre façons — un Tableau dense, une Liste aérée, un Kanban par statut, et une Carte de chaque site d’intervention.',
+  'Voyez vos ordres de trois façons — un Tableau dense, une Liste aérée, et une Carte de chaque site d’intervention.',
   'Sélectionnez plusieurs ordres pour agir ensemble — mise à jour de statut en lot ou export — dans le respect des permissions.',
   'La vue Carte place chaque ordre de service sur son site — voyez toute votre charge terrain géographiquement, regroupez les jobs proches, et planifiez des tournées efficaces.',
   'Chaque épingle est colorée par statut et cliquable — ouvrez l’ordre, voyez le client et le technicien affecté, sans quitter la carte.',

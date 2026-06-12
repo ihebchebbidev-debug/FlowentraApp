@@ -1,6 +1,7 @@
 import React from 'react';
 import { SiteTheme } from '../../../types';
 import { DynamicIcon } from '../../editor/IconPicker';
+import { sanitizeHtml } from '@/utils/sanitize';
 
 interface IconTextBlockProps {
   items: Array<{ icon: string; title: string; description: string }>;
@@ -35,7 +36,7 @@ export function IconTextBlock({ items, layout = 'horizontal', bgColor, theme, is
                 ) : (
                   <h4 className="font-semibold text-sm sm:text-base mb-1" style={{ color: theme.textColor, fontFamily: theme.headingFont }}>{item.title}</h4>
                 )}
-                <p className="text-xs sm:text-sm opacity-75" style={{ color: theme.secondaryColor }} dangerouslySetInnerHTML={{ __html: item.description }} />
+                <p className="text-xs sm:text-sm opacity-75" style={{ color: theme.secondaryColor }} dangerouslySetInnerHTML={{ __html: sanitizeHtml(item.description) }} />
               </div>
             </div>
           ))}

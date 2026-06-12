@@ -23,7 +23,7 @@ export function useEditorState({ initialComponents, onSave, resetKey }: UseEdito
   /** Signal for the canvas to scroll a freshly-added block into view. */
   const [lastAddedId, setLastAddedId] = useState<string | null>(null);
   const [clipboard, setClipboard] = useState<BuilderComponent | null>(null);
-  const [hasPendingPropChanges, setHasPendingPropChanges] = useState(false);
+  const hasPendingPropChangesRef = useRef(false);
 
   // Ref mirrors state — callbacks always read the latest value
   const componentsRef = useRef(components);
@@ -62,9 +62,13 @@ export function useEditorState({ initialComponents, onSave, resetKey }: UseEdito
 
   // ── Core helpers ──
 
+  const MAX_HISTORY = 100;
   const pushHistory = useCallback((newComponents: BuilderComponent[]) => {
-    const trimmed = historyRef.current.slice(0, historyIdxRef.current + 1);
+    let trimmed = historyRef.current.slice(0, historyIdxRef.current + 1);
     trimmed.push(newComponents);
+    if (trimmed.length > MAX_HISTORY) {
+      trimmed = trimmed.slice(trimmed.length - MAX_HISTORY);
+    }
     historyRef.current = trimmed;
     historyIdxRef.current = trimmed.length - 1;
     syncHistoryFlags();
@@ -144,25 +148,24 @@ export function useEditorState({ initialComponents, onSave, resetKey }: UseEdito
     setComponents(updated);
     componentsRef.current = updated;
     onSaveRef.current(updated);
-    setHasPendingPropChanges(true);
+    hasPendingPropChangesRef.current = true;
   }, []);
 
   const commitPropsToHistory = useCallback(() => {
-    if (hasPendingPropChanges) {
+    if (hasPendingPropChangesRef.current) {
       pushHistory(componentsRef.current);
-      setHasPendingPropChanges(false);
+      hasPendingPropChangesRef.current = false;
     }
-  }, [pushHistory, hasPendingPropChanges]);
+  }, [pushHistory]);
 
   /** Commit pending prop changes and set selection — ensures undo works for prop edits */
   const setSelectedId = useCallback((id: string | null) => {
-    // Commit any pending prop changes to history before switching selection
-    if (hasPendingPropChanges) {
+    if (hasPendingPropChangesRef.current) {
       pushHistory(componentsRef.current);
-      setHasPendingPropChanges(false);
+      hasPendingPropChangesRef.current = false;
     }
     setSelectedIdRaw(id);
-  }, [pushHistory, hasPendingPropChanges]);
+  }, [pushHistory]);
 
   const updateComponentAnimation = useCallback((id: string, animation: AnimationSettings) => {
     const updated = componentsRef.current.map(c =>
@@ -171,7 +174,7 @@ export function useEditorState({ initialComponents, onSave, resetKey }: UseEdito
     setComponents(updated);
     componentsRef.current = updated;
     onSaveRef.current(updated);
-    setHasPendingPropChanges(true);
+    hasPendingPropChangesRef.current = true;
   }, []);
 
   /** Style (dimensions/layout) updates */
@@ -182,7 +185,7 @@ export function useEditorState({ initialComponents, onSave, resetKey }: UseEdito
     setComponents(updated);
     componentsRef.current = updated;
     onSaveRef.current(updated);
-    setHasPendingPropChanges(true);
+    hasPendingPropChangesRef.current = true;
   }, []);
 
   /** Per-device visibility — hide a block on desktop / tablet / mobile. */
@@ -197,7 +200,7 @@ export function useEditorState({ initialComponents, onSave, resetKey }: UseEdito
     setComponents(updated);
     componentsRef.current = updated;
     onSaveRef.current(updated);
-    setHasPendingPropChanges(true);
+    hasPendingPropChangesRef.current = true;
   }, []);
 
   const reorderComponents = useCallback((activeId: string, overId: string) => {

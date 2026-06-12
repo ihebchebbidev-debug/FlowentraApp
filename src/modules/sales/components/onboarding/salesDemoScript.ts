@@ -9,7 +9,7 @@ export interface SalesDemoState {
   selectedStat: 'all' | 'active' | 'invoiced';
   searchActive: boolean;
   showFilters: boolean;
-  listView: 'list' | 'table' | 'kanban';
+  listView: 'list' | 'table';
   showMap: boolean;
   showExport: boolean;
   createStep: number;          // 0..4
@@ -116,7 +116,7 @@ export const SA_STEPS: SalesDemoStep[] = [
   {
     target: 'sa-demo-views',
     caption:
-      'See your sales three ways — a dense Table, a roomy List, and a Kanban board to drag deals through fulfilment.',
+      'See your sales two ways — a dense Table for scanning, or a roomy List for detail — pick the view that fits the task.',
     duration: 4600,
     apply: pure(() => ({ showFilters: false })),
   },
@@ -135,21 +135,6 @@ export const SA_STEPS: SalesDemoStep[] = [
     apply: pure(() => ({ showMap: false, showExport: true })),
   },
 
-  // ── Chapter 3 · Kanban fulfilment ──────────────────────────────────────────
-  {
-    target: 'sa-demo-kanban',
-    caption:
-      'The Kanban board tracks fulfilment visually — columns for Created, In Progress, Invoiced, and Closed, each showing its count and total value.',
-    duration: 5000,
-    apply: pure(() => ({ showExport: false, listView: 'kanban' as const })),
-  },
-  {
-    target: 'sa-demo-kanban-drag',
-    caption:
-      'Drag a sale forward as it’s fulfilled — from in progress to invoiced to closed — and the status and activity log update instantly.',
-    duration: 5000,
-    apply: pure(() => ({})),
-  },
 
   // ── Chapter 4 · Create a sale ──────────────────────────────────────────────
   {
@@ -321,11 +306,10 @@ export const SA_STEPS: SalesDemoStep[] = [
 export const SA_CHAPTERS: SalesDemoChapter[] = [
   { id: 'overview', title: 'Overview',        start: 0,  end: 6  },
   { id: 'controls', title: 'Filters & Views', start: 6,  end: 11 },
-  { id: 'kanban',   title: 'Fulfilment',      start: 11, end: 13 },
-  { id: 'create',   title: 'Raise a Sale',    start: 13, end: 19 },
-  { id: 'detail',   title: 'Detail & Status', start: 19, end: 22 },
-  { id: 'tabs',     title: 'Sale Workspace',  start: 22, end: 27 },
-  { id: 'pdf',      title: 'Invoice & PDF',   start: 27, end: 31 },
-  { id: 'convert',  title: 'To Service Order', start: 31, end: 33 },
-  { id: 'wrapup',   title: 'Wrap-up',         start: 33, end: SA_STEPS.length },
+  { id: 'create',   title: 'Raise a Sale',    start: 11, end: 17 },
+  { id: 'detail',   title: 'Detail & Status', start: 17, end: 20 },
+  { id: 'tabs',     title: 'Sale Workspace',  start: 20, end: 25 },
+  { id: 'pdf',      title: 'Invoice & PDF',   start: 25, end: 29 },
+  { id: 'convert',  title: 'To Service Order', start: 29, end: 31 },
+  { id: 'wrapup',   title: 'Wrap-up',         start: 31, end: SA_STEPS.length },
 ];

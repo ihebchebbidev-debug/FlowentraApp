@@ -1,6 +1,7 @@
 import React from 'react';
 import { SiteTheme } from '../../../types';
 import { Plus, Trash2 } from 'lucide-react';
+import { sanitizeHtml } from '@/utils/sanitize';
 
 interface TimelineItem {
   date: string;
@@ -84,10 +85,10 @@ export function TimelineBlock({ title, items, bgColor, theme, isEditing, onUpdat
                     onBlur={(e) => updateItem(i, 'description', e.currentTarget.innerHTML)}
                     className="text-sm opacity-70 mt-1 outline-none focus:ring-1 focus:ring-primary/30 rounded px-0.5"
                     style={{ color: theme.secondaryColor }}
-                    dangerouslySetInnerHTML={{ __html: item.description }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(item.description) }}
                   />
                 ) : (
-                  <p className="text-sm opacity-70 mt-1" style={{ color: theme.secondaryColor }} dangerouslySetInnerHTML={{ __html: item.description }} />
+                  <p className="text-sm opacity-70 mt-1" style={{ color: theme.secondaryColor }} dangerouslySetInnerHTML={{ __html: sanitizeHtml(item.description) }} />
                 )}
               </div>
             ))}

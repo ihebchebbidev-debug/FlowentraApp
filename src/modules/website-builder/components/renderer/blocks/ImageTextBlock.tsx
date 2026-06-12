@@ -3,6 +3,7 @@ import { SiteTheme } from '../../../types';
 import { ImageIcon, Upload } from 'lucide-react';
 import { useImageDrop } from '../../../hooks/useImageDrop';
 import { readFileAsDataUrl } from '../../../utils/imageUtils';
+import { sanitizeHtml } from '@/utils/sanitize';
 import { toast } from 'sonner';
 
 interface ImageTextBlockProps {
@@ -58,7 +59,7 @@ export function ImageTextBlock({ title, description, imageUrl, imagePosition = '
       )}
       {imageUrl ? (
         <>
-          <img src={imageUrl} alt={title} className="w-full h-full object-cover" />
+          <img src={imageUrl} alt={title || ''} className="w-full h-full object-cover" loading="lazy" />
           {isEditing && (
             <button
               onClick={handleFileInput}
@@ -104,13 +105,13 @@ export function ImageTextBlock({ title, description, imageUrl, imagePosition = '
             onBlur={(e) => onUpdate?.({ description: e.currentTarget.innerHTML })}
             className="text-base leading-relaxed opacity-80 outline-none focus:ring-1 focus:ring-primary/30 rounded px-1"
             style={{ color: theme.secondaryColor, fontFamily: theme.bodyFont }}
-            dangerouslySetInnerHTML={{ __html: description }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(description) }}
           />
         </>
       ) : (
         <>
           <h2 className="text-3xl font-bold mb-4" style={{ color: theme.textColor, fontFamily: theme.headingFont }}>{title}</h2>
-          <p className="text-base leading-relaxed opacity-80" style={{ color: theme.secondaryColor, fontFamily: theme.bodyFont }} dangerouslySetInnerHTML={{ __html: description }} />
+          <p className="text-base leading-relaxed opacity-80" style={{ color: theme.secondaryColor, fontFamily: theme.bodyFont }} dangerouslySetInnerHTML={{ __html: sanitizeHtml(description) }} />
         </>
       )}
     </div>

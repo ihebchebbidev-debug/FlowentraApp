@@ -11,27 +11,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { generateReactProjectWithStats } from '../utils/export/reactExporter';
-import { generateSiteHtmlWithStats } from '../utils/export/htmlExporter';
-import { downloadAsZip } from '../utils/export/zipHelper';
-import type { ExportProgress } from '../utils/export/types';
 import { ExportOptionsDialog, type ExportSettings, type ExportFormat } from './ExportOptionsDialog';
-import { ExportProgressDialog } from './ExportProgressDialog';
-
-function getMimeType(path: string): string {
-  const ext = path.split('.').pop()?.toLowerCase() || '';
-  const map: Record<string, string> = {
-    html: 'text/html', css: 'text/css', js: 'application/javascript',
-    json: 'application/json', svg: 'image/svg+xml', png: 'image/png',
-    jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif',
-    webp: 'image/webp', ico: 'image/x-icon', txt: 'text/plain',
-  };
-  return map[ext] || 'application/octet-stream';
-}
-
-function replaceAll(str: string, search: string, replacement: string): string {
-  return str.split(search).join(replacement);
-}
+import { ExportPreviewDialog } from './ExportPreviewDialog';
 
 interface PublishDialogProps {
   site: WebsiteSite;
@@ -44,13 +25,10 @@ export function PublishDialog({ site, open, onOpenChange, onSiteUpdate }: Publis
   const { t } = useTranslation();
   const [isCopied, setIsCopied] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
-  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
-  const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
   const [exportOptionsOpen, setExportOptionsOpen] = useState(false);
   const [exportInitialFormat, setExportInitialFormat] = useState<ExportFormat>('html');
-  const [progressDialogOpen, setProgressDialogOpen] = useState(false);
-  const [exportFormat, setExportFormat] = useState<'html' | 'react'>('html');
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [previewSettings, setPreviewSettings] = useState<ExportSettings | null>(null);
 
   const publicUrl = `${window.location.origin}/public/sites/${site.slug}`;
   const totalComponents = site.pages.reduce((sum, p) => sum + (Array.isArray(p.components) ? p.components.length : 0), 0);
@@ -87,46 +65,17 @@ export function PublishDialog({ site, open, onOpenChange, onSiteUpdate }: Publis
     } catch { toast.error(t('wb:common.failedToCopy')); }
   };
 
-  const openExportOptions = (format: ExportFormat) => { setExportInitialFormat(format); setExportOptionsOpen(true); };
+  const openExportOptions = (format: ExportFormat) => {
+    setExportInitialFormat(format);
+    setExportOptionsOpen(true);
+  };
 
-  const handleExportWithSettings = useCallback(async (settings: ExportSettings) => {
-    setIsExporting(true); setExportFormat('react'); setProgressDialogOpen(true); setExportProgress(null);
-    try {
-      const result = await generateReactProjectWithStats(site, (progress) => { setExportProgress(progress); }, { imageOptimization: settings.imageOptimization, platform: settings.platform });
-      setExportProgress({ phase: 'complete', current: result.files.length, total: result.files.length, message: `Export complete! ${result.files.length} files, ${result.stats.imageCount} images extracted.`, fileCount: result.files.length, imageCount: result.stats.imageCount });
-      await new Promise(resolve => setTimeout(resolve, 500));
-      await downloadAsZip(result.files, `${site.slug || 'website'}-react.zip`);
-      toast.success(t('wb:publish.reactProjectDownloaded'));
-      setProgressDialogOpen(false);
-    } catch (err: any) { setProgressDialogOpen(false); toast.error(t('wb:publish.exportFailed') + ': ' + (err.message || 'Unknown error')); }
-    finally { setIsExporting(false); setExportProgress(null); }
-  }, [site, t]);
-
-  const handlePreview = useCallback(async (settings: ExportSettings) => {
-    setIsPreviewLoading(true);
-    try {
-      const result = await generateSiteHtmlWithStats(site, undefined, { imageOptimization: settings.imageOptimization, platform: settings.platform });
-      const indexFile = result.files.find(f => f.path === 'index.html');
-      if (!indexFile || typeof indexFile.content !== 'string') { toast.error(t('wb:publish.noIndexPage')); return; }
-      const assetMap = new Map<string, string>();
-      for (const file of result.files) {
-        if (file.path === 'index.html') continue;
-        if (typeof file.content === 'string') { const blob = new Blob([file.content], { type: getMimeType(file.path) }); assetMap.set(file.path, URL.createObjectURL(blob)); }
-        else if (file.content instanceof Uint8Array) { const blob = new Blob([file.content.buffer as ArrayBuffer], { type: getMimeType(file.path) }); assetMap.set(file.path, URL.createObjectURL(blob)); }
-      }
-      let html = indexFile.content;
-      for (const [path, blobUrl] of assetMap) { html = replaceAll(html, `"${path}"`, `"${blobUrl}"`); html = replaceAll(html, `'${path}'`, `'${blobUrl}'`); html = replaceAll(html, `url(${path})`, `url(${blobUrl})`); }
-      const cssFile = result.files.find(f => f.path === 'styles.css');
-      if (cssFile && typeof cssFile.content === 'string') { let cssContent = cssFile.content; for (const [path, blobUrl] of assetMap) { cssContent = replaceAll(cssContent, path, blobUrl); } html = html.replace(/<link[^>]*href="[^"]*styles\.css"[^>]*\/?>/i, `<style>${cssContent}</style>`); }
-      const jsFile = result.files.find(f => f.path === 'scripts.js');
-      if (jsFile && typeof jsFile.content === 'string') { html = html.replace(/<script[^>]*src="[^"]*scripts\.js"[^>]*><\/script>/i, `<script>${jsFile.content}</script>`); }
-      const blob = new Blob([html], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
-      toast.success(t('wb:publish.previewOpened'));
-    } catch (err: any) { toast.error(t('wb:publish.previewFailed') + ': ' + (err.message || 'Unknown error')); }
-    finally { setIsPreviewLoading(false); }
-  }, [site, t]);
+  /** Both "Export" and "Preview" route through the same preview-first modal. */
+  const openPreviewWithSettings = useCallback((settings: ExportSettings) => {
+    setPreviewSettings(settings);
+    setPreviewDialogOpen(true);
+    setExportOptionsOpen(false);
+  }, []);
 
   return (
     <>
@@ -178,7 +127,7 @@ export function PublishDialog({ site, open, onOpenChange, onSiteUpdate }: Publis
             </div>
             <div className="pt-2 border-t space-y-2">
               <Label className="text-xs text-muted-foreground">{t('wb:publish.export')}</Label>
-              <Button onClick={() => openExportOptions('react')} disabled={isExporting} variant="outline" className="w-full text-xs" size="sm">
+              <Button onClick={() => openExportOptions('react')} variant="outline" className="w-full text-xs" size="sm">
                 <FileCode className="h-3.5 w-3.5 mr-1.5" />{t('wb:publish.exportReactProject')}
               </Button>
               <p className="text-[10px] text-muted-foreground text-center">{t('wb:publish.exportDesc')}</p>
@@ -191,8 +140,27 @@ export function PublishDialog({ site, open, onOpenChange, onSiteUpdate }: Publis
           </div>
         </DialogContent>
       </Dialog>
-      <ExportOptionsDialog open={exportOptionsOpen} onOpenChange={setExportOptionsOpen} onExport={handleExportWithSettings} onPreview={handlePreview} isPreviewLoading={isPreviewLoading} pageCount={site.pages.length} componentCount={totalComponents} initialFormat={exportInitialFormat} />
-      <ExportProgressDialog open={progressDialogOpen} onOpenChange={setProgressDialogOpen} progress={exportProgress} format={exportFormat} />
+
+      <ExportOptionsDialog
+        open={exportOptionsOpen}
+        onOpenChange={setExportOptionsOpen}
+        onExport={openPreviewWithSettings}
+        onPreview={openPreviewWithSettings}
+        isPreviewLoading={false}
+        pageCount={site.pages.length}
+        componentCount={totalComponents}
+        initialFormat={exportInitialFormat}
+      />
+
+      <ExportPreviewDialog
+        site={site}
+        settings={previewSettings}
+        open={previewDialogOpen}
+        onOpenChange={(o) => {
+          setPreviewDialogOpen(o);
+          if (!o) setPreviewSettings(null);
+        }}
+      />
     </>
   );
 }

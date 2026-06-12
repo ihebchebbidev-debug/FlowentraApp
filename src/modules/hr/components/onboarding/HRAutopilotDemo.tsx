@@ -413,16 +413,20 @@ function PageEmployeeDetail({ state }: { state: HRDemoState }) {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-0 border-b border-border/60 -mb-px">
+      <div className="flex gap-0 border-b border-border/60 -mb-px overflow-x-auto">
         {[
-          { key: 'profile',   label: 'Profile'    },
-          { key: 'salary',    label: 'Salary',    id: 'hr-demo-emp-tab-salary'  },
-          { key: 'documents', label: 'Documents', id: 'hr-demo-emp-tab-docs'   },
+          { key: 'profile',   label: 'Profile'   },
+          { key: 'salary',    label: 'Salary',    id: 'hr-demo-emp-tab-salary'   },
+          { key: 'documents', label: 'Documents', id: 'hr-demo-emp-tab-docs'     },
+          { key: 'cnss',      label: 'CNSS',      id: 'hr-demo-emp-tab-cnss'     },
+          { key: 'bonuses',   label: 'Bonuses',   id: 'hr-demo-emp-tab-bonuses'  },
+          { key: 'leaves',    label: 'Leaves',    id: 'hr-demo-emp-tab-leaves'   },
+          { key: 'history',   label: 'History',   id: 'hr-demo-emp-tab-history'  },
         ].map(t => (
           <div
             key={t.key}
             id={(t as any).id}
-            className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors cursor-default
+            className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors cursor-default whitespace-nowrap
               ${tab === t.key ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground'}`}
           >
             {t.label}
@@ -505,6 +509,111 @@ function PageEmployeeDetail({ state }: { state: HRDemoState }) {
                   <p className="text-[10px] text-muted-foreground">{d.cat} · {d.date} · {d.by}</p>
                 </div>
                 <Download className="h-3.5 w-3.5 text-muted-foreground cursor-default" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {tab === 'cnss' && (
+        <div className="bg-card border border-border rounded-lg p-4 space-y-3 text-xs">
+          <p className="text-xs font-semibold mb-2">CNSS Profile</p>
+          {[
+            ['CNSS Number',        '123456789'],
+            ['Affiliation Date',   emp.hireDate],
+            ['Dependants',         '2'],
+            ['Employee Rate',      '9.18%'],
+            ['Employer Rate',      '16.57%'],
+            ['Quarterly Status',   'Declared'],
+          ].map(([k, v]) => (
+            <div key={k} className="flex justify-between">
+              <span className="text-muted-foreground">{k}</span>
+              <span className="font-medium text-foreground">{v}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'bonuses' && (
+        <div className="bg-card border border-border rounded-lg overflow-hidden">
+          <div className="px-4 py-3 border-b border-border/60 text-sm font-medium">Personal Bonus History</div>
+          <table className="w-full text-xs">
+            <thead><tr className="bg-muted/30 border-b border-border/60">
+              <th className="text-left px-4 py-2 text-muted-foreground font-medium">Month</th>
+              <th className="text-left px-4 py-2 text-muted-foreground font-medium">Type</th>
+              <th className="text-right px-4 py-2 text-muted-foreground font-medium">Amount</th>
+              <th className="text-left px-4 py-2 text-muted-foreground font-medium">Payroll Run</th>
+            </tr></thead>
+            <tbody>
+              {DEMO_BONUSES.filter(b => b.employee === emp.name).map(b => (
+                <tr key={b.id} className="border-b border-border/40 last:border-0">
+                  <td className="px-4 py-2">{b.month}</td>
+                  <td className="px-4 py-2 text-muted-foreground">{b.type}</td>
+                  <td className="px-4 py-2 text-right font-medium text-green-700">+{fmtTnd(b.amount)} TND</td>
+                  <td className="px-4 py-2 text-muted-foreground">{b.included ? `${b.month} run` : '—'}</td>
+                </tr>
+              ))}
+              {DEMO_BONUSES.filter(b => b.employee === emp.name).length === 0 && (
+                <tr><td colSpan={4} className="px-4 py-4 text-center text-muted-foreground">No bonuses recorded yet.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {tab === 'leaves' && (
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="bg-card border border-border rounded-lg p-4 space-y-3 text-xs">
+            <p className="text-xs font-semibold mb-2">Balances (2025)</p>
+            {[
+              ['Annual',      '12 / 21 days'],
+              ['Sick',        '4 / 6 days'],
+              ['Maternity',   '0 / 30 days'],
+              ['Exceptional', '2 / 3 days'],
+            ].map(([k, v]) => (
+              <div key={k} className="flex justify-between">
+                <span className="text-muted-foreground">{k}</span>
+                <span className="font-medium text-foreground">{v}</span>
+              </div>
+            ))}
+          </div>
+          <div className="bg-card border border-border rounded-lg overflow-hidden">
+            <div className="px-4 py-3 border-b border-border/60 text-sm font-medium">Recent History</div>
+            <div className="divide-y divide-border/40">
+              {DEMO_LEAVES.filter(l => l.employee === emp.name).map(l => (
+                <div key={l.id} className="flex items-center justify-between px-4 py-2.5 text-xs">
+                  <div>
+                    <p className="font-medium">{l.type}</p>
+                    <p className="text-[10px] text-muted-foreground">{l.start} → {l.end} · {l.days}d</p>
+                  </div>
+                  <StatusBadge status={l.status} />
+                </div>
+              ))}
+              {DEMO_LEAVES.filter(l => l.employee === emp.name).length === 0 && (
+                <p className="px-4 py-4 text-center text-muted-foreground text-xs">No leaves recorded.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tab === 'history' && (
+        <div className="bg-card border border-border rounded-lg overflow-hidden">
+          <div className="px-4 py-3 border-b border-border/60 text-sm font-medium">Change Audit Log</div>
+          <div className="divide-y divide-border/40 text-xs">
+            {[
+              { date: '2025-05-01', who: 'HR Admin',     change: 'Gross salary updated', from: '4,300 TND', to: '4,500 TND' },
+              { date: '2024-09-15', who: 'Amira B.',     change: 'Job title changed',    from: 'HR Lead',   to: 'HR Manager' },
+              { date: '2024-01-10', who: 'System',       change: 'Department reassigned',from: 'Operations',to: 'Engineering' },
+              { date: emp.hireDate, who: 'HR Admin',     change: 'Employee created',     from: '—',         to: emp.title },
+            ].map((h, i) => (
+              <div key={i} className="grid grid-cols-[80px_1fr_auto] gap-3 px-4 py-2.5 items-center">
+                <span className="text-muted-foreground">{h.date}</span>
+                <div>
+                  <p className="font-medium">{h.change}</p>
+                  <p className="text-[10px] text-muted-foreground">{h.from} → {h.to}</p>
+                </div>
+                <span className="text-[10px] text-muted-foreground">{h.who}</span>
               </div>
             ))}
           </div>
@@ -857,7 +966,7 @@ function PagePayroll({ state }: { state: HRDemoState }) {
           <div className="flex items-center justify-between mb-4">
             <div>
               <p className="text-sm font-semibold">Payslip — Amira Ben Ali</p>
-              <p className="text-xs text-muted-foreground">June 2025 · HR Manager · CDI</p>
+              <p id="hr-demo-payslip-pdf-format" className="text-xs text-muted-foreground">Bilingual FR/AR · Company header · Net pay in words · Signature space</p>
             </div>
             <div className="h-8 px-3 rounded-md border border-border flex items-center gap-1.5 text-xs text-muted-foreground cursor-default">
               <FileDown className="h-3.5 w-3.5" /> PDF
@@ -939,6 +1048,22 @@ function PagePayroll({ state }: { state: HRDemoState }) {
               })}
             </tbody>
           </table>
+        </div>
+
+        <div id="hr-demo-payroll-settings" className="mt-5 bg-card border border-border rounded-lg p-4 text-xs space-y-2">
+          <p className="text-sm font-semibold mb-2 flex items-center gap-2"><Settings className="h-3.5 w-3.5 text-slate-500" />Payroll Calculation Rules</p>
+          {[
+            ['Overtime multiplier',  '1.5×'],
+            ['Holiday-day rate',     '2.0×'],
+            ['Working-days base',    '22 days/month'],
+            ['Rounding policy',      'Nearest TND'],
+            ['Net rounding',         'Round half up'],
+          ].map(([k, v]) => (
+            <div key={k} className="flex justify-between">
+              <span className="text-muted-foreground">{k}</span>
+              <span className="font-medium text-foreground">{v}</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -1382,6 +1507,20 @@ function PageReports() {
         </div>
       </div>
 
+      {/* Report tabs */}
+      <div className="flex gap-0 border-b border-border/60 -mb-px overflow-x-auto">
+        {[
+          { key: 'overview', label: 'Overview' },
+          { key: 'cost',     label: 'Cost',     id: 'hr-demo-report-cost-tab' },
+          { key: 'cnss',     label: 'CNSS & Absences', id: 'hr-demo-report-cnss-absences' },
+        ].map(t => (
+          <div key={t.key} id={(t as any).id} className="px-4 py-2 text-xs font-medium border-b-2 border-transparent text-muted-foreground first:border-primary first:text-foreground whitespace-nowrap cursor-default">
+            {t.label}
+          </div>
+        ))}
+      </div>
+
+
       <div className="grid md:grid-cols-2 gap-5">
         <div className="bg-card border border-border rounded-lg p-4">
           <p id="hr-demo-report-headcount" className="text-sm font-semibold mb-4">Headcount by Department</p>
@@ -1438,11 +1577,20 @@ function PageSettings() {
     <div className="p-4 md:p-6 space-y-5 max-w-4xl mx-auto">
       <div className="flex items-center gap-3">
         <Settings className="h-5 w-5 text-slate-500" />
-        <div>
+        <div className="flex-1">
           <h1 className="text-lg font-semibold">HR Settings</h1>
           <p className="text-xs text-muted-foreground">Leave types, holidays, payroll rules, and CNSS configuration</p>
         </div>
       </div>
+
+      <div id="hr-demo-settings-tabs" className="flex gap-0 border-b border-border/60 -mb-px overflow-x-auto">
+        {['Leave Types', 'CNSS Rates', 'Public Holidays', 'General'].map((t, i) => (
+          <div key={t} className={`px-4 py-2 text-xs font-medium border-b-2 whitespace-nowrap cursor-default ${i === 0 ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground'}`}>
+            {t}
+          </div>
+        ))}
+      </div>
+
 
       <div className="grid md:grid-cols-2 gap-5">
         <div className="bg-card border border-border rounded-lg overflow-hidden">

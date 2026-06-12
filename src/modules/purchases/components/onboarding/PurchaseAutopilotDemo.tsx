@@ -1755,7 +1755,7 @@ function PageOrderTejXml({ state }: { state: PurchaseDemoState }) {
         <XmlElem n={19} indent={2} name="MoisDepot" value="05" />
         <XmlLine n={20} indent={1} content={<XmlTag name="ReferenceDeclaration" close />} />
         <XmlLine n={21} indent={1} highlight={h===15} content={<XmlTag name="AjouterCertificats" />} />
-        <XmlLine n={22} indent={2} highlight={h===15} content={<XmlTag name="Certificat" />} />
+        <XmlLine n={22} indent={2} highlight={h===15} content={<span id="po-demo-tej-xml-cert"><XmlTag name="Certificat" /></span>} />
         <XmlElem n={23} indent={3} name="RefCertifChezDeclarant" value="CRT-2025-002" highlight={h===15} />
         <XmlElem n={24} indent={3} name="AnneeFacturation" value="2025" highlight={h===15} />
         <XmlElem n={25} indent={3} name="IdTypeOperation" value="RS1_500000" highlight={h===15} />
@@ -1839,7 +1839,7 @@ function PageInvoiceTejXml({ state }: { state: PurchaseDemoState }) {
         <XmlElem n={17} indent={2} name="MoisDepot" value="05" />
         <XmlLine n={18} indent={1} content={<XmlTag name="ReferenceDeclaration" close />} />
         <XmlLine n={19} indent={1} content={<XmlTag name="AjouterCertificats" />} />
-        <XmlLine n={20} indent={2} highlight={h===18} content={<XmlTag name="Certificat" />} />
+        <XmlLine n={20} indent={2} highlight={h===18} content={<span id="po-demo-itej-cert"><XmlTag name="Certificat" /></span>} />
         <XmlElem n={21} indent={3} name="RefCertifChezDeclarant" value="CRT-2025-002" highlight={h===18} />
         <XmlElem n={22} indent={3} name="AnneeFacturation" value="2025" highlight={h===18} />
         <XmlElem n={23} indent={3} name="IdTypeOperation" value="RS1_500000" highlight={h===18} />

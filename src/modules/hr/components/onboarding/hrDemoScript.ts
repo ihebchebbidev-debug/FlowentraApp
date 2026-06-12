@@ -1,4 +1,4 @@
-// HR module autopilot demo — 11 chapters, 54 steps.
+// HR module autopilot demo — 12 chapters, 63 steps.
 
 export type HRDemoPage =
   | 'dashboard'

@@ -185,6 +185,13 @@ export const BLOCK_MAP: Record<string, LazyBlock> = {
   ...USER_BLOCKS,
   ...ADVANCED_BLOCKS,
   ...INTEGRATION_BLOCKS,
-  // Legacy alias
-  carousel: lazyBlock(() => import('./blocks/HeroBlock'), 'HeroBlock'),
+  // Legacy alias — deprecated, will be removed in a future release.
+  // 'carousel' was the old type id for what is now 'hero'. Existing sites still using
+  // this type continue to render as HeroBlock so they never break.
+  carousel: lazyBlock(() => {
+    if (typeof console !== 'undefined') {
+      console.warn('[blockRegistry] Block type "carousel" is deprecated — please migrate to "hero".');
+    }
+    return import('./blocks/HeroBlock');
+  }, 'HeroBlock'),
 };

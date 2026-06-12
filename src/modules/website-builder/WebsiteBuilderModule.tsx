@@ -60,29 +60,25 @@ export function WebsiteBuilderModule() {
     setEditingSite(updatedSite);
   };
 
-  if (editingSite) {
-    return (
+  return (
     <PluginGate code="PL0038WEBSITEBLDR">
-        <div className="h-[calc(100vh-4rem)]">
+      {editingSite ? (
+        <div className="h-[calc(100dvh-4rem)]">
           <SiteEditor
             site={editingSite}
             onBack={handleBack}
             onSiteUpdate={handleSiteUpdate}
           />
         </div>
-        </PluginGate>
+      ) : !providersReady ? (
+        <div className="flex items-center justify-center h-[calc(100dvh-4rem)]">
+          <div className="h-8 w-8 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+        </div>
+      ) : (
+        <SiteManager onEditSite={handleEditSite} />
+      )}
+    </PluginGate>
   );
-  }
-
-  if (!providersReady) {
-    return (
-      <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
-        <div className="h-8 w-8 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
-      </div>
-    );
-  }
-
-  return <SiteManager onEditSite={handleEditSite} />;
 }
 
 export default WebsiteBuilderModule;
