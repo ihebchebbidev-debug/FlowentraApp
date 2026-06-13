@@ -28,7 +28,9 @@ import {
   DEFAULT_PLANNING_SETTINGS,
   type PlanningProfile,
   type PlanningProfileSettings,
+  type PlanningCardField,
 } from '../../types/planningProfile';
+import { PLANNING_CARD_FIELD_OPTIONS, planningFieldLabel } from '../../utils/planningCardFields';
 
 interface Props {
   open: boolean;
@@ -63,7 +65,12 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
   );
 
   useEffect(() => {
-    if (selected) setDraft(JSON.parse(JSON.stringify(selected)));
+    if (selected) {
+      const clone = JSON.parse(JSON.stringify(selected)) as PlanningProfile;
+      // Backfill any settings keys added after this profile was saved.
+      clone.settings = { ...DEFAULT_PLANNING_SETTINGS, ...(clone.settings ?? {}) };
+      setDraft(clone);
+    }
   }, [selected]);
 
   useEffect(() => {
@@ -389,6 +396,64 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
                               </Select>
                             </div>
                           </div>
+
+                          {/* Card display — configurable label + hover content */}
+                          <div className="border-t pt-4 space-y-3">
+                            <Label className="text-sm font-semibold">{t('dispatcher.profiles.card_display', { defaultValue: 'Card display' })}</Label>
+
+                            <div>
+                              <Label className="text-xs text-muted-foreground">{t('dispatcher.profiles.card_label_fields', { defaultValue: 'Label shows' })}</Label>
+                              <div className="flex flex-wrap gap-1.5 mt-1.5">
+                                {PLANNING_CARD_FIELD_OPTIONS.map(opt => {
+                                  const cur = draft.settings.cardPrimaryFields ?? [];
+                                  const selected = cur.includes(opt.value);
+                                  const idx = cur.indexOf(opt.value);
+                                  return (
+                                    <button
+                                      type="button"
+                                      key={opt.value}
+                                      onClick={() => updateSetting('cardPrimaryFields', selected ? cur.filter(f => f !== opt.value) : [...cur, opt.value] as PlanningCardField[])}
+                                      className={`text-xs px-2 py-1 rounded-md border transition-colors ${selected ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-muted-foreground hover:bg-muted'}`}
+                                    >
+                                      {selected && <span className="mr-1 text-[10px] opacity-80">{idx + 1}</span>}{opt.label}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                              <p className="text-[11px] text-muted-foreground mt-1">{t('dispatcher.profiles.card_label_hint', { defaultValue: 'Click in the order you want them shown.' })}</p>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <Label className="text-xs text-muted-foreground w-24 shrink-0">{t('dispatcher.profiles.card_separator', { defaultValue: 'Separator' })}</Label>
+                              <Input className="h-8 w-24" value={draft.settings.cardSeparator ?? ' · '} onChange={e => updateSetting('cardSeparator', e.target.value)} />
+                              <span className="text-xs text-muted-foreground truncate">
+                                {(draft.settings.cardPrimaryFields ?? []).map(f => planningFieldLabel(f)).join(draft.settings.cardSeparator ?? ' · ') || '—'}
+                              </span>
+                            </div>
+
+                            <div>
+                              <Label className="text-xs text-muted-foreground">{t('dispatcher.profiles.hover_fields', { defaultValue: 'Hover shows' })}</Label>
+                              <div className="flex flex-wrap gap-1.5 mt-1.5">
+                                {PLANNING_CARD_FIELD_OPTIONS.map(opt => {
+                                  const cur = draft.settings.hoverFields ?? [];
+                                  const selected = cur.includes(opt.value);
+                                  return (
+                                    <button
+                                      type="button"
+                                      key={opt.value}
+                                      onClick={() => updateSetting('hoverFields', selected ? cur.filter(f => f !== opt.value) : [...cur, opt.value] as PlanningCardField[])}
+                                      className={`text-xs px-2 py-1 rounded-md border transition-colors ${selected ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-muted-foreground hover:bg-muted'}`}
+                                    >
+                                      {opt.label}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            <ToggleRow label={t('dispatcher.profiles.show_jobs_on_hover', { defaultValue: 'List a service order’s jobs on hover' })} checked={draft.settings.showJobsOnHover ?? true} onChange={v => updateSetting('showJobsOnHover', v)} />
+                          </div>
+
                           <div className="border-t pt-4 space-y-3">
                             <ToggleRow label={t('dispatcher.profiles.include_weekends', { defaultValue: 'Include weekends' })} checked={draft.settings.includeWeekends} onChange={v => updateSetting('includeWeekends', v)} />
                             <ToggleRow label={t('dispatcher.profiles.show_closed_dispatches', { defaultValue: 'Display closed dispatches' })} checked={draft.settings.displayClosedDispatches} onChange={v => updateSetting('displayClosedDispatches', v)} />

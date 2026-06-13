@@ -30,7 +30,15 @@
       "Bash(head-20)",
       "Bash(grep -rniE \"Jint\" Backend/*.csproj Backend/**/*.csproj)",
       "Bash(sed -n '1925,1980p' Backend/Modules/WorkflowEngine/Services/WorkflowNodeExecutor.cs)",
-      "Bash(node -e \"const m=require\\('fs'\\).readFileSync\\('src/modules/deals/components/onboarding/dealsDemoTranslations.ts','utf8'\\);const b=m.split\\('CAPTIONS_FR: string[] = ['\\)[1].split\\('];'\\)[0];console.log\\(\\(b.match\\(/^\\\\s*\\\\x27/gm\\)||[]\\).length\\)\")"
+      "Bash(node -e \"const m=require\\('fs'\\).readFileSync\\('src/modules/deals/components/onboarding/dealsDemoTranslations.ts','utf8'\\);const b=m.split\\('CAPTIONS_FR: string[] = ['\\)[1].split\\('];'\\)[0];console.log\\(\\(b.match\\(/^\\\\s*\\\\x27/gm\\)||[]\\).length\\)\")",
+      "Bash(awk -F\"'\" 'BEGIN{i=0} {print i\": \"$2; i++}')",
+      "Bash(node -e \"const m=require\\('fs'\\).readFileSync\\('src/modules/dispatcher/components/onboarding/planningDemoTranslations.ts','utf8'\\);const b=m.split\\(/CAPTIONS_FR[^\\\\[]*\\\\[/\\)[1].split\\('];'\\)[0];const lines=b.split\\(/\\\\n/\\).filter\\(l=>l.trim\\(\\).startsWith\\(String.fromCharCode\\(39\\)\\)\\);lines.forEach\\(\\(l,i\\)=>{if\\([16,17,18,33,34,35].includes\\(i\\)\\)console.log\\(i+': '+l.trim\\(\\).slice\\(0,80\\)\\)}\\)\")",
+      "Bash(node -e \"const m=require\\('fs'\\).readFileSync\\('src/modules/dispatcher/components/onboarding/planningDemoTranslations.ts','utf8'\\);const b=m.split\\(/CAPTIONS_FR[^\\\\[]*\\\\[/\\)[1].split\\('];'\\)[0];console.log\\(b.split\\(/\\\\n/\\).filter\\(l=>l.trim\\(\\).startsWith\\(String.fromCharCode\\(39\\)\\)\\).length\\)\")",
+      "Bash(grep -nE \"const render|function render|soLabel|serviceOrderData|=> \\\\{$|renderPlannedOrder|renderServiceOrder\" src/modules/dispatcher/components/UnassignedJobsList.tsx)",
+      "Bash(grep -nE \"groupedData.map\\\\\\(\\\\\\(serviceOrderData|^              \\\\\\)\\\\\\)$|^            \\\\\\)\\\\}$\" src/modules/dispatcher/components/UnassignedJobsList.tsx)",
+      "Bash(grep -nE \"^              \\\\\\)\\\\\\)$\" src/modules/dispatcher/components/UnassignedJobsList.tsx)",
+      "Bash(awk -F\"'\" 'BEGIN{i=0}{print i\": \"$2; i++}')",
+      "Bash(node -e \"const m=require\\('fs'\\).readFileSync\\('src/modules/dispatcher/components/onboarding/planningDemoTranslations.ts','utf8'\\);const b=m.split\\(/CAPTIONS_FR[^\\\\[]*\\\\[/\\)[1].split\\('];'\\)[0];const lines=b.split\\(/\\\\n/\\).filter\\(l=>l.trim\\(\\).startsWith\\(String.fromCharCode\\(39\\)\\)\\);console.log\\('idx16:',lines[16].trim\\(\\)\\)\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\iheb.chebbi\\Desktop\\FlowentraApp\\Backend\\Modules\\Offers\\DTOs"

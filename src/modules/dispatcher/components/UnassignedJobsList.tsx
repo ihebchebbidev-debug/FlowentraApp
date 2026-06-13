@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, Fragment } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,8 @@ import {
 } from "lucide-react";
 
 import type { Job, ServiceOrder, InstallationGroup } from "../types";
+import { usePlanningDisplay } from "../context/PlanningDisplayContext";
+import { formatCardLabel, buildHoverRows } from "../utils/planningCardFields";
 import { DispatcherService } from "../services/dispatcher.service";
 import { JobMappingService } from "../services/job-mapping.service";
 import { cn } from "@/lib/utils";
@@ -60,10 +62,15 @@ export function UnassignedJobsList({
   conversionMode = 'installation'
 }: UnassignedJobsListProps) {
   const { t } = useTranslation();
+  const display = usePlanningDisplay();
   const [expandedServiceOrders, setExpandedServiceOrders] = useState<Set<string>>(new Set());
   const [expandedInstallations, setExpandedInstallations] = useState<Set<string>>(new Set(['__all__']));
   const [searchTerm, setSearchTerm] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<'so' | 'priority' | 'newest' | 'oldest' | 'customer' | 'duration'>("so");
+  const [groupBy, setGroupBy] = useState<'none' | 'contact' | 'status' | 'priority' | 'created'>("none");
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [_isDragging, setIsDragging] = useState(false);
   const [showPlanned, setShowPlanned] = useState(true);
   const [plannedOrders, setPlannedOrders] = useState<ServiceOrder[]>([]);
@@ -107,16 +114,88 @@ export function UnassignedJobsList({
       })
       .filter(order => {
         if (priorityFilter !== 'all' && (order.priority || 'medium') !== priorityFilter) return false;
+        if (statusFilter !== 'all' && (order.status || '') !== statusFilter) return false;
         if (!searchLower) return true;
+        // Search spans order id/title, customer name, and any job title — so "by contact"
+        // works by typing the customer here.
         const matchesOrderId = order.id.toLowerCase().includes(searchLower);
         const matchesOrderTitle = order.title.toLowerCase().includes(searchLower);
+        const matchesCustomer = (order.customerName || '').toLowerCase().includes(searchLower);
         const matchesJobTitle = order.unassignedJobs.some(job =>
           job.title.toLowerCase().includes(searchLower)
         );
-        return matchesOrderId || matchesOrderTitle || matchesJobTitle;
+        return matchesOrderId || matchesOrderTitle || matchesCustomer || matchesJobTitle;
+      })
+      .sort((a, b) => {
+        const prioRank: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3 };
+        const ms = (d: any) => { const t = new Date(d).getTime(); return isNaN(t) ? 0 : t; };
+        switch (sortBy) {
+          case 'priority': return (prioRank[a.priority] ?? 2) - (prioRank[b.priority] ?? 2);
+          case 'newest':   return ms(b.createdAt) - ms(a.createdAt);
+          case 'oldest':   return ms(a.createdAt) - ms(b.createdAt);
+          case 'customer': return (a.customerName || '').localeCompare(b.customerName || '');
+          case 'duration': return (b.totalEstimatedDuration || 0) - (a.totalEstimatedDuration || 0);
+          default:         return (a.title || '').localeCompare(b.title || '');
+        }
       });
     // jobs reference changes whenever the parent reloads unassigned jobs (= SO cache version).
-  }, [jobs, searchTerm, priorityFilter]);
+  }, [jobs, searchTerm, priorityFilter, statusFilter, sortBy]);
+
+  // ── Section grouping (collapsible headers above the service-order cards) ──
+  type SOGroup = (typeof groupedData)[number];
+  const getSection = (so: SOGroup): { key: string; label: string } => {
+    switch (groupBy) {
+      case 'contact': {
+        const c = so.customerName || t('dispatcher.unknown_customer', 'Unknown customer');
+        return { key: `c:${c}`, label: c };
+      }
+      case 'status': {
+        const s = so.status || 'ready_for_planning';
+        return { key: `s:${s}`, label: t(`serviceOrders.status.${s}`, s.replace(/_/g, ' ')) };
+      }
+      case 'priority': {
+        const p = so.priority || 'medium';
+        return { key: `p:${p}`, label: t(`dispatcher.priority_${p}`, p) };
+      }
+      case 'created': {
+        const d = new Date(so.createdAt);
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        const day = new Date(d); day.setHours(0, 0, 0, 0);
+        const diff = Math.round((today.getTime() - day.getTime()) / 86400000);
+        if (isNaN(diff)) return { key: 'd:unknown', label: t('dispatcher.group_no_date', 'No date') };
+        if (diff <= 0) return { key: 'd:today', label: t('dispatcher.group_today', 'Today') };
+        if (diff === 1) return { key: 'd:yesterday', label: t('dispatcher.group_yesterday', 'Yesterday') };
+        if (diff <= 7) return { key: 'd:week', label: t('dispatcher.group_this_week', 'Earlier this week') };
+        if (diff <= 30) return { key: 'd:month', label: t('dispatcher.group_this_month', 'Earlier this month') };
+        return { key: 'd:older', label: t('dispatcher.group_older', 'Older') };
+      }
+      default:
+        return { key: '__all__', label: '' };
+    }
+  };
+
+  // When grouping is active, keep same-section cards contiguous (the existing
+  // sort still orders cards within each section).
+  const displayData = useMemo(() => {
+    if (groupBy === 'none') return groupedData;
+    return [...groupedData].sort((a, b) => getSection(a).label.localeCompare(getSection(b).label));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupedData, groupBy, t]);
+
+  const sectionCounts = useMemo(() => {
+    const m = new Map<string, number>();
+    if (groupBy !== 'none') displayData.forEach(so => { const k = getSection(so).key; m.set(k, (m.get(k) || 0) + 1); });
+    return m;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [displayData, groupBy, t]);
+
+  const toggleSection = (key: string) => {
+    setCollapsedSections(prev => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  };
 
 
   // Group jobs by installation within a service order (used when conversionMode === 'installation')
@@ -408,17 +487,31 @@ export function UnassignedJobsList({
     const isExpanded = expandedServiceOrders.has(key);
     const colorClass = getStatusColor(so.status);
 
+    // Configurable card label + hover (driven by the active planning profile).
+    const repJob = so.jobs[0];
+    const soLabel = repJob
+      ? formatCardLabel(repJob, display.cardPrimaryFields, display.cardSeparator, { jobCount: so.jobs.length })
+      : (so.title || `SO-${so.id}`);
+    const soHover = repJob
+      ? [
+          soLabel,
+          ...buildHoverRows(repJob, display.hoverFields, { jobCount: so.jobs.length }).map(r => `${r.label}: ${r.value}`),
+          ...(display.showJobsOnHover ? so.jobs.map(j => `• ${j.title}`) : []),
+        ].filter(Boolean).join('\n')
+      : soLabel;
+
     return (
       <div key={key} className="border rounded-lg bg-muted/10 overflow-hidden">
         <div
           className="p-2.5 border-b bg-muted/20 cursor-pointer hover:bg-muted/30 transition-colors"
           onClick={() => toggleServiceOrder(key)}
+          title={soHover}
         >
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <CheckCircle2 className="h-3.5 w-3.5 text-success flex-shrink-0" />
               <span className="font-medium truncate text-xs flex-1 min-w-0 text-muted-foreground">
-                {so.title || `SO-${so.id}`}
+                {soLabel}
               </span>
             </div>
             <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -598,18 +691,60 @@ export function UnassignedJobsList({
               className="pl-8 h-8 text-xs"
             />
           </div>
-          <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-            <SelectTrigger className="h-8 w-full bg-background text-xs">
-              <SelectValue placeholder={t('dispatcher.by_priority', 'Priority')} />
-            </SelectTrigger>
-            <SelectContent className="bg-popover border shadow-md z-50">
-              <SelectItem value="all">{t('dispatcher.by_priority', 'Priority')}</SelectItem>
-              <SelectItem value="urgent">{t('dispatcher.priority_urgent', 'Urgent')}</SelectItem>
-              <SelectItem value="high">{t('dispatcher.priority_high', 'High')}</SelectItem>
-              <SelectItem value="medium">{t('dispatcher.priority_medium', 'Medium')}</SelectItem>
-              <SelectItem value="low">{t('dispatcher.priority_low', 'Low')}</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex gap-1.5">
+            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+              <SelectTrigger className="h-8 flex-1 bg-background text-xs">
+                <SelectValue placeholder={t('dispatcher.by_priority', 'Priority')} />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border shadow-md z-50">
+                <SelectItem value="all">{t('dispatcher.by_priority', 'Priority')}</SelectItem>
+                <SelectItem value="urgent">{t('dispatcher.priority_urgent', 'Urgent')}</SelectItem>
+                <SelectItem value="high">{t('dispatcher.priority_high', 'High')}</SelectItem>
+                <SelectItem value="medium">{t('dispatcher.priority_medium', 'Medium')}</SelectItem>
+                <SelectItem value="low">{t('dispatcher.priority_low', 'Low')}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="h-8 flex-1 bg-background text-xs">
+                <SelectValue placeholder={t('dispatcher.by_status', 'Status')} />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border shadow-md z-50">
+                <SelectItem value="all">{t('dispatcher.by_status', 'Status')}</SelectItem>
+                <SelectItem value="ready_for_planning">{t('serviceOrders.status.ready_for_planning', 'Ready for planning')}</SelectItem>
+                <SelectItem value="planned">{t('serviceOrders.status.planned', 'Planned')}</SelectItem>
+                <SelectItem value="scheduled">{t('serviceOrders.status.scheduled', 'Scheduled')}</SelectItem>
+                <SelectItem value="in_progress">{t('serviceOrders.status.in_progress', 'In progress')}</SelectItem>
+                <SelectItem value="pending">{t('serviceOrders.status.pending', 'Pending')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex gap-1.5">
+            <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
+              <SelectTrigger className="h-8 flex-1 bg-background text-xs">
+                <SelectValue placeholder={t('dispatcher.sort_by', 'Sort by')} />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border shadow-md z-50">
+                <SelectItem value="so">{t('dispatcher.sort_service_order', 'Service order')}</SelectItem>
+                <SelectItem value="priority">{t('dispatcher.sort_priority', 'Urgency')}</SelectItem>
+                <SelectItem value="newest">{t('dispatcher.sort_newest', 'Newest first')}</SelectItem>
+                <SelectItem value="oldest">{t('dispatcher.sort_oldest', 'Oldest first')}</SelectItem>
+                <SelectItem value="customer">{t('dispatcher.sort_customer', 'Customer')}</SelectItem>
+                <SelectItem value="duration">{t('dispatcher.sort_duration', 'Duration')}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={groupBy} onValueChange={(v) => setGroupBy(v as typeof groupBy)}>
+              <SelectTrigger className="h-8 flex-1 bg-background text-xs">
+                <SelectValue placeholder={t('dispatcher.group_by', 'Group by')} />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border shadow-md z-50">
+                <SelectItem value="none">{t('dispatcher.group_none', 'No grouping')}</SelectItem>
+                <SelectItem value="contact">{t('dispatcher.group_contact', 'Contact')}</SelectItem>
+                <SelectItem value="status">{t('dispatcher.group_status', 'Status')}</SelectItem>
+                <SelectItem value="priority">{t('dispatcher.group_priority', 'Urgency')}</SelectItem>
+                <SelectItem value="created">{t('dispatcher.group_created', 'Date created')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Show Planned Toggle */}
@@ -661,9 +796,26 @@ export function UnassignedJobsList({
                 )}
               </div>
             ) : (
-              groupedData.map((serviceOrderData) => (
-                <div 
-                  key={serviceOrderData.id} 
+              displayData.map((serviceOrderData, idx) => {
+                const sec = getSection(serviceOrderData);
+                const prevSec = idx > 0 ? getSection(displayData[idx - 1]) : null;
+                const showHeader = groupBy !== 'none' && sec.key !== prevSec?.key;
+                const sectionCollapsed = groupBy !== 'none' && collapsedSections.has(sec.key);
+                return (
+                <Fragment key={serviceOrderData.id}>
+                {showHeader && (
+                  <div
+                    className="flex items-center gap-1.5 px-1.5 py-1 mt-1 first:mt-0 cursor-pointer select-none"
+                    onClick={() => toggleSection(sec.key)}
+                  >
+                    <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${sectionCollapsed ? '-rotate-90' : ''}`} />
+                    <span className="text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground truncate">{sec.label}</span>
+                    <Badge variant="secondary" className="h-4 px-1.5 text-[0.6rem]">{sectionCounts.get(sec.key)}</Badge>
+                    <div className="h-px flex-1 bg-border ml-1" />
+                  </div>
+                )}
+                {!sectionCollapsed && (
+                <div
                   className={`border rounded-lg bg-card/50 overflow-hidden ${
                     planningMode === 'serviceOrder' && !isMobile ? 'cursor-grab hover:border-primary/50 hover:shadow-md transition-all' : ''
                   }`}
@@ -842,7 +994,10 @@ export function UnassignedJobsList({
                     </div>
                   )}
                 </div>
-              ))
+                )}
+                </Fragment>
+                );
+              })
             )}
             {/* Planned Orders Section */}
             {showPlanned && (

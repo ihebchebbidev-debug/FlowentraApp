@@ -28,6 +28,7 @@ import type { Job, CalendarViewType, Technician } from "../types";
 import { appSettingsApi } from "@/services/api/appSettingsApi";
 import { startOfWeek, endOfWeek, addDays } from "date-fns";
 import { autoFillDay, rankTechniciansForJob } from "../utils/planningAssist";
+import { PlanningDisplayProvider } from "../context/PlanningDisplayContext";
 
 export function DispatchingInterface() {
   const { t } = useTranslation();
@@ -246,7 +247,15 @@ export function DispatchingInterface() {
     }
   };
 
+  const planningDisplay = useMemo(() => ({
+    cardPrimaryFields: profileSettings.cardPrimaryFields ?? ['serviceOrderNumber'],
+    cardSeparator: profileSettings.cardSeparator ?? ' · ',
+    hoverFields: profileSettings.hoverFields ?? [],
+    showJobsOnHover: profileSettings.showJobsOnHover ?? true,
+  }), [profileSettings.cardPrimaryFields, profileSettings.cardSeparator, profileSettings.hoverFields, profileSettings.showJobsOnHover]);
+
   return (
+    <PlanningDisplayProvider value={planningDisplay}>
     <div className="flex flex-col h-screen w-full bg-background overflow-hidden relative">
       {/* Header (consistent with Articles/Contacts pattern) */}
       <header className="flex items-center justify-between p-4 border-b border-border bg-card/50 backdrop-blur">
@@ -459,5 +468,6 @@ export function DispatchingInterface() {
         </div>
       )}
     </div>
+    </PlanningDisplayProvider>
   );
 }

@@ -185,22 +185,22 @@ export const PL_STEPS: PlanningDemoStep[] = [
   {
     target: 'pl-demo-sidebar-search',
     caption:
-      'Search and a priority filter keep the queue manageable — focus on the urgent jobs first, or find one specific order in a long list.',
-    duration: 4600,
+      'Tame the queue your way — filter by priority or status, search by customer or order, and sort by urgency, newest, or duration. Then group the list into collapsible sections — by contact, status, or date created — so you work it however you think.',
+    duration: 6200,
     apply: pure(() => ({ sidebarHi: 'search' as const })),
   },
   {
     target: 'pl-demo-so',
     caption:
-      'Expand a service order to see its jobs — or, in installation mode, grouped by installation. A coloured priority dot flags how urgent each one is.',
-    duration: 5000,
+      'By default the board shows whole service orders, not individual jobs — so you can plan an entire order in one move. Expand one to reveal its jobs, each flagged with a priority dot.',
+    duration: 5200,
     apply: pure(() => ({ sidebarHi: 'so' as const })),
   },
   {
     target: 'pl-demo-job-hover',
     caption:
-      'Hover any job for the full picture — customer, site address, estimated duration, and the exact skills it requires, so you plan with every fact in front of you.',
-    duration: 5200,
+      'Hover to see the rest — and you decide exactly what appears: customer, site, duration, skills, even the service order’s jobs. The hover content is fully configurable in Planning Profiles.',
+    duration: 5400,
     apply: pure(() => ({ sidebarHi: 'job' as const })),
   },
   {
@@ -321,8 +321,8 @@ export const PL_STEPS: PlanningDemoStep[] = [
   {
     target: 'pl-demo-profile-display',
     caption:
-      'Display settings shape the board: service-order or installation mode, day or week, include weekends, and colour jobs by status, priority, order, or technician.',
-    duration: 5400,
+      'Display settings shape the board — and the cards themselves. Choose what each card’s label shows: service-order number, contact name, installation, or a combo like "SO-123 · Acme Corp", plus exactly which fields appear on hover. Mode, day or week, weekends and colour-coding live here too.',
+    duration: 6200,
     apply: pure(() => ({ profileTab: 'display' as const })),
   },
   {

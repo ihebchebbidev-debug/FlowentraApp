@@ -29,7 +29,9 @@ export function useActivePlanningProfile() {
   return {
     ...q,
     profile: q.data,
-    settings: q.data?.settings ?? DEFAULT_PLANNING_SETTINGS,
+    // Merge with defaults so profiles saved before a setting existed still get
+    // every key (e.g. the card-display fields) — never undefined downstream.
+    settings: { ...DEFAULT_PLANNING_SETTINGS, ...(q.data?.settings ?? {}) },
     visibleUserIds: q.data?.visibleUserIds ?? [],
     requiredSkillIds: q.data?.requiredSkillIds ?? [],
   };

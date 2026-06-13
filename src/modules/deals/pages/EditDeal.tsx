@@ -21,6 +21,7 @@ export function EditDeal() {
       setInitial({
         title: d.title,
         contactId: d.contactId,
+        projectId: d.projectId ?? null,
         stage: d.stage,
         estimatedValue: d.estimatedValue,
         currency: d.currency,

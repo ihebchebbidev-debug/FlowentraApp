@@ -3,6 +3,26 @@ export type PlanningBoardMode = 'service_orders' | 'installations';
 export type PlanningDefaultView = 'day' | 'week';
 export type PlanningColorBy = 'status' | 'priority' | 'service_order' | 'technician';
 
+/**
+ * Fields that can be composed into a planning card's label or shown on hover.
+ * Lets each profile decide what a block/card displays (e.g. just the SO number,
+ * or "SO number · contact name", and exactly what the hover tooltip lists).
+ */
+export type PlanningCardField =
+  | 'serviceOrderNumber'
+  | 'serviceOrderTitle'
+  | 'contactName'
+  | 'customerCompany'
+  | 'customerPhone'
+  | 'installationName'
+  | 'jobTitle'
+  | 'status'
+  | 'priority'
+  | 'duration'
+  | 'address'
+  | 'technician'
+  | 'jobCount';
+
 export interface PlanningProfileSettings {
   // Display
   mode: PlanningBoardMode;
@@ -16,6 +36,11 @@ export interface PlanningProfileSettings {
   colorBy: PlanningColorBy;
   showDurationLabels: boolean;
   compactRows: boolean;
+  // Card display — what a block/card shows and what the hover tooltip lists.
+  cardPrimaryFields: PlanningCardField[];  // composed into the main label, in order
+  cardSeparator: string;                   // joins the primary fields, e.g. " · "
+  hoverFields: PlanningCardField[];        // shown in the hover tooltip
+  showJobsOnHover: boolean;                 // in service-order mode, list the SO's jobs on hover
   // Visible users filters
   hideUsersWithoutWorkingHours: boolean;
   hideUsersOnLeaveToday: boolean;
@@ -43,6 +68,10 @@ export const DEFAULT_PLANNING_SETTINGS: PlanningProfileSettings = {
   colorBy: 'status',
   showDurationLabels: true,
   compactRows: false,
+  cardPrimaryFields: ['serviceOrderNumber'],
+  cardSeparator: ' · ',
+  hoverFields: ['contactName', 'installationName', 'status', 'duration'],
+  showJobsOnHover: true,
   hideUsersWithoutWorkingHours: false,
   hideUsersOnLeaveToday: false,
   skillFilterMode: 'any',

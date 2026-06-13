@@ -30,6 +30,8 @@ export interface DealFormValues {
   description: string;
   notes: string;
   items: DealItemDraft[];
+  /** Set when creating a deal from within a project — links it to that project. */
+  projectId: number | null;
 }
 
 interface Props {
@@ -57,6 +59,7 @@ export function DealForm({ mode, initial, submitting, onSubmit }: Props) {
     description: "",
     notes: "",
     items: [],
+    projectId: null,
     ...initial,
   });
 
@@ -80,6 +83,7 @@ export function DealForm({ mode, initial, submitting, onSubmit }: Props) {
       title: v.title.trim(),
       description: v.description || undefined,
       contactId: v.contactId,
+      projectId: v.projectId ?? undefined,
       stage: v.stage as any,
       probability: v.probability,
       estimatedValue: v.estimatedValue,

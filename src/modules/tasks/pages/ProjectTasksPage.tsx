@@ -495,7 +495,7 @@ export default function ProjectTasksPage() {
               </TabsContent>
 
               <TabsContent value="deals" className="mt-0">
-                <ProjectOffersTab projectLinks={projectLinks} mode="deals" sales={projectLinks?.sales ?? []} />
+                <ProjectOffersTab projectLinks={projectLinks} mode="deals" sales={projectLinks?.sales ?? []} projectId={projectId} />
               </TabsContent>
 
               <TabsContent value="tasks" className="mt-0">

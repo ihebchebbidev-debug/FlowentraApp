@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 import type { Job } from "../../types";
 import { DurationIndicatorCompact } from "./DurationIndicator";
 import { getStatusSolidClasses } from "@/config/entity-statuses";
+import { usePlanningDisplay } from "../../context/PlanningDisplayContext";
+import { formatCardLabel, buildHoverRows } from "../../utils/planningCardFields";
 
 interface ResizableJobBlockProps {
   job: Job;
@@ -31,6 +33,13 @@ export function ResizableJobBlock({
   isShared = false
 }: ResizableJobBlockProps) {
   const { t } = useTranslation();
+  const display = usePlanningDisplay();
+  // Configurable card label + hover content, driven by the active planning profile.
+  const cardLabel = formatCardLabel(job, display.cardPrimaryFields, display.cardSeparator);
+  const hoverTitle = [
+    cardLabel,
+    ...buildHoverRows(job, display.hoverFields).map(r => `${r.label}: ${r.value}`),
+  ].filter(Boolean).join('\n');
   const [isResizing, setIsResizing] = useState(false);
   const [originalEnd, setOriginalEnd] = useState<Date | null>(null);
   const [previewEnd, setPreviewEnd] = useState<Date | null>(null);
@@ -289,6 +298,7 @@ export function ResizableJobBlock({
   return (
   <div
       ref={blockRef}
+      title={hoverTitle}
       draggable={!isLocked}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
@@ -318,7 +328,7 @@ export function ResizableJobBlock({
           // Compact stacked variant — single line
           <div className="flex items-center gap-1.5 h-full">
             <span className={`inline-block w-1.5 h-1.5 rounded-full flex-shrink-0 ${statusInfo.color}`} title={statusInfo.label} />
-            <span className="font-semibold truncate text-[11px] leading-none flex-1">{job.title}</span>
+            <span className="font-semibold truncate text-[11px] leading-none flex-1">{cardLabel}</span>
             {isShared && (
               <span className="px-1 rounded bg-accent/30 text-accent-foreground text-[8px] font-bold uppercase tracking-wide flex-shrink-0" title={t('dispatcher.shared_dispatch', 'Shared with multiple technicians')}>
                 {t('dispatcher.shared', 'Shared')}
@@ -341,7 +351,7 @@ export function ResizableJobBlock({
                 </span>
               )}
             </div>
-            <div className="font-semibold truncate text-[11px] leading-tight">{job.title}</div>
+            <div className="font-semibold truncate text-[11px] leading-tight">{cardLabel}</div>
             {job.installationName && job.description && /^\d+ jobs$/.test(job.description) && (
               <div className="text-[9px] text-muted-foreground/80 mt-0.5">{job.description}</div>
             )}
