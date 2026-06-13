@@ -113,6 +113,52 @@ export const planningProfilesApi = {
   },
 
   async update(id: string, dto: UpdatePlanningProfileDto): Promise<PlanningProfile> {
+    // A `local-` id only ever existed client-side (e.g. the auto-created Default
+    // profile) and was never persisted — a PUT would 404. Persist it as a CREATE
+    // instead, then swap the temporary id for the real one everywhere.
+    if (id.startsWith('local-')) {
+      const existing = readLocal().find(p => p.id === id);
+      const merged = { ...(existing ?? {}), ...dto } as PlanningProfile;
+      const createBody: CreatePlanningProfileDto = {
+        name: merged.name ?? 'Default',
+        description: merged.description,
+        color: merged.color,
+        icon: merged.icon,
+        isShared: merged.isShared ?? false,
+        visibleUserIds: merged.visibleUserIds ?? [],
+        requiredSkillIds: merged.requiredSkillIds,
+        settings: merged.settings ?? { ...DEFAULT_PLANNING_SETTINGS },
+      };
+      const created = await tryBackend<PlanningProfile>(() => apiFetch<PlanningProfile>(BASE, {
+        method: 'POST', body: JSON.stringify(createBody),
+      }));
+      if (created) {
+        const next = readLocal().filter(p => p.id !== id);
+        next.push(created);
+        writeLocal(next);
+        if (localStorage.getItem(ACTIVE_KEY) === id) localStorage.setItem(ACTIVE_KEY, created.id);
+        return created;
+      }
+      // Backend unreachable — keep it local (recreate the entry if it was lost).
+      const list = readLocal();
+      const idx = list.findIndex(p => p.id === id);
+      if (idx === -1) {
+        const local = {
+          id,
+          ownerUserId: getCurrentUserId(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          ...createBody,
+        } as PlanningProfile;
+        list.push(local);
+        writeLocal(list);
+        return local;
+      }
+      list[idx] = { ...list[idx], ...dto, updatedAt: new Date().toISOString() } as PlanningProfile;
+      writeLocal(list);
+      return list[idx];
+    }
+
     const remote = await tryBackend<PlanningProfile>(() => apiFetch<PlanningProfile>(`${BASE}/${id}`, {
       method: 'PUT', body: JSON.stringify(dto),
     }));

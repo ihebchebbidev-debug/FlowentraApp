@@ -370,6 +370,22 @@ export function AppSidebar() {
         }
       }
 
+      // Deals module — CRM pipeline, sits alongside sales/offers.
+      const hasDeals = existing.some(i => i?.url === '/dashboard/deals' || i?.title === 'deals');
+      if (!hasDeals) {
+        const dealsDefault: SidebarItemConfig = {
+          id: 'deals-1111-1111-1111-111111111111',
+          title: 'deals',
+          url: '/dashboard/deals',
+          description: 'Sales pipeline',
+          icon: 'Handshake',
+          group: 'crm',
+          active: true,
+        };
+        const added = mergeMissingDefaults([dealsDefault], '/dashboard/tasks/projects');
+        if (added.length > 0) changed = true;
+      }
+
       const hasExternal = existing.some(i => i?.url === '/dashboard/external' || i?.title === 'external');
       if (!hasExternal) {
         const externalDefault: SidebarItemConfig = {

@@ -6,7 +6,7 @@ namespace MyApi.Modules.Plugins
     /// <summary>
     /// Minimal mirror of the frontend manifest registry — used for server-side
     /// validation (core-locking, dependency checks, total-count for stats).
-    /// Keep codes in sync with src/modules/<module>/plugin.ts.
+    /// Keep codes in sync with src/modules/{module}/plugin.ts.
     /// </summary>
     public static class KnownPlugins
     {

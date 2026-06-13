@@ -17,6 +17,10 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
 using System.Text.Json;
+// Jint 4.x exposes Options config (LimitRecursion/MaxStatements/TimeoutInterval/
+// CancellationToken) and JsValue helpers (IsUndefined/IsNull) as extension methods
+// in the Jint namespace, so this using is required for the JS sandbox below.
+using Jint;
 
 namespace MyApi.Modules.WorkflowEngine.Services
 {

@@ -20,7 +20,16 @@
       "Bash(grep -oE \"/api/deals[^\\\\`?]*\" src/services/api/dealsApi.ts)",
       "Read(//tmp/**)",
       "Bash(grep -nE \"path=\\\\\"\\(sales|offers|projects\\)/\\\\*\\\\\"|path=\\\\\":id\\\\\"\" src/modules/dashboard/components/DashboardContent.tsx)",
-      "Bash(grep -iE \"\\\\\\\\$|:id|projectId\")"
+      "Bash(grep -iE \"\\\\\\\\$|:id|projectId\")",
+      "Bash(grep -nA15 \"createProjectTask\" src/modules/tasks/services/tasks.service.ts)",
+      "Bash(grep -nA8 \"export interface Column\" src/modules/tasks/types.ts)",
+      "Bash(grep -rnA20 \"interface CreateProjectTaskRequestDto\" src/services/api/tasksApi.ts src/modules/tasks/types.ts)",
+      "Bash(grep -nA12 \"createProjectTask\" src/services/api/tasksApi.ts)",
+      "Bash(grep -nA10 \"export function mergeMissingDefaults\" src/modules/dashboard/services/sidebar.service.ts)",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('src/modules/dashboard/data/sidebar-defaults.json','utf8'\\)\\); console.log\\('valid JSON ✓'\\)\")",
+      "Bash(head-20)",
+      "Bash(grep -rniE \"Jint\" Backend/*.csproj Backend/**/*.csproj)",
+      "Bash(sed -n '1925,1980p' Backend/Modules/WorkflowEngine/Services/WorkflowNodeExecutor.cs)"
     ],
     "additionalDirectories": [
       "C:\\Users\\iheb.chebbi\\Desktop\\FlowentraApp\\Backend\\Modules\\Offers\\DTOs"

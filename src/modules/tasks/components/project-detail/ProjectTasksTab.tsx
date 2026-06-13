@@ -24,6 +24,9 @@ import { cn } from "@/lib/utils";
 import { Task, Project } from "../../types";
 import { KanbanBoard } from "../KanbanBoard";
 import TaskListView from "../TaskListView";
+import { QuickTaskModal } from "../QuickTaskModal";
+import { TasksService } from "../../services/tasks.service";
+import { useToast } from "@/hooks/use-toast";
 import { ContentSkeleton } from "@/components/ui/page-skeleton";
 
 interface Technician {
@@ -108,6 +111,43 @@ export function ProjectTasksTab({
   setTasksState,
 }: ProjectTasksTabProps) {
   const { t } = useTranslation("tasks");
+  const { toast } = useToast();
+
+  // Create a task from the list view. The QuickTaskModal lives inside KanbanBoard
+  // (board view) — in list view we render it here so "Add Task" works in both views.
+  const handleCreateTaskFromList = async (taskData: any) => {
+    try {
+      if (!project?.id) {
+        toast({ title: t("toast.error"), description: t("toast.failedCreate"), variant: "destructive" });
+        return;
+      }
+      const projectIdNum = parseInt(String(project.id), 10);
+      let columnIdNum = parseInt(String(taskData.status), 10);
+      if (isNaN(columnIdNum) || columnIdNum <= 0) {
+        const first = (project.columns as any[] | undefined)?.[0];
+        columnIdNum = first?.id ? parseInt(String(first.id), 10) : 0;
+      }
+      if (isNaN(projectIdNum)) throw new Error("Invalid project ID");
+      if (!columnIdNum || isNaN(columnIdNum)) throw new Error("Invalid column ID");
+
+      await TasksService.createProjectTask({
+        title: taskData.title,
+        description: taskData.description,
+        projectId: projectIdNum,
+        assigneeId: taskData.assigneeId ? parseInt(String(taskData.assigneeId), 10) : undefined,
+        assigneeName: taskData.assigneeName,
+        status: "open",
+        priority: taskData.priority || "medium",
+        columnId: columnIdNum,
+        dueDate: taskData.dueDate ? new Date(taskData.dueDate).toISOString() : undefined,
+        tags: [],
+      } as any);
+
+      fetchTasks();
+    } catch (e) {
+      toast({ title: t("toast.error"), description: t("toast.failedCreate"), variant: "destructive" });
+    }
+  };
 
   // Date navigation helpers
   const goToPreviousDay = () => {
@@ -421,21 +461,34 @@ export function ProjectTasksTab({
 
           {/* Main Task View */}
           {taskViewMode === "list" ? (
-            <TaskListView
-              tasks={openTasks.map((t) => ({
-                ...t,
-                status: t.columnId,
-                dueDate: new Date(t.dueDate || Date.now()),
-                createdAt: new Date(t.createdAt || Date.now()),
-                updatedAt: new Date(),
-                tags: [],
-                position: 0,
-              })) as Task[]}
-              columns={project?.columns}
-              onTaskClick={handleTaskClick}
-              onAddTask={() => handleAddTask()}
-              onTaskComplete={(id) => handleTaskComplete(id)}
-            />
+            <>
+              <TaskListView
+                tasks={openTasks.map((t) => ({
+                  ...t,
+                  status: t.columnId,
+                  dueDate: new Date(t.dueDate || Date.now()),
+                  createdAt: new Date(t.createdAt || Date.now()),
+                  updatedAt: new Date(),
+                  tags: [],
+                  position: 0,
+                })) as Task[]}
+                columns={project?.columns}
+                onTaskClick={handleTaskClick}
+                onAddTask={() => handleAddTask()}
+                onTaskComplete={(id) => handleTaskComplete(id)}
+              />
+              {/* In board view the modal lives inside KanbanBoard; in list view we
+                  render it here so the "Add Task" button works in both views. */}
+              <QuickTaskModal
+                isOpen={isQuickTaskModalOpen}
+                onClose={() => setIsQuickTaskModalOpen(false)}
+                onCreateTask={handleCreateTaskFromList}
+                technicians={technicians as any}
+                columns={(project?.columns as any) || []}
+                projects={project ? [project] : []}
+                projectId={project?.id}
+              />
+            </>
           ) : (
             <KanbanBoard
               onSwitchToProjects={() => {}}

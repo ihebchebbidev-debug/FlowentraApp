@@ -84,9 +84,11 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
     toast.success(t('dispatcher.profiles.created', { defaultValue: 'Profile created' }));
   };
 
+  // Returns the persisted profile. Saving a never-persisted ("local-") profile
+  // creates it on the backend and yields a NEW id, so callers must adopt it.
   const persistDraft = async () => {
-    if (!draft) return;
-    await update.mutateAsync({
+    if (!draft) return null;
+    const saved = await update.mutateAsync({
       id: draft.id,
       dto: {
         name: draft.name,
@@ -99,6 +101,8 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
         settings: draft.settings,
       },
     });
+    if (saved && saved.id !== draft.id) setSelectedId(saved.id);
+    return saved;
   };
 
   const handleSave = async () => {
@@ -108,9 +112,10 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
 
   const handleSaveAndApply = async () => {
     if (!draft) return;
-    await persistDraft();
-    if (activeProfile?.id !== draft.id) {
-      await setActive.mutateAsync(draft.id);
+    const saved = await persistDraft();
+    const targetId = saved?.id ?? draft.id;
+    if (activeProfile?.id !== targetId) {
+      await setActive.mutateAsync(targetId);
     }
     toast.success(t('dispatcher.profiles.applied', { defaultValue: 'Profile saved & applied to board' }));
   };

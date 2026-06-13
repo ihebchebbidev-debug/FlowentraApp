@@ -17,7 +17,8 @@
     { "id": "database-1111-1111-1111-111111111111", "name": "Database", "library": "lucide", "component": "Database", "tags": ["lookups"] },
     { "id": "gitbranch-1111-1111-1111-111111111111", "name": "GitBranch", "library": "lucide", "component": "GitBranch", "tags": ["workflow", "automation", "status", "flow"] },
     { "id": "usercog-1111-1111-1111-111111111111", "name": "UserCog", "library": "lucide", "component": "UserCog", "tags": ["hr", "people", "human resources"] },
-    { "id": "shoppingcart-1111-1111-1111-111111111111", "name": "ShoppingCart", "library": "lucide", "component": "ShoppingCart", "tags": ["purchases", "buying", "procurement"] }
+    { "id": "shoppingcart-1111-1111-1111-111111111111", "name": "ShoppingCart", "library": "lucide", "component": "ShoppingCart", "tags": ["purchases", "buying", "procurement"] },
+    { "id": "handshake-1111-1111-1111-111111111111", "name": "Handshake", "library": "lucide", "component": "Handshake", "tags": ["deals", "pipeline", "opportunities", "crm"] }
   ],
 
   "items": [
@@ -210,6 +211,19 @@
           "description": "Sales pipeline"
         }
       ],
+      "meta": {}
+    },
+    {
+      "id": "deals-1111-1111-1111-111111111111",
+      "tenantId": null,
+      "title": "deals",
+      "url": "/dashboard/deals",
+      "description": "Sales pipeline",
+      "iconId": "handshake-1111-1111-1111-111111111111",
+      "iconName": "Handshake",
+      "group": "crm",
+      "position": 2,
+      "active": true,
       "meta": {}
     },
     {
