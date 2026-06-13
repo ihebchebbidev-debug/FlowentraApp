@@ -30,7 +30,7 @@ export function DealsList() {
   const navigate = useNavigate();
   const { deals, stats, loading, refetch, deleteDeal } = useDeals();
 
-  const [viewMode, setViewMode] = useState<"list" | "kanban">(() => getInitialViewMode(["list", "kanban"] as const, "kanban"));
+  const [viewMode, setViewMode] = useState<"list" | "kanban">(() => getInitialViewMode(["list", "kanban"] as const, "list"));
   const [search, setSearch] = useState("");
   const [stageFilter, setStageFilter] = useState<"all" | string>("all");
   const [toDelete, setToDelete] = useState<Deal | null>(null);

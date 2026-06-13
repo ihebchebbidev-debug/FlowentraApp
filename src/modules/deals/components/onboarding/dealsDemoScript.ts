@@ -1,6 +1,9 @@
 // Deals (pipeline) module autopilot demo — 6 chapters, 26 steps.
 // Same architecture as the other module demos. English captions live inline here
 // as the source of truth; FR translations are in dealsDemoTranslations.ts by index.
+//
+// The list/table is the DEFAULT view (like Offers / Sales / Service Orders); the
+// kanban board is shown afterwards as the optional visual pipeline.
 
 export type DealsDemoPage = 'list' | 'create' | 'detail';
 
@@ -20,7 +23,7 @@ export interface DealsDemoState {
 
 export const initialDealsDemoState: DealsDemoState = {
   page: 'list',
-  view: 'kanban',
+  view: 'list',
   selectedStat: 'all',
   searchActive: false,
   showFilters: false,
@@ -45,13 +48,13 @@ const pure =
   (s: DealsDemoState): DealsDemoState => ({ ...s, ...apply(s) });
 
 export const DL_STEPS: DealsDemoStep[] = [
-  // ── Chapter 1 · Overview ───────────────────────────────────────────────────
+  // ── Chapter 1 · Pipeline (list view, the default) ───────────────────────────
   {
     target: 'dl-demo-title',
     caption:
       'Welcome to Deals — your sales pipeline. A deal is an opportunity: who the customer is, what it is worth, and how close it is to closing. When you win one, you turn it into a sale or a project in a single click.',
     duration: 6000,
-    apply: pure(() => ({ page: 'list' as const, view: 'kanban' as const, selectedStat: 'all' as const, highlightStage: null, searchActive: false, showFilters: false })),
+    apply: pure(() => ({ page: 'list' as const, view: 'list' as const, selectedStat: 'all' as const, highlightStage: null, searchActive: false, showFilters: false })),
   },
   {
     target: 'dl-demo-stat-total',
@@ -82,48 +85,48 @@ export const DL_STEPS: DealsDemoStep[] = [
     apply: pure(() => ({ selectedStat: 'rate' as const })),
   },
   {
+    target: 'dl-demo-table',
+    caption:
+      'By default your deals open as a clean, sortable list — every opportunity with its stage, customer, value and probability, side by side. Click any row to open it.',
+    duration: 5400,
+    apply: pure(() => ({ selectedStat: 'all' as const, view: 'list' as const })),
+  },
+
+  // ── Chapter 2 · Board & Views ───────────────────────────────────────────────
+  {
+    target: 'dl-demo-views',
+    caption:
+      'Prefer a visual pipeline? One click switches the very same deals to a kanban board.',
+    duration: 4400,
+    apply: pure(() => ({ view: 'kanban' as const })),
+  },
+  {
     target: 'dl-demo-kanban',
     caption:
-      'The board is your pipeline, stage by stage — Lead, Qualified, Proposal, Negotiation, then Won or Lost. Each column shows its count and total value.',
+      'The board shows your pipeline stage by stage — Lead, Qualified, Proposal, Negotiation, then Won or Lost. Each column shows its count and total value.',
     duration: 5200,
-    apply: pure(() => ({ selectedStat: 'all' as const })),
+    apply: pure(() => ({ view: 'kanban' as const })),
   },
   {
     target: 'dl-demo-col-negotiation',
     caption:
       'Just drag a card to move a deal forward. Pull this one into Negotiation and its stage updates instantly — your forecast recalculates with it.',
     duration: 5200,
-    apply: pure(() => ({ highlightStage: 'negotiation' })),
+    apply: pure(() => ({ view: 'kanban' as const, highlightStage: 'negotiation' })),
   },
-
-  // ── Chapter 2 · Search & Views ─────────────────────────────────────────────
   {
     target: 'dl-demo-search',
     caption:
-      'Search across deal titles, customers, and numbers — find any opportunity in seconds.',
-    duration: 3800,
-    apply: pure(() => ({ highlightStage: null, searchActive: true })),
+      'Back to the list. Search across deal titles, customers and numbers — find any opportunity in seconds.',
+    duration: 4200,
+    apply: pure(() => ({ view: 'list' as const, highlightStage: null, searchActive: true })),
   },
   {
     target: 'dl-demo-filters',
     caption:
-      'Filter the pipeline by stage to focus on exactly the deals you care about right now.',
+      'And filter by stage to focus on exactly the deals you care about right now.',
     duration: 4000,
     apply: pure(() => ({ searchActive: false, showFilters: true })),
-  },
-  {
-    target: 'dl-demo-views',
-    caption:
-      'Prefer a spreadsheet view? Switch from the board to a sortable list with value, probability, and close date side by side.',
-    duration: 4600,
-    apply: pure(() => ({ showFilters: false, view: 'list' as const })),
-  },
-  {
-    target: 'dl-demo-table',
-    caption:
-      'Every deal in one scan — stage, customer, value and how likely it is to close.',
-    duration: 4000,
-    apply: pure(() => ({ view: 'list' as const })),
   },
 
   // ── Chapter 3 · Create a deal ──────────────────────────────────────────────
@@ -132,7 +135,7 @@ export const DL_STEPS: DealsDemoStep[] = [
     caption:
       'Let’s create a deal. Add Deal opens a simple form — lighter than a quote, because a deal is about tracking the opportunity, not pricing a document yet.',
     duration: 5000,
-    apply: pure(() => ({ page: 'create' as const, view: 'kanban' as const, createStep: 0 })),
+    apply: pure(() => ({ page: 'create' as const, view: 'list' as const, createStep: 0 })),
   },
   {
     target: 'dl-demo-create-customer',
@@ -158,7 +161,7 @@ export const DL_STEPS: DealsDemoStep[] = [
   {
     target: 'dl-demo-create-save',
     caption:
-      'Save, and the deal drops into the Lead column, ready to move through your pipeline.',
+      'Save, and the deal drops into your pipeline at the Lead stage, ready to move forward.',
     duration: 4000,
     apply: pure(() => ({})),
   },
@@ -234,17 +237,17 @@ export const DL_STEPS: DealsDemoStep[] = [
   {
     target: 'dl-demo-title',
     caption:
-      'That’s Deals — a visual pipeline with a live forecast, a quick way to capture opportunities, and one-click conversion to sales and projects. Track every opportunity from first lead to closed win.',
+      'That’s Deals — a sortable list with a live forecast, an optional kanban board, a quick way to capture opportunities, and one-click conversion to sales and projects. Track every opportunity from first lead to closed win.',
     duration: 6000,
-    apply: pure(() => ({ page: 'list' as const, view: 'kanban' as const, convertOpen: false, selectedStat: 'all' as const })),
+    apply: pure(() => ({ page: 'list' as const, view: 'list' as const, convertOpen: false, selectedStat: 'all' as const })),
   },
 ];
 
 export const DL_CHAPTERS: DealsDemoChapter[] = [
-  { id: 'overview', title: 'Pipeline',        start: 0,  end: 7  },
-  { id: 'views',    title: 'Search & Views',  start: 7,  end: 11 },
-  { id: 'create',   title: 'Create a Deal',   start: 11, end: 16 },
-  { id: 'detail',   title: 'Deal Workspace',  start: 16, end: 21 },
-  { id: 'convert',  title: 'Convert',         start: 21, end: 25 },
-  { id: 'wrapup',   title: 'Wrap-up',         start: 25, end: DL_STEPS.length },
+  { id: 'overview', title: 'Pipeline',       start: 0,  end: 6  },
+  { id: 'views',    title: 'Board & Views',  start: 6,  end: 11 },
+  { id: 'create',   title: 'Create a Deal',  start: 11, end: 16 },
+  { id: 'detail',   title: 'Deal Workspace', start: 16, end: 21 },
+  { id: 'convert',  title: 'Convert',        start: 21, end: 25 },
+  { id: 'wrapup',   title: 'Wrap-up',        start: 25, end: DL_STEPS.length },
 ];

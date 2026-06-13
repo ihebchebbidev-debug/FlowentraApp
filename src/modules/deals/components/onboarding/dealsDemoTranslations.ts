@@ -16,7 +16,7 @@ export const CHAPTER_TITLES: Record<DemoLang, Record<string, string>> = {
   en: Object.fromEntries(DL_CHAPTERS.map(c => [c.id, c.title])),
   fr: {
     'overview': 'Pipeline',
-    'views':    'Recherche & Vues',
+    'views':    'Tableau & Vues',
     'create':   'Créer une affaire',
     'detail':   'Espace de l’affaire',
     'convert':  'Convertir',
@@ -30,12 +30,12 @@ const CAPTIONS_FR: string[] = [
   'Valeur en cours, c’est l’argent encore en jeu — la valeur de chaque affaire ni gagnée ni perdue. C’est votre prévision en temps réel.',
   'Valeur gagnée, c’est ce que vous avez déjà conclu — du revenu sécurisé, prêt à devenir des ventes et des projets.',
   'Et le Taux de réussite vous dit à quelle fréquence vous concluez — la part des affaires décidées qui se sont terminées par une victoire.',
-  'Le tableau est votre pipeline, étape par étape — Prospect, Qualifiée, Proposition, Négociation, puis Gagnée ou Perdue. Chaque colonne affiche son nombre et sa valeur totale.',
+  'Par défaut, vos affaires s’ouvrent dans une liste claire et triable — chaque opportunité avec son étape, son client, sa valeur et sa probabilité, côte à côte. Cliquez une ligne pour l’ouvrir.',
+  'Vous préférez un pipeline visuel ? Un clic bascule les mêmes affaires vers un tableau kanban.',
+  'Le tableau montre votre pipeline étape par étape — Prospect, Qualifiée, Proposition, Négociation, puis Gagnée ou Perdue. Chaque colonne affiche son nombre et sa valeur totale.',
   'Glissez simplement une carte pour faire avancer une affaire. Amenez celle-ci en Négociation et son étape se met à jour aussitôt — votre prévision se recalcule avec elle.',
-  'Recherchez par titre d’affaire, client et numéro — trouvez n’importe quelle opportunité en quelques secondes.',
-  'Filtrez le pipeline par étape pour vous concentrer exactement sur les affaires qui comptent maintenant.',
-  'Vous préférez une vue tableur ? Passez du tableau à une liste triable avec valeur, probabilité et date de clôture côte à côte.',
-  'Toutes les affaires d’un seul regard — étape, client, valeur et probabilité de conclusion.',
+  'Retour à la liste. Recherchez par titre d’affaire, client et numéro — trouvez n’importe quelle opportunité en quelques secondes.',
+  'Et filtrez par étape pour vous concentrer exactement sur les affaires qui comptent maintenant.',
   'Créons une affaire. Ajouter une affaire ouvre un formulaire simple — plus léger qu’un devis, car une affaire sert à suivre l’opportunité, pas encore à chiffrer un document.',
   'Choisissez le client dans vos Contacts — chaque affaire est liée à un compte réel de votre CRM.',
   'Définissez l’étape, la valeur estimée et la probabilité de conclusion. C’est tout ce qu’il faut pour que l’affaire compte dans votre pipeline et votre prévision.',
@@ -50,7 +50,7 @@ const CAPTIONS_FR: string[] = [
   'Convertissez en Vente, et une commande est créée avec le même client et les mêmes lignes — directement vers la facturation.',
   'Ou convertissez en Projet pour réaliser le travail — un projet est créé et relié à l’affaire. Une affaire peut même devenir les deux à la fois.',
   'Confirmez, et l’affaire passe en Gagnée et se relie à tout ce qu’elle est devenue — aucune double saisie, toute la chaîne reste connectée.',
-  'Voilà les Affaires — un pipeline visuel avec une prévision en temps réel, une façon rapide de capturer les opportunités, et la conversion en ventes et projets en un clic. Suivez chaque opportunité, du premier prospect à la victoire.',
+  'Voilà les Affaires — une liste triable avec une prévision en temps réel, un tableau kanban optionnel, une façon rapide de capturer les opportunités, et la conversion en ventes et projets en un clic. Suivez chaque opportunité, du premier prospect à la victoire.',
 ];
 
 if (CAPTIONS_FR.length !== DL_STEPS.length) {

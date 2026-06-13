@@ -29,7 +29,8 @@
       "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('src/modules/dashboard/data/sidebar-defaults.json','utf8'\\)\\); console.log\\('valid JSON ✓'\\)\")",
       "Bash(head-20)",
       "Bash(grep -rniE \"Jint\" Backend/*.csproj Backend/**/*.csproj)",
-      "Bash(sed -n '1925,1980p' Backend/Modules/WorkflowEngine/Services/WorkflowNodeExecutor.cs)"
+      "Bash(sed -n '1925,1980p' Backend/Modules/WorkflowEngine/Services/WorkflowNodeExecutor.cs)",
+      "Bash(node -e \"const m=require\\('fs'\\).readFileSync\\('src/modules/deals/components/onboarding/dealsDemoTranslations.ts','utf8'\\);const b=m.split\\('CAPTIONS_FR: string[] = ['\\)[1].split\\('];'\\)[0];console.log\\(\\(b.match\\(/^\\\\s*\\\\x27/gm\\)||[]\\).length\\)\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\iheb.chebbi\\Desktop\\FlowentraApp\\Backend\\Modules\\Offers\\DTOs"
