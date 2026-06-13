@@ -14,6 +14,7 @@ using MyApi.Modules.Calendar.Models;
 using MyApi.Modules.Projects.Models;
 using MyApi.Modules.Lookups.Models;
 using MyApi.Modules.Offers.Models;
+using MyApi.Modules.Deals.Models;
 using MyApi.Modules.Auth.Data.Configurations;
 using MyApi.Modules.Users.Data.Configurations;
 using MyApi.Modules.Roles.Data.Configurations;
@@ -139,6 +140,11 @@ namespace MyApi.Data
         public DbSet<Offer> Offers { get; set; }
         public DbSet<OfferItem> OfferItems { get; set; }
         public DbSet<OfferActivity> OfferActivities { get; set; }
+
+        // Deals Module
+        public DbSet<Deal> Deals { get; set; }
+        public DbSet<DealItem> DealItems { get; set; }
+        public DbSet<DealActivity> DealActivities { get; set; }
 
         // Sales Module
         public DbSet<Sale> Sales { get; set; }
@@ -569,6 +575,11 @@ namespace MyApi.Data
             new MyApi.Modules.Offers.Data.OfferConfiguration().Configure(modelBuilder);
             new MyApi.Modules.Offers.Data.OfferItemConfiguration().Configure(modelBuilder);
             new MyApi.Modules.Offers.Data.OfferActivityConfiguration().Configure(modelBuilder);
+
+            // Deals domain configurations
+            new MyApi.Modules.Deals.Data.DealConfiguration().Configure(modelBuilder);
+            new MyApi.Modules.Deals.Data.DealItemConfiguration().Configure(modelBuilder);
+            new MyApi.Modules.Deals.Data.DealActivityConfiguration().Configure(modelBuilder);
             
             // Sales domain configurations
             new MyApi.Modules.Sales.Data.SaleConfiguration().Configure(modelBuilder);

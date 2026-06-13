@@ -42,6 +42,8 @@ import salesEn from '../modules/sales/locale/en.json';
 import salesFr from '../modules/sales/locale/fr.json';
 import offersEn from '../modules/offers/locale/en.json';
 import offersFr from '../modules/offers/locale/fr.json';
+import dealsEn from '../modules/deals/locale/en.json';
+import dealsFr from '../modules/deals/locale/fr.json';
 import offersListEn from '../modules/offers/locale/list.en.json';
 import offersDetailEn from '../modules/offers/locale/detail.en.json';
 import offersAddEn from '../modules/offers/locale/add.en.json';
@@ -895,6 +897,10 @@ const offersNamespaceEn = { ...(offersEn as any || {}), ...(offersListEn as any 
 const offersNamespaceFr = { ...(offersFr as any || {}), ...(offersListFr as any || {}), ...(offersDetailFr as any || {}), ...(offersAddFr as any || {}) };
 i18n.addResourceBundle('en', 'offers', offersNamespaceEn, true, true);
 i18n.addResourceBundle('fr', 'offers', offersNamespaceFr, true, true);
+
+// Register deals namespace so useTranslation('deals') resolves correctly
+i18n.addResourceBundle('en', 'deals', dealsEn, true, true);
+i18n.addResourceBundle('fr', 'deals', dealsFr, true, true);
 
 // Register job-detail namespace separately so useTranslation('job-detail') resolves keys
 i18n.addResourceBundle('en', 'job-detail', jobDetailEn, true, true);

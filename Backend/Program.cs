@@ -315,6 +315,9 @@ builder.Services.AddScoped<IRecurringTaskService, RecurringTaskService>();
 // Offers Module Services
 builder.Services.AddScoped<IOfferService, OfferService>();
 
+// Deals Module Services
+builder.Services.AddScoped<MyApi.Modules.Deals.Services.IDealService, MyApi.Modules.Deals.Services.DealService>();
+
 // Sales Module Services
 builder.Services.AddScoped<ISaleService, SaleService>();
 
@@ -684,6 +687,9 @@ CREATE INDEX IF NOT EXISTS ix_activated_modules_tenant
             "Offers",
             "OfferItems",
             "OfferActivities",
+            "Deals",
+            "DealItems",
+            "DealActivities",
             "Sales",
             "SaleItems",
             "SaleActivities",

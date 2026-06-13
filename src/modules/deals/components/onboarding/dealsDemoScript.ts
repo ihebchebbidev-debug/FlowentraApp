@@ -1,0 +1,250 @@
+// Deals (pipeline) module autopilot demo — 6 chapters, 26 steps.
+// Same architecture as the other module demos. English captions live inline here
+// as the source of truth; FR translations are in dealsDemoTranslations.ts by index.
+
+export type DealsDemoPage = 'list' | 'create' | 'detail';
+
+export interface DealsDemoState {
+  page: DealsDemoPage;
+  view: 'kanban' | 'list';
+  selectedStat: 'all' | 'open' | 'won' | 'rate';
+  searchActive: boolean;
+  showFilters: boolean;
+  highlightStage: string | null;   // which kanban column to spotlight
+  createStep: number;              // 0=customer, 1=stage/value, 2=items, 3=ready
+  activeTab: 'overview' | 'items' | 'activity' | 'notes';
+  convertOpen: boolean;
+  convertSale: boolean;
+  convertProject: boolean;
+}
+
+export const initialDealsDemoState: DealsDemoState = {
+  page: 'list',
+  view: 'kanban',
+  selectedStat: 'all',
+  searchActive: false,
+  showFilters: false,
+  highlightStage: null,
+  createStep: 0,
+  activeTab: 'overview',
+  convertOpen: false,
+  convertSale: false,
+  convertProject: false,
+};
+
+export interface DealsDemoStep {
+  target: string;
+  caption: string;
+  duration: number;
+  apply: (s: DealsDemoState) => DealsDemoState;
+}
+export interface DealsDemoChapter { id: string; title: string; start: number; end: number; }
+
+const pure =
+  (apply: (s: DealsDemoState) => Partial<DealsDemoState>) =>
+  (s: DealsDemoState): DealsDemoState => ({ ...s, ...apply(s) });
+
+export const DL_STEPS: DealsDemoStep[] = [
+  // ── Chapter 1 · Overview ───────────────────────────────────────────────────
+  {
+    target: 'dl-demo-title',
+    caption:
+      'Welcome to Deals — your sales pipeline. A deal is an opportunity: who the customer is, what it is worth, and how close it is to closing. When you win one, you turn it into a sale or a project in a single click.',
+    duration: 6000,
+    apply: pure(() => ({ page: 'list' as const, view: 'kanban' as const, selectedStat: 'all' as const, highlightStage: null, searchActive: false, showFilters: false })),
+  },
+  {
+    target: 'dl-demo-stat-total',
+    caption:
+      'The KPI cards summarise your pipeline at a glance. Total Deals counts every opportunity you are tracking.',
+    duration: 4200,
+    apply: pure(() => ({ selectedStat: 'all' as const })),
+  },
+  {
+    target: 'dl-demo-stat-open',
+    caption:
+      'Open Value is the money still in play — the worth of every deal that has not yet been won or lost. This is your live forecast.',
+    duration: 4600,
+    apply: pure(() => ({ selectedStat: 'open' as const })),
+  },
+  {
+    target: 'dl-demo-stat-won',
+    caption:
+      'Won Value is what you have already closed — revenue secured, ready to become sales and projects.',
+    duration: 4200,
+    apply: pure(() => ({ selectedStat: 'won' as const })),
+  },
+  {
+    target: 'dl-demo-stat-rate',
+    caption:
+      'And the Win Rate tells you how often you close — the share of decided deals that ended in a win.',
+    duration: 4200,
+    apply: pure(() => ({ selectedStat: 'rate' as const })),
+  },
+  {
+    target: 'dl-demo-kanban',
+    caption:
+      'The board is your pipeline, stage by stage — Lead, Qualified, Proposal, Negotiation, then Won or Lost. Each column shows its count and total value.',
+    duration: 5200,
+    apply: pure(() => ({ selectedStat: 'all' as const })),
+  },
+  {
+    target: 'dl-demo-col-negotiation',
+    caption:
+      'Just drag a card to move a deal forward. Pull this one into Negotiation and its stage updates instantly — your forecast recalculates with it.',
+    duration: 5200,
+    apply: pure(() => ({ highlightStage: 'negotiation' })),
+  },
+
+  // ── Chapter 2 · Search & Views ─────────────────────────────────────────────
+  {
+    target: 'dl-demo-search',
+    caption:
+      'Search across deal titles, customers, and numbers — find any opportunity in seconds.',
+    duration: 3800,
+    apply: pure(() => ({ highlightStage: null, searchActive: true })),
+  },
+  {
+    target: 'dl-demo-filters',
+    caption:
+      'Filter the pipeline by stage to focus on exactly the deals you care about right now.',
+    duration: 4000,
+    apply: pure(() => ({ searchActive: false, showFilters: true })),
+  },
+  {
+    target: 'dl-demo-views',
+    caption:
+      'Prefer a spreadsheet view? Switch from the board to a sortable list with value, probability, and close date side by side.',
+    duration: 4600,
+    apply: pure(() => ({ showFilters: false, view: 'list' as const })),
+  },
+  {
+    target: 'dl-demo-table',
+    caption:
+      'Every deal in one scan — stage, customer, value and how likely it is to close.',
+    duration: 4000,
+    apply: pure(() => ({ view: 'list' as const })),
+  },
+
+  // ── Chapter 3 · Create a deal ──────────────────────────────────────────────
+  {
+    target: 'dl-demo-create-open',
+    caption:
+      'Let’s create a deal. Add Deal opens a simple form — lighter than a quote, because a deal is about tracking the opportunity, not pricing a document yet.',
+    duration: 5000,
+    apply: pure(() => ({ page: 'create' as const, view: 'kanban' as const, createStep: 0 })),
+  },
+  {
+    target: 'dl-demo-create-customer',
+    caption:
+      'Pick the customer from your Contacts — every deal is tied to a real account in your CRM.',
+    duration: 4400,
+    apply: pure(() => ({ createStep: 1 })),
+  },
+  {
+    target: 'dl-demo-create-stage',
+    caption:
+      'Set the stage, the estimated value, and how likely it is to close. That is all it takes for the deal to count in your pipeline and forecast.',
+    duration: 5000,
+    apply: pure(() => ({ createStep: 2 })),
+  },
+  {
+    target: 'dl-demo-create-items',
+    caption:
+      'Optionally add line items straight from your catalog — articles and services alike — so the deal already carries what you intend to sell.',
+    duration: 5000,
+    apply: pure(() => ({ createStep: 3 })),
+  },
+  {
+    target: 'dl-demo-create-save',
+    caption:
+      'Save, and the deal drops into the Lead column, ready to move through your pipeline.',
+    duration: 4000,
+    apply: pure(() => ({})),
+  },
+
+  // ── Chapter 4 · Detail & tabs ──────────────────────────────────────────────
+  {
+    target: 'dl-demo-detail-header',
+    caption:
+      'Open any deal to see its full picture — title, customer, stage, and the actions you use most: edit, and convert.',
+    duration: 4800,
+    apply: pure(() => ({ page: 'detail' as const, activeTab: 'overview' as const })),
+  },
+  {
+    target: 'dl-demo-metrics',
+    caption:
+      'The headline metrics sit up top — estimated value, probability, expected close date, and where the deal came from.',
+    duration: 4600,
+    apply: pure(() => ({ activeTab: 'overview' as const })),
+  },
+  {
+    target: 'dl-demo-tab-items',
+    caption:
+      'The Items tab lists what the deal is for — the articles and services, with their quantities and totals.',
+    duration: 4400,
+    apply: pure(() => ({ activeTab: 'items' as const })),
+  },
+  {
+    target: 'dl-demo-tab-activity',
+    caption:
+      'Activity is the timeline — created, stage changes, every note — an automatic history of how the deal progressed.',
+    duration: 4600,
+    apply: pure(() => ({ activeTab: 'activity' as const })),
+  },
+  {
+    target: 'dl-demo-tab-notes',
+    caption:
+      'And Notes keep the context — what the customer said, the next step, the terms you agreed.',
+    duration: 4200,
+    apply: pure(() => ({ activeTab: 'notes' as const })),
+  },
+
+  // ── Chapter 5 · Convert ────────────────────────────────────────────────────
+  {
+    target: 'dl-demo-convert',
+    caption:
+      'Here is the magic. When a deal is won, you don’t re-type anything — you convert it. Convert opens your options.',
+    duration: 5000,
+    apply: pure(() => ({ activeTab: 'overview' as const, convertOpen: true, convertSale: false, convertProject: false })),
+  },
+  {
+    target: 'dl-demo-convert-sale',
+    caption:
+      'Convert to a Sale, and a sales order is created with the same customer and line items — straight into invoicing.',
+    duration: 5000,
+    apply: pure(() => ({ convertSale: true })),
+  },
+  {
+    target: 'dl-demo-convert-project',
+    caption:
+      'Or convert to a Project to deliver the work — a project is created and linked back to the deal. A deal can even become both at once.',
+    duration: 5200,
+    apply: pure(() => ({ convertProject: true })),
+  },
+  {
+    target: 'dl-demo-convert-confirm',
+    caption:
+      'Confirm, and the deal is marked Won and wired to everything it became — no double entry, the whole chain stays connected.',
+    duration: 4800,
+    apply: pure(() => ({})),
+  },
+
+  // ── Chapter 6 · Wrap-up ────────────────────────────────────────────────────
+  {
+    target: 'dl-demo-title',
+    caption:
+      'That’s Deals — a visual pipeline with a live forecast, a quick way to capture opportunities, and one-click conversion to sales and projects. Track every opportunity from first lead to closed win.',
+    duration: 6000,
+    apply: pure(() => ({ page: 'list' as const, view: 'kanban' as const, convertOpen: false, selectedStat: 'all' as const })),
+  },
+];
+
+export const DL_CHAPTERS: DealsDemoChapter[] = [
+  { id: 'overview', title: 'Pipeline',        start: 0,  end: 7  },
+  { id: 'views',    title: 'Search & Views',  start: 7,  end: 11 },
+  { id: 'create',   title: 'Create a Deal',   start: 11, end: 16 },
+  { id: 'detail',   title: 'Deal Workspace',  start: 16, end: 21 },
+  { id: 'convert',  title: 'Convert',         start: 21, end: 25 },
+  { id: 'wrapup',   title: 'Wrap-up',         start: 25, end: DL_STEPS.length },
+];

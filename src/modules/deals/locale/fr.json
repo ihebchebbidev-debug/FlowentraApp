@@ -1,34 +1,171 @@
 {
   "header": {
-    "title": "Deals",
-    "subtitle": "Track your sales pipeline and revenue opportunities",
-    "add": "Add Deal"
+    "title": "Affaires",
+    "subtitle": "Suivez votre pipeline commercial, du prospect à la signature",
+    "add": "Ajouter une affaire",
+    "watchDemo": "Voir la démo"
   },
-  "active": {
-    "title": "Active Deals",
-    "description": "Your current sales opportunities"
+  "stats": {
+    "total": "Total des affaires",
+    "open": "Pipeline en cours",
+    "won": "Gagnées",
+    "lost": "Perdues",
+    "totalValue": "Valeur totale",
+    "openValue": "Valeur en cours",
+    "wonValue": "Valeur gagnée",
+    "avgValue": "Taille moyenne",
+    "winRate": "Taux de réussite"
   },
-  "pipeline": {
-    "title": "Pipeline Overview",
-    "description": "Visual representation of your sales pipeline",
-    "deals": "Deals"
+  "view": {
+    "list": "Liste",
+    "kanban": "Kanban"
   },
-  "revenue": {
-    "total": "Total Pipeline",
-    "thisMonth": "This Month",
-    "avgDeal": "Avg Deal Size",
-    "winRate": "Win Rate"
+  "search": {
+    "placeholder": "Rechercher des affaires…"
+  },
+  "filters": {
+    "all": "Toutes les étapes"
   },
   "stages": {
-    "Lead": "Lead",
-    "Qualified": "Qualified",
-    "Proposal": "Proposal",
-    "Negotiation": "Negotiation",
-    "Closed Won": "Closed Won"
+    "lead": "Prospect",
+    "qualified": "Qualifiée",
+    "proposal": "Proposition",
+    "negotiation": "Négociation",
+    "won": "Gagnée",
+    "lost": "Perdue"
+  },
+  "table": {
+    "deal": "Affaire",
+    "customer": "Client",
+    "stage": "Étape",
+    "value": "Valeur",
+    "probability": "Probabilité",
+    "closeDate": "Clôture prévue",
+    "owner": "Responsable",
+    "actions": "Actions"
+  },
+  "empty": {
+    "title": "Aucune affaire",
+    "description": "Créez votre première affaire pour commencer à suivre vos opportunités.",
+    "cta": "Ajouter une première affaire"
+  },
+  "actions": {
+    "view": "Voir",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "convert": "Convertir",
+    "create": "Créer l'affaire",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "back": "Retour aux affaires"
+  },
+  "detail": {
+    "tabs": {
+      "overview": "Aperçu",
+      "items": "Articles",
+      "activity": "Activité",
+      "notes": "Notes"
+    },
+    "customer": "Client",
+    "stage": "Étape",
+    "value": "Valeur estimée",
+    "probability": "Probabilité",
+    "expectedClose": "Clôture prévue",
+    "actualClose": "Clôturée le",
+    "source": "Source",
+    "category": "Catégorie",
+    "created": "Créée le",
+    "owner": "Responsable",
+    "description": "Description",
+    "project": "Projet",
+    "noDescription": "Aucune description fournie.",
+    "convertedBanner": "Cette affaire a été convertie",
+    "viewSale": "Voir la vente",
+    "viewProject": "Voir le projet",
+    "viewOffer": "Voir l'offre"
+  },
+  "form": {
+    "addTitle": "Ajouter une affaire",
+    "editTitle": "Modifier l'affaire",
+    "title": "Titre de l'affaire",
+    "titlePlaceholder": "ex. Contrat de support annuel — Acme Corp",
+    "customer": "Client",
+    "selectCustomer": "Sélectionner un client",
+    "stage": "Étape",
+    "value": "Valeur estimée",
+    "currency": "Devise",
+    "probability": "Probabilité (%)",
+    "expectedClose": "Date de clôture prévue",
+    "category": "Catégorie",
+    "source": "Source",
+    "description": "Description",
+    "notes": "Notes",
+    "items": "Lignes d'articles",
+    "required": "Veuillez renseigner les champs obligatoires"
+  },
+  "items": {
+    "add": "Ajouter un article",
+    "name": "Article",
+    "type": "Type",
+    "article": "Article",
+    "service": "Service",
+    "quantity": "Qté",
+    "unitPrice": "Prix unitaire",
+    "discount": "Remise",
+    "lineTotal": "Total",
+    "none": "Aucune ligne. La valeur estimée est utilisée à la place.",
+    "fromCatalog": "Choisir dans le catalogue",
+    "selectArticle": "Sélectionner un article"
+  },
+  "activity": {
+    "add": "Ajouter une note",
+    "placeholder": "Écrivez une note sur cette affaire…",
+    "none": "Aucune activité pour le moment.",
+    "types": {
+      "note": "Note",
+      "call": "Appel",
+      "email": "E-mail",
+      "meeting": "Réunion",
+      "status_change": "Changement d'étape",
+      "created": "Créée",
+      "converted": "Convertie"
+    }
+  },
+  "convert": {
+    "title": "Convertir l'affaire",
+    "description": "Transformez cette affaire gagnée en la prochaine étape de votre flux.",
+    "toSale": "Convertir en vente",
+    "toSaleDesc": "Créer une commande avec le même client et les mêmes lignes.",
+    "toProject": "Convertir en projet",
+    "toProjectDesc": "Lancer un projet pour réaliser le travail, lié à cette affaire.",
+    "toOffer": "Convertir en offre",
+    "toOfferDesc": "Générer un devis formel et chiffré à partir de cette affaire.",
+    "confirm": "Convertir",
+    "converting": "Conversion…",
+    "pickOne": "Choisissez au moins une cible",
+    "alreadySale": "Déjà convertie en vente",
+    "alreadyProject": "Déjà convertie en projet",
+    "alreadyOffer": "Déjà convertie en offre"
+  },
+  "toast": {
+    "created": "Affaire créée",
+    "updated": "Affaire mise à jour",
+    "deleted": "Affaire supprimée",
+    "converted": "Affaire convertie",
+    "loadError": "Échec du chargement des affaires",
+    "saveError": "Échec de l'enregistrement de l'affaire",
+    "deleteError": "Échec de la suppression de l'affaire",
+    "convertError": "Échec de la conversion de l'affaire"
+  },
+  "delete": {
+    "title": "Supprimer cette affaire ?",
+    "description": "Cette action est irréversible. L'affaire sera définitivement supprimée.",
+    "confirm": "Supprimer"
   },
   "plugin": {
     "name": "Affaires",
-    "description": "Gérez les affaires actives, du prospect à la signature.",
+    "description": "Gérez les opportunités du prospect à la signature — convertissez les affaires gagnées en ventes ou projets.",
     "category": "CRM"
   }
 }
