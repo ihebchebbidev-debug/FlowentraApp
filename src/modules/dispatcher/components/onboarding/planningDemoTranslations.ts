@@ -50,7 +50,7 @@ const CAPTIONS_FR: string[] = [
   'Un job planifié est un bloc coloré — par statut, priorité, ordre de service ou technicien — montrant client, heure et durée d’un coup d’œil. Cliquez pour ouvrir, ou glissez pour replanifier.',
   'Basculez entre les vues Jour et Semaine pour planifier à la bonne altitude — une journée chargée, ou toute la forme de la semaine à travers l’équipe.',
   'La barre latérale droite contient chaque job non planifié, regroupé par ordre de service pour garder le travail lié ensemble. C’est votre boîte de réception de planification.',
-  'Maîtrisez la file à votre façon — filtrez par priorité ou statut, recherchez par client ou ordre, et triez par urgence, plus récents ou durée. Puis groupez la liste en sections repliables — par contact, statut ou date de création — pour la travailler comme vous pensez.',
+  'La recherche reste ici, et un seul bouton Filtres ouvre tout le reste — filtrez par priorité ou statut, triez par urgence, plus récents ou durée, et groupez la file en sections repliables par contact, statut ou date de création. Les ordres de service restent repliés : vous voyez l’ordre et révélez ses jobs au survol.',
   'Par défaut, le tableau affiche des ordres de service entiers, pas des jobs individuels — pour planifier tout un ordre d’un coup. Dépliez-en un pour révéler ses jobs, chacun marqué d’un point de priorité.',
   'Survolez pour voir le reste — et vous décidez exactement ce qui apparaît : client, site, durée, compétences, et même les jobs de l’ordre de service. Le contenu du survol est entièrement configurable dans les Profils de planification.',
   'Un bouton Afficher planifiés révèle ce qui est déjà programmé à côté du backlog — rien n’est doublement réservé et vous voyez toujours la charge complète.',

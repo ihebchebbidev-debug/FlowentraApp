@@ -23,6 +23,7 @@ import {
   Eye,
   EyeOff,
   CheckCircle2,
+  SlidersHorizontal,
 } from "lucide-react";
 
 import type { Job, ServiceOrder, InstallationGroup } from "../types";
@@ -71,6 +72,12 @@ export function UnassignedJobsList({
   const [sortBy, setSortBy] = useState<'so' | 'priority' | 'newest' | 'oldest' | 'customer' | 'duration'>("so");
   const [groupBy, setGroupBy] = useState<'none' | 'contact' | 'status' | 'priority' | 'created'>("none");
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const [showFilters, setShowFilters] = useState(false);
+  const activeFilterCount =
+    (priorityFilter !== 'all' ? 1 : 0) +
+    (statusFilter !== 'all' ? 1 : 0) +
+    (sortBy !== 'so' ? 1 : 0) +
+    (groupBy !== 'none' ? 1 : 0);
   const [_isDragging, setIsDragging] = useState(false);
   const [showPlanned, setShowPlanned] = useState(true);
   const [plannedOrders, setPlannedOrders] = useState<ServiceOrder[]>([]);
@@ -220,14 +227,9 @@ export function UnassignedJobsList({
     return { groups: Array.from(groups.values()), ungrouped };
   };
 
-  // Auto-expand all service orders in service-order planning mode
-  const initializedRef = useRef(false);
-  useEffect(() => {
-    if (planningMode === 'serviceOrder' && groupedData.length > 0 && !initializedRef.current) {
-      initializedRef.current = true;
-      setExpandedServiceOrders(new Set(groupedData.map(so => so.id)));
-    }
-  }, [planningMode, groupedData.length]);
+  // Service orders are COLLAPSED by default — the board shows the service order,
+  // and its jobs appear on hover (tooltip) or when you expand the card. This keeps
+  // the queue compact and lets you plan a whole order without wading through jobs.
 
   // Fetch planned orders when toggle is activated
   useEffect(() => {
@@ -680,71 +682,85 @@ export function UnassignedJobsList({
 
 
         
-        {/* Search Input + Priority Filter — stacked to fit narrow sidebar */}
+        {/* Search + a single Filters button (opens the filter/sort/group panel) */}
         <div className="mt-1 flex flex-col gap-1.5">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              placeholder={t('dispatcher.search_placeholder')}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 h-8 text-xs"
-            />
-          </div>
           <div className="flex gap-1.5">
-            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger className="h-8 flex-1 bg-background text-xs">
-                <SelectValue placeholder={t('dispatcher.by_priority', 'Priority')} />
-              </SelectTrigger>
-              <SelectContent className="bg-popover border shadow-md z-50">
-                <SelectItem value="all">{t('dispatcher.by_priority', 'Priority')}</SelectItem>
-                <SelectItem value="urgent">{t('dispatcher.priority_urgent', 'Urgent')}</SelectItem>
-                <SelectItem value="high">{t('dispatcher.priority_high', 'High')}</SelectItem>
-                <SelectItem value="medium">{t('dispatcher.priority_medium', 'Medium')}</SelectItem>
-                <SelectItem value="low">{t('dispatcher.priority_low', 'Low')}</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="h-8 flex-1 bg-background text-xs">
-                <SelectValue placeholder={t('dispatcher.by_status', 'Status')} />
-              </SelectTrigger>
-              <SelectContent className="bg-popover border shadow-md z-50">
-                <SelectItem value="all">{t('dispatcher.by_status', 'Status')}</SelectItem>
-                <SelectItem value="ready_for_planning">{t('serviceOrders.status.ready_for_planning', 'Ready for planning')}</SelectItem>
-                <SelectItem value="planned">{t('serviceOrders.status.planned', 'Planned')}</SelectItem>
-                <SelectItem value="scheduled">{t('serviceOrders.status.scheduled', 'Scheduled')}</SelectItem>
-                <SelectItem value="in_progress">{t('serviceOrders.status.in_progress', 'In progress')}</SelectItem>
-                <SelectItem value="pending">{t('serviceOrders.status.pending', 'Pending')}</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                placeholder={t('dispatcher.search_placeholder')}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8 h-8 text-xs"
+              />
+            </div>
+            <Button
+              variant={showFilters || activeFilterCount > 0 ? 'default' : 'outline'}
+              size="sm"
+              className="h-8 px-2 gap-1 shrink-0"
+              onClick={() => setShowFilters(s => !s)}
+            >
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              {activeFilterCount > 0 && (
+                <Badge variant="secondary" className="h-4 px-1 text-[0.6rem]">{activeFilterCount}</Badge>
+              )}
+            </Button>
           </div>
-          <div className="flex gap-1.5">
-            <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
-              <SelectTrigger className="h-8 flex-1 bg-background text-xs">
-                <SelectValue placeholder={t('dispatcher.sort_by', 'Sort by')} />
-              </SelectTrigger>
-              <SelectContent className="bg-popover border shadow-md z-50">
-                <SelectItem value="so">{t('dispatcher.sort_service_order', 'Service order')}</SelectItem>
-                <SelectItem value="priority">{t('dispatcher.sort_priority', 'Urgency')}</SelectItem>
-                <SelectItem value="newest">{t('dispatcher.sort_newest', 'Newest first')}</SelectItem>
-                <SelectItem value="oldest">{t('dispatcher.sort_oldest', 'Oldest first')}</SelectItem>
-                <SelectItem value="customer">{t('dispatcher.sort_customer', 'Customer')}</SelectItem>
-                <SelectItem value="duration">{t('dispatcher.sort_duration', 'Duration')}</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={groupBy} onValueChange={(v) => setGroupBy(v as typeof groupBy)}>
-              <SelectTrigger className="h-8 flex-1 bg-background text-xs">
-                <SelectValue placeholder={t('dispatcher.group_by', 'Group by')} />
-              </SelectTrigger>
-              <SelectContent className="bg-popover border shadow-md z-50">
-                <SelectItem value="none">{t('dispatcher.group_none', 'No grouping')}</SelectItem>
-                <SelectItem value="contact">{t('dispatcher.group_contact', 'Contact')}</SelectItem>
-                <SelectItem value="status">{t('dispatcher.group_status', 'Status')}</SelectItem>
-                <SelectItem value="priority">{t('dispatcher.group_priority', 'Urgency')}</SelectItem>
-                <SelectItem value="created">{t('dispatcher.group_created', 'Date created')}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+
+          {showFilters && (
+            <div className="flex flex-col gap-1.5 rounded-md border bg-muted/20 p-1.5">
+              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                <SelectTrigger className="h-8 w-full bg-background text-xs"><SelectValue placeholder={t('dispatcher.by_priority', 'Priority')} /></SelectTrigger>
+                <SelectContent className="bg-popover border shadow-md z-50">
+                  <SelectItem value="all">{t('dispatcher.by_priority', 'Priority')}</SelectItem>
+                  <SelectItem value="urgent">{t('dispatcher.priority_urgent', 'Urgent')}</SelectItem>
+                  <SelectItem value="high">{t('dispatcher.priority_high', 'High')}</SelectItem>
+                  <SelectItem value="medium">{t('dispatcher.priority_medium', 'Medium')}</SelectItem>
+                  <SelectItem value="low">{t('dispatcher.priority_low', 'Low')}</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="h-8 w-full bg-background text-xs"><SelectValue placeholder={t('dispatcher.by_status', 'Status')} /></SelectTrigger>
+                <SelectContent className="bg-popover border shadow-md z-50">
+                  <SelectItem value="all">{t('dispatcher.by_status', 'Status')}</SelectItem>
+                  <SelectItem value="ready_for_planning">{t('serviceOrders.status.ready_for_planning', 'Ready for planning')}</SelectItem>
+                  <SelectItem value="planned">{t('serviceOrders.status.planned', 'Planned')}</SelectItem>
+                  <SelectItem value="scheduled">{t('serviceOrders.status.scheduled', 'Scheduled')}</SelectItem>
+                  <SelectItem value="in_progress">{t('serviceOrders.status.in_progress', 'In progress')}</SelectItem>
+                  <SelectItem value="pending">{t('serviceOrders.status.pending', 'Pending')}</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
+                <SelectTrigger className="h-8 w-full bg-background text-xs"><SelectValue placeholder={t('dispatcher.sort_by', 'Sort by')} /></SelectTrigger>
+                <SelectContent className="bg-popover border shadow-md z-50">
+                  <SelectItem value="so">{t('dispatcher.sort_service_order', 'Service order')}</SelectItem>
+                  <SelectItem value="priority">{t('dispatcher.sort_priority', 'Urgency')}</SelectItem>
+                  <SelectItem value="newest">{t('dispatcher.sort_newest', 'Newest first')}</SelectItem>
+                  <SelectItem value="oldest">{t('dispatcher.sort_oldest', 'Oldest first')}</SelectItem>
+                  <SelectItem value="customer">{t('dispatcher.sort_customer', 'Customer')}</SelectItem>
+                  <SelectItem value="duration">{t('dispatcher.sort_duration', 'Duration')}</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={groupBy} onValueChange={(v) => setGroupBy(v as typeof groupBy)}>
+                <SelectTrigger className="h-8 w-full bg-background text-xs"><SelectValue placeholder={t('dispatcher.group_by', 'Group by')} /></SelectTrigger>
+                <SelectContent className="bg-popover border shadow-md z-50">
+                  <SelectItem value="none">{t('dispatcher.group_none', 'No grouping')}</SelectItem>
+                  <SelectItem value="contact">{t('dispatcher.group_contact', 'Contact')}</SelectItem>
+                  <SelectItem value="status">{t('dispatcher.group_status', 'Status')}</SelectItem>
+                  <SelectItem value="priority">{t('dispatcher.group_priority', 'Urgency')}</SelectItem>
+                  <SelectItem value="created">{t('dispatcher.group_created', 'Date created')}</SelectItem>
+                </SelectContent>
+              </Select>
+              {activeFilterCount > 0 && (
+                <button
+                  className="text-[0.7rem] text-muted-foreground hover:text-foreground underline self-end"
+                  onClick={() => { setPriorityFilter('all'); setStatusFilter('all'); setSortBy('so'); setGroupBy('none'); }}
+                >
+                  {t('dispatcher.clear_filters', 'Clear all')}
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Show Planned Toggle */}

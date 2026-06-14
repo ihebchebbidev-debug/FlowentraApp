@@ -185,8 +185,8 @@ export const PL_STEPS: PlanningDemoStep[] = [
   {
     target: 'pl-demo-sidebar-search',
     caption:
-      'Tame the queue your way — filter by priority or status, search by customer or order, and sort by urgency, newest, or duration. Then group the list into collapsible sections — by contact, status, or date created — so you work it however you think.',
-    duration: 6200,
+      'Search stays right here, and a single Filters button opens everything else — filter by priority or status, sort by urgency, newest or duration, and group the queue into collapsible sections by contact, status, or date created. Service orders stay collapsed, so you see the order and reveal its jobs on hover.',
+    duration: 6600,
     apply: pure(() => ({ sidebarHi: 'search' as const })),
   },
   {
