@@ -13,6 +13,8 @@ using MyApi.Modules.Dispatches.Services;
 using MyApi.Modules.Offers.Models;
 using MyApi.Modules.Projects.Models;
 using MyApi.Modules.Sales.Models;
+using MyApi.Modules.Deals.Models;
+using MyApi.Modules.Purchases.Models;
 using MyApi.Modules.ServiceOrders.Models;
 using MyApi.Modules.Contacts.Models;
 using MyApi.Modules.Documents.Models;
@@ -683,6 +685,7 @@ namespace MyApi.Modules.Sync.Services
                 "daily_task" => await ApplyDailyTaskAsync(op, operation, currentUser),
                 "task" => await ApplyTaskAsync(op, operation, currentUser),
                 "offer" => await ApplyOfferAsync(op, operation, currentUser),
+                "deal" => await ApplyDealAsync(op, operation, currentUser),
                 "sale" => await ApplySaleAsync(op, operation, currentUser),
                 "service_order" => await ApplyServiceOrderAsync(op, operation, currentUser),
                 "service_order_job" => await ApplyServiceOrderJobAsync(op, operation, currentUser),
@@ -711,6 +714,14 @@ namespace MyApi.Modules.Sync.Services
                 "hr_leave_balance" => await ApplyHrLeaveBalanceAsync(op, currentUser),
                 "hr_attendance_import" => await ApplyHrAttendanceImportAsync(op, currentUser),
                 "hr_payroll_run" => await ApplyHrPayrollRunAsync(op, operation, currentUser),
+                "contact_note" => await ApplyContactNoteAsync(op, operation, currentUser),
+                "contact_tag" => await ApplyContactTagAsync(op, operation, currentUser),
+                "task_comment" => await ApplyTaskCommentAsync(op, operation, currentUser),
+                "task_attachment" => await ApplyTaskAttachmentAsync(op, operation, currentUser),
+                "task_time_entry" => await ApplyTaskTimeEntryAsync(op, operation, currentUser),
+                "purchase_order" => await ApplyPurchaseOrderAsync(op, operation, currentUser),
+                "supplier_invoice" => await ApplySupplierInvoiceAsync(op, operation, currentUser),
+                "goods_receipt" => await ApplyGoodsReceiptAsync(op, operation, currentUser),
                 _ => throw new InvalidOperationException($"Unsupported entityType '{entityType}' for offline sync")
             };
         }
@@ -749,6 +760,16 @@ namespace MyApi.Modules.Sync.Services
             if (value == "hr_attendance_import") return "hr_attendance_import";
             if (value == "hr_payroll_run") return "hr_payroll_run";
             if (value == "service_order_job") return "service_order_job";
+            // Sub-resources / new modules — keep before the broad contains() checks below
+            // (e.g. "contact_note" must not be swallowed by contains("contact")).
+            if (value == "contact_note" || ep.Contains("/contactnotes")) return "contact_note";
+            if (value == "contact_tag" || ep.Contains("/contacttags")) return "contact_tag";
+            if (value == "task_comment" || ep.Contains("/taskcomments")) return "task_comment";
+            if (value == "task_attachment" || ep.Contains("/taskattachments")) return "task_attachment";
+            if (value == "task_time_entry" || ep.Contains("/tasktimeentries")) return "task_time_entry";
+            if (value == "purchase_order" || ep.Contains("/purchase-orders") || ep.Contains("/purchaseorders")) return "purchase_order";
+            if (value == "supplier_invoice" || ep.Contains("/supplier-invoices") || ep.Contains("/supplierinvoices")) return "supplier_invoice";
+            if (value == "goods_receipt" || ep.Contains("/goods-receipts") || ep.Contains("/goodsreceipts")) return "goods_receipt";
             if (value.Contains("dynamic_form_response") || (ep.Contains("dynamicforms") && ep.Contains("/responses") && !ep.Contains("/responses/count"))) return "dynamic_form_response";
             if (value.Contains("synced_email") || ep.Contains("/emails/")) return "synced_email";
             if (value.Contains("service")) return "service_order";
@@ -756,6 +777,7 @@ namespace MyApi.Modules.Sync.Services
             if (value == "dispatch") return "dispatch";
             if (value.Contains("dispatch_")) return value;
             if (value.Contains("offer")) return "offer";
+            if (value.Contains("deal") || ep.Contains("/deals")) return "deal";
             if (value.Contains("sale")) return "sale";
             if (value.Contains("task")) return "task";
             if (value.Contains("project")) return "project";
@@ -2055,6 +2077,263 @@ namespace MyApi.Modules.Sync.Services
             await _context.SaveChangesAsync();
             await RecordChangeAsync("offer", offer.Id, operation, offer, user);
             return offer.Id;
+        }
+
+        private async Task<int?> ApplyDealAsync(SyncOperationDto op, string operation, string user)
+        {
+            var resolvedId = op.EntityId ?? ParseIdFromEndpoint(op.Endpoint, "deals") ?? ReadInt(op.Payload, "id") ?? ReadInt(op.Payload, "Id");
+            Deal? deal = null;
+            if (resolvedId.HasValue)
+            {
+                deal = await _context.Deals.FirstOrDefaultAsync(x => x.Id == resolvedId.Value);
+            }
+            if (deal == null && operation != "delete")
+            {
+                deal = new Deal
+                {
+                    ContactId = ReadInt(op.Payload, "contactId") ?? 0,
+                    Title = ReadString(op.Payload, "title") ?? string.Empty,
+                    CreatedBy = user,
+                    CreatedDate = DateTime.UtcNow,
+                };
+                _context.Deals.Add(deal);
+            }
+            if (deal == null) return null;
+            if (operation == "delete") { deal.IsDeleted = true; deal.DeletedAt = DateTime.UtcNow; deal.DeletedBy = user; }
+            else
+            {
+                deal.Title = ReadString(op.Payload, "title") ?? deal.Title;
+                deal.Description = ReadString(op.Payload, "description") ?? deal.Description;
+                deal.Stage = ReadString(op.Payload, "stage") ?? deal.Stage;
+                deal.ContactId = ReadInt(op.Payload, "contactId") ?? deal.ContactId;
+                deal.ProjectId = ReadInt(op.Payload, "projectId") ?? deal.ProjectId;
+                deal.Probability = ReadInt(op.Payload, "probability") ?? deal.Probability;
+                deal.Currency = ReadString(op.Payload, "currency") ?? deal.Currency;
+                deal.Category = ReadString(op.Payload, "category") ?? deal.Category;
+                deal.Source = ReadString(op.Payload, "source") ?? deal.Source;
+                deal.Notes = ReadString(op.Payload, "notes") ?? deal.Notes;
+                var estimatedValue = ReadDecimal(op.Payload, "estimatedValue");
+                if (estimatedValue.HasValue) deal.EstimatedValue = estimatedValue.Value;
+            }
+            deal.ModifiedBy = user;
+            deal.ModifiedDate = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            if (string.IsNullOrEmpty(deal.DealNumber))
+            {
+                deal.DealNumber = $"DEAL-{deal.Id:D5}";
+                await _context.SaveChangesAsync();
+            }
+            await RecordChangeAsync("deal", deal.Id, operation, deal, user);
+            return deal.Id;
+        }
+
+        private async Task<int?> ApplyContactNoteAsync(SyncOperationDto op, string operation, string user)
+        {
+            var resolvedId = op.EntityId ?? ParseIdFromEndpoint(op.Endpoint, "ContactNotes") ?? ReadInt(op.Payload, "id") ?? ReadInt(op.Payload, "Id");
+            ContactNote? note = null;
+            if (resolvedId.HasValue) note = await _context.ContactNotes.FirstOrDefaultAsync(x => x.Id == resolvedId.Value);
+            if (note == null && operation != "delete")
+            {
+                note = new ContactNote { ContactId = ReadInt(op.Payload, "contactId") ?? 0, Note = ReadString(op.Payload, "note") ?? string.Empty, CreatedBy = user, CreatedDate = DateTime.UtcNow };
+                _context.ContactNotes.Add(note);
+            }
+            if (note == null) return resolvedId;
+            if (operation == "delete") { _context.ContactNotes.Remove(note); }
+            else { note.Note = ReadString(op.Payload, "note") ?? note.Note; note.ContactId = ReadInt(op.Payload, "contactId") ?? note.ContactId; }
+            var id = note.Id;
+            await _context.SaveChangesAsync();
+            await RecordChangeAsync("contact_note", id, operation, note, user);
+            return id;
+        }
+
+        private async Task<int?> ApplyContactTagAsync(SyncOperationDto op, string operation, string user)
+        {
+            var resolvedId = op.EntityId ?? ParseIdFromEndpoint(op.Endpoint, "ContactTags") ?? ReadInt(op.Payload, "id") ?? ReadInt(op.Payload, "Id");
+            ContactTag? tag = null;
+            if (resolvedId.HasValue) tag = await _context.ContactTags.FirstOrDefaultAsync(x => x.Id == resolvedId.Value);
+            if (tag == null && operation != "delete")
+            {
+                tag = new ContactTag { Name = ReadString(op.Payload, "name") ?? string.Empty, Color = ReadString(op.Payload, "color") ?? "#3b82f6", CreatedBy = user };
+                _context.ContactTags.Add(tag);
+            }
+            if (tag == null) return resolvedId;
+            if (operation == "delete") { tag.IsDeleted = true; }
+            else { tag.Name = ReadString(op.Payload, "name") ?? tag.Name; tag.Color = ReadString(op.Payload, "color") ?? tag.Color; }
+            await _context.SaveChangesAsync();
+            await RecordChangeAsync("contact_tag", tag.Id, operation, tag, user);
+            return tag.Id;
+        }
+
+        private async Task<int?> ApplyTaskCommentAsync(SyncOperationDto op, string operation, string user)
+        {
+            var resolvedId = op.EntityId ?? ParseIdFromEndpoint(op.Endpoint, "TaskComments") ?? ReadInt(op.Payload, "id") ?? ReadInt(op.Payload, "Id");
+            TaskComment? c = null;
+            if (resolvedId.HasValue) c = await _context.TaskComments.FirstOrDefaultAsync(x => x.Id == resolvedId.Value);
+            if (c == null && operation != "delete")
+            {
+                c = new TaskComment { TaskId = ReadInt(op.Payload, "taskId") ?? ReadInt(op.Payload, "projectTaskId") ?? 0, Comment = ReadString(op.Payload, "comment") ?? string.Empty, CreatedBy = user };
+                _context.TaskComments.Add(c);
+            }
+            if (c == null) return resolvedId;
+            if (operation == "delete") { _context.TaskComments.Remove(c); }
+            else { c.Comment = ReadString(op.Payload, "comment") ?? c.Comment; }
+            var id = c.Id;
+            await _context.SaveChangesAsync();
+            await RecordChangeAsync("task_comment", id, operation, c, user);
+            return id;
+        }
+
+        // Attachment CREATEs are file uploads → replayed as binary by re-issuing the
+        // original multipart request. This handler only services JSON ops (e.g. delete).
+        private async Task<int?> ApplyTaskAttachmentAsync(SyncOperationDto op, string operation, string user)
+        {
+            var resolvedId = op.EntityId ?? ParseIdFromEndpoint(op.Endpoint, "TaskAttachments") ?? ReadInt(op.Payload, "id") ?? ReadInt(op.Payload, "Id");
+            if (!resolvedId.HasValue) return null;
+            var a = await _context.TaskAttachments.FirstOrDefaultAsync(x => x.Id == resolvedId.Value);
+            if (a == null) return resolvedId; // already removed — idempotent
+            if (operation == "delete") { _context.TaskAttachments.Remove(a); await _context.SaveChangesAsync(); }
+            await RecordChangeAsync("task_attachment", resolvedId.Value, operation, a, user);
+            return resolvedId;
+        }
+
+        private async Task<int?> ApplyTaskTimeEntryAsync(SyncOperationDto op, string operation, string user)
+        {
+            var resolvedId = op.EntityId ?? ParseIdFromEndpoint(op.Endpoint, "TaskTimeEntries") ?? ReadInt(op.Payload, "id") ?? ReadInt(op.Payload, "Id");
+            TaskTimeEntry? e = null;
+            if (resolvedId.HasValue) e = await _context.TaskTimeEntries.FirstOrDefaultAsync(x => x.Id == resolvedId.Value);
+            if (e == null && operation != "delete")
+            {
+                e = new TaskTimeEntry
+                {
+                    UserId = ReadInt(op.Payload, "userId") ?? 0,
+                    StartTime = ReadDate(op.Payload, "startTime") ?? DateTime.UtcNow,
+                    CreatedBy = user,
+                    CreatedDate = DateTime.UtcNow,
+                };
+                _context.TaskTimeEntries.Add(e);
+            }
+            if (e == null) return resolvedId;
+            if (operation == "delete") { _context.TaskTimeEntries.Remove(e); }
+            else
+            {
+                e.ProjectTaskId = ReadInt(op.Payload, "projectTaskId") ?? e.ProjectTaskId;
+                e.DailyTaskId = ReadInt(op.Payload, "dailyTaskId") ?? e.DailyTaskId;
+                e.UserId = ReadInt(op.Payload, "userId") ?? e.UserId;
+                e.UserName = ReadString(op.Payload, "userName") ?? e.UserName;
+                var st = ReadDate(op.Payload, "startTime"); if (st.HasValue) e.StartTime = st.Value;
+                e.EndTime = ReadDate(op.Payload, "endTime") ?? e.EndTime;
+                var dur = ReadDecimal(op.Payload, "duration"); if (dur.HasValue) e.Duration = dur.Value;
+                e.Description = ReadString(op.Payload, "description") ?? e.Description;
+                var wt = ReadString(op.Payload, "workType"); if (wt != null) e.WorkType = wt;
+                e.ModifiedBy = user; e.ModifiedDate = DateTime.UtcNow;
+            }
+            var id = e.Id;
+            await _context.SaveChangesAsync();
+            await RecordChangeAsync("task_time_entry", id, operation, e, user);
+            return id;
+        }
+
+        private async Task<int?> ApplyPurchaseOrderAsync(SyncOperationDto op, string operation, string user)
+        {
+            var resolvedId = op.EntityId ?? ParseIdFromEndpoint(op.Endpoint, "purchase-orders") ?? ReadInt(op.Payload, "id") ?? ReadInt(op.Payload, "Id");
+            PurchaseOrder? po = null;
+            if (resolvedId.HasValue) po = await _context.Set<PurchaseOrder>().FirstOrDefaultAsync(x => x.Id == resolvedId.Value);
+            if (po == null && operation != "delete")
+            {
+                po = new PurchaseOrder
+                {
+                    SupplierId = ReadInt(op.Payload, "supplierId") ?? 0,
+                    SupplierName = ReadString(op.Payload, "supplierName") ?? string.Empty,
+                    OrderNumber = ReadString(op.Payload, "orderNumber") ?? $"PO-{DateTime.UtcNow:yyyyMMddHHmmss}",
+                    Status = ReadString(op.Payload, "status") ?? "draft",
+                    CreatedBy = user,
+                    CreatedDate = DateTime.UtcNow,
+                };
+                _context.Set<PurchaseOrder>().Add(po);
+            }
+            if (po == null) return resolvedId;
+            if (operation == "delete") { po.IsDeleted = true; }
+            else
+            {
+                po.Title = ReadString(op.Payload, "title") ?? po.Title;
+                po.Description = ReadString(op.Payload, "description") ?? po.Description;
+                po.SupplierId = ReadInt(op.Payload, "supplierId") ?? po.SupplierId;
+                po.SupplierName = ReadString(op.Payload, "supplierName") ?? po.SupplierName;
+                po.Status = ReadString(op.Payload, "status") ?? po.Status;
+                po.ModifiedBy = user; po.ModifiedDate = DateTime.UtcNow;
+            }
+            await _context.SaveChangesAsync();
+            await RecordChangeAsync("purchase_order", po.Id, operation, po, user);
+            return po.Id;
+        }
+
+        private async Task<int?> ApplySupplierInvoiceAsync(SyncOperationDto op, string operation, string user)
+        {
+            var resolvedId = op.EntityId ?? ParseIdFromEndpoint(op.Endpoint, "supplier-invoices") ?? ReadInt(op.Payload, "id") ?? ReadInt(op.Payload, "Id");
+            SupplierInvoice? inv = null;
+            if (resolvedId.HasValue) inv = await _context.Set<SupplierInvoice>().FirstOrDefaultAsync(x => x.Id == resolvedId.Value);
+            if (inv == null && operation != "delete")
+            {
+                inv = new SupplierInvoice
+                {
+                    SupplierId = ReadInt(op.Payload, "supplierId") ?? 0,
+                    SupplierName = ReadString(op.Payload, "supplierName") ?? string.Empty,
+                    InvoiceNumber = ReadString(op.Payload, "invoiceNumber") ?? $"SINV-{DateTime.UtcNow:yyyyMMddHHmmss}",
+                    Status = ReadString(op.Payload, "status") ?? "draft",
+                    CreatedBy = user,
+                    CreatedDate = DateTime.UtcNow,
+                };
+                _context.Set<SupplierInvoice>().Add(inv);
+            }
+            if (inv == null) return resolvedId;
+            if (operation == "delete") { inv.IsDeleted = true; }
+            else
+            {
+                inv.SupplierId = ReadInt(op.Payload, "supplierId") ?? inv.SupplierId;
+                inv.SupplierName = ReadString(op.Payload, "supplierName") ?? inv.SupplierName;
+                inv.Status = ReadString(op.Payload, "status") ?? inv.Status;
+                inv.PurchaseOrderId = ReadInt(op.Payload, "purchaseOrderId") ?? inv.PurchaseOrderId;
+                inv.ModifiedBy = user; inv.ModifiedDate = DateTime.UtcNow;
+            }
+            await _context.SaveChangesAsync();
+            await RecordChangeAsync("supplier_invoice", inv.Id, operation, inv, user);
+            return inv.Id;
+        }
+
+        private async Task<int?> ApplyGoodsReceiptAsync(SyncOperationDto op, string operation, string user)
+        {
+            var resolvedId = op.EntityId ?? ParseIdFromEndpoint(op.Endpoint, "goods-receipts") ?? ReadInt(op.Payload, "id") ?? ReadInt(op.Payload, "Id");
+            GoodsReceipt? gr = null;
+            if (resolvedId.HasValue) gr = await _context.Set<GoodsReceipt>().FirstOrDefaultAsync(x => x.Id == resolvedId.Value);
+            if (gr == null && operation != "delete")
+            {
+                gr = new GoodsReceipt
+                {
+                    PurchaseOrderId = ReadInt(op.Payload, "purchaseOrderId") ?? 0,
+                    SupplierId = ReadInt(op.Payload, "supplierId") ?? 0,
+                    SupplierName = ReadString(op.Payload, "supplierName") ?? string.Empty,
+                    ReceiptNumber = ReadString(op.Payload, "receiptNumber") ?? $"GR-{DateTime.UtcNow:yyyyMMddHHmmss}",
+                    ReceiptDate = ReadDate(op.Payload, "receiptDate") ?? DateTime.UtcNow,
+                    Status = ReadString(op.Payload, "status") ?? "partial",
+                    CreatedBy = user,
+                    CreatedDate = DateTime.UtcNow,
+                };
+                _context.Set<GoodsReceipt>().Add(gr);
+            }
+            if (gr == null) return resolvedId;
+            if (operation == "delete") { _context.Set<GoodsReceipt>().Remove(gr); }
+            else
+            {
+                gr.PurchaseOrderId = ReadInt(op.Payload, "purchaseOrderId") ?? gr.PurchaseOrderId;
+                gr.SupplierId = ReadInt(op.Payload, "supplierId") ?? gr.SupplierId;
+                gr.Status = ReadString(op.Payload, "status") ?? gr.Status;
+                var rd = ReadDate(op.Payload, "receiptDate"); if (rd.HasValue) gr.ReceiptDate = rd.Value;
+                gr.ModifiedBy = user; gr.ModifiedDate = DateTime.UtcNow;
+            }
+            var id = gr.Id;
+            await _context.SaveChangesAsync();
+            await RecordChangeAsync("goods_receipt", id, operation, gr, user);
+            return id;
         }
 
         private async Task<int?> ApplySaleAsync(SyncOperationDto op, string operation, string user)

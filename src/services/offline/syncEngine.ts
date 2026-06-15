@@ -15,6 +15,7 @@ import { isHiddenFromSyncUi, sanitizeOfflineSyncLastDetailForUi } from "./syncUi
 import { OFFLINE_SYNC_BINARY_CONCURRENCY } from "./hydrationLimits";
 import { runPool } from "./parallelPool";
 import { runPostSyncCacheRefresh } from "./syncCacheRefresh";
+import { isReplayableEntityType } from "./supportedEntities";
 import { SERVICE_ORDER_JOB_PATH_REGEX } from "@/services/api/serviceOrderJobPaths";
 
 const OFFLINE_ENABLED_KEY = "offline-mode-enabled";
@@ -198,12 +199,21 @@ function inferConflictStrategy(entityType: string): OfflineConflictStrategy {
   if (entityType.startsWith("support_ticket")) return "last_write_wins";
   if (entityType === "daily_task") return "last_write_wins";
   if (entityType.startsWith("task_checklist")) return "merge";
+  if (
+    entityType === "contact_note" || entityType === "contact_tag" ||
+    entityType === "task_comment" || entityType === "task_attachment" ||
+    entityType === "task_time_entry" || entityType === "purchase_order" ||
+    entityType === "supplier_invoice" || entityType === "goods_receipt"
+  ) {
+    return "last_write_wins";
+  }
   if (entityType === "lookup_item" || entityType === "lookup_bulk" || entityType === "currency") return "last_write_wins";
   if (entityType.startsWith("planning_")) return "last_write_wins";
   if (entityType.startsWith("dispatch_")) return "last_write_wins";
   if (entityType.startsWith("hr_")) return "last_write_wins";
   if (
     entityType === "offer" ||
+    entityType === "deal" ||
     entityType === "sale" ||
     entityType === "service_order" ||
     entityType === "service_order_job"
@@ -282,6 +292,17 @@ function inferEntityType(endpoint: string): string {
   // Synced email mutations: PATCH .../emails/:id/star|read, DELETE .../emails/:id
   if (normalized.includes("/emails/")) return "synced_email";
   if (normalized.includes("stock-transactions")) return "stock_transaction";
+  // Purchases
+  if (normalized.includes("purchase-orders") || normalized.includes("purchaseorders")) return "purchase_order";
+  if (normalized.includes("supplier-invoices") || normalized.includes("supplierinvoices")) return "supplier_invoice";
+  if (normalized.includes("goods-receipts") || normalized.includes("goodsreceipts")) return "goods_receipt";
+  // Time & Expenses (standalone task time tracking)
+  if (normalized.includes("tasktimeentries") || normalized.includes("task-time-entries")) return "task_time_entry";
+  // Collaboration sub-resources — before broad /tasks and /contacts matches
+  if (normalized.includes("taskcomments") || normalized.includes("task-comments")) return "task_comment";
+  if (normalized.includes("taskattachments") || normalized.includes("task-attachments")) return "task_attachment";
+  if (normalized.includes("contactnotes") || normalized.includes("contact-notes")) return "contact_note";
+  if (normalized.includes("contacttags") || normalized.includes("contact-tags")) return "contact_tag";
   if (normalized.includes("/articles")) return "article";
   if (normalized.includes("/contacts")) return "contact";
   if (normalized.includes("/installations")) return "installation";
@@ -299,6 +320,7 @@ function inferEntityType(endpoint: string): string {
   if (normalized.includes("project-task") || normalized.includes("/tasks")) return "task";
   if (normalized.includes("/projects")) return "project";
   if (normalized.includes("/offers")) return "offer";
+  if (normalized.includes("/deals")) return "deal";
   if (normalized.includes("/sales")) return "sale";
   if (
     (normalized.includes("serviceorder") || normalized.includes("service-orders")) &&
@@ -339,7 +361,16 @@ function inferEntityIdFromEndpoint(endpoint: string, entityType: string): number
     return undefined;
   }
   if (entityType === "offer") return parseIdAfterSegment(endpoint, "offers");
+  if (entityType === "deal") return parseIdAfterSegment(endpoint, "deals");
   if (entityType === "sale") return parseIdAfterSegment(endpoint, "sales");
+  if (entityType === "purchase_order") return parseIdAfterSegment(endpoint, "purchase-orders") ?? parseIdAfterSegment(endpoint, "purchaseorders");
+  if (entityType === "supplier_invoice") return parseIdAfterSegment(endpoint, "supplier-invoices") ?? parseIdAfterSegment(endpoint, "supplierinvoices");
+  if (entityType === "goods_receipt") return parseIdAfterSegment(endpoint, "goods-receipts") ?? parseIdAfterSegment(endpoint, "goodsreceipts");
+  if (entityType === "task_time_entry") return parseIdAfterSegment(endpoint, "tasktimeentries");
+  if (entityType === "task_comment") return parseIdAfterSegment(endpoint, "taskcomments");
+  if (entityType === "task_attachment") return parseIdAfterSegment(endpoint, "taskattachments");
+  if (entityType === "contact_note") return parseIdAfterSegment(endpoint, "contactnotes");
+  if (entityType === "contact_tag") return parseIdAfterSegment(endpoint, "contacttags");
   if (entityType === "service_order") return parseIdAfterSegment(endpoint, "service-orders");
   if (entityType === "dispatch") return parseIdAfterSegment(endpoint, "dispatches");
   return undefined;
@@ -381,6 +412,15 @@ function parseSyncedEmailIdsFromEndpoint(endpoint: string): { accountId?: string
   return { accountId: match[1], emailId: match[2] };
 }
 
+/**
+ * True when an offline mutation to this endpoint can actually be replayed by the
+ * backend on sync. Used by the fetch guard to BLOCK (with a clear error) writes the
+ * backend can't apply — instead of silently queueing and losing them.
+ */
+export function canReplayEndpointOffline(endpoint: string): boolean {
+  return isReplayableEntityType(inferEntityType(endpoint));
+}
+
 export async function queueHttpOperation(input: {
   endpoint: string;
   method: string;
@@ -389,6 +429,15 @@ export async function queueHttpOperation(input: {
 }): Promise<OfflineOperation> {
   const opId = uuid();
   const entityType = inferEntityType(input.endpoint);
+  // Anti-drift guard: if a mutation maps to a type the backend replay can't apply,
+  // it will be rejected on sync and the change lost. Surface it loudly in DEV so a new
+  // module never silently falls through (see supportedEntities.ts).
+  if (import.meta.env.DEV && entityType !== "generic" && !isReplayableEntityType(entityType)) {
+    console.error(
+      `[offline] entityType "${entityType}" is inferred but NOT in OFFLINE_REPLAYABLE_ENTITY_TYPES — ` +
+        `add a backend handler in SyncService.ApplyOperationAsync and register it, or this offline write will be lost. Endpoint: ${input.endpoint}`,
+    );
+  }
   const entityId = inferEntityIdFromEndpoint(input.endpoint, entityType);
   let payload = input.body;
   let blobRefs: OfflineBlobRef[] | undefined = undefined;

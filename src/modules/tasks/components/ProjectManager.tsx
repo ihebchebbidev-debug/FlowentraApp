@@ -11,6 +11,7 @@ import {
   Search, 
   Filter,
   Grid,
+  Columns3,
   List,
   CheckSquare,
   Briefcase,
@@ -24,6 +25,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Project, ProjectStats, Task, Technician } from "../types";
 import { ProjectsList } from "./ProjectsList";
 import { ProjectsTable } from "./ProjectsTable";
+import { ProjectStatusBoard } from "./ProjectStatusBoard";
 import { EditProjectModal } from "./EditProjectModal";
 import { CreateProjectModal } from "./CreateProjectModal";
 import { QuickTaskModal } from "./QuickTaskModal";
@@ -54,11 +56,12 @@ export function ProjectManager({ onSwitchToTasks: _onSwitchToTasks }: ProjectMan
   const { preferences } = usePreferences();
   const { logAction, logSearch, logFilter, logFormSubmit } = useActionLogger('Projects');
   
-  // Desktop defaults to the table view ('grid' renders <ProjectsTable />),
+  // Desktop defaults to the Kanban board (projects grouped by status);
   // mobile defaults to the single-column list view.
-  const getInitialViewMode = (): 'grid' | 'list' => {
+  // 'kanban' = status board, 'grid' renders <ProjectsTable />, 'list' renders <ProjectsList />.
+  const getInitialViewMode = (): 'kanban' | 'grid' | 'list' => {
     if (typeof window !== 'undefined' && window.innerWidth < 768) return 'list';
-    return 'grid';
+    return 'kanban';
   };
 
   
@@ -73,7 +76,7 @@ export function ProjectManager({ onSwitchToTasks: _onSwitchToTasks }: ProjectMan
   const [filterOwner, setFilterOwner] = useState<'all' | string>('all');
   const [filterTimeframe, setFilterTimeframe] = useState<'all' | '7' | '30' | '365'>('all');
   const [showFilterBar, setShowFilterBar] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>(getInitialViewMode);
+  const [viewMode, setViewMode] = useState<'kanban' | 'grid' | 'list'>(getInitialViewMode);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -204,12 +207,11 @@ export function ProjectManager({ onSwitchToTasks: _onSwitchToTasks }: ProjectMan
     fetchProjects();
   }, [fetchProjects]);
 
-  // Update viewMode when preferences change
+  // Projects default to the Kanban board regardless of the global table/list
+  // preference (per product decision). Honor an explicit "list" preference only;
+  // 'grid'/'table' is the generic default we intentionally replace with Kanban here.
   useEffect(() => {
-    if (preferences?.dataView) {
-      const newMode = preferences.dataView === 'grid' ? 'grid' : 'list';
-      setViewMode(newMode);
-    }
+    if (preferences?.dataView === 'list') setViewMode('list');
   }, [preferences?.dataView]);
 
   const filteredProjects = projects.filter(project => {
@@ -595,9 +597,19 @@ export function ProjectManager({ onSwitchToTasks: _onSwitchToTasks }: ProjectMan
           
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <Button
+              variant={viewMode === 'kanban' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('kanban')}
+              title={t('projects.view.kanban', { defaultValue: 'Board' })}
+              className={`flex-1 sm:flex-none ${viewMode === 'kanban' ? 'bg-primary text-white hover:bg-primary/90' : ''}`}
+            >
+              <Columns3 className={`h-4 w-4 ${viewMode === 'kanban' ? 'text-white' : ''}`} />
+            </Button>
+            <Button
               variant={viewMode === 'list' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setViewMode('list')}
+              title={t('projects.view.list', { defaultValue: 'List' })}
               className={`flex-1 sm:flex-none ${viewMode === 'list' ? 'bg-primary text-white hover:bg-primary/90' : ''}`}
             >
               <List className={`h-4 w-4 ${viewMode === 'list' ? 'text-white' : ''}`} />
@@ -606,6 +618,7 @@ export function ProjectManager({ onSwitchToTasks: _onSwitchToTasks }: ProjectMan
               variant={viewMode === 'grid' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setViewMode('grid')}
+              title={t('projects.view.table', { defaultValue: 'Table' })}
               className={`flex-1 sm:flex-none ${viewMode === 'grid' ? 'bg-primary text-white hover:bg-primary/90' : ''}`}
             >
               <Grid className={`h-4 w-4 ${viewMode === 'grid' ? 'text-white' : ''}`} />
@@ -681,9 +694,18 @@ export function ProjectManager({ onSwitchToTasks: _onSwitchToTasks }: ProjectMan
           </div>
         ) : (
           <div>
-            {viewMode === 'list' ? (
+            {viewMode === 'kanban' ? (
+              <ProjectStatusBoard
+                projects={filteredProjects}
+                projectStats={projectStats}
+                onOpenProject={handleOpenProject}
+                onEditProject={handleEditProject}
+                onDeleteProject={handleRequestDeleteProject}
+                onToggleStatus={handleToggleStatus}
+              />
+            ) : viewMode === 'list' ? (
               <Card className="shadow-card border-0 bg-card">
-                
+
                 <CardContent className="p-0">
                   <div className="divide-y divide-border">
                     <ProjectsList

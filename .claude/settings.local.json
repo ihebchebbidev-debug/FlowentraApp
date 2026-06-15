@@ -38,7 +38,12 @@
       "Bash(grep -nE \"groupedData.map\\\\\\(\\\\\\(serviceOrderData|^              \\\\\\)\\\\\\)$|^            \\\\\\)\\\\}$\" src/modules/dispatcher/components/UnassignedJobsList.tsx)",
       "Bash(grep -nE \"^              \\\\\\)\\\\\\)$\" src/modules/dispatcher/components/UnassignedJobsList.tsx)",
       "Bash(awk -F\"'\" 'BEGIN{i=0}{print i\": \"$2; i++}')",
-      "Bash(node -e \"const m=require\\('fs'\\).readFileSync\\('src/modules/dispatcher/components/onboarding/planningDemoTranslations.ts','utf8'\\);const b=m.split\\(/CAPTIONS_FR[^\\\\[]*\\\\[/\\)[1].split\\('];'\\)[0];const lines=b.split\\(/\\\\n/\\).filter\\(l=>l.trim\\(\\).startsWith\\(String.fromCharCode\\(39\\)\\)\\);console.log\\('idx16:',lines[16].trim\\(\\)\\)\")"
+      "Bash(node -e \"const m=require\\('fs'\\).readFileSync\\('src/modules/dispatcher/components/onboarding/planningDemoTranslations.ts','utf8'\\);const b=m.split\\(/CAPTIONS_FR[^\\\\[]*\\\\[/\\)[1].split\\('];'\\)[0];const lines=b.split\\(/\\\\n/\\).filter\\(l=>l.trim\\(\\).startsWith\\(String.fromCharCode\\(39\\)\\)\\);console.log\\('idx16:',lines[16].trim\\(\\)\\)\")",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('src/modules/settings/locale/en.json','utf8'\\)\\);JSON.parse\\(require\\('fs'\\).readFileSync\\('src/modules/settings/locale/fr.json','utf8'\\)\\);console.log\\('valid'\\)\")",
+      "Bash(grep -vE \"api$\")",
+      "Bash(grep -nA10 \"interface ProjectStats\" src/modules/tasks/types.ts)",
+      "Bash(xargs grep -L \"getInitialViewMode\")",
+      "Bash(awk '/const loadAssignedJobs = async/,/^  };/' src/modules/dispatcher/components/calendar/CustomCalendar.tsx)"
     ],
     "additionalDirectories": [
       "C:\\Users\\iheb.chebbi\\Desktop\\FlowentraApp\\Backend\\Modules\\Offers\\DTOs"

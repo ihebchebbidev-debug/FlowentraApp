@@ -1,5 +1,5 @@
 import { getCachedResponse, putCachedResponse } from "./hydrationStore";
-import { getOfflineEnabled, normalizeHeaders, queueHttpOperation, shouldQueueOfflineWrites } from "./syncEngine";
+import { canReplayEndpointOffline, getOfflineEnabled, normalizeHeaders, queueHttpOperation, shouldQueueOfflineWrites } from "./syncEngine";
 import {
   headersBypassHydrationCache,
   headersContainOfflineQueueBypass,
@@ -77,6 +77,18 @@ export function installOfflineFetchGuard(): void {
           status: 200,
           headers: { "Content-Type": "application/json" },
         });
+      }
+      // No silent data loss: if the backend can't replay this entity on sync, don't
+      // queue it — return a clear "needs connection" error so the user knows now.
+      if (!canReplayEndpointOffline(rel)) {
+        return new Response(
+          JSON.stringify({
+            offline: true,
+            unsupported: true,
+            message: "This action isn’t available offline yet — reconnect to save your changes.",
+          }),
+          { status: 503, headers: { "Content-Type": "application/json" } },
+        );
       }
       const body = await extractBody(input, init);
       await queueHttpOperation({

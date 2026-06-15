@@ -220,6 +220,7 @@ export async function runOfflineHydration(): Promise<{ ok: boolean; modulesFaile
   const dailyTaskIds = new Set<number>();
   const contactIds: number[] = [];
   const offerIds: number[] = [];
+  const dealIds: number[] = [];
   const saleIds: number[] = [];
   const serviceOrderIds: number[] = [];
   const dispatchIds: number[] = [];
@@ -474,10 +475,22 @@ export async function runOfflineHydration(): Promise<{ ok: boolean; modulesFaile
       });
     });
 
+    await run("deals", async () => {
+      await paginateSimple("deals", (p) => `${API_URL}/api/deals?page=${p}&limit=100`, (json) => {
+        dealIds.push(...extractNumericIdsFromList(json, ["deals"]));
+      });
+    });
+
     await run("sales", async () => {
       await paginateSimple("sales", (p) => `${API_URL}/api/sales?page=${p}&limit=100`, (json) => {
         saleIds.push(...extractNumericIdsFromList(json, ["sales"]));
       });
+    });
+
+    await run("purchases", async () => {
+      await paginateSimple("purchase-orders", (p) => `${API_URL}/api/purchase-orders?page=${p}&pageSize=100`, () => {});
+      await paginateSimple("supplier-invoices", (p) => `${API_URL}/api/supplier-invoices?page=${p}&pageSize=100`, () => {});
+      await paginateSimple("goods-receipts", (p) => `${API_URL}/api/goods-receipts?page=${p}&pageSize=100`, () => {});
     });
 
     await run("service_orders", async () => {
@@ -579,6 +592,7 @@ export async function runOfflineHydration(): Promise<{ ok: boolean; modulesFaile
       const pi = uniqNumbers(projectIds).slice(0, MAX_ENTITY_DETAIL_PREFETCH);
       const ci = uniqNumbers(contactIds).slice(0, MAX_ENTITY_DETAIL_PREFETCH);
       const oi = uniqNumbers(offerIds).slice(0, MAX_ENTITY_DETAIL_PREFETCH);
+      const di = uniqNumbers(dealIds).slice(0, MAX_ENTITY_DETAIL_PREFETCH);
       const si = uniqNumbers(saleIds).slice(0, MAX_ENTITY_DETAIL_PREFETCH);
       const soi = uniqNumbers(serviceOrderIds).slice(0, MAX_ENTITY_DETAIL_PREFETCH);
       const di = uniqNumbers(dispatchIds).slice(0, MAX_ENTITY_DETAIL_PREFETCH);
@@ -652,6 +666,16 @@ export async function runOfflineHydration(): Promise<{ ok: boolean; modulesFaile
         async (id) => {
           if (signal.aborted) return;
           await fetchAndCache(`${API_URL}/api/offers/${id}`, signal);
+          bump();
+        },
+        { signal },
+      );
+      await runPool(
+        di,
+        HYDRATION_PARALLEL_FETCHES,
+        async (id) => {
+          if (signal.aborted) return;
+          await fetchAndCache(`${API_URL}/api/deals/${id}`, signal);
           bump();
         },
         { signal },

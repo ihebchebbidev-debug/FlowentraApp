@@ -134,6 +134,36 @@ function clearReactQueryCaches(): void {
  * Pass {viewAll:true} to enter cross-company audit mode (MainAdmin only).
  * Pass {id:null} to clear.
  */
+/**
+ * If `pathname` is an entity detail/edit page (it contains an id-like segment —
+ * a number or a UUID), return the path up to that segment (the owning module's
+ * list page). Returns null for list/overview pages so the caller reloads in place.
+ *
+ * Examples:
+ *   /dashboard/contacts/5            → /dashboard/contacts
+ *   /dashboard/sales/12/edit         → /dashboard/sales
+ *   /dashboard/tasks/projects/3      → /dashboard/tasks/projects
+ *   /dashboard/contacts              → null (stay)
+ */
+export function stripEntityDetailPath(pathname: string): string | null {
+  const segs = pathname.split('/').filter(Boolean); // ['dashboard','contacts','5']
+  // An entity id segment is anything containing a digit (numeric ids, numeric-string
+  // ids, GUIDs, slug-with-number ids) or a UUID. Structural/section/action segments
+  // in this app are purely alphabetic (list, edit, create, projects, service-orders,
+  // manage-scheduler, …), so they're never mistaken for ids. Truncating to a resource
+  // base is safe even for nested modules — their index route redirects to the list.
+  const isIdLike = (s: string) =>
+    /\d/.test(s) ||
+    /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(s);
+  // Start at 2: keep at least /dashboard/<module> as the destination.
+  for (let i = 2; i < segs.length; i++) {
+    if (isIdLike(segs[i])) {
+      return '/' + segs.slice(0, i).join('/');
+    }
+  }
+  return null;
+}
+
 export function setActiveCompany(
   payload: { id?: number | null; viewAll?: boolean; reload?: boolean } = {},
 ): void {
@@ -181,11 +211,17 @@ export function setActiveCompany(
   notifyTargetTenantChanged();
 
   if (reload && typeof window !== 'undefined') {
-    // Stay on the current page when already inside the dashboard so the admin
-    // doesn't lose their navigation context. Only redirect to /dashboard when
-    // switching from outside it (e.g. /select-company, /login).
     if (window.location.pathname.startsWith('/dashboard')) {
-      window.location.reload();
+      // A detail/edit page (e.g. /dashboard/contacts/5) points at one record. That
+      // record almost never exists under the newly-selected company, so reloading it
+      // would 404. Send the user up to the owning module's list instead; otherwise
+      // reload in place to preserve navigation context on list/overview pages.
+      const listPath = stripEntityDetailPath(window.location.pathname);
+      if (listPath) {
+        window.location.replace(listPath);
+      } else {
+        window.location.reload();
+      }
     } else {
       window.location.replace('/dashboard');
     }

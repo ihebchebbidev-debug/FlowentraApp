@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
-  Plus, LayoutGrid, Table as TableIcon, Target, Trophy, TrendingUp,
+  Plus, LayoutGrid, List, Table as TableIcon, Target, Trophy, TrendingUp,
   MoreVertical, Eye, Edit, Trash2, GitBranch, Loader2, Handshake, Play, Filter, ChevronDown,
 } from "lucide-react";
 import { format } from "date-fns";
@@ -33,7 +33,7 @@ export function DealsList() {
   const navigate = useNavigate();
   const { deals, stats, loading, refetch, deleteDeal } = useDeals();
 
-  const [viewMode, setViewMode] = useState<"table" | "kanban">(() => getInitialViewMode(["table", "kanban"] as const, "table"));
+  const [viewMode, setViewMode] = useState<"list" | "table" | "kanban">(() => getInitialViewMode(["list", "table", "kanban"] as const, "table"));
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStat, setSelectedStat] = useState<StatFilter>("all");
   const [showFilterBar, setShowFilterBar] = useState(false);
@@ -157,6 +157,14 @@ export function DealsList() {
 
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <Button
+              variant={viewMode === "list" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setViewMode("list")}
+              className={`flex-1 sm:flex-none ${viewMode === "list" ? "bg-primary text-white hover:bg-primary/90" : ""}`}
+            >
+              <List className={`h-4 w-4 ${viewMode === "list" ? "text-white" : ""}`} />
+            </Button>
+            <Button
               variant={viewMode === "table" ? "default" : "outline"}
               size="sm"
               onClick={() => setViewMode("table")}
@@ -217,6 +225,30 @@ export function DealsList() {
             onOpen={d => navigate(`/dashboard/deals/${d.id}`)}
             onRefetch={refetch}
           />
+        ) : viewMode === "list" ? (
+          <div className="space-y-2">
+            {filtered.map(d => (
+              <Card
+                key={d.id}
+                className="shadow-card border-0 bg-card cursor-pointer hover:shadow-lg transition-all"
+                onClick={() => navigate(`/dashboard/deals/${d.id}`)}
+              >
+                <CardContent className="p-3 flex items-center gap-3">
+                  <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: stageColor(d.stage) }} />
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium truncate">{d.title}</div>
+                    <div className="text-xs text-muted-foreground truncate">
+                      {(d.contactName || d.contact?.name || "—")}{d.dealNumber ? ` · ${d.dealNumber}` : ""}
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="font-semibold text-sm">{formatCurrencyValue(d.estimatedValue, d.currency)}</div>
+                    <Badge variant="secondary" className={`${stageBadgeClass(d.stage)} mt-0.5`}>{t(`stages.${d.stage}`)}</Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         ) : (
           <Card className="shadow-card border-0 bg-card">
             <CardContent className="p-0">

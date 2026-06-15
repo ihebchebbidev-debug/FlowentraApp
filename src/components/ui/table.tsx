@@ -3,18 +3,31 @@ import { Link } from "react-router-dom"
 
 import { cn } from "@/lib/utils"
 
-const Table = React.forwardRef<
-  HTMLTableElement,
-  React.HTMLAttributes<HTMLTableElement>
->(({ className, ...props }, ref) => (
-  <div className="relative w-full overflow-auto border border-border/30 rounded-lg">
-    <table
-      ref={ref}
-      className={cn("w-full caption-bottom text-[13px]", className)}
-      {...props}
-    />
-  </div>
-))
+interface TableProps extends React.HTMLAttributes<HTMLTableElement> {
+  /**
+   * On small screens (<768px), collapse rows into stacked cards instead of a
+   * sideways-scrolling table. On by default. Add `data-label` to each <td> for
+   * per-field labels. Set false to keep a horizontally-scrolling table.
+   */
+  stackOnMobile?: boolean
+}
+
+const Table = React.forwardRef<HTMLTableElement, TableProps>(
+  ({ className, stackOnMobile = true, ...props }, ref) => (
+    <div
+      className={cn(
+        "relative w-full overflow-auto border border-border/30 rounded-lg",
+        stackOnMobile && "table-stack",
+      )}
+    >
+      <table
+        ref={ref}
+        className={cn("w-full caption-bottom text-[13px]", className)}
+        {...props}
+      />
+    </div>
+  ),
+)
 Table.displayName = "Table"
 
 const TableHeader = React.forwardRef<
