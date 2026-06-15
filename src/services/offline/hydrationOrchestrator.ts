@@ -592,7 +592,7 @@ export async function runOfflineHydration(): Promise<{ ok: boolean; modulesFaile
       const pi = uniqNumbers(projectIds).slice(0, MAX_ENTITY_DETAIL_PREFETCH);
       const ci = uniqNumbers(contactIds).slice(0, MAX_ENTITY_DETAIL_PREFETCH);
       const oi = uniqNumbers(offerIds).slice(0, MAX_ENTITY_DETAIL_PREFETCH);
-      const di = uniqNumbers(dealIds).slice(0, MAX_ENTITY_DETAIL_PREFETCH);
+      const dli = uniqNumbers(dealIds).slice(0, MAX_ENTITY_DETAIL_PREFETCH);
       const si = uniqNumbers(saleIds).slice(0, MAX_ENTITY_DETAIL_PREFETCH);
       const soi = uniqNumbers(serviceOrderIds).slice(0, MAX_ENTITY_DETAIL_PREFETCH);
       const di = uniqNumbers(dispatchIds).slice(0, MAX_ENTITY_DETAIL_PREFETCH);
@@ -671,7 +671,7 @@ export async function runOfflineHydration(): Promise<{ ok: boolean; modulesFaile
         { signal },
       );
       await runPool(
-        di,
+        dli,
         HYDRATION_PARALLEL_FETCHES,
         async (id) => {
           if (signal.aborted) return;

@@ -298,14 +298,10 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
   }, [displayedTechnicians, dates, filteredAssignedJobs]);
 
   useEffect(() => {
-    console.log('Calendar refresh triggered:', { 
-      refreshTrigger, 
-      technicianCount: displayedTechnicians.length,
-      dateCount: dates.length 
-    });
     void loadAssignedJobs();
     loadTechnicianLeaves();
     loadTechnicianAvailability();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [displayedTechnicians, dateRange, settings.includeWeekends, refreshTrigger]);
 
   const handleDragOver = (e: React.DragEvent, technicianId: string, date: Date, hour: number) => {
@@ -784,7 +780,7 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
     setPendingInstallationAssignment(null);
   };
 
-  const handleJobResize = async (jobId: string, newEnd: Date) => {
+  const handleJobResize = useCallback(async (jobId: string, newEnd: Date) => {
     try {
       await DispatcherService.resizeJob(jobId, newEnd);
       const refreshedJobs = await loadAssignedJobs();
@@ -795,13 +791,13 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
       console.error('Failed to resize job:', error);
       toast.error(t('dispatcher.failed_to_resize_job'));
     }
-  };
+  }, [loadAssignedJobs, t]);
 
-  const handleJobClick = (job: Job) => {
+  const handleJobClick = useCallback((job: Job) => {
     // Allow clicking on locked jobs to show their locked status
     setSelectedJob(job);
     setShowConfirmModal(true);
-  };
+  }, []);
 
   const [isConfirming, setIsConfirming] = useState(false);
 
@@ -908,11 +904,9 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
     }
   };
 
-  const loadAssignedJobs = async (): Promise<Record<string, Job[]>> => {
+  const loadAssignedJobs = useCallback(async (): Promise<Record<string, Job[]>> => {
     if (displayedTechnicians.length === 0 || dates.length === 0) return {};
-    
-    console.log('Loading assigned jobs (bulk fetch) for technicians:', displayedTechnicians.map(t => t.id));
-    
+
     try {
       const techIds = displayedTechnicians.map(t => t.id);
       const startDate = dates[0];
@@ -930,14 +924,13 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
         }
       }
       
-      console.log('All assigned jobs loaded:', Object.keys(jobs).length, 'keys');
       setAssignedJobs(jobs);
       return jobs;
     } catch (error) {
       console.error('Failed to load assigned jobs:', error);
       return {};
     }
-  };
+  }, [displayedTechnicians, dates]);
 
   const loadTechnicianLeaves = async () => {
     console.log('Loading technician leaves...');
@@ -1015,7 +1008,7 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
   };
 
   // preview handler updates previewJobs map without persisting to service
-  const handlePreviewResize = (jobId: string, newEnd: Date) => {
+  const handlePreviewResize = useCallback((jobId: string, newEnd: Date) => {
     setPreviewJobs(prev => {
       // find job location in current assignedJobs
       const updated = { ...prev };
@@ -1030,7 +1023,7 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
       }
       return prev;
     });
-  };
+  }, [assignedJobs]);
 
   const navigateDays = (direction: 'prev' | 'next') => {
     const span = differenceInCalendarDays(dateRange.to, dateRange.from) + 1;

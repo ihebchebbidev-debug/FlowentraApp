@@ -43,7 +43,8 @@
       "Bash(grep -vE \"api$\")",
       "Bash(grep -nA10 \"interface ProjectStats\" src/modules/tasks/types.ts)",
       "Bash(xargs grep -L \"getInitialViewMode\")",
-      "Bash(awk '/const loadAssignedJobs = async/,/^  };/' src/modules/dispatcher/components/calendar/CustomCalendar.tsx)"
+      "Bash(awk '/const loadAssignedJobs = async/,/^  };/' src/modules/dispatcher/components/calendar/CustomCalendar.tsx)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" npx vite build)"
     ],
     "additionalDirectories": [
       "C:\\Users\\iheb.chebbi\\Desktop\\FlowentraApp\\Backend\\Modules\\Offers\\DTOs"

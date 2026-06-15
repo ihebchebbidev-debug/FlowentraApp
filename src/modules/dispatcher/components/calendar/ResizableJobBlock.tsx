@@ -22,7 +22,7 @@ interface ResizableJobBlockProps {
   isShared?: boolean;
 }
 
-export function ResizableJobBlock({
+function ResizableJobBlockInner({
   job,
   hourWidth,
   onResize,
@@ -392,3 +392,10 @@ export function ResizableJobBlock({
     </div>
   );
 }
+
+/**
+ * Memoized so a job block only re-renders when its own data changes — not on every
+ * unrelated calendar state change (hover, cursor, modal toggles). Requires the parent
+ * to pass stable callbacks (CustomCalendar useCallbacks them).
+ */
+export const ResizableJobBlock = React.memo(ResizableJobBlockInner);
