@@ -4,7 +4,8 @@ import type { PlanningCardField } from '../types/planningProfile';
 /** Field options offered in the planning-profile settings pickers. */
 export const PLANNING_CARD_FIELD_OPTIONS: { value: PlanningCardField; label: string }[] = [
   { value: 'serviceOrderNumber', label: 'Service order number' },
-  { value: 'serviceOrderTitle', label: 'Service order title' },
+  { value: 'serviceOrderTitle', label: 'Service order name' },
+  { value: 'description', label: 'Description' },
   { value: 'contactName', label: 'Contact / customer name' },
   { value: 'customerCompany', label: 'Company' },
   { value: 'customerPhone', label: 'Phone' },
@@ -49,6 +50,7 @@ export function getJobFieldValue(job: Job, field: PlanningCardField, extras?: Ca
   switch (field) {
     case 'serviceOrderNumber': return job.serviceOrderNumber || '';
     case 'serviceOrderTitle': return job.serviceOrderTitle || '';
+    case 'description': return job.description || '';
     case 'contactName': return job.customerName || '';
     case 'customerCompany': return job.customerCompany || '';
     case 'customerPhone': return job.customerPhone || '';

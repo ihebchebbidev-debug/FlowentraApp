@@ -42,6 +42,9 @@ interface CustomCalendarProps {
   refreshTrigger?: number; // Increment to trigger refresh from parent
   isMobile?: boolean;
   conversionMode?: 'installation' | 'service'; // From Settings > JobConversionMode
+  /** Reports the currently-viewed date range up to the parent (e.g. so Auto-fill
+   *  targets the day the dispatcher is actually looking at, not always "today"). */
+  onViewRangeChange?: (range: { from: Date; to: Date }) => void;
 }
 
 // Pending assignment state for confirmation
@@ -67,7 +70,7 @@ interface PendingReschedule {
   originalEnd: Date;
 }
 
-export function CustomCalendar({ view, technicians, selectedTechnician, onJobAssignment, onDispatchDeleted, onRefreshRequest, refreshTrigger, isMobile, conversionMode = 'installation' }: CustomCalendarProps) {
+export function CustomCalendar({ view, technicians, selectedTechnician, onJobAssignment, onDispatchDeleted, onRefreshRequest, refreshTrigger, isMobile, conversionMode = 'installation', onViewRangeChange }: CustomCalendarProps) {
   // Active planning profile drives display/permission behavior
   const { settings: profileSettings } = useActivePlanningProfile();
 
@@ -195,6 +198,11 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
     );
     return baseDisplayed.filter(t => !onLeaveIds.has(t.id));
   }, [baseDisplayed, profileSettings.hideUsersOnLeaveToday, technicianLeaves]);
+
+  // Report the viewed range up so the parent (Auto-fill) targets the day on screen.
+  useEffect(() => {
+    onViewRangeChange?.(dateRange);
+  }, [dateRange, onViewRangeChange]);
 
   // Generate date array from dateRange
   const dates = useMemo(() => {

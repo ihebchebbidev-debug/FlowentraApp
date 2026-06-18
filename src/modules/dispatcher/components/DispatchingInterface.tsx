@@ -52,6 +52,12 @@ export function DispatchingInterface() {
     return { type: 'week', startDate: startOfWeek(today, { weekStartsOn: 1 }), endDate: endOfWeek(today, { weekStartsOn: 1 }) };
   }, [profileSettings.defaultView]);
 
+  // The date window the dispatcher is actually viewing (CustomCalendar navigates
+  // internally). Auto-fill targets this instead of always "today".
+  const [viewedRange, setViewedRange] = useState<{ from: Date; to: Date }>(
+    () => ({ from: calendarView.startDate, to: calendarView.endDate }),
+  );
+
   // Trigger for refreshing calendar assigned jobs
   const [calendarRefreshTrigger, setCalendarRefreshTrigger] = useState(0);
 
@@ -159,8 +165,11 @@ export function DispatchingInterface() {
     }
     setAutoFilling(true);
     try {
-      const today = new Date();
-      const res = await autoFillDay(today, jobs, visibleTechnicians, {
+      // Target the day on screen: keep "today" when it's inside the viewed window,
+      // otherwise fill the first day of the period the dispatcher navigated to.
+      const now = new Date();
+      const targetDay = (now >= viewedRange.from && now <= viewedRange.to) ? now : viewedRange.from;
+      const res = await autoFillDay(targetDay, jobs, visibleTechnicians, {
         allowSchedulingInPast: profileSettings.allowSchedulingInPast,
         bufferMinutes: 15,
       });
@@ -252,7 +261,9 @@ export function DispatchingInterface() {
     cardSeparator: profileSettings.cardSeparator ?? ' · ',
     hoverFields: profileSettings.hoverFields ?? [],
     showJobsOnHover: profileSettings.showJobsOnHover ?? true,
-  }), [profileSettings.cardPrimaryFields, profileSettings.cardSeparator, profileSettings.hoverFields, profileSettings.showJobsOnHover]);
+    colorBy: profileSettings.colorBy ?? 'status',
+    showDurationLabels: profileSettings.showDurationLabels ?? true,
+  }), [profileSettings.cardPrimaryFields, profileSettings.cardSeparator, profileSettings.hoverFields, profileSettings.showJobsOnHover, profileSettings.colorBy, profileSettings.showDurationLabels]);
 
   return (
     <PlanningDisplayProvider value={planningDisplay}>
@@ -412,6 +423,7 @@ export function DispatchingInterface() {
                   onDispatchDeleted={handleRefresh}
                   refreshTrigger={calendarRefreshTrigger}
                   conversionMode={conversionMode || 'installation'}
+                  onViewRangeChange={setViewedRange}
                 />
               </div>
 
@@ -454,6 +466,7 @@ export function DispatchingInterface() {
               refreshTrigger={calendarRefreshTrigger}
               isMobile={true}
               conversionMode={conversionMode || 'installation'}
+                  onViewRangeChange={setViewedRange}
             />
           ) : (
             <div className="p-4 h-full">

@@ -11,6 +11,7 @@ export type PlanningColorBy = 'status' | 'priority' | 'service_order' | 'technic
 export type PlanningCardField =
   | 'serviceOrderNumber'
   | 'serviceOrderTitle'
+  | 'description'
   | 'contactName'
   | 'customerCompany'
   | 'customerPhone'
@@ -41,6 +42,7 @@ export interface PlanningProfileSettings {
   cardSeparator: string;                   // joins the primary fields, e.g. " · "
   hoverFields: PlanningCardField[];        // shown in the hover tooltip
   showJobsOnHover: boolean;                 // in service-order mode, list the SO's jobs on hover
+  expandServiceOrderJobs: boolean;          // allow expanding a SO card to its jobs in the list (default off)
   // Visible users filters
   hideUsersWithoutWorkingHours: boolean;
   hideUsersOnLeaveToday: boolean;
@@ -72,6 +74,7 @@ export const DEFAULT_PLANNING_SETTINGS: PlanningProfileSettings = {
   cardSeparator: ' · ',
   hoverFields: ['contactName', 'installationName', 'status', 'duration'],
   showJobsOnHover: true,
+  expandServiceOrderJobs: false,
   hideUsersWithoutWorkingHours: false,
   hideUsersOnLeaveToday: false,
   skillFilterMode: 'any',

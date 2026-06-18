@@ -28,6 +28,7 @@ import {
 
 import type { Job, ServiceOrder, InstallationGroup } from "../types";
 import { usePlanningDisplay } from "../context/PlanningDisplayContext";
+import { useActivePlanningProfile } from "../hooks/usePlanningProfile";
 import { formatCardLabel, buildHoverRows } from "../utils/planningCardFields";
 import { DispatcherService } from "../services/dispatcher.service";
 import { JobMappingService } from "../services/job-mapping.service";
@@ -64,6 +65,11 @@ export function UnassignedJobsList({
 }: UnassignedJobsListProps) {
   const { t } = useTranslation();
   const display = usePlanningDisplay();
+  const { settings: profileSettings } = useActivePlanningProfile();
+  const loadPlannedServiceOrders = profileSettings.loadPlannedServiceOrders ?? true;
+  const loadClosedServiceOrders = profileSettings.loadClosedServiceOrders ?? false;
+  // Expanding a SO card to its jobs is off by default; a profile can enable it.
+  const expandServiceOrderJobs = profileSettings.expandServiceOrderJobs ?? false;
   const [expandedServiceOrders, setExpandedServiceOrders] = useState<Set<string>>(new Set());
   const [expandedInstallations, setExpandedInstallations] = useState<Set<string>>(new Set(['__all__']));
   const [searchTerm, setSearchTerm] = useState("");
@@ -79,7 +85,8 @@ export function UnassignedJobsList({
     (sortBy !== 'so' ? 1 : 0) +
     (groupBy !== 'none' ? 1 : 0);
   const [_isDragging, setIsDragging] = useState(false);
-  const [showPlanned, setShowPlanned] = useState(true);
+  // Default the planned-orders section from the profile's "Load planned service orders" setting.
+  const [showPlanned, setShowPlanned] = useState(loadPlannedServiceOrders);
   const [plannedOrders, setPlannedOrders] = useState<ServiceOrder[]>([]);
   const [isLoadingPlanned, setIsLoadingPlanned] = useState(false);
 
@@ -231,6 +238,12 @@ export function UnassignedJobsList({
   // and its jobs appear on hover (tooltip) or when you expand the card. This keeps
   // the queue compact and lets you plan a whole order without wading through jobs.
 
+  // Re-apply the profile default when the setting changes (e.g. switching profiles).
+  // A manual toggle doesn't change the setting, so it's preserved until then.
+  useEffect(() => {
+    setShowPlanned(loadPlannedServiceOrders);
+  }, [loadPlannedServiceOrders]);
+
   // Fetch planned orders when toggle is activated
   useEffect(() => {
     if (!showPlanned) {
@@ -238,11 +251,11 @@ export function UnassignedJobsList({
       return;
     }
     setIsLoadingPlanned(true);
-    JobMappingService.fetchPlannedServiceOrders()
+    JobMappingService.fetchPlannedServiceOrders(loadClosedServiceOrders)
       .then(setPlannedOrders)
       .catch(console.error)
       .finally(() => setIsLoadingPlanned(false));
-  }, [showPlanned]);
+  }, [showPlanned, loadClosedServiceOrders]);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -847,8 +860,8 @@ export function UnassignedJobsList({
                   <HoverCard openDelay={250} closeDelay={80}>
                     <HoverCardTrigger asChild>
                       <div
-                        className="p-2 border-b bg-muted/30 transition-colors cursor-pointer hover:bg-muted/40"
-                        onClick={() => toggleServiceOrder(serviceOrderData.id)}
+                        className={`p-2 border-b bg-muted/30 transition-colors hover:bg-muted/40 ${expandServiceOrderJobs ? 'cursor-pointer' : ''}`}
+                        onClick={expandServiceOrderJobs ? () => toggleServiceOrder(serviceOrderData.id) : undefined}
                       >
                         <div className="flex items-center justify-between gap-1.5">
                           <div className="flex items-center gap-1.5 flex-1 min-w-0">
@@ -857,7 +870,9 @@ export function UnassignedJobsList({
                             )}
                             <Package className="h-3 w-3 text-primary flex-shrink-0" />
                             <span className="font-medium truncate text-xs flex-1 min-w-0">
-                              {serviceOrderData.title || `SO-${serviceOrderData.id}`}
+                              {serviceOrderData.unassignedJobs[0]
+                                ? formatCardLabel(serviceOrderData.unassignedJobs[0], display.cardPrimaryFields, display.cardSeparator, { jobCount: serviceOrderData.unassignedJobs.length })
+                                : (serviceOrderData.title || `SO-${serviceOrderData.id}`)}
                             </span>
                           </div>
                           <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -872,11 +887,13 @@ export function UnassignedJobsList({
                                 'bg-gray-300'
                               }`}
                             />
-                            <ChevronDown
-                              className={`h-3 w-3 transition-transform text-muted-foreground ${
-                                expandedServiceOrders.has(serviceOrderData.id) ? 'rotate-180' : ''
-                              }`}
-                            />
+                            {expandServiceOrderJobs && (
+                              <ChevronDown
+                                className={`h-3 w-3 transition-transform text-muted-foreground ${
+                                  expandedServiceOrders.has(serviceOrderData.id) ? 'rotate-180' : ''
+                                }`}
+                              />
+                            )}
                           </div>
                         </div>
                       </div>
@@ -932,7 +949,7 @@ export function UnassignedJobsList({
 
 
                   {/* Expanded content - grouped by installation or flat based on conversionMode */}
-                  {expandedServiceOrders.has(serviceOrderData.id) && (
+                  {expandServiceOrderJobs && expandedServiceOrders.has(serviceOrderData.id) && (
                     <div className="bg-background">
                       {conversionMode === 'installation' ? (
                         // INSTALLATION MODE: Group jobs by installation

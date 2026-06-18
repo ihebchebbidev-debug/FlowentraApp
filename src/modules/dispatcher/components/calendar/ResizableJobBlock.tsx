@@ -252,13 +252,48 @@ function ResizableJobBlockInner({
 
   const getPriorityColor = () => {
     if (isLocked) return 'from-green-500/30 to-green-600/20 border-green-500/50';
-    
+
     switch (job.priority) {
       case 'urgent': return 'from-red-500/30 to-red-600/20 border-red-500/50';
       case 'high': return 'from-orange-500/30 to-orange-600/20 border-orange-500/50';
       case 'medium': return 'from-blue-500/30 to-blue-600/20 border-blue-500/50';
       case 'low': return 'from-gray-500/30 to-gray-600/20 border-gray-500/50';
       default: return 'from-primary/30 to-primary/20 border-primary/50';
+    }
+  };
+
+  // Block tint respects the active profile's "Color jobs by" setting.
+  const STATUS_GRADIENT: Record<string, string> = {
+    unassigned: 'from-gray-400/30 to-gray-500/20 border-gray-400/50',
+    assigned: 'from-blue-500/30 to-blue-600/20 border-blue-500/50',
+    in_progress: 'from-amber-500/30 to-amber-600/20 border-amber-500/50',
+    completed: 'from-green-500/30 to-green-600/20 border-green-500/50',
+    cancelled: 'from-red-500/30 to-red-600/20 border-red-500/50',
+  };
+  const HASH_PALETTE = [
+    'from-blue-500/30 to-blue-600/20 border-blue-500/50',
+    'from-purple-500/30 to-purple-600/20 border-purple-500/50',
+    'from-emerald-500/30 to-emerald-600/20 border-emerald-500/50',
+    'from-amber-500/30 to-amber-600/20 border-amber-500/50',
+    'from-pink-500/30 to-pink-600/20 border-pink-500/50',
+    'from-cyan-500/30 to-cyan-600/20 border-cyan-500/50',
+    'from-indigo-500/30 to-indigo-600/20 border-indigo-500/50',
+    'from-rose-500/30 to-rose-600/20 border-rose-500/50',
+  ];
+  const hashColor = (s?: string) => {
+    const str = s || '';
+    let h = 0;
+    for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0;
+    return HASH_PALETTE[Math.abs(h) % HASH_PALETTE.length];
+  };
+  const getBlockColor = () => {
+    if (isLocked) return 'from-green-500/30 to-green-600/20 border-green-500/50';
+    switch (display.colorBy) {
+      case 'status': return STATUS_GRADIENT[job.status || ''] || 'from-primary/30 to-primary/20 border-primary/50';
+      case 'service_order': return hashColor(job.serviceOrderId);
+      case 'technician': return hashColor(job.assignedTechnicianId || job.assignedTechnicianIds?.[0]);
+      case 'priority':
+      default: return getPriorityColor();
     }
   };
 
@@ -302,7 +337,7 @@ function ResizableJobBlockInner({
       draggable={!isLocked}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      className={`resizable-job-block absolute inset-x-0 bg-gradient-to-r ${getPriorityColor()} 
+      className={`resizable-job-block absolute inset-x-0 bg-gradient-to-r ${getBlockColor()}
         border rounded text-xs flex items-center justify-between px-2 cursor-pointer
         hover:shadow-md transition-all duration-200 group z-10
         ${isResizing ? 'resizing shadow-lg ring-2 ring-primary/30' : ''}
@@ -360,13 +395,19 @@ function ResizableJobBlockInner({
                 <span>{format(scheduledStart, 'HH:mm')}</span>
                 <span className="opacity-60">→</span>
                 <span>{format(effectiveEnd, 'HH:mm')}</span>
-                <span className="opacity-50 ml-0.5">·</span>
-                <span className="opacity-70">{Math.round(duration / 60 * 10) / 10}h</span>
+                {display.showDurationLabels && (
+                  <>
+                    <span className="opacity-50 ml-0.5">·</span>
+                    <span className="opacity-70">{Math.round(duration / 60 * 10) / 10}h</span>
+                  </>
+                )}
               </div>
-              <DurationIndicatorCompact 
-                plannedDuration={duration} 
-                originalDuration={job.originalDuration}
-              />
+              {display.showDurationLabels && (
+                <DurationIndicatorCompact
+                  plannedDuration={duration}
+                  originalDuration={job.originalDuration}
+                />
+              )}
             </div>
             {isLocked && (
               <div className="text-[10px] text-green-600 font-medium">🔒 {t('dispatcher.locked').toUpperCase()}</div>

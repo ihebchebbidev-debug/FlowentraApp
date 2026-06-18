@@ -452,6 +452,7 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
                             </div>
 
                             <ToggleRow label={t('dispatcher.profiles.show_jobs_on_hover', { defaultValue: 'List a service order’s jobs on hover' })} checked={draft.settings.showJobsOnHover ?? true} onChange={v => updateSetting('showJobsOnHover', v)} />
+                            <ToggleRow label={t('dispatcher.profiles.expand_so_jobs', { defaultValue: 'Allow expanding a service order to its jobs in the list' })} checked={draft.settings.expandServiceOrderJobs ?? false} onChange={v => updateSetting('expandServiceOrderJobs', v)} />
                           </div>
 
                           <div className="border-t pt-4 space-y-3">

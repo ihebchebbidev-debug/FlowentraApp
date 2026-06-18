@@ -1,23 +1,13 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useCurrency } from '@/shared/hooks/useCurrency';
+import { useAuth } from '@/contexts/AuthContext';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { ThemedBarChart } from '@/components/charts/ThemedBarChart';
 import { DonutChartComponent } from '@/components/charts/DonutChartComponent';
-import { AnalyticsChart } from '@/components/charts/AnalyticsChart';
-import { LazyListItem } from '@/shared/components/LazyComponents';
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuLabel,
-  DropdownMenuCheckboxItem,
-} from '@/components/ui/dropdown-menu';
 import dayjs from 'dayjs';
 import {
   Users,
@@ -25,706 +15,453 @@ import {
   ShoppingCart,
   Package,
   TrendingUp,
-  CheckCircle,
   ArrowUpRight,
-  LayoutDashboard,
   Wrench,
-  Truck,
-  ListTodo,
-  Activity,
-  Pencil,
-  Check,
-  GripVertical,
-  EyeOff,
-  Maximize2,
-  RotateCcw,
-  Eye,
+  Clock,
+  Receipt,
+  UserCheck,
+  CheckCircle2,
+  AlertTriangle,
+  XCircle,
+  Boxes,
+  Wallet,
+  ArrowUp,
+  ArrowDown,
+  Plus,
+  LayoutDashboard,
 } from 'lucide-react';
 
 // ───────────────────────────────────────────────────────────────
-// Editable Overview — keeps the original look as default,
-// but lets the user reorder / resize / hide tiles in edit mode.
-// Layout is persisted in localStorage.
+// Structured overview — three focused sections:
+//   1. Overall KPIs   2. Team / technicians   3. Inventory / stock
+// All data is derived from the existing dashboard snapshot.
 // ───────────────────────────────────────────────────────────────
 
-type TileSpan = 1 | 2 | 3 | 4 | 6;
-
-interface TileMeta {
-  id: string;
-  /** human label used in the "hidden tiles" menu */
-  label: string;
-  defaultSpan: TileSpan;
-  /** allowed sizes for the resize cycle */
-  sizes: TileSpan[];
-}
-
-interface OverviewLayout {
-  order: string[];
-  hidden: string[];
-  spans: Record<string, TileSpan>;
-}
-
-const STORAGE_KEY = 'dashboard.overview.layout.v1';
-
-const SPAN_CLASS: Record<TileSpan, string> = {
-  1: 'lg:col-span-1',
-  2: 'lg:col-span-2',
-  3: 'lg:col-span-3',
-  4: 'lg:col-span-4',
-  6: 'lg:col-span-6',
+const fmtHours = (minutes: number) => {
+  const h = minutes / 60;
+  return h >= 10 ? `${Math.round(h)}h` : `${Math.round(h * 10) / 10}h`;
 };
 
-function readLayout(): Partial<OverviewLayout> {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return {};
-    return JSON.parse(raw);
-  } catch {
-    return {};
-  }
+const DONUT_PALETTE = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#a855f7', '#ec4899', '#14b8a6'];
+
+function SectionHeader({
+  icon: Icon,
+  title,
+  subtitle,
+  onViewAll,
+  viewAllLabel,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  subtitle?: string;
+  onViewAll?: () => void;
+  viewAllLabel?: string;
+}) {
+  return (
+    <div className="flex items-end justify-between gap-3 mb-3">
+      <div className="flex items-center gap-2.5 min-w-0">
+        <span className="p-2 rounded-xl bg-primary/10 text-primary shrink-0">
+          <Icon className="h-5 w-5" />
+        </span>
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold leading-tight truncate">{title}</h2>
+          {subtitle && <p className="text-[11px] text-muted-foreground truncate">{subtitle}</p>}
+        </div>
+      </div>
+      {onViewAll && (
+        <Button variant="ghost" size="sm" className="gap-1 text-xs shrink-0" onClick={onViewAll}>
+          {viewAllLabel} <ArrowUpRight className="h-3.5 w-3.5" />
+        </Button>
+      )}
+    </div>
+  );
 }
 
-function writeLayout(layout: OverviewLayout) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(layout));
-  } catch {
-    /* noop */
-  }
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  sub,
+  tone = 'primary',
+  trend,
+  onClick,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: React.ReactNode;
+  sub?: string;
+  tone?: 'primary' | 'success' | 'warning' | 'danger' | 'info';
+  /** Month-over-month % change; renders an up/down badge. */
+  trend?: number;
+  onClick?: () => void;
+}) {
+  const toneCls: Record<string, string> = {
+    primary: 'bg-primary/10 text-primary',
+    success: 'bg-emerald-500/10 text-emerald-600',
+    warning: 'bg-amber-500/10 text-amber-600',
+    danger: 'bg-red-500/10 text-red-600',
+    info: 'bg-sky-500/10 text-sky-600',
+  };
+  return (
+    <Card
+      className={`border-0 shadow-[var(--shadow-card)] bg-[image:var(--gradient-card)] transition-all ${
+        onClick ? 'cursor-pointer hover:shadow-lg hover:-translate-y-0.5 group' : ''
+      }`}
+      onClick={onClick}
+    >
+      <CardContent className="p-4">
+        <div className="flex items-center gap-3">
+          <span className={`p-2.5 rounded-xl shrink-0 ${toneCls[tone]}`}>
+            <Icon className="h-5 w-5" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-medium text-muted-foreground truncate">{label}</p>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <p className="text-xl font-bold text-foreground leading-tight truncate">{value}</p>
+              {trend !== undefined && Number.isFinite(trend) && (
+                <span className={`inline-flex items-center gap-0.5 text-[10px] font-semibold rounded-full px-1.5 py-0.5 ${trend >= 0 ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-600'}`}>
+                  {trend >= 0 ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />}
+                  {Math.abs(trend)}%
+                </span>
+              )}
+            </div>
+            {sub && <p className="text-[11px] text-muted-foreground truncate mt-0.5">{sub}</p>}
+          </div>
+          {onClick && (
+            <ArrowUpRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all shrink-0" />
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
+
+const SkeletonGrid = ({ n }: { n: number }) => (
+  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    {Array.from({ length: n }).map((_, i) => (
+      <div key={i} className="h-[76px] rounded-xl bg-primary/5 animate-pulse" />
+    ))}
+  </div>
+);
 
 export default function DashboardOverview() {
   const { format } = useCurrency();
   const { t } = useTranslation('dashboard');
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const greeting = React.useMemo(() => {
+    const h = new Date().getHours();
+    if (h < 12) return t('overview.greetingMorning', { defaultValue: 'Good morning' });
+    if (h < 18) return t('overview.greetingAfternoon', { defaultValue: 'Good afternoon' });
+    return t('overview.greetingEvening', { defaultValue: 'Good evening' });
+  }, [t]);
+
+  const quickActions = [
+    { label: t('overview.newSale', { defaultValue: 'New sale' }), to: '/dashboard/sales/add' },
+    { label: t('overview.newOffer', { defaultValue: 'New offer' }), to: '/dashboard/offers/add' },
+    { label: t('overview.newServiceOrder', { defaultValue: 'New service order' }), to: '/dashboard/field/service-orders/create' },
+  ];
 
   const {
     sales,
     closedSalesRevenue,
     offers,
     totalContacts,
-    totalArticles,
-    lowStockArticles,
-    overdueTasks,
-    pendingTasks,
     serviceOrders,
     dispatches,
+    articles,
     isLoading,
   } = useDashboardData();
 
-  // ── derived chart data (unchanged business logic) ──
+  // ── Section 1: Overall ───────────────────────────────────────
+  const activeSales = React.useMemo(
+    () => sales.filter(s => !['closed', 'cancelled', 'invoiced', 'completed'].includes((s.status || '').toLowerCase())).length,
+    [sales],
+  );
+  const openOffers = React.useMemo(
+    () => offers.filter(o => ['draft', 'sent', 'pending', 'negotiation'].includes((o.status || '').toLowerCase())).length,
+    [offers],
+  );
+  const activeServiceOrders = React.useMemo(
+    () => serviceOrders.filter(so => !['completed', 'closed', 'invoiced', 'cancelled'].includes((so.status || '').toLowerCase())).length,
+    [serviceOrders],
+  );
+
+  // This-month revenue + month-over-month delta for the headline KPI.
+  const revenueMoM = React.useMemo(() => {
+    const sum = (offset: number) => {
+      const m = dayjs().subtract(offset, 'month');
+      return sales
+        .filter(s => { const d = dayjs(s.createdAt); return d.month() === m.month() && d.year() === m.year(); })
+        .reduce((acc, s) => acc + (Number((s as any).totalAmount ?? (s as any).amount ?? 0) || 0), 0);
+    };
+    const thisMonth = sum(0);
+    const lastMonth = sum(1);
+    const delta = lastMonth > 0 ? Math.round(((thisMonth - lastMonth) / lastMonth) * 100) : (thisMonth > 0 ? 100 : undefined);
+    return { thisMonth, lastMonth, delta };
+  }, [sales]);
+
   const revenueTrend = React.useMemo(() => {
     const months = Array.from({ length: 6 }, (_, i) => dayjs().subtract(5 - i, 'month'));
     return months.map(m => {
-      const monthSales = sales.filter(s => {
-        const d = dayjs(s.createdAt);
-        return d.year() === m.year() && d.month() === m.month();
-      });
-      const revenue = monthSales
-        .filter(s => s.status === 'closed' || s.status === 'invoiced' || s.status === 'partially_invoiced')
-        .reduce((sum, s) => sum + (s.totalAmount || s.amount || 0), 0);
-      const offered = offers
-        .filter(o => {
-          const d = dayjs(o.createdAt);
-          return d.year() === m.year() && d.month() === m.month();
+      const revenue = sales
+        .filter(s => {
+          const d = dayjs(s.createdAt);
+          return d.month() === m.month() && d.year() === m.year();
         })
-        .reduce((sum, o) => sum + (o.totalAmount || o.amount || 0), 0);
-      return { name: m.format('MMM'), revenue: Math.round(revenue), offered: Math.round(offered) };
+        .reduce((sum, s) => sum + (Number((s as any).totalAmount ?? (s as any).amount ?? 0) || 0), 0);
+      return { name: m.format('MMM'), value: Math.round(revenue) };
     });
-  }, [sales, offers]);
-
-  const activityMix = React.useMemo(() => ([
-    { name: t('overview.sales', 'Sales'), value: sales.length, color: 'hsl(var(--primary))' },
-    { name: t('overview.offers', 'Offers'), value: offers.length, color: 'hsl(var(--chart-2, var(--primary)) / 0.75)' },
-    { name: t('overview.serviceOrders', 'Service Orders'), value: serviceOrders.length, color: 'hsl(var(--chart-3, var(--primary)) / 0.6)' },
-    { name: t('overview.dispatches', 'Dispatches'), value: dispatches.length, color: 'hsl(var(--chart-4, var(--primary)) / 0.45)' },
-  ].filter(d => d.value > 0)), [sales, offers, serviceOrders, dispatches, t]);
+  }, [sales]);
 
   const serviceOrderStatus = React.useMemo(() => {
     const counts: Record<string, number> = {};
     serviceOrders.forEach(so => {
-      const k = (so.status || 'unknown').toString();
+      const k = (so.status || 'unknown').toString().replace(/_/g, ' ');
       counts[k] = (counts[k] || 0) + 1;
     });
-    return Object.entries(counts).map(([name, value]) => ({ name, value }));
+    return Object.entries(counts).map(([name, value], i) => ({ name, value, color: DONUT_PALETTE[i % DONUT_PALETTE.length] }));
   }, [serviceOrders]);
 
-  const salesBarData = React.useMemo(() => {
-    let inProgress = 0, closed = 0, cancelled = 0;
-    sales.forEach(s => {
-      const st = (s.status || '').toString().toLowerCase();
-      if (st === 'closed' || st === 'invoiced' || st === 'partially_invoiced' || st === 'completed' || st === 'won') closed++;
-      else if (st === 'cancelled' || st === 'canceled' || st === 'lost') cancelled++;
-      else inProgress++;
-    });
-    return [
-      { name: t('overview.inProgress', 'In Progress'), value: inProgress, color: 'hsl(217 91% 60%)' },
-      { name: t('overview.closed', 'Closed'), value: closed, color: 'hsl(142 71% 45%)' },
-      { name: t('overview.cancelled', 'Cancelled'), value: cancelled, color: 'hsl(0 84% 60%)' },
-    ].filter(d => d.value > 0);
-  }, [sales, t]);
+  // ── Section 2: Team / technicians ────────────────────────────
+  const techStats = React.useMemo(() => {
+    const map = new Map<string, { id: string; name: string; minutes: number; expenses: number; jobs: number; completed: number }>();
+    for (const d of dispatches as any[]) {
+      const id = String(d.technicianId ?? '');
+      if (!id || id === 'undefined' || id === 'null') continue;
+      const name = d.technicianName || t('overview.technician', { defaultValue: 'Technician' });
+      const e = map.get(id) || { id, name, minutes: 0, expenses: 0, jobs: 0, completed: 0 };
+      e.minutes += Number(d.duration ?? 0) || 0;
+      e.expenses += (Array.isArray(d.expenses) ? d.expenses : []).reduce((s: number, x: any) => s + (Number(x.amount ?? 0) || 0), 0);
+      e.jobs += 1;
+      if ((d.status || '').toLowerCase() === 'completed') e.completed += 1;
+      map.set(id, e);
+    }
+    return Array.from(map.values()).sort((a, b) => b.minutes - a.minutes);
+  }, [dispatches, t]);
 
-  const offersBarData = React.useMemo(() => {
-    const c = { draft: 0, sent: 0, accepted: 0, declined: 0, modified: 0, cancelled: 0 };
-    offers.forEach(offer => {
-      const status = (offer.status || '').toString().toLowerCase();
-      if (status === 'draft' || status === 'created' || status === '') c.draft++;
-      else if (status === 'sent' || status === 'pending' || status === 'negotiation') c.sent++;
-      else if (status === 'accepted' || status === 'won' || status === 'approved') c.accepted++;
-      else if (status === 'declined' || status === 'rejected' || status === 'expired' || status === 'lost') c.declined++;
-      else if (status === 'modified' || status === 'updated') c.modified++;
-      else if (status === 'cancelled' || status === 'canceled') c.cancelled++;
-      else c.draft++;
-    });
-    return [
-      { name: t('overview.draft'), value: c.draft, color: 'hsl(220 9% 60%)' },
-      { name: t('overview.sent'), value: c.sent, color: 'hsl(217 91% 60%)' },
-      { name: t('overview.accepted'), value: c.accepted, color: 'hsl(142 71% 45%)' },
-      { name: t('overview.declined', 'Declined'), value: c.declined, color: 'hsl(0 84% 60%)' },
-      { name: t('overview.modified', 'Modified'), value: c.modified, color: 'hsl(38 92% 50%)' },
-      { name: t('overview.cancelled', 'Cancelled'), value: c.cancelled, color: 'hsl(0 72% 51%)' },
-    ].filter(d => d.value > 0);
-  }, [offers, t]);
+  const teamTotals = React.useMemo(() => {
+    const minutes = techStats.reduce((s, x) => s + x.minutes, 0);
+    const expenses = techStats.reduce((s, x) => s + x.expenses, 0);
+    const completed = techStats.reduce((s, x) => s + x.completed, 0);
+    return { minutes, expenses, completed, active: techStats.length };
+  }, [techStats]);
 
-  // ── tile registry ──
-  const tiles: Array<TileMeta & { render: () => React.ReactNode }> = React.useMemo(() => [
-    {
-      id: 'kpi-revenue',
-      label: t('overview.closedSalesRevenue'),
-      defaultSpan: 2, sizes: [1, 2, 3, 4, 6],
-      render: () => (
-        <LazyListItem placeholder={<div className="h-[72px] rounded-xl bg-primary/5 animate-pulse" />}>
-          <Card className="cursor-pointer group relative overflow-hidden border-0 bg-gradient-to-br from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/20 transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 h-[72px]" onClick={() => navigate('/dashboard/sales')}>
-            <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-            <CardContent className="p-4 relative h-full flex items-center">
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-primary/20 group-hover:bg-primary/30 transition-colors shadow-sm">
-                    <TrendingUp className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <span className="text-xs font-medium text-muted-foreground">{t('overview.closedSalesRevenue')}</span>
-                    <p className="text-xl font-bold text-foreground">{format(Math.round(closedSalesRevenue))}</p>
-                  </div>
-                </div>
-                <ArrowUpRight className="h-5 w-5 text-primary opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-              </div>
-            </CardContent>
-          </Card>
-        </LazyListItem>
-      ),
-    },
-    {
-      id: 'kpi-contacts',
-      label: t('overview.totalContacts'),
-      defaultSpan: 1, sizes: [1, 2, 3],
-      render: () => (
-        <LazyListItem placeholder={<div className="h-[72px] rounded-xl bg-primary/5 animate-pulse" />}>
-          <Card className="cursor-pointer group relative overflow-hidden border-0 bg-gradient-to-br from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/20 transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 h-[72px]" onClick={() => navigate('/dashboard/contacts')}>
-            <div className="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-            <CardContent className="p-3 relative h-full flex flex-col justify-center">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="p-1.5 rounded-lg bg-primary/20 group-hover:bg-primary/30 transition-colors shadow-sm">
-                  <Users className="h-4 w-4 text-primary" />
-                </div>
-                <span className="text-xs font-medium text-muted-foreground">{t('overview.totalContacts')}</span>
-              </div>
-              <p className="text-lg font-bold text-foreground">{totalContacts || '-'}</p>
-            </CardContent>
-          </Card>
-        </LazyListItem>
-      ),
-    },
-    {
-      id: 'kpi-offers',
-      label: t('overview.totalOffers'),
-      defaultSpan: 1, sizes: [1, 2, 3],
-      render: () => (
-        <LazyListItem placeholder={<div className="h-[72px] rounded-xl bg-primary/5 animate-pulse" />}>
-          <Card className="cursor-pointer group relative overflow-hidden border-0 bg-gradient-to-br from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/20 transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 h-[72px]" onClick={() => navigate('/dashboard/offers')}>
-            <div className="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-            <CardContent className="p-3 relative h-full flex flex-col justify-center">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="p-1.5 rounded-lg bg-primary/20 group-hover:bg-primary/30 transition-colors shadow-sm">
-                  <FileText className="h-4 w-4 text-primary" />
-                </div>
-                <span className="text-xs font-medium text-muted-foreground">{t('overview.totalOffers')}</span>
-              </div>
-              <p className="text-lg font-bold text-foreground">{offers.length || '-'}</p>
-            </CardContent>
-          </Card>
-        </LazyListItem>
-      ),
-    },
-    {
-      id: 'kpi-sales',
-      label: t('overview.totalSales'),
-      defaultSpan: 1, sizes: [1, 2, 3],
-      render: () => (
-        <LazyListItem placeholder={<div className="h-[72px] rounded-xl bg-primary/5 animate-pulse" />}>
-          <Card className="cursor-pointer group relative overflow-hidden border-0 bg-gradient-to-br from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/20 transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 h-[72px]" onClick={() => navigate('/dashboard/sales')}>
-            <div className="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-            <CardContent className="p-3 relative h-full flex flex-col justify-center">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="p-1.5 rounded-lg bg-primary/20 group-hover:bg-primary/30 transition-colors shadow-sm">
-                  <CheckCircle className="h-4 w-4 text-primary" />
-                </div>
-                <span className="text-xs font-medium text-muted-foreground">{t('overview.totalSales')}</span>
-              </div>
-              <p className="text-lg font-bold text-foreground">{sales.length || '-'}</p>
-            </CardContent>
-          </Card>
-        </LazyListItem>
-      ),
-    },
-    {
-      id: 'kpi-articles',
-      label: t('overview.articles'),
-      defaultSpan: 1, sizes: [1, 2, 3],
-      render: () => (
-        <LazyListItem placeholder={<div className="h-[72px] rounded-xl bg-primary/5 animate-pulse" />}>
-          <Card className={`cursor-pointer group relative overflow-hidden border-0 transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 h-[72px] ${lowStockArticles > 0 ? 'bg-gradient-to-br from-destructive/5 to-destructive/10 hover:from-destructive/10 hover:to-destructive/20' : 'bg-gradient-to-br from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/20'}`} onClick={() => navigate('/dashboard/articles')}>
-            <div className={`absolute top-0 right-0 w-16 h-16 rounded-full -translate-y-1/2 translate-x-1/2 ${lowStockArticles > 0 ? 'bg-destructive/5' : 'bg-primary/5'}`} />
-            <CardContent className="p-3 relative h-full flex flex-col justify-center">
-              <div className="flex items-center gap-2 mb-1">
-                <div className={`p-1.5 rounded-lg shadow-sm transition-colors ${lowStockArticles > 0 ? 'bg-destructive/20 group-hover:bg-destructive/30' : 'bg-primary/20 group-hover:bg-primary/30'}`}>
-                  <Package className={`h-4 w-4 ${lowStockArticles > 0 ? 'text-destructive' : 'text-primary'}`} />
-                </div>
-                <span className="text-xs font-medium text-muted-foreground">{t('overview.articles')}</span>
-              </div>
-              <p className="text-lg font-bold text-foreground">{totalArticles || '-'}</p>
-            </CardContent>
-          </Card>
-        </LazyListItem>
-      ),
-    },
-    {
-      id: 'chart-sales',
-      label: t('overview.salesStatus', 'Sales Status'),
-      defaultSpan: 3, sizes: [3, 4, 6],
-      render: () => (
-        <Card className="flex flex-col min-h-[240px] border-0 bg-gradient-to-br from-card to-muted/20 shadow-lg hover:shadow-xl transition-shadow duration-300 h-full">
-          <CardHeader className="py-3 sm:py-4 px-4 sm:px-5 border-b border-border/50">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="p-1.5 sm:p-2 rounded-xl bg-primary/10">
-                  <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-                </div>
-                <div>
-                  <CardTitle className="text-sm sm:text-base font-semibold">{t('overview.salesStatus', 'Sales Status')}</CardTitle>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 hidden sm:block">{t('overview.salesStatusDesc', 'Distribution of sales by status')}</p>
-                </div>
-              </div>
-              <button onClick={() => navigate('/dashboard/sales')} className="text-xs text-primary hover:text-primary/80 font-medium flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors self-end sm:self-auto">
-                {t('overview.viewAll')}<ArrowUpRight className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </CardHeader>
-          <CardContent className="flex-1 p-3 sm:p-5 min-h-0 flex flex-col">
-            {salesBarData.every(d => d.value === 0) ? (
-              <div className="flex flex-col items-center justify-center h-full text-muted-foreground py-8">
-                <TrendingUp className="h-12 w-12 mb-3 opacity-20" />
-                <p className="text-sm font-medium">{t('overview.noSalesData')}</p>
-                <p className="text-xs mt-1">{t('overview.noSalesDataDesc')}</p>
-              </div>
-            ) : (
-              <div className="flex-1 min-h-0"><ThemedBarChart data={salesBarData} height={180} usePrimaryGradient={false} /></div>
-            )}
-          </CardContent>
-        </Card>
-      ),
-    },
-    {
-      id: 'chart-offers',
-      label: t('overview.offersPipeline'),
-      defaultSpan: 3, sizes: [3, 4, 6],
-      render: () => (
-        <Card className="flex flex-col min-h-[240px] border-0 bg-gradient-to-br from-card to-muted/20 shadow-lg hover:shadow-xl transition-shadow duration-300 h-full">
-          <CardHeader className="py-3 sm:py-4 px-4 sm:px-5 border-b border-border/50">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="p-1.5 sm:p-2 rounded-xl bg-primary/10">
-                  <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-                </div>
-                <div>
-                  <CardTitle className="text-sm sm:text-base font-semibold">{t('overview.offersPipeline')}</CardTitle>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 hidden sm:block">{t('overview.offersPipelineDesc')}</p>
-                </div>
-              </div>
-              <button onClick={() => navigate('/dashboard/offers')} className="text-xs text-primary hover:text-primary/80 font-medium flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors self-end sm:self-auto">
-                {t('overview.viewAll')}<ArrowUpRight className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </CardHeader>
-          <CardContent className="flex-1 p-3 sm:p-5 min-h-0 flex flex-col">
-            {offersBarData.every(d => d.value === 0) ? (
-              <div className="flex flex-col items-center justify-center h-full text-muted-foreground py-8">
-                <ShoppingCart className="h-10 w-10 sm:h-12 sm:w-12 mb-3 opacity-20" />
-                <p className="text-sm font-medium">{t('overview.noOffersData')}</p>
-                <p className="text-xs mt-1">{t('overview.noOffersDataDesc')}</p>
-              </div>
-            ) : (
-              <div className="flex-1 min-h-0"><ThemedBarChart data={offersBarData} height={180} usePrimaryGradient={false} /></div>
-            )}
-          </CardContent>
-        </Card>
-      ),
-    },
-    {
-      id: 'chart-revenue-trend',
-      label: t('overview.revenueTrend', 'Revenue & Offers Trend'),
-      defaultSpan: 4, sizes: [3, 4, 6],
-      render: () => (
-        <Card className="border-0 bg-gradient-to-br from-card to-muted/20 shadow-lg h-full">
-          <CardHeader className="py-3 sm:py-4 px-4 sm:px-5 border-b border-border/50">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-primary/10"><TrendingUp className="h-5 w-5 text-primary" /></div>
-              <div>
-                <CardTitle className="text-sm sm:text-base font-semibold">{t('overview.revenueTrend', 'Revenue & Offers Trend')}</CardTitle>
-                <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">{t('overview.revenueTrendDesc', 'Last 6 months — closed revenue vs offered value')}</p>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-3 sm:p-5">
-            <AnalyticsChart
-              data={revenueTrend}
-              height={260}
-              series={[
-                { key: 'revenue', name: t('overview.closedRevenue', 'Closed Revenue'), color: 'hsl(var(--primary))' },
-                { key: 'offered', name: t('overview.offeredValue', 'Offered Value'), color: 'hsl(var(--primary) / 0.5)', dashed: true },
-              ]}
-            />
-          </CardContent>
-        </Card>
-      ),
-    },
-    {
-      id: 'chart-activity-mix',
-      label: t('overview.activityMix', 'Activity Mix'),
-      defaultSpan: 2, sizes: [2, 3, 4],
-      render: () => (
-        <Card className="border-0 bg-gradient-to-br from-card to-muted/20 shadow-lg h-full">
-          <CardHeader className="py-3 sm:py-4 px-4 sm:px-5 border-b border-border/50">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-primary/10"><Activity className="h-5 w-5 text-primary" /></div>
-              <div>
-                <CardTitle className="text-sm sm:text-base font-semibold">{t('overview.activityMix', 'Activity Mix')}</CardTitle>
-                <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">{t('overview.activityMixDesc', 'Volume across modules')}</p>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-3 sm:p-5 flex items-center justify-center min-h-[260px]">
-            {activityMix.length === 0 ? (
-              <div className="text-center text-muted-foreground">
-                <Activity className="h-10 w-10 mx-auto mb-2 opacity-20" />
-                <p className="text-sm">{t('overview.noActivity', 'No activity yet')}</p>
-              </div>
-            ) : (
-              <DonutChartComponent
-                data={activityMix}
-                height={240}
-                innerRadius={55}
-                outerRadius={85}
-                showLegend
-                centerLabel={t('overview.total', 'Total')}
-                centerValue={activityMix.reduce((s, d) => s + d.value, 0)}
-              />
-            )}
-          </CardContent>
-        </Card>
-      ),
-    },
-    {
-      id: 'op-service-orders',
-      label: t('overview.serviceOrders', 'Service Orders'),
-      defaultSpan: 2, sizes: [1, 2, 3],
-      render: () => (
-        <Card className="cursor-pointer border-0 bg-gradient-to-br from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/20 transition-all shadow-md hover:shadow-xl h-full" onClick={() => navigate('/dashboard/field')}>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-primary/20"><Wrench className="h-5 w-5 text-primary" /></div>
-            <div className="flex-1">
-              <p className="text-xs font-medium text-muted-foreground">{t('overview.serviceOrders', 'Service Orders')}</p>
-              <p className="text-2xl font-bold text-foreground">{serviceOrders.length}</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">
-                {serviceOrderStatus.slice(0, 2).map(s => `${s.name}: ${s.value}`).join(' · ') || t('overview.allClear', 'All clear')}
-              </p>
-            </div>
-            <ArrowUpRight className="h-4 w-4 text-primary" />
-          </CardContent>
-        </Card>
-      ),
-    },
-    {
-      id: 'op-dispatches',
-      label: t('overview.dispatches', 'Dispatches'),
-      defaultSpan: 2, sizes: [1, 2, 3],
-      render: () => (
-        <Card className="cursor-pointer border-0 bg-gradient-to-br from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/20 transition-all shadow-md hover:shadow-xl h-full" onClick={() => navigate('/dashboard/field/dispatcher/interface')}>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-primary/20"><Truck className="h-5 w-5 text-primary" /></div>
-            <div className="flex-1">
-              <p className="text-xs font-medium text-muted-foreground">{t('overview.dispatches', 'Dispatches')}</p>
-              <p className="text-2xl font-bold text-foreground">{dispatches.length}</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">
-                {t('overview.activeToday', 'Active today')}: {dispatches.filter((d: any) => dayjs(d.scheduledAt || d.startDate).isSame(dayjs(), 'day')).length}
-              </p>
-            </div>
-            <ArrowUpRight className="h-4 w-4 text-primary" />
-          </CardContent>
-        </Card>
-      ),
-    },
-    {
-      id: 'op-tasks',
-      label: t('overview.tasks', 'Tasks'),
-      defaultSpan: 2, sizes: [1, 2, 3],
-      render: () => (
-        <Card className={`cursor-pointer border-0 transition-all shadow-md hover:shadow-xl h-full ${overdueTasks.length > 0 ? 'bg-gradient-to-br from-destructive/5 to-destructive/10 hover:from-destructive/10 hover:to-destructive/20' : 'bg-gradient-to-br from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/20'}`} onClick={() => navigate('/dashboard/tasks')}>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className={`p-2.5 rounded-xl ${overdueTasks.length > 0 ? 'bg-destructive/20' : 'bg-primary/20'}`}>
-              <ListTodo className={`h-5 w-5 ${overdueTasks.length > 0 ? 'text-destructive' : 'text-primary'}`} />
-            </div>
-            <div className="flex-1">
-              <p className="text-xs font-medium text-muted-foreground">{t('overview.tasks', 'Tasks')}</p>
-              <p className="text-2xl font-bold text-foreground">{pendingTasks}</p>
-              <p className={`text-[11px] mt-0.5 ${overdueTasks.length > 0 ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
-                {overdueTasks.length > 0
-                  ? `${overdueTasks.length} ${t('overview.overdue', 'overdue')}`
-                  : t('overview.onTrack', 'All on track')}
-              </p>
-            </div>
-            <ArrowUpRight className={`h-4 w-4 ${overdueTasks.length > 0 ? 'text-destructive' : 'text-primary'}`} />
-          </CardContent>
-        </Card>
-      ),
-    },
-  ], [t, navigate, format, closedSalesRevenue, totalContacts, offers, sales, lowStockArticles, totalArticles, salesBarData, offersBarData, revenueTrend, activityMix, serviceOrders, serviceOrderStatus, dispatches, overdueTasks, pendingTasks]);
+  const maxTechMinutes = Math.max(1, ...techStats.map(t => t.minutes));
 
-  const defaultOrder = React.useMemo(() => tiles.map(t => t.id), [tiles]);
-  const defaultSpans = React.useMemo(() => Object.fromEntries(tiles.map(t => [t.id, t.defaultSpan])) as Record<string, TileSpan>, [tiles]);
+  // ── Section 3: Inventory / stock ─────────────────────────────
+  const stockStats = React.useMemo(() => {
+    let value = 0, low = 0, out = 0;
+    for (const a of articles as any[]) {
+      value += (Number(a.stock ?? 0) || 0) * (Number(a.price ?? a.costPrice ?? 0) || 0);
+      const st = (a.status || '').toLowerCase();
+      if (st === 'out_of_stock') out++;
+      else if (st === 'low_stock') low++;
+    }
+    return { value, low, out, total: articles.length, available: articles.length - low - out };
+  }, [articles]);
 
-  // ── layout state ──
-  const [editMode, setEditMode] = React.useState(false);
-  const [layout, setLayout] = React.useState<OverviewLayout>(() => {
-    const saved = readLayout();
-    return {
-      order: Array.isArray(saved.order) && saved.order.length ? saved.order : defaultOrder,
-      hidden: Array.isArray(saved.hidden) ? saved.hidden : [],
-      spans: { ...defaultSpans, ...(saved.spans || {}) },
-    };
-  });
+  const stockDonut = React.useMemo(() => ([
+    { name: t('overview.available', { defaultValue: 'Available' }), value: stockStats.available, color: '#10b981' },
+    { name: t('overview.lowStock', { defaultValue: 'Low stock' }), value: stockStats.low, color: '#f59e0b' },
+    { name: t('overview.outOfStock', { defaultValue: 'Out of stock' }), value: stockStats.out, color: '#ef4444' },
+  ].filter(d => d.value > 0)), [stockStats, t]);
 
-  React.useEffect(() => {
-    writeLayout(layout);
-  }, [layout]);
-
-  // Make sure newly-registered tiles also appear (append to order, default span)
-  React.useEffect(() => {
-    setLayout(prev => {
-      const known = new Set(prev.order);
-      const missing = defaultOrder.filter(id => !known.has(id));
-      const stale = prev.order.filter(id => defaultOrder.includes(id));
-      if (missing.length === 0 && stale.length === prev.order.length) return prev;
-      return {
-        order: [...stale, ...missing],
-        hidden: prev.hidden.filter(id => defaultOrder.includes(id)),
-        spans: { ...defaultSpans, ...prev.spans },
-      };
-    });
-  }, [defaultOrder, defaultSpans]);
-
-  const tileById = React.useMemo(() => Object.fromEntries(tiles.map(t => [t.id, t])), [tiles]);
-  const visibleOrder = layout.order.filter(id => tileById[id] && !layout.hidden.includes(id));
-  const hiddenTiles = layout.order.filter(id => layout.hidden.includes(id) && tileById[id]);
-
-  // ── handlers ──
-  const dragId = React.useRef<string | null>(null);
-  const onDragStart = (id: string) => (e: React.DragEvent) => {
-    dragId.current = id;
-    e.dataTransfer.effectAllowed = 'move';
-  };
-  const onDragOver = (e: React.DragEvent) => {
-    if (!editMode) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  };
-  const onDrop = (targetId: string) => (e: React.DragEvent) => {
-    e.preventDefault();
-    const src = dragId.current;
-    dragId.current = null;
-    if (!src || src === targetId) return;
-    setLayout(prev => {
-      const next = [...prev.order];
-      const from = next.indexOf(src);
-      const to = next.indexOf(targetId);
-      if (from < 0 || to < 0) return prev;
-      next.splice(from, 1);
-      next.splice(to, 0, src);
-      return { ...prev, order: next };
-    });
-  };
-
-  const cycleSize = (id: string) => {
-    setLayout(prev => {
-      const meta = tileById[id];
-      if (!meta) return prev;
-      const current = prev.spans[id] ?? meta.defaultSpan;
-      const idx = meta.sizes.indexOf(current);
-      const nextSize = meta.sizes[(idx + 1) % meta.sizes.length];
-      return { ...prev, spans: { ...prev.spans, [id]: nextSize } };
-    });
-  };
-
-  const hideTile = (id: string) => setLayout(prev => ({ ...prev, hidden: [...new Set([...prev.hidden, id])] }));
-  const showTile = (id: string) => setLayout(prev => ({ ...prev, hidden: prev.hidden.filter(x => x !== id) }));
-  const resetLayout = () => setLayout({ order: defaultOrder, hidden: [], spans: { ...defaultSpans } });
-
-  if (isLoading) {
-    return (
-      <div className="p-3 sm:p-5 h-[calc(100vh-80px)] flex flex-col gap-3 sm:gap-5 overflow-hidden">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-card rounded-xl border border-border p-4 space-y-3">
-              <div className="h-4 w-24 rounded bg-muted/60 animate-shimmer bg-[length:200%_100%] bg-gradient-to-r from-muted/60 via-muted/30 to-muted/60" />
-              <div className="h-8 w-16 rounded bg-muted/60 animate-shimmer bg-[length:200%_100%] bg-gradient-to-r from-muted/60 via-muted/30 to-muted/60" />
-              <div className="h-3 w-32 rounded bg-muted/60 animate-shimmer bg-[length:200%_100%] bg-gradient-to-r from-muted/40 via-muted/20 to-muted/40" />
-            </div>
-          ))}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 flex-1">
-          {[...Array(2)].map((_, i) => (
-            <div key={i} className="bg-card rounded-xl border border-border p-4 space-y-3">
-              <div className="h-5 w-32 rounded bg-muted/60 animate-shimmer bg-[length:200%_100%] bg-gradient-to-r from-muted/60 via-muted/30 to-muted/60" />
-              <div className="h-40 rounded bg-muted/60 animate-shimmer bg-[length:200%_100%] bg-gradient-to-r from-muted/60 via-muted/30 to-muted/60" />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const lowStockItems = React.useMemo(
+    () => (articles as any[])
+      .filter(a => ['low_stock', 'out_of_stock'].includes((a.status || '').toLowerCase()))
+      .sort((a, b) => (a.stock ?? 0) - (b.stock ?? 0))
+      .slice(0, 8),
+    [articles],
+  );
 
   return (
-    <div className="p-3 sm:p-5 flex flex-col gap-3 sm:gap-5 overflow-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-primary/10">
-            <Activity className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-lg sm:text-xl font-bold text-foreground leading-tight">
-              {t('overview.title', 'Overview')}
-            </h1>
-            <p className="text-xs text-muted-foreground">
-              {editMode
-                ? t('overview.editHint', 'Drag tiles to reorder · resize · hide · then click Done')
-                : t('overview.subtitle', 'A live snapshot of your entire business')}
-            </p>
-          </div>
+    <div className="space-y-8 p-3 sm:p-4 max-w-[1600px] mx-auto">
+      {/* ══ Header · greeting + quick actions ══ */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold leading-tight truncate">
+            {greeting}{user?.firstName ? `, ${user.firstName}` : ''} 👋
+          </h1>
+          <p className="text-[11px] text-muted-foreground">
+            {dayjs().format('dddd, D MMMM YYYY')} · {t('overview.welcomeMessage', { defaultValue: "Here's an overview of your business" })}
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          {editMode && hiddenTiles.length > 0 && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Eye className="h-4 w-4" />
-                  {t('overview.hiddenTiles', 'Hidden')} ({hiddenTiles.length})
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>{t('overview.showAgain', 'Show again')}</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {hiddenTiles.map(id => (
-                  <DropdownMenuCheckboxItem
-                    key={id}
-                    checked={false}
-                    onCheckedChange={() => showTile(id)}
-                  >
-                    {tileById[id]?.label}
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-          {editMode && (
-            <Button variant="ghost" size="sm" className="gap-2" onClick={resetLayout}>
-              <RotateCcw className="h-4 w-4" />
-              {t('overview.reset', 'Reset')}
+        <div className="flex items-center gap-2 flex-wrap">
+          {quickActions.map(a => (
+            <Button key={a.to} variant="outline" size="sm" className="gap-1.5" onClick={() => navigate(a.to)}>
+              <Plus className="h-3.5 w-3.5" /> {a.label}
             </Button>
-          )}
-          <Button
-            variant={editMode ? 'default' : 'outline'}
-            size="sm"
-            className="gap-2"
-            onClick={() => setEditMode(v => !v)}
-          >
-            {editMode ? <Check className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
-            {editMode ? t('overview.done', 'Done') : t('overview.edit', 'Edit')}
+          ))}
+          <Button size="sm" className="gap-1.5" onClick={() => navigate('/dashboard/dashboards')}>
+            <LayoutDashboard className="h-3.5 w-3.5" /> {t('overview.newDashboard', { defaultValue: 'New dashboard' })}
           </Button>
-          {!editMode && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2"
-              onClick={() => navigate('/dashboard/dashboards')}
-            >
-              <LayoutDashboard className="h-4 w-4" />
-              {t('overview.switchToCustom', 'Custom Dashboards')}
-            </Button>
-          )}
         </div>
       </div>
 
-      {/* Unified 6-col grid for all tiles */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-5 auto-rows-min">
-        {visibleOrder.map(id => {
-          const meta = tileById[id];
-          if (!meta) return null;
-          const span = layout.spans[id] ?? meta.defaultSpan;
-          const spanCls = SPAN_CLASS[span];
-          return (
-            <div
-              key={id}
-              className={`relative col-span-2 sm:col-span-3 ${spanCls} ${editMode ? 'ring-2 ring-primary/30 rounded-xl' : ''}`}
-              draggable={editMode}
-              onDragStart={onDragStart(id)}
-              onDragOver={onDragOver}
-              onDrop={onDrop(id)}
-            >
-              {editMode && (
-                <div className="absolute -top-2 -right-2 z-10 flex items-center gap-1 bg-background border border-border rounded-full shadow-md px-1 py-0.5">
-                  <button
-                    type="button"
-                    className="p-1 rounded-full hover:bg-muted cursor-grab active:cursor-grabbing"
-                    title={t('overview.dragTile', 'Drag to reorder')}
-                  >
-                    <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => cycleSize(id)}
-                    className="p-1 rounded-full hover:bg-muted"
-                    title={t('overview.resizeTile', 'Resize')}
-                  >
-                    <Maximize2 className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="sr-only">size {span}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => hideTile(id)}
-                    className="p-1 rounded-full hover:bg-destructive/10 text-destructive"
-                    title={t('overview.hideTile', 'Hide')}
-                  >
-                    <EyeOff className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              )}
-              <div className={editMode ? 'pointer-events-none select-none' : ''}>
-                {meta.render()}
-              </div>
+      {/* ══ Section 1 · Overall ══ */}
+      <section>
+        <SectionHeader
+          icon={TrendingUp}
+          title={t('overview.section.overall', { defaultValue: 'Business overview' })}
+          subtitle={t('overview.section.overallSub', { defaultValue: 'Your key performance indicators at a glance' })}
+        />
+        {isLoading ? (
+          <SkeletonGrid n={5} />
+        ) : (
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+            <StatCard
+              icon={TrendingUp}
+              tone="primary"
+              label={t('overview.revenueThisMonth', { defaultValue: 'Revenue (this month)' })}
+              value={format(Math.round(revenueMoM.thisMonth))}
+              sub={`${t('overview.allTimeClosed', { defaultValue: 'All-time' })}: ${format(Math.round(closedSalesRevenue))}`}
+              trend={revenueMoM.delta}
+              onClick={() => navigate('/dashboard/sales')}
+            />
+            <StatCard icon={ShoppingCart} tone="success" label={t('overview.activeSales', { defaultValue: 'Active sales' })} value={activeSales} onClick={() => navigate('/dashboard/sales')} />
+            <StatCard icon={FileText} tone="info" label={t('overview.openOffers', { defaultValue: 'Open offers' })} value={openOffers} onClick={() => navigate('/dashboard/offers')} />
+            <StatCard icon={Wrench} tone="warning" label={t('overview.activeServiceOrders', { defaultValue: 'Active service orders' })} value={activeServiceOrders} onClick={() => navigate('/dashboard/field/service-orders/list')} />
+            <StatCard icon={Users} tone="primary" label={t('overview.totalContacts', { defaultValue: 'Contacts' })} value={totalContacts || '-'} onClick={() => navigate('/dashboard/contacts')} />
+          </div>
+        )}
+
+        <div className="grid lg:grid-cols-3 gap-3 mt-3">
+          <Card className="lg:col-span-2 border-0 shadow-[var(--shadow-card)] bg-[image:var(--gradient-card)]">
+            <CardContent className="p-4">
+              <p className="text-sm font-semibold mb-3">{t('overview.revenueTrend', { defaultValue: 'Revenue — last 6 months' })}</p>
+              <ThemedBarChart data={revenueTrend} height={200} />
+            </CardContent>
+          </Card>
+          <Card className="border-0 shadow-[var(--shadow-card)] bg-[image:var(--gradient-card)]">
+            <CardContent className="p-4">
+              <p className="text-sm font-semibold mb-3">{t('overview.serviceOrderStatus', { defaultValue: 'Service orders by status' })}</p>
+              {serviceOrderStatus.length > 0
+                ? <DonutChartComponent data={serviceOrderStatus} height={200} />
+                : <div className="h-[200px] flex items-center justify-center text-sm text-muted-foreground">{t('overview.noData', { defaultValue: 'No data yet' })}</div>}
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
+      {/* ══ Section 2 · Team / technicians ══ */}
+      <section>
+        <SectionHeader
+          icon={UserCheck}
+          title={t('overview.section.team', { defaultValue: 'Team performance' })}
+          subtitle={t('overview.section.teamSub', { defaultValue: 'Hours worked, expenses and jobs per technician' })}
+          onViewAll={() => navigate('/dashboard/dispatcher')}
+          viewAllLabel={t('overview.openPlanner', { defaultValue: 'Planner' })}
+        />
+        {isLoading ? (
+          <SkeletonGrid n={4} />
+        ) : (
+          <>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <StatCard icon={Clock} tone="info" label={t('overview.hoursWorked', { defaultValue: 'Hours worked' })} value={fmtHours(teamTotals.minutes)} />
+              <StatCard icon={Receipt} tone="warning" label={t('overview.teamExpenses', { defaultValue: 'Expenses' })} value={format(Math.round(teamTotals.expenses))} />
+              <StatCard icon={UserCheck} tone="primary" label={t('overview.activeTechnicians', { defaultValue: 'Active technicians' })} value={teamTotals.active} />
+              <StatCard icon={CheckCircle2} tone="success" label={t('overview.jobsCompleted', { defaultValue: 'Jobs completed' })} value={teamTotals.completed} />
             </div>
-          );
-        })}
-      </div>
+
+            <Card className="border-0 shadow-[var(--shadow-card)] bg-[image:var(--gradient-card)] mt-3">
+              <CardContent className="p-0">
+                {techStats.length === 0 ? (
+                  <div className="h-32 flex items-center justify-center text-sm text-muted-foreground">{t('overview.noTechnicianData', { defaultValue: 'No technician activity yet' })}</div>
+                ) : (
+                  <div className="divide-y divide-border/60">
+                    <div className="grid grid-cols-12 gap-2 px-4 py-2 text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                      <span className="col-span-5">{t('overview.technician', { defaultValue: 'Technician' })}</span>
+                      <span className="col-span-3 text-right">{t('overview.hours', { defaultValue: 'Hours' })}</span>
+                      <span className="col-span-2 text-right">{t('overview.expenses', { defaultValue: 'Expenses' })}</span>
+                      <span className="col-span-2 text-right">{t('overview.jobs', { defaultValue: 'Jobs' })}</span>
+                    </div>
+                    {techStats.slice(0, 8).map(tech => (
+                      <div key={tech.id} className="grid grid-cols-12 gap-2 px-4 py-2.5 items-center hover:bg-muted/30 transition-colors">
+                        <div className="col-span-5 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="h-7 w-7 rounded-full bg-primary/10 text-primary text-[10px] font-bold inline-flex items-center justify-center shrink-0">
+                              {tech.name.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2)}
+                            </span>
+                            <span className="text-sm font-medium truncate">{tech.name}</span>
+                          </div>
+                          <div className="mt-1 h-1 rounded-full bg-muted overflow-hidden">
+                            <div className="h-full bg-primary/70" style={{ width: `${(tech.minutes / maxTechMinutes) * 100}%` }} />
+                          </div>
+                        </div>
+                        <span className="col-span-3 text-right text-sm font-semibold">{fmtHours(tech.minutes)}</span>
+                        <span className="col-span-2 text-right text-xs text-muted-foreground">{format(Math.round(tech.expenses))}</span>
+                        <span className="col-span-2 text-right text-xs">
+                          <span className="font-medium">{tech.completed}</span>
+                          <span className="text-muted-foreground">/{tech.jobs}</span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </>
+        )}
+      </section>
+
+      {/* ══ Section 3 · Inventory / stock ══ */}
+      <section>
+        <SectionHeader
+          icon={Boxes}
+          title={t('overview.section.stock', { defaultValue: 'Inventory & stock' })}
+          subtitle={t('overview.section.stockSub', { defaultValue: 'Stock value and items needing attention' })}
+          onViewAll={() => navigate('/dashboard/inventory-services')}
+          viewAllLabel={t('overview.openInventory', { defaultValue: 'Inventory' })}
+        />
+        {isLoading ? (
+          <SkeletonGrid n={4} />
+        ) : (
+          <>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <StatCard icon={Package} tone="primary" label={t('overview.totalArticles', { defaultValue: 'Total articles' })} value={stockStats.total} onClick={() => navigate('/dashboard/inventory-services')} />
+              <StatCard icon={Wallet} tone="success" label={t('overview.stockValue', { defaultValue: 'Stock value' })} value={format(Math.round(stockStats.value))} />
+              <StatCard icon={AlertTriangle} tone="warning" label={t('overview.lowStock', { defaultValue: 'Low stock' })} value={stockStats.low} onClick={() => navigate('/dashboard/inventory-services')} />
+              <StatCard icon={XCircle} tone="danger" label={t('overview.outOfStock', { defaultValue: 'Out of stock' })} value={stockStats.out} onClick={() => navigate('/dashboard/inventory-services')} />
+            </div>
+
+            <div className="grid lg:grid-cols-3 gap-3 mt-3">
+              <Card className="border-0 shadow-[var(--shadow-card)] bg-[image:var(--gradient-card)]">
+                <CardContent className="p-4">
+                  <p className="text-sm font-semibold mb-3">{t('overview.stockBreakdown', { defaultValue: 'Stock status' })}</p>
+                  {stockDonut.length > 0
+                    ? <DonutChartComponent data={stockDonut} height={200} />
+                    : <div className="h-[200px] flex items-center justify-center text-sm text-muted-foreground">{t('overview.noData', { defaultValue: 'No data yet' })}</div>}
+                </CardContent>
+              </Card>
+              <Card className="lg:col-span-2 border-0 shadow-[var(--shadow-card)] bg-[image:var(--gradient-card)]">
+                <CardContent className="p-4">
+                  <p className="text-sm font-semibold mb-3">{t('overview.needsRestock', { defaultValue: 'Needs restocking' })}</p>
+                  {lowStockItems.length === 0 ? (
+                    <div className="h-32 flex items-center justify-center text-sm text-muted-foreground">{t('overview.allStocked', { defaultValue: 'Everything is well stocked ✓' })}</div>
+                  ) : (
+                    <div className="divide-y divide-border/60">
+                      {lowStockItems.map((a: any) => (
+                        <div key={a.id} className="flex items-center justify-between gap-3 py-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className={`h-2 w-2 rounded-full shrink-0 ${(a.status || '').toLowerCase() === 'out_of_stock' ? 'bg-red-500' : 'bg-amber-500'}`} />
+                            <span className="text-sm truncate">{a.name || a.title || `#${a.id}`}</span>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <span className="text-sm font-semibold">{a.stock ?? 0}</span>
+                            <span className="text-xs text-muted-foreground"> / {t('overview.min', { defaultValue: 'min' })} {a.minStock ?? 0}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </>
+        )}
+      </section>
     </div>
   );
 }

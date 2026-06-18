@@ -44,7 +44,15 @@
       "Bash(grep -nA10 \"interface ProjectStats\" src/modules/tasks/types.ts)",
       "Bash(xargs grep -L \"getInitialViewMode\")",
       "Bash(awk '/const loadAssignedJobs = async/,/^  };/' src/modules/dispatcher/components/calendar/CustomCalendar.tsx)",
-      "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" npx vite build)"
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" npx vite build)",
+      "Bash(grep -viE \"locale|demo|//|radix\")",
+      "Bash(awk '/const handleDrop = async/,/^  };/' src/modules/dispatcher/components/calendar/CustomCalendar.tsx)",
+      "Bash(grep -nA2 \"dataTransfer.setData\" src/modules/dispatcher/components/UnassignedJobsList.tsx)",
+      "Bash(grep -nB6 \"onViewRangeChange\" src/modules/dispatcher/components/DispatchingInterface.tsx)",
+      "Bash(grep -nA12 \"public DealService\\\\\\(\" Backend/Modules/Deals/Services/DealService.cs)",
+      "Bash(grep -nE \"totalContacts|closedSalesRevenue|return \\\\{|articles,\" src/modules/dashboard/hooks/useDashboardData.ts)",
+      "Bash(node -e \"const o=require\\('./src/modules/dashboard/locale/en.json'\\); console.log\\(Object.keys\\(o.overview||{}\\).join\\(', '\\)\\)\")",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('src/modules/dashboard/locale/en.json','utf8'\\)\\);JSON.parse\\(require\\('fs'\\).readFileSync\\('src/modules/dashboard/locale/fr.json','utf8'\\)\\);console.log\\('JSON valid'\\)\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\iheb.chebbi\\Desktop\\FlowentraApp\\Backend\\Modules\\Offers\\DTOs"

@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { PlanningCardField } from '../types/planningProfile';
+import type { PlanningCardField, PlanningColorBy } from '../types/planningProfile';
 import { DEFAULT_PLANNING_SETTINGS } from '../types/planningProfile';
 
 /**
@@ -12,6 +12,8 @@ export interface PlanningDisplay {
   cardSeparator: string;
   hoverFields: PlanningCardField[];
   showJobsOnHover: boolean;
+  colorBy: PlanningColorBy;
+  showDurationLabels: boolean;
 }
 
 const DEFAULT: PlanningDisplay = {
@@ -19,6 +21,8 @@ const DEFAULT: PlanningDisplay = {
   cardSeparator: DEFAULT_PLANNING_SETTINGS.cardSeparator,
   hoverFields: DEFAULT_PLANNING_SETTINGS.hoverFields,
   showJobsOnHover: DEFAULT_PLANNING_SETTINGS.showJobsOnHover,
+  colorBy: DEFAULT_PLANNING_SETTINGS.colorBy,
+  showDurationLabels: DEFAULT_PLANNING_SETTINGS.showDurationLabels,
 };
 
 const PlanningDisplayContext = createContext<PlanningDisplay>(DEFAULT);

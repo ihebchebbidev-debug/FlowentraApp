@@ -224,11 +224,14 @@ export class JobMappingService {
 
   // ── Fetch already-planned/scheduled service orders ──
 
-  static async fetchPlannedServiceOrders(): Promise<ServiceOrder[]> {
+  static async fetchPlannedServiceOrders(includeClosed = false): Promise<ServiceOrder[]> {
     const ordersResponse = await serviceOrdersApi.getAll({ pageSize: 200 });
     const orders = ordersResponse.data.serviceOrders || [];
     const plannedStatuses = ['scheduled', 'in_progress', 'planned', 'assigned', 'technically_completed'];
-    const filtered = orders.filter((so: any) => plannedStatuses.includes(so.status));
+    // Profile "Load closed service orders" adds finished orders to the reference list.
+    const closedStatuses = ['completed', 'closed', 'invoiced', 'ready_for_invoice', 'cancelled'];
+    const allowed = includeClosed ? [...plannedStatuses, ...closedStatuses] : plannedStatuses;
+    const filtered = orders.filter((so: any) => allowed.includes(so.status));
 
     const result: ServiceOrder[] = [];
     const batchSize = 20;
