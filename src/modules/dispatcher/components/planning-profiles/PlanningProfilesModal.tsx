@@ -113,14 +113,15 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
   };
 
   const handleSave = async () => {
+    if (!draft) return;
     try {
+      // Was the profile being edited the one currently driving the board?
+      const wasActive = !activeProfile || activeProfile.id === draft.id;
       const saved = await persistDraft();
-      // Saving the profile that's currently driving the board should reflect
-      // immediately — make sure it's the active one so the board re-reads it.
-      const targetId = saved?.id ?? draft?.id;
-      if (targetId && activeProfile?.id === targetId) {
-        // already active — invalidation from the mutation refreshes the board
-      } else if (targetId && !activeProfile) {
+      const targetId = saved?.id ?? draft.id;
+      // Keep the board pointed at this profile so the saved display settings
+      // reflect immediately — covers the local→real id swap on first persist.
+      if (wasActive && activeProfile?.id !== targetId) {
         await setActive.mutateAsync(targetId);
       }
       toast.success(t('dispatcher.profiles.saved', { defaultValue: 'Profile saved' }));

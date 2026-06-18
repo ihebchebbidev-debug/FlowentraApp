@@ -165,7 +165,27 @@ export const planningProfilesApi = {
     if (remote) return remote;
     const list = readLocal();
     const idx = list.findIndex(p => p.id === id);
-    if (idx === -1) throw new Error('Profile not found');
+    if (idx === -1) {
+      // Backend unreachable and the profile isn't cached locally — persist it
+      // locally instead of throwing so the user's edit is never silently lost.
+      const local = {
+        id,
+        ownerUserId: getCurrentUserId(),
+        name: dto.name ?? 'Default',
+        description: dto.description,
+        color: dto.color,
+        icon: dto.icon,
+        isShared: dto.isShared ?? false,
+        visibleUserIds: dto.visibleUserIds ?? [],
+        requiredSkillIds: dto.requiredSkillIds,
+        settings: dto.settings ?? { ...DEFAULT_PLANNING_SETTINGS },
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      } as PlanningProfile;
+      list.push(local);
+      writeLocal(list);
+      return local;
+    }
     list[idx] = { ...list[idx], ...dto, updatedAt: new Date().toISOString() } as PlanningProfile;
     writeLocal(list);
     return list[idx];
