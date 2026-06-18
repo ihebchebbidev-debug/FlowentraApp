@@ -85,6 +85,9 @@ export interface CreateDealRequest {
 
 export type UpdateDealRequest = Partial<Omit<CreateDealRequest, 'items'>> & {
   actualCloseDate?: string;
+  /** When provided, the server replaces the deal's line items with this exact set
+   *  in one transaction (an empty array clears them). Omit to leave items untouched. */
+  items?: Omit<DealItem, 'id' | 'dealId' | 'lineTotal' | 'displayOrder'>[];
 };
 
 export interface DealStats {
@@ -214,7 +217,9 @@ export const dealsApi = {
     return data.data ?? data;
   },
 
-  async updateItem(dealId: number, itemId: number, item: Partial<Omit<DealItem, 'id' | 'dealId'>>): Promise<DealItem> {
+  // Full replace of a single item — the server overwrites every field, so always
+  // pass the complete item. To edit items as a set, prefer update(id, { items }).
+  async updateItem(dealId: number, itemId: number, item: Omit<DealItem, 'id' | 'dealId' | 'lineTotal' | 'displayOrder'>): Promise<DealItem> {
     const result = await apiFetch<any>(`/api/deals/${dealId}/items/${itemId}`, { method: 'PATCH', body: JSON.stringify(item) });
     const data = unwrap(result, 'Failed to update item');
     return data.data ?? data;

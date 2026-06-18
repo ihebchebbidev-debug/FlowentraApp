@@ -29,7 +29,7 @@ import {
 import type { Job, ServiceOrder, InstallationGroup } from "../types";
 import { usePlanningDisplay } from "../context/PlanningDisplayContext";
 import { useActivePlanningProfile } from "../hooks/usePlanningProfile";
-import { formatCardLabel, buildHoverRows } from "../utils/planningCardFields";
+import { formatCardLabel, buildHoverRows, getCardFieldRows } from "../utils/planningCardFields";
 import { DispatcherService } from "../services/dispatcher.service";
 import { JobMappingService } from "../services/job-mapping.service";
 import { cn } from "@/lib/utils";
@@ -863,19 +863,41 @@ export function UnassignedJobsList({
                         className={`p-2 border-b bg-muted/30 transition-colors hover:bg-muted/40 ${expandServiceOrderJobs ? 'cursor-pointer' : ''}`}
                         onClick={expandServiceOrderJobs ? () => toggleServiceOrder(serviceOrderData.id) : undefined}
                       >
-                        <div className="flex items-center justify-between gap-1.5">
-                          <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-1.5">
+                          <div className="flex items-start gap-1.5 flex-1 min-w-0">
                             {planningMode === 'serviceOrder' && !isMobile && (
-                              <GripVertical className="h-3 w-3 text-primary flex-shrink-0" />
+                              <GripVertical className="h-3 w-3 text-primary flex-shrink-0 mt-0.5" />
                             )}
-                            <Package className="h-3 w-3 text-primary flex-shrink-0" />
-                            <span className="font-medium truncate text-xs flex-1 min-w-0">
-                              {serviceOrderData.unassignedJobs[0]
-                                ? formatCardLabel(serviceOrderData.unassignedJobs[0], display.cardPrimaryFields, display.cardSeparator, { jobCount: serviceOrderData.unassignedJobs.length })
-                                : (serviceOrderData.title || `SO-${serviceOrderData.id}`)}
-                            </span>
+                            <Package className="h-3 w-3 text-primary flex-shrink-0 mt-0.5" />
+                            <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                              {(() => {
+                                const repJob = serviceOrderData.unassignedJobs[0];
+                                const rows = repJob
+                                  ? getCardFieldRows(repJob, display.cardPrimaryFields, { jobCount: serviceOrderData.unassignedJobs.length }, ['serviceOrderNumber'])
+                                  : [];
+                                if (!rows.length) {
+                                  return (
+                                    <span className="font-medium text-xs break-words leading-snug">
+                                      {serviceOrderData.title || `SO-${serviceOrderData.id}`}
+                                    </span>
+                                  );
+                                }
+                                // Each piece of info on its own line, wrapping instead of
+                                // truncating so nothing is hidden — cards grow as needed.
+                                return rows.map((r, i) => (
+                                  <span
+                                    key={r.field}
+                                    className={i === 0
+                                      ? "font-medium text-xs break-words leading-snug"
+                                      : "text-[0.7rem] text-muted-foreground break-words leading-snug"}
+                                  >
+                                    {r.value}
+                                  </span>
+                                ));
+                              })()}
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <div className="flex items-center gap-1.5 flex-shrink-0 mt-0.5">
                             {/* Priority shown as a coloured dot to save space in narrow sidebar.
                                 Full label is in the HoverCard. */}
                             <span
@@ -916,32 +938,73 @@ export function UnassignedJobsList({
                           </div>
 
                           <div className="space-y-1 pt-1">
-                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                              <User className="h-3 w-3 flex-shrink-0" />
-                              <span className="truncate">{serviceOrderData.customerName}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                              <Package className="h-3 w-3 flex-shrink-0" />
-                              <span>
-                                {serviceOrderData.unassignedJobs.length} {t('dispatcher.jobs')}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                              <Clock className="h-3 w-3 flex-shrink-0" />
-                              <span>
-                                {Math.floor((serviceOrderData.totalEstimatedDuration || 0) / 60)}
-                                {t('dispatcher.hours_short')}{' '}
-                                {(serviceOrderData.totalEstimatedDuration || 0) % 60}
-                                {t('dispatcher.minutes_short')}
-                              </span>
-                            </div>
-                            {serviceOrderData.location?.address && (
-                              <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                                <MapPin className="h-3 w-3 flex-shrink-0 mt-0.5" />
-                                <span className="leading-snug">{serviceOrderData.location.address}</span>
-                              </div>
-                            )}
+                            {(() => {
+                              // Honour the profile's "Hover shows" fields. Each detail on
+                              // its own line, labelled, de-duplicated and wrapping.
+                              const repJob = serviceOrderData.unassignedJobs[0];
+                              const rows = repJob
+                                ? buildHoverRows(repJob, display.hoverFields, { jobCount: serviceOrderData.unassignedJobs.length })
+                                : [];
+                              if (rows.length) {
+                                return rows.map(r => (
+                                  <div key={r.label} className="flex items-start gap-2 text-xs">
+                                    <span className="text-muted-foreground flex-shrink-0 min-w-[88px]">{r.label}</span>
+                                    <span className="font-medium break-words leading-snug min-w-0">{r.value}</span>
+                                  </div>
+                                ));
+                              }
+                              // No hover fields configured — fall back to the default detail set.
+                              return (
+                                <>
+                                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                    <User className="h-3 w-3 flex-shrink-0" />
+                                    <span className="truncate">{serviceOrderData.customerName}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                    <Package className="h-3 w-3 flex-shrink-0" />
+                                    <span>
+                                      {serviceOrderData.unassignedJobs.length} {t('dispatcher.jobs')}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                    <Clock className="h-3 w-3 flex-shrink-0" />
+                                    <span>
+                                      {Math.floor((serviceOrderData.totalEstimatedDuration || 0) / 60)}
+                                      {t('dispatcher.hours_short')}{' '}
+                                      {(serviceOrderData.totalEstimatedDuration || 0) % 60}
+                                      {t('dispatcher.minutes_short')}
+                                    </span>
+                                  </div>
+                                  {serviceOrderData.location?.address && (
+                                    <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                                      <MapPin className="h-3 w-3 flex-shrink-0 mt-0.5" />
+                                      <span className="leading-snug">{serviceOrderData.location.address}</span>
+                                    </div>
+                                  )}
+                                </>
+                              );
+                            })()}
                           </div>
+
+                          {/* Optionally list the service order's jobs on hover. */}
+                          {display.showJobsOnHover && serviceOrderData.unassignedJobs.length > 0 && (
+                            <div className="space-y-0.5 pt-1.5 mt-1.5 border-t">
+                              <p className="text-[0.65rem] font-medium uppercase tracking-wide text-muted-foreground">
+                                {serviceOrderData.unassignedJobs.length} {t('dispatcher.jobs')}
+                              </p>
+                              {serviceOrderData.unassignedJobs.slice(0, 8).map(j => (
+                                <div key={j.id} className="flex items-start gap-1.5 text-xs">
+                                  <span className="text-muted-foreground flex-shrink-0">•</span>
+                                  <span className="break-words leading-snug min-w-0">{j.title}</span>
+                                </div>
+                              ))}
+                              {serviceOrderData.unassignedJobs.length > 8 && (
+                                <p className="text-[0.7rem] text-muted-foreground pl-3">
+                                  +{serviceOrderData.unassignedJobs.length - 8}
+                                </p>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </HoverCardContent>
                     )}

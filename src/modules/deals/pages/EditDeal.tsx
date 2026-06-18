@@ -48,14 +48,10 @@ export function EditDeal() {
   const handleSubmit = async (payload: CreateDealRequest) => {
     setSubmitting(true);
     try {
+      // One atomic call: the server replaces scalar fields AND the full item set in a
+      // single transaction (no chatty, non-atomic delete-then-add from the client).
       const { items, ...rest } = payload;
-      await dealsApi.update(dealId, rest);
-      // Sync line items: replace the existing set with the submitted one.
-      const current = await dealsApi.getById(dealId);
-      await Promise.all((current.items || []).filter(it => it.id).map(it => dealsApi.deleteItem(dealId, it.id!)));
-      for (const it of items || []) {
-        await dealsApi.addItem(dealId, it);
-      }
+      await dealsApi.update(dealId, { ...rest, items: items ?? [] });
       toast.success(t("toast.updated"));
       navigate(`/dashboard/deals/${dealId}`);
     } catch {

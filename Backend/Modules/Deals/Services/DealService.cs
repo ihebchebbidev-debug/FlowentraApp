@@ -43,6 +43,12 @@ namespace MyApi.Modules.Deals.Services
             string? contactId = null, string? projectId = null, string? search = null,
             int page = 1, int limit = 20, string sortBy = "updated_at", string sortOrder = "desc")
         {
+            // Guard against bad input: page 0/negative → negative Skip (EF throws),
+            // limit 0 → divide-by-zero when computing TotalPages.
+            if (page < 1) page = 1;
+            if (limit < 1) limit = 20;
+            if (limit > 200) limit = 200;
+
             var query = _context.Deals.AsNoTracking().Where(d => !d.IsDeleted).AsQueryable();
 
             if (!string.IsNullOrEmpty(stage))
@@ -179,6 +185,20 @@ namespace MyApi.Modules.Deals.Services
             if (dto.Stage != null && (dto.Stage == "won" || dto.Stage == "lost") && deal.ActualCloseDate == null)
                 deal.ActualCloseDate = DateTime.UtcNow;
 
+            // Replace line items atomically when the caller manages them. Doing it here
+            // (rather than via a chatty delete-then-add loop from the client) keeps the
+            // whole edit in one transaction and recomputes the value consistently.
+            if (dto.Items != null)
+            {
+                if (deal.Items != null && deal.Items.Any())
+                    _context.DealItems.RemoveRange(deal.Items);
+                deal.Items = dto.Items.Select((it, idx) => BuildItem(it, idx)).ToList();
+                // An explicit item set drives the value; an empty set means 0 (no stale total).
+                deal.EstimatedValue = deal.Items.Any()
+                    ? Math.Round(deal.Items.Sum(i => i.LineTotal), 2)
+                    : (dto.EstimatedValue ?? 0m);
+            }
+
             deal.ModifiedDate = DateTime.UtcNow;
             deal.ModifiedBy = userId;
             deal.LastActivity = DateTime.UtcNow;
@@ -237,122 +257,189 @@ namespace MyApi.Modules.Deals.Services
 
         public async Task<ConvertDealResultDto> ConvertDealAsync(int id, ConvertDealDto dto, string userId, string? userName = null)
         {
-            var deal = await _context.Deals.Include(d => d.Items).FirstOrDefaultAsync(d => d.Id == id && !d.IsDeleted);
-            if (deal == null) throw new KeyNotFoundException($"Deal {id} not found");
+            if (!dto.ConvertToSale && !dto.ConvertToProject && !dto.ConvertToOffer)
+                throw new InvalidOperationException("Select at least one target (sale, project or offer) to convert into.");
 
             var result = new ConvertDealResultDto();
+            // Captured for the (non-fatal) back-link pass that runs after the commit.
+            int? saleBackId = null, offerBackId = null, projectBackId = null;
 
-            // ── Deal → Sale ──
-            if (dto.ConvertToSale)
+            // The whole conversion is one unit of work: a Sale/Project/Offer must never
+            // be committed without the deal's matching ConvertedTo* flag, otherwise a
+            // partial failure would orphan records AND defeat the idempotency guards
+            // (allowing duplicate conversions). EnableRetryOnFailure forces us to open
+            // the transaction inside an execution strategy.
+            var strategy = _context.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
             {
-                if (!string.IsNullOrEmpty(deal.ConvertedToSaleId))
-                    throw new InvalidOperationException($"Deal {id} has already been converted to Sale {deal.ConvertedToSaleId}");
+                // On a strategy retry the previous (rolled-back) attempt may have left
+                // entities tracked as Added — clear them so we never double-insert.
+                _context.ChangeTracker.Clear();
+                await using var tx = await _context.Database.BeginTransactionAsync();
 
-                var saleDto = new CreateSaleDto
+                // Reset accumulators so a strategy retry starts from a clean slate.
+                result.SaleId = null; result.ProjectId = null; result.OfferId = null;
+                saleBackId = offerBackId = projectBackId = null;
+
+                var deal = await _context.Deals.Include(d => d.Items)
+                    .FirstOrDefaultAsync(d => d.Id == id && !d.IsDeleted);
+                if (deal == null) throw new KeyNotFoundException($"Deal {id} not found");
+
+                // ── Deal → Project (FIRST, so a Sale/Offer in the same call links to it) ──
+                if (dto.ConvertToProject)
                 {
-                    Title = deal.Title,
-                    Description = deal.Description,
-                    ContactId = deal.ContactId,
-                    ProjectId = deal.ProjectId,
-                    Status = "created",
-                    Currency = deal.Currency,
-                    Category = deal.Category,
-                    Source = deal.Source,
-                    Items = (deal.Items ?? new List<DealItem>()).Select(it => new CreateSaleItemDto
+                    if (!string.IsNullOrEmpty(deal.ConvertedToProjectId))
+                        throw new InvalidOperationException($"Deal {id} has already been converted to Project {deal.ConvertedToProjectId}");
+
+                    var projectDto = new CreateProjectRequestDto
                     {
-                        Type = it.Type,
-                        ArticleId = it.ArticleId,
-                        ItemName = it.ItemName,
-                        ItemCode = it.ItemCode,
-                        Description = it.Description,
-                        Quantity = it.Quantity,
-                        UnitPrice = it.UnitPrice,
-                        Discount = it.Discount,
-                        DiscountType = it.DiscountType,
-                    }).ToList()
-                };
-                var sale = await _saleService.CreateSaleAsync(saleDto, userId);
-                result.SaleId = sale.Id;
-                deal.ConvertedToSaleId = sale.Id.ToString();
-            }
+                        Name = deal.Title,
+                        Description = deal.Description,
+                        ContactId = deal.ContactId,
+                        Status = "active",
+                        ProjectKind = "client",
+                        Priority = "medium",
+                        CreateDefaultColumns = true,
+                    };
+                    var project = await _projectService.CreateProjectAsync(projectDto, userId);
+                    result.ProjectId = project.Id;
+                    projectBackId = project.Id;
+                    deal.ConvertedToProjectId = project.Id.ToString();
+                    // The deal now belongs to the project it spawned.
+                    deal.ProjectId = project.Id;
+                }
 
-            // ── Deal → Project ──
-            if (dto.ConvertToProject)
-            {
-                if (!string.IsNullOrEmpty(deal.ConvertedToProjectId))
-                    throw new InvalidOperationException($"Deal {id} has already been converted to Project {deal.ConvertedToProjectId}");
+                // New project (if just created) wins; otherwise keep any existing link.
+                var effectiveProjectId = deal.ProjectId;
 
-                var projectDto = new CreateProjectRequestDto
+                // ── Deal → Sale ──
+                if (dto.ConvertToSale)
                 {
-                    Name = deal.Title,
-                    Description = deal.Description,
-                    ContactId = deal.ContactId,
-                    Status = "active",
-                    ProjectKind = "client",
-                    Priority = "medium",
-                    CreateDefaultColumns = true,
-                };
-                var project = await _projectService.CreateProjectAsync(projectDto, userId);
-                result.ProjectId = project.Id;
-                deal.ConvertedToProjectId = project.Id.ToString();
-                // The deal now belongs to the project it spawned.
-                deal.ProjectId = project.Id;
-            }
+                    if (!string.IsNullOrEmpty(deal.ConvertedToSaleId))
+                        throw new InvalidOperationException($"Deal {id} has already been converted to Sale {deal.ConvertedToSaleId}");
 
-            // ── Deal → Offer ──
-            if (dto.ConvertToOffer)
-            {
-                if (!string.IsNullOrEmpty(deal.ConvertedToOfferId))
-                    throw new InvalidOperationException($"Deal {id} has already been converted to Offer {deal.ConvertedToOfferId}");
-
-                var offerDto = new CreateOfferDto
-                {
-                    Title = deal.Title,
-                    Description = deal.Description,
-                    ContactId = deal.ContactId,
-                    ProjectId = deal.ProjectId,
-                    Status = "draft",
-                    Currency = deal.Currency,
-                    Category = deal.Category,
-                    Source = deal.Source,
-                    Notes = deal.Notes,
-                    Items = (deal.Items ?? new List<DealItem>()).Select(it => new CreateOfferItemDto
+                    var saleDto = new CreateSaleDto
                     {
-                        Type = it.Type,
-                        ArticleId = it.ArticleId,
-                        ItemName = it.ItemName,
-                        ItemCode = it.ItemCode,
-                        Description = it.Description,
-                        Quantity = it.Quantity,
-                        UnitPrice = it.UnitPrice,
-                        Discount = it.Discount,
-                        DiscountType = it.DiscountType,
-                    }).ToList()
-                };
-                var offer = await _offerService.CreateOfferAsync(offerDto, userId);
-                result.OfferId = offer.Id;
-                deal.ConvertedToOfferId = offer.Id.ToString();
-            }
+                        Title = deal.Title,
+                        Description = deal.Description,
+                        ContactId = deal.ContactId,
+                        ProjectId = effectiveProjectId,
+                        Status = "created",
+                        Currency = deal.Currency,
+                        Category = deal.Category,
+                        Source = deal.Source,
+                        Items = (deal.Items ?? new List<DealItem>()).Select(it => new CreateSaleItemDto
+                        {
+                            Type = it.Type,
+                            ArticleId = it.ArticleId,
+                            ItemName = it.ItemName,
+                            ItemCode = it.ItemCode,
+                            Description = it.Description,
+                            Quantity = it.Quantity,
+                            UnitPrice = it.UnitPrice,
+                            Discount = it.Discount,
+                            DiscountType = it.DiscountType,
+                        }).ToList()
+                    };
+                    var sale = await _saleService.CreateSaleAsync(saleDto, userId);
+                    result.SaleId = sale.Id;
+                    saleBackId = sale.Id;
+                    deal.ConvertedToSaleId = sale.Id.ToString();
+                }
 
-            deal.ConvertedAt = DateTime.UtcNow;
-            // A converted deal is won (unless only an offer was drafted).
-            if (dto.ConvertToSale || dto.ConvertToProject)
-            {
-                deal.Stage = "won";
-                deal.ActualCloseDate ??= DateTime.UtcNow;
-            }
-            deal.ModifiedDate = DateTime.UtcNow;
-            deal.ModifiedBy = userId;
-            deal.LastActivity = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
+                // ── Deal → Offer ──
+                if (dto.ConvertToOffer)
+                {
+                    if (!string.IsNullOrEmpty(deal.ConvertedToOfferId))
+                        throw new InvalidOperationException($"Deal {id} has already been converted to Offer {deal.ConvertedToOfferId}");
 
-            var targets = new List<string>();
-            if (result.SaleId.HasValue) targets.Add($"Sale #{result.SaleId}");
-            if (result.ProjectId.HasValue) targets.Add($"Project #{result.ProjectId}");
-            if (result.OfferId.HasValue) targets.Add($"Offer #{result.OfferId}");
-            await AddActivityInternalAsync(deal.Id, "converted", $"Converted to {string.Join(", ", targets)}", null, userId, userName);
+                    var offerDto = new CreateOfferDto
+                    {
+                        Title = deal.Title,
+                        Description = deal.Description,
+                        ContactId = deal.ContactId,
+                        ProjectId = effectiveProjectId,
+                        Status = "draft",
+                        Currency = deal.Currency,
+                        Category = deal.Category,
+                        Source = deal.Source,
+                        Notes = deal.Notes,
+                        Items = (deal.Items ?? new List<DealItem>()).Select(it => new CreateOfferItemDto
+                        {
+                            Type = it.Type,
+                            ArticleId = it.ArticleId,
+                            ItemName = it.ItemName,
+                            ItemCode = it.ItemCode,
+                            Description = it.Description,
+                            Quantity = it.Quantity,
+                            UnitPrice = it.UnitPrice,
+                            Discount = it.Discount,
+                            DiscountType = it.DiscountType,
+                        }).ToList()
+                    };
+                    var offer = await _offerService.CreateOfferAsync(offerDto, userId);
+                    result.OfferId = offer.Id;
+                    offerBackId = offer.Id;
+                    deal.ConvertedToOfferId = offer.Id.ToString();
+                }
+
+                deal.ConvertedAt = DateTime.UtcNow;
+                // A converted deal is won (unless only an offer was drafted).
+                if (dto.ConvertToSale || dto.ConvertToProject)
+                {
+                    deal.Stage = "won";
+                    deal.ActualCloseDate ??= DateTime.UtcNow;
+                }
+                deal.ModifiedDate = DateTime.UtcNow;
+                deal.ModifiedBy = userId;
+                deal.LastActivity = DateTime.UtcNow;
+
+                var targets = new List<string>();
+                if (result.SaleId.HasValue) targets.Add($"Sale #{result.SaleId}");
+                if (result.ProjectId.HasValue) targets.Add($"Project #{result.ProjectId}");
+                if (result.OfferId.HasValue) targets.Add($"Offer #{result.OfferId}");
+                _context.DealActivities.Add(new DealActivity
+                {
+                    DealId = deal.Id,
+                    Type = "converted",
+                    Description = $"Converted to {string.Join(", ", targets)}",
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = userId,
+                    CreatedByName = userName,
+                });
+
+                await _context.SaveChangesAsync();
+                await tx.CommitAsync();
+            });
+
+            // ── Forward back-links (best-effort, outside the transaction) ──────────
+            // These columns trace a Sale/Offer/Project back to the deal it came from.
+            // They're supplementary metadata and may predate the deals migration on a
+            // given DB, so a failure here must NOT roll back a successful conversion.
+            await TrySetBackLinkAsync("Sales", "DealId", id, saleBackId);
+            await TrySetBackLinkAsync("Offers", "DealId", id, offerBackId);
+            await TrySetBackLinkAsync("Projects", "ConvertedFromDealId", id, projectBackId);
 
             return result;
+        }
+
+        /// <summary>Stamps a forward back-link column on a spawned record. Non-fatal: logs and
+        /// continues if the column doesn't exist yet (table/column names are trusted literals).</summary>
+        private async Task TrySetBackLinkAsync(string table, string column, int dealId, int? targetId)
+        {
+            if (targetId == null) return;
+            try
+            {
+                await _context.Database.ExecuteSqlRawAsync(
+                    $"UPDATE \"{table}\" SET \"{column}\" = {{0}} WHERE \"Id\" = {{1}}",
+                    dealId, targetId.Value);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex,
+                    "Could not set {Table}.{Column} back-link for deal {DealId} (run the deals migration to add it)",
+                    table, column, dealId);
+            }
         }
 
         // ── Items ──
@@ -399,7 +486,15 @@ namespace MyApi.Modules.Deals.Services
             _context.DealItems.Remove(item);
             await _context.SaveChangesAsync();
             var deal = await ReloadWithItems(dealId);
-            if (deal != null) { deal.EstimatedValue = RecomputeValue(deal); deal.ModifiedDate = DateTime.UtcNow; await _context.SaveChangesAsync(); }
+            if (deal != null)
+            {
+                // Removing the last item zeroes the value rather than keeping the stale total.
+                deal.EstimatedValue = (deal.Items != null && deal.Items.Any())
+                    ? Math.Round(deal.Items.Sum(i => i.LineTotal), 2)
+                    : 0m;
+                deal.ModifiedDate = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+            }
             return true;
         }
 
@@ -477,9 +572,10 @@ namespace MyApi.Modules.Deals.Services
         private static decimal ComputeLineTotal(decimal qty, decimal unitPrice, decimal discount, string discountType)
         {
             var gross = qty * unitPrice;
-            if (discount <= 0) return Math.Round(gross, 3);
+            // Round to 2 dp to match the decimal(18,2) columns (no compute-vs-stored drift).
+            if (discount <= 0) return Math.Round(gross, 2);
             var net = discountType == "fixed" ? gross - discount : gross * (1 - discount / 100m);
-            return Math.Round(Math.Max(net, 0), 3);
+            return Math.Round(Math.Max(net, 0), 2);
         }
 
         /// <summary>If a deal has line items, its value is the sum of them; otherwise keep the manual estimate.</summary>
@@ -487,7 +583,7 @@ namespace MyApi.Modules.Deals.Services
         {
             if (deal == null) return 0;
             if (deal.Items != null && deal.Items.Any())
-                return Math.Round(deal.Items.Sum(i => i.LineTotal), 3);
+                return Math.Round(deal.Items.Sum(i => i.LineTotal), 2);
             return deal.EstimatedValue;
         }
 

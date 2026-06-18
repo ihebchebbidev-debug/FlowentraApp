@@ -127,6 +127,9 @@ namespace MyApi.Modules.Deals.DTOs
         public string[]? Tags { get; set; }
         public string? AssignedTo { get; set; }
         public string? AssignedToName { get; set; }
+        /// <summary>When non-null, the deal's line items are replaced with this exact set
+        /// in a single transaction (an empty list clears them). Leave null to keep items as-is.</summary>
+        public List<CreateDealItemDto>? Items { get; set; }
     }
 
     /// <summary>Convert a deal into a Sale and/or a Project (and/or an Offer).</summary>

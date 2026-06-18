@@ -255,7 +255,7 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
                       className="text-base font-semibold max-w-sm"
                       placeholder={t('dispatcher.profiles.name_placeholder', { defaultValue: 'Profile name' })}
                     />
-                    {activeProfile?.id === draft.id && (
+                    {String(activeProfile?.id) === String(draft.id) && (
                       <Badge variant="default" className="gap-1"><Star className="h-3 w-3" />{t('dispatcher.profiles.active', { defaultValue: 'Active' })}</Badge>
                     )}
                     {draft.isShared && (
@@ -507,7 +507,7 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
 
           <DialogFooter className="px-6 py-3 border-t flex-row sm:justify-between gap-2">
             <div className="flex gap-2">
-              {draft && activeProfile?.id !== draft.id && (
+              {draft && String(activeProfile?.id) !== String(draft.id) && (
                 <Button variant="outline" size="sm" onClick={handleSetActive} disabled={setActive.isPending}>
                   <Star className="h-4 w-4 mr-1" />
                   {t('dispatcher.profiles.set_active', { defaultValue: 'Set as active' })}
@@ -580,11 +580,11 @@ function ProfileSection({
         <button
           key={p.id}
           onClick={() => onSelect(p.id)}
-          className={`w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-accent/50 transition-colors ${selectedId === p.id ? 'bg-accent' : ''}`}
+          className={`w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-accent/50 transition-colors ${String(selectedId) === String(p.id) ? 'bg-accent' : ''}`}
         >
           <CalendarDays className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
           <span className="flex-1 text-sm truncate">{p.name}</span>
-          {activeId === p.id && <Star className="h-3.5 w-3.5 text-primary flex-shrink-0" fill="currentColor" />}
+          {String(activeId) === String(p.id) && <Star className="h-3.5 w-3.5 text-primary flex-shrink-0" fill="currentColor" />}
         </button>
       ))}
     </div>

@@ -66,27 +66,52 @@ export function getJobFieldValue(job: Job, field: PlanningCardField, extras?: Ca
   }
 }
 
-/** Compose the card's main label from the configured primary fields. */
+/**
+ * Resolve the configured fields to display rows, de-duplicated so the same piece
+ * of information never appears twice — neither the same field picked twice, nor
+ * two different fields that resolve to the identical value (e.g. when a service
+ * order's name and description are the same text). Empty values are dropped.
+ */
+export function getCardFieldRows(
+  job: Job,
+  fields: PlanningCardField[] | undefined,
+  extras?: CardFieldExtras,
+  fallback: PlanningCardField[] = [],
+): { field: PlanningCardField; label: string; value: string }[] {
+  const list = fields && fields.length ? fields : fallback;
+  const seenFields = new Set<PlanningCardField>();
+  const seenValues = new Set<string>();
+  const rows: { field: PlanningCardField; label: string; value: string }[] = [];
+  for (const f of list) {
+    if (seenFields.has(f)) continue;
+    seenFields.add(f);
+    const value = getJobFieldValue(job, f, extras);
+    if (!value) continue;
+    const key = value.trim().toLowerCase();
+    if (seenValues.has(key)) continue;
+    seenValues.add(key);
+    rows.push({ field: f, label: planningFieldLabel(f), value });
+  }
+  return rows;
+}
+
+/** Compose the card's main label from the configured primary fields (de-duplicated). */
 export function formatCardLabel(
   job: Job,
   fields: PlanningCardField[] | undefined,
   separator: string | undefined,
   extras?: CardFieldExtras,
 ): string {
-  const list = fields && fields.length ? fields : (['serviceOrderNumber'] as PlanningCardField[]);
-  const parts = list.map(f => getJobFieldValue(job, f, extras)).filter(Boolean);
+  const rows = getCardFieldRows(job, fields, extras, ['serviceOrderNumber']);
   // Always fall back to something readable so a block is never blank.
-  return parts.join(separator ?? ' · ') || job.serviceOrderNumber || job.title || '';
+  return rows.map(r => r.value).join(separator ?? ' · ') || job.serviceOrderNumber || job.title || '';
 }
 
-/** Build labelled rows for the hover tooltip from the configured hover fields. */
+/** Build labelled rows for the hover tooltip from the configured hover fields (de-duplicated). */
 export function buildHoverRows(
   job: Job,
   fields: PlanningCardField[] | undefined,
   extras?: CardFieldExtras,
 ): { label: string; value: string }[] {
-  const list = fields && fields.length ? fields : ([] as PlanningCardField[]);
-  return list
-    .map(f => ({ label: planningFieldLabel(f), value: getJobFieldValue(job, f, extras) }))
-    .filter(r => r.value);
+  return getCardFieldRows(job, fields, extras).map(({ label, value }) => ({ label, value }));
 }
