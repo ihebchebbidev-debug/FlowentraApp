@@ -113,18 +113,36 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
   };
 
   const handleSave = async () => {
-    await persistDraft();
-    toast.success(t('dispatcher.profiles.saved', { defaultValue: 'Profile saved' }));
+    try {
+      const saved = await persistDraft();
+      // Saving the profile that's currently driving the board should reflect
+      // immediately — make sure it's the active one so the board re-reads it.
+      const targetId = saved?.id ?? draft?.id;
+      if (targetId && activeProfile?.id === targetId) {
+        // already active — invalidation from the mutation refreshes the board
+      } else if (targetId && !activeProfile) {
+        await setActive.mutateAsync(targetId);
+      }
+      toast.success(t('dispatcher.profiles.saved', { defaultValue: 'Profile saved' }));
+      onOpenChange(false);
+    } catch (e: any) {
+      toast.error(e?.message || t('dispatcher.profiles.saveError', { defaultValue: 'Could not save the profile' }));
+    }
   };
 
   const handleSaveAndApply = async () => {
     if (!draft) return;
-    const saved = await persistDraft();
-    const targetId = saved?.id ?? draft.id;
-    if (activeProfile?.id !== targetId) {
-      await setActive.mutateAsync(targetId);
+    try {
+      const saved = await persistDraft();
+      const targetId = saved?.id ?? draft.id;
+      if (activeProfile?.id !== targetId) {
+        await setActive.mutateAsync(targetId);
+      }
+      toast.success(t('dispatcher.profiles.applied', { defaultValue: 'Profile saved & applied to board' }));
+      onOpenChange(false);
+    } catch (e: any) {
+      toast.error(e?.message || t('dispatcher.profiles.saveError', { defaultValue: 'Could not save the profile' }));
     }
-    toast.success(t('dispatcher.profiles.applied', { defaultValue: 'Profile saved & applied to board' }));
   };
 
   const handleSetActive = async () => {
