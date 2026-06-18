@@ -1,7 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { useAuth } from '@/contexts/AuthContext';
@@ -44,6 +43,16 @@ const fmtHours = (minutes: number) => {
 
 const DONUT_PALETTE = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#a855f7', '#ec4899', '#14b8a6'];
 
+const PANEL = 'rounded-xl border border-border/60 bg-card shadow-[0_1px_2px_rgba(0,0,0,0.04)]';
+
+const TONE: Record<string, { chip: string; bar: string }> = {
+  primary: { chip: 'bg-primary/10 text-primary', bar: 'bg-primary' },
+  success: { chip: 'bg-emerald-500/10 text-emerald-600', bar: 'bg-emerald-500' },
+  warning: { chip: 'bg-amber-500/10 text-amber-600', bar: 'bg-amber-500' },
+  danger: { chip: 'bg-red-500/10 text-red-600', bar: 'bg-red-500' },
+  info: { chip: 'bg-sky-500/10 text-sky-600', bar: 'bg-sky-500' },
+};
+
 function SectionHeader({
   icon: Icon,
   title,
@@ -58,18 +67,18 @@ function SectionHeader({
   viewAllLabel?: string;
 }) {
   return (
-    <div className="flex items-end justify-between gap-3 mb-3">
+    <div className="flex items-center justify-between gap-3 mb-3">
       <div className="flex items-center gap-2.5 min-w-0">
-        <span className="p-2 rounded-xl bg-primary/10 text-primary shrink-0">
-          <Icon className="h-5 w-5" />
+        <span className="grid place-items-center h-8 w-8 rounded-lg bg-primary/10 text-primary shrink-0">
+          <Icon className="h-[18px] w-[18px]" />
         </span>
         <div className="min-w-0">
-          <h2 className="text-base font-semibold leading-tight truncate">{title}</h2>
-          {subtitle && <p className="text-[11px] text-muted-foreground truncate">{subtitle}</p>}
+          <h2 className="text-[15px] font-semibold leading-tight tracking-tight truncate">{title}</h2>
+          {subtitle && <p className="text-xs text-muted-foreground truncate">{subtitle}</p>}
         </div>
       </div>
       {onViewAll && (
-        <Button variant="ghost" size="sm" className="gap-1 text-xs shrink-0" onClick={onViewAll}>
+        <Button variant="ghost" size="sm" className="gap-1 text-xs text-muted-foreground hover:text-foreground shrink-0" onClick={onViewAll}>
           {viewAllLabel} <ArrowUpRight className="h-3.5 w-3.5" />
         </Button>
       )}
@@ -95,51 +104,49 @@ function StatCard({
   trend?: number;
   onClick?: () => void;
 }) {
-  const toneCls: Record<string, string> = {
-    primary: 'bg-primary/10 text-primary',
-    success: 'bg-emerald-500/10 text-emerald-600',
-    warning: 'bg-amber-500/10 text-amber-600',
-    danger: 'bg-red-500/10 text-red-600',
-    info: 'bg-sky-500/10 text-sky-600',
-  };
   return (
-    <Card
-      className={`border-0 shadow-[var(--shadow-card)] bg-[image:var(--gradient-card)] transition-all ${
-        onClick ? 'cursor-pointer hover:shadow-lg hover:-translate-y-0.5 group' : ''
-      }`}
+    <div
+      className={`${PANEL} p-4 transition-all ${onClick ? 'cursor-pointer hover:border-primary/40 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)]' : ''}`}
       onClick={onClick}
     >
-      <CardContent className="p-4">
-        <div className="flex items-center gap-3">
-          <span className={`p-2.5 rounded-xl shrink-0 ${toneCls[tone]}`}>
-            <Icon className="h-5 w-5" />
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-[13px] font-medium text-muted-foreground leading-snug">{label}</p>
+        <span className={`grid place-items-center h-9 w-9 rounded-lg shrink-0 ${TONE[tone].chip}`}>
+          <Icon className="h-[18px] w-[18px]" />
+        </span>
+      </div>
+      <div className="mt-2.5 flex items-end gap-2 flex-wrap">
+        <span className="text-[26px] font-bold tracking-tight tabular-nums leading-none text-foreground">{value}</span>
+        {trend !== undefined && Number.isFinite(trend) && (
+          <span className={`inline-flex items-center gap-0.5 text-[11px] font-semibold rounded-full px-1.5 py-0.5 mb-0.5 ${trend >= 0 ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-600'}`}>
+            {trend >= 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+            {Math.abs(trend)}%
           </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-medium text-muted-foreground truncate">{label}</p>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <p className="text-xl font-bold text-foreground leading-tight truncate">{value}</p>
-              {trend !== undefined && Number.isFinite(trend) && (
-                <span className={`inline-flex items-center gap-0.5 text-[10px] font-semibold rounded-full px-1.5 py-0.5 ${trend >= 0 ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-600'}`}>
-                  {trend >= 0 ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />}
-                  {Math.abs(trend)}%
-                </span>
-              )}
-            </div>
-            {sub && <p className="text-[11px] text-muted-foreground truncate mt-0.5">{sub}</p>}
-          </div>
-          {onClick && (
-            <ArrowUpRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all shrink-0" />
-          )}
+        )}
+      </div>
+      {sub && <p className="mt-1.5 text-xs text-muted-foreground truncate">{sub}</p>}
+    </div>
+  );
+}
+
+function Panel({ title, action, children, className = '' }: { title?: string; action?: React.ReactNode; children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`${PANEL} ${className}`}>
+      {title && (
+        <div className="flex items-center justify-between gap-2 px-4 pt-4 pb-2">
+          <p className="text-sm font-semibold tracking-tight">{title}</p>
+          {action}
         </div>
-      </CardContent>
-    </Card>
+      )}
+      <div className={title ? 'px-4 pb-4' : 'p-4'}>{children}</div>
+    </div>
   );
 }
 
 const SkeletonGrid = ({ n }: { n: number }) => (
   <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
     {Array.from({ length: n }).map((_, i) => (
-      <div key={i} className="h-[76px] rounded-xl bg-primary/5 animate-pulse" />
+      <div key={i} className="h-[104px] rounded-xl border border-border/60 bg-muted/30 animate-pulse" />
     ))}
   </div>
 );
@@ -277,14 +284,14 @@ export default function DashboardOverview() {
   );
 
   return (
-    <div className="space-y-8 p-3 sm:p-4 max-w-[1600px] mx-auto">
+    <div className="space-y-6 p-3 sm:p-5 max-w-[1600px] mx-auto">
       {/* ══ Header · greeting + quick actions ══ */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-xl font-bold leading-tight truncate">
+          <h1 className="text-[22px] font-bold leading-tight tracking-tight truncate">
             {greeting}{user?.firstName ? `, ${user.firstName}` : ''} 👋
           </h1>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground mt-0.5">
             {dayjs().format('dddd, D MMMM YYYY')} · {t('overview.welcomeMessage', { defaultValue: "Here's an overview of your business" })}
           </p>
         </div>
@@ -328,20 +335,14 @@ export default function DashboardOverview() {
         )}
 
         <div className="grid lg:grid-cols-3 gap-3 mt-3">
-          <Card className="lg:col-span-2 border-0 shadow-[var(--shadow-card)] bg-[image:var(--gradient-card)]">
-            <CardContent className="p-4">
-              <p className="text-sm font-semibold mb-3">{t('overview.revenueTrend', { defaultValue: 'Revenue — last 6 months' })}</p>
-              <ThemedBarChart data={revenueTrend} height={200} />
-            </CardContent>
-          </Card>
-          <Card className="border-0 shadow-[var(--shadow-card)] bg-[image:var(--gradient-card)]">
-            <CardContent className="p-4">
-              <p className="text-sm font-semibold mb-3">{t('overview.serviceOrderStatus', { defaultValue: 'Service orders by status' })}</p>
-              {serviceOrderStatus.length > 0
-                ? <DonutChartComponent data={serviceOrderStatus} height={200} />
-                : <div className="h-[200px] flex items-center justify-center text-sm text-muted-foreground">{t('overview.noData', { defaultValue: 'No data yet' })}</div>}
-            </CardContent>
-          </Card>
+          <Panel className="lg:col-span-2" title={t('overview.revenueTrend', { defaultValue: 'Revenue — last 6 months' })}>
+            <ThemedBarChart data={revenueTrend} height={210} />
+          </Panel>
+          <Panel title={t('overview.serviceOrderStatus', { defaultValue: 'Service orders by status' })}>
+            {serviceOrderStatus.length > 0
+              ? <DonutChartComponent data={serviceOrderStatus} height={210} />
+              : <div className="h-[210px] flex items-center justify-center text-sm text-muted-foreground">{t('overview.noData', { defaultValue: 'No data yet' })}</div>}
+          </Panel>
         </div>
       </section>
 
@@ -365,10 +366,12 @@ export default function DashboardOverview() {
               <StatCard icon={CheckCircle2} tone="success" label={t('overview.jobsCompleted', { defaultValue: 'Jobs completed' })} value={teamTotals.completed} />
             </div>
 
-            <Card className="border-0 shadow-[var(--shadow-card)] bg-[image:var(--gradient-card)] mt-3">
-              <CardContent className="p-0">
+            <div className={`${PANEL} mt-3 overflow-hidden`}>
                 {techStats.length === 0 ? (
-                  <div className="h-32 flex items-center justify-center text-sm text-muted-foreground">{t('overview.noTechnicianData', { defaultValue: 'No technician activity yet' })}</div>
+                  <div className="h-32 flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
+                    <UserCheck className="h-7 w-7 opacity-30" />
+                    {t('overview.noTechnicianData', { defaultValue: 'No technician activity yet' })}
+                  </div>
                 ) : (
                   <div className="divide-y divide-border/60">
                     <div className="grid grid-cols-12 gap-2 px-4 py-2 text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
@@ -400,8 +403,7 @@ export default function DashboardOverview() {
                     ))}
                   </div>
                 )}
-              </CardContent>
-            </Card>
+            </div>
           </>
         )}
       </section>
@@ -427,37 +429,34 @@ export default function DashboardOverview() {
             </div>
 
             <div className="grid lg:grid-cols-3 gap-3 mt-3">
-              <Card className="border-0 shadow-[var(--shadow-card)] bg-[image:var(--gradient-card)]">
-                <CardContent className="p-4">
-                  <p className="text-sm font-semibold mb-3">{t('overview.stockBreakdown', { defaultValue: 'Stock status' })}</p>
-                  {stockDonut.length > 0
-                    ? <DonutChartComponent data={stockDonut} height={200} />
-                    : <div className="h-[200px] flex items-center justify-center text-sm text-muted-foreground">{t('overview.noData', { defaultValue: 'No data yet' })}</div>}
-                </CardContent>
-              </Card>
-              <Card className="lg:col-span-2 border-0 shadow-[var(--shadow-card)] bg-[image:var(--gradient-card)]">
-                <CardContent className="p-4">
-                  <p className="text-sm font-semibold mb-3">{t('overview.needsRestock', { defaultValue: 'Needs restocking' })}</p>
-                  {lowStockItems.length === 0 ? (
-                    <div className="h-32 flex items-center justify-center text-sm text-muted-foreground">{t('overview.allStocked', { defaultValue: 'Everything is well stocked ✓' })}</div>
-                  ) : (
-                    <div className="divide-y divide-border/60">
-                      {lowStockItems.map((a: any) => (
-                        <div key={a.id} className="flex items-center justify-between gap-3 py-2">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className={`h-2 w-2 rounded-full shrink-0 ${(a.status || '').toLowerCase() === 'out_of_stock' ? 'bg-red-500' : 'bg-amber-500'}`} />
-                            <span className="text-sm truncate">{a.name || a.title || `#${a.id}`}</span>
-                          </div>
-                          <div className="text-right shrink-0">
-                            <span className="text-sm font-semibold">{a.stock ?? 0}</span>
-                            <span className="text-xs text-muted-foreground"> / {t('overview.min', { defaultValue: 'min' })} {a.minStock ?? 0}</span>
-                          </div>
+              <Panel title={t('overview.stockBreakdown', { defaultValue: 'Stock status' })}>
+                {stockDonut.length > 0
+                  ? <DonutChartComponent data={stockDonut} height={210} />
+                  : <div className="h-[210px] flex items-center justify-center text-sm text-muted-foreground">{t('overview.noData', { defaultValue: 'No data yet' })}</div>}
+              </Panel>
+              <Panel className="lg:col-span-2" title={t('overview.needsRestock', { defaultValue: 'Needs restocking' })}>
+                {lowStockItems.length === 0 ? (
+                  <div className="h-32 flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
+                    <CheckCircle2 className="h-7 w-7 opacity-30" />
+                    {t('overview.allStocked', { defaultValue: 'Everything is well stocked ✓' })}
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border/60 -my-1">
+                    {lowStockItems.map((a: any) => (
+                      <div key={a.id} className="flex items-center justify-between gap-3 py-2.5">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className={`h-2 w-2 rounded-full shrink-0 ${(a.status || '').toLowerCase() === 'out_of_stock' ? 'bg-red-500' : 'bg-amber-500'}`} />
+                          <span className="text-sm truncate">{a.name || a.title || `#${a.id}`}</span>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                        <div className="text-right shrink-0 tabular-nums">
+                          <span className={`text-sm font-semibold ${(a.status || '').toLowerCase() === 'out_of_stock' ? 'text-red-600' : 'text-amber-600'}`}>{a.stock ?? 0}</span>
+                          <span className="text-xs text-muted-foreground"> / {t('overview.min', { defaultValue: 'min' })} {a.minStock ?? 0}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Panel>
             </div>
           </>
         )}

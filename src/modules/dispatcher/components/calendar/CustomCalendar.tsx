@@ -788,6 +788,34 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
     setPendingInstallationAssignment(null);
   };
 
+  const loadAssignedJobs = useCallback(async (): Promise<Record<string, Job[]>> => {
+    if (displayedTechnicians.length === 0 || dates.length === 0) return {};
+
+    try {
+      const techIds = displayedTechnicians.map(t => t.id);
+      const startDate = dates[0];
+      const endDate = dates[dates.length - 1];
+
+      // Use bulk fetch for better performance - single API call for all technicians and dates
+      const allJobs = await DispatcherService.getAssignedJobsForDateRange(techIds, startDate, endDate);
+
+      // Ensure all expected keys exist (even if empty)
+      const jobs: Record<string, Job[]> = {};
+      for (const technician of displayedTechnicians) {
+        for (const date of dates) {
+          const key = `${technician.id}-${format(date, 'yyyy-MM-dd')}`;
+          jobs[key] = allJobs[key] || [];
+        }
+      }
+
+      setAssignedJobs(jobs);
+      return jobs;
+    } catch (error) {
+      console.error('Failed to load assigned jobs:', error);
+      return {};
+    }
+  }, [displayedTechnicians, dates]);
+
   const handleJobResize = useCallback(async (jobId: string, newEnd: Date) => {
     try {
       await DispatcherService.resizeJob(jobId, newEnd);
@@ -911,34 +939,6 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
       throw error;
     }
   };
-
-  const loadAssignedJobs = useCallback(async (): Promise<Record<string, Job[]>> => {
-    if (displayedTechnicians.length === 0 || dates.length === 0) return {};
-
-    try {
-      const techIds = displayedTechnicians.map(t => t.id);
-      const startDate = dates[0];
-      const endDate = dates[dates.length - 1];
-      
-      // Use bulk fetch for better performance - single API call for all technicians and dates
-      const allJobs = await DispatcherService.getAssignedJobsForDateRange(techIds, startDate, endDate);
-      
-      // Ensure all expected keys exist (even if empty)
-      const jobs: Record<string, Job[]> = {};
-      for (const technician of displayedTechnicians) {
-        for (const date of dates) {
-          const key = `${technician.id}-${format(date, 'yyyy-MM-dd')}`;
-          jobs[key] = allJobs[key] || [];
-        }
-      }
-      
-      setAssignedJobs(jobs);
-      return jobs;
-    } catch (error) {
-      console.error('Failed to load assigned jobs:', error);
-      return {};
-    }
-  }, [displayedTechnicians, dates]);
 
   const loadTechnicianLeaves = async () => {
     console.log('Loading technician leaves...');
