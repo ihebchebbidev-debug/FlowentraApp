@@ -76,11 +76,12 @@ export const planningProfilesApi = {
     if (remote) return remote;
     const activeId = localStorage.getItem(ACTIVE_KEY);
     const list = readLocal();
-    const found = activeId ? list.find(p => p.id === activeId) : null;
+    const found = activeId ? list.find(p => String(p.id) === activeId) : null;
     return found ?? ensureDefaultProfile();
   },
 
-  async setActive(id: string): Promise<void> {
+  async setActive(rawId: string): Promise<void> {
+    const id = String(rawId);
     // Mirror to localStorage regardless of backend success so the fallback path
     // (used when the backend is unreachable) stays consistent on next read.
     await tryBackend<unknown>(() => apiFetch(`${BASE}/active/${id}`, { method: 'PUT' }));
@@ -112,12 +113,15 @@ export const planningProfilesApi = {
     return profile;
   },
 
-  async update(id: string, dto: UpdatePlanningProfileDto): Promise<PlanningProfile> {
+  async update(rawId: string, dto: UpdatePlanningProfileDto): Promise<PlanningProfile> {
+    // Ids may arrive as numbers from the backend — normalize so string ops below
+    // (and the `local-` check) never throw "startsWith is not a function".
+    const id = String(rawId);
     // A `local-` id only ever existed client-side (e.g. the auto-created Default
     // profile) and was never persisted — a PUT would 404. Persist it as a CREATE
     // instead, then swap the temporary id for the real one everywhere.
     if (id.startsWith('local-')) {
-      const existing = readLocal().find(p => p.id === id);
+      const existing = readLocal().find(p => String(p.id) === id);
       const merged = { ...(existing ?? {}), ...dto } as PlanningProfile;
       const createBody: CreatePlanningProfileDto = {
         name: merged.name ?? 'Default',
@@ -133,15 +137,15 @@ export const planningProfilesApi = {
         method: 'POST', body: JSON.stringify(createBody),
       }));
       if (created) {
-        const next = readLocal().filter(p => p.id !== id);
+        const next = readLocal().filter(p => String(p.id) !== id);
         next.push(created);
         writeLocal(next);
-        if (localStorage.getItem(ACTIVE_KEY) === id) localStorage.setItem(ACTIVE_KEY, created.id);
+        if (localStorage.getItem(ACTIVE_KEY) === id) localStorage.setItem(ACTIVE_KEY, String(created.id));
         return created;
       }
       // Backend unreachable — keep it local (recreate the entry if it was lost).
       const list = readLocal();
-      const idx = list.findIndex(p => p.id === id);
+      const idx = list.findIndex(p => String(p.id) === id);
       if (idx === -1) {
         const local = {
           id,
@@ -164,7 +168,7 @@ export const planningProfilesApi = {
     }));
     if (remote) return remote;
     const list = readLocal();
-    const idx = list.findIndex(p => p.id === id);
+    const idx = list.findIndex(p => String(p.id) === id);
     if (idx === -1) {
       // Backend unreachable and the profile isn't cached locally — persist it
       // locally instead of throwing so the user's edit is never silently lost.
@@ -191,18 +195,20 @@ export const planningProfilesApi = {
     return list[idx];
   },
 
-  async remove(id: string): Promise<void> {
+  async remove(rawId: string): Promise<void> {
+    const id = String(rawId);
     await tryBackend<unknown>(() => apiFetch(`${BASE}/${id}`, { method: 'DELETE' }));
-    const list = readLocal().filter(p => p.id !== id);
+    const list = readLocal().filter(p => String(p.id) !== id);
     writeLocal(list);
     if (localStorage.getItem(ACTIVE_KEY) === id) {
       localStorage.removeItem(ACTIVE_KEY);
     }
   },
 
-  async duplicate(id: string, newName: string): Promise<PlanningProfile> {
+  async duplicate(rawId: string, newName: string): Promise<PlanningProfile> {
+    const id = String(rawId);
     const list = await this.list();
-    const src = list.find(p => p.id === id);
+    const src = list.find(p => String(p.id) === id);
     if (!src) throw new Error('Profile not found');
     return this.create({
       name: newName,

@@ -54,7 +54,9 @@
       "Bash(node -e \"const o=require\\('./src/modules/dashboard/locale/en.json'\\); console.log\\(Object.keys\\(o.overview||{}\\).join\\(', '\\)\\)\")",
       "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('src/modules/dashboard/locale/en.json','utf8'\\)\\);JSON.parse\\(require\\('fs'\\).readFileSync\\('src/modules/dashboard/locale/fr.json','utf8'\\)\\);console.log\\('JSON valid'\\)\")",
       "PowerShell(npx tsc --noEmit 2>&1 | Select-Object -First 30; \"TSC_EXIT=$LASTEXITCODE\")",
-      "PowerShell(npx vite build 2>&1 | Select-Object -Last 15; \"VITE_EXIT=$LASTEXITCODE\")"
+      "PowerShell(npx vite build 2>&1 | Select-Object -Last 15; \"VITE_EXIT=$LASTEXITCODE\")",
+      "PowerShell(npx tsc --noEmit 2>&1 | Select-Object -First 20; \"TSC_EXIT=$LASTEXITCODE\")",
+      "PowerShell(npx vite build 2>&1 | Select-Object -Last 4; \"VITE_EXIT=$LASTEXITCODE\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\iheb.chebbi\\Desktop\\FlowentraApp\\Backend\\Modules\\Offers\\DTOs"

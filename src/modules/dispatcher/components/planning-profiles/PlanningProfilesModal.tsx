@@ -60,7 +60,7 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
 
 
   const selected = useMemo(
-    () => profiles.find(p => p.id === selectedId) ?? activeProfile ?? profiles[0] ?? null,
+    () => profiles.find(p => String(p.id) === String(selectedId)) ?? activeProfile ?? profiles[0] ?? null,
     [profiles, selectedId, activeProfile]
   );
 
@@ -108,7 +108,7 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
         settings: draft.settings,
       },
     });
-    if (saved && saved.id !== draft.id) setSelectedId(saved.id);
+    if (saved && String(saved.id) !== String(draft.id)) setSelectedId(saved.id);
     return saved;
   };
 
@@ -116,12 +116,12 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
     if (!draft) return;
     try {
       // Was the profile being edited the one currently driving the board?
-      const wasActive = !activeProfile || activeProfile.id === draft.id;
+      const wasActive = !activeProfile || String(activeProfile.id) === String(draft.id);
       const saved = await persistDraft();
       const targetId = saved?.id ?? draft.id;
       // Keep the board pointed at this profile so the saved display settings
       // reflect immediately — covers the local→real id swap on first persist.
-      if (wasActive && activeProfile?.id !== targetId) {
+      if (wasActive && String(activeProfile?.id) !== String(targetId)) {
         await setActive.mutateAsync(targetId);
       }
       toast.success(t('dispatcher.profiles.saved', { defaultValue: 'Profile saved' }));
@@ -136,7 +136,7 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
     try {
       const saved = await persistDraft();
       const targetId = saved?.id ?? draft.id;
-      if (activeProfile?.id !== targetId) {
+      if (String(activeProfile?.id) !== String(targetId)) {
         await setActive.mutateAsync(targetId);
       }
       toast.success(t('dispatcher.profiles.applied', { defaultValue: 'Profile saved & applied to board' }));
