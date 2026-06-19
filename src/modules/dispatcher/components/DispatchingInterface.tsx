@@ -258,7 +258,7 @@ export function DispatchingInterface() {
 
   const planningDisplay = useMemo(() => ({
     cardPrimaryFields: profileSettings.cardPrimaryFields ?? ['serviceOrderNumber'],
-    cardSeparator: profileSettings.cardSeparator ?? ' · ',
+    cardSeparator: profileSettings.cardSeparator ?? ' - ',
     hoverFields: profileSettings.hoverFields ?? [],
     showJobsOnHover: profileSettings.showJobsOnHover ?? true,
     colorBy: profileSettings.colorBy ?? 'status',

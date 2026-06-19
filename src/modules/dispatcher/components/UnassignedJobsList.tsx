@@ -29,7 +29,7 @@ import {
 import type { Job, ServiceOrder, InstallationGroup } from "../types";
 import { usePlanningDisplay } from "../context/PlanningDisplayContext";
 import { useActivePlanningProfile } from "../hooks/usePlanningProfile";
-import { formatCardLabel, buildHoverRows, getCardFieldRows } from "../utils/planningCardFields";
+import { formatCardLabel, buildHoverRows } from "../utils/planningCardFields";
 import { DispatcherService } from "../services/dispatcher.service";
 import { JobMappingService } from "../services/job-mapping.service";
 import { cn } from "@/lib/utils";
@@ -869,32 +869,13 @@ export function UnassignedJobsList({
                               <GripVertical className="h-3 w-3 text-primary flex-shrink-0 mt-0.5" />
                             )}
                             <Package className="h-3 w-3 text-primary flex-shrink-0 mt-0.5" />
-                            <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                              {(() => {
-                                const repJob = serviceOrderData.unassignedJobs[0];
-                                const rows = repJob
-                                  ? getCardFieldRows(repJob, display.cardPrimaryFields, { jobCount: serviceOrderData.unassignedJobs.length }, ['serviceOrderNumber'])
-                                  : [];
-                                if (!rows.length) {
-                                  return (
-                                    <span className="font-medium text-xs break-words leading-snug">
-                                      {serviceOrderData.title || `SO-${serviceOrderData.id}`}
-                                    </span>
-                                  );
-                                }
-                                // Each piece of info on its own line, wrapping instead of
-                                // truncating so nothing is hidden — cards grow as needed.
-                                return rows.map((r, i) => (
-                                  <span
-                                    key={r.field}
-                                    className={i === 0
-                                      ? "font-medium text-xs break-words leading-snug"
-                                      : "text-[0.7rem] text-muted-foreground break-words leading-snug"}
-                                  >
-                                    {r.value}
-                                  </span>
-                                ));
-                              })()}
+                            <div className="flex-1 min-w-0">
+                              {/* Up to two fields on one line, always joined by "-". */}
+                              <span className="font-medium text-xs break-words leading-snug">
+                                {serviceOrderData.unassignedJobs[0]
+                                  ? formatCardLabel(serviceOrderData.unassignedJobs[0], display.cardPrimaryFields, display.cardSeparator, { jobCount: serviceOrderData.unassignedJobs.length })
+                                  : (serviceOrderData.title || `SO-${serviceOrderData.id}`)}
+                              </span>
                             </div>
                           </div>
                           <div className="flex items-center gap-1.5 flex-shrink-0 mt-0.5">

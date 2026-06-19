@@ -71,7 +71,7 @@ export const DEFAULT_PLANNING_SETTINGS: PlanningProfileSettings = {
   showDurationLabels: true,
   compactRows: false,
   cardPrimaryFields: ['serviceOrderNumber'],
-  cardSeparator: ' · ',
+  cardSeparator: ' - ',
   hoverFields: ['contactName', 'installationName', 'status', 'duration'],
   showJobsOnHover: true,
   expandServiceOrderJobs: false,

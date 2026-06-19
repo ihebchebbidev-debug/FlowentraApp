@@ -104,7 +104,7 @@ export function formatCardLabel(
 ): string {
   const rows = getCardFieldRows(job, fields, extras, ['serviceOrderNumber']);
   // Always fall back to something readable so a block is never blank.
-  return rows.map(r => r.value).join(separator ?? ' · ') || job.serviceOrderNumber || job.title || '';
+  return rows.map(r => r.value).join(separator ?? ' - ') || job.serviceOrderNumber || job.title || '';
 }
 
 /** Build labelled rows for the hover tooltip from the configured hover fields (de-duplicated). */
