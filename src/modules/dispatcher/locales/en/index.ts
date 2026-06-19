@@ -404,7 +404,32 @@ export const en = {
 
       // General tab — planning mode
       planning_mode_label: "Planning mode",
-      planning_mode_hint: "How items are dragged onto the board. Matches the toggle above the unassigned jobs list."
+      planning_mode_hint: "How items are dragged onto the board. Matches the toggle above the unassigned jobs list.",
+
+      // Display tab — card display section
+      card_display: "Card display",
+      card_label_fields: "Label shows",
+      card_label_hint_two: 'Pick up to two fields (in order). They are always separated by "-".',
+      hover_fields: "Hover shows",
+      show_jobs_on_hover: "List a service order's jobs on hover",
+      expand_so_jobs: "Allow expanding a service order to its jobs in the list",
+      saveError: "Could not save the profile",
+
+      // Card field labels
+      field_service_order_number: "Service order number",
+      field_service_order_name: "Service order name",
+      field_description: "Description",
+      field_contact_name: "Contact / customer name",
+      field_customer_company: "Company",
+      field_customer_phone: "Phone",
+      field_installation: "Installation",
+      field_job_title: "Job title",
+      field_status: "Status",
+      field_priority: "Priority",
+      field_duration: "Duration",
+      field_address: "Address",
+      field_technician: "Technician",
+      field_job_count: "Number of jobs"
     },
 
     // Smart planning toolbar

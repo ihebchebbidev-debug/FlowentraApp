@@ -404,7 +404,32 @@ export const fr = {
 
       // Onglet général — mode de planification
       planning_mode_label: "Mode de planification",
-      planning_mode_hint: "Comment les éléments sont déplacés sur le tableau. Correspond au bouton au-dessus de la liste des tâches non assignées."
+      planning_mode_hint: "Comment les éléments sont déplacés sur le tableau. Correspond au bouton au-dessus de la liste des tâches non assignées.",
+
+      // Onglet affichage — section affichage des fiches
+      card_display: "Affichage des fiches",
+      card_label_fields: "Le libellé affiche",
+      card_label_hint_two: "Sélectionnez jusqu'à deux champs (dans l'ordre). Ils sont toujours séparés par « - ».",
+      hover_fields: "Le survol affiche",
+      show_jobs_on_hover: "Lister les tâches d'un ordre de service au survol",
+      expand_so_jobs: "Permettre d'afficher les tâches d'un ordre de service dans la liste",
+      saveError: "Impossible d'enregistrer le profil",
+
+      // Libellés des champs
+      field_service_order_number: "Numéro d'ordre de service",
+      field_service_order_name: "Nom de l'ordre de service",
+      field_description: "Description",
+      field_contact_name: "Nom du contact / client",
+      field_customer_company: "Société",
+      field_customer_phone: "Téléphone",
+      field_installation: "Installation",
+      field_job_title: "Titre de la tâche",
+      field_status: "Statut",
+      field_priority: "Priorité",
+      field_duration: "Durée",
+      field_address: "Adresse",
+      field_technician: "Technicien",
+      field_job_count: "Nombre de tâches"
     },
 
     // Barre d'outils planification intelligente

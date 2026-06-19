@@ -30,7 +30,7 @@ import {
   type PlanningProfileSettings,
   type PlanningCardField,
 } from '../../types/planningProfile';
-import { PLANNING_CARD_FIELD_OPTIONS, planningFieldLabel } from '../../utils/planningCardFields';
+import { PLANNING_CARD_FIELD_OPTIONS, PLANNING_CARD_FIELD_I18N_KEYS, planningFieldLabel } from '../../utils/planningCardFields';
 
 interface Props {
   open: boolean;
@@ -139,7 +139,7 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
       toast.success(t('dispatcher.profiles.saved', { defaultValue: 'Profile saved' }));
       onOpenChange(false);
     } catch (e: any) {
-      toast.error(e?.message || t('dispatcher.profiles.saveError', { defaultValue: 'Could not save the profile' }));
+      toast.error(e?.message || t('dispatcher.profiles.saveError'));
     }
   };
 
@@ -154,7 +154,7 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
       toast.success(t('dispatcher.profiles.applied', { defaultValue: 'Profile saved & applied to board' }));
       onOpenChange(false);
     } catch (e: any) {
-      toast.error(e?.message || t('dispatcher.profiles.saveError', { defaultValue: 'Could not save the profile' }));
+      toast.error(e?.message || t('dispatcher.profiles.saveError'));
     }
   };
 
@@ -429,67 +429,69 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
                           </div>
 
                           {/* Card display — configurable label + hover content */}
-                          <div className="border-t pt-4 space-y-3">
-                            <Label className="text-sm font-semibold">{t('dispatcher.profiles.card_display', { defaultValue: 'Card display' })}</Label>
+                          <div className=”border-t pt-4 space-y-3”>
+                            <Label className=”text-sm font-semibold”>{t(‘dispatcher.profiles.card_display’)}</Label>
 
                             <div>
-                              <Label className="text-xs text-muted-foreground">{t('dispatcher.profiles.card_label_fields', { defaultValue: 'Label shows' })}</Label>
-                              <div className="flex flex-wrap gap-1.5 mt-1.5">
+                              <Label className=”text-xs text-muted-foreground”>{t(‘dispatcher.profiles.card_label_fields’)}</Label>
+                              <div className=”flex flex-wrap gap-1.5 mt-1.5”>
                                 {PLANNING_CARD_FIELD_OPTIONS.map(opt => {
                                   const cur = draft.settings.cardPrimaryFields ?? [];
                                   const selected = cur.includes(opt.value);
                                   const idx = cur.indexOf(opt.value);
                                   // Limit the card label to at most two fields.
                                   const atMax = !selected && cur.length >= 2;
+                                  const fieldLabel = t(PLANNING_CARD_FIELD_I18N_KEYS[opt.value], { defaultValue: opt.label });
                                   return (
                                     <button
-                                      type="button"
+                                      type=”button”
                                       key={opt.value}
                                       disabled={atMax}
                                       onClick={() => {
                                         if (selected) {
-                                          updateSetting('cardPrimaryFields', cur.filter(f => f !== opt.value) as PlanningCardField[]);
+                                          updateSetting(‘cardPrimaryFields’, cur.filter(f => f !== opt.value) as PlanningCardField[]);
                                         } else if (cur.length < 2) {
-                                          updateSetting('cardPrimaryFields', [...cur, opt.value] as PlanningCardField[]);
+                                          updateSetting(‘cardPrimaryFields’, [...cur, opt.value] as PlanningCardField[]);
                                         }
                                       }}
-                                      className={`text-xs px-2 py-1 rounded-md border transition-colors ${selected ? 'bg-primary text-primary-foreground border-primary' : atMax ? 'bg-background text-muted-foreground/40 border-border/50 cursor-not-allowed' : 'bg-background text-muted-foreground hover:bg-muted'}`}
+                                      className={`text-xs px-2 py-1 rounded-md border transition-colors ${selected ? ‘bg-primary text-primary-foreground border-primary’ : atMax ? ‘bg-background text-muted-foreground/40 border-border/50 cursor-not-allowed’ : ‘bg-background text-muted-foreground hover:bg-muted’}`}
                                     >
-                                      {selected && <span className="mr-1 text-[10px] opacity-80">{idx + 1}</span>}{opt.label}
+                                      {selected && <span className=”mr-1 text-[10px] opacity-80”>{idx + 1}</span>}{fieldLabel}
                                     </button>
                                   );
                                 })}
                               </div>
-                              <p className="text-[11px] text-muted-foreground mt-1">
-                                {t('dispatcher.profiles.card_label_hint_two', { defaultValue: 'Pick up to two fields (in order). They are always separated by “-”.' })}
+                              <p className=”text-[11px] text-muted-foreground mt-1”>
+                                {t(‘dispatcher.profiles.card_label_hint_two’)}
                               </p>
-                              <p className="text-xs text-muted-foreground mt-1 truncate">
-                                {(draft.settings.cardPrimaryFields ?? []).map(f => planningFieldLabel(f)).join(' - ') || '—'}
+                              <p className=”text-xs text-muted-foreground mt-1 truncate”>
+                                {(draft.settings.cardPrimaryFields ?? []).map(f => t(PLANNING_CARD_FIELD_I18N_KEYS[f], { defaultValue: planningFieldLabel(f) })).join(‘ - ‘) || ‘—‘}
                               </p>
                             </div>
 
                             <div>
-                              <Label className="text-xs text-muted-foreground">{t('dispatcher.profiles.hover_fields', { defaultValue: 'Hover shows' })}</Label>
-                              <div className="flex flex-wrap gap-1.5 mt-1.5">
+                              <Label className=”text-xs text-muted-foreground”>{t(‘dispatcher.profiles.hover_fields’)}</Label>
+                              <div className=”flex flex-wrap gap-1.5 mt-1.5”>
                                 {PLANNING_CARD_FIELD_OPTIONS.map(opt => {
                                   const cur = draft.settings.hoverFields ?? [];
                                   const selected = cur.includes(opt.value);
+                                  const fieldLabel = t(PLANNING_CARD_FIELD_I18N_KEYS[opt.value], { defaultValue: opt.label });
                                   return (
                                     <button
-                                      type="button"
+                                      type=”button”
                                       key={opt.value}
-                                      onClick={() => updateSetting('hoverFields', selected ? cur.filter(f => f !== opt.value) : [...cur, opt.value] as PlanningCardField[])}
-                                      className={`text-xs px-2 py-1 rounded-md border transition-colors ${selected ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-muted-foreground hover:bg-muted'}`}
+                                      onClick={() => updateSetting(‘hoverFields’, selected ? cur.filter(f => f !== opt.value) : [...cur, opt.value] as PlanningCardField[])}
+                                      className={`text-xs px-2 py-1 rounded-md border transition-colors ${selected ? ‘bg-primary text-primary-foreground border-primary’ : ‘bg-background text-muted-foreground hover:bg-muted’}`}
                                     >
-                                      {opt.label}
+                                      {fieldLabel}
                                     </button>
                                   );
                                 })}
                               </div>
                             </div>
 
-                            <ToggleRow label={t('dispatcher.profiles.show_jobs_on_hover', { defaultValue: 'List a service order’s jobs on hover' })} checked={draft.settings.showJobsOnHover ?? true} onChange={v => updateSetting('showJobsOnHover', v)} />
-                            <ToggleRow label={t('dispatcher.profiles.expand_so_jobs', { defaultValue: 'Allow expanding a service order to its jobs in the list' })} checked={draft.settings.expandServiceOrderJobs ?? false} onChange={v => updateSetting('expandServiceOrderJobs', v)} />
+                            <ToggleRow label={t(‘dispatcher.profiles.show_jobs_on_hover’)} checked={draft.settings.showJobsOnHover ?? true} onChange={v => updateSetting(‘showJobsOnHover’, v)} />
+                            <ToggleRow label={t(‘dispatcher.profiles.expand_so_jobs’)} checked={draft.settings.expandServiceOrderJobs ?? false} onChange={v => updateSetting(‘expandServiceOrderJobs’, v)} />
                           </div>
 
                           <div className="border-t pt-4 space-y-3">

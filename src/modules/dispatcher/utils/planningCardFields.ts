@@ -1,7 +1,25 @@
 import type { Job } from '../types';
 import type { PlanningCardField } from '../types/planningProfile';
 
-/** Field options offered in the planning-profile settings pickers. */
+/** Maps each card field to its i18n translation key (under dispatcher.profiles.*). */
+export const PLANNING_CARD_FIELD_I18N_KEYS: Record<PlanningCardField, string> = {
+  serviceOrderNumber: 'dispatcher.profiles.field_service_order_number',
+  serviceOrderTitle:  'dispatcher.profiles.field_service_order_name',
+  description:        'dispatcher.profiles.field_description',
+  contactName:        'dispatcher.profiles.field_contact_name',
+  customerCompany:    'dispatcher.profiles.field_customer_company',
+  customerPhone:      'dispatcher.profiles.field_customer_phone',
+  installationName:   'dispatcher.profiles.field_installation',
+  jobTitle:           'dispatcher.profiles.field_job_title',
+  status:             'dispatcher.profiles.field_status',
+  priority:           'dispatcher.profiles.field_priority',
+  duration:           'dispatcher.profiles.field_duration',
+  address:            'dispatcher.profiles.field_address',
+  technician:         'dispatcher.profiles.field_technician',
+  jobCount:           'dispatcher.profiles.field_job_count',
+};
+
+/** Field options offered in the planning-profile settings pickers (fallback English labels). */
 export const PLANNING_CARD_FIELD_OPTIONS: { value: PlanningCardField; label: string }[] = [
   { value: 'serviceOrderNumber', label: 'Service order number' },
   { value: 'serviceOrderTitle', label: 'Service order name' },

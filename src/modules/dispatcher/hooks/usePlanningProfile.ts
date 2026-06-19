@@ -51,7 +51,15 @@ export function usePlanningProfileMutations() {
   const update = useMutation({
     mutationFn: ({ id, dto }: { id: string; dto: UpdatePlanningProfileDto }) =>
       planningProfilesApi.update(id, dto),
-    onSuccess: invalidate,
+    onSuccess: (saved) => {
+      // Eagerly populate the cache with the saved profile so the board
+      // re-renders immediately without waiting for a background refetch.
+      const active = qc.getQueryData<PlanningProfile>(KEYS.active);
+      if (active && String(active.id) === String(saved.id)) {
+        qc.setQueryData(KEYS.active, saved);
+      }
+      invalidate();
+    },
   });
   const remove = useMutation({
     mutationFn: (id: string) => planningProfilesApi.remove(id),

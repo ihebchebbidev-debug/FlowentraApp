@@ -183,7 +183,15 @@ export const planningProfilesApi = {
     const remote = await tryBackend<PlanningProfile>(() => apiFetch<PlanningProfile>(`${BASE}/${id}`, {
       method: 'PUT', body: JSON.stringify(dto),
     }));
-    if (remote) return normalizeProfile(remote);
+    if (remote) {
+      const norm = normalizeProfile(remote);
+      const list = readLocal();
+      const idx = list.findIndex(p => String(p.id) === id);
+      if (idx !== -1) list[idx] = norm;
+      else list.push(norm);
+      writeLocal(list);
+      return norm;
+    }
     const list = readLocal();
     const idx = list.findIndex(p => String(p.id) === id);
     if (idx === -1) {
