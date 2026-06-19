@@ -114,16 +114,21 @@ export function TenantMapProvider({ children }: { children: ReactNode }) {
       // where the active company changed via something other than the
       // TenantSwitcher (SelectCompany screen, single-tenant auto-pick, etc.).
       try {
+        const defaultTenant = active.find(t => t.isDefault) ?? active[0];
+        const defaultLogoUrl = defaultTenant?.companyLogoUrl ?? null;
+
         if (isActiveCompanyViewAll()) {
-          setCompanyLogoExplicitNone();
+          if (defaultLogoUrl) setCompanyLogo(defaultLogoUrl);
+          else setCompanyLogoExplicitNone();
         } else {
           const targetId = getActiveCompanyId()
             ?? (active.length === 1 ? active[0].id : undefined);
-          const target = targetId !== undefined ? active.find(t => t.id === targetId) : undefined;
-          if (target) {
-            if (target.companyLogoUrl) setCompanyLogo(target.companyLogoUrl);
-            else setCompanyLogoExplicitNone();
-          }
+          const activeTenant = targetId !== undefined
+            ? active.find(t => t.id === targetId)
+            : undefined;
+          const resolved = activeTenant?.companyLogoUrl ?? defaultLogoUrl;
+          if (resolved) setCompanyLogo(resolved);
+          else setCompanyLogoExplicitNone();
         }
       } catch { /* non-fatal */ }
     } catch (err) {

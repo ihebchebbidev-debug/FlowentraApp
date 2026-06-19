@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authService, UserData } from '@/services/authService';
-import { setCompanyLogo } from '@/hooks/useCompanyLogo';
 
 interface SignupUserData {
   firstName?: string;
@@ -115,8 +114,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setUser(storedUser);
             setIsAuthenticated(true);
             setIsMainAdmin(checkIsMainAdmin());
-            // Sync company logo from stored user data
-            setCompanyLogo(storedUser.companyLogoUrl || null);
           }
 
           // Verify with server and refresh if needed
@@ -242,8 +239,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(response.user);
         setIsAuthenticated(true);
         setIsMainAdmin(isMain);
-        // Sync company logo from user data
-        setCompanyLogo(response.user.companyLogoUrl || null);
         return { success: true };
       }
       return { success: false, message: response.message };
@@ -278,7 +273,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const isMain = checkIsMainAdmin();
         setIsMainAdmin(isMain);
         await resolveDefaultTenant(isMain);
-        setCompanyLogo(response.user.companyLogoUrl || null);
         return { success: true, user: response.user };
       }
       return { success: false, message: response.message };
@@ -354,8 +348,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const merged = { ...storedUser, ...currentUser };
         authService.saveUserToStoragePublic(merged);
         setUser(merged);
-        // Sync company logo
-        setCompanyLogo(merged.companyLogoUrl || null);
       }
     } catch (error) {
       console.error('Refresh user error:', error);

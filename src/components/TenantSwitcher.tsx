@@ -25,13 +25,18 @@ import { useTenantMap } from '@/contexts/TenantMapContext';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 
-/** Apply the per-tenant logo to the global singleton (sidebar/header/PDFs). */
-function applyTenantLogo(tenant: Tenant | null | undefined) {
-  if (!tenant) {
-    setCompanyLogoExplicitNone();
-    return;
-  }
-  if (tenant.companyLogoUrl) setCompanyLogo(tenant.companyLogoUrl);
+function pickLogoRef(
+  allTenants: Tenant[],
+  activeTenant: Tenant | null | undefined,
+): string | null {
+  const defaultTenant = allTenants.find(t => t.isDefault) ?? allTenants[0];
+  const defaultLogo = defaultTenant?.companyLogoUrl ?? null;
+  if (!activeTenant) return defaultLogo;
+  return activeTenant.companyLogoUrl ?? defaultLogo;
+}
+
+function applyPickedLogo(ref: string | null) {
+  if (ref) setCompanyLogo(ref);
   else setCompanyLogoExplicitNone();
 }
 
@@ -66,17 +71,13 @@ export function TenantSwitcher() {
 
   const handleSwitch = (tenant: Tenant) => {
     if (!viewAll && tenant.id === activeId) return;
-    // Pre-write the new tenant logo so the post-reload bootstrap of
-    // useCompanyLogo picks it up instantly (sidebar/header/PDF stay in sync).
-    applyTenantLogo(tenant);
+    applyPickedLogo(pickLogoRef(tenants, tenant));
     setActiveCompany({ id: tenant.id, reload: true });
   };
 
   const handleViewAll = () => {
     if (viewAll) return;
-    // In cross-company view, no single tenant logo applies — fall back to the
-    // default flowentra logo (not the MainAdmin's personal logo).
-    setCompanyLogoExplicitNone();
+    applyPickedLogo(pickLogoRef(tenants, null));
     setActiveCompany({ viewAll: true, reload: true });
   };
 
@@ -109,14 +110,11 @@ export function TenantSwitcher() {
       const updated = await tenantsApi.uploadLogo(target.id, file);
       // Optimistically reflect the new logo locally and refresh the shared
       // tenant map so the rest of the app sees it too.
-      setLocalTenants(prev => (prev ?? ctxTenants).map(t => t.id === updated.id ? updated : t));
+      const updatedList = (localTenants ?? ctxTenants).map(t => t.id === updated.id ? updated : t);
+      setLocalTenants(updatedList);
       void refetch();
-      // If the uploaded logo belongs to the currently active company,
-      // push it through the global singleton so sidebar/header/PDFs refresh
-      // immediately without requiring a page reload.
-      if (!viewAll && updated.id === activeId) {
-        applyTenantLogo(updated);
-      }
+      const activeTenant = viewAll ? null : updatedList.find(t => t.id === activeId) ?? null;
+      applyPickedLogo(pickLogoRef(updatedList, activeTenant));
       toast({ title: 'Logo updated', description: `${target.companyName} logo uploaded.` });
     } catch (err) {
       console.error('[TenantSwitcher] logo upload failed', err);
