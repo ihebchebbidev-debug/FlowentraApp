@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,12 +13,15 @@ import { Calendar, Clock, User, Edit, Trash2, FileText, Save, X, Loader2, UserPl
 import { useToast } from "@/hooks/use-toast";
 import { TaskComments } from "./TaskComments";
 import { TasksService } from "../services/tasks.service";
+import { resolveAssigneeProfilePic } from "../utils/assigneeAvatar";
 import { notificationsApi } from "@/services/api/notificationsApi";
 
 interface Technician {
   id: string;
   name: string;
   email?: string;
+  profilePictureUrl?: string;
+  avatar?: string;
 }
 
 interface Task {
@@ -31,6 +34,7 @@ interface Task {
   relatedEntityId?: string | number;
   assignee: string;
   assigneeId?: string;
+  assigneeProfilePicUrl?: string;
   dueDate: string;
   createdAt: Date;
   lastMoved?: Date;
@@ -76,6 +80,17 @@ export function TaskDetailModal({ open, onOpenChange, task, onTaskUpdated, onTas
 
   if (!task) return null;
 
+  const technicianAvatarMap = new Map(
+    technicians.map((tech) => [
+      tech.id,
+      tech.profilePictureUrl ?? tech.avatar,
+    ])
+  );
+
+  const assigneeProfilePicUrl =
+    resolveAssigneeProfilePic(task) ??
+    (task.assigneeId ? technicianAvatarMap.get(task.assigneeId) : undefined);
+
   const handleAssignTask = async (technicianId: string, technicianName: string) => {
     setIsAssigning(true);
     try {
@@ -104,6 +119,7 @@ export function TaskDetailModal({ open, onOpenChange, task, onTaskUpdated, onTas
         ...task,
         assignee: technicianName,
         assigneeId: technicianId,
+        assigneeProfilePicUrl: technicianAvatarMap.get(technicianId),
       };
 
       toast({
@@ -139,6 +155,7 @@ export function TaskDetailModal({ open, onOpenChange, task, onTaskUpdated, onTas
         ...task,
         assignee: '',
         assigneeId: undefined,
+        assigneeProfilePicUrl: undefined,
       };
 
       toast({
@@ -436,18 +453,27 @@ export function TaskDetailModal({ open, onOpenChange, task, onTaskUpdated, onTas
                       <SelectContent>
                         {technicians.map((tech) => (
                           <SelectItem key={tech.id} value={tech.id}>
-                            {tech.name}
+                            <span className="flex items-center gap-2">
+                              <UserAvatar
+                                src={tech.profilePictureUrl ?? tech.avatar}
+                                name={tech.name}
+                                seed={tech.id}
+                                size="xs"
+                              />
+                              {tech.name}
+                            </span>
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   ) : (
                     <>
-                      <Avatar className="h-9 w-9">
-                        <AvatarFallback className="text-sm bg-primary/10 text-primary font-medium">
-                          {getInitials(task.assignee)}
-                        </AvatarFallback>
-                      </Avatar>
+                      <UserAvatar
+                        src={assigneeProfilePicUrl}
+                        name={task.assignee}
+                        seed={task.assigneeId ?? task.assignee}
+                        size="sm"
+                      />
                       <span className="text-sm font-medium text-foreground flex-1">
                         {task.assignee || t('taskDetail.unassigned')}
                       </span>

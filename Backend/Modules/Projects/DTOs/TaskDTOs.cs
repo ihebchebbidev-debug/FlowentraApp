@@ -15,6 +15,7 @@ namespace MyApi.Modules.Projects.DTOs
         public DateTime? DueDate { get; set; }
         public int? AssignedUserId { get; set; }
         public string? AssignedUserName { get; set; }
+        public string? AssignedUserProfilePictureUrl { get; set; }
         public DateTime CreatedDate { get; set; }
         public string CreatedBy { get; set; } = string.Empty;
         public DateTime? ModifiedDate { get; set; }
@@ -33,6 +34,7 @@ namespace MyApi.Modules.Projects.DTOs
         public DateTime? DueDate { get; set; }
         public int? AssignedUserId { get; set; }
         public string? AssignedUserName { get; set; }
+        public string? AssignedUserProfilePictureUrl { get; set; }
         public DateTime CreatedDate { get; set; }
         public string CreatedBy { get; set; } = string.Empty;
         public DateTime? ModifiedDate { get; set; }

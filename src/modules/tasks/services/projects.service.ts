@@ -108,7 +108,7 @@ export class ProjectsService {
           description: `You have been added to project ${projectName || `#${projectId}`}`,
           type: 'info',
           category: 'task',
-          link: `/tasks/projects/${projectId}`,
+          link: `/dashboard/tasks/projects/${projectId}`,
           relatedEntityId: projectId,
           relatedEntityType: 'project'
         });

@@ -32,12 +32,14 @@ import { ProjectOffersTab } from '../components/project-detail/ProjectOffersTab'
 import { ProjectSummaryTab } from '../components/project-detail/ProjectSummaryTab';
 import { EditProjectModal } from '../components/EditProjectModal';
 import { QuickTaskModal } from '../components/QuickTaskModal';
+import { TaskDetailModal } from '../components/TaskDetailModal';
 import { useToast } from '@/hooks/use-toast';
 import {
   buildCreateProjectTaskPayload,
   isCompletedTaskStatus,
   mapTaskStatusToColumnId,
   normalizeTaskStatus,
+  taskMatchesUiFilterStatus,
 } from '../utils/taskStatusMapping';
 
 // Interface for technician/assignable users
@@ -45,6 +47,8 @@ interface Technician {
   id: string;
   name: string;
   email?: string;
+  profilePictureUrl?: string;
+  avatar?: string;
 }
 
 export default function ProjectTasksPage() {
@@ -63,6 +67,8 @@ export default function ProjectTasksPage() {
   const [isColumnEditorOpen, setIsColumnEditorOpen] = useState(false);
   const [isQuickTaskModalOpen, setIsQuickTaskModalOpen] = useState(false);
   const [isEditProjectOpen, setIsEditProjectOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<any>(null);
+  const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
   
   // Search and filters
   const [searchTerm, setSearchTerm] = useState("");
@@ -141,6 +147,8 @@ export default function ProjectTasksPage() {
               id: String(mainAdmin.id),
               name: `${mainAdmin.firstName || ''} ${mainAdmin.lastName || ''}`.trim() || mainAdmin.email || 'Admin',
               email: mainAdmin.email,
+              profilePictureUrl: mainAdmin.profilePictureUrl,
+              avatar: mainAdmin.profilePictureUrl,
             });
           }
         } catch (e) {
@@ -157,6 +165,8 @@ export default function ProjectTasksPage() {
                 id: String(user.id),
                 name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
                 email: user.email,
+                profilePictureUrl: user.profilePictureUrl,
+                avatar: user.profilePictureUrl,
               });
             }
           });
@@ -191,6 +201,7 @@ export default function ProjectTasksPage() {
       priority: (pt.priority as 'high' | 'medium' | 'low') || 'medium',
       assignee: (pt.assignee as string) || pt.assigneeName || '',
       assigneeId: pt.assigneeId || '',
+      assigneeProfilePicUrl: pt.assigneeProfilePicUrl,
       dueDate: pt.dueDate instanceof Date ? pt.dueDate.toLocaleDateString() : String(pt.dueDate || ''),
       status,
       columnId,
@@ -253,14 +264,22 @@ export default function ProjectTasksPage() {
     }
   }, [project, fetchTasks]);
 
+  const isTaskCompleted = (task: any) => {
+    if (task.completedAt) return true;
+    if (isCompletedTaskStatus(task.status)) return true;
+    const col = project?.columns?.find((c: any) => String(c.id) === String(task.columnId));
+    if (col && /done|completed|termin/i.test(col.title || '')) return true;
+    return task.columnId === 'done';
+  };
+
   const projectStats = {
     totalTasks: tasksState.length,
-    completedTasks: tasksState.filter((task: any) => (task.columnId === 'done') || task.completedAt).length,
-    inProgressTasks: tasksState.filter((task: any) => task.columnId === 'in-progress').length,
+    completedTasks: tasksState.filter((task: any) => isTaskCompleted(task)).length,
+    inProgressTasks: tasksState.filter((task: any) => normalizeTaskStatus(task.status) === 'in progress').length,
     overdueTasks: tasksState.filter((task: any) => {
       try {
         const d = new Date(task.dueDate);
-        return d < new Date() && !task.completedAt;
+        return d < new Date() && !isTaskCompleted(task);
       } catch {
         return false;
       }
@@ -268,14 +287,15 @@ export default function ProjectTasksPage() {
     totalEstimatedHours: tasksState.reduce((sum: number, task: any) => sum + (task.estimatedHours || 0), 0),
     totalActualHours: tasksState.reduce((sum: number, task: any) => sum + (task.actualHours || 0), 0),
     completionPercentage: tasksState.length > 0
-      ? Math.round((tasksState.filter((task: any) => (task.columnId === 'done') || task.completedAt).length / tasksState.length) * 100)
+      ? Math.round((tasksState.filter((task: any) => isTaskCompleted(task)).length / tasksState.length) * 100)
       : 0
   };
 
   const getFilteredTasks = () => {
+    const columns = project?.columns || [];
     let filtered = tasksState
       .filter(t => t.title.toLowerCase().includes(searchTerm.toLowerCase()) || (t.description||'').toLowerCase().includes(searchTerm.toLowerCase()))
-      .filter(t => filterStatus === 'all' ? true : (t.columnId === filterStatus))
+      .filter(t => taskMatchesUiFilterStatus(t, filterStatus, columns))
       .filter(t => filterPriority === 'all' ? true : t.priority === filterPriority)
       .filter(t => filterAssignee === 'all' ? true : t.assignee === filterAssignee);
     
@@ -292,19 +312,38 @@ export default function ProjectTasksPage() {
 
   const filteredTasks = getFilteredTasks();
 
-  const isTaskCompleted = (task: any) => {
-    if (task.completedAt) return true;
-    if (isCompletedTaskStatus(task.status)) return true;
-    const col = project?.columns?.find((c: any) => String(c.id) === String(task.columnId));
-    if (col && /done|completed|termin/i.test(col.title || '')) return true;
-    return task.columnId === 'done';
-  };
-
   const openTasks = filteredTasks.filter((t) => !isTaskCompleted(t));
   const completedTasks = filteredTasks.filter((t) => isTaskCompleted(t));
 
   const handleTaskClick = (task: Task) => {
-    console.log('Task clicked:', task);
+    setSelectedTask(task);
+    setIsTaskDetailOpen(true);
+  };
+
+  const handleTaskUpdated = (updatedTask: any) => {
+    const status = normalizeTaskStatus(updatedTask.status ?? updatedTask.columnId);
+    const columnId = mapTaskStatusToColumnId(status, project?.columns || []);
+    setTasksState((prev) =>
+      prev.map((t) =>
+        t.id === updatedTask.id
+          ? {
+              ...t,
+              ...updatedTask,
+              status,
+              columnId,
+            }
+          : t
+      )
+    );
+    if (selectedTask?.id === updatedTask.id) {
+      setSelectedTask((prev: any) => (prev ? { ...prev, ...updatedTask, status, columnId } : prev));
+    }
+  };
+
+  const handleTaskDeleted = async (_taskId: string) => {
+    setIsTaskDetailOpen(false);
+    setSelectedTask(null);
+    await fetchTasks();
   };
 
   const handleAddTask = () => {
@@ -358,8 +397,16 @@ export default function ProjectTasksPage() {
   };
 
 
-  const handleTaskComplete = (taskId: string) => {
-    console.log('Complete task:', taskId);
+  const handleTaskComplete = async (taskId: string) => {
+    try {
+      const taskIdNum = parseInt(taskId, 10) || parseInt(taskId.replace(/\D/g, ''), 10);
+      if (isNaN(taskIdNum)) return;
+      await TasksService.moveTask(taskIdNum, { status: 'completed' });
+      await fetchTasks();
+      toast({ title: t('toast.success'), description: t('toast.taskCompleted') });
+    } catch {
+      toast({ title: t('toast.error'), description: t('toast.failedStatus'), variant: 'destructive' });
+    }
   };
 
   const handleBackToProjects = () => {
@@ -645,6 +692,15 @@ export default function ProjectTasksPage() {
         onClose={() => setIsEditProjectOpen(false)}
         onUpdateProject={handleUpdateProject}
         project={project}
+        technicians={technicians as any}
+      />
+
+      <TaskDetailModal
+        open={isTaskDetailOpen}
+        onOpenChange={setIsTaskDetailOpen}
+        task={selectedTask}
+        onTaskUpdated={handleTaskUpdated}
+        onTaskDeleted={handleTaskDeleted}
         technicians={technicians as any}
       />
     </div>

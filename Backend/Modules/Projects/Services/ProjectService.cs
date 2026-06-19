@@ -136,6 +136,18 @@ namespace MyApi.Modules.Projects.Services
                 if (project == null) return null;
                 var dto = MapToProjectDto(project);
                 dto.Settings = await GetProjectSettingsAsync();
+
+                var columnsResult = await _columnService.GetProjectColumnsAsync(id);
+                dto.Columns = columnsResult.Columns
+                    .Select(c => new ProjectColumnDto
+                    {
+                        Id = c.Id,
+                        Name = c.Name,
+                        DisplayOrder = c.DisplayOrder,
+                        Color = c.Color
+                    })
+                    .ToList();
+
                 return dto;
             }
             catch (Exception ex)

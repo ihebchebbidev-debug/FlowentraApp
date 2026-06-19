@@ -151,22 +151,14 @@ export class TasksService {
 
   // Complete task
   static async completeTask(taskId: number): Promise<boolean> {
-    try {
-      await tasksApi.completeTask(taskId);
-      return true;
-    } catch {
-      return false;
-    }
+    await tasksApi.completeTask(taskId);
+    return true;
   }
 
   // Update task status
   static async updateTaskStatus(taskId: number, status: string): Promise<boolean> {
-    try {
-      await tasksApi.updateTaskStatus(taskId, status);
-      return true;
-    } catch {
-      return false;
-    }
+    await tasksApi.updateTaskStatus(taskId, status);
+    return true;
   }
 
   // Bulk update task status

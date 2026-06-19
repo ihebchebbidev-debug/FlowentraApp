@@ -14,6 +14,7 @@ export interface Task {
   assignee?: string;
   assigneeName?: string;
   assigneeId?: string | number;
+  assigneeProfilePicUrl?: string;
   createdAt: Date | string;
   createdBy?: string;
   updatedAt?: Date | string;

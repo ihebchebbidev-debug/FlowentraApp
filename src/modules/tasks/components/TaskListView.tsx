@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   Calendar, 
@@ -298,11 +298,12 @@ export default function TaskListView({
                                   {/* Assignee */}
                                   {assigneeName && (
                                     <div className="flex items-center gap-1.5">
-                                      <Avatar className="h-5 w-5 flex-shrink-0">
-                                        <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-medium">
-                                          {getInitials(assigneeName)}
-                                        </AvatarFallback>
-                                      </Avatar>
+                                      <UserAvatar
+                                        src={(task as any).assigneeProfilePicUrl}
+                                        name={assigneeName}
+                                        seed={(task as any).assigneeId ?? assigneeName}
+                                        size="xs"
+                                      />
                                       <span className="text-[11px] text-muted-foreground truncate max-w-[80px] hidden sm:inline">
                                         {assigneeName}
                                       </span>

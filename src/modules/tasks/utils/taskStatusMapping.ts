@@ -73,6 +73,34 @@ export function mapColumnIdToTaskStatus(columnId: unknown, columns: Column[] = [
   return 'open';
 }
 
+export type UiTaskFilterStatus = 'all' | 'todo' | 'in-progress' | 'review' | 'done';
+
+/** Match a task against UI filter chips (todo / in-progress / review / done). */
+export function taskMatchesUiFilterStatus(
+  task: { status?: unknown; columnId?: unknown },
+  filter: UiTaskFilterStatus,
+  columns: Column[] = []
+): boolean {
+  if (filter === 'all') return true;
+
+  const expectedColumnId = (() => {
+    switch (filter) {
+      case 'todo':
+        return mapTaskStatusToColumnId('open', columns);
+      case 'in-progress':
+      case 'review':
+        return mapTaskStatusToColumnId('in progress', columns);
+      case 'done':
+        return mapTaskStatusToColumnId('completed', columns);
+      default:
+        return String(filter);
+    }
+  })();
+
+  const taskColumnId = mapTaskStatusToColumnId(task.status ?? task.columnId, columns);
+  return String(taskColumnId) === String(expectedColumnId);
+}
+
 export function buildCreateProjectTaskPayload(
   input: Record<string, unknown>,
   fallbackProjectId?: number

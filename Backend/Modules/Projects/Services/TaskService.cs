@@ -821,6 +821,7 @@ namespace MyApi.Modules.Projects.Services
         {
             // Get assigned user name - check both Users table and MainAdminUsers table
             string? assignedUserName = null;
+            string? assignedUserProfilePictureUrl = null;
             
             if (task.AssignedUserId.HasValue)
             {
@@ -828,18 +829,20 @@ namespace MyApi.Modules.Projects.Services
                 if (task.AssignedUser != null)
                 {
                     assignedUserName = $"{task.AssignedUser.FirstName} {task.AssignedUser.LastName}".Trim();
+                    assignedUserProfilePictureUrl = task.AssignedUser.ProfilePictureUrl;
                 }
                 else
                 {
                     // Fallback: check MainAdminUsers table for the assigned user
                     var mainAdmin = _context.MainAdminUsers
                         .Where(u => u.Id == task.AssignedUserId.Value)
-                        .Select(u => new { u.FirstName, u.LastName })
+                        .Select(u => new { u.FirstName, u.LastName, u.ProfilePictureUrl })
                         .FirstOrDefault();
                     
                     if (mainAdmin != null)
                     {
                         assignedUserName = $"{mainAdmin.FirstName} {mainAdmin.LastName}".Trim();
+                        assignedUserProfilePictureUrl = mainAdmin.ProfilePictureUrl;
                     }
                 }
             }
@@ -856,6 +859,7 @@ namespace MyApi.Modules.Projects.Services
                 DueDate = task.DueDate,
                 AssignedUserId = task.AssignedUserId,
                 AssignedUserName = assignedUserName,
+                AssignedUserProfilePictureUrl = assignedUserProfilePictureUrl,
                 CreatedDate = task.CreatedDate,
                 CreatedBy = task.CreatedBy,
                 ModifiedDate = task.ModifiedDate,
@@ -867,6 +871,7 @@ namespace MyApi.Modules.Projects.Services
         {
             // Get assigned user name - check both Users table and MainAdminUsers table
             string? assignedUserName = null;
+            string? assignedUserProfilePictureUrl = null;
             
             if (task.AssignedUserId.HasValue)
             {
@@ -874,18 +879,20 @@ namespace MyApi.Modules.Projects.Services
                 if (task.AssignedUser != null)
                 {
                     assignedUserName = $"{task.AssignedUser.FirstName} {task.AssignedUser.LastName}".Trim();
+                    assignedUserProfilePictureUrl = task.AssignedUser.ProfilePictureUrl;
                 }
                 else
                 {
                     // Fallback: check MainAdminUsers table for the assigned user
                     var mainAdmin = _context.MainAdminUsers
                         .Where(u => u.Id == task.AssignedUserId.Value)
-                        .Select(u => new { u.FirstName, u.LastName })
+                        .Select(u => new { u.FirstName, u.LastName, u.ProfilePictureUrl })
                         .FirstOrDefault();
                     
                     if (mainAdmin != null)
                     {
                         assignedUserName = $"{mainAdmin.FirstName} {mainAdmin.LastName}".Trim();
+                        assignedUserProfilePictureUrl = mainAdmin.ProfilePictureUrl;
                     }
                 }
             }
@@ -902,6 +909,7 @@ namespace MyApi.Modules.Projects.Services
                 DueDate = task.DueDate,
                 AssignedUserId = task.AssignedUserId,
                 AssignedUserName = assignedUserName,
+                AssignedUserProfilePictureUrl = assignedUserProfilePictureUrl,
                 CreatedDate = task.CreatedDate,
                 CreatedBy = task.CreatedBy
             };

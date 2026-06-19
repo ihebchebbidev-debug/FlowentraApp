@@ -13,6 +13,8 @@ interface Task {
   description: string;
   priority: 'high' | 'medium' | 'low';
   assignee: string;
+  assigneeId?: string;
+  assigneeProfilePicUrl?: string;
   dueDate: string;
   columnId: string;
   createdAt: Date;
@@ -221,9 +223,9 @@ export function DraggableTaskCard({ task, isDragging = false, onTaskClick, onTas
             {task.assignee && (
               <div className="flex items-center gap-1.5">
                 <UserAvatar
-                  src={(task as any).assigneeProfilePicUrl}
+                  src={task.assigneeProfilePicUrl}
                   name={task.assignee}
-                  seed={task.assignee}
+                  seed={task.assigneeId ?? task.assignee}
                   size="xs"
                 />
                 <span className="text-[11px] text-muted-foreground truncate max-w-[80px]">

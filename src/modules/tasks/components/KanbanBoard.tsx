@@ -27,6 +27,7 @@ import TaskListViewGrouped from './TaskListViewGrouped';
 import { Column, Task as TaskType } from '../types';
 import { buildStatusColumns, defaultTechnicianColumns, defaultStatusColumns } from "../utils/columns";
 import { buildCreateProjectTaskPayload, mapColumnIdToTaskStatus, mapTaskStatusToColumnId, normalizeTaskStatus } from "../utils/taskStatusMapping";
+import { enrichTaskAssigneeAvatar, resolveAssigneeProfilePic } from "../utils/assigneeAvatar";
 import { useLookups } from "@/shared/contexts/LookupsContext";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -43,6 +44,7 @@ interface LocalTask {
   priority: 'high' | 'medium' | 'low';
   assignee: string;
   assigneeId?: string;
+  assigneeProfilePicUrl?: string;
   dueDate: string;
   columnId: string;
   createdAt: Date;
@@ -163,6 +165,7 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
             createdDate: currentUser.createdAt || new Date().toISOString(),
             createdUser: 'system',
             role: 'Admin',
+            profilePictureUrl: currentUser.profilePictureUrl,
           };
           // Add admin if not already in the list
           if (!usersList.some(u => u.id === adminAsUser.id)) {
@@ -182,7 +185,7 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
 
   // Create technicians list from API users for TaskDetailModal and QuickTaskModal
   const apiTechnicians = useMemo(() => {
-    const list: { id: string; name: string; email: string; role: string; isActive: boolean }[] = [];
+    const list: { id: string; name: string; email: string; role: string; isActive: boolean; profilePictureUrl?: string; avatar?: string }[] = [];
     usersMap.forEach((user, id) => {
       list.push({
         id: String(id),
@@ -190,6 +193,8 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
         email: user.email || '',
         role: user.role || 'User',
         isActive: user.isActive ?? true,
+        profilePictureUrl: user.profilePictureUrl,
+        avatar: user.profilePictureUrl,
       });
     });
     // Include technicians prop as fallback if no API users
@@ -247,6 +252,11 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
     }
   }, [statusColumns]);
 
+  const displayTasks = useMemo(
+    () => tasks.map((task) => enrichTaskAssigneeAvatar(task, usersMap)),
+    [tasks, usersMap]
+  );
+  
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -257,7 +267,7 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
-    const task = tasks.find(t => t.id === active.id);
+    const task = displayTasks.find(t => t.id === active.id);
     setActiveTask(task || null);
   };
 
@@ -343,7 +353,7 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
 
   const getTasksForColumn = (columnId: string) => {
     const normalizedColumnId = String(columnId);
-    return tasks.filter(task =>
+    return displayTasks.filter(task =>
       mapTaskStatusToColumnId(task.status, customColumns) === normalizedColumnId
     );
   };
@@ -427,7 +437,7 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
                 description: `You have been added to project ${project.name}`,
                 type: 'info',
                 category: 'task',
-                link: `/tasks/projects/${projectIdNum}`,
+                link: `/dashboard/tasks/projects/${projectIdNum}`,
                 relatedEntityId: projectIdNum,
                 relatedEntityType: 'project'
               });
@@ -579,13 +589,17 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
   };
 
   const handleTaskClick = (task: LocalTask) => {
-    setSelectedTask(task);
+    const enriched = displayTasks.find((t) => t.id === task.id) ?? task;
+    setSelectedTask(enriched);
     setIsTaskModalOpen(true);
   };
 
   const handleTaskUpdated = (updatedTask: any) => {
     const status = normalizeTaskStatus(updatedTask.status ?? updatedTask.columnId);
     const columnId = mapTaskStatusToColumnId(status, customColumns);
+    const assigneeProfilePicUrl =
+      updatedTask.assigneeProfilePicUrl ??
+      resolveAssigneeProfilePic(updatedTask, usersMap);
     setTasks(prevTasks =>
       prevTasks.map(task =>
         task.id === updatedTask.id
@@ -596,6 +610,7 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
               priority: updatedTask.priority ?? task.priority,
               assignee: updatedTask.assignee ?? task.assignee,
               assigneeId: updatedTask.assigneeId ?? task.assigneeId,
+              assigneeProfilePicUrl: assigneeProfilePicUrl ?? task.assigneeProfilePicUrl,
               status,
               columnId,
             }
@@ -691,11 +706,7 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
       const taskIdNum = parseInt(taskId, 10) || parseInt(taskId.replace(/\D/g, ''), 10);
       
       if (!isNaN(taskIdNum)) {
-        if (completed) {
-          await TasksService.completeTask(taskIdNum);
-        } else {
-          await TasksService.moveTask(taskIdNum, { status: newStatus });
-        }
+        await TasksService.moveTask(taskIdNum, { status: newStatus });
       }
       
       toast({
@@ -883,7 +894,7 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
         >
           {viewMode === 'list' ? (
             <TaskListViewGrouped
-              tasks={tasks.map(task => ({
+              tasks={displayTasks.map(task => ({
                 ...task,
                 status: task.columnId,
                 tags: [],
@@ -895,7 +906,7 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
               } as TaskType))}
               columns={getColumns()}
               onTaskClick={(task: TaskType) => {
-                const localTask = tasks.find(t => t.id === task.id);
+                const localTask = displayTasks.find(t => t.id === task.id);
                 if (localTask) handleTaskClick(localTask);
               }}
               onAddTask={handleAddTask}

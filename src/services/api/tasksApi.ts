@@ -94,6 +94,7 @@ export interface ProjectTaskResponseDto {
   relatedEntityId?: number;
   assignedUserId?: number;
   assignedUserName?: string | null;
+  assignedUserProfilePictureUrl?: string | null;
   dueDate?: string;
   createdDate?: string;
   createdAt?: string;
@@ -256,14 +257,15 @@ export interface BulkUpdateTaskStatusDto {
 }
 
 // Mappers
-const getMainAdminFromStorage = (): { id?: string; name?: string } => {
+const getMainAdminFromStorage = (): { id?: string; name?: string; profilePictureUrl?: string } => {
   try {
     const raw = localStorage.getItem('user_data');
     if (!raw) return {};
     const user = JSON.parse(raw);
     const id = user?.id != null ? String(user.id) : undefined;
     const name = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.email;
-    return { id, name };
+    const profilePictureUrl = user?.profilePictureUrl || undefined;
+    return { id, name, profilePictureUrl };
   } catch {
     return {};
   }
@@ -284,10 +286,23 @@ const mapProjectTaskToFrontend = (dto: ProjectTaskResponseDto): Task => {
     (dto as any).AssignedUserName ??
     (dto as any).AssigneeName;
 
+  const assigneeProfilePicUrl =
+    dto.assignedUserProfilePictureUrl ??
+    (dto as any).AssignedUserProfilePictureUrl ??
+    undefined;
+
   if ((!assigneeName || assigneeName === 'null') && assigneeId) {
     const mainAdmin = getMainAdminFromStorage();
     if (mainAdmin.id && mainAdmin.id === assigneeId) {
       assigneeName = mainAdmin.name;
+    }
+  }
+
+  let resolvedAssigneeProfilePicUrl = assigneeProfilePicUrl;
+  if (!resolvedAssigneeProfilePicUrl && assigneeId) {
+    const mainAdmin = getMainAdminFromStorage();
+    if (mainAdmin.id && mainAdmin.id === assigneeId) {
+      resolvedAssigneeProfilePicUrl = mainAdmin.profilePictureUrl;
     }
   }
 
@@ -313,6 +328,7 @@ const mapProjectTaskToFrontend = (dto: ProjectTaskResponseDto): Task => {
     assigneeId,
     assigneeName: assigneeName || undefined,
     assignee: assigneeName || '',
+    assigneeProfilePicUrl: resolvedAssigneeProfilePicUrl,
     projectId,
     projectName: dto.projectName,
     relatedEntityType,
@@ -633,11 +649,12 @@ export const tasksApi = {
     const queryParams = new URLSearchParams();
     
     if (params.searchTerm) queryParams.append('searchTerm', params.searchTerm);
-    if (params.status) queryParams.append('status', params.status);
-    if (params.priority) queryParams.append('priority', params.priority);
-    if (params.projectId) queryParams.append('projectId', String(params.projectId));
-    if (params.assigneeId) queryParams.append('assigneeId', String(params.assigneeId));
-    if (params.contactId) queryParams.append('contactId', String(params.contactId));
+    if (params.status) queryParams.append('status', normalizeTaskStatus(params.status));
+    if (params.projectId) {
+      queryParams.append('relatedEntityType', 'project');
+      queryParams.append('relatedEntityId', String(params.projectId));
+    }
+    if (params.assigneeId) queryParams.append('assignedUserId', String(params.assigneeId));
     if (params.dueDateFrom) queryParams.append('dueDateFrom', params.dueDateFrom);
     if (params.dueDateTo) queryParams.append('dueDateTo', params.dueDateTo);
     if (params.isOverdue !== undefined) queryParams.append('isOverdue', String(params.isOverdue));
@@ -674,7 +691,7 @@ export const tasksApi = {
 
   // Get tasks by assignee
   async getTasksByAssignee(assigneeId: number, projectId?: number): Promise<Task[]> {
-    const queryParams = projectId ? `?projectId=${projectId}` : '';
+    const queryParams = projectId ? `?entityType=project&entityId=${projectId}` : '';
     
     const response = await fetch(`${API_URL}/api/Tasks/assignee/${assigneeId}${queryParams}`, {
       method: 'GET',
@@ -695,7 +712,10 @@ export const tasksApi = {
   // Get overdue tasks
   async getOverdueTasks(projectId?: number, assigneeId?: number): Promise<Task[]> {
     const queryParams = new URLSearchParams();
-    if (projectId) queryParams.append('projectId', String(projectId));
+    if (projectId) {
+      queryParams.append('entityType', 'project');
+      queryParams.append('entityId', String(projectId));
+    }
     if (assigneeId) queryParams.append('assigneeId', String(assigneeId));
 
     const url = queryParams.toString()
@@ -816,29 +836,14 @@ export const tasksApi = {
 
   // ============ Task Status Management ============
 
-  // Update task status
+  // Update task status (uses move endpoint — dedicated /status route was removed)
   async updateTaskStatus(taskId: number, status: string): Promise<void> {
-    const response = await fetch(`${API_URL}/api/Tasks/${taskId}/status`, {
-      method: 'PUT',
-      headers: getMutationHeaders(),
-      body: JSON.stringify(status), // Backend expects plain string, not object
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to update task status');
-    }
+    await this.moveTask(taskId, { status: normalizeTaskStatus(status) });
   },
 
-  // Complete task
+  // Complete task (uses move endpoint — dedicated /complete route was removed)
   async completeTask(taskId: number): Promise<void> {
-    const response = await fetch(`${API_URL}/api/Tasks/${taskId}/complete`, {
-      method: 'PUT',
-      headers: getMutationHeaders(),
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to complete task');
-    }
+    await this.moveTask(taskId, { status: 'completed' });
   },
 
   // Bulk update task status
