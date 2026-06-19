@@ -339,6 +339,8 @@ namespace MyApi.Modules.Deals.Services
                             UnitPrice = it.UnitPrice,
                             Discount = it.Discount,
                             DiscountType = it.DiscountType,
+                            InstallationId = it.InstallationId,
+                            InstallationName = it.InstallationName,
                         }).ToList()
                     };
                     var sale = await _saleService.CreateSaleAsync(saleDto, userId);
@@ -375,6 +377,8 @@ namespace MyApi.Modules.Deals.Services
                             UnitPrice = it.UnitPrice,
                             Discount = it.Discount,
                             DiscountType = it.DiscountType,
+                            InstallationId = it.InstallationId,
+                            InstallationName = it.InstallationName,
                         }).ToList()
                     };
                     var offer = await _offerService.CreateOfferAsync(offerDto, userId);
@@ -472,6 +476,8 @@ namespace MyApi.Modules.Deals.Services
             item.UnitPrice = dto.UnitPrice;
             item.Discount = dto.Discount;
             item.DiscountType = dto.DiscountType;
+            item.InstallationId = dto.InstallationId;
+            item.InstallationName = dto.InstallationName;
             item.LineTotal = ComputeLineTotal(dto.Quantity, dto.UnitPrice, dto.Discount, dto.DiscountType);
             await _context.SaveChangesAsync();
             var deal = await ReloadWithItems(dealId);
@@ -567,6 +573,8 @@ namespace MyApi.Modules.Deals.Services
             DiscountType = dto.DiscountType,
             LineTotal = ComputeLineTotal(dto.Quantity, dto.UnitPrice, dto.Discount, dto.DiscountType),
             DisplayOrder = order,
+            InstallationId = dto.InstallationId,
+            InstallationName = dto.InstallationName,
         };
 
         private static decimal ComputeLineTotal(decimal qty, decimal unitPrice, decimal discount, string discountType)
@@ -659,6 +667,8 @@ namespace MyApi.Modules.Deals.Services
             DiscountType = i.DiscountType,
             LineTotal = i.LineTotal,
             DisplayOrder = i.DisplayOrder,
+            InstallationId = i.InstallationId,
+            InstallationName = i.InstallationName,
         };
 
         private static DealActivityDto MapActivity(DealActivity a) => new DealActivityDto

@@ -67,6 +67,10 @@ CREATE TABLE IF NOT EXISTS "DealItems" (
 CREATE INDEX IF NOT EXISTS "IX_DealItems_DealId"   ON "DealItems" ("DealId");
 CREATE INDEX IF NOT EXISTS "IX_DealItems_TenantId" ON "DealItems" ("TenantId");
 
+-- Optional installation/equipment link per item (parity with offer & sale items).
+ALTER TABLE "DealItems" ADD COLUMN IF NOT EXISTS "InstallationId"   varchar(50)  NULL;
+ALTER TABLE "DealItems" ADD COLUMN IF NOT EXISTS "InstallationName" varchar(255) NULL;
+
 -- ── DealActivities ──────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS "DealActivities" (
     "Id"            SERIAL PRIMARY KEY,

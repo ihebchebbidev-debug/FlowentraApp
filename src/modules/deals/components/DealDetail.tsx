@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import {
   ArrowLeft, Edit, GitBranch, Trash2, Loader2, Building2, User, Calendar,
   DollarSign, Target, Send, ShoppingCart, Briefcase, FileText, CheckCircle2,
+  Package, Wrench, ExternalLink,
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -17,6 +18,8 @@ import { formatCurrencyValue } from "@/lib/formatters";
 import { dealsApi, type Deal, type DealActivity } from "@/services/api/dealsApi";
 import { stageBadgeClass } from "../lib/dealStages";
 import { ConvertDealModal } from "./ConvertDealModal";
+import { UnifiedDocumentsSection, type DocumentEntityRef } from "@/modules/shared/components/documents/UnifiedDocumentsSection";
+import { ChecklistsSection } from "@/modules/shared/components/documents";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -127,15 +130,19 @@ export function DealDetail() {
       </div>
 
       <Tabs defaultValue="overview">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto justify-start">
           <TabsTrigger value="overview">{t("detail.tabs.overview")}</TabsTrigger>
           <TabsTrigger value="items">{t("detail.tabs.items")}</TabsTrigger>
+          <TabsTrigger value="documents">{t("detail.tabs.documents")}</TabsTrigger>
+          <TabsTrigger value="checklists">{t("detail.tabs.checklists")}</TabsTrigger>
           <TabsTrigger value="activity">{t("detail.tabs.activity")}</TabsTrigger>
           <TabsTrigger value="notes">{t("detail.tabs.notes")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview"><OverviewTab deal={deal} /></TabsContent>
         <TabsContent value="items"><ItemsTab deal={deal} /></TabsContent>
+        <TabsContent value="documents"><DocumentsTab deal={deal} /></TabsContent>
+        <TabsContent value="checklists"><ChecklistsTab deal={deal} /></TabsContent>
         <TabsContent value="activity"><ActivityTab dealId={dealId} /></TabsContent>
         <TabsContent value="notes"><NotesTab deal={deal} onSaved={load} /></TabsContent>
       </Tabs>
@@ -207,33 +214,114 @@ function ItemsTab({ deal }: { deal: Deal }) {
   const { t } = useTranslation("deals");
   const items = deal.items || [];
   if (items.length === 0) {
-    return <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">{t("items.none")}</CardContent></Card>;
+    return (
+      <Card>
+        <CardContent className="py-8 text-center text-muted-foreground">
+          <Package className="h-10 w-10 mx-auto mb-3 opacity-40" />
+          <p className="text-sm">{t("items.none")}</p>
+        </CardContent>
+      </Card>
+    );
   }
+  const subtotal = items.reduce((s, it) => s + (it.lineTotal ?? 0), 0);
+  const services = items.filter(it => it.type === "service").length;
+  const articles = items.filter(it => it.type === "article").length;
   return (
     <Card>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>{t("items.name")}</TableHead>
-            <TableHead>{t("items.type")}</TableHead>
-            <TableHead className="text-center">{t("items.quantity")}</TableHead>
-            <TableHead className="text-right">{t("items.unitPrice")}</TableHead>
-            <TableHead className="text-right">{t("items.lineTotal")}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {items.map(it => (
-            <TableRow key={it.id}>
-              <TableCell className="font-medium">{it.itemName}</TableCell>
-              <TableCell>{t(`items.${it.type}`)}</TableCell>
-              <TableCell className="text-center">{it.quantity}</TableCell>
-              <TableCell className="text-right">{formatCurrencyValue(it.unitPrice, deal.currency)}</TableCell>
-              <TableCell className="text-right font-medium">{formatCurrencyValue(it.lineTotal ?? 0, deal.currency)}</TableCell>
+      <div className="flex items-center gap-2 px-4 py-3 border-b">
+        <Package className="h-4 w-4 text-primary" />
+        <span className="text-sm font-medium">{t("detail.tabs.items")} ({items.length})</span>
+      </div>
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-10" />
+              <TableHead>{t("items.name")}</TableHead>
+              <TableHead>{t("items.type")}</TableHead>
+              <TableHead className="text-center">{t("items.quantity")}</TableHead>
+              <TableHead className="text-right">{t("items.unitPrice")}</TableHead>
+              <TableHead className="text-right">{t("items.discount", { defaultValue: "Discount" })}</TableHead>
+              <TableHead className="text-right">{t("items.lineTotal")}</TableHead>
+              <TableHead className="text-center">{t("items.installation", { defaultValue: "Installation" })}</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {items.map(it => (
+              <TableRow key={it.id} className="hover:bg-muted/50 transition-colors">
+                <TableCell className="text-center">
+                  {it.type === "service" ? <Wrench className="h-4 w-4 text-muted-foreground" /> : <Package className="h-4 w-4 text-muted-foreground" />}
+                </TableCell>
+                <TableCell>
+                  <span className="text-sm font-medium">{it.itemName}</span>
+                  {it.itemCode && <p className="text-xs text-muted-foreground">{it.itemCode}</p>}
+                </TableCell>
+                <TableCell>
+                  <Badge variant="outline" className="text-xs capitalize">{t(`items.${it.type}`, { defaultValue: it.type })}</Badge>
+                </TableCell>
+                <TableCell className="text-center">{Number(it.quantity).toFixed(2)}</TableCell>
+                <TableCell className="text-right">{formatCurrencyValue(it.unitPrice, deal.currency)}</TableCell>
+                <TableCell className="text-right text-muted-foreground">
+                  {it.discount && it.discount > 0
+                    ? (it.discountType === "percentage" ? `${it.discount}%` : formatCurrencyValue(it.discount, deal.currency))
+                    : "—"}
+                </TableCell>
+                <TableCell className="text-right font-medium">{formatCurrencyValue(it.lineTotal ?? 0, deal.currency)}</TableCell>
+                <TableCell className="text-center">
+                  {it.installationId ? (
+                    <Link to={`/dashboard/field/installations/${it.installationId}`} className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
+                      {it.installationName || t("items.viewInstallation", { defaultValue: "View" })}
+                      <ExternalLink className="h-3 w-3" />
+                    </Link>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">—</span>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+      <div className="flex items-center justify-between px-4 py-3 border-t">
+        <span className="text-xs text-muted-foreground">
+          {services} {t("items.service", { defaultValue: "service" })} · {articles} {t("items.article", { defaultValue: "article" })}
+        </span>
+        <div className="text-right">
+          <p className="text-xs text-muted-foreground">{t("form.itemsSubtotal", { defaultValue: "Items subtotal" })}</p>
+          <p className="text-sm font-semibold">{formatCurrencyValue(subtotal, deal.currency)}</p>
+        </div>
+      </div>
     </Card>
+  );
+}
+
+function DocumentsTab({ deal }: { deal: Deal }) {
+  // Pull documents up from what this deal became (sale / offer), like offers do.
+  const relatedEntities: DocumentEntityRef[] = [];
+  if (deal.convertedToSaleId) relatedEntities.push({ moduleType: "sales", moduleId: deal.convertedToSaleId });
+  if (deal.convertedToOfferId) relatedEntities.push({ moduleType: "offers", moduleId: deal.convertedToOfferId });
+  return (
+    <UnifiedDocumentsSection
+      entityType="deal"
+      entityId={deal.id}
+      moduleType="deals"
+      moduleName={deal.title}
+      relatedEntities={relatedEntities}
+      showFileUpload
+    />
+  );
+}
+
+function ChecklistsTab({ deal }: { deal: Deal }) {
+  const linkedSale = deal.convertedToSaleId;
+  const linkedOffer = deal.convertedToOfferId;
+  return (
+    <ChecklistsSection
+      entityType="deal"
+      entityId={deal.id}
+      linkedEntityType={linkedSale ? "sale" : linkedOffer ? "offer" : undefined}
+      linkedEntityId={linkedSale || linkedOffer || undefined}
+    />
   );
 }
 

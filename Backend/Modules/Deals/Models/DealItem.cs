@@ -58,6 +58,15 @@ namespace MyApi.Modules.Deals.Models
         [Column("DisplayOrder")]
         public int DisplayOrder { get; set; } = 0;
 
+        // Optional link to a physical installation/equipment — mirrors offer & sale items.
+        [Column("InstallationId")]
+        [MaxLength(50)]
+        public string? InstallationId { get; set; }
+
+        [Column("InstallationName")]
+        [MaxLength(255)]
+        public string? InstallationName { get; set; }
+
         // Navigation
         public virtual Deal? Deal { get; set; }
     }

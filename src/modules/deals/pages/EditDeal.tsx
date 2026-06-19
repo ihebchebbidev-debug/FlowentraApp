@@ -21,6 +21,10 @@ export function EditDeal() {
       setInitial({
         title: d.title,
         contactId: d.contactId,
+        contactName: d.contact?.name || d.contactName || "",
+        contactEmail: d.contact?.email || "",
+        contactPhone: d.contact?.phone || "",
+        contactAddress: d.contact?.address || "",
         projectId: d.projectId ?? null,
         stage: d.stage,
         estimatedValue: d.estimatedValue,
@@ -40,6 +44,8 @@ export function EditDeal() {
           unitPrice: it.unitPrice,
           discount: it.discount ?? 0,
           discountType: (it.discountType as any) || "percentage",
+          installationId: it.installationId ?? null,
+          installationName: it.installationName ?? null,
         })),
       });
     }).catch(() => toast.error(t("toast.loadError")));

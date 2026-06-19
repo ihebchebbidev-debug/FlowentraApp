@@ -151,7 +151,7 @@ const translations = {
 
 /** Describes a module association for document queries */
 export interface DocumentEntityRef {
-  moduleType: 'offers' | 'sales' | 'services' | 'field' | 'projects' | 'hr';
+  moduleType: 'offers' | 'sales' | 'services' | 'field' | 'projects' | 'hr' | 'deals';
   moduleId: string;
   label?: string; // e.g. "Offer", "Sale" for badge display
 }
@@ -160,7 +160,7 @@ interface UnifiedDocumentsSectionProps {
   entityType: EntityType;
   entityId: number | string;
   /** The moduleType used when uploading to backend */
-  moduleType: 'offers' | 'sales' | 'services' | 'field' | 'projects' | 'hr';
+  moduleType: 'offers' | 'sales' | 'services' | 'field' | 'projects' | 'hr' | 'deals';
   /** Human-readable name for the module (shown in Documents module) */
   moduleName?: string;
   /** Additional related entities to fetch documents from (for upward propagation) */
@@ -406,7 +406,7 @@ export function UnifiedDocumentsSection({
       setUploading(true);
       setUploadProgress(0);
 
-      const category: 'crm' | 'field' = (moduleType === 'offers' || moduleType === 'sales') ? 'crm' : 'field';
+      const category: 'crm' | 'field' = (moduleType === 'offers' || moduleType === 'sales' || moduleType === 'deals') ? 'crm' : 'field';
 
       const uploadedDocs = await DocumentsService.uploadDocuments(
         {

@@ -17,6 +17,8 @@ export interface DealItemDraft {
   unitPrice: number;
   discount: number;
   discountType: "percentage" | "fixed";
+  installationId?: string | null;
+  installationName?: string | null;
 }
 
 interface Props {

@@ -4,7 +4,7 @@ import {
   X, Play, Pause, RotateCcw, Volume2, VolumeX, Languages,
   Handshake, Search, Filter, List, LayoutGrid, Plus, GitBranch, DollarSign,
   Target, Trophy, TrendingUp, Building2, User, Calendar, Send, Activity,
-  StickyNote, ShoppingCart, Briefcase, Wrench, CheckCircle2,
+  StickyNote, ShoppingCart, Briefcase, Wrench, CheckCircle2, Package, X as XIcon,
 } from 'lucide-react';
 import { DemoCursor } from '@/modules/external/components/onboarding/DemoCursor';
 import { pickBestVoice, splitForSpeech, languageTagFor } from '@/modules/external/components/onboarding/narrationVoice';
@@ -156,42 +156,152 @@ function Field({ id, label, children, active }: { id?: string; label: string; ch
   return <div id={id} className={`rounded-md transition-all ${active ? 'ring-1 ring-primary/40 bg-primary/[0.03] p-2 -m-2' : ''}`}><label className="block text-xs font-medium text-foreground mb-1.5">{label}</label>{children}</div>;
 }
 
+function DemoCard({ title, children }: { title?: string; children: React.ReactNode }) {
+  return (
+    <div className="bg-card border border-border rounded-lg">
+      {title && <div className="px-4 pt-3 pb-1 text-sm font-semibold">{title}</div>}
+      <div className="p-4">{children}</div>
+    </div>
+  );
+}
+
 function PageCreate({ state }: { state: DealsDemoState }) {
   const step = state.createStep;
+  // Mirrors the real Add Deal page: a quote/sale-style workspace (main column +
+  // sidebar) that stays lighter than an offer — no fiscal-document fields.
   return (
-    <div className="p-4 md:p-6 space-y-5 max-w-3xl mx-auto">
-      <div className="flex items-center gap-3"><div className="h-8 w-8 rounded border border-border flex items-center justify-center text-muted-foreground text-xs">←</div><h1 className="text-lg font-semibold">Add Deal</h1></div>
-      <div className="bg-card border border-border rounded-lg p-5 space-y-5">
-        <Field id="dl-demo-create-title" label="Deal title *"><Box muted={step < 0}>Cold Room Upgrade — Médina Resorts</Box></Field>
-        <div id="dl-demo-create-customer" className={`grid grid-cols-2 gap-4 transition-opacity ${step >= 1 ? '' : 'opacity-40'}`}>
-          <Field label="Customer *" active={step === 1}><Box muted={step < 1}>{step >= 1 ? 'Médina Resorts' : 'Select…'}</Box></Field>
-          <Field label="Source"><Box muted={step < 1}>{step >= 1 ? 'Referral' : '—'}</Box></Field>
-        </div>
-        <div id="dl-demo-create-stage" className={`grid grid-cols-3 gap-4 transition-opacity ${step >= 2 ? '' : 'opacity-40'}`}>
-          <Field label="Stage" active={step === 2}><Box muted={step < 2}>{step >= 2 ? 'Qualified' : '—'}</Box></Field>
-          <Field label="Estimated value" active={step === 2}><Box muted={step < 2}>{step >= 2 ? '31 500 TND' : '—'}</Box></Field>
-          <Field label="Probability" active={step === 2}><Box muted={step < 2}>{step >= 2 ? '70%' : '—'}</Box></Field>
-        </div>
-        <div id="dl-demo-create-items" className={`transition-opacity ${step >= 3 ? '' : 'opacity-40'}`}>
-          <div className="flex items-center justify-between mb-2"><span className="text-xs font-medium">Line items (optional)</span><span className="h-6 px-2 rounded border border-border text-[10px] text-muted-foreground inline-flex items-center gap-1"><Plus className="h-3 w-3" /> Add</span></div>
-          <div className="border border-border rounded-md overflow-hidden">
-            <table className="w-full text-xs">
-              <thead><tr className="bg-muted/40 border-b border-border"><th className="text-left px-3 py-1.5 text-muted-foreground">Item</th><th className="text-right px-3 py-1.5 text-muted-foreground">Qty</th><th className="text-right px-3 py-1.5 text-muted-foreground">Price</th><th className="text-right px-3 py-1.5 text-muted-foreground">Total</th></tr></thead>
-              <tbody>
-                {step >= 3 ? [['Cold room panels', '1', '24,500', '24,500', 'article'], ['Installation service', '1', '7,000', '7,000', 'service']].map(r => (
-                  <tr key={r[0]} className="border-b border-border/40 last:border-0">
-                    <td className="px-3 py-1.5"><span className="inline-flex items-center gap-1.5">{r[4] === 'service' ? <Wrench className="h-3 w-3 text-muted-foreground" /> : <ShoppingCart className="h-3 w-3 text-muted-foreground" />}{r[0]}</span></td>
-                    <td className="px-3 py-1.5 text-right">{r[1]}</td><td className="px-3 py-1.5 text-right">{r[2]}</td><td className="px-3 py-1.5 text-right font-medium">{r[3]}</td>
-                  </tr>
-                )) : <tr><td colSpan={4} className="px-3 py-4 text-center text-muted-foreground">No items — the estimated value is used</td></tr>}
-              </tbody>
-            </table>
+    <div className="flex flex-col">
+      {/* Sticky-style header */}
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-border/60 bg-card/50">
+        <div className="h-7 w-7 rounded border border-border flex items-center justify-center text-muted-foreground text-xs">←</div>
+        <div className="p-1.5 rounded-md bg-primary/10"><Handshake className="h-4 w-4 text-primary" /></div>
+        <h1 className="text-sm font-medium">Add Deal</h1>
+      </div>
+
+      <div className="p-4 md:p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 max-w-5xl mx-auto">
+          {/* Main column */}
+          <div className="lg:col-span-2 space-y-4">
+            {/* Deal information */}
+            <DemoCard title="Deal information">
+              <div className="space-y-4">
+                <Field id="dl-demo-create-title" label="Deal title *"><Box>Cold Room Upgrade</Box></Field>
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Category"><Box>Refrigeration</Box></Field>
+                  <Field label="Source"><Box>Referral</Box></Field>
+                </div>
+                <Field label="Description"><Box muted>Replace and upgrade the main cold room — panels &amp; on-site install.</Box></Field>
+              </div>
+            </DemoCard>
+
+            {/* Contact — person OR company, same selector as offers/sales */}
+            <div id="dl-demo-create-customer">
+              <DemoCard title="Contact">
+                <div className={`rounded-md transition-all ${step === 1 ? 'ring-1 ring-primary/40 bg-primary/[0.03] p-2 -m-2' : ''}`}>
+                  {step >= 1 ? (
+                    <div className="flex items-center justify-between p-3 border border-border rounded-lg bg-muted/30">
+                      <div className="flex items-center gap-2.5">
+                        <span className="h-8 w-8 rounded-full bg-primary/10 text-primary inline-flex items-center justify-center"><Building2 className="h-4 w-4" /></span>
+                        <div>
+                          <p className="text-xs font-medium">Médina Resorts</p>
+                          <p className="text-[10px] text-muted-foreground">Company · contact@medina.tn · +216 71 234 567</p>
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground border border-border rounded px-1.5 py-0.5">Change</span>
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <div className="h-9 pl-10 pr-3 rounded-md border border-border bg-background text-sm text-muted-foreground flex items-center">Search a person or company…</div>
+                    </div>
+                  )}
+                </div>
+              </DemoCard>
+            </div>
+
+            {/* Installations — link items to equipment (same as offers/sales) */}
+            <DemoCard title="Installations">
+              <div className="space-y-2">
+                <div className="h-9 px-3 rounded-md border border-dashed border-border text-sm text-muted-foreground flex items-center gap-1.5"><Plus className="h-3.5 w-3.5" /> Link an installation…</div>
+                {step >= 2 && (
+                  <div className="flex items-center justify-between p-2.5 border border-border rounded-lg bg-muted/30">
+                    <div className="flex items-center gap-2"><Package className="h-4 w-4 text-primary" /><div><p className="text-xs font-medium">Cold Room A1</p><p className="text-[10px] text-muted-foreground">Carrier · SN CR-2024-A1</p></div></div>
+                    <XIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                  </div>
+                )}
+              </div>
+            </DemoCard>
+
+            {/* Items — the same catalog selector as offers & sales */}
+            <div id="dl-demo-create-items">
+              <DemoCard>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-medium">Select items to sell</span>
+                  <span className="h-7 px-2.5 rounded-md border border-border text-[11px] text-muted-foreground inline-flex items-center gap-1"><Plus className="h-3 w-3" /> Add items</span>
+                </div>
+                {step >= 3 ? (
+                  <div className="space-y-2">
+                    {[['Cold room panels', 'article', '1', '24,500', 'Cold Room A1'], ['Installation service', 'service', '1', '7,000', 'Cold Room A1']].map(r => (
+                      <div key={r[0]} className="border border-border rounded-lg p-3 flex items-center justify-between">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            {r[1] === 'service' ? <Wrench className="h-3.5 w-3.5 text-primary" /> : <ShoppingCart className="h-3.5 w-3.5 text-primary" />}
+                            <span className="text-xs font-medium">{r[0]}</span>
+                            <span className="text-[9px] rounded bg-muted px-1.5 py-0.5 text-muted-foreground capitalize">{r[1]}</span>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground mt-1">Qty {r[2]} · Unit {r[3]} TND · <span className="inline-flex items-center gap-0.5"><Package className="h-2.5 w-2.5" />{r[4]}</span></p>
+                        </div>
+                        <span className="text-xs font-semibold">{r[3]} TND</span>
+                      </div>
+                    ))}
+                    <div className="flex justify-between items-center pt-2 border-t border-border/60"><span className="text-xs font-semibold">Subtotal</span><span className="text-sm font-bold">31 500 TND</span></div>
+                  </div>
+                ) : (
+                  <div className="text-center py-6 text-muted-foreground"><Package className="h-9 w-9 mx-auto mb-2 opacity-40" /><p className="text-xs">No items added yet</p><p className="text-[10px]">Click Add items to pick from your catalog</p></div>
+                )}
+              </DemoCard>
+            </div>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-4">
+            {/* Pipeline settings */}
+            <div id="dl-demo-create-stage">
+              <DemoCard title="Deal settings">
+                <div className={`space-y-3 rounded-md transition-all ${step === 2 ? 'ring-1 ring-primary/40 bg-primary/[0.03] p-2 -m-2' : ''}`}>
+                  <Field label="Stage"><Box muted={step < 2}>{step >= 2 ? 'Qualified' : '—'}</Box></Field>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Probability"><Box muted={step < 2}>{step >= 2 ? '70%' : '—'}</Box></Field>
+                    <Field label="Currency"><Box muted={step < 2}>TND</Box></Field>
+                  </div>
+                  <Field label="Expected close"><Box muted={step < 2}>{step >= 2 ? '15 Jul 2025' : '—'}</Box></Field>
+                </div>
+              </DemoCard>
+            </div>
+
+            {/* Value */}
+            <DemoCard title="Value">
+              {step >= 3 ? (
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex justify-between"><span className="text-muted-foreground">Items subtotal</span><span className="font-medium">31 500 TND</span></div>
+                  <div className="flex justify-between border-t border-border/60 pt-1.5 text-sm font-semibold"><span>Value</span><span>31 500 TND</span></div>
+                </div>
+              ) : (
+                <Field label="Estimated value"><Box muted={step < 2}>{step >= 2 ? '31 500 TND' : '0 TND'}</Box></Field>
+              )}
+            </DemoCard>
+
+            {/* Notes */}
+            <DemoCard title="Notes">
+              <Box muted>Wants delivery before end of July.</Box>
+            </DemoCard>
           </div>
         </div>
-      </div>
-      <div className="flex justify-end gap-2">
-        <div className="h-9 px-4 rounded-md border border-border text-sm flex items-center text-muted-foreground">Cancel</div>
-        <div id="dl-demo-create-save" className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium flex items-center">Create Deal</div>
+
+        <div className="flex justify-end gap-2 pt-5 mt-5 border-t border-border max-w-5xl mx-auto">
+          <div className="h-9 px-4 rounded-md border border-border text-sm flex items-center text-muted-foreground">Cancel</div>
+          <div id="dl-demo-create-save" className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium flex items-center gap-1.5"><Send className="h-3.5 w-3.5" /> Save deal</div>
+        </div>
       </div>
     </div>
   );
@@ -253,7 +363,13 @@ function PageDetail({ state }: { state: DealsDemoState }) {
               <thead><tr className="bg-muted/30 border-b border-border/60"><th className="text-left px-4 py-2 text-muted-foreground">Item</th><th className="text-right px-4 py-2 text-muted-foreground">Qty</th><th className="text-right px-4 py-2 text-muted-foreground">Price</th><th className="text-right px-4 py-2 text-muted-foreground">Total</th></tr></thead>
               <tbody>
                 {[['Cold room panels', '1', '24,500 TND', '24,500 TND'], ['Installation service', '1', '7,000 TND', '7,000 TND']].map(r => (
-                  <tr key={r[0]} className="border-b border-border/40 last:border-0"><td className="px-4 py-2.5 font-medium">{r[0]}</td><td className="px-4 py-2.5 text-right">{r[1]}</td><td className="px-4 py-2.5 text-right">{r[2]}</td><td className="px-4 py-2.5 text-right font-medium">{r[3]}</td></tr>
+                  <tr key={r[0]} className="border-b border-border/40 last:border-0">
+                    <td className="px-4 py-2.5 font-medium">
+                      {r[0]}
+                      <span className="ml-2 inline-flex items-center gap-0.5 text-[10px] text-muted-foreground font-normal"><Package className="h-2.5 w-2.5" /> Cold Room A1</span>
+                    </td>
+                    <td className="px-4 py-2.5 text-right">{r[1]}</td><td className="px-4 py-2.5 text-right">{r[2]}</td><td className="px-4 py-2.5 text-right font-medium">{r[3]}</td>
+                  </tr>
                 ))}
               </tbody>
             </table>

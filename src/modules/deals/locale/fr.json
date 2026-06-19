@@ -24,7 +24,8 @@
     "placeholder": "Rechercher des affaires…"
   },
   "filters": {
-    "all": "Toutes les étapes"
+    "all": "Toutes les étapes",
+    "filters": "Filtres"
   },
   "stages": {
     "lead": "Prospect",
@@ -65,7 +66,9 @@
       "overview": "Aperçu",
       "items": "Articles",
       "activity": "Activité",
-      "notes": "Notes"
+      "notes": "Notes",
+      "documents": "Documents",
+      "checklists": "Listes de contrôle"
     },
     "customer": "Client",
     "stage": "Étape",
@@ -102,7 +105,13 @@
     "description": "Description",
     "notes": "Notes",
     "items": "Lignes d'articles",
-    "required": "Veuillez renseigner les champs obligatoires"
+    "required": "Veuillez renseigner les champs obligatoires",
+    "backToDeals": "Retour aux affaires",
+    "dealSettings": "Paramètres de l'affaire",
+    "valueSummary": "Valeur",
+    "valueHint": "Ajoutez des articles pour la calculer automatiquement.",
+    "itemsSubtotal": "Sous-total des articles",
+    "installationSerial": "N° de série"
   },
   "items": {
     "add": "Ajouter un article",
@@ -116,7 +125,9 @@
     "lineTotal": "Total",
     "none": "Aucune ligne. La valeur estimée est utilisée à la place.",
     "fromCatalog": "Choisir dans le catalogue",
-    "selectArticle": "Sélectionner un article"
+    "selectArticle": "Sélectionner un article",
+    "installation": "Installation",
+    "viewInstallation": "Voir"
   },
   "activity": {
     "add": "Ajouter une note",

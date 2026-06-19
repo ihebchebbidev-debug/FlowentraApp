@@ -133,29 +133,29 @@ export const DL_STEPS: DealsDemoStep[] = [
   {
     target: 'dl-demo-create-open',
     caption:
-      'Let’s create a deal. Add Deal opens a simple form — lighter than a quote, because a deal is about tracking the opportunity, not pricing a document yet.',
-    duration: 5000,
+      'Let’s create a deal. Add Deal opens a full workspace — the same structure as an offer or sale, with a contact, installations and a catalog item picker — yet lighter than a quote, with no fiscal document.',
+    duration: 5400,
     apply: pure(() => ({ page: 'create' as const, view: 'list' as const, createStep: 0 })),
   },
   {
     target: 'dl-demo-create-customer',
     caption:
-      'Pick the customer from your Contacts — every deal is tied to a real account in your CRM.',
-    duration: 4400,
+      'Pick the contact — a person or a company — from your CRM, using the very same selector as offers and sales.',
+    duration: 4600,
     apply: pure(() => ({ createStep: 1 })),
   },
   {
     target: 'dl-demo-create-stage',
     caption:
-      'Set the stage, the estimated value, and how likely it is to close. That is all it takes for the deal to count in your pipeline and forecast.',
-    duration: 5000,
+      'On the right sits everything that makes it a forecastable deal — stage, probability, currency and expected close. You can also link the customer’s installation.',
+    duration: 5200,
     apply: pure(() => ({ createStep: 2 })),
   },
   {
     target: 'dl-demo-create-items',
     caption:
-      'Optionally add line items straight from your catalog — articles and services alike — so the deal already carries what you intend to sell.',
-    duration: 5000,
+      'Add articles and services straight from your catalog — and link each to an installation — with the exact same item selector used by offers and sales.',
+    duration: 5200,
     apply: pure(() => ({ createStep: 3 })),
   },
   {

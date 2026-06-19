@@ -26,6 +26,8 @@ namespace MyApi.Modules.Deals.DTOs
         public string DiscountType { get; set; } = "percentage";
         public decimal LineTotal { get; set; }
         public int DisplayOrder { get; set; }
+        public string? InstallationId { get; set; }
+        public string? InstallationName { get; set; }
     }
 
     public class DealActivityDto
@@ -87,6 +89,8 @@ namespace MyApi.Modules.Deals.DTOs
         public decimal UnitPrice { get; set; } = 0;
         public decimal Discount { get; set; } = 0;
         public string DiscountType { get; set; } = "percentage";
+        public string? InstallationId { get; set; }
+        public string? InstallationName { get; set; }
     }
 
     public class CreateDealDto

@@ -1,6 +1,6 @@
 // Entity Form Document Types - For attaching dynamic forms to Offers/Sales/ServiceOrders/Dispatches
 
-export type EntityType = 'offer' | 'sale' | 'service_order' | 'dispatch' | 'installation' | 'project' | 'user';
+export type EntityType = 'offer' | 'sale' | 'service_order' | 'dispatch' | 'installation' | 'project' | 'user' | 'deal';
 export type FormDocumentStatus = 'draft' | 'completed';
 
 export interface EntityFormDocument {

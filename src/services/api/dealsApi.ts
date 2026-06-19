@@ -19,6 +19,8 @@ export interface DealItem {
   discountType?: 'percentage' | 'fixed';
   lineTotal?: number;
   displayOrder?: number;
+  installationId?: string | null;
+  installationName?: string | null;
 }
 
 export interface DealContact {

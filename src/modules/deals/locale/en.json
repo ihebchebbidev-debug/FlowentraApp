@@ -24,7 +24,8 @@
     "placeholder": "Search deals…"
   },
   "filters": {
-    "all": "All stages"
+    "all": "All stages",
+    "filters": "Filters"
   },
   "stages": {
     "lead": "Lead",
@@ -65,7 +66,9 @@
       "overview": "Overview",
       "items": "Items",
       "activity": "Activity",
-      "notes": "Notes"
+      "notes": "Notes",
+      "documents": "Documents",
+      "checklists": "Checklists"
     },
     "customer": "Customer",
     "stage": "Stage",
@@ -102,7 +105,13 @@
     "description": "Description",
     "notes": "Notes",
     "items": "Line items",
-    "required": "Please fill in the required fields"
+    "required": "Please fill in the required fields",
+    "backToDeals": "Back to deals",
+    "dealSettings": "Deal settings",
+    "valueSummary": "Value",
+    "valueHint": "Add items to compute this automatically.",
+    "itemsSubtotal": "Items subtotal",
+    "installationSerial": "Serial"
   },
   "items": {
     "add": "Add item",
@@ -116,7 +125,9 @@
     "lineTotal": "Total",
     "none": "No line items. The estimated value is used instead.",
     "fromCatalog": "Pick from catalog",
-    "selectArticle": "Select an article"
+    "selectArticle": "Select an article",
+    "installation": "Installation",
+    "viewInstallation": "View"
   },
   "activity": {
     "add": "Add note",
