@@ -56,57 +56,14 @@ const TONE: Record<Tone, { chip: string; text: string; bar: string; hex: string 
   info: { chip: 'bg-sky-500/10 text-sky-600', text: 'text-sky-600', bar: 'bg-sky-500', hex: '#0ea5e9' },
 };
 
-// ── Small circle-graph used inside every KPI card ──────────────
-function Ring({
-  pct,
-  color,
-  center,
-  size = 56,
-}: {
-  pct: number;
-  color: string;
-  center?: React.ReactNode;
-  size?: number;
-}) {
-  const stroke = 5;
-  const r = (size - stroke) / 2;
-  const c = 2 * Math.PI * r;
-  const clamped = Math.max(0, Math.min(100, pct));
-  const offset = c * (1 - clamped / 100);
-  return (
-    <div className="relative shrink-0" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={stroke} stroke="currentColor" className="text-muted/40" />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          strokeWidth={stroke}
-          stroke={color}
-          strokeLinecap="round"
-          strokeDasharray={c}
-          strokeDashoffset={offset}
-          style={{ transition: 'stroke-dashoffset .6s ease' }}
-        />
-      </svg>
-      {center !== undefined && (
-        <div className="absolute inset-0 grid place-items-center text-[11px] font-bold tabular-nums leading-none text-foreground">
-          {center}
-        </div>
-      )}
-    </div>
-  );
-}
-
+// Clean, uniform KPI card — no decorative rings, the visual weight lives in the
+// two charts so the page reads as an overview, not a wall of widgets.
 function KpiCard({
   icon: Icon,
   label,
   value,
   tone = 'primary',
   trend,
-  ringPct = 100,
-  ringCenter,
   onClick,
 }: {
   icon: React.ComponentType<{ className?: string }>;
@@ -115,66 +72,61 @@ function KpiCard({
   tone?: Tone;
   /** Month-over-month % change; renders an up/down pill next to the value. */
   trend?: number;
-  /** 0–100 fill of the ring on the right. */
-  ringPct?: number;
-  /** What sits in the ring's centre (a % string, a count, or an icon). */
-  ringCenter?: React.ReactNode;
   onClick?: () => void;
 }) {
   return (
     <div
-      className={`${PANEL} p-4 h-full flex items-center justify-between gap-3 transition-all ${
+      className={`${PANEL} p-4 h-full transition-all ${
         onClick ? 'cursor-pointer hover:border-primary/40 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)]' : ''
       }`}
       onClick={onClick}
     >
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5">
-          <Icon className={`h-3.5 w-3.5 shrink-0 ${TONE[tone].text}`} />
-          <p className="text-[12px] font-medium text-muted-foreground truncate">{label}</p>
-        </div>
-        <div className="mt-2 flex items-end gap-1.5 flex-wrap">
-          <span className="text-[24px] font-bold tracking-tight tabular-nums leading-none text-foreground">{value}</span>
-          {trend !== undefined && Number.isFinite(trend) && (
-            <span
-              className={`inline-flex items-center gap-0.5 text-[10px] font-semibold rounded-full px-1.5 py-0.5 mb-0.5 ${
-                trend >= 0 ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-600'
-              }`}
-            >
-              {trend >= 0 ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />}
-              {Math.abs(trend)}%
-            </span>
-          )}
-        </div>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[12px] font-medium text-muted-foreground truncate">{label}</p>
+        <span className={`grid place-items-center h-8 w-8 rounded-lg shrink-0 ${TONE[tone].chip}`}>
+          <Icon className="h-4 w-4" />
+        </span>
       </div>
-      <Ring pct={ringPct} color={TONE[tone].hex} center={ringCenter} />
+      <div className="mt-2.5 flex items-end gap-2 flex-wrap">
+        <span className="text-[24px] font-bold tracking-tight tabular-nums leading-none text-foreground">{value}</span>
+        {trend !== undefined && Number.isFinite(trend) && (
+          <span
+            className={`inline-flex items-center gap-0.5 text-[10px] font-semibold rounded-full px-1.5 py-0.5 mb-0.5 ${
+              trend >= 0 ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-600'
+            }`}
+          >
+            {trend >= 0 ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />}
+            {Math.abs(trend)}%
+          </span>
+        )}
+      </div>
     </div>
   );
 }
 
-function SectionHeader({
-  icon: Icon,
-  title,
-  subtitle,
-  onViewAll,
-  viewAllLabel,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  title: string;
-  subtitle?: string;
-  onViewAll?: () => void;
-  viewAllLabel?: string;
-}) {
+// Compact inline figure used in the team/stock summary strips.
+function Stat({ icon: Icon, label, value, tone = 'primary' }: { icon: React.ComponentType<{ className?: string }>; label: string; value: React.ReactNode; tone?: Tone }) {
   return (
-    <div className="flex items-center justify-between gap-3 mb-3">
-      <div className="flex items-center gap-2.5 min-w-0">
-        <span className="grid place-items-center h-8 w-8 rounded-lg bg-primary/10 text-primary shrink-0">
-          <Icon className="h-[18px] w-[18px]" />
+    <div className="flex items-center gap-2.5 min-w-0">
+      <span className={`grid place-items-center h-9 w-9 rounded-lg shrink-0 ${TONE[tone].chip}`}>
+        <Icon className="h-[18px] w-[18px]" />
+      </span>
+      <div className="min-w-0">
+        <p className="text-[11px] text-muted-foreground truncate">{label}</p>
+        <p className="text-base font-bold tabular-nums leading-tight truncate">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function PanelHead({ icon: Icon, title, onViewAll, viewAllLabel }: { icon: React.ComponentType<{ className?: string }>; title: string; onViewAll?: () => void; viewAllLabel?: string }) {
+  return (
+    <div className="flex items-center justify-between gap-2 px-4 pt-4 pb-3">
+      <div className="flex items-center gap-2 min-w-0">
+        <span className="grid place-items-center h-7 w-7 rounded-lg bg-primary/10 text-primary shrink-0">
+          <Icon className="h-4 w-4" />
         </span>
-        <div className="min-w-0">
-          <h2 className="text-[15px] font-semibold leading-tight tracking-tight truncate">{title}</h2>
-          {subtitle && <p className="text-xs text-muted-foreground truncate">{subtitle}</p>}
-        </div>
+        <h2 className="text-sm font-semibold tracking-tight truncate">{title}</h2>
       </div>
       {onViewAll && (
         <Button variant="ghost" size="sm" className="gap-1 text-xs text-muted-foreground hover:text-foreground shrink-0" onClick={onViewAll}>
@@ -200,14 +152,12 @@ function Panel({ title, action, children, className = '' }: { title?: string; ac
 }
 
 const SkeletonGrid = ({ n }: { n: number }) => (
-  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+  <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
     {Array.from({ length: n }).map((_, i) => (
       <div key={i} className="h-[92px] rounded-xl border border-border/60 bg-muted/30 animate-pulse" />
     ))}
   </div>
 );
-
-const pctOf = (value: number, total: number) => (total > 0 ? Math.round((value / total) * 100) : 0);
 
 export default function DashboardOverview() {
   const { format } = useCurrency();
@@ -344,10 +294,8 @@ export default function DashboardOverview() {
     [articles],
   );
 
-  const stockHealth = pctOf(stockStats.available, stockStats.total);
-
   return (
-    <div className="space-y-6 p-3 sm:p-5 max-w-[1600px] mx-auto">
+    <div className="space-y-5 p-3 sm:p-5 max-w-[1600px] mx-auto">
       {/* ══ Header · greeting + quick actions ══ */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="min-w-0">
@@ -370,193 +318,135 @@ export default function DashboardOverview() {
         </div>
       </div>
 
-      {/* ══ Section 1 · Overall ══ */}
-      <section>
-        <SectionHeader
-          icon={TrendingUp}
-          title={t('overview.section.overall', { defaultValue: 'Business overview' })}
-          subtitle={t('overview.section.overallSub', { defaultValue: 'Your key performance indicators at a glance' })}
-        />
-        {isLoading ? (
-          <SkeletonGrid n={5} />
-        ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-            <KpiCard
-              icon={TrendingUp}
-              tone={(revenueMoM.delta ?? 0) >= 0 ? 'success' : 'danger'}
-              label={t('overview.revenueThisMonth', { defaultValue: 'Revenue (this month)' })}
-              value={format(Math.round(revenueMoM.thisMonth))}
-              trend={revenueMoM.delta}
-              ringPct={revenueMoM.delta === undefined ? 100 : Math.min(100, Math.abs(revenueMoM.delta))}
-              ringCenter={revenueMoM.delta === undefined ? '—' : `${revenueMoM.delta}%`}
-              onClick={() => navigate('/dashboard/sales')}
-            />
-            <KpiCard
-              icon={ShoppingCart}
-              tone="success"
-              label={t('overview.activeSales', { defaultValue: 'Active sales' })}
-              value={activeSales}
-              ringPct={pctOf(activeSales, sales.length)}
-              ringCenter={`${pctOf(activeSales, sales.length)}%`}
-              onClick={() => navigate('/dashboard/sales')}
-            />
-            <KpiCard
-              icon={FileText}
-              tone="info"
-              label={t('overview.openOffers', { defaultValue: 'Open offers' })}
-              value={openOffers}
-              ringPct={pctOf(openOffers, offers.length)}
-              ringCenter={`${pctOf(openOffers, offers.length)}%`}
-              onClick={() => navigate('/dashboard/offers')}
-            />
-            <KpiCard
-              icon={Wrench}
-              tone="warning"
-              label={t('overview.activeServiceOrders', { defaultValue: 'Active service orders' })}
-              value={activeServiceOrders}
-              ringPct={pctOf(activeServiceOrders, serviceOrders.length)}
-              ringCenter={`${pctOf(activeServiceOrders, serviceOrders.length)}%`}
-              onClick={() => navigate('/dashboard/field/service-orders/list')}
-            />
-            <KpiCard
-              icon={Users}
-              tone="primary"
-              label={t('overview.totalContacts', { defaultValue: 'Contacts' })}
-              value={totalContacts || '-'}
-              ringPct={100}
-              ringCenter={<Users className="h-4 w-4 text-primary" />}
-              onClick={() => navigate('/dashboard/contacts')}
-            />
-          </div>
-        )}
+      {/* KPI row — the headline numbers, no section chrome */}
+      {isLoading ? (
+        <SkeletonGrid n={5} />
+      ) : (
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+          <KpiCard
+            icon={TrendingUp}
+            tone={(revenueMoM.delta ?? 0) >= 0 ? 'success' : 'danger'}
+            label={t('overview.revenueThisMonth', { defaultValue: 'Revenue (this month)' })}
+            value={format(Math.round(revenueMoM.thisMonth))}
+            trend={revenueMoM.delta}
+            onClick={() => navigate('/dashboard/sales')}
+          />
+          <KpiCard icon={ShoppingCart} tone="success" label={t('overview.activeSales', { defaultValue: 'Active sales' })} value={activeSales} onClick={() => navigate('/dashboard/sales')} />
+          <KpiCard icon={FileText} tone="info" label={t('overview.openOffers', { defaultValue: 'Open offers' })} value={openOffers} onClick={() => navigate('/dashboard/offers')} />
+          <KpiCard icon={Wrench} tone="warning" label={t('overview.activeServiceOrders', { defaultValue: 'Active service orders' })} value={activeServiceOrders} onClick={() => navigate('/dashboard/field/service-orders/list')} />
+          <KpiCard icon={Users} tone="primary" label={t('overview.totalContacts', { defaultValue: 'Contacts' })} value={totalContacts || '-'} onClick={() => navigate('/dashboard/contacts')} />
+        </div>
+      )}
 
-        <div className="grid lg:grid-cols-3 gap-3 mt-3">
-          <Panel className="lg:col-span-2" title={t('overview.revenueTrend', { defaultValue: 'Revenue — last 6 months' })}>
-            <ThemedBarChart data={revenueTrend} height={220} />
-          </Panel>
-          <Panel title={t('overview.serviceOrderStatus', { defaultValue: 'Service orders by status' })}>
-            {serviceOrderStatus.length > 0
-              ? <DonutChartComponent data={serviceOrderStatus} height={220} innerRadius={56} outerRadius={92} centerValue={serviceOrders.length} centerLabel={t('overview.total', { defaultValue: 'Total' })} />
+      {/* Charts — one bar, one donut. That's it. */}
+      <div className="grid lg:grid-cols-3 gap-3">
+        <Panel className="lg:col-span-2" title={t('overview.revenueTrend', { defaultValue: 'Revenue — last 6 months' })}>
+          <ThemedBarChart data={revenueTrend} height={240} />
+        </Panel>
+        <Panel title={t('overview.serviceOrderStatus', { defaultValue: 'Service orders by status' })}>
+          {serviceOrderStatus.length > 0
+            ? <DonutChartComponent data={serviceOrderStatus} height={240} innerRadius={58} outerRadius={92} centerValue={serviceOrders.length} centerLabel={t('overview.total', { defaultValue: 'Total' })} />
+            : <div className="h-[240px] flex items-center justify-center text-sm text-muted-foreground">{t('overview.noData', { defaultValue: 'No data yet' })}</div>}
+        </Panel>
+      </div>
+
+      {/* Team — one panel: summary strip + per-technician table */}
+      {!isLoading && (
+        <div className={`${PANEL} overflow-hidden`}>
+          <PanelHead
+            icon={UserCheck}
+            title={t('overview.section.team', { defaultValue: 'Team performance' })}
+            onViewAll={() => navigate('/dashboard/dispatcher')}
+            viewAllLabel={t('overview.openPlanner', { defaultValue: 'Planner' })}
+          />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 px-4 pb-4">
+            <Stat icon={Clock} tone="info" label={t('overview.hoursWorked', { defaultValue: 'Hours worked' })} value={fmtHours(teamTotals.minutes)} />
+            <Stat icon={Receipt} tone="warning" label={t('overview.teamExpenses', { defaultValue: 'Expenses' })} value={teamTotals.expenses > 0 ? format(Math.round(teamTotals.expenses)) : '—'} />
+            <Stat icon={UserCheck} tone="primary" label={t('overview.activeTechnicians', { defaultValue: 'Active technicians' })} value={teamTotals.active} />
+            <Stat icon={CheckCircle2} tone="success" label={t('overview.jobsCompleted', { defaultValue: 'Jobs completed' })} value={teamTotals.completed} />
+          </div>
+          {techStats.length === 0 ? (
+            <div className="h-24 flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground border-t border-border/60">
+              <UserCheck className="h-6 w-6 opacity-30" />
+              {t('overview.noTechnicianData', { defaultValue: 'No technician activity yet' })}
+            </div>
+          ) : (
+            <div className="border-t border-border/60 divide-y divide-border/60">
+              {techStats.slice(0, 6).map(tech => (
+                <div key={tech.id} className="grid grid-cols-12 gap-2 px-4 py-2.5 items-center hover:bg-muted/30 transition-colors">
+                  <div className="col-span-5 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="h-7 w-7 rounded-full bg-primary/10 text-primary text-[10px] font-bold inline-flex items-center justify-center shrink-0">
+                        {tech.name.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2)}
+                      </span>
+                      <span className="text-sm font-medium truncate">{tech.name}</span>
+                    </div>
+                    <div className="mt-1 h-1 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full bg-primary/70" style={{ width: `${(tech.minutes / maxTechMinutes) * 100}%` }} />
+                    </div>
+                  </div>
+                  <span className="col-span-3 text-right text-sm font-semibold">{fmtHours(tech.minutes)}</span>
+                  <span className="col-span-2 text-right text-xs text-muted-foreground">{format(Math.round(tech.expenses))}</span>
+                  <span className="col-span-2 text-right text-xs">
+                    <span className="font-medium">{tech.completed}</span>
+                    <span className="text-muted-foreground">/{tech.jobs}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Inventory — donut + summary strip with the items needing attention */}
+      {!isLoading && (
+        <div className="grid lg:grid-cols-3 gap-3">
+          <Panel title={t('overview.stockBreakdown', { defaultValue: 'Stock status' })}>
+            {stockDonut.length > 0
+              ? <DonutChartComponent data={stockDonut} height={220} innerRadius={56} outerRadius={90} centerValue={stockStats.total} centerLabel={t('overview.totalArticles', { defaultValue: 'Total articles' })} />
               : <div className="h-[220px] flex items-center justify-center text-sm text-muted-foreground">{t('overview.noData', { defaultValue: 'No data yet' })}</div>}
           </Panel>
-        </div>
-      </section>
 
-      {/* ══ Section 2 · Team / technicians ══ */}
-      <section>
-        <SectionHeader
-          icon={UserCheck}
-          title={t('overview.section.team', { defaultValue: 'Team performance' })}
-          subtitle={t('overview.section.teamSub', { defaultValue: 'Hours worked, expenses and jobs per technician' })}
-          onViewAll={() => navigate('/dashboard/dispatcher')}
-          viewAllLabel={t('overview.openPlanner', { defaultValue: 'Planner' })}
-        />
-        {isLoading ? (
-          <SkeletonGrid n={4} />
-        ) : (
-          <>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <KpiCard icon={Clock} tone="info" label={t('overview.hoursWorked', { defaultValue: 'Hours worked' })} value={fmtHours(teamTotals.minutes)} ringPct={100} ringCenter={<Clock className="h-4 w-4 text-sky-600" />} />
-              <KpiCard icon={Receipt} tone="warning" label={t('overview.teamExpenses', { defaultValue: 'Expenses' })} value={teamTotals.expenses > 0 ? format(Math.round(teamTotals.expenses)) : '—'} ringPct={100} ringCenter={<Receipt className="h-4 w-4 text-amber-600" />} />
-              <KpiCard icon={UserCheck} tone="primary" label={t('overview.activeTechnicians', { defaultValue: 'Active technicians' })} value={teamTotals.active} ringPct={100} ringCenter={<UserCheck className="h-4 w-4 text-primary" />} />
-              <KpiCard icon={CheckCircle2} tone="success" label={t('overview.jobsCompleted', { defaultValue: 'Jobs completed' })} value={teamTotals.completed} ringPct={pctOf(teamTotals.completed, teamTotals.jobs)} ringCenter={`${pctOf(teamTotals.completed, teamTotals.jobs)}%`} />
+          <div className={`${PANEL} lg:col-span-2 overflow-hidden`}>
+            <PanelHead
+              icon={Boxes}
+              title={t('overview.section.stock', { defaultValue: 'Inventory & stock' })}
+              onViewAll={() => navigate('/dashboard/inventory-services')}
+              viewAllLabel={t('overview.openInventory', { defaultValue: 'Inventory' })}
+            />
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 px-4 pb-4">
+              <Stat icon={Package} tone="primary" label={t('overview.totalArticles', { defaultValue: 'Total articles' })} value={stockStats.total} />
+              <Stat icon={Wallet} tone="success" label={t('overview.stockValue', { defaultValue: 'Stock value' })} value={stockStats.value > 0 ? format(Math.round(stockStats.value)) : '—'} />
+              <Stat icon={AlertTriangle} tone="warning" label={t('overview.lowStock', { defaultValue: 'Low stock' })} value={stockStats.low} />
+              <Stat icon={XCircle} tone="danger" label={t('overview.outOfStock', { defaultValue: 'Out of stock' })} value={stockStats.out} />
             </div>
-
-            <div className={`${PANEL} mt-3 overflow-hidden`}>
-                {techStats.length === 0 ? (
-                  <div className="h-32 flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
-                    <UserCheck className="h-7 w-7 opacity-30" />
-                    {t('overview.noTechnicianData', { defaultValue: 'No technician activity yet' })}
-                  </div>
-                ) : (
-                  <div className="divide-y divide-border/60">
-                    <div className="grid grid-cols-12 gap-2 px-4 py-2 text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
-                      <span className="col-span-5">{t('overview.technician', { defaultValue: 'Technician' })}</span>
-                      <span className="col-span-3 text-right">{t('overview.hours', { defaultValue: 'Hours' })}</span>
-                      <span className="col-span-2 text-right">{t('overview.expenses', { defaultValue: 'Expenses' })}</span>
-                      <span className="col-span-2 text-right">{t('overview.jobs', { defaultValue: 'Jobs' })}</span>
+            <div className="border-t border-border/60 px-4 py-3">
+              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">{t('overview.needsRestock', { defaultValue: 'Needs restocking' })}</p>
+              {lowStockItems.length === 0 ? (
+                <div className="py-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                  {t('overview.allStocked', { defaultValue: 'Everything is well stocked ✓' })}
+                </div>
+              ) : (
+                <div className="divide-y divide-border/60">
+                  {lowStockItems.slice(0, 5).map((a: any) => (
+                    <div key={a.id} className="flex items-center justify-between gap-3 py-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className={`h-2 w-2 rounded-full shrink-0 ${(a.status || '').toLowerCase() === 'out_of_stock' ? 'bg-red-500' : 'bg-amber-500'}`} />
+                        <span className="text-sm truncate">{a.name || a.title || `#${a.id}`}</span>
+                      </div>
+                      <div className="text-right shrink-0 tabular-nums">
+                        <span className={`text-sm font-semibold ${(a.status || '').toLowerCase() === 'out_of_stock' ? 'text-red-600' : 'text-amber-600'}`}>{a.stock ?? 0}</span>
+                        <span className="text-xs text-muted-foreground"> / {t('overview.min', { defaultValue: 'min' })} {a.minStock ?? 0}</span>
+                      </div>
                     </div>
-                    {techStats.slice(0, 8).map(tech => (
-                      <div key={tech.id} className="grid grid-cols-12 gap-2 px-4 py-2.5 items-center hover:bg-muted/30 transition-colors">
-                        <div className="col-span-5 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="h-7 w-7 rounded-full bg-primary/10 text-primary text-[10px] font-bold inline-flex items-center justify-center shrink-0">
-                              {tech.name.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2)}
-                            </span>
-                            <span className="text-sm font-medium truncate">{tech.name}</span>
-                          </div>
-                          <div className="mt-1 h-1 rounded-full bg-muted overflow-hidden">
-                            <div className="h-full bg-primary/70" style={{ width: `${(tech.minutes / maxTechMinutes) * 100}%` }} />
-                          </div>
-                        </div>
-                        <span className="col-span-3 text-right text-sm font-semibold">{fmtHours(tech.minutes)}</span>
-                        <span className="col-span-2 text-right text-xs text-muted-foreground">{format(Math.round(tech.expenses))}</span>
-                        <span className="col-span-2 text-right text-xs">
-                          <span className="font-medium">{tech.completed}</span>
-                          <span className="text-muted-foreground">/{tech.jobs}</span>
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                  ))}
+                </div>
+              )}
             </div>
-          </>
-        )}
-      </section>
-
-      {/* ══ Section 3 · Inventory / stock ══ */}
-      <section>
-        <SectionHeader
-          icon={Boxes}
-          title={t('overview.section.stock', { defaultValue: 'Inventory & stock' })}
-          subtitle={t('overview.section.stockSub', { defaultValue: 'Stock value and items needing attention' })}
-          onViewAll={() => navigate('/dashboard/inventory-services')}
-          viewAllLabel={t('overview.openInventory', { defaultValue: 'Inventory' })}
-        />
-        {isLoading ? (
-          <SkeletonGrid n={4} />
-        ) : (
-          <>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <KpiCard icon={Package} tone="primary" label={t('overview.totalArticles', { defaultValue: 'Total articles' })} value={stockStats.total} ringPct={stockHealth} ringCenter={`${stockHealth}%`} onClick={() => navigate('/dashboard/inventory-services')} />
-              <KpiCard icon={Wallet} tone="success" label={t('overview.stockValue', { defaultValue: 'Stock value' })} value={format(Math.round(stockStats.value))} ringPct={100} ringCenter={<Wallet className="h-4 w-4 text-emerald-600" />} />
-              <KpiCard icon={AlertTriangle} tone="warning" label={t('overview.lowStock', { defaultValue: 'Low stock' })} value={stockStats.low} ringPct={pctOf(stockStats.low, stockStats.total)} ringCenter={`${pctOf(stockStats.low, stockStats.total)}%`} onClick={() => navigate('/dashboard/inventory-services')} />
-              <KpiCard icon={XCircle} tone="danger" label={t('overview.outOfStock', { defaultValue: 'Out of stock' })} value={stockStats.out} ringPct={pctOf(stockStats.out, stockStats.total)} ringCenter={`${pctOf(stockStats.out, stockStats.total)}%`} onClick={() => navigate('/dashboard/inventory-services')} />
-            </div>
-
-            <div className="grid lg:grid-cols-3 gap-3 mt-3">
-              <Panel title={t('overview.stockBreakdown', { defaultValue: 'Stock status' })}>
-                {stockDonut.length > 0
-                  ? <DonutChartComponent data={stockDonut} height={220} innerRadius={56} outerRadius={92} centerValue={stockStats.total} centerLabel={t('overview.totalArticles', { defaultValue: 'Total articles' })} />
-                  : <div className="h-[220px] flex items-center justify-center text-sm text-muted-foreground">{t('overview.noData', { defaultValue: 'No data yet' })}</div>}
-              </Panel>
-              <Panel className="lg:col-span-2" title={t('overview.needsRestock', { defaultValue: 'Needs restocking' })}>
-                {lowStockItems.length === 0 ? (
-                  <div className="h-32 flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
-                    <CheckCircle2 className="h-7 w-7 opacity-30" />
-                    {t('overview.allStocked', { defaultValue: 'Everything is well stocked ✓' })}
-                  </div>
-                ) : (
-                  <div className="divide-y divide-border/60 -my-1">
-                    {lowStockItems.map((a: any) => (
-                      <div key={a.id} className="flex items-center justify-between gap-3 py-2.5">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <span className={`h-2 w-2 rounded-full shrink-0 ${(a.status || '').toLowerCase() === 'out_of_stock' ? 'bg-red-500' : 'bg-amber-500'}`} />
-                          <span className="text-sm truncate">{a.name || a.title || `#${a.id}`}</span>
-                        </div>
-                        <div className="text-right shrink-0 tabular-nums">
-                          <span className={`text-sm font-semibold ${(a.status || '').toLowerCase() === 'out_of_stock' ? 'text-red-600' : 'text-amber-600'}`}>{a.stock ?? 0}</span>
-                          <span className="text-xs text-muted-foreground"> / {t('overview.min', { defaultValue: 'min' })} {a.minStock ?? 0}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </Panel>
-            </div>
-          </>
-        )}
-      </section>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
