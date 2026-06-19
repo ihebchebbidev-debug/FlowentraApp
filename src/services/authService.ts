@@ -612,11 +612,6 @@ class AuthService {
         storage.removeItem('onboarding-completed');
       }
       
-      // Sync company logo to shared localStorage key for app-wide use
-      if ((authResponse.user as any).companyLogoUrl) {
-        storage.setItem('company-logo', (authResponse.user as any).companyLogoUrl);
-      }
-
       // Also save preferences from PreferencesJson if available
       if (authResponse.user.preferences) {
         try {
@@ -638,11 +633,9 @@ class AuthService {
   private saveUserToStorage(user: UserData): void {
     const storage = this.getStorage();
     storage.setItem('user_data', JSON.stringify(user));
-    // Always sync companyLogoUrl to the shared 'company-logo' key
-    if (user.companyLogoUrl) {
-      localStorage.setItem('company-logo', user.companyLogoUrl);
-      window.dispatchEvent(new CustomEvent('logo-updated', { detail: user.companyLogoUrl }));
-    }
+    // Logo is managed by TenantMapContext (active-company-aware fallback logic).
+    // Do NOT write company-logo here — it would override the selected company's
+    // logo on every token refresh with the MainAdminUser's personal logo.
   }
 
   private clearUserSession(): void {

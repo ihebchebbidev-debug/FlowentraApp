@@ -63,9 +63,14 @@ export default function SelectCompany() {
     setBusy(label);
     // Pre-write the logo so bootstrap reads it on the next page load before
     // the network resolves — must happen before setActiveCompany clears caches.
+    // Rule: use the selected company's logo; fall back to the default company's
+    // logo if the selected company has none (mirrors TenantMapContext logic).
     const tenant = activeTenants.find((t) => t.id === tenantId);
+    const defaultTenant = activeTenants.find(t => t.isDefault) ?? activeTenants[0];
     const logoUrl = (tenant as any)?.companyLogoUrl as string | null | undefined;
-    if (logoUrl) setCompanyLogo(logoUrl);
+    const fallback = (defaultTenant as any)?.companyLogoUrl as string | null | undefined;
+    const resolved = logoUrl ?? fallback;
+    if (resolved) setCompanyLogo(resolved);
     else setCompanyLogoExplicitNone();
     // Row-level switch: keep X-Tenant (subdomain/DB) untouched, set X-Target-Tenant.
     setActiveCompany({ id: tenantId, reload: true });
@@ -73,6 +78,11 @@ export default function SelectCompany() {
 
   const pickViewAll = () => {
     setBusy("__all__");
+    // Pre-write the default company's logo for view-all mode (same as login page).
+    const defaultTenant = activeTenants.find(t => t.isDefault) ?? activeTenants[0];
+    const defaultLogo = (defaultTenant as any)?.companyLogoUrl as string | null | undefined;
+    if (defaultLogo) setCompanyLogo(defaultLogo);
+    else setCompanyLogoExplicitNone();
     setActiveCompany({ viewAll: true, reload: true });
   };
 

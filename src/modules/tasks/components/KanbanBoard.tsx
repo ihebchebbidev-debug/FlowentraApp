@@ -28,9 +28,11 @@ import TaskListViewGrouped from './TaskListViewGrouped';
 import { Column, Task as TaskType } from '../types';
 import { buildStatusColumns, defaultTechnicianColumns, defaultStatusColumns } from "../utils/columns";
 import { useLookups } from "@/shared/contexts/LookupsContext";
-import { TasksService } from '../services/tasks.service';
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
+  const handleAddTask = (_columnId: string) => {              // Open quick task modal 
+    setIsQuickTaskModalOpen(true);
+    // Notify parent if it wants to control the quick task modal
+    onQuickTaskModalOpenChange?.(true);
+  };
 import { usersApi } from "@/services/usersApi";
 import { projectsApi } from "@/services/api/projectsApi";
 import { notificationsApi } from "@/services/api/notificationsApi";
@@ -227,6 +229,13 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
   useEffect(() => {
     if (quickTaskModalOpen !== undefined) {
       setIsQuickTaskModalOpen(quickTaskModalOpen);
+    }
+  }, [quickTaskModalOpen]);
+
+  // Sync external quick-task modal control (parent -> internal)
+  useEffect(() => {
+    if (typeof quickTaskModalOpen !== 'undefined') {
+      setIsQuickTaskModalOpen(!!quickTaskModalOpen);
     }
   }, [quickTaskModalOpen]);
 
