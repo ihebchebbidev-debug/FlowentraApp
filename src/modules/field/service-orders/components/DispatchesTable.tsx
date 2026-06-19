@@ -142,7 +142,7 @@ export function DispatchesTable({ dispatches, onDispatchUpdate }: DispatchesTabl
             size="sm"
             variant="outline"
             className="border-border bg-background hover:bg-muted"
-            onClick={() => window.location.href = '/dashboard/dispatcher/manage-scheduler'}
+            onClick={() => window.location.href = '/dashboard/field/dispatcher/interface'}
           >
             <Calendar className="mr-2 h-4 w-4" />
             View Schedules

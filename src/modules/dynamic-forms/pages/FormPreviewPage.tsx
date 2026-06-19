@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useCompanyLogo } from '@/hooks/useCompanyLogo';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Languages, Edit, Star, GitBranch, FileStack, Download, Save, FileText, Loader2, AlertCircle, RefreshCw, Link2 } from 'lucide-react';
@@ -28,6 +29,7 @@ import { pdfSettingsApi } from '@/services/pdfSettingsApi';
 
 export default function FormPreviewPage() {
   const { t, i18n } = useTranslation('dynamic-forms');
+  const logoUrl = useCompanyLogo();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { id } = useParams<{ id: string }>();
@@ -60,9 +62,11 @@ export default function FormPreviewPage() {
         const settings = await pdfSettingsApi.loadSettings('offers', {
           company: { name: '', logo: '', address: '', phone: '', email: '' }
         });
-        // Always resolve logo to base64 for reliable rendering
+        // Always resolve logo to base64 for reliable rendering.
+        // Pass logoUrl (from tenant-aware singleton) so the active company's
+        // logo is used, not the MainAdmin global fallback.
         const { getCompanyLogoBase64 } = await import('@/hooks/companyLogoUtils');
-        const logoBase64 = await getCompanyLogoBase64();
+        const logoBase64 = await getCompanyLogoBase64(logoUrl || undefined);
         if (settings?.company) {
           setCompanySettings({
             name: settings.company.name,
@@ -79,7 +83,7 @@ export default function FormPreviewPage() {
       }
     };
     loadCompanySettings();
-  }, []);
+  }, [logoUrl]);
   
   // Redirect if no view permission
   useEffect(() => {

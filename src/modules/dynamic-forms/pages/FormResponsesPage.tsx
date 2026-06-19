@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useCompanyLogo } from '@/hooks/useCompanyLogo';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Download, FileText, FileDown, Loader2, Eye, Sparkles } from 'lucide-react';
@@ -69,7 +70,11 @@ export default function FormResponsesPage() {
     }
   }, [canView, permissionsLoading, navigate, toastHook, t]);
   
-  // Get company logo as base64 for PDFs (resolves doc:{id} refs properly)
+  // Get company logo as base64 for PDFs.
+  // logoUrl comes from the tenant-aware singleton (TenantMapContext), matching
+  // exactly what the sidebar shows. Passing it to getCompanyLogoBase64 ensures
+  // Strategy 2 (URL fetch) is used instead of the MainAdmin global fallback.
+  const logoUrl = useCompanyLogo();
   const [companyLogo, setCompanyLogoState] = useState<string | undefined>(undefined);
   const companyName = localStorage.getItem('company-name') || undefined;
 
@@ -77,11 +82,11 @@ export default function FormResponsesPage() {
     let cancelled = false;
     (async () => {
       const { getCompanyLogoBase64 } = await import('@/hooks/companyLogoUtils');
-      const logo = await getCompanyLogoBase64();
+      const logo = await getCompanyLogoBase64(logoUrl || undefined);
       if (!cancelled && logo) setCompanyLogoState(logo);
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [logoUrl]);
   
   const handleExportPdf = async (response: DynamicFormResponse) => {
     if (!form) return;
