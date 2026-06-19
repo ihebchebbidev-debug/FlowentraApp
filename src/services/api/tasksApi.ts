@@ -211,8 +211,7 @@ export interface UpdateDailyTaskRequestDto {
 }
 
 export interface MoveTaskRequestDto {
-  columnId: number;
-  position: number;
+  status: string;
 }
 
 export interface TaskSearchRequestDto {
@@ -238,13 +237,12 @@ export interface AssignTaskRequestDto {
 }
 
 export interface BulkMoveTasksRequestDto {
-  moves: TaskMoveDto[];
+  tasks: TaskMoveDto[];
 }
 
 export interface TaskMoveDto {
-  taskId: number;
-  columnId: number;
-  position: number;
+  id: number;
+  status: string;
 }
 
 export interface BulkAssignTasksRequestDto {

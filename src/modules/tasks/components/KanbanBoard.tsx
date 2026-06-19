@@ -14,8 +14,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckSquare, Plus, Users, ArrowLeft, Settings, LayoutGrid, List } from "lucide-react";
+import { Plus, Users, ArrowLeft, Settings, LayoutGrid, List } from "lucide-react";
 import { DroppableColumn } from './DroppableColumn';
 import { DraggableTaskCard } from './DraggableTaskCard';
 import { TaskDetailModal } from './TaskDetailModal';
@@ -27,12 +26,11 @@ import { TeamManagementModal } from './TeamManagementModal';
 import TaskListViewGrouped from './TaskListViewGrouped';
 import { Column, Task as TaskType } from '../types';
 import { buildStatusColumns, defaultTechnicianColumns, defaultStatusColumns } from "../utils/columns";
-import { mapTaskStatusToColumnId } from "../utils/taskStatusMapping";
+import { buildCreateProjectTaskPayload, mapColumnIdToTaskStatus, mapTaskStatusToColumnId, normalizeTaskStatus } from "../utils/taskStatusMapping";
 import { useLookups } from "@/shared/contexts/LookupsContext";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { TasksService } from "../services/tasks.service";
-import { buildCreateProjectTaskPayload, mapTaskStatusToColumnId } from "../utils/taskStatusMapping";
 import { usersApi } from "@/services/usersApi";
 import { projectsApi } from "@/services/api/projectsApi";
 import { notificationsApi } from "@/services/api/notificationsApi";
@@ -133,7 +131,6 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
   const [tasks, setTasks] = useState<LocalTask[]>(initialTasks ?? []);
   const skipTasksNotifyRef = useRef(true);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
-  const [activeTab, setActiveTab] = useState('status');
   const [activeTask, setActiveTask] = useState<LocalTask | null>(null);
   const [selectedTask, setSelectedTask] = useState<LocalTask | null>(null);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
@@ -273,22 +270,14 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
     }
 
     const taskId = active.id as string;
-    const isTeamView = activeTab === 'technician';
-    
-    // Get all available columns based on current view
-    const availableColumns = isTeamView ? projectTeamColumns : customColumns;
-    const allColumnIds = availableColumns.map(c => c.id);
+    const allColumnIds = customColumns.map(c => c.id);
 
-    // Determine the target column id - when hovering over a task, find its parent column
     const resolveColumnId = (id: string): string | undefined => {
-      // First check if it's a column ID directly
       if (allColumnIds.includes(id)) return id;
-      
-      // If it's a task ID, find which column it belongs to based on current view
+
       const overTask = tasks.find(t => t.id === id);
       if (overTask) {
-        // In team view, use assigneeId; in status view, use columnId
-        return isTeamView ? overTask.assigneeId : overTask.columnId;
+        return mapTaskStatusToColumnId(overTask.status || overTask.columnId, customColumns);
       }
       return undefined;
     };
@@ -300,74 +289,43 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
       return;
     }
 
-    // Only update if there's a change
     const currentTask = tasks.find(t => t.id === taskId);
-    const hasChanged = currentTask && (
-      (isTeamView && currentTask.assigneeId !== newColumnId) || 
-      (!isTeamView && currentTask.columnId !== newColumnId)
-    );
+    const currentColumnId = currentTask
+      ? mapTaskStatusToColumnId(currentTask.status, customColumns)
+      : undefined;
+    const hasChanged = currentTask && currentColumnId !== newColumnId;
     
     if (currentTask && hasChanged) {
-      // Check if we're in technician view - if so, this is a reassignment
-      // IMPORTANT: Only treat as team column move if we're actually in technician view
-      const isTeamColumnMove = isTeamView && projectTeamColumns.some(col => col.id === newColumnId);
-      const targetTeamMember = isTeamColumnMove ? projectTeamColumns.find(col => col.id === newColumnId) : null;
-      
-      // Get team member info for assignment
-      const newAssigneeName = targetTeamMember?.title || currentTask.assignee;
-      const newAssigneeId = isTeamColumnMove ? parseInt(newColumnId, 10) : null;
+      const newStatus = mapColumnIdToTaskStatus(newColumnId, customColumns);
 
-      // Optimistic update
       setTasks(prevTasks => 
         prevTasks.map(task => 
           task.id === taskId 
             ? { 
                 ...task, 
-                columnId: isTeamColumnMove ? task.columnId : newColumnId, // Keep original column in team view, update in status view
-                assigneeId: isTeamColumnMove ? newColumnId : task.assigneeId, // Update assigneeId only in team view
+                status: newStatus,
+                columnId: newColumnId,
                 lastMoved: new Date(),
-                // Update assignee only when moving between team columns
-                assignee: isTeamColumnMove ? newAssigneeName : task.assignee
               }
             : task
         )
       );
 
-      // Call API to persist move or assignment
       try {
-        // Parse task ID - handle both numeric strings and prefixed formats
         const taskIdNum = parseInt(taskId, 10) || parseInt(taskId.replace(/\D/g, ''), 10);
         
         if (!isNaN(taskIdNum)) {
-          if (isTeamColumnMove && newAssigneeId && !isNaN(newAssigneeId)) {
-            // This is a reassignment between team members
-            await TasksService.assignTask(taskIdNum, newAssigneeId, newAssigneeName);
-            
-            toast({
-              title: t('toast.taskReassigned'),
-              description: t('toast.taskAssigned', { name: newAssigneeName }),
-            });
-          } else {
-            // This is a status column move
-            const columnIdNum = parseInt(newColumnId, 10) || parseInt(newColumnId.replace(/\D/g, ''), 10) || 1;
-            const tasksInColumn = tasks.filter(t => t.columnId === newColumnId).length;
-            await TasksService.moveTask(taskIdNum, {
-              columnId: columnIdNum,
-              position: tasksInColumn,
-            });
-          }
+          await TasksService.moveTask(taskIdNum, { status: newStatus });
         }
       } catch (error) {
-        console.error('Failed to move/assign task via API:', error);
-        // Revert on error
+        console.error('Failed to move task via API:', error);
         setTasks(prevTasks => 
           prevTasks.map(task => 
             task.id === taskId 
               ? { 
                   ...task, 
-                  columnId: currentTask.columnId, 
-                  assignee: currentTask.assignee,
-                  assigneeId: currentTask.assigneeId 
+                  status: currentTask.status,
+                  columnId: currentColumnId || currentTask.columnId,
                 }
               : task
           )
@@ -385,21 +343,12 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
 
   const getTasksForColumn = (columnId: string) => {
     const normalizedColumnId = String(columnId);
-    if (activeTab === 'technician') {
-      return tasks.filter(task => String(task.assigneeId) === normalizedColumnId);
-    }
-    const columns = customColumns;
-    return tasks.filter(task => {
-      const direct = String(task.columnId);
-      if (direct === normalizedColumnId) return true;
-      const statusColumn = mapTaskStatusToColumnId(task.status || task.columnId, columns);
-      return statusColumn === normalizedColumnId;
-    });
+    return tasks.filter(task =>
+      mapTaskStatusToColumnId(task.status, customColumns) === normalizedColumnId
+    );
   };
 
-  const getColumns = () => {
-    return activeTab === 'status' ? customColumns : projectTeamColumns;
-  };
+  const getColumns = () => customColumns;
 
   // Layout: limit columns per row to avoid long single-row horizontal overflow.
   // This makes the board render at most `columnsPerRow` columns per row, then wrap to the next row.
@@ -635,6 +584,8 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
   };
 
   const handleTaskUpdated = (updatedTask: any) => {
+    const status = normalizeTaskStatus(updatedTask.status ?? updatedTask.columnId);
+    const columnId = mapTaskStatusToColumnId(status, customColumns);
     setTasks(prevTasks =>
       prevTasks.map(task =>
         task.id === updatedTask.id
@@ -645,6 +596,8 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
               priority: updatedTask.priority ?? task.priority,
               assignee: updatedTask.assignee ?? task.assignee,
               assigneeId: updatedTask.assigneeId ?? task.assigneeId,
+              status,
+              columnId,
             }
           : task
       )
@@ -715,32 +668,33 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
   };
 
   const handleTaskComplete = async (taskId: string, completed: boolean) => {
-    const firstStatus = statusColumns[0]?.id || 'open';
-    const doneStatus = statusColumns.find(s => s.title.toLowerCase().includes('completed') || s.title.toLowerCase().includes('done'))?.id || 'completed';
-    const newStatus = completed ? doneStatus : firstStatus;
+    const doneColumn = statusColumns.find(s =>
+      s.title.toLowerCase().includes('completed') || s.title.toLowerCase().includes('done')
+    ) ?? statusColumns[statusColumns.length - 1];
+    const openColumn = statusColumns[0];
+    const targetColumnId = completed ? String(doneColumn?.id ?? 'done') : String(openColumn?.id ?? 'todo');
+    const newStatus = mapColumnIdToTaskStatus(targetColumnId, customColumns);
     
-    // Optimistic update
     const previousTasks = [...tasks];
     setTasks(tasks.map(task => 
       task.id === taskId 
         ? { 
             ...task, 
-            columnId: newStatus,
+            status: newStatus,
+            columnId: targetColumnId,
             lastMoved: new Date(),
           }
         : task
     ));
 
-    // Call API to persist status change
     try {
-      // Parse task ID - handle both numeric strings and prefixed formats
       const taskIdNum = parseInt(taskId, 10) || parseInt(taskId.replace(/\D/g, ''), 10);
       
       if (!isNaN(taskIdNum)) {
         if (completed) {
           await TasksService.completeTask(taskIdNum);
         } else {
-          await TasksService.updateTaskStatus(taskIdNum, newStatus);
+          await TasksService.moveTask(taskIdNum, { status: newStatus });
         }
       }
       
@@ -750,7 +704,6 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
       });
     } catch (error) {
       console.error('Failed to update task status:', error);
-      // Revert on error
       setTasks(previousTasks);
       toast({
         title: t('toast.error'),
@@ -761,36 +714,34 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
   };
 
   const handleTaskMove = async (taskId: string, newColumnId: string) => {
-    // Check if moving to a team member column (reassignment)
-    const isTeamColumn = projectTeamColumns.some(col => col.id === newColumnId);
-    const targetTeamMember = isTeamColumn ? projectTeamColumns.find(col => col.id === newColumnId) : null;
-    const newAssigneeName = targetTeamMember?.title || tasks.find(t => t.id === taskId)?.assignee || 'Unassigned';
-    
+    const currentTask = tasks.find(t => t.id === taskId);
+    if (!currentTask) return;
+
+    const currentColumnId = mapTaskStatusToColumnId(currentTask.status, customColumns);
+    if (currentColumnId === newColumnId) return;
+
+    const newStatus = mapColumnIdToTaskStatus(newColumnId, customColumns);
+    const previousTasks = [...tasks];
+
     setTasks(prevTasks => prevTasks.map(task => 
       task.id === taskId 
         ? { 
             ...task, 
-            columnId: isTeamColumn ? task.columnId : newColumnId,
-            assigneeId: isTeamColumn ? newColumnId : task.assigneeId,
+            status: newStatus,
+            columnId: newColumnId,
             lastMoved: new Date(),
-            // Update assignee when moving to team columns
-            assignee: isTeamColumn ? newAssigneeName : task.assignee
           }
         : task
     ));
 
-    // If moving to team column, call assign API
-    if (isTeamColumn) {
-      try {
-        const taskIdNum = parseInt(taskId, 10) || parseInt(taskId.replace(/\D/g, ''), 10);
-        const assigneeIdNum = parseInt(newColumnId, 10);
-        
-        if (!isNaN(taskIdNum) && !isNaN(assigneeIdNum)) {
-          await TasksService.assignTask(taskIdNum, assigneeIdNum, newAssigneeName);
-        }
-      } catch (error) {
-        console.error('Failed to assign task:', error);
+    try {
+      const taskIdNum = parseInt(taskId, 10) || parseInt(taskId.replace(/\D/g, ''), 10);
+      if (!isNaN(taskIdNum)) {
+        await TasksService.moveTask(taskIdNum, { status: newStatus });
       }
+    } catch (error) {
+      console.error('Failed to move task:', error);
+      setTasks(previousTasks);
     }
   };
 
@@ -870,7 +821,7 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
                   Add Task
                 </Button>
               </div>
-              {activeTab === 'status' && !isDailyTasks && (
+              {!isDailyTasks && (
                 <Button 
                   variant="outline" 
                   size="sm"
@@ -923,30 +874,7 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
         </div>
       )}
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-        {!isDailyTasks && (
-          <div className="border-b border-border/50 px-4 sm:px-6 bg-card/50">
-            <TabsList className="h-auto p-1 bg-muted/30 rounded-lg gap-1 w-full sm:w-fit">
-              <TabsTrigger 
-                value="status" 
-                className="gap-2 text-xs sm:text-sm py-2.5 px-4 rounded-md data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:text-foreground font-medium transition-all"
-              >
-                <CheckSquare className="h-4 w-4" />
-                <span className="hidden sm:inline">{t('kanban.byStatus')}</span>
-                <span className="sm:hidden">{t('kanban.status')}</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="technician" 
-                className="gap-2 text-xs sm:text-sm py-2.5 px-4 rounded-md data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:text-foreground font-medium transition-all"
-              >
-                <Users className="h-4 w-4" />
-                <span className="hidden sm:inline">{t('kanban.byTechnician')}</span>
-                <span className="sm:hidden">{t('kanban.people')}</span>
-              </TabsTrigger>
-            </TabsList>
-          </div>
-        )}
-
+      <div className="flex-1 flex flex-col">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCorners}
@@ -977,10 +905,10 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
           ) : (
             <>
               {!isDailyTasks && (
-                <TabsContent value="status" className="flex-1 m-0 p-3 sm:p-6">
-        <div className="grid gap-3 sm:gap-4 lg:gap-6 h-full overflow-auto"
-          style={{ gridTemplateColumns: `repeat(${Math.min(columnsPerRow, Math.max(1, customColumns.length))}, minmax(250px, 1fr))`, gridAutoRows: 'minmax(250px, 1fr)' }}>
-                    {customColumns.map((column, index) => (
+                <div className="flex-1 m-0 p-3 sm:p-6">
+                  <div className="grid gap-3 sm:gap-4 lg:gap-6 h-full overflow-auto"
+                    style={{ gridTemplateColumns: `repeat(${Math.min(columnsPerRow, Math.max(1, customColumns.length))}, minmax(250px, 1fr))`, gridAutoRows: 'minmax(250px, 1fr)' }}>
+                    {customColumns.map((column) => (
                       <DroppableColumn
                         key={column.id}
                         column={column}
@@ -993,34 +921,14 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
                       />
                     ))}
                   </div>
-                </TabsContent>
-              )}
-
-              {!isDailyTasks && (
-                <TabsContent value="technician" className="flex-1 m-0 p-3 sm:p-6">
-         <div className="grid gap-3 sm:gap-4 lg:gap-6 h-full overflow-auto"
-           style={{ gridTemplateColumns: `repeat(${Math.min(columnsPerRow, Math.max(1, getColumns().length))}, minmax(250px, 1fr))`, gridAutoRows: 'minmax(250px, 1fr)' }}>
-                    {getColumns().map((column) => (
-                      <DroppableColumn
-                        key={column.id}
-                        column={column}
-                        tasks={getTasksForColumn(column.id)}
-                        onTaskClick={handleTaskClick}
-                        onEditColumn={handleEditColumn}
-                        onAddTask={handleAddTask}
-                        onChangeTheme={handleChangeTheme}
-                        allowEditing={false}
-                      />
-                    ))}
-                  </div>
-                </TabsContent>
+                </div>
               )}
 
               {isDailyTasks && (
                 <div className="flex-1 p-3 sm:p-6">
-         <div className="grid gap-3 sm:gap-4 lg:gap-6 h-full overflow-auto"
-           style={{ gridTemplateColumns: `repeat(${Math.min(columnsPerRow, Math.max(1, customColumns.length))}, minmax(250px, 1fr))`, gridAutoRows: 'minmax(250px, 1fr)' }}>
-                    {customColumns.map((column, index) => (
+                  <div className="grid gap-3 sm:gap-4 lg:gap-6 h-full overflow-auto"
+                    style={{ gridTemplateColumns: `repeat(${Math.min(columnsPerRow, Math.max(1, customColumns.length))}, minmax(250px, 1fr))`, gridAutoRows: 'minmax(250px, 1fr)' }}>
+                    {customColumns.map((column) => (
                       <DroppableColumn
                         key={column.id}
                         column={column}
@@ -1091,7 +999,7 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
           allTechnicians={technicians}
           onUpdateTeam={handleUpdateTeam}
         />
-      </Tabs>
+      </div>
     </div>
   );
 }

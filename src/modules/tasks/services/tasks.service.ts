@@ -103,12 +103,10 @@ export class TasksService {
 
   // Move task
   static async moveTask(taskId: number, moveData: MoveTaskRequestDto): Promise<boolean> {
-    try {
-      await tasksApi.moveTask(taskId, moveData);
-      return true;
-    } catch {
-      return false;
-    }
+    await tasksApi.moveTask(taskId, {
+      status: moveData.status,
+    });
+    return true;
   }
 
   // Bulk move tasks

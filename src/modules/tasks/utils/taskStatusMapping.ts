@@ -39,6 +39,40 @@ export function mapTaskStatusToColumnId(status: unknown, columns: Column[] = [])
   return 'todo';
 }
 
+/** Map a kanban column id to the backend ProjectTask.Status value. */
+export function mapColumnIdToTaskStatus(columnId: unknown, columns: Column[] = []): string {
+  const id = String(columnId ?? '').trim();
+  if (!id) return 'open';
+
+  if (columns.length > 0) {
+    const col = columns.find((c) => String(c.id) === id);
+    if (col) {
+      const title = String(col.title || '').toLowerCase();
+      if (/done|completed|termin|fini/.test(title)) return 'completed';
+      if (/cancel/.test(title)) return 'cancelled';
+      if (/progress|cours|review|révision/.test(title)) return 'in progress';
+      if (/todo|open|faire|backlog|à faire/.test(title)) return 'open';
+
+      const sorted = [...columns].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+      const idx = sorted.findIndex((c) => String(c.id) === id);
+      if (idx >= 0) {
+        if (idx === sorted.length - 1 && sorted.length > 1) return 'completed';
+        if (idx === 1) return 'in progress';
+        return 'open';
+      }
+    }
+  }
+
+  const normalized = normalizeTaskStatus(id);
+  if (normalized === 'open' || normalized === 'in progress' || normalized === 'completed' || normalized === 'cancelled') {
+    return normalized;
+  }
+  if (id === 'todo') return 'open';
+  if (id === 'in-progress') return 'in progress';
+  if (id === 'done') return 'completed';
+  return 'open';
+}
+
 export function buildCreateProjectTaskPayload(
   input: Record<string, unknown>,
   fallbackProjectId?: number
