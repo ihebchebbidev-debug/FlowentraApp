@@ -66,86 +66,102 @@ export function DealDetail() {
   const converted = deal.convertedToSaleId || deal.convertedToProjectId || deal.convertedToOfferId;
 
   return (
-    <div className="max-w-5xl mx-auto p-4 space-y-4">
-      {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex items-start gap-2">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard/deals")}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl font-bold">{deal.title}</h1>
-              <Badge variant="secondary" className={stageBadgeClass(deal.stage)}>{t(`stages.${deal.stage}`)}</Badge>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {deal.dealNumber} · {deal.contactName || deal.contact?.name}
-            </p>
+    <div className="min-h-screen bg-background">
+      {/* Header — full-width sticky card (matches offers/sales) */}
+      <div className="border-b border-border bg-gradient-subtle backdrop-blur-sm sticky top-0 z-20 shadow-soft">
+        <div className="p-4 lg:p-6">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/dashboard/deals")}
+              className="h-9 w-9 shrink-0 hover:bg-background/80"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+
+            <Card className="flex-1 shadow-sm border-border/50">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between gap-6 flex-wrap">
+                  <div className="flex items-center gap-3 min-w-0 flex-wrap">
+                    <h1 className="text-xl font-bold truncate">{deal.title}</h1>
+                    <Badge variant="secondary" className={stageBadgeClass(deal.stage)}>{t(`stages.${deal.stage}`)}</Badge>
+                    <span className="text-sm text-muted-foreground">
+                      {deal.dealNumber} · {deal.contactName || deal.contact?.name}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button variant="outline" size="sm" onClick={() => navigate(`/dashboard/deals/${dealId}/edit`)} className="gap-1.5">
+                      <Edit className="h-4 w-4" /> {t("actions.edit")}
+                    </Button>
+                    <Button size="sm" onClick={() => setConvertOpen(true)} className="gap-1.5">
+                      <GitBranch className="h-4 w-4" /> {t("actions.convert")}
+                    </Button>
+                    <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={() => setDeleteOpen(true)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => navigate(`/dashboard/deals/${dealId}/edit`)} className="gap-1.5">
-            <Edit className="h-4 w-4" /> {t("actions.edit")}
-          </Button>
-          <Button size="sm" onClick={() => setConvertOpen(true)} className="gap-1.5">
-            <GitBranch className="h-4 w-4" /> {t("actions.convert")}
-          </Button>
-          <Button variant="ghost" size="icon" className="text-red-600" onClick={() => setDeleteOpen(true)}>
-            <Trash2 className="h-4 w-4" />
-          </Button>
+      </div>
+
+      <div className="px-4 py-6 space-y-6">
+        {/* Converted banner */}
+        {converted && (
+          <Card className="border-green-200 bg-green-50 dark:bg-green-900/10">
+            <CardContent className="p-3 flex flex-wrap items-center gap-3">
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
+              <span className="text-sm font-medium">{t("detail.convertedBanner")}:</span>
+              {deal.convertedToSaleId && (
+                <Button variant="link" size="sm" className="h-auto p-0 gap-1" onClick={() => navigate(`/dashboard/sales/${deal.convertedToSaleId}`)}>
+                  <ShoppingCart className="h-3.5 w-3.5" /> {t("detail.viewSale")}
+                </Button>
+              )}
+              {deal.convertedToProjectId && (
+                <Button variant="link" size="sm" className="h-auto p-0 gap-1" onClick={() => navigate(`/dashboard/tasks/projects/${deal.convertedToProjectId}`)}>
+                  <Briefcase className="h-3.5 w-3.5" /> {t("detail.viewProject")}
+                </Button>
+              )}
+              {deal.convertedToOfferId && (
+                <Button variant="link" size="sm" className="h-auto p-0 gap-1" onClick={() => navigate(`/dashboard/offers/${deal.convertedToOfferId}`)}>
+                  <FileText className="h-3.5 w-3.5" /> {t("detail.viewOffer")}
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Key metrics */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Metric icon={DollarSign} label={t("detail.value")} value={formatCurrencyValue(deal.estimatedValue, deal.currency)} />
+          <Metric icon={Target} label={t("detail.probability")} value={`${deal.probability}%`} />
+          <Metric icon={Calendar} label={t("detail.expectedClose")} value={deal.expectedCloseDate ? format(new Date(deal.expectedCloseDate), "dd MMM yyyy") : "—"} />
+          <Metric icon={Send} label={t("detail.source")} value={deal.source || "—"} />
         </div>
+
+        <Tabs defaultValue="overview">
+          <TabsList className="w-full h-auto p-1 bg-muted/50 rounded-lg grid grid-cols-3 sm:grid-cols-6">
+            <TabsTrigger value="overview">{t("detail.tabs.overview")}</TabsTrigger>
+            <TabsTrigger value="items">{t("detail.tabs.items")}</TabsTrigger>
+            <TabsTrigger value="documents">{t("detail.tabs.documents")}</TabsTrigger>
+            <TabsTrigger value="checklists">{t("detail.tabs.checklists")}</TabsTrigger>
+            <TabsTrigger value="activity">{t("detail.tabs.activity")}</TabsTrigger>
+            <TabsTrigger value="notes">{t("detail.tabs.notes")}</TabsTrigger>
+          </TabsList>
+
+          <div className="mt-6">
+            <TabsContent value="overview"><OverviewTab deal={deal} /></TabsContent>
+            <TabsContent value="items"><ItemsTab deal={deal} /></TabsContent>
+            <TabsContent value="documents"><DocumentsTab deal={deal} /></TabsContent>
+            <TabsContent value="checklists"><ChecklistsTab deal={deal} /></TabsContent>
+            <TabsContent value="activity"><ActivityTab dealId={dealId} /></TabsContent>
+            <TabsContent value="notes"><NotesTab deal={deal} onSaved={load} /></TabsContent>
+          </div>
+        </Tabs>
       </div>
-
-      {/* Converted banner */}
-      {converted && (
-        <Card className="border-green-200 bg-green-50 dark:bg-green-900/10">
-          <CardContent className="p-3 flex flex-wrap items-center gap-3">
-            <CheckCircle2 className="h-5 w-5 text-green-600" />
-            <span className="text-sm font-medium">{t("detail.convertedBanner")}:</span>
-            {deal.convertedToSaleId && (
-              <Button variant="link" size="sm" className="h-auto p-0 gap-1" onClick={() => navigate(`/dashboard/sales/${deal.convertedToSaleId}`)}>
-                <ShoppingCart className="h-3.5 w-3.5" /> {t("detail.viewSale")}
-              </Button>
-            )}
-            {deal.convertedToProjectId && (
-              <Button variant="link" size="sm" className="h-auto p-0 gap-1" onClick={() => navigate(`/dashboard/tasks/projects/${deal.convertedToProjectId}`)}>
-                <Briefcase className="h-3.5 w-3.5" /> {t("detail.viewProject")}
-              </Button>
-            )}
-            {deal.convertedToOfferId && (
-              <Button variant="link" size="sm" className="h-auto p-0 gap-1" onClick={() => navigate(`/dashboard/offers/${deal.convertedToOfferId}`)}>
-                <FileText className="h-3.5 w-3.5" /> {t("detail.viewOffer")}
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Key metrics */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Metric icon={DollarSign} label={t("detail.value")} value={formatCurrencyValue(deal.estimatedValue, deal.currency)} />
-        <Metric icon={Target} label={t("detail.probability")} value={`${deal.probability}%`} />
-        <Metric icon={Calendar} label={t("detail.expectedClose")} value={deal.expectedCloseDate ? format(new Date(deal.expectedCloseDate), "dd MMM yyyy") : "—"} />
-        <Metric icon={Send} label={t("detail.source")} value={deal.source || "—"} />
-      </div>
-
-      <Tabs defaultValue="overview">
-        <TabsList className="flex-wrap h-auto justify-start">
-          <TabsTrigger value="overview">{t("detail.tabs.overview")}</TabsTrigger>
-          <TabsTrigger value="items">{t("detail.tabs.items")}</TabsTrigger>
-          <TabsTrigger value="documents">{t("detail.tabs.documents")}</TabsTrigger>
-          <TabsTrigger value="checklists">{t("detail.tabs.checklists")}</TabsTrigger>
-          <TabsTrigger value="activity">{t("detail.tabs.activity")}</TabsTrigger>
-          <TabsTrigger value="notes">{t("detail.tabs.notes")}</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview"><OverviewTab deal={deal} /></TabsContent>
-        <TabsContent value="items"><ItemsTab deal={deal} /></TabsContent>
-        <TabsContent value="documents"><DocumentsTab deal={deal} /></TabsContent>
-        <TabsContent value="checklists"><ChecklistsTab deal={deal} /></TabsContent>
-        <TabsContent value="activity"><ActivityTab dealId={dealId} /></TabsContent>
-        <TabsContent value="notes"><NotesTab deal={deal} onSaved={load} /></TabsContent>
-      </Tabs>
 
       {convertOpen && (
         <ConvertDealModal deal={deal} open={convertOpen} onClose={() => setConvertOpen(false)} onConverted={() => { setConvertOpen(false); load(); }} />

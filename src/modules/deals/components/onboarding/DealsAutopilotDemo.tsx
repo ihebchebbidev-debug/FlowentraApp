@@ -4,7 +4,7 @@ import {
   X, Play, Pause, RotateCcw, Volume2, VolumeX, Languages,
   Handshake, Search, Filter, List, LayoutGrid, Plus, GitBranch, DollarSign,
   Target, Trophy, TrendingUp, Building2, User, Calendar, Send, Activity,
-  StickyNote, ShoppingCart, Briefcase, Wrench, CheckCircle2, Package, X as XIcon,
+  StickyNote, ShoppingCart, Briefcase, Wrench, CheckCircle2, Package, X as XIcon, Edit, Trash2,
 } from 'lucide-react';
 import { DemoCursor } from '@/modules/external/components/onboarding/DemoCursor';
 import { pickBestVoice, splitForSpeech, languageTagFor } from '@/modules/external/components/onboarding/narrationVoice';
@@ -312,37 +312,49 @@ function PageDetail({ state }: { state: DealsDemoState }) {
   const tabs = [
     { k: 'overview', l: 'Overview', id: undefined as string | undefined },
     { k: 'items', l: 'Items', id: 'dl-demo-tab-items' },
+    { k: 'documents', l: 'Documents', id: undefined as string | undefined },
+    { k: 'checklists', l: 'Checklists', id: undefined as string | undefined },
     { k: 'activity', l: 'Activity', id: 'dl-demo-tab-activity' },
     { k: 'notes', l: 'Notes', id: 'dl-demo-tab-notes' },
   ];
   return (
-    <div className="flex flex-col max-w-5xl mx-auto w-full relative">
-      <div id="dl-demo-detail-header" className="flex items-center justify-between gap-4 px-4 py-3 border-b border-border/60">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="h-8 w-8 rounded border border-border flex items-center justify-center text-muted-foreground text-xs">←</div>
-          <div><div className="flex items-center gap-2"><h1 className="text-lg font-semibold">{D.title}</h1><span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium capitalize ${STAGE_BADGE[D.stage]}`}>{D.stage}</span></div><p className="text-xs text-muted-foreground">DEAL-00012 · {D.customer}</p></div>
-        </div>
-        <div className="flex gap-2 shrink-0">
-          <div className="h-8 px-3 rounded-md border border-border text-xs inline-flex items-center gap-1.5 text-muted-foreground"><User className="h-3.5 w-3.5" /> Edit</div>
-          <div id="dl-demo-convert" className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium inline-flex items-center gap-1.5"><GitBranch className="h-3.5 w-3.5" /> Convert</div>
+    <div className="flex flex-col w-full relative">
+      {/* Full-width sticky header card — mirrors the real deal detail */}
+      <div className="border-b border-border bg-gradient-subtle px-4 py-3 lg:px-6 lg:py-4 sticky top-0 z-[5]">
+        <div className="flex items-center gap-3">
+          <div id="dl-demo-detail-header" className="h-9 w-9 rounded-md border border-border flex items-center justify-center text-muted-foreground text-sm shrink-0">←</div>
+          <div className="flex-1 bg-card border border-border/50 rounded-lg shadow-sm p-4">
+            <div className="flex items-center justify-between gap-6 flex-wrap">
+              <div className="flex items-center gap-3 min-w-0 flex-wrap">
+                <h1 className="text-xl font-bold">{D.title}</h1>
+                <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium capitalize ${STAGE_BADGE[D.stage]}`}>{D.stage}</span>
+                <span className="text-sm text-muted-foreground">DEAL-00012 · {D.customer}</span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="h-8 px-3 rounded-md border border-border text-xs inline-flex items-center gap-1.5 text-muted-foreground"><Edit className="h-3.5 w-3.5" /> Edit</div>
+                <div id="dl-demo-convert" className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium inline-flex items-center gap-1.5"><GitBranch className="h-3.5 w-3.5" /> Convert</div>
+                <div className="h-8 w-8 rounded-md border border-border flex items-center justify-center text-muted-foreground"><Trash2 className="h-3.5 w-3.5" /></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div id="dl-demo-metrics" className="px-4 py-3 grid grid-cols-2 md:grid-cols-4 gap-3 border-b border-border/60">
-        {[[DollarSign, 'Value', `${fmt(D.value)} TND`], [Target, 'Probability', `${D.prob}%`], [Calendar, 'Expected close', '15 Jul 2025'], [Send, 'Source', 'Referral']].map(([Ic, l, v]: any, i) => (
-          <div key={i} className="rounded-lg border border-border p-2.5 flex items-center gap-2"><Ic className="h-4 w-4 text-muted-foreground" /><div className="min-w-0"><p className="text-[10px] text-muted-foreground truncate">{l}</p><p className="text-xs font-semibold truncate">{v}</p></div></div>
-        ))}
-      </div>
-
-      <div className="border-b border-border/60 px-4 overflow-x-auto">
-        <div className="flex gap-1 -mb-px min-w-max">
-          {tabs.map(tab => (
-            <div key={tab.k} id={tab.id} className={`inline-flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium border-b-2 cursor-default whitespace-nowrap ${state.activeTab === tab.k ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground'}`}>{tab.l}</div>
+      <div className="px-4 py-6 lg:px-6 space-y-6">
+        <div id="dl-demo-metrics" className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[[DollarSign, 'Value', `${fmt(D.value)} TND`], [Target, 'Probability', `${D.prob}%`], [Calendar, 'Expected close', '15 Jul 2025'], [Send, 'Source', 'Referral']].map(([Ic, l, v]: any, i) => (
+            <div key={i} className="rounded-lg border border-border bg-card p-2.5 flex items-center gap-2"><Ic className="h-4 w-4 text-muted-foreground" /><div className="min-w-0"><p className="text-[10px] text-muted-foreground truncate">{l}</p><p className="text-xs font-semibold truncate">{v}</p></div></div>
           ))}
         </div>
-      </div>
 
-      <div className="p-4">
+        {/* Full-width pill tab bar (6 tabs) */}
+        <div className="w-full p-1 bg-muted/50 rounded-lg grid grid-cols-3 sm:grid-cols-6 gap-1">
+          {tabs.map(tab => (
+            <div key={tab.k} id={tab.id} className={`inline-flex items-center justify-center px-3 py-2 text-xs font-medium rounded-md cursor-default whitespace-nowrap ${state.activeTab === tab.k ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'}`}>{tab.l}</div>
+          ))}
+        </div>
+
+      <div className="">
         {state.activeTab === 'overview' && (
           <div className="grid md:grid-cols-2 gap-4">
             <div className="bg-card border border-border rounded-lg p-4 space-y-2 text-xs">
@@ -389,6 +401,17 @@ function PageDetail({ state }: { state: DealsDemoState }) {
             ))}
           </div>
         )}
+        {(state.activeTab as string) === 'documents' && (
+          <div className="bg-card border border-border rounded-lg p-6 text-center text-xs text-muted-foreground">
+            <Package className="h-8 w-8 mx-auto mb-2 opacity-40" /> Attach files & propagate documents from linked sales/offers.
+          </div>
+        )}
+        {(state.activeTab as string) === 'checklists' && (
+          <div className="bg-card border border-border rounded-lg p-6 text-center text-xs text-muted-foreground">
+            <CheckCircle2 className="h-8 w-8 mx-auto mb-2 opacity-40" /> Run dynamic-form checklists on the deal.
+          </div>
+        )}
+      </div>
       </div>
 
       {state.convertOpen && (

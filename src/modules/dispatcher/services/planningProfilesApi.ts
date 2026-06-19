@@ -62,22 +62,38 @@ async function tryBackend<T>(fn: () => Promise<{ data: T | null; status: number;
   } catch { return null; }
 }
 
+// Coerce a profile coming back from the backend (or cache) into a stable shape so
+// the board ALWAYS finds `settings` as a plain object. Guards the failure mode where
+// `settings` arrives as PascalCase `Settings`, a JSON string, or null — any of which
+// would otherwise make the board silently fall back to the default card label.
+function normalizeProfile<T extends { settings?: unknown; Settings?: unknown }>(raw: T): T {
+  if (!raw || typeof raw !== 'object') return raw;
+  let s: any = (raw as any).settings ?? (raw as any).Settings ?? {};
+  if (typeof s === 'string') { try { s = JSON.parse(s); } catch { s = {}; } }
+  if (!s || typeof s !== 'object') s = {};
+  // Backfill every known key (incl. card-display) so a profile saved before a
+  // setting existed still drives the board instead of reverting to defaults.
+  (raw as any).settings = { ...DEFAULT_PLANNING_SETTINGS, ...s };
+  delete (raw as any).Settings;
+  return raw;
+}
+
 export const planningProfilesApi = {
   async list(): Promise<PlanningProfile[]> {
     const remote = await tryBackend<PlanningProfile[]>(() => apiFetch<PlanningProfile[]>(BASE));
-    if (remote) { writeLocal(remote); return remote; }
+    if (remote) { const norm = remote.map(normalizeProfile); writeLocal(norm); return norm; }
     const local = readLocal();
     if (local.length === 0) { ensureDefaultProfile(); return readLocal(); }
-    return local;
+    return local.map(normalizeProfile);
   },
 
   async getActive(): Promise<PlanningProfile> {
     const remote = await tryBackend<PlanningProfile>(() => apiFetch<PlanningProfile>(`${BASE}/active`));
-    if (remote) return remote;
+    if (remote) return normalizeProfile(remote);
     const activeId = localStorage.getItem(ACTIVE_KEY);
     const list = readLocal();
     const found = activeId ? list.find(p => String(p.id) === activeId) : null;
-    return found ?? ensureDefaultProfile();
+    return normalizeProfile(found ?? ensureDefaultProfile());
   },
 
   async setActive(rawId: string): Promise<void> {
@@ -92,7 +108,7 @@ export const planningProfilesApi = {
     const remote = await tryBackend<PlanningProfile>(() => apiFetch<PlanningProfile>(BASE, {
       method: 'POST', body: JSON.stringify(dto),
     }));
-    if (remote) return remote;
+    if (remote) return normalizeProfile(remote);
     const profile: PlanningProfile = {
       id: `local-${Date.now()}`,
       ownerUserId: getCurrentUserId(),
@@ -137,11 +153,12 @@ export const planningProfilesApi = {
         method: 'POST', body: JSON.stringify(createBody),
       }));
       if (created) {
+        const norm = normalizeProfile(created);
         const next = readLocal().filter(p => String(p.id) !== id);
-        next.push(created);
+        next.push(norm);
         writeLocal(next);
-        if (localStorage.getItem(ACTIVE_KEY) === id) localStorage.setItem(ACTIVE_KEY, String(created.id));
-        return created;
+        if (localStorage.getItem(ACTIVE_KEY) === id) localStorage.setItem(ACTIVE_KEY, String(norm.id));
+        return norm;
       }
       // Backend unreachable — keep it local (recreate the entry if it was lost).
       const list = readLocal();
@@ -166,7 +183,7 @@ export const planningProfilesApi = {
     const remote = await tryBackend<PlanningProfile>(() => apiFetch<PlanningProfile>(`${BASE}/${id}`, {
       method: 'PUT', body: JSON.stringify(dto),
     }));
-    if (remote) return remote;
+    if (remote) return normalizeProfile(remote);
     const list = readLocal();
     const idx = list.findIndex(p => String(p.id) === id);
     if (idx === -1) {

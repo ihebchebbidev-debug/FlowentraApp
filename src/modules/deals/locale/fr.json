@@ -59,7 +59,8 @@
     "cancel": "Annuler",
     "save": "Enregistrer",
     "saving": "Enregistrement…",
-    "back": "Retour aux affaires"
+    "back": "Retour aux affaires",
+    "manage": "Gérer"
   },
   "detail": {
     "tabs": {
@@ -102,6 +103,8 @@
     "expectedClose": "Date de clôture prévue",
     "category": "Catégorie",
     "source": "Source",
+    "selectCategory": "Sélectionner une catégorie",
+    "selectSource": "Sélectionner une source",
     "description": "Description",
     "notes": "Notes",
     "items": "Lignes d'articles",

@@ -64,6 +64,12 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
     [profiles, selectedId, activeProfile]
   );
 
+  // Clone the selected profile into the editable draft only when the *identity*
+  // (id) changes — i.e. the user picked a different profile. Keying off `selected`
+  // (the object) would re-clone on every background React Query refetch (window
+  // focus / staleness) and silently wipe the user's unsaved field selections,
+  // making a later Save persist the old/default values.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (selected) {
       const clone = JSON.parse(JSON.stringify(selected)) as PlanningProfile;
@@ -71,7 +77,8 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
       clone.settings = { ...DEFAULT_PLANNING_SETTINGS, ...(clone.settings ?? {}) };
       setDraft(clone);
     }
-  }, [selected]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected?.id]);
 
   useEffect(() => {
     if (!selectedId && activeProfile) setSelectedId(activeProfile.id);

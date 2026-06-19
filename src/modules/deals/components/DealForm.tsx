@@ -7,8 +7,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Loader2, Save, Handshake, Package, X } from "lucide-react";
+import { ArrowLeft, Loader2, Save, Handshake, Package, X, Settings2 } from "lucide-react";
 import { toast } from "sonner";
+import { useLookups } from "@/shared/contexts/LookupsContext";
 import { DEAL_STAGES } from "../lib/dealStages";
 import type { DealItemDraft } from "./DealItemsManager";
 import { ContactSelectorWithType } from "@/modules/offers/components/ContactSelectorWithType";
@@ -92,6 +93,8 @@ const offerItemsToDrafts = (items: OfferItem[]): DealItemDraft[] =>
 export function DealForm({ mode, initial, submitting, onSubmit }: Props) {
   const { t } = useTranslation("deals");
   const navigate = useNavigate();
+  // Deals share the offer category/source lookups (same CRM pipeline taxonomy).
+  const { offerCategories, offerSources } = useLookups();
 
   const [v, setV] = useState<DealFormValues>({
     title: "",
@@ -227,12 +230,40 @@ export function DealForm({ mode, initial, submitting, onSubmit }: Props) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="category">{t("form.category")}</Label>
-                    <Input id="category" value={v.category} onChange={e => set("category", e.target.value)} />
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="category">{t("form.category")}</Label>
+                      <Link
+                        to={`/dashboard/lookups?tab=offerCategories&returnUrl=${encodeURIComponent("/dashboard/deals")}`}
+                        className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors"
+                      >
+                        <Settings2 className="h-3 w-3" />
+                        {t("actions.manage", { defaultValue: "Manage" })}
+                      </Link>
+                    </div>
+                    <Select value={v.category || undefined} onValueChange={val => set("category", val)}>
+                      <SelectTrigger id="category"><SelectValue placeholder={t("form.selectCategory", { defaultValue: "Select a category" })} /></SelectTrigger>
+                      <SelectContent>
+                        {offerCategories.map(cat => <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="source">{t("form.source")}</Label>
-                    <Input id="source" value={v.source} onChange={e => set("source", e.target.value)} />
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="source">{t("form.source")}</Label>
+                      <Link
+                        to={`/dashboard/lookups?tab=offerSources&returnUrl=${encodeURIComponent("/dashboard/deals")}`}
+                        className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors"
+                      >
+                        <Settings2 className="h-3 w-3" />
+                        {t("actions.manage", { defaultValue: "Manage" })}
+                      </Link>
+                    </div>
+                    <Select value={v.source || undefined} onValueChange={val => set("source", val)}>
+                      <SelectTrigger id="source"><SelectValue placeholder={t("form.selectSource", { defaultValue: "Select a source" })} /></SelectTrigger>
+                      <SelectContent>
+                        {offerSources.map(src => <SelectItem key={src.id} value={src.name}>{src.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
