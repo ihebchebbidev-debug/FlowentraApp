@@ -30,6 +30,7 @@ const CAPTIONS_FR: string[] = [
   'Valeur en cours, c’est l’argent encore en jeu — la valeur de chaque affaire ni gagnée ni perdue. C’est votre prévision en temps réel.',
   'Valeur gagnée, c’est ce que vous avez déjà conclu — du revenu sécurisé, prêt à devenir des ventes et des projets.',
   'Et le Taux de réussite vous dit à quelle fréquence vous concluez — la part des affaires décidées qui se sont terminées par une victoire.',
+  'En dessous, votre prévision en temps réel : le pipeline pondéré (valeur × probabilité), un entonnoir par étape, et le nombre d’affaires à risque — devenues silencieuses ou dont la relance est dépassée. Un coup d’œil suffit pour savoir où agir.',
   'Par défaut, vos affaires s’ouvrent dans une liste claire et triable — chaque opportunité avec son étape, son client, sa valeur et sa probabilité, côte à côte. Cliquez une ligne pour l’ouvrir.',
   'Vous préférez un pipeline visuel ? Un clic bascule les mêmes affaires vers un tableau kanban.',
   'Le tableau montre votre pipeline étape par étape — Prospect, Qualifiée, Proposition, Négociation, puis Gagnée ou Perdue. Chaque colonne affiche son nombre et sa valeur totale.',

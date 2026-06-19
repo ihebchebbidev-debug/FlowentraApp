@@ -64,6 +64,19 @@ namespace MyApi.Modules.Deals.Models
         [Column("ActualCloseDate")]
         public DateTime? ActualCloseDate { get; set; }
 
+        /// <summary>Next follow-up date — powers the overdue / at-risk pipeline indicators.</summary>
+        [Column("NextActionDate")]
+        public DateTime? NextActionDate { get; set; }
+
+        [Column("NextAction")]
+        [MaxLength(255)]
+        public string? NextAction { get; set; }
+
+        /// <summary>Reason captured when the deal is marked lost (for win/loss analytics).</summary>
+        [Column("LostReason")]
+        [MaxLength(255)]
+        public string? LostReason { get; set; }
+
         [Column("Category")]
         [MaxLength(50)]
         public string? Category { get; set; }

@@ -189,9 +189,27 @@ async function loadLogoGlobal() {
   }
 
   // Logged-in flow: use localStorage ref
+  const storedRaw = localStorage.getItem(LOGO_STORAGE_KEY);
+  const explicitNone = storedRaw === NO_LOGO_SENTINEL;
   const logoRef = resolveLogoRef();
 
   if (!logoRef) {
+    // No per-company logo resolved. Unless a company explicitly has NO logo,
+    // mirror the login page: fetch the current tenant's (subdomain) company
+    // logo from the public endpoint so the sidebar shows the brand instead of
+    // the default Flowentra mark. (Common case: user.companyLogoUrl is empty.)
+    if (!explicitNone) {
+      // Avoid refetch loops once the public logo is already resolved.
+      if (globalLogoRef === '__public__' && globalLogoUrl) return;
+      const publicUrl = await fetchLogoUrlPublic();
+      if (publicUrl) {
+        globalLogoUrl = publicUrl;
+        globalLogoRef = '__public__';
+        fetchInFlight = null;
+        notifySubscribers();
+        return;
+      }
+    }
     globalLogoUrl = '';
     globalLogoRef = null;
     fetchInFlight = null;

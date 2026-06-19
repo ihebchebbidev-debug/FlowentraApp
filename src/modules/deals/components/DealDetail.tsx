@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { formatCurrencyValue } from "@/lib/formatters";
 import { dealsApi, type Deal, type DealActivity } from "@/services/api/dealsApi";
 import { stageBadgeClass } from "../lib/dealStages";
+import { isFollowUpOverdue } from "../lib/dealAnalytics";
 import { ConvertDealModal } from "./ConvertDealModal";
 import { UnifiedDocumentsSection, type DocumentEntityRef } from "@/modules/shared/components/documents/UnifiedDocumentsSection";
 import { ChecklistsSection } from "@/modules/shared/components/documents";
@@ -86,6 +87,11 @@ export function DealDetail() {
                   <div className="flex items-center gap-3 min-w-0 flex-wrap">
                     <h1 className="text-xl font-bold truncate">{deal.title}</h1>
                     <Badge variant="secondary" className={stageBadgeClass(deal.stage)}>{t(`stages.${deal.stage}`)}</Badge>
+                    {isFollowUpOverdue(deal) && (
+                      <Badge variant="secondary" className="gap-1 bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                        <Send className="h-3 w-3" /> {t("detail.followUpOverdue", { defaultValue: "Follow-up overdue" })}
+                      </Badge>
+                    )}
                     <span className="text-sm text-muted-foreground">
                       {deal.dealNumber} · {deal.contactName || deal.contact?.name}
                     </span>
@@ -217,6 +223,29 @@ function OverviewTab({ deal }: { deal: Deal }) {
             </div>
           ))}
         </div>
+        {/* Next action / follow-up */}
+        {(deal.nextAction || deal.nextActionDate) && (
+          <div className={`rounded-lg border p-3 ${isFollowUpOverdue(deal) ? "border-amber-300 bg-amber-50 dark:bg-amber-900/10" : "border-border bg-muted/30"}`}>
+            <div className="flex items-center gap-2">
+              <Send className={`h-4 w-4 ${isFollowUpOverdue(deal) ? "text-amber-600" : "text-primary"}`} />
+              <span className="text-sm font-medium">{deal.nextAction || t("detail.followUp", { defaultValue: "Follow up" })}</span>
+              {deal.nextActionDate && (
+                <Badge variant="secondary" className={isFollowUpOverdue(deal) ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" : ""}>
+                  {format(new Date(deal.nextActionDate), "dd MMM yyyy")}
+                </Badge>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Lost reason */}
+        {deal.stage === "lost" && deal.lostReason && (
+          <div className="rounded-lg border border-red-200 bg-red-50 dark:bg-red-900/10 p-3">
+            <p className="text-xs text-red-600 font-medium mb-0.5">{t("detail.lostReason", { defaultValue: "Lost reason" })}</p>
+            <p className="text-sm">{deal.lostReason}</p>
+          </div>
+        )}
+
         <div>
           <p className="text-sm text-muted-foreground mb-1">{t("detail.description")}</p>
           <p className="text-sm">{deal.description || t("detail.noDescription")}</p>

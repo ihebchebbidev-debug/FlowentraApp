@@ -127,6 +127,8 @@ namespace MyApi.Modules.Deals.Services
                 EstimatedValue = dto.EstimatedValue,
                 Currency = string.IsNullOrWhiteSpace(dto.Currency) ? "TND" : dto.Currency,
                 ExpectedCloseDate = dto.ExpectedCloseDate,
+                NextActionDate = dto.NextActionDate,
+                NextAction = dto.NextAction,
                 Category = dto.Category,
                 Source = dto.Source,
                 Notes = dto.Notes,
@@ -174,6 +176,9 @@ namespace MyApi.Modules.Deals.Services
             if (dto.Currency != null) deal.Currency = dto.Currency;
             if (dto.ExpectedCloseDate.HasValue) deal.ExpectedCloseDate = dto.ExpectedCloseDate;
             if (dto.ActualCloseDate.HasValue) deal.ActualCloseDate = dto.ActualCloseDate;
+            if (dto.NextActionDate.HasValue) deal.NextActionDate = dto.NextActionDate;
+            if (dto.NextAction != null) deal.NextAction = dto.NextAction;
+            if (dto.LostReason != null) deal.LostReason = dto.LostReason;
             if (dto.Category != null) deal.Category = dto.Category;
             if (dto.Source != null) deal.Source = dto.Source;
             if (dto.Notes != null) deal.Notes = dto.Notes;
@@ -633,6 +638,9 @@ namespace MyApi.Modules.Deals.Services
                 Currency = d.Currency,
                 ExpectedCloseDate = d.ExpectedCloseDate,
                 ActualCloseDate = d.ActualCloseDate,
+                NextActionDate = d.NextActionDate,
+                NextAction = d.NextAction,
+                LostReason = d.LostReason,
                 Category = d.Category,
                 Source = d.Source,
                 Notes = d.Notes,

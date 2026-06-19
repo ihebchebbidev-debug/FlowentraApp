@@ -34,6 +34,9 @@ export interface DealFormValues {
   currency: string;
   probability: number;
   expectedCloseDate: string;
+  nextActionDate: string;
+  nextAction: string;
+  lostReason: string;
   category: string;
   source: string;
   description: string;
@@ -108,6 +111,9 @@ export function DealForm({ mode, initial, submitting, onSubmit }: Props) {
     currency: "TND",
     probability: 20,
     expectedCloseDate: "",
+    nextActionDate: "",
+    nextAction: "",
+    lostReason: "",
     category: "",
     source: "",
     description: "",
@@ -167,6 +173,9 @@ export function DealForm({ mode, initial, submitting, onSubmit }: Props) {
       estimatedValue: drafts.length > 0 ? Math.round(itemsSubtotal * 100) / 100 : v.estimatedValue,
       currency: v.currency,
       expectedCloseDate: v.expectedCloseDate || undefined,
+      nextActionDate: v.nextActionDate || undefined,
+      nextAction: v.nextAction.trim() || undefined,
+      lostReason: v.stage === "lost" ? (v.lostReason.trim() || undefined) : undefined,
       category: v.category || undefined,
       source: v.source || undefined,
       notes: v.notes || undefined,
@@ -391,6 +400,31 @@ export function DealForm({ mode, initial, submitting, onSubmit }: Props) {
                   <Label>{t("form.expectedClose")}</Label>
                   <Input type="date" value={v.expectedCloseDate} onChange={e => set("expectedCloseDate", e.target.value)} />
                 </div>
+
+                {/* Follow-up / next action — drives the pipeline at-risk indicators. */}
+                <div className="space-y-2 border-t pt-3">
+                  <Label>{t("form.nextAction", { defaultValue: "Next action" })}</Label>
+                  <Input
+                    value={v.nextAction}
+                    onChange={e => set("nextAction", e.target.value)}
+                    placeholder={t("form.nextActionPlaceholder", { defaultValue: "e.g. Call to confirm budget" })}
+                  />
+                  <Label className="text-xs text-muted-foreground">{t("form.nextActionDate", { defaultValue: "Follow-up date" })}</Label>
+                  <Input type="date" value={v.nextActionDate} onChange={e => set("nextActionDate", e.target.value)} />
+                </div>
+
+                {/* Lost reason — only when the deal is being marked lost. */}
+                {v.stage === "lost" && (
+                  <div className="space-y-2 border-t pt-3">
+                    <Label>{t("form.lostReason", { defaultValue: "Lost reason" })}</Label>
+                    <Textarea
+                      value={v.lostReason}
+                      onChange={e => set("lostReason", e.target.value)}
+                      rows={2}
+                      placeholder={t("form.lostReasonPlaceholder", { defaultValue: "Why was this deal lost?" })}
+                    />
+                  </div>
+                )}
               </CardContent>
             </Card>
 

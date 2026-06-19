@@ -60,6 +60,9 @@ namespace MyApi.Modules.Deals.DTOs
         public string Currency { get; set; } = "TND";
         public DateTime? ExpectedCloseDate { get; set; }
         public DateTime? ActualCloseDate { get; set; }
+        public DateTime? NextActionDate { get; set; }
+        public string? NextAction { get; set; }
+        public string? LostReason { get; set; }
         public string? Category { get; set; }
         public string? Source { get; set; }
         public string? Notes { get; set; }
@@ -104,6 +107,8 @@ namespace MyApi.Modules.Deals.DTOs
         public decimal EstimatedValue { get; set; } = 0;
         public string Currency { get; set; } = "TND";
         public DateTime? ExpectedCloseDate { get; set; }
+        public DateTime? NextActionDate { get; set; }
+        public string? NextAction { get; set; }
         public string? Category { get; set; }
         public string? Source { get; set; }
         public string? Notes { get; set; }
@@ -125,6 +130,9 @@ namespace MyApi.Modules.Deals.DTOs
         public string? Currency { get; set; }
         public DateTime? ExpectedCloseDate { get; set; }
         public DateTime? ActualCloseDate { get; set; }
+        public DateTime? NextActionDate { get; set; }
+        public string? NextAction { get; set; }
+        public string? LostReason { get; set; }
         public string? Category { get; set; }
         public string? Source { get; set; }
         public string? Notes { get; set; }

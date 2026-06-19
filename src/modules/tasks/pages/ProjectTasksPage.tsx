@@ -31,6 +31,8 @@ import { ProjectActivityTab } from '../components/project-detail/ProjectActivity
 import { ProjectOffersTab } from '../components/project-detail/ProjectOffersTab';
 import { ProjectSummaryTab } from '../components/project-detail/ProjectSummaryTab';
 import { ProjectSettingsTab } from '../components/project-detail/ProjectSettingsTab';
+import { EditProjectModal } from '../components/EditProjectModal';
+import { useToast } from '@/hooks/use-toast';
 
 // Interface for technician/assignable users
 interface Technician {
@@ -53,6 +55,7 @@ export default function ProjectTasksPage() {
   const [taskViewMode, setTaskViewMode] = useState<'board' | 'list'>('board');
   const [isColumnEditorOpen, setIsColumnEditorOpen] = useState(false);
   const [isQuickTaskModalOpen, setIsQuickTaskModalOpen] = useState(false);
+  const [isEditProjectOpen, setIsEditProjectOpen] = useState(false);
   
   // Search and filters
   const [searchTerm, setSearchTerm] = useState("");
@@ -284,6 +287,18 @@ export default function ProjectTasksPage() {
   const handleOpenColumnEditor = () => {
     if (activeTab !== 'tasks') setActiveTab('tasks');
     setIsColumnEditorOpen(true);
+  };
+
+  // "Manage" opens a modal to edit the project itself (name, status, type, …).
+  const handleUpdateProject = async (id: string, updates: Partial<Project>) => {
+    try {
+      await ProjectsService.updateProject(Number(id), updates as any);
+      setIsEditProjectOpen(false);
+      await fetchProject();
+      toast({ title: t('projects.toast.updated', 'Project updated') });
+    } catch {
+      toast({ title: t('projects.toast.updateFailed', 'Failed to update project'), variant: 'destructive' });
+    }
   };
 
 

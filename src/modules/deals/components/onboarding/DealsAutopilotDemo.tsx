@@ -74,6 +74,33 @@ function PageList({ state }: { state: DealsDemoState }) {
         <StatCard id="dl-demo-stat-rate"  icon={<TrendingUp className="h-4 w-4" />}  label="Win Rate"    value="58%"         active={state.selectedStat === 'rate'} />
       </div>
 
+      {/* Pipeline forecast & health — weighted value, at-risk, funnel by stage */}
+      <div id="dl-demo-forecast" className="p-4 border-b border-border">
+        <div className="rounded-xl border border-border/60 bg-card p-4">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mb-3">
+            <div><p className="text-[11px] text-muted-foreground font-medium">Weighted pipeline</p><p className="text-lg font-bold">61 200 TND</p></div>
+            <div className="h-8 w-px bg-border" />
+            <div><p className="text-[11px] text-muted-foreground font-medium">Open value</p><p className="text-lg font-bold">164 500 TND</p></div>
+            <div className="h-8 w-px bg-border" />
+            <div><p className="text-[11px] text-muted-foreground font-medium">At risk</p><p className="text-lg font-bold text-amber-600">3</p></div>
+            <div className="h-8 w-px bg-border" />
+            <div><p className="text-[11px] text-muted-foreground font-medium">Avg. age</p><p className="text-lg font-bold">12d</p></div>
+          </div>
+          <div className="space-y-1.5">
+            {[['Lead', 0.55, 3, '111 000'], ['Qualified', 0.18, 2, '9 200'], ['Proposal', 0.22, 1, '12 800'], ['Negotiation', 0.62, 1, '31 500']].map(([label, w, c, v]: any) => (
+              <div key={label} className="flex items-center gap-3">
+                <span className="text-xs text-muted-foreground w-24 shrink-0 capitalize">{label}</span>
+                <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+                  <div className="h-full rounded-full" style={{ width: `${w * 100}%`, background: STAGES.find(s => s.label === label)?.color }} />
+                </div>
+                <span className="text-xs w-8 text-right shrink-0">{c}</span>
+                <span className="text-xs w-24 text-right shrink-0 text-muted-foreground">{v} TND</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
       <div className="p-3 border-b border-border bg-card space-y-3">
         <div className="flex gap-2 items-center flex-wrap">
           <div id="dl-demo-search" className={`relative flex-1 min-w-[180px] ${state.searchActive ? 'ring-1 ring-primary rounded-md' : ''}`}>
@@ -356,16 +383,25 @@ function PageDetail({ state }: { state: DealsDemoState }) {
 
       <div className="">
         {state.activeTab === 'overview' && (
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="bg-card border border-border rounded-lg p-4 space-y-2 text-xs">
-              <p className="text-sm font-medium mb-1">Customer</p>
-              <div className="flex items-center gap-1.5 text-muted-foreground"><Building2 className="h-3 w-3" /> Médina Resorts</div>
-              <div className="flex items-center gap-1.5 text-muted-foreground"><Calendar className="h-3 w-3" /> Created 02 Jun 2025</div>
-              <div className="flex items-center gap-1.5 text-muted-foreground"><User className="h-3 w-3" /> Owner Ahmed B.</div>
+          <div className="space-y-4">
+            {/* Next action / follow-up callout */}
+            <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 flex items-center gap-2">
+              <Send className="h-4 w-4 text-amber-600" />
+              <span className="text-sm font-medium">Call to confirm budget</span>
+              <span className="inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium bg-amber-100 text-amber-700">15 Jun 2025</span>
+              <span className="text-[10px] text-amber-700 ml-auto">Follow-up overdue</span>
             </div>
-            <div className="bg-card border border-border rounded-lg p-4 text-xs">
-              <p className="text-sm font-medium mb-1">Description</p>
-              <p className="text-muted-foreground">Replace and upgrade the main cold room, including panels and on-site installation.</p>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="bg-card border border-border rounded-lg p-4 space-y-2 text-xs">
+                <p className="text-sm font-medium mb-1">Customer</p>
+                <div className="flex items-center gap-1.5 text-muted-foreground"><Building2 className="h-3 w-3" /> Médina Resorts</div>
+                <div className="flex items-center gap-1.5 text-muted-foreground"><Calendar className="h-3 w-3" /> Created 02 Jun 2025</div>
+                <div className="flex items-center gap-1.5 text-muted-foreground"><User className="h-3 w-3" /> Owner Ahmed B.</div>
+              </div>
+              <div className="bg-card border border-border rounded-lg p-4 text-xs">
+                <p className="text-sm font-medium mb-1">Description</p>
+                <p className="text-muted-foreground">Replace and upgrade the main cold room, including panels and on-site installation.</p>
+              </div>
             </div>
           </div>
         )}

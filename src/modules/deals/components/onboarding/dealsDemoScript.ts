@@ -85,6 +85,13 @@ export const DL_STEPS: DealsDemoStep[] = [
     apply: pure(() => ({ selectedStat: 'rate' as const })),
   },
   {
+    target: 'dl-demo-forecast',
+    caption:
+      'Below them sits your live forecast: the weighted pipeline (value × probability), a funnel by stage, and how many deals are at risk — going quiet or past their follow-up date. One glance tells you where to act.',
+    duration: 5600,
+    apply: pure(() => ({ selectedStat: 'all' as const, view: 'list' as const })),
+  },
+  {
     target: 'dl-demo-table',
     caption:
       'By default your deals open as a clean, sortable list — every opportunity with its stage, customer, value and probability, side by side. Click any row to open it.',
@@ -244,10 +251,10 @@ export const DL_STEPS: DealsDemoStep[] = [
 ];
 
 export const DL_CHAPTERS: DealsDemoChapter[] = [
-  { id: 'overview', title: 'Pipeline',       start: 0,  end: 6  },
-  { id: 'views',    title: 'Board & Views',  start: 6,  end: 11 },
-  { id: 'create',   title: 'Create a Deal',  start: 11, end: 16 },
-  { id: 'detail',   title: 'Deal Workspace', start: 16, end: 21 },
-  { id: 'convert',  title: 'Convert',        start: 21, end: 25 },
-  { id: 'wrapup',   title: 'Wrap-up',        start: 25, end: DL_STEPS.length },
+  { id: 'overview', title: 'Pipeline',       start: 0,  end: 7  },
+  { id: 'views',    title: 'Board & Views',  start: 7,  end: 12 },
+  { id: 'create',   title: 'Create a Deal',  start: 12, end: 17 },
+  { id: 'detail',   title: 'Deal Workspace', start: 17, end: 22 },
+  { id: 'convert',  title: 'Convert',        start: 22, end: 26 },
+  { id: 'wrapup',   title: 'Wrap-up',        start: 26, end: DL_STEPS.length },
 ];

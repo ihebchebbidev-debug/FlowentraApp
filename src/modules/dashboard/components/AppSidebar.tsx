@@ -25,6 +25,7 @@ import {
   Search,
   Command,
   PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -147,7 +148,7 @@ const SIDEBAR_PERMISSION_MAP: Record<string, PermissionModule> = {
 
 export function AppSidebar() {
   const companyLogo = useCompanyLogo();
-  const { state } = useSidebar();
+  const { state, toggleSidebar } = useSidebar();
   const { t } = useTranslation();
   const { t: tDash } = useTranslation('dashboard');
   const { hasPermission, isMainAdmin, isLoading: permissionsLoading } = usePermissions();
@@ -771,8 +772,18 @@ export function AppSidebar() {
           <ProfileBrandHeader companyLogo={companyLogo} />
         )}
         {collapsed && (
-          <div className="flex-shrink-0 h-[52px] flex items-center justify-center border-b border-sidebar-border/40">
+          <div className="flex-shrink-0 flex flex-col items-center gap-1.5 py-2 border-b border-sidebar-border/40">
             <ProfileAvatarOnly />
+            {/* Expand the sidebar again (collapsed mode has no header button). */}
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              aria-label={t('expand_sidebar', 'Expand sidebar')}
+              title={t('expand_sidebar', 'Expand sidebar')}
+              className="h-6 w-6 inline-flex items-center justify-center rounded-md text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition"
+            >
+              <PanelLeftOpen className="h-4 w-4" />
+            </button>
           </div>
         )}
 

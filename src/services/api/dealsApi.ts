@@ -48,6 +48,12 @@ export interface Deal {
   currency: string;
   expectedCloseDate?: string;
   actualCloseDate?: string;
+  /** Next follow-up date — drives the overdue/at-risk indicators. */
+  nextActionDate?: string;
+  /** Short description of the next step to take. */
+  nextAction?: string;
+  /** Reason captured when the deal is marked lost. */
+  lostReason?: string;
   category?: string;
   source?: string;
   notes?: string;
@@ -76,6 +82,9 @@ export interface CreateDealRequest {
   estimatedValue?: number;
   currency?: string;
   expectedCloseDate?: string;
+  nextActionDate?: string;
+  nextAction?: string;
+  lostReason?: string;
   category?: string;
   source?: string;
   notes?: string;

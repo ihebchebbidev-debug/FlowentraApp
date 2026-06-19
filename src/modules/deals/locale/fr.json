@@ -5,6 +5,13 @@
     "add": "Ajouter une affaire",
     "watchDemo": "Voir la démo"
   },
+  "forecast": {
+    "weighted": "Pipeline pondéré",
+    "openValue": "Valeur en cours",
+    "atRisk": "À risque",
+    "avgAge": "Âge moyen",
+    "daysShort": "j"
+  },
   "stats": {
     "total": "Total des affaires",
     "open": "Pipeline en cours",
@@ -71,6 +78,9 @@
       "documents": "Documents",
       "checklists": "Listes de contrôle"
     },
+    "followUp": "Relance",
+    "followUpOverdue": "Relance en retard",
+    "lostReason": "Raison de la perte",
     "customer": "Client",
     "stage": "Étape",
     "value": "Valeur estimée",
@@ -105,6 +115,11 @@
     "source": "Source",
     "selectCategory": "Sélectionner une catégorie",
     "selectSource": "Sélectionner une source",
+    "nextAction": "Prochaine action",
+    "nextActionPlaceholder": "ex. Appeler pour confirmer le budget",
+    "nextActionDate": "Date de relance",
+    "lostReason": "Raison de la perte",
+    "lostReasonPlaceholder": "Pourquoi cette affaire a-t-elle été perdue ?",
     "description": "Description",
     "notes": "Notes",
     "items": "Lignes d'articles",

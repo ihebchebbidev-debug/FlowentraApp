@@ -461,34 +461,21 @@ export function ProjectTasksTab({
 
           {/* Main Task View */}
           {taskViewMode === "list" ? (
-            <>
-              <TaskListView
-                tasks={openTasks.map((t) => ({
-                  ...t,
-                  status: t.columnId,
-                  dueDate: new Date(t.dueDate || Date.now()),
-                  createdAt: new Date(t.createdAt || Date.now()),
-                  updatedAt: new Date(),
-                  tags: [],
-                  position: 0,
-                })) as Task[]}
-                columns={project?.columns}
-                onTaskClick={handleTaskClick}
-                onAddTask={() => handleAddTask()}
-                onTaskComplete={(id) => handleTaskComplete(id)}
-              />
-              {/* In board view the modal lives inside KanbanBoard; in list view we
-                  render it here so the "Add Task" button works in both views. */}
-              <QuickTaskModal
-                isOpen={isQuickTaskModalOpen}
-                onClose={() => setIsQuickTaskModalOpen(false)}
-                onCreateTask={handleCreateTaskFromList}
-                technicians={technicians as any}
-                columns={(project?.columns as any) || []}
-                projects={project ? [project] : []}
-                projectId={project?.id}
-              />
-            </>
+            <TaskListView
+              tasks={openTasks.map((t) => ({
+                ...t,
+                status: t.columnId,
+                dueDate: new Date(t.dueDate || Date.now()),
+                createdAt: new Date(t.createdAt || Date.now()),
+                updatedAt: new Date(),
+                tags: [],
+                position: 0,
+              })) as Task[]}
+              columns={project?.columns}
+              onTaskClick={handleTaskClick}
+              onAddTask={() => handleAddTask()}
+              onTaskComplete={(id) => handleTaskComplete(id)}
+            />
           ) : (
             <KanbanBoard
               onSwitchToProjects={() => {}}
@@ -498,12 +485,22 @@ export function ProjectTasksTab({
               technicians={technicians}
               columnEditorOpen={isColumnEditorOpen}
               onColumnEditorOpenChange={(open) => setIsColumnEditorOpen(open)}
-              quickTaskModalOpen={isQuickTaskModalOpen}
-              onQuickTaskModalOpenChange={(open) => setIsQuickTaskModalOpen(open)}
               initialTasks={openTasks}
               onTasksChange={(next) => setTasksState(next)}
             />
           )}
+
+          {/* Add-Task modal lives at the tab level so the page "Add task" button
+              reliably opens it in BOTH board and list views (and refreshes the list). */}
+          <QuickTaskModal
+            isOpen={isQuickTaskModalOpen}
+            onClose={() => setIsQuickTaskModalOpen(false)}
+            onCreateTask={handleCreateTaskFromList}
+            technicians={technicians as any}
+            columns={(project?.columns as any) || []}
+            projects={project ? [project] : []}
+            projectId={project?.id}
+          />
         </>
       )}
     </div>
