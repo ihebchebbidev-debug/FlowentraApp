@@ -260,9 +260,7 @@ export function QuickTaskModal({
                     </SelectItem>
                   )}
                   <SelectItem value="unassigned">{t('quickTask.unassigned')}</SelectItem>
-                  {/* Show project team members if available, otherwise show technicians */}
                   {(teamMembers.length > 0 ? teamMembers : technicians).map((member) => {
-                    // Skip current user since they have "Myself" option
                     if (currentUser && member.id === currentUser.id) return null;
                     return (
                       <SelectItem key={member.id} value={member.id}>
@@ -275,36 +273,14 @@ export function QuickTaskModal({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="column">{t('quickTask.column')}</Label>
-              <Select 
-                value={formData.columnId} 
-                onValueChange={(value: string) => setFormData({ ...formData, columnId: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={t('quickTask.selectColumn')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {columns.map((column) => (
-                    <SelectItem key={column.id} value={column.id}>
-                      <div className="flex items-center gap-2">
-                        <div className={`w-3 h-3 rounded ${column.color}`} />
-                        {column.title}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="dueDate">{t('quickTask.dueDate')}</Label>
+              <Input
+                id="dueDate"
+                type="date"
+                value={formData.dueDate}
+                onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+              />
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="dueDate">{t('quickTask.dueDate')}</Label>
-            <Input
-              id="dueDate"
-              type="date"
-              value={formData.dueDate}
-              onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-            />
           </div>
 
           <div className="flex justify-end gap-3">

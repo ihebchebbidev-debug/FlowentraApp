@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import { Button } from "@/components/ui/button";
 import { CollapsibleSearch } from "@/components/ui/collapsible-search";
 import { Badge } from "@/components/ui/badge";
@@ -67,7 +67,7 @@ interface ProjectTasksTabProps {
   handleTaskComplete: (taskId: string) => void;
   fetchTasks: () => void;
   lookupPriorities: any[];
-  setTasksState: (tasks: any[]) => void;
+  setTasksState: Dispatch<SetStateAction<any[]>>;
 }
 
 export function ProjectTasksTab({
@@ -450,7 +450,13 @@ export function ProjectTasksTab({
               quickTaskModalOpen={isQuickTaskModalOpen}
               onQuickTaskModalOpenChange={setIsQuickTaskModalOpen}
               initialTasks={openTasks}
-              onTasksChange={(next) => setTasksState(next)}
+              onTasksChange={(updatedOpenTasks) => {
+                const updatedIds = new Set(updatedOpenTasks.map((t) => t.id));
+                setTasksState((prev) => [
+                  ...prev.filter((t) => !updatedIds.has(t.id)),
+                  ...updatedOpenTasks,
+                ]);
+              }}
             />
           )}
         </>

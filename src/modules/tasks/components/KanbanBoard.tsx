@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from "react-i18next";
 import {
   DndContext,
@@ -128,7 +128,8 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
   const { toast } = useToast();
   const { user: currentUser, isMainAdmin } = useAuth();
   const { taskStatuses } = useLookups();
-  const [tasks, setTasks] = useState<LocalTask[]>(initialTasks ?? defaultInitialTasks);
+  const [tasks, setTasks] = useState<LocalTask[]>(initialTasks ?? []);
+  const skipTasksNotifyRef = useRef(true);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
   const [activeTab, setActiveTab] = useState('status');
   const [activeTask, setActiveTask] = useState<LocalTask | null>(null);
@@ -222,6 +223,14 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
   
   // Initialize columns with project columns or defaults
   const [customColumns, setCustomColumns] = useState<Column[]>([]);
+
+  // Sync tasks from parent when initialTasks changes (e.g. after fetch or tab mount)
+  useEffect(() => {
+    if (initialTasks !== undefined) {
+      skipTasksNotifyRef.current = true;
+      setTasks(initialTasks);
+    }
+  }, [initialTasks]);
 
   const isQuickTaskModalControlled = onQuickTaskModalOpenChange !== undefined;
 
@@ -373,12 +382,13 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
   };
 
   const getTasksForColumn = (columnId: string) => {
+    const normalizedColumnId = String(columnId);
     // In technician/team view, filter by assigneeId
     if (activeTab === 'technician') {
-      return tasks.filter(task => task.assigneeId === columnId);
+      return tasks.filter(task => String(task.assigneeId) === normalizedColumnId);
     }
-    // In status view, filter by columnId
-    return tasks.filter(task => task.columnId === columnId);
+    // In status view, filter by columnId (normalize to string for API numeric ids)
+    return tasks.filter(task => String(task.columnId) === normalizedColumnId);
   };
 
   const getColumns = () => {
@@ -805,16 +815,20 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
     }
   };
 
-  // Notify parent when tasks change - only if callback is stable
+  // Notify parent when tasks change from user interactions (not from parent sync)
   useEffect(() => {
+    if (skipTasksNotifyRef.current) {
+      skipTasksNotifyRef.current = false;
+      return;
+    }
     if (onTasksChange) {
       onTasksChange(tasks);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tasks]); // intentionally exclude onTasksChange to prevent loops
+  }, [tasks]);
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className={hideHeader ? 'flex flex-col min-h-[400px]' : 'h-screen flex flex-col'}>
       {/* Enhanced Project Header - only show if hideHeader is false */}
       {!hideHeader && (
         <div className="flex flex-col gap-4 p-4 sm:p-6 border-b border-border bg-background/95">
