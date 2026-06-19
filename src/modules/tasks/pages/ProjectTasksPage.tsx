@@ -231,10 +231,12 @@ export default function ProjectTasksPage() {
 
     try {
       const apiTasks = await TasksService.getProjectTasks(numericProjectId);
-      setTasksState(mapToLocal(apiTasks));
+      const mapped = mapToLocal(apiTasks);
+      setTasksState(mapped);
     } catch (error) {
       console.error('Failed to fetch tasks from API:', error);
       setTasksError('Failed to load tasks');
+      setTasksState([]);
     } finally {
       setIsLoadingTasks(false);
     }

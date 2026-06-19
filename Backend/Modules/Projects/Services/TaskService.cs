@@ -78,6 +78,8 @@ namespace MyApi.Modules.Projects.Services
                     CreatedDate = DateTime.UtcNow
                 };
 
+                await ApplyParentTenantIdAsync(task);
+
                 _context.ProjectTasks.Add(task);
                 await _context.SaveChangesAsync();
 
@@ -780,6 +782,34 @@ namespace MyApi.Modules.Projects.Services
             {
                 _logger.LogError(ex, "Error bulk updating task status");
                 throw;
+            }
+        }
+
+        #endregion
+
+        #region Private Helpers
+
+        /// <summary>
+        /// Inherit TenantId from the parent project so per_company query filters return the task
+        /// when the user views that project (fixes tasks saved with TenantId=0).
+        /// </summary>
+        private async Task ApplyParentTenantIdAsync(ProjectTask task)
+        {
+            if (!string.Equals(task.RelatedEntityType, "project", StringComparison.OrdinalIgnoreCase)
+                || !task.RelatedEntityId.HasValue)
+            {
+                return;
+            }
+
+            var parentTenantId = await _context.Projects
+                .AsNoTracking()
+                .Where(p => p.Id == task.RelatedEntityId.Value)
+                .Select(p => (int?)p.TenantId)
+                .FirstOrDefaultAsync();
+
+            if (parentTenantId.HasValue)
+            {
+                task.TenantId = parentTenantId.Value;
             }
         }
 

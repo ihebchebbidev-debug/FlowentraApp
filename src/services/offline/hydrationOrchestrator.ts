@@ -303,7 +303,7 @@ export async function runOfflineHydration(): Promise<{ ok: boolean; modulesFaile
         HYDRATION_PARALLEL_FETCHES,
         async (pid) => {
           if (signal.aborted) return;
-          const url = `${API_URL}/api/Tasks/project/${pid}`;
+          const url = `${API_URL}/api/Tasks/entity/project/${pid}`;
           const res = await fetchAndCache(url, signal);
           if (res.ok) {
             const json = parseJsonSafe(await res.clone().text());

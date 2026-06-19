@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenantMap } from "@/contexts/TenantMapContext";
 import { setActiveCompany } from "@/utils/targetTenant";
+import { buildAssetUrl } from "@/config/api";
 import { setCompanyLogo, setCompanyLogoExplicitNone } from "@/hooks/useCompanyLogo";
 import { useUserType } from "@/hooks/useUserType";
 import { cn } from "@/lib/utils";
@@ -137,8 +138,9 @@ export default function SelectCompany() {
             {activeTenants.map((t) => {
               const label = t.companyName || t.slug;
               const isBusy = busy === label;
-              const logoUrl = (t as any).companyLogoUrl as string | null | undefined;
-              const showLogo = !!logoUrl && !brokenLogos[t.id];
+              const rawLogoUrl = (t as any).companyLogoUrl as string | null | undefined;
+              const logoSrc = rawLogoUrl ? buildAssetUrl(rawLogoUrl) : null;
+              const showLogo = !!logoSrc && !brokenLogos[t.id];
               const meta = [
                 (t as any).industry,
                 (t as any).companyCountry,
@@ -177,7 +179,7 @@ export default function SelectCompany() {
                       )}
                       {showLogo ? (
                         <img
-                          src={logoUrl!}
+                          src={logoSrc!}
                           alt={`${label} logo`}
                           className="max-h-16 max-w-[70%] object-contain"
                           onError={() =>

@@ -27,6 +27,7 @@ import { TeamManagementModal } from './TeamManagementModal';
 import TaskListViewGrouped from './TaskListViewGrouped';
 import { Column, Task as TaskType } from '../types';
 import { buildStatusColumns, defaultTechnicianColumns, defaultStatusColumns } from "../utils/columns";
+import { mapTaskStatusToColumnId } from "../utils/taskStatusMapping";
 import { useLookups } from "@/shared/contexts/LookupsContext";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -384,12 +385,16 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
 
   const getTasksForColumn = (columnId: string) => {
     const normalizedColumnId = String(columnId);
-    // In technician/team view, filter by assigneeId
     if (activeTab === 'technician') {
       return tasks.filter(task => String(task.assigneeId) === normalizedColumnId);
     }
-    // In status view, filter by columnId (normalize to string for API numeric ids)
-    return tasks.filter(task => String(task.columnId) === normalizedColumnId);
+    const columns = customColumns;
+    return tasks.filter(task => {
+      const direct = String(task.columnId);
+      if (direct === normalizedColumnId) return true;
+      const statusColumn = mapTaskStatusToColumnId(task.status || task.columnId, columns);
+      return statusColumn === normalizedColumnId;
+    });
   };
 
   const getColumns = () => {

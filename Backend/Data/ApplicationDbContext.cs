@@ -515,6 +515,12 @@ namespace MyApi.Data
                         continue;
                     }
 
+                    // Caller stamped TenantId from a parent entity (e.g. project task ← project).
+                    if (entry.Entity.TenantId != 0)
+                    {
+                        continue;
+                    }
+
                     // In view-all mode, default audit logs to system tenant (0) instead of -1.
                     if (_currentTenantId == -1 && entry.Entity is MyApi.Modules.Shared.Models.SystemLog)
                     {
