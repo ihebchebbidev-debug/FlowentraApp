@@ -23,6 +23,24 @@ namespace MyApi.Modules.Projects.Controllers
         #region Project Tasks
 
         /// <summary>
+        /// Get all tasks for a project (alias for entity/project).
+        /// </summary>
+        [HttpGet("project/{projectId}")]
+        public async Task<ActionResult<List<ProjectTaskResponseDto>>> GetProjectTasks(int projectId)
+        {
+            try
+            {
+                var tasks = await _taskService.GetTasksByEntityAsync("project", projectId);
+                return Ok(tasks);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting tasks for project {ProjectId}", projectId);
+                return StatusCode(500, "An error occurred while retrieving project tasks");
+            }
+        }
+
+        /// <summary>
         /// Get all tasks for an entity
         /// </summary>
         [HttpGet("entity/{entityType}/{entityId}")]

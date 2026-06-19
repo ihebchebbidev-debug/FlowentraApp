@@ -33,6 +33,12 @@ import { ProjectSummaryTab } from '../components/project-detail/ProjectSummaryTa
 import { EditProjectModal } from '../components/EditProjectModal';
 import { QuickTaskModal } from '../components/QuickTaskModal';
 import { useToast } from '@/hooks/use-toast';
+import {
+  buildCreateProjectTaskPayload,
+  isCompletedTaskStatus,
+  mapTaskStatusToColumnId,
+  normalizeTaskStatus,
+} from '../utils/taskStatusMapping';
 
 // Interface for technician/assignable users
 interface Technician {
@@ -171,18 +177,28 @@ export default function ProjectTasksPage() {
   
   const numericProjectId = projectId ? parseInt(projectId, 10) : null;
 
-  const mapToLocal = useCallback((apiTasks: Task[]) => apiTasks.map(pt => ({
-    id: pt.id,
-    title: pt.title,
-    description: pt.description || '',
-    priority: (pt.priority as 'high' | 'medium' | 'low') || 'medium',
-    assignee: (pt.assignee as string) || pt.assigneeName || '',
-    assigneeId: pt.assigneeId || '',
-    dueDate: pt.dueDate instanceof Date ? pt.dueDate.toLocaleDateString() : String(pt.dueDate || ''),
-    columnId: String(pt.columnId) || (pt.status as string) || 'todo',
-    createdAt: pt.createdAt || new Date(),
-    projectId: pt.projectId || projectId,
-  })), [projectId]);
+  const mapToLocal = useCallback((apiTasks: Task[]) => apiTasks.map(pt => {
+    const status = normalizeTaskStatus(pt.status);
+    const columns = project?.columns || [];
+    const columnId =
+      columns.length > 0
+        ? mapTaskStatusToColumnId(status, columns)
+        : String(pt.columnId || mapTaskStatusToColumnId(status));
+    return {
+      id: pt.id,
+      title: pt.title,
+      description: pt.description || '',
+      priority: (pt.priority as 'high' | 'medium' | 'low') || 'medium',
+      assignee: (pt.assignee as string) || pt.assigneeName || '',
+      assigneeId: pt.assigneeId || '',
+      dueDate: pt.dueDate instanceof Date ? pt.dueDate.toLocaleDateString() : String(pt.dueDate || ''),
+      status,
+      columnId,
+      createdAt: pt.createdAt || new Date(),
+      projectId: pt.projectId || projectId,
+      completedAt: pt.completedAt,
+    };
+  }), [projectId, project?.columns]);
 
   const fetchProject = useCallback(async () => {
     if (!numericProjectId || isNaN(numericProjectId)) {
@@ -276,9 +292,10 @@ export default function ProjectTasksPage() {
 
   const isTaskCompleted = (task: any) => {
     if (task.completedAt) return true;
+    if (isCompletedTaskStatus(task.status)) return true;
     const col = project?.columns?.find((c: any) => String(c.id) === String(task.columnId));
     if (col && /done|completed|termin/i.test(col.title || '')) return true;
-    return task.columnId === 'done' || task.status === 'done' || task.status === 'completed';
+    return task.columnId === 'done';
   };
 
   const openTasks = filteredTasks.filter((t) => !isTaskCompleted(t));
@@ -304,30 +321,25 @@ export default function ProjectTasksPage() {
         return;
       }
       const projectIdNum = parseInt(String(project.id), 10);
-      let columnIdNum = parseInt(String(taskData.status), 10);
-      if (isNaN(columnIdNum) || columnIdNum <= 0) {
-        const first = (project.columns as any[] | undefined)?.[0];
-        columnIdNum = first?.id ? parseInt(String(first.id), 10) : 0;
-      }
       if (isNaN(projectIdNum)) throw new Error('Invalid project ID');
-      if (!columnIdNum || isNaN(columnIdNum)) throw new Error('Invalid column ID');
 
-      await TasksService.createProjectTask({
-        title: taskData.title,
-        description: taskData.description,
-        projectId: projectIdNum,
-        assigneeId: taskData.assigneeId ? parseInt(String(taskData.assigneeId), 10) : undefined,
-        assigneeName: taskData.assigneeName,
-        status: 'open',
-        priority: taskData.priority || 'medium',
-        columnId: columnIdNum,
-        dueDate: taskData.dueDate ? new Date(taskData.dueDate).toISOString() : undefined,
-        tags: [],
-      } as any);
+      await TasksService.createProjectTask(
+        buildCreateProjectTaskPayload(
+          {
+            ...taskData,
+            relatedEntityType: 'project',
+            relatedEntityId: projectIdNum,
+            status: taskData.status ?? 'open',
+          },
+          projectIdNum
+        ) as any
+      );
 
       await fetchTasks();
-    } catch {
+      toast({ title: t('toast.success'), description: t('toast.taskCreated') });
+    } catch (err) {
       toast({ title: t('toast.error'), description: t('toast.failedCreate'), variant: 'destructive' });
+      throw err;
     }
   };
 

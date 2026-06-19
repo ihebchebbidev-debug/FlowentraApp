@@ -31,6 +31,7 @@ import { useLookups } from "@/shared/contexts/LookupsContext";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { TasksService } from "../services/tasks.service";
+import { buildCreateProjectTaskPayload, mapTaskStatusToColumnId } from "../utils/taskStatusMapping";
 import { usersApi } from "@/services/usersApi";
 import { projectsApi } from "@/services/api/projectsApi";
 import { notificationsApi } from "@/services/api/notificationsApi";
@@ -551,54 +552,26 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
     try {
       // If we have a project, create a project task via API
       if (project?.id) {
-        // Parse project ID - it's now a string from API but contains the actual numeric ID
         const projectIdNum = parseInt(String(project.id), 10);
-        
-        // Parse column ID - could be a numeric string like "176" or a fallback like "todo"
-        let columnIdNum: number;
-        const columnIdStr = String(taskData.columnId);
-        
-        // First try to parse directly as a number
-        const parsedColumnId = parseInt(columnIdStr, 10);
-        if (!isNaN(parsedColumnId) && parsedColumnId > 0) {
-          columnIdNum = parsedColumnId;
-        } else {
-          // If not a valid number, find the first column from project columns
-          const firstColumn = project.columns?.[0];
-          if (firstColumn?.id) {
-            columnIdNum = parseInt(String(firstColumn.id), 10);
-          } else {
-            // Final fallback - create task without column (API should handle default)
-            columnIdNum = 0;
-          }
-        }
-        
         if (isNaN(projectIdNum)) {
           throw new Error('Invalid project ID');
         }
-        
-        if (columnIdNum === 0 || isNaN(columnIdNum)) {
-          throw new Error('Invalid column ID. Please ensure the project has columns configured.');
-        }
-        
-        const createData = {
-          title: taskData.title,
-          description: taskData.description,
-          projectId: projectIdNum,
-          assigneeId: taskData.assigneeId ? parseInt(String(taskData.assigneeId), 10) : undefined,
-          assigneeName: taskData.assigneeName,
-          status: taskData.status || 'open',
-          priority: taskData.priority || 'medium',
-          columnId: columnIdNum,
-          dueDate: taskData.dueDate ? new Date(taskData.dueDate).toISOString() : undefined,
-          tags: taskData.tags || [],
-        };
-        
-        const createdTask = await TasksService.createProjectTask(createData);
-        
-        // Note: Backend automatically creates the notification when task is assigned
-        
-        // Map backend response to local task format
+
+        const createData = buildCreateProjectTaskPayload(
+          {
+            ...taskData,
+            relatedEntityType: 'project',
+            relatedEntityId: projectIdNum,
+            status: taskData.status ?? 'open',
+          },
+          projectIdNum
+        );
+
+        const createdTask = await TasksService.createProjectTask(createData as any);
+
+        const taskStatus = createdTask.status || 'open';
+        const displayColumnId = mapTaskStatusToColumnId(taskStatus, project.columns || customColumns);
+
         const newTask: LocalTask = {
           id: String(createdTask.id),
           title: createdTask.title,
@@ -607,7 +580,8 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
           assignee: createdTask.assigneeName || 'Unassigned',
           assigneeId: createdTask.assigneeId ? String(createdTask.assigneeId) : undefined,
           dueDate: createdTask.dueDate ? new Date(createdTask.dueDate).toLocaleDateString() : '',
-          columnId: String(createdTask.columnId) || taskData.columnId || 'open',
+          columnId: displayColumnId,
+          status: taskStatus,
           createdAt: new Date(createdTask.createdAt),
           lastMoved: new Date(),
           projectName: project?.name,

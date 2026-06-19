@@ -45,7 +45,7 @@ interface TeamMember {
 interface QuickTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreateTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  onCreateTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => void | Promise<void>;
   technicians: Technician[];
   columns: Column[];
   projects?: Project[];
@@ -93,7 +93,7 @@ export function QuickTaskModal({
     }
   }, [columns, formData.columnId]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.title.trim()) {
@@ -118,13 +118,11 @@ export function QuickTaskModal({
       assigneeName = assignee?.name;
     }
 
-    const _selectedProject = formData.projectId !== 'none' ? projects.find(p => p.id === formData.projectId) : undefined;
-    
     const newTask: Omit<Task, 'id' | 'createdAt' | 'updatedAt'> = {
       title: formData.title.trim(),
       description: formData.description.trim() || undefined,
       taskType: formData.taskType,
-      status: formData.columnId, // Will be updated to match column
+      status: 'open',
       relatedEntityType: formData.projectId !== 'none' ? 'project' : undefined,
       relatedEntityId: formData.projectId !== 'none' ? formData.projectId : undefined,
       assigneeId: assigneeId,
@@ -132,7 +130,11 @@ export function QuickTaskModal({
       dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined,
     };
 
-    onCreateTask(newTask as any);
+    try {
+      await Promise.resolve(onCreateTask(newTask as any));
+    } catch {
+      return;
+    }
     
     // Reset form with defaults
     setFormData({
@@ -143,11 +145,6 @@ export function QuickTaskModal({
       columnId: columns[0]?.id || 'todo',
       projectId: projectId || 'none',
       dueDate: '',
-    });
-    
-    toast({
-      title: t('toast.success'),
-      description: t('toast.taskCreated'),
     });
     
     onClose();

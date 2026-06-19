@@ -4,6 +4,11 @@ import { getAuthHeaders, getAuthToken, getMutationHeaders, getMutationHeadersNoC
 
 import { API_URL } from '@/config/api';
 import {
+  buildCreateProjectTaskPayload,
+  mapTaskStatusToColumnId,
+  normalizeTaskStatus,
+} from '@/modules/tasks/utils/taskStatusMapping';
+import {
   isOfflineNoCache503,
   parseOfflineNoCacheBody,
   throwIfNotOkAfterOfflineCheck,
@@ -78,56 +83,49 @@ function dailyTaskDtoFromOfflinePlaceholder(id: number): DailyTaskResponseDto {
   };
 }
 
-// Backend response DTOs
+// Backend response DTOs — aligned with Backend/Modules/Projects/DTOs/TaskDTOs.cs
 export interface ProjectTaskResponseDto {
   id: number;
   title: string;
   description?: string;
-  projectId: number;
-  projectName: string;
-  // Some backend versions include contact fields
-  contactId?: number;
-  contactName?: string;
-
-  // Some backend versions return assigneeId/assigneeName (legacy)
-  assigneeId?: number;
-  assigneeName?: string;
-
-  // Current backend returns assignedUserId/assignedUserName
+  taskType?: string;
+  status?: string;
+  relatedEntityType?: string;
+  relatedEntityId?: number;
   assignedUserId?: number;
   assignedUserName?: string | null;
-
-  // Some backend versions include status; others derive it from column
-  status?: string;
+  dueDate?: string;
+  createdDate?: string;
+  createdAt?: string;
+  modifiedDate?: string;
+  updatedAt?: string;
+  createdBy?: string;
+  modifiedBy?: string;
+  // Legacy / extended fields (optional, not in current backend)
+  projectId?: number;
+  projectName?: string;
+  contactId?: number;
+  contactName?: string;
+  assigneeId?: number;
+  assigneeName?: string;
   priority?: string;
-  columnId: number;
+  columnId?: number;
   columnTitle?: string;
   columnName?: string;
   columnColor?: string;
-
-  // Some backend versions use position, others use displayOrder
   position?: number;
   displayOrder?: number;
   parentTaskId?: number;
   parentTaskTitle?: string;
-  dueDate?: string;
   startDate?: string;
   estimatedHours?: number;
   actualHours?: number;
   tags?: string[];
   attachments?: string[];
-
-  // Some backend versions use createdAt/updatedAt, others createdDate/modifiedDate
-  createdAt?: string;
-  updatedAt?: string;
-  createdDate?: string;
-  modifiedDate?: string;
   completedAt?: string;
-  createdBy?: string;
-  modifiedBy?: string;
   subTasks?: ProjectTaskResponseDto[];
-  commentsCount: number;
-  attachmentsCount: number;
+  commentsCount?: number;
+  attachmentsCount?: number;
 }
 
 // Backend actual response format for DailyTask
@@ -156,7 +154,7 @@ export interface TaskListResponseDto {
   hasPreviousPage: boolean;
 }
 
-// Request DTOs
+// Request DTOs — aligned with backend CreateProjectTaskRequestDto
 export interface CreateProjectTaskRequestDto {
   title: string;
   description?: string;
@@ -166,6 +164,14 @@ export interface CreateProjectTaskRequestDto {
   relatedEntityId?: number;
   assignedUserId?: number;
   dueDate?: string;
+  /** @deprecated legacy callers — mapped to relatedEntityId */
+  projectId?: number;
+  /** @deprecated legacy callers — mapped to assignedUserId */
+  assigneeId?: number;
+  assigneeName?: string;
+  columnId?: number;
+  priority?: string;
+  tags?: string[];
 }
 
 export interface CreateDailyTaskRequestDto {
@@ -269,7 +275,6 @@ const mapProjectTaskToFrontend = (dto: ProjectTaskResponseDto): Task => {
   const assigneeIdNum =
     dto.assignedUserId ??
     dto.assigneeId ??
-    // fallback for unexpected casing
     (dto as any).AssignedUserId ??
     (dto as any).AssigneeId;
 
@@ -278,11 +283,9 @@ const mapProjectTaskToFrontend = (dto: ProjectTaskResponseDto): Task => {
   let assigneeName =
     dto.assignedUserName ??
     dto.assigneeName ??
-    // fallback for unexpected casing
     (dto as any).AssignedUserName ??
     (dto as any).AssigneeName;
 
-  // If backend returns null name for MainAdminUsers assignment, resolve from local storage
   if ((!assigneeName || assigneeName === 'null') && assigneeId) {
     const mainAdmin = getMainAdminFromStorage();
     if (mainAdmin.id && mainAdmin.id === assigneeId) {
@@ -292,18 +295,30 @@ const mapProjectTaskToFrontend = (dto: ProjectTaskResponseDto): Task => {
 
   const createdAtRaw = dto.createdAt ?? dto.createdDate;
   const updatedAtRaw = dto.updatedAt ?? dto.modifiedDate ?? dto.createdAt ?? dto.createdDate;
+  const status = normalizeTaskStatus(dto.status ?? dto.columnId);
+  const relatedEntityType = dto.relatedEntityType ?? (dto as any).RelatedEntityType;
+  const relatedEntityId = dto.relatedEntityId ?? (dto as any).RelatedEntityId;
+  const projectId =
+    relatedEntityType === 'project' && relatedEntityId != null
+      ? String(relatedEntityId)
+      : dto.projectId != null
+        ? String(dto.projectId)
+        : undefined;
 
   return {
     id: String(dto.id),
     title: dto.title,
     description: dto.description,
-    status: dto.status || String(dto.columnId),
+    taskType: dto.taskType || (dto as any).TaskType,
+    status,
     priority: (dto.priority || 'medium') as Task['priority'],
     assigneeId,
     assigneeName: assigneeName || undefined,
     assignee: assigneeName || '',
-    projectId: String(dto.projectId),
+    projectId,
     projectName: dto.projectName,
+    relatedEntityType,
+    relatedEntityId,
     contactId: dto.contactId ? String(dto.contactId) : undefined,
     contactName: dto.contactName,
     parentTaskId: dto.parentTaskId ? String(dto.parentTaskId) : undefined,
@@ -316,8 +331,17 @@ const mapProjectTaskToFrontend = (dto: ProjectTaskResponseDto): Task => {
     actualHours: dto.actualHours,
     createdAt: createdAtRaw ? new Date(createdAtRaw) : new Date(),
     updatedAt: updatedAtRaw ? new Date(updatedAtRaw) : new Date(),
-    completedAt: dto.completedAt ? new Date(dto.completedAt) : undefined,
-    columnId: String(dto.columnId),
+    completedAt:
+      status === 'completed' || status === 'cancelled'
+        ? dto.completedAt
+          ? new Date(dto.completedAt)
+          : updatedAtRaw
+            ? new Date(updatedAtRaw)
+            : undefined
+        : dto.completedAt
+          ? new Date(dto.completedAt)
+          : undefined,
+    columnId: dto.columnId != null ? String(dto.columnId) : mapTaskStatusToColumnId(status),
     columnTitle: dto.columnTitle || dto.columnName || '',
     columnColor: dto.columnColor || '',
     position: dto.position ?? dto.displayOrder ?? 0,
@@ -356,33 +380,47 @@ const mapDailyTaskToFrontend = (dto: DailyTaskResponseDto): DailyTask => ({
 export const tasksApi = {
   // ============ Project Tasks ============
 
-  // Get all tasks for a project
+  // Get all tasks for a project (entity/project or legacy project/{id} route)
   async getProjectTasks(projectId: number): Promise<Task[]> {
-    const url = `${API_URL}/api/Tasks/project/${projectId}`;
-    console.log('[tasksApi] Fetching project tasks from:', url);
-    console.log('[tasksApi] Auth token present:', !!getAuthToken());
-    
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-    });
+    const entityUrl = `${API_URL}/api/Tasks/entity/project/${projectId}`;
+    const legacyUrl = `${API_URL}/api/Tasks/project/${projectId}`;
 
-    console.log('[tasksApi] Response status:', response.status, response.statusText);
+    const fetchTasks = async (url: string) => {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      });
 
-    const offlineProj = await parseOfflineNoCacheBody(response);
-    if (isOfflineNoCache503(offlineProj)) {
+      const offlineBody = await parseOfflineNoCacheBody(response);
+      if (isOfflineNoCache503(offlineBody)) {
+        return { ok: true as const, tasks: [] as ProjectTaskResponseDto[] };
+      }
+
+      if (response.status === 404) {
+        return { ok: false as const, notFound: true };
+      }
+
+      await throwIfNotOkAfterOfflineCheck(
+        response,
+        offlineBody,
+        `Failed to fetch tasks for project ${projectId}: ${response.status}`
+      );
+
+      const data: ProjectTaskResponseDto[] = await response.json();
+      return { ok: true as const, tasks: data ?? [] };
+    };
+
+    let result = await fetchTasks(entityUrl);
+    if (!result.ok && result.notFound) {
+      result = await fetchTasks(legacyUrl);
+    }
+
+    if (!result.ok) {
       return [];
     }
 
-    await throwIfNotOkAfterOfflineCheck(
-      response,
-      offlineProj,
-      `Failed to fetch tasks for project ${projectId}: ${response.status}`
-    );
-
-    const data: ProjectTaskResponseDto[] = await response.json();
-    console.log('[tasksApi] Project tasks received:', data?.length || 0, 'tasks');
-    return data.map(mapProjectTaskToFrontend);
+    console.log('[tasksApi] Project tasks received:', result.tasks.length, 'tasks');
+    return result.tasks.map(mapProjectTaskToFrontend);
   },
 
   // Get all tasks for a column
@@ -427,10 +465,19 @@ export const tasksApi = {
 
   // Create project task
   async createProjectTask(request: CreateProjectTaskRequestDto): Promise<Task> {
+    const payload = buildCreateProjectTaskPayload(
+      request as Record<string, unknown>,
+      request.projectId ?? request.relatedEntityId
+    );
+
+    if (!payload.title) {
+      throw new Error('Task title is required');
+    }
+
     const response = await fetch(`${API_URL}/api/Tasks/project-task`, {
       method: 'POST',
       headers: getMutationHeaders(),
-      body: JSON.stringify(request),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
