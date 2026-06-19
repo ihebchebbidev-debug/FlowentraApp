@@ -34,7 +34,6 @@ import { ProjectSettingsTab } from '../components/project-detail/ProjectSettings
 import { EditProjectModal } from '../components/EditProjectModal';
 import { QuickTaskModal } from '../components/QuickTaskModal';
 import { useToast } from '@/hooks/use-toast';
-import { TasksService } from '../services/tasks.service';
 
 // Interface for technician/assignable users
 interface Technician {
@@ -287,6 +286,7 @@ export default function ProjectTasksPage() {
     setIsQuickTaskModalOpen(true);
   };
 
+  const handleManageProject = () => {
     setIsEditProjectOpen(true);
   };
 

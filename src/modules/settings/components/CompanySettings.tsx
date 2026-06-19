@@ -196,10 +196,27 @@ export function CompanySettings() {
         }
         // Clear any stale cached base64 so reports fetch fresh
         localStorage.removeItem('company-logo-blob-data');
-        // Update shared logo state across the entire app
+
+        // Persist to the tenant so TenantMapContext reads the new logo on
+        // next fetch — without this, the sidebar reverts after a page reload.
+        if (activeTenant?.id) {
+          try {
+            const updated = await tenantsApi.update(activeTenant.id, {
+              companyLogoUrl: logoPath,
+            });
+            setActiveTenant(updated);
+          } catch (err) {
+            console.warn('[CompanyLogo] Failed to persist logo to tenant', err);
+          }
+        }
+
+        // Update shared logo state across the entire app immediately (optimistic).
         setCompanyLogo(logoPath);
         setCompanyData(prev => ({ ...prev, logoUrl: logoPath }));
-        
+        // Refresh TenantMapContext cache so the sidebar/switcher/reports
+        // see the new tenant logo without a page reload.
+        void refetch();
+
         toast({
           title: t('company.logoUploaded', { defaultValue: 'Logo uploaded' }),
           description: t('company.logoUploadedDesc', { defaultValue: 'Logo saved successfully and applied across the app.' }),
@@ -226,13 +243,11 @@ export function CompanySettings() {
     }
   };
 
-  const handleRemoveLogo = () => {
+  const handleRemoveLogo = async () => {
     setCompanyData(prev => ({ ...prev, logoUrl: "" }));
-    // Immediately clear shared state so sidebar/header/login update
-    setCompanyLogo(null);
-    // Clear cached base64 for reports
+    // Use explicit-none sentinel so bootstrap doesn't fall back to user_data logo.
+    setCompanyLogoExplicitNone();
     localStorage.removeItem('company-logo-blob-data');
-    // Clear from localStorage too
     const userData = localStorage.getItem('user_data');
     if (userData) {
       try {
@@ -241,6 +256,16 @@ export function CompanySettings() {
         localStorage.setItem('user_data', JSON.stringify(parsed));
       } catch { /* ignore */ }
     }
+    // Persist removal to the tenant so it survives page reload.
+    if (activeTenant?.id) {
+      try {
+        const updated = await tenantsApi.update(activeTenant.id, { companyLogoUrl: "" });
+        setActiveTenant(updated);
+      } catch (err) {
+        console.warn('[CompanyLogo] Failed to clear tenant logo', err);
+      }
+    }
+    void refetch();
   };
 
   const handleSave = async () => {
@@ -292,7 +317,9 @@ export function CompanySettings() {
             localStorage.setItem('user_data', JSON.stringify(parsed));
           } catch { /* ignore */ }
         }
-        setCompanyLogo(companyData.logoUrl || null);
+        if (companyData.logoUrl) setCompanyLogo(companyData.logoUrl);
+        else setCompanyLogoExplicitNone();
+        void refetch();
 
         toast({
           title: t('company.settingsSavedTitle'),
