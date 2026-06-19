@@ -6,11 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { isSameDay } from "date-fns";
-import { 
-  ArrowLeft, 
-  PlusCircle, 
-  Settings, 
+import {
+  ArrowLeft,
+  PlusCircle,
+  Settings,
   FolderOpen,
+  Handshake,
 } from "lucide-react";
 import { Task, Project } from '../types';
 import { useTranslation } from 'react-i18next';
@@ -479,7 +480,16 @@ export default function ProjectTasksPage() {
             <Settings className="h-4 w-4" />
             {t('projects.header.manage')}
           </Button>
-          <Button 
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={() => navigate(`/dashboard/deals/add?projectId=${projectId}`)}
+          >
+            <Handshake className="h-4 w-4" />
+            {t('projects.header.addDeal', 'New Deal')}
+          </Button>
+          <Button
             className="gradient-primary text-primary-foreground shadow-medium hover-lift gap-2"
             onClick={handleAddTask}
           >
@@ -500,7 +510,16 @@ export default function ProjectTasksPage() {
             <Button variant="outline" size="sm" onClick={handleManageProject} className="h-8 w-8 p-0">
               <Settings className="h-4 w-4" />
             </Button>
-            <Button 
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={() => navigate(`/dashboard/deals/add?projectId=${projectId}`)}
+              title={t('projects.header.addDeal', 'New Deal')}
+            >
+              <Handshake className="h-4 w-4" />
+            </Button>
+            <Button
               size="sm"
               className="gradient-primary text-primary-foreground shadow-medium hover-lift gap-2"
               onClick={handleAddTask}

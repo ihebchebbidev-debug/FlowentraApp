@@ -16,7 +16,11 @@ const LOGO_EVENT = 'logo-updated';
 // Full URL: https://api.flowentra.app/uploads/company/...
 // ============================================================================
 
-let globalLogoUrl: string = '';
+// Sentinel meaning "async resolution is in progress — don't show any logo yet".
+// Distinguished from '' which means "resolved: this tenant has no logo".
+const LOGO_LOADING = '__loading__';
+
+let globalLogoUrl: string = LOGO_LOADING;
 let globalLogoRef: string | null = null;
 let fetchInFlight: Promise<void> | null = null;
 const subscribers = new Set<() => void>();
@@ -278,19 +282,24 @@ if (typeof window !== 'undefined') {
 }
 
 /**
- * React hook — returns the company logo as a direct URL.
- * Instant for path-based logos. Shared across all components. Zero flicker.
+ * React hook — returns the company logo as a direct URL, or empty string while
+ * loading so callers' existing `{logo && <img>}` guards naturally suppress display.
+ * Falls back to the Flowentra mark only once loading has fully resolved.
  */
 export function useCompanyLogo(): string {
   const logo = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  if (logo === LOGO_LOADING) return '';
   return logo || flowentraLogo;
 }
 
 /**
  * React hook — returns the company logo URL and whether it's the default logo.
+ * Returns null for logo while async resolution is in progress so callers can
+ * suppress display until the real value is known.
  */
-export function useCompanyLogoWithDefault(): { logo: string; isDefault: boolean } {
+export function useCompanyLogoWithDefault(): { logo: string | null; isDefault: boolean } {
   const logo = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  if (logo === LOGO_LOADING) return { logo: null, isDefault: true };
   const isDefault = !logo;
   return { logo: logo || flowentraLogo, isDefault };
 }
@@ -300,6 +309,7 @@ export function useCompanyLogoWithDefault(): { logo: string; isDefault: boolean 
  * Non-reactive — use useCompanyLogo() for React components.
  */
 export function getResolvedLogo(): string {
+  if (globalLogoUrl === LOGO_LOADING) return flowentraLogo;
   return globalLogoUrl || flowentraLogo;
 }
 
@@ -316,7 +326,7 @@ export function setCompanyLogo(ref: string | null) {
   // Drop cached PDF base64 so reports re-fetch the new logo.
   try { localStorage.removeItem('company-logo-blob-data'); } catch { /* ignore */ }
   globalLogoRef = null; // Force re-resolve
-  globalLogoUrl = '';
+  globalLogoUrl = LOGO_LOADING; // Hide any logo during the transition
   window.dispatchEvent(new CustomEvent(LOGO_EVENT, { detail: ref || '' }));
 }
 
@@ -329,6 +339,6 @@ export function setCompanyLogoExplicitNone() {
   localStorage.setItem(LOGO_STORAGE_KEY, NO_LOGO_SENTINEL);
   try { localStorage.removeItem('company-logo-blob-data'); } catch { /* ignore */ }
   globalLogoRef = null;
-  globalLogoUrl = '';
+  globalLogoUrl = LOGO_LOADING; // Hide any logo during the transition
   window.dispatchEvent(new CustomEvent(LOGO_EVENT, { detail: '' }));
 }
