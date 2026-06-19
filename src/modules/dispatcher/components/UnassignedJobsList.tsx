@@ -529,14 +529,14 @@ export function UnassignedJobsList({
                 {soLabel}
               </span>
             </div>
-            <div className="flex items-center gap-1.5 flex-shrink-0">
-              <Badge variant="outline" className={`text-[0.65rem] px-1.5 py-0 h-[18px] ${colorClass}`}>
-                {t(`serviceOrders.status.${so.status}`, so.status.replace(/_/g, ' '))}
-              </Badge>
-              <ChevronDown
-                className={`h-3 w-3 transition-transform text-muted-foreground ${isExpanded ? 'rotate-180' : ''}`}
-              />
-            </div>
+            <ChevronDown
+              className={`h-3 w-3 transition-transform text-muted-foreground flex-shrink-0 ${isExpanded ? 'rotate-180' : ''}`}
+            />
+          </div>
+          <div className="flex items-center gap-1.5 mt-1 pl-5">
+            <Badge variant="outline" className={`text-[0.65rem] px-1.5 py-0 h-[18px] ${colorClass}`}>
+              {t(`serviceOrders.status.${so.status}`, so.status.replace(/_/g, ' '))}
+            </Badge>
           </div>
           <div className="flex items-center gap-1.5 text-[0.65rem] text-muted-foreground mt-1 pl-5">
             <User className="h-2.5 w-2.5 flex-shrink-0" />
