@@ -8,11 +8,13 @@ import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from 'react-i18next';
 import { useAuth } from "@/contexts/AuthContext";
 import { authService } from "@/services/authService";
-import { setCompanyLogo, useCompanyLogo } from "@/hooks/useCompanyLogo";
+import { setCompanyLogo, setCompanyLogoExplicitNone, useCompanyLogo } from "@/hooks/useCompanyLogo";
 import { API_URL } from "@/config/api";
 import { getAuthHeadersNoContentType, getMutationHeadersNoContentType } from "@/utils/apiHeaders";
 import { tenantsApi, type Tenant } from "@/services/api/tenantsApi";
 import { getCurrentTenant, isViewAllMode } from "@/utils/tenant";
+import { getActiveCompanyId } from "@/utils/targetTenant";
+import { useTenantMap } from "@/contexts/TenantMapContext";
 
 
 
@@ -26,6 +28,7 @@ export function CompanySettings() {
   const [activeTenant, setActiveTenant] = useState<Tenant | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const currentLogo = useCompanyLogo();
+  const { refetch } = useTenantMap();
 
   const [companyData, setCompanyData] = useState({
     name: "",
@@ -47,11 +50,14 @@ export function CompanySettings() {
 
         const slug = getCurrentTenant();
         const viewAll = isViewAllMode();
+        const activeCompanyId = getActiveCompanyId();
 
         // Resolve which tenant this settings page is for:
-        // - If viewing a specific slug, find it
-        // - Otherwise (or in view-all mode), use the default tenant
+        // Priority 1: the actively selected company (X-Target-Tenant)
+        // Priority 2: the current subdomain tenant
+        // Priority 3: the default tenant
         const matched =
+          (activeCompanyId !== undefined ? tenants.find(t => t.id === activeCompanyId) : null) ||
           (!viewAll && slug ? tenants.find(t => t.slug?.toLowerCase() === slug.toLowerCase()) : null) ||
           tenants.find(t => t.isDefault) ||
           tenants[0] ||
@@ -65,9 +71,8 @@ export function CompanySettings() {
             phone: matched.companyPhone || "",
             logoUrl: matched.companyLogoUrl || "",
           });
-          if (matched.companyLogoUrl) {
-            setCompanyLogo(matched.companyLogoUrl);
-          }
+          // Do NOT call setCompanyLogo here — TenantMapContext is the
+          // authoritative owner of the logo singleton and will set it correctly.
           return;
         }
       } catch (err) {
@@ -87,9 +92,6 @@ export function CompanySettings() {
             phone: parsed.phoneNumber || "",
             logoUrl: parsed.companyLogoUrl || "",
           });
-          if (parsed.companyLogoUrl) {
-            setCompanyLogo(parsed.companyLogoUrl);
-          }
         } catch {
           // ignore
         }

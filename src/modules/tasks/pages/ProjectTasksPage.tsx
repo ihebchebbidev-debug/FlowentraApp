@@ -32,7 +32,9 @@ import { ProjectOffersTab } from '../components/project-detail/ProjectOffersTab'
 import { ProjectSummaryTab } from '../components/project-detail/ProjectSummaryTab';
 import { ProjectSettingsTab } from '../components/project-detail/ProjectSettingsTab';
 import { EditProjectModal } from '../components/EditProjectModal';
+import { QuickTaskModal } from '../components/QuickTaskModal';
 import { useToast } from '@/hooks/use-toast';
+import { TasksService } from '../services/tasks.service';
 
 // Interface for technician/assignable users
 interface Technician {
@@ -46,6 +48,7 @@ export default function ProjectTasksPage() {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const { isMobile } = useLayoutModeContext();
+  const { toast } = useToast();
   const { logAction, logSearch, logFilter } = useActionLogger('Projects');
   
   // Tab management
@@ -284,9 +287,41 @@ export default function ProjectTasksPage() {
     setIsQuickTaskModalOpen(true);
   };
 
-  const handleOpenColumnEditor = () => {
-    if (activeTab !== 'tasks') setActiveTab('tasks');
-    setIsColumnEditorOpen(true);
+    setIsEditProjectOpen(true);
+  };
+
+  const handleCreateTask = async (taskData: any) => {
+    try {
+      if (!project?.id) {
+        toast({ title: t('toast.error'), description: t('toast.failedCreate'), variant: 'destructive' });
+        return;
+      }
+      const projectIdNum = parseInt(String(project.id), 10);
+      let columnIdNum = parseInt(String(taskData.status), 10);
+      if (isNaN(columnIdNum) || columnIdNum <= 0) {
+        const first = (project.columns as any[] | undefined)?.[0];
+        columnIdNum = first?.id ? parseInt(String(first.id), 10) : 0;
+      }
+      if (isNaN(projectIdNum)) throw new Error('Invalid project ID');
+      if (!columnIdNum || isNaN(columnIdNum)) throw new Error('Invalid column ID');
+
+      await TasksService.createProjectTask({
+        title: taskData.title,
+        description: taskData.description,
+        projectId: projectIdNum,
+        assigneeId: taskData.assigneeId ? parseInt(String(taskData.assigneeId), 10) : undefined,
+        assigneeName: taskData.assigneeName,
+        status: 'open',
+        priority: taskData.priority || 'medium',
+        columnId: columnIdNum,
+        dueDate: taskData.dueDate ? new Date(taskData.dueDate).toISOString() : undefined,
+        tags: [],
+      } as any);
+
+      await fetchTasks();
+    } catch {
+      toast({ title: t('toast.error'), description: t('toast.failedCreate'), variant: 'destructive' });
+    }
   };
 
   // "Manage" opens a modal to edit the project itself (name, status, type, …).
@@ -372,7 +407,7 @@ export default function ProjectTasksPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleOpenColumnEditor} className="gap-2">
+          <Button variant="outline" size="sm" onClick={handleManageProject} className="gap-2">
             <Settings className="h-4 w-4" />
             {t('projects.header.manage')}
           </Button>
@@ -394,7 +429,7 @@ export default function ProjectTasksPage() {
             {t('projects.header.backShort')}
           </Button>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleOpenColumnEditor} className="h-8 w-8 p-0">
+            <Button variant="outline" size="sm" onClick={handleManageProject} className="h-8 w-8 p-0">
               <Settings className="h-4 w-4" />
             </Button>
             <Button 
@@ -581,6 +616,24 @@ export default function ProjectTasksPage() {
           </div>
         </Tabs>
       </div>
+
+      <QuickTaskModal
+        isOpen={isQuickTaskModalOpen}
+        onClose={() => setIsQuickTaskModalOpen(false)}
+        onCreateTask={handleCreateTask}
+        technicians={technicians as any}
+        columns={(project.columns as any) || []}
+        projects={[project]}
+        projectId={project.id}
+      />
+
+      <EditProjectModal
+        isOpen={isEditProjectOpen}
+        onClose={() => setIsEditProjectOpen(false)}
+        onUpdateProject={handleUpdateProject}
+        project={project}
+        technicians={technicians as any}
+      />
     </div>
   );
 }

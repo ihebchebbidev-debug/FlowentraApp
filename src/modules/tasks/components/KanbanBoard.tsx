@@ -28,11 +28,9 @@ import TaskListViewGrouped from './TaskListViewGrouped';
 import { Column, Task as TaskType } from '../types';
 import { buildStatusColumns, defaultTechnicianColumns, defaultStatusColumns } from "../utils/columns";
 import { useLookups } from "@/shared/contexts/LookupsContext";
-  const handleAddTask = (_columnId: string) => {              // Open quick task modal 
-    setIsQuickTaskModalOpen(true);
-    // Notify parent if it wants to control the quick task modal
-    onQuickTaskModalOpenChange?.(true);
-  };
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { TasksService } from "../services/tasks.service";
 import { usersApi } from "@/services/usersApi";
 import { projectsApi } from "@/services/api/projectsApi";
 import { notificationsApi } from "@/services/api/notificationsApi";
@@ -225,19 +223,14 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
   // Initialize columns with project columns or defaults
   const [customColumns, setCustomColumns] = useState<Column[]>([]);
 
-  // Sync quickTaskModalOpen prop with internal state
-  useEffect(() => {
-    if (quickTaskModalOpen !== undefined) {
-      setIsQuickTaskModalOpen(quickTaskModalOpen);
-    }
-  }, [quickTaskModalOpen]);
+  const isQuickTaskModalControlled = onQuickTaskModalOpenChange !== undefined;
 
   // Sync external quick-task modal control (parent -> internal)
   useEffect(() => {
-    if (typeof quickTaskModalOpen !== 'undefined') {
+    if (isQuickTaskModalControlled && typeof quickTaskModalOpen !== 'undefined') {
       setIsQuickTaskModalOpen(!!quickTaskModalOpen);
     }
-  }, [quickTaskModalOpen]);
+  }, [quickTaskModalOpen, isQuickTaskModalControlled]);
 
   // Update columns when project columns change
   useEffect(() => {
@@ -699,9 +692,24 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
     }
   }, [columnEditorOpen]);
 
+  const openQuickTaskModal = () => {
+    if (isQuickTaskModalControlled) {
+      onQuickTaskModalOpenChange?.(true);
+    } else {
+      setIsQuickTaskModalOpen(true);
+    }
+  };
+
+  const closeQuickTaskModal = () => {
+    if (isQuickTaskModalControlled) {
+      onQuickTaskModalOpenChange?.(false);
+    } else {
+      setIsQuickTaskModalOpen(false);
+    }
+  };
+
   const handleAddTask = (_columnId: string) => {
-    // Open quick task modal with the specific column pre-selected
-    setIsQuickTaskModalOpen(true);
+    openQuickTaskModal();
   };
 
   const handleChangeTheme = (columnId: string, colorClass?: string) => {
@@ -860,7 +868,7 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <div className="flex items-center gap-2">
                 <Button
-                  onClick={() => setIsQuickTaskModalOpen(true)}
+                  onClick={openQuickTaskModal}
                   variant="outline"
                   size="sm"
                   className="gap-2"
@@ -1053,19 +1061,18 @@ export function KanbanBoard({ project, onBackToProjects, onSwitchToProjects, tec
           technicians={apiTechnicians}
         />
 
-        <QuickTaskModal
-          isOpen={isQuickTaskModalOpen}
-          onClose={() => {
-            setIsQuickTaskModalOpen(false);
-            onQuickTaskModalOpenChange?.(false);
-          }}
-          onCreateTask={handleCreateTask}
-          technicians={apiTechnicians}
-          columns={getColumns()}
-          projects={project ? [project] : []}
-          projectId={project?.id}
-          teamMembers={projectTeamColumns.map(col => ({ id: col.id, name: col.title }))}
-        />
+        {!isQuickTaskModalControlled && (
+          <QuickTaskModal
+            isOpen={isQuickTaskModalOpen}
+            onClose={closeQuickTaskModal}
+            onCreateTask={handleCreateTask}
+            technicians={apiTechnicians}
+            columns={getColumns()}
+            projects={project ? [project] : []}
+            projectId={project?.id}
+            teamMembers={projectTeamColumns.map(col => ({ id: col.id, name: col.title }))}
+          />
+        )}
 
         <ColumnManager
           isOpen={isColumnEditorOpen}
