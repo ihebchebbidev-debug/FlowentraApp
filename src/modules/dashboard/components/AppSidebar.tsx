@@ -889,7 +889,7 @@ function ProfileBrandHeader({ companyLogo }: { companyLogo: string | null | unde
           src={companyLogo}
           alt=""
           aria-hidden
-          className="absolute inset-0 h-full w-full object-cover opacity-40 pointer-events-none select-none scale-110 blur-[1px]"
+          className="absolute inset-0 h-full w-full object-contain opacity-30 pointer-events-none select-none scale-75 blur-[0.5px]"
         />
       ) : (
         <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-sidebar-accent/40 to-sidebar" />

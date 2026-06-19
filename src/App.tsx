@@ -259,14 +259,14 @@ const App = () => {
     }
 
     // ─── Purge stale caches on app start ───
-    // Clear old logo caches so fresh data is fetched from the server
-    localStorage.removeItem('company-logo');
-    localStorage.removeItem('company-logo-blob-data');
+    // Keep 'company-logo' intact — TenantSwitcher/SelectCompany pre-write it
+    // before a reload so the module-level bootstrap in useCompanyLogo.ts reads
+    // the correct value instantly (no flash). TenantMapContext re-confirms on
+    // every load, so there is no risk of serving a stale value.
+    localStorage.removeItem('company-logo-blob-data'); // PDF base64 cache only
     // Clear cached PDF settings (logo embedded inside, lookups references, etc.)
     ['pdf-settings', 'pdf-settings-offers', 'pdf-settings-sales', 'pdf-settings-service-orders', 'pdf-settings-dispatches', 'pdf-settings-payments'].forEach(k => localStorage.removeItem(k));
-    // Clear sidebar config cache so it re-seeds from defaults
-    // (Don't clear sidebar config — user customizations should persist)
-    console.log('[App] Cleared stale logo & PDF caches on startup');
+    console.log('[App] Cleared stale PDF caches on startup');
 
     // Initialize theme on app start
     const savedTheme = localStorage.getItem('flowsolution-theme') || 'system';

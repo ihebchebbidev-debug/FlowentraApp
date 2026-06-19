@@ -30,7 +30,6 @@ import { ProjectDocumentsTab } from '../components/project-detail/ProjectDocumen
 import { ProjectActivityTab } from '../components/project-detail/ProjectActivityTab';
 import { ProjectOffersTab } from '../components/project-detail/ProjectOffersTab';
 import { ProjectSummaryTab } from '../components/project-detail/ProjectSummaryTab';
-import { ProjectSettingsTab } from '../components/project-detail/ProjectSettingsTab';
 import { EditProjectModal } from '../components/EditProjectModal';
 import { QuickTaskModal } from '../components/QuickTaskModal';
 import { useToast } from '@/hooks/use-toast';
@@ -274,8 +273,16 @@ export default function ProjectTasksPage() {
   };
 
   const filteredTasks = getFilteredTasks();
-  const openTasks = filteredTasks.filter(t => t.columnId !== 'done' && !t.completedAt);
-  const completedTasks = filteredTasks.filter(t => t.columnId === 'done' || t.completedAt);
+
+  const isTaskCompleted = (task: any) => {
+    if (task.completedAt) return true;
+    const col = project?.columns?.find((c: any) => String(c.id) === String(task.columnId));
+    if (col && /done|completed|termin/i.test(col.title || '')) return true;
+    return task.columnId === 'done' || task.status === 'done' || task.status === 'completed';
+  };
+
+  const openTasks = filteredTasks.filter((t) => !isTaskCompleted(t));
+  const completedTasks = filteredTasks.filter((t) => isTaskCompleted(t));
 
   const handleTaskClick = (task: Task) => {
     console.log('Task clicked:', task);
@@ -485,11 +492,10 @@ export default function ProjectTasksPage() {
                   <SelectItem value="notes">{t('projects.detail.tabs.notes')}</SelectItem>
                   <SelectItem value="documents">{t('projects.detail.tabs.documents')}</SelectItem>
                   <SelectItem value="activity">{t('projects.detail.tabs.activity')}</SelectItem>
-                  <SelectItem value="settings">{t('projects.detail.tabs.settings', 'Settings')}</SelectItem>
                 </SelectContent>
               </Select>
             ) : (
-              <TabsList className="w-full h-auto p-1 bg-muted/50 rounded-lg grid grid-cols-10">
+              <TabsList className="w-full h-auto p-1 bg-muted/50 rounded-lg grid grid-cols-9">
                 <TabsTrigger value="overview" className="px-2 py-2 text-xs sm:text-sm font-medium">
                   {t('projects.detail.tabs.overview')}
                 </TabsTrigger>
@@ -516,9 +522,6 @@ export default function ProjectTasksPage() {
                 </TabsTrigger>
                 <TabsTrigger value="activity" className="px-2 py-2 text-xs sm:text-sm font-medium">
                   {t('projects.detail.tabs.activity')}
-                </TabsTrigger>
-                <TabsTrigger value="settings" className="px-2 py-2 text-xs sm:text-sm font-medium">
-                  {t('projects.detail.tabs.settings', 'Settings')}
                 </TabsTrigger>
               </TabsList>
             )}
@@ -607,10 +610,6 @@ export default function ProjectTasksPage() {
 
               <TabsContent value="activity" className="mt-0">
                 <ProjectActivityTab project={project} />
-              </TabsContent>
-
-              <TabsContent value="settings" className="mt-0">
-                <ProjectSettingsTab />
               </TabsContent>
             </div>
           </div>
