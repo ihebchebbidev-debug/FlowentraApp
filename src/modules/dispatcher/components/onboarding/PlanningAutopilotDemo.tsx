@@ -233,7 +233,7 @@ function PageBoard({ state }: { state: PlanningDemoState }) {
       {state.boardView === 'calendar' ? (
         <div className="flex-1 flex min-h-0">
           {/* Calendar — horizontal Gantt timeline (technicians as rows) */}
-          <div id="pl-demo-calendar" className="flex-1 min-w-0 overflow-hidden flex flex-col relative">
+          <div id="pl-demo-calendar" className="order-2 flex-1 min-w-0 overflow-hidden flex flex-col relative">
             {/* Calendar toolbar (CalendarControls) */}
             <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border bg-background">
               <div className="flex items-center gap-1">
@@ -325,8 +325,8 @@ function PageBoard({ state }: { state: PlanningDemoState }) {
             )}
           </div>
 
-          {/* Sidebar */}
-          <div id="pl-demo-sidebar" className={`w-60 shrink-0 border-l border-border bg-card flex flex-col ${hi('list')}`}>
+          {/* Sidebar — orders panel on the LEFT */}
+          <div id="pl-demo-sidebar" className={`order-1 w-60 shrink-0 border-r border-border bg-card flex flex-col ${hi('list')}`}>
             <div className="p-2.5 border-b border-border">
               <h3 className="text-xs font-semibold mb-1.5">Service Orders</h3>
               <div id="pl-demo-sidebar-search" className={`space-y-1.5 ${hi('search')}`}>
