@@ -275,15 +275,18 @@ namespace MyApi.Modules.Dispatches.Services
                 ContactId = contactId,
                 ServiceOrderId = serviceOrderId,
                 ProjectId = jobs.FirstOrDefault()?.ServiceOrder?.ProjectId,
-                InstallationId = dto.InstallationId,
-                InstallationName = dto.InstallationName,
+                // installationId <= 0 means this is a whole-service-order dispatch, not an installation.
+                InstallationId = dto.InstallationId > 0 ? dto.InstallationId : (int?)null,
+                InstallationName = string.IsNullOrWhiteSpace(dto.InstallationName) ? null : dto.InstallationName,
                 Status = status,
                 Priority = dto.Priority ?? "medium",
                 ScheduledDate = dto.ScheduledDate,
                 ScheduledStartTime = dto.ScheduledStartTime,
                 ScheduledEndTime = dto.ScheduledEndTime,
                 SiteAddress = dto.SiteAddress ?? string.Empty,
-                Description = dto.Notes ?? $"Installation: {dto.InstallationName} ({dto.JobIds.Count} jobs)",
+                Description = dto.Notes ?? (dto.InstallationId > 0
+                    ? $"Installation: {dto.InstallationName} ({dto.JobIds.Count} jobs)"
+                    : $"Service order dispatch ({dto.JobIds.Count} jobs)"),
                 CreatedDate = DateTime.UtcNow,
                 CreatedBy = userId,
                 DispatchedBy = userId,
@@ -357,6 +360,43 @@ namespace MyApi.Modules.Dispatches.Services
 
             var nameMap = await GetTechnicianNameMapForDispatchAsync(createdDispatch.Id);
             return DispatchMapping.ToDto(createdDispatch, nameMap);
+        }
+
+        public async Task<DispatchDto> CreateFromServiceOrderAsync(CreateDispatchFromServiceOrderDto dto, string userId)
+        {
+            _logger.LogInformation("CreateFromServiceOrderAsync called by {UserId} for ServiceOrder {ServiceOrderId}",
+                userId, dto.ServiceOrderId);
+
+            // Resolve job ids: explicit list, or every non-deleted job on the service order.
+            var jobIds = dto.JobIds != null && dto.JobIds.Count > 0
+                ? dto.JobIds
+                : await _db.ServiceOrderJobs
+                    .Where(j => j.ServiceOrderId == dto.ServiceOrderId)
+                    .Select(j => j.Id)
+                    .ToListAsync();
+
+            if (jobIds.Count == 0)
+                throw new ArgumentException($"Service order {dto.ServiceOrderId} has no jobs to dispatch");
+
+            // Reuse the multi-job creation path. InstallationId is left at 0 so the
+            // dispatch is stored with InstallationId = NULL (a service-order dispatch).
+            var installationDto = new CreateDispatchFromInstallationDto
+            {
+                InstallationId = 0,
+                InstallationName = string.Empty,
+                JobIds = jobIds,
+                AssignedTechnicianIds = dto.AssignedTechnicianIds ?? new(),
+                ScheduledDate = dto.ScheduledDate,
+                ScheduledStartTime = dto.ScheduledStartTime,
+                ScheduledEndTime = dto.ScheduledEndTime,
+                Priority = dto.Priority,
+                Notes = dto.Notes,
+                SiteAddress = dto.SiteAddress,
+                ContactId = dto.ContactId,
+                ServiceOrderId = dto.ServiceOrderId
+            };
+
+            return await CreateFromInstallationAsync(installationDto, userId);
         }
 
         public async Task<DispatchDto> AddJobsToInstallationDispatchAsync(
@@ -590,6 +630,33 @@ namespace MyApi.Modules.Dispatches.Services
                 JobIds = d.DispatchJobs?.Select(dj => dj.JobId).ToList() ?? new()
             }).ToList();
 
+            // Enrich multi-job dispatches with job summaries (one extra query) so the
+            // planning board can show a single card per dispatch and reveal its jobs on hover.
+            var allJobIds = items.SelectMany(i => i.JobIds).Distinct().ToList();
+            if (allJobIds.Count > 0)
+            {
+                var jobSummaries = await _db.ServiceOrderJobs
+                    .AsNoTracking()
+                    .Where(j => allJobIds.Contains(j.Id))
+                    .Select(j => new DispatchJobSummaryDto
+                    {
+                        Id = j.Id,
+                        Title = j.Title ?? j.JobDescription,
+                        Status = j.Status,
+                        EstimatedDuration = j.EstimatedDuration,
+                        Priority = j.Priority
+                    })
+                    .ToDictionaryAsync(j => j.Id);
+
+                foreach (var item in items)
+                {
+                    item.Jobs = item.JobIds
+                        .Where(jobSummaries.ContainsKey)
+                        .Select(id => jobSummaries[id])
+                        .ToList();
+                }
+            }
+
             return new PagedResult<DispatchListItemDto>
             {
                 Data = items,
@@ -615,7 +682,26 @@ namespace MyApi.Modules.Dispatches.Services
 
             if (d == null) throw new KeyNotFoundException($"Dispatch {dispatchId} not found");
             var nameMap = await GetTechnicianNameMapForDispatchAsync(d.Id);
-            return DispatchMapping.ToDto(d, nameMap);
+            var dto = DispatchMapping.ToDto(d, nameMap);
+
+            // Attach job summaries so the UI can list the dispatch's jobs.
+            if (dto.JobIds.Count > 0)
+            {
+                dto.Jobs = await _db.ServiceOrderJobs
+                    .AsNoTracking()
+                    .Where(j => dto.JobIds.Contains(j.Id))
+                    .Select(j => new DispatchJobSummaryDto
+                    {
+                        Id = j.Id,
+                        Title = j.Title ?? j.JobDescription,
+                        Status = j.Status,
+                        EstimatedDuration = j.EstimatedDuration,
+                        Priority = j.Priority
+                    })
+                    .ToListAsync();
+            }
+
+            return dto;
         }
 
         public async Task<DispatchDto> UpdateAsync(int dispatchId, UpdateDispatchDto dto, string userId)
@@ -1166,10 +1252,33 @@ namespace MyApi.Modules.Dispatches.Services
             }
         }
 
+        // Ensure a job id (when provided) actually belongs to this dispatch so per-job
+        // attribution of time/expenses/materials can't point at an unrelated job.
+        private async Task ValidateJobBelongsToDispatchAsync(int dispatchId, int? serviceOrderJobId)
+        {
+            if (serviceOrderJobId is null) return;
+
+            var belongs = await _db.Set<DispatchJob>()
+                .AnyAsync(dj => dj.DispatchId == dispatchId && dj.JobId == serviceOrderJobId.Value && !dj.IsDeleted);
+            if (belongs) return;
+
+            // Legacy single-job dispatches store the job id on Dispatch.JobId (CSV-capable).
+            var legacy = await _db.Dispatches
+                .Where(x => x.Id == dispatchId)
+                .Select(x => x.JobId)
+                .FirstOrDefaultAsync();
+            var legacyMatch = !string.IsNullOrWhiteSpace(legacy)
+                && legacy.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                         .Any(p => int.TryParse(p, out var jid) && jid == serviceOrderJobId.Value);
+            if (!legacyMatch)
+                throw new InvalidOperationException($"Job {serviceOrderJobId} does not belong to dispatch {dispatchId}.");
+        }
+
         public async Task<TimeEntryDto> AddTimeEntryAsync(int dispatchId, CreateTimeEntryDto dto, string userId)
         {
             var d = await _db.Dispatches.FirstOrDefaultAsync(x => x.Id == dispatchId && !x.IsDeleted);
             if (d == null) throw new KeyNotFoundException($"Dispatch {dispatchId} not found");
+            await ValidateJobBelongsToDispatchAsync(dispatchId, dto.ServiceOrderJobId);
 
             var newMinutes = (decimal)(dto.EndTime - dto.StartTime).TotalMinutes;
             if (newMinutes < 0) newMinutes = 0;
@@ -1187,6 +1296,7 @@ namespace MyApi.Modules.Dispatches.Services
             var te = new TimeEntry
             {
                 DispatchId = dispatchId,
+                ServiceOrderJobId = dto.ServiceOrderJobId,
                 TechnicianId = int.TryParse(dto.TechnicianId, out var tid) ? tid : 0,
                 WorkType = dto.WorkType,
                 StartTime = dto.StartTime,
@@ -1205,9 +1315,10 @@ namespace MyApi.Modules.Dispatches.Services
 
             return new TimeEntryDto 
             { 
-                Id = te.Id, 
-                DispatchId = te.DispatchId, 
-                TechnicianId = te.TechnicianId.ToString(), 
+                Id = te.Id,
+                DispatchId = te.DispatchId,
+                ServiceOrderJobId = te.ServiceOrderJobId,
+                TechnicianId = te.TechnicianId.ToString(),
                 WorkType = te.WorkType, 
                 StartTime = te.StartTime,
                 EndTime = te.EndTime,
@@ -1285,9 +1396,10 @@ namespace MyApi.Modules.Dispatches.Services
             var items = await _db.TimeEntries.AsNoTracking().Where(t => t.DispatchId == dispatchId).ToListAsync();
             return items.Select(t => new TimeEntryDto 
             { 
-                Id = t.Id, 
-                DispatchId = t.DispatchId, 
-                TechnicianId = t.TechnicianId.ToString(), 
+                Id = t.Id,
+                DispatchId = t.DispatchId,
+                ServiceOrderJobId = t.ServiceOrderJobId,
+                TechnicianId = t.TechnicianId.ToString(),
                 WorkType = t.WorkType, 
                 StartTime = t.StartTime,
                 EndTime = t.EndTime,
@@ -1327,9 +1439,10 @@ namespace MyApi.Modules.Dispatches.Services
 
             return new TimeEntryDto 
             { 
-                Id = te.Id, 
-                DispatchId = te.DispatchId, 
-                TechnicianId = te.TechnicianId.ToString(), 
+                Id = te.Id,
+                DispatchId = te.DispatchId,
+                ServiceOrderJobId = te.ServiceOrderJobId,
+                TechnicianId = te.TechnicianId.ToString(),
                 WorkType = te.WorkType, 
                 StartTime = te.StartTime,
                 EndTime = te.EndTime,
@@ -1352,6 +1465,7 @@ namespace MyApi.Modules.Dispatches.Services
         {
             var d = await _db.Dispatches.FirstOrDefaultAsync(x => x.Id == dispatchId && !x.IsDeleted);
             if (d == null) throw new KeyNotFoundException($"Dispatch {dispatchId} not found");
+            await ValidateJobBelongsToDispatchAsync(dispatchId, dto.ServiceOrderJobId);
 
             // Soft-cap overrun check on expenses bucketed by type (Stage 2).
             var (plannedAmt, actualAmt) = await GetPlannedAndActualExpenseAsync(dispatchId, dto.Type);
@@ -1366,6 +1480,7 @@ namespace MyApi.Modules.Dispatches.Services
             var exp = new Expense
             {
                 DispatchId = dispatchId,
+                ServiceOrderJobId = dto.ServiceOrderJobId,
                 ExpenseType = dto.Type,
                 TechnicianId = dto.TechnicianId,
                 Amount = dto.Amount,
@@ -1385,8 +1500,9 @@ namespace MyApi.Modules.Dispatches.Services
             return new ExpenseDto 
             { 
                 Id = exp.Id, 
-                DispatchId = exp.DispatchId, 
-                TechnicianId = exp.TechnicianId ?? dto.TechnicianId ?? userId, 
+                DispatchId = exp.DispatchId,
+                ServiceOrderJobId = exp.ServiceOrderJobId,
+                TechnicianId = exp.TechnicianId ?? dto.TechnicianId ?? userId,
                 Type = exp.ExpenseType, 
                 Amount = exp.Amount,
                 Currency = dto.Currency,
@@ -1405,8 +1521,9 @@ namespace MyApi.Modules.Dispatches.Services
             return items.Select(e => new ExpenseDto 
             { 
                 Id = e.Id, 
-                DispatchId = e.DispatchId, 
-                TechnicianId = e.TechnicianId ?? e.RecordedBy, 
+                DispatchId = e.DispatchId,
+                ServiceOrderJobId = e.ServiceOrderJobId,
+                TechnicianId = e.TechnicianId ?? e.RecordedBy,
                 Type = e.ExpenseType, 
                 Amount = e.Amount,
                 Description = e.Description,
@@ -1440,9 +1557,10 @@ namespace MyApi.Modules.Dispatches.Services
 
             return new ExpenseDto 
             { 
-                Id = exp.Id, 
-                DispatchId = exp.DispatchId, 
-                TechnicianId = exp.RecordedBy, 
+                Id = exp.Id,
+                DispatchId = exp.DispatchId,
+                ServiceOrderJobId = exp.ServiceOrderJobId,
+                TechnicianId = exp.RecordedBy,
                 Type = exp.ExpenseType, 
                 Amount = exp.Amount,
                 Currency = dto.Currency,
@@ -1466,6 +1584,7 @@ namespace MyApi.Modules.Dispatches.Services
         {
             var d = await _db.Dispatches.FirstOrDefaultAsync(x => x.Id == dispatchId && !x.IsDeleted);
             if (d == null) throw new KeyNotFoundException($"Dispatch {dispatchId} not found");
+            await ValidateJobBelongsToDispatchAsync(dispatchId, dto.ServiceOrderJobId);
 
             // Get a valid article ID if not provided or invalid
             int? articleId = null;
@@ -1495,6 +1614,7 @@ namespace MyApi.Modules.Dispatches.Services
             var mat = new MaterialUsage
             {
                 DispatchId = dispatchId,
+                ServiceOrderJobId = dto.ServiceOrderJobId,
                 ArticleId = articleId,
                 Quantity = dto.Quantity,
                 Description = dto.Description ?? string.Empty,
@@ -1512,8 +1632,9 @@ namespace MyApi.Modules.Dispatches.Services
 
             return new MaterialDto 
             { 
-                Id = mat.Id, 
-                DispatchId = mat.DispatchId, 
+                Id = mat.Id,
+                DispatchId = mat.DispatchId,
+                ServiceOrderJobId = mat.ServiceOrderJobId,
                 TechnicianId = dto.UsedBy ?? userId,
                 ArticleId = mat.ArticleId?.ToString(),
                 Description = mat.Description,
@@ -1531,8 +1652,9 @@ namespace MyApi.Modules.Dispatches.Services
             var items = await _db.DispatchMaterials.Where(m => m.DispatchId == dispatchId).ToListAsync();
             return items.Select(m => new MaterialDto 
             { 
-                Id = m.Id, 
-                DispatchId = m.DispatchId, 
+                Id = m.Id,
+                DispatchId = m.DispatchId,
+                ServiceOrderJobId = m.ServiceOrderJobId,
                 TechnicianId = m.RecordedBy,
                 ArticleId = m.ArticleId?.ToString(),
                 Description = m.Description,

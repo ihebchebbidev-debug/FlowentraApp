@@ -327,6 +327,104 @@ export class DispatchOperationsService {
     return { success, failed };
   }
 
+  // ── Plan a whole service order as ONE dispatch holding all its jobs ──
+  // Alternative to assignServiceOrderJobs (which creates one dispatch per job).
+  // Materials / expenses / time entries remain per-job inside the single dispatch.
+  static async assignServiceOrderAsSingleDispatch(
+    serviceOrder: ServiceOrder,
+    technicianId: string,
+    startTime: Date,
+    technicianName?: string,
+    priority: 'low' | 'medium' | 'high' | 'urgent' = 'medium'
+  ): Promise<Dispatch | null> {
+    const soKey = `so-${serviceOrder.id}`;
+    if (installationsBeingAssigned.has(soKey)) {
+      throw new Error('This service order is already being processed. Please wait.');
+    }
+
+    try {
+      installationsBeingAssigned.add(soKey);
+      const backendTechId = technicianId.match(/\d+/)?.[0] || technicianId;
+      const jobIds = serviceOrder.jobs.map(j => parseInt(j.id, 10)).filter(id => !isNaN(id));
+      if (jobIds.length === 0) throw new Error('No valid job IDs found');
+
+      // Total duration spans all jobs back-to-back.
+      const totalDuration = serviceOrder.jobs.reduce((s, j) => s + (j.estimatedDuration || 60), 0);
+      const scheduledEnd = new Date(startTime.getTime() + totalDuration * 60 * 1000);
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const startTimeStr = `${pad(startTime.getHours())}:${pad(startTime.getMinutes())}:00`;
+      const endTimeStr = `${pad(scheduledEnd.getHours())}:${pad(scheduledEnd.getMinutes())}:00`;
+
+      const firstJob = serviceOrder.jobs[0];
+      const dispatch = await dispatchesApi.createFromServiceOrder({
+        serviceOrderId: parseInt(String(serviceOrder.id), 10),
+        jobIds,
+        assignedTechnicianIds: [backendTechId],
+        scheduledDate: startTime.toISOString(),
+        scheduledStartTime: startTimeStr,
+        scheduledEndTime: endTimeStr,
+        priority,
+        notes: `Service order #${serviceOrder.id}\n${jobIds.length} jobs\nScheduled: ${startTime.toLocaleTimeString()} - ${scheduledEnd.toLocaleTimeString()}`,
+        siteAddress: firstJob?.location?.address,
+        contactId: firstJob?.contactId,
+      });
+
+      pushUndo({
+        type: 'assign',
+        description: `Planned service order #${serviceOrder.id} (${jobIds.length} jobs) to ${technicianName || 'technician'}`,
+        timestamp: Date.now(),
+        data: {
+          dispatchId: String(dispatch.id),
+          technicianId,
+          scheduledStart: startTime,
+          scheduledEnd,
+          serviceOrderId: dispatch.serviceOrderId,
+          dispatchNumber: dispatch.dispatchNumber,
+        }
+      });
+
+      // Audit note on service order
+      try {
+        const dispatcherName = getCurrentUserName();
+        await serviceOrdersApi.addNote(parseInt(String(serviceOrder.id), 10), {
+          content: `🚚 Service order dispatched as a single dispatch\n` +
+            `• Dispatch #${dispatch.dispatchNumber || dispatch.id}\n` +
+            `• ${jobIds.length} jobs included\n` +
+            `• Dispatched by: ${dispatcherName}\n` +
+            `• Assigned to: ${technicianName || 'Unknown'}\n` +
+            `• Priority: ${priority}\n` +
+            `• Scheduled: ${startTime.toLocaleDateString()} at ${startTime.toLocaleTimeString()}`,
+          type: 'dispatch_created'
+        });
+      } catch { /* ignore */ }
+
+      // Notification to technician
+      try {
+        const techIdNum = parseInt(technicianId, 10);
+        if (!isNaN(techIdNum)) {
+          await notificationsApi.create({
+            userId: techIdNum,
+            title: 'New Service Order Assigned',
+            description: `Service order #${serviceOrder.id} (${jobIds.length} jobs) assigned. Dispatch #${dispatch.dispatchNumber || dispatch.id}, scheduled ${startTime.toLocaleDateString()} at ${startTime.toLocaleTimeString()}.`,
+            type: 'info',
+            category: 'service_order',
+            link: `/dashboard/field/dispatches/${dispatch.id}`,
+            relatedEntityId: dispatch.id,
+            relatedEntityType: 'dispatch'
+          });
+        }
+      } catch { /* ignore */ }
+
+      cacheService.invalidateDispatchData();
+      return dispatch;
+    } catch (error) {
+      console.error('Failed to assign service order as single dispatch:', error);
+      throw error;
+    } finally {
+      installationsBeingAssigned.delete(soKey);
+    }
+  }
+
   // ── Assign installation group (single dispatch for all jobs) ──
 
   static async assignInstallationGroup(
@@ -1004,6 +1102,15 @@ export class DispatchOperationsService {
       isLocked,
       installationId: dispatch.installationId,
       installationName: dispatch.installationName,
+      subJobs: (dispatch.jobs && dispatch.jobs.length > 0)
+        ? dispatch.jobs.map(j => ({
+            id: j.id,
+            title: j.title,
+            status: j.status,
+            estimatedDuration: j.estimatedDuration,
+            priority: j.priority,
+          }))
+        : undefined,
       location: { address: dispatch.siteAddress || 'No address' },
       customerName: dispatch.contactName || 'Unknown',
       createdAt: new Date(dispatch.createdDate || Date.now()),

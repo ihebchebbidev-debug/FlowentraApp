@@ -676,6 +676,7 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
   const handleConfirmBatchAssignment = async (
     jobPriorities: Array<{ jobId: string; priority: 'low' | 'medium' | 'high' | 'urgent' }>,
     scheduledStart: Date,
+    planAsSingleDispatch: boolean = false,
   ) => {
     if (!pendingBatchAssignment) return;
 
@@ -684,10 +685,34 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
     try {
       const { serviceOrder, technicianId, technician } = pendingBatchAssignment;
       const technicianName = technician ? `${technician.firstName} ${technician.lastName}` : undefined;
-      
+
       // Create a map for quick priority lookup
       const priorityMap = new Map(jobPriorities.map(jp => [jp.jobId, jp.priority]));
-      
+
+      // Single-dispatch mode: one dispatch holding all jobs (materials/expenses/time stay per job).
+      if (planAsSingleDispatch) {
+        // Highest selected priority drives the dispatch-level priority.
+        const order = { low: 0, medium: 1, high: 2, urgent: 3 } as const;
+        const dispatchPriority = jobPriorities.reduce<'low' | 'medium' | 'high' | 'urgent'>(
+          (max, jp) => (order[jp.priority] > order[max] ? jp.priority : max),
+          'medium',
+        );
+
+        await DispatcherService.assignServiceOrderAsSingleDispatch(
+          serviceOrder,
+          technicianId,
+          scheduledStart,
+          technicianName,
+          dispatchPriority,
+        );
+
+        await loadAssignedJobs();
+        toast.success(t('dispatcher.jobs_assigned_success', { count: serviceOrder.jobs.length }));
+        setShowBatchModal(false);
+        setPendingBatchAssignment(null);
+        return;
+      }
+
       console.log('Confirming batch assignment:', {
         serviceOrderId: serviceOrder.id,
         jobCount: serviceOrder.jobs.length,

@@ -5,6 +5,8 @@ namespace MyApi.Modules.Dispatches.DTOs
 {
     public class CreateMaterialUsageDto
     {
+        // Optional: the specific job (of a multi-job dispatch) this material is for.
+        public int? ServiceOrderJobId { get; set; }
         [Required]
         public string ArticleId { get; set; } = null!;
         [Required]
@@ -22,6 +24,7 @@ namespace MyApi.Modules.Dispatches.DTOs
     {
         public int Id { get; set; }
         public int DispatchId { get; set; }
+        public int? ServiceOrderJobId { get; set; }
         public int? ServiceOrderId { get; set; }
         public string? TechnicianId { get; set; }
         public string? ArticleId { get; set; }

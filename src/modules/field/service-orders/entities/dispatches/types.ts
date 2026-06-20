@@ -6,6 +6,7 @@ export interface ServiceOrderDispatch {
   installationId?: number;
   installationName?: string;
   jobIds?: number[];
+  jobs?: import('@/services/api/dispatchesApi').DispatchJobSummary[];
   dispatchNumber: string;
   assignedTechnicians: string[];
   requiredSkills: string[];

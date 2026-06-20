@@ -25,7 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/ui/date-time-picker";
 import { DateNavigationWithTime } from "@/components/ui/time-only-picker";
 import { Clock, DollarSign, Plus, Edit, Trash2, User, Settings2 } from "lucide-react";
-import { dispatchesApi, type TimeEntry, type Expense } from "@/services/api/dispatchesApi";
+import { dispatchesApi, type TimeEntry, type Expense, type DispatchJobSummary } from "@/services/api/dispatchesApi";
 import { toast } from "sonner";
 import { logDispatchActivityWithPropagation, formatDurationForLog, calculateDurationMinutes } from "@/services/activityLogger";
 import { useWorkTypes, useExpenseTypes } from "@/modules/lookups/hooks/useLookups";
@@ -33,6 +33,7 @@ import { useWorkTypes, useExpenseTypes } from "@/modules/lookups/hooks/useLookup
 interface DispatchTimeExpensesTabProps {
   dispatchId: number;
   dispatchStatus?: string;
+  dispatchJobs?: DispatchJobSummary[];
   initialTimeEntries?: TimeEntry[];
   initialExpenses?: Expense[];
   onDataChange?: () => void;
@@ -56,13 +57,21 @@ const defaultExpenseTypeOptions = [
 ];
 // Backend stores TimeEntry.Duration as decimal(18,2) - supports very long durations
 
-export function DispatchTimeExpensesTab({ 
+export function DispatchTimeExpensesTab({
   dispatchId,
   dispatchStatus,
-  initialTimeEntries = [], 
+  dispatchJobs = [],
+  initialTimeEntries = [],
   initialExpenses = [],
-  onDataChange 
+  onDataChange
 }: DispatchTimeExpensesTabProps) {
+  // Multi-job dispatches let the user attribute each entry to a specific job.
+  const isMultiJob = dispatchJobs.length > 1;
+  const jobLabel = (id?: number | null) => {
+    if (id == null) return '';
+    const j = dispatchJobs.find(x => x.id === id);
+    return j?.title || `#${id}`;
+  };
   // Only allow adding time/expenses when dispatch is in_progress (block closed, completed, cancelled, etc.)
   const canAddEntries = dispatchStatus === 'in_progress';
   const isClosedStatus = ['closed', 'completed', 'cancelled'].includes(dispatchStatus || '');
@@ -290,6 +299,10 @@ export function DispatchTimeExpensesTab({
     date: new Date().toISOString().split('T')[0],
   });
 
+  // Which job (of a multi-job dispatch) the new time/expense entry is for.
+  const [selectedTimeJobId, setSelectedTimeJobId] = useState<number | null>(null);
+  const [selectedExpenseJobId, setSelectedExpenseJobId] = useState<number | null>(null);
+
   // Sync form state when defaults are loaded
   useEffect(() => {
     if (defaultWorkType && timeFormData.workType === 'work') {
@@ -330,6 +343,8 @@ export function DispatchTimeExpensesTab({
     });
     setDurationHours(0);
     setDurationMinutes(0);
+    // Pre-select the first job for multi-job dispatches so a value is always set.
+    setSelectedTimeJobId(isMultiJob ? (dispatchJobs[0]?.id ?? null) : null);
   };
 
   const resetExpenseForm = () => {
@@ -340,6 +355,7 @@ export function DispatchTimeExpensesTab({
       description: '',
       date: new Date().toISOString().split('T')[0],
     });
+    setSelectedExpenseJobId(isMultiJob ? (dispatchJobs[0]?.id ?? null) : null);
   };
 
   // Resolve start/end times from duration mode if needed
@@ -368,17 +384,22 @@ export function DispatchTimeExpensesTab({
   const handleAddTimeEntry = async () => {
     const times = resolveTimesFromMode();
     if (!times) return;
+    if (isMultiJob && selectedTimeJobId == null) {
+      toast.error(t('dispatches.time_booking.select_job', 'Please select which job this time is for'));
+      return;
+    }
 
     setIsSubmitting(true);
     try {
       const currentUser = getCurrentUserData();
       const durationMins = calculateDurationMinutes(times.startTime, times.endTime);
-      
+
       console.log('Submitting time entry for dispatch:', dispatchId, 'user:', currentUser);
-      
+
       await dispatchesApi.addTimeEntry(dispatchId, {
         technicianId: currentUser.id,
         technicianName: currentUser.name,
+        serviceOrderJobId: selectedTimeJobId ?? undefined,
         workType: timeFormData.workType,
         startTime: times.startTime.toISOString(),
         endTime: times.endTime.toISOString(),
@@ -416,16 +437,21 @@ export function DispatchTimeExpensesTab({
       toast.error(t('dispatches.expense_booking.invalid_amount', 'Please enter a valid amount'));
       return;
     }
+    if (isMultiJob && selectedExpenseJobId == null) {
+      toast.error(t('dispatches.expense_booking.select_job', 'Please select which job this expense is for'));
+      return;
+    }
 
     setIsSubmitting(true);
     try {
       const currentUser = getCurrentUserData();
-      
+
       console.log('Submitting expense for dispatch:', dispatchId, 'user:', currentUser);
-      
+
       await dispatchesApi.addExpense(dispatchId, {
         technicianId: currentUser.id,
         technicianName: currentUser.name,
+        serviceOrderJobId: selectedExpenseJobId ?? undefined,
         type: expenseFormData.type,
         amount: expenseFormData.amount,
         currency: expenseFormData.currency,
@@ -513,6 +539,7 @@ export function DispatchTimeExpensesTab({
     });
     setDurationHours(hours);
     setDurationMinutes(mins);
+    setSelectedTimeJobId(entry.serviceOrderJobId ?? (isMultiJob ? (dispatchJobs[0]?.id ?? null) : null));
     setTimeEntryMode('times');
     setEditingTimeId(entry.id);
     setIsTimeDialogOpen(true);
@@ -605,6 +632,7 @@ export function DispatchTimeExpensesTab({
       description: expense.description || '',
       date: expense.date.split('T')[0],
     });
+    setSelectedExpenseJobId(expense.serviceOrderJobId ?? (isMultiJob ? (dispatchJobs[0]?.id ?? null) : null));
     setEditingExpenseId(expense.id);
     setIsExpenseDialogOpen(true);
   };
@@ -750,13 +778,18 @@ export function DispatchTimeExpensesTab({
               {timeEntries.map((entry) => (
                 <div key={entry.id} className="border rounded-lg p-3 hover:bg-muted/50 transition-colors">
                   <div className="flex items-center justify-between mb-2">
-                    <Badge variant="secondary" className={getWorkTypeBadgeColor(entry.workType)}>
-                      {getWorkTypeLabel(entry.workType)}
-                    </Badge>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <Badge variant="secondary" className={getWorkTypeBadgeColor(entry.workType)}>
+                        {getWorkTypeLabel(entry.workType)}
+                      </Badge>
+                      {isMultiJob && entry.serviceOrderJobId != null && (
+                        <Badge variant="outline" className="text-[10px]">📋 {jobLabel(entry.serviceOrderJobId)}</Badge>
+                      )}
+                    </div>
                     <div className="flex items-center gap-1">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="h-8 w-8 p-0"
                         onClick={() => handleEditTimeEntry(entry)}
                       >
@@ -838,13 +871,18 @@ export function DispatchTimeExpensesTab({
               {expenses.map((expense) => (
                 <div key={expense.id} className="border rounded-lg p-3 hover:bg-muted/50 transition-colors">
                   <div className="flex items-center justify-between mb-2">
-                    <Badge variant="secondary" className={getExpenseTypeBadgeColor(expense.type)}>
-                      {getExpenseTypeLabel(expense.type)}
-                    </Badge>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <Badge variant="secondary" className={getExpenseTypeBadgeColor(expense.type)}>
+                        {getExpenseTypeLabel(expense.type)}
+                      </Badge>
+                      {isMultiJob && expense.serviceOrderJobId != null && (
+                        <Badge variant="outline" className="text-[10px]">📋 {jobLabel(expense.serviceOrderJobId)}</Badge>
+                      )}
+                    </div>
                     <div className="flex items-center gap-1">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="h-8 w-8 p-0"
                         onClick={() => handleEditExpense(expense)}
                       >
@@ -901,6 +939,26 @@ export function DispatchTimeExpensesTab({
             <DialogTitle>{editingTimeId ? t('dispatches.time_booking.edit_entry') : t('dispatches.time_booking.new_entry')}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4 overflow-y-auto flex-1 pr-1">
+            {isMultiJob && (
+              <div>
+                <Label>{t('dispatches.job_for_entry', 'Job')}</Label>
+                <Select
+                  value={selectedTimeJobId != null ? String(selectedTimeJobId) : ''}
+                  onValueChange={(value) => setSelectedTimeJobId(value ? parseInt(value, 10) : null)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('dispatches.select_job', 'Select job')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {dispatchJobs.map((j) => (
+                      <SelectItem key={j.id} value={String(j.id)}>
+                        {j.title || `#${j.id}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <Label>{t('dispatches.time_booking.work_type')}</Label>
@@ -1054,6 +1112,26 @@ export function DispatchTimeExpensesTab({
             <DialogTitle>{editingExpenseId ? t('dispatches.expense_booking.edit_expense', 'Edit Expense') : t('dispatches.expense_booking.add_expense', 'Add Expense')}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4 overflow-y-auto flex-1 pr-1">
+            {isMultiJob && (
+              <div>
+                <Label>{t('dispatches.job_for_entry', 'Job')}</Label>
+                <Select
+                  value={selectedExpenseJobId != null ? String(selectedExpenseJobId) : ''}
+                  onValueChange={(value) => setSelectedExpenseJobId(value ? parseInt(value, 10) : null)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('dispatches.select_job', 'Select job')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {dispatchJobs.map((j) => (
+                      <SelectItem key={j.id} value={String(j.id)}>
+                        {j.title || `#${j.id}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <Label>{t('dispatches.expense_booking.expense_type', 'Expense Type')}</Label>

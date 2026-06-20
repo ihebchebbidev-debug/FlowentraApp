@@ -8,6 +8,9 @@ namespace MyApi.Modules.Dispatches.Services
     {
         Task<DispatchDto> CreateFromJobAsync(int jobId, CreateDispatchFromJobDto dto, string userId);
         Task<DispatchDto> CreateFromInstallationAsync(CreateDispatchFromInstallationDto dto, string userId);
+        // Create a single dispatch holding ALL (or the supplied) jobs of a service order.
+        // When dto.JobIds is empty, every non-deleted job on the service order is included.
+        Task<DispatchDto> CreateFromServiceOrderAsync(CreateDispatchFromServiceOrderDto dto, string userId);
         // Find an existing installation dispatch on the given date for the given technicians and append jobs to it,
         // or create a new installation dispatch when none exists. Used by both REST endpoint and PlanningService.
         Task<DispatchDto> AddJobsToInstallationDispatchAsync(int installationId, string installationName, System.Collections.Generic.List<int> jobIds, System.Collections.Generic.List<string> technicianIds, System.DateTime scheduledDate, System.TimeSpan? scheduledStartTime, System.TimeSpan? scheduledEndTime, string priority, string? notes, string? siteAddress, int? contactId, int? serviceOrderId, string userId);

@@ -236,7 +236,11 @@ export const en = {
     // Toast messages
     job_assigned_success: "Job assigned successfully!",
     dispatch_rescheduled_success: "Dispatch rescheduled successfully!",
-    jobs_assigned_success: "{count} jobs assigned successfully!",
+    jobs_assigned_success: "{{count}} jobs assigned successfully!",
+    plan_single_dispatch: "Plan as a single dispatch",
+    plan_single_dispatch_on: "All jobs go into one dispatch (materials, expenses and time stay per job).",
+    plan_single_dispatch_off: "Each job becomes its own dispatch.",
+    jobs_in_dispatch: "Jobs in this dispatch",
     job_duration_updated: "Job duration updated!",
     failed_to_assign_job: "Failed to assign job",
     failed_to_reschedule: "Failed to reschedule dispatch",

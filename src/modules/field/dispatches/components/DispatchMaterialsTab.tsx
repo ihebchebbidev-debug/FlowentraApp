@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Wrench, Plus, Eye, Trash2, Package, User, Calendar, FileText, Pencil, Building } from "lucide-react";
 import { AddMaterialModal } from "../../components/AddMaterialModal";
-import { dispatchesApi, type MaterialUsage } from "@/services/api/dispatchesApi";
+import { dispatchesApi, type MaterialUsage, type DispatchJobSummary } from "@/services/api/dispatchesApi";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { articlesApi } from "@/services/api/articlesApi";
 import type { Article } from "@/modules/inventory-services/types";
 import { toast } from "sonner";
@@ -70,6 +71,8 @@ interface DispatchMaterialsTabProps {
   // New props for installation-related materials from service order
   installationId?: string;
   serviceOrderMaterials?: ServiceOrderMaterial[];
+  // Jobs of a multi-job dispatch, so materials can be attributed to a specific job.
+  dispatchJobs?: DispatchJobSummary[];
 }
 
 // Extended type to hold resolved names
@@ -95,10 +98,24 @@ interface EditMaterialFormData {
   internalComment: string;
 }
 
-export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onDataChange, installationId, serviceOrderMaterials = [] }: DispatchMaterialsTabProps) {
+export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onDataChange, installationId, serviceOrderMaterials = [], dispatchJobs = [] }: DispatchMaterialsTabProps) {
   const { t } = useTranslation('dispatches');
   const [materials, setMaterials] = useState<MaterialUsage[]>(initialMaterials);
   const [isMaterialModalOpen, setIsMaterialModalOpen] = useState(false);
+
+  // Multi-job dispatches: attribute each material to a specific job.
+  const isMultiJob = dispatchJobs.length > 1;
+  const [selectedMaterialJobId, setSelectedMaterialJobId] = useState<number | null>(null);
+  useEffect(() => {
+    if (isMultiJob && selectedMaterialJobId == null) {
+      setSelectedMaterialJobId(dispatchJobs[0]?.id ?? null);
+    }
+  }, [isMultiJob, dispatchJobs, selectedMaterialJobId]);
+  const jobLabel = (id?: number | null) => {
+    if (id == null) return '';
+    const j = dispatchJobs.find(x => x.id === id);
+    return j?.title || `#${id}`;
+  };
   const [availableMaterials, setAvailableMaterials] = useState<Article[]>([]);
   const [loadingMaterials, setLoadingMaterials] = useState(false);
   
@@ -368,11 +385,16 @@ export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onData
   }, [isMaterialModalOpen]);
 
   const handleMaterialAdd = async (materialData: any) => {
+    if (isMultiJob && selectedMaterialJobId == null) {
+      toast.error(t('materials_tab.select_job', 'Please select which job this material is for'));
+      return;
+    }
     try {
       const currentUser = getCurrentUserData();
       await dispatchesApi.addMaterial(dispatchId, {
         articleId: materialData.articleId,
         articleName: materialData.articleName,
+        serviceOrderJobId: selectedMaterialJobId ?? undefined,
         quantity: materialData.quantity || 1,
         unitPrice: materialData.unitPrice || 0,
         usedBy: currentUser.name,
@@ -541,18 +563,42 @@ export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onData
               <Wrench className="h-4 w-4 text-primary" />
               {t('materials_tab.materials_used')} ({materials.length})
             </CardTitle>
-            {materials.length > 0 && (
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="gap-2" 
-                onClick={() => setIsMaterialModalOpen(true)}
-              >
-                <Plus className="h-4 w-4" />
-                {t('materials_tab.add_materials')}
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {isMultiJob && (
+                <Select
+                  value={selectedMaterialJobId != null ? String(selectedMaterialJobId) : ''}
+                  onValueChange={(value) => setSelectedMaterialJobId(value ? parseInt(value, 10) : null)}
+                >
+                  <SelectTrigger className="h-9 w-[200px]">
+                    <SelectValue placeholder={t('materials_tab.select_job', 'Select job')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {dispatchJobs.map((j) => (
+                      <SelectItem key={j.id} value={String(j.id)}>
+                        {j.title || `#${j.id}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {materials.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-2"
+                  onClick={() => setIsMaterialModalOpen(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                  {t('materials_tab.add_materials')}
+                </Button>
+              )}
+            </div>
           </div>
+          {isMultiJob && (
+            <p className="text-xs text-muted-foreground mt-1">
+              {t('materials_tab.adding_for_job', 'New materials will be added to')}: <span className="font-medium text-foreground">{jobLabel(selectedMaterialJobId)}</span>
+            </p>
+          )}
         </CardHeader>
         <CardContent>
           {materialsWithDetails.length > 0 ? (
@@ -562,6 +608,7 @@ export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onData
                   <thead>
                     <tr className="border-b">
                       <th className="text-left p-4 text-sm font-medium text-muted-foreground">{t('materials_tab.material_name')}</th>
+                      {isMultiJob && <th className="text-left p-4 text-sm font-medium text-muted-foreground">{t('materials_tab.job', 'Job')}</th>}
                       <th className="text-left p-4 text-sm font-medium text-muted-foreground">{t('materials_tab.quantity')}</th>
                       <th className="text-left p-4 text-sm font-medium text-muted-foreground">{t('materials_tab.unit_cost')}</th>
                       <th className="text-left p-4 text-sm font-medium text-muted-foreground">{t('materials_tab.total_cost')}</th>
@@ -577,6 +624,13 @@ export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onData
                       return (
                         <tr key={material.id} className="border-b hover:bg-muted/50 transition-colors">
                           <td className="px-4 py-3 text-sm font-medium">{material.resolvedArticleName}</td>
+                          {isMultiJob && (
+                            <td className="px-4 py-3 text-sm">
+                              {material.serviceOrderJobId != null
+                                ? <Badge variant="outline" className="text-[10px]">📋 {jobLabel(material.serviceOrderJobId)}</Badge>
+                                : <span className="text-muted-foreground">—</span>}
+                            </td>
+                          )}
                           <td className="px-4 py-3 text-sm">{material.quantity} {getUnitLabel((material as any).unit || 'piece', t)}</td>
                           <td className="px-4 py-3 text-sm">{formatCurrency(unitCost)}</td>
                           <td className="px-4 py-3 text-sm font-medium">{formatCurrency(materialTotalCost)}</td>

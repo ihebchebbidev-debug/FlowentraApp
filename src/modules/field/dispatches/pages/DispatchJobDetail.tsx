@@ -124,6 +124,7 @@ export default function DispatchJobDetail() {
         installationId: dispatchData.installationId,
         installationName: dispatchData.installationName,
         jobIds: dispatchData.jobIds,
+        jobs: dispatchData.jobs,
         dispatchNumber: dispatchData.dispatchNumber || `DISP-${dispatchData.id}`,
         assignedTechnicians: (dispatchData.assignedTechnicians || []).map((t: any) => {
           if (typeof t === 'string') return t;
@@ -805,15 +806,16 @@ export default function DispatchJobDetail() {
 
           {/* Time & Expenses Tab */}
           <TabsContent value="time_expenses" className="mt-0">
-            <DispatchTimeExpensesTab dispatchId={dispatchId} dispatchStatus={dispatch?.status} />
+            <DispatchTimeExpensesTab dispatchId={dispatchId} dispatchStatus={dispatch?.status} dispatchJobs={dispatch?.jobs} />
           </TabsContent>
 
           {/* Materials Tab */}
           <TabsContent value="materials" className="mt-0">
-            <DispatchMaterialsTab 
-              dispatchId={dispatchId} 
+            <DispatchMaterialsTab
+              dispatchId={dispatchId}
               installationId={jobInstallationId || undefined}
               serviceOrderMaterials={serviceOrderMaterials}
+              dispatchJobs={dispatch?.jobs}
             />
           </TabsContent>
 

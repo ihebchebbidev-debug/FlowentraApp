@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Clock, User, Calendar, Package, Briefcase } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Clock, User, Calendar, Package, Briefcase, Layers } from "lucide-react";
 import { format } from "date-fns";
 import { fr, enUS } from "date-fns/locale";
 import { useTranslation } from "react-i18next";
@@ -26,7 +28,7 @@ interface BatchAssignmentModalProps {
   scheduledStart: Date | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (jobPriorities: JobPriority[], scheduledStart: Date) => void;
+  onConfirm: (jobPriorities: JobPriority[], scheduledStart: Date, planAsSingleDispatch: boolean) => void;
   onCancel: () => void;
   isLoading?: boolean;
 }
@@ -52,6 +54,9 @@ export function BatchAssignmentModal({
   const [editedDate, setEditedDate] = useState('');
   const [editedStartTime, setEditedStartTime] = useState('');
 
+  // When ON (default), create ONE dispatch holding all jobs; when OFF, one dispatch per job.
+  const [planAsSingleDispatch, setPlanAsSingleDispatch] = useState(true);
+
   // Initialize state when modal opens with new service order / slot
   useEffect(() => {
     if (serviceOrder && open) {
@@ -60,6 +65,7 @@ export function BatchAssignmentModal({
         initialPriorities[job.id] = (job.priority as DispatchPriority) || 'medium';
       });
       setJobPriorities(initialPriorities);
+      setPlanAsSingleDispatch(true);
     }
     if (open && scheduledStart) {
       setEditedDate(format(scheduledStart, 'yyyy-MM-dd'));
@@ -103,7 +109,7 @@ export function BatchAssignmentModal({
       jobId: job.id,
       priority: jobPriorities[job.id] || 'medium'
     }));
-    onConfirm(priorities, finalStart);
+    onConfirm(priorities, finalStart, planAsSingleDispatch);
   };
 
   return (
@@ -232,6 +238,29 @@ export function BatchAssignmentModal({
               <span>·</span>
               <Clock className="h-3.5 w-3.5" />
               <span>{format(finalStart, 'HH:mm')} - {format(scheduledEnd, 'HH:mm')} ({totalHours}{t('dispatcher.hours_short')})</span>
+            </div>
+
+            {/* Single-dispatch toggle: one dispatch for all jobs vs one per job */}
+            <div className="flex items-start justify-between gap-3 pt-2 border-t border-border">
+              <div className="flex items-start gap-2">
+                <Layers className="h-4 w-4 text-muted-foreground mt-0.5" />
+                <div>
+                  <Label htmlFor="plan-single-dispatch" className="text-sm font-medium cursor-pointer">
+                    {t('dispatcher.plan_single_dispatch', 'Plan as a single dispatch')}
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    {planAsSingleDispatch
+                      ? t('dispatcher.plan_single_dispatch_on', 'All jobs go into one dispatch (materials, expenses and time stay per job).')
+                      : t('dispatcher.plan_single_dispatch_off', 'Each job becomes its own dispatch.')}
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="plan-single-dispatch"
+                checked={planAsSingleDispatch}
+                onCheckedChange={setPlanAsSingleDispatch}
+                disabled={isLoading}
+              />
             </div>
           </div>
         </div>

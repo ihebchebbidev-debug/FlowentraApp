@@ -19,6 +19,10 @@ namespace MyApi.Modules.Dispatches.Models
         [Column("DispatchId")]
         public int DispatchId { get; set; }
 
+        // Which job of a multi-job dispatch this expense belongs to (null = whole dispatch / legacy).
+        [Column("ServiceOrderJobId")]
+        public int? ServiceOrderJobId { get; set; }
+
         [Required]
         [Column("ExpenseType")]
         [MaxLength(50)]

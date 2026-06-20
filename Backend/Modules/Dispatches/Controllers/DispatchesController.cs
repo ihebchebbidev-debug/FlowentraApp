@@ -57,6 +57,20 @@ namespace MyApi.Modules.Dispatches.Controllers
             return CreatedAtAction(nameof(GetById), new { dispatchId = result.Id }, result);
         }
 
+        [HttpPost("from-service-order")]
+        public async Task<IActionResult> CreateFromServiceOrder([FromBody] CreateDispatchFromServiceOrderDto dto)
+        {
+            if (!ModelState.IsValid) return UnprocessableEntity(ModelState);
+            var userId = GetUserId();
+            var result = await _service.CreateFromServiceOrderAsync(dto, userId);
+
+            await _systemLogService.LogSuccessAsync(
+                $"Dispatch created from service order {dto.ServiceOrderId} ({result.JobIds.Count} jobs)",
+                "Dispatches", "create", userId, GetUserName(), "Dispatch", result.Id.ToString());
+
+            return CreatedAtAction(nameof(GetById), new { dispatchId = result.Id }, result);
+        }
+
         // Find-or-create installation dispatch and append jobs to it.
         // Body uses CreateDispatchFromInstallationDto (jobIds, technicianIds, scheduledDate, ...).
         [HttpPost("installations/{installationId:int}/jobs")]

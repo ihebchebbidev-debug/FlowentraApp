@@ -45,6 +45,7 @@ const logActivity = async (
 export interface TimeEntry {
   id: number;
   dispatchId: number;
+  serviceOrderJobId?: number;
   technicianId: string;
   technicianName?: string;
   workType: string;
@@ -60,6 +61,7 @@ export interface TimeEntry {
 export interface Expense {
   id: number;
   dispatchId: number;
+  serviceOrderJobId?: number;
   technicianId: string;
   technicianName?: string;
   type: string;
@@ -74,6 +76,7 @@ export interface Expense {
 export interface MaterialUsage {
   id: number;
   dispatchId: number;
+  serviceOrderJobId?: number;
   articleId: string;
   articleName?: string;
   quantity: number;
@@ -95,6 +98,14 @@ export interface DispatchNote {
   note: string;
   createdBy: string;
   createdDate: string;
+}
+
+export interface DispatchJobSummary {
+  id: number;
+  title?: string;
+  status?: string;
+  estimatedDuration?: number;
+  priority?: string;
 }
 
 export interface Dispatch {
@@ -130,6 +141,7 @@ export interface Dispatch {
   installationId?: number;
   installationName?: string;
   jobIds?: number[];
+  jobs?: DispatchJobSummary[];
   scheduling?: {
     scheduledDate?: string;
     scheduledStartTime?: string;
@@ -163,6 +175,19 @@ export interface CreateDispatchFromInstallationRequest {
   siteAddress?: string;
   contactId?: number;
   serviceOrderId?: number;
+}
+
+export interface CreateDispatchFromServiceOrderRequest {
+  serviceOrderId: number;
+  jobIds?: number[];            // optional: omit/empty = all jobs on the service order
+  assignedTechnicianIds: string[];
+  scheduledDate: string;
+  scheduledStartTime?: string;  // TimeSpan format: "HH:mm:ss"
+  scheduledEndTime?: string;    // TimeSpan format: "HH:mm:ss"
+  priority?: string;
+  notes?: string;
+  siteAddress?: string;
+  contactId?: number;
 }
 
 export interface UpdateDispatchRequest {
@@ -273,6 +298,15 @@ export const dispatchesApi = {
     return data.data || data;
   },
 
+  async createFromServiceOrder(request: CreateDispatchFromServiceOrderRequest): Promise<Dispatch> {
+    const result = await apiFetch<any>('/api/dispatches/from-service-order', {
+      method: 'POST',
+      body: JSON.stringify(request)
+    });
+    const data = unwrap(result, 'Failed to create dispatch from service order');
+    return data.data || data;
+  },
+
   async update(id: number, request: UpdateDispatchRequest): Promise<Dispatch> {
     const result = await apiFetch<any>(`/api/dispatches/${id}`, { method: 'PUT', body: JSON.stringify(request) });
     const data = unwrap(result, 'Failed to update dispatch');
@@ -328,6 +362,7 @@ export const dispatchesApi = {
   async addTimeEntry(dispatchId: number, entry: {
     technicianId: string;
     technicianName?: string;
+    serviceOrderJobId?: number;
     workType: string;
     startTime: string;
     endTime: string;
@@ -339,6 +374,7 @@ export const dispatchesApi = {
     const payload = {
       technicianId: entry.technicianId,
       technicianName: entry.technicianName || getUserName(),
+      serviceOrderJobId: entry.serviceOrderJobId ?? null,
       workType: entry.workType,
       startTime: entry.startTime,
       endTime: entry.endTime,
@@ -398,6 +434,7 @@ export const dispatchesApi = {
   async addExpense(dispatchId: number, expense: {
     technicianId: string;
     technicianName?: string;
+    serviceOrderJobId?: number;
     type: string;
     amount: number;
     currency: string;
@@ -408,6 +445,7 @@ export const dispatchesApi = {
     const payload = {
       technicianId: expense.technicianId,
       technicianName: expense.technicianName || getUserName(),
+      serviceOrderJobId: expense.serviceOrderJobId ?? null,
       type: expense.type,
       amount: expense.amount,
       currency: expense.currency || 'USD',
@@ -464,6 +502,7 @@ export const dispatchesApi = {
   async addMaterial(dispatchId: number, material: {
     articleId: string;
     articleName?: string;
+    serviceOrderJobId?: number;
     quantity: number;
     unitPrice?: number;
     usedBy: string;

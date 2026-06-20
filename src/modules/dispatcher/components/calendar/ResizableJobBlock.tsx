@@ -36,9 +36,21 @@ function ResizableJobBlockInner({
   const display = usePlanningDisplay();
   // Configurable card label + hover content, driven by the active planning profile.
   const cardLabel = formatCardLabel(job, display.cardPrimaryFields, display.cardSeparator);
+  // Multi-job dispatches (whole service order or installation) list their jobs on hover.
+  const subJobs = job.subJobs && job.subJobs.length > 0 ? job.subJobs : null;
+  const subJobRows = subJobs
+    ? [
+        `${t('dispatcher.jobs_in_dispatch', 'Jobs in this dispatch')} (${subJobs.length}):`,
+        ...subJobs.map((sj, i) => {
+          const dur = sj.estimatedDuration ? ` · ${Math.round(sj.estimatedDuration / 60 * 10) / 10}h` : '';
+          return `  ${i + 1}. ${sj.title || `#${sj.id}`}${dur}`;
+        }),
+      ]
+    : [];
   const hoverTitle = [
     cardLabel,
     ...buildHoverRows(job, display.hoverFields).map(r => `${r.label}: ${r.value}`),
+    ...subJobRows,
   ].filter(Boolean).join('\n');
   const [isResizing, setIsResizing] = useState(false);
   const [originalEnd, setOriginalEnd] = useState<Date | null>(null);
@@ -387,7 +399,11 @@ function ResizableJobBlockInner({
               )}
             </div>
             <div className="font-semibold truncate text-[11px] leading-tight">{cardLabel}</div>
-            {job.installationName && job.description && /^\d+ jobs$/.test(job.description) && (
+            {subJobs ? (
+              <div className="text-[9px] text-muted-foreground/80 mt-0.5">
+                📋 {subJobs.length} {t('dispatcher.jobs', 'jobs')}
+              </div>
+            ) : job.installationName && job.description && /^\d+ jobs$/.test(job.description) && (
               <div className="text-[9px] text-muted-foreground/80 mt-0.5">{job.description}</div>
             )}
             <div className="flex items-center gap-1 mt-1">

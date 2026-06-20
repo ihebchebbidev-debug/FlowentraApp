@@ -42,6 +42,7 @@ export class DispatcherService {
   static assignJob = DispatchOperationsService.assignJob;
   static assignServiceOrderJobs = DispatchOperationsService.assignServiceOrderJobs;
   static assignServiceOrderByInstallations = DispatchOperationsService.assignServiceOrderByInstallations;
+  static assignServiceOrderAsSingleDispatch = DispatchOperationsService.assignServiceOrderAsSingleDispatch;
   static assignInstallationGroup = DispatchOperationsService.assignInstallationGroup;
   static unassignJob = DispatchOperationsService.unassignJob;
   static deleteDispatch = DispatchOperationsService.deleteDispatch;

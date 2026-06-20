@@ -236,7 +236,11 @@ export const fr = {
     // Toast messages
     job_assigned_success: "Tâche assignée avec succès !",
     dispatch_rescheduled_success: "Intervention reprogrammée avec succès !",
-    jobs_assigned_success: "{count} tâches assignées avec succès !",
+    jobs_assigned_success: "{{count}} tâches assignées avec succès !",
+    plan_single_dispatch: "Planifier en une seule intervention",
+    plan_single_dispatch_on: "Toutes les tâches dans une seule intervention (matériel, dépenses et temps restent par tâche).",
+    plan_single_dispatch_off: "Chaque tâche devient sa propre intervention.",
+    jobs_in_dispatch: "Tâches dans cette intervention",
     job_duration_updated: "Durée de la tâche mise à jour !",
     failed_to_assign_job: "Échec de l'assignation de la tâche",
     failed_to_reschedule: "Échec de la reprogrammation",

@@ -5,6 +5,8 @@ namespace MyApi.Modules.Dispatches.DTOs
 {
     public class CreateTimeEntryDto
     {
+        // Optional: the specific job (of a multi-job dispatch) this entry is for.
+        public int? ServiceOrderJobId { get; set; }
         [Required]
         public string TechnicianId { get; set; } = null!;
         public string? TechnicianName { get; set; }
@@ -37,6 +39,7 @@ namespace MyApi.Modules.Dispatches.DTOs
     {
         public int Id { get; set; }
         public int DispatchId { get; set; }
+        public int? ServiceOrderJobId { get; set; }
         public string TechnicianId { get; set; } = null!;
         public string? TechnicianName { get; set; }
         public string WorkType { get; set; } = null!;

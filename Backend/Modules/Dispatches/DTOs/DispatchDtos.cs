@@ -46,6 +46,17 @@ namespace MyApi.Modules.Dispatches.DTOs
         public int? InstallationId { get; set; }
         public string? InstallationName { get; set; }
         public List<int> JobIds { get; set; } = new();
+        // Job summaries for multi-job dispatches (used by the planning board hover).
+        public List<DispatchJobSummaryDto> Jobs { get; set; } = new();
+    }
+
+    public class DispatchJobSummaryDto
+    {
+        public int Id { get; set; }
+        public string? Title { get; set; }
+        public string? Status { get; set; }
+        public int? EstimatedDuration { get; set; }
+        public string? Priority { get; set; }
     }
 
     public class DispatchDto : DispatchListItemDto

@@ -1,3 +1,11 @@
+export interface DispatchSubJob {
+  id: number;
+  title?: string;
+  status?: string;
+  estimatedDuration?: number;
+  priority?: string;
+}
+
 export interface Job {
   id: string;
   serviceOrderId: string;
@@ -18,6 +26,8 @@ export interface Job {
   isLocked?: boolean;
   installationId?: number;
   installationName?: string;
+  // Sub-jobs contained in a multi-job dispatch (installation or whole-service-order plan).
+  subJobs?: DispatchSubJob[];
   location: {
     address: string;
     lat?: number;
