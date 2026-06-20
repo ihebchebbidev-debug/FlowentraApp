@@ -28,6 +28,7 @@ import { ProjectTasksTab } from '../components/project-detail/ProjectTasksTab';
 import { ProjectTeamTab } from '../components/project-detail/ProjectTeamTab';
 import { ProjectNotesTab } from '../components/project-detail/ProjectNotesTab';
 import { ProjectDocumentsTab } from '../components/project-detail/ProjectDocumentsTab';
+import { ChecklistsSection } from '@/modules/shared/components/documents';
 import { ProjectActivityTab } from '../components/project-detail/ProjectActivityTab';
 import { ProjectOffersTab } from '../components/project-detail/ProjectOffersTab';
 import { ProjectSummaryTab } from '../components/project-detail/ProjectSummaryTab';
@@ -571,11 +572,12 @@ export default function ProjectTasksPage() {
                   <SelectItem value="team">{t('projects.detail.tabs.team')}</SelectItem>
                   <SelectItem value="notes">{t('projects.detail.tabs.notes')}</SelectItem>
                   <SelectItem value="documents">{t('projects.detail.tabs.documents')}</SelectItem>
+                  <SelectItem value="checklists">{t('projects.detail.tabs.checklists', 'Checklists')}</SelectItem>
                   <SelectItem value="activity">{t('projects.detail.tabs.activity')}</SelectItem>
                 </SelectContent>
               </Select>
             ) : (
-              <TabsList className="w-full h-auto p-1 bg-muted/50 rounded-lg grid grid-cols-9">
+              <TabsList className="w-full h-auto p-1 bg-muted/50 rounded-lg grid grid-cols-10">
                 <TabsTrigger value="overview" className="px-2 py-2 text-xs sm:text-sm font-medium">
                   {t('projects.detail.tabs.overview')}
                 </TabsTrigger>
@@ -599,6 +601,9 @@ export default function ProjectTasksPage() {
                 </TabsTrigger>
                 <TabsTrigger value="documents" className="px-2 py-2 text-xs sm:text-sm font-medium">
                   {t('projects.detail.tabs.documents')}
+                </TabsTrigger>
+                <TabsTrigger value="checklists" className="px-2 py-2 text-xs sm:text-sm font-medium">
+                  {t('projects.detail.tabs.checklists', 'Checklists')}
                 </TabsTrigger>
                 <TabsTrigger value="activity" className="px-2 py-2 text-xs sm:text-sm font-medium">
                   {t('projects.detail.tabs.activity')}
@@ -686,6 +691,10 @@ export default function ProjectTasksPage() {
 
               <TabsContent value="documents" className="mt-0">
                 <ProjectDocumentsTab project={project} />
+              </TabsContent>
+
+              <TabsContent value="checklists" className="mt-0">
+                <ChecklistsSection entityType="project" entityId={project.id} />
               </TabsContent>
 
               <TabsContent value="activity" className="mt-0">

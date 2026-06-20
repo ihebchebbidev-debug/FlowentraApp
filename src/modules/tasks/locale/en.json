@@ -340,6 +340,7 @@
         "team": "Team",
         "notes": "Notes",
         "documents": "Documents",
+        "checklists": "Checklists",
         "activity": "Activity",
         "settings": "Settings"
       },

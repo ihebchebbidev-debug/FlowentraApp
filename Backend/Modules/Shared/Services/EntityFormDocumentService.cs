@@ -51,10 +51,10 @@ namespace MyApi.Modules.Shared.Services
         public async Task<EntityFormDocumentDto> CreateAsync(CreateEntityFormDocumentDto dto, string userId)
         {
             // Validate entity type
-            var validEntityTypes = new[] { "offer", "sale", "serviceorder", "dispatch", "deal" };
+            var validEntityTypes = new[] { "offer", "sale", "serviceorder", "dispatch", "deal", "project" };
             if (!validEntityTypes.Contains(dto.EntityType.ToLower()))
             {
-                throw new ArgumentException($"Invalid entity type: {dto.EntityType}. Must be 'offer', 'sale', 'serviceorder', 'dispatch', or 'deal'.");
+                throw new ArgumentException($"Invalid entity type: {dto.EntityType}. Must be 'offer', 'sale', 'serviceorder', 'dispatch', 'deal', or 'project'.");
             }
 
             // Get the form to capture current version
@@ -173,10 +173,10 @@ namespace MyApi.Modules.Shared.Services
         public async Task<int> CopyDocumentsToEntityAsync(string sourceEntityType, int sourceEntityId, string targetEntityType, int targetEntityId, string userId)
         {
             // Validate target entity type
-            var validEntityTypes = new[] { "offer", "sale", "serviceorder", "dispatch", "deal" };
+            var validEntityTypes = new[] { "offer", "sale", "serviceorder", "dispatch", "deal", "project" };
             if (!validEntityTypes.Contains(targetEntityType.ToLower()))
             {
-                throw new ArgumentException($"Invalid target entity type: {targetEntityType}. Must be 'offer', 'sale', 'serviceorder', 'dispatch', or 'deal'.");
+                throw new ArgumentException($"Invalid target entity type: {targetEntityType}. Must be 'offer', 'sale', 'serviceorder', 'dispatch', 'deal', or 'project'.");
             }
 
             // Get all documents from the source entity
