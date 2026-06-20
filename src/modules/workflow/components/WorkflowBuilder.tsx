@@ -36,6 +36,7 @@ import { WorkflowManager } from './WorkflowManager';
 import { NodeConfigurationModal } from './NodeConfigurationModal';
 import { ConditionalConfigModal } from './conditional/ConditionalConfigModal';
 import { SavedWorkflow } from '../hooks/useWorkflowStorage';
+import { WorkflowHelpButton } from './onboarding/WorkflowHelpButton';
 import { IfElseNode } from './conditional/IfElseNode';
 import { SwitchNode } from './conditional/SwitchNode';
 import { LoopNode } from './conditional/LoopNode';
@@ -1730,6 +1731,9 @@ export function WorkflowBuilder() {
         
         {/* Right: Actions */}
         <div className="flex items-center gap-1.5">
+          {/* Watch Demo */}
+          <WorkflowHelpButton />
+
           {/* Edit Mode Indicator */}
           {isEditMode && (
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-warning/15 border border-warning/30 text-[11px] text-warning font-semibold mr-1">

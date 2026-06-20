@@ -4,8 +4,8 @@ import {
   X, Play, Pause, RotateCcw, Volume2, VolumeX, Languages,
   Calendar as CalendarIcon, Map, LayoutGrid, List, Table as TableIcon, Search,
   Filter, Trash2, Sparkles, Wand2, RefreshCcw, Clock, User, Building2, MapPin,
-  GripVertical, ChevronDown, ChevronRight, Star, Copy, Plus, CheckCircle2,
-  AlertTriangle, Users, Settings2, Eye, Wrench,
+  GripVertical, ChevronDown, ChevronRight, ChevronLeft, Star, Copy, Plus, CheckCircle2,
+  AlertTriangle, Users, Settings2, Eye, Wrench, ZoomIn, ZoomOut,
 } from 'lucide-react';
 import { DemoCursor } from '@/modules/external/components/onboarding/DemoCursor';
 import { pickBestVoice, splitForSpeech, languageTagFor } from '@/modules/external/components/onboarding/narrationVoice';
@@ -36,12 +36,14 @@ const TECHS = [
   { id: 't3', name: 'Leïla M.',  skills: ['HVAC', 'Electrical'],     status: 'available' },
 ];
 
-// Calendar blocks per technician column (index aligns with TECHS)
-const CAL_BLOCKS: Record<string, { top: number; h: number; label: string; sub: string; cls: string }[]> = {
-  t1: [{ top: 8, h: 64, label: 'AC Overhaul', sub: '09:00 · Acme', cls: 'bg-blue-100 border-blue-300 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200' }],
-  t2: [{ top: 0, h: 48, label: 'Leak Repair', sub: '08:30 · Médina', cls: 'bg-red-100 border-red-300 text-red-800 dark:bg-red-900/30 dark:text-red-200' },
-       { top: 120, h: 40, label: 'On leave', sub: 'PM', cls: 'bg-muted border-border text-muted-foreground striped' }],
-  t3: [{ top: 168, h: 80, label: 'Install Pump', sub: '13:00 · Acme', cls: 'bg-amber-100 border-amber-300 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200' }],
+// Horizontal Gantt blocks per technician ROW (matches the real CustomCalendar
+// timeline: technicians down the left, time running left→right). left/width are
+// percentages across the 08:00–17:00 working window (540 min).
+const JOBS_H: Record<string, { left: number; width: number; label: string; sub: string; cls: string }[]> = {
+  t1: [{ left: 11.1, width: 22.2, label: 'AC Overhaul', sub: '09:00–11:00 · Acme', cls: 'bg-blue-100 border-blue-300 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200 dark:border-blue-700' }],
+  t2: [{ left: 5.6, width: 16.7, label: 'Leak Repair', sub: '08:30–10:00 · Médina', cls: 'bg-red-100 border-red-300 text-red-800 dark:bg-red-900/40 dark:text-red-200 dark:border-red-700' },
+       { left: 66.7, width: 33.3, label: 'On leave', sub: 'PM', cls: 'bg-muted border-border text-muted-foreground striped' }],
+  t3: [{ left: 55.6, width: 27.8, label: 'Install Pump', sub: '13:00–15:30 · Acme', cls: 'bg-amber-100 border-amber-300 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200 dark:border-amber-700' }],
 };
 
 const SUGGEST = [
@@ -203,85 +205,124 @@ function PageBoard({ state }: { state: PlanningDemoState }) {
   const hi = (k: string) => state.sidebarHi === k ? 'ring-1 ring-primary rounded-md' : '';
   return (
     <div className="flex flex-col h-full relative">
-      {/* Header */}
-      <div id="pl-demo-board-header" className="flex items-center justify-between p-3 border-b border-border bg-card/50">
-        <div className="flex items-center gap-2.5">
-          <div className="p-1.5 rounded-lg bg-primary/10"><CalendarIcon className="h-5 w-5 text-primary" /></div>
-          <div><h1 className="text-sm font-semibold">Planning Board</h1><p className="text-[10px] text-muted-foreground">Drag jobs onto a technician</p></div>
+      {/* Header — mirrors the real DispatchingInterface header */}
+      <div id="pl-demo-board-header" className="flex items-center justify-between gap-3 p-4 border-b border-border bg-card/50 backdrop-blur">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="p-2 rounded-lg bg-primary/10"><CalendarIcon className="h-6 w-6 text-primary" /></div>
+          <div className="min-w-0">
+            <h1 className="text-xl font-semibold text-foreground truncate">Planning &amp; Dispatch</h1>
+            <p className="text-[11px] text-muted-foreground truncate">Schedule field work across your team</p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
-          <div id="pl-demo-view-toggle" className="flex items-center bg-muted rounded-lg p-0.5 text-[11px]">
-            <span className={`px-2 py-1 rounded ${state.boardView === 'calendar' ? 'bg-card shadow-sm' : 'text-muted-foreground'}`}>Day</span>
-            <span className="px-2 py-1 rounded text-muted-foreground">Week</span>
-          </div>
-          <div className="flex items-center bg-muted rounded-lg p-0.5">
-            <span className={`px-2 py-1 rounded text-[11px] inline-flex items-center gap-1 ${state.boardView === 'calendar' ? 'bg-card shadow-sm' : 'text-muted-foreground'}`}><LayoutGrid className="h-3.5 w-3.5" /> Calendar</span>
-            <span id="pl-demo-map-btn" className={`px-2 py-1 rounded text-[11px] inline-flex items-center gap-1 ${state.boardView === 'map' ? 'bg-card shadow-sm' : 'text-muted-foreground'}`}><Map className="h-3.5 w-3.5" /> Map</span>
+          {/* View Mode Toggle */}
+          <div className="flex items-center bg-muted rounded-lg p-1">
+            <span className={`px-2.5 py-1 rounded-md text-[11px] inline-flex items-center gap-1.5 ${state.boardView === 'calendar' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground'}`}><LayoutGrid className="h-3.5 w-3.5" /> Calendar</span>
+            <span id="pl-demo-map-btn" className={`px-2.5 py-1 rounded-md text-[11px] inline-flex items-center gap-1.5 ${state.boardView === 'map' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground'}`}><Map className="h-3.5 w-3.5" /> Map</span>
           </div>
           {/* Smart Planning group */}
           <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-primary/30 bg-primary/5">
-            <span className="hidden md:inline text-[10px] font-medium text-primary uppercase tracking-wide">Smart Planning</span>
-            <div id="pl-demo-suggest-btn" className="h-7 px-2 rounded-md bg-primary text-primary-foreground text-[11px] inline-flex items-center gap-1 cursor-default"><Sparkles className="h-3.5 w-3.5" /> Suggest <span className="h-4 px-1 rounded bg-primary-foreground/20 text-[9px]">2</span></div>
-            <div id="pl-demo-autofill-btn" className="h-7 px-2 rounded-md bg-primary text-primary-foreground text-[11px] inline-flex items-center gap-1 cursor-default"><Wand2 className="h-3.5 w-3.5" /> Auto-fill day</div>
+            <span className="hidden md:inline text-[10px] font-medium text-primary uppercase tracking-wide pr-0.5">Smart Planning</span>
+            <div id="pl-demo-suggest-btn" className="h-8 px-2.5 rounded-md bg-primary text-primary-foreground text-[11px] inline-flex items-center gap-1.5 cursor-default"><Sparkles className="h-3.5 w-3.5" /> Suggest <span className="h-5 px-1.5 rounded bg-secondary text-secondary-foreground text-[10px] inline-flex items-center font-semibold">2</span></div>
+            <div id="pl-demo-autofill-btn" className="h-8 px-2.5 rounded-md bg-primary text-primary-foreground text-[11px] inline-flex items-center gap-1.5 cursor-default"><Wand2 className="h-3.5 w-3.5" /> Auto-fill day</div>
           </div>
-          <div className="h-7 px-2 rounded-md border border-border text-[11px] inline-flex items-center gap-1 text-muted-foreground"><RefreshCcw className="h-3.5 w-3.5" /> Update</div>
+          <div className="h-8 px-2.5 rounded-md border border-border text-[11px] inline-flex items-center gap-1.5 text-muted-foreground"><RefreshCcw className="h-3.5 w-3.5" /> Update</div>
         </div>
       </div>
 
       {state.boardView === 'calendar' ? (
         <div className="flex-1 flex min-h-0">
-          {/* Calendar */}
-          <div id="pl-demo-calendar" className="flex-1 min-w-0 overflow-hidden p-3">
-            <div className="border border-border rounded-lg overflow-hidden h-full flex flex-col bg-card">
-              {/* Tech header row */}
-              <div className="flex border-b border-border bg-muted/30">
-                <div className="w-12 shrink-0 border-r border-border" />
-                {TECHS.map(tech => (
-                  <div key={tech.id} className="flex-1 px-2 py-1.5 text-center border-r border-border last:border-0">
-                    <div className="text-[11px] font-medium">{tech.name}</div>
-                    <div className="text-[9px] text-muted-foreground flex items-center justify-center gap-1">
-                      <span className={`h-1.5 w-1.5 rounded-full ${tech.status === 'available' ? 'bg-green-500' : 'bg-amber-500'}`} />{tech.status}
+          {/* Calendar — horizontal Gantt timeline (technicians as rows) */}
+          <div id="pl-demo-calendar" className="flex-1 min-w-0 overflow-hidden flex flex-col relative">
+            {/* Calendar toolbar (CalendarControls) */}
+            <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border bg-background">
+              <div className="flex items-center gap-1">
+                <div className="h-7 w-7 rounded-md border border-border inline-flex items-center justify-center text-muted-foreground"><ChevronLeft className="h-4 w-4" /></div>
+                <div className="h-7 px-2.5 rounded-md border border-border text-[11px] inline-flex items-center text-foreground">Today</div>
+                <div className="h-7 w-7 rounded-md border border-border inline-flex items-center justify-center text-muted-foreground"><ChevronRight className="h-4 w-4" /></div>
+                <div className="h-7 px-2.5 rounded-md border border-border text-[11px] inline-flex items-center gap-1.5 text-foreground ml-1"><CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" /> 16 Jun — 16 Jun 2025</div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div id="pl-demo-view-toggle" className="flex items-center bg-muted rounded-lg p-0.5 text-[11px]">
+                  <span className={`px-2 py-1 rounded ${state.boardView === 'calendar' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground'}`}>Day</span>
+                  <span className="px-2 py-1 rounded text-muted-foreground">Week</span>
+                </div>
+                <div className="flex items-center gap-0.5">
+                  <div className="h-7 w-7 rounded-md border border-border inline-flex items-center justify-center text-muted-foreground"><ZoomOut className="h-3.5 w-3.5" /></div>
+                  <div className="h-7 w-7 rounded-md border border-border inline-flex items-center justify-center text-muted-foreground"><ZoomIn className="h-3.5 w-3.5" /></div>
+                  <div className="h-7 w-7 rounded-md border border-border inline-flex items-center justify-center text-muted-foreground"><Filter className="h-3.5 w-3.5" /></div>
+                </div>
+              </div>
+            </div>
+
+            {/* Grid */}
+            <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+              {/* Header row: technician-column header + date/hours */}
+              <div className="flex border-b border-border bg-gradient-to-r from-card to-card/50">
+                <div className="w-44 shrink-0 border-r border-border flex items-center justify-center py-2">
+                  <div className="h-7 px-2.5 rounded-md border border-border bg-card text-[11px] inline-flex items-center gap-1.5 text-foreground"><Settings2 className="h-3.5 w-3.5" /> Edit planning</div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="h-8 border-b border-border bg-gradient-to-b from-primary/5 to-transparent flex items-center justify-center">
+                    <span className="font-semibold text-[11px] text-foreground">Mon</span>
+                    <span className="text-[11px] text-muted-foreground ml-1">Jun 16</span>
+                  </div>
+                  <div className="h-6 flex bg-muted/20">
+                    {HOURS.map(h => <div key={h} className="flex-1 border-r border-border/40 last:border-0 text-[9px] text-muted-foreground flex items-center justify-center">{h}:00</div>)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Technician rows */}
+              <div className="flex-1 overflow-hidden">
+                {TECHS.map((tech, ti) => (
+                  <div key={tech.id} className="flex border-b border-border/60 last:border-0" style={{ height: '64px' }}>
+                    {/* Technician cell */}
+                    <div className="w-44 shrink-0 border-r border-border flex items-center gap-2 px-2.5 bg-card/40">
+                      <span className="h-7 w-7 rounded-full bg-primary/10 text-primary text-[10px] font-bold inline-flex items-center justify-center shrink-0">
+                        {tech.name.split(' ').map(w => w[0]).join('')}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[11px] font-medium truncate">{tech.name}</div>
+                        <div className="text-[9px] text-muted-foreground inline-flex items-center gap-1">
+                          <span className={`h-1.5 w-1.5 rounded-full ${tech.status === 'available' ? 'bg-green-500' : 'bg-amber-500'}`} />{tech.status}
+                        </div>
+                      </div>
+                    </div>
+                    {/* Timeline */}
+                    <div className="flex-1 relative min-w-0">
+                      {/* hour gridlines */}
+                      <div className="absolute inset-0 flex">{HOURS.map(h => <div key={h} className="flex-1 border-r border-border/30 last:border-0" />)}</div>
+                      {/* job blocks */}
+                      {(JOBS_H[tech.id] || []).map((b, bi) => (
+                        <div key={bi}
+                          id={ti === 0 && bi === 0 ? 'pl-demo-calendar-job' : undefined}
+                          className={`absolute top-1.5 bottom-1.5 rounded border px-1.5 py-1 overflow-hidden ${b.cls}`}
+                          style={{ left: b.left + '%', width: b.width + '%' }}>
+                          <div className="text-[10px] font-medium leading-tight truncate">{b.label}</div>
+                          <div className="text-[9px] opacity-80 truncate">{b.sub}</div>
+                        </div>
+                      ))}
+                      {/* Dropped job (drag&drop demo) on Karim's row */}
+                      {state.dropped && ti === 0 && (
+                        <div id="pl-demo-drop-slot" className="absolute top-1.5 bottom-1.5 rounded border-2 border-primary bg-primary/15 px-1.5 py-1 animate-in fade-in zoom-in" style={{ left: '38.9%', width: '11.1%' }}>
+                          <div className="text-[10px] font-semibold leading-tight truncate text-primary">Inspection</div>
+                          <div className="text-[9px] text-primary/80 truncate">11:30 · Hydro</div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
-              {/* Grid */}
-              <div className="flex-1 flex relative overflow-hidden">
-                {/* Hours gutter */}
-                <div className="w-12 shrink-0 border-r border-border">
-                  {HOURS.map(h => <div key={h} className="h-7 text-[9px] text-muted-foreground text-right pr-1.5 border-b border-border/40">{h}:00</div>)}
-                </div>
-                {/* Tech columns */}
-                {TECHS.map((tech, ti) => (
-                  <div key={tech.id} className="flex-1 relative border-r border-border last:border-0">
-                    {HOURS.map(h => <div key={h} className="h-7 border-b border-border/40" />)}
-                    {(CAL_BLOCKS[tech.id] || []).map((b, bi) => (
-                      <div key={bi}
-                        id={ti === 0 && bi === 0 ? 'pl-demo-calendar-job' : undefined}
-                        className={`absolute left-1 right-1 rounded border px-1.5 py-0.5 overflow-hidden ${b.cls}`}
-                        style={{ top: b.top + 'px', height: b.h + 'px' }}>
-                        <div className="text-[10px] font-medium leading-tight truncate">{b.label}</div>
-                        <div className="text-[9px] opacity-80 truncate">{b.sub}</div>
-                      </div>
-                    ))}
-                    {/* Dropped job (drag&drop demo) on Karim's column */}
-                    {state.dropped && ti === 0 && (
-                      <div id="pl-demo-drop-slot" className="absolute left-1 right-1 rounded border-2 border-primary bg-primary/15 px-1.5 py-0.5 animate-in fade-in zoom-in" style={{ top: '112px', height: '56px' }}>
-                        <div className="text-[10px] font-semibold leading-tight truncate text-primary">Inspection</div>
-                        <div className="text-[9px] text-primary/80 truncate">11:30 · Hydro Parts</div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-                {/* Collision warning */}
-                {state.dropped && (
-                  <div id="pl-demo-collision" className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-card border border-amber-400/60 rounded-lg shadow-lg px-3 py-1.5 flex items-center gap-2">
-                    <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-                    <span className="text-[11px] text-foreground">No overlap · fits within working hours ✓</span>
-                  </div>
-                )}
-              </div>
             </div>
+
+            {/* Collision warning */}
+            {state.dropped && (
+              <div id="pl-demo-collision" className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-card border border-amber-400/60 rounded-lg shadow-lg px-3 py-1.5 flex items-center gap-2 z-[5]">
+                <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                <span className="text-[11px] text-foreground">No overlap · fits within working hours ✓</span>
+              </div>
+            )}
           </div>
 
           {/* Sidebar */}

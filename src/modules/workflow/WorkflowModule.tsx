@@ -6,7 +6,6 @@ import { ServiceOrderDetail } from "./components/ServiceOrderDetail";
 import { DispatchBoard } from "./components/DispatchBoard";
 import { WorkflowCalendar } from "./components/WorkflowCalendar";
 import { PluginGate } from "@/modules/shared/plugins";
-import { WorkflowHelpButton } from "./components/onboarding/WorkflowHelpButton";
 
 export function WorkflowModule() {
   return (
@@ -19,7 +18,6 @@ export function WorkflowModule() {
         <Route path="dispatch-board" element={<DispatchBoard />} />
         <Route path="calendar" element={<WorkflowCalendar />} />
       </Routes>
-      <WorkflowHelpButton />
       </PluginGate>
   );
 }

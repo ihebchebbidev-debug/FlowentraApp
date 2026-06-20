@@ -254,6 +254,7 @@ export function IntegrationHub() {
           <p className="text-sm text-muted-foreground mt-1">{t('hub.description', 'Connect Flowentra to your ERP, CRM, e-commerce, and other business systems.')}</p>
         </div>
         <div className="flex gap-2">
+          <IntegrationHelpButton />
           <Button variant="outline" onClick={() => navigate('create')} className="gap-2">
             <Globe className="h-4 w-4" />
             {t('external.createEndpoint')}
@@ -505,8 +506,6 @@ export function IntegrationHub() {
           )}
         </TabsContent>
       </Tabs>
-
-      <IntegrationHelpButton />
 
       {/* Delete confirmation */}
       <AlertDialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
