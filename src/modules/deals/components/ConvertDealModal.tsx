@@ -4,8 +4,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { ShoppingCart, Briefcase, FileText, Loader2, CheckCircle2 } from "lucide-react";
+import { ShoppingCart, Briefcase, FileText, Loader2, CheckCircle2, Building2 } from "lucide-react";
 import { dealsApi, type Deal } from "@/services/api/dealsApi";
+import { useTargetTenant } from "@/hooks/useTargetTenant";
 
 interface Props {
   deal: Deal;
@@ -16,6 +17,10 @@ interface Props {
 
 export function ConvertDealModal({ deal, open, onClose, onConverted }: Props) {
   const { t } = useTranslation("deals");
+  // In "view all companies" mode a MainAdmin has no single target tenant, so the
+  // backend rejects mutations. Force them to pick the deal's company from the
+  // top bar before converting (the conversion writes into that company).
+  const { viewAll } = useTargetTenant();
   const [toSale, setToSale] = useState(false);
   const [toProject, setToProject] = useState(false);
   const [toOffer, setToOffer] = useState(false);
@@ -35,6 +40,10 @@ export function ConvertDealModal({ deal, open, onClose, onConverted }: Props) {
   ];
 
   const handleConvert = async () => {
+    if (viewAll) {
+      toast.error(t("tenant.selectCompany", { defaultValue: "Select a company from the top bar first." }));
+      return;
+    }
     if (!toSale && !toProject && !toOffer) {
       toast.error(t("convert.pickOne"));
       return;
@@ -58,6 +67,13 @@ export function ConvertDealModal({ deal, open, onClose, onConverted }: Props) {
           <DialogTitle>{t("convert.title")}</DialogTitle>
           <DialogDescription>{t("convert.description")}</DialogDescription>
         </DialogHeader>
+
+        {viewAll && (
+          <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-900/10 p-3 text-sm text-amber-700 dark:text-amber-300">
+            <Building2 className="h-4 w-4 mt-0.5 shrink-0" />
+            <span>{t("tenant.selectCompanyHint", { defaultValue: "You're viewing all companies. Select this deal's company from the top bar to convert it." })}</span>
+          </div>
+        )}
 
         <div className="space-y-2">
           {targets.map(tg => (
@@ -89,7 +105,7 @@ export function ConvertDealModal({ deal, open, onClose, onConverted }: Props) {
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={busy}>{t("actions.cancel")}</Button>
-          <Button onClick={handleConvert} disabled={busy} className="gap-1.5">
+          <Button onClick={handleConvert} disabled={busy || viewAll} className="gap-1.5">
             {busy ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("convert.converting")}</> : t("convert.confirm")}
           </Button>
         </DialogFooter>

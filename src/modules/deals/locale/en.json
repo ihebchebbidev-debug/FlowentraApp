@@ -1,4 +1,9 @@
 {
+  "tenant": {
+    "selectCompany": "Select a company from the top bar first.",
+    "selectCompanyHint": "You're viewing all companies. Select this deal's company from the top bar to convert it.",
+    "selectCompanyHintAdd": "You're viewing all companies. Select the company you want to add this deal to from the top bar."
+  },
   "header": {
     "title": "Deals",
     "subtitle": "Track your sales pipeline from lead to close",

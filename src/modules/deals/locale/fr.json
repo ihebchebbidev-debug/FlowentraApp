@@ -1,4 +1,9 @@
 {
+  "tenant": {
+    "selectCompany": "Sélectionnez d'abord une entreprise dans la barre du haut.",
+    "selectCompanyHint": "Vous consultez toutes les entreprises. Sélectionnez l'entreprise de cette affaire dans la barre du haut pour la convertir.",
+    "selectCompanyHintAdd": "Vous consultez toutes les entreprises. Sélectionnez l'entreprise à laquelle ajouter cette affaire dans la barre du haut."
+  },
   "header": {
     "title": "Affaires",
     "subtitle": "Suivez votre pipeline commercial, du prospect à la signature",

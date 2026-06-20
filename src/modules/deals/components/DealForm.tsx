@@ -7,9 +7,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Loader2, Save, Handshake, Package, X, Settings2 } from "lucide-react";
+import { ArrowLeft, Loader2, Save, Handshake, Package, X, Settings2, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { useLookups } from "@/shared/contexts/LookupsContext";
+import { useTargetTenant } from "@/hooks/useTargetTenant";
 import { DEAL_STAGES } from "../lib/dealStages";
 import type { DealItemDraft } from "./DealItemsManager";
 import { ContactSelectorWithType } from "@/modules/offers/components/ContactSelectorWithType";
@@ -98,6 +99,9 @@ export function DealForm({ mode, initial, submitting, onSubmit }: Props) {
   const navigate = useNavigate();
   // Deals share the offer category/source lookups (same CRM pipeline taxonomy).
   const { offerCategories, offerSources } = useLookups();
+  // A MainAdmin in "view all companies" mode has no single target tenant — block
+  // saving until they pick a company from the top bar (backend rejects otherwise).
+  const { viewAll } = useTargetTenant();
 
   const [v, setV] = useState<DealFormValues>({
     title: "",
@@ -158,6 +162,10 @@ export function DealForm({ mode, initial, submitting, onSubmit }: Props) {
   };
 
   const handleSubmit = () => {
+    if (viewAll) {
+      toast.error(t("tenant.selectCompany", { defaultValue: "Select a company from the top bar first." }));
+      return;
+    }
     if (!v.title.trim() || !v.contactId) {
       toast.error(t("form.required"));
       return;
@@ -220,6 +228,12 @@ export function DealForm({ mode, initial, submitting, onSubmit }: Props) {
       </div>
 
       <div className="p-6">
+        {viewAll && (
+          <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-900/10 p-3 text-sm text-amber-700 dark:text-amber-300">
+            <Building2 className="h-4 w-4 mt-0.5 shrink-0" />
+            <span>{t("tenant.selectCompanyHintAdd", { defaultValue: "You're viewing all companies. Select the company you want to add this deal to from the top bar." })}</span>
+          </div>
+        )}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main content */}
           <div className="lg:col-span-2 space-y-6">
@@ -484,7 +498,7 @@ export function DealForm({ mode, initial, submitting, onSubmit }: Props) {
           <Button variant="outline" onClick={() => navigate("/dashboard/deals")} disabled={submitting}>
             {t("actions.cancel")}
           </Button>
-          <Button onClick={handleSubmit} disabled={submitting} className="gap-1.5">
+          <Button onClick={handleSubmit} disabled={submitting || viewAll} className="gap-1.5">
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             {submitting ? t("actions.saving") : t("actions.save")}
           </Button>
