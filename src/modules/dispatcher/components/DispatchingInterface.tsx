@@ -10,6 +10,7 @@ import {
   LayoutGrid,
   Wand2,
   Sparkles,
+  Play,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -19,6 +20,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 
+import { PlanningAutopilotDemo } from "./onboarding/PlanningAutopilotDemo";
 import { CustomCalendar } from "./CustomCalendar";
 import { UnassignedJobsList, type PlanningMode } from "./UnassignedJobsList";
 import { DispatcherMapView } from "./DispatcherMapView";
@@ -137,6 +139,8 @@ export function DispatchingInterface() {
 
   // View mode: 'calendar' or 'map'
   const [viewMode, setViewMode] = useState<'calendar' | 'map'>('calendar');
+  // Planning autopilot product demo
+  const [demoOpen, setDemoOpen] = useState(false);
 
   // Smart suggestions: best technicians for top unassigned jobs
   const suggestions = useMemo(() => {
@@ -304,7 +308,18 @@ export function DispatchingInterface() {
               <span className="hidden sm:inline">{t('common.mapView', 'Map')}</span>
             </Button>
           </div>
-          
+
+          {/* Watch Demo */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setDemoOpen(true)}
+            className="gap-1.5 shrink-0"
+          >
+            <Play className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">{t('dispatcher.watchDemo', 'Watch Demo')}</span>
+          </Button>
+
           {/* Smart Planning group — always visible, clearly labeled */}
           <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-primary/30 bg-primary/5">
             <span className="hidden md:inline text-[11px] font-medium text-primary uppercase tracking-wide pr-1">
@@ -482,6 +497,9 @@ export function DispatchingInterface() {
           )}
         </div>
       )}
+
+      {/* Autopilot product demo */}
+      <PlanningAutopilotDemo open={demoOpen} onClose={() => setDemoOpen(false)} />
     </div>
     </PlanningDisplayProvider>
   );
