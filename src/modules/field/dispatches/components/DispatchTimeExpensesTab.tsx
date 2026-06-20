@@ -939,7 +939,7 @@ export function DispatchTimeExpensesTab({
             <DialogTitle>{editingTimeId ? t('dispatches.time_booking.edit_entry') : t('dispatches.time_booking.new_entry')}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4 overflow-y-auto flex-1 pr-1">
-            {isMultiJob && (
+            {isMultiJob && !editingTimeId && (
               <div>
                 <Label>{t('dispatches.job_for_entry', 'Job')}</Label>
                 <Select
@@ -1112,7 +1112,7 @@ export function DispatchTimeExpensesTab({
             <DialogTitle>{editingExpenseId ? t('dispatches.expense_booking.edit_expense', 'Edit Expense') : t('dispatches.expense_booking.add_expense', 'Add Expense')}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4 overflow-y-auto flex-1 pr-1">
-            {isMultiJob && (
+            {isMultiJob && !editingExpenseId && (
               <div>
                 <Label>{t('dispatches.job_for_entry', 'Job')}</Label>
                 <Select
