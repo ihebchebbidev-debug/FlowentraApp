@@ -121,8 +121,10 @@ export function formatCardLabel(
   extras?: CardFieldExtras,
 ): string {
   const rows = getCardFieldRows(job, fields, extras, ['serviceOrderNumber']);
-  // Always fall back to something readable so a block is never blank.
-  return rows.map(r => r.value).join(separator ?? ' - ') || job.serviceOrderNumber || job.title || '';
+  // When every chosen field is empty for this record, fall back to the job title
+  // (populated and distinct per card) before the order number, so a sparse-data
+  // selection still produces a meaningful, visibly different label.
+  return rows.map(r => r.value).join(separator ?? ' - ') || job.title || job.serviceOrderNumber || '';
 }
 
 /** Build labelled rows for the hover tooltip from the configured hover fields (de-duplicated). */
