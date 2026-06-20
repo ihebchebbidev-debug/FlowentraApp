@@ -43,7 +43,7 @@ const CAPTIONS_FR: string[] = [
   'Ajoutez des articles et des services directement depuis votre catalogue — et reliez chacun à une installation — avec le même sélecteur d’articles que les offres et les ventes.',
   'Enregistrez, et l’affaire arrive dans la colonne Prospect, prête à parcourir votre pipeline.',
   'Ouvrez n’importe quelle affaire pour voir son tableau complet — titre, client, étape, et les actions les plus utiles : modifier et convertir.',
-  'Les indicateurs clés sont en haut — valeur estimée, probabilité, date de clôture prévue, et l’origine de l’affaire.',
+  'Les indicateurs clés sont en haut, et l’Aperçu donne la vue complète — chaque détail, la fiche contact du client, les installations liées et votre prochaine relance.',
   'L’onglet Articles liste l’objet de l’affaire — les articles et services, avec leurs quantités et totaux.',
   'Activité, c’est la chronologie — création, changements d’étape, chaque note — un historique automatique de la progression de l’affaire.',
   'Et les Notes gardent le contexte — ce que le client a dit, la prochaine étape, les conditions convenues.',

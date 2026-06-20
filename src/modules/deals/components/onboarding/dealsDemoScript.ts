@@ -184,7 +184,7 @@ export const DL_STEPS: DealsDemoStep[] = [
   {
     target: 'dl-demo-metrics',
     caption:
-      'The headline metrics sit up top — estimated value, probability, expected close date, and where the deal came from.',
+      'The headline metrics sit up top, and the Overview gives the full picture — every detail, the customer’s contact card, the linked installations, and your next follow-up step.',
     duration: 4600,
     apply: pure(() => ({ activeTab: 'overview' as const })),
   },

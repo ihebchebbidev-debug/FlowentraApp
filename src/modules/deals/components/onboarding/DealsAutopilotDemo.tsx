@@ -5,6 +5,7 @@ import {
   Handshake, Search, Filter, List, LayoutGrid, Plus, GitBranch, DollarSign,
   Target, Trophy, TrendingUp, Building2, User, Calendar, Send, Activity,
   StickyNote, ShoppingCart, Briefcase, Wrench, CheckCircle2, Package, X as XIcon, Edit, Trash2,
+  Mail, Phone, MapPin, ExternalLink,
 } from 'lucide-react';
 import { DemoCursor } from '@/modules/external/components/onboarding/DemoCursor';
 import { pickBestVoice, splitForSpeech, languageTagFor } from '@/modules/external/components/onboarding/narrationVoice';
@@ -384,6 +385,19 @@ function PageDetail({ state }: { state: DealsDemoState }) {
       <div className="">
         {state.activeTab === 'overview' && (
           <div className="space-y-4">
+            {/* Deal details — two columns (mirrors the real overview) */}
+            <div className="bg-card border border-border rounded-lg p-4">
+              <div className="grid md:grid-cols-2 gap-x-8 gap-y-3 text-xs">
+                <div><p className="text-muted-foreground">Deal number</p><p className="font-medium mt-0.5">DEAL-00012</p></div>
+                <div><p className="text-muted-foreground">Estimated value</p><p className="font-semibold mt-0.5">31 500 TND</p></div>
+                <div><p className="text-muted-foreground">Customer</p><p className="text-primary mt-0.5 inline-flex items-center gap-1">Médina Resorts <ExternalLink className="h-3 w-3" /></p></div>
+                <div><p className="text-muted-foreground">Stage</p><span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium capitalize mt-0.5 ${STAGE_BADGE['negotiation']}`}>negotiation</span></div>
+                <div><p className="text-muted-foreground">Category · Source</p><p className="font-medium mt-0.5">Refrigeration · Referral</p></div>
+                <div><p className="text-muted-foreground">Probability · Expected close</p><p className="font-medium mt-0.5">70% · 15 Jul 2025</p></div>
+                <div className="md:col-span-2"><p className="text-muted-foreground">Description</p><p className="mt-0.5">Replace and upgrade the main cold room, including panels and on-site installation.</p></div>
+              </div>
+            </div>
+
             {/* Next action / follow-up callout */}
             <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 flex items-center gap-2">
               <Send className="h-4 w-4 text-amber-600" />
@@ -391,16 +405,26 @@ function PageDetail({ state }: { state: DealsDemoState }) {
               <span className="inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium bg-amber-100 text-amber-700">15 Jun 2025</span>
               <span className="text-[10px] text-amber-700 ml-auto">Follow-up overdue</span>
             </div>
+
             <div className="grid md:grid-cols-2 gap-4">
-              <div className="bg-card border border-border rounded-lg p-4 space-y-2 text-xs">
-                <p className="text-sm font-medium mb-1">Customer</p>
-                <div className="flex items-center gap-1.5 text-muted-foreground"><Building2 className="h-3 w-3" /> Médina Resorts</div>
-                <div className="flex items-center gap-1.5 text-muted-foreground"><Calendar className="h-3 w-3" /> Created 02 Jun 2025</div>
-                <div className="flex items-center gap-1.5 text-muted-foreground"><User className="h-3 w-3" /> Owner Ahmed B.</div>
+              {/* Customer card */}
+              <div className="bg-card border border-border rounded-lg p-4">
+                <p className="text-sm font-medium mb-2 inline-flex items-center gap-1.5"><User className="h-3.5 w-3.5 text-primary" /> Customer</p>
+                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1.5"><User className="h-3 w-3" /> Médina Resorts</div>
+                  <div className="flex items-center gap-1.5"><Building2 className="h-3 w-3" /> Médina Resorts SARL</div>
+                  <div className="flex items-center gap-1.5"><Mail className="h-3 w-3" /> contact@medina.tn</div>
+                  <div className="flex items-center gap-1.5"><Phone className="h-3 w-3" /> +216 71 234 567</div>
+                  <div className="col-span-2 flex items-start gap-1.5"><MapPin className="h-3 w-3 mt-0.5" /> Av. Habib Bourguiba, Tunis</div>
+                </div>
               </div>
-              <div className="bg-card border border-border rounded-lg p-4 text-xs">
-                <p className="text-sm font-medium mb-1">Description</p>
-                <p className="text-muted-foreground">Replace and upgrade the main cold room, including panels and on-site installation.</p>
+              {/* Related installations */}
+              <div className="bg-card border border-border rounded-lg p-4">
+                <p className="text-sm font-medium mb-2 inline-flex items-center gap-1.5"><Package className="h-3.5 w-3.5 text-primary" /> Installations (1)</p>
+                <div className="flex items-center justify-between gap-3 p-2.5 rounded-lg border border-border bg-muted/30">
+                  <span className="flex items-center gap-2 text-xs"><Package className="h-3.5 w-3.5 text-primary" /> Cold Room A1</span>
+                  <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                </div>
               </div>
             </div>
           </div>

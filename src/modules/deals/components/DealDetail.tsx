@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import {
   ArrowLeft, Edit, GitBranch, Trash2, Loader2, Building2, User, Calendar,
   DollarSign, Target, Send, ShoppingCart, Briefcase, FileText, CheckCircle2,
-  Package, Wrench, ExternalLink,
+  Package, Wrench, ExternalLink, Mail, Phone, MapPin,
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -203,55 +203,165 @@ function Metric({ icon: Icon, label, value }: { icon: any; label: string; value:
   );
 }
 
+function DetailField({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div>
+      <span className="text-sm text-muted-foreground">{label}</span>
+      <p className="text-sm text-foreground mt-1 break-words">{value}</p>
+    </div>
+  );
+}
+
 function OverviewTab({ deal }: { deal: Deal }) {
   const { t } = useTranslation("deals");
-  const rows: [any, string, string][] = [
-    [User, t("detail.customer"), deal.contactName || deal.contact?.name || "—"],
-    [Building2, t("detail.category"), deal.category || "—"],
-    [Calendar, t("detail.created"), deal.createdAt ? format(new Date(deal.createdAt), "dd MMM yyyy") : "—"],
-    [User, t("detail.owner"), deal.assignedToName || deal.createdByName || "—"],
-  ];
+  const contact = deal.contact;
+  const fmtDate = (d?: string) => (d ? format(new Date(d), "dd MMM yyyy") : t("detail.notSpecified", { defaultValue: "—" }));
+
+  // Unique installations referenced by the deal's line items.
+  const installations = Array.from(
+    new Map(
+      (deal.items || [])
+        .filter(it => it.installationId)
+        .map(it => [String(it.installationId), { id: it.installationId as string, name: it.installationName || `#${it.installationId}` }]),
+    ).values(),
+  );
+
   return (
-    <Card>
-      <CardContent className="p-4 space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {rows.map(([Icon, label, value], i) => (
-            <div key={i} className="flex items-center gap-2">
-              <Icon className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">{label}:</span>
-              <span className="text-sm font-medium">{value}</span>
+    <div className="space-y-4 sm:space-y-6">
+      {/* Deal details — two columns (mirrors offers/sales) */}
+      <Card>
+        <CardContent className="p-4 sm:p-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Left */}
+            <div className="space-y-4">
+              <DetailField label={t("detail.dealNumber", { defaultValue: "Deal number" })} value={deal.dealNumber || "—"} />
+              <DetailField label={t("detail.title", { defaultValue: "Title" })} value={deal.title} />
+              <DetailField label={t("detail.description")} value={deal.description || t("detail.noDescription")} />
+              <div>
+                <span className="text-sm text-muted-foreground">{t("detail.customer")}</span>
+                <div className="mt-1">
+                  <Link
+                    to={`/dashboard/contacts/${deal.contactId}`}
+                    className="text-sm text-primary hover:underline inline-flex items-center gap-1.5 max-w-full"
+                  >
+                    <span className="truncate">{deal.contactName || contact?.name || contact?.company || "—"}</span>
+                    <ExternalLink className="h-3 w-3 shrink-0" />
+                  </Link>
+                </div>
+              </div>
+              <DetailField label={t("detail.category")} value={deal.category || "—"} />
+              <DetailField label={t("detail.source")} value={deal.source || "—"} />
             </div>
-          ))}
+
+            {/* Right */}
+            <div className="space-y-4">
+              <DetailField
+                label={t("detail.value")}
+                value={<span className="font-semibold">{formatCurrencyValue(deal.estimatedValue, deal.currency)}</span>}
+              />
+              <div>
+                <span className="text-sm text-muted-foreground">{t("detail.stage")}</span>
+                <div className="mt-1">
+                  <Badge variant="secondary" className={stageBadgeClass(deal.stage)}>{t(`stages.${deal.stage}`)}</Badge>
+                </div>
+              </div>
+              <DetailField label={t("detail.probability")} value={`${deal.probability}%`} />
+              <DetailField label={t("detail.expectedClose")} value={fmtDate(deal.expectedCloseDate)} />
+              <DetailField label={t("detail.created")} value={fmtDate(deal.createdAt)} />
+              <DetailField label={t("detail.owner")} value={deal.assignedToName || deal.createdByName || "—"} />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Next action / follow-up */}
+      {(deal.nextAction || deal.nextActionDate) && (
+        <div className={`rounded-lg border p-3 ${isFollowUpOverdue(deal) ? "border-amber-300 bg-amber-50 dark:bg-amber-900/10" : "border-border bg-muted/30"}`}>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Send className={`h-4 w-4 ${isFollowUpOverdue(deal) ? "text-amber-600" : "text-primary"}`} />
+            <span className="text-sm font-medium">{deal.nextAction || t("detail.followUp", { defaultValue: "Follow up" })}</span>
+            {deal.nextActionDate && (
+              <Badge variant="secondary" className={isFollowUpOverdue(deal) ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" : ""}>
+                {format(new Date(deal.nextActionDate), "dd MMM yyyy")}
+              </Badge>
+            )}
+          </div>
         </div>
-        {/* Next action / follow-up */}
-        {(deal.nextAction || deal.nextActionDate) && (
-          <div className={`rounded-lg border p-3 ${isFollowUpOverdue(deal) ? "border-amber-300 bg-amber-50 dark:bg-amber-900/10" : "border-border bg-muted/30"}`}>
+      )}
+
+      {/* Lost reason */}
+      {deal.stage === "lost" && deal.lostReason && (
+        <div className="rounded-lg border border-red-200 bg-red-50 dark:bg-red-900/10 p-3">
+          <p className="text-xs text-red-600 font-medium mb-0.5">{t("detail.lostReason", { defaultValue: "Lost reason" })}</p>
+          <p className="text-sm">{deal.lostReason}</p>
+        </div>
+      )}
+
+      {/* Customer card */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <User className="h-4 w-4 text-primary" />
+            {t("detail.customerInfo", { defaultValue: "Customer" })}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
             <div className="flex items-center gap-2">
-              <Send className={`h-4 w-4 ${isFollowUpOverdue(deal) ? "text-amber-600" : "text-primary"}`} />
-              <span className="text-sm font-medium">{deal.nextAction || t("detail.followUp", { defaultValue: "Follow up" })}</span>
-              {deal.nextActionDate && (
-                <Badge variant="secondary" className={isFollowUpOverdue(deal) ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" : ""}>
-                  {format(new Date(deal.nextActionDate), "dd MMM yyyy")}
-                </Badge>
-              )}
+              <User className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span>{deal.contactName || contact?.name || "—"}</span>
             </div>
+            <div className="flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span>{contact?.company || t("detail.notSpecified", { defaultValue: "—" })}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span className="truncate">{contact?.email || t("detail.notSpecified", { defaultValue: "—" })}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span>{contact?.phone || t("detail.notSpecified", { defaultValue: "—" })}</span>
+            </div>
+            {(contact?.address || contact?.city) && (
+              <div className="flex items-start gap-2 sm:col-span-2">
+                <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                <span>{[contact?.address, contact?.city].filter(Boolean).join(", ")}</span>
+              </div>
+            )}
           </div>
-        )}
+        </CardContent>
+      </Card>
 
-        {/* Lost reason */}
-        {deal.stage === "lost" && deal.lostReason && (
-          <div className="rounded-lg border border-red-200 bg-red-50 dark:bg-red-900/10 p-3">
-            <p className="text-xs text-red-600 font-medium mb-0.5">{t("detail.lostReason", { defaultValue: "Lost reason" })}</p>
-            <p className="text-sm">{deal.lostReason}</p>
-          </div>
-        )}
-
-        <div>
-          <p className="text-sm text-muted-foreground mb-1">{t("detail.description")}</p>
-          <p className="text-sm">{deal.description || t("detail.noDescription")}</p>
-        </div>
-      </CardContent>
-    </Card>
+      {/* Related installations */}
+      {installations.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Package className="h-4 w-4 text-primary" />
+              {t("detail.installations", { defaultValue: "Installations" })} ({installations.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {installations.map(inst => (
+                <Link
+                  key={inst.id}
+                  to={`/dashboard/field/installations/${inst.id}`}
+                  className="flex items-center justify-between gap-3 p-2.5 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 transition-colors"
+                >
+                  <span className="flex items-center gap-2 min-w-0">
+                    <Package className="h-4 w-4 text-primary shrink-0" />
+                    <span className="text-sm truncate">{inst.name}</span>
+                  </span>
+                  <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                </Link>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 }
 
