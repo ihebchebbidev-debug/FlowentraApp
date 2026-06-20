@@ -183,10 +183,49 @@ export const contactFields: EntityField[] = [
 ];
 
 // ============================================================================
+// DEAL FIELDS (from Deal.cs + DealItem)
+// ============================================================================
+export const dealFields: EntityField[] = [
+  { path: 'id', label: 'ID', type: 'number', category: 'core' },
+  { path: 'dealNumber', label: 'Deal Number', type: 'string', category: 'core' },
+  { path: 'title', label: 'Title', type: 'string', category: 'core' },
+  { path: 'description', label: 'Description', type: 'string', category: 'core' },
+  // Pipeline (deals use "stage" as their status field)
+  { path: 'stage', label: 'Stage', type: 'enum', category: 'status', enumValues: ['lead', 'qualified', 'proposal', 'negotiation', 'won', 'lost'] },
+  { path: 'probability', label: 'Probability %', type: 'number', category: 'status' },
+  { path: 'category', label: 'Category', type: 'string', category: 'core' },
+  { path: 'source', label: 'Source', type: 'string', category: 'core' },
+  { path: 'lostReason', label: 'Lost Reason', type: 'string', category: 'core' },
+  // Financial
+  { path: 'estimatedValue', label: 'Estimated Value', type: 'number', category: 'financial' },
+  { path: 'currency', label: 'Currency', type: 'string', category: 'financial' },
+  // Dates
+  { path: 'expectedCloseDate', label: 'Expected Close Date', type: 'date', category: 'dates' },
+  { path: 'actualCloseDate', label: 'Actual Close Date', type: 'date', category: 'dates' },
+  { path: 'nextActionDate', label: 'Next Action Date', type: 'date', category: 'dates' },
+  { path: 'nextAction', label: 'Next Action', type: 'string', category: 'core' },
+  // Relations
+  { path: 'contactId', label: 'Contact ID', type: 'number', category: 'relations' },
+  { path: 'contact.name', label: 'Contact Name', type: 'string', category: 'relations' },
+  { path: 'contact.email', label: 'Contact Email', type: 'string', category: 'relations', isRecipient: true },
+  { path: 'contact.phone', label: 'Contact Phone', type: 'string', category: 'relations' },
+  { path: 'projectId', label: 'Project ID', type: 'number', category: 'relations' },
+  { path: 'convertedToOfferId', label: 'Converted Offer ID', type: 'string', category: 'relations' },
+  { path: 'convertedToSaleId', label: 'Converted Sale ID', type: 'string', category: 'relations' },
+  { path: 'convertedToProjectId', label: 'Converted Project ID', type: 'string', category: 'relations' },
+  { path: 'assignedTo', label: 'Assigned To (User)', type: 'string', category: 'relations', isRecipient: true },
+  { path: 'items', label: 'Deal Items', type: 'array', category: 'relations' },
+  // Meta
+  { path: 'createdBy', label: 'Created By', type: 'string', category: 'meta', isRecipient: true },
+  { path: 'createdDate', label: 'Created Date', type: 'date', category: 'meta' },
+  { path: 'lastActivity', label: 'Last Activity', type: 'date', category: 'meta' },
+];
+
+// ============================================================================
 // LOOKUP & HELPERS
 // ============================================================================
 
-export type WorkflowEntityType = 'dispatch' | 'offer' | 'sale' | 'service_order' | 'contact';
+export type WorkflowEntityType = 'dispatch' | 'offer' | 'sale' | 'service_order' | 'contact' | 'deal';
 
 const entityFieldsMap: Record<WorkflowEntityType, EntityField[]> = {
   dispatch: dispatchFields,
@@ -194,6 +233,7 @@ const entityFieldsMap: Record<WorkflowEntityType, EntityField[]> = {
   sale: saleFields,
   service_order: serviceOrderFields,
   contact: contactFields,
+  deal: dealFields,
 };
 
 const entityLabels: Record<WorkflowEntityType, string> = {
@@ -202,9 +242,10 @@ const entityLabels: Record<WorkflowEntityType, string> = {
   sale: 'Sale',
   service_order: 'Service Order',
   contact: 'Contact',
+  deal: 'Deal',
 };
 
-export const ALL_ENTITY_TYPES: WorkflowEntityType[] = ['dispatch', 'offer', 'sale', 'service_order', 'contact'];
+export const ALL_ENTITY_TYPES: WorkflowEntityType[] = ['dispatch', 'offer', 'sale', 'service_order', 'contact', 'deal'];
 
 export function getEntityFields(entityType: WorkflowEntityType): EntityField[] {
   return entityFieldsMap[entityType] || [];

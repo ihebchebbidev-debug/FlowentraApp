@@ -49,6 +49,7 @@ import {
   AlertCircle,
   Sparkles,
   Brain,
+  Handshake,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DynamicForm, DynamicFormResponse, FormField } from '../types';
@@ -334,6 +335,8 @@ export function ExportResponsesDialog({
         return <Package className="h-5 w-5" />;
       case 'installation':
         return <Settings className="h-5 w-5" />;
+      case 'deal':
+        return <Handshake className="h-5 w-5" />;
     }
   };
   
@@ -364,8 +367,8 @@ export function ExportResponsesDialog({
         <ScrollArea className="max-h-[60vh]">
           {/* Step 1: Select Entity Type */}
           {step === 'select' && (
-            <div className="grid grid-cols-3 gap-4 p-4">
-              {(['contact', 'article', 'installation'] as ExportEntityType[]).map((type) => (
+            <div className="grid grid-cols-2 gap-4 p-4">
+              {(['contact', 'article', 'installation', 'deal'] as ExportEntityType[]).map((type) => (
                 <button
                   key={type}
                   onClick={() => handleEntityTypeSelect(type)}

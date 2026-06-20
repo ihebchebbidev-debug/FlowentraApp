@@ -23,8 +23,11 @@ namespace MyApi.Modules.ServiceOrders.Models
         [Column("Content")]
         public string Content { get; set; } = string.Empty;
 
+        // Note type / activity category. Widened from 20 → 50 because activity
+        // propagation sends values like "dispatch_status_changed" (23 chars) that
+        // overflowed the original varchar(20) and threw 22001 on insert.
         [Column("Type")]
-        [MaxLength(20)]
+        [MaxLength(50)]
         public string Type { get; set; } = "internal";
 
         [Required]

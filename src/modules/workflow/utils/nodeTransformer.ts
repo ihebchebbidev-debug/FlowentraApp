@@ -55,7 +55,7 @@ function getReactFlowNodeType(backendType: string, nodeData: any): string {
   }
   
   // Entity action nodes — detect by config properties or known entity types
-  const entityNames = ['offer', 'sale', 'service-order', 'service_order', 'dispatch', 'contact'];
+  const entityNames = ['offer', 'sale', 'service-order', 'service_order', 'dispatch', 'contact', 'deal'];
   const isEntityType = entityNames.some(e => backendType === e || backendType.includes(`update-${e}`) || backendType.includes(`create-${e}`));
   
   if (isEntityType) {

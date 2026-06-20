@@ -92,6 +92,20 @@ function inferOutputSchema(node: Node): StepOutputField[] {
     ];
   }
 
+  if (entityType === 'deal' || nodeType.includes('deal')) {
+    return [
+      { key: 'id', label: 'ID', type: 'number' },
+      { key: 'dealNumber', label: 'Deal Number', type: 'string' },
+      { key: 'title', label: 'Title', type: 'string' },
+      { key: 'stage', label: 'Stage', type: 'string' },
+      { key: 'probability', label: 'Probability %', type: 'number' },
+      { key: 'estimatedValue', label: 'Estimated Value', type: 'number' },
+      { key: 'contactId', label: 'Contact ID', type: 'number' },
+      { key: 'expectedCloseDate', label: 'Expected Close Date', type: 'date' },
+      { key: 'assignedTo', label: 'Assigned To', type: 'string' },
+    ];
+  }
+
   // ─── Condition / branching nodes ────────────────────────────────
   if (nodeType.includes('if-else') || nodeType.includes('condition') || nodeType === 'switch') {
     return [

@@ -8,7 +8,7 @@ import { NodeExecutionState } from './N8nStyleNode';
 export interface EntityTriggerData {
   label: string;
   type: string;
-  entityType: 'offer' | 'sale' | 'service_order' | 'dispatch';
+  entityType: 'offer' | 'sale' | 'service_order' | 'dispatch' | 'deal';
   icon: React.ComponentType<any>;
   description?: string;
   config?: Record<string, any>;
@@ -31,6 +31,7 @@ const getEntityStyle = (entityType: string) => {
     sale: { color: '#10b981', bg: '#ecfdf5' },
     service_order: { color: '#3b82f6', bg: '#eff6ff' },
     dispatch: { color: '#8b5cf6', bg: '#f5f3ff' },
+    deal: { color: '#0ea5e9', bg: '#f0f9ff' },
   };
   return styles[entityType] || styles.offer;
 };

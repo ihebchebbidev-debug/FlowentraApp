@@ -2,7 +2,7 @@
 // Allows mapping form field responses to Articles, Contacts, Installations
 
 // Supported entity types for export
-export type ExportEntityType = 'contact' | 'article' | 'installation';
+export type ExportEntityType = 'contact' | 'article' | 'installation' | 'deal';
 
 // Field mapping for export
 export interface ExportFieldMapping {
@@ -117,6 +117,20 @@ export const INSTALLATION_FIELDS: EntityFieldDefinition[] = [
   { field: 'notes', label_en: 'Notes', label_fr: 'Notes', type: 'string', required: false },
 ];
 
+export const DEAL_FIELDS: EntityFieldDefinition[] = [
+  { field: 'contactId', label_en: 'Contact ID', label_fr: 'ID Contact', type: 'number', required: true, description_en: 'Must be a valid contact ID', description_fr: 'Doit être un ID de contact valide' },
+  { field: 'title', label_en: 'Title', label_fr: 'Titre', type: 'string', required: true },
+  { field: 'description', label_en: 'Description', label_fr: 'Description', type: 'string', required: false },
+  { field: 'stage', label_en: 'Stage', label_fr: 'Étape', type: 'string', required: false, description_en: 'lead, qualified, proposal, negotiation, won, lost', description_fr: 'lead, qualified, proposal, negotiation, won, lost' },
+  { field: 'estimatedValue', label_en: 'Estimated Value', label_fr: 'Valeur Estimée', type: 'number', required: false },
+  { field: 'currency', label_en: 'Currency', label_fr: 'Devise', type: 'string', required: false },
+  { field: 'probability', label_en: 'Probability %', label_fr: 'Probabilité %', type: 'number', required: false },
+  { field: 'category', label_en: 'Category', label_fr: 'Catégorie', type: 'string', required: false },
+  { field: 'source', label_en: 'Source', label_fr: 'Source', type: 'string', required: false },
+  { field: 'expectedCloseDate', label_en: 'Expected Close Date', label_fr: 'Date de Clôture Prévue', type: 'date', required: false },
+  { field: 'notes', label_en: 'Notes', label_fr: 'Notes', type: 'string', required: false },
+];
+
 // Get fields for entity type
 export function getEntityFields(entityType: ExportEntityType): EntityFieldDefinition[] {
   switch (entityType) {
@@ -126,6 +140,8 @@ export function getEntityFields(entityType: ExportEntityType): EntityFieldDefini
       return ARTICLE_FIELDS;
     case 'installation':
       return INSTALLATION_FIELDS;
+    case 'deal':
+      return DEAL_FIELDS;
     default:
       return [];
   }
@@ -136,6 +152,7 @@ export const EXPORT_ENTITY_LABELS: Record<ExportEntityType, { en: string; fr: st
   contact: { en: 'Contact', fr: 'Contact', icon: 'Users' },
   article: { en: 'Article', fr: 'Article', icon: 'Package' },
   installation: { en: 'Installation', fr: 'Installation', icon: 'Settings' },
+  deal: { en: 'Deal', fr: 'Affaire', icon: 'Handshake' },
 };
 
 // Transform labels

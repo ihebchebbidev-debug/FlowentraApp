@@ -1027,6 +1027,13 @@ namespace MyApi.Modules.WorkflowEngine.Services
                     "accepted" => 4, "won" => 5, "lost" => -1, "cancelled" => -1,
                     "rejected" => -1, "expired" => -1, "declined" => -1, "modified" => 3, _ => 0
                 },
+                // Deals use "stage" as their pipeline state (lead → … → won/lost).
+                "deal" => status switch
+                {
+                    "lead" => 0, "new" => 0, "qualified" => 1, "proposal" => 2,
+                    "negotiation" => 3, "won" => 4, "closed_won" => 4,
+                    "lost" => -1, "closed_lost" => -1, _ => 0
+                },
                 _ => 0
             };
         }
@@ -1510,12 +1517,28 @@ namespace MyApi.Modules.WorkflowEngine.Services
                         .Where(o => targetStatus == null || o.Status == targetStatus)
                         .Select(o => new { o.Id, o.Status })
                         .ToListAsync(cancellationToken);
-                    
+
                     results.AddRange(offers.Select(o => new EntityStatusInfo
                     {
                         Id = o.Id,
                         Status = o.Status ?? "",
                         Context = null
+                    }));
+                    break;
+
+                case "deal":
+                    // Deals key their pipeline state on "Stage", not "Status".
+                    var deals = await db.Deals
+                        .AsNoTracking()
+                        .Where(d => !d.IsDeleted && (targetStatus == null || d.Stage == targetStatus))
+                        .Select(d => new { d.Id, d.Stage, d.ContactId, d.ProjectId })
+                        .ToListAsync(cancellationToken);
+
+                    results.AddRange(deals.Select(d => new EntityStatusInfo
+                    {
+                        Id = d.Id,
+                        Status = d.Stage ?? "",
+                        Context = new { d.ContactId, d.ProjectId }
                     }));
                     break;
             }
@@ -1665,13 +1688,28 @@ namespace MyApi.Modules.WorkflowEngine.Services
                         {
                             variables["saleId"] = relatedSale.Id;
                             _logger.LogInformation("[WORKFLOW-POLLING] Pre-populated saleId={Id}", relatedSale.Id);
-                            
+
                             var offerSo = await db.ServiceOrders.FirstOrDefaultAsync(s => s.SaleId == relatedSale.Id.ToString());
                             if (offerSo != null)
                             {
                                 variables["serviceOrderId"] = offerSo.Id;
                                 _logger.LogInformation("[WORKFLOW-POLLING] Pre-populated serviceOrderId={Id}", offerSo.Id);
                             }
+                        }
+                        break;
+
+                    case "deal":
+                        // Deal → Contact / Project / converted Offer / Sale
+                        var deal = await db.Deals.FindAsync(entityId);
+                        if (deal != null)
+                        {
+                            variables["contactId"] = deal.ContactId;
+                            if (deal.ProjectId != null) variables["projectId"] = deal.ProjectId.Value;
+                            if (!string.IsNullOrEmpty(deal.ConvertedToOfferId) && int.TryParse(deal.ConvertedToOfferId, out var dOfferId))
+                                variables["offerId"] = dOfferId;
+                            if (!string.IsNullOrEmpty(deal.ConvertedToSaleId) && int.TryParse(deal.ConvertedToSaleId, out var dSaleId))
+                                variables["saleId"] = dSaleId;
+                            _logger.LogInformation("[WORKFLOW-POLLING] Pre-populated deal context for deal #{Id}", entityId);
                         }
                         break;
                 }

@@ -612,7 +612,7 @@ export function WorkflowBuilder() {
                       nodeData.type === 'dynamic-form' ||
                       nodeData.type === 'human-input-form' ||
                       nodeData.type === 'wait-for-event' ||
-                      ['offer', 'sale', 'service-order', 'service_order', 'dispatch', 'contact'].includes(nodeData.type);
+                      ['offer', 'sale', 'service-order', 'service_order', 'dispatch', 'contact', 'deal'].includes(nodeData.type);
     
     if (isN8nNode) {
       setConfigPanel({

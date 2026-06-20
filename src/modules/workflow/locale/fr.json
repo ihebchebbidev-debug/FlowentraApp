@@ -726,6 +726,14 @@
   "node.update-service-order-status.desc": "Définir statut",
   "node.update-dispatch-status.label": "Modifier Statut Dispatch",
   "node.update-dispatch-status.desc": "Définir statut",
+  "node.deal-status-trigger.label": "Changement d'étape de l'affaire",
+  "node.deal-status-trigger.desc": "Au changement d'étape de l'affaire",
+  "node.update-deal-status.label": "Modifier l'étape de l'affaire",
+  "node.update-deal-status.desc": "Définir l'étape",
+  "node.create-deal.label": "Créer une affaire",
+  "node.create-deal.desc": "Créer automatiquement une affaire",
+  "node.deal.label": "Affaire",
+  "node.deal.desc": "Entité affaire du pipeline",
   "node.send-notification.label": "Notification",
   "node.send-notification.desc": "Alerte push",
   "node.send-workflow-email.label": "Email",
@@ -736,6 +744,7 @@
   "entity.sale": "Vente",
   "entity.serviceOrder": "Ordre de Service",
   "entity.dispatch": "Répartition",
+  "entity.deal": "Affaire",
   "config.triggerName": "Nom du Déclencheur",
   "config.triggerNamePlaceholder": "ex., À la fin de la répartition",
   "config.triggerDescriptionPlaceholder": "Décrivez quand ce déclencheur doit se déclencher...",
@@ -1104,9 +1113,18 @@
     "sale": "Vente",
     "service_order": "Ordre de Service",
     "dispatch": "Intervention",
-    "contact": "Contact"
+    "contact": "Contact",
+    "deal": "Affaire"
   },
   "status": {
+    "deal": {
+      "lead": "Prospect",
+      "qualified": "Qualifié",
+      "proposal": "Proposition",
+      "negotiation": "Négociation",
+      "won": "Gagnée",
+      "lost": "Perdue"
+    },
     "offer": {
       "draft": "Brouillon",
       "sent": "Envoyé",

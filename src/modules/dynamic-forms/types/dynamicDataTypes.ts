@@ -9,6 +9,7 @@ export type DynamicDataEntityType =
   | 'services'     // articles of type 'service'
   | 'offers'
   | 'sales'
+  | 'deals'
   | 'installations'
   | 'users'
   | 'service_orders';
@@ -107,6 +108,15 @@ export const SERVICE_ORDER_DATA_FIELDS: EntityFieldDefinition[] = [
   { field: 'createdAt', label_en: 'Created Date', label_fr: 'Date de Création', type: 'date' },
 ];
 
+export const DEAL_DATA_FIELDS: EntityFieldDefinition[] = [
+  { field: 'id', label_en: 'ID', label_fr: 'ID', type: 'number' },
+  { field: 'dealNumber', label_en: 'Deal Number', label_fr: 'Numéro d\'Affaire', type: 'string' },
+  { field: 'title', label_en: 'Title', label_fr: 'Titre', type: 'string' },
+  { field: 'stage', label_en: 'Stage', label_fr: 'Étape', type: 'string' },
+  { field: 'estimatedValue', label_en: 'Estimated Value', label_fr: 'Valeur Estimée', type: 'number' },
+  { field: 'createdAt', label_en: 'Created Date', label_fr: 'Date de Création', type: 'date' },
+];
+
 export const INSTALLATION_DATA_FIELDS: EntityFieldDefinition[] = [
   { field: 'id', label_en: 'ID', label_fr: 'ID', type: 'number' },
   { field: 'installationNumber', label_en: 'Installation Number', label_fr: 'Numéro d\'Installation', type: 'string' },
@@ -137,6 +147,8 @@ export function getDataSourceFields(entityType: DynamicDataEntityType): EntityFi
       return OFFER_DATA_FIELDS;
     case 'sales':
       return SALE_DATA_FIELDS;
+    case 'deals':
+      return DEAL_DATA_FIELDS;
     case 'installations':
       return INSTALLATION_DATA_FIELDS;
     case 'users':
@@ -156,6 +168,7 @@ export const DYNAMIC_DATA_ENTITY_LABELS: Record<DynamicDataEntityType, { en: str
   services: { en: 'Services', fr: 'Services', icon: 'Wrench' },
   offers: { en: 'Offers', fr: 'Offres', icon: 'FileText' },
   sales: { en: 'Sales', fr: 'Ventes', icon: 'Receipt' },
+  deals: { en: 'Deals', fr: 'Affaires', icon: 'Handshake' },
   installations: { en: 'Installations', fr: 'Installations', icon: 'Settings' },
   users: { en: 'Users', fr: 'Utilisateurs', icon: 'UserCircle' },
   service_orders: { en: 'Service Orders', fr: 'Ordres de Service', icon: 'ClipboardList' },
@@ -182,6 +195,7 @@ export const DEFAULT_DATA_SOURCES: Record<DynamicDataEntityType, Partial<Dynamic
   services: { display_field: 'name', value_field: 'id', sort_field: 'name', sort_order: 'asc' },
   offers: { display_field: 'offerNumber', value_field: 'id', sort_field: 'createdAt', sort_order: 'desc' },
   sales: { display_field: 'saleNumber', value_field: 'id', sort_field: 'createdAt', sort_order: 'desc' },
+  deals: { display_field: 'title', value_field: 'id', sort_field: 'createdAt', sort_order: 'desc' },
   installations: { display_field: 'name', value_field: 'id', sort_field: 'name', sort_order: 'asc' },
   users: { display_field: 'name', value_field: 'id', sort_field: 'name', sort_order: 'asc' },
   service_orders: { display_field: 'orderNumber', value_field: 'id', sort_field: 'createdAt', sort_order: 'desc' },

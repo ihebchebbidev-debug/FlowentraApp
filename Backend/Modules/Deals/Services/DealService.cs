@@ -8,6 +8,7 @@ using MyApi.Modules.Projects.DTOs;
 using MyApi.Modules.Projects.Services;
 using MyApi.Modules.Offers.DTOs;
 using MyApi.Modules.Offers.Services;
+using MyApi.Modules.WorkflowEngine.Services;
 
 namespace MyApi.Modules.Deals.Services
 {
@@ -19,6 +20,7 @@ namespace MyApi.Modules.Deals.Services
         private readonly IProjectService _projectService;
         private readonly IOfferService _offerService;
         private readonly ITaskService _taskService;
+        private readonly IWorkflowTriggerService? _workflowTriggerService;
 
         // Stages considered "open" (still in the pipeline)
         private static readonly string[] OpenStages = { "lead", "qualified", "proposal", "negotiation" };
@@ -29,7 +31,8 @@ namespace MyApi.Modules.Deals.Services
             ISaleService saleService,
             IProjectService projectService,
             IOfferService offerService,
-            ITaskService taskService)
+            ITaskService taskService,
+            IWorkflowTriggerService? workflowTriggerService = null)
         {
             _context = context;
             _logger = logger;
@@ -37,6 +40,7 @@ namespace MyApi.Modules.Deals.Services
             _projectService = projectService;
             _offerService = offerService;
             _taskService = taskService;
+            _workflowTriggerService = workflowTriggerService;
         }
 
         // ── Queries ──
@@ -215,6 +219,26 @@ namespace MyApi.Modules.Deals.Services
 
             if (dto.Stage != null && dto.Stage != oldStage)
                 await AddActivityInternalAsync(deal.Id, "status_change", $"Stage changed to {dto.Stage}", oldStage, userId, userName, dto.Stage);
+
+            // Fire workflow automation on stage change (deals trigger on "Stage").
+            if (dto.Stage != null && dto.Stage != oldStage && _workflowTriggerService != null)
+            {
+                try
+                {
+                    await _workflowTriggerService.TriggerStatusChangeAsync(
+                        "deal",
+                        deal.Id,
+                        oldStage ?? "",
+                        dto.Stage,
+                        userId,
+                        new { dealId = deal.Id, dealNumber = deal.DealNumber, title = deal.Title, contactId = deal.ContactId }
+                    );
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to trigger workflow for deal {DealId} stage change", deal.Id);
+                }
+            }
 
             var contacts = await LoadContactsAsync(new[] { deal.ContactId });
             return MapToDto(deal, contacts);

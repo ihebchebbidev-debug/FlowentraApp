@@ -619,11 +619,16 @@ namespace MyApi.Modules.ServiceOrders.Controllers
                 if (serviceOrder == null)
                     return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = "Service order not found" } });
 
+                // Defensively cap Type to the column width (varchar(50)) so an
+                // over-length activity category can never throw a 22001 again.
+                var noteType = string.IsNullOrWhiteSpace(noteDto.Type) ? "internal" : noteDto.Type.Trim();
+                if (noteType.Length > 50) noteType = noteType.Substring(0, 50);
+
                 var note = new ServiceOrderNote
                 {
                     ServiceOrderId = id,
                     Content = noteDto.Content,
-                    Type = noteDto.Type ?? "internal",
+                    Type = noteType,
                     CreatedBy = userId,
                     CreatedByName = userName,
                     CreatedAt = DateTime.UtcNow

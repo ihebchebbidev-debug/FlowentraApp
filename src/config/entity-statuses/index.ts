@@ -11,6 +11,7 @@ export { saleStatusConfig } from './sale.config';
 export { serviceOrderStatusConfig } from './service-order.config';
 export { dispatchStatusConfig } from './dispatch.config';
 export { jobStatusConfig } from './job.config';
+export { dealStatusConfig } from './deal.config';
 
 import type { EntityStatusConfig, EntityType } from './types';
 import { offerStatusConfig } from './offer.config';
@@ -18,6 +19,7 @@ import { saleStatusConfig } from './sale.config';
 import { serviceOrderStatusConfig } from './service-order.config';
 import { dispatchStatusConfig } from './dispatch.config';
 import { jobStatusConfig } from './job.config';
+import { dealStatusConfig } from './deal.config';
 
 /** Map of all entity status configs by entity type */
 export const entityStatusConfigs: Record<EntityType, EntityStatusConfig> = {
@@ -26,6 +28,7 @@ export const entityStatusConfigs: Record<EntityType, EntityStatusConfig> = {
   service_order: serviceOrderStatusConfig,
   dispatch: dispatchStatusConfig,
   job: jobStatusConfig,
+  deal: dealStatusConfig,
 };
 
 /** Get status config for an entity type */
@@ -49,7 +52,7 @@ export function getTerminalStatusesForEntity(entityType: EntityType) {
 }
 
 /** Supported entity types list */
-export const allEntityTypes: EntityType[] = ['offer', 'sale', 'service_order', 'dispatch', 'job'];
+export const allEntityTypes: EntityType[] = ['offer', 'sale', 'service_order', 'dispatch', 'job', 'deal'];
 
 // Re-export new helper functions for convenience
 export { normalizeStatus, getWorkflowPosition, getActiveStatuses, getPositiveTerminalStatuses, getNegativeStatuses } from './types';

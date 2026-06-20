@@ -451,6 +451,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
                 "service_order" => await UpdateServiceOrderStatusAsync(entityId, newStatus, context.UserId),
                 "dispatch" => await UpdateDispatchStatusAsync(entityId, newStatus, context.UserId),
                 "job" => await UpdateJobStatusAsync(entityId, newStatus, context.UserId),
+                "deal" => await UpdateDealStatusAsync(entityId, newStatus, context.UserId),
                 _ => false
             };
 
@@ -2359,6 +2360,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
                 "sale" => await GetSaleFieldAsync(resolvedEntityId, resolvedField),
                 "service_order" => await GetServiceOrderFieldAsync(resolvedEntityId, resolvedField),
                 "dispatch" => await GetDispatchFieldAsync(resolvedEntityId, resolvedField),
+                "deal" => await GetDealFieldAsync(resolvedEntityId, resolvedField),
                 _ => null
             };
             
@@ -2415,6 +2417,30 @@ namespace MyApi.Modules.WorkflowEngine.Services
                 "grandtotal" => offer.GrandTotal,
                 "contactid" => offer.ContactId,
                 "validuntil" => offer.ValidUntil,
+                _ => null
+            };
+        }
+
+        private async Task<object?> GetDealFieldAsync(int id, string field)
+        {
+            var deal = await _db.Deals.FindAsync(id);
+            if (deal == null) return null;
+
+            return field.ToLower() switch
+            {
+                // "status" maps to the deal's stage so generic status conditions work.
+                "status" or "stage" => deal.Stage,
+                "probability" => deal.Probability,
+                "estimatedvalue" or "value" => deal.EstimatedValue,
+                "currency" => deal.Currency,
+                "contactid" => deal.ContactId,
+                "projectid" => deal.ProjectId,
+                "category" => deal.Category,
+                "source" => deal.Source,
+                "title" => deal.Title,
+                "expectedclosedate" => deal.ExpectedCloseDate,
+                "nextactiondate" => deal.NextActionDate,
+                "assignedto" => deal.AssignedTo,
                 _ => null
             };
         }
@@ -2721,6 +2747,38 @@ namespace MyApi.Modules.WorkflowEngine.Services
             offer.ModifiedDate = DateTime.UtcNow;
             offer.ModifiedBy = userId;
             await _db.SaveChangesAsync();
+            return true;
+        }
+
+        private async Task<bool> UpdateDealStatusAsync(int id, string newStatus, string? userId)
+        {
+            // Deals track their pipeline state in "Stage", not "Status".
+            var deal = await _db.Deals.FindAsync(id);
+            if (deal == null)
+            {
+                _logger.LogError("[WORKFLOW-UPDATE-DEAL] Deal #{Id} not found!", id);
+                return false;
+            }
+
+            var oldStage = deal.Stage;
+            deal.Stage = newStatus;
+            deal.ModifiedDate = DateTime.UtcNow;
+            deal.ModifiedBy = userId;
+            deal.LastActivity = DateTime.UtcNow;
+
+            // Mirror the UI's close behaviour: stamp the close date on terminal stages.
+            var lower = newStatus.ToLower();
+            if ((lower == "won" || lower == "lost") && deal.ActualCloseDate == null)
+            {
+                deal.ActualCloseDate = DateTime.UtcNow;
+            }
+
+            await _db.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "[WORKFLOW-UPDATE-DEAL] Deal #{Id} stage '{OldStage}' -> '{NewStage}' (by {UserId})",
+                id, oldStage, newStatus, userId ?? "system");
+
             return true;
         }
 

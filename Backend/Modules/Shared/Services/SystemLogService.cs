@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MyApi.Data;
+using MyApi.Infrastructure;
 using MyApi.Modules.Shared.DTOs;
 using MyApi.Modules.Shared.Models;
 using System.Text.Json;
@@ -10,11 +11,19 @@ namespace MyApi.Modules.Shared.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<SystemLogService> _logger;
+        private readonly ITenantDbContextFactory _dbContextFactory;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public SystemLogService(ApplicationDbContext context, ILogger<SystemLogService> logger)
+        public SystemLogService(
+            ApplicationDbContext context,
+            ILogger<SystemLogService> logger,
+            ITenantDbContextFactory dbContextFactory,
+            IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
             _logger = logger;
+            _dbContextFactory = dbContextFactory;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         private DbSet<SystemLog> SystemLogs => _context.Set<SystemLog>();
@@ -236,82 +245,86 @@ namespace MyApi.Modules.Shared.Services
         }
 
         /// <summary>
-        /// Persist a SystemLog while tolerating missing/invalid tenant context.
-        /// If the primary save fails (e.g. view-all mode without X-Target-Tenant,
-        /// detached entries, transient DB errors) we detach the entity, stamp a
-        /// safe fallback TenantId (0 = system/global) and retry once. If that
-        /// also fails, we swallow the exception so logging never breaks callers.
+        /// Persist a SystemLog on a DEDICATED, isolated DbContext.
+        ///
+        /// Logging must never share the request-scoped DbContext: if a caller's
+        /// SaveChanges has already failed (e.g. a 22001 value-too-long on some other
+        /// entity), that bad entity stays tracked in the Added state. Re-using the
+        /// same context here would re-attempt the failed insert on every log write,
+        /// so the log save fails for an unrelated reason and the audit entry is lost.
+        ///
+        /// We therefore spin up a fresh context from the tenant factory, write only
+        /// the log, and dispose it. The primary attempt uses the current tenant; if
+        /// that fails we retry once against the system/global tenant (0). Everything
+        /// is wrapped so logging can never throw back to the caller.
         /// </summary>
         private async Task PersistLogResilientlyAsync(SystemLog log, string source)
         {
-            try
-            {
-                SystemLogs.Add(log);
-                await _context.SaveChangesAsync();
-                return;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "SystemLog primary persist failed in {Source}; retrying with fallback tenant", source);
-                // Detach the failed entry so we can retry cleanly
-                try
-                {
-                    var entry = _context.Entry(log);
-                    if (entry.State != EntityState.Detached)
-                    {
-                        entry.State = EntityState.Detached;
-                    }
-                }
-                catch { /* best-effort detach */ }
-            }
+            var tenant = _httpContextAccessor.HttpContext?.Items["Tenant"] as string;
 
-            // Fallback path: explicitly stamp a safe tenant id (0 = system/global)
-            // and try again. Wrap in try/catch so logging never throws to callers.
-            // Temporarily switch the DbContext tenant to 0 so StampTenantIdOnNewEntities
-            // does not re-throw the "view-all mode" guard or overwrite our fallback id.
-            var previousTenantId = _context.GetTenantId();
+            int currentTenantId;
+            try { currentTenantId = _context.GetTenantId(); }
+            catch { currentTenantId = 0; }
+            // view-all sentinel (-1) is not a writable tenant — fall straight to 0.
+            if (currentTenantId < 0) currentTenantId = 0;
+
+            if (await TryPersistAsync(log, tenant, currentTenantId, source, isFallback: false))
+                return;
+
+            // Fallback: system/global tenant (0).
+            await TryPersistAsync(log, tenant, 0, source, isFallback: true);
+        }
+
+        private async Task<bool> TryPersistAsync(SystemLog log, string? tenant, int tenantId, string source, bool isFallback)
+        {
             try
             {
-                _context.SetTenantId(0);
-                var fallback = new SystemLog
+                await using var ctx = _dbContextFactory.CreateDbContext(tenant);
+                ctx.SetTenantId(tenantId);
+
+                var entry = new SystemLog
                 {
-                    TenantId = 0,
+                    TenantId = tenantId,
                     Timestamp = log.Timestamp == default ? DateTime.UtcNow : log.Timestamp,
-                    Level = string.IsNullOrEmpty(log.Level) ? "error" : log.Level,
+                    Level = Cap(string.IsNullOrEmpty(log.Level) ? "error" : log.Level, 20),
                     Message = string.IsNullOrEmpty(log.Message)
                         ? "(system log written without tenant context)"
                         : log.Message,
-                    Module = string.IsNullOrEmpty(log.Module) ? "System" : log.Module,
-                    Action = string.IsNullOrEmpty(log.Action) ? "other" : log.Action,
-                    UserId = log.UserId,
-                    UserName = log.UserName,
-                    EntityType = log.EntityType,
-                    EntityId = log.EntityId,
+                    Module = Cap(string.IsNullOrEmpty(log.Module) ? "System" : log.Module, 100),
+                    Action = Cap(string.IsNullOrEmpty(log.Action) ? "other" : log.Action, 50),
+                    UserId = Cap(log.UserId, 100),
+                    UserName = Cap(log.UserName, 200),
+                    EntityType = Cap(log.EntityType, 100),
+                    EntityId = Cap(log.EntityId, 100),
                     Details = log.Details,
-                    IpAddress = log.IpAddress,
+                    IpAddress = Cap(log.IpAddress, 45),
                     UserAgent = log.UserAgent,
                     Metadata = log.Metadata
                 };
 
-                SystemLogs.Add(fallback);
-                await _context.SaveChangesAsync();
+                ctx.Set<SystemLog>().Add(entry);
+                await ctx.SaveChangesAsync();
 
                 // Mirror the persisted Id back so callers (CreateLogAsync) get a usable DTO
-                log.Id = fallback.Id;
-                log.TenantId = fallback.TenantId;
+                log.Id = entry.Id;
+                log.TenantId = entry.TenantId;
+                return true;
             }
-            catch (Exception fallbackEx)
+            catch (Exception ex)
             {
-                // Last resort: never break the caller because of logging.
-                _logger.LogWarning(fallbackEx, "SystemLog fallback persist also failed in {Source}; dropping log entry", source);
-            }
-            finally
-            {
-                // Always restore the original tenant context so we don't leak
-                // tenant=0 into subsequent queries on this scoped DbContext.
-                try { _context.SetTenantId(previousTenantId); } catch { /* ignore */ }
+                _logger.LogWarning(ex,
+                    isFallback
+                        ? "SystemLog fallback persist also failed in {Source}; dropping log entry"
+                        : "SystemLog primary persist failed in {Source}; retrying with fallback tenant",
+                    source);
+                return false;
             }
         }
+
+        // Trim a value to the backing column width so an over-length field can never
+        // throw a 22001 and take the whole log entry down with it.
+        private static string? Cap(string? value, int max)
+            => value != null && value.Length > max ? value.Substring(0, max) : value;
 
         private static SystemLogDto MapToDto(SystemLog log)
         {

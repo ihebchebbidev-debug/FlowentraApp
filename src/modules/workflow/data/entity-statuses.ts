@@ -44,9 +44,10 @@ export const saleStatuses: StatusOption[] = toStatusOptions(entityStatusConfigs.
 export const serviceOrderStatuses: StatusOption[] = toStatusOptions(entityStatusConfigs.service_order);
 export const dispatchStatuses: StatusOption[] = toStatusOptions(entityStatusConfigs.dispatch);
 export const jobStatuses: StatusOption[] = toStatusOptions(entityStatusConfigs.job);
+export const dealStatuses: StatusOption[] = toStatusOptions(entityStatusConfigs.deal);
 
-// Re-export EntityType (workflow module uses these 5)
-export type EntityType = 'offer' | 'sale' | 'service_order' | 'dispatch' | 'job';
+// Re-export EntityType (workflow module uses these 6)
+export type EntityType = 'offer' | 'sale' | 'service_order' | 'dispatch' | 'job' | 'deal';
 
 export const entityTypes: { value: EntityType; labelKey: string }[] = [
   { value: 'offer', labelKey: 'entity.offer' },
@@ -54,6 +55,7 @@ export const entityTypes: { value: EntityType; labelKey: string }[] = [
   { value: 'service_order', labelKey: 'entity.serviceOrder' },
   { value: 'dispatch', labelKey: 'entity.dispatch' },
   { value: 'job', labelKey: 'entity.job' },
+  { value: 'deal', labelKey: 'entity.deal' },
 ];
 
 // ============================================================================
@@ -72,6 +74,7 @@ export const getEntityTypeFromNodeType = (nodeType: string): EntityType | null =
   if (nodeType.includes('sale')) return 'sale';
   if (nodeType.includes('service-order')) return 'service_order';
   if (nodeType.includes('dispatch')) return 'dispatch';
+  if (nodeType.includes('deal')) return 'deal';
   return null;
 };
 
@@ -90,10 +93,11 @@ export const getBranchStatuses = (entityType: EntityType): Record<string, string
 // Node type configurations for the workflow builder
 export const statusTriggerNodes = [
   'offer-status-trigger',
-  'sale-status-trigger', 
+  'sale-status-trigger',
   'service-order-status-trigger',
   'dispatch-status-trigger',
   'job-status-trigger',
+  'deal-status-trigger',
 ] as const;
 
 export const statusActionNodes = [
@@ -102,6 +106,7 @@ export const statusActionNodes = [
   'update-service-order-status',
   'update-dispatch-status',
   'update-job-status',
+  'update-deal-status',
 ] as const;
 
 // Non-status action nodes (communication, approvals) — separate from status actions

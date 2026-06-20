@@ -4,7 +4,7 @@ import {
   Mail, Send, Sparkles, Brain, Webhook, Calendar, 
   Database, GitBranch, Repeat, Split, Shield,
   Zap, Play, Bell, Clock, ArrowRight, RefreshCw, ChevronDown,
-  ClipboardList, Bot, Wrench, PauseCircle, FormInput, ArrowLeftRight, Globe, Settings2, Code
+  ClipboardList, Bot, Wrench, PauseCircle, FormInput, ArrowLeftRight, Globe, Settings2, Code, Handshake
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
@@ -20,7 +20,7 @@ export interface NodeTemplate {
   description: string;
   icon: React.ComponentType<any>;
   category: string;
-  entityType?: 'offer' | 'sale' | 'service_order' | 'dispatch' | 'job';
+  entityType?: 'offer' | 'sale' | 'service_order' | 'dispatch' | 'job' | 'deal';
   isTrigger?: boolean;
   isAction?: boolean;
   defaultConfig?: Record<string, any>;
@@ -135,6 +135,15 @@ const nodeTemplates: NodeTemplate[] = [
     isTrigger: true,
   },
   {
+    type: 'deal-status-trigger',
+    label: 'node.deal-status-trigger.label',
+    description: 'node.deal-status-trigger.desc',
+    icon: Handshake,
+    category: 'triggers',
+    entityType: 'deal',
+    isTrigger: true,
+  },
+  {
     type: 'webhook-trigger',
     label: 'node.webhook.label',
     description: 'node.webhook.desc',
@@ -185,6 +194,14 @@ const nodeTemplates: NodeTemplate[] = [
     entityType: 'dispatch',
   },
   {
+    type: 'deal',
+    label: 'node.deal.label',
+    description: 'node.deal.desc',
+    icon: Handshake,
+    category: 'entities',
+    entityType: 'deal',
+  },
+  {
     type: 'contact',
     label: 'node.contact.label',
     description: 'node.contact.desc',
@@ -233,6 +250,16 @@ const nodeTemplates: NodeTemplate[] = [
     isAction: true,
     defaultConfig: { createPerService: true },
   },
+  {
+    type: 'create-deal',
+    label: 'node.create-deal.label',
+    description: 'node.create-deal.desc',
+    icon: Handshake,
+    category: 'actions',
+    entityType: 'deal',
+    isAction: true,
+    defaultConfig: { autoCreate: true },
+  },
   // Actions - Update Status
   {
     type: 'update-offer-status',
@@ -277,6 +304,15 @@ const nodeTemplates: NodeTemplate[] = [
     icon: Truck,
     category: 'actions',
     entityType: 'job',
+    isAction: true,
+  },
+  {
+    type: 'update-deal-status',
+    label: 'node.update-deal-status.label',
+    description: 'node.update-deal-status.desc',
+    icon: Handshake,
+    category: 'actions',
+    entityType: 'deal',
     isAction: true,
   },
 

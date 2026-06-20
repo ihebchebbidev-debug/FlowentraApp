@@ -142,6 +142,37 @@ async function fetchSales(): Promise<any[]> {
   }
 }
 
+async function fetchDeals(): Promise<any[]> {
+  const cacheKey = getCacheKey('deals');
+  const cached = getFromCache(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const response = await fetch(`${API_URL}/api/deals?limit=1000`, {
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    const deals = (data.data?.deals || data.deals || data.data || []).map((deal: any) => ({
+      id: deal.id || deal.Id,
+      dealNumber: deal.dealNumber || deal.DealNumber || `DEAL-${deal.id || deal.Id}`,
+      title: deal.title || deal.Title || '',
+      stage: deal.stage || deal.Stage || '',
+      estimatedValue: deal.estimatedValue || deal.EstimatedValue || 0,
+      createdAt: deal.createdDate || deal.CreatedDate || deal.createdAt || deal.CreatedAt || '',
+    }));
+    setCache(cacheKey, deals);
+    return deals;
+  } catch (error) {
+    console.error('Failed to fetch deals for dynamic data:', error);
+    return [];
+  }
+}
+
 async function fetchInstallations(): Promise<any[]> {
   const cacheKey = getCacheKey('installations');
   const cached = getFromCache(cacheKey);
@@ -339,6 +370,9 @@ export const dynamicDataService = {
         break;
       case 'sales':
         data = await fetchSales();
+        break;
+      case 'deals':
+        data = await fetchDeals();
         break;
       case 'installations':
         data = await fetchInstallations();

@@ -712,6 +712,14 @@
   "node.update-service-order-status.desc": "Set SO status",
   "node.update-dispatch-status.label": "Update Dispatch Status",
   "node.update-dispatch-status.desc": "Set dispatch status",
+  "node.deal-status-trigger.label": "Deal Stage Change",
+  "node.deal-status-trigger.desc": "On deal stage change",
+  "node.update-deal-status.label": "Update Deal Stage",
+  "node.update-deal-status.desc": "Set deal stage",
+  "node.create-deal.label": "Create Deal",
+  "node.create-deal.desc": "Auto-create a new deal",
+  "node.deal.label": "Deal",
+  "node.deal.desc": "Pipeline deal entity",
   "node.send-notification.label": "Send Notification",
   "node.send-notification.desc": "Push notification",
   "node.send-workflow-email.label": "Send Email",
@@ -722,6 +730,7 @@
   "entity.sale": "Sale",
   "entity.serviceOrder": "Service Order",
   "entity.dispatch": "Dispatch",
+  "entity.deal": "Deal",
   "config.triggerName": "Trigger Name",
   "config.triggerNamePlaceholder": "e.g., On Dispatch Completed",
   "config.triggerDescriptionPlaceholder": "Describe when this trigger should fire...",
@@ -1092,9 +1101,18 @@
     "sale": "Sale",
     "service_order": "Service Order",
     "dispatch": "Dispatch",
-    "contact": "Contact"
+    "contact": "Contact",
+    "deal": "Deal"
   },
   "status": {
+    "deal": {
+      "lead": "Lead",
+      "qualified": "Qualified",
+      "proposal": "Proposal",
+      "negotiation": "Negotiation",
+      "won": "Won",
+      "lost": "Lost"
+    },
     "offer": {
       "draft": "Created",
       "sent": "Sent",

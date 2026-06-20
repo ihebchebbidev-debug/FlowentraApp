@@ -753,6 +753,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
             if (nodeType.Contains("job")) return "job";
             if (nodeType.Contains("offer")) return "offer";
             if (nodeType.Contains("sale")) return "sale";
+            if (nodeType.Contains("deal")) return "deal";
             return null;
         }
 

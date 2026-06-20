@@ -2,6 +2,7 @@
 import { articlesApi } from '@/services/api/articlesApi';
 import { contactsApi } from '@/services/api/contactsApi';
 import { installationsApi } from '@/services/api/installationsApi';
+import { dealsApi } from '@/services/api/dealsApi';
 import { DynamicFormResponse, FormField } from '../types';
 import {
   ExportEntityType,
@@ -247,6 +248,53 @@ async function exportToInstallation(payload: Record<string, any>): Promise<Expor
   }
 }
 
+async function exportToDeal(payload: Record<string, any>): Promise<ExportResult> {
+  try {
+    if (!payload.contactId) {
+      return {
+        success: false,
+        entity_type: 'deal',
+        message_en: 'Contact ID is required for deals',
+        message_fr: 'L\'ID du contact est requis pour les affaires',
+        error: 'Missing contactId',
+      };
+    }
+
+    const request = {
+      title: payload.title || payload.name || 'New Deal',
+      description: payload.description,
+      contactId: Number(payload.contactId),
+      stage: (payload.stage || 'lead') as any,
+      probability: payload.probability != null ? Number(payload.probability) : undefined,
+      estimatedValue: payload.estimatedValue != null ? Number(payload.estimatedValue) : undefined,
+      currency: payload.currency,
+      expectedCloseDate: payload.expectedCloseDate,
+      category: payload.category,
+      source: payload.source || 'form',
+      notes: payload.notes,
+      assignedTo: payload.assignedTo,
+    };
+
+    const deal = await dealsApi.create(request);
+
+    return {
+      success: true,
+      entity_id: deal.id,
+      entity_type: 'deal',
+      message_en: `Deal "${deal.title || deal.dealNumber}" created successfully`,
+      message_fr: `Affaire "${deal.title || deal.dealNumber}" créée avec succès`,
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      entity_type: 'deal',
+      message_en: 'Failed to create deal',
+      message_fr: 'Échec de création de l\'affaire',
+      error: error.message,
+    };
+  }
+}
+
 // =====================================================
 // Main Export Service
 // =====================================================
@@ -270,6 +318,8 @@ export const formExportService = {
         return exportToArticle(payload);
       case 'installation':
         return exportToInstallation(payload);
+      case 'deal':
+        return exportToDeal(payload);
       default:
         return {
           success: false,
@@ -364,6 +414,13 @@ export const formExportService = {
       if (!mappedEntityFields.includes('contactId')) {
         errors.push('Contact ID field mapping is required for installations');
       }
+    } else if (entityType === 'deal') {
+      if (!mappedEntityFields.includes('contactId')) {
+        errors.push('Contact ID field mapping is required for deals');
+      }
+      if (!mappedEntityFields.includes('title') && !mappedEntityFields.includes('name')) {
+        errors.push('Title (or name) field mapping is required for deals');
+      }
     }
     
     return {
@@ -413,6 +470,16 @@ export const formExportService = {
         manufacturer: ['manufacturer', 'fabricant', 'brand', 'marque'],
         serialNumber: ['serial', 'numéro de série', 'sn', 'serial number'],
         category: ['category', 'catégorie'],
+      },
+      deal: {
+        contactId: ['contact', 'client', 'customer'],
+        title: ['title', 'titre', 'name', 'nom', 'deal', 'affaire', 'subject', 'objet'],
+        description: ['description', 'details', 'détails', 'message'],
+        estimatedValue: ['value', 'valeur', 'amount', 'montant', 'budget', 'price', 'prix'],
+        stage: ['stage', 'étape', 'etape', 'status', 'statut'],
+        category: ['category', 'catégorie', 'categorie'],
+        source: ['source', 'origine', 'channel', 'canal'],
+        expectedCloseDate: ['close date', 'date de clôture', 'expected', 'échéance', 'deadline'],
       },
     };
     
