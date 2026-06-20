@@ -13,6 +13,7 @@ namespace MyApi.Modules.Projects.DTOs
         public string Status { get; set; } = string.Empty;
         public string ProjectKind { get; set; } = "client";
         public string? Priority { get; set; }
+        public decimal? Budget { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
         public ProjectSettingsDto? Settings { get; set; }
@@ -78,6 +79,8 @@ namespace MyApi.Modules.Projects.DTOs
 
         [StringLength(20)]
         public string? Priority { get; set; } = "medium";
+
+        public decimal? Budget { get; set; }
 
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }

@@ -41,6 +41,10 @@ namespace MyApi.Modules.Projects.Models
         [MaxLength(20)]
         public string? Priority { get; set; }
 
+        /// <summary>Planned budget for the project (e.g. seeded from a converted deal's value).</summary>
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? Budget { get; set; }
+
         public int? ContactId { get; set; }
 
         // Stored as JSON array in DB (e.g. "[1,2,3]")

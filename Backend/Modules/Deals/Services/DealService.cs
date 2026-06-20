@@ -18,6 +18,7 @@ namespace MyApi.Modules.Deals.Services
         private readonly ISaleService _saleService;
         private readonly IProjectService _projectService;
         private readonly IOfferService _offerService;
+        private readonly ITaskService _taskService;
 
         // Stages considered "open" (still in the pipeline)
         private static readonly string[] OpenStages = { "lead", "qualified", "proposal", "negotiation" };
@@ -27,13 +28,15 @@ namespace MyApi.Modules.Deals.Services
             ILogger<DealService> logger,
             ISaleService saleService,
             IProjectService projectService,
-            IOfferService offerService)
+            IOfferService offerService,
+            ITaskService taskService)
         {
             _context = context;
             _logger = logger;
             _saleService = saleService;
             _projectService = projectService;
             _offerService = offerService;
+            _taskService = taskService;
         }
 
         // ── Queries ──
@@ -304,6 +307,8 @@ namespace MyApi.Modules.Deals.Services
                         Status = "active",
                         ProjectKind = "client",
                         Priority = "medium",
+                        // Seed the project budget from the deal's value (delivery vs forecast).
+                        Budget = deal.EstimatedValue,
                         CreateDefaultColumns = true,
                     };
                     var project = await _projectService.CreateProjectAsync(projectDto, userId);
@@ -312,6 +317,40 @@ namespace MyApi.Modules.Deals.Services
                     deal.ConvertedToProjectId = project.Id.ToString();
                     // The deal now belongs to the project it spawned.
                     deal.ProjectId = project.Id;
+
+                    // Incremental conversions stay consistent: if this deal was already
+                    // turned into a Sale/Offer in an earlier call, retro-link those
+                    // records to the project just created (only when they aren't already
+                    // linked elsewhere). The Sale/Offer created later in THIS call use
+                    // effectiveProjectId, so they're handled separately below.
+                    if (int.TryParse(deal.ConvertedToSaleId, out var priorSaleId))
+                    {
+                        var priorSale = await _context.Sales.FirstOrDefaultAsync(s => s.Id == priorSaleId);
+                        if (priorSale != null && priorSale.ProjectId == null) priorSale.ProjectId = project.Id;
+                    }
+                    if (int.TryParse(deal.ConvertedToOfferId, out var priorOfferId))
+                    {
+                        var priorOffer = await _context.Offers.FirstOrDefaultAsync(o => o.Id == priorOfferId);
+                        if (priorOffer != null && priorOffer.ProjectId == null) priorOffer.ProjectId = project.Id;
+                    }
+
+                    // Seed a starter task per deal line item so the new project opens with
+                    // an actionable to-do list derived from exactly what was sold. The task
+                    // service stamps TenantId from the parent project (tenant-safe), and
+                    // these inserts join the same transaction.
+                    foreach (var it in deal.Items ?? new List<DealItem>())
+                    {
+                        await _taskService.CreateProjectTaskAsync(new CreateProjectTaskRequestDto
+                        {
+                            Title = string.IsNullOrWhiteSpace(it.ItemName) ? $"Deliver item #{it.Id}" : it.ItemName,
+                            Description = $"Qty {it.Quantity:0.##} · {it.UnitPrice:0.00} {deal.Currency}"
+                                + (string.IsNullOrEmpty(it.InstallationName) ? "" : $" · {it.InstallationName}"),
+                            TaskType = it.Type == "service" ? "visit" : "follow-up",
+                            Status = "open",
+                            RelatedEntityType = "project",
+                            RelatedEntityId = project.Id,
+                        }, userId);
+                    }
                 }
 
                 // New project (if just created) wins; otherwise keep any existing link.

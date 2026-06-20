@@ -11,7 +11,8 @@ import {
   TrendingUp,
   User,
   Calendar,
-  FileText 
+  FileText,
+  Wallet
 } from "lucide-react";
 import { Project } from "../../types";
 import { cn } from "@/lib/utils";
@@ -151,6 +152,19 @@ export function ProjectOverviewTab({
                 <span className="text-sm">{ownerName}</span>
               </div>
             </div>
+
+            {/* Budget */}
+            {project.budget != null && (
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-2">
+                  {t("projects.detail.overview.budget", "Budget")}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Wallet className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-semibold">{project.budget.toLocaleString()}</span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Description */}

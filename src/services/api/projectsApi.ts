@@ -28,6 +28,7 @@ export interface ProjectResponseDto {
   status: string;
   projectKind: string;
   priority?: string;
+  budget?: number;
   startDate?: string;
   endDate?: string;
   teamMembers: number[];
@@ -238,6 +239,7 @@ const mapProjectResponseToFrontend = (dto: ProjectResponseDto): Project => ({
   // Backend stores this as projectKind (free string); treat it as the frontend type
   type: ((dto.projectKind as Project['type']) || 'internal'),
   priority: (dto.priority || 'medium') as Project['priority'],
+  budget: dto.budget,
   progress: 0,
   startDate: dto.startDate ? new Date(dto.startDate) : undefined,
   endDate: dto.endDate ? new Date(dto.endDate) : undefined,

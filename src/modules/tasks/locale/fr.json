@@ -351,6 +351,7 @@
         "priority": "Priorité",
         "type": "Type",
         "owner": "Propriétaire",
+        "budget": "Budget",
         "startDate": "Date de Début",
         "endDate": "Date de Fin",
         "createdDate": "Créé le",
