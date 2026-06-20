@@ -144,18 +144,51 @@ namespace MyApi.Modules.Planning.Services
             var actualExpenseByType = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
             if (dispatchIds.Count > 0)
             {
-                actualMinutes = (int)await _db.Set<MyApi.Modules.Dispatches.Models.TimeEntry>()
-                    .Where(t => dispatchIds.Contains(t.DispatchId) && t.Duration != null)
-                    .SumAsync(t => (decimal?)t.Duration ?? 0m);
+                // A dispatch can hold several jobs (single multi-job dispatch). Attribute an actual
+                // entry to THIS job when it is explicitly tagged with ServiceOrderJobId. Untagged
+                // (legacy / whole-dispatch) entries are only counted when their dispatch contains a
+                // single job (this one) — otherwise the same totals would be double-counted across
+                // every sibling job.
+                var jobCountsByDispatch = await _db.Set<MyApi.Modules.Dispatches.Models.DispatchJob>()
+                    .Where(dj => dispatchIds.Contains(dj.DispatchId) && !dj.IsDeleted)
+                    .GroupBy(dj => dj.DispatchId)
+                    .Select(g => new { DispatchId = g.Key, Count = g.Count() })
+                    .ToListAsync();
+                var singleJobDispatchIds = jobCountsByDispatch
+                    .Where(x => x.Count <= 1)
+                    .Select(x => x.DispatchId)
+                    .ToList();
+
+                var timeDurations = await _db.Set<MyApi.Modules.Dispatches.Models.TimeEntry>()
+                    .Where(t => dispatchIds.Contains(t.DispatchId) && t.Duration != null
+                        && (t.ServiceOrderJobId == serviceOrderJobId
+                            || (t.ServiceOrderJobId == null && singleJobDispatchIds.Contains(t.DispatchId))))
+                    .Select(t => t.Duration)
+                    .ToListAsync();
+                actualMinutes = (int)timeDurations.Sum(d => d ?? 0m);
 
                 var expenses = await _db.Set<MyApi.Modules.Dispatches.Models.Expense>()
-                    .Where(e => dispatchIds.Contains(e.DispatchId))
+                    .Where(e => dispatchIds.Contains(e.DispatchId)
+                        && (e.ServiceOrderJobId == serviceOrderJobId
+                            || (e.ServiceOrderJobId == null && singleJobDispatchIds.Contains(e.DispatchId))))
                     .ToListAsync();
                 foreach (var e in expenses)
                 {
                     var key = (e.ExpenseType ?? "other").ToLower();
                     actualExpenseByType.TryGetValue(key, out var cur);
                     actualExpenseByType[key] = cur + e.Amount;
+                }
+
+                // Actual material cost counts against the planned "materials" expense bucket.
+                var materialTotal = await _db.Set<MyApi.Modules.Dispatches.Models.MaterialUsage>()
+                    .Where(m => dispatchIds.Contains(m.DispatchId)
+                        && (m.ServiceOrderJobId == serviceOrderJobId
+                            || (m.ServiceOrderJobId == null && singleJobDispatchIds.Contains(m.DispatchId))))
+                    .SumAsync(m => (decimal?)m.TotalPrice ?? 0m);
+                if (materialTotal > 0)
+                {
+                    actualExpenseByType.TryGetValue("materials", out var curMat);
+                    actualExpenseByType["materials"] = curMat + materialTotal;
                 }
             }
 
@@ -184,6 +217,16 @@ namespace MyApi.Modules.Planning.Services
                         var key = (e.Type ?? "other").ToLower();
                         actualExpenseByType.TryGetValue(key, out var cur);
                         actualExpenseByType[key] = cur + e.Amount;
+                    }
+
+                    // SO-direct materials count against the planned "materials" bucket too.
+                    var soMaterialTotal = await _db.Set<MyApi.Modules.ServiceOrders.Models.ServiceOrderMaterial>()
+                        .Where(m => m.ServiceOrderId == serviceOrderId.Value)
+                        .SumAsync(m => (decimal?)m.TotalPrice ?? 0m);
+                    if (soMaterialTotal > 0)
+                    {
+                        actualExpenseByType.TryGetValue("materials", out var curMat);
+                        actualExpenseByType["materials"] = curMat + soMaterialTotal;
                     }
                 }
             }

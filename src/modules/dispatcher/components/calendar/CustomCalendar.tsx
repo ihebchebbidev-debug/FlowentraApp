@@ -706,6 +706,9 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
           dispatchPriority,
         );
 
+        // Notify parent so the unassigned-jobs panel refreshes (args are ignored by the handler).
+        onJobAssignment(String(serviceOrder.id), technicianId, scheduledStart, scheduledStart);
+
         await loadAssignedJobs();
         toast.success(t('dispatcher.jobs_assigned_success', { count: serviceOrder.jobs.length }));
         setShowBatchModal(false);
