@@ -19,14 +19,16 @@ namespace MyApi.Modules.ServiceOrders.Services
         private readonly MyApi.Modules.Numbering.Services.INumberingService? _numberingService;
         private readonly IAppSettingsService? _appSettingsService;
         private readonly MyApi.Modules.Planning.Services.IPlannedLineEntryService? _plannedEntries;
+        private readonly MyApi.Modules.Shared.Services.IEntityFormDocumentService? _formDocuments;
 
         public ServiceOrderService(
-            ApplicationDbContext context, 
+            ApplicationDbContext context,
             ILogger<ServiceOrderService> logger,
             IWorkflowTriggerService? workflowTriggerService = null,
             MyApi.Modules.Numbering.Services.INumberingService? numberingService = null,
             IAppSettingsService? appSettingsService = null,
-            MyApi.Modules.Planning.Services.IPlannedLineEntryService? plannedEntries = null)
+            MyApi.Modules.Planning.Services.IPlannedLineEntryService? plannedEntries = null,
+            MyApi.Modules.Shared.Services.IEntityFormDocumentService? formDocuments = null)
         {
             _context = context;
             _logger = logger;
@@ -34,6 +36,7 @@ namespace MyApi.Modules.ServiceOrders.Services
             _numberingService = numberingService;
             _appSettingsService = appSettingsService;
             _plannedEntries = plannedEntries;
+            _formDocuments = formDocuments;
         }
 
         // =====================================================================
@@ -524,20 +527,35 @@ namespace MyApi.Modules.ServiceOrders.Services
                     // Copy ONLY from the primary (first) sale item to avoid stacking duplicate
                     // planned budgets when several lines share an installation. The lineage anchor
                     // OriginOfferItemId is preserved on the copied rows.
-                    if (_plannedEntries != null)
+                    if (_plannedEntries != null || _formDocuments != null)
                     {
                         foreach (var j in jobs)
                         {
                             if (string.IsNullOrWhiteSpace(j.SaleItemId)) continue;
-                            var firstPart = j.SaleItemId
+                            var saleItemIds = j.SaleItemId
                                 .Split(',', StringSplitOptions.RemoveEmptyEntries)
                                 .Select(p => p.Trim())
-                                .FirstOrDefault();
-                            if (firstPart != null && int.TryParse(firstPart, out var primarySaleItemId))
+                                .Select(p => int.TryParse(p, out var n) ? (int?)n : null)
+                                .Where(n => n.HasValue)
+                                .Select(n => n!.Value)
+                                .ToList();
+                            if (saleItemIds.Count == 0) continue;
+
+                            // Planned time/expenses: copy ONLY from the primary (first) sale item to
+                            // avoid stacking duplicate planned budgets when lines share an installation.
+                            if (_plannedEntries != null)
                             {
-                                // Inside the transaction: a failure here MUST roll back
-                                // so we never end up with jobs missing planned budget.
-                                await _plannedEntries.CopyAsync("sale_item", primarySaleItemId, "service_order_job", j.Id, userId);
+                                await _plannedEntries.CopyAsync("sale_item", saleItemIds[0], "service_order_job", j.Id, userId);
+                            }
+
+                            // Checklists: copy from EVERY sale item the job aggregates, so each service
+                            // article's checklist lands on the job (idempotent — only seeds an empty job).
+                            if (_formDocuments != null)
+                            {
+                                foreach (var saleItemId in saleItemIds)
+                                {
+                                    await _formDocuments.CopyItemDocumentsAsync("sale_item", saleItemId, "service_order_job", j.Id, userId);
+                                }
                             }
                         }
                     }

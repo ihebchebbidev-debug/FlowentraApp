@@ -1,6 +1,9 @@
 // Entity Form Document Types - For attaching dynamic forms to Offers/Sales/ServiceOrders/Dispatches
 
-export type EntityType = 'offer' | 'sale' | 'service_order' | 'dispatch' | 'installation' | 'project' | 'user' | 'deal';
+export type EntityType = 'offer' | 'sale' | 'service_order' | 'dispatch' | 'installation' | 'project' | 'user' | 'deal'
+  // Item-level lineage targets — a checklist attached to a service line follows
+  // offer_item → sale_item → service_order_job (the job in the dispatch).
+  | 'offer_item' | 'sale_item' | 'service_order_job';
 export type FormDocumentStatus = 'draft' | 'completed';
 
 export interface EntityFormDocument {

@@ -48,13 +48,22 @@ namespace MyApi.Modules.Shared.Services
             return document != null ? MapToDto(document) : null;
         }
 
+        // Entity-level targets (whole document attached to the record) plus the
+        // item-level lineage targets a checklist follows: offer line → sale line →
+        // service-order job (the service article that becomes a job in the dispatch).
+        private static readonly string[] ValidEntityTypes =
+            { "offer", "sale", "serviceorder", "dispatch", "deal", "project",
+              "offer_item", "sale_item", "service_order_job" };
+        // Item-level lineage targets only (used by the conversion copy helper).
+        private static readonly string[] ValidItemEntityTypes =
+            { "offer_item", "sale_item", "service_order_job" };
+
         public async Task<EntityFormDocumentDto> CreateAsync(CreateEntityFormDocumentDto dto, string userId)
         {
             // Validate entity type
-            var validEntityTypes = new[] { "offer", "sale", "serviceorder", "dispatch", "deal", "project" };
-            if (!validEntityTypes.Contains(dto.EntityType.ToLower()))
+            if (!ValidEntityTypes.Contains(dto.EntityType.ToLower()))
             {
-                throw new ArgumentException($"Invalid entity type: {dto.EntityType}. Must be 'offer', 'sale', 'serviceorder', 'dispatch', 'deal', or 'project'.");
+                throw new ArgumentException($"Invalid entity type: {dto.EntityType}.");
             }
 
             // Get the form to capture current version
@@ -216,6 +225,60 @@ namespace MyApi.Modules.Shared.Services
             await _context.SaveChangesAsync();
 
             return copiedCount;
+        }
+
+        /// <summary>
+        /// Copy item-level checklists along the conversion lineage
+        /// (offer_item → sale_item → service_order_job). Deduplicates by FormId so a
+        /// target can be seeded from several sources (e.g. a job aggregating multiple
+        /// sale items) without duplicates, and re-running a sync never duplicates.
+        /// TenantId is stamped by the DbContext on save (same scoped context as the
+        /// conversion), so copies stay within the current tenant.
+        /// </summary>
+        public async Task<int> CopyItemDocumentsAsync(string sourceEntityType, int sourceEntityId, string targetEntityType, int targetEntityId, string userId)
+        {
+            var src = sourceEntityType.ToLower();
+            var dst = targetEntityType.ToLower();
+            if (!ValidItemEntityTypes.Contains(dst))
+            {
+                throw new ArgumentException($"Invalid item target entity type: {targetEntityType}. Must be 'offer_item', 'sale_item' or 'service_order_job'.");
+            }
+
+            var sourceDocuments = await _context.Set<EntityFormDocument>()
+                .Where(d => !d.IsDeleted && d.EntityType.ToLower() == src && d.EntityId == sourceEntityId)
+                .ToListAsync();
+            if (sourceDocuments.Count == 0) return 0;
+
+            // Forms already on the target (incl. any added earlier in this same call)
+            // — used to dedupe across multiple sources and across re-runs.
+            var existingFormIds = new HashSet<int>(
+                await _context.Set<EntityFormDocument>()
+                    .Where(d => !d.IsDeleted && d.EntityType.ToLower() == dst && d.EntityId == targetEntityId)
+                    .Select(d => d.FormId)
+                    .ToListAsync());
+
+            var copied = 0;
+            foreach (var s in sourceDocuments)
+            {
+                if (!existingFormIds.Add(s.FormId)) continue; // already present on target
+                _context.Set<EntityFormDocument>().Add(new EntityFormDocument
+                {
+                    EntityType = dst,
+                    EntityId = targetEntityId,
+                    FormId = s.FormId,
+                    FormVersion = s.FormVersion,
+                    Title = s.Title,
+                    Status = s.Status,
+                    Responses = s.Responses,
+                    CreatedBy = userId,
+                    CreatedAt = DateTime.UtcNow,
+                    IsDeleted = false,
+                });
+                copied++;
+            }
+
+            if (copied > 0) await _context.SaveChangesAsync();
+            return copied;
         }
 
         private EntityFormDocumentDto MapToDto(EntityFormDocument document)

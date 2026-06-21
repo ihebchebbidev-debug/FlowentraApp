@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SaleItem } from "../types";
 import PlannedEntriesEditor from "@/shared/components/planning/PlannedEntriesEditor";
+import { ChecklistsSection } from "@/modules/shared/components/documents";
 
 interface EditSaleItemModalProps {
   item: SaleItem;
@@ -133,6 +134,11 @@ export function EditSaleItemModal({ item, isOpen, onClose, onSave }: EditSaleIte
             parentType="sale_item"
             parentId={Number(editedItem.id)}
           />
+
+          {/* Checklists on a service line follow sale → service-order job → dispatch. */}
+          {editedItem.type === 'service' && Number(editedItem.id) > 0 && (
+            <ChecklistsSection entityType="sale_item" entityId={Number(editedItem.id)} />
+          )}
 
 
           {/* Actions */}

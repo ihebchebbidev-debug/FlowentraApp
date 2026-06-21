@@ -21,6 +21,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
         private readonly MyApi.Modules.Numbering.Services.INumberingService? _numberingService;
         private readonly MyApi.Modules.Planning.Services.IPlannedLineEntryService? _plannedEntries;
         private readonly IAppSettingsService? _appSettingsService;
+        private readonly MyApi.Modules.Shared.Services.IEntityFormDocumentService? _formDocuments;
 
         public BusinessWorkflowService(
             ApplicationDbContext db,
@@ -29,7 +30,8 @@ namespace MyApi.Modules.WorkflowEngine.Services
             IWorkflowNotificationService notificationService,
             MyApi.Modules.Numbering.Services.INumberingService? numberingService = null,
             MyApi.Modules.Planning.Services.IPlannedLineEntryService? plannedEntries = null,
-            IAppSettingsService? appSettingsService = null)
+            IAppSettingsService? appSettingsService = null,
+            MyApi.Modules.Shared.Services.IEntityFormDocumentService? formDocuments = null)
         {
             _db = db;
             _logger = logger;
@@ -38,6 +40,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
             _numberingService = numberingService;
             _plannedEntries = plannedEntries;
             _appSettingsService = appSettingsService;
+            _formDocuments = formDocuments;
         }
 
 
@@ -185,11 +188,14 @@ namespace MyApi.Modules.WorkflowEngine.Services
                         // Carry planned time/expenses from offer items → sale items (Stage 2).
                         // Propagate failures: a missing plan is a data-integrity bug, not a warning.
                         // The outer catch will mark the workflow step failed and notify the user.
-                        if (_plannedEntries != null)
+                        if (_plannedEntries != null || _formDocuments != null)
                         {
                             foreach (var (offerItemId, saleItem) in offerItemToSaleItem)
                             {
-                                await _plannedEntries.CopyAsync("offer_item", offerItemId, "sale_item", saleItem.Id, userId ?? "system");
+                                if (_plannedEntries != null)
+                                    await _plannedEntries.CopyAsync("offer_item", offerItemId, "sale_item", saleItem.Id, userId ?? "system");
+                                if (_formDocuments != null)
+                                    await _formDocuments.CopyItemDocumentsAsync("offer_item", offerItemId, "sale_item", saleItem.Id, userId ?? "system");
                             }
                         }
                     }
@@ -489,11 +495,15 @@ namespace MyApi.Modules.WorkflowEngine.Services
                 // Carry planned time/expenses from primary sale item → service order job.
                 // Propagate failures so the workflow step fails visibly rather than
                 // silently producing jobs without their planned budget.
-                if (_plannedEntries != null)
+                if (_plannedEntries != null || _formDocuments != null)
                 {
                     foreach (var (saleItemId, job) in planSeeds)
                     {
-                        await _plannedEntries.CopyAsync("sale_item", saleItemId, "service_order_job", job.Id, userId ?? "system");
+                        if (_plannedEntries != null)
+                            await _plannedEntries.CopyAsync("sale_item", saleItemId, "service_order_job", job.Id, userId ?? "system");
+                        // Checklists copy from every sale item; dedup-by-form keeps one per job.
+                        if (_formDocuments != null)
+                            await _formDocuments.CopyItemDocumentsAsync("sale_item", saleItemId, "service_order_job", job.Id, userId ?? "system");
                     }
                 }
 

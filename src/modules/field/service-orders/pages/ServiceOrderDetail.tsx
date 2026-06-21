@@ -1384,6 +1384,10 @@ export default function ServiceOrderDetail() {
                           parentId={Number(j.id)}
                           currency={(serviceOrderForComponents as any)?.currency || 'TND'}
                         />
+                        {/* Checklists carried from the offer/sale service line. */}
+                        {Number(j.id) > 0 && (
+                          <ChecklistsSection entityType="service_order_job" entityId={Number(j.id)} />
+                        )}
                       </div>
                     ))}
                   </CardContent>

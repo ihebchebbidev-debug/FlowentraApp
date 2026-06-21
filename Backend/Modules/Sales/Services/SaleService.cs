@@ -17,14 +17,16 @@ namespace MyApi.Modules.Sales.Services
         private readonly IWorkflowTriggerService? _workflowTriggerService;
         private readonly MyApi.Modules.Numbering.Services.INumberingService? _numberingService;
         private readonly MyApi.Modules.Planning.Services.IPlannedLineEntryService? _plannedEntries;
+        private readonly MyApi.Modules.Shared.Services.IEntityFormDocumentService? _formDocuments;
 
         public SaleService(
-            ApplicationDbContext context, 
+            ApplicationDbContext context,
             ILogger<SaleService> logger,
             IStockTransactionService? stockTransactionService = null,
             IWorkflowTriggerService? workflowTriggerService = null,
             MyApi.Modules.Numbering.Services.INumberingService? numberingService = null,
-            MyApi.Modules.Planning.Services.IPlannedLineEntryService? plannedEntries = null)
+            MyApi.Modules.Planning.Services.IPlannedLineEntryService? plannedEntries = null,
+            MyApi.Modules.Shared.Services.IEntityFormDocumentService? formDocuments = null)
         {
             _context = context;
             _logger = logger;
@@ -32,6 +34,7 @@ namespace MyApi.Modules.Sales.Services
             _workflowTriggerService = workflowTriggerService;
             _numberingService = numberingService;
             _plannedEntries = plannedEntries;
+            _formDocuments = formDocuments;
         }
 
 
@@ -345,11 +348,15 @@ namespace MyApi.Modules.Sales.Services
                 // Propagate planned time/expenses from offer_item → sale_item.
                 // Inside the transaction: any failure rolls the whole conversion back
                 // so we never end up with a Sale that lost its plan.
-                if (_plannedEntries != null && itemPairs.Count > 0)
+                if (itemPairs.Count > 0)
                 {
                     foreach (var (src, dst) in itemPairs)
                     {
-                        await _plannedEntries.CopyAsync("offer_item", src.Id, "sale_item", dst.Id, userId);
+                        if (_plannedEntries != null)
+                            await _plannedEntries.CopyAsync("offer_item", src.Id, "sale_item", dst.Id, userId);
+                        // Carry item-level checklists (offer line → sale line) too.
+                        if (_formDocuments != null)
+                            await _formDocuments.CopyItemDocumentsAsync("offer_item", src.Id, "sale_item", dst.Id, userId);
                     }
                 }
 

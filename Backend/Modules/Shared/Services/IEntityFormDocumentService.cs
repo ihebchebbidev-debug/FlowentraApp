@@ -36,5 +36,11 @@ namespace MyApi.Modules.Shared.Services
     /// Copy all form documents from one entity to another (e.g., from offer to sale during conversion)
     /// </summary>
     Task<int> CopyDocumentsToEntityAsync(string sourceEntityType, int sourceEntityId, string targetEntityType, int targetEntityId, string userId);
+
+    /// <summary>
+    /// Copy item-level checklists along the conversion lineage
+    /// (offer_item → sale_item → service_order_job). Idempotent (skips non-empty targets).
+    /// </summary>
+    Task<int> CopyItemDocumentsAsync(string sourceEntityType, int sourceEntityId, string targetEntityType, int targetEntityId, string userId);
 }
 }

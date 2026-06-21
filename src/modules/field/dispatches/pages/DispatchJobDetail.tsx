@@ -848,8 +848,18 @@ export default function DispatchJobDetail() {
           </TabsContent>
 
           {/* Checklists Tab */}
-          <TabsContent value="checklists" className="mt-0">
-            <ChecklistsSection 
+          <TabsContent value="checklists" className="mt-0 space-y-6">
+            {/* Per-job checklists carried from the offer/sale service line. */}
+            {(dispatch?.jobs ?? []).map(j => (
+              <div key={`job-checklist-${j.id}`} className="space-y-2">
+                <div className="text-sm font-medium text-muted-foreground">
+                  📋 {j.title || `Job #${j.id}`}
+                </div>
+                <ChecklistsSection entityType="service_order_job" entityId={j.id} />
+              </div>
+            ))}
+            {/* Dispatch-level checklists. */}
+            <ChecklistsSection
               entityType="dispatch"
               entityId={dispatchId}
               linkedEntityType="service_order"

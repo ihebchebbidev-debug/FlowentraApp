@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Package, Wrench, DollarSign, Percent } from "lucide-react";
 import { OfferItem } from "../types";
 import PlannedEntriesEditor from "@/shared/components/planning/PlannedEntriesEditor";
+import { ChecklistsSection } from "@/modules/shared/components/documents";
 
 interface EditOfferItemModalProps {
   open: boolean;
@@ -269,6 +270,10 @@ export function EditOfferItemModal({ open, onOpenChange, item, onUpdateItem, cur
             currency={currency}
           />
 
+          {/* Checklists on a service line follow offer → sale → service-order job. */}
+          {item.type === 'service' && Number(item.id) > 0 && (
+            <ChecklistsSection entityType="offer_item" entityId={Number(item.id)} />
+          )}
 
           <div className="flex justify-end gap-3 pt-4 border-t">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

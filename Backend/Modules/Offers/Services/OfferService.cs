@@ -452,8 +452,8 @@ namespace MyApi.Modules.Offers.Services
 
                         await _context.SaveChangesAsync();
 
-                        // Carry planned time/expenses from offer items to the rebuilt sale items (Stage 2).
-                        if (_plannedEntries != null && offerItems.Any())
+                        // Carry planned time/expenses + item checklists from offer items to the rebuilt sale items (Stage 2).
+                        if ((_plannedEntries != null || _formDocumentService != null) && offerItems.Any())
                         {
                             try
                             {
@@ -464,12 +464,15 @@ namespace MyApi.Modules.Offers.Services
                                 // Pair by index — both lists were built in the same order from offerItems.
                                 for (int i = 0; i < offerItems.Count && i < newSaleItemsList.Count; i++)
                                 {
-                                    await _plannedEntries.CopyAsync("offer_item", offerItems[i].Id, "sale_item", newSaleItemsList[i].Id, userId);
+                                    if (_plannedEntries != null)
+                                        await _plannedEntries.CopyAsync("offer_item", offerItems[i].Id, "sale_item", newSaleItemsList[i].Id, userId);
+                                    if (_formDocumentService != null)
+                                        await _formDocumentService.CopyItemDocumentsAsync("offer_item", offerItems[i].Id, "sale_item", newSaleItemsList[i].Id, userId);
                                 }
                             }
                             catch (Exception planEx)
                             {
-                                _logger.LogWarning(planEx, "Failed to copy planned entries during offer→sale sync (offer {OfferId})", id);
+                                _logger.LogWarning(planEx, "Failed to copy planned entries/checklists during offer→sale sync (offer {OfferId})", id);
                             }
                         }
                         _logger.LogInformation("Synced offer {OfferId} changes to linked sale {SaleId}", id, linkedSaleId);
@@ -738,7 +741,7 @@ namespace MyApi.Modules.Offers.Services
                     // Carry planned time/expenses from offer items → new sale items (Stage 2).
                     // Inside the transaction: a copy failure here MUST roll back the Sale so
                     // we never end up with sale items but no planned budget.
-                    if (_plannedEntries != null && offer.Items != null && offer.Items.Any())
+                    if ((_plannedEntries != null || _formDocumentService != null) && offer.Items != null && offer.Items.Any())
                     {
                         var srcOfferItems = offer.Items.ToList();
                         var newSaleItems = await _context.SaleItems
@@ -747,7 +750,10 @@ namespace MyApi.Modules.Offers.Services
                             .ToListAsync();
                         for (int i = 0; i < srcOfferItems.Count && i < newSaleItems.Count; i++)
                         {
-                            await _plannedEntries.CopyAsync("offer_item", srcOfferItems[i].Id, "sale_item", newSaleItems[i].Id, userId);
+                            if (_plannedEntries != null)
+                                await _plannedEntries.CopyAsync("offer_item", srcOfferItems[i].Id, "sale_item", newSaleItems[i].Id, userId);
+                            if (_formDocumentService != null)
+                                await _formDocumentService.CopyItemDocumentsAsync("offer_item", srcOfferItems[i].Id, "sale_item", newSaleItems[i].Id, userId);
                         }
                     }
                 }
