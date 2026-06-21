@@ -94,6 +94,9 @@ export default function DispatchJobDetail() {
   const [loading, setLoading] = useState(true);
   const [isStatusUpdating, setIsStatusUpdating] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
+  // The job the technician is currently working on — preselected when logging
+  // time / expenses / materials on a multi-job dispatch (still changeable there).
+  const [currentJobId, setCurrentJobId] = useState<number | null>(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isPdfPreviewOpen, setIsPdfPreviewOpen] = useState(false);
   const [isSendModalOpen, setIsSendModalOpen] = useState(false);
@@ -297,6 +300,14 @@ export default function DispatchJobDetail() {
       navigate("/dashboard/field/dispatcher");
     }
   }, [id, navigate, fetchDispatchData]);
+
+  // Default the "current job" to the first job once the dispatch (with its jobs) loads.
+  useEffect(() => {
+    if (currentJobId == null && dispatch?.jobs && dispatch.jobs.length > 0) {
+      setCurrentJobId(dispatch.jobs[0].id);
+    }
+  }, [dispatch?.jobs, currentJobId]);
+
   if (loading) {
     return <div className="p-6 space-y-6 animate-pulse">
         <div className="flex items-center gap-3">
@@ -789,9 +800,9 @@ export default function DispatchJobDetail() {
 
           {/* Jobs Tab */}
           <TabsContent value="jobs" className="mt-0">
-            <DispatchJobsTab 
-              dispatchId={dispatch.id} 
-              jobId={dispatch.jobId} 
+            <DispatchJobsTab
+              dispatchId={dispatch.id}
+              jobId={dispatch.jobId}
               jobIds={dispatch.jobIds}
               installationId={dispatch.installationId}
               installationName={dispatch.installationName}
@@ -801,12 +812,14 @@ export default function DispatchJobDetail() {
               dispatchEstimatedDuration={dispatch.estimatedDuration}
               scheduledStartTime={dispatch.scheduledStartTime}
               scheduledEndTime={dispatch.scheduledEndTime}
+              currentJobId={currentJobId}
+              onSelectCurrentJob={setCurrentJobId}
             />
           </TabsContent>
 
           {/* Time & Expenses Tab */}
           <TabsContent value="time_expenses" className="mt-0">
-            <DispatchTimeExpensesTab dispatchId={dispatchId} dispatchStatus={dispatch?.status} dispatchJobs={dispatch?.jobs} />
+            <DispatchTimeExpensesTab dispatchId={dispatchId} dispatchStatus={dispatch?.status} dispatchJobs={dispatch?.jobs} preselectedJobId={currentJobId} />
           </TabsContent>
 
           {/* Materials Tab */}
@@ -816,6 +829,7 @@ export default function DispatchJobDetail() {
               installationId={jobInstallationId || undefined}
               serviceOrderMaterials={serviceOrderMaterials}
               dispatchJobs={dispatch?.jobs}
+              preselectedJobId={currentJobId}
             />
           </TabsContent>
 

@@ -111,6 +111,18 @@ const SKIP_LOGGING_ENDPOINTS = [
   '/api/workflows/default', // Skip logging for default workflow to avoid cascades when backend is down
 ];
 
+// Endpoints exempt from the "view-all write guard" — admin/auth/system surfaces
+// that legitimately run while viewing all companies (e.g. logging in, managing
+// the companies themselves). Per-company data endpoints are NOT listed and are
+// therefore blocked when no single company is selected.
+const VIEW_ALL_WRITE_EXEMPT_ENDPOINTS = [
+  '/api/Auth',
+  '/api/Tenants',
+  '/api/SystemLogs',
+  '/api/logs',
+  '/api/workflow', // best-effort workflow triggers are already fire-and-forget
+];
+
 // API fetch wrapper with automatic token refresh on 401 and logging
 export const apiFetch = async <T>(
   endpoint: string,
@@ -120,6 +132,37 @@ export const apiFetch = async <T>(
   const method = options.method || 'GET';
   const isMutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase());
   const normalizedHeaders = normalizeHeaders(options.headers);
+
+  // ── View-all write guard ───────────────────────────────────────────────────
+  // When a MainAdmin is viewing ALL companies (no single company selected), every
+  // add/edit/delete of per-company data is blocked here so the action is a no-op
+  // app-wide with one clear message — matching the backend, which rejects
+  // tenant-scoped writes without an X-Target-Tenant. Admin/auth surfaces that
+  // legitimately operate across companies are exempt (endpoint prefix or the
+  // X-Allow-View-All-Write opt-out header).
+  if (isMutation) {
+    const allowViewAllWrite =
+      normalizedHeaders?.['x-allow-view-all-write'] === 'true' ||
+      normalizedHeaders?.['X-Allow-View-All-Write'] === 'true';
+    const isExemptEndpoint = VIEW_ALL_WRITE_EXEMPT_ENDPOINTS.some(p => endpoint.includes(p));
+    // Only main-admin users can be in cross-company view-all mode; never gate
+    // regular (single-tenant) users even if a stale flag lingers in storage.
+    const isMainAdmin = (() => {
+      try {
+        const u = JSON.parse(localStorage.getItem('user_data') || '{}');
+        const id = u?.id ?? u?.userId;
+        return id === 1 || id === '1';
+      } catch { return false; }
+    })();
+    if (isMainAdmin && !allowViewAllWrite && !isExemptEndpoint) {
+      const { isViewAllWriteBlocked } = await import('@/utils/targetTenant');
+      if (isViewAllWriteBlocked()) {
+        const msg = 'Select a company first — adding and editing are disabled while viewing all companies.';
+        try { toast.error(msg); } catch {}
+        return { data: null, status: 0, error: msg };
+      }
+    }
+  }
   const bypassOfflineQueue = normalizedHeaders?.['x-bypass-offline-queue'] === 'true' || normalizedHeaders?.['X-Bypass-Offline-Queue'] === 'true';
   const relativeForQueue = toRelativeApiEndpoint(url);
   if (shouldQueueOfflineWrites() && isMutation && !bypassOfflineQueue && shouldSkipOfflineQueueForEndpoint(relativeForQueue)) {

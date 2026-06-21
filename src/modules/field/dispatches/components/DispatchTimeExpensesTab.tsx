@@ -34,6 +34,8 @@ interface DispatchTimeExpensesTabProps {
   dispatchId: number;
   dispatchStatus?: string;
   dispatchJobs?: DispatchJobSummary[];
+  /** The job the technician is currently working on — preselected in add dialogs. */
+  preselectedJobId?: number | null;
   initialTimeEntries?: TimeEntry[];
   initialExpenses?: Expense[];
   onDataChange?: () => void;
@@ -61,6 +63,7 @@ export function DispatchTimeExpensesTab({
   dispatchId,
   dispatchStatus,
   dispatchJobs = [],
+  preselectedJobId,
   initialTimeEntries = [],
   initialExpenses = [],
   onDataChange
@@ -71,6 +74,13 @@ export function DispatchTimeExpensesTab({
     if (id == null) return '';
     const j = dispatchJobs.find(x => x.id === id);
     return j?.title || `#${id}`;
+  };
+  // Default job for new entries: the "current" job if it belongs to this dispatch,
+  // otherwise the first job. Always changeable in the dialog.
+  const defaultJobId = (): number | null => {
+    if (!isMultiJob) return null;
+    if (preselectedJobId != null && dispatchJobs.some(j => j.id === preselectedJobId)) return preselectedJobId;
+    return dispatchJobs[0]?.id ?? null;
   };
   // Only allow adding time/expenses when dispatch is in_progress (block closed, completed, cancelled, etc.)
   const canAddEntries = dispatchStatus === 'in_progress';
@@ -343,8 +353,8 @@ export function DispatchTimeExpensesTab({
     });
     setDurationHours(0);
     setDurationMinutes(0);
-    // Pre-select the first job for multi-job dispatches so a value is always set.
-    setSelectedTimeJobId(isMultiJob ? (dispatchJobs[0]?.id ?? null) : null);
+    // Pre-select the current job (falls back to the first) for multi-job dispatches.
+    setSelectedTimeJobId(defaultJobId());
   };
 
   const resetExpenseForm = () => {
@@ -355,7 +365,7 @@ export function DispatchTimeExpensesTab({
       description: '',
       date: new Date().toISOString().split('T')[0],
     });
-    setSelectedExpenseJobId(isMultiJob ? (dispatchJobs[0]?.id ?? null) : null);
+    setSelectedExpenseJobId(defaultJobId());
   };
 
   // Resolve start/end times from duration mode if needed
@@ -539,7 +549,7 @@ export function DispatchTimeExpensesTab({
     });
     setDurationHours(hours);
     setDurationMinutes(mins);
-    setSelectedTimeJobId(entry.serviceOrderJobId ?? (isMultiJob ? (dispatchJobs[0]?.id ?? null) : null));
+    setSelectedTimeJobId(entry.serviceOrderJobId ?? defaultJobId());
     setTimeEntryMode('times');
     setEditingTimeId(entry.id);
     setIsTimeDialogOpen(true);
@@ -632,7 +642,7 @@ export function DispatchTimeExpensesTab({
       description: expense.description || '',
       date: expense.date.split('T')[0],
     });
-    setSelectedExpenseJobId(expense.serviceOrderJobId ?? (isMultiJob ? (dispatchJobs[0]?.id ?? null) : null));
+    setSelectedExpenseJobId(expense.serviceOrderJobId ?? defaultJobId());
     setEditingExpenseId(expense.id);
     setIsExpenseDialogOpen(true);
   };

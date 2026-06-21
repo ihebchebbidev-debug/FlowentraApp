@@ -85,7 +85,15 @@ function toDataTenantId(realId: number): number {
 
 // ─── Active company persistence ─────────────────────────────────────────────
 
-const TARGET_TENANT_CHANGED_EVENT = 'flowentra:target-tenant-changed';
+export const TARGET_TENANT_CHANGED_EVENT = 'flowentra:target-tenant-changed';
+
+/** Subscribe to active-company / target-tenant changes. Returns an unsubscribe fn. */
+export function onTargetTenantChanged(cb: () => void): () => void {
+  if (typeof window === 'undefined') return () => {};
+  window.addEventListener(TARGET_TENANT_CHANGED_EVENT, cb);
+  return () => window.removeEventListener(TARGET_TENANT_CHANGED_EVENT, cb);
+}
+
 function notifyTargetTenantChanged(): void {
   if (typeof window === 'undefined') return;
   try {
@@ -347,4 +355,15 @@ export function withTargetTenant(tenantId?: number): { headers: Record<string, s
   const headers = getTargetTenantHeaders(tenantId);
   if (Object.keys(headers).length === 0) return undefined;
   return { headers };
+}
+
+/**
+ * True when a data mutation should be blocked because the user is viewing ALL
+ * companies and has not narrowed to a single company. Mirrors getTargetTenantHeaders:
+ * a write is blocked exactly when the request would carry X-View-All (i.e. no
+ * X-Target-Tenant could be resolved). Use this to disable add/edit buttons and to
+ * gate mutations centrally in the API client.
+ */
+export function isViewAllWriteBlocked(tenantId?: number): boolean {
+  return VIEW_ALL_HEADER in getTargetTenantHeaders(tenantId);
 }

@@ -36,6 +36,9 @@ interface DispatchJobsTabProps {
   dispatchEstimatedDuration?: number;
   scheduledStartTime?: string;
   scheduledEndTime?: string;
+  /** The job currently being worked on (preselected when logging time/expenses/materials). */
+  currentJobId?: number | null;
+  onSelectCurrentJob?: (jobId: number) => void;
 }
 
 export function DispatchJobsTab({ 
@@ -49,7 +52,9 @@ export function DispatchJobsTab({
   dispatchPriority,
   dispatchEstimatedDuration,
   scheduledStartTime,
-  scheduledEndTime
+  scheduledEndTime,
+  currentJobId,
+  onSelectCurrentJob
 }: DispatchJobsTabProps) {
   const { t } = useTranslation('job-detail');
   const navigate = useNavigate();
@@ -391,6 +396,9 @@ export function DispatchJobsTab({
                   <th className="text-left p-4 text-sm font-medium text-muted-foreground">{t('jobs_tab.status')}</th>
                   <th className="text-left p-4 text-sm font-medium text-muted-foreground">{t('jobs_tab.work_type')}</th>
                   <th className="text-left p-4 text-sm font-medium text-muted-foreground">{t('jobs_tab.installation')}</th>
+                  {onSelectCurrentJob && filteredJobs.length > 1 && (
+                    <th className="text-right p-4 text-sm font-medium text-muted-foreground">{t('jobs_tab.current_job', 'Current')}</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -442,6 +450,22 @@ export function DispatchJobsTab({
                         )}
                       </div>
                     </td>
+                    {onSelectCurrentJob && filteredJobs.length > 1 && (
+                      <td className="px-4 py-3 text-right">
+                        {Number(jobItem.id) === currentJobId ? (
+                          <Badge variant="default" className="gap-1"><CheckCircle className="h-3 w-3" /> {t('jobs_tab.current_job', 'Current')}</Badge>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={() => onSelectCurrentJob(Number(jobItem.id))}
+                          >
+                            {t('jobs_tab.set_current', 'Set current')}
+                          </Button>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

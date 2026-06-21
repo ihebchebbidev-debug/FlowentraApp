@@ -73,6 +73,8 @@ interface DispatchMaterialsTabProps {
   serviceOrderMaterials?: ServiceOrderMaterial[];
   // Jobs of a multi-job dispatch, so materials can be attributed to a specific job.
   dispatchJobs?: DispatchJobSummary[];
+  /** The job the technician is currently working on — preselected for new materials. */
+  preselectedJobId?: number | null;
 }
 
 // Extended type to hold resolved names
@@ -98,7 +100,7 @@ interface EditMaterialFormData {
   internalComment: string;
 }
 
-export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onDataChange, installationId, serviceOrderMaterials = [], dispatchJobs = [] }: DispatchMaterialsTabProps) {
+export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onDataChange, installationId, serviceOrderMaterials = [], dispatchJobs = [], preselectedJobId }: DispatchMaterialsTabProps) {
   const { t } = useTranslation('dispatches');
   const [materials, setMaterials] = useState<MaterialUsage[]>(initialMaterials);
   const [isMaterialModalOpen, setIsMaterialModalOpen] = useState(false);
@@ -106,11 +108,17 @@ export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onData
   // Multi-job dispatches: attribute each material to a specific job.
   const isMultiJob = dispatchJobs.length > 1;
   const [selectedMaterialJobId, setSelectedMaterialJobId] = useState<number | null>(null);
+  // Track whether the user has manually overridden the selection, so syncing the
+  // "current job" preselection never fights a manual choice.
+  const [materialJobTouched, setMaterialJobTouched] = useState(false);
   useEffect(() => {
-    if (isMultiJob && selectedMaterialJobId == null) {
-      setSelectedMaterialJobId(dispatchJobs[0]?.id ?? null);
-    }
-  }, [isMultiJob, dispatchJobs, selectedMaterialJobId]);
+    if (!isMultiJob || materialJobTouched) return;
+    // Preselect the current job if it belongs to this dispatch, else the first job.
+    const preferred = (preselectedJobId != null && dispatchJobs.some(j => j.id === preselectedJobId))
+      ? preselectedJobId
+      : (dispatchJobs[0]?.id ?? null);
+    if (preferred !== selectedMaterialJobId) setSelectedMaterialJobId(preferred);
+  }, [isMultiJob, dispatchJobs, preselectedJobId, materialJobTouched, selectedMaterialJobId]);
   const jobLabel = (id?: number | null) => {
     if (id == null) return '';
     const j = dispatchJobs.find(x => x.id === id);
@@ -567,7 +575,7 @@ export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onData
               {isMultiJob && (
                 <Select
                   value={selectedMaterialJobId != null ? String(selectedMaterialJobId) : ''}
-                  onValueChange={(value) => setSelectedMaterialJobId(value ? parseInt(value, 10) : null)}
+                  onValueChange={(value) => { setMaterialJobTouched(true); setSelectedMaterialJobId(value ? parseInt(value, 10) : null); }}
                 >
                   <SelectTrigger className="h-9 w-[200px]">
                     <SelectValue placeholder={t('materials_tab.select_job', 'Select job')} />
