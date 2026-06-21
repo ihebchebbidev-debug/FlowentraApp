@@ -49,6 +49,10 @@ export interface PlanningProfileSettings {
   // Skills filter
   skillFilterMode: 'any' | 'all';  // 'any' = at least one match, 'all' = every required skill
   sortBySkillMatch: boolean;        // technicians with more matching skills appear first
+  // Auto-fill behavior
+  // When true (default) the auto-planner creates ONE dispatch per service order
+  // holding all its jobs; when false it creates one dispatch per job.
+  autoFillSingleDispatchPerOrder: boolean;
   // Permissions / behavior
   allowSchedulingJobs: boolean;
   allowSchedulingInPast: boolean;
@@ -79,6 +83,7 @@ export const DEFAULT_PLANNING_SETTINGS: PlanningProfileSettings = {
   hideUsersOnLeaveToday: false,
   skillFilterMode: 'any',
   sortBySkillMatch: false,
+  autoFillSingleDispatchPerOrder: true,
   allowSchedulingJobs: true,
   allowSchedulingInPast: false,
   allowChangingDispatches: true,

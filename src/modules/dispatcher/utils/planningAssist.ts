@@ -102,6 +102,26 @@ export interface AutoFillResult {
   errors: string[];
 }
 
+/** Highest priority among a set of jobs (drives a grouped unit's priority). */
+function highestPriority(jobs: Job[]): string {
+  let best = 'medium';
+  let bestWeight = -1;
+  for (const j of jobs) {
+    const w = priorityWeight(j.priority);
+    if (w > bestWeight) { bestWeight = w; best = j.priority || 'medium'; }
+  }
+  return best;
+}
+
+/** A unit the auto-planner places as a whole — a single job, or a whole service order. */
+interface PlaceUnit {
+  rep: Job;            // representative job (skills/location/labels)
+  jobs: Job[];         // all jobs in the unit
+  priority: string;
+  durationMin: number; // total duration of the unit
+  serviceOrderId?: string;
+}
+
 /**
  * Auto-fill day:
  *   1. Fetches each technician's already-assigned jobs for the day (§3.1).
@@ -120,6 +140,8 @@ export async function autoFillDay(
     allowSchedulingInPast: boolean;
     maxJobsPerTech?: number;
     bufferMinutes?: number;
+    /** When true, create one dispatch per service order (all its jobs) instead of per job. */
+    groupByServiceOrder?: boolean;
   } = { allowSchedulingInPast: false },
 ): Promise<AutoFillResult> {
   const result: AutoFillResult = { assigned: 0, skipped: 0, errors: [] };
@@ -129,12 +151,12 @@ export async function autoFillDay(
   }
 
   // Flatten ServiceOrder -> jobs[]
-  let jobs: Job[] = [];
+  const allJobs: Job[] = [];
   for (const item of unassignedJobs) {
     if ('jobs' in item && Array.isArray((item as ServiceOrder).jobs)) {
-      jobs.push(...(item as ServiceOrder).jobs);
+      allJobs.push(...(item as ServiceOrder).jobs);
     } else {
-      jobs.push(item as Job);
+      allJobs.push(item as Job);
     }
   }
 
@@ -146,12 +168,39 @@ export async function autoFillDay(
     return result;
   }
 
-  // §3.4: sort jobs by priority desc, then by duration desc (long jobs early
-  // are easier to fit before the day fills up).
-  jobs = [...jobs].sort((a, b) => {
+  // Build the units to place. "Single dispatch per service order" groups a whole
+  // order (all its jobs) into one unit; otherwise every job is its own unit.
+  // Jobs without a service order always fall back to per-job placement.
+  let units: PlaceUnit[];
+  if (opts.groupByServiceOrder) {
+    const groups = new Map<string, Job[]>();
+    for (const j of allJobs) {
+      const key = j.serviceOrderId ? `so:${j.serviceOrderId}` : `job:${j.id}`;
+      const arr = groups.get(key);
+      if (arr) arr.push(j); else groups.set(key, [j]);
+    }
+    units = Array.from(groups.values()).map(gjobs => ({
+      rep: gjobs[0],
+      jobs: gjobs,
+      priority: highestPriority(gjobs),
+      durationMin: gjobs.reduce((s, j) => s + (j.estimatedDuration || 60), 0),
+      serviceOrderId: gjobs[0].serviceOrderId,
+    }));
+  } else {
+    units = allJobs.map(j => ({
+      rep: j,
+      jobs: [j],
+      priority: j.priority || 'medium',
+      durationMin: j.estimatedDuration || 60,
+      serviceOrderId: j.serviceOrderId,
+    }));
+  }
+
+  // §3.4: place important/long units first so they fit before the day fills up.
+  units.sort((a, b) => {
     const pw = priorityWeight(b.priority) - priorityWeight(a.priority);
     if (pw !== 0) return pw;
-    return (b.estimatedDuration || 60) - (a.estimatedDuration || 60);
+    return b.durationMin - a.durationMin;
   });
 
   // §3.1 + §3.3: per-tech cursor and per-tech existing assignments cache
@@ -202,12 +251,13 @@ export async function autoFillDay(
   const maxPer = opts.maxJobsPerTech ?? 8;
   let errorLogged = 0;
 
-  for (const job of jobs) {
+  for (const unit of units) {
     // §3.9: pass current per-tech counts so ranker applies load-balancing penalty.
     const eligible = technicians.filter(t => !skipTech.has(t.id));
-    const ranked = rankTechniciansForJob(job, eligible, counts);
-    const duration = (job.estimatedDuration || 60) * 60_000;
-    const durationMin = Math.ceil(duration / 60_000);
+    const ranked = rankTechniciansForJob(unit.rep, eligible, counts);
+    const durationMin = Math.max(1, Math.ceil(unit.durationMin));
+    const durationMs = durationMin * 60_000;
+    const unitPriority = (unit.priority || 'medium') as 'low' | 'medium' | 'high' | 'urgent';
     let placed = false;
 
     for (const r of ranked) {
@@ -226,23 +276,39 @@ export async function autoFillDay(
         end.getHours() + end.getMinutes() / 60,
       );
       if (!slotStart) continue;
-      const jobEnd = new Date(slotStart.getTime() + duration);
+      const jobEnd = new Date(slotStart.getTime() + durationMs);
       if (jobEnd.getTime() > end.getTime()) continue;
 
       try {
         const techName = `${r.technician.firstName} ${r.technician.lastName}`.trim();
-        await DispatcherService.assignJob(job.id, tid, slotStart, jobEnd, techName, job.priority || 'medium');
-        // §3.1: also push the just-assigned job into the local existing list
+        if (opts.groupByServiceOrder && unit.serviceOrderId) {
+          // One dispatch holding all of the service order's jobs.
+          const so: ServiceOrder = {
+            id: unit.serviceOrderId,
+            title: unit.rep.serviceOrderTitle || unit.rep.title || '',
+            customerName: unit.rep.customerName || '',
+            status: 'ready_for_planning',
+            priority: unitPriority,
+            jobs: unit.jobs,
+            totalEstimatedDuration: unit.durationMin,
+            location: unit.rep.location,
+            createdAt: new Date(),
+          };
+          await DispatcherService.assignServiceOrderAsSingleDispatch(so, tid, slotStart, techName, unitPriority);
+        } else {
+          await DispatcherService.assignJob(unit.jobs[0].id, tid, slotStart, jobEnd, techName, unitPriority);
+        }
+        // §3.1: also push the just-placed unit into the local existing list
         // so the next iteration's collision check sees it.
-        existing.push({ ...(job as Job), scheduledStart: slotStart, scheduledEnd: jobEnd });
+        existing.push({ ...(unit.rep as Job), scheduledStart: slotStart, scheduledEnd: jobEnd });
         existingByTech.set(tid, existing);
         cursors.set(tid, jobEnd);
         counts.set(tid, (counts.get(tid) ?? 0) + 1);
-        result.assigned++;
+        result.assigned += unit.jobs.length;
         placed = true;
         break;
       } catch (e) {
-        const msg = `${job.title}: ${e instanceof Error ? e.message : 'assign failed'}`;
+        const msg = `${unit.rep.serviceOrderTitle || unit.rep.title}: ${e instanceof Error ? e.message : 'assign failed'}`;
         result.errors.push(msg);
         // §3.11: surface the first few errors instead of swallowing all of them silently.
         if (errorLogged < 5) {
@@ -252,7 +318,7 @@ export async function autoFillDay(
       }
     }
 
-    if (!placed) result.skipped++;
+    if (!placed) result.skipped += unit.jobs.length;
   }
   return result;
 }

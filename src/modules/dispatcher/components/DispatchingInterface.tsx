@@ -13,6 +13,8 @@ import {
   Play,
 } from "lucide-react";
 import { toast } from "sonner";
+import { isViewAllWriteBlocked } from "@/utils/targetTenant";
+import { useMutationActionGuard } from "@/hooks/useCreateActionGuard";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -136,6 +138,8 @@ export function DispatchingInterface() {
   // Auto-fill day state
   const [autoFillOpen, setAutoFillOpen] = useState(false);
   const [autoFilling, setAutoFilling] = useState(false);
+  // Disable scheduling actions while viewing all companies (no single company selected).
+  const viewAllGuard = useMutationActionGuard();
 
   // View mode: 'calendar' or 'map'
   const [viewMode, setViewMode] = useState<'calendar' | 'map'>('calendar');
@@ -152,6 +156,13 @@ export function DispatchingInterface() {
   }, [jobs, visibleTechnicians]);
 
   const runAutoFill = async () => {
+    // Block (with a single message) while viewing all companies — auto-fill would
+    // otherwise fire one blocked write per job. A company must be selected first.
+    if (isViewAllWriteBlocked()) {
+      toast.error(t('dispatcher.autofill.select_company', { defaultValue: 'Select a company first — auto-fill is disabled while viewing all companies.' }));
+      setAutoFillOpen(false);
+      return;
+    }
     if (jobs.length === 0) {
       toast.info(t('dispatcher.autofill.no_jobs', { defaultValue: 'No unassigned jobs to plan.' }));
       setAutoFillOpen(false);
@@ -176,6 +187,7 @@ export function DispatchingInterface() {
       const res = await autoFillDay(targetDay, jobs, visibleTechnicians, {
         allowSchedulingInPast: profileSettings.allowSchedulingInPast,
         bufferMinutes: 15,
+        groupByServiceOrder: profileSettings.autoFillSingleDispatchPerOrder,
       });
       if (res.assigned > 0) toast.success(t('dispatcher.autofill.success', { defaultValue: '{{n}} job(s) auto-scheduled', n: res.assigned }));
       if (res.skipped > 0) toast.warning(t('dispatcher.autofill.skipped', { defaultValue: '{{n}} job(s) could not be placed', n: res.skipped }));
@@ -381,7 +393,10 @@ export function DispatchingInterface() {
                 }
                 setAutoFillOpen(true);
               }}
-              disabled={autoFilling}
+              disabled={autoFilling || viewAllGuard.disabled}
+              title={viewAllGuard.disabled
+                ? t('dispatcher.autofill.select_company', { defaultValue: 'Select a company first — auto-fill is disabled while viewing all companies.' })
+                : undefined}
               className="gap-2 h-8"
             >
               <Wand2 className={`h-4 w-4 ${autoFilling ? 'animate-pulse' : ''}`} />

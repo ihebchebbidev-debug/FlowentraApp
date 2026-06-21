@@ -301,10 +301,14 @@ export default function DispatchJobDetail() {
     }
   }, [id, navigate, fetchDispatchData]);
 
-  // Default the "current job" to the first job once the dispatch (with its jobs) loads.
+  // Default the "current job" to the first job once the dispatch (with its jobs)
+  // loads. Also re-default when the selected job no longer belongs to the loaded
+  // dispatch (e.g. after navigating to a different dispatch without remounting).
   useEffect(() => {
-    if (currentJobId == null && dispatch?.jobs && dispatch.jobs.length > 0) {
-      setCurrentJobId(dispatch.jobs[0].id);
+    const jobs = dispatch?.jobs;
+    if (!jobs || jobs.length === 0) return;
+    if (currentJobId == null || !jobs.some(j => j.id === currentJobId)) {
+      setCurrentJobId(jobs[0].id);
     }
   }, [dispatch?.jobs, currentJobId]);
 

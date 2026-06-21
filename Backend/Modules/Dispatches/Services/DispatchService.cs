@@ -1283,8 +1283,9 @@ namespace MyApi.Modules.Dispatches.Services
             var newMinutes = (decimal)(dto.EndTime - dto.StartTime).TotalMinutes;
             if (newMinutes < 0) newMinutes = 0;
 
-            // Soft-cap overrun check against planned totals (Stage 2).
-            var (plannedMin, actualMin) = await GetPlannedAndActualMinutesAsync(dispatchId);
+            // Soft-cap overrun check against planned totals (Stage 2). Scoped to the
+            // specific job on a multi-job dispatch so each job is capped to its own plan.
+            var (plannedMin, actualMin) = await GetPlannedAndActualMinutesAsync(dispatchId, dto.ServiceOrderJobId);
             bool willOverrun = plannedMin > 0 && (actualMin + newMinutes) > plannedMin;
             if (willOverrun && string.IsNullOrWhiteSpace(dto.OverrunReason))
             {
@@ -1330,28 +1331,41 @@ namespace MyApi.Modules.Dispatches.Services
             };
         }
 
-        /// <summary>Sum planned minutes (planned_minutes * technician_count) across all service-order jobs linked to this dispatch, and the already-logged actual minutes.</summary>
-        private async Task<(decimal plannedMinutes, decimal actualMinutes)> GetPlannedAndActualMinutesAsync(int dispatchId)
+        /// <summary>
+        /// Planned vs already-logged actual minutes for the soft-cap overrun check.
+        /// When <paramref name="serviceOrderJobId"/> is supplied (multi-job dispatch),
+        /// the budget and actuals are scoped to THAT job, so each job is capped against
+        /// its own plan. Otherwise the whole dispatch (all its jobs) is summed.
+        /// </summary>
+        private async Task<(decimal plannedMinutes, decimal actualMinutes)> GetPlannedAndActualMinutesAsync(int dispatchId, int? serviceOrderJobId = null)
         {
-            var jobIds = await _db.Set<DispatchJob>()
-                .Where(dj => dj.DispatchId == dispatchId && !dj.IsDeleted)
-                .Select(dj => dj.JobId)
-                .Distinct()
-                .ToListAsync();
-
-            // G5 fallback: legacy dispatches have no DispatchJob rows — parse Dispatch.JobId (CSV-capable string).
-            if (jobIds.Count == 0)
+            List<int> jobIds;
+            if (serviceOrderJobId.HasValue)
             {
-                var legacy = await _db.Dispatches
-                    .Where(x => x.Id == dispatchId)
-                    .Select(x => x.JobId)
-                    .FirstOrDefaultAsync();
-                if (!string.IsNullOrWhiteSpace(legacy))
+                jobIds = new List<int> { serviceOrderJobId.Value };
+            }
+            else
+            {
+                jobIds = await _db.Set<DispatchJob>()
+                    .Where(dj => dj.DispatchId == dispatchId && !dj.IsDeleted)
+                    .Select(dj => dj.JobId)
+                    .Distinct()
+                    .ToListAsync();
+
+                // G5 fallback: legacy dispatches have no DispatchJob rows — parse Dispatch.JobId (CSV-capable string).
+                if (jobIds.Count == 0)
                 {
-                    foreach (var part in legacy.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-                        if (int.TryParse(part, out var jid)) jobIds.Add(jid);
+                    var legacy = await _db.Dispatches
+                        .Where(x => x.Id == dispatchId)
+                        .Select(x => x.JobId)
+                        .FirstOrDefaultAsync();
+                    if (!string.IsNullOrWhiteSpace(legacy))
+                    {
+                        foreach (var part in legacy.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                            if (int.TryParse(part, out var jid)) jobIds.Add(jid);
+                    }
+                    if (jobIds.Count == 0) return (0, 0);
                 }
-                if (jobIds.Count == 0) return (0, 0);
             }
 
             var planned = await _db.Set<MyApi.Modules.Planning.Models.PlannedLineEntry>()
@@ -1361,20 +1375,33 @@ namespace MyApi.Modules.Dispatches.Services
             decimal plannedTotal = planned.Sum(p => (decimal)((p.PlannedMinutes ?? 0) * (p.TechnicianCount ?? 1)));
 
             decimal actualTotal = await _db.TimeEntries
-                .Where(t => t.DispatchId == dispatchId && t.Duration != null)
+                .Where(t => t.DispatchId == dispatchId && t.Duration != null
+                    && (serviceOrderJobId == null || t.ServiceOrderJobId == serviceOrderJobId))
                 .SumAsync(t => (decimal?)t.Duration ?? 0m);
             return (plannedTotal, actualTotal);
         }
 
-        /// <summary>Sum planned amounts for an expense type across all jobs linked to this dispatch, and the already-logged actual amounts.</summary>
-        private async Task<(decimal plannedAmount, decimal actualAmount)> GetPlannedAndActualExpenseAsync(int dispatchId, string expenseType)
+        /// <summary>
+        /// Planned vs actual amount for an expense type, for the soft-cap overrun check.
+        /// When <paramref name="serviceOrderJobId"/> is supplied (multi-job dispatch) the
+        /// budget and actuals are scoped to THAT job; otherwise the whole dispatch is summed.
+        /// </summary>
+        private async Task<(decimal plannedAmount, decimal actualAmount)> GetPlannedAndActualExpenseAsync(int dispatchId, string expenseType, int? serviceOrderJobId = null)
         {
-            var jobIds = await _db.Set<DispatchJob>()
-                .Where(dj => dj.DispatchId == dispatchId && !dj.IsDeleted)
-                .Select(dj => dj.JobId)
-                .Distinct()
-                .ToListAsync();
-            if (jobIds.Count == 0) return (0, 0);
+            List<int> jobIds;
+            if (serviceOrderJobId.HasValue)
+            {
+                jobIds = new List<int> { serviceOrderJobId.Value };
+            }
+            else
+            {
+                jobIds = await _db.Set<DispatchJob>()
+                    .Where(dj => dj.DispatchId == dispatchId && !dj.IsDeleted)
+                    .Select(dj => dj.JobId)
+                    .Distinct()
+                    .ToListAsync();
+                if (jobIds.Count == 0) return (0, 0);
+            }
 
             var et = (expenseType ?? "").ToLower();
             decimal plannedTotal = await _db.Set<MyApi.Modules.Planning.Models.PlannedLineEntry>()
@@ -1386,7 +1413,8 @@ namespace MyApi.Modules.Dispatches.Services
                 .SumAsync(p => (decimal?)p.PlannedAmount ?? 0m);
 
             decimal actualTotal = await _db.DispatchExpenses
-                .Where(e => e.DispatchId == dispatchId && e.ExpenseType.ToLower() == et)
+                .Where(e => e.DispatchId == dispatchId && e.ExpenseType.ToLower() == et
+                    && (serviceOrderJobId == null || e.ServiceOrderJobId == serviceOrderJobId))
                 .SumAsync(e => (decimal?)e.Amount ?? 0m);
             return (plannedTotal, actualTotal);
         }
@@ -1467,8 +1495,9 @@ namespace MyApi.Modules.Dispatches.Services
             if (d == null) throw new KeyNotFoundException($"Dispatch {dispatchId} not found");
             await ValidateJobBelongsToDispatchAsync(dispatchId, dto.ServiceOrderJobId);
 
-            // Soft-cap overrun check on expenses bucketed by type (Stage 2).
-            var (plannedAmt, actualAmt) = await GetPlannedAndActualExpenseAsync(dispatchId, dto.Type);
+            // Soft-cap overrun check on expenses bucketed by type (Stage 2). Scoped to the
+            // specific job on a multi-job dispatch so each job is capped to its own plan.
+            var (plannedAmt, actualAmt) = await GetPlannedAndActualExpenseAsync(dispatchId, dto.Type, dto.ServiceOrderJobId);
             bool willOverrun = plannedAmt > 0 && (actualAmt + dto.Amount) > plannedAmt;
             if (willOverrun && string.IsNullOrWhiteSpace(dto.OverrunReason))
             {

@@ -508,6 +508,7 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
                         </TabsContent>
 
                         <TabsContent value="permissions" className="space-y-3 mt-0">
+                          <ToggleRow label={t('dispatcher.profiles.autofill_single_dispatch', { defaultValue: 'Auto-fill: one dispatch per service order (all its jobs)' })} checked={draft.settings.autoFillSingleDispatchPerOrder} onChange={v => updateSetting('autoFillSingleDispatchPerOrder', v)} />
                           <ToggleRow label={t('dispatcher.profiles.allow_scheduling', { defaultValue: 'Allow scheduling of jobs' })} checked={draft.settings.allowSchedulingJobs} onChange={v => updateSetting('allowSchedulingJobs', v)} />
                           <ToggleRow label={t('dispatcher.profiles.allow_past', { defaultValue: 'Allow scheduling in the past' })} checked={draft.settings.allowSchedulingInPast} onChange={v => updateSetting('allowSchedulingInPast', v)} />
                           <ToggleRow label={t('dispatcher.profiles.allow_change', { defaultValue: 'Allow changing dispatches' })} checked={draft.settings.allowChangingDispatches} onChange={v => updateSetting('allowChangingDispatches', v)} />
