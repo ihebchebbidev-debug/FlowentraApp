@@ -225,8 +225,8 @@ export const OF_STEPS: OffersDemoStep[] = [
   {
     target: 'of-demo-tab-checklists',
     caption:
-      'Checklists turn a quote into a process — qualification steps, approvals, things to confirm before you send — so nothing is missed on a big deal.',
-    duration: 4800,
+      'Checklists turn a quote into a process. Offer-level ones cover qualification and approvals before you send; and a checklist attached to a service line travels with it — offer → sale → service-order job → dispatch — so the field gets the exact steps for that job.',
+    duration: 6000,
     apply: pure(() => ({ activeTab: 'checklists' as const })),
   },
   {

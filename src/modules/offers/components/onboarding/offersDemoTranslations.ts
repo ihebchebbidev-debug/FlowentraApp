@@ -49,7 +49,7 @@ const CAPTIONS_FR: string[] = [
   'La Vue d’ensemble rassemble tout : détails client et fiscaux, résumé financier, validité, et l’installation liée si le devis couvre un équipement sur site.',
   'L’onglet Articles liste chaque ligne avec ses totaux — modifiez quantités, prix et remises en ligne tant que l’offre est en brouillon.',
   'Les Notes gardent la conversation avec le client — chaque appel et relance, horodaté avec son auteur.',
-  'Les Checklists transforment un devis en processus — étapes de qualification, approbations, points à confirmer avant l’envoi — pour ne rien oublier sur une grosse affaire.',
+  'Les checklists transforment un devis en processus. Celles au niveau de l’offre couvrent la qualification et les approbations avant l’envoi ; et une checklist attachée à une ligne de service voyage avec elle — offre → vente → job de l’ordre de service → intervention — pour que le terrain reçoive les étapes exactes de ce job.',
   'Documents et pièces jointes vivent avec l’offre — spécifications, plans, approbations signées — tout ce dont l’affaire a besoin au même endroit.',
   'Et l’onglet Activité est la chronologie complète — créée, envoyée, ouverte, acceptée — un historique immuable du parcours de l’affaire.',
   'Envoyez l’offre par e-mail en un clic — Flowentra joint le PDF, suit le nombre d’envois, et fait passer le statut à Envoyé automatiquement.',

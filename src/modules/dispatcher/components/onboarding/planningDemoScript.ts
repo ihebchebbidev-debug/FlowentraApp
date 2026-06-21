@@ -263,15 +263,15 @@ export const PL_STEPS: PlanningDemoStep[] = [
   {
     target: 'pl-demo-autofill-btn',
     caption:
-      'Need to plan a whole day at once? Auto-fill day schedules every unassigned job for you — picking the best technician and the first free slot inside their working hours.',
-    duration: 5200,
+      'Need to plan a whole day at once? Auto-fill day schedules every unassigned service order for you — by default one dispatch per service order (all its jobs), picking the best technician and the first free slot inside their working hours.',
+    duration: 5600,
     apply: pure(() => ({ suggestOpen: false, autofill: 1 })),
   },
   {
     target: 'pl-demo-autofill-confirm',
     caption:
-      'It previews exactly what it will do — how many jobs, across how many technicians — and never touches existing assignments or schedules in the past. You stay in control.',
-    duration: 5400,
+      'It previews exactly what it will do — how many service orders, across how many technicians — and never touches existing assignments or schedules in the past. Prefer one dispatch per job instead? Flip the setting in your planning profile.',
+    duration: 5600,
     apply: pure(() => ({})),
   },
   {
@@ -344,8 +344,8 @@ export const PL_STEPS: PlanningDemoStep[] = [
   {
     target: 'pl-demo-profile-permissions',
     caption:
-      'Permissions set the guardrails: allow or block scheduling in the past, confirm on overlap, and control who can change or unassign dispatches — safe planning for every role.',
-    duration: 5400,
+      'Permissions and behavior live here: the "Auto-fill: one dispatch per service order" default, scheduling in the past, confirm on overlap, and who can change or unassign dispatches — safe planning for every role.',
+    duration: 5600,
     apply: pure(() => ({ profileTab: 'permissions' as const })),
   },
   {

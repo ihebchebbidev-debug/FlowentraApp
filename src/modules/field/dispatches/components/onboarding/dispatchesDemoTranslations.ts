@@ -51,8 +51,9 @@ const CAPTIONS_FR: string[] = [
   'Le rapport d’intervention est un document soigné et à votre marque — le client et le site, les tâches réalisées, les heures et les pièces, et la signature capturée — un enregistrement complet de la visite.',
   'Et la mise en page vous appartient — un studio pour couleurs, typographie, disposition et champs affichés, pour que chaque rapport porte votre marque.',
   'Téléchargez-le, imprimez-le ou envoyez-le — le même rapport net à chaque fois, heures et matériels totalisés automatiquement et prêts à facturer.',
-  'Quand vous planifiez tout un ordre de service en un seul envoi, chaque job voyage dans le même ticket. L’onglet Tâches les montre tous — un technicien, une visite, l’ordre complet.',
-  'Et chaque saisie est rattachée à un job. Avant de consigner du temps — ou un frais ou une pièce — le technicien choisit le job, pour que main-d’œuvre, coûts et matériels remontent au bon job, pas seulement à l’envoi.',
+  'Quand vous planifiez tout un ordre de service en un seul envoi, chaque job voyage dans le même ticket. L’onglet Tâches les montre tous, et le technicien en marque un comme job Courant — un technicien, une visite, l’ordre complet.',
+  'Chaque saisie est rattachée à un job, et le job Courant est présélectionné — donc avant de consigner du temps, un frais ou une pièce, le bon job est déjà choisi (modifiable). Main-d’œuvre, coûts et matériels remontent au bon job, pas seulement à l’envoi.',
+  'Les checklists suivent aussi : chaque job porte la checklist définie sur sa ligne de service dans le devis ou la vente — le technicien réalise les bonnes étapes pour chaque job, regroupées par job.',
   'Voilà Envois de bout en bout — des KPI sur votre équipe terrain, un espace technicien avec un vrai flux de statut, le booking temps et frais, les matériels du stock, photos, checklists, une signature capturée, et un rapport d’intervention à votre marque.',
   'Les ordres de service deviennent des envois, les envois des jobs validés, et chaque heure et pièce revient à la facturation. C’est votre équipe terrain, dans votre poche et sur un seul écran.',
 ];

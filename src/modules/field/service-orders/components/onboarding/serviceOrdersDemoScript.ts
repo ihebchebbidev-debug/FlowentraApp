@@ -102,7 +102,7 @@ export const SO_STEPS: SODemoStep[] = [
 
   // ── Chapter 8 · More tabs ──────────────────────────────────────────────────
   { target: 'so-demo-tab-attachments', caption: 'Attachments hold the field evidence — before-and-after photos, the signed work report, delivery notes — everything the job produced.', duration: 4800, apply: pure(() => ({ activeTab: 'attachments' as const })) },
-  { target: 'so-demo-tab-checklists', caption: 'Checklists turn procedures into guaranteed steps — safety checks, completion criteria, sign-offs — so every job is done to standard.', duration: 4800, apply: pure(() => ({ activeTab: 'checklists' as const })) },
+  { target: 'so-demo-tab-checklists', caption: 'Checklists turn procedures into guaranteed steps — and each job carries the checklist defined on its service line back in the offer/sale, grouped per job, so every job is done to standard.', duration: 5400, apply: pure(() => ({ activeTab: 'checklists' as const })) },
   { target: 'so-demo-tab-activity', caption: 'And the Activity tab is the full timeline — created, scheduled, dispatched, completed, invoiced — an immutable history of the whole job.', duration: 4800, apply: pure(() => ({ activeTab: 'activity' as const })) },
 
   // ── Chapter 9 · Invoice & PDF ──────────────────────────────────────────────

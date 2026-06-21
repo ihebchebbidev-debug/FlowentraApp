@@ -185,7 +185,7 @@ function PageDetail({ state }: { state: DPDemoState }) {
               ? [['Diagnose compressor fault', 'completed', '90 min'], ['Replace condenser unit', 'in_progress', '120 min'], ['Commission & test', 'pending', '45 min']]
               : [['Diagnose compressor fault', 'completed', '90 min'], ['Replace condenser unit', 'in_progress', '120 min']]
             ).map((j, i) => (
-              <div key={j[0]} id={i === 0 ? 'dp-demo-job-detail' : undefined} className="p-3 bg-card border border-border rounded-lg"><div className="flex items-center justify-between"><span className="text-xs font-medium inline-flex items-center gap-1.5"><Wrench className="h-3 w-3 text-muted-foreground" />{j[0]}</span><Pill s={j[1]} /></div><div className="flex items-center gap-3 mt-1 text-[10px] text-muted-foreground"><span className="inline-flex items-center gap-1"><Clock className="h-2.5 w-2.5" /> {j[2]}</span><span>Skills: HVAC</span></div></div>
+              <div key={j[0]} id={i === 0 ? 'dp-demo-job-detail' : undefined} className="p-3 bg-card border border-border rounded-lg"><div className="flex items-center justify-between"><span className="text-xs font-medium inline-flex items-center gap-1.5"><Wrench className="h-3 w-3 text-muted-foreground" />{j[0]}</span><div className="flex items-center gap-1.5">{state.multiJob && (i === 0 ? <span className="px-1.5 py-0.5 rounded bg-primary/15 text-primary text-[9px] font-semibold inline-flex items-center gap-1"><CheckCircle2 className="h-2.5 w-2.5" /> Current</span> : <span className="px-1.5 py-0.5 rounded border border-border text-[9px] text-muted-foreground">Set current</span>)}<Pill s={j[1]} /></div></div><div className="flex items-center gap-3 mt-1 text-[10px] text-muted-foreground"><span className="inline-flex items-center gap-1"><Clock className="h-2.5 w-2.5" /> {j[2]}</span><span>Skills: HVAC</span></div></div>
             ))}
           </div>
         )}
@@ -206,8 +206,20 @@ function PageDetail({ state }: { state: DPDemoState }) {
         {state.activeTab === 'attachments' && (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">{[['before.jpg'], ['after.jpg'], ['nameplate.jpg'], ['delivery-note.pdf']].map(d => <div key={d[0]} className="aspect-video flex flex-col items-center justify-center gap-1 bg-card border border-border rounded-lg text-muted-foreground"><Paperclip className="h-4 w-4" /><span className="text-[10px]">{d[0]}</span></div>)}</div>
         )}
-        {state.activeTab === 'checklists' && (
+        {state.activeTab === 'checklists' && !state.multiJob && (
           <div className="bg-card border border-border rounded-lg p-4 space-y-2"><p className="text-sm font-medium mb-1 inline-flex items-center gap-2"><ListChecks className="h-4 w-4 text-primary" /> On-site checklist</p>{[['Power isolated & tagged', true], ['Pressure test passed', true], ['Cooling verified', true], ['Customer signature', false]].map(c => (<div key={c[0] as string} className="flex items-center gap-2 text-xs"><span className={`h-4 w-4 rounded border inline-flex items-center justify-center ${c[1] ? 'bg-primary border-primary' : 'border-border'}`}>{c[1] && <CheckCircle2 className="h-3 w-3 text-primary-foreground" />}</span><span className={c[1] ? 'line-through text-muted-foreground' : ''}>{c[0]}</span></div>))}</div>
+        )}
+        {state.activeTab === 'checklists' && state.multiJob && (
+          <div id="dp-demo-multijob-checklists" className="space-y-3">
+            {[['Replace condenser unit', [['Power isolated & tagged', true], ['Refrigerant recovered', true], ['New unit pressure-tested', false]]], ['Commission & test', [['Cooling verified', false], ['Customer walkthrough', false]]]].map(([job, items]) => (
+              <div key={job as string} className="bg-card border border-border rounded-lg p-3 space-y-1.5">
+                <p className="text-xs font-semibold inline-flex items-center gap-1.5"><Wrench className="h-3 w-3 text-primary" /> {job as string} <span className="text-[9px] font-normal text-muted-foreground">· checklist from the service line</span></p>
+                {(items as [string, boolean][]).map(c => (
+                  <div key={c[0]} className="flex items-center gap-2 text-xs"><span className={`h-4 w-4 rounded border inline-flex items-center justify-center ${c[1] ? 'bg-primary border-primary' : 'border-border'}`}>{c[1] && <CheckCircle2 className="h-3 w-3 text-primary-foreground" />}</span><span className={c[1] ? 'line-through text-muted-foreground' : ''}>{c[0]}</span></div>
+                ))}
+              </div>
+            ))}
+          </div>
         )}
         {state.activeTab === 'activity' && (
           <div className="space-y-2">{[['Confirmed by Karim T.', '08:42'], ['En route', '08:55'], ['On site', '09:08'], ['Job 1 completed', '10:30'], ['Customer signed', '12:05']].map((a, i, arr) => (<div key={a[0]} className="flex gap-3"><div className="flex flex-col items-center shrink-0"><span className="h-6 w-6 rounded-full bg-primary/10 text-primary inline-flex items-center justify-center"><Activity className="h-3 w-3" /></span>{i < arr.length - 1 && <div className="w-px flex-1 bg-border mt-1" />}</div><div className="pb-1"><p className="text-xs font-medium">{a[0]}</p><p className="text-[10px] text-muted-foreground">Today · {a[1]}</p></div></div>))}

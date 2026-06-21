@@ -286,11 +286,21 @@ function PageDetail({ state }: { state: OffersDemoState }) {
           </div>
         )}
         {state.activeTab === 'checklists' && (
-          <div className="bg-card border border-border rounded-lg p-4 space-y-2">
-            <p className="text-sm font-medium mb-1 inline-flex items-center gap-2"><ListChecks className="h-4 w-4 text-primary" /> Pre-send checklist</p>
-            {[['Site survey completed', true], ['Pricing approved by manager', true], ['Lead time confirmed with supplier', false]].map(c => (
-              <div key={c[0] as string} className="flex items-center gap-2 text-xs"><span className={`h-4 w-4 rounded border inline-flex items-center justify-center ${c[1] ? 'bg-primary border-primary' : 'border-border'}`}>{c[1] && <CheckCircle2 className="h-3 w-3 text-primary-foreground" />}</span><span className={c[1] ? 'line-through text-muted-foreground' : ''}>{c[0]}</span></div>
-            ))}
+          <div className="space-y-3">
+            <div className="bg-card border border-border rounded-lg p-4 space-y-2">
+              <p className="text-sm font-medium mb-1 inline-flex items-center gap-2"><ListChecks className="h-4 w-4 text-primary" /> Pre-send checklist <span className="text-[10px] font-normal text-muted-foreground">· offer-level</span></p>
+              {[['Site survey completed', true], ['Pricing approved by manager', true], ['Lead time confirmed with supplier', false]].map(c => (
+                <div key={c[0] as string} className="flex items-center gap-2 text-xs"><span className={`h-4 w-4 rounded border inline-flex items-center justify-center ${c[1] ? 'bg-primary border-primary' : 'border-border'}`}>{c[1] && <CheckCircle2 className="h-3 w-3 text-primary-foreground" />}</span><span className={c[1] ? 'line-through text-muted-foreground' : ''}>{c[0]}</span></div>
+              ))}
+            </div>
+            {/* Item-level checklist on a service line — follows to the job/dispatch. */}
+            <div id="of-demo-item-checklist" className="bg-card border border-primary/30 ring-1 ring-primary/15 rounded-lg p-4 space-y-2">
+              <p className="text-sm font-medium mb-1 inline-flex items-center gap-2"><ListChecks className="h-4 w-4 text-primary" /> Service line: Annual Maintenance Plan <span className="text-[10px] font-normal text-primary">· follows to the job →</span></p>
+              {[['Inspect & clean unit', false], ['Replace filters', false], ['Performance test & report', false]].map(c => (
+                <div key={c[0]} className="flex items-center gap-2 text-xs"><span className="h-4 w-4 rounded border border-border inline-flex items-center justify-center" /><span>{c[0]}</span></div>
+              ))}
+              <p className="text-[10px] text-muted-foreground pt-1">Carried offer → sale → service-order job → dispatch.</p>
+            </div>
           </div>
         )}
         {state.activeTab === 'documents' && (

@@ -595,6 +595,9 @@ function PageProfiles({ state }: { state: PlanningDemoState }) {
             {state.profileTab === 'permissions' && (
               <div id="pl-demo-profile-permissions" className="grid grid-cols-2 gap-x-6">
                 <div>
+                  <div className="rounded-md ring-2 ring-primary/20 bg-primary/5 px-1">
+                    <Toggle on label="Auto-fill: one dispatch per service order" />
+                  </div>
                   <Toggle on label="Allow scheduling jobs" />
                   <Toggle on={false} label="Allow scheduling in the past" />
                   <Toggle on label="Confirm on overlap" />

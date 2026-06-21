@@ -262,7 +262,17 @@ function PageDetail({ state }: { state: SODemoState }) {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">{[['before.jpg'], ['after.jpg'], ['work-report-signed.pdf'], ['delivery-note.pdf']].map(d => <div key={d[0]} className="flex items-center gap-2.5 p-3 bg-card border border-border rounded-lg"><Paperclip className="h-4 w-4 text-muted-foreground" /><span className="text-xs truncate">{d[0]}</span></div>)}</div>
         )}
         {state.activeTab === 'checklists' && (
-          <div className="bg-card border border-border rounded-lg p-4 space-y-2"><p className="text-sm font-medium mb-1 inline-flex items-center gap-2"><ListChecks className="h-4 w-4 text-primary" /> Completion checklist</p>{[['Power isolated before work', true], ['Old unit removed safely', true], ['New unit tested & cooling', true], ['Customer sign-off collected', false]].map(c => (<div key={c[0] as string} className="flex items-center gap-2 text-xs"><span className={`h-4 w-4 rounded border inline-flex items-center justify-center ${c[1] ? 'bg-primary border-primary' : 'border-border'}`}>{c[1] && <CheckCircle2 className="h-3 w-3 text-primary-foreground" />}</span><span className={c[1] ? 'line-through text-muted-foreground' : ''}>{c[0]}</span></div>))}</div>
+          <div id="so-demo-job-checklists" className="space-y-3">
+            {/* Per-job checklists carried from the sale's service lines. */}
+            {[['Replace condenser unit', [['Power isolated before work', true], ['Old unit removed safely', true], ['New unit tested & cooling', false]]], ['Annual Maintenance Plan', [['Inspect & clean unit', false], ['Replace filters', false], ['Performance report', false]]]].map(([job, items]) => (
+              <div key={job as string} className="bg-card border border-border rounded-lg p-4 space-y-1.5">
+                <p className="text-sm font-medium inline-flex items-center gap-2"><ListChecks className="h-4 w-4 text-primary" /> {job as string} <span className="text-[10px] font-normal text-muted-foreground">· from the sale’s service line</span></p>
+                {(items as [string, boolean][]).map(c => (
+                  <div key={c[0]} className="flex items-center gap-2 text-xs"><span className={`h-4 w-4 rounded border inline-flex items-center justify-center ${c[1] ? 'bg-primary border-primary' : 'border-border'}`}>{c[1] && <CheckCircle2 className="h-3 w-3 text-primary-foreground" />}</span><span className={c[1] ? 'line-through text-muted-foreground' : ''}>{c[0]}</span></div>
+                ))}
+              </div>
+            ))}
+          </div>
         )}
         {state.activeTab === 'activity' && (
           <div className="space-y-2">{[['Order created from sale', 'System', '2025-06-08'], ['Scheduled for 16 Jun', 'Ahmed B.', '2025-06-12'], ['Dispatched to Karim T.', 'Ahmed B.', '2025-06-12'], ['Job 1 completed on site', 'Karim T.', '2025-06-16']].map((a, i, arr) => (<div key={a[0]} className="flex gap-3"><div className="flex flex-col items-center shrink-0"><span className="h-6 w-6 rounded-full bg-primary/10 text-primary inline-flex items-center justify-center"><Activity className="h-3 w-3" /></span>{i < arr.length - 1 && <div className="w-px flex-1 bg-border mt-1" />}</div><div className="pb-1"><p className="text-xs font-medium">{a[0]}</p><p className="text-[10px] text-muted-foreground">{a[2]} · {a[1]}</p></div></div>))}</div>

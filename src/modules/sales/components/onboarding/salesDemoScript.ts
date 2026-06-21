@@ -221,8 +221,8 @@ export const SA_STEPS: SalesDemoStep[] = [
   {
     target: 'sa-demo-tab-checklists',
     caption:
-      'Checklists drive fulfilment — confirm stock, schedule delivery, collect the signed delivery note — so nothing ships incomplete.',
-    duration: 4800,
+      'Checklists drive fulfilment — confirm stock, schedule delivery, collect the signed delivery note. And a checklist on a service line carries over from the offer and follows the sale → service-order job → dispatch, so the technician gets the right steps per job.',
+    duration: 6000,
     apply: pure(() => ({ activeTab: 'checklists' as const })),
   },
   {

@@ -49,7 +49,7 @@ const CAPTIONS_FR: string[] = [
   'La Vue d’ensemble rassemble tout : détails client et fiscaux, résumé financier avec port et timbre, date de livraison, et l’offre d’origine dont elle a été convertie.',
   'L’onglet Articles liste chaque ligne avec ses totaux — ajustez quantités et prix avant que la vente soit facturée.',
   'Les Notes gardent la trace de chaque échange — modalités de livraison, promesses de paiement, conditions spéciales — horodatées avec qui et quand.',
-  'Les Checklists pilotent l’exécution — confirmer le stock, planifier la livraison, récupérer le bon de livraison signé — pour que rien ne parte incomplet.',
+  'Les checklists pilotent l’exécution — confirmer le stock, planifier la livraison, récupérer le bon de livraison signé. Et une checklist sur une ligne de service est reprise depuis l’offre et suit la vente → job de l’ordre de service → intervention, pour que le technicien ait les bonnes étapes par job.',
   'Documents et pièces jointes restent avec la vente — le devis signé, les bons de livraison, la preuve de paiement — toute la trace papier au même endroit.',
   'Et l’onglet Activité est la chronologie complète — créée, facturée, payée, clôturée — un historique immuable de toute la transaction.',
   'Envoyez la facture par e-mail en un clic — Flowentra joint le PDF et fait passer le statut à Facturée, l’envoi étant suivi sur la fiche.',

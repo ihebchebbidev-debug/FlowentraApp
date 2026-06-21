@@ -51,7 +51,7 @@ const CAPTIONS_FR: string[] = [
   'Consignez les frais sur le champ — déplacement, pièces achetées sur place, péages — et joignez la photo du reçu. Chaque coût est capturé pour la facture au lieu d’être perdu sur un carnet.',
   'L’onglet Matériels suit les pièces et consommables utilisés — tirés de votre inventaire pour que le stock soit décrémenté automatiquement et facturé avec précision.',
   'Les Pièces jointes contiennent les preuves terrain — photos avant/après, rapport d’intervention signé, bons de livraison — tout ce que le job a produit.',
-  'Les Checklists transforment les procédures en étapes garanties — contrôles de sécurité, critères d’achèvement, validations — pour que chaque job soit fait selon les règles.',
+  'Les checklists transforment les procédures en étapes garanties — et chaque job porte la checklist définie sur sa ligne de service dans le devis/la vente, regroupée par job, pour que chaque job soit fait selon les règles.',
   'Et l’onglet Activité est la chronologie complète — créé, planifié, envoyé, terminé, facturé — un historique immuable de tout le job.',
   'Quand le travail est techniquement terminé, Préparer la facture rassemble la main-d’œuvre, les matériels et les frais consignés sur site en une vente prête à facturer — sans ressaisie.',
   'L’ordre de service lui-même s’imprime en document soigné et à votre marque — votre logo et identité fiscale, le client et le site, les tâches réalisées et les matériels utilisés.',

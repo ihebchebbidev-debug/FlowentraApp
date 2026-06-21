@@ -105,8 +105,9 @@ export const DP_STEPS: DPDemoStep[] = [
   { target: 'dp-demo-pdf-download', caption: 'Download it, print it, or email it — the same clean report every time, hours and materials totalled automatically and ready to invoice.', duration: 4600, apply: pure(() => ({ pdfSettings: false })) },
 
   // ── Chapter 10 · Multi-job dispatch (per-job logging) ──────────────────────
-  { target: 'dp-demo-multijob-jobs', caption: 'When you plan a whole service order as one dispatch, every job rides in the same ticket. The Jobs tab shows them all — one technician, one visit, the full order.', duration: 5200, apply: pure(() => ({ page: 'detail' as const, pdfOpen: false, sendOpen: false, activeTab: 'jobs' as const, multiJob: true })) },
-  { target: 'dp-demo-multijob-time', caption: 'And every booking is tagged to a job. Before logging time — or an expense or a part — the technician picks the job, so labour, costs and materials roll up to the exact job, not just the dispatch.', duration: 5600, apply: pure(() => ({ activeTab: 'time_expenses' as const, timeBookOpen: true, multiJob: true })) },
+  { target: 'dp-demo-multijob-jobs', caption: 'When you plan a whole service order as one dispatch, every job rides in the same ticket. The Jobs tab shows them all, and the technician marks one as the Current job — one technician, one visit, the full order.', duration: 5400, apply: pure(() => ({ page: 'detail' as const, pdfOpen: false, sendOpen: false, activeTab: 'jobs' as const, multiJob: true })) },
+  { target: 'dp-demo-multijob-time', caption: 'Every booking is tagged to a job, and the Current job is preselected — so before logging time, an expense or a part, the right job is already chosen (still changeable). Labour, costs and materials roll up to the exact job, not just the dispatch.', duration: 5800, apply: pure(() => ({ activeTab: 'time_expenses' as const, timeBookOpen: true, multiJob: true })) },
+  { target: 'dp-demo-multijob-checklists', caption: 'Checklists ride along too: each job carries the checklist defined on its service line back in the offer or sale — so the technician completes the right steps for every job, grouped by job.', duration: 5400, apply: pure(() => ({ timeBookOpen: false, activeTab: 'checklists' as const, multiJob: true })) },
 
   // ── Chapter 11 · Wrap-up ───────────────────────────────────────────────────
   { target: 'dp-demo-title', caption: 'That is Dispatches end to end — KPIs across your field team, a technician workspace with a real status flow, time and expense booking, materials from stock, photos, checklists, a captured signature, and a branded work report.', duration: 5800, apply: pure(() => ({ page: 'list' as const, pdfOpen: false, timeBookOpen: false, multiJob: false, selectedStat: 'all' as const })) },
@@ -123,6 +124,6 @@ export const DP_CHAPTERS: DPDemoChapter[] = [
   { id: 'evidence',  title: 'Evidence',        start: 20, end: 23 },
   { id: 'signoff',   title: 'Sign-off',        start: 23, end: 25 },
   { id: 'report',    title: 'Work Report',     start: 25, end: 29 },
-  { id: 'multijob',  title: 'Multi-job dispatch', start: 29, end: 31 },
-  { id: 'wrapup',    title: 'Wrap-up',         start: 31, end: DP_STEPS.length },
+  { id: 'multijob',  title: 'Multi-job dispatch', start: 29, end: 32 },
+  { id: 'wrapup',    title: 'Wrap-up',         start: 32, end: DP_STEPS.length },
 ];
