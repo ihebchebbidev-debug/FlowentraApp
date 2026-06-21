@@ -17,7 +17,7 @@ export const CHAPTER_TITLES: Record<DemoLang, Record<string, string>> = {
   fr: {
     'overview': 'Vue d’ensemble', 'controls': 'Filtres & Vues', 'detail': 'Ticket de job',
     'jobs': 'Tâches', 'time': 'Temps & Frais', 'materials': 'Matériels',
-    'evidence': 'Preuves', 'signoff': 'Validation', 'report': 'Rapport', 'wrapup': 'Conclusion',
+    'evidence': 'Preuves', 'signoff': 'Validation', 'report': 'Rapport', 'multijob': 'Envoi multi-jobs', 'wrapup': 'Conclusion',
   },
 };
 
@@ -35,12 +35,12 @@ const CAPTIONS_FR: string[] = [
   'Ouvrez un envoi pour atteindre l’espace du technicien — le job, son client, et les actions du terrain : naviguer, appeler, envoyer et mettre à jour le statut.',
   'Le flux de statut reflète une vraie journée terrain — En attente, Planifié, Confirmé, En cours, Terminé — avec branches Rejeter et Annuler. Le technicien le fait avancer depuis son téléphone au fil du job.',
   'La carte technicien montre qui est affecté, ses compétences, son téléphone et son statut en direct — un appui pour l’appeler ou lui écrire, pour que bureau et terrain restent synchronisés.',
-  'L’onglet Tâches liste les tâches couvertes par cet envoi — ce que le technicien doit réellement faire sur site, cochable au fur et à mesure.',
+  'L’onglet Tâches liste les tâches couvertes par cet envoi. Un seul envoi peut porter tous les jobs d’un ordre de service — un technicien prend en charge l’ordre entier en une visite, chaque job cochable au fur et à mesure.',
   'Ouvrez une tâche pour son brief complet — le problème, l’équipement, les compétences requises et tout historique — pour que le technicien arrive prêt, sans deviner.',
   'Temps & Frais, c’est là que le job devient facturable. Tout ce que le technicien consigne sur site atterrit ici et alimente directement la facture.',
-  'Bookez la main-d’œuvre d’un geste — lancez et arrêtez un chrono, ou saisissez les heures directement sur le job — précis à la minute, attribué au bon technicien.',
-  'Consignez les frais sur le champ — déplacement, parking, consommables — photographiez le reçu et joignez-le, pour que rien ne passe et que chaque coût soit récupéré.',
-  'L’onglet Matériels enregistre les pièces utilisées sur le job — tirées de l’inventaire ou du stock du van — le stock se décrémente automatiquement et le client est facturé avec précision.',
+  'Bookez la main-d’œuvre d’un geste — lancez et arrêtez un chrono, ou saisissez les heures directement. Quand l’envoi porte plusieurs jobs, vous choisissez à quel job le temps se rattache, pour que chaque minute tombe sur le bon job et le bon technicien.',
+  'Consignez les frais sur le champ — déplacement, parking, consommables — joignez le reçu, et sur un envoi multi-jobs, marquez le job concerné, pour que chaque coût soit récupéré sur le bon job.',
+  'L’onglet Matériels enregistre les pièces utilisées — tirées de l’inventaire ou du stock du van — le stock se décrémente automatiquement. Sur un envoi multi-jobs, vous choisissez à quel job chaque pièce se rattache, pour un coût par job exact et une facturation précise.',
   'Ajoutez une pièce depuis le catalogue d’un geste — quantité et prix pré-remplis — transformant ce qui a été posé en une ligne facturable précise, sans paperasse.',
   'Les Pièces jointes contiennent les preuves terrain — photos avant/après, plaque signalétique de l’équipement, bon de livraison — la preuve que le job a été bien fait.',
   'Les Checklists guident le technicien dans les étapes obligatoires — isolation de sécurité, résultats de test, critères d’achèvement — pour que chaque job atteigne le même standard.',
@@ -51,6 +51,8 @@ const CAPTIONS_FR: string[] = [
   'Le rapport d’intervention est un document soigné et à votre marque — le client et le site, les tâches réalisées, les heures et les pièces, et la signature capturée — un enregistrement complet de la visite.',
   'Et la mise en page vous appartient — un studio pour couleurs, typographie, disposition et champs affichés, pour que chaque rapport porte votre marque.',
   'Téléchargez-le, imprimez-le ou envoyez-le — le même rapport net à chaque fois, heures et matériels totalisés automatiquement et prêts à facturer.',
+  'Quand vous planifiez tout un ordre de service en un seul envoi, chaque job voyage dans le même ticket. L’onglet Tâches les montre tous — un technicien, une visite, l’ordre complet.',
+  'Et chaque saisie est rattachée à un job. Avant de consigner du temps — ou un frais ou une pièce — le technicien choisit le job, pour que main-d’œuvre, coûts et matériels remontent au bon job, pas seulement à l’envoi.',
   'Voilà Envois de bout en bout — des KPI sur votre équipe terrain, un espace technicien avec un vrai flux de statut, le booking temps et frais, les matériels du stock, photos, checklists, une signature capturée, et un rapport d’intervention à votre marque.',
   'Les ordres de service deviennent des envois, les envois des jobs validés, et chaque heure et pièce revient à la facturation. C’est votre équipe terrain, dans votre poche et sur un seul écran.',
 ];

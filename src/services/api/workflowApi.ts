@@ -308,11 +308,16 @@ export const workflowExecutionsApi = {
     return data!;
   },
   
-  // Manually trigger execution
+  // Manually trigger execution.
+  // Best-effort / fire-and-forget: callers (dispatch, service orders, etc.) wrap this
+  // in try/catch and the backend also auto-triggers on status changes. Suppress the
+  // global error toast so "Workflow N not found" (e.g. no default workflow configured)
+  // never surfaces to the user.
   triggerManual: async (workflowId: number, entityType: string, entityId: number): Promise<WorkflowExecution> => {
     const { data, error } = await apiFetch<WorkflowExecution>(`/api/workflow-executions/trigger-manual`, {
       method: 'POST',
       body: JSON.stringify({ workflowId, entityType, entityId }),
+      headers: { 'X-Suppress-Error-Toast': 'true' },
     });
     if (error) throw new Error(error);
     return data!;

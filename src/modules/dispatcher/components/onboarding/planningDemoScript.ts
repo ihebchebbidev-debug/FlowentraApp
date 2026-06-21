@@ -21,6 +21,7 @@ export interface PlanningDemoState {
   suggestOpen: boolean;        // smart-suggest popover open
   autofill: number;            // 0=closed, 1=confirm dialog, 2=result
   mapAssign: boolean;          // assign-from-map popover
+  batchModal: boolean;         // batch-assign modal with "single dispatch" toggle
   // ── Profiles ──
   profileTab: 'display' | 'users' | 'permissions';
 }
@@ -38,6 +39,7 @@ export const initialPlanningDemoState: PlanningDemoState = {
   suggestOpen: false,
   autofill: 0,
   mapAssign: false,
+  batchModal: false,
   profileTab: 'display',
 };
 
@@ -222,8 +224,8 @@ export const PL_STEPS: PlanningDemoStep[] = [
   {
     target: 'pl-demo-drop-slot',
     caption:
-      'Drop it on a time slot and the dispatch is created instantly — assigned, scheduled, and visible to the technician in real time.',
-    duration: 4800,
+      'Drop it on a time slot and the dispatch is created instantly. Drop a whole service order and it becomes a single dispatch holding all its jobs — assigned, scheduled, and visible to the technician in real time.',
+    duration: 5200,
     apply: pure(() => ({ dropped: true, sidebarHi: 'none' as const })),
   },
   {
@@ -377,13 +379,22 @@ export const PL_STEPS: PlanningDemoStep[] = [
     apply: pure(() => ({})),
   },
 
-  // ── Chapter 11 · Wrap-up ───────────────────────────────────────────────────
+  // ── Chapter 11 · Single dispatch per service order ─────────────────────────
+  {
+    target: 'pl-demo-single-toggle',
+    caption:
+      'Planning a whole service order? When you drop one onto the calendar, this dialog opens. The "Plan as a single dispatch" toggle — on by default — creates one dispatch holding every job of the order, so it travels as a single visit. Turn it off to spin up one dispatch per job instead.',
+    duration: 6400,
+    apply: pure(() => ({ page: 'board' as const, boardView: 'calendar' as const, autofill: 0, mapAssign: false, batchModal: true })),
+  },
+
+  // ── Chapter 12 · Wrap-up ───────────────────────────────────────────────────
   {
     target: 'pl-demo-title',
     caption:
       'That is Planning & Dispatch end to end — a dispatch overview, a drag-and-drop calendar, smart suggestions and one-click auto-fill, a routing map, configurable profiles, and team working hours, all connected.',
     duration: 5800,
-    apply: pure(() => ({ page: 'overview' as const, selectedStat: 'all' as const })),
+    apply: pure(() => ({ page: 'overview' as const, batchModal: false, selectedStat: 'all' as const })),
   },
   {
     target: 'pl-demo-dispatch-jobs',
@@ -405,5 +416,6 @@ export const PL_CHAPTERS: PlanningDemoChapter[] = [
   { id: 'map',        title: 'Map View',          start: 29, end: 32 },
   { id: 'profiles',   title: 'Planning Profiles', start: 32, end: 39 },
   { id: 'scheduler',  title: 'Working Hours',     start: 39, end: 42 },
-  { id: 'wrapup',     title: 'Wrap-up',           start: 42, end: PL_STEPS.length },
+  { id: 'singledispatch', title: 'Single Dispatch', start: 42, end: 43 },
+  { id: 'wrapup',     title: 'Wrap-up',           start: 43, end: PL_STEPS.length },
 ];

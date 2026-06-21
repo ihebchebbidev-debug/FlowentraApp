@@ -454,6 +454,31 @@ function PageBoard({ state }: { state: PlanningDemoState }) {
           <div><p className="text-xs font-semibold">2 jobs auto-scheduled</p><p className="text-[10px] text-muted-foreground">Placed by priority · no conflicts · within working hours</p></div>
         </div>
       )}
+      {/* Batch-assign modal with the single-dispatch toggle */}
+      {state.batchModal && (
+        <div className="absolute inset-0 z-[6] flex items-center justify-center bg-background/40">
+          <div className="w-[420px] bg-card border border-border rounded-xl shadow-2xl p-4">
+            <p className="text-sm font-semibold mb-1 inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Plan service order · SO-2042</p>
+            <p className="text-xs text-muted-foreground mb-3">3 jobs · Acme Corp · assign to Karim T.</p>
+            <div className="space-y-1.5 mb-3">
+              {['Diagnose compressor fault', 'Replace condenser unit', 'Commission & test'].map(j => (
+                <div key={j} className="flex items-center justify-between text-xs px-2 py-1.5 rounded-md border border-border/60"><span className="inline-flex items-center gap-1.5"><Wrench className="h-3 w-3 text-muted-foreground" /> {j}</span><span className="text-[10px] text-muted-foreground">medium</span></div>
+              ))}
+            </div>
+            <div id="pl-demo-single-toggle" className="flex items-start justify-between gap-3 p-2.5 rounded-lg border border-primary/40 ring-2 ring-primary/15 bg-primary/5">
+              <div>
+                <p className="text-xs font-medium">Plan as a single dispatch</p>
+                <p className="text-[10px] text-muted-foreground">All jobs go into one dispatch (materials, expenses and time stay per job).</p>
+              </div>
+              <div className="mt-0.5 h-5 w-9 rounded-full bg-primary flex items-center px-0.5 justify-end shrink-0"><span className="h-4 w-4 rounded-full bg-white shadow" /></div>
+            </div>
+            <div className="flex justify-end gap-2 mt-3">
+              <div className="h-8 px-3 rounded-md border border-border text-xs flex items-center text-muted-foreground cursor-default">Cancel</div>
+              <div className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium flex items-center cursor-default">Confirm</div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -682,7 +707,7 @@ export function PlanningAutopilotDemo({ open, onClose }: Props) {
     };
     const t = setTimeout(place, 160);
     return () => clearTimeout(t);
-  }, [stepIndex, open, finished, step?.target, state.page, state.boardView, state.sidebarHi, state.suggestOpen, state.autofill, state.profileTab, state.showFilters, state.bulkBar, state.dropped, state.mapAssign]);
+  }, [stepIndex, open, finished, step?.target, state.page, state.boardView, state.sidebarHi, state.suggestOpen, state.autofill, state.profileTab, state.showFilters, state.bulkBar, state.dropped, state.mapAssign, state.batchModal]);
 
   useEffect(() => {
     if (!open || !playing || finished) return;

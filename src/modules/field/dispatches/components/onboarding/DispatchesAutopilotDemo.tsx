@@ -175,7 +175,16 @@ function PageDetail({ state }: { state: DPDemoState }) {
         )}
         {state.activeTab === 'jobs' && (
           <div className="space-y-2">
-            {[['Diagnose compressor fault', 'completed', '90 min'], ['Replace condenser unit', 'in_progress', '120 min']].map((j, i) => (
+            {state.multiJob && (
+              <div id="dp-demo-multijob-jobs" className="flex items-center justify-between px-3 py-2 rounded-lg bg-primary/10 border border-primary/30 text-xs">
+                <span className="inline-flex items-center gap-1.5 font-medium text-primary"><Wrench className="h-3.5 w-3.5" /> 3 jobs in this dispatch · whole service order</span>
+                <span className="text-[10px] text-muted-foreground">SO-2042</span>
+              </div>
+            )}
+            {(state.multiJob
+              ? [['Diagnose compressor fault', 'completed', '90 min'], ['Replace condenser unit', 'in_progress', '120 min'], ['Commission & test', 'pending', '45 min']]
+              : [['Diagnose compressor fault', 'completed', '90 min'], ['Replace condenser unit', 'in_progress', '120 min']]
+            ).map((j, i) => (
               <div key={j[0]} id={i === 0 ? 'dp-demo-job-detail' : undefined} className="p-3 bg-card border border-border rounded-lg"><div className="flex items-center justify-between"><span className="text-xs font-medium inline-flex items-center gap-1.5"><Wrench className="h-3 w-3 text-muted-foreground" />{j[0]}</span><Pill s={j[1]} /></div><div className="flex items-center gap-3 mt-1 text-[10px] text-muted-foreground"><span className="inline-flex items-center gap-1"><Clock className="h-2.5 w-2.5" /> {j[2]}</span><span>Skills: HVAC</span></div></div>
             ))}
           </div>
@@ -217,6 +226,12 @@ function PageDetail({ state }: { state: DPDemoState }) {
       {state.timeBookOpen && (
         <div className="absolute inset-0 z-[6] flex items-start justify-center pt-10 bg-background/40"><div id="dp-demo-time-book" className="w-[380px] bg-card border border-border rounded-xl shadow-2xl p-4 text-center">
           <p className="text-sm font-semibold mb-3 inline-flex items-center gap-2"><Timer className="h-4 w-4 text-primary" /> Book Time</p>
+          {state.multiJob && (
+            <div id="dp-demo-multijob-time" className="mb-3 text-left">
+              <label className="block text-[10px] text-muted-foreground mb-1">Job</label>
+              <div className="h-8 rounded-md border border-primary/50 ring-2 ring-primary/20 flex items-center justify-between px-2 text-xs"><span className="inline-flex items-center gap-1.5"><Wrench className="h-3 w-3 text-primary" /> Replace condenser unit</span><ChevronDown className="h-3.5 w-3.5 text-muted-foreground" /></div>
+            </div>
+          )}
           <div className="text-3xl font-bold tabular-nums mb-1">00:38:14</div>
           <p className="text-[11px] text-muted-foreground mb-3">Replace condenser unit · Karim T.</p>
           <div className="flex justify-center gap-2"><div className="h-9 px-4 rounded-md border border-border text-xs flex items-center gap-1.5 text-muted-foreground"><Pause className="h-3.5 w-3.5" /> Pause</div><div className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-xs font-medium flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5" /> Stop &amp; log</div></div>
@@ -287,7 +302,7 @@ export function DispatchesAutopilotDemo({ open, onClose }: Props) {
     if (!open || finished) return;
     const place = () => { const el = document.getElementById(step.target); if (!el) return; const r = el.getBoundingClientRect(); setCursor({ x: r.left + Math.min(r.width / 2, 120), y: r.top + Math.min(r.height / 2, 40), clicking: true }); if (clickRef.current) clearTimeout(clickRef.current); clickRef.current = setTimeout(() => setCursor(c => ({ ...c, clicking: false })), 450); };
     const t = setTimeout(place, 160); return () => clearTimeout(t);
-  }, [stepIndex, open, finished, step?.target, state.page, state.activeTab, state.listView, state.showFilters, state.bulkBar, state.bulkConfirm, state.timeBookOpen, state.expenseBookOpen, state.notesOpen, state.sendOpen, state.pdfOpen, state.pdfSettings]);
+  }, [stepIndex, open, finished, step?.target, state.page, state.activeTab, state.listView, state.showFilters, state.bulkBar, state.bulkConfirm, state.timeBookOpen, state.expenseBookOpen, state.notesOpen, state.sendOpen, state.pdfOpen, state.pdfSettings, state.multiJob]);
   useEffect(() => {
     if (!open || !playing || finished) return;
     const advance = () => setStepIndex(i => i + 1);

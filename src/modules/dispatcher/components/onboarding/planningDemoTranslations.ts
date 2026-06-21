@@ -27,6 +27,7 @@ export const CHAPTER_TITLES: Record<DemoLang, Record<string, string>> = {
     'map':        'Vue carte',
     'profiles':   'Profils de planification',
     'scheduler':  'Heures de travail',
+    'singledispatch': 'Envoi unique',
     'wrapup':     'Conclusion',
   },
 };
@@ -55,7 +56,7 @@ const CAPTIONS_FR: string[] = [
   'Survolez pour voir le reste — et vous décidez exactement ce qui apparaît : client, site, durée, compétences, et même les jobs de l’ordre de service. Le contenu du survol est entièrement configurable dans les Profils de planification.',
   'Un bouton Afficher planifiés révèle ce qui est déjà programmé à côté du backlog — rien n’est doublement réservé et vous voyez toujours la charge complète.',
   'La planification est physique : saisissez un job, une installation entière ou tout un ordre de service et glissez-le sur le calendrier d’un technicien.',
-  'Déposez-le sur un créneau et l’envoi est créé instantanément — affecté, planifié et visible par le technicien en temps réel.',
+  'Déposez-le sur un créneau et l’envoi est créé instantanément. Déposez tout un ordre de service et il devient un seul envoi regroupant tous ses jobs — affecté, planifié et visible par le technicien en temps réel.',
   'Et c’est sûr : si le créneau chevauche un travail existant ou sort des heures de travail, le tableau vous avertit avant de confirmer — aucune double réservation accidentelle.',
   'Pas sûr de qui convient le mieux ? La Planification intelligente réfléchit pour vous. Ouvrez Suggérer pour une liste classée des meilleurs techniciens pour chaque job non planifié.',
   'Chaque technicien est noté sur 100 et classé — le meilleur choix est mis en avant, une bonne affectation est à un clic même un jour chargé.',
@@ -76,6 +77,7 @@ const CAPTIONS_FR: string[] = [
   'Tout cela repose sur le fait de savoir quand votre équipe travaille. Le Planificateur gère les heures de travail de chaque technicien, jour par jour.',
   'Définissez les heures de début et de fin par jour, avec pauses et jours de repos — ces heures bornent le calendrier, pilotent le remplissage auto, et décident qui peut prendre un job tardif.',
   'Modifiez l’horaire d’un technicien et tout le tableau le respecte aussitôt — une capacité toujours exacte, pour des plans toujours réalistes.',
+  'Vous planifiez tout un ordre de service ? Quand vous le déposez sur le calendrier, cette boîte de dialogue s’ouvre. Le bouton « Planifier en une seule intervention » — activé par défaut — crée un seul envoi regroupant tous les jobs de l’ordre, pour qu’il voyage comme une seule visite. Désactivez-le pour créer un envoi par job.',
   'Voilà Planification & Envoi de bout en bout — un aperçu des envois, un calendrier en glisser-déposer, des suggestions intelligentes et un remplissage auto en un clic, une carte de routage, des profils configurables et les heures de travail de l’équipe, tout connecté.',
   'Les ordres de service arrivent, le bon technicien est associé en quelques secondes, et chaque job est suivi jusqu’au bout. Ouvrez le tableau et planifiez votre journée — toute votre équipe terrain, orchestrée depuis un seul écran.',
 ];

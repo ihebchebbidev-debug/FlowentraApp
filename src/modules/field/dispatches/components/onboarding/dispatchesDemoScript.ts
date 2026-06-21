@@ -21,6 +21,7 @@ export interface DPDemoState {
   sendOpen: boolean;
   pdfOpen: boolean;
   pdfSettings: boolean;
+  multiJob: boolean;           // dispatch holds all jobs of a service order (per-job logging)
 }
 
 export const initialDPDemoState: DPDemoState = {
@@ -39,6 +40,7 @@ export const initialDPDemoState: DPDemoState = {
   sendOpen: false,
   pdfOpen: false,
   pdfSettings: false,
+  multiJob: false,
 };
 
 export interface DPDemoStep { target: string; caption: string; duration: number; apply: (s: DPDemoState) => DPDemoState; }
@@ -75,16 +77,16 @@ export const DP_STEPS: DPDemoStep[] = [
   { target: 'dp-demo-tech', caption: 'The technician card shows who’s assigned, their skills, phone, and live status — one tap to call or message them, so the office and the field stay in sync.', duration: 5000, apply: pure(() => ({ statusStage: 3 })) },
 
   // ── Chapter 4 · Jobs ───────────────────────────────────────────────────────
-  { target: 'dp-demo-tab-jobs', caption: 'The Jobs tab lists the tasks this dispatch covers — what the technician actually has to do on site, each tickable as it’s done.', duration: 4800, apply: pure(() => ({ activeTab: 'jobs' as const })) },
+  { target: 'dp-demo-tab-jobs', caption: 'The Jobs tab lists the tasks this dispatch covers. A single dispatch can carry every job of a service order — so one technician owns the whole order in one visit, each job tickable as it’s done.', duration: 5000, apply: pure(() => ({ activeTab: 'jobs' as const })) },
   { target: 'dp-demo-job-detail', caption: 'Open a job for its full brief — the problem, the equipment, the required skills, and any history — so the technician arrives ready, not guessing.', duration: 5000, apply: pure(() => ({})) },
 
   // ── Chapter 5 · Time & Expenses booking ────────────────────────────────────
   { target: 'dp-demo-tab-time', caption: 'Time & Expenses is where the job becomes billable. Everything the technician books on site lands here and flows straight to the invoice.', duration: 4800, apply: pure(() => ({ activeTab: 'time_expenses' as const })) },
-  { target: 'dp-demo-time-book', caption: 'Book labour with a tap — start and stop a timer, or log hours directly against the job — accurate to the minute, attributed to the right technician.', duration: 5200, apply: pure(() => ({ timeBookOpen: true })) },
-  { target: 'dp-demo-expense-book', caption: 'Log expenses on the spot — travel, parking, consumables — snap the receipt and attach it, so nothing slips through and every cost is recovered.', duration: 5200, apply: pure(() => ({ timeBookOpen: false, expenseBookOpen: true })) },
+  { target: 'dp-demo-time-book', caption: 'Book labour with a tap — start and stop a timer, or log hours directly. When the dispatch holds several jobs you pick which job the time is for, so every minute lands on the right job and technician.', duration: 5400, apply: pure(() => ({ timeBookOpen: true })) },
+  { target: 'dp-demo-expense-book', caption: 'Log expenses on the spot — travel, parking, consumables — attach the receipt, and on a multi-job dispatch tag the job it belongs to, so every cost is recovered against the right job.', duration: 5400, apply: pure(() => ({ timeBookOpen: false, expenseBookOpen: true })) },
 
   // ── Chapter 6 · Materials ──────────────────────────────────────────────────
-  { target: 'dp-demo-tab-materials', caption: 'The Materials tab records the parts used on the job — pulled from inventory or van stock, so stock decrements automatically and the customer is billed accurately.', duration: 5000, apply: pure(() => ({ expenseBookOpen: false, activeTab: 'materials' as const })) },
+  { target: 'dp-demo-tab-materials', caption: 'The Materials tab records the parts used — pulled from inventory or van stock, so stock decrements automatically. On a multi-job dispatch you choose which job each part is for, keeping cost per job exact and billing accurate.', duration: 5200, apply: pure(() => ({ expenseBookOpen: false, activeTab: 'materials' as const })) },
   { target: 'dp-demo-articles', caption: 'Add a part from the catalog in a tap — quantity and price pre-filled — turning what was fitted into a precise, billable line with no paperwork.', duration: 5000, apply: pure(() => ({})) },
 
   // ── Chapter 7 · Attachments, Checklists, Notes ─────────────────────────────
@@ -102,8 +104,12 @@ export const DP_STEPS: DPDemoStep[] = [
   { target: 'dp-demo-pdf-settings', caption: 'And the layout is yours — a studio for colours, typography, layout, and which fields appear, so every report carries your brand.', duration: 4800, apply: pure(() => ({ pdfSettings: true })) },
   { target: 'dp-demo-pdf-download', caption: 'Download it, print it, or email it — the same clean report every time, hours and materials totalled automatically and ready to invoice.', duration: 4600, apply: pure(() => ({ pdfSettings: false })) },
 
-  // ── Chapter 10 · Wrap-up ───────────────────────────────────────────────────
-  { target: 'dp-demo-title', caption: 'That is Dispatches end to end — KPIs across your field team, a technician workspace with a real status flow, time and expense booking, materials from stock, photos, checklists, a captured signature, and a branded work report.', duration: 5800, apply: pure(() => ({ page: 'list' as const, pdfOpen: false, selectedStat: 'all' as const })) },
+  // ── Chapter 10 · Multi-job dispatch (per-job logging) ──────────────────────
+  { target: 'dp-demo-multijob-jobs', caption: 'When you plan a whole service order as one dispatch, every job rides in the same ticket. The Jobs tab shows them all — one technician, one visit, the full order.', duration: 5200, apply: pure(() => ({ page: 'detail' as const, pdfOpen: false, sendOpen: false, activeTab: 'jobs' as const, multiJob: true })) },
+  { target: 'dp-demo-multijob-time', caption: 'And every booking is tagged to a job. Before logging time — or an expense or a part — the technician picks the job, so labour, costs and materials roll up to the exact job, not just the dispatch.', duration: 5600, apply: pure(() => ({ activeTab: 'time_expenses' as const, timeBookOpen: true, multiJob: true })) },
+
+  // ── Chapter 11 · Wrap-up ───────────────────────────────────────────────────
+  { target: 'dp-demo-title', caption: 'That is Dispatches end to end — KPIs across your field team, a technician workspace with a real status flow, time and expense booking, materials from stock, photos, checklists, a captured signature, and a branded work report.', duration: 5800, apply: pure(() => ({ page: 'list' as const, pdfOpen: false, timeBookOpen: false, multiJob: false, selectedStat: 'all' as const })) },
   { target: 'dp-demo-stat-completed', caption: 'Service orders become dispatches, dispatches become signed-off jobs, and every hour and part flows back to billing. This is your field team, in your pocket and on one screen.', duration: 5400, apply: pure(() => ({})) },
 ];
 
@@ -117,5 +123,6 @@ export const DP_CHAPTERS: DPDemoChapter[] = [
   { id: 'evidence',  title: 'Evidence',        start: 20, end: 23 },
   { id: 'signoff',   title: 'Sign-off',        start: 23, end: 25 },
   { id: 'report',    title: 'Work Report',     start: 25, end: 29 },
-  { id: 'wrapup',    title: 'Wrap-up',         start: 29, end: DP_STEPS.length },
+  { id: 'multijob',  title: 'Multi-job dispatch', start: 29, end: 31 },
+  { id: 'wrapup',    title: 'Wrap-up',         start: 31, end: DP_STEPS.length },
 ];
