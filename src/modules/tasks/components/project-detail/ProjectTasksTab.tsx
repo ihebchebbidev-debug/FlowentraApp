@@ -422,9 +422,13 @@ export function ProjectTasksTab({
           )}
 
           {/* Main Task View */}
+          {/* Feed BOTH open and completed tasks to the board/list so the "Done"
+              column actually shows completed cards. Previously only openTasks was
+              passed, so anything moved to Done vanished from the board (it only
+              survived in the collapsible "Completed" banner above). */}
           {taskViewMode === "list" ? (
             <TaskListView
-              tasks={openTasks.map((t) => ({
+              tasks={[...openTasks, ...completedTasks].map((t) => ({
                 ...t,
                 status: t.columnId,
                 dueDate: new Date(t.dueDate || Date.now()),
@@ -449,7 +453,7 @@ export function ProjectTasksTab({
               onColumnEditorOpenChange={(open) => setIsColumnEditorOpen(open)}
               quickTaskModalOpen={isQuickTaskModalOpen}
               onQuickTaskModalOpenChange={setIsQuickTaskModalOpen}
-              initialTasks={openTasks}
+              initialTasks={[...openTasks, ...completedTasks]}
               onTasksChange={(updatedOpenTasks) => {
                 const updatedIds = new Set(updatedOpenTasks.map((t) => t.id));
                 setTasksState((prev) => [
