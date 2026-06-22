@@ -128,8 +128,10 @@ function DraggableTaskCard({ task, getPriorityColor, onClick, onToggleComplete, 
       ref={setNodeRef}
       style={style}
       onClick={handleClick}
+      {...listeners}
+      {...attributes}
       className={cn(
-        "group bg-card rounded-sm border border-border shadow-sm hover:bg-accent/30 transition-all duration-150 cursor-pointer active:cursor-grabbing relative",
+        "group bg-card rounded-sm border border-border shadow-sm hover:bg-accent/30 transition-all duration-150 cursor-grab active:cursor-grabbing relative touch-none",
         "border-l-[3px]",
         getPriorityBorderColor(task.priority),
         overdue && !task.isCompleted && "ring-1 ring-destructive/50",
@@ -140,7 +142,7 @@ function DraggableTaskCard({ task, getPriorityColor, onClick, onToggleComplete, 
       <div className="p-3">
         {/* Top row: Drag handle + Title + Overdue badge */}
         <div className="flex items-start gap-2">
-          <div {...listeners} {...attributes} className="flex-shrink-0 cursor-grab">
+          <div className="flex-shrink-0">
             <GripVertical className="h-4 w-4 text-muted-foreground" />
           </div>
           
