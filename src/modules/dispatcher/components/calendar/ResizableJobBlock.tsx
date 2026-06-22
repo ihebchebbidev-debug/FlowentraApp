@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from "react";
 import { format, addMinutes, differenceInMinutes } from "date-fns";
 import { useTranslation } from "react-i18next";
 import type { Job } from "../../types";
-import { DurationIndicatorCompact } from "./DurationIndicator";
 import { getStatusSolidClasses } from "@/config/entity-statuses";
 import { usePlanningDisplay } from "../../context/PlanningDisplayContext";
 import { formatCardLabel, buildHoverRows } from "../../utils/planningCardFields";
@@ -398,32 +397,20 @@ function ResizableJobBlockInner({
                 </span>
               )}
             </div>
-            <div className="font-semibold truncate text-[11px] leading-tight">{cardLabel}</div>
+            <div className="font-semibold truncate text-[10px] leading-tight">{cardLabel}</div>
             {subJobs ? (
-              <div className="text-[9px] text-muted-foreground/80 mt-0.5">
+              <div className="text-[8px] text-muted-foreground/80 mt-0.5">
                 📋 {subJobs.length} {t('dispatcher.jobs', 'jobs')}
               </div>
             ) : job.installationName && job.description && /^\d+ jobs$/.test(job.description) && (
-              <div className="text-[9px] text-muted-foreground/80 mt-0.5">{job.description}</div>
+              <div className="text-[8px] text-muted-foreground/80 mt-0.5">{job.description}</div>
             )}
             <div className="flex items-center gap-1 mt-1">
-              <div className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-black/10 dark:bg-white/15 backdrop-blur-sm text-[9px] font-semibold text-foreground shadow-sm">
+              <div className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-black/10 dark:bg-white/15 backdrop-blur-sm text-[8px] font-semibold text-foreground shadow-sm">
                 <span>{format(scheduledStart, 'HH:mm')}</span>
                 <span className="opacity-60">→</span>
                 <span>{format(effectiveEnd, 'HH:mm')}</span>
-                {display.showDurationLabels && (
-                  <>
-                    <span className="opacity-50 ml-0.5">·</span>
-                    <span className="opacity-70">{Math.round(duration / 60 * 10) / 10}h</span>
-                  </>
-                )}
               </div>
-              {display.showDurationLabels && (
-                <DurationIndicatorCompact
-                  plannedDuration={duration}
-                  originalDuration={job.originalDuration}
-                />
-              )}
             </div>
             {isLocked && (
               <div className="text-[10px] text-green-600 font-medium">🔒 {t('dispatcher.locked').toUpperCase()}</div>
