@@ -35,6 +35,7 @@ import { offersApi } from '@/services/api/offersApi';
 import { salesApi } from '@/services/api/salesApi';
 import { serviceOrdersApi } from '@/services/api/serviceOrdersApi';
 import { dispatchesApi } from '@/services/api/dispatchesApi';
+import { dealsApi } from '@/services/api/dealsApi';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -88,6 +89,10 @@ const translations = {
     checklistCompletedDetails: 'The checklist "{{formName}}" has been completed.',
     checklistCompletedFromNote: 'Checklist completed from {{source}}: {{formName}}',
     checklistCompletedFromDetails: 'The checklist "{{formName}}" has been completed from {{source}}.',
+    checklistDeletedNote: 'Checklist removed: {{formName}}',
+    checklistDeletedDetails: 'The checklist "{{formName}}" has been removed.',
+    checklistDeletedFromNote: 'Checklist removed from {{source}}: {{formName}}',
+    checklistDeletedFromDetails: 'The checklist "{{formName}}" has been removed from {{source}}.',
   },
   fr: {
     title: 'Checklists',
@@ -122,6 +127,10 @@ const translations = {
     checklistCompletedDetails: 'Le checklist "{{formName}}" a été complété.',
     checklistCompletedFromNote: 'Checklist complété depuis {{source}} : {{formName}}',
     checklistCompletedFromDetails: 'Le checklist "{{formName}}" a été complété depuis {{source}}.',
+    checklistDeletedNote: 'Checklist supprimé : {{formName}}',
+    checklistDeletedDetails: 'Le checklist "{{formName}}" a été supprimé.',
+    checklistDeletedFromNote: 'Checklist supprimé depuis {{source}} : {{formName}}',
+    checklistDeletedFromDetails: 'Le checklist "{{formName}}" a été supprimé depuis {{source}}.',
   },
 };
 
@@ -301,14 +310,20 @@ export function ChecklistsSection({
 
   const handleConfirmDelete = async () => {
     if (deletingDocument) {
+      const formName = (language === 'en' ? deletingDocument.form_name_en : deletingDocument.form_name_fr) || '';
+      const docEntityType = deletingDocument.source;
+      const docEntityId = deletingDocument.entity_id;
       // Check if deleting from main or linked entity
       if (deletingDocument.source === entityType) {
         await deleteDocument(deletingDocument.id);
+        // Log the removal to the entity's activity feed (and up the chain).
+        await propagateChecklistNote(formName, docEntityType, docEntityId, 'deleted');
       } else {
         // Delete from linked entity
         try {
           await entityFormDocumentsService.delete(deletingDocument.id);
           await fetchLinkedDocuments();
+          await propagateChecklistNote(formName, docEntityType, docEntityId, 'deleted');
           toast.success(language === 'fr' ? 'Document formulaire supprimé' : 'Form document deleted');
         } catch (err) {
           toast.error(language === 'fr' ? 'Échec de la suppression' : 'Failed to delete');
@@ -354,6 +369,13 @@ export function ChecklistsSection({
             details: noteDetails,
           });
           break;
+        case 'deal':
+          await dealsApi.addActivity(targetEntityId, {
+            type: noteType,
+            description: noteDescription,
+            details: noteDetails,
+          });
+          break;
         case 'service_order':
           await serviceOrdersApi.addNote(targetEntityId, {
             content: `${noteDescription}\n${noteDetails}`,
@@ -374,27 +396,25 @@ export function ChecklistsSection({
     formName: string,
     sourceEntityType: EntityType,
     sourceEntityId: number,
-    action: 'added' | 'completed'
+    action: 'added' | 'completed' | 'deleted'
   ) => {
     const sourceLabel = getEntityLabel(sourceEntityType);
 
+    // Pick the right message set for the action (added / completed / deleted).
+    const selfNote = action === 'added' ? t.checklistAddedNote : action === 'completed' ? t.checklistCompletedNote : t.checklistDeletedNote;
+    const selfDetails = action === 'added' ? t.checklistAddedDetails : action === 'completed' ? t.checklistCompletedDetails : t.checklistDeletedDetails;
+    const fromNote = action === 'added' ? t.checklistAddedFromNote : action === 'completed' ? t.checklistCompletedFromNote : t.checklistDeletedFromNote;
+    const fromDetails = action === 'added' ? t.checklistAddedFromDetails : action === 'completed' ? t.checklistCompletedFromDetails : t.checklistDeletedFromDetails;
+
     // Note for the source entity itself
-    const selfNoteDescription = action === 'added'
-      ? t.checklistAddedNote.replace('{{formName}}', formName)
-      : t.checklistCompletedNote.replace('{{formName}}', formName);
-    const selfNoteDetails = action === 'added'
-      ? t.checklistAddedDetails.replace('{{formName}}', formName)
-      : t.checklistCompletedDetails.replace('{{formName}}', formName);
+    const selfNoteDescription = selfNote.replace('{{formName}}', formName);
+    const selfNoteDetails = selfDetails.replace('{{formName}}', formName);
 
     // Note for linked entities (showing source)
-    const linkedNoteDescription = action === 'added'
-      ? t.checklistAddedFromNote.replace('{{formName}}', formName).replace('{{source}}', sourceLabel)
-      : t.checklistCompletedFromNote.replace('{{formName}}', formName).replace('{{source}}', sourceLabel);
-    const linkedNoteDetails = action === 'added'
-      ? t.checklistAddedFromDetails.replace('{{formName}}', formName).replace('{{source}}', sourceLabel)
-      : t.checklistCompletedFromDetails.replace('{{formName}}', formName).replace('{{source}}', sourceLabel);
+    const linkedNoteDescription = fromNote.replace('{{formName}}', formName).replace('{{source}}', sourceLabel);
+    const linkedNoteDetails = fromDetails.replace('{{formName}}', formName).replace('{{source}}', sourceLabel);
 
-    const noteType = action === 'added' ? 'checklist_added' : 'checklist_completed';
+    const noteType = action === 'added' ? 'checklist_added' : action === 'completed' ? 'checklist_completed' : 'checklist_deleted';
 
     // Add note to the source entity
     await addNoteToEntity(sourceEntityType, sourceEntityId, selfNoteDescription, selfNoteDetails, noteType);

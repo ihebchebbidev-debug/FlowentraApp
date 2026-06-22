@@ -61,6 +61,17 @@ export function EditDeal() {
       // single transaction (no chatty, non-atomic delete-then-add from the client).
       const { items, ...rest } = payload;
       await dealsApi.update(dealId, { ...rest, items: items ?? [] });
+      // Stage changes are logged server-side; this records plain detail/item
+      // edits so the activity feed captures every change.
+      try {
+        await dealsApi.addActivity(dealId, {
+          type: 'updated',
+          description: 'Deal details were updated',
+          details: `Deal updated on ${new Date().toLocaleDateString()}`,
+        });
+      } catch (e) {
+        console.warn('Failed to log deal update activity:', e);
+      }
       toast.success(t("toast.updated"));
       navigate(`/dashboard/deals/${dealId}`);
     } catch {

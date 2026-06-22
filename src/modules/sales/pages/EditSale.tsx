@@ -156,7 +156,23 @@ export function EditSale() {
       };
       
       await SalesService.updateSale(id, updateData);
-      
+
+      // Track the edit in the activity feed (status changes are logged
+      // separately via their own flow; this captures plain detail edits).
+      try {
+        const saleId = parseInt(id, 10);
+        if (!isNaN(saleId)) {
+          const { salesApi } = await import('@/services/api/salesApi');
+          await salesApi.addActivity(saleId, {
+            type: 'updated',
+            description: 'Sale details were updated',
+            details: `Sale updated on ${new Date().toLocaleDateString()}`,
+          });
+        }
+      } catch (e) {
+        console.warn('Failed to log sale update activity:', e);
+      }
+
       toast({
         title: t('success', 'Success'),
         description: t('editSale.successUpdated'),

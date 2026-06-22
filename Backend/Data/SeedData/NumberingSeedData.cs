@@ -59,6 +59,19 @@ namespace MyApi.Data.SeedData
                     Padding = 6,
                     CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                     UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                },
+                new NumberingSettings
+                {
+                    Id = 5,
+                    EntityName = "Deal",
+                    IsEnabled = false,
+                    Template = "DEAL-{YEAR}-{SEQ:5}",
+                    Strategy = "atomic_counter",
+                    ResetFrequency = "yearly",
+                    StartValue = 1,
+                    Padding = 5,
+                    CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
                 }
             );
         }

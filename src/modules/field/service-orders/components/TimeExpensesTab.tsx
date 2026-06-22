@@ -20,6 +20,7 @@ import { Plus, Trash2, Edit, AlertCircle, Settings2, Clock, Receipt, Truck, User
 import { useWorkTypes, useExpenseTypes } from "@/modules/lookups/hooks/useLookups";
 import { serviceOrdersApi } from "@/services/api/serviceOrdersApi";
 import { dispatchesApi, type Dispatch } from "@/services/api/dispatchesApi";
+import { logServiceOrderActivity, logDispatchActivityWithPropagation, formatDurationForLog, calculateDurationMinutes } from "@/services/activityLogger";
 import { type ExpenseEntry } from "@/modules/field/dispatches/types";
 // Using extended ExpenseEntry with aggregation fields
 interface AggregatedExpenseEntry extends Omit<ExpenseEntry, 'dispatchId'> {
@@ -502,7 +503,16 @@ export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries
 
       await dispatchesApi.addTimeEntry(selectedDispatchId!, entryData);
       toast.success(t('time_booking.add_entry'));
-      
+
+      // Log the action (and who) to the dispatch + propagate up to the service order.
+      await logDispatchActivityWithPropagation(selectedDispatchId!, {
+        type: editingTimeId ? 'time_entry_updated' : 'time_entry_added',
+        userName: currentUser.name,
+        workType: timeFormData.workType,
+        duration: formatDurationForLog(calculateDurationMinutes(startTime, endTime)),
+        entityName: timeFormData.description || undefined,
+      }, { serviceOrderId: Number(serviceOrder.id) });
+
       setIsTimeDialogOpen(false);
       setEditingTimeId(null);
       resetTimeForm();
@@ -535,12 +545,22 @@ export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries
         date: expenseFormData.date,
       };
 
+      const expenseLog = {
+        type: (editingExpenseId ? 'expense_updated' : 'expense_added') as const,
+        userName: currentUser.name,
+        expenseType: expenseFormData.type,
+        amount: expenseFormData.amount,
+        currency: expenseFormData.currency,
+        entityName: expenseFormData.description || undefined,
+      };
       // G7: route expenses through the selected dispatch so the overrun gate fires;
       // fall back to SO-direct only when no dispatch is available.
       if (selectedDispatchId) {
         await dispatchesApi.addExpense(selectedDispatchId, expenseData);
+        await logDispatchActivityWithPropagation(selectedDispatchId, expenseLog, { serviceOrderId: Number(serviceOrder.id) });
       } else {
         await serviceOrdersApi.addExpense(Number(serviceOrder.id), expenseData);
+        await logServiceOrderActivity(Number(serviceOrder.id), expenseLog);
       }
       toast.success(t('expense_booking.added_success', 'Expense added'));
       
@@ -558,10 +578,19 @@ export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries
 
   const handleDeleteTimeEntry = async (entryId: string, dispatchId?: number) => {
     try {
+      const entry = aggregatedTimeEntries.find(e => String(e.id) === String(entryId));
+      const logDetails = {
+        type: 'time_entry_deleted' as const,
+        userName: getCurrentUserData().name,
+        workType: entry?.workType,
+        duration: entry?.duration != null ? formatDurationForLog(Number(entry.duration)) : undefined,
+      };
       if (dispatchId) {
         await dispatchesApi.deleteTimeEntry(dispatchId, Number(entryId));
+        await logDispatchActivityWithPropagation(dispatchId, logDetails, { serviceOrderId: Number(serviceOrder.id) });
       } else {
         await serviceOrdersApi.deleteTimeEntry(Number(serviceOrder.id), Number(entryId));
+        await logServiceOrderActivity(Number(serviceOrder.id), logDetails);
       }
       toast.success(t('time_booking.deleted_success', 'Time entry deleted'));
       onUpdate?.();
@@ -573,10 +602,20 @@ export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries
 
   const handleDeleteExpense = async (expenseId: string, dispatchId?: number) => {
     try {
+      const expense = aggregatedExpenses.find(e => String(e.id) === String(expenseId));
+      const logDetails = {
+        type: 'expense_deleted' as const,
+        userName: getCurrentUserData().name,
+        expenseType: expense?.type,
+        amount: expense?.amount,
+        currency: expense?.currency,
+      };
       if (dispatchId) {
         await dispatchesApi.deleteExpense(dispatchId, Number(expenseId));
+        await logDispatchActivityWithPropagation(dispatchId, logDetails, { serviceOrderId: Number(serviceOrder.id) });
       } else {
         await serviceOrdersApi.deleteExpense(Number(serviceOrder.id), Number(expenseId));
+        await logServiceOrderActivity(Number(serviceOrder.id), logDetails);
       }
       toast.success(t('expense_booking.deleted_success', 'Expense deleted'));
       onUpdate?.();

@@ -18,6 +18,7 @@ namespace MyApi.Modules.Numbering.Services
                 "Sale"         => $"SALE-{now:yyyyMMdd}-{Guid.NewGuid().ToString()[..6].ToUpper()}",
                 "ServiceOrder" => $"SO-{now:yyyyMMdd}-{Guid.NewGuid().ToString()[..6].ToUpper()}",
                 "Dispatch"     => $"DISP-{now:yyyyMMddHHmmss}-{Guid.NewGuid().ToString()[..6].ToUpper()}",
+                "Deal"         => $"DEAL-{now:yyyyMMdd}-{Guid.NewGuid().ToString()[..6].ToUpper()}",
                 "Invoice"      => $"INV-{now:yyyy-MM-dd}-{Guid.NewGuid().ToString()[..6].ToUpper()}",
                 _              => $"DOC-{now:yyyyMMddHHmmss}-{Guid.NewGuid().ToString()[..6].ToUpper()}",
             };

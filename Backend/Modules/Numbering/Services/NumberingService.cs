@@ -14,7 +14,7 @@ namespace MyApi.Modules.Numbering.Services
         // Valid entities
         private static readonly HashSet<string> ValidEntities = new(StringComparer.OrdinalIgnoreCase)
         {
-            "Offer", "Sale", "ServiceOrder", "Dispatch",
+            "Offer", "Sale", "ServiceOrder", "Dispatch", "Deal",
             // Purchases module: PurchaseOrderService / GoodsReceiptService /
             // SupplierInvoiceService all call GetNextAsync(...) with these keys.
             // Without them the service throws ArgumentException on every Create*
@@ -30,6 +30,7 @@ namespace MyApi.Modules.Numbering.Services
             { "Sale", "SALE" },
             { "ServiceOrder", "SO" },
             { "Dispatch", "DISP" },
+            { "Deal", "DEAL" },
             { "PurchaseOrder", "PO" },
             { "GoodsReceipt", "GR" },
             { "SupplierInvoice", "INV" }
@@ -115,6 +116,7 @@ namespace MyApi.Modules.Numbering.Services
                     "Sale" => await _context.Sales.AnyAsync(s => s.SaleNumber == number),
                     "ServiceOrder" => await _context.ServiceOrders.AnyAsync(s => s.OrderNumber == number),
                     "Dispatch" => await _context.Dispatches.AnyAsync(d => d.DispatchNumber == number),
+                    "Deal" => await _context.Deals.AnyAsync(d => d.DealNumber == number),
                     "PurchaseOrder" => await _context.PurchaseOrders.AnyAsync(o => o.OrderNumber == number),
                     "GoodsReceipt" => await _context.GoodsReceipts.AnyAsync(r => r.ReceiptNumber == number),
                     "SupplierInvoice" => await _context.SupplierInvoices.AnyAsync(i => i.InvoiceNumber == number),
@@ -345,6 +347,7 @@ namespace MyApi.Modules.Numbering.Services
                     "Sale" => await _context.Sales.CountAsync(),
                     "ServiceOrder" => await _context.ServiceOrders.CountAsync(),
                     "Dispatch" => await _context.Dispatches.CountAsync(),
+                    "Deal" => await _context.Deals.CountAsync(),
                     _ => 0
                 };
 
@@ -484,6 +487,7 @@ namespace MyApi.Modules.Numbering.Services
                 "Sale" => $"SALE-{now:yyyyMMdd}-{Guid.NewGuid().ToString()[..5].ToUpper()}",
                 "ServiceOrder" => $"SO-{now:yyyyMMdd}-{Guid.NewGuid().ToString()[..6].ToUpper()}",
                 "Dispatch" => $"DISP-{now:yyyyMMddHHmmss}-{Guid.NewGuid().ToString()[..4].ToUpper()}",
+                "Deal" => $"DEAL-{now:yyyyMMdd}-{Guid.NewGuid().ToString()[..5].ToUpper()}",
                 _ => $"DOC-{now:yyyyMMddHHmmss}-{Guid.NewGuid().ToString()[..4].ToUpper()}"
             };
         }
@@ -500,6 +504,7 @@ namespace MyApi.Modules.Numbering.Services
                 "Sale" => $"SALE-{now:yyyyMMdd}-{Guid.NewGuid().ToString()[..5].ToUpper()}",
                 "ServiceOrder" => $"SO-{now:yyyyMMdd}-{Guid.NewGuid().ToString()[..6].ToUpper()}",
                 "Dispatch" => $"DISP-{now:yyyyMMddHHmmss}-{Guid.NewGuid().ToString()[..4].ToUpper()}",
+                "Deal" => $"DEAL-{now:yyyyMMdd}-{Guid.NewGuid().ToString()[..5].ToUpper()}",
                 _ => $"DOC-{now:yyyyMMddHHmmss}-{Guid.NewGuid().ToString()[..4].ToUpper()}"
             };
         }
@@ -526,6 +531,7 @@ namespace MyApi.Modules.Numbering.Services
             "Sale" => new() { EntityName = "Sale", Template = "SALE-{DATE:yyyyMMdd}-{GUID:5}", Strategy = "guid", ResetFrequency = "never", StartValue = 1, Padding = 5 },
             "ServiceOrder" => new() { EntityName = "ServiceOrder", Template = "SO-{DATE:yyyyMMdd}-{GUID:6}", Strategy = "guid", ResetFrequency = "never", StartValue = 1, Padding = 6 },
             "Dispatch" => new() { EntityName = "Dispatch", Template = "DISP-{TS:yyyyMMddHHmmss}", Strategy = "timestamp_random", ResetFrequency = "never", StartValue = 1, Padding = 6 },
+            "Deal" => new() { EntityName = "Deal", Template = "DEAL-{YEAR}-{SEQ:5}", Strategy = "atomic_counter", ResetFrequency = "yearly", StartValue = 1, Padding = 5 },
             _ => new() { EntityName = entity, Template = $"{entity}-{{SEQ:6}}", Strategy = "atomic_counter", ResetFrequency = "yearly", StartValue = 1, Padding = 6 }
         };
     }

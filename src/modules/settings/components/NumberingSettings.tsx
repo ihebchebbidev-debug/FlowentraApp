@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { Hash, Eye, Save, AlertTriangle, CheckCircle2, FileText, ShoppingCart, Wrench, Truck, Copy, Info } from 'lucide-react';
+import { Hash, Eye, Save, AlertTriangle, CheckCircle2, FileText, ShoppingCart, Wrench, Truck, Handshake, Copy, Info } from 'lucide-react';
 import { numberingApi, type NumberingSettingsDto, type NumberingEntity, type UpdateNumberingRequest } from '@/services/numberingApi';
 
 const DEFAULT_CONFIGS: Record<NumberingEntity, { template: string; strategy: string; resetFrequency: string; startValue: number; padding: number }> = {
@@ -17,6 +17,7 @@ const DEFAULT_CONFIGS: Record<NumberingEntity, { template: string; strategy: str
   Sale: { template: 'SALE-{DATE:yyyyMMdd}-{GUID:5}', strategy: 'guid', resetFrequency: 'never', startValue: 1, padding: 5 },
   ServiceOrder: { template: 'SO-{DATE:yyyyMMdd}-{GUID:6}', strategy: 'guid', resetFrequency: 'never', startValue: 1, padding: 6 },
   Dispatch: { template: 'DISP-{TS:yyyyMMddHHmmss}', strategy: 'timestamp_random', resetFrequency: 'never', startValue: 1, padding: 6 },
+  Deal: { template: 'DEAL-{YEAR}-{SEQ:5}', strategy: 'atomic_counter', resetFrequency: 'yearly', startValue: 1, padding: 5 },
 };
 
 const ENTITIES: { key: NumberingEntity; label: string; icon: React.ElementType; defaultExample: string }[] = [
@@ -24,6 +25,7 @@ const ENTITIES: { key: NumberingEntity; label: string; icon: React.ElementType; 
   { key: 'Sale', label: 'Ventes', icon: ShoppingCart, defaultExample: 'SALE-20260223-A1B2C' },
   { key: 'ServiceOrder', label: 'Ordres de Service', icon: Wrench, defaultExample: 'SO-20260223-A1B2C3' },
   { key: 'Dispatch', label: 'Dispatches', icon: Truck, defaultExample: 'DISP-20260223143022' },
+  { key: 'Deal', label: 'Deals', icon: Handshake, defaultExample: 'DEAL-2026-00001' },
 ];
 
 const STRATEGIES = [
@@ -219,7 +221,7 @@ export function NumberingSettings() {
           Modèles de Numérotation
         </CardTitle>
         <CardDescription className="text-xs">
-          Configurez les formats de numérotation pour les Offres, Ventes, Ordres de Service et Dispatches
+          Configurez les formats de numérotation pour les Offres, Ventes, Ordres de Service, Dispatches et Deals
         </CardDescription>
       </CardHeader>
 

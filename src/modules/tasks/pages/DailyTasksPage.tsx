@@ -581,6 +581,15 @@ export default function DailyTasksPage() {
 
   // Show all tasks in columns (including completed ones) - only archived tasks are hidden
   const openTasks = filteredTasks;
+
+  // Done tasks must always be visible regardless of the selected date, so a task
+  // moved to "Done" never disappears when its dueDate/createdAt isn't the day in
+  // view. Only search/priority/status filters apply here — never the date filter.
+  const doneTasks = tasks
+    .filter(t => t.status === 'done')
+    .filter(t => t.title.toLowerCase().includes(searchTerm.toLowerCase()) || (t.description || '').toLowerCase().includes(searchTerm.toLowerCase()))
+    .filter(t => filterStatus === 'all' ? true : t.status === filterStatus)
+    .filter(t => filterPriority === 'all' ? true : t.priority === filterPriority);
   
   // For completed tasks, filter by completedDate (when task was completed), not dueDate
   // This ensures tasks completed today show up in today's completed section
@@ -611,6 +620,9 @@ export default function DailyTasksPage() {
   const goToToday = () => setSelectedDate(new Date());
 
   const getTasksForColumn = (columnId: string) => {
+    // "Done" shows every completed task across all dates; the other columns stay
+    // scoped to the selected day.
+    if (columnId === 'done') return doneTasks;
     return openTasks.filter(task => task.status === columnId);
   };
 

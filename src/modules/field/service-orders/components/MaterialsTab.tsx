@@ -13,6 +13,7 @@ import { AddMaterialModal } from "../../components/AddMaterialModal";
 import { dispatchesApi } from "@/services/api/dispatchesApi";
 import { serviceOrdersApi } from "@/services/api/serviceOrdersApi";
 import { articlesApi } from "@/services/api/articlesApi";
+import { logServiceOrderActivity, logDispatchActivityWithPropagation } from "@/services/activityLogger";
 import type { Article } from "@/modules/inventory-services/types";
 import { toast } from "sonner";
 import { useCurrency } from "@/shared/hooks/useCurrency";
@@ -469,7 +470,16 @@ export function MaterialsTab({ serviceOrder, onUpdate }: MaterialsTabProps) {
       });
       setIsMaterialModalOpen(false);
       toast.success('Material added successfully');
-      
+
+      // Log the action (and who performed it) to the service order activity feed.
+      await logServiceOrderActivity(serviceOrderId, {
+        type: 'material_added',
+        userName: currentUser.name,
+        articleName: materialData.articleName || materialData.name || 'Unknown Material',
+        quantity: materialData.quantity || 1,
+        amount: materialData.unitPrice || undefined,
+      });
+
       // Refresh
       const soMaterials = await serviceOrdersApi.getMaterials(serviceOrderId);
       const dispatchList = dispatches;
@@ -505,13 +515,22 @@ export function MaterialsTab({ serviceOrder, onUpdate }: MaterialsTabProps) {
     
     setIsDeleting(true);
     try {
+      const currentUser = getCurrentUserData();
+      const logDetails = {
+        type: 'material_deleted' as const,
+        userName: currentUser.name,
+        articleName: materialToDelete.resolvedArticleName || materialToDelete.name || 'Unknown Material',
+        quantity: materialToDelete.quantity || 1,
+      };
       // Context-aware deletion
       if (materialToDelete.sourceType === 'dispatch' && materialToDelete.dispatchId) {
         await dispatchesApi.deleteMaterial(materialToDelete.dispatchId, materialToDelete.id);
+        await logDispatchActivityWithPropagation(materialToDelete.dispatchId, logDetails, { serviceOrderId });
       } else {
         await serviceOrdersApi.deleteMaterial(serviceOrderId, materialToDelete.id);
+        await logServiceOrderActivity(serviceOrderId, logDetails);
       }
-      
+
       toast.success('Material deleted successfully');
       
       // Refresh
@@ -551,6 +570,14 @@ export function MaterialsTab({ serviceOrder, onUpdate }: MaterialsTabProps) {
     
     setIsEditing(true);
     try {
+      const currentUser = getCurrentUserData();
+      const logDetails = {
+        type: 'material_updated' as const,
+        userName: currentUser.name,
+        articleName: materialToEdit.resolvedArticleName || materialToEdit.name || 'Unknown Material',
+        quantity: editFormData.quantity,
+        amount: editFormData.unitPrice || undefined,
+      };
       // Context-aware update
       if (materialToEdit.sourceType === 'dispatch' && materialToEdit.dispatchId) {
         await dispatchesApi.updateMaterial(materialToEdit.dispatchId, materialToEdit.id, {
@@ -559,6 +586,7 @@ export function MaterialsTab({ serviceOrder, onUpdate }: MaterialsTabProps) {
           description: editFormData.description || undefined,
           internalComment: editFormData.internalComment || undefined,
         });
+        await logDispatchActivityWithPropagation(materialToEdit.dispatchId, logDetails, { serviceOrderId });
       } else {
         await serviceOrdersApi.updateMaterial(serviceOrderId, materialToEdit.id, {
           quantity: editFormData.quantity,
@@ -567,8 +595,9 @@ export function MaterialsTab({ serviceOrder, onUpdate }: MaterialsTabProps) {
           internalComment: editFormData.internalComment || undefined,
           externalComment: editFormData.externalComment || undefined,
         });
+        await logServiceOrderActivity(serviceOrderId, logDetails);
       }
-      
+
       toast.success('Material updated successfully');
       
       // Refresh - update local state

@@ -2,7 +2,7 @@ import { apiFetch } from './api/apiClient';
 
 // ── Types ──────────────────────────────────────────────────
 
-export type NumberingEntity = 'Offer' | 'Sale' | 'ServiceOrder' | 'Dispatch';
+export type NumberingEntity = 'Offer' | 'Sale' | 'ServiceOrder' | 'Dispatch' | 'Deal';
 
 export interface NumberingSettingsDto {
   id: number;

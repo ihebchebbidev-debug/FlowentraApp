@@ -21,6 +21,7 @@ namespace MyApi.Modules.Deals.Services
         private readonly IOfferService _offerService;
         private readonly ITaskService _taskService;
         private readonly IWorkflowTriggerService? _workflowTriggerService;
+        private readonly MyApi.Modules.Numbering.Services.INumberingService? _numberingService;
 
         // Stages considered "open" (still in the pipeline)
         private static readonly string[] OpenStages = { "lead", "qualified", "proposal", "negotiation" };
@@ -32,7 +33,8 @@ namespace MyApi.Modules.Deals.Services
             IProjectService projectService,
             IOfferService offerService,
             ITaskService taskService,
-            IWorkflowTriggerService? workflowTriggerService = null)
+            IWorkflowTriggerService? workflowTriggerService = null,
+            MyApi.Modules.Numbering.Services.INumberingService? numberingService = null)
         {
             _context = context;
             _logger = logger;
@@ -41,6 +43,7 @@ namespace MyApi.Modules.Deals.Services
             _offerService = offerService;
             _taskService = taskService;
             _workflowTriggerService = workflowTriggerService;
+            _numberingService = numberingService;
         }
 
         // ── Queries ──
@@ -123,9 +126,25 @@ namespace MyApi.Modules.Deals.Services
 
         public async Task<DealDto> CreateDealAsync(CreateDealDto dto, string userId, string? userName = null)
         {
-            // Create the deal and stamp its Id-derived DealNumber atomically. DealNumber
-            // is `DEAL-{Id}`, so it needs the identity from the first save — wrapping both
-            // saves in one transaction guarantees a deal can never persist without a number.
+            // Resolve the document number from the configurable numbering service
+            // (admin can customise the Deal template in Settings → Numbering). Falls
+            // back to a GUID, and ultimately to the legacy Id-derived number below if
+            // generation yields nothing — so a deal can never persist without a number.
+            string dealNumber;
+            try
+            {
+                dealNumber = _numberingService != null
+                    ? await _numberingService.GetNextAsync("Deal")
+                    : MyApi.Modules.Numbering.Services.NumberingFallback.Generate("Deal");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Numbering service failed for Deal, using GUID fallback");
+                dealNumber = MyApi.Modules.Numbering.Services.NumberingFallback.Generate("Deal");
+            }
+
+            // Persist the deal (and its number) atomically. Wrapping both saves in one
+            // transaction guarantees a deal can never persist without a number.
             // Uses the execution strategy (retry-on-failure is enabled on the connection).
             Deal deal = null!;
             var strategy = _context.Database.CreateExecutionStrategy();
@@ -137,6 +156,7 @@ namespace MyApi.Modules.Deals.Services
 
                 deal = new Deal
                 {
+                    DealNumber = string.IsNullOrWhiteSpace(dealNumber) ? null : dealNumber,
                     Title = dto.Title,
                     Description = dto.Description,
                     ContactId = dto.ContactId,
