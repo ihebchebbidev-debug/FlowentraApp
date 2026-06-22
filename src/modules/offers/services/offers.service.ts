@@ -167,6 +167,8 @@ const mapLocalToApiCreate = (data: CreateOfferData): CreateOfferRequest => {
     title: data.title,
     description: data.description,
     contactId: parseInt(data.contactId, 10) || 0,
+    // Optional link to a project — set when creating an offer from a project page.
+    projectId: (data as any).projectId != null ? Number((data as any).projectId) : undefined,
     status: data.status || 'draft',
     category: data.category,
     source: data.source,

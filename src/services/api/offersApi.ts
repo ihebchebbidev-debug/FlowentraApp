@@ -63,6 +63,7 @@ export interface CreateOfferRequest {
   title: string;
   description?: string;
   contactId: number;
+  projectId?: number;
   status?: string;
   category?: string;
   source?: string;

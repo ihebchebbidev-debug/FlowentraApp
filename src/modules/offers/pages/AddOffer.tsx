@@ -234,12 +234,17 @@ export function AddOffer() {
     try {
       setLoading(true);
       
+      // When launched from a project (…/offers/add?projectId=N) link the new
+      // offer to that project so it shows up under the project's Offers tab.
+      const projectIdParam = new URLSearchParams(location.search).get('projectId');
+
       const offerData = {
         ...formData,
         validUntil,
-        status: isDraft ? 'draft' as const : 'sent' as const
+        status: isDraft ? 'draft' as const : 'sent' as const,
+        ...(projectIdParam ? { projectId: Number(projectIdParam) } : {}),
       };
-      
+
       const newOffer = await OffersService.createOffer(offerData);
       
       logFormSubmit('Create Offer', true, { 

@@ -31,7 +31,6 @@ import { ProjectDocumentsTab } from '../components/project-detail/ProjectDocumen
 import { ChecklistsSection } from '@/modules/shared/components/documents';
 import { ProjectActivityTab } from '../components/project-detail/ProjectActivityTab';
 import { ProjectOffersTab } from '../components/project-detail/ProjectOffersTab';
-import { ProjectSummaryTab } from '../components/project-detail/ProjectSummaryTab';
 import { EditProjectModal } from '../components/EditProjectModal';
 import { QuickTaskModal } from '../components/QuickTaskModal';
 import { TaskDetailModal } from '../components/TaskDetailModal';
@@ -565,7 +564,6 @@ export default function ProjectTasksPage() {
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-card">
                   <SelectItem value="overview">{t('projects.detail.tabs.overview')}</SelectItem>
-                  <SelectItem value="summary">{t('projects.detail.tabs.summary')}</SelectItem>
                   <SelectItem value="offers">{t('projects.detail.tabs.offers')}</SelectItem>
                   <SelectItem value="deals">{t('projects.detail.tabs.deals')}</SelectItem>
                   <SelectItem value="tasks">{t('projects.detail.tabs.tasks')}</SelectItem>
@@ -577,12 +575,9 @@ export default function ProjectTasksPage() {
                 </SelectContent>
               </Select>
             ) : (
-              <TabsList className="w-full h-auto p-1 bg-muted/50 rounded-lg grid grid-cols-10">
+              <TabsList className="w-full h-auto p-1 bg-muted/50 rounded-lg grid grid-cols-9">
                 <TabsTrigger value="overview" className="px-2 py-2 text-xs sm:text-sm font-medium">
                   {t('projects.detail.tabs.overview')}
-                </TabsTrigger>
-                <TabsTrigger value="summary" className="px-2 py-2 text-xs sm:text-sm font-medium">
-                  {t('projects.detail.tabs.summary')}
                 </TabsTrigger>
                 <TabsTrigger value="offers" className="px-2 py-2 text-xs sm:text-sm font-medium">
                   {t('projects.detail.tabs.offers')}
@@ -624,12 +619,8 @@ export default function ProjectTasksPage() {
                 />
               </TabsContent>
 
-              <TabsContent value="summary" className="mt-0">
-                <ProjectSummaryTab project={project} projectLinks={projectLinks} />
-              </TabsContent>
-
               <TabsContent value="offers" className="mt-0">
-                <ProjectOffersTab projectLinks={projectLinks} mode="offers" />
+                <ProjectOffersTab projectLinks={projectLinks} mode="offers" projectId={projectId} />
               </TabsContent>
 
               <TabsContent value="deals" className="mt-0">

@@ -95,13 +95,21 @@ export function ProjectOffersTab({ projectLinks, mode = 'offers', sales, project
               {t('projects.detail.offers.total')}: <span className="font-semibold text-foreground">{totalAmount.toFixed(2)}</span>
             </div>
           )}
-          {isDeals && (
+          {isDeals ? (
             <Button
               size="sm"
               className="gap-1.5"
               onClick={() => navigate(`/dashboard/deals/add${projectId != null ? `?projectId=${projectId}` : ''}`)}
             >
               <Plus className="h-4 w-4" /> {t('projects.detail.deals.add', 'New deal')}
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              className="gap-1.5"
+              onClick={() => navigate(`/dashboard/offers/add${projectId != null ? `?projectId=${projectId}` : ''}`)}
+            >
+              <Plus className="h-4 w-4" /> {t('projects.detail.offers.add', 'New offer')}
             </Button>
           )}
         </div>
