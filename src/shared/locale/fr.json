@@ -61,7 +61,7 @@
     "newProject": "Nouveau Projet",
     "newOffer": "Nouvelle Offre",
     "newDeal": "Nouveau Deal",
-    "newServiceOrder": "Nouvel Ordre de Service",
+    "newServiceOrder": "Nouvel Ordre",
     "newArticle": "Nouvel Article",
     "newInstallation": "Nouvelle Installation",
     "cancel": "Annuler"
@@ -146,7 +146,7 @@
     "newContact": "Nouveau Contact",
     "newOffer": "Nouveau Devis",
     "newTask": "Nouvelle Tâche",
-    "newService": "Nouvel Ordre de Service",
+    "newService": "Nouvel Ordre",
     "tooltip": "Palette de commandes"
   },
   "versionCheck": {
