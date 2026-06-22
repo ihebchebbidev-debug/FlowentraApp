@@ -6,12 +6,13 @@ import {
 } from "@/config/entity-statuses";
 import { StatusFlowStepper, type StatusStepDef } from "@/components/shared/StatusFlowStepper";
 
-export type DispatchStatus = 
+export type DispatchStatus =
   | "pending"
   | "planned"
+  | "assigned"
   | "confirmed"
   | "rejected"
-  | "in_progress" 
+  | "in_progress"
   | "completed"
   | "cancelled";
 
