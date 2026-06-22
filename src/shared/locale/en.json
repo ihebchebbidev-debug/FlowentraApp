@@ -60,6 +60,8 @@
     "newTask": "New Task",
     "newProject": "New Project",
     "newOffer": "New Offer",
+    "newDeal": "New Deal",
+    "newServiceOrder": "New Service Order",
     "newArticle": "New Article",
     "newInstallation": "New Installation",
     "cancel": "Cancel"

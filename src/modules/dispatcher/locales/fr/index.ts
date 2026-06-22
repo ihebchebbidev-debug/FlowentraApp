@@ -203,7 +203,7 @@ export const fr = {
     schedule_status: "Statut du Planning",
     on_leave: "En congé",
     leave_type: "Type de congé",
-    available_until: "Disponible jusqu'à {{time}}",
+    available_until: "Termine à {{time}}",
     starts_at: "Commence à {{time}}",
     send_email: "Envoyer un Email",
     call: "Appeler",
@@ -389,7 +389,7 @@ export const fr = {
       active_indicator: "Profil actif",
       no_active_profile: "Aucun profil actif",
       change_profile: "Changer de profil",
-      manage_profiles: "Gérer les profils de planification",
+      manage_profiles: "Gérer les profils",
       currently_active: "Actuellement actif",
 
       // Onglet filtre par compétences

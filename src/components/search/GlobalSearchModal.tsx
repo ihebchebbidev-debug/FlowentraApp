@@ -16,7 +16,10 @@ import {
   Clock,
   DollarSign,
   Loader2,
-  Building2
+  Building2,
+  Handshake,
+  ShoppingCart,
+  Layers
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -25,6 +28,9 @@ import { serviceOrdersApi } from '@/services/api/serviceOrdersApi';
 import { installationsApi } from '@/services/api/installationsApi';
 import { articlesApi } from '@/services/api/articlesApi';
 import { offersApi } from '@/services/api/offersApi';
+import { dealsApi } from '@/services/api/dealsApi';
+import { salesApi } from '@/services/api/salesApi';
+import { projectsApi } from '@/services/api/projectsApi';
 import { getUniversalStatusColorClass } from '@/config/entity-statuses';
 
 // Search result types
@@ -32,7 +38,7 @@ export interface SearchResultItem {
   id: string;
   title: string;
   subtitle: string;
-  type: 'service-order' | 'contact' | 'installation' | 'article' | 'offer';
+  type: 'service-order' | 'contact' | 'installation' | 'article' | 'offer' | 'deal' | 'sale' | 'project';
   status?: string;
   priority?: string;
   location?: string;
@@ -42,7 +48,7 @@ export interface SearchResultItem {
   url: string;
 }
 
-type SearchType = 'all' | 'service-order' | 'contact' | 'installation' | 'article' | 'offer';
+type SearchType = 'all' | 'service-order' | 'contact' | 'installation' | 'article' | 'offer' | 'deal' | 'sale' | 'project';
 
 const getTypeIcon = (type: string) => {
   switch (type) {
@@ -51,6 +57,9 @@ const getTypeIcon = (type: string) => {
     case 'installation': return Building2;
     case 'article': return Package;
     case 'offer': return FileText;
+    case 'deal': return Handshake;
+    case 'sale': return ShoppingCart;
+    case 'project': return Layers;
     default: return Search;
   }
 };
@@ -75,7 +84,10 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
     'contact': 0,
     'installation': 0,
     'article': 0,
-    'offer': 0
+    'offer': 0,
+    'deal': 0,
+    'sale': 0,
+    'project': 0
   });
   const navigate = useNavigate();
 
@@ -89,7 +101,10 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
         'contact': 0,
         'installation': 0,
         'article': 0,
-        'offer': 0
+        'offer': 0,
+        'deal': 0,
+        'sale': 0,
+        'project': 0
       });
       return;
     }
@@ -104,7 +119,10 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
         'contact': 0,
         'installation': 0,
         'article': 0,
-        'offer': 0
+        'offer': 0,
+        'deal': 0,
+        'sale': 0,
+        'project': 0
       };
 
       // Parallel API calls for better performance using correct search params
@@ -113,13 +131,19 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
         serviceOrdersResult,
         installationsResult,
         articlesResult,
-        offersResult
+        offersResult,
+        dealsResult,
+        salesResult,
+        projectsResult
       ] = await Promise.allSettled([
         contactsApi.getAll({ searchTerm: term, pageNumber: 1, pageSize: 10 }),
         serviceOrdersApi.getAll({ search: term, page: 1, pageSize: 10 }),
         installationsApi.getAll({ search: term, page: 1, pageSize: 10 }),
         articlesApi.getAll({ search: term, page: 1, limit: 10 }),
-        offersApi.getAll({ search: term, page: 1, limit: 10 })
+        offersApi.getAll({ search: term, page: 1, limit: 10 }),
+        dealsApi.getAll({ search: term, page: 1, limit: 10 }),
+        salesApi.getAll({ search: term, page: 1, limit: 10 }),
+        projectsApi.getAll({ searchTerm: term, pageNumber: 1, pageSize: 10 })
       ]);
 
       // Process contacts
@@ -210,6 +234,59 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
         });
       }
 
+      // Process deals
+      if (dealsResult.status === 'fulfilled' && dealsResult.value?.deals) {
+        const deals = dealsResult.value.deals;
+        newCounts['deal'] = deals.length;
+        deals.forEach((deal: any) => {
+          searchResults.push({
+            id: deal.dealNumber || String(deal.id),
+            title: deal.title || `#${deal.dealNumber || deal.id}`,
+            subtitle: deal.contactName || deal.contact?.name || '',
+            type: 'deal',
+            status: deal.stage,
+            cost: deal.estimatedValue ? `${deal.estimatedValue}` : undefined,
+            date: deal.expectedCloseDate || deal.createdDate,
+            url: `/dashboard/deals/${deal.id}`
+          });
+        });
+      }
+
+      // Process sales
+      if (salesResult.status === 'fulfilled' && salesResult.value?.data?.sales) {
+        const sales = salesResult.value.data.sales;
+        newCounts['sale'] = sales.length;
+        sales.forEach((sale: any) => {
+          searchResults.push({
+            id: sale.saleNumber || String(sale.id),
+            title: sale.title || `#${sale.saleNumber || sale.id}`,
+            subtitle: sale.contactName || sale.contact?.name || '',
+            type: 'sale',
+            status: sale.status,
+            cost: sale.totalAmount ? `${sale.totalAmount}` : undefined,
+            date: sale.createdDate || sale.createdAt,
+            url: `/dashboard/sales/${sale.id}`
+          });
+        });
+      }
+
+      // Process projects
+      if (projectsResult.status === 'fulfilled' && projectsResult.value?.projects) {
+        const projects = projectsResult.value.projects;
+        newCounts['project'] = projects.length;
+        projects.forEach((project: any) => {
+          searchResults.push({
+            id: String(project.id),
+            title: project.name || `#${project.id}`,
+            subtitle: project.contactName || project.description || '',
+            type: 'project',
+            status: project.status,
+            date: project.startDate || project.createdDate,
+            url: `/dashboard/tasks/projects/${project.id}`
+          });
+        });
+      }
+
       newCounts['all'] = searchResults.length;
       setCounts(newCounts);
       setResults(searchResults);
@@ -259,13 +336,16 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
     }
   }, [isOpen]);
 
-  const typeFilters: { value: SearchType; labelKey: string; shortKey: string }[] = [
-    { value: 'all', labelKey: 'search.filters.all', shortKey: 'search.filtersShort.all' },
-    { value: 'service-order', labelKey: 'search.filters.serviceOrders', shortKey: 'search.filtersShort.service' },
-    { value: 'contact', labelKey: 'search.filters.contacts', shortKey: 'search.filtersShort.contacts' },
-    { value: 'installation', labelKey: 'search.filters.installations', shortKey: 'search.filtersShort.installations' },
-    { value: 'offer', labelKey: 'search.filters.offers', shortKey: 'search.filtersShort.offers' },
-    { value: 'article', labelKey: 'search.filters.articles', shortKey: 'search.filtersShort.articles' },
+  const typeFilters: { value: SearchType; labelKey: string; shortKey: string; fallback: string }[] = [
+    { value: 'all', labelKey: 'search.filters.all', shortKey: 'search.filtersShort.all', fallback: 'All' },
+    { value: 'service-order', labelKey: 'search.filters.serviceOrders', shortKey: 'search.filtersShort.service', fallback: 'Service Orders' },
+    { value: 'contact', labelKey: 'search.filters.contacts', shortKey: 'search.filtersShort.contacts', fallback: 'Contacts' },
+    { value: 'offer', labelKey: 'search.filters.offers', shortKey: 'search.filtersShort.offers', fallback: 'Offers' },
+    { value: 'deal', labelKey: 'search.filters.deals', shortKey: 'search.filtersShort.deals', fallback: 'Deals' },
+    { value: 'sale', labelKey: 'search.filters.sales', shortKey: 'search.filtersShort.sales', fallback: 'Sales' },
+    { value: 'project', labelKey: 'search.filters.projects', shortKey: 'search.filtersShort.projects', fallback: 'Projects' },
+    { value: 'installation', labelKey: 'search.filters.installations', shortKey: 'search.filtersShort.installations', fallback: 'Installations' },
+    { value: 'article', labelKey: 'search.filters.articles', shortKey: 'search.filtersShort.articles', fallback: 'Articles' },
   ];
 
   const getTypeLabel = (type: string): string => {
@@ -275,6 +355,9 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
       case 'installation': return t('search.types.installation', 'Installation');
       case 'article': return t('search.types.article', 'Article');
       case 'offer': return t('search.types.offer', 'Offer');
+      case 'deal': return t('search.types.deal', 'Deal');
+      case 'sale': return t('search.types.sale', 'Sale');
+      case 'project': return t('search.types.project', 'Project');
       default: return type;
     }
   };
@@ -319,8 +402,8 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
                   onClick={() => setSelectedType(filter.value)}
                   className="whitespace-nowrap text-xs sm:text-sm h-7 sm:h-8 px-2 sm:px-3"
                 >
-                  <span className="hidden sm:inline">{t(filter.labelKey, filter.value)}</span>
-                  <span className="sm:hidden">{t(filter.shortKey, filter.value)}</span>
+                  <span className="hidden sm:inline">{t(filter.labelKey, filter.fallback)}</span>
+                  <span className="sm:hidden">{t(filter.shortKey, filter.fallback)}</span>
                   <span className="ml-1">({counts[filter.value]})</span>
                 </Button>
               ))}
