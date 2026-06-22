@@ -471,36 +471,56 @@ export function CalendarPage() {
                         const sourceLabel = String(t(`source_label.${ev.type}`, ev.type));
                         const priorityLabel = String(t(`priority_label.${ev.priority || 'medium'}`, ev.priority || 'medium'));
                         const statusLabel = String(t(`status_label.${(ev.status || 'scheduled').replace(/ /g, '_')}`, ev.status || 'scheduled'));
+                        const md = ev.metadata || {};
+                        // When: show the date + time range (or "All day").
+                        const sameDay = dayjs(ev.start).isSame(ev.end, 'day');
+                        const whenText = ev.allDay
+                          ? format(ev.start, 'EEE, MMM d')
+                          : sameDay
+                            ? `${format(ev.start, 'EEE, MMM d · HH:mm')} – ${format(ev.end, 'HH:mm')}`
+                            : `${format(ev.start, 'MMM d, HH:mm')} – ${format(ev.end, 'MMM d, HH:mm')}`;
+                        const contact = md.contactName || ev.contactName;
+                        const assignee = md.technicianName || md.assignedTo;
+                        const reference = md.jobNumber || md.orderNumber || md.offerNumber || md.saleNumber;
+                        const amount = md.amount != null
+                          ? `${Number(md.amount).toLocaleString()} ${md.currency || ''}`.trim()
+                          : null;
+                        const duration = md.estimatedDuration ? `${md.estimatedDuration} min` : null;
+                        const place = ev.location || md.customerAddress;
+                        const Row = ({ label, value }: { label: string; value: React.ReactNode }) => (
+                          <div className="flex items-start justify-between gap-3">
+                            <span className="text-[10px] text-muted-foreground shrink-0">{label}</span>
+                            <span className="text-[10px] font-medium text-popover-foreground text-right break-words">{value}</span>
+                          </div>
+                        );
                         return (
-                          <Tooltip delayDuration={200}>
+                          <Tooltip delayDuration={150}>
                             <TooltipTrigger asChild>
                               <div className="w-full h-full text-white text-[10px] px-1 cursor-pointer hover:opacity-90 transition-opacity leading-[18px]">
                                 <span className="truncate font-medium text-[10px]">{ev.title}</span>
                               </div>
                             </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-[220px] p-0 overflow-hidden border shadow-lg">
-                              <div className="p-2.5 space-y-1.5">
-                                <p className="font-semibold text-xs text-popover-foreground truncate">{ev.title}</p>
-                                <div className="space-y-1">
-                                  <div className="flex items-center justify-between gap-3">
-                                    <span className="text-[10px] text-muted-foreground">{t('tooltip.source')}</span>
-                                    <span className="text-[10px] font-medium flex items-center gap-1 text-popover-foreground">
-                                      <span className="h-1.5 w-1.5 rounded-full inline-block" style={{ backgroundColor: ev.color || '#6b7280' }} />
-                                      {sourceLabel}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center justify-between gap-3">
-                                    <span className="text-[10px] text-muted-foreground">{t('tooltip.priority')}</span>
-                                    <span className="text-[10px] font-medium capitalize text-popover-foreground">{priorityLabel}</span>
-                                  </div>
-                                  <div className="flex items-center justify-between gap-3">
-                                    <span className="text-[10px] text-muted-foreground">{t('tooltip.status')}</span>
-                                    <span className="text-[10px] font-medium capitalize text-popover-foreground">{statusLabel}</span>
-                                  </div>
-                                </div>
-                                {ev.location && (
-                                  <p className="text-[10px] text-muted-foreground truncate pt-1 border-t border-border">📍 {ev.location}</p>
+                            <TooltipContent side="top" className="max-w-[260px] p-0 overflow-hidden border shadow-lg">
+                              <div className="px-2.5 py-2 border-b border-border" style={{ borderLeft: `3px solid ${ev.color || '#6b7280'}` }}>
+                                <p className="font-semibold text-xs text-popover-foreground break-words">{ev.title}</p>
+                                <p className="text-[10px] text-muted-foreground mt-0.5">{sourceLabel}</p>
+                              </div>
+                              <div className="p-2.5 space-y-1">
+                                <Row label={t('tooltip.when')} value={whenText} />
+                                <Row label={t('tooltip.status')} value={<span className="capitalize">{statusLabel}</span>} />
+                                <Row label={t('tooltip.priority')} value={<span className="capitalize">{priorityLabel}</span>} />
+                                {reference && <Row label={t('tooltip.reference')} value={reference} />}
+                                {contact && <Row label={t('tooltip.contact')} value={contact} />}
+                                {assignee && <Row label={t('tooltip.technician')} value={assignee} />}
+                                {amount && <Row label={t('tooltip.amount')} value={amount} />}
+                                {duration && <Row label={t('tooltip.duration')} value={duration} />}
+                                {place && (
+                                  <p className="text-[10px] text-muted-foreground break-words pt-1 mt-1 border-t border-border">📍 {place}</p>
                                 )}
+                                {ev.description && (
+                                  <p className="text-[10px] text-muted-foreground break-words pt-1 mt-1 border-t border-border line-clamp-3">{ev.description}</p>
+                                )}
+                                <p className="text-[9px] text-muted-foreground/70 pt-1 mt-1 border-t border-border italic">{t('tooltip.hint')}</p>
                               </div>
                             </TooltipContent>
                           </Tooltip>

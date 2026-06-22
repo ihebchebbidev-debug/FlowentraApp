@@ -93,7 +93,14 @@
   "tooltip": {
     "source": "Source",
     "priority": "Priority",
-    "status": "Status"
+    "status": "Status",
+    "when": "When",
+    "contact": "Contact",
+    "technician": "Assigned to",
+    "reference": "Reference",
+    "amount": "Amount",
+    "duration": "Duration",
+    "hint": "Click to open full details"
   },
   "auto_generated": "Auto-generated",
   "go_to": "Go to {{source}}",
