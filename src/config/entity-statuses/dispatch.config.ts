@@ -6,7 +6,10 @@ import type { EntityStatusConfig } from './types';
 // Backend: FlowServiceBackendOnlyFinal-main/Modules/Dispatches/Models/Dispatch.cs
 // StatusFlow: DispatchStatusFlow.tsx
 //
-// WORKFLOW: pending → planned → confirmed/rejected → in_progress → completed
+// WORKFLOW: pending → planned → assigned → confirmed/rejected → in_progress → completed
+// 'assigned' = a technician is assigned but has not confirmed yet. The backend
+// creates dispatches as 'assigned' when techs are attached (else 'planned') —
+// see Dispatches/Services/DispatchService.cs CreateFromInstallationAsync.
 // ============================================================================
 
 export const dispatchStatusConfig: EntityStatusConfig = {
@@ -17,6 +20,7 @@ export const dispatchStatusConfig: EntityStatusConfig = {
   statuses: [
     { id: 'pending',    translationKey: 'dispatches.statuses.pending',    workflowTranslationKey: 'status.dispatch.pending',    color: 'default',     isTerminal: false },
     { id: 'planned',    translationKey: 'dispatches.statuses.planned',    workflowTranslationKey: 'status.dispatch.planned',    color: 'info',        isTerminal: false },
+    { id: 'assigned',   translationKey: 'dispatches.statuses.assigned',   workflowTranslationKey: 'status.dispatch.assigned',   color: 'info',        isTerminal: false },
     { id: 'confirmed',  translationKey: 'dispatches.statuses.confirmed',  workflowTranslationKey: 'status.dispatch.confirmed',  color: 'primary',     isTerminal: false },
     { id: 'rejected',   translationKey: 'dispatches.statuses.rejected',   workflowTranslationKey: 'status.dispatch.rejected',   color: 'destructive', isTerminal: false, isNegative: true },
     { id: 'in_progress', translationKey: 'dispatches.statuses.in_progress', workflowTranslationKey: 'status.dispatch.in_progress', color: 'primary', isTerminal: false },
@@ -25,11 +29,12 @@ export const dispatchStatusConfig: EntityStatusConfig = {
   ],
 
   workflow: {
-    // Happy path: Pending → Planned → Confirmed → In Progress → Completed
-    steps: ['planned', 'confirmed', 'in_progress', 'completed'],
+    // Happy path: Pending → Planned → Assigned → Confirmed → In Progress → Completed
+    steps: ['planned', 'assigned', 'confirmed', 'in_progress', 'completed'],
     terminalStatuses: ['completed', 'cancelled'],
     branchStatuses: {
-      planned: ['rejected'], // Rejection branches from planned stage
+      planned: ['rejected'],  // Rejection can branch from planned…
+      assigned: ['rejected'], // …or after a technician was assigned
     },
   },
 };

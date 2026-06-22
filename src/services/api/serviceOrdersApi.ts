@@ -54,16 +54,6 @@ export interface ServiceOrder {
   completedDispatchCount?: number;
 }
 
-export interface CreateServiceOrderFromSaleRequest {
-  priority?: string;
-  notes?: string;
-  startDate?: string;
-  targetCompletionDate?: string;
-  installationIds?: number[];
-  requiresApproval?: boolean;
-  tags?: string[];
-}
-
 /**
  * Body for POST /api/service-orders/direct — create a Service Order without
  * a parent Offer or Sale. Only contactId is required.
@@ -197,11 +187,9 @@ export const serviceOrdersApi = {
     }
   },
 
-  async createFromSale(saleId: number, request: CreateServiceOrderFromSaleRequest): Promise<ServiceOrder> {
-    const result = await apiFetch<any>(`/api/service-orders/from-sale/${saleId}`, { method: 'POST', body: JSON.stringify(request) });
-    const data = unwrap(result, 'Failed to create service order');
-    return data.data || data;
-  },
+  // NOTE: Service-order creation from a sale is owned by `salesApi.createServiceOrder`
+  // (the single live path used by the convert dialog, sales service and workflow).
+  // A duplicate `createFromSale` here was dead code and has been removed.
 
   /**
    * Create a Service Order directly, without an originating Offer or Sale.
@@ -460,42 +448,13 @@ export const serviceOrdersApi = {
     return data?.data || data;
   },
 
+  // Reconcile the service order's status from its dispatches. The cascade logic
+  // now lives on the server (single source of truth); this just triggers it.
   async recalculateStatus(serviceOrderId: number): Promise<ServiceOrder> {
     try {
-      const dispatches = await this.getDispatches(serviceOrderId);
-      const activeDispatches = (dispatches || []).filter(
-        (d: any) => !d.isDeleted && d.status !== 'cancelled'
-      );
-
-      const serviceOrder = await this.getById(serviceOrderId, true);
-
-      const finalStatuses = ['closed', 'invoiced', 'cancelled'];
-      if (finalStatuses.includes(serviceOrder.status)) {
-        return serviceOrder;
-      }
-
-      let newStatus = serviceOrder.status;
-
-      if (activeDispatches.length === 0) {
-        newStatus = 'ready_for_planning';
-      } else {
-        const allCompleted = activeDispatches.every((d: any) => d.status === 'completed');
-        const anyInProgress = activeDispatches.some((d: any) => d.status === 'in_progress');
-        
-        if (allCompleted) {
-          newStatus = 'technically_completed';
-        } else if (anyInProgress) {
-          newStatus = 'in_progress';
-        } else {
-          newStatus = 'scheduled';
-        }
-      }
-
-      if (newStatus !== serviceOrder.status) {
-        return await this.updateStatus(serviceOrderId, newStatus);
-      }
-
-      return serviceOrder;
+      const result = await apiFetch<any>(`/api/service-orders/${serviceOrderId}/recalculate-status`, { method: 'POST' });
+      const data = unwrap(result, 'Failed to recalculate service order status');
+      return data.data || data;
     } catch (error) {
       console.warn('Failed to recalculate service order status:', error);
       return await this.getById(serviceOrderId, false);

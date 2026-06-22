@@ -238,19 +238,6 @@ function unwrap<T>(result: { data: T | null; status: number; error?: string }, f
 }
 
 // Helper to get user name from localStorage
-const getUserName = () => {
-  try {
-    const userData = localStorage.getItem('user_data');
-    if (userData) {
-      const parsed = JSON.parse(userData);
-      return `${parsed.firstName || ''} ${parsed.lastName || ''}`.trim() || 'Unknown';
-    }
-  } catch (error) {
-    if (import.meta.env.DEV) console.error('Error parsing user data:', error);
-  }
-  return 'Unknown';
-};
-
 export const dispatchesApi = {
   async getAll(params?: DispatchSearchParams): Promise<DispatchListResponse> {
     const queryParams = new URLSearchParams();
@@ -373,7 +360,7 @@ export const dispatchesApi = {
   }): Promise<TimeEntry> {
     const payload = {
       technicianId: entry.technicianId,
-      technicianName: entry.technicianName || getUserName(),
+      technicianName: entry.technicianName || getCurrentUserName(),
       serviceOrderJobId: entry.serviceOrderJobId ?? null,
       workType: entry.workType,
       startTime: entry.startTime,
@@ -406,7 +393,7 @@ export const dispatchesApi = {
   async approveTimeEntry(dispatchId: number, timeEntryId: number): Promise<void> {
     const result = await apiFetch<any>(`/api/dispatches/${dispatchId}/time-entries/${timeEntryId}/approve`, {
       method: 'POST',
-      body: JSON.stringify({ approvedBy: getUserName() }),
+      body: JSON.stringify({ approvedBy: getCurrentUserName() }),
     });
     if (result.error) throw new Error(result.error || 'Failed to approve time entry');
   },
@@ -444,7 +431,7 @@ export const dispatchesApi = {
   }): Promise<Expense> {
     const payload = {
       technicianId: expense.technicianId,
-      technicianName: expense.technicianName || getUserName(),
+      technicianName: expense.technicianName || getCurrentUserName(),
       serviceOrderJobId: expense.serviceOrderJobId ?? null,
       type: expense.type,
       amount: expense.amount,
@@ -474,7 +461,7 @@ export const dispatchesApi = {
   async approveExpense(dispatchId: number, expenseId: number): Promise<void> {
     const result = await apiFetch<any>(`/api/dispatches/${dispatchId}/expenses/${expenseId}/approve`, {
       method: 'POST',
-      body: JSON.stringify({ approvedBy: getUserName() }),
+      body: JSON.stringify({ approvedBy: getCurrentUserName() }),
     });
     if (result.error) throw new Error(result.error || 'Failed to approve expense');
   },
@@ -535,7 +522,7 @@ export const dispatchesApi = {
   async approveMaterial(dispatchId: number, materialId: number): Promise<void> {
     const result = await apiFetch<any>(`/api/dispatches/${dispatchId}/materials/${materialId}/approve`, {
       method: 'POST',
-      body: JSON.stringify({ approvedBy: getUserName() }),
+      body: JSON.stringify({ approvedBy: getCurrentUserName() }),
     });
     if (result.error) throw new Error(result.error || 'Failed to approve material');
   },

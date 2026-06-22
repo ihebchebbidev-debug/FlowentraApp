@@ -80,41 +80,45 @@ export const schedulesApi = {
     };
   },
 
-  // Get full schedule for a user — auto-provisions defaults if none exist
+  // Get full schedule for a user — PURE READ. When no schedule exists yet (or it
+  // came back empty) this returns in-memory defaults WITHOUT writing to the server.
+  // To persist defaults, call ensureDefaultSchedule() explicitly from an edit/save flow.
   async getSchedule(userId: number | string): Promise<UserFullSchedule> {
     const id = typeof userId === 'string' ? userId.replace('admin-', '') : userId;
     const response = await apiFetch<{ success: boolean; data: UserFullSchedule }>(
       `/api/planning/schedule/${id}`
     ) as ApiResponse<{ success: boolean; data: UserFullSchedule }>;
-    
-    if (response.error || !response.data || !response.data.data) {
-      // No schedule exists yet — auto-create default schedule
-      console.info(`[schedulesApi] No schedule for user ${id}, auto-provisioning defaults…`);
-      const defaults = this._buildDefaultSchedule(id);
-      try {
-        const created = await this.updateSchedule({ userId: Number(id), daySchedules: defaults.daySchedules });
-        return created;
-      } catch (e) {
-        console.warn('[schedulesApi] Auto-provision failed, returning local defaults', e);
-        return defaults;
-      }
-    }
 
-    // If schedule came back but has no/empty daySchedules, treat as unconfigured
-    const data = response.data.data;
-    if (!data.daySchedules || Object.keys(data.daySchedules).length === 0) {
-      console.info(`[schedulesApi] Empty schedule for user ${id}, auto-provisioning defaults…`);
-      const defaults = this._buildDefaultSchedule(id);
-      try {
-        const created = await this.updateSchedule({ userId: Number(id), daySchedules: defaults.daySchedules });
-        return created;
-      } catch (e) {
-        console.warn('[schedulesApi] Auto-provision failed, returning local defaults', e);
-        return defaults;
-      }
+    const data = response.data?.data;
+    if (response.error || !data || !data.daySchedules || Object.keys(data.daySchedules).length === 0) {
+      // Unconfigured — return local defaults for display only (no side effect).
+      return this._buildDefaultSchedule(id);
     }
-
     return data;
+  },
+
+  // Explicitly persist a default schedule when the user has none. Use this from
+  // edit/save flows only — never from read paths. Returns the existing schedule
+  // unchanged when one is already configured; falls back to local defaults if the
+  // write fails (e.g. blocked in cross-company view-all mode).
+  async ensureDefaultSchedule(userId: number | string): Promise<UserFullSchedule> {
+    const id = typeof userId === 'string' ? userId.replace('admin-', '') : userId;
+    const response = await apiFetch<{ success: boolean; data: UserFullSchedule }>(
+      `/api/planning/schedule/${id}`
+    ) as ApiResponse<{ success: boolean; data: UserFullSchedule }>;
+
+    const existing = response.data?.data;
+    if (!response.error && existing && existing.daySchedules && Object.keys(existing.daySchedules).length > 0) {
+      return existing;
+    }
+
+    const defaults = this._buildDefaultSchedule(id);
+    try {
+      return await this.updateSchedule({ userId: Number(id), daySchedules: defaults.daySchedules });
+    } catch (e) {
+      console.warn('[schedulesApi] ensureDefaultSchedule failed, returning local defaults', e);
+      return defaults;
+    }
   },
 
   // Update user schedule

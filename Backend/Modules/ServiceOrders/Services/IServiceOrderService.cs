@@ -35,6 +35,8 @@ namespace MyApi.Modules.ServiceOrders.Services
         Task<ServiceOrderDto> UpdateServiceOrderAsync(int id, UpdateServiceOrderDto updateDto, string userId);
         Task<ServiceOrderDto> PatchServiceOrderAsync(int id, UpdateServiceOrderDto updateDto, string userId);
         Task<ServiceOrderDto> UpdateStatusAsync(int id, UpdateServiceOrderStatusDto statusDto, string userId);
+        // Server-side reconciliation of SO status from its dispatches (replaces the client-side cascade).
+        Task<ServiceOrderDto> RecalculateStatusFromDispatchesAsync(int id, string userId);
         Task<ServiceOrderDto> ApproveAsync(int id, ApproveServiceOrderDto approveDto, string userId);
         Task<ServiceOrderDto> CompleteAsync(int id, CompleteServiceOrderDto completeDto, string userId);
         Task<ServiceOrderDto> CancelAsync(int id, CancelServiceOrderDto cancelDto, string userId);

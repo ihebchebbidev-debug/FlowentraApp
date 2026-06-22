@@ -44,7 +44,10 @@ export interface Sale {
   contact?: SaleContact;
   offerId?: number;
   offerNumber?: string;
-  status: 'draft' | 'won' | 'lost' | 'negotiation';
+  // Sale fulfilment lifecycle — must match src/config/entity-statuses/sale.config.ts
+  // and the backend (SaleService). Legacy values (draft→created, won→closed,
+  // lost→cancelled) are normalized via the status config's aliases.
+  status: 'created' | 'in_progress' | 'invoiced' | 'partially_invoiced' | 'closed' | 'cancelled';
   stage?: string;
   priority?: string;
   currency: string;

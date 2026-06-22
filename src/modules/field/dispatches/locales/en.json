@@ -116,6 +116,7 @@
     "statuses": {
       "pending": "Pending",
       "planned": "Planned",
+      "assigned": "Assigned",
       "confirmed": "Confirmed",
       "rejected": "Rejected",
       "in_progress": "In Progress",

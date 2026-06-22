@@ -897,6 +897,51 @@ namespace MyApi.Modules.ServiceOrders.Services
             return await UpdateServiceOrderAsync(id, updateDto, userId);
         }
 
+        /// <summary>
+        /// Server-side reconciliation of a service order's status from its dispatches'
+        /// statuses (replaces the old client-side cascade). System-driven: it sets the
+        /// status directly (no user-transition validation) and never overrides a
+        /// terminal/billing status (closed/invoiced/cancelled).
+        /// </summary>
+        public async Task<ServiceOrderDto> RecalculateStatusFromDispatchesAsync(int id, string userId)
+        {
+            var serviceOrder = await _context.ServiceOrders.FindAsync(id);
+            if (serviceOrder == null)
+                throw new KeyNotFoundException($"Service order with ID {id} not found");
+
+            var finalStatuses = new[] { "closed", "invoiced", "cancelled" };
+            if (!finalStatuses.Contains(serviceOrder.Status))
+            {
+                var activeDispatchStatuses = await _context.Dispatches
+                    .Where(d => d.ServiceOrderId == id && !d.IsDeleted && d.Status != "cancelled")
+                    .Select(d => d.Status)
+                    .ToListAsync();
+
+                string newStatus;
+                if (activeDispatchStatuses.Count == 0)
+                    newStatus = "ready_for_planning";
+                else if (activeDispatchStatuses.All(s => s == "completed"))
+                    newStatus = "technically_completed";
+                else if (activeDispatchStatuses.Any(s => s == "in_progress"))
+                    newStatus = "in_progress";
+                else
+                    newStatus = "scheduled";
+
+                if (newStatus != serviceOrder.Status)
+                {
+                    serviceOrder.Status = newStatus;
+                    serviceOrder.ModifiedBy = userId;
+                    serviceOrder.ModifiedDate = DateTime.UtcNow;
+                    if (newStatus == "in_progress" && !serviceOrder.ActualStartDate.HasValue)
+                        serviceOrder.ActualStartDate = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+                }
+            }
+
+            var result = await GetServiceOrderByIdAsync(id);
+            return result!;
+        }
+
         public async Task<ServiceOrderDto> UpdateStatusAsync(int id, UpdateServiceOrderStatusDto statusDto, string userId)
         {
             var serviceOrder = await _context.ServiceOrders.FindAsync(id);

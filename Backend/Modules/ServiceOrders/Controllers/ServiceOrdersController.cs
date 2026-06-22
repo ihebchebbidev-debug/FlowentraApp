@@ -315,6 +315,27 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             }
         }
 
+        /// <summary>POST /api/service-orders/{id}/recalculate-status — server-side reconcile of SO status from its dispatches.</summary>
+        [HttpPost("{id:int}/recalculate-status")]
+        public async Task<IActionResult> RecalculateStatus(int id)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var serviceOrder = await _serviceOrderService.RecalculateStatusFromDispatchesAsync(id, userId);
+                return Ok(new { success = true, data = serviceOrder });
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = "Service order not found" } });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error recalculating status for service order {Id}", id);
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+            }
+        }
+
         [HttpPost("{id:int}/approve")]
         public async Task<IActionResult> Approve(int id, [FromBody] ApproveServiceOrderDto approveDto)
         {

@@ -116,6 +116,7 @@
     "statuses": {
       "pending": "En Attente",
       "planned": "Planifié",
+      "assigned": "Affecté",
       "confirmed": "Confirmé",
       "rejected": "Rejeté",
       "in_progress": "En Cours",
