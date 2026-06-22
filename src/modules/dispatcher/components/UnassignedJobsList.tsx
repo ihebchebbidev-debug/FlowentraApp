@@ -29,7 +29,7 @@ import {
 import type { Job, ServiceOrder, InstallationGroup } from "../types";
 import { usePlanningDisplay } from "../context/PlanningDisplayContext";
 import { useActivePlanningProfile } from "../hooks/usePlanningProfile";
-import { formatCardLabel, buildHoverRows } from "../utils/planningCardFields";
+import { formatCardLabel, getCardLabelLines, buildHoverRows } from "../utils/planningCardFields";
 import { DispatcherService } from "../services/dispatcher.service";
 import { JobMappingService } from "../services/job-mapping.service";
 import { cn } from "@/lib/utils";
@@ -507,6 +507,9 @@ export function UnassignedJobsList({
     const soLabel = repJob
       ? formatCardLabel(repJob, display.cardPrimaryFields, display.cardSeparator, { jobCount: so.jobs.length })
       : (so.title || `SO-${so.id}`);
+    const soLines = repJob
+      ? getCardLabelLines(repJob, display.cardPrimaryFields, { jobCount: so.jobs.length })
+      : [so.title || `SO-${so.id}`];
     const soHover = repJob
       ? [
           soLabel,
@@ -523,14 +526,18 @@ export function UnassignedJobsList({
           title={soHover}
         >
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <CheckCircle2 className="h-3.5 w-3.5 text-success flex-shrink-0" />
-              <span className="font-medium truncate text-xs flex-1 min-w-0 text-muted-foreground">
-                {soLabel}
-              </span>
+            <div className="flex items-start gap-2 flex-1 min-w-0">
+              <CheckCircle2 className="h-3.5 w-3.5 text-success flex-shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0 space-y-0.5">
+                {soLines.map((line, i) => (
+                  <p key={i} className={`truncate text-xs ${i === 0 ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
+                    {line}
+                  </p>
+                ))}
+              </div>
             </div>
             <ChevronDown
-              className={`h-3 w-3 transition-transform text-muted-foreground flex-shrink-0 ${isExpanded ? 'rotate-180' : ''}`}
+              className={`h-3 w-3 transition-transform text-muted-foreground flex-shrink-0 mt-0.5 ${isExpanded ? 'rotate-180' : ''}`}
             />
           </div>
           <div className="flex items-center gap-1.5 mt-1 pl-5">
@@ -869,13 +876,16 @@ export function UnassignedJobsList({
                               <GripVertical className="h-3 w-3 text-primary flex-shrink-0 mt-0.5" />
                             )}
                             <Package className="h-3 w-3 text-primary flex-shrink-0 mt-0.5" />
-                            <div className="flex-1 min-w-0">
-                              {/* Up to two fields on one line, always joined by "-". */}
-                              <span className="font-medium text-xs break-words leading-snug">
-                                {serviceOrderData.unassignedJobs[0]
-                                  ? formatCardLabel(serviceOrderData.unassignedJobs[0], display.cardPrimaryFields, display.cardSeparator, { jobCount: serviceOrderData.unassignedJobs.length })
-                                  : (serviceOrderData.title || `SO-${serviceOrderData.id}`)}
-                              </span>
+                            <div className="flex-1 min-w-0 space-y-0.5">
+                              {/* Each configured field on its own line to save horizontal space. */}
+                              {(serviceOrderData.unassignedJobs[0]
+                                ? getCardLabelLines(serviceOrderData.unassignedJobs[0], display.cardPrimaryFields, { jobCount: serviceOrderData.unassignedJobs.length })
+                                : [serviceOrderData.title || `SO-${serviceOrderData.id}`]
+                              ).map((line, i) => (
+                                <p key={i} className={`text-xs break-words leading-snug ${i === 0 ? 'font-medium' : 'text-muted-foreground'}`}>
+                                  {line}
+                                </p>
+                              ))}
                             </div>
                           </div>
                           <div className="flex items-center gap-1.5 flex-shrink-0 mt-0.5">

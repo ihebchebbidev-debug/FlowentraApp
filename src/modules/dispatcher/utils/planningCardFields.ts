@@ -113,6 +113,23 @@ export function getCardFieldRows(
   return rows;
 }
 
+/**
+ * Like formatCardLabel but returns each configured field as its own line instead
+ * of joining them with a separator — lets cards stack data vertically (one datum
+ * per line) to save horizontal space. Falls back to a single meaningful line.
+ */
+export function getCardLabelLines(
+  job: Job,
+  fields: PlanningCardField[] | undefined,
+  extras?: CardFieldExtras,
+): string[] {
+  const rows = getCardFieldRows(job, fields, extras, ['serviceOrderNumber']);
+  const lines = rows.map(r => r.value);
+  if (lines.length) return lines;
+  const fallback = job.title || job.serviceOrderNumber || '';
+  return fallback ? [fallback] : [];
+}
+
 /** Compose the card's main label from the configured primary fields (de-duplicated). */
 export function formatCardLabel(
   job: Job,

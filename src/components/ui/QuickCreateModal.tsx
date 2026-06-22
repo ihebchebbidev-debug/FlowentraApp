@@ -146,7 +146,7 @@ export function QuickCreateModal({ open, onOpenChange }: QuickCreateModalProps) 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="w-full max-w-md p-0 overflow-hidden">
+        <DialogContent className="w-full max-w-lg p-0 overflow-hidden">
           <DialogHeader className="p-4 border-b border-border">
             <DialogTitle className="text-lg font-semibold">{t('quickCreate.title')}</DialogTitle>
           </DialogHeader>
