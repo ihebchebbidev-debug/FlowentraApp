@@ -582,13 +582,19 @@ export default function DailyTasksPage() {
   // Show all tasks in columns (including completed ones) - only archived tasks are hidden
   const openTasks = filteredTasks;
 
+  // A task is "done" via EITHER signal: dragged into the Done column (status==='done')
+  // OR checked off with the complete button (isCompleted===true). Both must land in the
+  // Done column, otherwise a checked-off task only shows in the "Completed" banner and
+  // looks like it vanished from the board.
+  const isTaskDone = (tk: DailyTask) => tk.status === 'done' || !!tk.isCompleted;
+
   // Done tasks must always be visible regardless of the selected date, so a task
   // moved to "Done" never disappears when its dueDate/createdAt isn't the day in
-  // view. Only search/priority/status filters apply here — never the date filter.
+  // view. Only search/priority filters apply here — never the date filter.
   const doneTasks = tasks
-    .filter(t => t.status === 'done')
+    .filter(isTaskDone)
+    .filter(() => filterStatus === 'all' || filterStatus === 'done')
     .filter(t => t.title.toLowerCase().includes(searchTerm.toLowerCase()) || (t.description || '').toLowerCase().includes(searchTerm.toLowerCase()))
-    .filter(t => filterStatus === 'all' ? true : t.status === filterStatus)
     .filter(t => filterPriority === 'all' ? true : t.priority === filterPriority);
   
   // For completed tasks, filter by completedDate (when task was completed), not dueDate
@@ -620,10 +626,11 @@ export default function DailyTasksPage() {
   const goToToday = () => setSelectedDate(new Date());
 
   const getTasksForColumn = (columnId: string) => {
-    // "Done" shows every completed task across all dates; the other columns stay
-    // scoped to the selected day.
+    // "Done" shows every completed task (by status OR check-off) across all dates;
+    // the other columns stay scoped to the selected day and must exclude completed
+    // tasks so a checked-off task visibly moves into Done instead of lingering.
     if (columnId === 'done') return doneTasks;
-    return openTasks.filter(task => task.status === columnId);
+    return openTasks.filter(task => task.status === columnId && !isTaskDone(task));
   };
 
   const getPriorityColor = (priority: string) => {
