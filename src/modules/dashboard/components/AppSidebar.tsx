@@ -780,7 +780,7 @@ export function AppSidebar() {
               onClick={toggleSidebar}
               aria-label={t('expand_sidebar', 'Expand sidebar')}
               title={t('expand_sidebar', 'Expand sidebar')}
-              className="h-6 w-6 inline-flex items-center justify-center rounded-md text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition"
+              className="h-9 w-9 inline-flex items-center justify-center rounded-md text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition"
             >
               <PanelLeftOpen className="h-4 w-4" />
             </button>

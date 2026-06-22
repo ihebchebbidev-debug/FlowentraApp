@@ -173,7 +173,7 @@ export function CompanyFilter({
         title={only.companyName}
       >
         <Building2 className="h-4 w-4 text-primary shrink-0" />
-        <span className="truncate max-w-[160px]">{only.companyName}</span>
+        <span className="truncate max-w-[90px] sm:max-w-[160px]">{only.companyName}</span>
       </div>
     );
   }
@@ -219,7 +219,9 @@ export function CompanyFilter({
       <SelectTrigger
         className={cn(
           'gap-2 border-primary/40 bg-primary/5 hover:bg-primary/10 focus:ring-primary/40',
-          size === 'sm' ? 'h-9 w-[200px]' : 'h-10 w-[240px]',
+          // Responsive width — narrow on phones so the topbar cluster never clips,
+          // full width from sm up. The trigger value truncates within.
+          size === 'sm' ? 'h-9 w-[130px] sm:w-[200px]' : 'h-10 w-[140px] sm:w-[240px]',
           className,
         )}
         title={viewAll ? 'Filter by company' : 'Switch company'}
