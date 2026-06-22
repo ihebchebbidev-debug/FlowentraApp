@@ -41,6 +41,11 @@ namespace MyApi.Modules.Projects.Services
                 // Use projectTaskId as TaskId filter
                 if (projectTaskId.HasValue)
                     query = query.Where(a => a.TaskId == projectTaskId.Value);
+                else if (dailyTaskId.HasValue)
+                    // TaskAttachment has no DailyTaskId column, so daily-task attachments
+                    // are not stored. Return an empty set rather than (the old bug) every
+                    // attachment unfiltered. a.Id < 0 never matches an identity key.
+                    query = query.Where(a => a.Id < 0);
 
                 var totalCount = await query.CountAsync();
                 var skip = (pageNumber - 1) * pageSize;
@@ -235,6 +240,11 @@ namespace MyApi.Modules.Projects.Services
 
                 if (projectTaskId.HasValue)
                     query = query.Where(a => a.TaskId == projectTaskId.Value);
+                else if (dailyTaskId.HasValue)
+                    // TaskAttachment has no DailyTaskId column, so daily-task attachments
+                    // are not stored. Return an empty set rather than (the old bug) every
+                    // attachment unfiltered. a.Id < 0 never matches an identity key.
+                    query = query.Where(a => a.Id < 0);
 
                 query = query.Where(a => _validImageTypes.Contains(a.ContentType));
 
@@ -278,6 +288,11 @@ namespace MyApi.Modules.Projects.Services
 
                 if (projectTaskId.HasValue)
                     query = query.Where(a => a.TaskId == projectTaskId.Value);
+                else if (dailyTaskId.HasValue)
+                    // TaskAttachment has no DailyTaskId column, so daily-task attachments
+                    // are not stored. Return an empty set rather than (the old bug) every
+                    // attachment unfiltered. a.Id < 0 never matches an identity key.
+                    query = query.Where(a => a.Id < 0);
 
                 query = query.Where(a => _validDocumentTypes.Contains(a.ContentType));
 
@@ -341,6 +356,9 @@ namespace MyApi.Modules.Projects.Services
 
             if (projectTaskId.HasValue)
                 query = query.Where(a => a.TaskId == projectTaskId.Value);
+            else if (dailyTaskId.HasValue)
+                // No DailyTaskId column — daily-task attachments aren't stored; return empty.
+                query = query.Where(a => a.Id < 0);
 
             return await query.CountAsync();
         }
@@ -351,6 +369,9 @@ namespace MyApi.Modules.Projects.Services
 
             if (projectTaskId.HasValue)
                 query = query.Where(a => a.TaskId == projectTaskId.Value);
+            else if (dailyTaskId.HasValue)
+                // No DailyTaskId column — daily-task attachments aren't stored; return empty.
+                query = query.Where(a => a.Id < 0);
 
             return await query.SumAsync(a => a.FileSize);
         }
@@ -386,6 +407,9 @@ namespace MyApi.Modules.Projects.Services
 
             if (projectTaskId.HasValue)
                 query = query.Where(a => a.TaskId == projectTaskId.Value);
+            else if (dailyTaskId.HasValue)
+                // No DailyTaskId column — daily-task attachments aren't stored; return empty.
+                query = query.Where(a => a.Id < 0);
 
             var totalCount = await query.CountAsync();
             var totalSize = await query.SumAsync(a => a.FileSize);

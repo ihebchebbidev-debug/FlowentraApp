@@ -123,42 +123,57 @@ namespace MyApi.Modules.Deals.Services
 
         public async Task<DealDto> CreateDealAsync(CreateDealDto dto, string userId, string? userName = null)
         {
-            var deal = new Deal
+            // Create the deal and stamp its Id-derived DealNumber atomically. DealNumber
+            // is `DEAL-{Id}`, so it needs the identity from the first save — wrapping both
+            // saves in one transaction guarantees a deal can never persist without a number.
+            // Uses the execution strategy (retry-on-failure is enabled on the connection).
+            Deal deal = null!;
+            var strategy = _context.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
             {
-                Title = dto.Title,
-                Description = dto.Description,
-                ContactId = dto.ContactId,
-                ProjectId = dto.ProjectId,
-                Stage = string.IsNullOrWhiteSpace(dto.Stage) ? "lead" : dto.Stage,
-                Probability = dto.Probability,
-                EstimatedValue = dto.EstimatedValue,
-                Currency = string.IsNullOrWhiteSpace(dto.Currency) ? "TND" : dto.Currency,
-                ExpectedCloseDate = dto.ExpectedCloseDate,
-                NextActionDate = dto.NextActionDate,
-                NextAction = dto.NextAction,
-                Category = dto.Category,
-                Source = dto.Source,
-                Notes = dto.Notes,
-                Tags = dto.Tags,
-                AssignedTo = dto.AssignedTo,
-                AssignedToName = dto.AssignedToName,
-                CreatedDate = DateTime.UtcNow,
-                CreatedBy = userId,
-                CreatedByName = userName,
-                LastActivity = DateTime.UtcNow,
-            };
+                // Retry-safe: drop any entities a previous (rolled-back) attempt added.
+                _context.ChangeTracker.Clear();
+                await using var tx = await _context.Database.BeginTransactionAsync();
 
-            if (dto.Items != null && dto.Items.Any())
-            {
-                deal.Items = dto.Items.Select((it, idx) => BuildItem(it, idx)).ToList();
-            }
+                deal = new Deal
+                {
+                    Title = dto.Title,
+                    Description = dto.Description,
+                    ContactId = dto.ContactId,
+                    ProjectId = dto.ProjectId,
+                    Stage = string.IsNullOrWhiteSpace(dto.Stage) ? "lead" : dto.Stage,
+                    Probability = dto.Probability,
+                    EstimatedValue = dto.EstimatedValue,
+                    Currency = string.IsNullOrWhiteSpace(dto.Currency) ? "TND" : dto.Currency,
+                    ExpectedCloseDate = dto.ExpectedCloseDate,
+                    NextActionDate = dto.NextActionDate,
+                    NextAction = dto.NextAction,
+                    Category = dto.Category,
+                    Source = dto.Source,
+                    Notes = dto.Notes,
+                    Tags = dto.Tags,
+                    AssignedTo = dto.AssignedTo,
+                    AssignedToName = dto.AssignedToName,
+                    CreatedDate = DateTime.UtcNow,
+                    CreatedBy = userId,
+                    CreatedByName = userName,
+                    LastActivity = DateTime.UtcNow,
+                };
 
-            _context.Deals.Add(deal);
-            await _context.SaveChangesAsync();
+                if (dto.Items != null && dto.Items.Any())
+                {
+                    deal.Items = dto.Items.Select((it, idx) => BuildItem(it, idx)).ToList();
+                }
 
-            deal.DealNumber ??= $"DEAL-{deal.Id:D5}";
-            deal.EstimatedValue = RecomputeValue(deal);
-            await _context.SaveChangesAsync();
+                _context.Deals.Add(deal);
+                await _context.SaveChangesAsync();          // assign identity Id
+
+                deal.DealNumber ??= $"DEAL-{deal.Id:D5}";
+                deal.EstimatedValue = RecomputeValue(deal);
+                await _context.SaveChangesAsync();
+
+                await tx.CommitAsync();
+            });
 
             await AddActivityInternalAsync(deal.Id, "created", "Deal created", null, userId, userName);
 

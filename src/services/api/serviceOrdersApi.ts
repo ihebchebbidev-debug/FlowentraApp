@@ -452,7 +452,12 @@ export const serviceOrdersApi = {
   // now lives on the server (single source of truth); this just triggers it.
   async recalculateStatus(serviceOrderId: number): Promise<ServiceOrder> {
     try {
-      const result = await apiFetch<any>(`/api/service-orders/${serviceOrderId}/recalculate-status`, { method: 'POST' });
+      // Best-effort background reconciliation — suppress the global error toast so a
+      // missing endpoint (e.g. frontend deployed before backend) stays silent.
+      const result = await apiFetch<any>(`/api/service-orders/${serviceOrderId}/recalculate-status`, {
+        method: 'POST',
+        headers: { 'X-Suppress-Error-Toast': 'true' },
+      });
       const data = unwrap(result, 'Failed to recalculate service order status');
       return data.data || data;
     } catch (error) {
