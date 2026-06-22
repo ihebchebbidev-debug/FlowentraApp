@@ -17,6 +17,7 @@
     "sectionAdmin": "Administration"
   },
   "lookups": "Lookups",
+  "watchDemo": "Watch Demo",
   "selectAll": "Select All",
   "deselectAll": "Deselect All",
   "offlineHydration": {

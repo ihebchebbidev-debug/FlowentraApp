@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Users, Shield, Settings2, Palette, Filter, ChevronDown, Activity, Database, Monitor, Link2, User, Building2, Lock, ChevronRight, CreditCard, Layers, RefreshCw, WifiOff } from "lucide-react";
+import { Plus, Users, Shield, Settings2, Palette, Filter, ChevronDown, Activity, Database, Monitor, Link2, User, Building2, Lock, ChevronRight, CreditCard, Layers, RefreshCw, WifiOff, Play } from "lucide-react";
+import { SettingsAutopilotDemo } from "@/modules/settings/components/onboarding/SettingsAutopilotDemo";
 import { useLayoutModeContext } from "@/hooks/useLayoutMode";
 import { useQuery } from "@tanstack/react-query";
 import { usersApi } from "@/services/usersApi";
@@ -55,6 +56,7 @@ export default function SettingsPage() {
   const { isMainAdmin, hasPermission } = usePermissions();
   const { isMobile } = useLayoutModeContext();
   const [activeSection, setActiveSection] = useState("profile");
+  const [demoOpen, setDemoOpen] = useState(false);
   
   // Permission-based tab visibility
   const canViewUsers = isMainAdmin || hasPermission('users', 'read');
@@ -283,7 +285,12 @@ export default function SettingsPage() {
     return (
       <div className="flex flex-col min-h-full">
         <div className="border-b border-border bg-background px-4 py-3">
-          <h1 className="text-lg font-semibold text-foreground mb-3">{t('header.title')}</h1>
+          <div className="flex items-center justify-between mb-3">
+            <h1 className="text-lg font-semibold text-foreground">{t('header.title')}</h1>
+            <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="gap-1.5">
+              <Play className="h-3.5 w-3.5" /> {t('watchDemo', 'Watch Demo')}
+            </Button>
+          </div>
           <Select value={activeSection} onValueChange={setActiveSection}>
             <SelectTrigger className="w-full bg-background">
               <SelectValue>
@@ -311,6 +318,7 @@ export default function SettingsPage() {
           {renderContent()}
         </div>
         {renderModals()}
+        <SettingsAutopilotDemo open={demoOpen} onClose={() => setDemoOpen(false)} />
       </div>
     );
   }
@@ -692,6 +700,9 @@ export default function SettingsPage() {
             </p>
           </div>
         </div>
+        <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="gap-1.5 shrink-0">
+          <Play className="h-3.5 w-3.5" /> {t('watchDemo', 'Watch Demo')}
+        </Button>
       </header>
 
       <div className="flex flex-1 overflow-hidden">
@@ -770,6 +781,7 @@ export default function SettingsPage() {
       </div>
 
       {renderModals()}
+      <SettingsAutopilotDemo open={demoOpen} onClose={() => setDemoOpen(false)} />
     </div>
   );
 }
