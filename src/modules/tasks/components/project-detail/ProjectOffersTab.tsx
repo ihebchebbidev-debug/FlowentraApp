@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { FileText, CheckCircle2, Plus, Handshake } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { dealsApi } from '@/services/api/dealsApi';
@@ -118,39 +119,51 @@ export function ProjectOffersTab({ projectLinks, mode = 'offers', sales, project
       {items.length === 0 ? (
         <Card className="p-8 text-center text-muted-foreground">{t(emptyKey)}</Card>
       ) : (
-        <div className="space-y-2">
-          {items.map((it) => (
-            <Card
-              key={`${it.entityType}-${it.entityId}`}
-              className="p-4 hover:bg-accent/50 cursor-pointer transition-colors"
-              onClick={() => handleOpen(it)}
-            >
-              <div className="flex items-center justify-between gap-4">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-mono text-xs text-muted-foreground">{it.number}</span>
-                    {it.status && <Badge variant="outline" className="text-xs capitalize">{it.status}</Badge>}
-                    {it.entityType === 'deal' && (
-                      <Badge className="text-xs bg-primary/15 text-primary border-primary/30 gap-1">
-                        <Handshake className="h-3 w-3" /> {t('projects.detail.deals.badge')}
-                      </Badge>
-                    )}
-                    {it.entityType === 'sale' && isDeals && (
-                      <Badge variant="secondary" className="text-xs">{t('projects.detail.deals.legacyBadge', 'Won')}</Badge>
-                    )}
-                  </div>
-                  <div className="font-medium truncate">{it.title}</div>
-                </div>
-                <div className="text-right shrink-0">
-                  {it.amount != null && <div className="font-semibold">{it.amount.toFixed(2)}</div>}
-                  {it.date && (
-                    <div className="text-xs text-muted-foreground">{new Date(it.date).toLocaleDateString()}</div>
-                  )}
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
+        <Card className="overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{isDeals ? t('projects.detail.deals.title', 'Deal') : t('projects.detail.offers.title', 'Offer')}</TableHead>
+                <TableHead>{isDeals ? t('projects.detail.deals.stage', 'Stage') : t('projects.detail.offers.status', 'Status')}</TableHead>
+                <TableHead className="text-right">{isDeals ? t('projects.detail.deals.value', 'Value') : t('projects.detail.offers.amount', 'Amount')}</TableHead>
+                <TableHead className="text-right">{t('projects.detail.offers.date', 'Date')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {items.map((it) => (
+                <TableRow
+                  key={`${it.entityType}-${it.entityId}`}
+                  className="cursor-pointer"
+                  onClick={() => handleOpen(it)}
+                >
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs text-muted-foreground">{it.number}</span>
+                      {it.entityType === 'deal' && (
+                        <Badge className="text-xs bg-primary/15 text-primary border-primary/30 gap-1">
+                          <Handshake className="h-3 w-3" /> {t('projects.detail.deals.badge')}
+                        </Badge>
+                      )}
+                      {it.entityType === 'sale' && isDeals && (
+                        <Badge variant="secondary" className="text-xs">{t('projects.detail.deals.legacyBadge', 'Won')}</Badge>
+                      )}
+                    </div>
+                    <div className="font-medium truncate max-w-[260px]">{it.title}</div>
+                  </TableCell>
+                  <TableCell>
+                    {it.status ? <Badge variant="outline" className="text-xs capitalize">{it.status}</Badge> : '—'}
+                  </TableCell>
+                  <TableCell className="text-right font-semibold">
+                    {it.amount != null ? it.amount.toFixed(2) : '—'}
+                  </TableCell>
+                  <TableCell className="text-right text-sm text-muted-foreground">
+                    {it.date ? new Date(it.date).toLocaleDateString() : '—'}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
       )}
     </div>
   );

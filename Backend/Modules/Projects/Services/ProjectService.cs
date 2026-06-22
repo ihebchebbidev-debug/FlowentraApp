@@ -255,6 +255,18 @@ namespace MyApi.Modules.Projects.Services
                 if (!string.IsNullOrEmpty(updateDto.ProjectKind) && oldKind != project.ProjectKind)
                     ProjectAutoNote.Add(_context, id, $"Kind changed: {oldKind} → {project.ProjectKind}.", modifiedByUser);
 
+                // Track plain detail edits (name/description/contact/team/priority/dates)
+                // so every modification shows up on the project's timeline.
+                var nonStatusEdit = !string.IsNullOrEmpty(updateDto.Name)
+                    || updateDto.Description != null
+                    || updateDto.ContactId.HasValue
+                    || updateDto.TeamMembers != null
+                    || !string.IsNullOrEmpty(updateDto.Priority)
+                    || updateDto.StartDate.HasValue
+                    || updateDto.EndDate.HasValue;
+                if (nonStatusEdit)
+                    ProjectAutoNote.Add(_context, id, "Project details updated.", modifiedByUser);
+
                 await _context.SaveChangesAsync();
                 await SetProjectIdForLinkedEntitiesAsync(id, updateDto.LinkOfferId, updateDto.LinkSaleId, updateDto.LinkServiceOrderId, updateDto.LinkDispatchId);
 

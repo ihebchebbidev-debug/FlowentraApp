@@ -36,6 +36,7 @@ import { salesApi } from '@/services/api/salesApi';
 import { serviceOrdersApi } from '@/services/api/serviceOrdersApi';
 import { dispatchesApi } from '@/services/api/dispatchesApi';
 import { dealsApi } from '@/services/api/dealsApi';
+import { projectsApi } from '@/services/api/projectsApi';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -384,6 +385,12 @@ export function ChecklistsSection({
           break;
         case 'dispatch':
           await dispatchesApi.addNote(targetEntityId, `${noteDescription}\n${noteDetails}`, noteType);
+          break;
+        case 'project':
+          await projectsApi.createProjectNote(
+            targetEntityId,
+            noteDetails ? `${noteDescription}\n${noteDetails}` : noteDescription,
+          );
           break;
       }
     } catch (error) {

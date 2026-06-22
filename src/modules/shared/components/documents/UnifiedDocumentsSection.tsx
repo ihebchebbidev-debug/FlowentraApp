@@ -34,6 +34,7 @@ import { dynamicFormsService } from '@/modules/dynamic-forms/services/dynamicFor
 import { pdf } from '@react-pdf/renderer';
 import { DynamicFormPDFDocument } from '@/modules/dynamic-forms/components/DynamicFormPDFDocument';
 import { DocumentsService, UploadProgressInfo } from '@/modules/documents/services/documents.service';
+import { projectsApi } from '@/services/api/projectsApi';
 import { Document } from '@/modules/documents/types';
 import {
   AlertDialog,
@@ -287,6 +288,18 @@ export function UnifiedDocumentsSection({
   const numericEntityId = typeof entityId === 'string' ? parseInt(entityId, 10) : entityId;
 
   // Handle form selection
+  // Mirror document actions into the owning project's activity/notes feed so the
+  // project's "Notes & Activity" tab reflects every document change. Scoped to
+  // projects to avoid duplicate logging in modules that already track documents.
+  const logProjectDocActivity = async (message: string) => {
+    if (entityType !== 'project') return;
+    try {
+      await projectsApi.createProjectNote(numericEntityId, message);
+    } catch (e) {
+      console.warn('Failed to log document activity to project:', e);
+    }
+  };
+
   const handleFormSelected = async (form: DynamicForm) => {
     try {
       await createDocument({
@@ -299,6 +312,7 @@ export function UnifiedDocumentsSection({
       });
       setShowFormSelector(false);
       toast.success(language === 'fr' ? 'Formulaire ajouté' : 'Form added');
+      await logProjectDocActivity(`Document added: ${(language === 'en' ? form.name_en : form.name_fr) || form.name_en || 'Document'}`);
     } catch (error) {
       console.error('Failed to add form:', error);
       toast.error(language === 'fr' ? 'Échec de l\'ajout' : 'Failed to add form');
@@ -363,14 +377,18 @@ export function UnifiedDocumentsSection({
 
   const handleConfirmDelete = async () => {
     if (deletingFormDoc) {
+      const docName = (language === 'en' ? (deletingFormDoc as any).form_name_en : (deletingFormDoc as any).form_name_fr) || deletingFormDoc.title || 'Document';
       await deleteFormDocument(deletingFormDoc.id);
+      await logProjectDocActivity(`Document removed: ${docName}`);
       setDeletingFormDoc(null);
       toast.success(t.deleteSuccess);
     }
     if (deletingFileDoc) {
       try {
+        const fileName = deletingFileDoc.name || deletingFileDoc.fileName || 'File';
         await DocumentsService.deleteDocument(deletingFileDoc.id);
         setFileDocuments(prev => prev.filter(d => d.id !== deletingFileDoc!.id));
+        await logProjectDocActivity(`File removed: ${fileName}`);
         toast.success(t.deleteSuccess);
       } catch {
         toast.error(t.deleteError);
@@ -386,12 +404,19 @@ export function UnifiedDocumentsSection({
     markComplete: boolean
   ) => {
     if (editingDocument) {
+      const wasCompleted = editingDocument.status === 'completed';
       await updateDocument({
         id: editingDocument.id,
         responses,
         title: title || undefined,
         status: markComplete ? 'completed' : 'draft',
       });
+      const dName = title || (language === 'en' ? (editingDocument as any).form_name_en : (editingDocument as any).form_name_fr) || 'Document';
+      if (markComplete && !wasCompleted) {
+        await logProjectDocActivity(`Document completed: ${dName}`);
+      } else {
+        await logProjectDocActivity(`Document updated: ${dName}`);
+      }
     }
 
     setShowEditor(false);
@@ -423,6 +448,7 @@ export function UnifiedDocumentsSection({
 
       setFileDocuments(prev => [...uploadedDocs, ...prev]);
       toast.success(t.uploadSuccess);
+      await logProjectDocActivity(`File(s) uploaded: ${fileList.map(f => f.name).join(', ')}`);
     } catch (error) {
       console.error('Upload failed:', error);
       toast.error(t.uploadError);

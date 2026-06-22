@@ -153,17 +153,34 @@ namespace MyApi.Modules.Projects.Services
 
                 await _context.SaveChangesAsync();
 
-                // Activity log when a task is marked completed on a project.
-                if (!string.IsNullOrEmpty(updateDto.Status)
-                    && updateDto.Status.Equals("completed", StringComparison.OrdinalIgnoreCase)
-                    && string.Equals(task.RelatedEntityType, "project", StringComparison.OrdinalIgnoreCase)
+                // Activity log: reflect every task change on the owning project's timeline.
+                if (string.Equals(task.RelatedEntityType, "project", StringComparison.OrdinalIgnoreCase)
                     && task.RelatedEntityId.HasValue)
                 {
+                    string actionType;
+                    string description;
+                    if (!string.IsNullOrEmpty(updateDto.Status)
+                        && updateDto.Status.Equals("completed", StringComparison.OrdinalIgnoreCase))
+                    {
+                        actionType = "task_completed";
+                        description = $"Task '{task.Title}' completed";
+                    }
+                    else if (!string.IsNullOrEmpty(updateDto.Status))
+                    {
+                        actionType = "task_status_changed";
+                        description = $"Task '{task.Title}' status changed to {updateDto.Status}";
+                    }
+                    else
+                    {
+                        actionType = "task_updated";
+                        description = $"Task '{task.Title}' updated";
+                    }
+
                     _context.Set<ProjectActivity>().Add(new ProjectActivity
                     {
                         ProjectId = task.RelatedEntityId.Value,
-                        ActionType = "task_completed",
-                        Description = $"Task '{task.Title}' completed",
+                        ActionType = actionType,
+                        Description = description,
                         CreatedDate = DateTime.UtcNow,
                         CreatedBy = modifiedByUser,
                         RelatedEntityId = task.Id,
@@ -195,6 +212,22 @@ namespace MyApi.Modules.Projects.Services
 
                 if (task == null)
                     return false;
+
+                // Activity log: record the deletion on the owning project's timeline
+                // before the task row (and its FK) is gone.
+                if (string.Equals(task.RelatedEntityType, "project", StringComparison.OrdinalIgnoreCase)
+                    && task.RelatedEntityId.HasValue)
+                {
+                    _context.Set<ProjectActivity>().Add(new ProjectActivity
+                    {
+                        ProjectId = task.RelatedEntityId.Value,
+                        ActionType = "task_deleted",
+                        Description = $"Task '{task.Title}' deleted",
+                        CreatedDate = DateTime.UtcNow,
+                        CreatedBy = deletedByUser,
+                        RelatedEntityType = "Task"
+                    });
+                }
 
                 _context.ProjectTasks.Remove(task);
                 await _context.SaveChangesAsync();
