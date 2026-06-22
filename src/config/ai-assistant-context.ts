@@ -143,6 +143,49 @@ Flowentra is a comprehensive Field Service Management (FSM) and CRM solution des
 
 ---
 
+### 3b. Deals (Sales Pipeline / Opportunities) - /dashboard/deals
+**What it is**: The sales pipeline — opportunities you are working to close, tracked from first contact to won or lost. This is the CRM forecasting layer that sits *before* offers and sales.
+
+**Deal stages (pipeline)**:
+1. **Lead** → New, unqualified opportunity
+2. **Qualified** → Confirmed there's a real fit and budget
+3. **Proposal** → A quote/proposal has been put forward
+4. **Negotiation** → Discussing terms, price, scope
+5. **Won** → Closed successfully (can convert to Offer, Sale, or Project)
+6. **Lost** → Did not close (a lost reason is recorded)
+
+**Key fields**:
+- **Title**: Short name of the opportunity
+- **Contact**: The customer/company the deal is with
+- **Stage**: Current pipeline stage (see above)
+- **Estimated Value** + **Currency**: Expected deal size
+- **Probability (%)**: Likelihood of closing — used for weighted pipeline
+- **Expected Close Date**: Target close date (drives forecasting)
+- **Next Action** + **Next Action Date**: The next step and when it's due (overdue ones flag as at-risk)
+- **Category** / **Source**: Where the deal came from (from lookups)
+- **Assigned To**: Owner of the deal
+- **Line Items**: Articles/services with quantity and unit price
+- **Lost Reason**: Captured when a deal is marked lost
+
+**How to create a deal**:
+1. Go to [Deals](/dashboard/deals)
+2. Click "New Deal" / "+"
+3. Select a contact, set a title, estimated value and stage
+4. Optionally add line items, expected close date and next action
+5. Save
+
+**Converting a won deal**:
+- Open the deal and use "Convert"
+- A won deal can become an **Offer**, a **Sale**, and/or a **Project** in one step (links are stored as convertedToOfferId / convertedToSaleId / convertedToProjectId)
+
+**Metrics it powers**:
+- **Pipeline value** (total and weighted by probability)
+- **Win rate** (won ÷ closed)
+- Open vs won vs lost value, average deal size
+- Forecasting by expected close date
+
+---
+
 ### 4. Articles (Products & Services) - /dashboard/inventory-services
 **Types**:
 - **Material** → Physical products tracked in inventory
@@ -524,6 +567,12 @@ The AI assistant can query real-time data across all modules. Here are all avail
 - "Pipeline value" → Sales pipeline breakdown
 - "Monthly revenue" → 6-month revenue trends
 
+**Deals (Pipeline)**:
+- "Deals overview" / "How many deals" → Deal count, open/won/lost value, win rate, by stage
+- "Open deals" / "Won deals" → Deals by stage
+- "Find deal [title]" → Specific deal details (stage, value, probability, contact)
+- "Opportunities" → Pipeline opportunities
+
 **Field Operations**:
 - "Service orders stats" → Service order breakdown
 - "Today's dispatches" → Today's scheduled work
@@ -777,6 +826,7 @@ Create tasks quickly from anywhere:
 | /dashboard/contacts | Customer/Contact management |
 | /dashboard/offers | Quotes and proposals |
 | /dashboard/sales | Sales orders |
+| /dashboard/deals | Sales pipeline / opportunities |
 | /dashboard/tasks | Task management |
 | /dashboard/projects | Project management |
 | /dashboard/inventory-services | Articles & inventory |
@@ -795,6 +845,7 @@ Create tasks quickly from anywhere:
 |---------|--------|-------------|
 | Offer | Devis | Quote/Proposal |
 | Sale | Vente | Confirmed order |
+| Deal | Affaire / Opportunité | Sales pipeline opportunity |
 | Service Order | Ordre de service | Work order |
 | Job | Tâche | Individual service task |
 | Dispatch | Intervention | Scheduled job assignment |

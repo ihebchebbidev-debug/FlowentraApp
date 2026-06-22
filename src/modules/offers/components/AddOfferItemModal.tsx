@@ -52,7 +52,11 @@ export function AddOfferItemModal({ open, onOpenChange, onAddItem, currency, exi
   };
 
   const handleBulkSubmit = () => {
-    const selectedItems = existingItems.filter(item => selectedItemIds.has(item.id));
+    // Keep the user's selection order (Set preserves insertion order), not the
+    // order items happen to appear in the catalog list.
+    const selectedItems = Array.from(selectedItemIds)
+      .map(id => existingItems.find(item => item.id === id))
+      .filter((item): item is OfferItem => !!item);
     if (selectedItems.length > 0) {
       onAddItem(selectedItems);
       onOpenChange(false);

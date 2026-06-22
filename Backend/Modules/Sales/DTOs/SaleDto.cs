@@ -111,6 +111,7 @@ namespace MyApi.Modules.Sales.DTOs
         public bool ServiceOrderGenerated { get; set; }
         public string? ServiceOrderId { get; set; }
         public string? FulfillmentStatus { get; set; }
+        public int DisplayOrder { get; set; }
         public List<MyApi.Modules.Planning.DTOs.PlannedLineEntryDto>? PlannedEntries { get; set; }
     }
 
@@ -158,6 +159,7 @@ namespace MyApi.Modules.Sales.DTOs
         public string? InstallationName { get; set; }
 
         public bool RequiresServiceOrder { get; set; } = false;
+        public int? DisplayOrder { get; set; }
     }
 
     public class ServiceOrderConfigDto

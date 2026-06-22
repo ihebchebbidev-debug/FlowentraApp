@@ -68,11 +68,8 @@ import { ExecutionDebugPanel } from './panels/ExecutionDebugPanel';
 import { AddButtonEdge } from './edges/AddButtonEdge';
 import { WorkflowVersionBadge, type WorkflowVersionStatus } from './panels/WorkflowVersionBadge';
 import { WorkflowDebugConsole } from './WorkflowDebugConsole';
-import { AIWorkflowBuilder } from './AIWorkflowBuilder';
 import { WorkflowTemplatesGallery } from './WorkflowTemplatesGallery';
-import { AiLogoIcon } from '@/components/ai-assistant/AiLogoIcon';
 import { WorkflowGroupsManager } from './WorkflowGroupsManager';
-import { useAiAssistantAvailable } from '@/hooks/useAiAssistantAvailable';
 
 const createNodeTypes = (
   onNodeClick: (nodeId: string, nodeData: any) => void,
@@ -126,15 +123,9 @@ export function WorkflowBuilder() {
   const [isSaving, setIsSaving] = useState(false); // Saving state
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Track changes
   const [isCopied, setIsCopied] = useState(false); // Copy feedback
-  const [aiBuilderOpen, setAiBuilderOpen] = useState(false); // AI workflow builder
   const [templatesOpen, setTemplatesOpen] = useState(false); // Templates gallery
   const [groupsManagerOpen, setGroupsManagerOpen] = useState(false); // Workflow groups manager
 
-  const aiAssistantAvailable = useAiAssistantAvailable();
-  const { t: tAiAssistant } = useTranslation('aiAssistant');
-  useEffect(() => {
-    if (!aiAssistantAvailable && aiBuilderOpen) setAiBuilderOpen(false);
-  }, [aiAssistantAvailable, aiBuilderOpen]);
   const [workflowVersion, setWorkflowVersion] = useState(1);
   const [versionStatus, setVersionStatus] = useState<WorkflowVersionStatus>('active');
   const reactFlowInstance = useRef<ReactFlowInstance<any, any> | null>(null);
@@ -923,23 +914,6 @@ export function WorkflowBuilder() {
       duration: 2000,
     });
   }, [setNodes, t]);
-
-  // Apply AI-generated workflow as a separate group (doesn't replace existing)
-  const handleApplyAIWorkflow = useCallback((newNodes: Node[], newEdges: Edge[], name: string) => {
-    // Offset AI nodes to not overlap with existing ones
-    const existingMaxX = nodes.reduce((max, n) => Math.max(max, n.position.x), 0);
-    const offsetX = existingMaxX > 0 ? existingMaxX + 400 : 0;
-    
-    const offsetNodes = newNodes.map(n => ({
-      ...n,
-      position: { x: n.position.x + offsetX, y: n.position.y },
-    }));
-
-    setNodes(prev => [...prev, ...offsetNodes]);
-    setEdges(prev => [...prev, ...newEdges]);
-    setHasUnsavedChanges(true);
-    if (!isEditMode) setIsEditMode(true);
-  }, [nodes, setNodes, setEdges, isEditMode]);
 
   const getNodeType = (type: string) => {
     switch (type) {
@@ -1755,33 +1729,6 @@ export function WorkflowBuilder() {
           
           {/* Separator */}
           <div className="w-px h-5 bg-border mx-0.5" />
-          
-          {/* Build with AI Button */}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="inline-flex">
-                  <Button
-                    variant="outline"
-                    onClick={() => setAiBuilderOpen(true)}
-                    size="sm"
-                    className="h-8 gap-1.5 border-primary/30 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
-                    disabled={!aiAssistantAvailable}
-                  >
-                    <AiLogoIcon size={14} variant="light" />
-                    <span className="hidden sm:inline text-xs">{t('ai.buildWithAI', 'Build with AI')}</span>
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>
-                  {!aiAssistantAvailable
-                    ? tAiAssistant('offlineUnavailable')
-                    : t('ai.buildWithAITooltip', 'Describe a workflow and let AI build it')}
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
 
           {/* Debug Console Button */}
           <TooltipProvider>
@@ -2040,31 +1987,6 @@ export function WorkflowBuilder() {
                     <Layers className="h-4 w-4" />
                     Browse templates
                   </Button>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="inline-flex">
-                          <Button
-                            variant="outline"
-                            size="lg"
-                            onClick={() => setAiBuilderOpen(true)}
-                            className="gap-2 border-primary/20 hover:border-primary/40 transition-colors disabled:opacity-60"
-                            disabled={!aiAssistantAvailable}
-                          >
-                            <AiLogoIcon size={14} />
-                            <span>{t('ai.buildWithAI', 'Build with AI')}</span>
-                          </Button>
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>
-                          {!aiAssistantAvailable
-                            ? tAiAssistant('offlineUnavailable')
-                            : t('ai.buildWithAITooltip', 'Describe a workflow and let AI build it')}
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
                 </div>
 
                 {/* Quick hint */}
@@ -2297,14 +2219,6 @@ export function WorkflowBuilder() {
         onClose={() => setDebugConsoleOpen(false)}
         workflowId={currentWorkflowId}
         lastExecutionId={liveExecutionId}
-      />
-
-      {/* AI Workflow Builder Dialog */}
-      <AIWorkflowBuilder
-        open={aiBuilderOpen}
-        onOpenChange={setAiBuilderOpen}
-        onApplyWorkflow={handleApplyAIWorkflow}
-        existingNodes={nodes}
       />
 
       {/* Workflow Groups Manager Dialog */}

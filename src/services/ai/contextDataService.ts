@@ -239,6 +239,42 @@ const formatProjectContext = async (id: string): Promise<string> => {
   return parts.filter(Boolean).join('\n');
 };
 
+// Format deal data for AI context
+const formatDealContext = async (id: string): Promise<string> => {
+  const deal = await safeFetch<any>(`${API_URL}/api/deals/${id}`);
+  if (!deal) return '';
+
+  const items = deal.items || [];
+  const itemsSummary = items.length > 0
+    ? items.map((i: any) => `  - ${i.itemName}: ${i.quantity} x ${i.unitPrice}`).join('\n')
+    : '  No items';
+
+  const parts = [
+    `**Deal Details (ID: ${id})**`,
+    deal.dealNumber && `- Deal Number: ${deal.dealNumber}`,
+    `- Title: ${deal.title}`,
+    `- Contact: ${deal.contactName || deal.contact?.name || 'N/A'}`,
+    `- Stage: ${deal.stage}`,
+    deal.probability !== undefined && `- Probability: ${deal.probability}%`,
+    deal.estimatedValue !== undefined && `- Estimated Value: ${deal.estimatedValue} ${deal.currency || 'USD'}`,
+    deal.expectedCloseDate && `- Expected Close: ${new Date(deal.expectedCloseDate).toLocaleDateString()}`,
+    deal.nextAction && `- Next Action: ${deal.nextAction}`,
+    deal.nextActionDate && `- Next Action Date: ${new Date(deal.nextActionDate).toLocaleDateString()}`,
+    deal.category && `- Category: ${deal.category}`,
+    deal.source && `- Source: ${deal.source}`,
+    deal.assignedToName && `- Assigned To: ${deal.assignedToName}`,
+    deal.lostReason && `- Lost Reason: ${deal.lostReason}`,
+    deal.convertedToSaleId && `- Converted to Sale ID: ${deal.convertedToSaleId}`,
+    deal.convertedToOfferId && `- Converted to Offer ID: ${deal.convertedToOfferId}`,
+    deal.convertedToProjectId && `- Converted to Project ID: ${deal.convertedToProjectId}`,
+    `- Line Items (${items.length}):`,
+    itemsSummary,
+    deal.notes && `- Notes: ${deal.notes.substring(0, 200)}`
+  ];
+
+  return parts.filter(Boolean).join('\n');
+};
+
 // Format user data for AI context
 const formatUserContext = async (id: string): Promise<string> => {
   const user = await safeFetch<any>(`${API_URL}/api/Users/${id}`);
@@ -288,6 +324,8 @@ export const fetchContextData = async (route: string): Promise<string | null> =>
         return await formatTaskContext(id);
       case 'project':
         return await formatProjectContext(id);
+      case 'deal':
+        return await formatDealContext(id);
       case 'user':
         return await formatUserContext(id);
       default:

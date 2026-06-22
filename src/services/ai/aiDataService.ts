@@ -11,6 +11,7 @@ import { serviceOrdersApi } from '@/services/api/serviceOrdersApi';
 import { schedulesApi } from '@/services/api/schedulesApi';
 import { tasksApi } from '@/services/api/tasksApi';
 import { projectsApi } from '@/services/api/projectsApi';
+import { dealsApi } from '@/services/api/dealsApi';
 import { installationsApi } from '@/services/api/installationsApi';
 import { dispatchesApi } from '@/services/api/dispatchesApi';
 import { dynamicFormsService } from '@/modules/dynamic-forms/services/dynamicFormsService';
@@ -679,6 +680,44 @@ export const aiDataQueries = {
     }
   },
 
+  // Deals (pipeline / opportunities) stats
+  async getDealsStats(): Promise<DataQueryResult> {
+    try {
+      const response = await dealsApi.getAll({ limit: 1000 });
+      const deals = response.deals || [];
+
+      const byStage = deals.reduce((acc: Record<string, number>, d: any) => {
+        const stage = d.stage || 'lead';
+        acc[stage] = (acc[stage] || 0) + 1;
+        return acc;
+      }, {});
+
+      const stageOrder = ['lead', 'qualified', 'proposal', 'negotiation', 'won', 'lost'];
+      const stageBreakdown = stageOrder
+        .filter(s => byStage[s])
+        .map(s => `  - ${s}: ${byStage[s]}`)
+        .join('\n');
+
+      const open = deals.filter((d: any) => d.stage !== 'won' && d.stage !== 'lost');
+      const won = deals.filter((d: any) => d.stage === 'won');
+      const lost = deals.filter((d: any) => d.stage === 'lost');
+      const sum = (arr: any[]) => arr.reduce((t, d) => t + (Number(d.estimatedValue) || 0), 0);
+      const openValue = sum(open);
+      const wonValue = sum(won);
+      const totalValue = sum(deals);
+      const closed = won.length + lost.length;
+      const winRate = closed > 0 ? Math.round((won.length / closed) * 100) : 0;
+      const currency = deals.find((d: any) => d.currency)?.currency || 'USD';
+
+      return {
+        success: true,
+        data: `🤝 **Deals / Pipeline Overview**:\n- Total: **${deals.length} deals**\n- Open: **${open.length}** (${openValue.toLocaleString()} ${currency})\n- Won: **${won.length}** (${wonValue.toLocaleString()} ${currency})\n- Lost: **${lost.length}**\n- Win rate: **${winRate}%**\n- Total pipeline value: **${totalValue.toLocaleString()} ${currency}**\n\n**By Stage:**\n${stageBreakdown || '  - No deals yet'}`
+      };
+    } catch (error) {
+      return { success: false, data: '', error: 'Could not fetch deals data' };
+    }
+  },
+
   // Installations stats
   async getInstallationsStats(): Promise<DataQueryResult> {
     try {
@@ -801,10 +840,11 @@ export const aiDataQueries = {
   // Overall summary
   async getDashboardSummary(): Promise<DataQueryResult> {
     try {
-      const [articles, offers, sales, contacts, serviceOrders, projects, installations, dispatches] = await Promise.all([
+      const [articles, offers, sales, deals, contacts, serviceOrders, projects, installations, dispatches] = await Promise.all([
         aiDataQueries.getArticlesCount(),
         aiDataQueries.getOffersStats(),
         aiDataQueries.getSalesStats(),
+        aiDataQueries.getDealsStats(),
         aiDataQueries.getContactsCount(),
         aiDataQueries.getServiceOrdersStats(),
         aiDataQueries.getProjectsStats(),
@@ -814,7 +854,7 @@ export const aiDataQueries = {
 
       return {
         success: true,
-        data: `📊 **Flowentra Dashboard Summary**\n\n${contacts.data}\n\n${articles.data}\n\n${offers.data}\n\n${sales.data}\n\n${serviceOrders.data}\n\n${projects.data}\n\n${installations.data}\n\n${dispatches.data}`
+        data: `📊 **Flowentra Dashboard Summary**\n\n${contacts.data}\n\n${articles.data}\n\n${offers.data}\n\n${sales.data}\n\n${deals.data}\n\n${serviceOrders.data}\n\n${projects.data}\n\n${installations.data}\n\n${dispatches.data}`
       };
     } catch (error) {
       return { success: false, data: '', error: 'Could not fetch summary data' };
@@ -2421,6 +2461,37 @@ export const aiDataQueries = {
       return { success: true, data: result };
     } catch (error) {
       return { success: false, data: '', error: 'Could not search projects' };
+    }
+  },
+
+  // Get deal details
+  async searchDeals(searchTerm: string): Promise<DataQueryResult> {
+    try {
+      const response = await dealsApi.getAll({ search: searchTerm });
+      const deals = response.deals || [];
+
+      if (deals.length === 0) {
+        return {
+          success: true,
+          data: `🤝 **Deal Search for "${searchTerm}"**:\n\n_No deals found._\n\n[View all deals](/dashboard/deals)`
+        };
+      }
+
+      let result = `🤝 **Deal Search Results for "${searchTerm}" (${deals.length} found)**:\n\n`;
+
+      deals.slice(0, 5).forEach((d: any) => {
+        const stageIcon = d.stage === 'won' ? '✅' : d.stage === 'lost' ? '❌' : d.stage === 'negotiation' ? '🤝' : d.stage === 'proposal' ? '📄' : '🔍';
+        const currency = d.currency || 'USD';
+        result += `${stageIcon} **${d.title}**${d.dealNumber ? ` (${d.dealNumber})` : ''}\n`;
+        result += `   Stage: ${d.stage} | Value: ${(Number(d.estimatedValue) || 0).toLocaleString()} ${currency} | Probability: ${d.probability ?? 0}%\n`;
+        if (d.contactName) result += `   Contact: ${d.contactName}\n`;
+        if (d.expectedCloseDate) result += `   Expected close: ${new Date(d.expectedCloseDate).toLocaleDateString()}\n`;
+        result += `   🔗 [View Deal](/dashboard/deals/${d.id})\n\n`;
+      });
+
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, data: '', error: 'Could not search deals' };
     }
   },
 
@@ -5508,6 +5579,7 @@ const DATA_QUERY_PATTERNS = [
   { patterns: ['not working today', 'absent today', 'on leave today', 'who is off', 'technicians off', 'pas travail', 'congé aujourd\'hui', 'absent', 'disponibilité', 'who is working', 'qui travaille', 'team availability', 'available today'], query: 'getTechniciansNotWorkingToday' },
   { patterns: ['urgent', 'priority items', 'important items', 'pending items', 'priorité', 'en attente', 'critical items'], query: 'getUrgentItems' },
   { patterns: ['how many projects', 'combien de projets', 'projects count', 'project stats', 'projects overview', 'active projects'], query: 'getProjectsStats' },
+  { patterns: ['how many deals', 'combien de deals', 'deals count', 'deal stats', 'deals overview', 'deals pipeline', 'open deals', 'won deals', 'lost deals', 'mes deals', 'opportunities', 'opportunités'], query: 'getDealsStats' },
   { patterns: ['how many installations', 'combien d\'installations', 'installations count', 'installation stats', 'equipment', 'machines'], query: 'getInstallationsStats' },
   { patterns: ['how many dispatches', 'combien de dispatches', 'dispatches count', 'dispatch stats', 'field service', 'interventions'], query: 'getDispatchesStats' },
   { patterns: ['today dispatches', 'dispatches today', 'interventions aujourd\'hui', 'field work today', 'scheduled today'], query: 'getTodaysDispatches' },
@@ -6066,6 +6138,12 @@ const PROJECT_SEARCH_PATTERNS = [
   /(?:cherche|trouve|montre)\s+(?:le\s+)?(?:projet)\s+["']?(.+?)["']?/i,
 ];
 
+const DEAL_SEARCH_PATTERNS = [
+  /(?:find|search|get|show me|look up)\s+(?:the\s+)?(?:deal|opportunity)\s+["']?(.+?)["']?/i,
+  /(?:deal|opportunity)\s+(?:#|number|called\s+|named\s+)?\s*["']?([\w-]+)["']?/i,
+  /(?:cherche|trouve|montre)\s+(?:le\s+|la\s+|l'\s*)?(?:deal|opportunité|affaire)\s+["']?(.+?)["']?/i,
+];
+
 const INSTALLATION_SEARCH_PATTERNS = [
   /(?:find|search|get|show me|look up)\s+(?:the\s+)?(?:installation|equipment|machine)\s+["']?(.+?)["']?/i,
   /(?:installation|équipement)\s+(?:called\s+|named\s+)?["'](.+?)["']/i,
@@ -6371,6 +6449,11 @@ export const detectAndExecuteDataQuery = async (message: string): Promise<DataQu
   const projectSearch = extractSearchTerm(message, PROJECT_SEARCH_PATTERNS);
   if (projectSearch) {
     return await aiDataQueries.searchProjects(projectSearch);
+  }
+
+  const dealSearch = extractSearchTerm(message, DEAL_SEARCH_PATTERNS);
+  if (dealSearch) {
+    return await aiDataQueries.searchDeals(dealSearch);
   }
 
   const installationSearch = extractSearchTerm(message, INSTALLATION_SEARCH_PATTERNS);

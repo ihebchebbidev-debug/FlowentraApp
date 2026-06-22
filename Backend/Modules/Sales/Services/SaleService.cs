@@ -192,7 +192,7 @@ namespace MyApi.Modules.Sales.Services
             // Add items if provided
             if (createDto.Items != null && createDto.Items.Any())
             {
-                var items = createDto.Items.Select(itemDto => new SaleItem
+                var items = createDto.Items.Select((itemDto, index) => new SaleItem
                 {
                     // Id is auto-generated
                     SaleId = sale.Id,
@@ -207,7 +207,9 @@ namespace MyApi.Modules.Sales.Services
                     DiscountType = itemDto.DiscountType ?? "percentage",
                     InstallationId = itemDto.InstallationId,
                     InstallationName = itemDto.InstallationName,
-                    RequiresServiceOrder = itemDto.RequiresServiceOrder
+                    RequiresServiceOrder = itemDto.RequiresServiceOrder,
+                    // Preserve the exact order items were selected/sent in.
+                    DisplayOrder = itemDto.DisplayOrder ?? index
                 }).ToList();
 
                 _context.SaleItems.AddRange(items);
@@ -319,7 +321,7 @@ namespace MyApi.Modules.Sales.Services
                 var itemPairs = new List<(MyApi.Modules.Offers.Models.OfferItem Src, SaleItem Dst)>();
                 if (offer.Items != null && offer.Items.Any())
                 {
-                    foreach (var offerItem in offer.Items)
+                    foreach (var offerItem in offer.Items.OrderBy(i => i.DisplayOrder).ThenBy(i => i.Id))
                     {
                         var saleItem = new SaleItem
                         {
@@ -337,7 +339,8 @@ namespace MyApi.Modules.Sales.Services
                             InstallationName = offerItem.InstallationName,
                             RequiresServiceOrder = offerItem.Type == "service",
                             FulfillmentStatus = "pending",
-                            TaxRate = 0
+                            TaxRate = 0,
+                            DisplayOrder = offerItem.DisplayOrder
                         };
                         _context.SaleItems.Add(saleItem);
                         itemPairs.Add((offerItem, saleItem));
@@ -684,6 +687,11 @@ namespace MyApi.Modules.Sales.Services
             if (sale == null)
                 throw new KeyNotFoundException($"Sale with ID {saleId} not found");
 
+            var nextOrder = await _context.SaleItems
+                .Where(si => si.SaleId == saleId)
+                .Select(si => (int?)si.DisplayOrder)
+                .MaxAsync() ?? -1;
+
             var item = new SaleItem
             {
                 SaleId = saleId,
@@ -698,7 +706,8 @@ namespace MyApi.Modules.Sales.Services
                 DiscountType = itemDto.DiscountType,
                 InstallationId = itemDto.InstallationId,
                 InstallationName = itemDto.InstallationName,
-                RequiresServiceOrder = itemDto.RequiresServiceOrder
+                RequiresServiceOrder = itemDto.RequiresServiceOrder,
+                DisplayOrder = itemDto.DisplayOrder ?? (nextOrder + 1)
             };
 
             _context.SaleItems.Add(item);
@@ -833,7 +842,7 @@ namespace MyApi.Modules.Sales.Services
                 Notes = sale.Notes,
                 // Get the first service order ID from items that have been converted
                 ConvertedToServiceOrderId = sale.Items?.FirstOrDefault(i => !string.IsNullOrEmpty(i.ServiceOrderId))?.ServiceOrderId,
-                Items = sale.Items?.Select(MapItemToDto).ToList() ?? new List<SaleItemDto>()
+                Items = sale.Items?.OrderBy(i => i.DisplayOrder).ThenBy(i => i.Id).Select(MapItemToDto).ToList() ?? new List<SaleItemDto>()
             };
         }
 
@@ -858,7 +867,8 @@ namespace MyApi.Modules.Sales.Services
                 RequiresServiceOrder = item.RequiresServiceOrder,
                 ServiceOrderGenerated = item.ServiceOrderGenerated,
                 ServiceOrderId = item.ServiceOrderId,
-                FulfillmentStatus = item.FulfillmentStatus
+                FulfillmentStatus = item.FulfillmentStatus,
+                DisplayOrder = item.DisplayOrder
             };
         }
 

@@ -226,7 +226,7 @@ namespace MyApi.Modules.Offers.Services
             // Add items if provided
             if (createDto.Items != null && createDto.Items.Any())
             {
-                var items = createDto.Items.Select(itemDto => new OfferItem
+                var items = createDto.Items.Select((itemDto, index) => new OfferItem
                 {
                     OfferId = offer.Id,
                     Type = itemDto.Type ?? "article",
@@ -239,7 +239,9 @@ namespace MyApi.Modules.Offers.Services
                     Discount = itemDto.Discount,
                     DiscountType = itemDto.DiscountType ?? "percentage",
                     InstallationId = itemDto.InstallationId,
-                    InstallationName = itemDto.InstallationName
+                    InstallationName = itemDto.InstallationName,
+                    // Preserve the exact order items were selected/sent in.
+                    DisplayOrder = itemDto.DisplayOrder ?? index
                 }).ToList();
 
                 _context.OfferItems.AddRange(items);
@@ -412,14 +414,15 @@ namespace MyApi.Modules.Offers.Services
                         sale.ModifiedBy = userId;
 
                         // Sync items: remove old sale items and re-create from offer
-                        var offerItems = await _context.OfferItems.Where(oi => oi.OfferId == id).ToListAsync();
+                        var offerItems = await _context.OfferItems.Where(oi => oi.OfferId == id)
+                            .OrderBy(oi => oi.DisplayOrder).ThenBy(oi => oi.Id).ToListAsync();
                         if (sale.Items != null && sale.Items.Any())
                         {
                             _context.SaleItems.RemoveRange(sale.Items);
                         }
                         if (offerItems.Any())
                         {
-                            var newSaleItems = offerItems.Select(oi => new MyApi.Modules.Sales.Models.SaleItem
+                            var newSaleItems = offerItems.Select((oi, index) => new MyApi.Modules.Sales.Models.SaleItem
                             {
                                 SaleId = sale.Id,
                                 Type = oi.Type,
@@ -435,7 +438,8 @@ namespace MyApi.Modules.Offers.Services
                                 InstallationName = oi.InstallationName,
                                 RequiresServiceOrder = oi.Type == "service",
                                 FulfillmentStatus = "pending",
-                                TaxRate = 0
+                                TaxRate = 0,
+                                DisplayOrder = oi.DisplayOrder
                             }).ToList();
                             _context.SaleItems.AddRange(newSaleItems);
                         }
@@ -565,7 +569,8 @@ namespace MyApi.Modules.Offers.Services
                     Discount = item.Discount,
                     DiscountType = item.DiscountType,
                     InstallationId = item.InstallationId,
-                    InstallationName = item.InstallationName
+                    InstallationName = item.InstallationName,
+                    DisplayOrder = item.DisplayOrder
                 }).ToList();
 
                 _context.OfferItems.AddRange(renewedItems);
@@ -705,7 +710,7 @@ namespace MyApi.Modules.Offers.Services
                     // Copy offer items → sale items
                     if (offer.Items != null && offer.Items.Any())
                     {
-                        var saleItems = offer.Items.Select(oi => new MyApi.Modules.Sales.Models.SaleItem
+                        var saleItems = offer.Items.OrderBy(i => i.DisplayOrder).ThenBy(i => i.Id).Select(oi => new MyApi.Modules.Sales.Models.SaleItem
                         {
                             SaleId = sale.Id,
                             Type = oi.Type,
@@ -721,7 +726,8 @@ namespace MyApi.Modules.Offers.Services
                             InstallationName = oi.InstallationName,
                             RequiresServiceOrder = oi.Type == "service",
                             FulfillmentStatus = "pending",
-                            TaxRate = 0
+                            TaxRate = 0,
+                            DisplayOrder = oi.DisplayOrder
                         }).ToList();
                         _context.SaleItems.AddRange(saleItems);
                     }
@@ -743,7 +749,7 @@ namespace MyApi.Modules.Offers.Services
                     // we never end up with sale items but no planned budget.
                     if ((_plannedEntries != null || _formDocumentService != null) && offer.Items != null && offer.Items.Any())
                     {
-                        var srcOfferItems = offer.Items.ToList();
+                        var srcOfferItems = offer.Items.OrderBy(i => i.DisplayOrder).ThenBy(i => i.Id).ToList();
                         var newSaleItems = await _context.SaleItems
                             .Where(si => si.SaleId == sale.Id)
                             .OrderBy(si => si.Id)
@@ -938,6 +944,12 @@ namespace MyApi.Modules.Offers.Services
             if (offer == null)
                 throw new KeyNotFoundException($"Offer with ID {offerId} not found");
 
+            // Append after the current last item so insertion order is preserved.
+            var nextOrder = await _context.OfferItems
+                .Where(oi => oi.OfferId == offerId)
+                .Select(oi => (int?)oi.DisplayOrder)
+                .MaxAsync() ?? -1;
+
             var item = new OfferItem
             {
                 OfferId = offerId,
@@ -951,7 +963,8 @@ namespace MyApi.Modules.Offers.Services
                 Discount = itemDto.Discount,
                 DiscountType = itemDto.DiscountType,
                 InstallationId = itemDto.InstallationId,
-                InstallationName = itemDto.InstallationName
+                InstallationName = itemDto.InstallationName,
+                DisplayOrder = itemDto.DisplayOrder ?? (nextOrder + 1)
             };
 
             _context.OfferItems.Add(item);
@@ -1147,7 +1160,7 @@ namespace MyApi.Modules.Offers.Services
                 CreatedBy = offer.CreatedBy,
                 CreatedByName = createdByName,
                 UpdatedAt = offer.UpdatedAt ?? offer.CreatedDate,
-                Items = offer.Items?.Select(MapItemToDto).ToList() ?? new List<OfferItemDto>()
+                Items = offer.Items?.OrderBy(i => i.DisplayOrder).ThenBy(i => i.Id).Select(MapItemToDto).ToList() ?? new List<OfferItemDto>()
             };
         }
 
@@ -1168,7 +1181,8 @@ namespace MyApi.Modules.Offers.Services
                 DiscountType = item.DiscountType,
                 TotalPrice = item.LineTotal,
                 InstallationId = item.InstallationId,
-                InstallationName = item.InstallationName
+                InstallationName = item.InstallationName,
+                DisplayOrder = item.DisplayOrder
             };
         }
 
@@ -1365,7 +1379,7 @@ namespace MyApi.Modules.Offers.Services
                             // Prepare items for this offer
                             if (dto.Items != null && dto.Items.Any())
                             {
-                                var items = dto.Items.Select(itemDto => new OfferItem
+                                var items = dto.Items.Select((itemDto, index) => new OfferItem
                                 {
                                     Type = itemDto.Type ?? "article",
                                     ArticleId = itemDto.ArticleId,
@@ -1377,7 +1391,8 @@ namespace MyApi.Modules.Offers.Services
                                     Discount = itemDto.Discount,
                                     DiscountType = itemDto.DiscountType ?? "percentage",
                                     InstallationId = itemDto.InstallationId,
-                                    InstallationName = itemDto.InstallationName
+                                    InstallationName = itemDto.InstallationName,
+                                    DisplayOrder = itemDto.DisplayOrder ?? index
                                 }).ToList();
 
                                 offerItemsToAdd[offer] = items;

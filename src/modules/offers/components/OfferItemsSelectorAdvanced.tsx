@@ -220,7 +220,11 @@ export function OfferItemsSelectorAdvanced({ items, onUpdateItems, currency = 'T
 
     const inst = getSelectedInstallation();
     const newOfferItems: OfferItem[] = [];
-    const selectedArticles = allArticles.filter(article => selectedItemIds.has(article.id));
+    // Preserve the exact order the user selected items in (Set keeps insertion
+    // order), NOT the catalog order — so reports/PDFs match the selection 1:1.
+    const selectedArticles = Array.from(selectedItemIds)
+      .map(id => allArticles.find(article => article.id === id))
+      .filter((a): a is ArticleItem => !!a);
 
     selectedArticles.forEach((article, index) => {
       const unitPrice = article.salesPrice || article.sellPrice || article.basePrice || 0;

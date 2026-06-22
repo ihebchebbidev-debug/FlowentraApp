@@ -96,7 +96,11 @@ export default function InstallationAssignment({ assignedInstallations, onAssign
   };
 
   const getAssignedInstallations = () => {
-    return mockInstallations.filter(installation => assignedInstallations.includes(installation.id));
+    // Preserve the order installations were assigned in (assignedInstallations is
+    // the selection-order list of ids), not the catalog order.
+    return assignedInstallations
+      .map(id => mockInstallations.find(installation => installation.id === id))
+      .filter((installation): installation is typeof mockInstallations[number] => !!installation);
   };
 
   const getStatusColor = (status: string) => {

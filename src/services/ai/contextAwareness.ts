@@ -108,6 +108,30 @@ const routeContextMap: Record<string, Omit<PageContext, 'route' | 'relevantData'
     entityType: 'sale'
   },
 
+  // ==================== DEALS ====================
+  '/dashboard/deals': {
+    pageName: 'Deals (Pipeline)',
+    pageDescription: 'Sales pipeline and opportunity management (CRM). Track deals through stages: Lead → Qualified → Proposal → Negotiation → Won/Lost. Each deal has an estimated value, probability, expected close date, next action, contact, and line items. Won deals can convert to an Offer, a Sale, or a Project. Drives forecasting, win-rate and pipeline value.',
+    suggestions: [
+      'contextSuggestions.deals.createDeal',
+      'contextSuggestions.deals.stages',
+      'contextSuggestions.deals.pipelineValue',
+      'contextSuggestions.deals.winRate',
+      'contextSuggestions.deals.convert'
+    ],
+    relatedApis: [
+      'GET /api/deals - List deals with filters (stage, category, source, contactId, search)',
+      'GET /api/deals/{id} - Get deal with items',
+      'GET /api/deals/stats - Pipeline stats (open/won/lost value, win rate)',
+      'POST /api/deals - Create deal',
+      'PATCH /api/deals/{id} - Update deal (stage, value, next action)',
+      'POST /api/deals/{id}/convert - Convert to offer / sale / project',
+      'GET /api/deals/{id}/activities - Deal activity log',
+      'POST /api/deals/{id}/items - Add line item'
+    ],
+    entityType: 'deal'
+  },
+
   // ==================== SERVICE ORDERS ====================
   '/field/service-orders': {
     pageName: 'Service Orders',
@@ -504,6 +528,7 @@ const extractEntityId = (route: string): string | undefined => {
     /\/dashboard\/contacts\/(\d+)/,
     /\/dashboard\/offers\/(\d+)/,
     /\/dashboard\/sales\/(\d+)/,
+    /\/dashboard\/deals\/(\d+)/,
     /\/field\/service-orders\/(\d+)/,
     /\/field\/dispatches\/(\d+)/,
     /\/field\/installations\/(\d+)/,
