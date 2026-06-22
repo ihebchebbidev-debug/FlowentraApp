@@ -690,8 +690,12 @@ export function TopNavigation() {
               <div className="hidden md:block min-w-[180px] max-w-[240px]">
                 <TenantSwitcher />
               </div>
-              {/* Company filter — appears next to action buttons in view-all mode */}
-              <GlobalCompanyFilter />
+              {/* Company filter — appears next to action buttons in view-all mode.
+                  Hidden on phones so the topbar cluster never clips at narrow widths;
+                  it stays reachable in the hamburger menu (same control, w-full). */}
+              <div className="hidden sm:block">
+                <GlobalCompanyFilter />
+              </div>
               <Button
                 variant={offlineEnabled ? "default" : "outline"}
                 size="sm"

@@ -6,7 +6,10 @@
 -- Create the TaskChecklists table
 CREATE TABLE IF NOT EXISTS "TaskChecklists" (
     "Id" SERIAL PRIMARY KEY,
-    
+
+    -- Multi-tenant scope (matches the EF ITenantEntity model)
+    "TenantId" INTEGER NOT NULL DEFAULT 0,
+
     -- Foreign keys (one of these should be set)
     "ProjectTaskId" INTEGER NULL,
     "DailyTaskId" INTEGER NULL,
@@ -33,7 +36,10 @@ CREATE TABLE IF NOT EXISTS "TaskChecklists" (
 -- Create the TaskChecklistItems table
 CREATE TABLE IF NOT EXISTS "TaskChecklistItems" (
     "Id" SERIAL PRIMARY KEY,
-    
+
+    -- Multi-tenant scope (matches the EF ITenantEntity model)
+    "TenantId" INTEGER NOT NULL DEFAULT 0,
+
     -- Parent checklist
     "ChecklistId" INTEGER NOT NULL,
     
@@ -58,7 +64,14 @@ CREATE TABLE IF NOT EXISTS "TaskChecklistItems" (
         REFERENCES "MainAdminUsers"("Id") ON DELETE SET NULL
 );
 
+-- Defensive: ensure TenantId exists even on databases where these tables were
+-- created by an earlier version of this script (before TenantId was added natively).
+ALTER TABLE "TaskChecklists"     ADD COLUMN IF NOT EXISTS "TenantId" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "TaskChecklistItems" ADD COLUMN IF NOT EXISTS "TenantId" INTEGER NOT NULL DEFAULT 0;
+
 -- Create indexes for better query performance
+CREATE INDEX IF NOT EXISTS "IX_TaskChecklists_TenantId" ON "TaskChecklists"("TenantId");
+CREATE INDEX IF NOT EXISTS "IX_TaskChecklistItems_TenantId" ON "TaskChecklistItems"("TenantId");
 CREATE INDEX IF NOT EXISTS "IX_TaskChecklists_ProjectTaskId" ON "TaskChecklists"("ProjectTaskId");
 CREATE INDEX IF NOT EXISTS "IX_TaskChecklists_DailyTaskId" ON "TaskChecklists"("DailyTaskId");
 CREATE INDEX IF NOT EXISTS "IX_TaskChecklists_SortOrder" ON "TaskChecklists"("SortOrder");
