@@ -1,4 +1,4 @@
-import { RolePermission, UpdateRolePermissionsRequest, PermissionModule, PermissionAction } from '@/types/permissions';
+import { RolePermission, UpdateRolePermissionsRequest, PermissionModule, PermissionAction, PERMISSION_MODULES } from '@/types/permissions';
 import { getAuthHeaders, getMutationHeaders, getMutationHeadersNoContentType } from '@/utils/apiHeaders';
 
 import { API_URL } from '@/config/api';
@@ -197,38 +197,13 @@ export const permissionsApi = {
 
   // Grant all permissions to a role
   async grantAllPermissions(roleId: number): Promise<void> {
-    // Define all available permissions - simplified to CRUD only
-    const backendPermissions = [
-      // CRM
-      { module: 'contacts', actions: ['create', 'read', 'update', 'delete'] },
-      { module: 'articles', actions: ['create', 'read', 'update', 'delete'] },
-      { module: 'offers', actions: ['create', 'read', 'update', 'delete'] },
-      { module: 'sales', actions: ['create', 'read', 'update', 'delete'] },
-      // Field Service
-      { module: 'installations', actions: ['create', 'read', 'update', 'delete'] },
-      { module: 'service_orders', actions: ['create', 'read', 'update', 'delete'] },
-      { module: 'dispatches', actions: ['create', 'read', 'update', 'delete'] },
-      { module: 'dispatcher', actions: ['create', 'read', 'update', 'delete'] },
-      // Time & Expenses
-      { module: 'time_tracking', actions: ['create', 'read', 'update', 'delete'] },
-      { module: 'expenses', actions: ['create', 'read', 'update', 'delete'] },
-      // Administration
-      { module: 'users', actions: ['create', 'read', 'update', 'delete'] },
-      { module: 'roles', actions: ['create', 'read', 'update', 'delete'] },
-      { module: 'settings', actions: ['create', 'read', 'update', 'delete'] },
-      { module: 'audit_logs', actions: ['read', 'delete'] },
-      { module: 'documents', actions: ['read'] },
-    ];
-
-    // Build all permission entries
+    // Derive the full set from the single source of truth (PERMISSION_MODULES)
+    // so newly added modules (hr, purchases, dynamic_forms, ai_assistant,
+    // external_endpoints, stock_management, …) are never silently omitted.
     const allPermissions: Array<{ module: string; action: string; granted: boolean }> = [];
-    for (const perm of backendPermissions) {
-      for (const action of perm.actions) {
-        allPermissions.push({
-          module: perm.module,
-          action: action,
-          granted: true,
-        });
+    for (const mod of PERMISSION_MODULES) {
+      for (const action of mod.actions) {
+        allPermissions.push({ module: mod.module, action, granted: true });
       }
     }
 

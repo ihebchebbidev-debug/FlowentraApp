@@ -10,7 +10,9 @@ namespace MyApi.Modules.Roles.Services
         private readonly ApplicationDbContext _context;
         private readonly ILogger<PermissionService> _logger;
 
-        // Define all available modules and actions (simplified to match frontend)
+        // Define all available modules and actions. MUST stay a superset of the
+        // frontend PERMISSION_MODULES (src/types/permissions.ts) so that "Grant All"
+        // and "Grant Module" actually cover every module the UI gates features on.
         private static readonly Dictionary<string, string[]> AvailablePermissions = new()
         {
             // CRM
@@ -18,20 +20,27 @@ namespace MyApi.Modules.Roles.Services
             { "articles", new[] { "create", "read", "update", "delete", "export", "import", "archive", "duplicate", "bulk_edit" } },
             { "offers", new[] { "create", "read", "update", "delete", "export", "approve", "reject", "send", "print", "duplicate", "convert", "archive" } },
             { "sales", new[] { "create", "read", "update", "delete", "export", "approve", "convert", "archive", "print", "bulk_edit" } },
+            { "purchases", new[] { "create", "read", "update", "delete" } },
             // Field Service
             { "installations", new[] { "create", "read", "update", "delete", "export", "import", "archive" } },
             { "service_orders", new[] { "create", "read", "update", "delete", "export", "assign", "approve", "archive", "print", "convert" } },
             { "dispatches", new[] { "create", "read", "update", "delete", "assign", "approve" } },
-            { "dispatcher", new[] { "read", "assign", "manage" } },
+            { "dispatcher", new[] { "create", "read", "update", "delete", "assign", "manage" } },
             // Time & Expenses
             { "time_tracking", new[] { "create", "read", "update", "delete", "approve", "export", "view_all", "view_own" } },
             { "expenses", new[] { "create", "read", "update", "delete", "approve", "reject", "export", "view_all", "view_own" } },
+            // Inventory
+            { "stock_management", new[] { "read", "add_stock", "remove_stock", "read_logs" } },
             // Administration
             { "users", new[] { "create", "read", "update", "delete", "assign", "archive", "restore", "bulk_edit" } },
             { "roles", new[] { "create", "read", "update", "delete", "assign", "manage" } },
-            { "settings", new[] { "read", "update", "configure", "manage", "switch_company" } },
+            { "settings", new[] { "create", "read", "update", "delete", "configure", "manage", "switch_company" } },
             { "audit_logs", new[] { "read", "export", "delete" } },
-            { "documents", new[] { "read" } }
+            { "documents", new[] { "read" } },
+            { "dynamic_forms", new[] { "create", "read", "update", "delete" } },
+            { "ai_assistant", new[] { "read" } },
+            { "hr", new[] { "create", "read", "update", "delete" } },
+            { "external_endpoints", new[] { "create", "read", "update", "delete" } }
         };
 
         public PermissionService(ApplicationDbContext context, ILogger<PermissionService> logger)
