@@ -1,4 +1,5 @@
 {
+  "watchDemo": "Watch Demo",
   "title": "Lookups",
   "subtitle": "Manage task statuses, event types, currencies, and service categories",
   "selectLookup": "Select a lookup to manage",

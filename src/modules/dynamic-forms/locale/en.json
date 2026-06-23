@@ -11,6 +11,7 @@
     "french": "French"
   },
   "actions": {
+    "watchDemo": "Watch Demo",
     "create": "Create Form",
     "edit": "Edit",
     "delete": "Delete",

@@ -161,7 +161,7 @@ export function HRDashboard() {
         actions={
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="gap-1.5">
-              <Play className="h-3.5 w-3.5" /> Watch Demo
+              <Play className="h-3.5 w-3.5" /> {t('watchDemo', 'Watch Demo')}
             </Button>
             <Button asChild variant="outline" size="sm">
               <Link to="/dashboard/hr/employees" className="inline-flex items-center gap-2">

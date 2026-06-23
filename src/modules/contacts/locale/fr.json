@@ -140,6 +140,7 @@
     }
   },
   "contacts": {
+    "watchDemo": "Voir la démo",
     "title": "Contacts",
     "subtitle": "Gérez votre base de clients",
     "import": "Importer",

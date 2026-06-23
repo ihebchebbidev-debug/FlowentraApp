@@ -58,6 +58,7 @@ import { CreateActionButton } from '@/components/CreateActionButton';
 
 export default function DispatchesList() {
   const { t } = useTranslation();
+  const { t: tDispatches } = useTranslation('dispatches');
   const navigate = useNavigate();
   const { toast } = useToast();
   const { canCreate, canRead, canUpdate, canDelete, isLoading: permissionsLoading, isMainAdmin } = usePermissions();
@@ -233,7 +234,7 @@ export default function DispatchesList() {
             
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="gap-1.5">
-                <Play className="h-3.5 w-3.5" /> {t('dispatches.watchDemo', 'Watch Demo')}
+                <Play className="h-3.5 w-3.5" /> {tDispatches('watchDemo', 'Watch Demo')}
               </Button>
               {hasCreateAccess && (
                 <CreateActionButton onClick={() => navigate('/dashboard/field/dispatches/create')}>

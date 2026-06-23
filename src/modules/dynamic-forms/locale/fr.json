@@ -11,6 +11,7 @@
     "french": "Français"
   },
   "actions": {
+    "watchDemo": "Voir la démo",
     "create": "Créer un Formulaire",
     "edit": "Modifier",
     "delete": "Supprimer",
