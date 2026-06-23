@@ -35,7 +35,7 @@ import EdgeToolbar from '../small-components/EdgeToolbar';
 import { WorkflowManager } from './WorkflowManager';
 import { NodeConfigurationModal } from './NodeConfigurationModal';
 import { ConditionalConfigModal } from './conditional/ConditionalConfigModal';
-import { SavedWorkflow } from '../hooks/useWorkflowStorage';
+import { SavedWorkflow } from '../hooks/useWorkflowApi';
 import { WorkflowHelpButton } from './onboarding/WorkflowHelpButton';
 import { IfElseNode } from './conditional/IfElseNode';
 import { SwitchNode } from './conditional/SwitchNode';
@@ -70,6 +70,17 @@ import { WorkflowVersionBadge, type WorkflowVersionStatus } from './panels/Workf
 import { WorkflowDebugConsole } from './WorkflowDebugConsole';
 import { WorkflowTemplatesGallery } from './WorkflowTemplatesGallery';
 import { WorkflowGroupsManager } from './WorkflowGroupsManager';
+
+// Collision-safe id generator. `Date.now()` collides when two ids are minted in
+// the same millisecond (rapid add/duplicate), which corrupts React Flow rendering
+// and makes edges/config target the wrong node.
+const genWfId = (prefix: string): string => {
+  const rand =
+    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+  return `${prefix}-${rand}`;
+};
 
 const createNodeTypes = (
   onNodeClick: (nodeId: string, nodeData: any) => void,
@@ -130,6 +141,12 @@ export function WorkflowBuilder() {
   const [versionStatus, setVersionStatus] = useState<WorkflowVersionStatus>('active');
   const reactFlowInstance = useRef<ReactFlowInstance<any, any> | null>(null);
 
+  // Last *persisted* canvas state — used to revert when the user cancels an edit.
+  const baselineRef = useRef<{ nodes: Node[]; edges: Edge[] }>({ nodes: [], edges: [] });
+  const setBaseline = useCallback((n: Node[], e: Edge[]) => {
+    baselineRef.current = { nodes: [...n], edges: [...e] };
+  }, []);
+
   // Track if auto-reconciliation should run
   const shouldAutoReconcileRef = useRef(false);
   // Ref for reconciliation handler to avoid circular deps
@@ -162,43 +179,47 @@ export function WorkflowBuilder() {
     },
     onNodeExecuting: (event) => {
       console.log('[Workflow] Node executing:', event);
-      
-      // Find matching node by type or ID and set to executing
-      setNodes(nds => nds.map(n => {
-        const nodeType = (n.data as any)?.type;
-        const matches = n.id === event.nodeId || 
-                       nodeType === event.nodeType ||
-                       nodeType === event.nodeType.replace('-trigger', '');
-        
-        return {
-          ...n,
-          data: { 
-            ...n.data, 
-            executionState: matches ? 'executing' as NodeExecutionState : n.data.executionState 
-          }
-        };
-      }));
+
+      // Prefer an exact id match so we never light up multiple nodes that happen
+      // to share a type. Fall back to type-matching only when no id matches.
+      setNodes(nds => {
+        const hasIdMatch = nds.some(n => n.id === event.nodeId);
+        return nds.map(n => {
+          const nodeType = (n.data as any)?.type;
+          const matches = hasIdMatch
+            ? n.id === event.nodeId
+            : nodeType === event.nodeType || nodeType === event.nodeType.replace('-trigger', '');
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              executionState: matches ? 'executing' as NodeExecutionState : n.data.executionState,
+            },
+          };
+        });
+      });
     },
     onNodeCompleted: (event) => {
       console.log('[Workflow] Node completed:', event);
-      
-      // Mark the node as completed or failed
-      setNodes(nds => nds.map(n => {
-        const nodeType = (n.data as any)?.type;
-        const matches = n.id === event.nodeId || 
-                       nodeType === event.nodeType ||
-                       nodeType === event.nodeType.replace('-trigger', '');
-        
-        return {
-          ...n,
-          data: { 
-            ...n.data, 
-            executionState: matches 
-              ? (event.success ? 'completed' : 'failed') as NodeExecutionState 
-              : n.data.executionState 
-          }
-        };
-      }));
+
+      setNodes(nds => {
+        const hasIdMatch = nds.some(n => n.id === event.nodeId);
+        return nds.map(n => {
+          const nodeType = (n.data as any)?.type;
+          const matches = hasIdMatch
+            ? n.id === event.nodeId
+            : nodeType === event.nodeType || nodeType === event.nodeType.replace('-trigger', '');
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              executionState: matches
+                ? (event.success ? 'completed' : 'failed') as NodeExecutionState
+                : n.data.executionState,
+            },
+          };
+        });
+      });
     },
     onExecutionCompleted: (event) => {
       console.log('[Workflow] Execution completed:', event);
@@ -519,6 +540,7 @@ export function WorkflowBuilder() {
             console.log('[Workflow] Loaded from backend:', transformedNodes.length, 'nodes');
             setNodes(transformedNodes);
             setEdges(transformedEdges);
+            setBaseline(transformedNodes, transformedEdges);
             setCurrentWorkflowId(defaultWorkflow.id);
             setIsWorkflowActive(defaultWorkflow.isActive);
             setWorkflowVersion(defaultWorkflow.version || 1);
@@ -540,17 +562,19 @@ export function WorkflowBuilder() {
         const { nodes: fallbackNodes, edges: fallbackEdges } = getDefaultBusinessTemplate();
         setNodes(fallbackNodes);
         setEdges(fallbackEdges);
+        setBaseline(fallbackNodes, fallbackEdges);
         setWorkflowLoading(false);
         setInitialized(true);
       } catch (err) {
         // Network error - backend truly unreachable
         console.error('Backend unreachable:', err);
         toast.error(t('backendUnreachable'));
-        
+
         // Load local template as last resort
         const { nodes: fallbackNodes, edges: fallbackEdges } = getDefaultBusinessTemplate();
         setNodes(fallbackNodes);
         setEdges(fallbackEdges);
+        setBaseline(fallbackNodes, fallbackEdges);
         setWorkflowLoading(false);
         setInitialized(true);
       }
@@ -695,7 +719,22 @@ export function WorkflowBuilder() {
       toast.error(t('noWorkflowSelected'));
       return;
     }
-    
+
+    // Validate before persisting — block on hard errors, warn (but allow) on warnings.
+    const { WorkflowValidator } = await import('../utils/workflowValidator');
+    const validation = WorkflowValidator.validateWorkflow(nodes, edges);
+    if (!validation.isValid) {
+      toast.error(validation.errors[0] || t('saveFailed'), {
+        description: validation.errors.length > 1
+          ? t('validationErrorsCount', { count: validation.errors.length, defaultValue: `${validation.errors.length} validation errors` })
+          : undefined,
+      });
+      return;
+    }
+    if (validation.warnings.length > 0) {
+      toast.warning(validation.warnings[0], { duration: 4000 });
+    }
+
     setIsSaving(true);
     try {
       // Clean nodes - remove non-serializable icons
@@ -703,14 +742,15 @@ export function WorkflowBuilder() {
         ...n,
         data: { ...n.data, icon: undefined }
       }));
-      
+
       await workflowApi.update(currentWorkflowId, {
         nodes: cleanNodes,
         edges: edges
       });
-      
+
       setHasUnsavedChanges(false);
       setIsEditMode(false);
+      setBaseline(nodes, edges);
       toast.success(t('saved'), { duration: 2500 });
     } catch (err) {
       console.error('Failed to save workflow:', err);
@@ -718,17 +758,19 @@ export function WorkflowBuilder() {
     } finally {
       setIsSaving(false);
     }
-  }, [currentWorkflowId, nodes, edges, t]);
+  }, [currentWorkflowId, nodes, edges, t, setBaseline]);
 
-  // Cancel edit mode
+  // Cancel edit mode — actually revert the canvas to the last saved state.
   const handleCancelEdit = useCallback(() => {
     if (hasUnsavedChanges) {
-      // Could show a confirmation dialog here
+      setNodes(baselineRef.current.nodes);
+      setEdges(baselineRef.current.edges);
       toast.warning(t('changesDiscarded'));
     }
+    setSelectedEdgeId(null);
     setIsEditMode(false);
     setHasUnsavedChanges(false);
-  }, [hasUnsavedChanges, t]);
+  }, [hasUnsavedChanges, t, setNodes, setEdges]);
 
   const handleEdgeClick = useCallback((edgeId: string) => {
     setSelectedEdgeId(edgeId);
@@ -748,7 +790,7 @@ export function WorkflowBuilder() {
       if (!existing) return eds;
 
       // create a new edge object with swapped source/target and a fresh id
-      const newId = `${existing.id}-rev-${Date.now()}`;
+      const newId = genWfId('edge');
       const newEdge = {
         ...existing,
         id: newId,
@@ -832,10 +874,23 @@ export function WorkflowBuilder() {
     }
 
     const nodeType = getNodeType(type);
+    // Place below existing nodes instead of a random spot (avoids overlap).
+    const current = reactFlowInstance.current?.getNodes() || [];
+    let posX = 300, posY = 150;
+    if (current.length > 0) {
+      let maxY = -Infinity;
+      let maxYNodeX = 300;
+      current.forEach(n => {
+        const ny = (n.position?.y ?? 0) + 120;
+        if (ny > maxY) { maxY = ny; maxYNodeX = n.position?.x ?? 300; }
+      });
+      posX = maxYNodeX;
+      posY = maxY + 60;
+    }
     const newNode: Node = {
-      id: `node-${Date.now()}`,
+      id: genWfId('node'),
       type: nodeType,
-      position: { x: Math.random() * 500 + 200, y: Math.random() * 400 + 150 },
+      position: { x: posX, y: posY },
       data: {
         label: getNodeLabel(type),
         type,
@@ -844,6 +899,7 @@ export function WorkflowBuilder() {
       },
     };
     setNodes((nds) => [...nds, newNode]);
+    setHasUnsavedChanges(true);
   }, [setNodes, createBusinessTemplate]);
 
   // Add node from palette template (n8n-style)
@@ -879,7 +935,7 @@ export function WorkflowBuilder() {
     }
 
     const nodeType = getN8nNodeType(template);
-    const nodeId = `node-${Date.now()}`;
+    const nodeId = genWfId('node');
     const newNode: Node = {
       id: nodeId,
       type: nodeType,
@@ -899,6 +955,7 @@ export function WorkflowBuilder() {
       },
     };
     setNodes((nds) => [...nds, newNode]);
+    setHasUnsavedChanges(true);
 
     // Auto-pan to the new node
     setTimeout(() => {
@@ -1198,17 +1255,26 @@ export function WorkflowBuilder() {
 
   const handleRunWorkflow = useCallback(() => {
     if (nodes.length === 0) {
+      toast.error(t('emptyWorkflow', { defaultValue: 'Add at least one node before running.' }));
       return;
     }
-    
+
     // Import and use validator
     import('../utils/workflowValidator').then(({ WorkflowValidator }) => {
       const validation = WorkflowValidator.validateWorkflow(nodes, edges);
-      
+
       if (!validation.isValid) {
+        toast.error(validation.errors[0] || t('invalidWorkflow', { defaultValue: 'Workflow is invalid.' }), {
+          description: validation.errors.length > 1
+            ? t('validationErrorsCount', { count: validation.errors.length, defaultValue: `${validation.errors.length} validation errors` })
+            : undefined,
+        });
         return;
       }
-      
+      if (validation.warnings.length > 0) {
+        toast.warning(validation.warnings[0], { duration: 4000 });
+      }
+
       setIsRunning(true);
       setExecutionProgress(0);
 
@@ -1258,22 +1324,24 @@ export function WorkflowBuilder() {
 
             // If this is the last node, complete the workflow
             if (index === nodeOrder.length - 1) {
-              setTimeout(() => {
+              const finishTimeout = setTimeout(() => {
                 setIsRunning(false);
                 setExecutionProgress(100);
-                
+
                 // Reset after showing completion
-                setTimeout(() => {
+                const resetTimeout = setTimeout(() => {
                   setNodes(nds => nds.map(n => ({
                     ...n,
                     data: { ...n.data, executionState: 'idle' as NodeExecutionState }
                   })));
                   setExecutionProgress(0);
                 }, 3000);
+                executionTimeoutRef.current.push(resetTimeout);
               }, 600);
+              executionTimeoutRef.current.push(finishTimeout);
             }
           }, 600);
-          
+
           executionTimeoutRef.current.push(completeTimeout);
         }, index * 1000);
         
@@ -1283,18 +1351,35 @@ export function WorkflowBuilder() {
   }, [nodes, edges, setNodes, getExecutionOrder]);
 
   const handleLoadWorkflow = (workflow: SavedWorkflow) => {
-  const normalize = (node: Node) => ({
-    ...node,
-    data: {
-      ...node.data,
-      label: (node.data as any)?.config?.name || (node.data as any)?.label || getNodeLabel((node.data as any)?.type),
-      description: (node.data as any)?.description || getNodeDescription((node.data as any)?.type),
-    }
-  });
+    const normalize = (node: Node) => ({
+      ...node,
+      data: {
+        ...node.data,
+        // Restore the (non-serializable) icon from the node type.
+        icon: (node.data as any)?.icon || getNodeIcon((node.data as any)?.type),
+        label: (node.data as any)?.config?.name || (node.data as any)?.label || getNodeLabel((node.data as any)?.type),
+        description: (node.data as any)?.description || getNodeDescription((node.data as any)?.type),
+        executionState: 'idle' as NodeExecutionState,
+      }
+    });
 
-  setNodes(workflow.nodes.map(normalize));
-  setEdges(workflow.edges);
-  toast.success(t('workflowLoaded', { name: workflow.name }));
+    const normalizedNodes = workflow.nodes.map(normalize);
+    setNodes(normalizedNodes);
+    setEdges(workflow.edges);
+    setBaseline(normalizedNodes, workflow.edges);
+
+    // CRITICAL: retarget the active workflow id so a subsequent Save writes to the
+    // workflow the user just loaded — not whichever one was open before. Local-only
+    // workflows (non-numeric id) clear the id so Save won't overwrite the wrong one.
+    const numericId = Number(workflow.id);
+    setCurrentWorkflowId(Number.isFinite(numericId) && String(numericId) === workflow.id ? numericId : null);
+    setIsWorkflowActive(workflow.isActive);
+    setWorkflowVersion(workflow.version || 1);
+    setVersionStatus(workflow.isActive ? 'active' : 'draft');
+    setHasUnsavedChanges(false);
+    setIsEditMode(false);
+
+    toast.success(t('workflowLoaded', { name: workflow.name }));
   };
 
   const handleNewWorkflow = async () => {
@@ -1306,21 +1391,27 @@ export function WorkflowBuilder() {
           nodes: defaultWorkflow.nodes,
           edges: defaultWorkflow.edges,
         });
-        if (transformedNodes.length > 0) {
-          setNodes(transformedNodes);
-          setEdges(transformedEdges);
-        } else {
-          setNodes([]);
-          setEdges([]);
-        }
+        const nextNodes = transformedNodes.length > 0 ? transformedNodes : [];
+        const nextEdges = transformedNodes.length > 0 ? transformedEdges : [];
+        setNodes(nextNodes);
+        setEdges(nextEdges);
+        setBaseline(nextNodes, nextEdges);
+        setCurrentWorkflowId(defaultWorkflow.id);
+        setIsWorkflowActive(defaultWorkflow.isActive);
+        setWorkflowVersion(defaultWorkflow.version || 1);
+        setVersionStatus(defaultWorkflow.isActive ? 'active' : 'draft');
       } else {
         setNodes([]);
         setEdges([]);
+        setBaseline([], []);
       }
     } catch (err) {
       setNodes([]);
       setEdges([]);
+      setBaseline([], []);
     }
+    setHasUnsavedChanges(false);
+    setIsEditMode(false);
     toast.success(t('newWorkflowCreated'));
   };
 
@@ -1365,6 +1456,7 @@ export function WorkflowBuilder() {
           : node
       )
     );
+    setHasUnsavedChanges(true);
     toast.success(t('configSaved'));
   }, [configModal.nodeData?.id, setNodes, t]);
 
@@ -1373,69 +1465,60 @@ export function WorkflowBuilder() {
   // can read them via GetNodeDataString (which checks both top-level and nested config)
   const handlePanelConfigSave = useCallback((nodeId: string, config: NodeConfig) => {
     setNodes((nds) =>
-      nds.map((node) =>
-        node.id === nodeId
-          ? {
-              ...node,
-              data: {
-                ...node.data,
-                config,
-                // Spread all config fields to top-level for backend compatibility
-                label: config.name || node.data.label,
-                description: config.description || node.data.description,
-                // Status trigger/action fields
-                fromStatus: config.fromStatus,
-                toStatus: config.toStatus,
-                newStatus: config.newStatus,
-                // Action fields
-                autoCreate: config.autoCreate,
-                createPerService: config.createPerService,
-                // Condition fields (critical for if-else/switch nodes)
-                field: config.field,
-                operator: config.operator,
-                value: config.value,
-                // Switch cases (stored in config AND top-level for ConditionNode rendering)
-                cases: config.cases,
-                // Approval fields
-                requiresApproval: config.requiresApproval,
-                approverRole: config.approverRole,
-                timeoutHours: config.timeoutHours,
-                // Notification fields
-                title: config.notificationTitle,
-                message: config.notificationMessage,
-                notificationType: config.notificationType,
-                recipientType: config.recipientType,
-                // Email fields
-                subject: config.emailSubject,
-                template: config.emailTemplate,
-                // AI fields
-                model: config.model,
-                prompt: config.prompt,
-                maxTokens: config.maxTokens,
-                // Loop fields
-                loopType: config.loopType,
-                iterations: config.iterations,
-                // Delay fields
-                delayMs: config.delayMs,
-                // Webhook/API fields
-                url: config.url,
-                method: config.method,
-                headers: config.headers,
-                body: config.body,
-                // Scheduled fields
-                cronExpression: config.cronExpression,
-                timezone: config.timezone,
-                // Database fields
-                operation: config.operation,
-                table: config.table,
-                // Email to field
-                to: config.to,
-              }
-            }
-          : node
-      )
+      nds.map((node) => {
+        if (node.id !== nodeId) return node;
+        // Map config → top-level fields the backend expects, then drop any
+        // `undefined` so a partial config never wipes a previously-set value.
+        const flat: Record<string, any> = {
+          fromStatus: config.fromStatus,
+          toStatus: config.toStatus,
+          newStatus: config.newStatus,
+          autoCreate: config.autoCreate,
+          createPerService: config.createPerService,
+          field: config.field,
+          operator: config.operator,
+          value: config.value,
+          cases: config.cases,
+          requiresApproval: config.requiresApproval,
+          approverRole: config.approverRole,
+          timeoutHours: config.timeoutHours,
+          title: config.notificationTitle,
+          message: config.notificationMessage,
+          notificationType: config.notificationType,
+          recipientType: config.recipientType,
+          subject: config.emailSubject,
+          template: config.emailTemplate,
+          model: config.model,
+          prompt: config.prompt,
+          maxTokens: config.maxTokens,
+          loopType: config.loopType,
+          iterations: config.iterations,
+          delayMs: config.delayMs,
+          url: config.url,
+          method: config.method,
+          headers: config.headers,
+          body: config.body,
+          cronExpression: config.cronExpression,
+          timezone: config.timezone,
+          operation: config.operation,
+          table: config.table,
+          to: config.to,
+        };
+        const definedFlat = Object.fromEntries(Object.entries(flat).filter(([, v]) => v !== undefined));
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            config,
+            label: config.name || node.data.label,
+            description: config.description || node.data.description,
+            ...definedFlat,
+          },
+        };
+      })
     );
     setConfigPanel({ isOpen: false, nodeId: '', nodeData: null });
+    setHasUnsavedChanges(true);
     toast.success(t('configSaved'));
   }, [setNodes, t]);
 
@@ -1473,6 +1556,10 @@ export function WorkflowBuilder() {
     setNodes(normalizedNodes);
     setEdges(normalizedEdges);
     setImportModal(false);
+    // Imported content is not yet persisted — flag it and enter edit mode so the
+    // user can review and Save (which writes to the current workflow id).
+    setHasUnsavedChanges(true);
+    setIsEditMode(true);
     toast.success(t('importedWorkflowLoaded', { name: name || t('importedDefaultName') }));
   }, [setNodes, setEdges, t, getNodeIcon, getNodeLabel, getNodeDescription]);
 
@@ -1674,6 +1761,17 @@ export function WorkflowBuilder() {
   useEffect(() => {
     handleReconciliationRef.current = handleReconciliation;
   }, [handleReconciliation]);
+
+  // Warn before leaving/closing the tab while there are unsaved edits.
+  useEffect(() => {
+    if (!isEditMode || !hasUnsavedChanges) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isEditMode, hasUnsavedChanges]);
 
   return (
     <div className="workflow-module h-full flex flex-col bg-background">
