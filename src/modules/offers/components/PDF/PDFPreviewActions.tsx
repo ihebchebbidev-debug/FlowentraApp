@@ -5,6 +5,7 @@ import { Download, Printer, Settings, Share2, Eye, MessageCircle, Mail, PenLine 
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { OfferPDFDocument, InstallationDetails } from '../OfferPDFDocument';
 import { PdfSettings } from '../../utils/pdfSettings.utils';
+import { PdfLabelOverrides, applyPdfLabelOverrides } from './pdfLabels';
 import { useTranslation } from 'react-i18next';
 import { useRef } from 'react';
 
@@ -26,6 +27,10 @@ interface PDFPreviewActionsProps {
   onSendEmail?: () => void;
   printLinkRef?: React.RefObject<HTMLAnchorElement>;
   installationsData?: Record<string, InstallationDetails>;
+  /** Module-specific document label overrides (e.g. deals). */
+  labelOverrides?: PdfLabelOverrides;
+  /** Downloaded file name prefix (default "quote"). */
+  filePrefix?: string;
 }
 
 export function PDFPreviewActions({
@@ -45,12 +50,14 @@ export function PDFPreviewActions({
   signatureImage,
   onSendEmail,
   printLinkRef,
-  installationsData
+  installationsData,
+  labelOverrides,
+  filePrefix = 'quote'
 }: PDFPreviewActionsProps) {
   const { t, i18n } = useTranslation('offers');
-  
+
   // PDF translations object
-  const pdfTranslations = {
+  const pdfTranslations = applyPdfLabelOverrides({
     offer: t('pdf.offer'),
     offerNumber: t('pdf.offerNumber'),
     date: t('pdf.date'),
@@ -94,15 +101,15 @@ export function PDFPreviewActions({
     // Amount in words
     amountInWords: t('pdf.amountInWords', 'Amount in Words'),
     statusValue: t(`status.${offer?.status || 'draft'}`, { defaultValue: (offer?.status || 'draft') }),
-  };
+  }, labelOverrides);
 
   return (
     <div className="flex items-center justify-between py-3 px-1">
       <div className="flex items-center gap-3">
         {/* Hidden Print Link - triggered when user clicks Print button */}
-        <PDFDownloadLink 
-          document={<OfferPDFDocument offer={offer} formatCurrency={formatCurrency} settings={pdfSettings} translations={pdfTranslations} installationsData={installationsData} language={i18n.language} currencyCode={offer?.currency || 'TND'} />} 
-          fileName={`quote-${offer.id}.pdf`}
+        <PDFDownloadLink
+          document={<OfferPDFDocument offer={offer} formatCurrency={formatCurrency} settings={pdfSettings} translations={pdfTranslations} installationsData={installationsData} language={i18n.language} currencyCode={offer?.currency || 'TND'} />}
+          fileName={`${filePrefix}-${offer.id}.pdf`}
         >
           {({ blob, url, loading, error }) => (
             <a 
@@ -149,10 +156,10 @@ export function PDFPreviewActions({
           {t('pdfActions.print')}
         </Button>
         
-        <PDFDownloadLink 
-          document={<OfferPDFDocument offer={offer} formatCurrency={formatCurrency} settings={pdfSettings} translations={pdfTranslations} installationsData={installationsData} language={i18n.language} currencyCode={offer?.currency || 'TND'} />} 
-          fileName={`quote-${offer.id}.pdf`} 
-          className="inline-flex" 
+        <PDFDownloadLink
+          document={<OfferPDFDocument offer={offer} formatCurrency={formatCurrency} settings={pdfSettings} translations={pdfTranslations} installationsData={installationsData} language={i18n.language} currencyCode={offer?.currency || 'TND'} />}
+          fileName={`${filePrefix}-${offer.id}.pdf`}
+          className="inline-flex"
           onError={onDownloadError}
         >
           {({ loading }) => (

@@ -1,4 +1,11 @@
 {
+  "pdf": {
+    "documentType": "Deal",
+    "documentNumber": "Deal Number",
+    "documentDetails": "Deal Details",
+    "documentItems": "Deal Items",
+    "thankYouMessage": "Thank you for your business."
+  },
   "tenant": {
     "selectCompany": "Select a company from the top bar first.",
     "selectCompanyHint": "You're viewing all companies. Select this deal's company from the top bar to convert it.",
@@ -65,6 +72,7 @@
   "actions": {
     "view": "View",
     "edit": "Edit",
+    "pdf": "PDF",
     "delete": "Delete",
     "convert": "Convert",
     "create": "Create Deal",

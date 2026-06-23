@@ -6,6 +6,7 @@ import { PDFDownloadLink } from '@react-pdf/renderer';
 import { OfferPDFDocument, InstallationDetails } from '../OfferPDFDocument';
 import { PdfSettingsModal } from '../PdfSettingsModal';
 import { PdfSettings } from '../../utils/pdfSettings.utils';
+import { PdfLabelOverrides, applyPdfLabelOverrides } from './pdfLabels';
 import { useTranslation } from 'react-i18next';
 
 interface PDFMobileActionsProps {
@@ -25,6 +26,10 @@ interface PDFMobileActionsProps {
   signatureImage?: string;
   onSendEmail?: () => void;
   installationsData?: Record<string, InstallationDetails>;
+  /** Module-specific document label overrides (e.g. deals). */
+  labelOverrides?: PdfLabelOverrides;
+  /** Downloaded file name prefix (default "quote"). */
+  filePrefix?: string;
 }
 
 export function PDFMobileActions({
@@ -43,12 +48,14 @@ export function PDFMobileActions({
   onRemoveSignature,
   signatureImage,
   onSendEmail,
-  installationsData
+  installationsData,
+  labelOverrides,
+  filePrefix = 'quote'
 }: PDFMobileActionsProps) {
   const { t, i18n } = useTranslation('offers');
-  
+
   // PDF translations object
-  const pdfTranslations = {
+  const pdfTranslations = applyPdfLabelOverrides({
     offer: t('pdf.offer'),
     offerNumber: t('pdf.offerNumber'),
     date: t('pdf.date'),
@@ -91,14 +98,14 @@ export function PDFMobileActions({
     // Amount in words
     amountInWords: t('pdf.amountInWords', 'Amount in Words'),
     statusValue: t(`status.${offer?.status || 'draft'}`, { defaultValue: (offer?.status || 'draft') }),
-  };
+  }, labelOverrides);
 
   return (
     <div className="flex items-center gap-2">
-      <PDFDownloadLink 
-        document={<OfferPDFDocument offer={offer} formatCurrency={formatCurrency} settings={pdfSettings} translations={pdfTranslations} installationsData={installationsData} language={i18n.language} currencyCode={offer?.currency || 'TND'} />} 
-        fileName={`quote-${offer.id}.pdf`} 
-        className="inline-flex" 
+      <PDFDownloadLink
+        document={<OfferPDFDocument offer={offer} formatCurrency={formatCurrency} settings={pdfSettings} translations={pdfTranslations} installationsData={installationsData} language={i18n.language} currencyCode={offer?.currency || 'TND'} />}
+        fileName={`${filePrefix}-${offer.id}.pdf`}
+        className="inline-flex"
         onError={onDownloadError}
       >
         {({ loading }) => (

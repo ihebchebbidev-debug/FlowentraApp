@@ -10,12 +10,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import {
   ArrowLeft, Edit, GitBranch, Trash2, Loader2, Building2, User, Calendar,
   DollarSign, Target, Send, ShoppingCart, Briefcase, FileText, CheckCircle2,
-  Package, Wrench, ExternalLink, Mail, Phone, MapPin,
+  Package, Wrench, ExternalLink, Mail, Phone, MapPin, FileDown,
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { formatCurrencyValue } from "@/lib/formatters";
+import { useCurrency } from "@/shared/hooks/useCurrency";
 import { dealsApi, type Deal, type DealActivity } from "@/services/api/dealsApi";
+import { DealPDFPreviewModal } from "./DealPDFPreviewModal";
 import { stageBadgeClass } from "../lib/dealStages";
 import { isFollowUpOverdue } from "../lib/dealAnalytics";
 import { ConvertDealModal } from "./ConvertDealModal";
@@ -32,10 +34,12 @@ export function DealDetail() {
   const navigate = useNavigate();
   const dealId = Number(id);
 
+  const { format: formatCurrency } = useCurrency();
   const [deal, setDeal] = useState<Deal | null>(null);
   const [loading, setLoading] = useState(true);
   const [convertOpen, setConvertOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -97,6 +101,9 @@ export function DealDetail() {
                     </span>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
+                    <Button variant="outline" size="sm" onClick={() => setIsPDFModalOpen(true)} className="gap-1.5">
+                      <FileDown className="h-4 w-4" /> {t("actions.pdf", { defaultValue: "PDF" })}
+                    </Button>
                     <Button variant="outline" size="sm" onClick={() => navigate(`/dashboard/deals/${dealId}/edit`)} className="gap-1.5">
                       <Edit className="h-4 w-4" /> {t("actions.edit")}
                     </Button>
@@ -171,6 +178,15 @@ export function DealDetail() {
 
       {convertOpen && (
         <ConvertDealModal deal={deal} open={convertOpen} onClose={() => setConvertOpen(false)} onConverted={() => { setConvertOpen(false); load(); }} />
+      )}
+
+      {isPDFModalOpen && (
+        <DealPDFPreviewModal
+          deal={deal}
+          isOpen={isPDFModalOpen}
+          onClose={() => setIsPDFModalOpen(false)}
+          formatCurrency={formatCurrency}
+        />
       )}
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>

@@ -18,19 +18,32 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useTranslation } from 'react-i18next';
 import { PDFAnnotationViewer, AnnotationsMap } from '@/components/shared/PDFAnnotationViewer';
 import { useCompanyLogo } from '@/hooks/useCompanyLogo';
+import { PdfLabelOverrides, applyPdfLabelOverrides } from './PDF/pdfLabels';
 
 interface OfferPDFPreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   offer: any;
   formatCurrency: (amount: number) => string;
+  /** Module-specific document label overrides so the same viewer reads e.g. as a Deal. */
+  labelOverrides?: PdfLabelOverrides;
+  /** Header subtitle (e.g. "Deal #D-123 - Title"); defaults to the offer number line. */
+  previewSubtitle?: string;
+  /** Downloaded/shared file name prefix (default "quote"). */
+  filePrefix?: string;
+  /** Report type passed to the email dialog (default "offer"). */
+  reportType?: string;
 }
 
 export function OfferPDFPreviewModal({
   isOpen,
   onClose,
   offer,
-  formatCurrency
+  formatCurrency,
+  labelOverrides,
+  previewSubtitle,
+  filePrefix = 'quote',
+  reportType = 'offer'
 }: OfferPDFPreviewModalProps) {
   const { t, i18n } = useTranslation('offers');
   const companyLogo = useCompanyLogo();
@@ -50,7 +63,7 @@ export function OfferPDFPreviewModal({
   const printLinkRef = useRef<HTMLAnchorElement>(null);
   
   // PDF translations object — memoized to avoid re-creating on every render
-  const pdfTranslations = useMemo(() => ({
+  const pdfTranslations = useMemo(() => applyPdfLabelOverrides({
     offer: t('pdf.offer'),
     offerNumber: t('pdf.offerNumber'),
     date: t('pdf.date'),
@@ -91,7 +104,7 @@ export function OfferPDFPreviewModal({
     fiscalStamp: t('pdf.fiscalStamp', 'Fiscal Stamp'),
     amountInWords: t('pdf.amountInWords', 'Amount in Words'),
     statusValue: t(`status.${offer?.status || 'draft'}`, { defaultValue: (offer?.status || 'draft') }),
-  }), [t, offer?.status]);
+  }, labelOverrides), [t, offer?.status, labelOverrides]);
 
   const {
     isGenerating,
@@ -244,8 +257,12 @@ export function OfferPDFPreviewModal({
                 {t('pdfPreview.title')}
               </DialogTitle>
               <p className="text-sm text-muted-foreground">
-                {t('pdfPreview.offerNumber', { number: offer.offerNumber || offer.id })}
-                {!isMobile && ` - ${offer.title}`}
+                {previewSubtitle ?? (
+                  <>
+                    {t('pdfPreview.offerNumber', { number: offer.offerNumber || offer.id })}
+                    {!isMobile && ` - ${offer.title}`}
+                  </>
+                )}
               </p>
             </div>
           </div>
@@ -281,6 +298,8 @@ export function OfferPDFPreviewModal({
             signatureImage={hasAnnotations ? 'signed' : undefined}
             onSendEmail={() => setIsSendEmailOpen(true)}
             installationsData={installationsData}
+            labelOverrides={labelOverrides}
+            filePrefix={filePrefix}
           />
         ) : (
           <PDFPreviewActions
@@ -301,6 +320,8 @@ export function OfferPDFPreviewModal({
             onSendEmail={() => setIsSendEmailOpen(true)}
             printLinkRef={printLinkRef}
             installationsData={installationsData}
+            labelOverrides={labelOverrides}
+            filePrefix={filePrefix}
           />
         )}
 
@@ -316,7 +337,7 @@ export function OfferPDFPreviewModal({
             <PDFAnnotationViewer
               key={`sign-${pdfKey}`}
               document={pdfDocElement}
-              fileName={`quote-${offer.offerNumber || offer.id}-signed.pdf`}
+              fileName={`${filePrefix}-${offer.offerNumber || offer.id}-signed.pdf`}
               isSigningMode={isSigningMode}
               onSigningModeChange={setIsSigningMode}
               onAnnotationsChange={setHasAnnotations}
@@ -327,7 +348,7 @@ export function OfferPDFPreviewModal({
             <PDFAnnotationViewer
               key={`view-${pdfKey}`}
               document={pdfDocElement}
-              fileName={`quote-${offer.offerNumber || offer.id}.pdf`}
+              fileName={`${filePrefix}-${offer.offerNumber || offer.id}.pdf`}
               isSigningMode={false}
               onSigningModeChange={setIsSigningMode}
               onAnnotationsChange={setHasAnnotations}
@@ -364,8 +385,8 @@ export function OfferPDFPreviewModal({
           open={isSendEmailOpen}
           onOpenChange={setIsSendEmailOpen}
           pdfDocument={pdfDocElement}
-          fileName={`quote-${offer.offerNumber || offer.id}.pdf`}
-          reportType="offer"
+          fileName={`${filePrefix}-${offer.offerNumber || offer.id}.pdf`}
+          reportType={reportType}
           reportNumber={offer.offerNumber || offer.id}
           reportTitle={offer.title || ''}
           customerName={offer.customer?.name || offer.customerName}
@@ -379,8 +400,8 @@ export function OfferPDFPreviewModal({
           onClose={() => setSharePlatform(null)}
           platform={sharePlatform}
           pdfDocument={pdfDocElement}
-          fileName={`quote-${offer.offerNumber || offer.id}.pdf`}
-          shareText={`${offer.title || t('pdf.offer')} - ${offer.offerNumber || offer.id} - ${formatCurrency(offer.total ?? offer.totalAmount ?? offer.amount ?? 0)}`}
+          fileName={`${filePrefix}-${offer.offerNumber || offer.id}.pdf`}
+          shareText={`${offer.title || pdfTranslations.offer} - ${offer.offerNumber || offer.id} - ${formatCurrency(offer.total ?? offer.totalAmount ?? offer.amount ?? 0)}`}
         />
       </DialogContent>
     </Dialog>
