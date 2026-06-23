@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { FormField, FieldOption, FIELD_TYPES, ConditionOperator, FieldWidth, LinkStyle, DynamicDataSource } from '../../types';
 import { DynamicDataConfig } from './DynamicDataConfig';
+import { genId } from '../../utils/ids';
 
 interface FieldPropertiesProps {
   field: FormField | null;
@@ -75,7 +76,7 @@ export function FieldProperties({ field, allFields, onUpdate }: FieldPropertiesP
   
   const handleAddOption = () => {
     const newOption: FieldOption = {
-      id: `opt_${Date.now()}`,
+      id: genId('opt'),
       value: `option_${(field.options?.length || 0) + 1}`,
       label_en: `Option ${(field.options?.length || 0) + 1}`,
       label_fr: `Option ${(field.options?.length || 0) + 1}`,

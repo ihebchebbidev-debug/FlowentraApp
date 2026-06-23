@@ -15,6 +15,9 @@ import { Save, CheckCircle, FileText, Loader2 } from 'lucide-react';
 import { DynamicForm } from '@/modules/dynamic-forms/types';
 import { SteppedFormPreview } from '@/modules/dynamic-forms/components/SteppedFormPreview';
 import { dynamicFormsService } from '@/modules/dynamic-forms/services/dynamicFormsService';
+import { validateFormFields } from '@/modules/dynamic-forms/utils/formValidation';
+import { getVisibleFields, getVisibleValues } from '@/modules/dynamic-forms/utils/conditionEvaluator';
+import { toast } from 'sonner';
 import { EntityFormDocument } from '../../types/formDocument';
 
 const translations = {
@@ -29,6 +32,8 @@ const translations = {
     cancel: 'Cancel',
     save_draft: 'Save as Created',
     save_complete: 'Save & Complete',
+    validation_error: 'Validation Error',
+    fix_errors: 'Please fix the {{count}} error(s) before completing.',
   },
   fr: {
     edit_document: 'Modifier le Document',
@@ -41,6 +46,8 @@ const translations = {
     cancel: 'Annuler',
     save_draft: 'Enregistrer Brouillon',
     save_complete: 'Enregistrer & Terminer',
+    validation_error: 'Erreur de validation',
+    fix_errors: 'Veuillez corriger les {{count}} erreur(s) avant de terminer.',
   },
 };
 
@@ -68,8 +75,10 @@ export function FormDocumentEditorModal({
   const [title, setTitle] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
+    setFieldErrors({});
     if (open && document && !initialForm) {
       loadForm(document.form_id);
       setFormValues(document.responses || {});
@@ -95,12 +104,38 @@ export function FormDocumentEditorModal({
 
   const handleValueChange = (fieldId: string, value: any) => {
     setFormValues(prev => ({ ...prev, [fieldId]: value }));
+    // Clear this field's error as soon as the user edits it.
+    setFieldErrors(prev => {
+      if (!prev[fieldId]) return prev;
+      const next = { ...prev };
+      delete next[fieldId];
+      return next;
+    });
   };
 
   const handleSave = async (markComplete: boolean) => {
+    if (!form) return;
+
+    // Only enforce validation when completing — drafts can be partial.
+    if (markComplete) {
+      const visibleFields = getVisibleFields(form.fields, formValues);
+      const result = validateFormFields(visibleFields, formValues, language);
+      if (!result.isValid) {
+        setFieldErrors(result.fieldErrors);
+        toast.error(t.validation_error, {
+          description: t.fix_errors.replace('{{count}}', String(result.errors.length)),
+        });
+        return;
+      }
+    }
+
+    setFieldErrors({});
     try {
       setSaving(true);
-      await onSave(formValues, title, markComplete);
+      // On completion, drop values from fields hidden by conditional logic so we
+      // never persist stale answers. Drafts keep everything for work-in-progress.
+      const valuesToSave = markComplete ? getVisibleValues(form.fields, formValues) : formValues;
+      await onSave(valuesToSave, title, markComplete);
       onOpenChange(false);
     } finally {
       setSaving(false);
@@ -170,6 +205,7 @@ export function FormDocumentEditorModal({
                     language={language}
                     formValues={formValues}
                     onValueChange={handleValueChange}
+                    fieldErrors={fieldErrors}
                   />
                 )}
               </div>

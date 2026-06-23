@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight, Check, Star, GitBranch, ExternalLink, Info, Loader2, AlertCircle, RefreshCw, Link2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -23,13 +23,16 @@ interface SteppedFormPreviewProps {
   language: 'en' | 'fr';
   formValues: Record<string, any>;
   onValueChange: (fieldId: string, value: any) => void;
+  /** Validation errors keyed by field id — rendered inline under each field. */
+  fieldErrors?: Record<string, string>;
 }
 
-export function SteppedFormPreview({ 
-  form, 
-  language, 
-  formValues, 
-  onValueChange 
+export function SteppedFormPreview({
+  form,
+  language,
+  formValues,
+  onValueChange,
+  fieldErrors,
 }: SteppedFormPreviewProps) {
   const { t } = useTranslation('dynamic-forms');
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
@@ -39,6 +42,14 @@ export function SteppedFormPreview({
   const pages = useMemo(() => {
     return organizeFieldsIntoPages(form.fields);
   }, [form.fields]);
+
+  // When validation errors arrive, jump to the page holding the first error so
+  // the user can see what needs fixing.
+  useEffect(() => {
+    if (!fieldErrors || Object.keys(fieldErrors).length === 0) return;
+    const idx = pages.findIndex(page => page.fields.some(f => fieldErrors[f.id]));
+    if (idx >= 0) setCurrentPageIndex(idx);
+  }, [fieldErrors, pages]);
 
   const totalPages = pages.length;
   const currentPage = pages[currentPageIndex];
@@ -171,6 +182,18 @@ export function SteppedFormPreview({
     );
   };
 
+  // Helper to render an inline validation error for a field
+  const renderError = (field: FormField) => {
+    const error = fieldErrors?.[field.id];
+    if (!error) return null;
+    return (
+      <p className="text-xs text-destructive flex items-center gap-1 mt-1">
+        <AlertCircle className="h-3 w-3" />
+        {error}
+      </p>
+    );
+  };
+
   // Helper to render hint text
   const renderHint = (field: FormField) => {
     const hint = isEnglish ? field.hint_en : field.hint_fr;
@@ -248,11 +271,12 @@ export function SteppedFormPreview({
                 type={field.type === 'email' ? 'email' : field.type === 'phone' ? 'tel' : 'text'}
                 placeholder={placeholder}
                 value={formValues[field.id] || ''}
-                onChange={(e) => onValueChange(field.id, e.target.value)}
+                onChange={(e) => handleValueChange(field.id, e.target.value)}
               />
               {description && <p className="text-xs text-muted-foreground">{description}</p>}
               {renderHint(field)}
               {renderFieldLink(field)}
+              {renderError(field)}
             </div>
           </div>
         );
@@ -271,12 +295,13 @@ export function SteppedFormPreview({
                 placeholder={placeholder}
                 min={field.min}
                 max={field.max}
-                value={formValues[field.id] || ''}
-                onChange={(e) => onValueChange(field.id, e.target.value ? Number(e.target.value) : '')}
+                value={formValues[field.id] ?? ''}
+                onChange={(e) => handleValueChange(field.id, e.target.value === '' ? '' : Number(e.target.value))}
               />
               {description && <p className="text-xs text-muted-foreground">{description}</p>}
               {renderHint(field)}
               {renderFieldLink(field)}
+              {renderError(field)}
             </div>
           </div>
         );
@@ -294,11 +319,12 @@ export function SteppedFormPreview({
                 placeholder={placeholder}
                 rows={3}
                 value={formValues[field.id] || ''}
-                onChange={(e) => onValueChange(field.id, e.target.value)}
+                onChange={(e) => handleValueChange(field.id, e.target.value)}
               />
               {description && <p className="text-xs text-muted-foreground">{description}</p>}
               {renderHint(field)}
               {renderFieldLink(field)}
+              {renderError(field)}
             </div>
           </div>
         );
@@ -376,6 +402,7 @@ export function SteppedFormPreview({
               )}
               {renderHint(field)}
               {renderFieldLink(field)}
+              {renderError(field)}
             </div>
           </div>
         );
@@ -433,6 +460,7 @@ export function SteppedFormPreview({
               )}
               {renderHint(field)}
               {renderFieldLink(field)}
+              {renderError(field)}
             </div>
           </div>
         );
@@ -492,6 +520,7 @@ export function SteppedFormPreview({
               {description && <p className="text-xs text-muted-foreground">{description}</p>}
               {renderHint(field)}
               {renderFieldLink(field)}
+              {renderError(field)}
             </div>
           </div>
         );
@@ -508,11 +537,12 @@ export function SteppedFormPreview({
               <Input
                 type="date"
                 value={formValues[field.id] || ''}
-                onChange={(e) => onValueChange(field.id, e.target.value)}
+                onChange={(e) => handleValueChange(field.id, e.target.value)}
               />
               {description && <p className="text-xs text-muted-foreground">{description}</p>}
               {renderHint(field)}
               {renderFieldLink(field)}
+              {renderError(field)}
             </div>
           </div>
         );
@@ -528,12 +558,13 @@ export function SteppedFormPreview({
               </Label>
               <SignatureCanvas
                 value={formValues[field.id] || ''}
-                onChange={(value) => onValueChange(field.id, value)}
+                onChange={(value) => handleValueChange(field.id, value)}
                 height={120}
               />
               {description && <p className="text-xs text-muted-foreground">{description}</p>}
               {renderHint(field)}
               {renderFieldLink(field)}
+              {renderError(field)}
             </div>
           </div>
         );
@@ -557,13 +588,14 @@ export function SteppedFormPreview({
                         ? 'text-amber-500 fill-amber-500'
                         : 'text-muted-foreground/40'
                     )}
-                    onClick={() => onValueChange(field.id, i + 1)}
+                    onClick={() => handleValueChange(field.id, i + 1)}
                   />
                 ))}
               </div>
               {description && <p className="text-xs text-muted-foreground">{description}</p>}
               {renderHint(field)}
               {renderFieldLink(field)}
+              {renderError(field)}
             </div>
           </div>
         );
@@ -650,20 +682,16 @@ export function SteppedFormPreview({
             {t('multipage.previous')}
           </Button>
 
-          <Button
-            onClick={handleNext}
-            disabled={currentPageIndex === totalPages - 1}
-            className="gradient-primary"
-          >
-            {currentPageIndex === totalPages - 1 ? (
-              t('multipage.complete')
-            ) : (
-              <>
-                {t('multipage.next')}
-                <ChevronRight className="h-4 w-4 ml-2" />
-              </>
-            )}
-          </Button>
+          {currentPageIndex < totalPages - 1 ? (
+            <Button onClick={handleNext} className="gradient-primary">
+              {t('multipage.next')}
+              <ChevronRight className="h-4 w-4 ml-2" />
+            </Button>
+          ) : (
+            // Last page — completion is driven by the parent (e.g. the editor's
+            // "Save & Complete" footer), so no extra button here.
+            <span />
+          )}
         </div>
       )}
     </div>

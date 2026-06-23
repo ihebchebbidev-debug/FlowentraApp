@@ -53,6 +53,10 @@ function evaluateCondition(
         return sourceValue.length === 0;
       case 'is_not_empty':
         return sourceValue.length > 0;
+      case 'greater_than':
+        return sourceValue.length > Number(conditionValue);
+      case 'less_than':
+        return sourceValue.length < Number(conditionValue);
       default:
         return true;
     }
@@ -115,4 +119,23 @@ export function getVisibleFields(
   formValues: Record<string, any>
 ): FormField[] {
   return fields.filter(field => evaluateFieldVisibility(field, formValues));
+}
+
+/**
+ * Returns only the values belonging to currently-visible input fields, dropping
+ * stale values left behind by fields that are now hidden by conditional logic.
+ * Use this when persisting/submitting so hidden answers aren't saved.
+ */
+export function getVisibleValues(
+  fields: FormField[],
+  formValues: Record<string, any>
+): Record<string, any> {
+  const visibleIds = new Set(
+    getVisibleFields(fields, formValues).map(f => f.id)
+  );
+  const result: Record<string, any> = {};
+  for (const key of Object.keys(formValues)) {
+    if (visibleIds.has(key)) result[key] = formValues[key];
+  }
+  return result;
 }

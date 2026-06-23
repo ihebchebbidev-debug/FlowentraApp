@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Star, CheckCircle2, Loader2, Sun, Moon, Languages, AlertCircle, ExternalLink, Info } from 'lucide-react';
+import { Star, CheckCircle2, Loader2, Sun, Moon, Languages, AlertCircle, ExternalLink, Info, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { publicFormsService } from '../services/dynamicFormsService';
 import { DynamicForm, FormField } from '../types';
-import { evaluateFieldVisibility } from '../utils/conditionEvaluator';
+import { evaluateFieldVisibility, getVisibleValues } from '../utils/conditionEvaluator';
+import { organizeFieldsIntoPages } from '../utils/pageUtils';
 import { evaluateThankYouPage, ThankYouResult } from '../utils/thankYouEvaluator';
 import { SignatureCanvas } from '../components/FormBuilder/SignatureCanvas';
 import { validateFormFields, validateSubmitterInfo } from '../utils/formValidation';
@@ -36,6 +37,7 @@ export default function PublicFormPage() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [submitterErrors, setSubmitterErrors] = useState<{ emailError?: string; nameError?: string }>({});
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+  const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [submitterInfo, setSubmitterInfo] = useState({
     name: '',
     email: '',
@@ -44,7 +46,7 @@ export default function PublicFormPage() {
   // Thank you page state
   const [thankYouResult, setThankYouResult] = useState<ThankYouResult | null>(null);
   const [redirectCountdown, setRedirectCountdown] = useState<number | null>(null);
-  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const redirectTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   
   // Get language from URL param or fallback to i18n
   const langParam = searchParams.get('lang');
@@ -104,13 +106,32 @@ export default function PublicFormPage() {
     loadForm();
   }, [slug]);
   
-  // Get visible fields based on conditions
-  const visibleFields = useMemo(() => {
+  // Split fields into pages on page_break, then resolve the current page's
+  // visible fields. Validation still runs across every visible field.
+  const pages = useMemo(() => organizeFieldsIntoPages(form?.fields || []), [form]);
+  const totalPages = pages.length;
+  const isLastPage = currentPageIndex >= totalPages - 1;
+
+  const allVisibleFields = useMemo(() => {
     if (!form) return [];
     return form.fields
       .filter(field => evaluateFieldVisibility(field, formValues))
       .sort((a, b) => a.order - b.order);
   }, [form, formValues]);
+
+  const visibleFields = useMemo(() => {
+    const page = pages[currentPageIndex];
+    if (!page) return [];
+    return page.fields
+      .filter(field => evaluateFieldVisibility(field, formValues))
+      .sort((a, b) => a.order - b.order);
+  }, [pages, currentPageIndex, formValues]);
+
+  const goToFirstErrorPage = useCallback((errorFieldIds: string[]) => {
+    if (errorFieldIds.length === 0) return;
+    const idx = pages.findIndex(p => p.fields.some(f => errorFieldIds.includes(f.id)));
+    if (idx >= 0) setCurrentPageIndex(idx);
+  }, [pages]);
   
   const handleValueChange = useCallback((fieldId: string, value: any) => {
     setFormValues(prev => ({ ...prev, [fieldId]: value }));
@@ -139,9 +160,9 @@ export default function PublicFormPage() {
     if (!slug || !form) return;
     
     setHasAttemptedSubmit(true);
-    
-    // Validate all form fields
-    const validationResult = validateFormFields(visibleFields, formValues, previewLang);
+
+    // Validate every visible field across all pages (not just the current page)
+    const validationResult = validateFormFields(allVisibleFields, formValues, previewLang);
     
     // Validate submitter info
     const submitterValidation = validateSubmitterInfo(submitterInfo.email, submitterInfo.name, previewLang);
@@ -166,11 +187,14 @@ export default function PublicFormPage() {
         variant: 'destructive',
       });
       
-      // Scroll to first error
+      // Jump to the page holding the first error, then scroll to it
       const firstErrorField = validationResult.errors[0];
       if (firstErrorField) {
-        const element = document.getElementById(`field-${firstErrorField.fieldId}`);
-        element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        goToFirstErrorPage(validationResult.errors.map(e => e.fieldId));
+        setTimeout(() => {
+          const element = document.getElementById(`field-${firstErrorField.fieldId}`);
+          element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 50);
       }
       return;
     }
@@ -198,7 +222,8 @@ export default function PublicFormPage() {
       const submitterName = submitterInfo.name?.trim() || undefined;
       
       await publicFormsService.submitResponse(slug, {
-        responses: formValues,
+        // Drop values from fields hidden by conditional logic.
+        responses: getVisibleValues(form.fields, formValues),
         submitter_name: submitterName,
         submitter_email: submitterEmail,
       });
@@ -390,13 +415,13 @@ export default function PublicFormPage() {
                 {label}
                 {field.required && <span className="text-destructive ml-1">*</span>}
               </Label>
-              <Input 
-                type="number" 
-                placeholder={placeholder} 
-                min={field.min} 
+              <Input
+                type="number"
+                placeholder={placeholder}
+                min={field.min}
                 max={field.max}
-                value={formValues[field.id] || ''}
-                onChange={(e) => handleValueChange(field.id, e.target.value ? Number(e.target.value) : '')}
+                value={formValues[field.id] ?? ''}
+                onChange={(e) => handleValueChange(field.id, e.target.value === '' ? '' : Number(e.target.value))}
                 className={cn(
                   "bg-background border-border focus:border-primary",
                   hasError && "border-destructive focus:border-destructive"
@@ -805,17 +830,48 @@ export default function PublicFormPage() {
               </div>
             </div>
             
+            {/* Multi-page step indicator */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2">
+                {pages.map((_, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    onClick={() => setCurrentPageIndex(index)}
+                    className={cn(
+                      "flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-all",
+                      index === currentPageIndex
+                        ? "bg-primary text-primary-foreground"
+                        : index < currentPageIndex
+                        ? "bg-primary/20 text-primary"
+                        : "bg-muted text-muted-foreground"
+                    )}
+                    aria-label={`Page ${index + 1}`}
+                  >
+                    {index < currentPageIndex ? <Check className="h-4 w-4" /> : index + 1}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Current page title */}
+            {totalPages > 1 && pages[currentPageIndex]?.title_en && (
+              <p className="text-center text-sm text-muted-foreground">
+                {previewLang === 'en' ? pages[currentPageIndex].title_en : pages[currentPageIndex].title_fr}
+              </p>
+            )}
+
             {/* Form fields */}
             <div className="flex flex-wrap gap-4">
               {visibleFields.map(renderField)}
             </div>
-            
-            {visibleFields.length === 0 && (
+
+            {allVisibleFields.length === 0 && (
               <p className="text-center text-muted-foreground py-8">
                 {t('preview.no_fields', 'This form has no fields yet')}
               </p>
             )}
-            
+
             {/* Validation error summary */}
             {hasAttemptedSubmit && (Object.keys(fieldErrors).length > 0 || submitterErrors.emailError || submitterErrors.nameError) && (
               <Alert variant="destructive">
@@ -825,24 +881,52 @@ export default function PublicFormPage() {
                 </AlertDescription>
               </Alert>
             )}
-            
-            {/* Submit button */}
-            {visibleFields.length > 0 && (
-              <Button 
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="w-full"
-                size="lg"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    {t('public.submitting', 'Submitting...')}
-                  </>
-                ) : (
-                  t('public.submit', 'Submit')
-                )}
-              </Button>
+
+            {/* Navigation / Submit */}
+            {allVisibleFields.length > 0 && (
+              totalPages > 1 ? (
+                <div className="flex items-center justify-between gap-3 pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setCurrentPageIndex(i => Math.max(0, i - 1))}
+                    disabled={currentPageIndex === 0}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-2" />
+                    {t('multipage.previous', 'Previous')}
+                  </Button>
+                  {isLastPage ? (
+                    <Button onClick={handleSubmit} disabled={isSubmitting} size="lg" className="flex-1">
+                      {isSubmitting ? (
+                        <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t('public.submitting', 'Submitting...')}</>
+                      ) : (
+                        t('public.submit', 'Submit')
+                      )}
+                    </Button>
+                  ) : (
+                    <Button type="button" onClick={() => setCurrentPageIndex(i => Math.min(totalPages - 1, i + 1))}>
+                      {t('multipage.next', 'Next')}
+                      <ChevronRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <Button
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                  className="w-full"
+                  size="lg"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      {t('public.submitting', 'Submitting...')}
+                    </>
+                  ) : (
+                    t('public.submit', 'Submit')
+                  )}
+                </Button>
+              )
             )}
           </CardContent>
         </Card>

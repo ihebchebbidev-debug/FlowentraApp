@@ -6,6 +6,7 @@ import { FieldPalette } from './FieldPalette';
 import { FormCanvas } from './FormCanvas';
 import { FieldProperties } from './FieldProperties';
 import { FormField, FieldType, FIELD_TYPES } from '../../types';
+import { genId } from '../../utils/ids';
 
 interface FormBuilderProps {
   fields: FormField[];
@@ -33,7 +34,7 @@ export function FormBuilder({ fields, onFieldsChange, formName, formDescription 
   const createNewField = (type: FieldType): FormField => {
     const config = FIELD_TYPES.find(f => f.type === type);
     return {
-      id: `field_${Date.now()}`,
+      id: genId('field'),
       type,
       label_en: config?.label_en || 'New Field',
       label_fr: config?.label_fr || 'Nouveau Champ',
@@ -100,15 +101,21 @@ export function FormBuilder({ fields, onFieldsChange, formName, formDescription 
   const handleDuplicateField = useCallback((id: string) => {
     const fieldToDuplicate = fields.find(f => f.id === id);
     if (!fieldToDuplicate) return;
-    
+
     const newField: FormField = {
       ...fieldToDuplicate,
-      id: `field_${Date.now()}`,
+      id: genId('field'),
       label_en: `${fieldToDuplicate.label_en} (${t('builder.copy')})`,
       label_fr: `${fieldToDuplicate.label_fr} (${t('builder.copy')})`,
       order: fields.length,
+      // Deep-clone nested objects so the copy doesn't share references with the
+      // original (shared option arrays / duplicate option IDs corrupt rendering).
+      options: fieldToDuplicate.options?.map(opt => ({ ...opt, id: genId('opt') })),
+      condition: fieldToDuplicate.condition ? { ...fieldToDuplicate.condition } : undefined,
+      data_source: fieldToDuplicate.data_source ? { ...fieldToDuplicate.data_source } : undefined,
+      dependency: fieldToDuplicate.dependency ? { ...fieldToDuplicate.dependency } : undefined,
     };
-    
+
     const fieldIndex = fields.findIndex(f => f.id === id);
     const newFields = [...fields];
     newFields.splice(fieldIndex + 1, 0, newField);

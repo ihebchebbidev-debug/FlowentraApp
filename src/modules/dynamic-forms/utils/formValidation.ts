@@ -29,7 +29,7 @@ export function validateField(
   const label = lang === 'en' ? field.label_en : field.label_fr;
   
   // Skip validation for non-input fields
-  if (field.type === 'section' || field.type === 'page_break') {
+  if (field.type === 'section' || field.type === 'page_break' || field.type === 'content') {
     return null;
   }
   
@@ -112,13 +112,27 @@ export function validateField(
     case 'signature':
       // Signature should be a base64 data URL
       if (typeof value !== 'string' || !value.startsWith('data:image/')) {
-        return lang === 'en' 
-          ? 'Please provide a valid signature' 
+        return lang === 'en'
+          ? 'Please provide a valid signature'
           : 'Veuillez fournir une signature valide';
       }
       break;
   }
-  
+
+  // Custom regex pattern validation (applies to text-like fields)
+  if (field.pattern && ['text', 'textarea', 'email', 'phone'].includes(field.type)) {
+    try {
+      const re = new RegExp(field.pattern);
+      if (!re.test(String(value))) {
+        return lang === 'en'
+          ? 'Please enter a valid value'
+          : 'Veuillez entrer une valeur valide';
+      }
+    } catch {
+      // Invalid regex in the field config — ignore rather than block submission.
+    }
+  }
+
   return null;
 }
 

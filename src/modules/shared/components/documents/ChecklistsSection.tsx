@@ -75,6 +75,8 @@ const translations = {
     addedInSale: 'Sale',
     addedInServiceOrder: 'Service Order',
     addedInDispatch: 'Dispatch',
+    addedInDeal: 'Deal',
+    addedInProject: 'Project',
     addChecklistTitle: 'Add Checklist',
     addChecklistDescription: 'Select a form and optionally add a note',
     selectForm: 'Select Form',
@@ -113,6 +115,8 @@ const translations = {
     addedInSale: 'Vente',
     addedInServiceOrder: 'Ordre de Service',
     addedInDispatch: 'Intervention',
+    addedInDeal: 'Affaire',
+    addedInProject: 'Projet',
     addChecklistTitle: 'Ajouter un Checklist',
     addChecklistDescription: 'Sélectionnez un formulaire et ajoutez une note optionnelle',
     selectForm: 'Sélectionner un Formulaire',
@@ -342,6 +346,8 @@ export function ChecklistsSection({
       case 'sale': return t.addedInSale;
       case 'service_order': return t.addedInServiceOrder;
       case 'dispatch': return t.addedInDispatch;
+      case 'deal': return t.addedInDeal;
+      case 'project': return t.addedInProject;
       default: return eType;
     }
   };
@@ -513,12 +519,13 @@ export function ChecklistsSection({
       console.warn('Error building entity chain for note propagation:', error);
     }
 
-    // Notify all entities in the chain (except the source which was already notified)
-    for (const entity of entitiesToNotify) {
-      if (entity.type !== sourceEntityType || entity.id !== sourceEntityId) {
-        await addNoteToEntity(entity.type, entity.id, linkedNoteDescription, linkedNoteDetails, noteType);
-      }
-    }
+    // Notify all entities in the chain (except the source which was already
+    // notified) in parallel — each call already swallows its own errors.
+    await Promise.allSettled(
+      entitiesToNotify
+        .filter(entity => entity.type !== sourceEntityType || entity.id !== sourceEntityId)
+        .map(entity => addNoteToEntity(entity.type, entity.id, linkedNoteDescription, linkedNoteDetails, noteType))
+    );
   };
 
   const handleSaveDocument = async (
@@ -584,6 +591,10 @@ export function ChecklistsSection({
         return t.addedInServiceOrder;
       case 'dispatch':
         return t.addedInDispatch;
+      case 'deal':
+        return t.addedInDeal;
+      case 'project':
+        return t.addedInProject;
       default:
         return source;
     }
