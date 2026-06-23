@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { SiteTheme } from '../../../types';
 
 interface AnnouncementBarBlockProps {
@@ -16,6 +16,12 @@ interface AnnouncementBarBlockProps {
 
 export function AnnouncementBarBlock({ text, linkText, linkUrl, dismissible = true, variant = 'primary', bgColor, theme, isEditing, onUpdate, style }: AnnouncementBarBlockProps) {
   const variantBg = variant === 'dark' ? '#1e293b' : variant === 'accent' ? theme.accentColor : theme.primaryColor;
+  const [dismissed, setDismissed] = useState(false);
+
+  // Stays dismissed for the visit (not while editing, so it remains selectable).
+  if (dismissed && !isEditing) return null;
+
+  const isExternal = !!linkUrl && /^https?:\/\//i.test(linkUrl);
 
   return (
     <section className="relative" style={style}>
@@ -30,10 +36,20 @@ export function AnnouncementBarBlock({ text, linkText, linkUrl, dismissible = tr
           <span>{text}</span>
         )}
         {linkText && (
-          <a href={isEditing ? undefined : linkUrl} className="underline ml-2 hover:opacity-80">{linkText}</a>
+          <a
+            href={isEditing ? undefined : linkUrl}
+            target={isExternal ? '_blank' : undefined}
+            rel={isExternal ? 'noopener noreferrer' : undefined}
+            className="underline ml-2 hover:opacity-80"
+          >{linkText}</a>
         )}
         {dismissible && !isEditing && (
-          <button className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white">✕</button>
+          <button
+            type="button"
+            aria-label="Dismiss"
+            onClick={() => setDismissed(true)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white"
+          >✕</button>
         )}
       </div>
     </section>

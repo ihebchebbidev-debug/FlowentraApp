@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { SiteTheme } from '../../../types';
 
 interface CountdownBlockProps {
@@ -12,8 +12,17 @@ interface CountdownBlockProps {
 
 export function CountdownBlock({ title, targetDate, theme, isEditing, onUpdate, style }: CountdownBlockProps) {
   const target = new Date(targetDate || Date.now() + 7 * 86400000);
-  const now = new Date();
-  const diff = Math.max(0, target.getTime() - now.getTime());
+
+  // Tick every second so the countdown is live. No interval while editing
+  // (the values aren't meaningful on the canvas and it avoids churn).
+  const [nowTs, setNowTs] = useState(() => Date.now());
+  useEffect(() => {
+    if (isEditing) return;
+    const id = setInterval(() => setNowTs(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [isEditing]);
+
+  const diff = Math.max(0, target.getTime() - nowTs);
   const days = Math.floor(diff / 86400000);
   const hours = Math.floor((diff % 86400000) / 3600000);
   const minutes = Math.floor((diff % 3600000) / 60000);

@@ -109,15 +109,18 @@ export async function submitFormData(opts: SubmitFormOptions): Promise<SubmitFor
     }
   }
 
-  // success requires: webhook didn't fail AND (we persisted OR a webhook succeeded)
+  // The submission counts as successful if the lead was captured at all — either
+  // persisted (backend/localStorage) or delivered via webhook. A webhook that
+  // fails AFTER the data is saved must NOT show the visitor an error; it's
+  // reported via `webhookStatus` so the caller can surface a non-blocking notice.
   const webhookOk = webhookStatus === 'success';
-  const success = webhookStatus !== 'failed' && (persisted || webhookOk);
+  const captured = persisted || webhookOk;
 
   return {
-    success,
+    success: captured,
     persisted,
     webhookStatus,
     webhookResponse,
-    error: success ? undefined : (webhookStatus === 'failed' ? 'Webhook delivery failed' : 'Failed to save submission'),
+    error: captured ? undefined : (webhookStatus === 'failed' ? 'Webhook delivery failed' : 'Failed to save submission'),
   };
 }

@@ -1,5 +1,17 @@
 import DOMPurify from 'dompurify';
 
+// Harden every sanitized anchor that opens a new tab against reverse-tabnabbing
+// by forcing rel="noopener noreferrer". Registered once at module load.
+let _relHookInstalled = false;
+if (!_relHookInstalled && typeof DOMPurify.addHook === 'function') {
+  DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+    if (node instanceof Element && node.tagName === 'A' && node.getAttribute('target') === '_blank') {
+      node.setAttribute('rel', 'noopener noreferrer');
+    }
+  });
+  _relHookInstalled = true;
+}
+
 /**
  * Sanitize HTML content to prevent XSS attacks.
  * Uses DOMPurify to strip dangerous tags/attributes while keeping safe formatting.

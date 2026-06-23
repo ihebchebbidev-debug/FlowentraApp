@@ -32,7 +32,19 @@ function ComponentRendererInner({
     isEditing ? undefined : component.animation
   );
 
-  if (!Block) return null;
+  if (!Block) {
+    // Unknown/legacy block type. Stay invisible on the published site, but surface
+    // a selectable placeholder while editing so the content isn't silently lost.
+    if (!isEditing) return null;
+    return (
+      <div
+        onClick={(e) => { e.stopPropagation(); onSelect?.(component.id); }}
+        className={`rounded-lg border border-dashed border-amber-400 bg-amber-50 text-amber-700 px-4 py-3 text-sm ${isSelected ? 'ring-2 ring-primary ring-offset-2' : ''}`}
+      >
+        Unknown block: <strong>{component.label || component.type}</strong> <span className="opacity-70">({component.type})</span>
+      </div>
+    );
+  }
   // Hidden on this device: truly removed in preview/published, but kept visible
   // (dimmed + badged) while editing so it stays selectable to toggle back.
   const hiddenHere = !!component.hidden?.[device];

@@ -11,6 +11,21 @@ interface UseActionHandlerOptions {
   onModalOpen?: (modalId: string) => void;
 }
 
+/** Reject dangerous URL schemes (javascript:, data:, vbscript:) that would
+ *  execute script when assigned to location/href. Allows http(s), mailto, tel,
+ *  anchors and relative/site paths. */
+function isSafeUrl(url: string): boolean {
+  const trimmed = url.trim();
+  // Relative, root-relative, anchor and protocol-relative URLs are safe.
+  if (/^(https?:\/\/|mailto:|tel:|\/|#|\.|\?)/i.test(trimmed)) return true;
+  // Anything with an explicit dangerous scheme is rejected.
+  if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed)) {
+    return /^(https?|mailto|tel):/i.test(trimmed);
+  }
+  // No scheme at all (e.g. "example.com/path") — treat as relative/safe.
+  return true;
+}
+
 export function useActionHandler(options: UseActionHandlerOptions = {}) {
   const { pages = [], currentPageId, onModalOpen } = options;
   const navigate = useNavigate();
@@ -39,13 +54,15 @@ export function useActionHandler(options: UseActionHandlerOptions = {}) {
       }
 
       case 'url': {
-        // Navigate to external URL
-        if (action.url) {
+        // Navigate to external URL — block dangerous schemes (javascript:, data:).
+        if (action.url && isSafeUrl(action.url)) {
           if (action.openInNewTab) {
             window.open(action.url, '_blank', 'noopener,noreferrer');
           } else {
             window.location.href = action.url;
           }
+        } else if (action.url) {
+          console.warn('[website-builder] Blocked unsafe action URL:', action.url);
         }
         break;
       }
@@ -130,7 +147,7 @@ export function useActionHandler(options: UseActionHandlerOptions = {}) {
         return '#';
       }
       case 'url':
-        return action.url || '#';
+        return action.url && isSafeUrl(action.url) ? action.url : '#';
       case 'section':
         return action.sectionId ? `#${action.sectionId}` : '#';
       case 'email':

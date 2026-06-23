@@ -26,9 +26,14 @@ function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-/** Client-side ids look like "1770636146211-abc1234"; backend ids are plain integers. */
+/**
+ * Client-side ids are produced by `generateId()` and look like
+ * "1770636146211-abc1234" (epoch-millis + "-" + base36 suffix). Backend ids are
+ * plain integers. Match the exact client shape so a hyphenated backend id (e.g.
+ * a GUID) is never mistaken for an unsaved page and re-created on every save.
+ */
 function isClientSideId(id: string): boolean {
-  return id.includes('-');
+  return /^\d+-[a-z0-9]+$/i.test(id);
 }
 
 const SAVE_DEBOUNCE_MS = 600;
