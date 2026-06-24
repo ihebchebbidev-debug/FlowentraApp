@@ -1,6 +1,6 @@
 @echo off
 REM ---------------------------------------------------------------------------
-REM  run-frontend.bat - starts the Flowentra Vite dev server (port 8080).
+REM  run-frontend.bat - setarts the Flowentra Vite dev server (port 8080).
 REM  Generated/maintained alongside watcher.bat. Can also be run standalone.
 REM ---------------------------------------------------------------------------
 title Flowentra FRONTEND (http://localhost:8080)
