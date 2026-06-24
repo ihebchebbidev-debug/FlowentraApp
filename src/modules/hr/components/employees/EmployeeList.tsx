@@ -91,7 +91,7 @@ export function EmployeeList() {
             fullWidth
           />
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           {employeesQuery.isLoading ? (
             <div className="text-sm text-muted-foreground">{t('loading')}</div>
           ) : employeesQuery.error ? (
@@ -102,7 +102,7 @@ export function EmployeeList() {
               <div className="text-xs text-muted-foreground mt-1">{t('employeesPage.emptyHint')}</div>
             </div>
           ) : (
-            <Table>
+            <Table className="min-w-[650px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>{t('employee.name')}</TableHead>

@@ -77,7 +77,7 @@ export function SummaryCards({ entries, className }: SummaryCardsProps) {
       {cards.map((card, index) => {
         const Icon = card.icon;
         return (
-          <Card key={index} className="p-6 hover-lift shadow-card">
+          <Card key={index} className="p-3 sm:p-4 lg:p-6 hover-lift shadow-card">
             <div className="flex items-center justify-between">
               <div className="space-y-2">
                 <p className="text-sm font-medium text-muted-foreground">

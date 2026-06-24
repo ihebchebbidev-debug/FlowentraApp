@@ -167,8 +167,8 @@ export default function CreateGoodsReceiptPage() {
 
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm">{t('receipts.itemsToReceive')}</CardTitle></CardHeader>
-          <CardContent className="p-0">
-            <Table>
+          <CardContent className="p-0 overflow-x-auto">
+            <Table className="min-w-[640px]">
               <TableHeader>
                 <TableRow>
                   <TableHead className="text-xs">{t('fields.article')}</TableHead>

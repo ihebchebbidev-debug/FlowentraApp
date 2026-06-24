@@ -217,8 +217,8 @@ export default function CreateSupplierInvoicePage() {
             <CardTitle className="text-sm">{t('create.items')}</CardTitle>
             <Button size="sm" variant="outline" onClick={addItem}><Plus className="h-3.5 w-3.5 mr-1" /> {t('create.addItem')}</Button>
           </CardHeader>
-          <CardContent className="p-0">
-            <Table>
+          <CardContent className="p-0 overflow-x-auto">
+            <Table className="min-w-[560px]">
               <TableHeader><TableRow>
                 <TableHead className="text-xs min-w-[180px]">{t('fields.description')}</TableHead>
                 <TableHead className="text-xs w-20">{t('fields.quantity')}</TableHead>

@@ -111,14 +111,14 @@ export function DashboardContent() {
           </PermissionRoute>
         } />
         <Route path="stock-management/*" element={
-          <PermissionRoute module="articles" action="read">
+          <PermissionRoute module="stock_management" action="read">
             <Suspense fallback={<PageSkeleton />}>
               <StockManagementModule />
             </Suspense>
           </PermissionRoute>
         } />
         <Route path="deals/*" element={
-          <PermissionRoute module="offers" action="read">
+          <PermissionRoute module="deals" action="read">
             <DealsModule />
           </PermissionRoute>
         } />
@@ -173,11 +173,17 @@ export function DashboardContent() {
             </PermissionRoute>
           </PluginGate>
         } />
-        <Route path="settings/*" element={<SettingsModule />} />
+        <Route path="settings/*" element={
+          <PermissionRoute module="settings" action="read">
+            <SettingsModule />
+          </PermissionRoute>
+        } />
         <Route path="website-builder/*" element={
-          <Suspense fallback={<PageSkeleton />}>
-            <WebsiteBuilderModule />
-          </Suspense>
+          <PermissionRoute module="settings" action="read">
+            <Suspense fallback={<PageSkeleton />}>
+              <WebsiteBuilderModule />
+            </Suspense>
+          </PermissionRoute>
         } />
         <Route path="hr/*" element={
           <PermissionRoute module="hr" action="read">
@@ -207,9 +213,11 @@ export function DashboardContent() {
         <Route path="projects/*" element={<Navigate to="/dashboard/tasks/projects" replace />} />
         {/* Tickets Admin */}
         <Route path="ticketsadmin" element={
-          <Suspense fallback={<PageSkeleton />}>
-            <TicketsAdminPage />
-          </Suspense>
+          <PermissionRoute module="settings" action="read">
+            <Suspense fallback={<PageSkeleton />}>
+              <TicketsAdminPage />
+            </Suspense>
+          </PermissionRoute>
         } />
       </Routes>
     </div>

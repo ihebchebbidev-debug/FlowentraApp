@@ -322,7 +322,7 @@ export default function DashboardOverview() {
       {isLoading ? (
         <SkeletonGrid n={5} />
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
           <KpiCard
             icon={TrendingUp}
             tone={(revenueMoM.delta ?? 0) >= 0 ? 'success' : 'danger'}
@@ -339,7 +339,7 @@ export default function DashboardOverview() {
       )}
 
       {/* Charts — one bar, one donut. That's it. */}
-      <div className="grid lg:grid-cols-3 gap-3">
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
         <Panel className="lg:col-span-2" title={t('overview.revenueTrend', { defaultValue: 'Revenue — last 6 months' })}>
           <ThemedBarChart data={revenueTrend} height={240} />
         </Panel>
@@ -400,7 +400,7 @@ export default function DashboardOverview() {
 
       {/* Inventory — donut + summary strip with the items needing attention */}
       {!isLoading && (
-        <div className="grid lg:grid-cols-3 gap-3">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
           <Panel title={t('overview.stockBreakdown', { defaultValue: 'Stock status' })}>
             {stockDonut.length > 0
               ? <DonutChartComponent data={stockDonut} height={220} innerRadius={56} outerRadius={90} centerValue={stockStats.total} centerLabel={t('overview.totalArticles', { defaultValue: 'Total articles' })} />

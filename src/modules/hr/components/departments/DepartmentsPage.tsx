@@ -196,8 +196,8 @@ export function DepartmentsPage() {
             <CardTitle className="text-base">{t('departments.listTitle')}</CardTitle>
             <p className="text-sm text-muted-foreground">{t('departments.listHint')}</p>
           </CardHeader>
-          <CardContent>
-            <Table>
+          <CardContent className="overflow-x-auto">
+            <Table className="min-w-[400px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>{t('departments.name')}</TableHead>

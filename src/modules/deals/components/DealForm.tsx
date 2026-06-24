@@ -211,7 +211,7 @@ export function DealForm({ mode, initial, submitting, onSubmit }: Props) {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex h-14 items-center gap-4 px-6">
+        <div className="flex h-14 items-center gap-2 sm:gap-4 px-3 sm:px-6">
           <Button variant="ghost" size="sm" asChild>
             <Link to="/dashboard/deals" className="gap-2">
               <ArrowLeft className="h-4 w-4" />
@@ -227,14 +227,14 @@ export function DealForm({ mode, initial, submitting, onSubmit }: Props) {
         </div>
       </div>
 
-      <div className="p-6">
+      <div className="p-3 sm:p-6">
         {viewAll && (
           <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-900/10 p-3 text-sm text-amber-700 dark:text-amber-300">
             <Building2 className="h-4 w-4 mt-0.5 shrink-0" />
             <span>{t("tenant.selectCompanyHintAdd", { defaultValue: "You're viewing all companies. Select the company you want to add this deal to from the top bar." })}</span>
           </div>
         )}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
           {/* Main content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Deal information */}
@@ -494,11 +494,11 @@ export function DealForm({ mode, initial, submitting, onSubmit }: Props) {
         </div>
 
         {/* Action buttons */}
-        <div className="flex justify-end gap-3 pt-6 border-t mt-6">
-          <Button variant="outline" onClick={() => navigate("/dashboard/deals")} disabled={submitting}>
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3 pt-6 border-t mt-6">
+          <Button variant="outline" onClick={() => navigate("/dashboard/deals")} disabled={submitting} className="w-full sm:w-auto">
             {t("actions.cancel")}
           </Button>
-          <Button onClick={handleSubmit} disabled={submitting || viewAll} className="gap-1.5">
+          <Button onClick={handleSubmit} disabled={submitting || viewAll} className="gap-1.5 w-full sm:w-auto">
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             {submitting ? t("actions.saving") : t("actions.save")}
           </Button>

@@ -292,8 +292,8 @@ export function PaymentsTab({ entityType, entityId, entityNumber, totalAmount, c
               )}
               <Progress value={planPct} className="h-1.5 mt-2" />
             </CardHeader>
-            <CardContent className="p-0">
-              <Table>
+            <CardContent className="p-0 overflow-x-auto">
+              <Table className="min-w-[550px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[60px]">#</TableHead>

@@ -91,7 +91,7 @@ export function DealDetail() {
 
             <Card className="flex-1 shadow-sm border-border/50">
               <CardContent className="p-4">
-                <div className="flex items-center justify-between gap-6 flex-wrap">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-6">
                   <div className="flex items-center gap-3 min-w-0 flex-wrap">
                     <h1 className="text-xl font-bold truncate">{deal.title}</h1>
                     <Badge variant="secondary" className={stageBadgeClass(deal.stage)}>{t(`stages.${deal.stage}`)}</Badge>
@@ -104,7 +104,7 @@ export function DealDetail() {
                       {deal.dealNumber} · {deal.contactName || deal.contact?.name}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <Button variant="outline" size="sm" onClick={() => setIsPDFModalOpen(true)} className="gap-1.5">
                       <FileDown className="h-4 w-4" /> {t("actions.pdf", { defaultValue: "PDF" })}
                     </Button>

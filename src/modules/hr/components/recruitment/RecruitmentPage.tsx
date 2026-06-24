@@ -156,9 +156,9 @@ export function RecruitmentPage() {
                   </DialogContent>
                 </Dialog>
               </CardHeader>
-              <CardContent>
+              <CardContent className="overflow-x-auto">
                 <div className="rounded-md border">
-                  <Table>
+                  <Table className="min-w-[550px]">
                     <TableHeader>
                       <TableRow>
                         <TableHead>Title</TableHead>
@@ -346,8 +346,8 @@ function ApplicantsTab() {
             </Select>
           </div>
         </div>
-        <div className="rounded-md border">
-          <Table>
+        <div className="rounded-md border overflow-x-auto">
+          <Table className="min-w-[600px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
@@ -515,9 +515,9 @@ function InterviewsTab() {
           </DialogContent>
         </Dialog>
       </CardHeader>
-      <CardContent>
+      <CardContent className="overflow-x-auto">
         <div className="rounded-md border">
-          <Table>
+          <Table className="min-w-[600px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Applicant</TableHead>

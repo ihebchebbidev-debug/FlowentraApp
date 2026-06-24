@@ -598,10 +598,6 @@ export function TopNavigation() {
                    <div className="px-3 pt-2">
                      <TenantSwitcher />
                    </div>
-                    {/* Company filter — only visible in view-all mode */}
-                    <div className="px-3 pt-2">
-                      <GlobalCompanyFilter className="w-full" />
-                    </div>
 
                    <div className="px-3 pt-3 pb-1">
                      <button

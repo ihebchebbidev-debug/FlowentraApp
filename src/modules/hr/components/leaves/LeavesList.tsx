@@ -208,7 +208,8 @@ export function LeavesList() {
         ) : (employeesQuery.error || leavesQuery.error) ? (
           <div className="text-sm text-destructive">{String(employeesQuery.error || leavesQuery.error)}</div>
         ) : (
-          <Table>
+          <div className="overflow-x-auto">
+          <Table className="min-w-[550px]">
             <TableHeader>
               <TableRow>
                 <TableHead>{t('employee.employee')}</TableHead>
@@ -256,6 +257,7 @@ export function LeavesList() {
               )}
             </TableBody>
           </Table>
+          </div>
         )}
       </CardContent>
     </Card>

@@ -377,9 +377,9 @@ function PurchaseOrderDetailPage() {
                   )
                 )}
               </CardHeader>
-              <CardContent className="p-0">
+              <CardContent className="p-0 overflow-x-auto">
                 {!isEditingItems ? (
-                  <Table>
+                  <Table className="min-w-[650px]">
                     <TableHeader>
                       <TableRow>
                         <TableHead className="text-xs">{t('fields.article')}</TableHead>
@@ -419,7 +419,7 @@ function PurchaseOrderDetailPage() {
                     </TableBody>
                   </Table>
                 ) : (
-                  <Table>
+                  <Table className="min-w-[650px]">
                     <TableHeader>
                       <TableRow>
                         <TableHead className="text-xs min-w-[180px]">{t('fields.description')}</TableHead>

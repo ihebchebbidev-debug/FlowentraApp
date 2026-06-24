@@ -260,7 +260,7 @@ export function BonusesPage() {
               </div>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="overflow-x-auto">
             {bonusesQuery.isLoading ? (
               <div className="text-sm text-muted-foreground">{t('loading')}</div>
             ) : (bonusesQuery.data ?? []).length === 0 ? (
@@ -269,7 +269,7 @@ export function BonusesPage() {
                 <div className="text-xs text-muted-foreground mt-1">{t('bonusesPage.emptyHint')}</div>
               </div>
             ) : (
-              <Table>
+              <Table className="min-w-[500px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t('bonusesPage.employee')}</TableHead>

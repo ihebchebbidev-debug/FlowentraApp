@@ -224,9 +224,9 @@ export function EditSale() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
           {/* Sale Information */}
-          <Card className="lg:col-span-2">
+          <Card className="md:col-span-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <ShoppingCart className="h-5 w-5 text-primary" />

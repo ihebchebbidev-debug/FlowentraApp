@@ -465,9 +465,9 @@ function SupplierInvoiceDetailContent() {
                   )
                 )}
               </CardHeader>
-              <CardContent className="p-0">
+              <CardContent className="p-0 overflow-x-auto">
                 {!isEditingItems ? (
-                  <Table>
+                  <Table className="min-w-[500px]">
                     <TableHeader><TableRow>
                       <TableHead className="text-xs">{t('fields.article')}</TableHead>
                       <TableHead className="text-xs text-center">{t('fields.quantity')}</TableHead>

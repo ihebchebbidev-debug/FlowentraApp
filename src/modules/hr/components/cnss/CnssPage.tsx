@@ -251,8 +251,8 @@ export function CnssPage() {
               </div>
             </div>
           </CardHeader>
-          <CardContent>
-            <Table>
+          <CardContent className="overflow-x-auto">
+            <Table className="min-w-[550px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>{t('cnssPage.cnssNumber')}</TableHead>

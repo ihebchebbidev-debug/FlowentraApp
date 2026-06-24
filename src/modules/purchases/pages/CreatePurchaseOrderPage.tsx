@@ -361,8 +361,8 @@ export default function CreatePurchaseOrderPage() {
               <Button size="sm" variant="outline" onClick={addItem}><Plus className="h-3.5 w-3.5 mr-1" /> {t('create.addItem')}</Button>
             </div>
           </CardHeader>
-          <CardContent className="p-0">
-            <Table>
+          <CardContent className="p-0 overflow-x-auto">
+            <Table className="min-w-[700px]">
               <TableHeader>
                 <TableRow>
                   <TableHead className="text-xs min-w-[200px]">{t('fields.article')}</TableHead>

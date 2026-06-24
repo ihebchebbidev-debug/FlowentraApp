@@ -181,8 +181,8 @@ export function ReportsPage() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <Table>
+              <CardContent className="overflow-x-auto">
+                <Table className="min-w-[650px]">
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t('reportsPage.employee')}</TableHead>

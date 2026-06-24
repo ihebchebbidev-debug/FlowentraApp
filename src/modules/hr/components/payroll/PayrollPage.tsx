@@ -317,7 +317,7 @@ export function PayrollPage() {
                 <Badge variant="secondary" className="text-[11px]">{draftRuns.length}</Badge>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="overflow-x-auto">
               <Alert className="mb-3">
                 <AlertDescription className="text-sm text-muted-foreground">
                   {t('payrollDraft.runsHint')}
@@ -329,7 +329,7 @@ export function PayrollPage() {
                   <div className="text-xs text-muted-foreground mt-1">{t('payrollDraft.emptyHint')}</div>
                 </div>
               ) : (
-                <Table>
+                <Table className="min-w-[400px]">
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t('payrollPage.month')}</TableHead>
@@ -398,14 +398,14 @@ export function PayrollPage() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="overflow-x-auto">
               {!activeRun ? (
                 <div className="py-10 text-center">
                   <div className="text-sm font-medium">{t('payrollDraft.noActiveRunTitle')}</div>
                   <div className="text-xs text-muted-foreground mt-1">{t('payrollDraft.noActiveRunHint')}</div>
                 </div>
               ) : (
-                <Table>
+                <Table className="min-w-[650px]">
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-10">

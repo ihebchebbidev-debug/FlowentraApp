@@ -321,16 +321,16 @@ export function DealsList() {
           </div>
         ) : (
           <Card className="shadow-card border-0 bg-card">
-            <CardContent className="p-0">
-              <Table>
+            <CardContent className="p-0 overflow-x-auto">
+              <Table className="min-w-[640px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t("table.deal")}</TableHead>
-                    <TableHead>{t("table.customer")}</TableHead>
+                    <TableHead className="hidden sm:table-cell">{t("table.customer")}</TableHead>
                     <TableHead>{t("table.stage")}</TableHead>
                     <TableHead className="text-right">{t("table.value")}</TableHead>
-                    <TableHead className="text-center">{t("table.probability")}</TableHead>
-                    <TableHead>{t("table.closeDate")}</TableHead>
+                    <TableHead className="text-center hidden md:table-cell">{t("table.probability")}</TableHead>
+                    <TableHead className="hidden md:table-cell">{t("table.closeDate")}</TableHead>
                     <TableHead className="w-10" />
                   </TableRow>
                 </TableHeader>
@@ -347,11 +347,11 @@ export function DealsList() {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>{d.contactName || d.contact?.name || "—"}</TableCell>
+                      <TableCell className="hidden sm:table-cell">{d.contactName || d.contact?.name || "—"}</TableCell>
                       <TableCell><Badge variant="secondary" className={stageBadgeClass(d.stage)}>{t(`stages.${d.stage}`)}</Badge></TableCell>
                       <TableCell className="text-right font-medium">{formatCurrencyValue(d.estimatedValue, d.currency)}</TableCell>
-                      <TableCell className="text-center">{d.probability}%</TableCell>
-                      <TableCell>{d.expectedCloseDate ? format(new Date(d.expectedCloseDate), "dd MMM yyyy") : "—"}</TableCell>
+                      <TableCell className="text-center hidden md:table-cell">{d.probability}%</TableCell>
+                      <TableCell className="hidden md:table-cell">{d.expectedCloseDate ? format(new Date(d.expectedCloseDate), "dd MMM yyyy") : "—"}</TableCell>
                       <TableCell onClick={e => e.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>

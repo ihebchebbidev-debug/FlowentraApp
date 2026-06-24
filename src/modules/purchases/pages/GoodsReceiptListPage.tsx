@@ -469,8 +469,8 @@ function GoodsReceiptListContent() {
           <div className="animate-in fade-in duration-300">
             {viewMode === "table" ? (
               <Card>
-                <CardContent className="p-0">
-                  <Table>
+                <CardContent className="p-0 overflow-x-auto">
+                  <Table className="min-w-[700px]">
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-10">

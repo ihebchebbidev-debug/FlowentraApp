@@ -101,7 +101,7 @@ const SIDEBAR_PERMISSION_MAP: Record<string, PermissionModule> = {
   'sales-offers': 'sales',
   'time-expenses': 'time_tracking',
   'expenses': 'expenses',
-  'deals': 'offers',
+  'deals': 'deals',
   // Service - dispatches and dispatcher depend on service_orders access
   'service orders': 'service_orders',
   'service-orders': 'service_orders',
@@ -110,6 +110,8 @@ const SIDEBAR_PERMISSION_MAP: Record<string, PermissionModule> = {
   'planner': 'service_orders',
   'field': 'service_orders',
   'inventory-services': 'articles',
+  'stock-management': 'stock_management',
+  'stock_management': 'stock_management',
   // System
   'settings': 'settings',
   'users': 'users',
@@ -118,7 +120,7 @@ const SIDEBAR_PERMISSION_MAP: Record<string, PermissionModule> = {
   'system-logs': 'audit_logs',
   'documentation': 'documents',
   'documents': 'documents',
-  'dynamic-forms': 'settings',
+  'dynamic-forms': 'dynamic_forms',
   // Analytics & Communication
   'analytics': 'sales',
   'communication': 'contacts',

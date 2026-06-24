@@ -138,8 +138,8 @@ export function HrSettingsPage() {
 
             <Card className="shadow-card border-0 bg-card">
               <CardHeader><CardTitle className="text-base">{t('settingsPage.cnss.history')}</CardTitle></CardHeader>
-              <CardContent>
-                <Table>
+              <CardContent className="overflow-x-auto">
+                <Table className="min-w-[500px]">
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t('cnssPage.effectiveFrom')}</TableHead>
@@ -197,7 +197,8 @@ export function HrSettingsPage() {
                   </div>
                 </div>
 
-                <Table>
+                <div className="overflow-x-auto">
+                <Table className="min-w-[400px]">
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t('settingsPage.holidays.date')}</TableHead>
@@ -221,6 +222,7 @@ export function HrSettingsPage() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

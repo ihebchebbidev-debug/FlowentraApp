@@ -355,11 +355,11 @@ export function AttendancePage() {
 
             <TabsContent value="list">
               <Card className="shadow-card border-0 bg-card">
-                <CardContent className="p-0">
+                <CardContent className="p-0 overflow-x-auto">
                   {records.length === 0 ? (
                     <div className="py-10 text-center"><div className="text-sm font-medium">{t('attendancePage.emptyTitle')}</div><div className="mt-1 text-xs text-muted-foreground">{t('attendancePage.emptyHint')}</div></div>
                   ) : (
-                    <Table>
+                    <Table className="min-w-[600px]">
                       <TableHeader><TableRow><TableHead>{t('employee.employee')}</TableHead><TableHead>{t('attendanceFields.date')}</TableHead><TableHead>{t('attendanceFields.hoursWorked')}</TableHead><TableHead>{t('attendanceFields.overtimeHours')}</TableHead><TableHead>{t('attendanceFields.status')}</TableHead><TableHead className="text-right">{t('leavesPage.actions')}</TableHead></TableRow></TableHeader>
                       <TableBody>
                         {records.map((record) => (

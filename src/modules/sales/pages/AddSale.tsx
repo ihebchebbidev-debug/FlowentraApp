@@ -283,10 +283,10 @@ export function AddSale() {
         </div>
       </div>
 
-      <form onSubmit={(e) => handleSubmit(e, false)} className="p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <form onSubmit={(e) => handleSubmit(e, false)} className="p-3 sm:p-4 lg:p-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="md:col-span-2 space-y-6">
             {/* Sale Information */}
             <Card>
               <CardContent className="space-y-4 pt-6">

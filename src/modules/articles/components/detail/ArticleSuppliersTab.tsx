@@ -126,8 +126,8 @@ export function ArticleSuppliersTab({ articleId }: ArticleSuppliersTabProps) {
             <Plus className="h-3.5 w-3.5 mr-1" /> {t('detail.suppliers.add')}
           </Button>
         </CardHeader>
-        <CardContent className="p-0">
-          <Table>
+        <CardContent className="p-0 overflow-x-auto">
+          <Table className="min-w-[600px]">
             <TableHeader>
               <TableRow>
                 <TableHead className="text-xs">{t('detail.suppliers.supplierName')}</TableHead>

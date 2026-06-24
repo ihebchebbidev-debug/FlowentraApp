@@ -91,8 +91,8 @@ function GoodsReceiptDetailContent() {
 
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm">{t('detail.receivedItems')}</CardTitle></CardHeader>
-          <CardContent className="p-0">
-            <Table>
+          <CardContent className="p-0 overflow-x-auto">
+            <Table className="min-w-[480px]">
               <TableHeader>
                 <TableRow>
                   <TableHead className="text-xs">{t('fields.article')}</TableHead>

@@ -234,7 +234,7 @@ export function ArticlesList() {
 
       {/* Stats Cards */}
       <div className="p-3 sm:p-4 border-b border-border">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {stats.map((stat, index) => (
             <Card key={index} className="shadow-card border-0 hover-lift gradient-card group">
               <CardContent className="p-3 sm:p-4">

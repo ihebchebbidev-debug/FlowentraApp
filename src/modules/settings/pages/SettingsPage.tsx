@@ -705,75 +705,98 @@ export default function SettingsPage() {
         </Button>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left sidebar navigation — GitHub / Twenty style */}
-        <nav className="w-60 shrink-0 border-r border-border bg-card py-5 overflow-y-auto">
-          {/* Personal section */}
-          <div className="px-5 mb-2">
-            <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70">
-              {t('nav.sectionPersonal')}
-            </span>
-          </div>
-          <div className="space-y-0.5 px-3 mb-5">
-            {personalItems.map(item => {
+      <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+        {/* Navigation — horizontal scroll tabs on mobile, fixed sidebar on md+ */}
+        <nav className="shrink-0 border-b md:border-b-0 md:border-r border-border bg-card md:w-60 md:py-5 md:overflow-y-auto overflow-x-auto">
+          {/* Mobile: single horizontal row of icon+label buttons */}
+          <div className="flex md:hidden gap-1 p-2">
+            {[...personalItems, ...adminItems].map(item => {
               const isActive = activeSection === item.id;
               return (
                 <button
                   key={item.id}
                   onClick={() => setActiveSection(item.id)}
                   className={cn(
-                    "w-full flex items-center gap-3 px-2 py-1.5 rounded-lg h-8 text-sm transition-all duration-150",
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all duration-150 shrink-0",
                     isActive
                       ? "bg-sidebar-accent text-foreground font-medium shadow-sm"
                       : "text-sidebar-foreground/70 hover:text-foreground hover:bg-sidebar-foreground/[0.06]"
                   )}
                 >
-                  <item.icon className={cn("h-4 w-4 shrink-0", isActive && "text-primary")} />
+                  <item.icon className={cn("h-3.5 w-3.5 shrink-0", isActive && "text-primary")} />
                   {t(item.labelKey)}
                 </button>
               );
             })}
           </div>
 
-          {/* Separator */}
-          {adminItems.length > 0 && (
-            <div className="mx-5 mb-4 border-t border-border" />
-          )}
+          {/* Desktop: grouped sidebar */}
+          <div className="hidden md:block">
+            {/* Personal section */}
+            <div className="px-5 mb-2">
+              <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70">
+                {t('nav.sectionPersonal')}
+              </span>
+            </div>
+            <div className="space-y-0.5 px-3 mb-5">
+              {personalItems.map(item => {
+                const isActive = activeSection === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveSection(item.id)}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-2 py-1.5 rounded-lg h-8 text-sm transition-all duration-150",
+                      isActive
+                        ? "bg-sidebar-accent text-foreground font-medium shadow-sm"
+                        : "text-sidebar-foreground/70 hover:text-foreground hover:bg-sidebar-foreground/[0.06]"
+                    )}
+                  >
+                    <item.icon className={cn("h-4 w-4 shrink-0", isActive && "text-primary")} />
+                    {t(item.labelKey)}
+                  </button>
+                );
+              })}
+            </div>
 
-          {/* Admin section */}
-          {adminItems.length > 0 && (
-            <>
-              <div className="px-5 mb-2">
-                <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70">
-                  {t('nav.sectionAdmin')}
-                </span>
-              </div>
-              <div className="space-y-0.5 px-3">
-                {adminItems.map(item => {
-                  const isActive = activeSection === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => setActiveSection(item.id)}
-                      className={cn(
-                        "w-full flex items-center gap-3 px-2 py-1.5 rounded-lg h-8 text-sm transition-all duration-150",
-                        isActive
-                          ? "bg-sidebar-accent text-foreground font-medium shadow-sm"
-                          : "text-sidebar-foreground/70 hover:text-foreground hover:bg-sidebar-foreground/[0.06]"
-                      )}
-                    >
-                      <item.icon className={cn("h-4 w-4 shrink-0", isActive && "text-primary")} />
-                      {t(item.labelKey)}
-                    </button>
-                  );
-                })}
-              </div>
-            </>
-          )}
+            {adminItems.length > 0 && (
+              <div className="mx-5 mb-4 border-t border-border" />
+            )}
+
+            {adminItems.length > 0 && (
+              <>
+                <div className="px-5 mb-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70">
+                    {t('nav.sectionAdmin')}
+                  </span>
+                </div>
+                <div className="space-y-0.5 px-3">
+                  {adminItems.map(item => {
+                    const isActive = activeSection === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => setActiveSection(item.id)}
+                        className={cn(
+                          "w-full flex items-center gap-3 px-2 py-1.5 rounded-lg h-8 text-sm transition-all duration-150",
+                          isActive
+                            ? "bg-sidebar-accent text-foreground font-medium shadow-sm"
+                            : "text-sidebar-foreground/70 hover:text-foreground hover:bg-sidebar-foreground/[0.06]"
+                        )}
+                      >
+                        <item.icon className={cn("h-4 w-4 shrink-0", isActive && "text-primary")} />
+                        {t(item.labelKey)}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
         </nav>
 
         {/* Main content area */}
-        <main className="flex-1 overflow-y-auto p-6 lg:p-8 bg-background">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 lg:p-8 bg-background">
           <div className="w-full">
             {renderContent()}
           </div>
