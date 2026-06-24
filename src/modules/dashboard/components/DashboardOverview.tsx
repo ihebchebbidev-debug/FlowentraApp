@@ -152,7 +152,7 @@ function Panel({ title, action, children, className = '' }: { title?: string; ac
 }
 
 const SkeletonGrid = ({ n }: { n: number }) => (
-  <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
     {Array.from({ length: n }).map((_, i) => (
       <div key={i} className="h-[92px] rounded-xl border border-border/60 bg-muted/30 animate-pulse" />
     ))}

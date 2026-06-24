@@ -447,26 +447,26 @@ export default function ArticlesPage() {
   const totalItems = pagination?.total ?? statsSource.length;
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 lg:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">{t('title')}</h1>
-          <p className="text-muted-foreground">{t('subtitle')}</p>
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-xl sm:text-3xl font-bold truncate">{t('title')}</h1>
+          <p className="text-muted-foreground text-sm truncate">{t('subtitle')}</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="gap-1.5">
+        <div className="flex gap-1.5 sm:gap-2 flex-shrink-0">
+          <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="hidden sm:inline-flex gap-1.5">
             <Play className="h-3.5 w-3.5" /> {t('watchDemo', 'Watch Demo')}
           </Button>
           {canCreate && (
             <>
-              <Button variant="outline" onClick={() => setShowImportModal(true)}>
-                <Upload className="mr-2 h-4 w-4" />
-                {t('bulkImport.title', 'Import')}
+              <Button variant="outline" size="sm" onClick={() => setShowImportModal(true)}>
+                <Upload className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">{t('bulkImport.title', 'Import')}</span>
               </Button>
-              <Button onClick={() => setShowCreateDialog(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                {t('add_article')}
+              <Button size="sm" onClick={() => setShowCreateDialog(true)}>
+                <Plus className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">{t('add_article')}</span>
               </Button>
             </>
           )}
@@ -474,7 +474,7 @@ export default function ArticlesPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-card border rounded-lg p-4">
           <div className="flex items-center gap-2">
             <Package className="h-5 w-5 text-primary" />
@@ -572,7 +572,7 @@ export default function ArticlesPage() {
       )}
 
       {/* Articles Table */}
-      <div className="border rounded-lg">
+      <div className="border rounded-lg overflow-x-auto">
         <Table>
           <TableHeader>
               <TableRow>

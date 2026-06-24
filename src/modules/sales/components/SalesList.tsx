@@ -395,20 +395,20 @@ export function SalesList() {
   return (
     <div className="flex flex-col">
       {/* Mobile Header */}
-      <div className="md:hidden flex items-center justify-between p-4 border-b border-border bg-card/50 backdrop-blur">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary/10">
+      <div className="md:hidden flex items-center justify-between gap-2 p-3 border-b border-border bg-card/50 backdrop-blur">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div className="p-2 rounded-lg bg-primary/10 flex-shrink-0">
             <TrendingUp className="h-5 w-5 text-primary" />
           </div>
-          <div>
-            <h1 className="text-lg font-semibold text-foreground">{t("salesManagement")}</h1>
-            <p className="text-[10px] text-muted-foreground">{t("manageSalesAndOffers")}</p>
+          <div className="min-w-0">
+            <h1 className="text-base font-semibold text-foreground truncate">{t("salesManagement")}</h1>
+            <p className="text-[10px] text-muted-foreground truncate">{t("manageSalesAndOffers")}</p>
           </div>
         </div>
         {hasCreateAccess && (
-          <CreateActionButton 
+          <CreateActionButton
             size="sm"
-            className="gradient-primary text-primary-foreground shadow-medium hover-lift"
+            className="gradient-primary text-primary-foreground shadow-medium hover-lift flex-shrink-0"
             onClick={() => navigate('/dashboard/sales/new')}
           >
             <Plus className="h-4 w-4" />
@@ -427,7 +427,7 @@ export function SalesList() {
             <p className="text-[11px] text-muted-foreground">{t("manageSalesAndOffers")}</p>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="gap-1.5">
+        <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="hidden sm:inline-flex gap-1.5">
           <Play className="h-3.5 w-3.5" /> {t('watchDemo', 'Watch Demo')}
         </Button>
       </div>
@@ -438,7 +438,7 @@ export function SalesList() {
 
       {/* Stats Cards */}
       <div className="p-3 sm:p-4 border-b border-border">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
           {statsData.map((stat, index) => {
             const isSelected = selectedStat === stat.filter;
             const isInteractive = stat.filter !== 'value';
@@ -560,8 +560,8 @@ export function SalesList() {
       {/* List/Table View */}
       {showFilterBar && (
         <div className="p-3 sm:p-4 border-b border-border bg-card">
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="flex flex-col gap-1.5 min-w-[140px]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-muted-foreground">{t('allStatus')}</label>
               <Select value={filterStatus} onValueChange={setFilterStatus}>
                 <SelectTrigger className="h-9 bg-background">
@@ -575,7 +575,7 @@ export function SalesList() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex flex-col gap-1.5 min-w-[140px]">
+            <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-muted-foreground">{t('allPriorities')}</label>
               <Select value={filterPriority} onValueChange={setFilterPriority}>
                 <SelectTrigger className="h-9 bg-background">
@@ -589,7 +589,7 @@ export function SalesList() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex flex-col gap-1.5 min-w-[140px]">
+            <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-muted-foreground">{t('allStages')}</label>
               <Select value={filterStage} onValueChange={setFilterStage}>
                 <SelectTrigger className="h-9 bg-background">
@@ -604,7 +604,7 @@ export function SalesList() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex flex-col gap-1.5 min-w-[140px]">
+            <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-muted-foreground">{t('allAssignees')}</label>
               <Select value={filterAssigned} onValueChange={setFilterAssigned}>
                 <SelectTrigger className="h-9 bg-background">
@@ -619,15 +619,17 @@ export function SalesList() {
               </Select>
             </div>
             {(filterStatus !== 'all' || filterPriority !== 'all' || filterStage !== 'all' || filterAssigned !== 'all') && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => { setFilterStatus('all'); setFilterPriority('all'); setFilterStage('all'); setFilterAssigned('all'); }}
-                className="h-9 text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-4 w-4 mr-1" />
-                {t('clear')}
-              </Button>
+              <div className="flex items-end sm:col-span-2 md:col-span-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => { setFilterStatus('all'); setFilterPriority('all'); setFilterStage('all'); setFilterAssigned('all'); }}
+                  className="h-9 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  {t('clear')}
+                </Button>
+              </div>
             )}
           </div>
         </div>
@@ -636,27 +638,21 @@ export function SalesList() {
       {/* Bulk Action Bar */}
       {selectedIds.size > 0 && (
         <div className="sticky top-0 z-30 bg-destructive/10 border-b border-destructive/20 p-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Checkbox
-                checked={allSelected}
-                onCheckedChange={handleSelectAll}
-              />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Checkbox checked={allSelected} onCheckedChange={handleSelectAll} />
               <span className="text-sm font-medium text-foreground">
                 {t('bulk.selectedCount', { count: selectedIds.size })}
               </span>
-              <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())} className="text-muted-foreground">
-                {t('bulk.deselectAll')}
+              <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())} className="text-muted-foreground px-2">
+                <X className="h-3.5 w-3.5 sm:hidden" />
+                <span className="hidden sm:inline">{t('bulk.deselectAll')}</span>
               </Button>
             </div>
             {hasDeleteAccess && (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => setShowBulkDeleteDialog(true)}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                {t('bulk.deleteSelected')}
+              <Button variant="destructive" size="sm" onClick={() => setShowBulkDeleteDialog(true)}>
+                <Trash2 className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">{t('bulk.deleteSelected')}</span>
               </Button>
             )}
           </div>
@@ -789,7 +785,7 @@ export function SalesList() {
 
                   <div className="overflow-x-auto w-full scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
                        style={{ WebkitOverflowScrolling: 'touch' }}>
-                    <Table className="min-w-[900px]">
+                    <Table className="min-w-[640px]">
                       <TableHeader>
                         <TableRow>
                           <TableHead className="w-12">

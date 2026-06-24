@@ -553,18 +553,18 @@ useEffect(() => {
   return (
     <div className="flex flex-col">
       {/* Header - match Service Orders style */}
-      <header className="flex items-center justify-between gap-3 p-4 border-b border-border bg-card/50 backdrop-blur">
+      <header className="flex items-center justify-between gap-2 p-3 sm:p-4 border-b border-border bg-card/50 backdrop-blur">
         <div className="flex-1 min-w-0">
           <DispatcherHeader onDispatchJobs={handleDispatchJobs} hasCreateAccess={hasCreateAccess} />
         </div>
-        <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="gap-1.5 shrink-0">
+        <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="hidden sm:inline-flex gap-1.5 shrink-0">
           <Play className="h-3.5 w-3.5" /> {t('dispatcher.watchDemo', 'Watch Demo')}
         </Button>
       </header>
 
       {/* Stats Cards */}
       <div className="p-3 sm:p-4 border-b border-border">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
           {statsData.map((stat, index) => {
             const isSelected = selectedStat === stat.filter;
             return (
@@ -721,7 +721,7 @@ useEffect(() => {
                 {t('dispatcher.selected_count', { count: selectedIds.size })}
               </span>
               <Button variant="ghost" size="sm" onClick={clearSelection} className="text-muted-foreground">
-                {t('dispatcher.deselect_all')}
+                <span className="hidden sm:inline">{t('dispatcher.deselect_all')}</span>
               </Button>
             </div>
             <Button
@@ -730,7 +730,7 @@ useEffect(() => {
               onClick={() => setShowBulkDeleteConfirm(true)}
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              {t('dispatcher.bulk_delete')}
+              <span className="hidden sm:inline">{t('dispatcher.bulk_delete')}</span>
             </Button>
           </div>
         </div>

@@ -46,6 +46,7 @@ export function DocumentFilters({ filters, onFiltersChange }: DocumentFiltersPro
               <SelectItem value="sales">{t('documents.sales')}</SelectItem>
               <SelectItem value="offers">{t('documents.offers')}</SelectItem>
               <SelectItem value="services">{t('documents.services')}</SelectItem>
+              <SelectItem value="deals">{t('documents.deals', 'Deals')}</SelectItem>
               <SelectItem value="installations">Installation</SelectItem>
               <SelectItem value="projects">{t('documents.projects')}</SelectItem>
               <SelectItem value="field">{t('documents.field')}</SelectItem>

@@ -14,7 +14,7 @@ export function PurchaseOrdersHeader({ total, onExport }: Props) {
   const navigate = useNavigate();
 
   return (
-    <div className="flex items-center justify-between p-4 border-b border-border bg-card/50 backdrop-blur">
+    <div className="flex items-center justify-between p-3 sm:p-4 border-b border-border bg-card/50 backdrop-blur">
       <div className="flex items-center gap-3 min-w-0">
         <div className="p-2 rounded-lg bg-primary/10 shrink-0">
           <ShoppingCart className="h-5 w-5 md:h-6 md:w-6 text-primary" />

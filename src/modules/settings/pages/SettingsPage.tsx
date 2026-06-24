@@ -285,11 +285,8 @@ export default function SettingsPage() {
     return (
       <div className="flex flex-col min-h-full">
         <div className="border-b border-border bg-background px-4 py-3">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center mb-3">
             <h1 className="text-lg font-semibold text-foreground">{t('header.title')}</h1>
-            <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="gap-1.5">
-              <Play className="h-3.5 w-3.5" /> {t('watchDemo', 'Watch Demo')}
-            </Button>
           </div>
           <Select value={activeSection} onValueChange={setActiveSection}>
             <SelectTrigger className="w-full bg-background">
@@ -688,19 +685,19 @@ export default function SettingsPage() {
   return (
     <div className="flex flex-col h-full" style={{ minHeight: 'calc(100vh - 56px)' }}>
       {/* Header - consistent with Articles/Contacts pattern */}
-      <header className="flex items-center justify-between p-4 border-b border-border bg-card/50 backdrop-blur">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary/10">
-            <Settings2 className="h-6 w-6 text-primary" />
+      <header className="flex items-center justify-between gap-2 p-3 sm:p-4 border-b border-border bg-card/50 backdrop-blur">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+          <div className="p-2 rounded-lg bg-primary/10 flex-shrink-0">
+            <Settings2 className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-xl font-semibold text-foreground truncate">{t('header.title')}</h1>
-            <p className="text-[11px] text-muted-foreground truncate">
+            <h1 className="text-base sm:text-xl font-semibold text-foreground truncate">{t('header.title')}</h1>
+            <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">
               {t('header.descAdmin')}
             </p>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="gap-1.5 shrink-0">
+        <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="hidden sm:inline-flex gap-1.5 shrink-0">
           <Play className="h-3.5 w-3.5" /> {t('watchDemo', 'Watch Demo')}
         </Button>
       </header>

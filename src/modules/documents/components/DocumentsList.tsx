@@ -58,7 +58,7 @@ import { getInitialViewMode } from '../../../hooks/getInitialViewMode';
 
 export function DocumentsList() {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<'all' | 'offers' | 'sales' | 'services' | 'field'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'offers' | 'sales' | 'services' | 'field' | 'deals'>('all');
   const [searchInput, setSearchInput] = useState('');
   const [showUpload, setShowUpload] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
@@ -97,8 +97,8 @@ export function DocumentsList() {
 
   const { documents: allDocuments, stats, loading, refetch, deleteDocument, bulkDeleteDocuments, downloadDocument } = useDocuments(apiFilters);
 
-  // Only show documents related to core modules (offers, sales, services, field)
-  const relevantModuleTypes = ['offers', 'sales', 'services', 'field'];
+  // Only show documents related to core modules (offers, sales, services, field, deals)
+  const relevantModuleTypes = ['offers', 'sales', 'services', 'field', 'deals'];
   const documents = useMemo(() => {
     const moduleFiltered = allDocuments.filter(doc => relevantModuleTypes.includes(doc.moduleType));
     if (activeTab === 'all') return moduleFiltered;
@@ -204,6 +204,7 @@ export function DocumentsList() {
       case 'services': return 'text-warning bg-warning/10';
       case 'projects': return 'text-destructive bg-destructive/10';
       case 'field': return 'text-warning bg-warning/10';
+      case 'deals': return 'text-violet-700 bg-violet-100 dark:text-violet-400 dark:bg-violet-900/30';
       case 'general': return 'text-muted-foreground bg-muted';
       default: return 'text-muted-foreground bg-muted';
     }
@@ -222,6 +223,7 @@ export function DocumentsList() {
       case 'services': return '/dashboard/service-orders';
       case 'projects': return '/dashboard/tasks/projects';
       case 'contacts': return '/dashboard/contacts';
+      case 'deals': return '/dashboard/deals';
       default: return null; // field / general → no clickable link
     }
   };
@@ -249,7 +251,7 @@ export function DocumentsList() {
   const statsData = useMemo(() => [
     {
       label: t('documents.totalFiles'),
-      value: (stats?.byModule?.offers || 0) + (stats?.byModule?.sales || 0) + (stats?.byModule?.services || 0) + (stats?.byModule?.field || 0),
+      value: (stats?.byModule?.offers || 0) + (stats?.byModule?.sales || 0) + (stats?.byModule?.services || 0) + (stats?.byModule?.field || 0) + (stats?.byModule?.deals || 0),
       icon: Files,
       color: "chart-1",
       filter: 'all'
@@ -281,6 +283,13 @@ export function DocumentsList() {
       icon: Activity,
       color: "chart-5",
       filter: 'field'
+    },
+    {
+      label: t('documents.deals', 'Deals'),
+      value: stats?.byModule?.deals || 0,
+      icon: FolderOpen,
+      color: "chart-1",
+      filter: 'deals'
     }
   ], [stats, t]);
 
@@ -316,20 +325,20 @@ export function DocumentsList() {
   }
 
   const Header = () => (
-    <div className="flex items-center justify-between p-4 border-b border-border bg-card/50 backdrop-blur">
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-primary/10">
-          <Files className="h-6 w-6 text-primary" />
+    <div className="flex items-center justify-between gap-2 p-3 sm:p-4 border-b border-border bg-card/50 backdrop-blur">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+        <div className="p-2 rounded-lg bg-primary/10 flex-shrink-0">
+          <Files className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
         </div>
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">{t('documents.title', 'Documents')}</h1>
-          <p className="text-[11px] text-muted-foreground">{t('documents.subtitle', 'Manage and share files across modules')}</p>
+        <div className="min-w-0">
+          <h1 className="text-base sm:text-xl font-semibold text-foreground truncate">{t('documents.title', 'Documents')}</h1>
+          <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">{t('documents.subtitle', 'Manage and share files across modules')}</p>
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        <Button variant="outline" onClick={() => { setDroppedFiles([]); setShowUpload(true); }}>
-          <Upload className="mr-2 h-4 w-4" />
-          {t('documents.upload')}
+      <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+        <Button variant="outline" size="sm" onClick={() => { setDroppedFiles([]); setShowUpload(true); }}>
+          <Upload className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">{t('documents.upload')}</span>
         </Button>
       </div>
     </div>
@@ -371,7 +380,7 @@ export function DocumentsList() {
 
       {/* Stats Cards */}
       <div className="p-3 sm:p-4 border-b border-border">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
           {statsData.map((stat, index) => {
             const isSelected = selectedStat === stat.filter;
             return (

@@ -14,20 +14,20 @@ export function EmailCalendarPage() {
   return (
     <main className="flex-1 overflow-auto">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border bg-card/50 backdrop-blur">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary/10">
-            <HeaderIcon className="h-6 w-6 text-primary" />
+      <div className="flex items-center justify-between gap-2 p-3 sm:p-4 border-b border-border bg-card/50 backdrop-blur">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+          <div className="p-2 rounded-lg bg-primary/10 flex-shrink-0">
+            <HeaderIcon className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
           </div>
-          <div>
-            <h1 className="text-xl font-semibold text-foreground">{headerTitle}</h1>
-            <p className="text-[11px] text-muted-foreground">{t('description')}</p>
+          <div className="min-w-0">
+            <h1 className="text-base sm:text-xl font-semibold text-foreground truncate">{headerTitle}</h1>
+            <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">{t('description')}</p>
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="p-6">
+      <div className="p-3 sm:p-4 lg:p-6">
         <Outlet />
       </div>
     </main>

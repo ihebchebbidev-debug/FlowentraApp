@@ -248,16 +248,16 @@ export function IntegrationHub() {
   return (
     <div className="space-y-6 p-4 md:p-6">
       {/* Page header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">{t('hub.title', 'Integration Hub')}</h1>
-          <p className="text-sm text-muted-foreground mt-1">{t('hub.description', 'Connect Flowentra to your ERP, CRM, e-commerce, and other business systems.')}</p>
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-2xl font-bold text-foreground truncate">{t('hub.title', 'Integration Hub')}</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1 line-clamp-2">{t('hub.description', 'Connect Flowentra to your ERP, CRM, e-commerce, and other business systems.')}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-1.5 sm:gap-2 flex-shrink-0">
           <IntegrationHelpButton />
-          <Button variant="outline" onClick={() => navigate('create')} className="gap-2">
+          <Button variant="outline" size="sm" onClick={() => navigate('create')} className="gap-1 sm:gap-2">
             <Globe className="h-4 w-4" />
-            {t('external.createEndpoint')}
+            <span className="hidden sm:inline">{t('external.createEndpoint')}</span>
           </Button>
         </div>
       </div>

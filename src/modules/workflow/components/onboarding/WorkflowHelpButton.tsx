@@ -20,7 +20,7 @@ export function WorkflowHelpButton() {
 
   return (
     <>
-      <Button variant="outline" size="sm" onClick={open} className="h-8 gap-1.5">
+      <Button variant="outline" size="sm" onClick={open} className="hidden sm:inline-flex h-8 gap-1.5">
         <Play className="h-3.5 w-3.5" />
         {t('onboarding.help.watchDemo')}
       </Button>

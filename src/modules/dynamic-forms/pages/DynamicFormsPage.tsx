@@ -82,18 +82,18 @@ export default function DynamicFormsPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <header className="flex items-center justify-between p-4 border-b border-border bg-card/50 backdrop-blur">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary/10">
-            <FileText className="h-6 w-6 text-primary" />
+      <header className="flex items-center justify-between gap-2 p-3 sm:p-4 border-b border-border bg-card/50 backdrop-blur">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+          <div className="p-2 rounded-lg bg-primary/10 flex-shrink-0">
+            <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-xl font-semibold text-foreground truncate">{t('header.title')}</h1>
-            <p className="text-[11px] text-muted-foreground truncate">{t('header.subtitle')}</p>
+            <h1 className="text-base sm:text-xl font-semibold text-foreground truncate">{t('header.title')}</h1>
+            <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">{t('header.subtitle')}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="gap-1.5">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="hidden sm:inline-flex gap-1.5">
             <Play className="h-3.5 w-3.5" /> <span className="hidden md:inline">{t('actions.watchDemo', 'Watch Demo')}</span>
           </Button>
           <PermissionButton

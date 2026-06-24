@@ -669,30 +669,30 @@ export default function DailyTasksPage() {
       </div>
 
       {/* Mobile Header */}
-      <div className="md:hidden flex items-center justify-between p-4 border-b border-border bg-card/50 backdrop-blur">
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="ghost" 
+      <div className="md:hidden flex items-center justify-between gap-2 p-3 border-b border-border bg-card/50 backdrop-blur">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <Button
+            variant="ghost"
             size="sm"
             onClick={handleSwitchToProjects}
-            className="gap-1 px-2"
+            className="gap-1 px-2 flex-shrink-0"
           >
             <ArrowLeft className="h-4 w-4" />
-            {t('daily.back')}
+            <span className="hidden xs:inline">{t('daily.back')}</span>
           </Button>
-          <div className="h-5 w-px bg-border" />
-          <div className="p-1.5 rounded-lg bg-primary/10">
+          <div className="h-5 w-px bg-border flex-shrink-0" />
+          <div className="p-1.5 rounded-lg bg-primary/10 flex-shrink-0">
             <CheckSquare className="h-5 w-5 text-primary" />
           </div>
-          <span className="font-semibold text-foreground">{t('daily.title')}</span>
+          <span className="font-semibold text-foreground truncate">{t('daily.title')}</span>
         </div>
-        <Button 
+        <Button
           size="sm"
           onClick={() => setIsAddTaskOpen(true)}
-          className="gap-1"
+          className="gap-1 flex-shrink-0"
         >
           <PlusCircle className="h-4 w-4" />
-          {t('daily.add')}
+          <span className="hidden sm:inline">{t('daily.add')}</span>
         </Button>
       </div>
 

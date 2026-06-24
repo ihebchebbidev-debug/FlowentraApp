@@ -73,14 +73,14 @@ function PurchaseDashboardContent() {
         icon={ShoppingCart}
         actions={
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="gap-1.5">
+            <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="hidden sm:inline-flex gap-1.5">
               <Play className="h-3.5 w-3.5" /> {t('watchDemo', 'Watch Demo')}
             </Button>
-            <Button variant="outline" size="sm" onClick={() => navigate('/dashboard/purchases/orders')}>
+            <Button variant="outline" size="sm" onClick={() => navigate('/dashboard/purchases/orders')} className="hidden sm:inline-flex">
               <ShoppingCart className="h-4 w-4 mr-1" /> {t('dashboard.viewOrders')}
             </Button>
             <CreateActionButton size="sm" onClick={() => navigate('/dashboard/purchases/orders/add')}>
-              <Plus className="h-4 w-4 mr-1" /> {t('dashboard.newOrder')}
+              <Plus className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">{t('dashboard.newOrder')}</span><span className="sm:hidden">{t('common.new', 'New')}</span>
             </CreateActionButton>
           </div>
         }
@@ -93,9 +93,9 @@ function PurchaseDashboardContent() {
       )}
 
       {!loading && !error && (
-        <div className="p-4 md:p-6 space-y-6 animate-in fade-in duration-300">
+        <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6 animate-in fade-in duration-300">
           {/* Stats Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             {[
               {
                 label: t('dashboard.totalOrders'),
@@ -153,7 +153,7 @@ function PurchaseDashboardContent() {
           </div>
 
           {/* Recent Tables */}
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             <Card>
               <CardHeader className="pb-2 flex flex-row items-center justify-between">
                 <CardTitle className="text-sm font-medium">{t('dashboard.recentOrders')}</CardTitle>
@@ -161,8 +161,8 @@ function PurchaseDashboardContent() {
                   {t('dashboard.viewAll')} <ArrowRight className="h-3 w-3 ml-1" />
                 </Button>
               </CardHeader>
-              <CardContent className="p-0">
-                <Table>
+              <CardContent className="p-0 overflow-x-auto">
+                <Table className="min-w-[400px]">
                   <TableHeader>
                     <TableRow>
                       <TableHead className="text-xs">{t('fields.orderNumber')}</TableHead>
@@ -195,8 +195,8 @@ function PurchaseDashboardContent() {
                   {t('dashboard.viewAll')} <ArrowRight className="h-3 w-3 ml-1" />
                 </Button>
               </CardHeader>
-              <CardContent className="p-0">
-                <Table>
+              <CardContent className="p-0 overflow-x-auto">
+                <Table className="min-w-[400px]">
                   <TableHeader>
                     <TableRow>
                       <TableHead className="text-xs">{t('fields.orderNumber')}</TableHead>
@@ -224,7 +224,7 @@ function PurchaseDashboardContent() {
           </div>
 
           {/* Quick Links */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             <Button variant="outline" className="h-auto py-3 flex flex-col items-center gap-1" onClick={() => navigate('/dashboard/purchases/compliance')}>
               <AlertTriangle className="h-5 w-5 text-amber-500" />
               <span className="text-xs">{t('dashboard.compliance')}</span>

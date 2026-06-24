@@ -13,8 +13,8 @@ export function StockHeader({ onOpenForecast, onOpenAnomalyDetection }: StockHea
   const navigate = useNavigate();
 
   return (
-    <div className="flex items-center justify-between p-4 border-b border-border bg-card/50 backdrop-blur">
-      <div className="flex items-center gap-3">
+    <div className="flex items-center justify-between gap-2 p-3 sm:p-4 border-b border-border bg-card/50 backdrop-blur">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
         <Button
           variant="ghost"
           size="icon"
@@ -23,12 +23,12 @@ export function StockHeader({ onOpenForecast, onOpenAnomalyDetection }: StockHea
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <div className="p-2 rounded-lg bg-primary/10">
-          <Boxes className="h-6 w-6 text-primary" />
+        <div className="p-2 rounded-lg bg-primary/10 flex-shrink-0">
+          <Boxes className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
         </div>
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">{t('title')}</h1>
-          <p className="text-xs text-muted-foreground">{t('subtitle')}</p>
+        <div className="min-w-0">
+          <h1 className="text-base sm:text-xl font-semibold text-foreground truncate">{t('title')}</h1>
+          <p className="text-xs text-muted-foreground truncate">{t('subtitle')}</p>
         </div>
       </div>
 

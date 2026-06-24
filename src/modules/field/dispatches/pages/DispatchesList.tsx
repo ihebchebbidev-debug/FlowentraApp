@@ -220,26 +220,26 @@ export default function DispatchesList() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b border-border bg-gradient-subtle backdrop-blur-sm sticky top-0 z-20 shadow-soft">
-        <div className="px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-primary/10">
-                <Wrench className="h-6 w-6 text-primary" />
+        <div className="px-3 sm:px-4 py-3 sm:py-4 md:py-6">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+              <div className="p-2 sm:p-3 rounded-lg bg-primary/10 flex-shrink-0">
+                <Wrench className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">{t("dispatches.title")}</h1>
-                <p className="text-muted-foreground">{t("dispatches.subtitle")}</p>
+              <div className="min-w-0">
+                <h1 className="text-lg sm:text-2xl font-bold text-foreground truncate">{t("dispatches.title")}</h1>
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">{t("dispatches.subtitle")}</p>
               </div>
             </div>
-            
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="gap-1.5">
+
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="hidden sm:inline-flex gap-1.5">
                 <Play className="h-3.5 w-3.5" /> {tDispatches('watchDemo', 'Watch Demo')}
               </Button>
               {hasCreateAccess && (
                 <CreateActionButton onClick={() => navigate('/dashboard/field/dispatches/create')}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  {t('dispatches.create_dispatch')}
+                  <Plus className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">{t('dispatches.create_dispatch')}</span>
                 </CreateActionButton>
               )}
             </div>
@@ -252,9 +252,9 @@ export default function DispatchesList() {
 
       <div className="px-4 py-6">
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6 items-stretch sm:items-center">
-          <div className="flex-1">
-            <CollapsibleSearch 
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="sm:col-span-2 md:col-span-2">
+            <CollapsibleSearch
               placeholder={t("dispatches.search_placeholder")}
               value={searchTerm}
               onChange={setSearchTerm}
@@ -264,7 +264,7 @@ export default function DispatchesList() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 border border-border rounded-md bg-background text-foreground"
+            className="px-3 py-2 border border-border rounded-md bg-background text-foreground w-full"
           >
             <option value="all">{t("dispatches.all_statuses")}</option>
             <option value="pending">{t("dispatches.statuses.pending")}</option>
@@ -274,24 +274,25 @@ export default function DispatchesList() {
             <option value="in_progress">{t("dispatches.statuses.in_progress")}</option>
             <option value="completed">{t("dispatches.statuses.completed")}</option>
           </select>
-          
-          <div className="flex items-center gap-2">
+
+          <div className="flex flex-wrap items-center gap-2">
             {/* Bulk delete button */}
             {hasDeleteAccess && selectedIds.size > 0 && (
-              <Button 
-                variant="destructive" 
-                size="sm" 
+              <Button
+                variant="destructive"
+                size="sm"
                 onClick={() => setShowBulkDeleteDialog(true)}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
-                {t('dispatches.bulk.delete_selected')} ({selectedIds.size})
+                <span className="hidden sm:inline">{t('dispatches.bulk.delete_selected')}</span>
+                <span>({selectedIds.size})</span>
               </Button>
             )}
-            
-            <Button 
-              variant={showMap ? 'default' : 'outline'} 
-              size="sm" 
-              onClick={() => setShowMap(!showMap)} 
+
+            <Button
+              variant={showMap ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setShowMap(!showMap)}
               className={`flex-1 sm:flex-none ${showMap ? 'bg-primary text-white hover:bg-primary/90' : ''}`}
             >
               <Map className={`h-4 w-4 ${showMap ? 'text-white' : ''}`} />

@@ -286,7 +286,7 @@ export function InventoryServicesList() {
                 {t('table.selected_count', { count: selectedIds.size })}
               </span>
               <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())} className="text-muted-foreground">
-                {t('table.deselect_all')}
+                <span className="hidden sm:inline">{t('table.deselect_all')}</span>
               </Button>
             </div>
             <Button
@@ -295,7 +295,7 @@ export function InventoryServicesList() {
               onClick={() => setShowBulkDeleteDialog(true)}
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              {t('table.delete_selected')}
+              <span className="hidden sm:inline">{t('table.delete_selected')}</span>
             </Button>
           </div>
         </div>

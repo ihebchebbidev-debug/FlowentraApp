@@ -299,7 +299,7 @@ export default function LookupsPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="gap-1.5">
+          <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="hidden sm:inline-flex gap-1.5">
             <Play className="h-3.5 w-3.5" /> {t('watchDemo', 'Watch Demo')}
           </Button>
           {returnUrl && (

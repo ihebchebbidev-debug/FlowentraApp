@@ -386,25 +386,25 @@ export default function ContactsPage() {
 
   return <div className="flex flex-col">
       {/* Header - matching inventory style */}
-      <div className="flex items-center justify-between p-4 border-b border-border bg-card/50 backdrop-blur">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary/10">
-            <Users className="h-6 w-6 text-primary" />
+      <div className="flex items-center justify-between gap-2 p-3 sm:p-4 border-b border-border bg-card/50 backdrop-blur">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+          <div className="p-2 rounded-lg bg-primary/10 flex-shrink-0">
+            <Users className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
           </div>
-          <div>
-            <h1 className="text-xl font-semibold text-foreground">{t('contacts.title')}</h1>
-            <p className="text-[11px] text-muted-foreground">{t('contacts.subtitle')}</p>
+          <div className="min-w-0">
+            <h1 className="text-base sm:text-xl font-semibold text-foreground truncate">{t('contacts.title')}</h1>
+            <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">{t('contacts.subtitle')}</p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="gap-1.5">
+        <div className="flex gap-1.5 sm:gap-2 items-center flex-shrink-0">
+          <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="hidden sm:inline-flex gap-1.5">
             <Play className="h-3.5 w-3.5" /> {t('contacts.watchDemo', 'Watch Demo')}
           </Button>
           {(isMainAdmin || canCreate('contacts')) && (
             <>
-              <Button variant="outline" onClick={() => setShowImportModal(true)}>
-                <Upload className="h-4 w-4 mr-2" />
-                {t('contacts.import')}
+              <Button variant="outline" size="sm" onClick={() => setShowImportModal(true)}>
+                <Upload className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">{t('contacts.import')}</span>
               </Button>
               <CreateActionButton className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-medium hover-lift" onClick={() => navigate('/dashboard/contacts/add')}>
                 <Plus className="h-4 w-4 sm:mr-2" />
@@ -560,8 +560,8 @@ export default function ContactsPage() {
         {/* Expandable Filters */}
         {showFilters && (
           <div className="mt-3 pt-3 border-t border-border">
-            <div className="flex flex-wrap items-end gap-3">
-              <div className="flex flex-col gap-1.5 min-w-[140px]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">{t('contacts.filters.status_label')}</label>
                 <Select value={searchParams.status || 'all'} onValueChange={handleStatusFilter}>
                   <SelectTrigger className="h-9 bg-background">
@@ -578,7 +578,7 @@ export default function ContactsPage() {
                 </Select>
               </div>
 
-              <div className="flex flex-col gap-1.5 min-w-[140px]">
+              <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">{t('contacts.filters.type_label')}</label>
                 <Select value={searchParams.type || 'all'} onValueChange={handleTypeFilter}>
                   <SelectTrigger className="h-9 bg-background">
@@ -593,7 +593,7 @@ export default function ContactsPage() {
                 </Select>
               </div>
 
-              <div className="flex flex-col gap-1.5 min-w-[140px]">
+              <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">{t('contacts.filters.favorites_label')}</label>
                 <Select value={searchParams.favorite === undefined ? 'all' : String(searchParams.favorite)} onValueChange={handleFavoriteFilter}>
                   <SelectTrigger className="h-9 bg-background">
@@ -614,7 +614,7 @@ export default function ContactsPage() {
       {/* Bulk Action Bar */}
       {selectedIds.size > 0 && (
         <div className="sticky top-0 z-30 bg-destructive/10 border-b border-destructive/20 p-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-3">
               <Checkbox
                 checked={allSelected}
@@ -624,7 +624,7 @@ export default function ContactsPage() {
                 {t('contacts.table_headers.selected_count', { count: selectedIds.size })}
               </span>
               <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())} className="text-muted-foreground">
-                {t('contacts.table_headers.deselect_all')}
+                <span className="hidden sm:inline">{t('contacts.table_headers.deselect_all')}</span>
               </Button>
             </div>
             {(isMainAdmin || canDelete('contacts')) && (
@@ -634,7 +634,7 @@ export default function ContactsPage() {
                 onClick={() => setShowBulkDeleteDialog(true)}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
-                {t('contacts.table_headers.delete_selected')}
+                <span className="hidden sm:inline">{t('contacts.table_headers.delete_selected')}</span>
               </Button>
             )}
           </div>
@@ -676,7 +676,7 @@ export default function ContactsPage() {
             />
           )}
           
-          <CardContent className={showMap ? "pt-4 p-0" : "p-0"}>
+          <CardContent className={showMap ? "pt-4 p-0 overflow-x-auto" : "p-0 overflow-x-auto"}>
         {isLoading ? <TableSkeleton rows={6} cols={5} /> : contacts.length === 0 ? <div className="text-center p-12">
             <User className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">{t('contacts.no_contacts')}</h3>

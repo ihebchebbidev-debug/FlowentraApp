@@ -272,19 +272,19 @@ export function SchedulerManager() {
 
   return (
     <div className="p-4">
-      <div className="flex items-center justify-between p-4 border-b border-border bg-card/50 backdrop-blur mb-4 -m-4 rounded-t-lg">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary/10">
-            <CalendarCog className="h-6 w-6 text-primary" />
+      <div className="flex items-center justify-between gap-2 p-3 sm:p-4 border-b border-border bg-card/50 backdrop-blur mb-4 -m-4 rounded-t-lg">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+          <div className="p-2 rounded-lg bg-primary/10 flex-shrink-0">
+            <CalendarCog className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
           </div>
-          <div>
-            <h1 className="text-xl font-semibold text-foreground">{t('scheduling.manage_scheduler', 'Manage scheduler')}</h1>
-            <p className="text-[11px] text-muted-foreground">{t('scheduling.manage_scheduler_description', 'Manage technician schedules, leaves and capacity')}</p>
+          <div className="min-w-0">
+            <h1 className="text-base sm:text-xl font-semibold text-foreground truncate">{t('scheduling.manage_scheduler', 'Manage scheduler')}</h1>
+            <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">{t('scheduling.manage_scheduler_description', 'Manage technician schedules, leaves and capacity')}</p>
           </div>
         </div>
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="gap-2">
+        <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="gap-1 sm:gap-2 flex-shrink-0">
           <ArrowLeft className="h-4 w-4" />
-          {t('common.back', 'Back')}
+          <span className="hidden sm:inline">{t('common.back', 'Back')}</span>
         </Button>
       </div>
 

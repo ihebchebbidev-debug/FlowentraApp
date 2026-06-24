@@ -15,11 +15,12 @@ import { offersApi } from '@/services/api/offersApi';
 import { salesApi } from '@/services/api/salesApi';
 import { serviceOrdersApi } from '@/services/api/serviceOrdersApi';
 import { installationsApi } from '@/services/api/installationsApi';
+import { dealsApi } from '@/services/api/dealsApi';
 
 interface SearchResult {
   id: string;
   label: string;
-  type: 'sales' | 'offers' | 'services' | 'installations';
+  type: 'sales' | 'offers' | 'services' | 'installations' | 'deals';
   subLabel?: string;
 }
 
@@ -108,11 +109,12 @@ export function DocumentUploadModal({
       const results: SearchResult[] = [];
 
       // Search all modules in parallel for comprehensive results
-      const [offersRes, salesRes, servicesRes, installationsRes] = await Promise.all([
+      const [offersRes, salesRes, servicesRes, installationsRes, dealsRes] = await Promise.all([
         offersApi.getAll({ search: query, limit: 10 }).catch(() => null),
         salesApi.getAll({ search: query, limit: 10 }).catch(() => null),
         serviceOrdersApi.getAll({ search: query, pageSize: 10 }).catch(() => null),
         installationsApi.getAll({ search: query, pageSize: 10 }).catch(() => null),
+        dealsApi.getAll({ search: query, limit: 10 }).catch(() => null),
       ]);
 
       // Offers
@@ -159,6 +161,17 @@ export function DocumentUploadModal({
         }));
       }
 
+      // Deals
+      if (dealsRes) {
+        const deals = dealsRes.deals || [];
+        deals.forEach((d: any) => results.push({
+          id: String(d.id),
+          label: [d.dealNumber, d.title].filter(Boolean).join(' — ') || `Deal #${d.id}`,
+          type: 'deals',
+          subLabel: [d.contactName, d.stage].filter(Boolean).join(' · '),
+        }));
+      }
+
       setSearchResults(results);
       setShowDropdown(results.length > 0);
     } catch (err) {
@@ -183,7 +196,7 @@ export function DocumentUploadModal({
     setShowDropdown(false);
     // Auto-set module type to match selected record
     if (!preselectedModule) {
-      setModuleType(record.type === 'installations' ? 'installations' : record.type);
+      setModuleType(record.type);
     }
   }, [preselectedModule]);
 
@@ -199,6 +212,7 @@ export function DocumentUploadModal({
     services: t('documents.services', 'Service'),
     installations: 'Installation',
     field: t('documents.operation', 'Opération'),
+    deals: t('documents.deals', 'Deals'),
   }), [t]);
 
   const typeBadgeColors: Record<string, string> = {
@@ -207,6 +221,7 @@ export function DocumentUploadModal({
     services: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
     installations: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400',
     field: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+    deals: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400',
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -306,6 +321,7 @@ export function DocumentUploadModal({
                 <SelectItem value="offers">{t('documents.offers')}</SelectItem>
                 <SelectItem value="sales">{t('documents.sales')}</SelectItem>
                 <SelectItem value="services">{t('documents.services')}</SelectItem>
+                <SelectItem value="deals">{t('documents.deals', 'Deals')}</SelectItem>
                 <SelectItem value="field">{t('documents.operation', 'Opération')}</SelectItem>
                 <SelectItem value="installations">Installation</SelectItem>
               </SelectContent>
@@ -318,8 +334,9 @@ export function DocumentUploadModal({
               {moduleType === 'offers' && (t('documents.searchOfferHint', 'Rechercher une offre à associer'))}
               {moduleType === 'sales' && (t('documents.searchSaleHint', 'Rechercher une vente à associer'))}
               {moduleType === 'services' && (t('documents.searchServiceHint', 'Rechercher un ordre de service à associer'))}
+              {moduleType === 'deals' && (t('documents.searchDealHint', 'Search a deal to associate'))}
               {(moduleType === 'installations' || moduleType === 'field') && (t('documents.searchInstallationHint', 'Rechercher une installation à associer'))}
-              {!['offers','sales','services','installations','field'].includes(moduleType) && t('documents.associatedRecord')}
+              {!['offers','sales','services','installations','field','deals'].includes(moduleType) && t('documents.associatedRecord')}
             </Label>
             <div className="relative" ref={dropdownRef}>
               {selectedRecord ? (
@@ -361,7 +378,7 @@ export function DocumentUploadModal({
                     </div>
                   )}
                   {/* Group results by type */}
-                  {(['offers', 'sales', 'services', 'installations'] as const).map((type) => {
+                  {(['offers', 'sales', 'services', 'deals', 'installations'] as const).map((type) => {
                     const group = searchResults.filter(r => r.type === type);
                     if (group.length === 0) return null;
                     return (

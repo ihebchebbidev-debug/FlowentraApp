@@ -85,23 +85,23 @@ export function DealsList() {
   ];
 
   const Header = () => (
-    <div className="flex items-center justify-between p-4 border-b border-border bg-card/50 backdrop-blur">
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-primary/10">
-          <Handshake className="h-6 w-6 text-primary" />
+    <div className="flex items-center justify-between gap-2 p-3 sm:p-4 border-b border-border bg-card/50 backdrop-blur">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+        <div className="p-2 rounded-lg bg-primary/10 flex-shrink-0">
+          <Handshake className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
         </div>
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">{t("header.title")}</h1>
-          <p className="text-[11px] text-muted-foreground">{t("header.subtitle")}</p>
+        <div className="min-w-0">
+          <h1 className="text-base sm:text-xl font-semibold text-foreground truncate">{t("header.title")}</h1>
+          <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">{t("header.subtitle")}</p>
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="gap-1.5">
+      <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+        <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="hidden sm:inline-flex gap-1.5">
           <Play className="h-3.5 w-3.5" /> {t("header.watchDemo")}
         </Button>
         {hasCreateAccess && (
           <CreateActionButton className="bg-primary text-white hover:bg-primary/90 shadow-medium hover-lift" onClick={() => navigate("/dashboard/deals/add")}>
-            <Plus className="h-4 w-4 text-white mr-2" /> {t("header.add")}
+            <Plus className="h-4 w-4 sm:mr-2" /> <span className="hidden sm:inline">{t("header.add")}</span>
           </CreateActionButton>
         )}
       </div>
@@ -117,7 +117,7 @@ export function DealsList() {
 
       {/* Stats Cards */}
       <div className="p-3 sm:p-4 border-b border-border">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
           {statsData.map((stat, index) => {
             const isSelected = selectedStat === stat.filter;
             const isInteractive = stat.filter !== "value";
@@ -220,12 +220,12 @@ export function DealsList() {
             </Button>
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex items-center gap-1 sm:gap-2 w-full sm:w-auto">
             <Button
               variant={viewMode === "list" ? "default" : "outline"}
               size="sm"
               onClick={() => setViewMode("list")}
-              className={`flex-1 sm:flex-none ${viewMode === "list" ? "bg-primary text-white hover:bg-primary/90" : ""}`}
+              className={`flex-1 sm:flex-none min-w-[36px] ${viewMode === "list" ? "bg-primary text-white hover:bg-primary/90" : ""}`}
             >
               <List className={`h-4 w-4 ${viewMode === "list" ? "text-white" : ""}`} />
             </Button>
@@ -233,7 +233,7 @@ export function DealsList() {
               variant={viewMode === "table" ? "default" : "outline"}
               size="sm"
               onClick={() => setViewMode("table")}
-              className={`flex-1 sm:flex-none ${viewMode === "table" ? "bg-primary text-white hover:bg-primary/90" : ""}`}
+              className={`flex-1 sm:flex-none min-w-[36px] ${viewMode === "table" ? "bg-primary text-white hover:bg-primary/90" : ""}`}
             >
               <TableIcon className={`h-4 w-4 ${viewMode === "table" ? "text-white" : ""}`} />
             </Button>
@@ -241,7 +241,7 @@ export function DealsList() {
               variant={viewMode === "kanban" ? "default" : "outline"}
               size="sm"
               onClick={() => setViewMode("kanban")}
-              className={`flex-1 sm:flex-none ${viewMode === "kanban" ? "bg-primary text-white hover:bg-primary/90" : ""}`}
+              className={`flex-1 sm:flex-none min-w-[36px] ${viewMode === "kanban" ? "bg-primary text-white hover:bg-primary/90" : ""}`}
             >
               <LayoutGrid className={`h-4 w-4 ${viewMode === "kanban" ? "text-white" : ""}`} />
             </Button>

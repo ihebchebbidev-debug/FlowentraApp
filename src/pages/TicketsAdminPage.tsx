@@ -289,8 +289,16 @@ export default function TicketsAdminPage() {
       </div>
 
       {/* Mobile header */}
-      <div className="md:hidden flex items-center justify-end p-4 border-b border-border bg-card/50 backdrop-blur">
-        <Button variant="outline" size="sm" className="shadow-soft hover-lift" onClick={fetchTickets} disabled={loading}>
+      <div className="md:hidden flex items-center justify-between gap-2 p-3 border-b border-border bg-card/50 backdrop-blur">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="p-2 rounded-lg bg-primary/10 flex-shrink-0">
+            <TicketCheck className="h-5 w-5 text-primary" />
+          </div>
+          <h1 className="text-base font-semibold text-foreground truncate">
+            {t('admin.title', 'Support Tickets')}
+          </h1>
+        </div>
+        <Button variant="outline" size="sm" className="shadow-soft hover-lift flex-shrink-0" onClick={fetchTickets} disabled={loading}>
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
         </Button>
       </div>

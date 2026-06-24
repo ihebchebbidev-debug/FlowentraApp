@@ -309,8 +309,8 @@ function GoodsReceiptListContent() {
   return (
     <div ref={containerRef} className="flex flex-col overflow-auto">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border bg-card/50 backdrop-blur">
-        <div className="flex items-center gap-3 min-w-0">
+      <div className="flex items-center justify-between p-3 sm:p-4 border-b border-border bg-card/50 backdrop-blur">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
           <div className="p-2 rounded-lg bg-primary/10 shrink-0">
             <Package className="h-5 w-5 md:h-6 md:w-6 text-primary" />
           </div>
@@ -344,7 +344,7 @@ function GoodsReceiptListContent() {
 
       {/* KPI cards */}
       <div className="p-3 sm:p-4 border-b border-border">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
           {statCards.map((s) => {
             const isSelected = selectedStat === s.key;
             return (

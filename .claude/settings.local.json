@@ -69,7 +69,9 @@
       "PowerShell(Set-Location \"c:\\\\Users\\\\iheb.chebbi\\\\Desktop\\\\FlowentraApp\"; npx tsc --noEmit 2>&1 | Select-Object -First 25; \"TSC_EXIT=$LASTEXITCODE\")",
       "Bash(cd \"c:/Users/iheb.chebbi/Desktop/FlowentraApp\" *)",
       "Bash(grep -v \"^\\\\\"$\")",
-      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\ihebc\\\\OneDrive\\\\Desktop\\\\FlowentraApp\\\\src\\\\modules\\\\inventory-services\" -Recurse -File)"
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\ihebc\\\\OneDrive\\\\Desktop\\\\FlowentraApp\\\\src\\\\modules\\\\inventory-services\" -Recurse -File)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\ihebc\\\\OneDrive\\\\Desktop\\\\FlowentraApp\\\\src\\\\modules\\\\documents\" -Recurse -File)",
+      "Bash(node_modules/.bin/tsc --noEmit --skipLibCheck)"
     ],
     "additionalDirectories": [
       "C:\\Users\\iheb.chebbi\\Desktop\\FlowentraApp\\Backend\\Modules\\Offers\\DTOs",

@@ -232,7 +232,7 @@ export function PaymentsTab({ entityType, entityId, entityNumber, totalAmount, c
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-3 gap-4 text-center">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
             <div>
               <p className="text-xs text-muted-foreground">{t('totalAmount')}</p>
               <p className="text-sm font-semibold text-foreground">{formatAmount(summary?.totalAmount ?? totalAmount)}</p>
@@ -371,7 +371,7 @@ export function PaymentsTab({ entityType, entityId, entityNumber, totalAmount, c
             )}
           </CardTitle>
         </CardHeader>
-        <CardContent className={payments.length > 0 ? "p-0" : undefined}>
+        <CardContent className={payments.length > 0 ? "p-0 overflow-x-auto" : undefined}>
           {payments.length === 0 ? (
             <div className="text-center py-6 text-muted-foreground">
               <Wallet className="h-8 w-8 mx-auto mb-2 opacity-40" />
@@ -1029,7 +1029,7 @@ function StatementModal({
 
         <div className="space-y-6 py-2" id="payment-statement">
           {/* Summary header */}
-          <div className="grid grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg border border-border/50">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg border border-border/50">
             <div className="text-center">
               <p className="text-xs text-muted-foreground">{t('documentTotal')}</p>
               <p className="text-lg font-bold text-foreground">{formatCurrency(totalAmount)}</p>
@@ -1048,8 +1048,8 @@ function StatementModal({
           {items.length > 0 && (
             <div>
               <h4 className="text-sm font-medium text-foreground mb-2">{t('itemBreakdown')}</h4>
-              <div className="border border-border rounded-lg overflow-hidden">
-                <div className="grid grid-cols-4 gap-2 p-2 bg-muted/50 text-xs font-medium text-muted-foreground">
+              <div className="border border-border rounded-lg overflow-hidden overflow-x-auto">
+                <div className="grid grid-cols-4 gap-2 p-2 bg-muted/50 text-xs font-medium text-muted-foreground min-w-[320px]">
                   <span>{t('itemName')}</span>
                   <span className="text-right">{t('itemTotal')}</span>
                   <span className="text-right">{t('itemPaid')}</span>
@@ -1059,7 +1059,7 @@ function StatementModal({
                   const paid = itemPaidMap[item.id] ?? 0;
                   const remaining = item.totalPrice - paid;
                   return (
-                    <div key={item.id} className="grid grid-cols-4 gap-2 p-2 border-t border-border/50 text-sm">
+                    <div key={item.id} className="grid grid-cols-4 gap-2 p-2 border-t border-border/50 text-sm min-w-[320px]">
                       <span className="truncate text-foreground">{item.itemName}</span>
                       <span className="text-right text-foreground">{formatCurrency(item.totalPrice)}</span>
                       <span className="text-right text-success">{formatCurrency(paid)}</span>
@@ -1074,8 +1074,8 @@ function StatementModal({
           {/* Full payment list */}
           <div>
             <h4 className="text-sm font-medium text-foreground mb-2">{t('paymentDetails')}</h4>
-            <div className="border border-border rounded-lg overflow-hidden">
-              <div className="grid grid-cols-5 gap-2 p-2 bg-muted/50 text-xs font-medium text-muted-foreground">
+            <div className="border border-border rounded-lg overflow-hidden overflow-x-auto">
+              <div className="grid grid-cols-5 gap-2 p-2 bg-muted/50 text-xs font-medium text-muted-foreground min-w-[380px]">
                 <span>{t('date')}</span>
                 <span>{t('method')}</span>
                 <span className="text-right">{t('amount')}</span>
@@ -1086,7 +1086,7 @@ function StatementModal({
                 <div className="p-4 text-center text-sm text-muted-foreground">{t('noPayments')}</div>
               ) : (
                 payments.map((p) => (
-                  <div key={p.id} className="grid grid-cols-5 gap-2 p-2 border-t border-border/50 text-sm">
+                  <div key={p.id} className="grid grid-cols-5 gap-2 p-2 border-t border-border/50 text-sm min-w-[380px]">
                     <span className="text-foreground">{format(new Date(p.paymentDate), 'dd/MM/yyyy')}</span>
                     <span className="text-foreground">{t(p.paymentMethod)}</span>
                     <span className="text-right font-medium text-foreground">{formatCurrency(p.amount)}</span>

@@ -160,27 +160,27 @@ export function HRDashboard() {
         accentColor="chart-1"
         actions={
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="gap-1.5">
+            <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="hidden sm:inline-flex gap-1.5">
               <Play className="h-3.5 w-3.5" /> {t('watchDemo', 'Watch Demo')}
             </Button>
             <Button asChild variant="outline" size="sm">
               <Link to="/dashboard/hr/employees" className="inline-flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                {t('employees')}
+                <span className="hidden sm:inline">{t('employees')}</span>
                 <ArrowRight className="h-4 w-4 opacity-70" />
               </Link>
             </Button>
             <Button asChild variant="outline" size="sm">
               <Link to="/dashboard/hr/payroll" className="inline-flex items-center gap-2">
                 <Coins className="h-4 w-4" />
-                {t('payroll')}
+                <span className="hidden sm:inline">{t('payroll')}</span>
                 <ArrowRight className="h-4 w-4 opacity-70" />
               </Link>
             </Button>
             <Button asChild variant="outline" size="sm">
               <Link to="/dashboard/hr/cnss" className="inline-flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4" />
-                {t('cnss')}
+                <span className="hidden sm:inline">{t('cnss')}</span>
                 <ArrowRight className="h-4 w-4 opacity-70" />
               </Link>
             </Button>

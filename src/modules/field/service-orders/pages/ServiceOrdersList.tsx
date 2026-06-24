@@ -396,7 +396,7 @@ export default function ServiceOrdersList() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="gap-1.5">
+          <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="hidden sm:inline-flex gap-1.5">
             <Play className="h-3.5 w-3.5" /> {t('watchDemo', 'Watch Demo')}
           </Button>
           {hasCreateAccess && (
@@ -415,20 +415,20 @@ export default function ServiceOrdersList() {
       <ServiceOrdersAutopilotDemo open={demoOpen} onClose={() => setDemoOpen(false)} />
 
       {/* Mobile Header */}
-      <div className="md:hidden flex items-center justify-between p-4 border-b border-border bg-card/50 backdrop-blur">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary/10">
+      <div className="md:hidden flex items-center justify-between gap-2 p-3 border-b border-border bg-card/50 backdrop-blur">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div className="p-2 rounded-lg bg-primary/10 flex-shrink-0">
             <ClipboardList className="h-5 w-5 text-primary" />
           </div>
-          <div>
-            <h1 className="text-lg font-semibold text-foreground">{t('list.title')}</h1>
-            <p className="text-[10px] text-muted-foreground">{t('list.subtitle')}</p>
+          <div className="min-w-0">
+            <h1 className="text-base font-semibold text-foreground truncate">{t('list.title')}</h1>
+            <p className="text-[10px] text-muted-foreground truncate">{t('list.subtitle')}</p>
           </div>
         </div>
         {hasCreateAccess && (
           <CreateActionButton
             size="sm"
-            className="gradient-primary text-primary-foreground shadow-medium hover-lift"
+            className="gradient-primary text-primary-foreground shadow-medium hover-lift flex-shrink-0"
             onClick={() => navigate('/dashboard/field/service-orders/create')}
           >
             <Plus className="h-4 w-4" />
@@ -438,7 +438,7 @@ export default function ServiceOrdersList() {
 
       {/* Stats Cards */}
       <div className="p-3 sm:p-4 border-b border-border">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
           {statsData.map((stat, index) => {
             const isSelected = selectedStat === stat.filter;
             return (
@@ -601,7 +601,7 @@ export default function ServiceOrdersList() {
       {/* Bulk Action Bar */}
       {selectedIds.size > 0 && (
         <div className="sticky top-0 z-30 bg-destructive/10 border-b border-destructive/20 p-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-3">
               <Checkbox
                 checked={allSelected}
@@ -611,7 +611,7 @@ export default function ServiceOrdersList() {
                 {t('bulk.selectedCount', { count: selectedIds.size })}
               </span>
               <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())} className="text-muted-foreground">
-                {t('bulk.deselectAll')}
+                <span className="hidden sm:inline">{t('bulk.deselectAll')}</span>
               </Button>
             </div>
             {hasDeleteAccess && (
@@ -621,7 +621,7 @@ export default function ServiceOrdersList() {
                 onClick={() => setShowBulkDeleteDialog(true)}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
-                {t('bulk.deleteSelected')}
+                <span className="hidden sm:inline">{t('bulk.deleteSelected')}</span>
               </Button>
             )}
           </div>

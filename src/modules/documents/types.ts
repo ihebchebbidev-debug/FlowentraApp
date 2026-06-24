@@ -8,7 +8,7 @@ export interface Document {
   mimeType: string;
   
   // Module association (optional — general documents have no module)
-  moduleType: 'contacts' | 'sales' | 'offers' | 'services' | 'projects' | 'field' | 'general';
+  moduleType: 'contacts' | 'sales' | 'offers' | 'services' | 'projects' | 'field' | 'deals' | 'general';
   moduleId?: string;
   moduleName?: string;
   
@@ -89,6 +89,7 @@ export interface DocumentStats {
     services: number;
     projects: number;
     field: number;
+    deals: number;
   };
   recentActivity: number;
 }

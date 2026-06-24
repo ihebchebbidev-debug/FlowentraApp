@@ -134,30 +134,32 @@ export default function CreateFormPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <header className="flex items-center justify-between p-4 border-b border-border bg-card/50 backdrop-blur sticky top-0 z-10">
-        <div className="flex items-center gap-3">
-          <Button 
-            variant="ghost" 
-            size="icon" 
+      <header className="flex items-center justify-between gap-2 p-3 sm:p-4 border-b border-border bg-card/50 backdrop-blur sticky top-0 z-10">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={handleBack}
+            className="flex-shrink-0"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div className="p-2 rounded-lg bg-primary/10">
+          <div className="p-2 rounded-lg bg-primary/10 flex-shrink-0">
             <FileText className="h-5 w-5 text-primary" />
           </div>
-          <div>
-            <h1 className="text-xl font-semibold text-foreground">{t('create.title')}</h1>
-            <p className="text-[11px] text-muted-foreground">{t('create.subtitle')}</p>
+          <div className="min-w-0">
+            <h1 className="text-base sm:text-xl font-semibold text-foreground truncate">{t('create.title')}</h1>
+            <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">{t('create.subtitle')}</p>
           </div>
         </div>
-        <Button 
+        <Button
+          size="sm"
           onClick={handleSubmit}
           disabled={createMutation.isPending}
-          className="gradient-primary"
+          className="gradient-primary flex-shrink-0"
         >
-          <Save className="h-4 w-4 mr-2" />
-          {t('common.save')}
+          <Save className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">{t('common.save')}</span>
         </Button>
       </header>
       

@@ -47,18 +47,18 @@ export function DispatcherHeader({ onDispatchJobs, hasCreateAccess = true }: Dis
   };
 
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-primary/10">
-          <CalendarRange className="h-6 w-6 text-primary" />
+    <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+        <div className="p-2 rounded-lg bg-primary/10 flex-shrink-0">
+          <CalendarRange className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
         </div>
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">{t('dispatcher.title')}</h1>
-          <p className="text-[11px] text-muted-foreground">{t('dispatcher.description')}</p>
+        <div className="min-w-0">
+          <h1 className="text-base sm:text-xl font-semibold text-foreground truncate">{t('dispatcher.title')}</h1>
+          <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">{t('dispatcher.description')}</p>
         </div>
       </div>
-      
-      <div className="flex items-center gap-2">
+
+      <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
         <Tooltip>
           <TooltipTrigger asChild>
             <Button

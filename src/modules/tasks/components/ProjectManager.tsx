@@ -456,19 +456,19 @@ export function ProjectManager({ onSwitchToTasks: _onSwitchToTasks }: ProjectMan
   }
 
   const Header = () => (
-    <div className="flex items-center justify-between p-4 border-b border-border bg-card/50 backdrop-blur">
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-primary/10">
-          <Briefcase className="h-6 w-6 text-primary" />
+    <div className="flex items-center justify-between gap-2 p-3 sm:p-4 border-b border-border bg-card/50 backdrop-blur">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+        <div className="p-2 rounded-lg bg-primary/10 flex-shrink-0">
+          <Briefcase className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
         </div>
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">{t('projects.title')}</h1>
-          <p className="text-[11px] text-muted-foreground">{t('projects.description')}</p>
+        <div className="min-w-0">
+          <h1 className="text-base sm:text-xl font-semibold text-foreground truncate">{t('projects.title')}</h1>
+          <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">{t('projects.description')}</p>
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        <Button onClick={() => setIsCreateModalOpen(true)} className="gradient-primary text-white shadow-medium hover-lift w-full sm:w-auto bg-primary hover:bg-primary/90">
-          <Plus className="mr-2 h-4 w-4 text-white" />
+      <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+        <Button size="sm" onClick={() => setIsCreateModalOpen(true)} className="gradient-primary text-white shadow-medium hover-lift bg-primary hover:bg-primary/90">
+          <Plus className="h-4 w-4 sm:mr-2 text-white" />
           <span className="hidden sm:inline text-white">{t('projects.buttons.newProject')}</span>
         </Button>
       </div>

@@ -373,7 +373,7 @@ export function PayrollPage() {
                     onClick={exportSelectedPdfs}
                   >
                     <FileDown className="h-4 w-4" />
-                    {isExporting ? t('payrollDraft.export.exporting') : t('payrollDraft.export.button')}
+                    <span className="hidden sm:inline">{isExporting ? t('payrollDraft.export.exporting') : t('payrollDraft.export.button')}</span>
                   </Button>
                   <Button
                     size="sm" variant={canConfirm ? 'default' : 'outline'}
@@ -383,7 +383,7 @@ export function PayrollPage() {
                       toast({ title: t('payrollDraft.actions.confirmed') });
                     }}
                   >
-                    {t('payrollDraft.actions.confirm')}
+                    <span className="hidden sm:inline">{t('payrollDraft.actions.confirm')}</span>
                   </Button>
                   <Button
                     size="sm" variant={canMarkPaid ? 'default' : 'outline'}
@@ -393,7 +393,7 @@ export function PayrollPage() {
                       toast({ title: t('payrollDraft.actions.paid') });
                     }}
                   >
-                    {t('payrollDraft.actions.markPaid')}
+                    <span className="hidden sm:inline">{t('payrollDraft.actions.markPaid')}</span>
                   </Button>
                 </div>
               </div>

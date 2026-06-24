@@ -570,7 +570,7 @@ export function OffersList() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="gap-1.5">
+          <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="hidden sm:inline-flex gap-1.5">
             <Play className="h-3.5 w-3.5" /> {t('watchDemo', 'Watch Demo')}
           </Button>
           {hasCreateAccess && (
@@ -586,18 +586,18 @@ export function OffersList() {
       <OffersAutopilotDemo open={demoOpen} onClose={() => setDemoOpen(false)} />
 
       {/* Mobile Header with Title */}
-      <div className="md:hidden flex items-center justify-between p-4 border-b border-border bg-card/50 backdrop-blur">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary/10">
-            <FileText className="h-6 w-6 text-primary" />
+      <div className="md:hidden flex items-center justify-between gap-2 p-3 border-b border-border bg-card/50 backdrop-blur">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div className="p-2 rounded-lg bg-primary/10 flex-shrink-0">
+            <FileText className="h-5 w-5 text-primary" />
           </div>
-          <div>
-            <h1 className="text-xl font-semibold text-foreground">{t('title', 'Offers')}</h1>
-            <p className="text-[11px] text-muted-foreground">{t('subtitle', 'Manage quotes and proposals')}</p>
+          <div className="min-w-0">
+            <h1 className="text-base font-semibold text-foreground truncate">{t('title', 'Offers')}</h1>
+            <p className="text-[10px] text-muted-foreground truncate">{t('subtitle', 'Manage quotes and proposals')}</p>
           </div>
         </div>
         {hasCreateAccess && (
-          <div className="flex gap-2">
+          <div className="flex gap-1.5 flex-shrink-0">
             <Button variant="outline" size="sm" onClick={() => setShowImportModal(true)}>
               <Upload className="h-4 w-4" />
             </Button>
@@ -610,7 +610,7 @@ export function OffersList() {
 
       {/* Stats Cards */}
       <div className="p-3 sm:p-4 border-b border-border">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
           {statsData.map((stat, index) => {
             const isSelected = selectedStat === stat.filter;
             const isInteractive = stat.filter !== 'value';
@@ -767,7 +767,7 @@ export function OffersList() {
       {/* Bulk Action Bar */}
       {selectedIds.size > 0 && (
         <div className="sticky top-0 z-30 bg-destructive/10 border-b border-destructive/20 p-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-3">
               <Checkbox
                 checked={allSelected}
@@ -777,7 +777,7 @@ export function OffersList() {
                 {t('bulk.selectedCount', { count: selectedIds.size })}
               </span>
               <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())} className="text-muted-foreground">
-                {t('bulk.deselectAll')}
+                <span className="hidden sm:inline">{t('bulk.deselectAll')}</span>
               </Button>
             </div>
             {hasDeleteAccess && (
@@ -787,7 +787,7 @@ export function OffersList() {
                 onClick={() => setShowBulkDeleteDialog(true)}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
-                {t('bulk.deleteSelected')}
+                <span className="hidden sm:inline">{t('bulk.deleteSelected')}</span>
               </Button>
             )}
           </div>
@@ -937,7 +937,7 @@ export function OffersList() {
 
                   <div className="overflow-x-auto w-full scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
                     style={{ WebkitOverflowScrolling: 'touch' }}>
-                    <Table className="min-w-[800px]">
+                    <Table className="min-w-[640px]">
                       <TableHeader>
                         <TableRow>
                           <TableHead className="w-12">
