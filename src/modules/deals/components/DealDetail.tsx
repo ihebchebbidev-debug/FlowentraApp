@@ -27,12 +27,16 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export function DealDetail() {
   const { t } = useTranslation("deals");
   const { id } = useParams();
   const navigate = useNavigate();
   const dealId = Number(id);
+  const { canUpdate, canDelete, isMainAdmin } = usePermissions();
+  const hasUpdateAccess = isMainAdmin || canUpdate('deals');
+  const hasDeleteAccess = isMainAdmin || canDelete('deals');
 
   const { format: formatCurrency } = useCurrency();
   const [deal, setDeal] = useState<Deal | null>(null);
@@ -104,15 +108,21 @@ export function DealDetail() {
                     <Button variant="outline" size="sm" onClick={() => setIsPDFModalOpen(true)} className="gap-1.5">
                       <FileDown className="h-4 w-4" /> {t("actions.pdf", { defaultValue: "PDF" })}
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => navigate(`/dashboard/deals/${dealId}/edit`)} className="gap-1.5">
-                      <Edit className="h-4 w-4" /> {t("actions.edit")}
-                    </Button>
-                    <Button size="sm" onClick={() => setConvertOpen(true)} className="gap-1.5">
-                      <GitBranch className="h-4 w-4" /> {t("actions.convert")}
-                    </Button>
-                    <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={() => setDeleteOpen(true)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {hasUpdateAccess && (
+                      <Button variant="outline" size="sm" onClick={() => navigate(`/dashboard/deals/${dealId}/edit`)} className="gap-1.5">
+                        <Edit className="h-4 w-4" /> {t("actions.edit")}
+                      </Button>
+                    )}
+                    {hasUpdateAccess && (
+                      <Button size="sm" onClick={() => setConvertOpen(true)} className="gap-1.5">
+                        <GitBranch className="h-4 w-4" /> {t("actions.convert")}
+                      </Button>
+                    )}
+                    {hasDeleteAccess && (
+                      <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={() => setDeleteOpen(true)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               </CardContent>

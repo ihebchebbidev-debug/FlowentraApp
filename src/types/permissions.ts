@@ -1,12 +1,13 @@
 // Permission types for Role-Based Access Control (RBAC)
 
 // All available modules/resources in the system
-export type PermissionModule = 
+export type PermissionModule =
   | 'contacts'
   | 'articles'
   | 'installations'
   | 'offers'
   | 'sales'
+  | 'deals'
   | 'service_orders'
   | 'dispatches'
   | 'dispatcher'
@@ -129,6 +130,13 @@ export const PERMISSION_MODULES: {
     module: 'sales',
     label: 'Sales',
     description: 'Manage sales pipeline and deals',
+    actions: ['create', 'read', 'update', 'delete'],
+    category: 'CRM'
+  },
+  {
+    module: 'deals',
+    label: 'Deals',
+    description: 'Manage sales opportunities and deal pipeline',
     actions: ['create', 'read', 'update', 'delete'],
     category: 'CRM'
   },

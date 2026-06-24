@@ -26,6 +26,7 @@ import { ConvertDealModal } from "./ConvertDealModal";
 import { DealsAutopilotDemo } from "./onboarding/DealsAutopilotDemo";
 import type { Deal } from "@/services/api/dealsApi";
 import { getInitialViewMode } from "../../../hooks/getInitialViewMode";
+import { usePermissions } from "@/hooks/usePermissions";
 
 type StatFilter = "all" | "open" | "won" | "lost";
 
@@ -33,6 +34,11 @@ export function DealsList() {
   const { t } = useTranslation("deals");
   const navigate = useNavigate();
   const { deals, stats, loading, refetch, deleteDeal } = useDeals();
+  const { canCreate, canUpdate, canDelete, isMainAdmin } = usePermissions();
+
+  const hasCreateAccess = isMainAdmin || canCreate('deals');
+  const hasUpdateAccess = isMainAdmin || canUpdate('deals');
+  const hasDeleteAccess = isMainAdmin || canDelete('deals');
 
   const [viewMode, setViewMode] = useState<"list" | "table" | "kanban">(() => getInitialViewMode(["list", "table", "kanban"] as const, "table"));
   const [searchTerm, setSearchTerm] = useState("");
@@ -93,9 +99,11 @@ export function DealsList() {
         <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="gap-1.5">
           <Play className="h-3.5 w-3.5" /> {t("header.watchDemo")}
         </Button>
-        <CreateActionButton className="bg-primary text-white hover:bg-primary/90 shadow-medium hover-lift" onClick={() => navigate("/dashboard/deals/add")}>
-          <Plus className="h-4 w-4 text-white mr-2" /> {t("header.add")}
-        </CreateActionButton>
+        {hasCreateAccess && (
+          <CreateActionButton className="bg-primary text-white hover:bg-primary/90 shadow-medium hover-lift" onClick={() => navigate("/dashboard/deals/add")}>
+            <Plus className="h-4 w-4 text-white mr-2" /> {t("header.add")}
+          </CreateActionButton>
+        )}
       </div>
     </div>
   );
@@ -272,9 +280,11 @@ export function DealsList() {
             <Handshake className="h-10 w-10 text-muted-foreground/40 mb-3" />
             <p className="font-medium">{t("empty.title")}</p>
             <p className="text-sm text-muted-foreground mb-4">{t("empty.description")}</p>
-            <CreateActionButton className="bg-primary text-white hover:bg-primary/90" onClick={() => navigate("/dashboard/deals/add")}>
-              <Plus className="h-4 w-4 mr-2" /> {t("empty.cta")}
-            </CreateActionButton>
+            {hasCreateAccess && (
+              <CreateActionButton className="bg-primary text-white hover:bg-primary/90" onClick={() => navigate("/dashboard/deals/add")}>
+                <Plus className="h-4 w-4 mr-2" /> {t("empty.cta")}
+              </CreateActionButton>
+            )}
           </div>
         ) : viewMode === "kanban" ? (
           <DealsKanbanView
@@ -351,16 +361,24 @@ export function DealsList() {
                             <DropdownMenuItem onClick={() => navigate(`/dashboard/deals/${d.id}`)}>
                               <Eye className="h-4 w-4 mr-2" /> {t("actions.view")}
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => navigate(`/dashboard/deals/${d.id}/edit`)}>
-                              <Edit className="h-4 w-4 mr-2" /> {t("actions.edit")}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setToConvert(d)}>
-                              <GitBranch className="h-4 w-4 mr-2" /> {t("actions.convert")}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-red-600" onClick={() => setToDelete(d)}>
-                              <Trash2 className="h-4 w-4 mr-2" /> {t("actions.delete")}
-                            </DropdownMenuItem>
+                            {hasUpdateAccess && (
+                              <DropdownMenuItem onClick={() => navigate(`/dashboard/deals/${d.id}/edit`)}>
+                                <Edit className="h-4 w-4 mr-2" /> {t("actions.edit")}
+                              </DropdownMenuItem>
+                            )}
+                            {hasUpdateAccess && (
+                              <DropdownMenuItem onClick={() => setToConvert(d)}>
+                                <GitBranch className="h-4 w-4 mr-2" /> {t("actions.convert")}
+                              </DropdownMenuItem>
+                            )}
+                            {hasDeleteAccess && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem className="text-red-600" onClick={() => setToDelete(d)}>
+                                  <Trash2 className="h-4 w-4 mr-2" /> {t("actions.delete")}
+                                </DropdownMenuItem>
+                              </>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>

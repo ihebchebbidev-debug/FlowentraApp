@@ -20,6 +20,7 @@ namespace MyApi.Modules.Roles.Services
             { "articles", new[] { "create", "read", "update", "delete", "export", "import", "archive", "duplicate", "bulk_edit" } },
             { "offers", new[] { "create", "read", "update", "delete", "export", "approve", "reject", "send", "print", "duplicate", "convert", "archive" } },
             { "sales", new[] { "create", "read", "update", "delete", "export", "approve", "convert", "archive", "print", "bulk_edit" } },
+            { "deals", new[] { "create", "read", "update", "delete" } },
             { "purchases", new[] { "create", "read", "update", "delete" } },
             // Field Service
             { "installations", new[] { "create", "read", "update", "delete", "export", "import", "archive" } },
