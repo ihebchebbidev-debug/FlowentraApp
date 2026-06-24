@@ -80,15 +80,15 @@ const convertToArticleFormat = (
     skillsRequired: undefined,
     materialsNeeded: [],
     preferredUsers: [],
-    lastUsed: article.modifiedDate ? new Date(article.modifiedDate) : undefined,
+    lastUsed: article.modifiedDate ? new Date(article.modifiedDate).toLocaleDateString() : undefined,
     lastUsedBy: undefined,
     tags: [],
     notes: article.description,
     status: rawStatus,
     statusDisplay: translateStatus(rawStatus, t),
     description: article.description,
-    createdAt: article.createdDate ? new Date(article.createdDate) : new Date(),
-    updatedAt: article.modifiedDate ? new Date(article.modifiedDate) : new Date(),
+    createdAt: article.createdDate ? new Date(article.createdDate).toLocaleDateString() : new Date().toLocaleDateString(),
+    updatedAt: article.modifiedDate ? new Date(article.modifiedDate).toLocaleDateString() : new Date().toLocaleDateString(),
     createdBy: "system",
     modifiedBy: "system"
   };
