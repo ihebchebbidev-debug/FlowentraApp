@@ -71,7 +71,10 @@
       "Bash(grep -v \"^\\\\\"$\")",
       "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\ihebc\\\\OneDrive\\\\Desktop\\\\FlowentraApp\\\\src\\\\modules\\\\inventory-services\" -Recurse -File)",
       "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\ihebc\\\\OneDrive\\\\Desktop\\\\FlowentraApp\\\\src\\\\modules\\\\documents\" -Recurse -File)",
-      "Bash(node_modules/.bin/tsc --noEmit --skipLibCheck)"
+      "Bash(node_modules/.bin/tsc --noEmit --skipLibCheck)",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\ihebc\\\\OneDrive\\\\Desktop\\\\FlowentraApp\\\\src\\\\modules\" -Directory | ForEach-Object { $_.Name })",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\ihebc\\\\OneDrive\\\\Desktop\\\\FlowentraApp\\\\src\\\\modules\" -Directory | Where-Object { $_.Name -match 'install|dispatch|service' } | ForEach-Object { $_.Name })",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\ihebc\\\\OneDrive\\\\Desktop\\\\FlowentraApp\\\\src\\\\modules\" -Directory -Recurse -Depth 1 | Where-Object { $_.Name -eq 'pages' } | ForEach-Object { $_.FullName })"
     ],
     "additionalDirectories": [
       "C:\\Users\\iheb.chebbi\\Desktop\\FlowentraApp\\Backend\\Modules\\Offers\\DTOs",

@@ -22,7 +22,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 
-import { Plus, Edit2, Trash2, Loader2, Star } from 'lucide-react';
+import { Plus, Edit2, Trash2, Loader2, Star, Tag, Clock, FolderOpen } from 'lucide-react';
 import { LookupItem, CreateLookupRequest, UpdateLookupRequest } from '@/services/lookupsApi';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -275,103 +275,180 @@ export function LookupTable({
           </div>
         </div>
       ) : (
-        <div className="border rounded-lg">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12">{t('default')}</TableHead>
-                <TableHead>{t('name')}</TableHead>
-                
-                
-                
-                {showTypeFields.isCompleted && <TableHead>{t('completed')}</TableHead>}
-                {showTypeFields.defaultDuration && <TableHead>{t('duration')}</TableHead>}
-                {showTypeFields.isPaid && <TableHead>{t('paid')}</TableHead>}
-                {showTypeFields.category && <TableHead>{t('category')}</TableHead>}
-                <TableHead>{t('status')}</TableHead>
-                <TableHead>{t('actions')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0"
-                            onClick={() => handleSetDefault(item.id)}
-                            disabled={isSettingDefault === item.id || !onSetDefault}
-                          >
-                            {isSettingDefault === item.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Star 
-                                className={`h-4 w-4 ${item.isDefault ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground hover:text-amber-400'}`}
-                              />
-                            )}
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          {item.isDefault ? t('thisIsDefault') : t('setAsDefault')}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </TableCell>
-                  <TableCell className="font-medium">{item.name}</TableCell>
-                  
-                  
-                  {showTypeFields.isCompleted && (
-                    <TableCell>
-                      {item.isCompleted !== undefined && (
-                        <Badge variant={item.isCompleted ? "default" : "secondary"}>
-                          {item.isCompleted ? t('completed') : t('inProgress')}
-                        </Badge>
+        <>
+          {/* Mobile cards */}
+          <div className="md:hidden divide-y divide-border/50 border rounded-xl overflow-hidden">
+            {items.map((item) => (
+              <div key={item.id} className="p-4 bg-card hover:bg-muted/30 transition-colors">
+                {/* Header: color dot + name + status badge */}
+                <div className="flex items-start gap-3">
+                  <div
+                    className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+                    style={{ backgroundColor: item.color ? `${item.color}20` : undefined }}
+                  >
+                    <Tag
+                      className="h-4 w-4"
+                      style={{ color: item.color || 'hsl(var(--primary))' }}
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-semibold text-sm text-foreground leading-snug">
+                        {item.name}
+                      </p>
+                      <Badge
+                        variant={item.isActive ? 'default' : 'secondary'}
+                        className="text-[10px] px-2 py-0.5 shrink-0"
+                      >
+                        {item.isActive ? t('active') : t('inactive')}
+                      </Badge>
+                    </div>
+
+                    {/* Optional meta row */}
+                    {(showTypeFields.defaultDuration || showTypeFields.category || showTypeFields.isCompleted || showTypeFields.isPaid) && (
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5">
+                        {showTypeFields.defaultDuration && item.defaultDuration && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Clock className="h-3 w-3 shrink-0" />
+                            <span>{item.defaultDuration}min</span>
+                          </div>
+                        )}
+                        {showTypeFields.category && item.category && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <FolderOpen className="h-3 w-3 shrink-0" />
+                            <span>{item.category}</span>
+                          </div>
+                        )}
+                        {showTypeFields.isCompleted && item.isCompleted !== undefined && (
+                          <Badge variant={item.isCompleted ? 'default' : 'secondary'} className="text-[10px] px-2 py-0.5">
+                            {item.isCompleted ? t('completed') : t('inProgress')}
+                          </Badge>
+                        )}
+                        {showTypeFields.isPaid && (
+                          <Badge variant={item.isPaid ? 'default' : 'outline'} className="text-[10px] px-2 py-0.5">
+                            {item.isPaid ? t('paid') : t('unpaid')}
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Footer: default star + actions */}
+                <div className="flex items-center justify-between mt-3 pl-12">
+                  {onSetDefault ? (
+                    <button
+                      onClick={() => handleSetDefault(item.id)}
+                      disabled={isSettingDefault === item.id}
+                      className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-amber-500 transition-colors disabled:opacity-50"
+                    >
+                      {isSettingDefault === item.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Star className={`h-3.5 w-3.5 ${item.isDefault ? 'fill-amber-400 text-amber-400' : ''}`} />
                       )}
-                    </TableCell>
-                  )}
-                  {showTypeFields.defaultDuration && (
-                    <TableCell>{item.defaultDuration ? `${item.defaultDuration}min` : '-'}</TableCell>
-                  )}
-                  {showTypeFields.isPaid && (
+                      <span>{item.isDefault ? t('thisIsDefault') : t('setAsDefault')}</span>
+                    </button>
+                  ) : <span />}
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={() => handleEdit(item)}>
+                      <Edit2 className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="destructive" size="sm" className="h-8 w-8 p-0" onClick={() => handleDelete(item.id)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden md:block border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">{t('default')}</TableHead>
+                  <TableHead>{t('name')}</TableHead>
+                  {showTypeFields.isCompleted && <TableHead>{t('completed')}</TableHead>}
+                  {showTypeFields.defaultDuration && <TableHead>{t('duration')}</TableHead>}
+                  {showTypeFields.isPaid && <TableHead>{t('paid')}</TableHead>}
+                  {showTypeFields.category && <TableHead>{t('category')}</TableHead>}
+                  <TableHead>{t('status')}</TableHead>
+                  <TableHead>{t('actions')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {items.map((item) => (
+                  <TableRow key={item.id}>
                     <TableCell>
-                      <Badge variant={item.isPaid ? "default" : "outline"}>
-                        {item.isPaid ? t('paid') : t('unpaid')}
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              onClick={() => handleSetDefault(item.id)}
+                              disabled={isSettingDefault === item.id || !onSetDefault}
+                            >
+                              {isSettingDefault === item.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Star
+                                  className={`h-4 w-4 ${item.isDefault ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground hover:text-amber-400'}`}
+                                />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {item.isDefault ? t('thisIsDefault') : t('setAsDefault')}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </TableCell>
+                    <TableCell className="font-medium">{item.name}</TableCell>
+                    {showTypeFields.isCompleted && (
+                      <TableCell>
+                        {item.isCompleted !== undefined && (
+                          <Badge variant={item.isCompleted ? 'default' : 'secondary'}>
+                            {item.isCompleted ? t('completed') : t('inProgress')}
+                          </Badge>
+                        )}
+                      </TableCell>
+                    )}
+                    {showTypeFields.defaultDuration && (
+                      <TableCell>{item.defaultDuration ? `${item.defaultDuration}min` : '-'}</TableCell>
+                    )}
+                    {showTypeFields.isPaid && (
+                      <TableCell>
+                        <Badge variant={item.isPaid ? 'default' : 'outline'}>
+                          {item.isPaid ? t('paid') : t('unpaid')}
+                        </Badge>
+                      </TableCell>
+                    )}
+                    {showTypeFields.category && <TableCell>{item.category}</TableCell>}
+                    <TableCell>
+                      <Badge variant={item.isActive ? 'default' : 'secondary'}>
+                        {item.isActive ? t('active') : t('inactive')}
                       </Badge>
                     </TableCell>
-                  )}
-                  {showTypeFields.category && <TableCell>{item.category}</TableCell>}
-                  <TableCell>
-                    <Badge variant={item.isActive ? "default" : "secondary"}>
-                      {item.isActive ? t('active') : t('inactive')}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEdit(item)}
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDelete(item.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Button variant="outline" size="sm" onClick={() => handleEdit(item)}>
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button variant="destructive" size="sm" onClick={() => handleDelete(item.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </>
       )}
 
       {/* Edit Dialog */}

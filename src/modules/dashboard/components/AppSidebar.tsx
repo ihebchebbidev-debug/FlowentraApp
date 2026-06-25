@@ -272,6 +272,12 @@ export function AppSidebar() {
       const v = val.trim();
       return v === key || v === `${key}.description` || v === `${key}.title`;
     };
+    // Avoid calling t(key) for keys known to resolve to objects in some locales
+    if (key === 'external') {
+      const desc = t('external.description');
+      if (typeof desc === 'string' && !isLikelyRaw(desc)) return desc;
+      return fallback ?? '';
+    }
     const direct = t(key);
     if (typeof direct === 'object' && direct && 'description' in direct) {
       const maybe = (direct as any).description;

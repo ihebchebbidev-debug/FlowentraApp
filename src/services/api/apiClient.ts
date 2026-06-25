@@ -16,6 +16,8 @@ import { getSyntheticDataForOfflineCacheMissGet } from '@/services/offline/offli
 import { getOfflineDetailPlaceholder } from '@/services/offline/offlineDetailPlaceholders';
 import { isOfflineNoCache503, parseOfflineNoCacheBody } from '@/services/offline/offlineHttpRead';
 import { toast } from 'sonner';
+import { reportApiErrorIncident, reportNetworkErrorIncident } from '@/services/incident/incidentService';
+import { pushBreadcrumb } from '@/services/incident/incidentBreadcrumbs';
 
 // Helper to get auth token
 const getAuthToken = (): string | null => {
@@ -107,6 +109,7 @@ const parseEndpointForLogging = (endpoint: string, method: string): { module: st
 const SKIP_LOGGING_ENDPOINTS = [
   '/api/SystemLogs',
   '/api/logs',
+  '/api/Incidents',
   '/api/Auth/refresh',
   '/api/workflows/default', // Skip logging for default workflow to avoid cascades when backend is down
 ];
@@ -120,6 +123,7 @@ const VIEW_ALL_WRITE_EXEMPT_ENDPOINTS = [
   '/api/Tenants',
   '/api/SystemLogs',
   '/api/logs',
+  '/api/Incidents',
   '/api/workflow', // best-effort workflow triggers are already fire-and-forget
 ];
 
@@ -131,6 +135,11 @@ export const apiFetch = async <T>(
   const url = endpoint.startsWith('http') ? endpoint : `${API_URL}${endpoint}`;
   const method = options.method || 'GET';
   const isMutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase());
+
+  if (endpoint.includes('/api/') && !endpoint.includes('/api/Incidents') && !endpoint.includes('/api/SystemLogs')) {
+    pushBreadcrumb({ type: 'api', label: `${method.toUpperCase()} ${endpoint.split('?')[0]}` });
+  }
+
   const normalizedHeaders = normalizeHeaders(options.headers);
 
   // ── View-all write guard ───────────────────────────────────────────────────
@@ -313,7 +322,17 @@ export const apiFetch = async <T>(
         try { toast.error(errorMessage); } catch {}
       }
 
-      return { 
+      if (!SKIP_LOGGING_ENDPOINTS.some(skip => endpoint.includes(skip))) {
+        reportApiErrorIncident({
+          endpoint,
+          method,
+          status: response.status,
+          message: errorMessage,
+          incidentType: method !== 'GET' ? 'mutation_error' : 'query_error',
+        });
+      }
+
+      return {
         data: null, 
         status: response.status, 
         error: errorMessage 
@@ -386,8 +405,14 @@ export const apiFetch = async <T>(
         { entityId, details: error.message }
       );
     }
+
+    reportNetworkErrorIncident({
+      endpoint,
+      method,
+      message: error.message || 'Network error',
+    });
     
-    return { 
+    return {
       data: null, 
       status: 0, 
       error: error.message || 'Network error' 

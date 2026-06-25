@@ -11,9 +11,9 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CollapsibleSearch } from "@/components/ui/collapsible-search";
-import { 
+import {
   Package, Filter, Edit, Trash2, Eye, MoreVertical, Plus, MapPin, List, Table as TableIcon,
-  ChevronDown, Shield, Wrench, Download, Building, ExternalLink, ShieldAlert, Lock, Upload, Loader2, X
+  ChevronDown, Shield, Wrench, Download, Building, Building2, ExternalLink, ShieldAlert, Lock, Upload, Loader2, X, Calendar
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -981,73 +981,78 @@ export default function InstallationsList() {
           </div>
         ) : !isLoading && filteredInstallations.length > 0 ? (
           <div className="p-3 sm:p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {pagination.data.map((installation) => {
-                const warrantyStatus = getWarrantyStatus(installation.warranty);
-                const customer = installation.contactId ? contactsMap.get(installation.contactId) : null;
-                return (
-                  <Card 
-                    key={installation.id} 
-                    className="shadow-card hover-lift gradient-card group cursor-pointer"
-                    onClick={() => handleInstallationClick(installation)}
-                  >
-                     <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <Avatar className="h-10 w-10">
-                            <AvatarFallback className="bg-primary/10 text-primary">
-                              {getInitials(installation.name)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="min-w-0 flex-1">
-                            <CardTitle className="text-base text-foreground truncate">{installation.name}</CardTitle>
-                            <CardDescription className="text-xs truncate">{installation.model}</CardDescription>
-                          </div>
+            <Card className="shadow-card">
+              <CardContent className="p-0 divide-y divide-border">
+                {pagination.data.map((installation) => {
+                  const warrantyStatus = getWarrantyStatus(installation.warranty);
+                  const customer = installation.contactId ? contactsMap.get(installation.contactId) : null;
+                  return (
+                    <div
+                      key={installation.id}
+                      className="p-4 hover:bg-muted/30 transition-colors cursor-pointer active:bg-muted/50"
+                      onClick={() => handleInstallationClick(installation)}
+                    >
+                      {/* Header: icon + name + warranty status */}
+                      <div className="flex items-start gap-3 mb-2.5">
+                        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <Building2 className="h-4 w-4 text-primary" />
                         </div>
-                        <div onClick={(e) => e.stopPropagation()}>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="font-semibold text-foreground text-sm leading-snug line-clamp-1 flex-1">{installation.name}</p>
+                            <Badge className={`${warrantyStatus.color} text-[10px] px-2 py-0.5 shrink-0`}>{warrantyStatus.text}</Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                            {[installation.manufacturer, installation.model].filter(Boolean).join(' · ') || '—'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Details */}
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pl-12 mb-3">
+                        {installation.siteAddress && (
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <MapPin className="h-3 w-3 shrink-0" />
+                            <span className="truncate max-w-[180px]">{installation.siteAddress}</span>
+                          </div>
+                        )}
+                        {installation.installationDate && (
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Calendar className="h-3 w-3 shrink-0" />
+                            <span>{new Date(installation.installationDate).toLocaleDateString()}</span>
+                          </div>
+                        )}
+                        {customer && (
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground" onClick={(e) => e.stopPropagation()}>
+                            <Building className="h-3 w-3 shrink-0" />
+                            <Link
+                              to={`/dashboard/contacts/${customer.id}`}
+                              className="text-primary hover:underline truncate max-w-[140px]"
+                            >
+                              {customer.name}
+                            </Link>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Footer: type badge + actions */}
+                      <div className="flex items-center justify-between pl-12" onClick={(e) => e.stopPropagation()}>
+                        <Badge className={`${getTypeColor(!customer ? 'internal' : installation.type)} text-[10px] px-2 py-0.5`}>
+                          {!customer ? t('internal') : (installation.type === 'internal' ? t('internal') : t('external'))}
+                        </Badge>
+                        <div className="ml-auto">
                           <TableRowActions actions={[
                             { icon: Eye, label: t('list.view_details'), onClick: (e) => { e.stopPropagation(); navigate(`/dashboard/field/installations/${installation.id}`); } },
-                            { icon: Edit, label: t('list.edit'), onClick: (e) => { e.stopPropagation(); navigate(`/dashboard/field/installations/edit/${installation.id}`); }, show: hasUpdateAccess },
+                            { icon: Edit, label: t('list.edit'), onClick: (e) => { e.stopPropagation(); navigate(`/dashboard/field/installations/${installation.id}/edit`); }, show: hasUpdateAccess },
                             { icon: Trash2, label: t('list.delete'), onClick: (e) => { e.stopPropagation(); openDeleteDialog(installation); }, variant: 'destructive', show: hasDeleteAccess }
                           ]} />
                         </div>
                       </div>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <Badge className={getTypeColor(!customer ? 'internal' : installation.type)}>
-                          {!customer ? t('internal') : (installation.type === 'internal' ? t('internal') : t('external'))}
-                        </Badge>
-                        <Badge className={warrantyStatus.color}>
-                          {warrantyStatus.text}
-                        </Badge>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                          <Building className="h-4 w-4 text-primary" />
-                          {installation.contactId && installation.contactId !== 0 && customer ? (
-                            <Link 
-                              to={`/dashboard/contacts/${customer.id}`}
-                              className="text-sm text-primary hover:underline truncate"
-                            >
-                              {customer.name}
-                            </Link>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">-</span>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border">
-                        <span>{t('manufacturer')}: {installation.manufacturer}</span>
-                        <span className="text-muted-foreground">{installation.category || t('statuses.inactive')}</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
             {filteredInstallations.length > 0 && (
               <div className="mt-4">
                 <PageSizeSelector

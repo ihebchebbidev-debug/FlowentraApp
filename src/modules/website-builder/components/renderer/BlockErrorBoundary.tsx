@@ -1,5 +1,6 @@
 import React, { Component, type ErrorInfo, type ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { reportIncident } from '@/services/incident/incidentService';
 
 interface BlockErrorBoundaryProps {
   blockLabel: string;
@@ -32,6 +33,13 @@ export class BlockErrorBoundary extends Component<BlockErrorBoundaryProps, Block
       error,
       errorInfo.componentStack,
     );
+    void reportIncident({
+      incidentType: 'react_boundary',
+      message: `${this.props.blockLabel} (${this.props.blockType}): ${error.message}`,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack,
+      module: 'website-builder',
+    });
   }
 
   handleRetry = () => {

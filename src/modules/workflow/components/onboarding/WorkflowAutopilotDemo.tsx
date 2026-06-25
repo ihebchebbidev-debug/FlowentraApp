@@ -554,9 +554,10 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
         const u = new SpeechSynthesisUtterance(chunk);
         u.lang = bcp47;
         if (voice) u.voice = voice;
-        // Slow, warm, slightly varied — sounds less robotic than a flat read.
-        u.rate = 0.86;
-        u.pitch = idx % 2 === 0 ? 1.02 : 0.98;
+        // Clear, natural female pace — 0.92 is easy to follow, 1.08 pitch sits
+        // comfortably in the female register without sounding artificial.
+        u.rate = 0.92;
+        u.pitch = 1.08;
         u.volume = 1;
         if (idx === chunks.length - 1) {
           u.onend = doAdvance;

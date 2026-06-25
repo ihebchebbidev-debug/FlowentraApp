@@ -26,10 +26,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { 
-  Users, 
-  Calendar, 
-  Clock, 
+import {
+  Users,
+  Calendar,
+  Clock,
   Eye,
   FileText,
   Edit,
@@ -41,7 +41,8 @@ import {
   Trash2,
   MoreVertical,
   Loader2,
-  Play
+  Play,
+  ClipboardList
 } from "lucide-react";
 import { mockDispatches } from "../data";
 import { DispatchesAutopilotDemo } from "../components/onboarding/DispatchesAutopilotDemo";
@@ -332,108 +333,59 @@ export default function DispatchesList() {
                 )}
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      {hasDeleteAccess && (
-                        <TableHead className="w-12">
-                          <Checkbox
-                            checked={isAllSelected}
-                            onCheckedChange={handleSelectAll}
-                            aria-label={t('dispatches.bulk.select_all')}
-                          />
-                        </TableHead>
-                      )}
-                      <TableHead>{t('dispatches.job_number')}</TableHead>
-                      {isViewAllMode() && <TableHead>Company</TableHead>}
-                      <TableHead>{t('dispatches.customer')}</TableHead>
-                      <TableHead>{t('dispatches.scheduled_date')}</TableHead>
-                      <TableHead>{t('dispatches.technicians')}</TableHead>
-                      <TableHead>{t('dispatches.overview.current_status')}</TableHead>
-                      <TableHead>{t('dispatches.job_info.priority')}</TableHead>
-                      <TableHead className="text-right">{t('common.actions')}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredDispatches.map((dispatch) => (
-                      <TableRow 
-                        key={dispatch.id} 
-                        className="cursor-pointer hover:bg-muted/50 group"
-                      >
-                        {hasDeleteAccess && (
-                          <TableCell onClick={(e) => e.stopPropagation()}>
-                            <Checkbox
-                              checked={selectedIds.has(dispatch.id)}
-                              onCheckedChange={(checked) => handleSelectItem(dispatch.id, !!checked)}
-                              aria-label={t('dispatches.bulk.select_item')}
-                            />
-                          </TableCell>
+              <>
+                {/* Mobile cards — visible below md breakpoint */}
+                <div className="md:hidden divide-y divide-border">
+                  {filteredDispatches.map((dispatch) => (
+                    <div
+                      key={dispatch.id}
+                      className="p-4 hover:bg-muted/30 transition-colors cursor-pointer active:bg-muted/50"
+                      onClick={() => handleDispatchClick(dispatch)}
+                    >
+                      {/* Header: icon + job number/title + status */}
+                      <div className="flex items-start gap-3 mb-2.5">
+                        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <ClipboardList className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="font-semibold text-foreground text-sm leading-snug line-clamp-1 flex-1">{dispatch.jobNumber}</p>
+                            <Badge className={`${getStatusColor(dispatch.status)} text-[10px] px-2 py-0.5 shrink-0`}>
+                              {t(`dispatches.statuses.${dispatch.status}`)}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{dispatch.title}</p>
+                        </div>
+                      </div>
+
+                      {/* Details */}
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pl-12 mb-3">
+                        {dispatch.customer.address?.city && (
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <MapPin className="h-3 w-3 shrink-0" />
+                            <span className="truncate max-w-[160px]">{dispatch.customer.company} · {dispatch.customer.address.city}</span>
+                          </div>
                         )}
-                        <TableCell onClick={() => handleDispatchClick(dispatch)}>
-                          <div>{dispatch.jobNumber}</div>
-                          <div className="text-sm text-muted-foreground truncate max-w-[200px]">
-                            {dispatch.title}
+                        {dispatch.scheduledDate && (
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Calendar className="h-3 w-3 shrink-0" />
+                            <span>{dispatch.scheduledDate.toLocaleDateString()}</span>
                           </div>
-                        </TableCell>
-                        {isViewAllMode() && (
-                          <TableCell><CompanyBadge tenantId={(dispatch as any).tenantId} forceShow /></TableCell>
                         )}
-                        <TableCell onClick={() => handleDispatchClick(dispatch)}>
-                          <div className="flex items-center gap-2">
-                            <Users className="h-4 w-4 text-primary" />
-                            <div>
-                              <div>{dispatch.customer.company}</div>
-                              <div className="text-sm text-muted-foreground flex items-center gap-1">
-                                <MapPin className="h-3 w-3" />
-                                {dispatch.customer.address.city}
-                              </div>
-                            </div>
+                        {dispatch.assignedTechnicians.length > 0 && (
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Users className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{dispatch.assignedTechnicians.slice(0, 2).map(tech => tech.name).join(', ')}{dispatch.assignedTechnicians.length > 2 ? ` +${dispatch.assignedTechnicians.length - 2}` : ''}</span>
                           </div>
-                        </TableCell>
-                        <TableCell onClick={() => handleDispatchClick(dispatch)}>
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-primary" />
-                            <div>
-                              <div>{dispatch.scheduledDate?.toLocaleDateString()}</div>
-                              <div className="text-sm text-muted-foreground flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                {dispatch.scheduledStartTime} - {dispatch.scheduledEndTime}
-                              </div>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell onClick={() => handleDispatchClick(dispatch)}>
-                          {dispatch.assignedTechnicians.length > 0 ? (
-                            <div className="flex flex-wrap gap-1">
-                              {dispatch.assignedTechnicians.slice(0, 2).map((tech) => (
-                                <Badge key={tech.id} variant="secondary" className="text-xs">
-                                  {tech.name}
-                                </Badge>
-                              ))}
-                              {dispatch.assignedTechnicians.length > 2 && (
-                                <Badge variant="outline" className="text-xs">
-                                  +{dispatch.assignedTechnicians.length - 2}
-                                </Badge>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground text-sm">
-                              {t('dispatches.overview.none_assigned')}
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell onClick={() => handleDispatchClick(dispatch)}>
-                          <Badge className={`${getStatusColor(dispatch.status)} text-xs font-medium`}>
-                            {t(`dispatches.statuses.${dispatch.status}`)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell onClick={() => handleDispatchClick(dispatch)}>
-                          <Badge className={`${getPriorityColor(dispatch.priority)} text-xs font-medium`}>
-                            {t(`dispatches.priorities.${dispatch.priority}`)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                        )}
+                      </div>
+
+                      {/* Footer: priority badge + actions */}
+                      <div className="flex items-center justify-between pl-12" onClick={(e) => e.stopPropagation()}>
+                        <Badge className={`${getPriorityColor(dispatch.priority)} text-[10px] px-2 py-0.5 capitalize`}>
+                          {t(`dispatches.priorities.${dispatch.priority}`)}
+                        </Badge>
+                        <div className="ml-auto">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -453,7 +405,6 @@ export default function DispatchesList() {
                                   {t('common.edit')}
                                 </DropdownMenuItem>
                               )}
-                              {/* Report action */}
                               <DropdownMenuItem onClick={() => window.open(`/dashboard/field/dispatches/${dispatch.id}/report`, '_blank')}>
                                 <FileText className="h-4 w-4 mr-2" />
                                 {t('common.report', 'Report')}
@@ -461,7 +412,7 @@ export default function DispatchesList() {
                               {hasDeleteAccess && (
                                 <>
                                   <DropdownMenuSeparator />
-                                  <DropdownMenuItem 
+                                  <DropdownMenuItem
                                     onClick={() => handleDeleteClick(dispatch)}
                                     className="text-destructive focus:text-destructive"
                                   >
@@ -472,12 +423,160 @@ export default function DispatchesList() {
                               )}
                             </DropdownMenuContent>
                           </DropdownMenu>
-                        </TableCell>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop table — hidden on mobile */}
+                <div className="hidden md:block overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        {hasDeleteAccess && (
+                          <TableHead className="w-12">
+                            <Checkbox
+                              checked={isAllSelected}
+                              onCheckedChange={handleSelectAll}
+                              aria-label={t('dispatches.bulk.select_all')}
+                            />
+                          </TableHead>
+                        )}
+                        <TableHead>{t('dispatches.job_number')}</TableHead>
+                        {isViewAllMode() && <TableHead>Company</TableHead>}
+                        <TableHead>{t('dispatches.customer')}</TableHead>
+                        <TableHead>{t('dispatches.scheduled_date')}</TableHead>
+                        <TableHead>{t('dispatches.technicians')}</TableHead>
+                        <TableHead>{t('dispatches.overview.current_status')}</TableHead>
+                        <TableHead>{t('dispatches.job_info.priority')}</TableHead>
+                        <TableHead className="text-right">{t('common.actions')}</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredDispatches.map((dispatch) => (
+                        <TableRow
+                          key={dispatch.id}
+                          className="cursor-pointer hover:bg-muted/50 group"
+                        >
+                          {hasDeleteAccess && (
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <Checkbox
+                                checked={selectedIds.has(dispatch.id)}
+                                onCheckedChange={(checked) => handleSelectItem(dispatch.id, !!checked)}
+                                aria-label={t('dispatches.bulk.select_item')}
+                              />
+                            </TableCell>
+                          )}
+                          <TableCell onClick={() => handleDispatchClick(dispatch)}>
+                            <div>{dispatch.jobNumber}</div>
+                            <div className="text-sm text-muted-foreground truncate max-w-[200px]">
+                              {dispatch.title}
+                            </div>
+                          </TableCell>
+                          {isViewAllMode() && (
+                            <TableCell><CompanyBadge tenantId={(dispatch as any).tenantId} forceShow /></TableCell>
+                          )}
+                          <TableCell onClick={() => handleDispatchClick(dispatch)}>
+                            <div className="flex items-center gap-2">
+                              <Users className="h-4 w-4 text-primary" />
+                              <div>
+                                <div>{dispatch.customer.company}</div>
+                                <div className="text-sm text-muted-foreground flex items-center gap-1">
+                                  <MapPin className="h-3 w-3" />
+                                  {dispatch.customer.address.city}
+                                </div>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell onClick={() => handleDispatchClick(dispatch)}>
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4 text-primary" />
+                              <div>
+                                <div>{dispatch.scheduledDate?.toLocaleDateString()}</div>
+                                <div className="text-sm text-muted-foreground flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {dispatch.scheduledStartTime} - {dispatch.scheduledEndTime}
+                                </div>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell onClick={() => handleDispatchClick(dispatch)}>
+                            {dispatch.assignedTechnicians.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {dispatch.assignedTechnicians.slice(0, 2).map((tech) => (
+                                  <Badge key={tech.id} variant="secondary" className="text-xs">
+                                    {tech.name}
+                                  </Badge>
+                                ))}
+                                {dispatch.assignedTechnicians.length > 2 && (
+                                  <Badge variant="outline" className="text-xs">
+                                    +{dispatch.assignedTechnicians.length - 2}
+                                  </Badge>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">
+                                {t('dispatches.overview.none_assigned')}
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell onClick={() => handleDispatchClick(dispatch)}>
+                            <Badge className={`${getStatusColor(dispatch.status)} text-xs font-medium`}>
+                              {t(`dispatches.statuses.${dispatch.status}`)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell onClick={() => handleDispatchClick(dispatch)}>
+                            <Badge className={`${getPriorityColor(dispatch.priority)} text-xs font-medium`}>
+                              {t(`dispatches.priorities.${dispatch.priority}`)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>{t('common.actions')}</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => handleDispatchClick(dispatch)}>
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  {t('common.view')}
+                                </DropdownMenuItem>
+                                {hasUpdateAccess && (
+                                  <DropdownMenuItem onClick={() => handleEditDispatch(dispatch)}>
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    {t('common.edit')}
+                                  </DropdownMenuItem>
+                                )}
+                                {/* Report action */}
+                                <DropdownMenuItem onClick={() => window.open(`/dashboard/field/dispatches/${dispatch.id}/report`, '_blank')}>
+                                  <FileText className="h-4 w-4 mr-2" />
+                                  {t('common.report', 'Report')}
+                                </DropdownMenuItem>
+                                {hasDeleteAccess && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      onClick={() => handleDeleteClick(dispatch)}
+                                      className="text-destructive focus:text-destructive"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      {t('common.delete')}
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>

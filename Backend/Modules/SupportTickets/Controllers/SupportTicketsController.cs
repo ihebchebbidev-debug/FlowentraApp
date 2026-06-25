@@ -127,6 +127,13 @@ namespace MyApi.Modules.SupportTickets.Controllers
                     UserEmail = t.UserEmail,
                     Status = t.Status,
                     CreatedAt = t.CreatedAt,
+                    Source = t.Source,
+                    ErrorFingerprint = t.ErrorFingerprint,
+                    SystemLogId = t.SystemLogId,
+                    OccurrenceCount = t.OccurrenceCount,
+                    LastOccurredAt = t.LastOccurredAt,
+                    IncidentType = t.IncidentType,
+                    Module = t.Module,
                     Attachments = t.Attachments.Select(a => new SupportTicketAttachmentDto
                     {
                         Id = a.Id,
@@ -199,6 +206,13 @@ namespace MyApi.Modules.SupportTickets.Controllers
                     UserEmail = t.UserEmail,
                     Status = t.Status,
                     CreatedAt = t.CreatedAt,
+                    Source = t.Source,
+                    ErrorFingerprint = t.ErrorFingerprint,
+                    SystemLogId = t.SystemLogId,
+                    OccurrenceCount = t.OccurrenceCount,
+                    LastOccurredAt = t.LastOccurredAt,
+                    IncidentType = t.IncidentType,
+                    Module = t.Module,
                     Attachments = t.Attachments.Select(a => new SupportTicketAttachmentDto
                     {
                         Id = a.Id,
@@ -456,6 +470,13 @@ namespace MyApi.Modules.SupportTickets.Controllers
                     UserEmail = t.UserEmail,
                     Status = t.Status,
                     CreatedAt = t.CreatedAt,
+                    Source = t.Source,
+                    ErrorFingerprint = t.ErrorFingerprint,
+                    SystemLogId = t.SystemLogId,
+                    OccurrenceCount = t.OccurrenceCount,
+                    LastOccurredAt = t.LastOccurredAt,
+                    IncidentType = t.IncidentType,
+                    Module = t.Module,
                     Attachments = t.Attachments.Select(a => new SupportTicketAttachmentDto {
                         Id = a.Id,
                         FileName = a.FileName,

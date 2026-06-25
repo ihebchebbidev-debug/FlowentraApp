@@ -12,7 +12,7 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
   Plus, LayoutGrid, List, Table as TableIcon, Target, Trophy, TrendingUp,
-  MoreVertical, Eye, Edit, Trash2, GitBranch, Loader2, Handshake, Play, Filter, ChevronDown, AlertTriangle,
+  MoreVertical, Eye, Edit, Trash2, GitBranch, Loader2, Handshake, Play, Filter, ChevronDown, AlertTriangle, Calendar,
 } from "lucide-react";
 import { format } from "date-fns";
 import { formatStatValue, formatCurrencyValue } from "@/lib/formatters";
@@ -293,32 +293,93 @@ export function DealsList() {
             onRefetch={refetch}
           />
         ) : viewMode === "list" ? (
-          <div className="space-y-2">
-            {filtered.map(d => (
-              <Card
-                key={d.id}
-                className="shadow-card border-0 bg-card cursor-pointer hover:shadow-lg transition-all"
-                onClick={() => navigate(`/dashboard/deals/${d.id}`)}
-              >
-                <CardContent className="p-3 flex items-center gap-3">
-                  <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: stageColor(d.stage) }} />
-                  <div className="min-w-0 flex-1">
-                    <div className="font-medium truncate flex items-center gap-1.5">
-                      <span className="truncate">{d.title}</span>
-                      {isAtRisk(d) && <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" aria-label={t("forecast.atRisk", { defaultValue: "At risk" })} />}
+          <Card className="shadow-card border-0 bg-card">
+            <CardContent className="p-0">
+              <div className="divide-y divide-border">
+                {filtered.map(d => (
+                  <div
+                    key={d.id}
+                    className="p-4 hover:bg-muted/30 transition-colors cursor-pointer active:bg-muted/50"
+                    onClick={() => navigate(`/dashboard/deals/${d.id}`)}
+                  >
+                    {/* Header: icon + title + stage badge */}
+                    <div className="flex items-start gap-3 mb-2.5">
+                      <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <Handshake className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="font-semibold text-foreground text-sm leading-snug line-clamp-1 flex-1">
+                            {d.title}
+                            {isAtRisk(d) && <AlertTriangle className="inline h-3.5 w-3.5 text-amber-500 ml-1 shrink-0" aria-label={t("forecast.atRisk", { defaultValue: "At risk" })} />}
+                          </p>
+                          <Badge variant="secondary" className={`${stageBadgeClass(d.stage)} text-[10px] px-2 py-0.5 shrink-0`}>
+                            {t(`stages.${d.stage}`)}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                          {d.contactName || d.contact?.name || "—"}{d.dealNumber ? ` · ${d.dealNumber}` : ""}
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground truncate">
-                      {(d.contactName || d.contact?.name || "—")}{d.dealNumber ? ` · ${d.dealNumber}` : ""}
+
+                    {/* Details */}
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pl-12 mb-3">
+                      {d.expectedCloseDate && (
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <Calendar className="h-3 w-3 shrink-0" />
+                          <span>{format(new Date(d.expectedCloseDate), "dd MMM yyyy")}</span>
+                        </div>
+                      )}
+                      {d.probability != null && (
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <TrendingUp className="h-3 w-3 shrink-0" />
+                          <span>{d.probability}%</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Footer: value + actions */}
+                    <div className="flex items-center justify-between pl-12" onClick={e => e.stopPropagation()}>
+                      <span className="text-sm font-semibold text-primary">
+                        {formatCurrencyValue(d.estimatedValue, d.currency)}
+                      </span>
+                      <div className="ml-auto">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => navigate(`/dashboard/deals/${d.id}`)}>
+                              <Eye className="h-4 w-4 mr-2" /> {t("actions.view")}
+                            </DropdownMenuItem>
+                            {hasUpdateAccess && (
+                              <DropdownMenuItem onClick={() => navigate(`/dashboard/deals/${d.id}/edit`)}>
+                                <Edit className="h-4 w-4 mr-2" /> {t("actions.edit")}
+                              </DropdownMenuItem>
+                            )}
+                            {hasUpdateAccess && (
+                              <DropdownMenuItem onClick={() => setToConvert(d)}>
+                                <GitBranch className="h-4 w-4 mr-2" /> {t("actions.convert")}
+                              </DropdownMenuItem>
+                            )}
+                            {hasDeleteAccess && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem className="text-red-600" onClick={() => setToDelete(d)}>
+                                  <Trash2 className="h-4 w-4 mr-2" /> {t("actions.delete")}
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <div className="font-semibold text-sm">{formatCurrencyValue(d.estimatedValue, d.currency)}</div>
-                    <Badge variant="secondary" className={`${stageBadgeClass(d.stage)} mt-0.5`}>{t(`stages.${d.stage}`)}</Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         ) : (
           <Card className="shadow-card border-0 bg-card">
             <CardContent className="p-0 overflow-x-auto">

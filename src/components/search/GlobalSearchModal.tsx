@@ -394,14 +394,9 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
       <DialogContent className="w-screen h-screen sm:w-[95vw] sm:max-w-4xl sm:h-[85vh] p-0 gap-0 m-0 sm:mx-auto sm:rounded-lg rounded-none border-0 sm:border flex flex-col overflow-y-hidden">
         {/* Header */}
         <DialogHeader className="p-3 sm:p-4 pb-2 sm:pb-3 border-b shrink-0">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-base sm:text-lg font-semibold">
-              {t('search.title', 'Search Everything')}
-            </DialogTitle>
-            <Button variant="ghost" size="sm" onClick={handleClose} className="h-8 w-8 p-0 sm:hidden">
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+          <DialogTitle className="text-base sm:text-lg font-semibold">
+            {t('search.title', 'Search Everything')}
+          </DialogTitle>
           
           {/* Search Input */}
           <div className="relative mt-2 sm:mt-3">

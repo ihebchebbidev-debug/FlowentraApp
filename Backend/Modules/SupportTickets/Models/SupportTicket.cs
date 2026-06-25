@@ -42,6 +42,24 @@ namespace MyApi.Modules.SupportTickets.Models
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        [StringLength(20)]
+        public string Source { get; set; } = "manual";
+
+        [StringLength(64)]
+        public string? ErrorFingerprint { get; set; }
+
+        public int? SystemLogId { get; set; }
+
+        public int OccurrenceCount { get; set; } = 1;
+
+        public DateTime? LastOccurredAt { get; set; }
+
+        [StringLength(50)]
+        public string? IncidentType { get; set; }
+
+        [StringLength(100)]
+        public string? Module { get; set; }
+
         public virtual ICollection<SupportTicketAttachment> Attachments { get; set; } = new List<SupportTicketAttachment>();
     }
 

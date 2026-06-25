@@ -44,6 +44,8 @@ import { SessionExpiredBanner } from "./components/SessionExpiredBanner";
 // ErrorBoundary component is available at ./components/ErrorBoundary for module-level use
 import { useErrorTracking } from "./hooks/useErrorTracking";
 import { logger } from "./hooks/useLogger";
+import { reportIncident } from "./services/incident/incidentService";
+import { installIncidentMonitor } from "./services/incident/installIncidentMonitor";
 import { DeploymentNotificationSystem } from "./components/DeploymentNotificationSystem";
 import { OfflineSyncRedirector } from "./components/offline/OfflineSyncRedirector";
 import { OfflineSyncLoadingOverlay } from "./components/offline/OfflineSyncLoadingOverlay";
@@ -72,6 +74,9 @@ const GlobalErrorTracker: React.FC<{ children: React.ReactNode }> = ({ children 
     enableUnhandledRejections: true,
     enableWindowErrors: true,
   });
+  useEffect(() => {
+    installIncidentMonitor();
+  }, []);
   return <>{children}</>;
 };
 
@@ -122,6 +127,14 @@ class AppErrorBoundary extends React.Component<{ children: React.ReactNode }, { 
         }),
       }
     ).catch(() => {});
+
+    void reportIncident({
+      incidentType: 'app_crash',
+      message: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack,
+      referenceId: errorId,
+    });
   }
   
   render() {

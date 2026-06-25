@@ -688,65 +688,65 @@ export function SalesList() {
               ) : (
                 <div className="divide-y divide-border">
                   {filteredSales.map((sale) => (
-                    <div 
-                      key={sale.id} 
-                      className="p-3 sm:p-4 lg:p-6 hover:bg-muted/50 transition-colors group cursor-pointer" 
+                    <div
+                      key={sale.id}
+                      className="p-4 hover:bg-muted/30 transition-colors cursor-pointer active:bg-muted/50"
                       onClick={() => handleSaleClick(sale)}
                     >
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-                        <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-1 min-w-0">
-                          <Avatar className="h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0">
-                            <AvatarFallback className="text-xs sm:text-sm bg-primary/10 text-primary">
-                              <Building2 className="h-4 w-4 sm:h-6 sm:w-6" />
-                            </AvatarFallback>
-                          </Avatar>
-                          
-                          <div className="flex-1 min-w-0">
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
-                              <div className="flex items-center gap-2">
-                                <h3 className="text-foreground text-xs sm:text-sm break-words line-clamp-2">{sale.title}</h3>
-                                <Badge className={`${getStatusColor(sale.status)} text-xs`}>
-                                  {t(sale.status)}
-                                </Badge>
-                              </div>
-                              <Badge className={`${getPriorityColor(sale.priority)} text-xs`}>
-                                {t(sale.priority)}
-                              </Badge>
-                            </div>
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-muted-foreground mb-2">
-                              <span className="break-words line-clamp-1">{sale.contactName} - {sale.contactCompany}</span>
-                                <span className="text-foreground">{formatCurrency(calculateItemsTotal(sale))}</span>
-                            </div>
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <User className="h-3 w-3 flex-shrink-0" />
-                                <span className="break-words line-clamp-1">{sale.assignedToName || t('unassigned')}</span>
-                              </div>
-                              
-                              <div className="hidden sm:flex items-center gap-1">
-                                <Calendar className="h-3 w-3 flex-shrink-0" />
-                                <span>
-                                  {sale.estimatedCloseDate ? formatDate(sale.estimatedCloseDate) : t('noDateSet')}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
+                      {/* Header: icon + title + status badge */}
+                      <div className="flex items-start gap-3 mb-2.5">
+                        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <TrendingUp className="h-4 w-4 text-primary" />
                         </div>
-                        
-                        <div className="flex items-center justify-between sm:justify-end gap-2 mt-2 sm:mt-0">
-                          <div className="flex gap-1 flex-wrap flex-1 sm:flex-none">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="font-semibold text-foreground text-sm leading-snug line-clamp-1 flex-1">{sale.title}</p>
+                            <Badge className={`${getStatusColor(sale.status)} text-[10px] px-2 py-0.5 shrink-0`}>
+                              {t(sale.status)}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                            {sale.contactName}{sale.contactCompany ? ` · ${sale.contactCompany}` : ''}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Details */}
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pl-12 mb-3">
+                        {sale.assignedToName && (
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <User className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{sale.assignedToName}</span>
+                          </div>
+                        )}
+                        {sale.estimatedCloseDate && (
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Calendar className="h-3 w-3 shrink-0" />
+                            <span>{formatDate(sale.estimatedCloseDate)}</span>
+                          </div>
+                        )}
+                        {sale.tags.length > 0 && (
+                          <div className="flex gap-1 flex-wrap">
                             {sale.tags.slice(0, 2).map((tag, index) => (
-                              <Badge key={index} variant="outline" className="text-xs px-1.5 py-0.5">
+                              <Badge key={index} variant="outline" className="text-[10px] px-1.5 py-0">
                                 {tag}
                               </Badge>
                             ))}
                             {sale.tags.length > 2 && (
-                              <Badge variant="outline" className="text-xs px-1.5 py-0.5">
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                                 +{sale.tags.length - 2}
                               </Badge>
                             )}
                           </div>
-                          
+                        )}
+                      </div>
+
+                      {/* Footer: amount + actions */}
+                      <div className="flex items-center justify-between pl-12" onClick={e => e.stopPropagation()}>
+                        <span className="text-sm font-semibold text-primary">
+                          {formatCurrency(calculateItemsTotal(sale))}
+                        </span>
+                        <div className="ml-auto">
                           <TableRowActions actions={[
                             { icon: Eye, label: t("viewSale"), onClick: (e) => { e.stopPropagation(); handleSaleClick(sale); } },
                             { icon: FileText, label: t('report', 'Report'), onClick: (e) => { e.stopPropagation(); window.open(`/dashboard/sales/${sale.id}/report`, '_blank'); } },

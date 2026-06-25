@@ -676,114 +676,199 @@ export default function ContactsPage() {
             />
           )}
           
-          <CardContent className={showMap ? "pt-4 p-0 overflow-x-auto" : "p-0 overflow-x-auto"}>
+          <CardContent className={showMap ? "pt-4 p-0" : "p-0"}>
         {isLoading ? <TableSkeleton rows={6} cols={5} /> : contacts.length === 0 ? <div className="text-center p-12">
             <User className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">{t('contacts.no_contacts')}</h3>
             <p className="text-muted-foreground">{t('contacts.no_contacts_description')}</p>
-          </div> : <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12">
-                  <Checkbox
-                    checked={allSelected}
-                    onCheckedChange={handleSelectAll}
-                    aria-label={t('contacts.table_headers.select_all')}
-                    className={someSelected ? "data-[state=checked]:bg-primary" : ""}
-                  />
-                </TableHead>
-                <TableHead>{t('contacts.table_headers.contact')}</TableHead>
-                {isViewAllMode() && <TableHead>Company</TableHead>}
-                <TableHead>{t('contacts.table_headers.email')}</TableHead>
-                <TableHead>{t('contacts.table_headers.phone')}</TableHead>
-                <TableHead>{t('contacts.table_headers.type')}</TableHead>
-                <TableHead>{t('contacts.table_headers.status')}</TableHead>
-                <TableHead className="text-right">{t('contacts.table_headers.actions')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          </div> : <>
+            {/* Mobile card list */}
+            <div className="md:hidden divide-y divide-border/50">
               {contacts.map(contact => {
                 const isSelected = selectedIds.has(contact.id);
+                const initials = getInitials(contact.name);
                 return (
-                  <TableRow 
-                    key={contact.id} 
-                    className={`cursor-pointer hover:bg-muted/50 ${contact.favorite ? 'bg-warning/5' : ''} ${isSelected ? 'bg-muted/30' : ''}`} 
+                  <div
+                    key={contact.id}
+                    className={`p-4 hover:bg-muted/30 transition-colors cursor-pointer active:bg-muted/50 ${isSelected ? 'bg-primary/5' : ''}`}
                     onClick={() => navigate(`/dashboard/contacts/${contact.id}`)}
                   >
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      <Checkbox
-                        checked={isSelected}
-                        onCheckedChange={(checked) => handleSelectItem(contact.id, !!checked)}
-                        aria-label={t('contacts.table_headers.select_item', { name: contact.name })}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div>
-                          <div className="text-sm flex items-center gap-2">
-                            {contact.name}
-                            {contact.favorite && <Star className="h-4 w-4 fill-warning text-warning" />}
+                    {/* Header: avatar + name + status */}
+                    <div className="flex items-start gap-3 mb-2.5">
+                      <div onClick={e => { e.stopPropagation(); handleSelectItem(contact.id, !isSelected); }}>
+                        {isSelected ? (
+                          <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <span className="text-white text-xs font-bold">{initials}</span>
                           </div>
-                          {contact.position && <div className="text-sm text-muted-foreground">{contact.position}</div>}
+                        ) : (
+                          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <span className="text-primary text-xs font-semibold">{initials}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-foreground text-sm leading-snug line-clamp-1 flex items-center gap-1.5">
+                              {contact.name}
+                              {contact.favorite && <Star className="h-3 w-3 fill-warning text-warning flex-shrink-0" />}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-0.5 capitalize">
+                              {contact.type === 'individual' ? t('detail.type.individual')
+                                : contact.type === 'company' ? t('detail.type.company')
+                                : contact.type === 'partner' ? t('detail.type.partner')
+                                : contact.type === 'supplier' ? t('detail.type.supplier')
+                                : t('detail.type.individual')}
+                            </p>
+                          </div>
+                          <Badge variant={getStatusColor(contact.status || 'active') as any} className="text-[10px] px-2 py-0.5 shrink-0 capitalize">
+                            {t(`detail.status.${String(contact.status || 'active').toLowerCase()}`)}
+                          </Badge>
                         </div>
                       </div>
-                    </TableCell>
-                    {isViewAllMode() && (
-                      <TableCell><CompanyBadge tenantId={(contact as any).tenantId} forceShow /></TableCell>
-                    )}
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Mail className="h-4 w-4 text-primary" />
-                        <span className="text-sm">{contact.email}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Phone className="h-4 w-4 text-primary" />
-                        <span className="text-sm">{contact.phone || '-'}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="capitalize">
-                        {contact.type === 'individual'
-                          ? t('detail.type.individual')
-                          : contact.type === 'company'
-                            ? t('detail.type.company')
-                            : contact.type === 'partner'
-                              ? t('detail.type.partner')
-                              : contact.type === 'supplier'
-                                ? t('detail.type.supplier')
-                                : t('detail.type.individual')}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusColor(contact.status || 'active') as any} className="capitalize">
-                        {t(`detail.status.${String(contact.status || 'active').toLowerCase()}`)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right" onClick={e => e.stopPropagation()}>
-                      <div className="flex items-center justify-end gap-2">
-                        {(isMainAdmin || canUpdate('contacts')) ? (
-                          <Button variant="ghost" size="sm" onClick={() => setEditingContact(contact)}>
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                        ) : (
-                          <Button variant="ghost" size="sm" disabled className="opacity-50">
-                            <Lock className="h-4 w-4" />
-                          </Button>
-                        )}
-                        {(isMainAdmin || canDelete('contacts')) ? (
-                          <Button variant="ghost" size="sm" onClick={() => setDeletingContact(contact)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        ) : null}
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                    </div>
+
+                    {/* Contact details */}
+                    <div className="flex flex-col gap-1.5 pl-12 mb-3">
+                      {contact.email && (
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <Mail className="h-3 w-3 shrink-0 text-muted-foreground/60" />
+                          <span className="truncate">{contact.email}</span>
+                        </div>
+                      )}
+                      {contact.phone && (
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <Phone className="h-3 w-3 shrink-0 text-muted-foreground/60" />
+                          <span>{contact.phone}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Footer: actions */}
+                    <div className="flex items-center justify-end pl-12 gap-1" onClick={e => e.stopPropagation()}>
+                      {(isMainAdmin || canUpdate('contacts')) ? (
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingContact(contact)}>
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </Button>
+                      ) : null}
+                      {(isMainAdmin || canDelete('contacts')) ? (
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeletingContact(contact)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      ) : null}
+                    </div>
+                  </div>
                 );
               })}
-            </TableBody>
-          </Table>}
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden md:block overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12">
+                      <Checkbox
+                        checked={allSelected}
+                        onCheckedChange={handleSelectAll}
+                        aria-label={t('contacts.table_headers.select_all')}
+                        className={someSelected ? "data-[state=checked]:bg-primary" : ""}
+                      />
+                    </TableHead>
+                    <TableHead>{t('contacts.table_headers.contact')}</TableHead>
+                    {isViewAllMode() && <TableHead>Company</TableHead>}
+                    <TableHead>{t('contacts.table_headers.email')}</TableHead>
+                    <TableHead>{t('contacts.table_headers.phone')}</TableHead>
+                    <TableHead>{t('contacts.table_headers.type')}</TableHead>
+                    <TableHead>{t('contacts.table_headers.status')}</TableHead>
+                    <TableHead className="text-right">{t('contacts.table_headers.actions')}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {contacts.map(contact => {
+                    const isSelected = selectedIds.has(contact.id);
+                    return (
+                      <TableRow
+                        key={contact.id}
+                        className={`cursor-pointer hover:bg-muted/50 ${contact.favorite ? 'bg-warning/5' : ''} ${isSelected ? 'bg-muted/30' : ''}`}
+                        onClick={() => navigate(`/dashboard/contacts/${contact.id}`)}
+                      >
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={(checked) => handleSelectItem(contact.id, !!checked)}
+                            aria-label={t('contacts.table_headers.select_item', { name: contact.name })}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div>
+                              <div className="text-sm flex items-center gap-2">
+                                {contact.name}
+                                {contact.favorite && <Star className="h-4 w-4 fill-warning text-warning" />}
+                              </div>
+                              {contact.position && <div className="text-sm text-muted-foreground">{contact.position}</div>}
+                            </div>
+                          </div>
+                        </TableCell>
+                        {isViewAllMode() && (
+                          <TableCell><CompanyBadge tenantId={(contact as any).tenantId} forceShow /></TableCell>
+                        )}
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-4 w-4 text-primary" />
+                            <span className="text-sm">{contact.email}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-4 w-4 text-primary" />
+                            <span className="text-sm">{contact.phone || '-'}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="capitalize">
+                            {contact.type === 'individual'
+                              ? t('detail.type.individual')
+                              : contact.type === 'company'
+                                ? t('detail.type.company')
+                                : contact.type === 'partner'
+                                  ? t('detail.type.partner')
+                                  : contact.type === 'supplier'
+                                    ? t('detail.type.supplier')
+                                    : t('detail.type.individual')}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={getStatusColor(contact.status || 'active') as any} className="capitalize">
+                            {t(`detail.status.${String(contact.status || 'active').toLowerCase()}`)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right" onClick={e => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-2">
+                            {(isMainAdmin || canUpdate('contacts')) ? (
+                              <Button variant="ghost" size="sm" onClick={() => setEditingContact(contact)}>
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
+                            ) : (
+                              <Button variant="ghost" size="sm" disabled className="opacity-50">
+                                <Lock className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {(isMainAdmin || canDelete('contacts')) ? (
+                              <Button variant="ghost" size="sm" onClick={() => setDeletingContact(contact)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            ) : null}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </>}
           </CardContent>
         </Card>
       </div>

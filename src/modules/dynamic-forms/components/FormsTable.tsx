@@ -198,7 +198,141 @@ export function FormsTable({ forms, isLoading }: FormsTableProps) {
   
   return (
     <>
-      <div className="rounded-md border">
+      {/* Mobile Cards */}
+      <div className="md:hidden divide-y divide-border/50">
+        {forms.map((form) => {
+          const name = isEnglish ? form.name_en : form.name_fr;
+          const description = isEnglish ? form.description_en : form.description_fr;
+          const updatedDate = form.updated_at
+            ? format(new Date(form.updated_at), 'MMM d, yyyy')
+            : format(new Date(form.created_at), 'MMM d, yyyy');
+          return (
+            <div
+              key={form.id}
+              className="p-4 hover:bg-muted/30 transition-colors cursor-pointer active:bg-muted/50"
+              onClick={() => handlePreview(form.id)}
+            >
+              {/* Header row: icon + title + status badge */}
+              <div className="flex items-start gap-3 mb-3">
+                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <FileText className="h-4 w-4 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="font-semibold text-foreground text-sm leading-snug line-clamp-2 flex-1">{name}</p>
+                    {getStatusBadge(form)}
+                  </div>
+                  {description && (
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{description}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Stats row */}
+              <div className="flex items-center gap-4 mb-3 pl-12">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span className="font-medium text-foreground">{form.fields.length}</span>
+                  <span>{t('table.fields')}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span>{updatedDate}</span>
+                </div>
+              </div>
+
+              {/* Footer: share + actions */}
+              <div className="flex items-center justify-between pl-12" onClick={e => e.stopPropagation()}>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`h-8 gap-1.5 text-xs ${form.is_public && form.status === 'released' ? 'text-primary' : 'text-muted-foreground/40'}`}
+                        onClick={() => handleShare(form)}
+                        disabled={!form.is_public || form.status !== 'released'}
+                      >
+                        <Share2 className="h-3.5 w-3.5" />
+                        {t('table.share')}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>{getShareTooltip(form)}</p></TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {canView && (
+                      <DropdownMenuItem onClick={() => handlePreview(form.id)}>
+                        <Eye className="h-4 w-4 mr-2" />{t('actions.preview')}
+                      </DropdownMenuItem>
+                    )}
+                    {canEdit && (
+                      <DropdownMenuItem onClick={() => handleEdit(form.id)}>
+                        <Edit className="h-4 w-4 mr-2" />{t('actions.edit')}
+                      </DropdownMenuItem>
+                    )}
+                    {canCreate && (
+                      <DropdownMenuItem onClick={() => handleDuplicate(form.id)}>
+                        <Copy className="h-4 w-4 mr-2" />{t('actions.duplicate')}
+                      </DropdownMenuItem>
+                    )}
+                    {canView && (
+                      <DropdownMenuItem onClick={() => handleViewResponses(form.id)}>
+                        <FileText className="h-4 w-4 mr-2" />{t('actions.view_responses')}
+                      </DropdownMenuItem>
+                    )}
+                    {canEdit && (
+                      <>
+                        <DropdownMenuSeparator />
+                        {form.status === 'draft' && (
+                          <DropdownMenuItem onClick={() => handleStatusChange(form.id, 'released')}>
+                            <CheckCircle className="h-4 w-4 mr-2" />{t('actions.release')}
+                          </DropdownMenuItem>
+                        )}
+                        {form.status === 'released' && (
+                          <DropdownMenuItem onClick={() => handleStatusChange(form.id, 'archived')}>
+                            <Archive className="h-4 w-4 mr-2" />{t('actions.archive')}
+                          </DropdownMenuItem>
+                        )}
+                        {form.status === 'archived' && (
+                          <DropdownMenuItem onClick={() => handleStatusChange(form.id, 'draft')}>
+                            <RotateCcw className="h-4 w-4 mr-2" />{t('actions.restore')}
+                          </DropdownMenuItem>
+                        )}
+                        {canEdit && (
+                          <DropdownMenuItem onClick={() => handleTogglePublic(form)}>
+                            {form.is_public ? (
+                              <><GlobeLock className="h-4 w-4 mr-2" />{t('actions.make_private')}</>
+                            ) : (
+                              <><Globe className="h-4 w-4 mr-2" />{t('actions.make_public')}</>
+                            )}
+                          </DropdownMenuItem>
+                        )}
+                      </>
+                    )}
+                    {canDelete && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-destructive" onClick={() => setDeleteId(form.id)}>
+                          <Trash2 className="h-4 w-4 mr-2" />{t('actions.delete')}
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Desktop Table */}
+      <div className="hidden md:block rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>

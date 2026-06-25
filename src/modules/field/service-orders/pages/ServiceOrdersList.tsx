@@ -678,66 +678,67 @@ export default function ServiceOrdersList() {
                   {pagination.data.map((order) => (
                     <div
                       key={order.id}
-                      className="p-3 sm:p-4 lg:p-6 hover:bg-muted/50 transition-colors group cursor-pointer"
+                      className="p-4 hover:bg-muted/30 transition-colors cursor-pointer active:bg-muted/50"
                       onClick={() => handleServiceOrderClick(order)}
                     >
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-                        <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-1 min-w-0">
-                          <Avatar className="h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0">
-                            <AvatarFallback className="text-xs sm:text-sm bg-primary/10 text-primary">
-                              <ClipboardList className="h-4 w-4 sm:h-6 sm:w-6" />
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
-                              <div className="flex items-center gap-2">
-                                <h3 className="text-foreground text-sm sm:text-base truncate">
-                                  {order.orderNumber}
-                                </h3>
-                              </div>
-                              <div className="flex gap-1">
-                                <Badge className={`${getStatusColor(order.status)} text-xs`}>
-                                  {t(`statuses.${order.status}`)}
-                                </Badge>
-                              </div>
-                            </div>
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-muted-foreground mb-2">
-                              <Link
-                                to={`/dashboard/contacts/${order.customer.id}`}
-                                className="flex items-center gap-1 hover:text-primary transition-colors"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <Building className="h-3 w-3 flex-shrink-0" />
-                                <span className="truncate hover:underline">{order.customer.company}</span>
-                              </Link>
-                              {order.customer.contactPerson && order.customer.contactPerson !== order.customer.company && (
-                                <span className="truncate">{order.customer.contactPerson}</span>
-                              )}
-                            </div>
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <MapPin className="h-3 w-3 flex-shrink-0" />
-                                <span className="truncate">{order.repair.location}</span>
-                              </div>
-                              <div className="hidden sm:flex items-center gap-1">
-                                <User className="h-3 w-3 flex-shrink-0" />
-                                <span>{order.assignedTechnicians.length} technicians</span>
-                              </div>
-                              <div className="hidden sm:flex items-center gap-1">
-                                <Calendar className="h-3 w-3 flex-shrink-0" />
-                                <span>{order.createdAt.toLocaleDateString()}</span>
-                              </div>
-                              <div className="text-sm text-foreground">
-                                {order.financials.estimatedCost.toLocaleString()} TND
-                              </div>
+                      {/* Header: icon + order number + status badge */}
+                      <div className="flex items-start gap-3 mb-2.5">
+                        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <ClipboardList className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="font-semibold text-foreground text-sm leading-snug line-clamp-1 flex-1">
+                              {order.orderNumber}
+                            </p>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <Badge className={`${getPriorityColor(order.priority)} text-[10px] px-2 py-0.5`}>
+                                {t(`priorities.${order.priority}`)}
+                              </Badge>
+                              <Badge className={`${getStatusColor(order.status)} text-[10px] px-2 py-0.5`}>
+                                {t(`statuses.${order.status}`)}
+                              </Badge>
                             </div>
                           </div>
+                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                            {order.customer.company}
+                            {order.customer.contactPerson && order.customer.contactPerson !== order.customer.company
+                              ? ` · ${order.customer.contactPerson}`
+                              : ''}
+                          </p>
                         </div>
-                        <div className="flex items-center gap-2 sm:flex-col sm:items-end">
+                      </div>
+
+                      {/* Details */}
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pl-12 mb-3">
+                        {order.repair.location ? (
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <MapPin className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{order.repair.location}</span>
+                          </div>
+                        ) : null}
+                        {order.assignedTechnicians.length > 0 && (
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <User className="h-3 w-3 shrink-0" />
+                            <span>{order.assignedTechnicians.length} {t('list.technicians', 'technicians')}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <Calendar className="h-3 w-3 shrink-0" />
+                          <span>{order.createdAt.toLocaleDateString()}</span>
+                        </div>
+                      </div>
+
+                      {/* Footer: cost + actions */}
+                      <div className="flex items-center justify-between pl-12" onClick={e => e.stopPropagation()}>
+                        <span className="text-sm font-semibold text-primary">
+                          {order.financials.estimatedCost.toLocaleString()} TND
+                        </span>
+                        <div className="ml-auto">
                           <TableRowActions actions={[
-                            { icon: Eye, label: t('list.view_details'), onClick: () => handleServiceOrderClick(order) },
-                            { icon: FileText, label: t('list.report', 'Report'), onClick: () => window.open(`/dashboard/field/service-orders/${order.id}/report`, '_blank') },
-                            { icon: Trash2, label: t('list.delete_order'), onClick: () => handleDeleteClick(order), variant: 'destructive', show: hasDeleteAccess },
+                            { icon: Eye, label: t('list.view_details'), onClick: (e) => { e.stopPropagation(); handleServiceOrderClick(order); } },
+                            { icon: FileText, label: t('list.report', 'Report'), onClick: (e) => { e.stopPropagation(); window.open(`/dashboard/field/service-orders/${order.id}/report`, '_blank'); } },
+                            { icon: Trash2, label: t('list.delete_order'), onClick: (e) => { e.stopPropagation(); handleDeleteClick(order, e as any); }, variant: 'destructive', show: hasDeleteAccess },
                           ]} />
                         </div>
                       </div>

@@ -33,6 +33,7 @@ const OFFLINE_HYDRATION_PREFS_PREFIX = "offline-hydration-module-prefs";
 export function shouldSkipOfflineQueueForEndpoint(endpoint: string): boolean {
   const path = endpoint.split("?")[0].toLowerCase();
   if (path.includes("/systemlogs")) return true;
+  if (path.includes("/incidents")) return true;
   // Read-only validation used by planning UI; no persisted mutation.
   if (path.includes("/planning/validate-assignment")) return true;
   // Authentication operations must happen online or fail immediately.

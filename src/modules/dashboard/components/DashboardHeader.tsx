@@ -8,7 +8,7 @@ import { GlobalSearch } from "@/components/ui/global-search";
 import { useTranslation } from 'react-i18next';
 import QuickCreateModal from '@/components/ui/QuickCreateModal';
 import { Plus } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useCompanyLogo } from '@/hooks/useCompanyLogo';
 
 import { useLayoutModeContext } from "@/hooks/useLayoutMode";
@@ -36,6 +36,7 @@ import SupportChoiceModal from "@/components/SupportChoiceModal";
 import { useOffline } from "@/contexts/OfflineContext";
 import { useAiAssistantAvailable } from "@/hooks/useAiAssistantAvailable";
 import { GlobalCompanyFilter } from "@/components/CompanyFilter";
+import { INCIDENT_PREFILL_EVENT, type ReportIssuePrefill } from "@/services/incident/incidentTypes";
 
 // Safe sidebar state hook — returns null when not inside SidebarProvider
 function useSidebarState() {
@@ -51,6 +52,7 @@ export function DashboardHeader() {
   const [createOpen, setCreateOpen] = useState(false);
   const [aiSidebarOpen, setAiSidebarOpen] = useState(false);
   const [reportIssueOpen, setReportIssueOpen] = useState(false);
+  const [reportIssuePrefill, setReportIssuePrefill] = useState<ReportIssuePrefill | undefined>();
   const [supportChoiceOpen, setSupportChoiceOpen] = useState(false);
   const companyLogo = useCompanyLogo();
   const sidebarState = useSidebarState();
@@ -65,6 +67,16 @@ export function DashboardHeader() {
   const { hasPermission, isMainAdmin } = usePermissions();
   const { enabled: offlineEnabled, online, pendingCount, setEnabled: setOfflineEnabled } = useOffline();
   const aiAssistantAvailable = useAiAssistantAvailable();
+
+  useEffect(() => {
+    const onPrefill = (event: Event) => {
+      const detail = (event as CustomEvent<ReportIssuePrefill>).detail;
+      if (detail) setReportIssuePrefill(detail);
+      setReportIssueOpen(true);
+    };
+    window.addEventListener(INCIDENT_PREFILL_EVENT, onPrefill);
+    return () => window.removeEventListener(INCIDENT_PREFILL_EVENT, onPrefill);
+  }, []);
   
   // Check AI Assistant permission
   const canAccessAi = isMainAdmin || hasPermission('ai_assistant', 'read');
@@ -323,7 +335,14 @@ export function DashboardHeader() {
             onOpenChange={setSupportChoiceOpen}
             onCreateTicket={() => setReportIssueOpen(true)}
           />
-          <ReportIssueModal open={reportIssueOpen} onOpenChange={setReportIssueOpen} />
+          <ReportIssueModal
+            open={reportIssueOpen}
+            onOpenChange={(open) => {
+              setReportIssueOpen(open);
+              if (!open) setReportIssuePrefill(undefined);
+            }}
+            prefill={reportIssuePrefill}
+          />
 
           {/* Layout toggle */}
           {!isMobile && (

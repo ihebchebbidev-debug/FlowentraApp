@@ -4,6 +4,7 @@
  * Wraps API operations to show user-friendly error messages.
  */
 import { toast } from 'sonner';
+import { reportApiErrorIncident, reportNetworkErrorIncident } from '@/services/incident/incidentService';
 
 export interface ApiErrorContext {
   operation: string;
@@ -78,6 +79,23 @@ export function showApiError(error: any, context: ApiErrorContext): void {
     });
   } else {
     toast.error(message);
+  }
+
+  const status = error?.status ?? error?.response?.status;
+  if (typeof status === 'number') {
+    reportApiErrorIncident({
+      endpoint: error?.config?.url || context.entityType || 'website-builder',
+      method: error?.config?.method?.toUpperCase() || 'POST',
+      status,
+      message,
+      incidentType: 'api_error',
+    });
+  } else if (isNetworkError) {
+    reportNetworkErrorIncident({
+      endpoint: 'website-builder',
+      method: 'POST',
+      message,
+    });
   }
 }
 

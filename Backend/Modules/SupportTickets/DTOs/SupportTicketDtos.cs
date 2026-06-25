@@ -27,7 +27,50 @@ namespace MyApi.Modules.SupportTickets.DTOs
         public string? UserEmail { get; set; }
         public string Status { get; set; } = "open";
         public DateTime CreatedAt { get; set; }
+        public string Source { get; set; } = "manual";
+        public string? ErrorFingerprint { get; set; }
+        public int? SystemLogId { get; set; }
+        public int OccurrenceCount { get; set; } = 1;
+        public DateTime? LastOccurredAt { get; set; }
+        public string? IncidentType { get; set; }
+        public string? Module { get; set; }
         public List<SupportTicketAttachmentDto> Attachments { get; set; } = new();
+    }
+
+    public class AutoIncidentReportDto
+    {
+        public string IncidentType { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+        public string? Severity { get; set; }
+        public string? Module { get; set; }
+        public string? CurrentPage { get; set; }
+        public string? RelatedUrl { get; set; }
+        public string? UserEmail { get; set; }
+        public string? UserId { get; set; }
+        public string? UserName { get; set; }
+        public string? Stack { get; set; }
+        public string? ComponentStack { get; set; }
+        public string? Fingerprint { get; set; }
+        public int? HttpStatus { get; set; }
+        public string? HttpMethod { get; set; }
+        public string? Endpoint { get; set; }
+        public string? EntityType { get; set; }
+        public string? EntityId { get; set; }
+        public string? ReferenceId { get; set; }
+        public int? SystemLogId { get; set; }
+        public string? Details { get; set; }
+        public string? UserAgent { get; set; }
+        public int? ClientOccurrenceCount { get; set; }
+    }
+
+    public class AutoIncidentResultDto
+    {
+        public int? TicketId { get; set; }
+        public bool Created { get; set; }
+        public bool Skipped { get; set; }
+        public string? SkipReason { get; set; }
+        public int OccurrenceCount { get; set; }
+        public string? Fingerprint { get; set; }
     }
 
     public class SupportTicketAttachmentDto

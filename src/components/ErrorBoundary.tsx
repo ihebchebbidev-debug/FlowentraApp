@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertTriangle, RefreshCw, Home, Bug } from 'lucide-react';
 import { logger } from '@/hooks/useLogger';
+import { reportIncident, openReportIssuePrefill } from '@/services/incident/incidentService';
 
 interface Props {
   children: ReactNode;
@@ -71,6 +72,14 @@ export class ErrorBoundary extends Component<Props, State> {
     } catch (logError) {
       console.error('Failed to log error to backend:', logError);
     }
+
+    void reportIncident({
+      incidentType: 'react_boundary',
+      message: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack,
+      referenceId: errorId,
+    });
   }
 
   private handleRetry = () => {
@@ -87,11 +96,21 @@ export class ErrorBoundary extends Component<Props, State> {
 
   private handleReportBug = () => {
     const { error, errorId } = this.state;
-    const subject = encodeURIComponent(`Bug Report: ${error?.message || 'Unknown error'}`);
-    const body = encodeURIComponent(
-      `Error ID: ${errorId}\n\nError: ${error?.message}\n\nURL: ${window.location.href}\n\nPlease describe what you were doing when this error occurred:\n\n`
-    );
-    window.open(`mailto:support@example.com?subject=${subject}&body=${body}`, '_blank');
+    openReportIssuePrefill({
+      title: `Bug: ${error?.message || 'Unknown error'}`,
+      description: [
+        `Error ID: ${errorId}`,
+        `Error: ${error?.message}`,
+        `URL: ${window.location.href}`,
+        '',
+        'Please describe what you were doing when this error occurred:',
+      ].join('\n'),
+      category: 'bug',
+      urgency: 'high',
+      currentPage: window.location.pathname,
+      relatedUrl: window.location.href,
+      referenceId: errorId ?? undefined,
+    });
   };
 
   public render() {

@@ -2,6 +2,9 @@ import { useEffect, useRef } from 'react';
 import { logger } from '@/hooks/useLogger';
 import { isViewAllMode } from '@/utils/tenant';
 import { getTargetTenantId } from '@/utils/targetTenant';
+import { reportIncident, reportConsoleErrorIncident } from '@/services/incident/incidentService';
+import { isChunkLoadMessage } from '@/services/incident/incidentFilters';
+import type { IncidentType } from '@/services/incident/incidentTypes';
 
 /**
  * Frontend error/warning log posts go to /api/SystemLogs which is a mutation.
@@ -45,6 +48,27 @@ const logErrorToBackend = async (
     );
   } catch (e) {
     // Silently fail to avoid infinite loops
+  }
+
+  const incidentTypeMap: Record<string, IncidentType> = {
+    UnhandledRejection: 'unhandled_rejection',
+    WindowError: 'window_error',
+    ConsoleError: 'console_error',
+  };
+  const incidentType = incidentTypeMap[type];
+  if (incidentType === 'console_error') {
+    reportConsoleErrorIncident(
+      message,
+      typeof details?.stack === 'string' ? details.stack : undefined
+    );
+  } else if (incidentType) {
+    const finalType = isChunkLoadMessage(message) ? 'chunk_load_error' : incidentType;
+    void reportIncident({
+      incidentType: finalType as IncidentType,
+      message,
+      stack: typeof details?.stack === 'string' ? details.stack : undefined,
+      details: details ? JSON.stringify(details) : undefined,
+    });
   }
 };
 
@@ -127,9 +151,11 @@ export const useErrorTracking = (options: ErrorTrackingOptions = {}) => {
         return;
       }
       
-      // Only log actual errors
-      if (message.includes('Error') || message.includes('error') || message.includes('failed') || message.includes('Failed')) {
-        logErrorToBackend('ConsoleError', message.slice(0, 500));
+      // Actionable console errors — smart threshold inside reportConsoleErrorIncident
+      if (message.includes('Error') || message.includes('error') || message.includes('failed') || message.includes('Failed') || message.includes('Exception')) {
+        logErrorToBackend('ConsoleError', message.slice(0, 500), {
+          stack: args.find((a) => a instanceof Error)?.stack,
+        });
       }
     };
 
@@ -205,6 +231,15 @@ export const trackError = async (
     );
   } catch (e) {
     console.error('Failed to track error:', e);
+  }
+
+  if (typeof window !== 'undefined') {
+    void reportIncident({
+      incidentType: type === 'UnhandledRejection' ? 'unhandled_rejection' : 'window_error',
+      message,
+      stack: typeof details?.stack === 'string' ? details.stack : undefined,
+      details: details ? JSON.stringify(details) : undefined,
+    });
   }
 };
 

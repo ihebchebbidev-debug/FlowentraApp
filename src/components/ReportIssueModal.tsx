@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -28,15 +28,17 @@ import { AlertTriangle, Paperclip, X, Upload, Globe, FolderOpen, Shield, Tag, Lo
 import { supportTicketsApi } from '@/services/api/supportTicketsApi';
 import TicketLinkSelector from '@/components/tickets/TicketLinkSelector';
 import { useAuth } from '@/contexts/AuthContext';
+import type { ReportIssuePrefill } from '@/services/incident/incidentTypes';
 
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  prefill?: ReportIssuePrefill;
 };
 
 const MAX_FILES = 5;
 
-export default function ReportIssueModal({ open, onOpenChange }: Props) {
+export default function ReportIssueModal({ open, onOpenChange, prefill }: Props) {
   const { t } = useTranslation('support');
   const location = useLocation();
   const navigate = useNavigate();
@@ -54,6 +56,16 @@ export default function ReportIssueModal({ open, onOpenChange }: Props) {
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!open || !prefill) return;
+    if (prefill.title) setTitle(prefill.title);
+    if (prefill.description) setDescription(prefill.description);
+    if (prefill.category) setCategory(prefill.category);
+    if (prefill.urgency) setUrgency(prefill.urgency);
+    if (prefill.currentPage) setCurrentPage(prefill.currentPage);
+    if (prefill.relatedUrl) setRelatedUrl(prefill.relatedUrl);
+  }, [open, prefill]);
 
   // Screenshot state
 

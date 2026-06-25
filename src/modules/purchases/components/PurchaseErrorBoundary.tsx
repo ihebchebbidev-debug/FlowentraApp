@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, RefreshCcw, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { reportIncident } from '@/services/incident/incidentService';
 
 interface ErrorFallbackProps {
   error?: Error | string;
@@ -58,6 +59,15 @@ export class PurchaseErrorBoundary extends React.Component<
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error('[PurchaseErrorBoundary]', error, info.componentStack);
+    const errorId = `PUR-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    void reportIncident({
+      incidentType: 'react_boundary',
+      message: error.message,
+      stack: error.stack,
+      componentStack: info.componentStack,
+      module: 'purchases',
+      referenceId: errorId,
+    });
   }
 
   handleRetry = () => {

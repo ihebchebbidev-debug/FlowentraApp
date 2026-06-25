@@ -1,6 +1,7 @@
 // Easy-to-use logging hook for integrating logs throughout the app
 import { useCallback } from 'react';
 import { logsApi, CreateLogRequest, LogLevel, LogAction } from '@/services/api/logsApi';
+import { reportLoggerErrorIncident } from '@/services/incident/incidentService';
 
 interface LogContext {
   module: string;
@@ -82,6 +83,16 @@ export function useLogger(module: string) {
       logsApi.create(logRequest).catch(err => {
         console.warn('Failed to create log entry:', err);
       });
+
+      if (level === 'error') {
+        reportLoggerErrorIncident({
+          message,
+          module,
+          entityType: options?.entityType,
+          entityId: options?.entityId?.toString(),
+          details: options?.details,
+        });
+      }
     } catch (err) {
       console.warn('Error creating log:', err);
     }
@@ -180,6 +191,16 @@ export const logger = {
       };
 
       await logsApi.create(logRequest);
+
+      if (level === 'error') {
+        reportLoggerErrorIncident({
+          message,
+          module,
+          entityType: options?.entityType,
+          entityId: options?.entityId?.toString(),
+          details: options?.details,
+        });
+      }
     } catch (err) {
       console.warn('Logger: Failed to create log entry:', err);
     }

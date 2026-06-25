@@ -1,6 +1,7 @@
 // Optimized QueryClient configuration for enterprise scalability
-import { QueryClient, QueryClientConfig, dehydrate, hydrate } from '@tanstack/react-query';
+import { QueryClient, QueryClientConfig, dehydrate, hydrate, MutationCache, QueryCache } from '@tanstack/react-query';
 import { getCurrentTenant } from '@/utils/tenant';
+import { reportIncident, inferModuleFromPath } from '@/services/incident/incidentService';
 
 // Cache time constants (in milliseconds)
 export const CACHE_TIMES = {
@@ -35,8 +36,64 @@ const retryConfig = {
   retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 30000),
 };
 
+function extractQueryErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+  if (error && typeof error === 'object') {
+    const e = error as Record<string, unknown>;
+    if (typeof e.message === 'string') return e.message;
+    if (typeof e.error === 'string') return e.error;
+  }
+  return 'Query failed';
+}
+
+function extractQueryErrorStatus(error: unknown): number | undefined {
+  if (error && typeof error === 'object') {
+    const e = error as Record<string, unknown>;
+    if (typeof e.status === 'number') return e.status;
+  }
+  return undefined;
+}
+
+function inferModuleFromQueryKey(queryKey: readonly unknown[]): string {
+  const first = queryKey[0];
+  return typeof first === 'string' ? first : inferModuleFromPath();
+}
+
+const mutationCache = new MutationCache({
+  onError: (error, _variables, _context, mutation) => {
+    const status = extractQueryErrorStatus(error);
+    const message = extractQueryErrorMessage(error);
+    if (status && status < 500 && status !== 0) return;
+    void reportIncident({
+      incidentType: 'mutation_error',
+      message,
+      httpStatus: status,
+      module: inferModuleFromQueryKey(mutation.options.mutationKey ?? []),
+      details: JSON.stringify({ mutationKey: mutation.options.mutationKey }),
+    });
+  },
+});
+
+const queryCache = new QueryCache({
+  onError: (error, query) => {
+    const status = extractQueryErrorStatus(error);
+    const message = extractQueryErrorMessage(error);
+    if (status && status < 500 && status !== 0) return;
+    void reportIncident({
+      incidentType: 'query_error',
+      message,
+      httpStatus: status,
+      module: inferModuleFromQueryKey(query.queryKey),
+      details: JSON.stringify({ queryKey: query.queryKey }),
+    });
+  },
+});
+
 // Create optimized QueryClient configuration
 const queryClientConfig: QueryClientConfig = {
+  queryCache,
+  mutationCache,
   defaultOptions: {
     queries: {
       // Default stale time - data is fresh for 1 minute

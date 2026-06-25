@@ -82,6 +82,7 @@ export default function TicketsAdminPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [urgencyFilter, setUrgencyFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [sourceFilter, setSourceFilter] = useState('all');
   const [showFilterBar, setShowFilterBar] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<SupportTicketResponse | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -140,6 +141,7 @@ export default function TicketsAdminPage() {
       if (statusFilter !== 'all' && tk.status !== statusFilter) return false;
       if (urgencyFilter !== 'all' && tk.urgency !== urgencyFilter) return false;
       if (categoryFilter !== 'all' && tk.category !== categoryFilter) return false;
+      if (sourceFilter !== 'all' && (tk.source || 'manual') !== sourceFilter) return false;
       if (search) {
         const q = search.toLowerCase();
         return (
@@ -257,12 +259,14 @@ export default function TicketsAdminPage() {
   const activeFilterCount =
     (statusFilter !== 'all' ? 1 : 0) +
     (urgencyFilter !== 'all' ? 1 : 0) +
-    (categoryFilter !== 'all' ? 1 : 0);
+    (categoryFilter !== 'all' ? 1 : 0) +
+    (sourceFilter !== 'all' ? 1 : 0);
 
   const clearFilters = () => {
     setStatusFilter('all');
     setUrgencyFilter('all');
     setCategoryFilter('all');
+    setSourceFilter('all');
   };
 
   return (
@@ -399,6 +403,23 @@ export default function TicketsAdminPage() {
               </Select>
             </div>
 
+            {/* Source */}
+            <div className="flex flex-col gap-1.5 min-w-[140px]">
+              <label className="text-xs font-medium text-muted-foreground">
+                {t('admin.colSource', 'Source')}
+              </label>
+              <Select value={sourceFilter} onValueChange={(v) => { setSourceFilter(v); setPage(1); }}>
+                <SelectTrigger className="h-9 bg-background">
+                  <SelectValue placeholder={t('admin.allSources', 'All Sources')} />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border shadow-md z-50">
+                  <SelectItem value="all">{t('admin.allSources', 'All Sources')}</SelectItem>
+                  <SelectItem value="manual">{t('admin.sourceManual', 'Manual')}</SelectItem>
+                  <SelectItem value="auto">{t('admin.sourceAuto', 'Auto-detected')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Clear */}
             {activeFilterCount > 0 && (
               <Button
@@ -481,7 +502,13 @@ export default function TicketsAdminPage() {
                           <p className="text-sm font-medium text-foreground truncate max-w-[280px] group-hover:text-primary transition-colors">
                             {tk.title}
                           </p>
-                          <div className="flex items-center gap-2 mt-0.5">
+                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                            {(tk.source || 'manual') === 'auto' && (
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 bg-violet-500/10 text-violet-600 border-violet-500/20">
+                                {t('admin.autoDetected', 'Auto')}
+                                {(tk.occurrenceCount ?? 1) > 1 ? ` ×${tk.occurrenceCount}` : ''}
+                              </Badge>
+                            )}
                             <span className="text-[11px] text-muted-foreground flex items-center gap-1">
                               <CalendarDays className="h-3 w-3" />
                               {formatDate(tk.createdAt)}
@@ -601,6 +628,12 @@ export default function TicketsAdminPage() {
                       <div className={`h-1.5 w-1.5 rounded-full ${statusCfg.dotColor}`} />
                       {t(`admin.status_${selectedTicket.status}`, statusCfg.label)}
                     </Badge>
+                    {(selectedTicket.source || 'manual') === 'auto' && (
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 bg-violet-500/10 text-violet-600 border-violet-500/20">
+                        {t('admin.autoDetected', 'Auto-detected')}
+                        {(selectedTicket.occurrenceCount ?? 1) > 1 ? ` ×${selectedTicket.occurrenceCount}` : ''}
+                      </Badge>
+                    )}
                   </div>
                   <DialogTitle className="text-base font-semibold leading-snug">
                     {selectedTicket.title}
@@ -637,12 +670,33 @@ export default function TicketsAdminPage() {
                     </section>
 
                     {/* Meta */}
-                    {(selectedTicket.category || selectedTicket.currentPage || selectedTicket.relatedUrl) && (
+                    {(selectedTicket.category || selectedTicket.currentPage || selectedTicket.relatedUrl || selectedTicket.module || selectedTicket.incidentType || selectedTicket.lastOccurredAt) && (
                       <section>
                         <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                           {t('admin.details', 'Details')}
                         </h4>
                         <div className="space-y-2">
+                          {selectedTicket.module && (
+                            <div className="flex items-center gap-3 text-sm">
+                              <FolderOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                              <span className="text-muted-foreground text-xs w-16">{t('admin.colModule', 'Module')}</span>
+                              <span className="text-foreground capitalize">{selectedTicket.module}</span>
+                            </div>
+                          )}
+                          {selectedTicket.incidentType && (
+                            <div className="flex items-center gap-3 text-sm">
+                              <AlertTriangle className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                              <span className="text-muted-foreground text-xs w-16">{t('admin.incidentType', 'Type')}</span>
+                              <span className="text-foreground capitalize">{selectedTicket.incidentType.replace(/_/g, ' ')}</span>
+                            </div>
+                          )}
+                          {selectedTicket.lastOccurredAt && (
+                            <div className="flex items-center gap-3 text-sm">
+                              <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                              <span className="text-muted-foreground text-xs w-16">{t('admin.lastSeen', 'Last seen')}</span>
+                              <span className="text-foreground text-xs">{formatDateTime(selectedTicket.lastOccurredAt)}</span>
+                            </div>
+                          )}
                           {selectedTicket.category && (
                             <div className="flex items-center gap-3 text-sm">
                               <Tag className="h-3.5 w-3.5 text-muted-foreground shrink-0" />

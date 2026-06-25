@@ -16,7 +16,7 @@ export function WorkflowHelpButton() {
 
   // Index route ends with /workflow or /workflow/
   const isIndexRoute = /\/workflow\/?$/.test(location.pathname);
-  const { isOpen, open, close } = useWorkflowOnboarding({ autoOpen: isIndexRoute });
+  const { isOpen, open, close } = useWorkflowOnboarding({ autoOpen: false });
 
   return (
     <>

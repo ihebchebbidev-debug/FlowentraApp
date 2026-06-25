@@ -31,6 +31,13 @@ export interface SupportTicketResponse {
   userEmail?: string;
   status: string;
   createdAt: string;
+  source?: string;
+  errorFingerprint?: string;
+  systemLogId?: number;
+  occurrenceCount?: number;
+  lastOccurredAt?: string;
+  incidentType?: string;
+  module?: string;
   attachments: SupportTicketAttachmentDto[];
 }
 

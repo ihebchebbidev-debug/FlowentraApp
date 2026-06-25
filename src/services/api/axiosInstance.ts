@@ -25,6 +25,8 @@ import {
 } from "@/services/offline/offlineRequestPolicy";
 import { getSyntheticDataForOfflineCacheMissGet } from "@/services/offline/offlineApiGetDefaults";
 import { getOfflineDetailPlaceholder } from "@/services/offline/offlineDetailPlaceholders";
+import { reportApiErrorIncident } from "@/services/incident/incidentService";
+import { pushBreadcrumb } from "@/services/incident/incidentBreadcrumbs";
 
 const axiosInstance = axios.create({
   baseURL: API_CONFIG.baseURL,
@@ -44,6 +46,16 @@ axiosInstance.interceptors.request.use((config) => {
   }
   const method = (config.method || "GET").toUpperCase();
   const isMutation = ["POST", "PUT", "PATCH", "DELETE"].includes(method);
+
+  try {
+    const uri = axios.getUri(config);
+    const rel = toRelativeApiEndpoint(uri);
+    if (rel.includes('/api/') && !rel.includes('/api/Incidents') && !rel.includes('/api/SystemLogs')) {
+      pushBreadcrumb({ type: 'api', label: `${method} ${rel.split('?')[0]}` });
+    }
+  } catch {
+    // ignore breadcrumb errors
+  }
 
   // Always emit X-Target-Tenant for row-level company scoping on EVERY request
   // (GET + mutations). In view-all mode, getTargetTenantHeaders() returns {} so
@@ -128,6 +140,26 @@ axiosInstance.interceptors.response.use(
     }
 
     const cfg = error.config as InternalAxiosRequestConfig | undefined;
+    if (cfg && error.response) {
+      const response = error.response;
+      const method = (cfg.method || "get").toUpperCase();
+      const endpoint = toRelativeApiEndpoint(axios.getUri(cfg));
+      const data = response.data as Record<string, unknown> | undefined;
+      const nestedError = data?.error as Record<string, unknown> | undefined;
+      const message =
+        (typeof nestedError?.message === "string" ? nestedError.message : null) ||
+        (typeof data?.message === "string" ? data.message : null) ||
+        error.message ||
+        `HTTP ${response.status}`;
+      reportApiErrorIncident({
+        endpoint,
+        method,
+        status: response.status,
+        message: String(message),
+        incidentType: method === "GET" ? "query_error" : "mutation_error",
+      });
+    }
+
     if (!cfg || (cfg.method || "get").toUpperCase() !== "GET") {
       return Promise.reject(error);
     }

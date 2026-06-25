@@ -1,4 +1,5 @@
 import { lazy, type ComponentType } from 'react';
+import { reportChunkLoadError } from '@/services/incident/incidentService';
 
 /**
  * Chunk error detection helper
@@ -88,8 +89,10 @@ async function loadWithRetry<T>(factory: () => Promise<T>): Promise<T> {
       if (!isChunkError(retryErr)) throw retryErr;
 
       if (recentlyReloaded()) {
-        // We just reloaded and STILL can't load this chunk — surface the error
-        // so the user sees an error boundary instead of an infinite reload loop.
+        reportChunkLoadError(
+          retryErr instanceof Error ? retryErr : new Error(String(retryErr)),
+          'lazyWithRetry exhausted'
+        );
         throw retryErr;
       }
 
