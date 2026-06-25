@@ -1,11 +1,6 @@
 /**
- * Push notifications via ntfy.sh — same channel as AI chat / notify.sh.
- *
- * Env (optional):
- *   VITE_NTFY_ENABLED=true|false     — default: true in production builds
- *   VITE_NTFY_BASE_URL=https://ntfy.sh
- *   VITE_NTFY_TOPIC=flowchat         — default topic (AI chat uses this)
- *   VITE_NTFY_ISSUES_TOPIC=flowentra-issues — issues topic (falls back to VITE_NTFY_TOPIC)
+ * Push notifications via ntfy.sh — single channel for both AI chat and issue alerts.
+ * All config is hardcoded; no .env required.
  */
 
 export type NtfyPriority = '1' | '2' | '3' | '4' | '5';
@@ -15,39 +10,24 @@ export interface NtfyNotificationOptions {
   body: string;
   priority?: NtfyPriority;
   tags?: string[];
-  /** Override topic; defaults to issues topic for issue alerts */
   topic?: string;
-  /** Deep link when notification is tapped */
   click?: string;
 }
 
-const DEFAULT_BASE = 'https://ntfy.sh';
-
-function isEnabled(): boolean {
-  const flag = import.meta.env.VITE_NTFY_ENABLED;
-  if (flag === 'false' || flag === '0') return false;
-  if (flag === 'true' || flag === '1') return true;
-  return import.meta.env.PROD;
-}
-
-function getBaseUrl(): string {
-  const raw = import.meta.env.VITE_NTFY_BASE_URL || DEFAULT_BASE;
-  return raw.replace(/\/$/, '');
-}
+const NTFY_BASE = 'https://ntfy.sh';
+const NTFY_TOPIC = 'flowchat';
 
 export function getNtfyChatTopic(): string {
-  return import.meta.env.VITE_NTFY_TOPIC || 'flowchat';
+  return NTFY_TOPIC;
 }
 
 export function getNtfyIssuesTopic(): string {
-  return import.meta.env.VITE_NTFY_ISSUES_TOPIC || import.meta.env.VITE_NTFY_TOPIC || 'flowentra-issues';
+  return NTFY_TOPIC;
 }
 
 export async function sendNtfyNotification(options: NtfyNotificationOptions): Promise<void> {
-  if (!isEnabled()) return;
-
-  const topic = options.topic || getNtfyIssuesTopic();
-  const url = `${getBaseUrl()}/${encodeURIComponent(topic)}`;
+  const topic = options.topic || NTFY_TOPIC;
+  const url = `${NTFY_BASE}/${encodeURIComponent(topic)}`;
 
   const headers: Record<string, string> = {
     Title: options.title.slice(0, 250),
@@ -77,7 +57,6 @@ export async function sendChatNtfyNotification(question: string, response: strin
   const truncatedResponse = response.length > 500 ? `${response.slice(0, 500)}...` : response;
 
   await sendNtfyNotification({
-    topic: getNtfyChatTopic(),
     title: 'AI Chat',
     priority: '3',
     tags: ['robot', 'speech_balloon'],
