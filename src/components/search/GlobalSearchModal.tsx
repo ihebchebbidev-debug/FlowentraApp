@@ -72,6 +72,26 @@ interface GlobalSearchModalProps {
   onClose: () => void;
 }
 
+// Extract an array from various possible API response shapes, trying dot-path keys in order
+function extractArray(v: any, ...keys: string[]): any[] {
+  if (!v) return [];
+  for (const k of keys) {
+    const val = k.split('.').reduce((o: any, p: string) => o?.[p], v);
+    if (Array.isArray(val)) return val;
+  }
+  if (Array.isArray(v)) return v;
+  return [];
+}
+
+// Safely convert any value (string, Date, number, undefined) to a renderable string
+function safeStr(v: any): string | undefined {
+  if (v === null || v === undefined || v === '') return undefined;
+  if (typeof v === 'string') return v;
+  if (v instanceof Date) return v.toLocaleDateString();
+  if (typeof v === 'number') return String(v);
+  return undefined; // skip objects/arrays
+}
+
 export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
@@ -93,7 +113,7 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
 
   // Debounced search function
   const performSearch = useCallback(async (term: string) => {
-    if (!term || term.length < 2) {
+    if (!term || term.length < 1) {
       setResults([]);
       setCounts({
         'all': 0,
@@ -110,7 +130,7 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
     }
 
     setLoading(true);
-    
+
     try {
       const searchResults: SearchResultItem[] = [];
       const newCounts: Record<SearchType, number> = {
@@ -125,7 +145,7 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
         'project': 0
       };
 
-      // Parallel API calls for better performance using correct search params
+      // Parallel API calls
       const [
         contactsResult,
         serviceOrdersResult,
@@ -146,142 +166,149 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
         projectsApi.getAll({ searchTerm: term, pageNumber: 1, pageSize: 10 })
       ]);
 
-      // Process contacts
-      if (contactsResult.status === 'fulfilled' && contactsResult.value?.contacts) {
-        const contacts = contactsResult.value.contacts;
+      // Log any failures for debugging
+      const names = ['contacts','serviceOrders','installations','articles','offers','deals','sales','projects'];
+      [contactsResult, serviceOrdersResult, installationsResult, articlesResult, offersResult, dealsResult, salesResult, projectsResult]
+        .forEach((r, i) => { if (r.status === 'rejected') console.warn(`[GlobalSearch] ${names[i]} failed:`, r.reason); });
+
+      // Process contacts — try multiple possible shapes
+      if (contactsResult.status === 'fulfilled') {
+        const contacts = extractArray(contactsResult.value, 'contacts', 'data.contacts', 'items', 'data');
         newCounts['contact'] = contacts.length;
         contacts.forEach((contact: any) => {
           searchResults.push({
             id: String(contact.id),
-            title: contact.name || `${contact.firstName} ${contact.lastName}`,
-            subtitle: contact.company || contact.email || '',
+            title: safeStr(contact.name) || `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || `#${contact.id}`,
+            subtitle: safeStr(contact.company || contact.email) || '',
             type: 'contact',
-            location: contact.city || contact.address,
-            description: contact.notes,
+            location: safeStr(contact.city || contact.address),
+            description: safeStr(contact.notes),
             url: `/dashboard/contacts/${contact.id}`
           });
         });
       }
 
-      // Process service orders
-      if (serviceOrdersResult.status === 'fulfilled' && serviceOrdersResult.value?.data?.serviceOrders) {
-        const orders = serviceOrdersResult.value.data.serviceOrders;
+      // Process service orders — normalized shape: { success, data: { serviceOrders } }
+      if (serviceOrdersResult.status === 'fulfilled') {
+        const orders = extractArray(serviceOrdersResult.value, 'data.serviceOrders', 'serviceOrders', 'data', 'items');
         newCounts['service-order'] = orders.length;
         orders.forEach((order: any) => {
           searchResults.push({
-            id: order.orderNumber || String(order.id),
-            title: order.title || order.description || `#${order.orderNumber}`,
-            subtitle: order.contactName || '',
+            id: String(order.orderNumber || order.id),
+            title: safeStr(order.title || order.description) || `#${order.orderNumber || order.id}`,
+            subtitle: safeStr(order.contactName) || '',
             type: 'service-order',
-            status: order.status,
-            priority: order.priority,
-            date: order.startDate || order.createdDate,
+            status: safeStr(order.status),
+            priority: safeStr(order.priority),
+            date: safeStr(order.startDate || order.createdDate),
             url: `/dashboard/field/service-orders/${order.id}`
           });
         });
       }
 
-      // Process installations
-      if (installationsResult.status === 'fulfilled' && installationsResult.value?.installations) {
-        const installations = installationsResult.value.installations;
+      // Process installations — normalized shape: { installations }
+      if (installationsResult.status === 'fulfilled') {
+        const installations = extractArray(installationsResult.value, 'installations', 'data.installations', 'data', 'items');
         newCounts['installation'] = installations.length;
         installations.forEach((inst: any) => {
           searchResults.push({
             id: String(inst.id),
-            title: inst.name || inst.installationNumber || `#${inst.id}`,
-            subtitle: inst.manufacturer || inst.category || '',
+            title: safeStr(inst.name || inst.installationNumber) || `#${inst.id}`,
+            subtitle: safeStr(inst.manufacturer || inst.category) || '',
             type: 'installation',
-            status: inst.status,
-            location: inst.siteAddress,
-            date: inst.installationDate || inst.createdDate,
+            status: safeStr(inst.status),
+            location: safeStr(inst.siteAddress),
+            date: safeStr(inst.installationDate || inst.createdDate),
             url: `/dashboard/installations/${inst.id}`
           });
         });
       }
 
-      // Process articles
+      // Process articles — normalized shape: { data: Article[] }
       if (articlesResult.status === 'fulfilled') {
-        const articles = articlesResult.value?.data || [];
+        const articles = extractArray(articlesResult.value, 'data', 'articles', 'data.articles', 'items');
         newCounts['article'] = articles.length;
         articles.forEach((article: any) => {
           searchResults.push({
-            id: article.sku || String(article.id),
-            title: article.name || article.title,
-            subtitle: article.category || article.type || '',
+            id: String(article.sku || article.id),
+            title: safeStr(article.name || article.title) || `#${article.id}`,
+            subtitle: safeStr(article.category || article.type) || '',
             type: 'article',
-            cost: article.sellPrice ? `${article.sellPrice}` : undefined,
-            description: article.description,
+            cost: article.sellPrice != null ? `${article.sellPrice}` : undefined,
+            description: safeStr(article.description),
             url: `/dashboard/inventory/articles/${article.id}`
           });
         });
       }
 
-      // Process offers
-      if (offersResult.status === 'fulfilled' && offersResult.value?.data?.offers) {
-        const offers = offersResult.value.data.offers;
+      // Process offers — normalized shape: { success, data: { offers } }
+      if (offersResult.status === 'fulfilled') {
+        const offers = extractArray(offersResult.value, 'data.offers', 'offers', 'data', 'items');
         newCounts['offer'] = offers.length;
         offers.forEach((offer: any) => {
           searchResults.push({
-            id: offer.offerNumber || String(offer.id),
-            title: offer.title || offer.name || `#${offer.offerNumber}`,
-            subtitle: offer.contactName || '',
+            id: String(offer.offerNumber || offer.id),
+            title: safeStr(offer.title || offer.name) || `#${offer.offerNumber || offer.id}`,
+            subtitle: safeStr(offer.contactName) || '',
             type: 'offer',
-            status: offer.status,
-            cost: offer.totalAmount ? `${offer.totalAmount}` : undefined,
-            date: offer.createdDate || offer.validUntil,
+            status: safeStr(offer.status),
+            cost: offer.totalAmount != null ? `${offer.totalAmount}` : undefined,
+            date: safeStr(offer.createdDate || offer.validUntil),
             url: `/dashboard/offers/${offer.id}`
           });
         });
       }
 
-      // Process deals
-      if (dealsResult.status === 'fulfilled' && dealsResult.value?.deals) {
-        const deals = dealsResult.value.deals;
+      // Process deals — normalized shape: { deals }
+      if (dealsResult.status === 'fulfilled') {
+        const deals = extractArray(dealsResult.value, 'deals', 'data.deals', 'data', 'items');
         newCounts['deal'] = deals.length;
         deals.forEach((deal: any) => {
           searchResults.push({
-            id: deal.dealNumber || String(deal.id),
-            title: deal.title || `#${deal.dealNumber || deal.id}`,
-            subtitle: deal.contactName || deal.contact?.name || '',
+            id: String(deal.dealNumber || deal.id),
+            title: safeStr(deal.title) || `#${deal.dealNumber || deal.id}`,
+            subtitle: safeStr(deal.contactName || deal.contact?.name) || '',
             type: 'deal',
-            status: deal.stage,
-            cost: deal.estimatedValue ? `${deal.estimatedValue}` : undefined,
-            date: deal.expectedCloseDate || deal.createdDate,
+            status: safeStr(deal.stage),
+            cost: deal.estimatedValue != null ? `${deal.estimatedValue}` : undefined,
+            date: safeStr(deal.expectedCloseDate || deal.createdDate),
             url: `/dashboard/deals/${deal.id}`
           });
         });
       }
 
-      // Process sales
-      if (salesResult.status === 'fulfilled' && salesResult.value?.data?.sales) {
-        const sales = salesResult.value.data.sales;
+      // Process sales — normalized shape: { success, data: { sales } }
+      if (salesResult.status === 'fulfilled') {
+        const sales = extractArray(salesResult.value, 'data.sales', 'sales', 'data', 'items');
         newCounts['sale'] = sales.length;
         sales.forEach((sale: any) => {
           searchResults.push({
-            id: sale.saleNumber || String(sale.id),
-            title: sale.title || `#${sale.saleNumber || sale.id}`,
-            subtitle: sale.contactName || sale.contact?.name || '',
+            id: String(sale.saleNumber || sale.id),
+            title: safeStr(sale.title) || `#${sale.saleNumber || sale.id}`,
+            subtitle: safeStr(sale.contactName || sale.contact?.name) || '',
             type: 'sale',
-            status: sale.status,
-            cost: sale.totalAmount ? `${sale.totalAmount}` : undefined,
-            date: sale.createdDate || sale.createdAt,
+            status: safeStr(sale.status),
+            cost: sale.totalAmount != null ? `${sale.totalAmount}` : undefined,
+            date: safeStr(sale.createdDate || sale.createdAt),
             url: `/dashboard/sales/${sale.id}`
           });
         });
       }
 
-      // Process projects
-      if (projectsResult.status === 'fulfilled' && projectsResult.value?.projects) {
-        const projects = projectsResult.value.projects;
+      // Process projects — normalized shape: { projects, totalCount }
+      // NOTE: mapProjectResponseToFrontend converts dates to Date objects (startDate, createdAt)
+      // safeStr handles Date → toLocaleDateString() conversion
+      if (projectsResult.status === 'fulfilled') {
+        const projects = extractArray(projectsResult.value, 'projects', 'data.projects', 'data', 'items');
         newCounts['project'] = projects.length;
         projects.forEach((project: any) => {
           searchResults.push({
             id: String(project.id),
-            title: project.name || `#${project.id}`,
-            subtitle: project.contactName || project.description || '',
+            title: safeStr(project.name) || `#${project.id}`,
+            subtitle: safeStr(project.contactName || project.description),
             type: 'project',
-            status: project.status,
-            date: project.startDate || project.createdDate,
+            status: safeStr(project.status),
+            date: safeStr(project.startDate || project.createdAt || project.createdDate),
             url: `/dashboard/tasks/projects/${project.id}`
           });
         });
@@ -364,7 +391,7 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="w-screen h-screen sm:w-[95vw] sm:max-w-4xl sm:max-h-[90vh] sm:h-auto p-0 gap-0 m-0 sm:mx-auto sm:rounded-lg rounded-none border-0 sm:border">
+      <DialogContent className="w-screen h-screen sm:w-[95vw] sm:max-w-4xl sm:h-[85vh] p-0 gap-0 m-0 sm:mx-auto sm:rounded-lg rounded-none border-0 sm:border flex flex-col overflow-y-hidden">
         {/* Header */}
         <DialogHeader className="p-3 sm:p-4 pb-2 sm:pb-3 border-b shrink-0">
           <div className="flex items-center justify-between">
@@ -412,9 +439,9 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
         </DialogHeader>
 
         {/* Results */}
-        <ScrollArea className="flex-1 min-h-0 overflow-auto">
-          <div className="p-2 sm:p-4 min-h-0">
-            {loading && searchTerm.length >= 2 ? (
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="p-2 sm:p-4">
+            {loading && searchTerm.length >= 1 ? (
               <div className="text-center py-6 sm:py-8 px-4">
                 <Loader2 className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground mx-auto mb-3 sm:mb-4 animate-spin" />
                 <h3 className="text-base sm:text-lg font-medium text-muted-foreground mb-2">
@@ -425,12 +452,12 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
               <div className="text-center py-6 sm:py-8 px-4">
                 <Search className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground mx-auto mb-3 sm:mb-4" />
                 <h3 className="text-base sm:text-lg font-medium text-muted-foreground mb-2">
-                  {searchTerm.length >= 2 
-                    ? t('search.noResults', 'No results found') 
+                  {searchTerm.length >= 1
+                    ? t('search.noResults', 'No results found')
                     : t('search.startTyping', 'Start typing to search')}
                 </h3>
                 <p className="text-xs sm:text-sm text-muted-foreground px-2">
-                  {searchTerm.length >= 2 
+                  {searchTerm.length >= 1
                     ? t('search.tryAdjusting', 'Try adjusting your search terms or filters')
                     : t('search.searchHint', 'Search across contacts, service orders, articles, and more')
                   }
@@ -502,7 +529,7 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
               </div>
             )}
           </div>
-        </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );

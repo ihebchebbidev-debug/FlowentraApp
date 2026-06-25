@@ -26,7 +26,13 @@ import {
   CheckCircle,
   Zap,
   Info,
-  MoreVertical
+  MoreVertical,
+  LayoutDashboard,
+  Package,
+  CreditCard,
+  StickyNote,
+  CheckSquare,
+  FolderOpen,
 } from "lucide-react";
 
 import { Sale } from "../types";
@@ -560,26 +566,43 @@ export function SaleDetail() {
           <div className="w-full mb-6">
             {/* Mobile: Dropdown Select */}
             {isMobile ? (
-              <Select value={activeTab} onValueChange={setActiveTab}>
-                <SelectTrigger className="w-full bg-background">
-                  <SelectValue>
-                    {activeTab === 'overview' && t('tabs.overview')}
-                    {activeTab === 'items' && t('tabs.items')}
-                    {activeTab === 'payments' && t('payments:title', 'Payments')}
-                    {activeTab === 'notes' && t('tabs.notesActivity')}
-                    {activeTab === 'checklists' && t('tabs.checklists')}
-                    {activeTab === 'documents' && t('tabs.documents')}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-card">
-                  <SelectItem value="overview">{t('tabs.overview')}</SelectItem>
-                  <SelectItem value="items">{t('tabs.items')}</SelectItem>
-                  <SelectItem value="payments">{t('payments:title', 'Payments')}</SelectItem>
-                  <SelectItem value="notes">{t('tabs.notesActivity')}</SelectItem>
-                  <SelectItem value="checklists">{t('tabs.checklists')}</SelectItem>
-                  <SelectItem value="documents">{t('tabs.documents')}</SelectItem>
-                </SelectContent>
-              </Select>
+              (() => {
+                const TABS = [
+                  { value: 'overview',   icon: LayoutDashboard, label: t('tabs.overview') },
+                  { value: 'items',      icon: Package,          label: t('tabs.items') },
+                  { value: 'payments',   icon: CreditCard,       label: t('payments:title', 'Payments') },
+                  { value: 'notes',      icon: StickyNote,       label: t('tabs.notesActivity') },
+                  { value: 'checklists', icon: CheckSquare,      label: t('tabs.checklists') },
+                  { value: 'documents',  icon: FolderOpen,       label: t('tabs.documents') },
+                ];
+                const current = TABS.find(tab => tab.value === activeTab);
+                return (
+                  <Select value={activeTab} onValueChange={setActiveTab}>
+                    <SelectTrigger className="w-full h-11 rounded-xl border-primary/20 bg-primary/5 text-foreground font-medium shadow-sm focus:ring-primary/30">
+                      <SelectValue>
+                        {current && (
+                          <span className="flex items-center gap-2">
+                            <current.icon className="h-4 w-4 text-primary flex-shrink-0" />
+                            {current.label}
+                          </span>
+                        )}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="bg-white dark:bg-card rounded-xl shadow-lg border-border/60">
+                      {TABS.map(({ value, icon: Icon, label }) => (
+                        <SelectItem key={value} value={value} className="rounded-lg cursor-pointer py-2.5">
+                          <span className="flex items-center gap-2.5">
+                            <span className={`p-1 rounded-md ${activeTab === value ? 'bg-primary/10' : 'bg-muted'}`}>
+                              <Icon className={`h-3.5 w-3.5 ${activeTab === value ? 'text-primary' : 'text-muted-foreground'}`} />
+                            </span>
+                            <span className={activeTab === value ? 'text-primary font-medium' : ''}>{label}</span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                );
+              })()
             ) : (
               <TabsList className="w-full h-auto p-1 bg-muted/50 rounded-lg grid grid-cols-6">
                 <TabsTrigger value="overview" className="px-4 py-2.5 text-sm font-medium">

@@ -4,6 +4,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useLayoutModeContext } from "@/hooks/useLayoutMode";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -28,6 +30,7 @@ const ArticleDetail = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { isMobile } = useLayoutModeContext();
   const [activeTab, setActiveTab] = useState("overview");
   const [stockAdjustment, setStockAdjustment] = useState("");
   const [adjustmentReason, setAdjustmentReason] = useState("");
@@ -232,27 +235,63 @@ const ArticleDetail = () => {
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-          <div className="border-b border-border px-3 sm:px-6">
-            <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
-              <TabsList className="inline-flex h-auto p-1 bg-muted rounded-lg min-w-max">
-                <TabsTrigger value="overview" className="gap-2 text-xs sm:text-sm py-2 sm:py-3 px-3 sm:px-4 whitespace-nowrap">
-                  <Package className="h-3 w-3 sm:h-4 sm:w-4" />
-                  {t("detail.overview")}
-                </TabsTrigger>
-                <TabsTrigger value="inventory" className="gap-2 text-xs sm:text-sm py-2 sm:py-3 px-3 sm:px-4 whitespace-nowrap">
-                  <Warehouse className="h-3 w-3 sm:h-4 sm:w-4" />
-                  {t("detail.inventory")}
-                </TabsTrigger>
-                <TabsTrigger value="activity" className="gap-2 text-xs sm:text-sm py-2 sm:py-3 px-3 sm:px-4 whitespace-nowrap">
-                  <Activity className="h-3 w-3 sm:h-4 sm:w-4" />
-                  {t("detail.activity")}
-                </TabsTrigger>
-                <TabsTrigger value="suppliers" className="gap-2 text-xs sm:text-sm py-2 sm:py-3 px-3 sm:px-4 whitespace-nowrap">
-                  <Users className="h-3 w-3 sm:h-4 sm:w-4" />
-                  {t("detail.suppliers_tab", "Suppliers")}
-                </TabsTrigger>
-              </TabsList>
-            </div>
+          <div className="border-b border-border px-3 sm:px-6 py-2 sm:py-0">
+            {isMobile ? (
+              /* Mobile: styled dropdown select */
+              (() => {
+                const TABS = [
+                  { value: 'overview',   icon: Package,   label: t("detail.overview") },
+                  { value: 'inventory',  icon: Warehouse,  label: t("detail.inventory") },
+                  { value: 'activity',   icon: Activity,   label: t("detail.activity") },
+                  { value: 'suppliers',  icon: Users,      label: t("detail.suppliers_tab", "Suppliers") },
+                ];
+                const current = TABS.find(tab => tab.value === activeTab);
+                return (
+                  <Select value={activeTab} onValueChange={setActiveTab}>
+                    <SelectTrigger className="w-full h-11 rounded-xl border-primary/20 bg-primary/5 text-foreground font-medium shadow-sm focus:ring-primary/30">
+                      <SelectValue>
+                        {current && (
+                          <span className="flex items-center gap-2">
+                            <current.icon className="h-4 w-4 text-primary flex-shrink-0" />
+                            {current.label}
+                          </span>
+                        )}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="bg-white dark:bg-card rounded-xl shadow-lg border-border/60">
+                      {TABS.map(({ value, icon: Icon, label }) => (
+                        <SelectItem key={value} value={value} className="rounded-lg cursor-pointer py-2.5">
+                          <span className="flex items-center gap-2.5">
+                            <span className={`p-1 rounded-md ${activeTab === value ? 'bg-primary/10' : 'bg-muted'}`}>
+                              <Icon className={`h-3.5 w-3.5 ${activeTab === value ? 'text-primary' : 'text-muted-foreground'}`} />
+                            </span>
+                            <span className={activeTab === value ? 'text-primary font-medium' : ''}>{label}</span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                );
+              })()
+            ) : (
+              /* Desktop: scrollable tab pills */
+              <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+                <TabsList className="inline-flex h-auto p-1 bg-muted rounded-lg min-w-max">
+                  <TabsTrigger value="overview" className="gap-2 text-sm py-3 px-4 whitespace-nowrap">
+                    <Package className="h-4 w-4" />{t("detail.overview")}
+                  </TabsTrigger>
+                  <TabsTrigger value="inventory" className="gap-2 text-sm py-3 px-4 whitespace-nowrap">
+                    <Warehouse className="h-4 w-4" />{t("detail.inventory")}
+                  </TabsTrigger>
+                  <TabsTrigger value="activity" className="gap-2 text-sm py-3 px-4 whitespace-nowrap">
+                    <Activity className="h-4 w-4" />{t("detail.activity")}
+                  </TabsTrigger>
+                  <TabsTrigger value="suppliers" className="gap-2 text-sm py-3 px-4 whitespace-nowrap">
+                    <Users className="h-4 w-4" />{t("detail.suppliers_tab", "Suppliers")}
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+            )}
           </div>
 
           <TabsContent value="overview" className="flex-1 p-3 sm:p-6 space-y-4 sm:space-y-6">

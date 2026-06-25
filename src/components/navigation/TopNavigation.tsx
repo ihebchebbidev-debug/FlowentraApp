@@ -227,6 +227,18 @@ export function TopNavigation() {
     setConfiguredItems(items);
   }, []);
 
+  // Keyboard shortcut: Cmd/Ctrl+K opens search
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsSearchModalOpen(true);
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, []);
+
   // Company logo is now managed by useCompanyLogo hook
 
   const resolveTitle = (key: string) => {
@@ -963,7 +975,26 @@ export function TopNavigation() {
             })()}
           </nav>
         </div>
+
+        {/* Right side: search + actions */}
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsSearchModalOpen(true)}
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground w-56 justify-start px-3"
+          >
+            <Search className="h-4 w-4" />
+            <span className="text-sm">{t('search.placeholder', 'Search...')}</span>
+            <kbd className="ml-auto pointer-events-none text-[10px] text-muted-foreground/60 border border-border rounded px-1.5 py-0.5">⌘K</kbd>
+          </Button>
+        </div>
       </div>
+
+      <GlobalSearchModal
+        isOpen={isSearchModalOpen}
+        onClose={() => setIsSearchModalOpen(false)}
+      />
     </div>
   );
 }

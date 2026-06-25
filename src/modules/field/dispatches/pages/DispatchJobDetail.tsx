@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ArrowLeft, Clock, MapPin, CheckCircle, AlertCircle, User, MoreVertical, Edit, Trash2, Camera, Building, ExternalLink, Play, ClipboardList, Share2, Phone, Mail, Wrench, Calendar, FileText } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { ProfessionalShareModal } from "@/components/shared/ProfessionalShareModal";
@@ -519,34 +520,45 @@ export default function DispatchJobDetail() {
       <div className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-20 shadow-sm">
         {/* Mobile Header */}
             <div className="md:hidden">
-              <div className="flex items-center justify-between p-4 border-b border-border/50">
+              {/* Row 1: Back + actions menu */}
+              <div className="flex items-center justify-between p-3 border-b border-border/50">
                 <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard/field/dispatcher")} className="gap-2">
                   <ArrowLeft className="h-4 w-4" />
                   {t('dispatch_detail.back_to_dispatcher')}
                 </Button>
-                <TooltipProvider delayDuration={300}>
-                  <div className="flex items-center gap-2">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleStatusChange('completed')}>
-                          <CheckCircle className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">Mark Complete</TooltipContent>
-                    </Tooltip>
-
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10" onClick={() => handleStatusChange('cancelled')}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">Cancel Dispatch</TooltipContent>
-                    </Tooltip>
-                  </div>
-                </TooltipProvider>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-52">
+                    <DropdownMenuItem onClick={() => setIsPdfPreviewOpen(true)}>
+                      <ClipboardList className="h-4 w-4 mr-2" />
+                      {t('detail.download_report')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setIsShareModalOpen(true)}>
+                      <Share2 className="h-4 w-4 mr-2" />
+                      {t('detail.share')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setIsSendModalOpen(true)}>
+                      <Mail className="h-4 w-4 mr-2" />
+                      {t('detail.send_email', 'Send via Email')}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => handleStatusChange('completed')}>
+                      <CheckCircle className="h-4 w-4 mr-2 text-success" />
+                      {t('dispatch_detail.mark_complete', 'Mark Complete')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleStatusChange('cancelled')} className="text-destructive focus:text-destructive">
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      {t('dispatch_detail.cancel_dispatch', 'Cancel Dispatch')}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-              <div className="p-4">
+              {/* Row 2: Entity number + tenant */}
+              <div className="p-3 space-y-2.5">
                 <EditableEntityNumber
                   value={dispatch.dispatchNumber}
                   onSave={async (newValue) => {
@@ -560,6 +572,14 @@ export default function DispatchJobDetail() {
                   className="text-xl font-bold"
                 />
                 <TenantSelector value={(dispatch as any)?.tenantId} onChange={() => {}} readOnly compact />
+                {/* Status flow – full width, scrollable */}
+                <div className="overflow-x-auto">
+                  <DispatchStatusFlow
+                    currentStatus={dispatch.status as DispatchStatus}
+                    onStatusChange={handleStatusChange}
+                    isUpdating={isStatusUpdating}
+                  />
+                </div>
               </div>
             </div>
 

@@ -156,7 +156,7 @@ export function DashboardHeader() {
   }
 
   return (
-    <header data-tour="dashboard-header" className="h-14 min-w-0 max-w-full overflow-hidden border-b border-border bg-card sticky top-0 z-50">
+    <header data-tour="dashboard-header" className="h-14 min-w-0 max-w-full border-b border-border bg-card sticky top-0 z-50">
       <div className="flex h-full min-w-0 items-center justify-between px-4 gap-3">
         <div className="flex items-center gap-4 flex-shrink-0">
           {/* App Logo — show in topbar mode always, or in sidebar mode when collapsed (desktop only) */}
@@ -173,16 +173,15 @@ export function DashboardHeader() {
         </div>
         
         {/* Global Search - Centered and responsive */}
-        <div className="min-w-0 flex-1 flex justify-center px-2 md:px-4">
-          <div data-tour="global-search" className="w-full max-w-2xl md:max-w-3xl lg:max-w-4xl relative">
+        <div className="min-w-0 flex-1 flex items-center justify-center gap-2 px-2 md:px-4">
+          <div data-tour="global-search" className="flex-1 max-w-2xl md:max-w-3xl lg:max-w-4xl">
             <GlobalSearch />
-            {/* Quick action on the right side of the search */}
-            <div className="absolute right-0 top-1/2 transform -translate-y-1/2 mr-1 hidden md:flex items-center gap-2">
-              <Button data-tour="quick-create" onClick={() => setCreateOpen(true)} className="h-10 px-3 dark:text-white" variant="default">
-                <Plus className="h-4 w-4 mr-2" />
-                <span className="text-sm">{t('create')}</span>
-              </Button>
-            </div>
+          </div>
+          <div className="hidden md:flex items-center shrink-0">
+            <Button data-tour="quick-create" onClick={() => setCreateOpen(true)} className="h-10 px-3 dark:text-white" variant="default">
+              <Plus className="h-4 w-4 mr-2" />
+              <span className="text-sm">{t('create')}</span>
+            </Button>
           </div>
         </div>
         

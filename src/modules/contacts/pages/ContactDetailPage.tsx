@@ -6,9 +6,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  ArrowLeft, 
-  Edit2, 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useLayoutModeContext } from '@/hooks/useLayoutMode';
+import {
+  ArrowLeft,
+  Edit2,
   Star,
   StarOff,
   Loader2,
@@ -19,7 +21,9 @@ import {
   ShoppingCart,
   ClipboardList,
   StickyNote,
-  LayoutDashboard
+  LayoutDashboard,
+  Package,
+  type LucideIcon,
 } from 'lucide-react';
 import { useContact, useContacts } from '../hooks/useContacts';
 import { useContactNotes } from '../hooks/useNotes';
@@ -55,6 +59,7 @@ export default function ContactDetailPage() {
     isDeleting: isDeletingNote 
   } = useContactNotes(contactId);
   
+  const { isMobile } = useLayoutModeContext();
   const [activeTab, setActiveTab] = useState('overview');
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -128,6 +133,17 @@ export default function ContactDetailPage() {
   const tabConfig = isSupplierRoute
     ? (['overview', 'articles', 'purchases', 'notes'] as const)
     : (['overview', 'installations', 'offers', 'sales', 'serviceOrders', 'purchases', 'notes'] as const);
+
+  const TAB_META: Record<string, { icon: LucideIcon; label: () => string }> = {
+    overview:       { icon: LayoutDashboard, label: () => t('detail.tabs.overview') },
+    installations:  { icon: Wrench,          label: () => t('detail.tabs.installations') },
+    offers:         { icon: FileText,         label: () => t('detail.tabs.offers') },
+    sales:          { icon: ShoppingCart,     label: () => t('detail.tabs.sales') },
+    serviceOrders:  { icon: ClipboardList,    label: () => t('detail.tabs.service_orders') },
+    purchases:      { icon: Package,          label: () => t('detail.tabs.purchases') },
+    notes:          { icon: StickyNote,       label: () => t('detail.tabs.notes') },
+    articles:       { icon: Package,          label: () => t('detail.tabs.articles', 'Articles') },
+  };
 
   if (error || !contact) {
     return (
@@ -228,26 +244,58 @@ export default function ContactDetailPage() {
       {/* Main Content with Tabs */}
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList
-            className={`grid gap-1 h-auto p-1 ${
-              isSupplierRoute ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-3 md:grid-cols-7'
-            }`}
-          >
-            {tabConfig.map((tab) => (
-              <TabsTrigger key={tab} value={tab} className="text-xs md:text-sm">
-                {tab === 'serviceOrders' ? (
-                  <>
-                    <span className="hidden md:inline">{t('detail.tabs.service_orders')}</span>
-                    <span className="md:hidden">S.O.</span>
-                  </>
-                ) : tab === 'articles' ? (
-                  t('detail.tabs.articles', 'Articles')
-                ) : (
-                  t(`detail.tabs.${tab}`)
-                )}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          <div className="w-full">
+            {isMobile ? (
+              /* Mobile: styled dropdown select */
+              <Select value={activeTab} onValueChange={setActiveTab}>
+                <SelectTrigger className="w-full h-11 rounded-xl border-primary/20 bg-primary/5 text-foreground font-medium shadow-sm focus:ring-primary/30">
+                  <SelectValue>
+                    {(() => {
+                      const meta = TAB_META[activeTab];
+                      if (!meta) return null;
+                      const Icon = meta.icon;
+                      return (
+                        <span className="flex items-center gap-2">
+                          <Icon className="h-4 w-4 text-primary flex-shrink-0" />
+                          {meta.label()}
+                        </span>
+                      );
+                    })()}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-card rounded-xl shadow-lg border-border/60">
+                  {tabConfig.map((tab) => {
+                    const meta = TAB_META[tab];
+                    if (!meta) return null;
+                    const Icon = meta.icon;
+                    return (
+                      <SelectItem key={tab} value={tab} className="rounded-lg cursor-pointer py-2.5">
+                        <span className="flex items-center gap-2.5">
+                          <span className={`p-1 rounded-md ${activeTab === tab ? 'bg-primary/10' : 'bg-muted'}`}>
+                            <Icon className={`h-3.5 w-3.5 ${activeTab === tab ? 'text-primary' : 'text-muted-foreground'}`} />
+                          </span>
+                          <span className={activeTab === tab ? 'text-primary font-medium' : ''}>{meta.label()}</span>
+                        </span>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            ) : (
+              /* Desktop: tab pills */
+              <TabsList
+                className={`w-full h-auto p-1 bg-muted/50 rounded-lg grid gap-0 ${
+                  isSupplierRoute ? 'grid-cols-4' : 'grid-cols-7'
+                }`}
+              >
+                {tabConfig.map((tab) => (
+                  <TabsTrigger key={tab} value={tab} className="px-3 py-2 text-sm font-medium">
+                    {TAB_META[tab]?.label() ?? tab}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            )}
+          </div>
 
           {/* Overview Tab */}
           <TabsContent value="overview">

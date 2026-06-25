@@ -10,8 +10,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import {
   ArrowLeft, Edit, GitBranch, Trash2, Loader2, Building2, User, Calendar,
   DollarSign, Target, Send, ShoppingCart, Briefcase, FileText, CheckCircle2,
-  Package, Wrench, ExternalLink, Mail, Phone, MapPin, FileDown,
+  Package, Wrench, ExternalLink, Mail, Phone, MapPin, FileDown, MoreVertical,
 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { formatCurrencyValue } from "@/lib/formatters";
@@ -78,7 +79,66 @@ export function DealDetail() {
     <div className="min-h-screen bg-background">
       {/* Header — full-width sticky card (matches offers/sales) */}
       <div className="border-b border-border bg-gradient-subtle backdrop-blur-sm sticky top-0 z-20 shadow-soft">
-        <div className="p-4 lg:p-6">
+        {/* Mobile Header */}
+        <div className="md:hidden">
+          {/* Row 1: Back + actions menu */}
+          <div className="flex items-center justify-between p-3 border-b border-border/50">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard/deals")} className="gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              {t("backToDeals", { defaultValue: "Deals" })}
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuItem onClick={() => setIsPDFModalOpen(true)}>
+                  <FileDown className="h-4 w-4 mr-2" />
+                  {t("actions.pdf", { defaultValue: "PDF" })}
+                </DropdownMenuItem>
+                {hasUpdateAccess && (
+                  <DropdownMenuItem onClick={() => navigate(`/dashboard/deals/${dealId}/edit`)}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    {t("actions.edit")}
+                  </DropdownMenuItem>
+                )}
+                {hasUpdateAccess && (
+                  <DropdownMenuItem onClick={() => setConvertOpen(true)}>
+                    <GitBranch className="h-4 w-4 mr-2" />
+                    {t("actions.convert")}
+                  </DropdownMenuItem>
+                )}
+                {hasDeleteAccess && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setDeleteOpen(true)} className="text-destructive focus:text-destructive">
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      {t("actions.delete")}
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          {/* Row 2: Deal title + stage badge */}
+          <div className="p-3 space-y-1.5">
+            <div className="flex items-center gap-2 min-w-0 flex-wrap">
+              <h1 className="text-xl font-bold truncate">{deal.title}</h1>
+              <Badge variant="secondary" className={stageBadgeClass(deal.stage)}>{t(`stages.${deal.stage}`)}</Badge>
+              {isFollowUpOverdue(deal) && (
+                <Badge variant="secondary" className="gap-1 bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                  <Send className="h-3 w-3" /> {t("detail.followUpOverdue", { defaultValue: "Follow-up overdue" })}
+                </Badge>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground">{deal.dealNumber} · {deal.contactName || deal.contact?.name}</p>
+          </div>
+        </div>
+
+        {/* Desktop Header */}
+        <div className="hidden md:block p-4 lg:p-6">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
@@ -91,7 +151,7 @@ export function DealDetail() {
 
             <Card className="flex-1 shadow-sm border-border/50">
               <CardContent className="p-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-6">
+                <div className="flex items-center justify-between gap-6">
                   <div className="flex items-center gap-3 min-w-0 flex-wrap">
                     <h1 className="text-xl font-bold truncate">{deal.title}</h1>
                     <Badge variant="secondary" className={stageBadgeClass(deal.stage)}>{t(`stages.${deal.stage}`)}</Badge>
@@ -104,7 +164,7 @@ export function DealDetail() {
                       {deal.dealNumber} · {deal.contactName || deal.contact?.name}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap shrink-0">
                     <Button variant="outline" size="sm" onClick={() => setIsPDFModalOpen(true)} className="gap-1.5">
                       <FileDown className="h-4 w-4" /> {t("actions.pdf", { defaultValue: "PDF" })}
                     </Button>

@@ -10,8 +10,15 @@ import { useLayoutModeContext } from "@/hooks/useLayoutMode";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ArrowLeft, Edit, Trash2, FileDown, RefreshCw, Send, Check, X, ShoppingCart, Loader2, Zap, Info, Receipt } from "lucide-react";
+import { ArrowLeft, Edit, Trash2, FileDown, RefreshCw, Send, Check, X, ShoppingCart, Loader2, Zap, Info, Receipt, MoreVertical, LayoutDashboard, Package, StickyNote, CheckSquare, FolderOpen } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { OffersService } from "../services/offers.service";
 import { offersApi } from "@/services/api/offersApi";
 import { entityFormDocumentsService } from "@/modules/shared/services/entityFormDocumentsService";
@@ -307,9 +314,99 @@ export function OfferDetail() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header - Compact Card Style */}
+      {/* Header */}
       <div className="border-b border-border bg-gradient-subtle backdrop-blur-sm sticky top-0 z-20 shadow-soft">
-        <div className="p-4 lg:p-6">
+
+        {/* ── Mobile Header ── */}
+        <div className="md:hidden">
+          {/* Row 1: Back + actions menu */}
+          <div className="flex items-center justify-between p-3 border-b border-border/50">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/dashboard/offers')}
+              className="gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              {t('backToOffers')}
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52 bg-background/95 backdrop-blur-sm border border-border/50">
+                <DropdownMenuItem onClick={() => setShowSendModal(true)} className="gap-2">
+                  <Send className="h-4 w-4" />
+                  {t('send_offer')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setIsPDFModalOpen(true)} className="gap-2">
+                  <FileDown className="h-4 w-4" />
+                  {t('download_pdf')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate(`/dashboard/offers/${offer.id}/edit`)} className="gap-2">
+                  <Edit className="h-4 w-4" />
+                  {t('edit_offer')}
+                </DropdownMenuItem>
+                {getPositiveTerminalStatuses(offerStatusConfig).includes(offer.status) && !offer.convertedToSaleId && !workflowStatus.isActive && (
+                  <DropdownMenuItem onClick={() => setShowConvertDialog(true)} className="gap-2">
+                    <ShoppingCart className="h-4 w-4" />
+                    {t('convert_to_sale')}
+                  </DropdownMenuItem>
+                )}
+                {getNegativeStatuses(offerStatusConfig).includes(offer.status) && (
+                  <DropdownMenuItem onClick={handleRenewOffer} className="gap-2">
+                    <RefreshCw className="h-4 w-4" />
+                    {t('detail.renewOffer')}
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="gap-2 text-destructive focus:text-destructive">
+                  <Trash2 className="h-4 w-4" />
+                  {t('delete')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {/* Row 2: Offer number + sent count + status */}
+          <div className="p-3 space-y-2.5">
+            <div className="min-w-0">
+              <EditableEntityNumber
+                value={offer.offerNumber || offer.title}
+                onSave={async (newValue) => {
+                  await offersApi.update(Number(offer.id), { offerNumber: newValue });
+                  setOffer({ ...offer, offerNumber: newValue });
+                }}
+                validate={async (newValue) => {
+                  const result = await checkDuplicateDocumentNumber(newValue, 'offer', offer.id);
+                  return result.isDuplicate ? `This number already exists in ${result.foundIn}` : null;
+                }}
+                className="text-xl font-bold"
+              />
+              <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground bg-muted/50 px-2.5 py-1 rounded-md border border-border">
+                  <Send className="w-3.5 h-3.5 text-primary" />
+                  <span>{t('sent', 'Sent')} {offer.sentCount || 0} {t('time', 'time')}{(offer.sentCount || 0) !== 1 ? 's' : ''}</span>
+                </div>
+                <CompanyBadge tenantId={(offer as any)?.tenantId} />
+              </div>
+            </div>
+            {/* Status flow – full width, scrollable on mobile */}
+            <div className="overflow-x-auto">
+              <OfferStatusFlow
+                currentStatus={offer.status}
+                onStatusChange={handleStatusFlowChange}
+                disabled={actionLoading !== null}
+                isUpdating={actionLoading !== null}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* ── Desktop Header – Compact Card Style ── */}
+        <div className="hidden md:block p-4 lg:p-6">
           <div className="flex items-center gap-4">
             {/* Back Button */}
             <Button
@@ -338,11 +435,10 @@ export function OfferDetail() {
                         return result.isDuplicate ? `This number already exists in ${result.foundIn}` : null;
                       }}
                     />
-                    
                     {/* Sent Count Display */}
                     <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground bg-muted/50 px-2.5 py-1 rounded-md border border-border">
-                        <Send className="w-3.5 h-3.5 text-primary" />
-                        <span>{t('sent', 'Sent')} {offer.sentCount || 0} {t('time', 'time')}{(offer.sentCount || 0) !== 1 ? 's' : ''}</span>
+                      <Send className="w-3.5 h-3.5 text-primary" />
+                      <span>{t('sent', 'Sent')} {offer.sentCount || 0} {t('time', 'time')}{(offer.sentCount || 0) !== 1 ? 's' : ''}</span>
                     </div>
                     <CompanyBadge tenantId={(offer as any)?.tenantId} />
                     <TenantSelector value={(offer as any)?.tenantId} readOnly compact onChange={() => {}} />
@@ -356,9 +452,7 @@ export function OfferDetail() {
                       disabled={actionLoading !== null}
                       isUpdating={actionLoading !== null}
                     />
-                    
                     <div className="h-8 w-px bg-border/50" />
-                    
                     <TooltipProvider delayDuration={300}>
                       <div className="flex items-center gap-2">
                         <Tooltip>
@@ -369,7 +463,6 @@ export function OfferDetail() {
                           </TooltipTrigger>
                           <TooltipContent side="bottom">{t('send_offer')}</TooltipContent>
                         </Tooltip>
-
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button variant="ghost" size="icon-sm" onClick={() => setIsPDFModalOpen(true)} className="text-muted-foreground hover:text-foreground hover:bg-accent">
@@ -378,7 +471,6 @@ export function OfferDetail() {
                           </TooltipTrigger>
                           <TooltipContent side="bottom">{t('download_pdf')}</TooltipContent>
                         </Tooltip>
-
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Link to={`/dashboard/offers/${offer.id}/edit`}>
@@ -389,7 +481,6 @@ export function OfferDetail() {
                           </TooltipTrigger>
                           <TooltipContent side="bottom">{t('edit_offer')}</TooltipContent>
                         </Tooltip>
-
                         {getPositiveTerminalStatuses(offerStatusConfig).includes(offer.status) && !offer.convertedToSaleId && !workflowStatus.isActive && (
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -400,7 +491,6 @@ export function OfferDetail() {
                             <TooltipContent side="bottom">{t('convert_to_sale')}</TooltipContent>
                           </Tooltip>
                         )}
-
                         {getNegativeStatuses(offerStatusConfig).includes(offer.status) && (
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -411,7 +501,6 @@ export function OfferDetail() {
                             <TooltipContent side="bottom">{t('detail.renewOffer')}</TooltipContent>
                           </Tooltip>
                         )}
-
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button variant="ghost" size="icon-sm" onClick={() => setShowDeleteDialog(true)} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10">
@@ -436,24 +525,42 @@ export function OfferDetail() {
           <div className="w-full mb-6">
             {/* Mobile: Dropdown Select */}
             {isMobile ? (
-              <Select value={activeTab} onValueChange={setActiveTab}>
-                <SelectTrigger className="w-full bg-background">
-                  <SelectValue>
-                      {activeTab === 'overview' && t('tabs.overview')}
-                      {activeTab === 'items' && t('tabs.items')}
-                      {activeTab === 'notes' && t('tabs.notes')}
-                      {activeTab === 'checklists' && t('tabs.checklists')}
-                      {activeTab === 'documents' && t('tabs.documents')}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-card">
-                  <SelectItem value="overview">{t('tabs.overview')}</SelectItem>
-                  <SelectItem value="items">{t('tabs.items')}</SelectItem>
-                  <SelectItem value="notes">{t('tabs.notes')}</SelectItem>
-                  <SelectItem value="checklists">{t('tabs.checklists')}</SelectItem>
-                  <SelectItem value="documents">{t('tabs.documents')}</SelectItem>
-                </SelectContent>
-              </Select>
+              (() => {
+                const TABS = [
+                  { value: 'overview',   icon: LayoutDashboard, label: t('tabs.overview') },
+                  { value: 'items',      icon: Package,          label: t('tabs.items') },
+                  { value: 'notes',      icon: StickyNote,       label: t('tabs.notes') },
+                  { value: 'checklists', icon: CheckSquare,      label: t('tabs.checklists') },
+                  { value: 'documents',  icon: FolderOpen,       label: t('tabs.documents') },
+                ];
+                const current = TABS.find(tab => tab.value === activeTab);
+                return (
+                  <Select value={activeTab} onValueChange={setActiveTab}>
+                    <SelectTrigger className="w-full h-11 rounded-xl border-primary/20 bg-primary/5 text-foreground font-medium shadow-sm focus:ring-primary/30">
+                      <SelectValue>
+                        {current && (
+                          <span className="flex items-center gap-2">
+                            <current.icon className="h-4 w-4 text-primary flex-shrink-0" />
+                            {current.label}
+                          </span>
+                        )}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="bg-white dark:bg-card rounded-xl shadow-lg border-border/60">
+                      {TABS.map(({ value, icon: Icon, label }) => (
+                        <SelectItem key={value} value={value} className="rounded-lg cursor-pointer py-2.5">
+                          <span className="flex items-center gap-2.5">
+                            <span className={`p-1 rounded-md ${activeTab === value ? 'bg-primary/10' : 'bg-muted'}`}>
+                              <Icon className={`h-3.5 w-3.5 ${activeTab === value ? 'text-primary' : 'text-muted-foreground'}`} />
+                            </span>
+                            <span className={activeTab === value ? 'text-primary font-medium' : ''}>{label}</span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                );
+              })()
             ) : (
               <TabsList className="w-full h-auto p-1 bg-muted/50 rounded-lg grid grid-cols-5">
                 <TabsTrigger value="overview" className="px-4 py-2.5 text-sm font-medium">

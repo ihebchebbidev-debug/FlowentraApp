@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Clock, Users, Package, Calendar, CheckCircle, AlertCircle, User, MapPin, Phone, Mail, Settings, MoreVertical, Edit, Trash2, ClipboardList, Building, Wrench, ExternalLink, Filter, ChevronDown, MessageSquare, History, Check, Share2, Plus, Loader2, RefreshCw, Eye, FileText, RefreshCcw, ShoppingCart } from "lucide-react";
+import { ArrowLeft, Clock, Users, Package, Calendar, CheckCircle, AlertCircle, User, MapPin, Phone, Mail, Settings, MoreVertical, Edit, Trash2, ClipboardList, Building, Wrench, ExternalLink, Filter, ChevronDown, MessageSquare, History, Check, Share2, Plus, Loader2, RefreshCw, Eye, FileText, RefreshCcw, ShoppingCart, LayoutDashboard, Truck, Timer, StickyNote, FolderOpen, Activity } from "lucide-react";
 import { CollapsibleSearch } from "@/components/ui/collapsible-search";
 import { JobsTable } from "../components/JobsTable";
 import { DispatchesTable } from "../components/DispatchesTable";
@@ -980,23 +980,22 @@ export default function ServiceOrderDetail() {
       <div className="border-b border-border bg-gradient-subtle backdrop-blur-sm sticky top-0 z-20 shadow-soft">
         {/* Mobile Header */}
         <div className="md:hidden">
-          <div className="flex items-center justify-between p-4 border-b border-border/50">
+          <div className="flex items-center justify-between p-3 border-b border-border/50">
             <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard/field/service-orders")} className="gap-2">
               <ArrowLeft className="h-4 w-4" />
               {t('detail.back')}
             </Button>
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={handleRefresh} disabled={refreshing}>
+            <div className="flex items-center gap-1.5">
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handleRefresh} disabled={refreshing}>
                 <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
               </Button>
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => setIsPdfPreviewOpen(true)}>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => setIsPdfPreviewOpen(true)}>
                 <ClipboardList className="h-4 w-4" />
-                {t('detail.download_report')}
               </Button>
             </div>
           </div>
-          <div className="p-4">
-            <div className="flex flex-col space-y-3">
+          <div className="p-3 space-y-2.5">
+            <div className="min-w-0">
               <EditableEntityNumber
                 value={serviceOrderForComponents.orderNumber}
                 onSave={async (newValue) => {
@@ -1009,38 +1008,27 @@ export default function ServiceOrderDetail() {
                 }}
                 className="text-xl font-bold"
               />
-              <div className="flex items-center gap-2 flex-wrap">
-                <TenantSelector value={(serviceOrder as any)?.tenantId} onChange={() => {}} readOnly compact />
+              <div className="flex items-center gap-2 flex-wrap mt-1.5">
                 <CompanyBadge tenantId={(serviceOrder as any)?.tenantId} />
-                <Badge
-                  variant="secondary"
-                  className={`${currentStatusFlow === 'closed' || currentStatusFlow === 'technically_completed' || currentStatusFlow === 'invoiced'
-                      ? 'bg-success/10 text-success border-success/20'
-                      : currentStatusFlow === 'ready_for_invoice'
-                        ? 'bg-warning/10 text-warning border-warning/20'
-                        : currentStatusFlow === 'scheduled'
-                          ? 'bg-primary/10 text-primary border-primary/20'
-                          : 'bg-accent text-accent-foreground border-border'
-                    } font-medium`}
-                >
-                  {(currentStatusFlow === 'closed' || currentStatusFlow === 'technically_completed' || currentStatusFlow === 'invoiced') && (
-                    <CheckCircle className="h-3 w-3 mr-1" />
-                  )}
-                  <span className="capitalize">
-                    {t(`statuses.${currentStatusFlow}`)}
-                  </span>
-                </Badge>
                 {serviceOrder.saleId && (
                   <Button
                     variant="link"
                     size="sm"
-                    className="text-primary h-auto p-0"
+                    className="text-primary h-auto p-0 text-xs"
                     onClick={() => navigate(`/dashboard/sales/${serviceOrder.saleId}`)}
                   >
-                    View Sale #{serviceOrder.saleNumber || serviceOrder.saleId}
+                    #{serviceOrder.saleNumber || serviceOrder.saleId}
                   </Button>
                 )}
               </div>
+            </div>
+            {/* Status flow – full width on mobile */}
+            <div className="overflow-x-auto">
+              <ServiceOrderStatusFlow
+                currentStatus={currentStatusFlow}
+                onStatusChange={handleStatusChange}
+                isUpdating={isStatusUpdating}
+              />
             </div>
           </div>
         </div>
@@ -1162,30 +1150,45 @@ export default function ServiceOrderDetail() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           {/* Mobile: Dropdown Select */}
           {isMobile ? (
-            <Select value={activeTab} onValueChange={setActiveTab}>
-              <SelectTrigger className="w-full bg-background">
-                <SelectValue>
-                  {activeTab === 'overview' && t('tabs.overview')}
-                  {activeTab === 'jobs' && t('tabs.jobs')}
-                  {activeTab === 'dispatches' && t('tabs.dispatches')}
-                  {activeTab === 'time_expenses' && t('tabs.time_expenses')}
-                  {activeTab === 'materials' && t('tabs.materials')}
-                  {activeTab === 'attachments' && t('tabs.attachments')}
-                  {activeTab === 'checklists' && t('tabs.checklists')}
-                  {activeTab === 'activity' && t('tabs.activity')}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent className="bg-white dark:bg-card">
-                <SelectItem value="overview">{t('tabs.overview')}</SelectItem>
-                <SelectItem value="jobs">{t('tabs.jobs')}</SelectItem>
-                <SelectItem value="dispatches">{t('tabs.dispatches')}</SelectItem>
-                <SelectItem value="time_expenses">{t('tabs.time_expenses')}</SelectItem>
-                <SelectItem value="materials">{t('tabs.materials')}</SelectItem>
-                <SelectItem value="attachments">{t('tabs.attachments')}</SelectItem>
-                <SelectItem value="checklists">{t('tabs.checklists')}</SelectItem>
-                <SelectItem value="activity">{t('tabs.activity')}</SelectItem>
-              </SelectContent>
-            </Select>
+            (() => {
+              const TABS = [
+                { value: 'overview',      icon: LayoutDashboard, label: t('tabs.overview') },
+                { value: 'jobs',          icon: Wrench,           label: t('tabs.jobs') },
+                { value: 'dispatches',    icon: Truck,            label: t('tabs.dispatches') },
+                { value: 'time_expenses', icon: Timer,            label: t('tabs.time_expenses') },
+                { value: 'materials',     icon: Package,          label: t('tabs.materials') },
+                { value: 'attachments',   icon: FolderOpen,       label: t('tabs.attachments') },
+                { value: 'checklists',    icon: CheckCircle,      label: t('tabs.checklists') },
+                { value: 'activity',      icon: Activity,         label: t('tabs.activity') },
+              ];
+              const current = TABS.find(tab => tab.value === activeTab);
+              return (
+                <Select value={activeTab} onValueChange={setActiveTab}>
+                  <SelectTrigger className="w-full h-11 rounded-xl border-primary/20 bg-primary/5 text-foreground font-medium shadow-sm focus:ring-primary/30">
+                    <SelectValue>
+                      {current && (
+                        <span className="flex items-center gap-2">
+                          <current.icon className="h-4 w-4 text-primary flex-shrink-0" />
+                          {current.label}
+                        </span>
+                      )}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="bg-white dark:bg-card rounded-xl shadow-lg border-border/60">
+                    {TABS.map(({ value, icon: Icon, label }) => (
+                      <SelectItem key={value} value={value} className="rounded-lg cursor-pointer py-2.5">
+                        <span className="flex items-center gap-2.5">
+                          <span className={`p-1 rounded-md ${activeTab === value ? 'bg-primary/10' : 'bg-muted'}`}>
+                            <Icon className={`h-3.5 w-3.5 ${activeTab === value ? 'text-primary' : 'text-muted-foreground'}`} />
+                          </span>
+                          <span className={activeTab === value ? 'text-primary font-medium' : ''}>{label}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              );
+            })()
           ) : (
             <TabsList className="grid grid-cols-4 md:grid-cols-8 gap-1 h-auto p-1">
               <TabsTrigger value="overview" className="text-xs md:text-sm">{t('tabs.overview')}</TabsTrigger>
