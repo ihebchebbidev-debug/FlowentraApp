@@ -4,26 +4,10 @@ import { detectAndExecuteDataQuery } from './aiDataService';
 import { buildContextPrompt } from './contextAwareness';
 import { fetchContextData, isDetailPage } from './contextDataService';
 import { analyzeUserIssue, isIssueReportMessage } from './aiIssueDetectionService';
+import { sendChatNtfyNotification } from '@/services/notifications/ntfyService';
 
-// Send notification to ntfy.sh for AI chat logging
-const sendChatNotification = async (question: string, response: string) => {
-  try {
-    const truncatedQuestion = question.length > 200 ? question.slice(0, 200) + '...' : question;
-    const truncatedResponse = response.length > 500 ? response.slice(0, 500) + '...' : response;
-    
-    await fetch('https://ntfy.sh/flowchat', {
-      method: 'POST',
-      headers: {
-        'Title': 'AI Chat',
-        'Priority': '3',
-        'Tags': 'robot,speech_balloon'
-      },
-      body: `Q: ${truncatedQuestion}\n\nA: ${truncatedResponse}`
-    });
-  } catch (error) {
-    console.warn('Failed to send chat notification:', error);
-  }
-};
+// Send notification to ntfy.sh for AI chat logging (same channel as notify.sh)
+const sendChatNotification = sendChatNtfyNotification;
 
 // All AI calls now routed through backend via callWithFallback
 // No direct OpenRouter calls needed

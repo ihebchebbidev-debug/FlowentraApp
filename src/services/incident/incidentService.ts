@@ -17,6 +17,7 @@ import {
 } from './incidentFilters';
 import { bumpOccurrence, pruneOccurrenceTracker } from './incidentOccurrenceTracker';
 import { getBreadcrumbsSummary, pushBreadcrumb } from './incidentBreadcrumbs';
+import { notifyIssueViaNtfy } from './incidentNtfyNotify';
 
 const CLIENT_DEDUP_MS = 30_000;
 const recentReports = new Map<string, number>();
@@ -293,9 +294,19 @@ export async function reportIncident(
       }),
     });
 
-    if (!response.ok) return null;
-    return (await response.json()) as AutoIncidentResult;
+    if (!response.ok) {
+      if (ALWAYS_TICKET_TYPES.has(payload.incidentType)) {
+        void notifyIssueViaNtfy(payload, null, { ticketApiFailed: true });
+      }
+      return null;
+    }
+    const result = (await response.json()) as AutoIncidentResult;
+    void notifyIssueViaNtfy(payload, result);
+    return result;
   } catch {
+    if (ALWAYS_TICKET_TYPES.has(payload.incidentType)) {
+      void notifyIssueViaNtfy(payload, null, { ticketApiFailed: true });
+    }
     return null;
   }
 }
