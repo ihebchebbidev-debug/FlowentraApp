@@ -884,7 +884,7 @@
   },
   "plugins": {
     "title": "Plugins",
-    "subtitle": "Enable or disable modules for this company.",
+    "subtitle": "Modules activated for this company. Contact support to change your plan.",
     "active": "active plugins",
     "inactive": "inactive",
     "of": "of",
@@ -941,6 +941,8 @@
       "system": "System",
       "comms": "Comms",
       "analytics": "Analytics"
-    }
+    },
+    "statusActive": "Active",
+    "statusInactive": "Inactive"
   }
 }

@@ -1,20 +1,16 @@
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { Lock } from 'lucide-react';
 import type { PluginRuntimeState } from '@/modules/shared/plugins';
 import { getLucideIcon } from './lucideIconResolver';
 
 interface Props {
   state: PluginRuntimeState;
-  onToggle: (code: string, enabled: boolean) => void;
-  isToggling?: boolean;
 }
 
-export function PluginCard({ state, onToggle, isToggling }: Props) {
-  const { manifest, isEnabled, hasBrokenDependency, enabledDependents } = state;
+export function PluginCard({ state }: Props) {
+  const { manifest, isEnabled, hasBrokenDependency } = state;
   const { t } = useTranslation(['settings', manifest.moduleKey]);
   const Icon = getLucideIcon(manifest.icon);
 
@@ -57,25 +53,14 @@ export function PluginCard({ state, onToggle, isToggling }: Props) {
           </div>
         </div>
 
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span>
-                <Switch
-                  checked={isEnabled}
-                  disabled={manifest.isCore || isToggling}
-                  onCheckedChange={(checked) => onToggle(manifest.code, checked)}
-                  aria-label={isEnabled ? t('plugins.toggleOff') : t('plugins.toggleOn')}
-                />
-              </span>
-            </TooltipTrigger>
-            {manifest.isCore && (
-              <TooltipContent side="left">
-                <p className="text-xs">{t('plugins.coreLockedDesc')}</p>
-              </TooltipContent>
-            )}
-          </Tooltip>
-        </TooltipProvider>
+        <Badge
+          variant={isEnabled ? 'success' : 'ghost'}
+          className="shrink-0 mt-0.5"
+        >
+          {isEnabled
+            ? t('plugins.statusActive', 'Active')
+            : t('plugins.statusInactive', 'Inactive')}
+        </Badge>
       </CardHeader>
 
       <CardContent className="space-y-2 pt-0">
@@ -93,12 +78,6 @@ export function PluginCard({ state, onToggle, isToggling }: Props) {
         {hasBrokenDependency && (
           <div className="text-xs text-destructive">
             ⚠ {t('plugins.dependencyWarning')}
-          </div>
-        )}
-
-        {!isEnabled && enabledDependents.length > 0 && (
-          <div className="text-xs text-amber-600 dark:text-amber-400">
-            ⚠ {enabledDependents.length} {t('plugins.dependencyWarning')}
           </div>
         )}
       </CardContent>

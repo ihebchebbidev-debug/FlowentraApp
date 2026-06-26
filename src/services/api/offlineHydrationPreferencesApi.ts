@@ -11,13 +11,13 @@ export type OfflineHydrationPreferencesPayload = {
   };
 };
 
-const BYPASS_QUEUE: HeadersInit = {
-  "X-Bypass-Offline-Queue": "true",
-};
-
 /** GET /api/OfflineHydrationPreferences — current user / tenant. */
 export async function fetchOfflineHydrationPreferences() {
-  return apiFetch<OfflineHydrationPreferencesPayload>("/api/OfflineHydrationPreferences");
+  return apiFetch<OfflineHydrationPreferencesPayload>("/api/OfflineHydrationPreferences", {
+    // Skip system logging so 400/404 from a not-yet-configured backend
+    // doesn't generate incident tickets — the caller handles the error gracefully.
+    headers: { "X-Skip-Logging": "true" },
+  });
 }
 
 /** PUT /api/OfflineHydrationPreferences — only explicit `false` entries are stored server-side. */
@@ -25,6 +25,11 @@ export async function putOfflineHydrationPreferences(modules: Record<string, boo
   return apiFetch<OfflineHydrationPreferencesPayload>("/api/OfflineHydrationPreferences", {
     method: "PUT",
     body: JSON.stringify({ modules }),
-    headers: BYPASS_QUEUE,
+    headers: {
+      "X-Bypass-Offline-Queue": "true",
+      // Suppress the global apiClient error toast — persistToServer() shows its own.
+      "X-Suppress-Error-Toast": "true",
+      "X-Skip-Logging": "true",
+    },
   });
 }

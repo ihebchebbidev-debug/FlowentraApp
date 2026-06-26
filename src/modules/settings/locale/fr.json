@@ -941,6 +941,8 @@
       "system": "Système",
       "comms": "Comms",
       "analytics": "Analytique"
-    }
+    },
+    "statusActive": "Actif",
+    "statusInactive": "Inactif"
   }
 }

@@ -289,25 +289,47 @@ export default function SettingsPage() {
             <h1 className="text-lg font-semibold text-foreground">{t('header.title')}</h1>
           </div>
           <Select value={activeSection} onValueChange={setActiveSection}>
-            <SelectTrigger className="w-full bg-background">
+            <SelectTrigger className="w-full h-11 rounded-xl border-primary/20 bg-primary/5 text-foreground font-medium shadow-sm focus:ring-primary/30">
               <SelectValue>
                 {activeItem && (
-                  <div className="flex items-center gap-2">
-                    <activeItem.icon className="h-4 w-4" />
+                  <span className="flex items-center gap-2">
+                    <activeItem.icon className="h-4 w-4 text-primary flex-shrink-0" />
                     <span>{t(activeItem.labelKey)}</span>
-                  </div>
+                  </span>
                 )}
               </SelectValue>
             </SelectTrigger>
-            <SelectContent className="bg-popover">
-              {navItems.filter(i => i.visible).map(item => (
-                <SelectItem key={item.id} value={item.id}>
-                  <div className="flex items-center gap-2">
-                    <item.icon className="h-4 w-4" />
-                    {t(item.labelKey)}
-                  </div>
-                </SelectItem>
-              ))}
+            <SelectContent className="bg-white dark:bg-card rounded-xl shadow-lg border-border/60">
+              {personalItems.length > 0 && (
+                <>
+                  <div className="px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t('nav.sectionPersonal')}</div>
+                  {personalItems.map(item => (
+                    <SelectItem key={item.id} value={item.id} className="rounded-lg cursor-pointer py-2.5">
+                      <span className="flex items-center gap-2.5">
+                        <span className={`p-1 rounded-md ${activeSection === item.id ? 'bg-primary/10' : 'bg-muted'}`}>
+                          <item.icon className={`h-3.5 w-3.5 ${activeSection === item.id ? 'text-primary' : 'text-muted-foreground'}`} />
+                        </span>
+                        <span className={activeSection === item.id ? 'text-primary font-medium' : ''}>{t(item.labelKey)}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </>
+              )}
+              {adminItems.length > 0 && (
+                <>
+                  <div className="px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mt-1">{t('nav.sectionAdmin')}</div>
+                  {adminItems.map(item => (
+                    <SelectItem key={item.id} value={item.id} className="rounded-lg cursor-pointer py-2.5">
+                      <span className="flex items-center gap-2.5">
+                        <span className={`p-1 rounded-md ${activeSection === item.id ? 'bg-primary/10' : 'bg-muted'}`}>
+                          <item.icon className={`h-3.5 w-3.5 ${activeSection === item.id ? 'text-primary' : 'text-muted-foreground'}`} />
+                        </span>
+                        <span className={activeSection === item.id ? 'text-primary font-medium' : ''}>{t(item.labelKey)}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </>
+              )}
             </SelectContent>
           </Select>
         </div>

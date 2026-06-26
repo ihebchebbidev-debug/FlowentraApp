@@ -1,49 +1,22 @@
 /**
  * ActivatedModulesSection
- * Compact, embeddable view of plugin activations for the Subscription page.
- * Shares the SAME data source as the full Plugins page (usePlugins hook),
- * so toggles here are reflected everywhere (sidebar, gates, paywall).
+ * Read-only view of which modules are active for this tenant.
+ * Module activation is managed exclusively from the database — users cannot toggle.
  */
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Search, Lock, Loader2, ExternalLink } from 'lucide-react';
-import {
-  usePlugins,
-  getDependentsOf,
-  type PluginManifest,
-} from '@/modules/shared/plugins';
+import { Lock, Search } from 'lucide-react';
+import { usePlugins } from '@/modules/shared/plugins';
 import { getLucideIcon } from './plugins/lucideIconResolver';
 
 export function ActivatedModulesSection() {
   const { t } = useTranslation('settings');
-  const {
-    runtimeState,
-    activeCount,
-    totalCount,
-    toggle,
-    bulkToggle,
-    isToggling,
-    isLoading,
-    isApiAvailable,
-    isUsingCachedFallback,
-  } = usePlugins();
+  const { runtimeState, activeCount, totalCount, isLoading } = usePlugins();
 
   const [search, setSearch] = useState('');
-  const [pendingDisable, setPendingDisable] = useState<{
-    plugin: PluginManifest;
-    dependents: PluginManifest[];
-  } | null>(null);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -60,38 +33,6 @@ export function ActivatedModulesSection() {
     });
   }, [runtimeState, search, t]);
 
-  const handleToggle = (code: string, enabled: boolean) => {
-    if (!enabled) {
-      const dependents = getDependentsOf(code).filter((d) => {
-        const st = runtimeState.find((s) => s.manifest.code === d.code);
-        return st?.isEnabled;
-      });
-      if (dependents.length > 0) {
-        const plugin = runtimeState.find((s) => s.manifest.code === code)?.manifest;
-        if (plugin) {
-          setPendingDisable({ plugin, dependents });
-          return;
-        }
-      }
-    }
-    toggle(code, enabled);
-  };
-
-  const confirmSingleDisable = () => {
-    if (pendingDisable) {
-      toggle(pendingDisable.plugin.code, false);
-      setPendingDisable(null);
-    }
-  };
-
-  const cascadeDisable = () => {
-    if (pendingDisable) {
-      const codes = [pendingDisable.plugin.code, ...pendingDisable.dependents.map((d) => d.code)];
-      bulkToggle(codes, false);
-      setPendingDisable(null);
-    }
-  };
-
   return (
     <Card className="shadow-card border-0 bg-card">
       <CardHeader className="p-4 sm:p-6">
@@ -103,41 +44,17 @@ export function ActivatedModulesSection() {
             <CardDescription className="text-xs mt-1">
               {t(
                 'subscription.activatedModulesDesc',
-                'Modules included in your subscription. Toggle to enable or disable for your tenant.',
+                'Modules included in your subscription. Contact support to change your plan.',
               )}
             </CardDescription>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Badge variant="secondary" className="text-xs">
-              {activeCount} / {totalCount}
-            </Badge>
-            <Button asChild variant="outline" size="sm" className="h-7 text-xs gap-1.5">
-              <Link to="/dashboard/settings/plugins">
-                {t('subscription.openFullManager', 'Full manager')}
-                <ExternalLink className="h-3 w-3" />
-              </Link>
-            </Button>
-          </div>
+          <Badge variant="secondary" className="text-xs shrink-0">
+            {activeCount} / {totalCount}
+          </Badge>
         </div>
       </CardHeader>
 
       <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-3">
-        {!isApiAvailable && !isLoading && (
-          <Alert className="py-2">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            <AlertTitle className="text-xs">
-              {isUsingCachedFallback
-                ? t('plugins.cachedFallbackTitle')
-                : t('plugins.unavailableTitle')}
-            </AlertTitle>
-            <AlertDescription className="text-xs">
-              {isUsingCachedFallback
-                ? t('plugins.cachedFallbackDesc')
-                : t('plugins.unavailableDesc')}
-            </AlertDescription>
-          </Alert>
-        )}
-
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
@@ -169,7 +86,9 @@ export function ActivatedModulesSection() {
                 <div
                   key={s.manifest.code}
                   className={`flex items-center gap-2.5 px-2.5 py-2 rounded-md border transition-colors ${
-                    s.isEnabled ? 'border-border/60 bg-background' : 'border-dashed border-muted-foreground/20 opacity-70'
+                    s.isEnabled
+                      ? 'border-border/60 bg-background'
+                      : 'border-dashed border-muted-foreground/20 opacity-60'
                   }`}
                 >
                   <div
@@ -190,57 +109,20 @@ export function ActivatedModulesSection() {
                       {s.manifest.code}
                     </p>
                   </div>
-                  <Switch
-                    checked={s.isEnabled}
-                    disabled={s.manifest.isCore || isToggling}
-                    onCheckedChange={(checked) => handleToggle(s.manifest.code, checked)}
-                    aria-label={s.isEnabled ? t('plugins.toggleOff') : t('plugins.toggleOn')}
-                  />
+                  <Badge
+                    variant={s.isEnabled ? 'success' : 'ghost'}
+                    className="text-[10px] shrink-0"
+                  >
+                    {s.isEnabled
+                      ? t('plugins.statusActive', 'Active')
+                      : t('plugins.statusInactive', 'Inactive')}
+                  </Badge>
                 </div>
               );
             })}
           </div>
         )}
       </CardContent>
-
-      {/* Dependency cascade modal */}
-      <AlertDialog
-        open={!!pendingDisable}
-        onOpenChange={(o) => { if (!o) setPendingDisable(null); }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t('plugins.dependencyModalTitle', 'Disable dependent modules?')}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {pendingDisable && (
-                <>
-                  {t(
-                    'plugins.dependencyModalDesc',
-                    'The following modules depend on {{name}}:',
-                    { name: pendingDisable.plugin.moduleKey },
-                  )}
-                  <ul className="mt-2 list-disc list-inside text-xs">
-                    {pendingDisable.dependents.map((d) => (
-                      <li key={d.code} className="font-mono">{d.code}</li>
-                    ))}
-                  </ul>
-                </>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel>{t('plugins.cancel')}</AlertDialogCancel>
-            <Button variant="outline" onClick={confirmSingleDisable}>
-              {t('plugins.disableOnlyThis', 'Disable only this')}
-            </Button>
-            <AlertDialogAction onClick={cascadeDisable}>
-              {t('plugins.cascadeDisable', 'Disable all')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </Card>
   );
 }
