@@ -608,7 +608,7 @@
     "currentPlanDesc": "Votre abonnement actif et les détails de facturation",
     "noSubscription": "Aucun abonnement actif trouvé.",
     "activatedModulesTitle": "Modules activés",
-    "activatedModulesDesc": "Modules inclus dans votre abonnement. Activez ou désactivez-les pour votre espace.",
+    "activatedModulesDesc": "Modules inclus dans votre abonnement. ",
     "openFullManager": "Gestionnaire complet",
     "perSeat": "siège",
     "billingInterval": "Intervalle de facturation",

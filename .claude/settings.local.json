@@ -80,7 +80,12 @@
       "Bash(grep -v \"^$\")",
       "Bash(grep -v \"node_modules\\\\|comment\\\\|//\")",
       "Bash(bash /tmp/check_perms.sh)",
-      "Bash(bash /tmp/find_unused.sh)"
+      "Bash(bash /tmp/find_unused.sh)",
+      "Bash(Sort-Object Name)",
+      "Bash([ -d \"$module/hooks\" ])",
+      "Bash(ls -1 __TRACKED_VAR__/hooks)",
+      "Bash([ -d \"$module/services\" ])",
+      "Bash(ls -1 __TRACKED_VAR__/services)"
     ],
     "additionalDirectories": [
       "C:\\Users\\iheb.chebbi\\Desktop\\FlowentraApp\\Backend\\Modules\\Offers\\DTOs",
