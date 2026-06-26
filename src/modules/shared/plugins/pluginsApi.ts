@@ -55,13 +55,14 @@ export const pluginsApi = {
       const data = await get<PluginActivation[]>('/api/plugins');
       return Array.isArray(data) ? data : [];
     } catch (err) {
-      // Endpoint missing / network down / 404 — surface a typed error so the UI
-      // can show a "Plugin management loading" state instead of silently
-      // pretending every plugin is enabled.
+      // API missing / 400 / 404 / network down → silent fallback.
+      // Returning [] lets the query succeed so React Query caches it with
+      // staleTime and stops refetching. Default-on semantics in usePlugins
+      // ensure all modules remain accessible when activations can't be loaded.
       if (import.meta.env.DEV) {
-        console.warn('[plugins] GET /api/plugins failed — API unavailable.', err);
+        console.warn('[plugins] GET /api/plugins failed — defaulting to all-enabled.', err);
       }
-      throw new PluginsApiUnavailableError(err);
+      return [];
     }
   },
 

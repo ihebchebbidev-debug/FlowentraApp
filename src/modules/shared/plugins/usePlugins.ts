@@ -36,18 +36,17 @@ export function usePlugins() {
     queryKey: QUERY_KEY,
     queryFn: async () => {
       const data = await pluginsApi.list();
-      // Persist last known good state so a future cold start (or transient
-      // network outage) can fall back to it instead of default-on.
-      writeCachedActivations(data);
+      // Persist last known good state so offline / cold-start renders have data.
+      if (data.length > 0) writeCachedActivations(data);
       return data;
     },
     staleTime: 5 * 60_000,
-    retry: (failCount, error) => {
-      // Don't retry on 400/404 — these are server config errors, not transient failures
-      const msg = error instanceof Error ? error.message : String(error);
-      if (/400|404|unable to resolve|plugin/i.test(msg)) return false;
-      return failCount < 1;
-    },
+    // pluginsApi.list() never throws — it returns [] on any error — so this
+    // retry path only triggers for genuine network failures (no response at all).
+    retry: 0,
+    // Don't re-fetch on component remount: [] is a valid "no activations" state
+    // and we don't want the PluginGate skeleton to flash on every navigation.
+    retryOnMount: false,
     // Seed React Query's cache with the persisted snapshot so the very first
     // render already reflects the tenant's last known activations.
     initialData: cachedActivations,
@@ -55,7 +54,6 @@ export function usePlugins() {
   });
 
   const isApiAvailable = !isApiError;
-  // True when the query failed but we are still showing a cached snapshot.
   const isUsingCachedFallback = isApiError && !!cachedActivations;
 
   /**
