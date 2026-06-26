@@ -32,7 +32,6 @@ import { installationsApi } from "@/services/api/installationsApi";
 import { notificationsApi } from "@/services/api/notificationsApi";
 import { toast } from "sonner";
 import { EditableEntityNumber } from "@/components/shared/EditableEntityNumber";
-import { TenantSelector } from "@/components/TenantSelector";
 import { checkDuplicateDocumentNumber } from "@/services/documentNumberValidator";
 
 interface ServiceOrderData {
@@ -572,7 +571,6 @@ export default function DispatchJobDetail() {
                   }}
                   className="text-xl font-bold"
                 />
-                <TenantSelector value={(dispatch as any)?.tenantId} onChange={() => {}} readOnly compact />
                 {/* Status flow – full width, scrollable */}
                 <div className="overflow-x-auto">
                   <DispatchStatusFlow
@@ -614,7 +612,6 @@ export default function DispatchJobDetail() {
                         return result.isDuplicate ? `This number already exists in ${result.foundIn}` : null;
                       }}
                     />
-                    <TenantSelector value={(dispatch as any)?.tenantId} onChange={() => {}} readOnly compact />
                   </div>
 
                   {/* Right: Status Flow + Actions */}
