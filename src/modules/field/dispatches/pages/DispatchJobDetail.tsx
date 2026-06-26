@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { ArrowLeft, Clock, MapPin, CheckCircle, AlertCircle, User, MoreVertical, Edit, Trash2, Camera, Building, ExternalLink, Play, ClipboardList, Share2, Phone, Mail, Wrench, Calendar, FileText } from "lucide-react";
+import { ArrowLeft, Clock, MapPin, CheckCircle, AlertCircle, User, MoreVertical, Edit, Trash2, Camera, Building, ExternalLink, Play, ClipboardList, Share2, Phone, Mail, Wrench, Calendar, FileText, LayoutDashboard, Briefcase, Timer, Package, Paperclip, ListChecks, Activity } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { ProfessionalShareModal } from "@/components/shared/ProfessionalShareModal";
 import { SendDispatchModal } from "../components/SendDispatchModal";
@@ -665,8 +666,26 @@ export default function DispatchJobDetail() {
 
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          {/* Enhanced tabs with icons */}
-          <div className="w-full mb-6">
+          {/* Mobile: select dropdown */}
+          <div className="md:hidden">
+            <Select value={activeTab} onValueChange={setActiveTab}>
+              <SelectTrigger className="w-full h-11 rounded-xl border-primary/20 bg-primary/5 font-medium shadow-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="overview"><span className="flex items-center gap-2"><LayoutDashboard className="h-4 w-4 text-primary" />{t('dispatch_detail.overview')}</span></SelectItem>
+                <SelectItem value="jobs"><span className="flex items-center gap-2"><Briefcase className="h-4 w-4 text-primary" />{t('tabs.jobs')}</span></SelectItem>
+                <SelectItem value="time_expenses"><span className="flex items-center gap-2"><Timer className="h-4 w-4 text-primary" />{t('tabs.time_expenses')}</span></SelectItem>
+                <SelectItem value="materials"><span className="flex items-center gap-2"><Package className="h-4 w-4 text-primary" />{t('dispatch_detail.materials')}</span></SelectItem>
+                <SelectItem value="attachments"><span className="flex items-center gap-2"><Paperclip className="h-4 w-4 text-primary" />{t('tabs.attachments')}</span></SelectItem>
+                <SelectItem value="checklists"><span className="flex items-center gap-2"><ListChecks className="h-4 w-4 text-primary" />{t('tabs.checklists')}</span></SelectItem>
+                <SelectItem value="activity"><span className="flex items-center gap-2"><Activity className="h-4 w-4 text-primary" />{t('tabs.activity')}</span></SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Desktop: scrollable tab pills */}
+          <div className="hidden md:block w-full mb-6">
             <TabsList className="w-full h-auto p-1 bg-muted/50 rounded-lg lg:grid lg:grid-cols-7 lg:gap-0">
               <div className="flex lg:contents overflow-x-auto mask-fade-right gap-1 lg:gap-0 pb-1 lg:pb-0">
                 <TabsTrigger value="overview" className="whitespace-nowrap px-4 py-2.5 min-w-[100px] flex-shrink-0 lg:flex-1 lg:min-w-0 text-sm font-medium">
@@ -692,6 +711,7 @@ export default function DispatchJobDetail() {
                 </TabsTrigger>
               </div>
             </TabsList>
+          </div>
           </div>
 
           {/* Overview Tab */}
