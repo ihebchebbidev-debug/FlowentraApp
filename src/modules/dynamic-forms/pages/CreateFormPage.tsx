@@ -27,7 +27,7 @@ export default function CreateFormPage() {
   const { isMainAdmin, hasPermission, isLoading: permissionsLoading } = usePermissions();
   const { logButtonClick } = useActionLogger('DynamicForms');
   
-  // Buaildar returnUrl for lookups navigation
+  // Buaildadr returnUrl for lookups navigation
   const currentPath = location.pathname;
   
   // Permission check
