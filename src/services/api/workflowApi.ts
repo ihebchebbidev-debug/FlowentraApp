@@ -313,7 +313,9 @@ export const workflowExecutionsApi = {
   // in try/catch and the backend also auto-triggers on status changes. Suppress the
   // global error toast so "Workflow N not found" (e.g. no default workflow configured)
   // never surfaces to the user.
-  triggerManual: async (workflowId: number, entityType: string, entityId: number): Promise<WorkflowExecution> => {
+  triggerManual: async (workflowId: number | null | undefined, entityType: string, entityId: number): Promise<WorkflowExecution> => {
+    // Skip if no valid workflow ID — workflowId 0 or null means "no specific workflow configured"
+    if (!workflowId) throw new Error('No workflow configured for this entity');
     const { data, error } = await apiFetch<WorkflowExecution>(`/api/workflow-executions/trigger-manual`, {
       method: 'POST',
       body: JSON.stringify({ workflowId, entityType, entityId }),

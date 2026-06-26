@@ -58,6 +58,8 @@ export function installIncidentMonitor(): void {
         healthFailStreak = 0;
         return;
       }
+      // 404 = endpoint doesn't exist on this backend — backend IS reachable, not a health failure
+      if (res.status === 404) return;
       healthFailStreak += 1;
       if (healthFailStreak >= 3 && !healthTicketSent) {
         healthTicketSent = true;
@@ -68,7 +70,7 @@ export function installIncidentMonitor(): void {
           endpoint: '/api/health',
           httpMethod: 'GET',
           module: 'infrastructure',
-          severity: 'critical',
+          severity: res.status >= 500 ? 'critical' : 'high',
         });
       }
     } catch (err) {

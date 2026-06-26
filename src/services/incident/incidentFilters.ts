@@ -23,6 +23,15 @@ const IGNORE_PATTERNS: RegExp[] = [
   /canceled/i,
   /signal is aborted/i,
   /network error when attempting to fetch resource/i, // transient during navigation
+  // Backend DI/config errors — server-side issue, not a frontend bug
+  /unable to resolve service for type/i,
+  /iPluginService/i,
+  /PluginsController/i,
+  // Workflow not configured — expected when no workflow is set up for an entity
+  /workflow \d+ not found/i,
+  /no workflow configured/i,
+  // Plugin API unavailable — backend config issue, gracefully handled in UI
+  /plugins api is unavailable/i,
 ];
 
 /** Benign 4xx — user/input errors, not bugs. */

@@ -41,8 +41,13 @@ export function usePlugins() {
       writeCachedActivations(data);
       return data;
     },
-    staleTime: 60_000,
-    retry: 1,
+    staleTime: 5 * 60_000,
+    retry: (failCount, error) => {
+      // Don't retry on 400/404 — these are server config errors, not transient failures
+      const msg = error instanceof Error ? error.message : String(error);
+      if (/400|404|unable to resolve|plugin/i.test(msg)) return false;
+      return failCount < 1;
+    },
     // Seed React Query's cache with the persisted snapshot so the very first
     // render already reflects the tenant's last known activations.
     initialData: cachedActivations,
