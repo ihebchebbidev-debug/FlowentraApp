@@ -5,16 +5,19 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
-  ArrowLeft, 
-  Edit, 
-  Package, 
+  ArrowLeft,
+  Edit,
+  Package,
   Loader2,
   LayoutDashboard,
   ClipboardList,
   FileText,
   ShoppingCart,
-  StickyNote
+  StickyNote,
+  Wrench,
+  FolderOpen,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
@@ -235,27 +238,57 @@ export default function InstallationDetail() {
       {/* Main Content with Tabs */}
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid grid-cols-3 md:grid-cols-6 gap-1 h-auto p-1">
-            <TabsTrigger value="overview" className="text-xs md:text-sm">
-              {t('detail.tabs.overview')}
-            </TabsTrigger>
-            <TabsTrigger value="serviceOrders" className="text-xs md:text-sm">
-              <span className="hidden md:inline">{t('detail.tabs.service_orders')}</span>
-              <span className="md:hidden">S.O.</span>
-            </TabsTrigger>
-            <TabsTrigger value="offers" className="text-xs md:text-sm">
-              {t('detail.tabs.offers')}
-            </TabsTrigger>
-            <TabsTrigger value="sales" className="text-xs md:text-sm">
-              {t('detail.tabs.sales')}
-            </TabsTrigger>
-            <TabsTrigger value="documents" className="text-xs md:text-sm">
-              {t('detail.tabs.documents')}
-            </TabsTrigger>
-            <TabsTrigger value="notes" className="text-xs md:text-sm">
-              {t('detail.tabs.notes')}
-            </TabsTrigger>
-          </TabsList>
+          {/* Mobile: Select dropdown */}
+          {(() => {
+            const TABS = [
+              { value: 'overview',      icon: LayoutDashboard, label: t('detail.tabs.overview') },
+              { value: 'serviceOrders', icon: Wrench,          label: t('detail.tabs.service_orders') },
+              { value: 'offers',        icon: FileText,        label: t('detail.tabs.offers') },
+              { value: 'sales',         icon: ShoppingCart,    label: t('detail.tabs.sales') },
+              { value: 'documents',     icon: FolderOpen,      label: t('detail.tabs.documents') },
+              { value: 'notes',         icon: StickyNote,      label: t('detail.tabs.notes') },
+            ];
+            const current = TABS.find(tab => tab.value === activeTab);
+            return (
+              <div className="md:hidden">
+                <Select value={activeTab} onValueChange={setActiveTab}>
+                  <SelectTrigger className="w-full h-11 rounded-xl border-primary/20 bg-primary/5 text-foreground font-medium shadow-sm focus:ring-primary/30">
+                    <SelectValue>
+                      {current && (
+                        <span className="flex items-center gap-2">
+                          <current.icon className="h-4 w-4 text-primary flex-shrink-0" />
+                          {current.label}
+                        </span>
+                      )}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="bg-white dark:bg-card rounded-xl shadow-lg border-border/60">
+                    {TABS.map(({ value, icon: Icon, label }) => (
+                      <SelectItem key={value} value={value} className="rounded-lg cursor-pointer py-2.5">
+                        <span className="flex items-center gap-2.5">
+                          <span className={`p-1 rounded-md ${activeTab === value ? 'bg-primary/10' : 'bg-muted'}`}>
+                            <Icon className={`h-3.5 w-3.5 ${activeTab === value ? 'text-primary' : 'text-muted-foreground'}`} />
+                          </span>
+                          <span className={activeTab === value ? 'text-primary font-medium' : ''}>{label}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            );
+          })()}
+          {/* Desktop: tab pills */}
+          <div className="hidden md:block">
+            <TabsList className="grid grid-cols-6 gap-1 h-auto p-1">
+              <TabsTrigger value="overview" className="text-sm">{t('detail.tabs.overview')}</TabsTrigger>
+              <TabsTrigger value="serviceOrders" className="text-sm">{t('detail.tabs.service_orders')}</TabsTrigger>
+              <TabsTrigger value="offers" className="text-sm">{t('detail.tabs.offers')}</TabsTrigger>
+              <TabsTrigger value="sales" className="text-sm">{t('detail.tabs.sales')}</TabsTrigger>
+              <TabsTrigger value="documents" className="text-sm">{t('detail.tabs.documents')}</TabsTrigger>
+              <TabsTrigger value="notes" className="text-sm">{t('detail.tabs.notes')}</TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* Overview Tab */}
           <TabsContent value="overview">

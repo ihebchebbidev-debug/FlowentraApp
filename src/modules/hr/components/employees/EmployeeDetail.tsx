@@ -9,7 +9,7 @@ import { EmployeeEditForm, type EmployeeEditFormValues } from './EmployeeEditFor
 import { useToast } from '@/hooks/use-toast';
 import { HRPageHeader } from '../HRPageHeader';
 import { Badge } from '@/components/ui/badge';
-import { Building2, BriefcaseBusiness, User, Plus, Trash2, History as HistoryIcon } from 'lucide-react';
+import { Building2, BriefcaseBusiness, User, Plus, Trash2, History as HistoryIcon, DollarSign, Award, Calendar, FileText } from 'lucide-react';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { cn } from '@/lib/utils';
 import { usePlanningLeaves } from '../../hooks/usePlanning';
@@ -34,6 +34,7 @@ export function EmployeeDetail() {
   const userId = Number(id);
   const { t } = useTranslation('hr');
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState('profile');
   const { employeesQuery, upsertSalaryConfig, updateUser } = useEmployees();
   const planningLeavesQuery = usePlanningLeaves(userId);
   const { activeRateQuery } = useCnssRates();
@@ -200,16 +201,60 @@ export function EmployeeDetail() {
           </CardContent>
         </Card>
 
-        <Tabs defaultValue="profile" className="w-full space-y-4 mt-4">
-          <TabsList className={cn('w-full h-auto p-1 bg-muted/50 rounded-lg grid gap-1', 'grid-cols-3 sm:grid-cols-7')}>
-            <TabsTrigger value="profile">{t('tabs.profile')}</TabsTrigger>
-            <TabsTrigger value="salary">{t('tabs.salary')}</TabsTrigger>
-            <TabsTrigger value="cnss">{t('tabs.cnss')}</TabsTrigger>
-            <TabsTrigger value="bonuses">{t('tabs.bonuses')}</TabsTrigger>
-            <TabsTrigger value="leaves">{t('leaves')}</TabsTrigger>
-            <TabsTrigger value="documents">{t('tabs.documents')}</TabsTrigger>
-            <TabsTrigger value="history">{t('tabs.history')}</TabsTrigger>
-          </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-4 mt-4">
+          {/* Mobile: Select dropdown */}
+          {(() => {
+            const TABS = [
+              { value: 'profile',   icon: User,         label: t('tabs.profile') },
+              { value: 'salary',    icon: DollarSign,   label: t('tabs.salary') },
+              { value: 'cnss',      icon: Building2,    label: t('tabs.cnss') },
+              { value: 'bonuses',   icon: Award,        label: t('tabs.bonuses') },
+              { value: 'leaves',    icon: Calendar,     label: t('leaves') },
+              { value: 'documents', icon: FileText,     label: t('tabs.documents') },
+              { value: 'history',   icon: HistoryIcon,  label: t('tabs.history') },
+            ];
+            const current = TABS.find(tab => tab.value === activeTab);
+            return (
+              <div className="md:hidden">
+                <Select value={activeTab} onValueChange={setActiveTab}>
+                  <SelectTrigger className="w-full h-11 rounded-xl border-primary/20 bg-primary/5 text-foreground font-medium shadow-sm focus:ring-primary/30">
+                    <SelectValue>
+                      {current && (
+                        <span className="flex items-center gap-2">
+                          <current.icon className="h-4 w-4 text-primary flex-shrink-0" />
+                          {current.label}
+                        </span>
+                      )}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="bg-white dark:bg-card rounded-xl shadow-lg border-border/60">
+                    {TABS.map(({ value, icon: Icon, label }) => (
+                      <SelectItem key={value} value={value} className="rounded-lg cursor-pointer py-2.5">
+                        <span className="flex items-center gap-2.5">
+                          <span className={`p-1 rounded-md ${activeTab === value ? 'bg-primary/10' : 'bg-muted'}`}>
+                            <Icon className={`h-3.5 w-3.5 ${activeTab === value ? 'text-primary' : 'text-muted-foreground'}`} />
+                          </span>
+                          <span className={activeTab === value ? 'text-primary font-medium' : ''}>{label}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            );
+          })()}
+          {/* Desktop: tab pills */}
+          <div className="hidden md:block">
+            <TabsList className={cn('w-full h-auto p-1 bg-muted/50 rounded-lg grid gap-1', 'grid-cols-7')}>
+              <TabsTrigger value="profile">{t('tabs.profile')}</TabsTrigger>
+              <TabsTrigger value="salary">{t('tabs.salary')}</TabsTrigger>
+              <TabsTrigger value="cnss">{t('tabs.cnss')}</TabsTrigger>
+              <TabsTrigger value="bonuses">{t('tabs.bonuses')}</TabsTrigger>
+              <TabsTrigger value="leaves">{t('leaves')}</TabsTrigger>
+              <TabsTrigger value="documents">{t('tabs.documents')}</TabsTrigger>
+              <TabsTrigger value="history">{t('tabs.history')}</TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="profile" className="mt-3 space-y-3">
             {employeesQuery.isLoading ? (

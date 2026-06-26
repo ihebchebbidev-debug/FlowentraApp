@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   ArrowLeft, Edit, GitBranch, Trash2, Loader2, Building2, User, Calendar,
   DollarSign, Target, Send, ShoppingCart, Briefcase, FileText, CheckCircle2,
   Package, Wrench, ExternalLink, Mail, Phone, MapPin, FileDown, MoreVertical,
+  LayoutDashboard, Activity, FolderOpen, CheckSquare, StickyNote,
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
@@ -42,6 +44,7 @@ export function DealDetail() {
   const { format: formatCurrency } = useCurrency();
   const [deal, setDeal] = useState<Deal | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('overview');
   const [convertOpen, setConvertOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
@@ -225,15 +228,58 @@ export function DealDetail() {
           <Metric icon={Send} label={t("detail.source")} value={deal.source || "—"} />
         </div>
 
-        <Tabs defaultValue="overview">
-          <TabsList className="w-full h-auto p-1 bg-muted/50 rounded-lg grid grid-cols-3 sm:grid-cols-6">
-            <TabsTrigger value="overview">{t("detail.tabs.overview")}</TabsTrigger>
-            <TabsTrigger value="items">{t("detail.tabs.items")}</TabsTrigger>
-            <TabsTrigger value="documents">{t("detail.tabs.documents")}</TabsTrigger>
-            <TabsTrigger value="checklists">{t("detail.tabs.checklists")}</TabsTrigger>
-            <TabsTrigger value="activity">{t("detail.tabs.activity")}</TabsTrigger>
-            <TabsTrigger value="notes">{t("detail.tabs.notes")}</TabsTrigger>
-          </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          {/* Mobile: Select dropdown */}
+          {(() => {
+            const TABS = [
+              { value: 'overview',   icon: LayoutDashboard, label: t('detail.tabs.overview') },
+              { value: 'items',      icon: Package,         label: t('detail.tabs.items') },
+              { value: 'documents',  icon: FolderOpen,      label: t('detail.tabs.documents') },
+              { value: 'checklists', icon: CheckSquare,     label: t('detail.tabs.checklists') },
+              { value: 'activity',   icon: Activity,        label: t('detail.tabs.activity') },
+              { value: 'notes',      icon: StickyNote,      label: t('detail.tabs.notes') },
+            ];
+            const current = TABS.find(tab => tab.value === activeTab);
+            return (
+              <div className="md:hidden mb-4">
+                <Select value={activeTab} onValueChange={setActiveTab}>
+                  <SelectTrigger className="w-full h-11 rounded-xl border-primary/20 bg-primary/5 text-foreground font-medium shadow-sm focus:ring-primary/30">
+                    <SelectValue>
+                      {current && (
+                        <span className="flex items-center gap-2">
+                          <current.icon className="h-4 w-4 text-primary flex-shrink-0" />
+                          {current.label}
+                        </span>
+                      )}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="bg-white dark:bg-card rounded-xl shadow-lg border-border/60">
+                    {TABS.map(({ value, icon: Icon, label }) => (
+                      <SelectItem key={value} value={value} className="rounded-lg cursor-pointer py-2.5">
+                        <span className="flex items-center gap-2.5">
+                          <span className={`p-1 rounded-md ${activeTab === value ? 'bg-primary/10' : 'bg-muted'}`}>
+                            <Icon className={`h-3.5 w-3.5 ${activeTab === value ? 'text-primary' : 'text-muted-foreground'}`} />
+                          </span>
+                          <span className={activeTab === value ? 'text-primary font-medium' : ''}>{label}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            );
+          })()}
+          {/* Desktop: tab pills */}
+          <div className="hidden md:block">
+            <TabsList className="w-full h-auto p-1 bg-muted/50 rounded-lg grid grid-cols-6">
+              <TabsTrigger value="overview">{t("detail.tabs.overview")}</TabsTrigger>
+              <TabsTrigger value="items">{t("detail.tabs.items")}</TabsTrigger>
+              <TabsTrigger value="documents">{t("detail.tabs.documents")}</TabsTrigger>
+              <TabsTrigger value="checklists">{t("detail.tabs.checklists")}</TabsTrigger>
+              <TabsTrigger value="activity">{t("detail.tabs.activity")}</TabsTrigger>
+              <TabsTrigger value="notes">{t("detail.tabs.notes")}</TabsTrigger>
+            </TabsList>
+          </div>
 
           <div className="mt-6">
             <TabsContent value="overview"><OverviewTab deal={deal} /></TabsContent>

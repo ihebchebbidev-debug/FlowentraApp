@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Send, Package, FileText, CheckCircle, User, Building2, MapPin, ClipboardList, Download, Pencil, Plus, Trash2, Save, X, Loader2, FileDown } from "lucide-react";
+import { Send, Package, FileText, CheckCircle, User, Building2, MapPin, ClipboardList, Download, Pencil, Plus, Trash2, Save, X, Loader2, FileDown, LayoutDashboard, PackageCheck, Activity } from "lucide-react";
 import { purchaseOrderService, goodsReceiptService, supplierInvoiceService } from "../services/purchaseService";
 import { PurchasePageHeader } from "../components/PurchasePageHeader";
 import { PurchaseErrorBoundary, PurchaseErrorFallback } from "../components/PurchaseErrorBoundary";
@@ -311,13 +311,55 @@ function PurchaseOrderDetailPage() {
 
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="h-8">
-            <TabsTrigger value="overview" className="text-xs">{t('tabs.overview')}</TabsTrigger>
-            <TabsTrigger value="items" className="text-xs">{t('tabs.items')}</TabsTrigger>
-            <TabsTrigger value="receipts" className="text-xs">{t('tabs.receipts')} ({receipts.length})</TabsTrigger>
-            <TabsTrigger value="invoices" className="text-xs">{t('tabs.invoices')} ({invoices.length})</TabsTrigger>
-            <TabsTrigger value="activity" className="text-xs">{t('tabs.activity')}</TabsTrigger>
-          </TabsList>
+          {/* Mobile: Select dropdown */}
+          {(() => {
+            const TABS = [
+              { value: 'overview',  icon: LayoutDashboard, label: t('tabs.overview') },
+              { value: 'items',     icon: Package,         label: t('tabs.items') },
+              { value: 'receipts',  icon: PackageCheck,    label: `${t('tabs.receipts')} (${receipts.length})` },
+              { value: 'invoices',  icon: FileText,        label: `${t('tabs.invoices')} (${invoices.length})` },
+              { value: 'activity',  icon: Activity,        label: t('tabs.activity') },
+            ];
+            const current = TABS.find(tab => tab.value === activeTab);
+            return (
+              <div className="md:hidden mb-4">
+                <Select value={activeTab} onValueChange={setActiveTab}>
+                  <SelectTrigger className="w-full h-11 rounded-xl border-primary/20 bg-primary/5 text-foreground font-medium shadow-sm focus:ring-primary/30">
+                    <SelectValue>
+                      {current && (
+                        <span className="flex items-center gap-2">
+                          <current.icon className="h-4 w-4 text-primary flex-shrink-0" />
+                          {current.label}
+                        </span>
+                      )}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="bg-white dark:bg-card rounded-xl shadow-lg border-border/60">
+                    {TABS.map(({ value, icon: Icon, label }) => (
+                      <SelectItem key={value} value={value} className="rounded-lg cursor-pointer py-2.5">
+                        <span className="flex items-center gap-2.5">
+                          <span className={`p-1 rounded-md ${activeTab === value ? 'bg-primary/10' : 'bg-muted'}`}>
+                            <Icon className={`h-3.5 w-3.5 ${activeTab === value ? 'text-primary' : 'text-muted-foreground'}`} />
+                          </span>
+                          <span className={activeTab === value ? 'text-primary font-medium' : ''}>{label}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            );
+          })()}
+          {/* Desktop: tab pills */}
+          <div className="hidden md:block">
+            <TabsList className="h-8">
+              <TabsTrigger value="overview" className="text-xs">{t('tabs.overview')}</TabsTrigger>
+              <TabsTrigger value="items" className="text-xs">{t('tabs.items')}</TabsTrigger>
+              <TabsTrigger value="receipts" className="text-xs">{t('tabs.receipts')} ({receipts.length})</TabsTrigger>
+              <TabsTrigger value="invoices" className="text-xs">{t('tabs.invoices')} ({invoices.length})</TabsTrigger>
+              <TabsTrigger value="activity" className="text-xs">{t('tabs.activity')}</TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="overview" className="mt-4">
             <div className="grid md:grid-cols-2 gap-4">

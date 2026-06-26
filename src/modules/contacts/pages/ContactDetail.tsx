@@ -7,14 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useLayoutModeContext } from "@/hooks/useLayoutMode";
 import AddNoteModal from "../components/AddNoteModal";
 import { NewOfferInput } from "../components/AddOfferModal";
 import AddTagModal from "../components/AddTagModal";
 import { ContactProjectsManager } from "../components/ContactProjectsManager";
 import { ContactTasksManager } from "../components/ContactTasksManager";
 import { ContactSales } from "../components/ContactSales";
-import { TrendingUp, FileText, PlusCircle } from "lucide-react";
+import { TrendingUp, FileText, PlusCircle, LayoutDashboard, FolderKanban, CheckSquare, StickyNote } from "lucide-react";
 import { ContactDetailHeader } from "../components/detail/ContactDetailHeader";
 import { ContactOverviewCards } from "../components/detail/ContactOverviewCards";
 import { ContactNotesSection } from "../components/detail/ContactNotesSection";
@@ -30,7 +29,6 @@ export default function ContactDetail() {
   const { t } = useTranslation('contacts');
   const { t: tDashboard } = useTranslation('dashboard');
   const { toast } = useToast();
-  const { isMobile } = useLayoutModeContext();
   const [activeTab, setActiveTab] = useState("overview");
   const [contact, setContact] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -135,40 +133,60 @@ export default function ContactDetail() {
       {/* Content */}
       <div className="p-3 sm:p-6 max-w-7xl mx-auto">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          {/* Responsive Tabs - Dropdown on mobile, grid on desktop */}
-          <div className="border-b border-border mb-6">
-            {isMobile ? (
-              <Select value={activeTab} onValueChange={setActiveTab}>
-                <SelectTrigger className="w-full bg-background">
-                  <SelectValue>
-                    {activeTab === 'overview' && t('detail.tabs.overview')}
-                    {activeTab === 'projects' && t('detail.tabs.projects')}
-                    {activeTab === 'todos' && t('detail.tabs.tasks')}
-                    {activeTab === 'sales' && t('detail.tabs.sales')}
-                    {activeTab === 'notes' && t('detail.tabs.notes')}
-                    {activeTab === 'documents' && t('detail.tabs.files')}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-card">
-                  <SelectItem value="overview">{t('detail.tabs.overview')}</SelectItem>
-                  <SelectItem value="projects">{t('detail.tabs.projects')}</SelectItem>
-                  <SelectItem value="todos">{t('detail.tabs.tasks')}</SelectItem>
-                  <SelectItem value="sales">{t('detail.tabs.sales')}</SelectItem>
-                  <SelectItem value="notes">{t('detail.tabs.notes')}</SelectItem>
-                  <SelectItem value="documents">{t('detail.tabs.files')}</SelectItem>
-                </SelectContent>
-              </Select>
-            ) : (
-              <TabsList className="inline-flex h-auto p-1 bg-muted rounded-lg w-full overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent md:grid md:grid-cols-3 lg:grid-cols-6 md:w-full">
-                <TabsTrigger value="overview" className="whitespace-nowrap px-3 py-2 text-sm">{t('detail.tabs.overview')}</TabsTrigger>
-                <TabsTrigger value="projects" className="whitespace-nowrap px-3 py-2 text-sm">{t('detail.tabs.projects')}</TabsTrigger>
-                <TabsTrigger value="todos" className="whitespace-nowrap px-3 py-2 text-sm">{t('detail.tabs.tasks')}</TabsTrigger>
-                <TabsTrigger value="sales" className="whitespace-nowrap px-3 py-2 text-sm">{t('detail.tabs.sales')}</TabsTrigger>
-                <TabsTrigger value="notes" className="whitespace-nowrap px-3 py-2 text-sm">{t('detail.tabs.notes')}</TabsTrigger>
-                <TabsTrigger value="documents" className="whitespace-nowrap px-3 py-2 text-sm">{t('detail.tabs.files')}</TabsTrigger>
-              </TabsList>
-            )}
-          </div>
+          {/* Tabs navigation */}
+          {(() => {
+            const TABS = [
+              { value: 'overview',   icon: LayoutDashboard, label: t('detail.tabs.overview') },
+              { value: 'projects',   icon: FolderKanban,    label: t('detail.tabs.projects') },
+              { value: 'todos',      icon: CheckSquare,     label: t('detail.tabs.tasks') },
+              { value: 'sales',      icon: TrendingUp,      label: t('detail.tabs.sales') },
+              { value: 'notes',      icon: StickyNote,      label: t('detail.tabs.notes') },
+              { value: 'documents',  icon: FileText,        label: t('detail.tabs.files') },
+            ];
+            const current = TABS.find(tab => tab.value === activeTab);
+            return (
+              <div className="border-b border-border mb-6">
+                {/* Mobile: styled dropdown */}
+                <div className="md:hidden py-2">
+                  <Select value={activeTab} onValueChange={setActiveTab}>
+                    <SelectTrigger className="w-full h-11 rounded-xl border-primary/20 bg-primary/5 text-foreground font-medium shadow-sm focus:ring-primary/30">
+                      <SelectValue>
+                        {current && (
+                          <span className="flex items-center gap-2">
+                            <current.icon className="h-4 w-4 text-primary flex-shrink-0" />
+                            {current.label}
+                          </span>
+                        )}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="bg-white dark:bg-card rounded-xl shadow-lg border-border/60">
+                      {TABS.map(({ value, icon: Icon, label }) => (
+                        <SelectItem key={value} value={value} className="rounded-lg cursor-pointer py-2.5">
+                          <span className="flex items-center gap-2.5">
+                            <span className={`p-1 rounded-md ${activeTab === value ? 'bg-primary/10' : 'bg-muted'}`}>
+                              <Icon className={`h-3.5 w-3.5 ${activeTab === value ? 'text-primary' : 'text-muted-foreground'}`} />
+                            </span>
+                            <span className={activeTab === value ? 'text-primary font-medium' : ''}>{label}</span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {/* Desktop: tab pills */}
+                <div className="hidden md:block">
+                  <TabsList className="inline-flex h-auto p-1 bg-muted rounded-lg w-full md:grid md:grid-cols-3 lg:grid-cols-6 md:w-full">
+                    <TabsTrigger value="overview" className="whitespace-nowrap px-3 py-2 text-sm">{t('detail.tabs.overview')}</TabsTrigger>
+                    <TabsTrigger value="projects" className="whitespace-nowrap px-3 py-2 text-sm">{t('detail.tabs.projects')}</TabsTrigger>
+                    <TabsTrigger value="todos" className="whitespace-nowrap px-3 py-2 text-sm">{t('detail.tabs.tasks')}</TabsTrigger>
+                    <TabsTrigger value="sales" className="whitespace-nowrap px-3 py-2 text-sm">{t('detail.tabs.sales')}</TabsTrigger>
+                    <TabsTrigger value="notes" className="whitespace-nowrap px-3 py-2 text-sm">{t('detail.tabs.notes')}</TabsTrigger>
+                    <TabsTrigger value="documents" className="whitespace-nowrap px-3 py-2 text-sm">{t('detail.tabs.files')}</TabsTrigger>
+                  </TabsList>
+                </div>
+              </div>
+            );
+          })()}
 
           <TabsContent value="overview" className="mt-0 space-y-4 sm:space-y-6">
             <ContactOverviewCards contact={contact} tags={tags} onAddTag={() => setIsAddTagOpen(true)} />

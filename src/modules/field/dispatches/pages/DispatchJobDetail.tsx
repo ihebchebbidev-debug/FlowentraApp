@@ -667,22 +667,46 @@ export default function DispatchJobDetail() {
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           {/* Mobile: select dropdown */}
-          <div className="md:hidden">
-            <Select value={activeTab} onValueChange={setActiveTab}>
-              <SelectTrigger className="w-full h-11 rounded-xl border-primary/20 bg-primary/5 font-medium shadow-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="overview"><span className="flex items-center gap-2"><LayoutDashboard className="h-4 w-4 text-primary" />{t('dispatch_detail.overview')}</span></SelectItem>
-                <SelectItem value="jobs"><span className="flex items-center gap-2"><Briefcase className="h-4 w-4 text-primary" />{t('tabs.jobs')}</span></SelectItem>
-                <SelectItem value="time_expenses"><span className="flex items-center gap-2"><Timer className="h-4 w-4 text-primary" />{t('tabs.time_expenses')}</span></SelectItem>
-                <SelectItem value="materials"><span className="flex items-center gap-2"><Package className="h-4 w-4 text-primary" />{t('dispatch_detail.materials')}</span></SelectItem>
-                <SelectItem value="attachments"><span className="flex items-center gap-2"><Paperclip className="h-4 w-4 text-primary" />{t('tabs.attachments')}</span></SelectItem>
-                <SelectItem value="checklists"><span className="flex items-center gap-2"><ListChecks className="h-4 w-4 text-primary" />{t('tabs.checklists')}</span></SelectItem>
-                <SelectItem value="activity"><span className="flex items-center gap-2"><Activity className="h-4 w-4 text-primary" />{t('tabs.activity')}</span></SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {(() => {
+            const TABS = [
+              { value: 'overview',      icon: LayoutDashboard, label: t('dispatch_detail.overview') },
+              { value: 'jobs',          icon: Briefcase,        label: t('tabs.jobs') },
+              { value: 'time_expenses', icon: Timer,            label: t('tabs.time_expenses') },
+              { value: 'materials',     icon: Package,          label: t('dispatch_detail.materials') },
+              { value: 'attachments',   icon: Paperclip,        label: t('tabs.attachments') },
+              { value: 'checklists',    icon: ListChecks,       label: t('tabs.checklists') },
+              { value: 'activity',      icon: Activity,         label: t('tabs.activity') },
+            ];
+            const current = TABS.find(tab => tab.value === activeTab);
+            return (
+              <div className="md:hidden">
+                <Select value={activeTab} onValueChange={setActiveTab}>
+                  <SelectTrigger className="w-full h-11 rounded-xl border-primary/20 bg-primary/5 text-foreground font-medium shadow-sm focus:ring-primary/30">
+                    <SelectValue>
+                      {current && (
+                        <span className="flex items-center gap-2">
+                          <current.icon className="h-4 w-4 text-primary flex-shrink-0" />
+                          {current.label}
+                        </span>
+                      )}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="bg-white dark:bg-card rounded-xl shadow-lg border-border/60">
+                    {TABS.map(({ value, icon: Icon, label }) => (
+                      <SelectItem key={value} value={value} className="rounded-lg cursor-pointer py-2.5">
+                        <span className="flex items-center gap-2.5">
+                          <span className={`p-1 rounded-md ${activeTab === value ? 'bg-primary/10' : 'bg-muted'}`}>
+                            <Icon className={`h-3.5 w-3.5 ${activeTab === value ? 'text-primary' : 'text-muted-foreground'}`} />
+                          </span>
+                          <span className={activeTab === value ? 'text-primary font-medium' : ''}>{label}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            );
+          })()}
 
           {/* Desktop: scrollable tab pills */}
           <div className="hidden md:block w-full mb-6">
@@ -711,7 +735,6 @@ export default function DispatchJobDetail() {
                 </TabsTrigger>
               </div>
             </TabsList>
-          </div>
           </div>
 
           {/* Overview Tab */}
