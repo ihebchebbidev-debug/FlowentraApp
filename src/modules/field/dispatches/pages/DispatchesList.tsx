@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Input } from "@/components/ui/input";
 import { useTranslation } from "react-i18next";
 import { getStatusColorClass } from "@/config/entity-statuses";
 import { useNavigate } from "react-router-dom";
@@ -42,7 +43,9 @@ import {
   MoreVertical,
   Loader2,
   Play,
-  ClipboardList
+  ClipboardList,
+  SlidersHorizontal,
+  Search
 } from "lucide-react";
 import { mockDispatches } from "../data";
 import { DispatchesAutopilotDemo } from "../components/onboarding/DispatchesAutopilotDemo";
@@ -74,6 +77,8 @@ export default function DispatchesList() {
   // Single delete state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [dispatchToDelete, setDispatchToDelete] = useState<DispatchJob | null>(null);
+
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   // Bulk selection state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -253,7 +258,83 @@ export default function DispatchesList() {
 
       <div className="px-4 py-6">
         {/* Filters */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+
+        {/* Mobile toolbar */}
+        <div className="md:hidden flex items-center gap-2 mb-2">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              className="pl-9 h-9"
+              placeholder={t("dispatches.search_placeholder")}
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 w-9 p-0 shrink-0 relative"
+            onClick={() => setShowMobileFilters(v => !v)}
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            {statusFilter !== 'all' && (
+              <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-primary text-[9px] text-white flex items-center justify-center font-bold">1</span>
+            )}
+          </Button>
+          <Button
+            variant={showMap ? 'default' : 'outline'}
+            size="sm"
+            className={`h-9 w-9 p-0 shrink-0 ${showMap ? 'bg-primary text-white hover:bg-primary/90' : ''}`}
+            onClick={() => setShowMap(!showMap)}
+          >
+            <Map className={`h-4 w-4 ${showMap ? 'text-white' : ''}`} />
+          </Button>
+          {hasCreateAccess && (
+            <CreateActionButton
+              size="sm"
+              className="h-9 shrink-0"
+              onClick={() => navigate('/dashboard/field/dispatches/create')}
+            >
+              <Plus className="h-4 w-4" />
+            </CreateActionButton>
+          )}
+        </div>
+
+        {/* Mobile collapsible filter panel */}
+        {showMobileFilters && (
+          <div className="md:hidden mt-2 grid grid-cols-2 gap-2 pb-2 mb-2">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="col-span-2 px-3 py-2 h-9 border border-border rounded-md bg-background text-foreground w-full text-sm"
+            >
+              <option value="all">{t("dispatches.all_statuses")}</option>
+              <option value="pending">{t("dispatches.statuses.pending")}</option>
+              <option value="planned">{t("dispatches.statuses.planned")}</option>
+              <option value="confirmed">{t("dispatches.statuses.confirmed")}</option>
+              <option value="rejected">{t("dispatches.statuses.rejected")}</option>
+              <option value="in_progress">{t("dispatches.statuses.in_progress")}</option>
+              <option value="completed">{t("dispatches.statuses.completed")}</option>
+            </select>
+            <Button variant="outline" size="sm" className="h-9 gap-1.5" onClick={() => setShowExportModal(true)}>
+              <Download className="h-4 w-4" />
+              {t('common.export')}
+            </Button>
+            {statusFilter !== 'all' && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-9 text-muted-foreground hover:text-foreground"
+                onClick={() => setStatusFilter('all')}
+              >
+                Clear filters
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Desktop toolbar — unchanged */}
+        <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="sm:col-span-2 md:col-span-2">
             <CollapsibleSearch
               placeholder={t("dispatches.search_placeholder")}

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, Search, Globe, Zap, BarChart3, Copy, MoreHorizontal, Eye, Pencil, Trash2, ArrowDownLeft, ArrowUpDown, SendHorizonal } from 'lucide-react';
+import { Plus, Search, Globe, Zap, BarChart3, Copy, MoreHorizontal, Eye, Pencil, Trash2, ArrowDownLeft, ArrowUpDown, SendHorizonal, Webhook, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -101,7 +101,7 @@ export function ExternalEndpointsList() {
         </div>
       </div>
 
-      {/* Table */}
+      {/* List / Table */}
       {loading ? (
         <div className="flex items-center justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>
       ) : endpoints.length === 0 ? (
@@ -112,72 +112,169 @@ export function ExternalEndpointsList() {
           <Button onClick={() => navigate('create')} className="mt-4 gap-2"><Plus className="h-4 w-4" />{t('external.createEndpoint')}</Button>
         </CardContent></Card>
       ) : (
-        <Card>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('external.table.name')}</TableHead>
-                <TableHead>{t('external.table.slug')}</TableHead>
-                <TableHead>{t('external.table.status')}</TableHead>
-                <TableHead className="hidden sm:table-cell">{t('external.table.direction', 'Flow')}</TableHead>
-                <TableHead className="text-center">{t('external.table.received')}</TableHead>
-                <TableHead className="text-center hidden md:table-cell">{t('external.table.sent', 'Sent')}</TableHead>
-                <TableHead>{t('external.table.created')}</TableHead>
-                <TableHead className="w-[50px]">{t('external.table.actions')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {endpoints.map((ep) => {
-                const isBidirectional = !!ep.webhookForwardUrl;
-                return (
-                <TableRow key={ep.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`${ep.id}`)}>
-                  <TableCell className="font-medium">{ep.name}</TableCell>
-                  <TableCell><code className="text-xs bg-muted px-1.5 py-0.5 rounded">{ep.slug}</code></TableCell>
-                  <TableCell>
-                    <Badge variant={ep.isActive ? 'default' : 'secondary'}>
-                      {ep.isActive ? t('external.detail.active') : t('external.detail.inactive')}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell">
-                    {isBidirectional ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-600 bg-blue-50 dark:bg-blue-950/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-full px-2 py-0.5">
-                        <ArrowUpDown className="h-3 w-3" />{t('external.detail.flowBidirectional', 'In + Out')}
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-full px-2 py-0.5">
-                        <ArrowDownLeft className="h-3 w-3" />{t('external.detail.flowInbound', 'Inbound')}
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-center">{ep.totalReceived}</TableCell>
-                  <TableCell className="text-center hidden md:table-cell text-muted-foreground">{ep.totalSent > 0 ? ep.totalSent : '—'}</TableCell>
-                  <TableCell className="text-muted-foreground text-sm">{new Date(ep.createdAt).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <Button variant="ghost" size="icon-sm"><MoreHorizontal className="h-4 w-4" /></Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`${ep.id}`); }}>
-                          <Eye className="h-4 w-4 mr-2" />{t('external.actions.view')}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`${ep.id}/edit`); }}>
-                          <Pencil className="h-4 w-4 mr-2" />{t('external.actions.edit')}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); copyUrl(ep.slug); }}>
-                          <Copy className="h-4 w-4 mr-2" />{t('external.actions.copyUrl')}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteId(ep.id); }}>
-                          <Trash2 className="h-4 w-4 mr-2" />{t('external.actions.delete')}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+        <Card className="overflow-hidden">
+          {/* Mobile cards */}
+          <div className="md:hidden divide-y divide-border/50">
+            {endpoints.map((ep) => {
+              const isBidirectional = !!ep.webhookForwardUrl;
+              return (
+                <div
+                  key={ep.id}
+                  className="p-4 bg-card hover:bg-muted/30 transition-colors cursor-pointer"
+                  onClick={() => navigate(`${ep.id}`)}
+                >
+                  {/* Header: icon tile + name + active badge */}
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      {isBidirectional
+                        ? <Webhook className="h-4 w-4 text-primary" />
+                        : <Globe className="h-4 w-4 text-primary" />
+                      }
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-semibold text-sm text-foreground leading-snug line-clamp-1 flex-1">{ep.name}</p>
+                        <Badge variant={ep.isActive ? 'default' : 'secondary'} className="text-[10px] px-2 py-0.5 shrink-0">
+                          {ep.isActive ? t('external.detail.active') : t('external.detail.inactive')}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5 font-mono">{ep.slug}</p>
+                    </div>
+                  </div>
+
+                  {/* Details row */}
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pl-12 mt-2">
+                    {/* Direction badge */}
+                    <div className="flex items-center gap-1.5">
+                      {isBidirectional ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-blue-600 bg-blue-50 dark:bg-blue-950/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-full px-2 py-0.5">
+                          <ArrowUpDown className="h-3 w-3" />{t('external.detail.flowBidirectional', 'In + Out')}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-full px-2 py-0.5">
+                          <ArrowDownLeft className="h-3 w-3" />{t('external.detail.flowInbound', 'Inbound')}
+                        </span>
+                      )}
+                    </div>
+                    {/* Received count */}
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Activity className="h-3 w-3 shrink-0" />
+                      <span>{ep.totalReceived} {t('external.table.received')}</span>
+                    </div>
+                    {/* Created date */}
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <span>{new Date(ep.createdAt).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+
+                  {/* Footer: action buttons */}
+                  <div className="flex items-center justify-end pl-12 mt-3 gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs gap-1"
+                      onClick={(e) => { e.stopPropagation(); navigate(`${ep.id}`); }}
+                    >
+                      <Eye className="h-3 w-3" />{t('external.actions.view')}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs gap-1"
+                      onClick={(e) => { e.stopPropagation(); navigate(`${ep.id}/edit`); }}
+                    >
+                      <Pencil className="h-3 w-3" />{t('external.actions.edit')}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs gap-1"
+                      onClick={(e) => { e.stopPropagation(); copyUrl(ep.slug); }}
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs gap-1 text-destructive hover:text-destructive"
+                      onClick={(e) => { e.stopPropagation(); setDeleteId(ep.id); }}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden md:block overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t('external.table.name')}</TableHead>
+                  <TableHead>{t('external.table.slug')}</TableHead>
+                  <TableHead>{t('external.table.status')}</TableHead>
+                  <TableHead className="hidden sm:table-cell">{t('external.table.direction', 'Flow')}</TableHead>
+                  <TableHead className="text-center">{t('external.table.received')}</TableHead>
+                  <TableHead className="text-center hidden md:table-cell">{t('external.table.sent', 'Sent')}</TableHead>
+                  <TableHead>{t('external.table.created')}</TableHead>
+                  <TableHead className="w-[50px]">{t('external.table.actions')}</TableHead>
                 </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {endpoints.map((ep) => {
+                  const isBidirectional = !!ep.webhookForwardUrl;
+                  return (
+                  <TableRow key={ep.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`${ep.id}`)}>
+                    <TableCell className="font-medium">{ep.name}</TableCell>
+                    <TableCell><code className="text-xs bg-muted px-1.5 py-0.5 rounded">{ep.slug}</code></TableCell>
+                    <TableCell>
+                      <Badge variant={ep.isActive ? 'default' : 'secondary'}>
+                        {ep.isActive ? t('external.detail.active') : t('external.detail.inactive')}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                      {isBidirectional ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-600 bg-blue-50 dark:bg-blue-950/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-full px-2 py-0.5">
+                          <ArrowUpDown className="h-3 w-3" />{t('external.detail.flowBidirectional', 'In + Out')}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-full px-2 py-0.5">
+                          <ArrowDownLeft className="h-3 w-3" />{t('external.detail.flowInbound', 'Inbound')}
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center">{ep.totalReceived}</TableCell>
+                    <TableCell className="text-center hidden md:table-cell text-muted-foreground">{ep.totalSent > 0 ? ep.totalSent : '—'}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{new Date(ep.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                          <Button variant="ghost" size="icon-sm"><MoreHorizontal className="h-4 w-4" /></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`${ep.id}`); }}>
+                            <Eye className="h-4 w-4 mr-2" />{t('external.actions.view')}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`${ep.id}/edit`); }}>
+                            <Pencil className="h-4 w-4 mr-2" />{t('external.actions.edit')}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); copyUrl(ep.slug); }}>
+                            <Copy className="h-4 w-4 mr-2" />{t('external.actions.copyUrl')}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteId(ep.id); }}>
+                            <Trash2 className="h-4 w-4 mr-2" />{t('external.actions.delete')}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
         </Card>
       )}
 

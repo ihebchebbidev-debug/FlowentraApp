@@ -6,7 +6,7 @@ import { UserAvatar } from '@/components/ui/user-avatar';
 import { formatTnd } from '../../utils/money';
 import { HRPageHeader } from '../HRPageHeader';
 import { HRStatsStrip, type HRStatItem } from '../HRStatsStrip';
-import { CheckCircle2, CircleAlert, Users, UserCheck } from 'lucide-react';
+import { CheckCircle2, CircleAlert, Users, UserCheck, Building2, BadgeCheck, Banknote, CreditCard } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { SearchAndFilterBar } from '@/shared/components/SearchAndFilterBar';
 import { Badge } from '@/components/ui/badge';
@@ -91,71 +91,149 @@ export function EmployeeList() {
             fullWidth
           />
         </CardHeader>
-        <CardContent className="overflow-x-auto">
+        <CardContent className="p-0">
           {employeesQuery.isLoading ? (
-            <div className="text-sm text-muted-foreground">{t('loading')}</div>
+            <div className="text-sm text-muted-foreground p-4">{t('loading')}</div>
           ) : employeesQuery.error ? (
-            <div className="text-sm text-destructive">{String(employeesQuery.error)}</div>
+            <div className="text-sm text-destructive p-4">{String(employeesQuery.error)}</div>
           ) : filteredBySalary.length === 0 ? (
             <div className="py-10 text-center">
               <div className="text-sm font-medium">{t('employeesPage.emptyTitle')}</div>
               <div className="text-xs text-muted-foreground mt-1">{t('employeesPage.emptyHint')}</div>
             </div>
           ) : (
-            <Table className="min-w-[650px]">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('employee.name')}</TableHead>
-                  <TableHead>{t('employeesPage.cin')}</TableHead>
-                  <TableHead>{t('employee.position')}</TableHead>
-                  <TableHead>{t('employee.department')}</TableHead>
-                  <TableHead>{t('employeesPage.status')}</TableHead>
-                  <TableHead>{t('employee.cnssNumber')}</TableHead>
-                  <TableHead>{t('employee.grossSalary')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Mobile cards */}
+              <div className="md:hidden divide-y divide-border/50">
                 {filteredBySalary.map((r: any) => {
                   const user = r.user ?? {};
                   const cfg = r.salaryConfig ?? null;
                   const name = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email || `#${user.id}`;
                   const salaryReady = Number.isFinite(Number(cfg?.grossSalary));
+                  const firstInitial = (user.firstName ?? '').charAt(0).toUpperCase();
+                  const lastInitial = (user.lastName ?? '').charAt(0).toUpperCase();
+                  const initials = firstInitial || lastInitial ? `${firstInitial}${lastInitial}` : (user.email ?? '#').charAt(0).toUpperCase();
                   return (
-                    <TableRow key={user.id} to={`/dashboard/hr/employees/${user.id}`}>
-                      <TableCell>
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <UserAvatar
-                            src={user.profilePictureUrl}
-                            name={name}
-                            seed={user.id}
-                            size="sm"
-                          />
-                          <div className="min-w-0">
-                            <div className="truncate font-medium">{name}</div>
-                            <div className="truncate text-xs text-muted-foreground">{user.email ?? '—'}</div>
-                          </div>
+                    <a
+                      key={user.id}
+                      href={`/dashboard/hr/employees/${user.id}`}
+                      className="block p-4 bg-card hover:bg-muted/30 transition-colors"
+                    >
+                      {/* Header: initials avatar + name + status badge */}
+                      <div className="flex items-start gap-3">
+                        <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <span className="text-xs font-bold text-primary">{initials}</span>
                         </div>
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">{(cfg as any)?.cin ?? '—'}</TableCell>
-                      <TableCell>{cfg?.position ?? '—'}</TableCell>
-                      <TableCell>{cfg?.department ?? '—'}</TableCell>
-                      <TableCell>
-                        <span
-                          className={cn(
-                            'inline-flex items-center rounded px-2 py-1 text-xs font-medium capitalize',
-                            salaryReady ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-200' : 'bg-amber-500/15 text-amber-800 dark:text-amber-200'
-                          )}
-                        >
-                          {salaryReady ? t('employeesPage.statusActive') : t('employeesPage.statusIncomplete')}
-                        </span>
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">{cfg?.cnssNumber ?? '—'}</TableCell>
-                      <TableCell>{cfg?.grossSalary != null ? formatTnd(cfg.grossSalary) : '—'}</TableCell>
-                    </TableRow>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="font-semibold text-sm text-foreground leading-snug line-clamp-1 flex-1">{name}</p>
+                            <span
+                              className={cn(
+                                'inline-flex items-center rounded px-2 py-0.5 text-[10px] font-medium capitalize shrink-0',
+                                salaryReady
+                                  ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-200'
+                                  : 'bg-amber-500/15 text-amber-800 dark:text-amber-200'
+                              )}
+                            >
+                              {salaryReady ? t('employeesPage.statusActive') : t('employeesPage.statusIncomplete')}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5">{cfg?.position ?? user.email ?? '—'}</p>
+                        </div>
+                      </div>
+
+                      {/* Details row */}
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pl-12 mt-2">
+                        {cfg?.department && (
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Building2 className="h-3 w-3 shrink-0" />
+                            <span>{cfg.department}</span>
+                          </div>
+                        )}
+                        {(cfg as any)?.cin && (
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <CreditCard className="h-3 w-3 shrink-0" />
+                            <span className="font-mono">{(cfg as any).cin}</span>
+                          </div>
+                        )}
+                        {cfg?.cnssNumber && (
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <BadgeCheck className="h-3 w-3 shrink-0" />
+                            <span className="font-mono">{cfg.cnssNumber}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Footer: salary */}
+                      {cfg?.grossSalary != null && (
+                        <div className="flex items-center gap-1.5 pl-12 mt-2">
+                          <Banknote className="h-3 w-3 shrink-0 text-primary" />
+                          <span className="text-sm font-semibold text-primary">{formatTnd(cfg.grossSalary)}</span>
+                        </div>
+                      )}
+                    </a>
                   );
                 })}
-              </TableBody>
-            </Table>
+              </div>
+
+              {/* Desktop table */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table className="min-w-[650px]">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('employee.name')}</TableHead>
+                      <TableHead>{t('employeesPage.cin')}</TableHead>
+                      <TableHead>{t('employee.position')}</TableHead>
+                      <TableHead>{t('employee.department')}</TableHead>
+                      <TableHead>{t('employeesPage.status')}</TableHead>
+                      <TableHead>{t('employee.cnssNumber')}</TableHead>
+                      <TableHead>{t('employee.grossSalary')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredBySalary.map((r: any) => {
+                      const user = r.user ?? {};
+                      const cfg = r.salaryConfig ?? null;
+                      const name = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email || `#${user.id}`;
+                      const salaryReady = Number.isFinite(Number(cfg?.grossSalary));
+                      return (
+                        <TableRow key={user.id} to={`/dashboard/hr/employees/${user.id}`}>
+                          <TableCell>
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <UserAvatar
+                                src={user.profilePictureUrl}
+                                name={name}
+                                seed={user.id}
+                                size="sm"
+                              />
+                              <div className="min-w-0">
+                                <div className="truncate font-medium">{name}</div>
+                                <div className="truncate text-xs text-muted-foreground">{user.email ?? '—'}</div>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-mono text-xs">{(cfg as any)?.cin ?? '—'}</TableCell>
+                          <TableCell>{cfg?.position ?? '—'}</TableCell>
+                          <TableCell>{cfg?.department ?? '—'}</TableCell>
+                          <TableCell>
+                            <span
+                              className={cn(
+                                'inline-flex items-center rounded px-2 py-1 text-xs font-medium capitalize',
+                                salaryReady ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-200' : 'bg-amber-500/15 text-amber-800 dark:text-amber-200'
+                              )}
+                            >
+                              {salaryReady ? t('employeesPage.statusActive') : t('employeesPage.statusIncomplete')}
+                            </span>
+                          </TableCell>
+                          <TableCell className="font-mono text-xs">{cfg?.cnssNumber ?? '—'}</TableCell>
+                          <TableCell>{cfg?.grossSalary != null ? formatTnd(cfg.grossSalary) : '—'}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
         </Card>
@@ -163,4 +241,3 @@ export function EmployeeList() {
     </div>
   );
 }
-

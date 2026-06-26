@@ -7,6 +7,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -16,7 +17,7 @@ import {
   Trash2, Eye, Plus, MapPin, List, Table as TableIcon, LayoutGrid,
   ChevronDown, Map, Download,
   DollarSign, Target, CheckCircle, Clock, AlertTriangle, Loader2, ShieldAlert, Lock, FileText,
-  MoreVertical, Play
+  MoreVertical, Play, SlidersHorizontal, Search
 } from "lucide-react";
 import { TableRowActions } from '@/shared/components/TableRowActions';
 import { isViewAllMode } from '@/utils/tenant';
@@ -74,6 +75,7 @@ export default function ServiceOrdersList() {
   const { priorities: lookupPriorities } = useLookups();
   const [selectedStat, setSelectedStat] = useState<string>('all');
   const [showFilterBar, setShowFilterBar] = useState(false);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [filterAssigned, setFilterAssigned] = useState<'all' | string>('all');
   const [filterDateRange, setFilterDateRange] = useState<'any' | '7' | '30' | '365'>('any');
   const [showExportModal, setShowExportModal] = useState(false);
@@ -479,7 +481,105 @@ export default function ServiceOrdersList() {
 
       {/* Search and Controls */}
       <section className="p-3 sm:p-4 border-b border-border bg-card">
-        <div className="flex flex-col gap-3 sm:flex-row sm:gap-4 sm:items-center sm:justify-between">
+        {/* Mobile toolbar */}
+        <div className="md:hidden flex items-center gap-2">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              className="pl-9 h-9"
+              placeholder={t('search_placeholder')}
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 w-9 p-0 shrink-0 relative"
+            onClick={() => setShowMobileFilters(v => !v)}
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            {(filterStatus !== 'all' || filterPriority !== 'all' || filterAssigned !== 'all') && (
+              <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-primary text-[9px] text-white flex items-center justify-center font-bold">
+                {[filterStatus !== 'all' ? 1 : 0, filterPriority !== 'all' ? 1 : 0, filterAssigned !== 'all' ? 1 : 0].reduce((a, b) => a + b, 0)}
+              </span>
+            )}
+          </Button>
+          <Button
+            variant={viewMode === 'list' ? 'default' : 'outline'}
+            size="sm"
+            className={`h-9 w-9 p-0 shrink-0 ${viewMode === 'list' ? 'bg-primary text-white hover:bg-primary/90' : ''}`}
+            onClick={() => setViewMode('list')}
+          >
+            <List className={`h-4 w-4 ${viewMode === 'list' ? 'text-white' : ''}`} />
+          </Button>
+          <Button
+            variant={viewMode === 'table' ? 'default' : 'outline'}
+            size="sm"
+            className={`h-9 w-9 p-0 shrink-0 ${viewMode === 'table' ? 'bg-primary text-white hover:bg-primary/90' : ''}`}
+            onClick={() => setViewMode('table')}
+          >
+            <TableIcon className={`h-4 w-4 ${viewMode === 'table' ? 'text-white' : ''}`} />
+          </Button>
+          <Button
+            variant={showMap ? 'default' : 'outline'}
+            size="sm"
+            className={`h-9 w-9 p-0 shrink-0 ${showMap ? 'bg-primary text-white hover:bg-primary/90' : ''}`}
+            onClick={() => setShowMap(!showMap)}
+          >
+            <Map className={`h-4 w-4 ${showMap ? 'text-white' : ''}`} />
+          </Button>
+        </div>
+
+        {/* Mobile collapsible filter panel */}
+        {showMobileFilters && (
+          <div className="md:hidden mt-2 grid grid-cols-2 gap-2 pb-2">
+            <div className="relative">
+              <select className="border rounded px-3 py-2 pr-10 appearance-none bg-background text-foreground w-full text-sm h-9" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+                <option value="all">{t('list.all_statuses')}</option>
+                {serviceOrderStatuses.map((s: any) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            </div>
+            <div className="relative">
+              <select className="border rounded px-3 py-2 pr-10 appearance-none bg-background text-foreground w-full text-sm h-9" value={filterPriority} onChange={e => setFilterPriority(e.target.value)}>
+                <option value="all">All Priorities</option>
+                {lookupPriorities.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            </div>
+            <div className="relative">
+              <select className="border rounded px-3 py-2 pr-10 appearance-none bg-background text-foreground w-full text-sm h-9" value={filterAssigned} onChange={e => setFilterAssigned(e.target.value)}>
+                <option value="all">All Technicians</option>
+                {assignedOptions.map((a, i) => <option key={i} value={a}>{a}</option>)}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            </div>
+            <div className="relative">
+              <select className="border rounded px-3 py-2 pr-10 appearance-none bg-background text-foreground w-full text-sm h-9" value={filterDateRange} onChange={e => setFilterDateRange(e.target.value as any)}>
+                {timeframes.map((tf: any) => (
+                  <option key={tf.id} value={tf.id}>{tf.name}</option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            </div>
+            {(filterStatus !== 'all' || filterPriority !== 'all' || filterAssigned !== 'all' || filterDateRange !== 'any') && (
+              <button
+                className="col-span-2 px-3 py-1.5 rounded border border-border text-sm text-muted-foreground hover:text-foreground"
+                onClick={() => { setFilterStatus('all'); setFilterPriority('all'); setFilterAssigned('all'); setFilterDateRange('any'); }}
+              >
+                {t('clear')}
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Desktop toolbar — unchanged */}
+        <div className="hidden md:flex flex-col gap-3 sm:flex-row sm:gap-4 sm:items-center sm:justify-between">
           <div className="flex gap-2 sm:gap-3 flex-1 w-full items-center">
             <div className="flex-1">
               <CollapsibleSearch
@@ -532,10 +632,10 @@ export default function ServiceOrdersList() {
               <TableIcon className={`h-4 w-4 ${viewMode === 'table' ? 'text-white' : ''}`} />
             </Button>
             {/* Kanban view button - commented out for now
-            <Button 
-              variant={viewMode === 'kanban' ? 'default' : 'outline'} 
-              size="sm" 
-              onClick={() => setViewMode('kanban')} 
+            <Button
+              variant={viewMode === 'kanban' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('kanban')}
               className={`flex-1 sm:flex-none ${viewMode === 'kanban' ? 'bg-primary text-white hover:bg-primary/90' : ''}`}
             >
               <LayoutGrid className={`h-4 w-4 ${viewMode === 'kanban' ? 'text-white' : ''}`} />
@@ -554,7 +654,7 @@ export default function ServiceOrdersList() {
       </section>
 
       {showFilterBar && (
-        <div className="p-3 sm:p-4 border-b border-border bg-background/50">
+        <div className="hidden md:block p-3 sm:p-4 border-b border-border bg-background/50">
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
             <div className="flex-1 grid grid-cols-1 sm:grid-cols-4 gap-2">
               <div className="relative">

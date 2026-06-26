@@ -7,13 +7,15 @@ import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CollapsibleSearch } from "@/components/ui/collapsible-search";
 import {
   Package, Filter, Edit, Trash2, Eye, MoreVertical, Plus, MapPin, List, Table as TableIcon,
-  ChevronDown, Shield, Wrench, Download, Building, Building2, ExternalLink, ShieldAlert, Lock, Upload, Loader2, X, Calendar
+  ChevronDown, Shield, Wrench, Download, Building, Building2, ExternalLink, ShieldAlert, Lock, Upload, Loader2, X, Calendar,
+  SlidersHorizontal, Search
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -77,6 +79,7 @@ export default function InstallationsList() {
   const [viewMode, setViewMode] = useState<'list' | 'table'>(() => getInitialViewMode(['list','table'] as const, 'table'));
   const [selectedStat, setSelectedStat] = useState<string>('all');
   const [showFilterBar, setShowFilterBar] = useState(false);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [installationToDelete, setInstallationToDelete] = useState<InstallationDto | null>(null);
@@ -713,10 +716,101 @@ export default function InstallationsList() {
 
       {/* Search and Controls */}
       <section className="p-3 sm:p-4 border-b border-border bg-card">
-        <div className="flex flex-col gap-3 sm:flex-row sm:gap-4 sm:items-center sm:justify-between">
+        {/* Mobile toolbar */}
+        <div className="md:hidden flex items-center gap-2">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              className="pl-9 h-9"
+              placeholder={t('list.search_placeholder')}
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 w-9 p-0 shrink-0 relative"
+            onClick={() => setShowMobileFilters(v => !v)}
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            {(filterType !== 'all' || filterManufacturer !== 'all' || filterWarranty !== 'all') && (
+              <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-primary text-[9px] text-white flex items-center justify-center font-bold">
+                {[filterType !== 'all' ? 1 : 0, filterManufacturer !== 'all' ? 1 : 0, filterWarranty !== 'all' ? 1 : 0].reduce((a, b) => a + b, 0)}
+              </span>
+            )}
+          </Button>
+          <Button
+            variant={viewMode === 'list' ? 'default' : 'outline'}
+            size="sm"
+            className={`h-9 w-9 p-0 shrink-0 ${viewMode === 'list' ? 'bg-primary text-white hover:bg-primary/90' : ''}`}
+            onClick={() => setViewMode('list')}
+          >
+            <List className={`h-4 w-4 ${viewMode === 'list' ? 'text-white' : ''}`} />
+          </Button>
+          <Button
+            variant={viewMode === 'table' ? 'default' : 'outline'}
+            size="sm"
+            className={`h-9 w-9 p-0 shrink-0 ${viewMode === 'table' ? 'bg-primary text-white hover:bg-primary/90' : ''}`}
+            onClick={() => setViewMode('table')}
+          >
+            <TableIcon className={`h-4 w-4 ${viewMode === 'table' ? 'text-white' : ''}`} />
+          </Button>
+        </div>
+
+        {/* Mobile collapsible filter panel */}
+        {showMobileFilters && (
+          <div className="md:hidden mt-2 grid grid-cols-2 gap-2 pb-2">
+            <Select value={filterType} onValueChange={setFilterType}>
+              <SelectTrigger className="h-9 bg-background">
+                <SelectValue placeholder="All Types" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border shadow-md z-50">
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="internal">Internal</SelectItem>
+                <SelectItem value="external">External</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filterManufacturer} onValueChange={setFilterManufacturer}>
+              <SelectTrigger className="h-9 bg-background">
+                <SelectValue placeholder="All Manufacturers" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border shadow-md z-50">
+                <SelectItem value="all">All Manufacturers</SelectItem>
+                {manufacturerOptions.map(m => (
+                  <SelectItem key={m} value={m}>{m}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={filterWarranty} onValueChange={(v) => setFilterWarranty(v as 'all' | 'with' | 'without')}>
+              <SelectTrigger className="h-9 bg-background">
+                <SelectValue placeholder="All Warranty Status" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border shadow-md z-50">
+                <SelectItem value="all">All Warranty Status</SelectItem>
+                <SelectItem value="with">With Warranty</SelectItem>
+                <SelectItem value="without">No Warranty</SelectItem>
+              </SelectContent>
+            </Select>
+            {(filterType !== 'all' || filterManufacturer !== 'all' || filterWarranty !== 'all') && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => { setFilterType('all'); setFilterManufacturer('all'); setFilterWarranty('all'); }}
+                className="h-9 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4 mr-1" />
+                Clear
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Desktop toolbar — unchanged */}
+        <div className="hidden md:flex flex-col gap-3 sm:flex-row sm:gap-4 sm:items-center sm:justify-between">
           <div className="flex gap-2 sm:gap-3 flex-1 w-full items-center">
             <div className="flex-1">
-              <CollapsibleSearch 
+              <CollapsibleSearch
                 placeholder={t('list.search_placeholder')}
                 value={searchTerm}
                 onChange={setSearchTerm}
@@ -739,20 +833,20 @@ export default function InstallationsList() {
               </Button>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Button 
-              variant={viewMode === 'list' ? 'default' : 'outline'} 
-              size="sm" 
-              onClick={() => setViewMode('list')} 
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('list')}
               className={`flex-1 sm:flex-none ${viewMode === 'list' ? 'bg-primary text-white hover:bg-primary/90' : ''}`}
             >
               <List className={`h-4 w-4 ${viewMode === 'list' ? 'text-white' : ''}`} />
             </Button>
-            <Button 
-              variant={viewMode === 'table' ? 'default' : 'outline'} 
-              size="sm" 
-              onClick={() => setViewMode('table')} 
+            <Button
+              variant={viewMode === 'table' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('table')}
               className={`flex-1 sm:flex-none ${viewMode === 'table' ? 'bg-primary text-white hover:bg-primary/90' : ''}`}
             >
               <TableIcon className={`h-4 w-4 ${viewMode === 'table' ? 'text-white' : ''}`} />
@@ -762,7 +856,7 @@ export default function InstallationsList() {
       </section>
 
       {showFilterBar && (
-        <div className="p-3 sm:p-4 border-b border-border bg-card">
+        <div className="hidden md:block p-3 sm:p-4 border-b border-border bg-card">
           <div className="flex flex-wrap items-end gap-3">
             <div className="flex flex-col gap-1.5 min-w-[140px]">
               <label className="text-xs font-medium text-muted-foreground">Type</label>
@@ -805,9 +899,9 @@ export default function InstallationsList() {
               </Select>
             </div>
             {(filterType !== 'all' || filterManufacturer !== 'all' || filterWarranty !== 'all') && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => { setFilterType('all'); setFilterManufacturer('all'); setFilterWarranty('all'); }}
                 className="h-9 text-muted-foreground hover:text-foreground"
               >

@@ -624,99 +624,188 @@ export function DocumentsList() {
                   </div>
                 </Card>
               ) : (
-                <Card>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[40px]">
-                          <Checkbox
-                            checked={documents.length > 0 && selectedIds.size === documents.length}
-                            onCheckedChange={toggleSelectAll}
-                          />
-                        </TableHead>
-                        <TableHead>{t('documents.fileName')}</TableHead>
-                        <TableHead>{t('documents.module')}</TableHead>
-                        <TableHead>{t('documents.linkedTo', 'Linked To')}</TableHead>
-                        <TableHead>{t('documents.fileType')}</TableHead>
-                        <TableHead>{t('documents.fileSize')}</TableHead>
-                        <TableHead>{t('documents.uploadDate')}</TableHead>
-                        <TableHead>{t('documents.uploadedBy')}</TableHead>
-                        {isViewAllMode() && (
-                          <TableHead className="w-[160px]">{t('documents.company', 'Company')}</TableHead>
-                        )}
-                        <TableHead className="w-[50px]"></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {documents.map((document) => {
-                        const FileIcon = getFileIcon(document.fileType);
-                        return (
-                          <TableRow key={document.id} className={selectedIds.has(document.id) ? 'bg-primary/5' : ''}>
-                            <TableCell>
+                <>
+                  {/* Mobile cards — visible below md breakpoint */}
+                  <div className="md:hidden divide-y divide-border/50 rounded-lg border border-border overflow-hidden">
+                    {documents.map((document) => {
+                      const FileIcon = getFileIcon(document.fileType);
+                      const moduleColorClass = getModuleColor(document.moduleType);
+                      return (
+                        <div
+                          key={document.id}
+                          className={`p-4 bg-card hover:bg-muted/30 transition-colors cursor-pointer ${selectedIds.has(document.id) ? 'bg-primary/5' : ''}`}
+                          onClick={() => handlePreviewDocument(document)}
+                        >
+                          {/* Header row */}
+                          <div className="flex items-start gap-3">
+                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${moduleColorClass}`}>
+                              <FileIcon className="h-4 w-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2">
+                                <p className="font-semibold text-sm text-foreground leading-snug line-clamp-1 flex-1">
+                                  {document.fileName}
+                                </p>
+                                <Badge variant="secondary" className={`text-[10px] px-2 py-0.5 shrink-0 ${moduleColorClass}`}>
+                                  {document.fileType.toUpperCase()}
+                                </Badge>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-0.5 font-mono">
+                                {t(`documents.${document.moduleType}`)}
+                                {document.moduleName ? ` · ${document.moduleName}` : ''}
+                              </p>
+                            </div>
+                          </div>
+                          {/* Detail row */}
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pl-12 mt-2">
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <Calendar className="h-3 w-3 shrink-0" />
+                              <span>{formatDate(document.uploadedAt)}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <User className="h-3 w-3 shrink-0" />
+                              <span>{document.uploadedByName}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <FileText className="h-3 w-3 shrink-0" />
+                              <span>{DocumentsService.formatFileSize(document.fileSize)}</span>
+                            </div>
+                          </div>
+                          {/* Footer row */}
+                          <div
+                            className="flex items-center justify-between pl-12 mt-3"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div className="flex items-center gap-1.5">
                               <Checkbox
                                 checked={selectedIds.has(document.id)}
                                 onCheckedChange={() => toggleSelect(document.id)}
                               />
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-3">
-                                <DocumentThumbnail
-                                  docId={document.id}
-                                  fileType={document.fileType}
-                                  fileName={document.fileName}
-                                  size="sm"
-                                />
-                                <span className="font-medium">{document.fileName}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="secondary" className={getModuleColor(document.moduleType)}>
-                                {t(`documents.${document.moduleType}`)}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>{renderLinkedTo(document)}</TableCell>
-                            <TableCell>{document.fileType.toUpperCase()}</TableCell>
-                            <TableCell>{DocumentsService.formatFileSize(document.fileSize)}</TableCell>
-                            <TableCell>{formatDate(document.uploadedAt)}</TableCell>
-                            <TableCell>{document.uploadedByName}</TableCell>
+                              <span className="text-xs text-muted-foreground">{t('documents.select', 'Select')}</span>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 px-3 text-xs"
+                                onClick={() => downloadDocument(document)}
+                              >
+                                <Download className="h-3.5 w-3.5 mr-1" />
+                                {t('documents.download')}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 px-3 text-xs text-destructive border-destructive/30 hover:bg-destructive/10"
+                                onClick={() => handleDeleteDocument(document)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5 mr-1" />
+                                {t('documents.delete')}
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Desktop table — hidden on mobile */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <Card>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-[40px]">
+                              <Checkbox
+                                checked={documents.length > 0 && selectedIds.size === documents.length}
+                                onCheckedChange={toggleSelectAll}
+                              />
+                            </TableHead>
+                            <TableHead>{t('documents.fileName')}</TableHead>
+                            <TableHead>{t('documents.module')}</TableHead>
+                            <TableHead>{t('documents.linkedTo', 'Linked To')}</TableHead>
+                            <TableHead>{t('documents.fileType')}</TableHead>
+                            <TableHead>{t('documents.fileSize')}</TableHead>
+                            <TableHead>{t('documents.uploadDate')}</TableHead>
+                            <TableHead>{t('documents.uploadedBy')}</TableHead>
                             {isViewAllMode() && (
-                              <TableCell>
-                                <CompanyBadge tenantId={(document as any).tenantId} forceShow />
-                              </TableCell>
+                              <TableHead className="w-[160px]">{t('documents.company', 'Company')}</TableHead>
                             )}
-                            <TableCell>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm">
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => handlePreviewDocument(document)}>
-                                    <Eye className="h-4 w-4 mr-2" />
-                                    {t('documents.preview')}
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => downloadDocument(document)}>
-                                    <Download className="h-4 w-4 mr-2" />
-                                    {t('documents.download')}
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem 
-                                    onClick={() => handleDeleteDocument(document)}
-                                    className="text-destructive"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    {t('documents.delete')}
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
+                            <TableHead className="w-[50px]"></TableHead>
                           </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </Card>
+                        </TableHeader>
+                        <TableBody>
+                          {documents.map((document) => {
+                            const FileIcon = getFileIcon(document.fileType);
+                            return (
+                              <TableRow key={document.id} className={selectedIds.has(document.id) ? 'bg-primary/5' : ''}>
+                                <TableCell>
+                                  <Checkbox
+                                    checked={selectedIds.has(document.id)}
+                                    onCheckedChange={() => toggleSelect(document.id)}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-3">
+                                    <DocumentThumbnail
+                                      docId={document.id}
+                                      fileType={document.fileType}
+                                      fileName={document.fileName}
+                                      size="sm"
+                                    />
+                                    <span className="font-medium">{document.fileName}</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="secondary" className={getModuleColor(document.moduleType)}>
+                                    {t(`documents.${document.moduleType}`)}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>{renderLinkedTo(document)}</TableCell>
+                                <TableCell>{document.fileType.toUpperCase()}</TableCell>
+                                <TableCell>{DocumentsService.formatFileSize(document.fileSize)}</TableCell>
+                                <TableCell>{formatDate(document.uploadedAt)}</TableCell>
+                                <TableCell>{document.uploadedByName}</TableCell>
+                                {isViewAllMode() && (
+                                  <TableCell>
+                                    <CompanyBadge tenantId={(document as any).tenantId} forceShow />
+                                  </TableCell>
+                                )}
+                                <TableCell>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="sm">
+                                        <MoreVertical className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => handlePreviewDocument(document)}>
+                                        <Eye className="h-4 w-4 mr-2" />
+                                        {t('documents.preview')}
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => downloadDocument(document)}>
+                                        <Download className="h-4 w-4 mr-2" />
+                                        {t('documents.download')}
+                                      </DropdownMenuItem>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem
+                                        onClick={() => handleDeleteDocument(document)}
+                                        className="text-destructive"
+                                      >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        {t('documents.delete')}
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </Card>
+                  </div>
+                </>
               )}
         </div>
       )}

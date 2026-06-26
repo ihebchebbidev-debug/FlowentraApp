@@ -1,12 +1,6 @@
 import React from "react";
 import { ChevronRight, Check, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 export interface StatusStepDef {
   id: string;
@@ -149,7 +143,7 @@ export function StatusFlowStepper({
             )}
           >
             <Check className="h-3 w-3 shrink-0 text-muted-foreground/35" />
-            <span className="text-xs font-medium whitespace-nowrap hidden sm:inline truncate max-w-[80px]">
+            <span className="text-xs font-medium whitespace-nowrap">
               {def.label}
             </span>
           </button>
@@ -176,7 +170,7 @@ export function StatusFlowStepper({
             ) : (
               <Check className="h-3 w-3 shrink-0" />
             )}
-            <span className="hidden sm:inline">{def.label}</span>
+            <span>{def.label}</span>
           </button>
         );
       }
@@ -192,29 +186,18 @@ export function StatusFlowStepper({
           )}
         >
           <div className="w-2 h-2 rounded-full border border-muted-foreground/25 shrink-0" />
-          <span className="text-xs font-medium whitespace-nowrap hidden sm:inline truncate max-w-[80px]">
+          <span className="text-xs font-medium whitespace-nowrap">
              {def.label}
           </span>
         </button>
       );
     })();
 
-    // Wrap in tooltip for mobile (or always)
-    return (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          {badgeContent}
-        </TooltipTrigger>
-        <TooltipContent side="top" className="sm:hidden">
-          {def.label}
-        </TooltipContent>
-      </Tooltip>
-    );
+    return badgeContent;
   };
 
   return (
-    <TooltipProvider delayDuration={300}>
-      <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+    <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar py-0.5">
         
         {isUpdating && !onAdvance && !onBack ? (
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-muted/50 border border-border">
@@ -276,6 +259,5 @@ export function StatusFlowStepper({
           </>
         )}
       </div>
-    </TooltipProvider>
   );
 }

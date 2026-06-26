@@ -482,110 +482,211 @@ function PurchaseOrderListContent() {
         {!loading && !error && (
           <div className="animate-in fade-in duration-300">
             {viewMode === "table" ? (
-              <Card>
-                <CardContent className="p-0 overflow-x-auto">
-                  <Table className="min-w-[700px]">
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-10">
-                          <Checkbox
-                            checked={allSelected ? true : someSelected ? "indeterminate" : false}
-                            onCheckedChange={(c) => handleToggleAll(!!c)}
-                            aria-label="Select all"
-                          />
-                        </TableHead>
-                        <TableHead className="text-xs">{t("fields.orderNumber", "Order #")}</TableHead>
-                        <TableHead className="text-xs">{t("fields.supplier", "Supplier")}</TableHead>
-                        <TableHead className="text-xs">{t("fields.date", "Date")}</TableHead>
-                        <TableHead className="text-xs">{t("fields.status", "Status")}</TableHead>
-                        <TableHead className="text-xs">{t("fields.paymentStatus", "Payment")}</TableHead>
-                        <TableHead className="text-xs text-right">{t("fields.total", "Total")}</TableHead>
-                        <TableHead className="text-xs w-32 text-right">{t("fields.actions", "Actions")}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {companyScopedOrders.map((po) => {
-                        const isSelected = selectedIds.has(po.id);
-                        return (
-                          <TableRow
-                            key={po.id}
-                            data-state={isSelected ? "selected" : undefined}
-                            className="cursor-pointer hover:bg-muted/50 transition-colors"
-                            onClick={() => navigate(`/dashboard/purchases/orders/${po.id}`)}
-                          >
-                            <TableCell onClick={(e) => e.stopPropagation()}>
-                              <Checkbox
-                                checked={isSelected}
-                                onCheckedChange={(c) => handleToggleOne(po.id, !!c)}
-                                aria-label={`Select ${po.orderNumber}`}
-                              />
-                            </TableCell>
-                            <TableCell className="text-xs font-medium text-primary">{po.orderNumber}</TableCell>
-                            <TableCell className="text-xs">
-                              <div className="flex items-center gap-2 min-w-0">
-                                <Avatar className="h-6 w-6 shrink-0">
-                                  <AvatarFallback className="text-[10px] bg-muted">
-                                    {initials(po.supplierName)}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div className="flex flex-col min-w-0">
-                                  <span className="truncate">{po.supplierName}</span>
-                                  <CompanyBadge tenantId={(po as any).tenantId} className="text-[9px] mt-0.5" />
-                                </div>
+              <>
+                {/* Mobile cards — visible below md breakpoint */}
+                <div className="md:hidden divide-y divide-border/50 rounded-lg border border-border overflow-hidden">
+                  {companyScopedOrders.length === 0 ? (
+                    <div className="p-12 text-center text-muted-foreground">
+                      <FileText className="h-8 w-8 opacity-40 mx-auto mb-2" />
+                      <span className="text-sm">{t("orders.empty", "No purchase orders found")}</span>
+                    </div>
+                  ) : (
+                    companyScopedOrders.map((po) => {
+                      const isSelected = selectedIds.has(po.id);
+                      return (
+                        <div
+                          key={po.id}
+                          className={`p-4 bg-card hover:bg-muted/30 transition-colors cursor-pointer ${isSelected ? 'bg-primary/5' : ''}`}
+                          onClick={() => navigate(`/dashboard/purchases/orders/${po.id}`)}
+                        >
+                          {/* Header */}
+                          <div className="flex items-start gap-3">
+                            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                              <ShoppingCart className="h-4 w-4 text-primary" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2">
+                                <p className="font-semibold text-sm text-foreground leading-snug line-clamp-1 flex-1">
+                                  {po.orderNumber}
+                                </p>
+                                <Badge
+                                  variant="secondary"
+                                  className={`text-[10px] px-2 py-0.5 shrink-0 ${STATUS_COLORS[po.status] || ""}`}
+                                >
+                                  {t(`status.${po.status}`)}
+                                </Badge>
                               </div>
-                            </TableCell>
-                            <TableCell className="text-xs text-muted-foreground">{po.orderDate}</TableCell>
-                            <TableCell>
-                              <Badge variant="secondary" className={`text-[10px] ${STATUS_COLORS[po.status] || ""}`}>
-                                {t(`status.${po.status}`)}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className="text-[10px]">
+                              <p className="text-xs text-muted-foreground mt-0.5 font-mono">
+                                {po.supplierName}
+                              </p>
+                            </div>
+                          </div>
+                          {/* Details */}
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pl-12 mt-2">
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <Clock className="h-3 w-3 shrink-0" />
+                              <span>{po.orderDate}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                                 {t(`paymentStatus.${po.paymentStatus}`)}
                               </Badge>
-                            </TableCell>
-                            <TableCell className="text-xs text-right font-medium">{fmt(po.grandTotal)} TND</TableCell>
-                            <TableCell className="text-right">
-                              <TableRowActions
-                                actions={[
-                                  {
-                                    icon: Eye,
-                                    label: t("actions.view", "View"),
-                                    onClick: () => navigate(`/dashboard/purchases/orders/${po.id}`),
-                                  },
-                                  {
-                                    icon: Edit,
-                                    label: t("actions.edit", "Edit"),
-                                    onClick: () => navigate(`/dashboard/purchases/orders/${po.id}`),
-                                    show: po.status === "draft",
-                                  },
-                                  {
-                                    icon: Trash2,
-                                    label: t("actions.delete", "Delete"),
-                                    onClick: () => setDeleteId(po.id),
-                                    variant: "destructive",
-                                  },
-                                ]}
-                              />
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                      {companyScopedOrders.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={8} className="text-center py-12">
-                            <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                              <FileText className="h-8 w-8 opacity-40" />
-                              <span className="text-sm">{t("orders.empty", "No purchase orders found")}</span>
                             </div>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
+                          </div>
+                          {/* Footer */}
+                          <div
+                            className="flex items-center justify-between pl-12 mt-3"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <span className="text-sm font-semibold text-primary">
+                              {fmt(po.grandTotal)} TND
+                            </span>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 px-3 text-xs"
+                                onClick={() => navigate(`/dashboard/purchases/orders/${po.id}`)}
+                              >
+                                <Eye className="h-3.5 w-3.5 mr-1" />
+                                {t("actions.view", "View")}
+                              </Button>
+                              {po.status === "draft" && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-8 px-3 text-xs"
+                                  onClick={() => navigate(`/dashboard/purchases/orders/${po.id}`)}
+                                >
+                                  <Edit className="h-3.5 w-3.5 mr-1" />
+                                  {t("actions.edit", "Edit")}
+                                </Button>
+                              )}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 px-3 text-xs text-destructive border-destructive/30 hover:bg-destructive/10"
+                                onClick={() => setDeleteId(po.id)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5 mr-1" />
+                                {t("actions.delete", "Delete")}
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Desktop table — hidden on mobile */}
+                <div className="hidden md:block overflow-x-auto">
+                  <Card>
+                    <CardContent className="p-0 overflow-x-auto">
+                      <Table className="min-w-[700px]">
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-10">
+                              <Checkbox
+                                checked={allSelected ? true : someSelected ? "indeterminate" : false}
+                                onCheckedChange={(c) => handleToggleAll(!!c)}
+                                aria-label="Select all"
+                              />
+                            </TableHead>
+                            <TableHead className="text-xs">{t("fields.orderNumber", "Order #")}</TableHead>
+                            <TableHead className="text-xs">{t("fields.supplier", "Supplier")}</TableHead>
+                            <TableHead className="text-xs">{t("fields.date", "Date")}</TableHead>
+                            <TableHead className="text-xs">{t("fields.status", "Status")}</TableHead>
+                            <TableHead className="text-xs">{t("fields.paymentStatus", "Payment")}</TableHead>
+                            <TableHead className="text-xs text-right">{t("fields.total", "Total")}</TableHead>
+                            <TableHead className="text-xs w-32 text-right">{t("fields.actions", "Actions")}</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {companyScopedOrders.map((po) => {
+                            const isSelected = selectedIds.has(po.id);
+                            return (
+                              <TableRow
+                                key={po.id}
+                                data-state={isSelected ? "selected" : undefined}
+                                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                                onClick={() => navigate(`/dashboard/purchases/orders/${po.id}`)}
+                              >
+                                <TableCell onClick={(e) => e.stopPropagation()}>
+                                  <Checkbox
+                                    checked={isSelected}
+                                    onCheckedChange={(c) => handleToggleOne(po.id, !!c)}
+                                    aria-label={`Select ${po.orderNumber}`}
+                                  />
+                                </TableCell>
+                                <TableCell className="text-xs font-medium text-primary">{po.orderNumber}</TableCell>
+                                <TableCell className="text-xs">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <Avatar className="h-6 w-6 shrink-0">
+                                      <AvatarFallback className="text-[10px] bg-muted">
+                                        {initials(po.supplierName)}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex flex-col min-w-0">
+                                      <span className="truncate">{po.supplierName}</span>
+                                      <CompanyBadge tenantId={(po as any).tenantId} className="text-[9px] mt-0.5" />
+                                    </div>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-xs text-muted-foreground">{po.orderDate}</TableCell>
+                                <TableCell>
+                                  <Badge variant="secondary" className={`text-[10px] ${STATUS_COLORS[po.status] || ""}`}>
+                                    {t(`status.${po.status}`)}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline" className="text-[10px]">
+                                    {t(`paymentStatus.${po.paymentStatus}`)}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-xs text-right font-medium">{fmt(po.grandTotal)} TND</TableCell>
+                                <TableCell className="text-right">
+                                  <TableRowActions
+                                    actions={[
+                                      {
+                                        icon: Eye,
+                                        label: t("actions.view", "View"),
+                                        onClick: () => navigate(`/dashboard/purchases/orders/${po.id}`),
+                                      },
+                                      {
+                                        icon: Edit,
+                                        label: t("actions.edit", "Edit"),
+                                        onClick: () => navigate(`/dashboard/purchases/orders/${po.id}`),
+                                        show: po.status === "draft",
+                                      },
+                                      {
+                                        icon: Trash2,
+                                        label: t("actions.delete", "Delete"),
+                                        onClick: () => setDeleteId(po.id),
+                                        variant: "destructive",
+                                      },
+                                    ]}
+                                  />
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                          {companyScopedOrders.length === 0 && (
+                            <TableRow>
+                              <TableCell colSpan={8} className="text-center py-12">
+                                <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                                  <FileText className="h-8 w-8 opacity-40" />
+                                  <span className="text-sm">{t("orders.empty", "No purchase orders found")}</span>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
+                </div>
+              </>
             ) : (
               <div className="space-y-2">
                 {companyScopedOrders.map((po) => {

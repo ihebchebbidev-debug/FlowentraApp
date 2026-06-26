@@ -74,7 +74,10 @@
       "Bash(node_modules/.bin/tsc --noEmit --skipLibCheck)",
       "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\ihebc\\\\OneDrive\\\\Desktop\\\\FlowentraApp\\\\src\\\\modules\" -Directory | ForEach-Object { $_.Name })",
       "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\ihebc\\\\OneDrive\\\\Desktop\\\\FlowentraApp\\\\src\\\\modules\" -Directory | Where-Object { $_.Name -match 'install|dispatch|service' } | ForEach-Object { $_.Name })",
-      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\ihebc\\\\OneDrive\\\\Desktop\\\\FlowentraApp\\\\src\\\\modules\" -Directory -Recurse -Depth 1 | Where-Object { $_.Name -eq 'pages' } | ForEach-Object { $_.FullName })"
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\ihebc\\\\OneDrive\\\\Desktop\\\\FlowentraApp\\\\src\\\\modules\" -Directory -Recurse -Depth 1 | Where-Object { $_.Name -eq 'pages' } | ForEach-Object { $_.FullName })",
+      "Bash(grep -r \"min-w-\\\\\\\\\\\\[.*px\\\\\\\\\\\\]\\\\|fixed.*width\\\\|px-6\" /c/Users/ihebc/OneDrive/Desktop/FlowentraApp/src/modules/offers/components/OffersList.tsx /c/Users/ihebc/OneDrive/Desktop/FlowentraApp/src/modules/sales/components/SalesList.tsx)",
+      "Bash(git -C c:/Users/ihebc/OneDrive/Desktop/FlowentraApp/.claude/worktrees/__TRACKED_VAR__ diff HEAD --name-only)",
+      "Bash(grep -v \"^$\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\iheb.chebbi\\Desktop\\FlowentraApp\\Backend\\Modules\\Offers\\DTOs",
