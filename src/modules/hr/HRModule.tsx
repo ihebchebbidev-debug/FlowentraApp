@@ -13,10 +13,12 @@ import { HrSettingsPage } from './components/settings/HrSettingsPage';
 import { PerformancePage } from './components/performance/PerformancePage';
 import { RecruitmentPage } from './components/recruitment/RecruitmentPage';
 import { PluginGate } from '@/modules/shared/plugins';
+import { PermissionRoute } from '@/components/permissions/PermissionRoute';
 
 export default function HRModule() {
   return (
     <PluginGate code="PL0013HR">
+      <PermissionRoute module="hr" action="read">
       <Routes>
         <Route index element={<HRDashboard />} />
         <Route path="employees" element={<EmployeeList />} />
@@ -34,6 +36,7 @@ export default function HRModule() {
         <Route path="recruitment" element={<RecruitmentPage />} />
         <Route path="*" element={<Navigate to="/dashboard/hr" replace />} />
       </Routes>
+      </PermissionRoute>
     </PluginGate>
   );
 }

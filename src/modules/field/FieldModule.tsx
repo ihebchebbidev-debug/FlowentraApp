@@ -64,9 +64,11 @@ export function FieldModule() {
           </Suspense>
         } />
         <Route path="service-orders/*" element={
-          <Suspense fallback={<TableLoadingPlaceholder />}>
-            <ServiceOrders />
-          </Suspense>
+          <PermissionRoute module="service_orders" action="read">
+            <Suspense fallback={<TableLoadingPlaceholder />}>
+              <ServiceOrders />
+            </Suspense>
+          </PermissionRoute>
         } />
         <Route path="dispatches/*" element={
           <PermissionRoute module="service_orders" action="read">
@@ -88,13 +90,15 @@ export function FieldModule() {
         } />
       
         <Route path="inventory/*" element={<InventoryField />} />
-        <Route 
-          path="time-expenses/*" 
+        <Route
+          path="time-expenses/*"
           element={
-            <Suspense fallback={<TableLoadingPlaceholder />}>
-              <TimeExpensesModule />
-            </Suspense>
-          } 
+            <PermissionRoute module="time_tracking" action="read">
+              <Suspense fallback={<TableLoadingPlaceholder />}>
+                <TimeExpensesModule />
+              </Suspense>
+            </PermissionRoute>
+          }
         />
         <Route path="documents/*" element={<DocumentsModule />} />
         <Route path="reports" element={<Reports />} />

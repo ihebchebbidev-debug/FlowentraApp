@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { PluginGate } from "@/modules/shared/plugins";
+import { PermissionRoute } from "@/components/permissions/PermissionRoute";
 
 import PurchasesLayout from "./components/PurchasesLayout";
 
@@ -50,6 +51,7 @@ const SupplierInvoiceAgingPage = lazy(() => import("./pages/SupplierInvoiceAging
 export function PurchasesModule() {
   return (
     <PluginGate code="PL0025PURCHASES">
+      <PermissionRoute module="purchases" action="read">
       <Suspense fallback={<PageSkeleton />}>
         <Routes>
           {/* Full-viewport report pages — no shared chrome */}
@@ -112,6 +114,7 @@ export function PurchasesModule() {
           </Route>
         </Routes>
       </Suspense>
+      </PermissionRoute>
     </PluginGate>
   );
 }

@@ -182,8 +182,6 @@ export function AppSidebar() {
     const normalizedTitle = itemTitle.toLowerCase().replace(/_/g, '-');
     const permissionModule = SIDEBAR_PERMISSION_MAP[normalizedTitle];
     if (!permissionModule) return true;
-    // HR module: show for everyone EXCEPT krossier tenant (bypass permission check)
-    if (permissionModule === 'hr') return true;
     return hasPermission(permissionModule, 'read');
   };
 

@@ -78,7 +78,9 @@
       "Bash(grep -r \"min-w-\\\\\\\\\\\\[.*px\\\\\\\\\\\\]\\\\|fixed.*width\\\\|px-6\" /c/Users/ihebc/OneDrive/Desktop/FlowentraApp/src/modules/offers/components/OffersList.tsx /c/Users/ihebc/OneDrive/Desktop/FlowentraApp/src/modules/sales/components/SalesList.tsx)",
       "Bash(git -C c:/Users/ihebc/OneDrive/Desktop/FlowentraApp/.claude/worktrees/__TRACKED_VAR__ diff HEAD --name-only)",
       "Bash(grep -v \"^$\")",
-      "Bash(grep -v \"node_modules\\\\|comment\\\\|//\")"
+      "Bash(grep -v \"node_modules\\\\|comment\\\\|//\")",
+      "Bash(bash /tmp/check_perms.sh)",
+      "Bash(bash /tmp/find_unused.sh)"
     ],
     "additionalDirectories": [
       "C:\\Users\\iheb.chebbi\\Desktop\\FlowentraApp\\Backend\\Modules\\Offers\\DTOs",

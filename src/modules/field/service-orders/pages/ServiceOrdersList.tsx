@@ -384,6 +384,22 @@ export default function ServiceOrdersList() {
     }
   };
 
+  if (!permissionsLoading && !hasReadAccess) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] p-8">
+        <div className="text-center space-y-4">
+          <div className="mx-auto w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center">
+            <ShieldAlert className="h-8 w-8 text-destructive" />
+          </div>
+          <h2 className="text-xl font-semibold text-foreground">{t('common.access_denied', 'Access Denied')}</h2>
+          <p className="text-muted-foreground max-w-md">
+            {t('common.no_permission_view', "You don't have permission to view service orders.")}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col">
       {/* Header - Hidden on mobile */}
