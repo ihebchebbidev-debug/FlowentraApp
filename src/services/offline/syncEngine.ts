@@ -38,6 +38,8 @@ export function shouldSkipOfflineQueueForEndpoint(endpoint: string): boolean {
   if (path.includes("/planning/validate-assignment")) return true;
   // Authentication operations must happen online or fail immediately.
   if (path.includes("/auth/")) return true;
+  // Notification read/unread status — idempotent, low-priority, skip silently.
+  if (path.includes("/notifications")) return true;
   return false;
 }
 
@@ -292,6 +294,9 @@ function inferEntityType(endpoint: string): string {
   if (normalized.includes("public/forms") && normalized.includes("/responses")) return "dynamic_form_response";
   // Synced email mutations: PATCH .../emails/:id/star|read, DELETE .../emails/:id
   if (normalized.includes("/emails/")) return "synced_email";
+  // Recurring tasks — check before the broad /tasks match so /api/recurringtasks
+  // doesn't mis-classify as "task". Not yet replayable; resolves to generic → blocked.
+  if (normalized.includes("recurringtasks") || normalized.includes("recurring-tasks")) return "recurring_task";
   if (normalized.includes("stock-transactions")) return "stock_transaction";
   // Purchases
   if (normalized.includes("purchase-orders") || normalized.includes("purchaseorders")) return "purchase_order";
@@ -317,7 +322,9 @@ function inferEntityType(endpoint: string): string {
   if (normalized.includes("taskchecklists") && normalized.includes("/items")) return "task_checklist_item";
   if (normalized.includes("taskchecklists")) return "task_checklist";
   if (normalized.includes("/calendar") || normalized.startsWith("calendar/")) return "calendar_event";
-  if (normalized.includes("email") || normalized.includes("customemail")) return "email_account";
+  // Tightened email-account match — prevents payment reminder/send URLs that
+  // contain the word "email" from mis-classifying as email_account.
+  if (normalized.includes("/email-accounts") || normalized.includes("/customemail") || normalized.includes("/custom-email-accounts")) return "email_account";
   if (normalized.includes("project-task") || normalized.includes("/tasks")) return "task";
   if (normalized.includes("/projects")) return "project";
   if (normalized.includes("/offers")) return "offer";

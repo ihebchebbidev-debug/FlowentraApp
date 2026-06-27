@@ -12,6 +12,7 @@ import {
   queueHttpOperation,
   shouldQueueOfflineWrites,
   shouldSkipOfflineQueueForEndpoint,
+  canReplayEndpointOffline,
 } from "@/services/offline/syncEngine";
 import {
   attachCachedGetAdapter,
@@ -27,6 +28,7 @@ import { getSyntheticDataForOfflineCacheMissGet } from "@/services/offline/offli
 import { getOfflineDetailPlaceholder } from "@/services/offline/offlineDetailPlaceholders";
 import { reportApiErrorIncident } from "@/services/incident/incidentService";
 import { pushBreadcrumb } from "@/services/incident/incidentBreadcrumbs";
+import { toast } from "sonner";
 
 const axiosInstance = axios.create({
   baseURL: API_CONFIG.baseURL,
@@ -83,6 +85,13 @@ axiosInstance.interceptors.request.use((config) => {
     const endpoint = toRelativeApiEndpoint(fullUrl);
     if (shouldSkipOfflineQueueForEndpoint(endpoint)) {
       return Promise.reject(new axios.Cancel("OFFLINE_SKIP_NON_QUEUEABLE"));
+    }
+    if (!canReplayEndpointOffline(endpoint)) {
+      const msg = "This action isn't available offline yet — reconnect to save your changes.";
+      try { toast.error(msg); } catch {}
+      return Promise.reject(
+        Object.assign(new Error(msg), { isOfflineUnsupported: true })
+      );
     }
     const data = config.data;
     return queueHttpOperation({

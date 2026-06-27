@@ -11,6 +11,7 @@ import {
   queueHttpOperation,
   shouldQueueOfflineWrites,
   shouldSkipOfflineQueueForEndpoint,
+  canReplayEndpointOffline,
 } from '@/services/offline/syncEngine';
 import { getSyntheticDataForOfflineCacheMissGet } from '@/services/offline/offlineApiGetDefaults';
 import { getOfflineDetailPlaceholder } from '@/services/offline/offlineDetailPlaceholders';
@@ -179,6 +180,11 @@ export const apiFetch = async <T>(
       data: ({ ok: true, skippedOffline: true, message: 'System logs are not queued for sync.' } as unknown) as T,
       status: 200,
     };
+  }
+  if (shouldQueueOfflineWrites() && isMutation && !bypassOfflineQueue && !canReplayEndpointOffline(relativeForQueue)) {
+    const msg = "This action isn't available offline yet — reconnect to save your changes.";
+    try { toast.error(msg); } catch {}
+    return { data: null, status: 503, error: msg };
   }
   if (shouldQueueOfflineWrites() && isMutation && !bypassOfflineQueue) {
     let parsedBody: unknown;
