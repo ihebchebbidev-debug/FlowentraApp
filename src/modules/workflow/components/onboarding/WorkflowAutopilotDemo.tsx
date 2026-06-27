@@ -24,7 +24,7 @@ import {
   steps, chapters, initialDemoState,
   type DemoState, type PaletteCategory, type ConfigField, type OpenPanel,
 } from './autopilotScript';
-import { pickBestVoice, splitForSpeech, languageTagFor } from './narrationVoice';
+import { pickBestVoice, splitForSpeech, languageTagFor, configureUtteranceForFemaleVoice } from './narrationVoice';
 
 
 const nodeTypes = { demo: DemoNode };
@@ -553,12 +553,7 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
       chunks.forEach((chunk, idx) => {
         const u = new SpeechSynthesisUtterance(chunk);
         u.lang = bcp47;
-        if (voice) u.voice = voice;
-        // Clear, natural female pace — 0.92 is easy to follow, 1.08 pitch sits
-        // comfortably in the female register without sounding artificial.
-        u.rate = 0.92;
-        u.pitch = 1.08;
-        u.volume = 1;
+        configureUtteranceForFemaleVoice(u, voice);
         if (idx === chunks.length - 1) {
           u.onend = doAdvance;
           u.onerror = doAdvance;

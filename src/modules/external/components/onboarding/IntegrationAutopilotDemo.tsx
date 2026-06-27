@@ -9,7 +9,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DemoCursor } from './DemoCursor';
-import { pickBestVoice, splitForSpeech, languageTagFor } from './narrationVoice';
+import { pickBestVoice, splitForSpeech, languageTagFor, configureUtteranceForFemaleVoice } from './narrationVoice';
 import {
   INT_STEPS, INT_CHAPTERS, initialDemoState,
   type IntegrationDemoState,
@@ -139,10 +139,7 @@ export function IntegrationAutopilotDemo({ open, onClose }: Props) {
       chunks.forEach((chunk, idx) => {
         const u = new SpeechSynthesisUtterance(chunk);
         u.lang = bcp47;
-        if (voice) u.voice = voice;
-        u.rate = 0.86;
-        u.pitch = idx % 2 === 0 ? 1.02 : 0.98;
-        u.volume = 1;
+        configureUtteranceForFemaleVoice(u, voice);
         if (idx === chunks.length - 1) { u.onend = doAdvance; u.onerror = doAdvance; }
         try { synth.speak(u); } catch { /* safety */ }
       });

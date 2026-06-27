@@ -8,7 +8,7 @@ import {
   AlertTriangle, Users, Settings2, Eye, Wrench, ZoomIn, ZoomOut,
 } from 'lucide-react';
 import { DemoCursor } from '@/modules/external/components/onboarding/DemoCursor';
-import { pickBestVoice, splitForSpeech, languageTagFor } from '@/modules/external/components/onboarding/narrationVoice';
+import { pickBestVoice, splitForSpeech, languageTagFor, configureUtteranceForFemaleVoice } from '@/modules/external/components/onboarding/narrationVoice';
 import {
   PL_STEPS, PL_CHAPTERS, initialPlanningDemoState,
   type PlanningDemoState,
@@ -731,10 +731,7 @@ export function PlanningAutopilotDemo({ open, onClose }: Props) {
       chunks.forEach((chunk, idx) => {
         const u = new SpeechSynthesisUtterance(chunk);
         u.lang = bcp47;
-        if (voice) u.voice = voice;
-        u.rate = 0.86;
-        u.pitch = idx % 2 === 0 ? 1.02 : 0.98;
-        u.volume = 1;
+        configureUtteranceForFemaleVoice(u, voice);
         if (idx === chunks.length - 1) { u.onend = doAdvance; u.onerror = doAdvance; }
         try { synth.speak(u); } catch { /* safety */ }
       });
