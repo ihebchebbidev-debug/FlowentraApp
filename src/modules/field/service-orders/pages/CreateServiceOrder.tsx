@@ -104,13 +104,20 @@ export default function CreateServiceOrder() {
       };
 
       const created = await serviceOrdersApi.createDirect(payload);
-      toast.success(
-        t('create_success', {
-          defaultValue: 'Service order {{number}} created',
-          number: created.orderNumber,
-        })
-      );
-      navigate(`/dashboard/field/service-orders/${created.id}`);
+      if (created?.id) {
+        toast.success(
+          t('create_success', {
+            defaultValue: 'Service order {{number}} created',
+            number: created.orderNumber,
+          })
+        );
+        navigate(`/dashboard/field/service-orders/${created.id}`);
+      } else {
+        toast.success(
+          t('create_queued_offline', { defaultValue: 'Service order saved — will sync when reconnected' })
+        );
+        navigate('/dashboard/field/service-orders');
+      }
     } catch (err: any) {
       console.error('Failed to create direct service order', err);
       toast.error(

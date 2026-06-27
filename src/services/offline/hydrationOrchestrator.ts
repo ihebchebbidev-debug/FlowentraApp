@@ -467,6 +467,12 @@ export async function runOfflineHydration(): Promise<{ ok: boolean; modulesFaile
         if (!hasMore) break;
         page++;
       }
+      // Cache the URL the inventory list page actually requests so the offline
+      // guard gets an exact hit instead of the loose-list fallback (which would
+      // only return the last paginated page, not the full article set).
+      if (!signal.aborted) {
+        await fetchAndCache(`${API_URL}/api/articles?limit=99999`, signal).catch(() => undefined);
+      }
     });
 
     await run("offers", async () => {

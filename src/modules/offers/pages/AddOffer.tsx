@@ -246,20 +246,24 @@ export function AddOffer() {
       };
 
       const newOffer = await OffersService.createOffer(offerData);
-      
-      logFormSubmit('Create Offer', true, { 
-        entityType: 'Offer', 
+
+      logFormSubmit('Create Offer', true, {
+        entityType: 'Offer',
         entityId: newOffer.id,
         details: `Created offer "${formData.title}" for ${formData.contactName}`
       });
-      
+
       toast({
         title: t('success'),
         description: isDraft ? t("offer_created") : t("offer_sent"),
       });
-      
+
       clearFormData();
-      navigate(`/dashboard/offers/${newOffer.id}`);
+      if (newOffer?.id) {
+        navigate(`/dashboard/offers/${newOffer.id}`);
+      } else {
+        navigate('/dashboard/offers');
+      }
     } catch (error) {
       console.error("Error creating offer:", error);
       logFormSubmit('Create Offer', false, { details: (error as Error).message });

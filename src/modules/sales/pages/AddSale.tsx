@@ -232,20 +232,24 @@ export function AddSale() {
       };
       
       const newSale = await SalesService.createSale(saleData);
-      
-      logFormSubmit('Create Sale', true, { 
-        entityType: 'Sale', 
+
+      logFormSubmit('Create Sale', true, {
+        entityType: 'Sale',
         entityId: newSale.id,
         details: `Created sale "${formData.title}" for ${formData.customerName}`
       });
-      
+
       toast({
         title: t('addSale.successTitle', 'Success'),
         description: isDraft ? t('addSale.successDraft') : t('addSale.successCreated'),
       });
-      
+
       clearFormData();
-      navigate(`/dashboard/sales/${newSale.id}`);
+      if (newSale?.id) {
+        navigate(`/dashboard/sales/${newSale.id}`);
+      } else {
+        navigate('/dashboard/sales');
+      }
     } catch (error) {
       console.error("Error creating sale:", error);
       logFormSubmit('Create Sale', false, { details: (error as Error).message });
