@@ -91,8 +91,11 @@ export default function CreateFormPage() {
     
     try {
       const createdForm = await createMutation.mutateAsync(dto);
-      // Navigate directly to the edit page so user can add fields in the builder
-      navigate(`/dashboard/settings/dynamic-forms/${createdForm.id}/edit`);
+      if (createdForm?.id) {
+        navigate(`/dashboard/settings/dynamic-forms/${createdForm.id}/edit`);
+      } else {
+        navigate('/dashboard/settings/dynamic-forms');
+      }
     } catch (error: any) {
       // Error toast is handled by the mutation's onError callback
       // Just log for debugging - navigation won't happen on error

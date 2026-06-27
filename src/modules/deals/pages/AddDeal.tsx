@@ -20,7 +20,11 @@ export function AddDeal() {
     try {
       const deal = await dealsApi.create(payload);
       toast.success(t("toast.created"));
-      navigate(`/dashboard/deals/${deal.id}`);
+      if (deal?.id) {
+        navigate(`/dashboard/deals/${deal.id}`);
+      } else {
+        navigate('/dashboard/deals');
+      }
     } catch {
       toast.error(t("toast.saveError"));
     } finally {
