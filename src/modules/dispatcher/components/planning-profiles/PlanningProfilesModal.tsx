@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { CalendarDays, Plus, Copy, Trash2, Star, Share2, Check, Loader2, Package, Building2, List, GraduationCap } from 'lucide-react';
+import { CalendarDays, Plus, Copy, Trash2, Star, Share2, Check, Loader2, Package, Building2, List, GraduationCap, ChevronLeft } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,6 +47,11 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<PlanningProfile | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // Mobile: show either the profile list or the detail pane (not both)
+  const [mobileView, setMobileView] = useState<'list' | 'detail'>('list');
+
+  // Reset mobile view to list when the modal is reopened
+  useEffect(() => { if (open) setMobileView('list'); }, [open]);
 
   // Mirrors DispatchingInterface: needed to label the planning-mode toggle correctly.
   const { data: conversionMode = 'installation' } = useQuery({
@@ -189,24 +194,24 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-5xl h-[85vh] flex flex-col p-0 gap-0">
-          <DialogHeader className="px-6 py-4 border-b">
-            <DialogTitle className="flex items-center justify-between gap-3 flex-wrap">
-              <span className="flex items-center gap-2">
-                <CalendarDays className="h-5 w-5 text-primary" />
+        <DialogContent className="sm:max-w-5xl w-full h-[100dvh] sm:h-[85vh] flex flex-col p-0 gap-0 rounded-none sm:rounded-lg max-w-none">
+          <DialogHeader className="px-4 sm:px-6 py-3 sm:py-4 border-b flex-shrink-0">
+            <DialogTitle className="flex items-center justify-between gap-2 flex-wrap">
+              <span className="flex items-center gap-2 text-base sm:text-lg">
+                <CalendarDays className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
                 {t('dispatcher.profiles.title', { defaultValue: 'Planning profiles' })}
               </span>
-              <span className="flex items-center gap-2 text-xs font-normal mr-8">
-                <span className="text-muted-foreground">
+              <span className="flex items-center gap-2 text-xs font-normal mr-6 sm:mr-8">
+                <span className="text-muted-foreground hidden sm:inline">
                   {t('dispatcher.profiles.currently_active', { defaultValue: 'Currently active' })}:
                 </span>
                 {activeProfile ? (
-                  <Badge variant="default" className="gap-1.5 py-1">
-                    <Star className="h-3 w-3" fill="currentColor" />
-                    {activeProfile.name}
+                  <Badge variant="default" className="gap-1 py-0.5 text-[11px]">
+                    <Star className="h-2.5 w-2.5" fill="currentColor" />
+                    <span className="max-w-[120px] truncate">{activeProfile.name}</span>
                   </Badge>
                 ) : (
-                  <Badge variant="outline">
+                  <Badge variant="outline" className="text-[11px]">
                     {t('dispatcher.profiles.no_active_profile', { defaultValue: 'No active profile' })}
                   </Badge>
                 )}
@@ -214,9 +219,9 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
             </DialogTitle>
           </DialogHeader>
 
-          <div className="flex flex-1 min-h-0">
-            {/* Left rail */}
-            <aside className="w-64 border-r flex flex-col bg-muted/30">
+          <div className="flex flex-1 min-h-0 overflow-hidden">
+            {/* Left rail — full-width on mobile (hidden when detail is showing) */}
+            <aside className={`${mobileView === 'detail' ? 'hidden' : 'flex'} sm:flex w-full sm:w-64 border-r flex-col bg-muted/30 flex-shrink-0`}>
               <div className="p-3 border-b">
                 <Button size="sm" className="w-full gap-2" onClick={handleCreate}>
                   <Plus className="h-4 w-4" />
@@ -230,14 +235,14 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
                   profiles={mine}
                   activeId={activeProfile?.id}
                   selectedId={draft?.id}
-                  onSelect={setSelectedId}
+                  onSelect={id => { setSelectedId(id); setMobileView('detail'); }}
                 />
                 <ProfileSection
                   label={t('dispatcher.profiles.shared_profiles', { defaultValue: 'Shared profiles' })}
                   profiles={shared}
                   activeId={activeProfile?.id}
                   selectedId={draft?.id}
-                  onSelect={setSelectedId}
+                  onSelect={id => { setSelectedId(id); setMobileView('detail'); }}
                 />
               </ScrollArea>
               <div className="p-3 border-t">
@@ -252,48 +257,61 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
               </div>
             </aside>
 
-            {/* Right pane */}
-            <section className="flex-1 flex flex-col min-w-0">
+            {/* Right pane — full-width on mobile (hidden when list is showing) */}
+            <section className={`${mobileView === 'list' ? 'hidden' : 'flex'} sm:flex flex-1 flex-col min-w-0`}>
               {!draft ? (
-                <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm p-6 text-center">
                   {t('dispatcher.profiles.empty_state', { defaultValue: 'Select or create a profile to begin' })}
                 </div>
               ) : (
                 <>
-                  <div className="px-6 py-3 border-b flex items-center gap-3">
+                  <div className="px-4 sm:px-6 py-2 sm:py-3 border-b flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                    {/* Back button — mobile only */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="sm:hidden -ml-2 gap-1 text-muted-foreground"
+                      onClick={() => setMobileView('list')}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      {t('common.back', { defaultValue: 'Back' })}
+                    </Button>
                     <Input
                       value={draft.name}
                       onChange={e => setDraft({ ...draft, name: e.target.value })}
-                      className="text-base font-semibold max-w-sm"
+                      className="text-sm sm:text-base font-semibold flex-1 sm:max-w-sm"
                       placeholder={t('dispatcher.profiles.name_placeholder', { defaultValue: 'Profile name' })}
                     />
                     {String(activeProfile?.id) === String(draft.id) && (
-                      <Badge variant="default" className="gap-1"><Star className="h-3 w-3" />{t('dispatcher.profiles.active', { defaultValue: 'Active' })}</Badge>
+                      <Badge variant="default" className="gap-1 shrink-0"><Star className="h-3 w-3" /><span className="hidden sm:inline">{t('dispatcher.profiles.active', { defaultValue: 'Active' })}</span></Badge>
                     )}
                     {draft.isShared && (
-                      <Badge variant="secondary" className="gap-1"><Share2 className="h-3 w-3" />{t('dispatcher.profiles.shared', { defaultValue: 'Shared' })}</Badge>
+                      <Badge variant="secondary" className="gap-1 shrink-0"><Share2 className="h-3 w-3" /><span className="hidden sm:inline">{t('dispatcher.profiles.shared', { defaultValue: 'Shared' })}</span></Badge>
                     )}
                   </div>
 
                   <Tabs defaultValue="general" className="flex-1 flex flex-col min-h-0">
-                    <TabsList className="mx-6 mt-3 self-start">
-                      <TabsTrigger value="general">{t('dispatcher.profiles.tab_general', { defaultValue: 'General' })}</TabsTrigger>
-                      <TabsTrigger value="users">{t('dispatcher.profiles.tab_users', { defaultValue: 'Visible users' })}</TabsTrigger>
-                      <TabsTrigger value="skills" className="gap-1.5">
-                        <GraduationCap className="h-3.5 w-3.5" />
-                        {t('dispatcher.profiles.tab_skills', { defaultValue: 'Skills filter' })}
-                        {(draft.requiredSkillIds?.length ?? 0) > 0 && (
-                          <Badge variant="default" className="h-4 px-1 text-[10px] ml-0.5">
-                            {draft.requiredSkillIds!.length}
-                          </Badge>
-                        )}
-                      </TabsTrigger>
-                      <TabsTrigger value="display">{t('dispatcher.profiles.tab_display', { defaultValue: 'Display' })}</TabsTrigger>
-                      <TabsTrigger value="permissions">{t('dispatcher.profiles.tab_permissions', { defaultValue: 'Permissions' })}</TabsTrigger>
-                    </TabsList>
+                    {/* Tabs scroll horizontally on mobile */}
+                    <div className="px-2 sm:px-6 mt-2 sm:mt-3 overflow-x-auto flex-shrink-0">
+                      <TabsList className="w-max">
+                        <TabsTrigger value="general" className="text-xs sm:text-sm">{t('dispatcher.profiles.tab_general', { defaultValue: 'General' })}</TabsTrigger>
+                        <TabsTrigger value="users" className="text-xs sm:text-sm">{t('dispatcher.profiles.tab_users', { defaultValue: 'Users' })}</TabsTrigger>
+                        <TabsTrigger value="skills" className="gap-1 text-xs sm:text-sm">
+                          <GraduationCap className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                          {t('dispatcher.profiles.tab_skills', { defaultValue: 'Skills' })}
+                          {(draft.requiredSkillIds?.length ?? 0) > 0 && (
+                            <Badge variant="default" className="h-4 px-1 text-[10px] ml-0.5">
+                              {draft.requiredSkillIds!.length}
+                            </Badge>
+                          )}
+                        </TabsTrigger>
+                        <TabsTrigger value="display" className="text-xs sm:text-sm">{t('dispatcher.profiles.tab_display', { defaultValue: 'Display' })}</TabsTrigger>
+                        <TabsTrigger value="permissions" className="text-xs sm:text-sm">{t('dispatcher.profiles.tab_permissions', { defaultValue: 'Perms' })}</TabsTrigger>
+                      </TabsList>
+                    </div>
 
                     <ScrollArea className="flex-1">
-                      <div className="p-6">
+                      <div className="p-4 sm:p-6">
                         <TabsContent value="general" className="space-y-4 mt-0">
                           <div>
                             <Label>{t('dispatcher.profiles.field_name', { defaultValue: 'Name' })}</Label>
@@ -392,7 +410,7 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
                         </TabsContent>
 
                         <TabsContent value="display" className="space-y-4 mt-0">
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                               <Label>{t('dispatcher.profiles.field_mode', { defaultValue: 'Board mode' })}</Label>
                               <Select value={draft.settings.mode} onValueChange={v => updateSetting('mode', v as PlanningProfileSettings['mode'])}>
@@ -414,7 +432,7 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
                                 </SelectContent>
                               </Select>
                             </div>
-                            <div className="col-span-2">
+                            <div className="col-span-1 sm:col-span-2">
                               <Label>{t('dispatcher.profiles.field_color_by', { defaultValue: 'Color jobs by' })}</Label>
                               <Select value={draft.settings.colorBy} onValueChange={v => updateSetting('colorBy', v as PlanningProfileSettings['colorBy'])}>
                                 <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
@@ -526,36 +544,39 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
             </section>
           </div>
 
-          <DialogFooter className="px-6 py-3 border-t flex-row sm:justify-between gap-2">
-            <div className="flex gap-2">
+          <DialogFooter className="px-4 sm:px-6 py-3 border-t flex-col sm:flex-row sm:justify-between gap-2 flex-shrink-0">
+            {/* Secondary actions */}
+            <div className="flex flex-wrap gap-2 order-2 sm:order-1">
               {draft && String(activeProfile?.id) !== String(draft.id) && (
                 <Button variant="outline" size="sm" onClick={handleSetActive} disabled={setActive.isPending}>
                   <Star className="h-4 w-4 mr-1" />
-                  {t('dispatcher.profiles.set_active', { defaultValue: 'Set as active' })}
+                  <span className="hidden sm:inline">{t('dispatcher.profiles.set_active', { defaultValue: 'Set as active' })}</span>
+                  <span className="sm:hidden">{t('dispatcher.profiles.set_active_short', { defaultValue: 'Activate' })}</span>
                 </Button>
               )}
               {draft && (
                 <Button variant="outline" size="sm" onClick={handleDuplicate}>
-                  <Copy className="h-4 w-4 mr-1" />
-                  {t('dispatcher.profiles.duplicate', { defaultValue: 'Duplicate' })}
+                  <Copy className="h-4 w-4 sm:mr-1" />
+                  <span className="hidden sm:inline">{t('dispatcher.profiles.duplicate', { defaultValue: 'Duplicate' })}</span>
                 </Button>
               )}
               {draft && (
                 <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setConfirmDelete(true)}>
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  {t('common.delete', { defaultValue: 'Delete' })}
+                  <Trash2 className="h-4 w-4 sm:mr-1" />
+                  <span className="hidden sm:inline">{t('common.delete', { defaultValue: 'Delete' })}</span>
                 </Button>
               )}
             </div>
-            <div className="flex gap-2">
-              <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            {/* Primary actions */}
+            <div className="flex gap-2 order-1 sm:order-2">
+              <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} className="hidden sm:inline-flex">
                 {t('common.cancel', { defaultValue: 'Cancel' })}
               </Button>
-              <Button variant="outline" onClick={handleSave} disabled={!draft || update.isPending}>
+              <Button variant="outline" size="sm" onClick={handleSave} disabled={!draft || update.isPending} className="flex-1 sm:flex-none">
                 {update.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Check className="h-4 w-4 mr-1" />}
                 {t('common.save', { defaultValue: 'Save' })}
               </Button>
-              <Button onClick={handleSaveAndApply} disabled={!draft || update.isPending || setActive.isPending}>
+              <Button size="sm" onClick={handleSaveAndApply} disabled={!draft || update.isPending || setActive.isPending} className="flex-1 sm:flex-none">
                 {(update.isPending || setActive.isPending) ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Star className="h-4 w-4 mr-1" />}
                 {t('dispatcher.profiles.save_and_apply', { defaultValue: 'Save & Apply' })}
               </Button>
