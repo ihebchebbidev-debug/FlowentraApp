@@ -489,7 +489,7 @@ export function DispatchingInterface() {
 
       {/* Mobile Layout */}
       {isMobile && (
-        <div className="flex-1 w-full overflow-hidden relative">
+        <div className="flex-1 w-full overflow-hidden">
           {viewMode === 'calendar' ? (
             <CustomCalendar
               view={calendarView}
@@ -512,11 +512,15 @@ export function DispatchingInterface() {
               />
             </div>
           )}
+        </div>
+      )}
 
-          {/* Floating button — opens the unassigned jobs sheet */}
+      {/* FAB + Sheet — rendered at root level so no overflow-hidden clips them */}
+      {isMobile && (
+        <>
           <button
             onClick={() => setIsJobsSheetOpen(true)}
-            className="absolute bottom-5 right-4 z-30 flex items-center gap-2 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 px-4 py-3 text-sm font-medium active:scale-95 transition-transform"
+            className="fixed bottom-5 right-4 z-50 flex items-center gap-2 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 px-4 py-3 text-sm font-medium active:scale-95 transition-transform"
             aria-label={t('dispatcher.unassigned_jobs', { defaultValue: 'Unassigned jobs' })}
           >
             <ClipboardList className="h-4 w-4 flex-shrink-0" />
@@ -528,7 +532,6 @@ export function DispatchingInterface() {
             )}
           </button>
 
-          {/* Bottom sheet — unassigned jobs list */}
           <Sheet open={isJobsSheetOpen} onOpenChange={setIsJobsSheetOpen}>
             <SheetContent
               side="bottom"
@@ -557,7 +560,7 @@ export function DispatchingInterface() {
               </div>
             </SheetContent>
           </Sheet>
-        </div>
+        </>
       )}
 
       {/* Autopilot product demo */}
