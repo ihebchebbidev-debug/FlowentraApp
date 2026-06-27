@@ -106,8 +106,8 @@ export function configureUtteranceForFemaleVoice(
 export function splitForSpeech(text: string): string[] {
   return text
     .replace(/\u2019/g, "'")     // normalize curly apostrophe → straight
-    .replace(/…|\.{3}/g, ‘. ‘)        // ellipses → sentence boundary
-    .replace(/([:;—])\s+/g, ‘. ‘)     // colons / semicolons / em-dashes → pause
+    .replace(/…|\.{3}/g, '. ')        // ellipses → sentence boundary
+    .replace(/([:;—])\s+/g, '. ')     // colons / semicolons / em-dashes → pause
     .split(/(?<=[.!?])\s+(?=[A-ZÀ-Ý])/u)
     .map((s) => s.trim())
     .filter(Boolean);
