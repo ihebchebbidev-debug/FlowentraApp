@@ -26,8 +26,8 @@ export function CalendarHeader({ dates, workingHours, dimensions, includeWeekend
 
   return (
     <div className="flex border-b bg-gradient-to-r from-card to-card/50 sticky top-0 z-20 shadow-sm flex-shrink-0">
-      {/* Technicians column header - width matches TechnicianList */}
-      <div className={`${isMobile ? 'w-10' : 'w-52'} border-r bg-card/95 backdrop-blur-md flex-shrink-0`}>
+      {/* Technicians column header - stays pinned left when body scrolls horizontally */}
+      <div className={`${isMobile ? 'w-10' : 'w-52'} border-r bg-card/95 backdrop-blur-md flex-shrink-0 sticky left-0 z-30`}>
         <div className="h-20 flex items-center justify-center px-1 py-1.5">
           {isMobile ? (
             <Button
@@ -53,8 +53,8 @@ export function CalendarHeader({ dates, workingHours, dimensions, includeWeekend
         </div>
       </div>
       
-  {/* Date headers fixed (no horizontal scroll) */}
-  <div className="flex-1 overflow-x-hidden">
+  {/* Date headers scroll with the body */}
+  <div className="flex-1">
         <div className={`flex ${widthMode === 'auto' ? 'w-full' : ''}`} style={widthMode === 'scroll' ? { width: `${dates.length * dateWidth}px` } : {}}>
           {dates.map((date) => {
             const weekend = isWeekend(date);

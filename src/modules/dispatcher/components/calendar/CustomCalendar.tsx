@@ -1134,18 +1134,17 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
       ) : (
         /* Detailed Planning Mode (≤7 days) */
         <>
-          <CalendarHeader
-            dates={dates}
-            workingHours={workingHours}
-            dimensions={dimensions}
-            includeWeekends={settings.includeWeekends}
-            isMobile={isMobile}
-          />
-          
-          <div ref={setViewportRef} className="flex-1 overflow-y-auto">
-            <div className="flex h-full">
+          <div ref={setViewportRef} className="flex-1 overflow-y-auto overflow-x-auto">
+            <CalendarHeader
+              dates={dates}
+              workingHours={workingHours}
+              dimensions={dimensions}
+              includeWeekends={settings.includeWeekends}
+              isMobile={isMobile}
+            />
+            <div className="flex">
               <TechnicianList technicians={displayedTechnicians} rowHeights={rowHeights} isMobile={isMobile} />
-              
+
               <CalendarGrid
                 dates={dates}
                 technicians={displayedTechnicians}
@@ -1162,6 +1161,7 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
                 onJobClick={handleJobClick}
                 onPreviewResize={handlePreviewResize}
                 includeWeekends={settings.includeWeekends}
+                rowHeights={rowHeights}
               />
             </div>
           </div>

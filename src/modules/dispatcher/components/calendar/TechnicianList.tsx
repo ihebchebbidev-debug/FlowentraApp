@@ -1,4 +1,3 @@
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Phone, Mail, Clock, Briefcase, MapPin, Send, User, Search, CheckCircle, AlertTriangle, XCircle, Circle } from "lucide-react";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { useTranslation } from "react-i18next";
@@ -199,8 +198,7 @@ export function TechnicianList({
 
   return (
     <>
-      <div className={`${isMobile ? 'w-10' : 'w-52'} border-r bg-card/50 backdrop-blur-sm flex-shrink-0 flex flex-col`}>
-        <ScrollArea className="flex-1">
+      <div className={`${isMobile ? 'w-10' : 'w-52'} border-r bg-card/50 backdrop-blur-sm flex-shrink-0 sticky left-0 z-10`}>
           {filteredTechnicians.length === 0 ? (
             <div className="p-4 text-center text-xs text-muted-foreground">
               {t('dispatcher.no_technicians_found', 'No technicians found')}
@@ -268,7 +266,6 @@ export function TechnicianList({
             );
           })
           )}
-        </ScrollArea>
       </div>
 
       {/* Technician Details Modal */}

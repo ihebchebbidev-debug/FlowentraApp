@@ -33,6 +33,7 @@ interface CalendarGridProps {
   onJobResize: (jobId: string, newEnd: Date) => void;
   onJobClick: (job: Job) => void;
   includeWeekends: boolean;
+  rowHeights?: Record<string, number>;
 }
 
 export function CalendarGrid({
@@ -50,7 +51,8 @@ export function CalendarGrid({
   onJobResize,
   onJobClick,
   onPreviewResize,
-  includeWeekends
+  includeWeekends,
+  rowHeights,
 }: CalendarGridProps & { onPreviewResize?: (jobId: string, newEnd: Date) => void }) {
   const { t } = useTranslation();
   const { dateWidth, hourWidth, widthMode } = dimensions;
@@ -260,7 +262,7 @@ export function CalendarGrid({
   };
 
   return (
-  <div className="flex-1 overflow-x-hidden bg-gradient-to-br from-background to-accent/5 relative">
+  <div className="flex-1 min-w-0 bg-gradient-to-br from-background to-accent/5 relative">
       {/* Single current time indicator spanning all rows */}
       <CurrentTimeIndicator 
         dates={dates}
@@ -274,8 +276,8 @@ export function CalendarGrid({
         {technicians.map((technician) => {
           const techUnavailable = isTechnicianUnavailable(technician.id);
           const maxLanes = getMaxLanesForTechnician(technician.id);
-          const LANE_HEIGHT = 36; // px per stacked job
-          const rowHeight = Math.max(80, maxLanes * LANE_HEIGHT + 12);
+          const LANE_HEIGHT = 36;
+          const rowHeight = rowHeights?.[technician.id] ?? Math.max(80, maxLanes * LANE_HEIGHT + 12);
 
           return (
           <div key={technician.id} className="flex border-b" style={{ height: `${rowHeight}px` }}>
