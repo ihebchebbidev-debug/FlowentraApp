@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { ClipboardList } from "lucide-react";
 
 import { PlanningAutopilotDemo } from "./onboarding/PlanningAutopilotDemo";
 import { CustomCalendar } from "./CustomCalendar";
@@ -487,7 +489,7 @@ export function DispatchingInterface() {
 
       {/* Mobile Layout */}
       {isMobile && (
-        <div className="flex-1 w-full overflow-hidden">
+        <div className="flex-1 w-full overflow-hidden relative">
           {viewMode === 'calendar' ? (
             <CustomCalendar
               view={calendarView}
@@ -498,7 +500,7 @@ export function DispatchingInterface() {
               refreshTrigger={calendarRefreshTrigger}
               isMobile={true}
               conversionMode={conversionMode || 'installation'}
-                  onViewRangeChange={setViewedRange}
+              onViewRangeChange={setViewedRange}
             />
           ) : (
             <div className="p-4 h-full">
@@ -510,6 +512,51 @@ export function DispatchingInterface() {
               />
             </div>
           )}
+
+          {/* Floating button — opens the unassigned jobs sheet */}
+          <button
+            onClick={() => setIsJobsSheetOpen(true)}
+            className="absolute bottom-5 right-4 z-30 flex items-center gap-2 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 px-4 py-3 text-sm font-medium active:scale-95 transition-transform"
+            aria-label={t('dispatcher.unassigned_jobs', { defaultValue: 'Unassigned jobs' })}
+          >
+            <ClipboardList className="h-4 w-4 flex-shrink-0" />
+            <span>{t('dispatcher.jobs', { defaultValue: 'Jobs' })}</span>
+            {jobs.length > 0 && (
+              <span className="flex items-center justify-center rounded-full bg-primary-foreground text-primary text-[11px] font-bold h-5 min-w-[20px] px-1 -mr-1">
+                {jobs.length}
+              </span>
+            )}
+          </button>
+
+          {/* Bottom sheet — unassigned jobs list */}
+          <Sheet open={isJobsSheetOpen} onOpenChange={setIsJobsSheetOpen}>
+            <SheetContent
+              side="bottom"
+              className="h-[82dvh] rounded-t-2xl p-0 flex flex-col"
+            >
+              <SheetHeader className="px-4 pt-4 pb-2 border-b flex-shrink-0">
+                <SheetTitle className="flex items-center gap-2 text-base">
+                  <ClipboardList className="h-4 w-4 text-primary" />
+                  {t('dispatcher.unassigned_jobs', { defaultValue: 'Unassigned jobs' })}
+                  {jobs.length > 0 && (
+                    <Badge variant="secondary" className="ml-1">{jobs.length}</Badge>
+                  )}
+                </SheetTitle>
+              </SheetHeader>
+              <div className="flex-1 min-h-0 overflow-hidden">
+                <UnassignedJobsList
+                  jobs={jobs}
+                  isLoading={!loadingState.serviceOrdersLoaded || isRefreshing}
+                  onJobUpdate={handleRefresh}
+                  onJobClick={handleJobClick}
+                  isMobile={true}
+                  planningMode={planningMode}
+                  onPlanningModeChange={setPlanningMode}
+                  conversionMode={conversionMode || 'installation'}
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       )}
 
