@@ -13,9 +13,10 @@ interface CalendarHeaderProps {
   workingHours: number[];
   dimensions: ZoomDimensions;
   includeWeekends?: boolean;
+  isMobile?: boolean;
 }
 
-export function CalendarHeader({ dates, workingHours, dimensions, includeWeekends = true }: CalendarHeaderProps) {
+export function CalendarHeader({ dates, workingHours, dimensions, includeWeekends = true, isMobile = false }: CalendarHeaderProps) {
   const { t, i18n } = useTranslation();
   const [profilesOpen, setProfilesOpen] = useState(false);
   const { dateWidth, hourWidth, widthMode, showHourLabels, hourTextSize } = dimensions;
@@ -25,18 +26,30 @@ export function CalendarHeader({ dates, workingHours, dimensions, includeWeekend
 
   return (
     <div className="flex border-b bg-gradient-to-r from-card to-card/50 sticky top-0 z-20 shadow-sm flex-shrink-0">
-      {/* Technicians column header - FIXED WIDTH */}
-      <div className="w-52 border-r bg-card/95 backdrop-blur-md flex-shrink-0">
-        <div className="h-20 flex items-center justify-center px-2 py-1.5">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setProfilesOpen(true)}
-            className="h-8 px-3 text-xs gap-1.5"
-          >
-            <Settings className="h-3.5 w-3.5" />
-            {t('dispatcher.profiles.manage_profiles', { defaultValue: 'Edit planning' })}
-          </Button>
+      {/* Technicians column header - width matches TechnicianList */}
+      <div className={`${isMobile ? 'w-10' : 'w-52'} border-r bg-card/95 backdrop-blur-md flex-shrink-0`}>
+        <div className="h-20 flex items-center justify-center px-1 py-1.5">
+          {isMobile ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setProfilesOpen(true)}
+              className="h-8 w-8 p-0"
+              title={t('dispatcher.profiles.manage_profiles', { defaultValue: 'Edit planning' })}
+            >
+              <Settings className="h-3.5 w-3.5" />
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setProfilesOpen(true)}
+              className="h-8 px-3 text-xs gap-1.5"
+            >
+              <Settings className="h-3.5 w-3.5" />
+              {t('dispatcher.profiles.manage_profiles', { defaultValue: 'Edit planning' })}
+            </Button>
+          )}
         </div>
       </div>
       

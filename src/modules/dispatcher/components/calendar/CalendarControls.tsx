@@ -36,6 +36,7 @@ interface CalendarControlsProps {
   onGoToToday: () => void;
   statusFilter?: StatusFilter;
   onStatusFilterChange?: (filter: StatusFilter) => void;
+  isMobile?: boolean;
 }
 
 export function CalendarControls({
@@ -48,7 +49,8 @@ export function CalendarControls({
   onNavigateDays,
   onGoToToday,
   statusFilter = 'all',
-  onStatusFilterChange
+  onStatusFilterChange,
+  isMobile = false,
 }: CalendarControlsProps) {
   const { t, i18n } = useTranslation();
   const dateLocale = i18n.language === 'fr' ? frLocale : enUS;
@@ -83,8 +85,8 @@ export function CalendarControls({
   const currentDayCount = differenceInCalendarDays(dateRange.to, dateRange.from) + 1;
 
   return (
-    <div className="flex items-center justify-between p-4 border-b bg-card/50 backdrop-blur-sm">
-      <div className="flex items-center gap-4">
+    <div className="flex items-center justify-between p-2 sm:p-4 border-b bg-card/50 backdrop-blur-sm">
+      <div className="flex items-center gap-2 sm:gap-4 min-w-0">
         {/* Navigation Controls */}
         <div className="flex items-center gap-1">
           <Button
@@ -110,60 +112,70 @@ export function CalendarControls({
           </Button>
         </div>
 
-        {/* Date Range Picker */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className={cn(
-                "justify-start text-left font-normal gap-2 min-w-[200px]",
-              )}
-            >
-              <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-              <span className="text-[12px]">
-                {format(dateRange.from, 'dd MMM', { locale: dateLocale })} — {format(dateRange.to, 'dd MMM yyyy', { locale: dateLocale })}
-              </span>
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <div className="flex flex-col">
-              <Calendar
-                mode="range"
-                selected={{ from: dateRange.from, to: dateRange.to }}
-                onSelect={handleRangeSelect}
-                numberOfMonths={2}
-                defaultMonth={dateRange.from}
-              />
-              <div className="px-3 pb-2 text-xs text-muted-foreground text-center">
-                {t('dispatcher.overview_calendar_hint')}
+        {/* Date display — compact label on mobile, full picker on desktop */}
+        {isMobile ? (
+          <span className="text-xs font-medium text-foreground truncate">
+            {format(dateRange.from, 'EEE dd MMM', { locale: dateLocale })}
+          </span>
+        ) : (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "justify-start text-left font-normal gap-2 min-w-[200px]",
+                )}
+              >
+                <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                <span className="text-[12px]">
+                  {format(dateRange.from, 'dd MMM', { locale: dateLocale })} — {format(dateRange.to, 'dd MMM yyyy', { locale: dateLocale })}
+                </span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <div className="flex flex-col">
+                <Calendar
+                  mode="range"
+                  selected={{ from: dateRange.from, to: dateRange.to }}
+                  onSelect={handleRangeSelect}
+                  numberOfMonths={2}
+                  defaultMonth={dateRange.from}
+                />
+                <div className="px-3 pb-2 text-xs text-muted-foreground text-center">
+                  {t('dispatcher.overview_calendar_hint')}
+                </div>
               </div>
-            </div>
-          </PopoverContent>
-        </Popover>
-
-        {/* Day Count Presets */}
-        <div className="flex items-center gap-1">
-          {[1, 3, 5, 7, 14, 30].map((count) => (
-            <Button
-              key={count}
-              variant={currentDayCount === count ? "default" : "outline"}
-              size="sm"
-              onClick={() => setDayCount(count)}
-              className="text-xs px-2"
-            >
-              {count}{t('dispatcher.day_short')}
-            </Button>
-          ))}
-        </div>
-        {currentDayCount > 7 && (
-          <Badge variant="secondary" className="text-xs">
-            {t('dispatcher.overview_mode')}
-          </Badge>
+            </PopoverContent>
+          </Popover>
         )}
 
-        {/* Zoom Controls */}
-        <div className="flex items-center gap-1">
+        {/* Day Count Presets — hidden on mobile */}
+        {!isMobile && (
+          <>
+            <div className="flex items-center gap-1">
+              {[1, 3, 5, 7, 14, 30].map((count) => (
+                <Button
+                  key={count}
+                  variant={currentDayCount === count ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setDayCount(count)}
+                  className="text-xs px-2"
+                >
+                  {count}{t('dispatcher.day_short')}
+                </Button>
+              ))}
+            </div>
+            {currentDayCount > 7 && (
+              <Badge variant="secondary" className="text-xs">
+                {t('dispatcher.overview_mode')}
+              </Badge>
+            )}
+          </>
+        )}
+
+        {/* Zoom Controls — hidden on mobile */}
+        {!isMobile && <div className="flex items-center gap-1">
           <Button
             variant="outline"
             size="sm"
@@ -194,7 +206,7 @@ export function CalendarControls({
           >
             <ZoomOut className="h-4 w-4" />
           </Button>
-        </div>
+        </div>}
 
         {/* Status Filter */}
         {onStatusFilterChange && (

@@ -1,4 +1,4 @@
-// Pick the best-sounding FEMALE Web Speech voice for a given language.
+﻿// Pick the best-sounding FEMALE Web Speech voice for a given language.
 // Priority: top-tier named female voices > generic female-labelled > any premium.
 // Male voices are penalised so the picker never falls back to them when a
 // female voice of any quality exists.
@@ -105,7 +105,7 @@ export function configureUtteranceForFemaleVoice(
 // between sentences instead of running the whole paragraph together.
 export function splitForSpeech(text: string): string[] {
   return text
-    .replace(/’/g, "’")           // normalize curly apostrophe → straight
+    .replace(/\u2019/g, "'")     // normalize curly apostrophe → straight
     .replace(/…|\.{3}/g, ‘. ‘)        // ellipses → sentence boundary
     .replace(/([:;—])\s+/g, ‘. ‘)     // colons / semicolons / em-dashes → pause
     .split(/(?<=[.!?])\s+(?=[A-ZÀ-Ý])/u)

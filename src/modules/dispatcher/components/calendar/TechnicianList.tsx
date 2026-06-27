@@ -28,11 +28,13 @@ interface TechnicianListProps {
   technicians: Technician[];
   /** Optional dynamic row heights keyed by technician id (must match calendar grid row heights). */
   rowHeights?: Record<string, number>;
+  isMobile?: boolean;
 }
 
 export function TechnicianList({
   technicians,
-  rowHeights
+  rowHeights,
+  isMobile = false,
 }: TechnicianListProps) {
   const { t } = useTranslation();
   const [selectedTechnician, setSelectedTechnician] = useState<Technician | null>(null);
@@ -197,7 +199,7 @@ export function TechnicianList({
 
   return (
     <>
-      <div className="w-52 border-r bg-card/50 backdrop-blur-sm flex-shrink-0 flex flex-col">
+      <div className={`${isMobile ? 'w-10' : 'w-52'} border-r bg-card/50 backdrop-blur-sm flex-shrink-0 flex flex-col`}>
         <ScrollArea className="flex-1">
           {filteredTechnicians.length === 0 ? (
             <div className="p-4 text-center text-xs text-muted-foreground">
@@ -213,14 +215,22 @@ export function TechnicianList({
             const hex = lookup?.color;
             const avatarClass = getStatusColor(effectiveStatus);
             
+            const timeAwareStatus = getTimeAwareStatus(
+              effectiveStatus,
+              workingHours,
+              scheduleInfo?.isOnLeave || false
+            );
+            const statusHex = lookupHexColorForStatus(effectiveStatus as TechnicianStatus);
+
             return (
-              <div 
-                key={technician.id} 
-                className="border-b p-4 flex items-center gap-3 hover:bg-accent/30 transition-all duration-200 group cursor-pointer"
+              <div
+                key={technician.id}
+                className={`border-b flex items-center hover:bg-accent/30 transition-all duration-200 group cursor-pointer ${isMobile ? 'justify-center p-1' : 'p-4 gap-3'}`}
                 style={{ height: `${rowHeights?.[technician.id] ?? 80}px` }}
                 onClick={() => { setSelectedTechnician(technician); setSelectedEffectiveStatus(effectiveStatus); setSelectedScheduleInfo(scheduleInfo || null); }}
+                title={isMobile ? `${technician.firstName} ${technician.lastName}` : undefined}
               >
-                {/* Avatar */}
+                {/* Avatar with status dot */}
                 <div className="relative flex-shrink-0">
                   <UserAvatar
                     src={technician.avatar}
@@ -229,46 +239,31 @@ export function TechnicianList({
                     size="sm"
                     className="!h-8 !w-8 !rounded-full"
                   />
-                  <span 
-                    className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-card ${getStatusDotColor((() => {
-                      const timeAwareStatus = getTimeAwareStatus(
-                        effectiveStatus, 
-                        workingHours, 
-                        scheduleInfo?.isOnLeave || false
-                      );
-                      return timeAwareStatus.status;
-                    })(), lookupHexColorForStatus(effectiveStatus as TechnicianStatus))}`}
-                    style={(() => {
-                      const statusHex = lookupHexColorForStatus(effectiveStatus as TechnicianStatus);
-                      return statusHex ? { backgroundColor: statusHex } : undefined;
-                    })()}
+                  <span
+                    className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-card ${getStatusDotColor(timeAwareStatus.status, statusHex)}`}
+                    style={statusHex ? { backgroundColor: statusHex } : undefined}
                   />
                 </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm truncate text-foreground group-hover:text-primary transition-colors">
-                    {technician.firstName} {technician.lastName}
+
+                {/* Name + status — hidden on mobile */}
+                {!isMobile && (
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm truncate text-foreground group-hover:text-primary transition-colors">
+                      {technician.firstName} {technician.lastName}
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        {getStatusIcon(timeAwareStatus.status)}
+                        <span className="truncate">
+                          {scheduleInfo?.isOnLeave && scheduleInfo.leaveType
+                            ? `${timeAwareStatus.label} (${scheduleInfo.leaveType})`
+                            : timeAwareStatus.label
+                          }
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1.5 mt-1">
-                    {(() => {
-                      const timeAwareStatus = getTimeAwareStatus(
-                        effectiveStatus, 
-                        workingHours, 
-                        scheduleInfo?.isOnLeave || false
-                      );
-                      return (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          {getStatusIcon(timeAwareStatus.status)}
-                          <span className="truncate">
-                            {scheduleInfo?.isOnLeave && scheduleInfo.leaveType 
-                              ? `${timeAwareStatus.label} (${scheduleInfo.leaveType})`
-                              : timeAwareStatus.label
-                            }
-                          </span>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </div>
+                )}
               </div>
             );
           })

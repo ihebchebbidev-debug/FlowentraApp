@@ -98,11 +98,28 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view.type]);
 
+  // On mobile: always show exactly 1 day so the grid is usable on a narrow screen.
+  useEffect(() => {
+    if (isMobile) {
+      setDateRange(prev => ({ from: prev.from, to: prev.from }));
+    }
+  }, [isMobile]);
+
   // Measure the calendar's date area so day columns fit exactly. We measure the
   // scroll VIEWPORT's clientWidth (which already excludes the vertical scrollbar,
   // on every platform) and subtract the fixed technician column. No scrollbar
   // guessing → no empty gap before the sidebar.
-  const TECH_COL_WIDTH = 208; // matches TechnicianList `w-52`
+  // w-10 (40px) on mobile, w-52 (208px) on desktop — kept in a ref so the
+  // ResizeObserver closure always sees the latest value.
+  const TECH_COL_WIDTH = isMobile ? 40 : 208;
+  const techColWidthRef = useRef(TECH_COL_WIDTH);
+  const viewportNodeRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    techColWidthRef.current = TECH_COL_WIDTH;
+    if (viewportNodeRef.current) {
+      setDateAreaWidth(Math.max(0, viewportNodeRef.current.clientWidth - TECH_COL_WIDTH));
+    }
+  }, [TECH_COL_WIDTH]);
   const MIN_HOUR_WIDTH = 11;  // smallest readable hour cell before falling back to scroll
   const calendarRootRef = useRef<HTMLDivElement>(null);
   const [dateAreaWidth, setDateAreaWidth] = useState(0);
@@ -112,8 +129,9 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
   const setViewportRef = useCallback((node: HTMLDivElement | null) => {
     viewportRoRef.current?.disconnect();
     viewportRoRef.current = null;
+    viewportNodeRef.current = node;
     if (!node) return;
-    const measure = () => setDateAreaWidth(Math.max(0, node.clientWidth - TECH_COL_WIDTH));
+    const measure = () => setDateAreaWidth(Math.max(0, node.clientWidth - techColWidthRef.current));
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(node);
@@ -1091,6 +1109,7 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
         onGoToToday={goToToday}
         statusFilter={statusFilter}
         onStatusFilterChange={setStatusFilter}
+        isMobile={isMobile}
       />
 
       {showSettings && (
@@ -1120,11 +1139,12 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
             workingHours={workingHours}
             dimensions={dimensions}
             includeWeekends={settings.includeWeekends}
+            isMobile={isMobile}
           />
           
           <div ref={setViewportRef} className="flex-1 overflow-y-auto">
             <div className="flex h-full">
-              <TechnicianList technicians={displayedTechnicians} rowHeights={rowHeights} />
+              <TechnicianList technicians={displayedTechnicians} rowHeights={rowHeights} isMobile={isMobile} />
               
               <CalendarGrid
                 dates={dates}
