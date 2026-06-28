@@ -65,6 +65,14 @@ export const OFFLINE_REPLAYABLE_ENTITY_TYPES = [
   "purchase_order",
   "supplier_invoice",
   "goods_receipt",
+  "app_setting",
+  "numbering_setting",
+  "signature",
+  "skill",
+  "role",
+  "recurring_task",
+  "planning_profile",
+  "dashboard",
 ] as const;
 
 export type OfflineReplayableEntityType = (typeof OFFLINE_REPLAYABLE_ENTITY_TYPES)[number];

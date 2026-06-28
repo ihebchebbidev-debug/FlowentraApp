@@ -32,6 +32,13 @@ using MyApi.Modules.Planning.Models;
 using MyApi.Modules.Planning.Services;
 using MyApi.Modules.SupportTickets.Models;
 using MyApi.Modules.Auth.Models;
+using MyApi.Modules.Settings.Models;
+using MyApi.Modules.Numbering.Models;
+using MyApi.Modules.Signatures.Models;
+using MyApi.Modules.Skills.Models;
+using MyApi.Modules.Roles.Models;
+using MyApi.Modules.PlanningProfiles.Models;
+using MyApi.Modules.Dashboards.Models;
 using MyApi.Modules.Sync.DTOs;
 using MyApi.Modules.Sync.Models;
 
@@ -722,6 +729,14 @@ namespace MyApi.Modules.Sync.Services
                 "purchase_order" => await ApplyPurchaseOrderAsync(op, operation, currentUser),
                 "supplier_invoice" => await ApplySupplierInvoiceAsync(op, operation, currentUser),
                 "goods_receipt" => await ApplyGoodsReceiptAsync(op, operation, currentUser),
+                "app_setting" => await ApplyAppSettingAsync(op, operation, currentUser),
+                "numbering_setting" => await ApplyNumberingSettingAsync(op, operation, currentUser),
+                "signature" => await ApplySignatureAsync(op, operation, currentUser),
+                "skill" => await ApplySkillAsync(op, operation, currentUser),
+                "role" => await ApplyRoleAsync(op, operation, currentUser),
+                "recurring_task" => await ApplyRecurringTaskAsync(op, operation, currentUser),
+                "planning_profile" => await ApplyPlanningProfileAsync(op, operation, currentUser),
+                "dashboard" => await ApplyDashboardAsync(op, operation, currentUser),
                 _ => throw new InvalidOperationException($"Unsupported entityType '{entityType}' for offline sync")
             };
         }
@@ -848,6 +863,15 @@ namespace MyApi.Modules.Sync.Services
             if (ep.Contains("dynamicforms") || ep.Contains("dynamic-forms")) return "dynamic_form";
             if (ep.Contains("calendar")) return "calendar_event";
             if (ep.Contains("email")) return "email_account";
+            // New entity types — keep before the final return
+            if (value == "app_setting" || ep.Contains("/settings/app")) return "app_setting";
+            if (value == "numbering_setting" || ep.Contains("/settings/numbering")) return "numbering_setting";
+            if (value == "signature" || ep.Contains("/signatures")) return "signature";
+            if (value == "skill" || ep.Contains("/skills")) return "skill";
+            if (value == "role" || ep.Contains("/roles")) return "role";
+            if (value == "recurring_task" || ep.Contains("/recurringtasks") || ep.Contains("/recurring-tasks")) return "recurring_task";
+            if (value == "planning_profile" || ep.Contains("/planning-profiles") || ep.Contains("/planningprofiles")) return "planning_profile";
+            if (value == "dashboard" || ep.Contains("/dashboards")) return "dashboard";
             return value;
         }
 
@@ -2811,6 +2835,357 @@ namespace MyApi.Modules.Sync.Services
             var created = await _hrService.GeneratePayrollRunAsync(dto, uid.Value);
             await RecordChangeAsync("hr_payroll_run", created.Id, "create", created, currentUser);
             return created.Id;
+        }
+
+        private async Task<int?> ApplyAppSettingAsync(SyncOperationDto op, string operation, string user)
+        {
+            var id = op.EntityId ?? ParseIdFromEndpoint(op.Endpoint, "app");
+            AppSettings? entity = null;
+            if (id.HasValue)
+                entity = await _context.AppSettings.FirstOrDefaultAsync(x => x.Id == id.Value);
+
+            // AppSettings are upserted by SettingKey when no id is available
+            if (entity == null && operation != "delete")
+            {
+                var key = ReadString(op.Payload, "settingKey");
+                if (key != null)
+                    entity = await _context.AppSettings.FirstOrDefaultAsync(x => x.SettingKey == key);
+            }
+
+            if (entity == null && operation != "delete")
+            {
+                entity = new AppSettings
+                {
+                    SettingKey = ReadString(op.Payload, "settingKey") ?? "unknown",
+                    Value = ReadString(op.Payload, "value") ?? "",
+                };
+                _context.AppSettings.Add(entity);
+            }
+            if (entity == null) return null;
+
+            if (operation == "delete")
+            {
+                _context.AppSettings.Remove(entity);
+            }
+            else
+            {
+                entity.Value = ReadString(op.Payload, "value") ?? entity.Value;
+                entity.UpdatedAt = DateTime.UtcNow;
+            }
+
+            await _context.SaveChangesAsync();
+            await RecordChangeAsync("app_setting", entity.Id, operation, entity, user);
+            return entity.Id;
+        }
+
+        private async Task<int?> ApplyNumberingSettingAsync(SyncOperationDto op, string operation, string user)
+        {
+            var id = op.EntityId ?? ParseIdFromEndpoint(op.Endpoint, "numbering");
+            NumberingSettings? entity = null;
+            if (id.HasValue)
+                entity = await _context.NumberingSettings.FirstOrDefaultAsync(x => x.Id == id.Value);
+
+            // Upsert by EntityName when no id present
+            if (entity == null && operation != "delete")
+            {
+                var entityName = ReadString(op.Payload, "entityName");
+                if (entityName != null)
+                    entity = await _context.NumberingSettings.FirstOrDefaultAsync(x => x.EntityName == entityName);
+            }
+
+            if (entity == null && operation != "delete")
+            {
+                entity = new NumberingSettings
+                {
+                    EntityName = ReadString(op.Payload, "entityName") ?? "unknown",
+                    Template = ReadString(op.Payload, "template") ?? "",
+                    Strategy = ReadString(op.Payload, "strategy") ?? "sequential",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                };
+                _context.NumberingSettings.Add(entity);
+            }
+            if (entity == null) return null;
+
+            if (operation == "delete")
+            {
+                _context.NumberingSettings.Remove(entity);
+            }
+            else
+            {
+                entity.IsEnabled = ReadBool(op.Payload, "isEnabled") ?? entity.IsEnabled;
+                entity.Template = ReadString(op.Payload, "template") ?? entity.Template;
+                entity.Strategy = ReadString(op.Payload, "strategy") ?? entity.Strategy;
+                entity.ResetFrequency = ReadString(op.Payload, "resetFrequency") ?? entity.ResetFrequency;
+                entity.StartValue = ReadInt(op.Payload, "startValue") ?? entity.StartValue;
+                entity.Padding = ReadInt(op.Payload, "padding") ?? entity.Padding;
+                entity.UpdatedAt = DateTime.UtcNow;
+            }
+
+            await _context.SaveChangesAsync();
+            await RecordChangeAsync("numbering_setting", entity.Id, operation, entity, user);
+            return entity.Id;
+        }
+
+        private async Task<int?> ApplySignatureAsync(SyncOperationDto op, string operation, string user)
+        {
+            var id = op.EntityId ?? ParseIdFromEndpoint(op.Endpoint, "signatures");
+            UserSignature? entity = null;
+            if (id.HasValue)
+                entity = await _context.UserSignatures.FirstOrDefaultAsync(x => x.Id == id.Value);
+
+            // Upsert by UserId — each user has at most one signature
+            if (entity == null && operation != "delete")
+            {
+                var userId = ReadInt(op.Payload, "userId");
+                if (userId.HasValue)
+                    entity = await _context.UserSignatures.FirstOrDefaultAsync(x => x.UserId == userId.Value);
+            }
+
+            if (entity == null && operation != "delete")
+            {
+                entity = new UserSignature
+                {
+                    UserId = ReadInt(op.Payload, "userId") ?? 0,
+                    SignatureUrl = ReadString(op.Payload, "signatureUrl") ?? "",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                };
+                _context.UserSignatures.Add(entity);
+            }
+            if (entity == null) return null;
+
+            if (operation == "delete")
+            {
+                _context.UserSignatures.Remove(entity);
+            }
+            else
+            {
+                entity.SignatureUrl = ReadString(op.Payload, "signatureUrl") ?? entity.SignatureUrl;
+                entity.UpdatedAt = DateTime.UtcNow;
+            }
+
+            await _context.SaveChangesAsync();
+            await RecordChangeAsync("signature", entity.Id, operation, entity, user);
+            return entity.Id;
+        }
+
+        private async Task<int?> ApplySkillAsync(SyncOperationDto op, string operation, string user)
+        {
+            var id = op.EntityId ?? ParseIdFromEndpoint(op.Endpoint, "skills");
+            Skill? entity = null;
+            if (id.HasValue)
+                entity = await _context.Skills.FirstOrDefaultAsync(x => x.Id == id.Value && !x.IsDeleted);
+
+            if (entity == null && operation != "delete")
+            {
+                entity = new Skill
+                {
+                    Name = ReadString(op.Payload, "name") ?? "Unnamed Skill",
+                    CreatedBy = user,
+                    CreatedUser = user,
+                    CreatedAt = DateTime.UtcNow,
+                };
+                _context.Skills.Add(entity);
+            }
+            if (entity == null) return null;
+
+            if (operation == "delete")
+            {
+                entity.IsDeleted = true;
+            }
+            else
+            {
+                entity.Name = ReadString(op.Payload, "name") ?? entity.Name;
+                entity.Category = ReadString(op.Payload, "category") ?? entity.Category;
+                entity.Description = ReadString(op.Payload, "description") ?? entity.Description;
+                entity.Level = ReadString(op.Payload, "level") ?? entity.Level;
+                entity.IsActive = ReadBool(op.Payload, "isActive") ?? entity.IsActive;
+                entity.ModifyUser = user;
+                entity.UpdatedAt = DateTime.UtcNow;
+            }
+
+            await _context.SaveChangesAsync();
+            await RecordChangeAsync("skill", entity.Id, operation, entity, user);
+            return entity.Id;
+        }
+
+        private async Task<int?> ApplyRoleAsync(SyncOperationDto op, string operation, string user)
+        {
+            var id = op.EntityId ?? ParseIdFromEndpoint(op.Endpoint, "roles");
+            Role? entity = null;
+            if (id.HasValue)
+                entity = await _context.Roles.FirstOrDefaultAsync(x => x.Id == id.Value && !x.IsDeleted);
+
+            if (entity == null && operation != "delete")
+            {
+                entity = new Role
+                {
+                    Name = ReadString(op.Payload, "name") ?? "Unnamed Role",
+                    CreatedBy = user,
+                    CreatedUser = user,
+                    CreatedAt = DateTime.UtcNow,
+                };
+                _context.Roles.Add(entity);
+            }
+            if (entity == null) return null;
+
+            if (operation == "delete")
+            {
+                entity.IsDeleted = true;
+            }
+            else
+            {
+                entity.Name = ReadString(op.Payload, "name") ?? entity.Name;
+                entity.Description = ReadString(op.Payload, "description") ?? entity.Description;
+                entity.IsActive = ReadBool(op.Payload, "isActive") ?? entity.IsActive;
+                entity.ModifyUser = user;
+                entity.ModifiedBy = user;
+                entity.ModifiedDate = DateTime.UtcNow;
+                entity.UpdatedAt = DateTime.UtcNow;
+            }
+
+            await _context.SaveChangesAsync();
+            await RecordChangeAsync("role", entity.Id, operation, entity, user);
+            return entity.Id;
+        }
+
+        private async Task<int?> ApplyRecurringTaskAsync(SyncOperationDto op, string operation, string user)
+        {
+            var id = op.EntityId ?? ParseIdFromEndpoint(op.Endpoint, "recurringtasks");
+            RecurringTask? entity = null;
+            if (id.HasValue)
+                entity = await _context.RecurringTasks.FirstOrDefaultAsync(x => x.Id == id.Value);
+
+            if (entity == null && operation != "delete")
+            {
+                entity = new RecurringTask
+                {
+                    RecurrenceType = ReadString(op.Payload, "recurrenceType") ?? "daily",
+                    StartDate = ReadDate(op.Payload, "startDate") ?? DateTime.UtcNow,
+                    CreatedBy = user,
+                    CreatedDate = DateTime.UtcNow,
+                };
+                _context.RecurringTasks.Add(entity);
+            }
+            if (entity == null) return null;
+
+            if (operation == "delete")
+            {
+                entity.IsActive = false;
+            }
+            else
+            {
+                entity.ProjectTaskId = ReadInt(op.Payload, "projectTaskId") ?? entity.ProjectTaskId;
+                entity.DailyTaskId = ReadInt(op.Payload, "dailyTaskId") ?? entity.DailyTaskId;
+                entity.RecurrenceType = ReadString(op.Payload, "recurrenceType") ?? entity.RecurrenceType;
+                entity.DaysOfWeek = ReadString(op.Payload, "daysOfWeek") ?? entity.DaysOfWeek;
+                entity.DayOfMonth = ReadInt(op.Payload, "dayOfMonth") ?? entity.DayOfMonth;
+                entity.MonthOfYear = ReadInt(op.Payload, "monthOfYear") ?? entity.MonthOfYear;
+                entity.Interval = ReadInt(op.Payload, "interval") ?? entity.Interval;
+                entity.StartDate = ReadDate(op.Payload, "startDate") ?? entity.StartDate;
+                entity.EndDate = ReadDate(op.Payload, "endDate") ?? entity.EndDate;
+                entity.MaxOccurrences = ReadInt(op.Payload, "maxOccurrences") ?? entity.MaxOccurrences;
+                entity.IsActive = ReadBool(op.Payload, "isActive") ?? entity.IsActive;
+                entity.IsPaused = ReadBool(op.Payload, "isPaused") ?? entity.IsPaused;
+                entity.ModifiedBy = user;
+                entity.ModifiedDate = DateTime.UtcNow;
+            }
+
+            await _context.SaveChangesAsync();
+            await RecordChangeAsync("recurring_task", entity.Id, operation, entity, user);
+            return entity.Id;
+        }
+
+        private async Task<int?> ApplyPlanningProfileAsync(SyncOperationDto op, string operation, string user)
+        {
+            var id = op.EntityId ?? ParseIdFromEndpoint(op.Endpoint, "planning-profiles");
+            PlanningProfile? entity = null;
+            if (id.HasValue)
+                entity = await _context.PlanningProfiles.FirstOrDefaultAsync(x => x.Id == id.Value && x.DeletedAt == null);
+
+            if (entity == null && operation != "delete")
+            {
+                entity = new PlanningProfile
+                {
+                    Name = ReadString(op.Payload, "name") ?? "Unnamed Profile",
+                    OwnerUserId = ReadString(op.Payload, "ownerUserId") ?? user,
+                    VisibleUserIdsJson = ReadString(op.Payload, "visibleUserIdsJson") ?? "[]",
+                    SettingsJson = ReadString(op.Payload, "settingsJson") ?? "{}",
+                    CreatedBy = user,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                };
+                _context.PlanningProfiles.Add(entity);
+            }
+            if (entity == null) return null;
+
+            if (operation == "delete")
+            {
+                entity.DeletedAt = DateTime.UtcNow;
+                entity.DeletedBy = user;
+            }
+            else
+            {
+                entity.Name = ReadString(op.Payload, "name") ?? entity.Name;
+                entity.Description = ReadString(op.Payload, "description") ?? entity.Description;
+                entity.Color = ReadString(op.Payload, "color") ?? entity.Color;
+                entity.Icon = ReadString(op.Payload, "icon") ?? entity.Icon;
+                entity.IsShared = ReadBool(op.Payload, "isShared") ?? entity.IsShared;
+                entity.VisibleUserIdsJson = ReadString(op.Payload, "visibleUserIdsJson") ?? entity.VisibleUserIdsJson;
+                entity.RequiredSkillIdsJson = ReadString(op.Payload, "requiredSkillIdsJson") ?? entity.RequiredSkillIdsJson;
+                entity.SettingsJson = ReadString(op.Payload, "settingsJson") ?? entity.SettingsJson;
+                entity.UpdatedBy = user;
+                entity.UpdatedAt = DateTime.UtcNow;
+            }
+
+            await _context.SaveChangesAsync();
+            await RecordChangeAsync("planning_profile", entity.Id, operation, entity, user);
+            return entity.Id;
+        }
+
+        private async Task<int?> ApplyDashboardAsync(SyncOperationDto op, string operation, string user)
+        {
+            var id = op.EntityId ?? ParseIdFromEndpoint(op.Endpoint, "dashboards");
+            Dashboard? entity = null;
+            if (id.HasValue)
+                entity = await _context.Dashboards.FirstOrDefaultAsync(x => x.Id == id.Value && !x.IsDeleted);
+
+            if (entity == null && operation != "delete")
+            {
+                entity = new Dashboard
+                {
+                    Name = ReadString(op.Payload, "name") ?? "Unnamed Dashboard",
+                    Widgets = ReadString(op.Payload, "widgets") ?? "[]",
+                    CreatedBy = user,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                };
+                _context.Dashboards.Add(entity);
+            }
+            if (entity == null) return null;
+
+            if (operation == "delete")
+            {
+                entity.IsDeleted = true;
+            }
+            else
+            {
+                entity.Name = ReadString(op.Payload, "name") ?? entity.Name;
+                entity.Description = ReadString(op.Payload, "description") ?? entity.Description;
+                entity.TemplateKey = ReadString(op.Payload, "templateKey") ?? entity.TemplateKey;
+                entity.IsDefault = ReadBool(op.Payload, "isDefault") ?? entity.IsDefault;
+                entity.IsShared = ReadBool(op.Payload, "isShared") ?? entity.IsShared;
+                entity.IsPublic = ReadBool(op.Payload, "isPublic") ?? entity.IsPublic;
+                entity.SharedWithRoles = ReadString(op.Payload, "sharedWithRoles") ?? entity.SharedWithRoles;
+                entity.Widgets = ReadString(op.Payload, "widgets") ?? entity.Widgets;
+                entity.GridSettings = ReadString(op.Payload, "gridSettings") ?? entity.GridSettings;
+                entity.UpdatedAt = DateTime.UtcNow;
+            }
+
+            await _context.SaveChangesAsync();
+            await RecordChangeAsync("dashboard", entity.Id, operation, entity, user);
+            return entity.Id;
         }
     }
 }

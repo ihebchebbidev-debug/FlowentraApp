@@ -338,6 +338,16 @@ function inferEntityType(endpoint: string): string {
   }
   if (normalized.includes("serviceorder") || normalized.includes("service-orders")) return "service_order";
   if (normalized.includes("/dispatch") || normalized.includes("/dispatches")) return "dispatch";
+  // Settings / numbering — check specific sub-paths before any generic "settings" fallback
+  if (normalized.includes("/settings/app")) return "app_setting";
+  if (normalized.includes("/settings/numbering")) return "numbering_setting";
+  // Signatures, skills, roles — exact resource segment matches
+  if (normalized.includes("/signatures")) return "signature";
+  if (normalized.includes("/skills")) return "skill";
+  if (normalized.includes("/roles")) return "role";
+  // Planning profiles (distinct from /planning/ board endpoints already matched above)
+  if (normalized.includes("/planning-profiles") || normalized.includes("/planningprofiles")) return "planning_profile";
+  if (normalized.includes("/dashboards")) return "dashboard";
   if (normalized.includes("systemlogs")) return "system_log";
   if (import.meta.env.DEV) {
     console.warn(
