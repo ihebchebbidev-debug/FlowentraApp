@@ -86,45 +86,38 @@ namespace MyApi.Modules.WorkflowEngine.Services
             approval.ApprovedById = userId;
             approval.RespondedAt = DateTime.UtcNow;
 
-            // Update the workflow execution status
+            // For both approved and rejected, mark execution as running so
+            // ResumeAfterNodeAsync can route it to the correct branch.
             if (approval.Execution != null)
             {
-                if (response.Approved)
-                {
-                    approval.Execution.Status = "running";
-                    _logger.LogInformation("Approval {ApprovalId} approved, resuming workflow execution {ExecutionId}",
-                        approvalId, approval.ExecutionId);
-                }
-                else
-                {
-                    approval.Execution.Status = "cancelled";
-                    approval.Execution.CompletedAt = DateTime.UtcNow;
-                    approval.Execution.Error = $"Rejected by {userId}: {response.Note}";
-                    _logger.LogInformation("Approval {ApprovalId} rejected, cancelling workflow execution {ExecutionId}",
-                        approvalId, approval.ExecutionId);
-                }
+                approval.Execution.Status = "running";
+                approval.Execution.WaitingNodeId = null;
             }
 
             await _db.SaveChangesAsync();
 
-            // Actually resume the graph after the approval node (was previously a no-op,
-            // leaving approved executions stuck in "running" forever).
-            if (response.Approved && approval.Execution != null && !string.IsNullOrEmpty(approval.NodeId))
+            // Resume the graph after the approval node for BOTH approved and rejected.
+            // The graph executor will follow whichever outgoing edge matches the branch:
+            //   approved  → edge labelled "approved" or "yes" / "true"
+            //   rejected  → edge labelled "rejected" or "no"  / "false"
+            // If no matching edge exists, the execution completes cleanly with no further nodes.
+            if (approval.Execution != null && !string.IsNullOrEmpty(approval.NodeId))
             {
                 try
                 {
                     var execution = approval.Execution;
 
-                    // BUG FIX: re-hydrate Variables from the persisted Context so that
-                    // entity IDs and node outputs created BEFORE the approval pause
-                    // are still available to downstream nodes.
+                    // Re-hydrate Variables from the persisted Context so entity IDs and
+                    // outputs from nodes that ran before the pause are still available.
                     var variables = new Dictionary<string, object?>
                     {
-                        ["entityType"] = execution.TriggerEntityType,
-                        ["entityId"] = execution.TriggerEntityId,
-                        ["approvalId"] = approval.Id,
-                        ["approvedBy"] = userId,
-                        ["approvalNote"] = response.Note ?? string.Empty
+                        ["entityType"]     = execution.TriggerEntityType,
+                        ["entityId"]       = execution.TriggerEntityId,
+                        ["approvalId"]     = approval.Id,
+                        ["approvedBy"]     = userId,
+                        ["approvalNote"]   = response.Note ?? string.Empty,
+                        ["approval_result"] = response.Approved ? "approved" : "rejected",
+                        ["approval_approved"] = response.Approved
                     };
                     if (!string.IsNullOrEmpty(execution.Context))
                     {
@@ -132,26 +125,26 @@ namespace MyApi.Modules.WorkflowEngine.Services
                         {
                             var saved = JsonSerializer.Deserialize<Dictionary<string, object?>>(execution.Context);
                             if (saved != null)
-                            {
                                 foreach (var kv in saved)
-                                {
                                     if (!variables.ContainsKey(kv.Key))
                                         variables[kv.Key] = kv.Value;
-                                }
-                            }
                         }
                         catch { /* best-effort */ }
                     }
 
                     var context = new WorkflowExecutionContext
                     {
-                        WorkflowId = execution.WorkflowId,
-                        ExecutionId = execution.Id,
-                        TriggerEntityType = execution.TriggerEntityType,
-                        TriggerEntityId = execution.TriggerEntityId,
-                        UserId = userId,
-                        Variables = variables
+                        WorkflowId         = execution.WorkflowId,
+                        ExecutionId        = execution.Id,
+                        TriggerEntityType  = execution.TriggerEntityType,
+                        TriggerEntityId    = execution.TriggerEntityId,
+                        UserId             = userId,
+                        Variables          = variables
                     };
+
+                    // Inject the branch so GetNextNodes picks the right edge.
+                    // Approval node uses SelectedBranch = "approved" | "rejected".
+                    context.Variables["_approval_branch"] = response.Approved ? "approved" : "rejected";
 
                     var result = await _graphExecutor.ResumeAfterNodeAsync(
                         execution.WorkflowId,
@@ -160,27 +153,28 @@ namespace MyApi.Modules.WorkflowEngine.Services
                         context);
 
                     execution.Status = result.FinalStatus;
-                    execution.Error = result.Error;
-                    if (result.FinalStatus == "completed" || result.FinalStatus == "failed")
-                    {
+                    execution.Error  = result.Error;
+                    if (result.FinalStatus is "completed" or "failed")
                         execution.CompletedAt = DateTime.UtcNow;
-                    }
 
                     await _db.SaveChangesAsync();
 
                     _logger.LogInformation(
-                        "[WORKFLOW-APPROVAL] Resumed execution {ExecutionId} after approval {ApprovalId}: status={Status}, executed={Count}",
-                        execution.Id, approvalId, result.FinalStatus, result.NodesExecuted);
+                        "[WORKFLOW-APPROVAL] Resumed execution {ExecutionId} after {Decision} on approval {ApprovalId}: status={Status}, nodes={Count}",
+                        execution.Id, response.Approved ? "approval" : "rejection", approvalId, result.FinalStatus, result.NodesExecuted);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex,
                         "[WORKFLOW-APPROVAL] Failed to resume execution {ExecutionId} after approval {ApprovalId}",
                         approval.ExecutionId, approvalId);
-                    approval.Execution.Status = "failed";
-                    approval.Execution.Error = $"Resume failed: {ex.Message}";
-                    approval.Execution.CompletedAt = DateTime.UtcNow;
-                    await _db.SaveChangesAsync();
+                    if (approval.Execution != null)
+                    {
+                        approval.Execution.Status = "failed";
+                        approval.Execution.Error  = $"Resume failed: {ex.Message}";
+                        approval.Execution.CompletedAt = DateTime.UtcNow;
+                        await _db.SaveChangesAsync();
+                    }
                 }
             }
 

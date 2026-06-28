@@ -1208,6 +1208,8 @@
   "node.custom-llm.desc": "Bring your own AI model",
   "node.code.label": "Code (JavaScript)",
   "node.code.desc": "Run custom JavaScript logic with access to previous node outputs",
+  "node.subworkflow.label": "Call Subworkflow",
+  "node.subworkflow.desc": "Execute another workflow as a step, passing variables in and getting outputs back",
   "ai.buildWithAI": "Build with AI",
   "ai.buildWithAITooltip": "Describe a workflow and let AI build it",
   "ai.buildDescription": "Describe your workflow in plain language. The AI will generate it for you. You can refine your prompt until it's perfect.",

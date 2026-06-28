@@ -32,6 +32,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
         private readonly IConfiguration _configuration;
         private readonly INotificationService _notificationService;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IServiceProvider _serviceProvider;
 
         public WorkflowNodeExecutor(
             ApplicationDbContext db,
@@ -39,7 +40,8 @@ namespace MyApi.Modules.WorkflowEngine.Services
             IBusinessWorkflowService businessWorkflowService,
             IConfiguration configuration,
             INotificationService notificationService,
-            IHttpClientFactory httpClientFactory)
+            IHttpClientFactory httpClientFactory,
+            IServiceProvider serviceProvider)
         {
             _db = db;
             _logger = logger;
@@ -47,6 +49,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
             _configuration = configuration;
             _notificationService = notificationService;
             _httpClientFactory = httpClientFactory;
+            _serviceProvider = serviceProvider;
         }
 
         public async Task<NodeExecutionResult> ExecuteNodeAsync(
@@ -155,6 +158,9 @@ namespace MyApi.Modules.WorkflowEngine.Services
                     // Custom LLM nodes
                     var t when t.Contains("custom-llm") || t.Contains("custom_llm") => await ExecuteCustomLLMNodeAsync(node, context),
                     
+                    // Subworkflow nodes
+                    var t when t.Contains("subworkflow") || t.Contains("sub-workflow") || t.Contains("sub_workflow") || t == "call-workflow" => await ExecuteSubWorkflowAsync(node, context),
+
                     // Code / JavaScript nodes
                     var t when t == "code" || t == "javascript" || t.Contains("code") => await ExecuteCodeNodeAsync(node, context),
                     
@@ -1511,30 +1517,298 @@ namespace MyApi.Modules.WorkflowEngine.Services
 
         #region AI Nodes
 
-        private Task<NodeExecutionResult> ExecuteAiNodeAsync(WorkflowNode node, WorkflowExecutionContext context)
+        private async Task<NodeExecutionResult> ExecuteAiNodeAsync(WorkflowNode node, WorkflowExecutionContext context)
         {
-            var model = GetNodeDataString(node, "model") ?? "gpt-4";
-            var prompt = GetNodeDataString(node, "prompt");
+            var model  = GetNodeDataString(node, "model") ?? "openai/gpt-4o-mini";
+            var prompt = ResolveVariables(GetNodeDataString(node, "prompt") ?? "", context);
+            var system = ResolveVariables(GetNodeDataString(node, "systemPrompt") ?? "You are a helpful business assistant.", context);
             var aiType = node.Type.ToLower();
 
-            _logger.LogInformation("AI node executed: Type={AiType}, Model={Model}", aiType, model);
+            _logger.LogInformation("[WORKFLOW-AI] Executing AI node: type={AiType}, model={Model}", aiType, model);
 
-            // TODO: Integrate with actual AI/LLM service
-            return Task.FromResult(new NodeExecutionResult
+            // Resolve API key: node config → AppSettings DB row → configuration
+            var apiKey = GetNodeDataString(node, "apiKey");
+            if (string.IsNullOrWhiteSpace(apiKey))
             {
-                Success = true,
-                Status = "completed",
-                Output = new Dictionary<string, object?>
+                var setting = await _db.AppSettings.FirstOrDefaultAsync(s => s.SettingKey == "openrouter_api_key");
+                apiKey = setting?.Value;
+            }
+            if (string.IsNullOrWhiteSpace(apiKey))
+                apiKey = _configuration["OpenRouter:ApiKey"];
+
+            if (string.IsNullOrWhiteSpace(apiKey))
+            {
+                return new NodeExecutionResult
                 {
-                    ["action"] = aiType.Contains("email") ? "ai_email_write" : "ai_analyze",
-                    ["model"] = model,
-                    ["prompt"] = prompt,
-                    ["result"] = aiType.Contains("email") 
-                        ? "AI-generated email content (simulated)" 
-                        : "AI analysis result (simulated)",
-                    ["status"] = "simulated"
+                    Success = false,
+                    Status = "failed",
+                    Error = "OpenRouter API key not configured. Set it in Settings → App Settings (key: openrouter_api_key) or appsettings.json OpenRouter:ApiKey."
+                };
+            }
+
+            if (string.IsNullOrWhiteSpace(prompt))
+            {
+                return new NodeExecutionResult
+                {
+                    Success = false,
+                    Status = "failed",
+                    Error = "AI node: prompt is empty. Configure the prompt in the node settings."
+                };
+            }
+
+            try
+            {
+                var client = _httpClientFactory.CreateClient("openrouter");
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+                client.DefaultRequestHeaders.Add("HTTP-Referer", "https://flowentra.app");
+                client.DefaultRequestHeaders.Add("X-Title", "Flowentra Workflow");
+
+                var requestBody = new
+                {
+                    model,
+                    messages = new[]
+                    {
+                        new { role = "system", content = system },
+                        new { role = "user",   content = prompt }
+                    },
+                    max_tokens = GetNodeDataInt(node, "maxTokens") ?? 1024,
+                    temperature = GetNodeDataDouble(node, "temperature") ?? 0.7
+                };
+
+                var json    = JsonSerializer.Serialize(requestBody);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                using var cts      = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+                var httpResponse   = await client.PostAsync("https://openrouter.ai/api/v1/chat/completions", content, cts.Token);
+                var responseText   = await httpResponse.Content.ReadAsStringAsync(cts.Token);
+
+                if (!httpResponse.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("[WORKFLOW-AI] OpenRouter returned {Status}: {Body}", (int)httpResponse.StatusCode, responseText.Length > 500 ? responseText[..500] : responseText);
+                    return new NodeExecutionResult
+                    {
+                        Success = false,
+                        Status  = "failed",
+                        Error   = $"OpenRouter API error ({(int)httpResponse.StatusCode}): {responseText}"
+                    };
                 }
-            });
+
+                using var doc     = JsonDocument.Parse(responseText);
+                var completion    = doc.RootElement
+                    .GetProperty("choices")[0]
+                    .GetProperty("message")
+                    .GetProperty("content")
+                    .GetString() ?? "";
+
+                var usage = doc.RootElement.TryGetProperty("usage", out var u) ? u : (JsonElement?)null;
+
+                _logger.LogInformation("[WORKFLOW-AI] OpenRouter response: model={Model}, length={Len}", model, completion.Length);
+
+                return new NodeExecutionResult
+                {
+                    Success = true,
+                    Status  = "completed",
+                    Output  = new Dictionary<string, object?>
+                    {
+                        ["action"]          = aiType.Contains("email") ? "ai_email_write" : "ai_generate",
+                        ["model"]           = model,
+                        ["result"]          = completion,
+                        ["prompt_tokens"]   = usage?.TryGetProperty("prompt_tokens", out var pt) == true ? (int?)pt.GetInt32() : null,
+                        ["completion_tokens"] = usage?.TryGetProperty("completion_tokens", out var ct2) == true ? (int?)ct2.GetInt32() : null,
+                    }
+                };
+            }
+            catch (TaskCanceledException)
+            {
+                return new NodeExecutionResult { Success = false, Status = "failed", Error = "AI node timed out after 60 seconds." };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[WORKFLOW-AI] OpenRouter call failed");
+                return new NodeExecutionResult { Success = false, Status = "failed", Error = $"AI node error: {ex.Message}" };
+            }
+        }
+
+        #endregion
+
+        #region Subworkflow Node
+
+        private async Task<NodeExecutionResult> ExecuteSubWorkflowAsync(WorkflowNode node, WorkflowExecutionContext context)
+        {
+            // Guard against infinite recursion: max 5 levels deep
+            var depth = context.Variables.TryGetValue("_subworkflow_depth", out var d) && d is int di ? di : 0;
+            if (depth >= 5)
+            {
+                return new NodeExecutionResult
+                {
+                    Success = false,
+                    Status = "failed",
+                    Error = "subworkflow: maximum nesting depth (5) exceeded"
+                };
+            }
+
+            // Resolve target workflow id
+            var subworkflowIdRaw = GetNodeDataString(node, "workflowId")
+                                ?? GetNodeDataString(node, "subworkflowId")
+                                ?? GetNodeDataString(node, "targetWorkflowId");
+            if (string.IsNullOrWhiteSpace(subworkflowIdRaw) || !int.TryParse(subworkflowIdRaw, out var subworkflowId))
+            {
+                return new NodeExecutionResult
+                {
+                    Success = false,
+                    Status = "failed",
+                    Error = "subworkflow: 'workflowId' is required and must be an integer"
+                };
+            }
+
+            // Verify the target workflow exists and is active
+            var targetWorkflow = await _db.WorkflowDefinitions
+                .AsNoTracking()
+                .FirstOrDefaultAsync(w => w.Id == subworkflowId && !w.IsDeleted);
+            if (targetWorkflow == null)
+            {
+                return new NodeExecutionResult
+                {
+                    Success = false,
+                    Status = "failed",
+                    Error = $"subworkflow: workflow {subworkflowId} not found"
+                };
+            }
+
+            // Build child variables: pass current variables + optional explicit mapping
+            var childVariables = new Dictionary<string, object?>(context.Variables)
+            {
+                ["_subworkflow_depth"] = depth + 1,
+                ["_parent_execution_id"] = context.ExecutionId,
+                ["entityType"] = context.TriggerEntityType,
+                ["entityId"] = context.TriggerEntityId,
+            };
+
+            // Explicit input mapping from node config: comma-separated "childVar=parentVar" or "childVar={{parentVar}}"
+            var inputMapping = GetNodeDataString(node, "inputMapping");
+            if (!string.IsNullOrWhiteSpace(inputMapping))
+            {
+                foreach (var line in inputMapping.Split('\n', ',', ';'))
+                {
+                    var parts = line.Split('=', 2);
+                    if (parts.Length == 2)
+                    {
+                        var childKey = parts[0].Trim();
+                        var valueExpr = ResolveVariables(parts[1].Trim(), context);
+                        if (!string.IsNullOrEmpty(childKey))
+                            childVariables[childKey] = valueExpr;
+                    }
+                }
+            }
+
+            // Create a child execution record
+            var childExecution = new WorkflowExecution
+            {
+                WorkflowId = subworkflowId,
+                TriggerEntityType = context.TriggerEntityType,
+                TriggerEntityId = context.TriggerEntityId,
+                Status = "running",
+                CurrentNodeId = "subworkflow-start",
+                Context = JsonSerializer.Serialize(new
+                {
+                    parentExecutionId = context.ExecutionId,
+                    parentNodeId = node.Id,
+                    depth = depth + 1
+                }),
+                StartedAt = DateTime.UtcNow,
+                TriggeredBy = context.UserId
+            };
+            _db.WorkflowExecutions.Add(childExecution);
+            await _db.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "[WORKFLOW-SUB] Starting subworkflow {SubWorkflowId} (execution {ChildExecId}) from parent {ParentExecId}",
+                subworkflowId, childExecution.Id, context.ExecutionId);
+
+            // Lazily resolve IWorkflowGraphExecutor to avoid circular dependency
+            var graphExecutor = _serviceProvider.GetRequiredService<IWorkflowGraphExecutor>();
+
+            // Find the trigger/start node in the subworkflow
+            var startNodeId = "trigger-1";
+            try
+            {
+                var nodes = JsonSerializer.Deserialize<List<JsonElement>>(targetWorkflow.Nodes ?? "[]");
+                var triggerNode = nodes?.FirstOrDefault(n =>
+                {
+                    if (n.TryGetProperty("type", out var typeEl))
+                    {
+                        var t = typeEl.GetString()?.ToLower() ?? "";
+                        return t.Contains("trigger");
+                    }
+                    return false;
+                });
+                if (triggerNode.HasValue && triggerNode.Value.TryGetProperty("id", out var idEl))
+                    startNodeId = idEl.GetString() ?? startNodeId;
+            }
+            catch { /* use default */ }
+
+            var childContext = new WorkflowExecutionContext
+            {
+                WorkflowId = subworkflowId,
+                ExecutionId = childExecution.Id,
+                TriggerEntityType = context.TriggerEntityType,
+                TriggerEntityId = context.TriggerEntityId,
+                UserId = context.UserId,
+                Variables = childVariables
+            };
+
+            GraphExecutionResult subResult;
+            try
+            {
+                subResult = await graphExecutor.ExecuteGraphAsync(subworkflowId, childExecution.Id, startNodeId, childContext);
+            }
+            catch (Exception ex)
+            {
+                childExecution.Status = "failed";
+                childExecution.Error = ex.Message;
+                childExecution.CompletedAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+                return new NodeExecutionResult
+                {
+                    Success = false,
+                    Status = "failed",
+                    Error = $"subworkflow execution failed: {ex.Message}"
+                };
+            }
+
+            childExecution.Status = subResult.FinalStatus;
+            childExecution.Error = subResult.Error;
+            childExecution.CompletedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+
+            var success = subResult.FinalStatus == "completed";
+
+            _logger.LogInformation(
+                "[WORKFLOW-SUB] Subworkflow {SubWorkflowId} (execution {ChildExecId}) finished: status={Status}, nodes={Count}",
+                subworkflowId, childExecution.Id, subResult.FinalStatus, subResult.NodesExecuted);
+
+            // Expose subworkflow outputs to parent context
+            var output = new Dictionary<string, object?>
+            {
+                ["subworkflow_id"]           = subworkflowId,
+                ["subworkflow_execution_id"] = childExecution.Id,
+                ["subworkflow_status"]       = subResult.FinalStatus,
+                ["subworkflow_nodes"]        = subResult.NodesExecuted,
+                ["subworkflow_error"]        = subResult.Error
+            };
+
+            // Also merge child node outputs into parent under "sub.<nodeId>.<key>"
+            foreach (var kv in childContext.NodeOutputs)
+                foreach (var ov in kv.Value is Dictionary<string, object?> d2 ? d2 : new Dictionary<string, object?>())
+                    output[$"sub.{kv.Key}.{ov.Key}"] = ov.Value;
+
+            return new NodeExecutionResult
+            {
+                Success = success,
+                Status = success ? "completed" : "failed",
+                Error = success ? null : subResult.Error,
+                Output = output
+            };
         }
 
         #endregion
@@ -2177,37 +2451,63 @@ namespace MyApi.Modules.WorkflowEngine.Services
         }
 
         /// <summary>
-        /// Resolves {{variable}} references in a string using workflow context
+        /// Resolves variable references in a template string using workflow context.
+        /// Supported syntaxes:
+        ///   {{varName}}          — flat variable from context.Variables
+        ///   {{nodeId.key}}       — output key of a previously executed node
+        ///   {{trigger.key}}      — same as {{key}}, convenience alias
+        ///   ${varName}           — dollar-brace syntax used by the frontend editor
+        ///   ${nodeId.key}        — dollar-brace node output reference
+        /// Unresolved references are left as-is so callers can inspect them.
         /// </summary>
         private string ResolveVariables(string input, WorkflowExecutionContext context)
         {
             if (string.IsNullOrEmpty(input)) return input;
 
-            // Replace {{trigger.xxx}} with trigger entity data
-            input = System.Text.RegularExpressions.Regex.Replace(input, @"\{\{trigger\.(\w+)\}\}", match =>
+            // Inner resolver shared by both syntaxes.
+            string Resolve(string expr)
             {
-                var key = match.Groups[1].Value;
-                if (context.Variables.TryGetValue(key, out var val) && val != null)
-                    return val.ToString() ?? "";
-                return match.Value; // Keep unresolved
-            });
-
-            // Replace {{stepX.xxx}} with node outputs
-            input = System.Text.RegularExpressions.Regex.Replace(input, @"\{\{(\w+)\.(\w+)\}\}", match =>
-            {
-                var nodeId = match.Groups[1].Value;
-                var key = match.Groups[2].Value;
-                if (context.NodeOutputs.TryGetValue(nodeId, out var outputs) && outputs is Dictionary<string, object?> dict)
+                // "nodeId.key" → NodeOutputs first, then Variables["nodeId.key"]
+                var dotIdx = expr.IndexOf('.');
+                if (dotIdx > 0)
                 {
-                    if (dict.TryGetValue(key, out var val) && val != null)
-                        return val.ToString() ?? "";
+                    var nodeId = expr[..dotIdx];
+                    var key    = expr[(dotIdx + 1)..];
+
+                    // Special alias: {{trigger.xxx}} → context.Variables[xxx]
+                    if (string.Equals(nodeId, "trigger", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (context.Variables.TryGetValue(key, out var tv) && tv != null)
+                            return tv.ToString() ?? "";
+                    }
+                    else
+                    {
+                        if (context.NodeOutputs.TryGetValue(nodeId, out var outputs)
+                            && outputs is Dictionary<string, object?> dict
+                            && dict.TryGetValue(key, out var nv) && nv != null)
+                            return nv.ToString() ?? "";
+
+                        var fullKey = expr; // "nodeId.key"
+                        if (context.Variables.TryGetValue(fullKey, out var fv) && fv != null)
+                            return fv.ToString() ?? "";
+                    }
+                    return $"{{{{{expr}}}}}"; // leave unresolved in {{}} form
                 }
-                // Also check Variables directly
-                var fullKey = $"{nodeId}.{key}";
-                if (context.Variables.TryGetValue(fullKey, out var directVal) && directVal != null)
-                    return directVal.ToString() ?? "";
-                return match.Value;
-            });
+
+                // Flat variable
+                if (context.Variables.TryGetValue(expr, out var flat) && flat != null)
+                    return flat.ToString() ?? "";
+
+                return $"{{{{{expr}}}}}"; // leave unresolved
+            }
+
+            // {{expr}} — double-brace syntax (covers trigger.x, nodeId.key, plain varName)
+            input = System.Text.RegularExpressions.Regex.Replace(
+                input, @"\{\{([\w.]+)\}\}", m => Resolve(m.Groups[1].Value));
+
+            // ${expr} — dollar-brace syntax (frontend template strings)
+            input = System.Text.RegularExpressions.Regex.Replace(
+                input, @"\$\{([\w.]+)\}", m => Resolve(m.Groups[1].Value));
 
             return input;
         }

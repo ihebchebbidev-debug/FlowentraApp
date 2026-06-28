@@ -11,6 +11,7 @@ import { dynamicFormsService } from '@/modules/dynamic-forms/services/dynamicFor
 import { usersApi } from '@/services/api/usersApi';
 import { emailAccountsApi, type ConnectedEmailAccountDto } from '@/services/api/emailAccountsApi';
 import { fetchOpenRouterModels, getOpenRouterKeys, type OpenRouterModel, type OpenRouterApiKey } from '@/services/openRouterModelsService';
+import { workflowApi, type WorkflowDefinition } from '@/services/api/workflowApi';
 import type { DynamicForm } from '@/modules/dynamic-forms/types';
 import type { User } from '@/types/users';
 
@@ -85,9 +86,13 @@ export function NodeConfigurationModal({ isOpen, onClose, nodeData, onSave }: No
   const [loadingAccounts, setLoadingAccounts] = useState(false);
   const [loadingModels, setLoadingModels] = useState(false);
   const [userKeys, setUserKeys] = useState<OpenRouterApiKey[]>([]);
+  const [availableWorkflows, setAvailableWorkflows] = useState<WorkflowDefinition[]>([]);
 
   useEffect(() => {
     if (!isOpen) return;
+
+    // Fetch all workflows (for subworkflow selector)
+    workflowApi.getAll().then(setAvailableWorkflows).catch(() => setAvailableWorkflows([]));
 
     // Fetch forms
     setLoadingForms(true);
@@ -1402,6 +1407,59 @@ return { action: 'skip' };`}</pre>
     );
   };
 
+  // Subworkflow node configuration
+  const renderSubWorkflowConfig = () => (
+    <div className="space-y-4">
+      <div className="p-3 bg-muted/30 rounded-md text-xs text-muted-foreground">
+        {t('config.subworkflowHint', 'Call another workflow as a step. The child workflow executes synchronously and its outputs become available as variables in this workflow.')}
+      </div>
+
+      <div className="space-y-2">
+        <Label>{t('config.subworkflowTarget', 'Target Workflow')}</Label>
+        <Select
+          value={config.workflowId?.toString() || ''}
+          onValueChange={(v) => setConfig((c: any) => ({ ...c, workflowId: v }))}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder={t('config.subworkflowSelectPlaceholder', 'Select a workflow…')} />
+          </SelectTrigger>
+          <SelectContent>
+            {availableWorkflows.map((wf) => (
+              <SelectItem key={wf.id} value={wf.id.toString()}>
+                {wf.name}
+                {!wf.isActive ? ' (inactive)' : ''}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-[11px] text-muted-foreground">
+          {t('config.subworkflowTargetHint', 'Only active workflows are recommended. Max nesting depth: 5.')}
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <Label>{t('config.subworkflowInputMapping', 'Input Variable Mapping (optional)')}</Label>
+        <Textarea
+          rows={4}
+          value={config.inputMapping || ''}
+          onChange={(e) => setConfig((c: any) => ({ ...c, inputMapping: e.target.value }))}
+          placeholder={`childVar=parentVar\nchildEmail={{entityEmail}}\ncustomerName=\${contactName}`}
+          className="font-mono text-xs"
+        />
+        <p className="text-[11px] text-muted-foreground">
+          {t('config.subworkflowMappingHint', 'One mapping per line: childKey=value or childKey={{parentVar}}. All current variables are passed by default.')}
+        </p>
+      </div>
+
+      <div className="p-3 bg-muted/20 rounded-md space-y-1.5 text-xs">
+        <p className="font-semibold text-foreground">{t('config.subworkflowOutputsTitle', 'Available Outputs After This Node')}</p>
+        <p><code className="bg-muted px-1 rounded">{'{{nodeId.subworkflow_status}}'}</code> — completed / failed</p>
+        <p><code className="bg-muted px-1 rounded">{'{{nodeId.subworkflow_execution_id}}'}</code> — child execution ID</p>
+        <p><code className="bg-muted px-1 rounded">{'{{nodeId.sub.<childNodeId>.<key>}}'}</code> — child node outputs</p>
+      </div>
+    </div>
+  );
+
   // Custom LLM configuration (bring your own model)
   const renderCustomLLMConfig = () => (
     <div className="space-y-4">
@@ -1796,6 +1854,10 @@ return { action: 'skip' };`}</pre>
 
     if (type === 'code' || type === 'javascript') {
       return renderCodeConfig();
+    }
+
+    if (type === 'subworkflow' || type === 'sub-workflow' || type === 'call-workflow') {
+      return renderSubWorkflowConfig();
     }
 
     if (type === 'delay') {

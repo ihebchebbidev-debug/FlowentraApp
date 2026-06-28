@@ -1220,6 +1220,8 @@
   "node.custom-llm.desc": "Utilisez votre propre modèle IA",
   "node.code.label": "Code (JavaScript)",
   "node.code.desc": "Exécuter du code JavaScript personnalisé avec accès aux sorties des nœuds précédents",
+  "node.subworkflow.label": "Appeler un Sous-workflow",
+  "node.subworkflow.desc": "Exécuter un autre workflow en tant qu'étape, en transmettant des variables et récupérant les sorties",
   "ai.buildWithAI": "Construire avec l'IA",
   "ai.buildWithAITooltip": "Décrivez un workflow et laissez l'IA le construire",
   "ai.buildDescription": "Décrivez votre workflow en langage courant. L'IA le générera pour vous. Vous pouvez affiner votre prompt jusqu'à ce qu'il soit parfait.",

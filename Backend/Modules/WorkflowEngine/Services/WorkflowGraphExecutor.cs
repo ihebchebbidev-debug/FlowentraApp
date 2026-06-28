@@ -196,9 +196,28 @@ namespace MyApi.Modules.WorkflowEngine.Services
                         break;
                     }
 
-                    // Check for failure
+                    // Check for failure — but first try to route to an "error" edge (n8n-style catch path).
                     if (!nodeResult.Success)
                     {
+                        if (adjacencyMap.TryGetValue(node.Id, out var errOutEdges))
+                        {
+                            var errorEdge = errOutEdges.FirstOrDefault(e =>
+                                (e.SourceHandle?.ToLower() is "error" or "catch" or "fail") ||
+                                (e.Label?.ToLower() is "error" or "catch" or "fail" or "on error"));
+
+                            if (errorEdge != null)
+                            {
+                                _logger.LogInformation(
+                                    "[WORKFLOW-GRAPH] Node {NodeId} failed but has error edge → routing to {Target}. Error: {Error}",
+                                    node.Id, errorEdge.Target, nodeResult.Error);
+                                context.Variables["last_error"]       = nodeResult.Error ?? "";
+                                context.Variables["last_failed_node"] = node.Id;
+                                if (!executed.Contains(errorEdge.Target))
+                                    queue.Enqueue(errorEdge.Target);
+                                continue; // skip normal "failed" break
+                            }
+                        }
+
                         _logger.LogWarning("Node {NodeId} failed: {Error}", node.Id, nodeResult.Error);
                         result.FinalStatus = "failed";
                         result.Error = nodeResult.Error;
@@ -206,7 +225,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
                     }
 
                     // Determine next nodes based on node type and result
-                    var nextNodes = GetNextNodes(node, nodeResult, edges, adjacencyMap);
+                    var nextNodes = GetNextNodes(node, nodeResult, edges, adjacencyMap, context);
                     
                     _logger.LogInformation(
                         "[WORKFLOW-GRAPH] Node {NodeId} completed. Next nodes: [{NextNodes}] (Branch: {Branch})",
@@ -625,12 +644,35 @@ namespace MyApi.Modules.WorkflowEngine.Services
             WorkflowNode node,
             NodeExecutionResult result,
             List<WorkflowEdge> edges,
-            Dictionary<string, List<WorkflowEdge>> adjacencyMap)
+            Dictionary<string, List<WorkflowEdge>> adjacencyMap,
+            WorkflowExecutionContext? context = null)
         {
             var nextNodes = new List<string>();
 
             if (!adjacencyMap.TryGetValue(node.Id, out var outgoingEdges))
             {
+                return nextNodes;
+            }
+
+            // Approval nodes: route to "approved"/"rejected" edge based on approval_result
+            if (node.Type.Contains("approval"))
+            {
+                var branch = "approved"; // default: positive branch
+                if (context?.Variables.TryGetValue("_approval_branch", out var ab) == true && ab is string abs)
+                    branch = abs.ToLower();
+
+                foreach (var edge in outgoingEdges)
+                {
+                    var h = edge.SourceHandle?.ToLower() ?? "";
+                    var l = edge.Label?.ToLower() ?? "";
+                    if (h == branch || l == branch) nextNodes.Add(edge.Target);
+                    // "approved" also matches "yes"/"true"; "rejected" also matches "no"/"false"
+                    else if (branch == "approved" && (h == "yes" || h == "true" || l == "yes" || l == "true")) nextNodes.Add(edge.Target);
+                    else if (branch == "rejected" && (h == "no" || h == "false" || l == "no" || l == "false")) nextNodes.Add(edge.Target);
+                }
+                // If still no match, fall back to all unlabelled edges
+                if (!nextNodes.Any())
+                    nextNodes.AddRange(outgoingEdges.Where(e => string.IsNullOrEmpty(e.SourceHandle) && string.IsNullOrEmpty(e.Label)).Select(e => e.Target));
                 return nextNodes;
             }
 

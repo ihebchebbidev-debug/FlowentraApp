@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { 
-  Users, FileText, DollarSign, ShoppingCart, Truck, 
-  Mail, Send, Sparkles, Brain, Webhook, Calendar, 
+import {
+  Users, FileText, DollarSign, ShoppingCart, Truck,
+  Mail, Send, Sparkles, Brain, Webhook, Calendar,
   Database, GitBranch, Repeat, Split, Shield,
   Zap, Play, Bell, Clock, ArrowRight, RefreshCw, ChevronDown,
-  ClipboardList, Bot, Wrench, PauseCircle, FormInput, ArrowLeftRight, Globe, Settings2, Code, Handshake
+  ClipboardList, Bot, Wrench, PauseCircle, FormInput, ArrowLeftRight, Globe, Settings2, Code, Handshake, Layers
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
@@ -447,6 +447,15 @@ const nodeTemplates: NodeTemplate[] = [
     icon: Code,
     category: 'integration',
     isAction: true,
+  },
+  {
+    type: 'subworkflow',
+    label: 'node.subworkflow.label',
+    description: 'node.subworkflow.desc',
+    icon: Layers,
+    category: 'integration',
+    isAction: true,
+    defaultConfig: { workflowId: '', inputMapping: '' },
   },
 ];
 
