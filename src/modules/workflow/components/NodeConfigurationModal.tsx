@@ -1882,6 +1882,43 @@ return { action: 'skip' };`}</pre>
           </div>
         )}
 
+        {/* Retry settings — available for every action node (not triggers or conditions) */}
+        {nodeData && !nodeData.type.includes('trigger') && !nodeData.type.includes('condition') && !nodeData.type.includes('if-') && !nodeData.type.includes('switch') && (
+          <details className="mt-3">
+            <summary className="text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none">
+              ⟳ Retry settings
+            </summary>
+            <div className="mt-2 grid grid-cols-2 gap-3 p-3 rounded-md border border-border bg-muted/20">
+              <div className="space-y-1">
+                <Label className="text-xs">Retry attempts (0 = no retry)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={10}
+                  value={config.retryCount ?? 0}
+                  onChange={e => setConfig((c: any) => ({ ...c, retryCount: Math.max(0, Math.min(10, parseInt(e.target.value) || 0)) }))}
+                  className="h-7 text-xs bg-background"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Delay between retries (ms)</Label>
+                <Input
+                  type="number"
+                  min={100}
+                  max={60000}
+                  step={100}
+                  value={config.retryDelayMs ?? 1000}
+                  onChange={e => setConfig((c: any) => ({ ...c, retryDelayMs: Math.max(100, Math.min(60000, parseInt(e.target.value) || 1000)) }))}
+                  className="h-7 text-xs bg-background"
+                />
+              </div>
+              <p className="col-span-2 text-[10px] text-muted-foreground">
+                Retries use exponential backoff (1×, 2×, 4×, … the base delay). Pause/wait nodes are never retried.
+              </p>
+            </div>
+          </details>
+        )}
+
         <div className="flex justify-end gap-2 pt-4 border-t">
           <Button variant="outline" onClick={onClose}>
             <X className="h-4 w-4 mr-2" />

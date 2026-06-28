@@ -67,9 +67,26 @@ namespace MyApi.Modules.WorkflowEngine.Services
                     };
                 }
 
+                // Workflow-level timeout: read maxDurationMinutes from a "workflow-config"
+                // node or default to 60 min. Prevents runaway executions from hanging forever.
+                var maxMinutes = 60;
+                try
+                {
+                    var cfgNode = nodes.FirstOrDefault(n => n.Type == "workflow-config");
+                    if (cfgNode != null
+                        && cfgNode.Data.TryGetValue("maxDurationMinutes", out var mdEl)
+                        && mdEl is JsonElement mdJsonEl
+                        && mdJsonEl.ValueKind == JsonValueKind.Number)
+                    {
+                        maxMinutes = Math.Clamp(mdJsonEl.GetInt32(), 1, 1440);
+                    }
+                }
+                catch { }
+                var executionDeadline = context.StartedAt.AddMinutes(maxMinutes);
+
                 _logger.LogInformation(
-                    "Starting graph execution for workflow {WorkflowId} with {NodeCount} nodes and {EdgeCount} edges",
-                    workflowId, nodes.Count, edges.Count);
+                    "Starting graph execution for workflow {WorkflowId} with {NodeCount} nodes and {EdgeCount} edges (timeout={Max}min)",
+                    workflowId, nodes.Count, edges.Count, maxMinutes);
 
                 // Build adjacency map for graph traversal
                 var adjacencyMap = BuildAdjacencyMap(edges);
@@ -81,6 +98,18 @@ namespace MyApi.Modules.WorkflowEngine.Services
 
                 while (queue.Count > 0)
                 {
+                    // Workflow timeout guard — fails the execution cleanly instead of hanging.
+                    if (DateTime.UtcNow > executionDeadline)
+                    {
+                        result.FinalStatus = "failed";
+                        result.Error = $"Workflow exceeded maximum execution time of {maxMinutes} minutes";
+                        result.Success = false;
+                        _logger.LogWarning(
+                            "[WORKFLOW-GRAPH] Execution {ExecutionId} timed out after {Max}min — aborting remaining nodes",
+                            executionId, maxMinutes);
+                        break;
+                    }
+
                     var currentNodeId = queue.Dequeue();
 
                     if (executed.Contains(currentNodeId))
@@ -106,8 +135,8 @@ namespace MyApi.Modules.WorkflowEngine.Services
                     await _notificationService.NotifyNodeExecutingAsync(
                         workflowId, executionId, node.Id, node.Type);
 
-                    // Execute the node
-                    var nodeResult = await _nodeExecutor.ExecuteNodeAsync(executionId, node, context);
+                    // Execute the node (with per-node retry/backoff from node config)
+                    var nodeResult = await ExecuteNodeWithRetryAsync(executionId, node, context);
 
                     // Log the execution
                     await LogNodeExecutionAsync(executionId, node, nodeResult);
@@ -337,6 +366,61 @@ namespace MyApi.Modules.WorkflowEngine.Services
             result.TotalDurationMs = (int)stopwatch.ElapsedMilliseconds;
 
             return result;
+        }
+
+        /// <summary>
+        /// Executes a node with configurable retry and exponential backoff.
+        /// Reads retryCount (0–10) and retryDelayMs (100–60000) from node.Data.
+        /// Pause/stop results (ShouldStop = true) bypass retry immediately.
+        /// </summary>
+        private async Task<NodeExecutionResult> ExecuteNodeWithRetryAsync(
+            int executionId,
+            WorkflowNode node,
+            WorkflowExecutionContext context)
+        {
+            var maxRetries = 0;
+            var retryDelayMs = 1000;
+
+            try
+            {
+                if (node.Data.TryGetValue("retryCount", out var rcEl) && rcEl is JsonElement rcJson
+                    && rcJson.ValueKind == JsonValueKind.Number)
+                    maxRetries = Math.Clamp(rcJson.GetInt32(), 0, 10);
+
+                if (node.Data.TryGetValue("retryDelayMs", out var rdEl) && rdEl is JsonElement rdJson
+                    && rdJson.ValueKind == JsonValueKind.Number)
+                    retryDelayMs = Math.Clamp(rdJson.GetInt32(), 100, 60_000);
+            }
+            catch { /* ignore bad config */ }
+
+            NodeExecutionResult? lastResult = null;
+
+            for (var attempt = 0; attempt <= maxRetries; attempt++)
+            {
+                if (attempt > 0)
+                {
+                    // Exponential backoff: 1s, 2s, 4s, 8s …
+                    var backoffMs = Math.Min(retryDelayMs * (int)Math.Pow(2, attempt - 1), 60_000);
+                    _logger.LogInformation(
+                        "[WORKFLOW-GRAPH] Node {NodeId} retry {Attempt}/{Max} after {Backoff}ms backoff",
+                        node.Id, attempt, maxRetries, backoffMs);
+                    await Task.Delay(backoffMs);
+                }
+
+                lastResult = await _nodeExecutor.ExecuteNodeAsync(executionId, node, context);
+
+                // Don't retry pause/stop signals or successful results.
+                if (lastResult.Success || lastResult.ShouldStop) break;
+
+                if (attempt < maxRetries)
+                {
+                    _logger.LogWarning(
+                        "[WORKFLOW-GRAPH] Node {NodeId} failed (attempt {Attempt}/{Total}): {Error}",
+                        node.Id, attempt + 1, maxRetries + 1, lastResult.Error);
+                }
+            }
+
+            return lastResult!;
         }
 
         private async Task PersistContextAsync(int executionId, WorkflowExecutionContext context)

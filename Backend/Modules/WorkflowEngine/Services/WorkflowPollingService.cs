@@ -62,10 +62,18 @@ namespace MyApi.Modules.WorkflowEngine.Services
             var notificationService = scope.ServiceProvider.GetRequiredService<IWorkflowNotificationService>();
             var graphExecutor = scope.ServiceProvider.GetRequiredService<IWorkflowGraphExecutor>();
 
+            // ═══ PHASE 0: Purge stale execution records (TTL housekeeping) ═══
+            var purged = await PurgeStaleExecutionsAsync(db, cancellationToken);
+            _logger.LogInformation("[WORKFLOW-POLLING] Phase 0 - Stale executions purged: {Count}", purged);
+
             // ═══ PHASE 1: Direct status consistency reconciliation ═══
             // This fixes mismatches that the trigger-based system may have missed
             var consistencyFixes = await ReconcileStatusConsistencyAsync(db, cancellationToken);
             _logger.LogInformation("[WORKFLOW-POLLING] Phase 1 - Consistency fixes: {Fixes}", consistencyFixes);
+
+            // ═══ PHASE 1.4: Expire timed-out approval requests ═══
+            var expired = await ExpireTimedOutApprovalsAsync(db, graphExecutor, cancellationToken);
+            _logger.LogInformation("[WORKFLOW-POLLING] Phase 1.4 - Approvals expired: {Count}", expired);
 
             // ═══ PHASE 1.5: Resume delayed executions whose ResumeAt has passed ═══
             var resumed = await ResumeDueDelayedExecutionsAsync(db, graphExecutor, cancellationToken);
@@ -109,6 +117,154 @@ namespace MyApi.Modules.WorkflowEngine.Services
             _logger.LogInformation("[WORKFLOW-POLLING] Polling cycle complete. Consistency fixes: {ConsistencyFixes}, Entities checked: {Processed}, Workflows triggered: {Triggered}",
                 consistencyFixes, totalProcessed, totalTriggered);
             _logger.LogInformation("[WORKFLOW-POLLING] ═══════════════════════════════════════════════════════════════");
+        }
+
+        /// <summary>
+        /// Delete completed/cancelled executions older than 30 days and failed ones older
+        /// than 90 days, including their logs and approval records. Runs every cycle but is
+        /// capped at 500 rows per pass so it never blocks the polling cycle significantly.
+        /// </summary>
+        private async Task<int> PurgeStaleExecutionsAsync(ApplicationDbContext db, CancellationToken ct)
+        {
+            try
+            {
+                var now = DateTime.UtcNow;
+                var completedCutoff = now.AddDays(-30);
+                var failedCutoff = now.AddDays(-90);
+
+                var completedIds = await db.WorkflowExecutions
+                    .Where(e => (e.Status == "completed" || e.Status == "cancelled") && e.CompletedAt < completedCutoff)
+                    .Select(e => e.Id)
+                    .Take(500)
+                    .ToListAsync(ct);
+
+                var failedIds = await db.WorkflowExecutions
+                    .Where(e => e.Status == "failed" && e.CompletedAt < failedCutoff)
+                    .Select(e => e.Id)
+                    .Take(500)
+                    .ToListAsync(ct);
+
+                var allIds = completedIds.Concat(failedIds).ToList();
+                if (!allIds.Any()) return 0;
+
+                await db.WorkflowExecutionLogs
+                    .Where(l => allIds.Contains(l.ExecutionId))
+                    .ExecuteDeleteAsync(ct);
+
+                await db.Set<WorkflowApproval>()
+                    .Where(a => allIds.Contains(a.ExecutionId))
+                    .ExecuteDeleteAsync(ct);
+
+                int deleted = await db.WorkflowExecutions
+                    .Where(e => allIds.Contains(e.Id))
+                    .ExecuteDeleteAsync(ct);
+
+                if (deleted > 0)
+                    _logger.LogInformation("[WORKFLOW-POLLING] 🗑️  TTL purge: removed {Count} execution records", deleted);
+
+                return deleted;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "[WORKFLOW-POLLING] Stale execution purge failed (non-critical)");
+                return 0;
+            }
+        }
+
+        /// <summary>
+        /// Find pending approval records whose ExpiresAt has passed, mark them as expired,
+        /// and resume the workflow on the rejection/timeout branch so executions don't stall
+        /// forever waiting for a human who never responds.
+        /// </summary>
+        private async Task<int> ExpireTimedOutApprovalsAsync(
+            ApplicationDbContext db,
+            IWorkflowGraphExecutor graphExecutor,
+            CancellationToken ct)
+        {
+            var now = DateTime.UtcNow;
+            var timedOut = await db.Set<WorkflowApproval>()
+                .Where(a => a.Status == "pending" && a.ExpiresAt != null && a.ExpiresAt <= now)
+                .Take(50)
+                .ToListAsync(ct);
+
+            int expiredCount = 0;
+            foreach (var approval in timedOut)
+            {
+                try
+                {
+                    _logger.LogInformation(
+                        "[WORKFLOW-POLLING] ⏰ Approval #{ApprovalId} expired (execution #{ExecutionId}, node {NodeId}, deadline {Deadline:o})",
+                        approval.Id, approval.ExecutionId, approval.NodeId, approval.ExpiresAt);
+
+                    approval.Status = "expired";
+                    approval.RespondedAt = now;
+                    await db.SaveChangesAsync(ct);
+
+                    var exec = await db.WorkflowExecutions.FirstOrDefaultAsync(e => e.Id == approval.ExecutionId, ct);
+                    if (exec == null || exec.Status != "waiting_approval") continue;
+
+                    Dictionary<string, object?> vars = new();
+                    try
+                    {
+                        if (!string.IsNullOrEmpty(exec.Context))
+                        {
+                            var parsed = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(exec.Context);
+                            if (parsed != null)
+                                foreach (var kv in parsed) vars[kv.Key] = kv.Value;
+                        }
+                    }
+                    catch { /* best-effort */ }
+
+                    // Downstream nodes can check approval_result == "expired" / "rejected"
+                    vars["approval_result"] = "expired";
+                    vars["approval_id"] = approval.Id;
+                    vars["approval_expired"] = true;
+
+                    var context = new WorkflowExecutionContext
+                    {
+                        WorkflowId = exec.WorkflowId,
+                        ExecutionId = exec.Id,
+                        TriggerEntityType = exec.TriggerEntityType,
+                        TriggerEntityId = exec.TriggerEntityId,
+                        UserId = "system-expiry",
+                        Variables = vars
+                    };
+
+                    exec.Status = "running";
+                    exec.WaitingNodeId = null;
+                    await db.SaveChangesAsync(ct);
+
+                    // Treat expiry as an implicit rejection — resume on the same branch
+                    // the graph would take after a reject response.
+                    var result = await graphExecutor.ResumeAfterNodeAsync(
+                        exec.WorkflowId, exec.Id, approval.NodeId, context);
+
+                    exec.Status = result.FinalStatus;
+                    exec.Error = result.Success ? exec.Error : Truncate(result.Error, 1000);
+                    if (result.FinalStatus == "completed" || result.FinalStatus == "failed")
+                        exec.CompletedAt = now;
+                    await db.SaveChangesAsync(ct);
+
+                    expiredCount++;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "[WORKFLOW-POLLING] Failed to expire approval #{ApprovalId}", approval.Id);
+                    try
+                    {
+                        db.ChangeTracker.Clear();
+                        var freshApproval = await db.Set<WorkflowApproval>().FirstOrDefaultAsync(a => a.Id == approval.Id, ct);
+                        if (freshApproval != null && freshApproval.Status == "pending")
+                        {
+                            freshApproval.Status = "expired";
+                            freshApproval.RespondedAt = now;
+                            await db.SaveChangesAsync(ct);
+                        }
+                    }
+                    catch { /* swallow */ }
+                }
+            }
+            return expiredCount;
         }
 
         /// <summary>
