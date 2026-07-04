@@ -6,8 +6,8 @@
  * Main admins also see a "View all companies" option at the bottom for audit
  * mode; regular users only get the cards.
  */
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Building2,
   Loader2,
@@ -23,7 +23,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenantMap } from "@/contexts/TenantMapContext";
-import { setActiveCompany } from "@/utils/targetTenant";
+import { setActiveCompany, getActiveCompanyId } from "@/utils/targetTenant";
+import { bootstrapActiveCompany } from "@/utils/bootstrapCompany";
 import { buildAssetUrl } from "@/config/api";
 import { setCompanyLogo, setCompanyLogoExplicitNone } from "@/hooks/useCompanyLogo";
 import { useUserType } from "@/hooks/useUserType";
@@ -40,11 +41,17 @@ function initialsOf(name: string) {
 
 export default function SelectCompany() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { logout, isAuthenticated, isLoading: authLoading } = useAuth();
-  const { tenants, loaded } = useTenantMap();
+  const { tenants, loaded, refetch } = useTenantMap();
   const { isMainAdminUser } = useUserType();
   const [busy, setBusy] = useState<string | null>(null);
   const [brokenLogos, setBrokenLogos] = useState<Record<number, boolean>>({});
+  const emptyRetryRef = useRef(false);
+  const autoPickRef = useRef(false);
+
+  const returnTo =
+    (location.state as { from?: string } | null)?.from ?? "/dashboard";
 
   useEffect(() => {
     document.title = "Select Company — Flowentra";
@@ -60,12 +67,8 @@ export default function SelectCompany() {
     [tenants]
   );
 
-  const pick = (tenantId: number, label: string) => {
+  const pick = useCallback((tenantId: number, label: string) => {
     setBusy(label);
-    // Pre-write the logo so bootstrap reads it on the next page load before
-    // the network resolves — must happen before setActiveCompany clears caches.
-    // Rule: use the selected company's logo; fall back to the default company's
-    // logo if the selected company has none (mirrors TenantMapContext logic).
     const tenant = activeTenants.find((t) => t.id === tenantId);
     const defaultTenant = activeTenants.find(t => t.isDefault) ?? activeTenants[0];
     const logoUrl = (tenant as any)?.companyLogoUrl as string | null | undefined;
@@ -73,9 +76,41 @@ export default function SelectCompany() {
     const resolved = logoUrl ?? fallback;
     if (resolved) setCompanyLogo(resolved);
     else setCompanyLogoExplicitNone();
-    // Row-level switch: keep X-Tenant (subdomain/DB) untouched, set X-Target-Tenant.
     setActiveCompany({ id: tenantId, reload: true });
-  };
+  }, [activeTenants]);
+
+  // Already pinned (e.g. after onboarding bootstrap) — skip this page.
+  useEffect(() => {
+    if (!loaded) return;
+    if (getActiveCompanyId() !== undefined) {
+      navigate(returnTo, { replace: true });
+    }
+  }, [loaded, navigate, returnTo]);
+
+  // Single company: auto-open workspace, no picker needed.
+  useEffect(() => {
+    if (!loaded || autoPickRef.current || activeTenants.length !== 1) return;
+    autoPickRef.current = true;
+    const only = activeTenants[0];
+    const label = only.companyName || only.slug;
+    setBusy(label);
+    void bootstrapActiveCompany(isMainAdminUser).then((result) => {
+      if (result.pinned) {
+        navigate(returnTo, { replace: true });
+        return;
+      }
+      pick(only.id, label);
+    });
+  }, [loaded, activeTenants, isMainAdminUser, navigate, returnTo, pick]);
+
+  // Stale empty cache after onboarding — one fresh refetch before showing dead-end UI.
+  useEffect(() => {
+    if (!loaded || emptyRetryRef.current || activeTenants.length > 0) return;
+    emptyRetryRef.current = true;
+    void refetch({ bustCache: true }).then(() => {
+      void bootstrapActiveCompany(isMainAdminUser);
+    });
+  }, [loaded, activeTenants.length, refetch, isMainAdminUser]);
 
   const pickViewAll = () => {
     setBusy("__all__");
@@ -129,8 +164,31 @@ export default function SelectCompany() {
               </div>
               <h2 className="text-base font-medium text-foreground">No company available</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Contact your administrator to be assigned to a workspace.
+                {isMainAdminUser
+                  ? "Finish onboarding to create your first workspace, or retry loading companies."
+                  : "Contact your administrator to be assigned to a workspace."}
               </p>
+              {isMainAdminUser && (
+                <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                  <Button
+                    variant="default"
+                    onClick={() => navigate("/onboarding", { replace: true })}
+                  >
+                    Continue setup
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      emptyRetryRef.current = false;
+                      void refetch({ bustCache: true }).then(() =>
+                        bootstrapActiveCompany(true),
+                      );
+                    }}
+                  >
+                    Retry
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         ) : (

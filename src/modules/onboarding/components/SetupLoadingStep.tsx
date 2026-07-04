@@ -160,8 +160,13 @@ export function SetupLoadingStep({ data, onComplete }: SetupLoadingStepProps) {
         } catch (err: any) {
           console.error(`[Onboarding] Step failed: ${step.id}`, err);
           setError(err.message || 'Setup failed');
-          
-          // Wait a bit then continue anyway (graceful degradation)
+
+          // Finalize must succeed — without it no company row is created on the backend.
+          if (step.id === 'finalize') {
+            return;
+          }
+
+          // Non-critical steps: continue after a short pause.
           await new Promise(resolve => setTimeout(resolve, 1500));
           setCompletedSteps(prev => [...prev, step.id]);
         }

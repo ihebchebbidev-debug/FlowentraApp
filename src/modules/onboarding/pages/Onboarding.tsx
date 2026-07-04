@@ -10,6 +10,8 @@ import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { useNavigate } from "react-router-dom";
 import { authService } from '@/services/authService';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTenantMap } from '@/contexts/TenantMapContext';
+import { bootstrapActiveCompany } from '@/utils/bootstrapCompany';
 import { useTranslation } from 'react-i18next';
 import useOnboardingTranslations from '../hooks/useOnboardingTranslations';
 import { Check, User, Palette, Briefcase, Building2, Mail, Rocket, Camera } from "lucide-react";
@@ -40,7 +42,8 @@ export interface OnboardingData {
 
 const Onboarding = () => {
   const navigate = useNavigate();
-  const { refreshUser } = useAuth();
+  const { refreshUser, isMainAdmin } = useAuth();
+  const { refetch: refetchTenants } = useTenantMap();
   const currentUser = authService.getCurrentUserFromStorage();
   const { t } = useTranslation();
   useOnboardingTranslations();
@@ -192,6 +195,10 @@ const Onboarding = () => {
       }
 
       await refreshUser();
+      // Company row is created when onboardingCompleted flips on the backend.
+      // Bust the stale empty tenant cache from signup/login and pin the new company.
+      await refetchTenants({ bustCache: true });
+      await bootstrapActiveCompany(isMainAdmin);
       navigate('/dashboard', { replace: true });
     } catch (err) {
       console.error('Failed to complete onboarding:', err);

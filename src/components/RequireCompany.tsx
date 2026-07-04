@@ -12,29 +12,46 @@
  *  - Tenant === VIEW_ALL_SENTINEL → render (admin opt-in audit mode)
  *  - Tenant null/missing → redirect to /select-company
  */
-import { type ReactNode } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenantMap } from "@/contexts/TenantMapContext";
-import { getActiveCompanyId, isActiveCompanyViewAll } from "@/utils/targetTenant";
+import {
+  getActiveCompanyId,
+  isActiveCompanyViewAll,
+  onTargetTenantChanged,
+  setActiveCompany,
+} from "@/utils/targetTenant";
 
 export function RequireCompany({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
-  const { loaded: tenantsLoaded } = useTenantMap();
+  const { loaded: tenantsLoaded, tenants } = useTenantMap();
   const location = useLocation();
+  const [, tenantRevision] = useState(0);
 
-  // Wait for auth + tenant map. Returning children while loading caused the
-  // dashboard to mount before headers were resolvable, producing the brief
-  // 428 "company_required" burst on every reload.
+  useEffect(() => onTargetTenantChanged(() => setTenantRevision((n) => n + 1)), []);
+
+  const activeTenants = tenants.filter((t) => t.isActive !== false);
+
+  useEffect(() => {
+    if (!tenantsLoaded || !isAuthenticated) return;
+    if (getActiveCompanyId() !== undefined || isActiveCompanyViewAll()) return;
+    if (activeTenants.length !== 1) return;
+    setActiveCompany({ id: activeTenants[0].id });
+  }, [tenantsLoaded, isAuthenticated, activeTenants]);
+
+  void tenantRevision;
+
   if (isLoading) return null;
   if (!isAuthenticated) return <>{children}</>;
   if (!tenantsLoaded) return null;
 
-  // Pass-through if the user has picked a company OR opted into view-all
-  // (TenantMapContext auto-pins single-tenant accounts before this runs).
   if (getActiveCompanyId() !== undefined || isActiveCompanyViewAll()) {
     return <>{children}</>;
   }
+
+  // One company: wait for the effect above to pin before redirecting.
+  if (activeTenants.length === 1) return null;
 
   return (
     <Navigate

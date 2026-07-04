@@ -6,6 +6,7 @@ import { createContext, useContext, useEffect, useState, useCallback, type React
 import { tenantsApi, type Tenant } from '@/services/api/tenantsApi';
 import { useAuth } from '@/contexts/AuthContext';
 import { getCurrentTenant } from '@/utils/tenant';
+import { clearTenantListCache } from '@/utils/bootstrapCompany';
 import { registerTenantHeaderMetadata, setActiveCompany, getActiveCompanyId, isActiveCompanyViewAll } from '@/utils/targetTenant';
 import { setCompanyLogo, setCompanyLogoExplicitNone } from '@/hooks/useCompanyLogo';
 
@@ -16,8 +17,8 @@ interface TenantMapContextValue {
   tenants: Tenant[];
   /** Whether the map has loaded */
   loaded: boolean;
-  /** Force a refetch (e.g. after creating a company). */
-  refetch: () => Promise<void>;
+  /** Force a refetch (e.g. after creating a company). Pass bustCache after onboarding. */
+  refetch: (opts?: { bustCache?: boolean }) => Promise<void>;
 }
 
 const TenantMapContext = createContext<TenantMapContextValue>({
@@ -89,13 +90,16 @@ export function TenantMapProvider({ children }: { children: ReactNode }) {
   const [tenants, setTenants] = useState<Tenant[]>(initialCache);
   const [loaded, setLoaded] = useState(initialCache.length > 0);
 
-  const fetchTenants = useCallback(async (): Promise<void> => {
+  const fetchTenants = useCallback(async (opts?: { bustCache?: boolean }): Promise<void> => {
     const token = getStoredAccessToken();
     if (!isAuthenticated || !token) {
       setTenants([]);
       setTenantMap(new Map());
       setLoaded(true);
       return;
+    }
+    if (opts?.bustCache) {
+      clearTenantListCache();
     }
     try {
       const data = await tenantsApi.list();

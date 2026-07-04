@@ -63,41 +63,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const resolveDefaultTenant = async (isMain: boolean) => {
-    try {
-      const { getActiveCompanyId, isActiveCompanyViewAll, setActiveCompany } = await import('@/utils/targetTenant');
-
-      // Already picked a company (or opted into view-all) → nothing to do.
-      if (getActiveCompanyId() !== undefined || isActiveCompanyViewAll()) {
-        return;
-      }
-
-      // Main admin with multiple companies → leave unset so RequireCompany
-      // routes them through /select-company.
-      try {
-        const { tenantsApi } = await import('@/services/api/tenantsApi');
-        const tenants = await tenantsApi.list();
-        const active = tenants.filter(t => t.isActive !== false);
-
-        if (isMain && active.length > 1) {
-          return;
-        }
-
-        const fallback =
-          active.find(t => t.isDefault) ||
-          active[0] ||
-          tenants.find(t => t.isDefault) ||
-          tenants[0];
-
-        if (fallback) {
-          setActiveCompany({ id: fallback.id });
-          return;
-        }
-      } catch (innerErr) {
-        console.warn('[Auth] tenantsApi.list failed during bootstrap', innerErr);
-      }
-    } catch (e) {
-      console.warn('Failed to auto-resolve default tenant', e);
-    }
+    const { bootstrapActiveCompany } = await import('@/utils/bootstrapCompany');
+    await bootstrapActiveCompany(isMain);
   };
 
   // Initialize auth state
@@ -252,6 +219,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const response = await authService.userLogin({ email, password, rememberMe });
       if (response.success && response.user) {
+        await resolveDefaultTenant(false);
         setUser(response.user);
         setIsAuthenticated(true);
         setIsMainAdmin(false); // User login = Regular user with role-based permissions
