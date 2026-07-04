@@ -1,59 +1,82 @@
 /**
  * RequireCompany — gates the dashboard behind an explicit company pick.
  *
- * Why: the app used to boot in VIEW_ALL_SENTINEL mode for main admins, which
- * silently disabled "Add" buttons and made every list look empty (filters
- * scoped to a null tenantId). Now we force the user to pick — or to
- * explicitly opt into "view all" — before any dashboard route renders.
- *
- * Behavior:
- *  - Not authenticated → fall through (children handle their own auth redirect)
- *  - Tenant pinned to a real slug → render
- *  - Tenant === VIEW_ALL_SENTINEL → render (admin opt-in audit mode)
- *  - Tenant null/missing → redirect to /select-company
+ * Single-company accounts are auto-pinned here — they never see /select-company.
+ * The picker is only used when a main admin owns 2+ companies and none is pinned yet.
  */
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenantMap } from "@/contexts/TenantMapContext";
 import {
-  getActiveCompanyId,
-  isActiveCompanyViewAll,
   onTargetTenantChanged,
-  setActiveCompany,
 } from "@/utils/targetTenant";
-import { filterActiveTenants } from "@/utils/bootstrapCompany";
+import {
+  filterActiveTenants,
+  hasActiveCompanySelection,
+  isMainAdminFromStorage,
+  pinActiveCompanyFromList,
+  shouldShowCompanyPicker,
+} from "@/utils/bootstrapCompany";
 
 export function RequireCompany({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
-  const { loaded: tenantsLoaded, tenants } = useTenantMap();
+  const { loaded: tenantsLoaded, tenants, refetch } = useTenantMap();
   const location = useLocation();
   const [, tenantRevision] = useState(0);
+  const [resolving, setResolving] = useState(false);
+  const emptyResolveRef = useRef(false);
 
   useEffect(() => onTargetTenantChanged(() => setTenantRevision((n) => n + 1)), []);
 
   const activeTenants = filterActiveTenants(tenants);
+  const mainAdmin = isMainAdminFromStorage();
 
+  // Auto-pin when there is only one company — no picker needed.
   useEffect(() => {
     if (!tenantsLoaded || !isAuthenticated) return;
-    if (getActiveCompanyId() !== undefined || isActiveCompanyViewAll()) return;
+    if (hasActiveCompanySelection()) return;
     if (activeTenants.length !== 1) return;
-    setActiveCompany({ id: activeTenants[0].id });
-  }, [tenantsLoaded, isAuthenticated, activeTenants]);
+    pinActiveCompanyFromList(activeTenants, mainAdmin);
+  }, [tenantsLoaded, isAuthenticated, activeTenants, mainAdmin]);
+
+  // Stale empty cache: refetch once before deciding where to send the user.
+  useEffect(() => {
+    if (!tenantsLoaded || !isAuthenticated || resolving || emptyResolveRef.current) return;
+    if (hasActiveCompanySelection()) return;
+    if (activeTenants.length > 0) return;
+
+    emptyResolveRef.current = true;
+    setResolving(true);
+    void refetch({ bustCache: true }).then((fresh) => {
+      if (!hasActiveCompanySelection()) {
+        pinActiveCompanyFromList(fresh, mainAdmin);
+      }
+      setResolving(false);
+    });
+  }, [tenantsLoaded, isAuthenticated, activeTenants.length, refetch, resolving, mainAdmin]);
 
   void tenantRevision;
 
-  if (isLoading) return null;
+  if (isLoading || !tenantsLoaded || resolving) return null;
   if (!isAuthenticated) return <>{children}</>;
-  if (!tenantsLoaded) return null;
+  if (hasActiveCompanySelection()) return <>{children}</>;
 
-  if (getActiveCompanyId() !== undefined || isActiveCompanyViewAll()) {
-    return <>{children}</>;
-  }
-
-  // One company: wait for the effect above to pin before redirecting.
+  // Still pinning the sole company — hold the gate briefly.
   if (activeTenants.length === 1) return null;
 
+  // Picker only for main admins with multiple companies.
+  if (shouldShowCompanyPicker(tenants, mainAdmin)) {
+    return (
+      <Navigate
+        to="/select-company"
+        replace
+        state={{ from: location.pathname + location.search }}
+      />
+    );
+  }
+
+  // Zero companies (setup not finished) — recovery screen, not a multi pick.
   return (
     <Navigate
       to="/select-company"

@@ -1,15 +1,11 @@
 /**
- * SelectCompany — mandatory company picker shown right after login when no
- * tenant is pinned yet. Replaces the previous "boot in view-all" default so
- * Add buttons, list filters and KPIs all have a concrete company to scope to.
+ * SelectCompany — multi-company picker for main admins with 2+ workspaces.
  *
- * Main admins also see a "View all companies" option at the bottom for audit
- * mode; regular users only get the cards.
- *
- * Skipped automatically when the user has exactly one company.
+ * NOT shown when the user has only one company: those accounts are auto-pinned
+ * in RequireCompany and redirected away immediately if they land here.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Navigate } from "react-router-dom";
 import {
   Building2,
   Loader2,
@@ -25,16 +21,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenantMap } from "@/contexts/TenantMapContext";
-import {
-  setActiveCompany,
-  isActiveCompanyViewAll,
-  onTargetTenantChanged,
-} from "@/utils/targetTenant";
+import { setActiveCompany } from "@/utils/targetTenant";
 import {
   ensureActiveCompanyPinned,
   filterActiveTenants,
   hasActiveCompanySelection,
   isMainAdminFromStorage,
+  pinActiveCompanyFromList,
+  shouldShowCompanyPicker,
 } from "@/utils/bootstrapCompany";
 import { buildAssetUrl } from "@/config/api";
 import { setCompanyLogo, setCompanyLogoExplicitNone } from "@/hooks/useCompanyLogo";
@@ -58,40 +52,30 @@ export default function SelectCompany() {
   const { isMainAdminUser } = useUserType();
   const [busy, setBusy] = useState<string | null>(null);
   const [brokenLogos, setBrokenLogos] = useState<Record<number, boolean>>({});
-  const [pinRevision, setPinRevision] = useState(0);
   const emptyRetryRef = useRef(false);
-  const autoPickRef = useRef(false);
 
   const returnTo =
     (location.state as { from?: string } | null)?.from ?? "/dashboard";
 
   const effectiveMainAdmin = isMainAdminUser || isMainAdminFromStorage();
+  const activeTenants = useMemo(() => filterActiveTenants(tenants || []), [tenants]);
 
   useEffect(() => {
     document.title = "Select Company — Flowentra";
   }, []);
 
-  useEffect(() => onTargetTenantChanged(() => setPinRevision((n) => n + 1)), []);
-
   useEffect(() => {
     if (!authLoading && !isAuthenticated) navigate("/login", { replace: true });
   }, [authLoading, isAuthenticated, navigate]);
 
-  const activeTenants = useMemo(() => filterActiveTenants(tenants || []), [tenants]);
-
-  const redirectIfPinned = useCallback(() => {
-    if (hasActiveCompanySelection()) {
-      navigate(returnTo, { replace: true });
-      return true;
-    }
-    return false;
-  }, [navigate, returnTo]);
-
-  // Already pinned — skip this page entirely.
+  // Stale empty cache — refetch once (e.g. right after onboarding).
   useEffect(() => {
-    if (!loaded) return;
-    redirectIfPinned();
-  }, [loaded, pinRevision, redirectIfPinned]);
+    if (!loaded || emptyRetryRef.current || activeTenants.length > 0) return;
+    emptyRetryRef.current = true;
+    void refetch({ bustCache: true }).then((fresh) => {
+      void ensureActiveCompanyPinned(effectiveMainAdmin, fresh);
+    });
+  }, [loaded, activeTenants.length, refetch, effectiveMainAdmin]);
 
   const pick = useCallback((tenantId: number, label: string) => {
     setBusy(label);
@@ -105,39 +89,6 @@ export default function SelectCompany() {
     setActiveCompany({ id: tenantId, reload: true });
   }, [activeTenants]);
 
-  // Single company: auto-open workspace, no picker needed.
-  useEffect(() => {
-    if (!loaded || autoPickRef.current || activeTenants.length !== 1) return;
-    if (hasActiveCompanySelection()) return;
-
-    autoPickRef.current = true;
-    const only = activeTenants[0];
-    const label = only.companyName || only.slug;
-    setBusy(label);
-
-    void ensureActiveCompanyPinned(effectiveMainAdmin, activeTenants).then((result) => {
-      if (result.pinned || hasActiveCompanySelection()) {
-        navigate(returnTo, { replace: true });
-        return;
-      }
-      pick(only.id, label);
-    });
-  }, [loaded, activeTenants, effectiveMainAdmin, navigate, returnTo, pick]);
-
-  // Stale empty cache after onboarding — one fresh refetch before dead-end UI.
-  useEffect(() => {
-    if (!loaded || emptyRetryRef.current || activeTenants.length > 0) return;
-    if (hasActiveCompanySelection()) return;
-
-    emptyRetryRef.current = true;
-    void refetch({ bustCache: true }).then(async (freshTenants) => {
-      const result = await ensureActiveCompanyPinned(effectiveMainAdmin, freshTenants);
-      if (result.pinned || hasActiveCompanySelection()) {
-        navigate(returnTo, { replace: true });
-      }
-    });
-  }, [loaded, activeTenants.length, refetch, effectiveMainAdmin, navigate, returnTo]);
-
   const pickViewAll = () => {
     setBusy("__all__");
     const defaultTenant = activeTenants.find(t => t.isDefault) ?? activeTenants[0];
@@ -147,28 +98,28 @@ export default function SelectCompany() {
     setActiveCompany({ viewAll: true, reload: true });
   };
 
-  const isAutoSelecting =
-    loaded &&
-    activeTenants.length === 1 &&
-    !hasActiveCompanySelection() &&
-    !isActiveCompanyViewAll();
-
-  const isResolving = !loaded || isAutoSelecting || (busy !== null && activeTenants.length <= 1);
-
-  if (isResolving) {
+  if (authLoading || !loaded) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex items-center text-muted-foreground">
           <Loader2 className="h-5 w-5 animate-spin mr-2" />
-          {isAutoSelecting ? "Opening your workspace…" : "Loading your companies…"}
+          Loading…
         </div>
       </div>
     );
   }
 
-  // Pinned while rendering — redirect on next paint.
-  if (hasActiveCompanySelection()) {
-    return null;
+  // One company (or already pinned) — skip this page entirely.
+  if (hasActiveCompanySelection() || activeTenants.length === 1) {
+    if (activeTenants.length === 1 && !hasActiveCompanySelection()) {
+      pinActiveCompanyFromList(activeTenants, effectiveMainAdmin);
+    }
+    return <Navigate to={returnTo} replace />;
+  }
+
+  // Not a multi-company admin — send to dashboard; RequireCompany handles pinning.
+  if (!shouldShowCompanyPicker(tenants, effectiveMainAdmin)) {
+    return <Navigate to={returnTo} replace />;
   }
 
   return (
@@ -192,8 +143,7 @@ export default function SelectCompany() {
             Select your company
           </h1>
           <p className="mt-3 text-sm md:text-base text-muted-foreground max-w-xl mx-auto">
-            Everything you create — offers, sales, service orders, dispatches —
-            stays scoped to the company you choose here.
+            You have multiple companies — choose which workspace to open.
           </p>
         </div>
 
@@ -205,35 +155,27 @@ export default function SelectCompany() {
               </div>
               <h2 className="text-base font-medium text-foreground">No company available</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                {effectiveMainAdmin
-                  ? "Finish onboarding to create your first workspace, or retry loading companies."
-                  : "Contact your administrator to be assigned to a workspace."}
+                Finish onboarding to create your first workspace, or retry loading companies.
               </p>
-              {effectiveMainAdmin && (
-                <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-                  <Button
-                    variant="default"
-                    onClick={() => navigate("/onboarding", { replace: true })}
-                  >
-                    Continue setup
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      emptyRetryRef.current = false;
-                      autoPickRef.current = false;
-                      void refetch({ bustCache: true }).then(async (freshTenants) => {
-                        const result = await ensureActiveCompanyPinned(true, freshTenants);
-                        if (result.pinned || hasActiveCompanySelection()) {
-                          navigate(returnTo, { replace: true });
-                        }
-                      });
-                    }}
-                  >
-                    Retry
-                  </Button>
-                </div>
-              )}
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                <Button
+                  variant="default"
+                  onClick={() => navigate("/onboarding", { replace: true })}
+                >
+                  Continue setup
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    emptyRetryRef.current = false;
+                    void refetch({ bustCache: true }).then((fresh) =>
+                      ensureActiveCompanyPinned(true, fresh),
+                    );
+                  }}
+                >
+                  Retry
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ) : (
@@ -367,7 +309,7 @@ export default function SelectCompany() {
           </div>
         )}
 
-        {effectiveMainAdmin && activeTenants.length > 1 && (
+        {activeTenants.length > 1 && (
           <div className="mt-8 flex justify-center">
             <Button
               variant="outline"

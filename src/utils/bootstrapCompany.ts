@@ -104,6 +104,17 @@ export function hasActiveCompanySelection(): boolean {
 }
 
 /**
+ * Manual company picker is only needed when the user has more than one workspace.
+ * Main admins with a single company are auto-pinned; everyone else with one company too.
+ */
+export function shouldShowCompanyPicker(tenants: Tenant[], isMainAdmin = false): boolean {
+  const active = filterActiveTenants(tenants);
+  const effectiveMainAdmin = isMainAdmin || isMainAdminFromStorage();
+  if (active.length <= 1) return false;
+  return effectiveMainAdmin;
+}
+
+/**
  * Fetch companies and auto-pin when there is a single choice (or a default).
  * Main admins with multiple companies are left unpinned for /select-company.
  */

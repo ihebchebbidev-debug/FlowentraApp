@@ -3,7 +3,6 @@ import { PersonalInfoStep } from "../components/PersonalInfoStep";
 import { PreferencesStep } from "../components/PreferencesStep";
 import { WorkAreaStep } from "../components/WorkAreaStep";
 import { CompanyInfoStep } from "../components/CompanyInfoStep";
-import { EmailCalendarStep } from "../components/EmailCalendarStep";
 import { ProfilePictureStep } from "../components/ProfilePictureStep";
 import { SetupLoadingStep } from "../components/SetupLoadingStep";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
@@ -15,10 +14,11 @@ import {
   ensureActiveCompanyPinned,
   hasActiveCompanySelection,
   isMainAdminFromStorage,
+  shouldShowCompanyPicker,
 } from '@/utils/bootstrapCompany';
 import { useTranslation } from 'react-i18next';
 import useOnboardingTranslations from '../hooks/useOnboardingTranslations';
-import { Check, User, Palette, Briefcase, Building2, Mail, Rocket, Camera } from "lucide-react";
+import { Check, User, Palette, Briefcase, Building2, Rocket, Camera } from "lucide-react";
 import { useCompanyLogoWithDefault } from "@/hooks/useCompanyLogo";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -145,12 +145,6 @@ const Onboarding = () => {
       icon: Building2,
     },
     {
-      component: EmailCalendarStep,
-      titleKey: 'onboarding.steps.emailCalendar.title',
-      descKey: 'onboarding.steps.emailCalendar.description',
-      icon: Mail,
-    },
-    {
       component: ProfilePictureStep,
       titleKey: 'onboarding.steps.profilePicture.title',
       descKey: 'onboarding.steps.profilePicture.description',
@@ -219,10 +213,15 @@ const Onboarding = () => {
         return;
       }
 
-      navigate('/select-company', { replace: true });
+      if (shouldShowCompanyPicker(freshTenants, isMainAdminFromStorage())) {
+        navigate('/select-company', { replace: true });
+        return;
+      }
+
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       console.error('Failed to complete onboarding:', err);
-      navigate('/select-company', { replace: true });
+      navigate('/dashboard', { replace: true });
     }
   };
 
@@ -410,21 +409,16 @@ const Onboarding = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: 0.15, ease: "easeOut" }}
                   >
-                    {currentStep === steps.length - 1 ? (
+                    {isSetupStep ? (
                       <SetupLoadingStep data={data} onComplete={handleComplete} />
-                    ) : currentStep === 0 ? (
-                      <PersonalInfoStep data={data} onNext={handleNext} isFirst={true} />
-                    ) : currentStep === 1 ? (
-                      <PreferencesStep data={data} onNext={handleNext} onBack={handleBack} isFirst={false} />
-                    ) : currentStep === 2 ? (
-                      <WorkAreaStep data={data} onNext={handleNext} onBack={handleBack} isFirst={false} />
-                    ) : currentStep === 3 ? (
-                      <CompanyInfoStep data={data} onNext={handleNext} onBack={handleBack} isFirst={false} />
-                    ) : currentStep === 4 ? (
-                      <EmailCalendarStep data={data} onNext={handleNext} onBack={handleBack} isFirst={false} />
-                    ) : currentStep === 5 ? (
-                      <ProfilePictureStep data={data} onNext={handleNext} onBack={handleBack} isFirst={false} />
-                    ) : null}
+                    ) : (
+                      <CurrentStepComponent
+                        data={data}
+                        onNext={handleNext}
+                        {...(currentStep > 0 ? { onBack: handleBack } : {})}
+                        isFirst={currentStep === 0}
+                      />
+                    )}
                   </motion.div>
                 </motion.div>
               </AnimatePresence>
