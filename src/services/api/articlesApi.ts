@@ -23,6 +23,10 @@ import {
   throwIfNotOkAfterOfflineCheck,
   type OfflineNoCacheBody,
 } from '@/services/offline/offlineHttpRead';
+import {
+  bulkImportErrorFromThrown,
+  parseBulkImportHttpResponse,
+} from '@/shared/import/parseBulkImportResponse';
 
 function emptyArticleListResponse(page = 1, limit = 20): ArticleListResponse {
   return {
@@ -616,33 +620,21 @@ export interface ArticleBulkImportRequest {
            updateExisting: request.updateExisting ?? false,
          }),
        });
- 
-       if (!response.ok) {
-         const error = await response.json().catch(() => ({ message: 'Bulk import failed' }));
-         throw new Error(error.error?.message || error.message || 'Bulk import failed');
-       }
- 
-       const result = await response.json();
-       const data = result.data || result;
- 
-       return {
-         totalProcessed: data.totalProcessed || request.articles.length,
-         successCount: data.successCount || 0,
-         failedCount: data.failedCount || 0,
-         skippedCount: data.skippedCount || 0,
-         errors: data.errors || [],
-         importedItems: data.importedArticles || data.importedItems || [],
-       };
+
+       return await parseBulkImportHttpResponse(
+         response,
+         request.articles.length,
+         (data) => ({
+           totalProcessed: Number(data.totalProcessed) || request.articles.length,
+           successCount: Number(data.successCount) || 0,
+           failedCount: Number(data.failedCount) || 0,
+           skippedCount: Number(data.skippedCount) || 0,
+           errors: Array.isArray(data.errors) ? data.errors.map(String) : [],
+           importedItems: (data.importedArticles ?? data.importedItems ?? []) as unknown[],
+         }),
+       );
      } catch (error) {
-       console.error('Bulk import error:', error);
-       return {
-         totalProcessed: request.articles.length,
-         successCount: 0,
-         failedCount: request.articles.length,
-         skippedCount: 0,
-         errors: [error instanceof Error ? error.message : 'Unknown error'],
-         importedItems: [],
-       };
+       throw bulkImportErrorFromThrown(error);
      }
    }
  };

@@ -1,6 +1,7 @@
 // Real API service for Offers management
 // Migrated to use centralized apiFetch for automatic 401 retry, dedup, and logging
 import { apiFetch } from '@/services/api/apiClient';
+import { bulkImportErrorFromThrown } from '@/shared/import/parseBulkImportResponse';
 
 // Types
 export interface OfferItem {
@@ -322,15 +323,7 @@ export const offersBulkImportApi = {
         importedItems: inner.importedOffers || inner.importedItems || [],
       };
     } catch (error) {
-      console.error('Bulk import error:', error);
-      return {
-        totalProcessed: request.offers.length,
-        successCount: 0,
-        failedCount: request.offers.length,
-        skippedCount: 0,
-        errors: [error instanceof Error ? error.message : 'Unknown error'],
-        importedItems: [],
-      };
+      throw bulkImportErrorFromThrown(error);
     }
   }
 };

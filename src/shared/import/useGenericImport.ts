@@ -7,12 +7,13 @@
    ImportResult,
    BulkImportResult 
  } from './types';
- import { 
-   parseExcelFile, 
-   generateImportPreview, 
-   autoMapColumns,
-   generateExcelTemplate 
- } from './utils';
+import { 
+  parseExcelFile, 
+  generateImportPreview, 
+  autoMapColumns,
+  generateExcelTemplate 
+} from './utils';
+import { BulkImportRequestError } from './parseBulkImportResponse';
  
  export type ImportStep = 'upload' | 'analyzing' | 'mapping' | 'preview' | 'summary';
 
@@ -29,6 +30,12 @@
    errors: string[];
    invalidDetails: Array<{ rowIndex: number; name: string; errors: string[] }>;
    duplicateDetails: Array<{ rowIndex: number; name: string; fields: string[] }>;
+   /** True when every selected row failed (request or server-side batch). */
+   requestFailed?: boolean;
+   /** Primary error line for total failures. */
+   primaryError?: string;
+   /** HTTP status when the whole request failed. */
+   httpStatus?: number;
  }
  
  export interface UseGenericImportOptions<T> {
@@ -50,6 +57,8 @@
    const [analysisMessage, setAnalysisMessage] = useState<string>('');
    const [fileMetadata, setFileMetadata] = useState<any>(null);
    const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
+   const [importError, setImportError] = useState<string | null>(null);
+   const [importErrorDetails, setImportErrorDetails] = useState<string[]>([]);
 
    const processFile = useCallback(async (file: File) => {
      setIsLoading(true);
@@ -149,10 +158,19 @@
      if (selectedRows.length === 0) throw new Error('No valid rows selected for import');
 
      setIsLoading(true);
+     setImportError(null);
+     setImportErrorDetails([]);
 
      try {
        const itemsToImport = selectedRows.map(row => row.data);
        const result = await onImport(itemsToImport);
+
+       const requestFailed =
+         result.successCount === 0 &&
+         selectedRows.length > 0 &&
+         (result.failedCount >= selectedRows.length || result.errors.length > 0);
+
+       const primaryError = result.errors[0];
 
        // Build detailed summary
        const invalidDetails = preview.rows
@@ -186,14 +204,24 @@
          errors: result.errors,
          invalidDetails,
          duplicateDetails,
+         requestFailed,
+         primaryError,
        };
 
        setImportSummary(summary);
        setCurrentStep('summary');
 
-       // Show clear success toast with exact count
        const totalInFile = preview.totalRows;
-       if (result.successCount > 0) {
+       if (requestFailed && result.successCount === 0) {
+         const detailLines = result.errors.length > 0 ? result.errors : ['No details returned by the server.'];
+         setImportError(primaryError ?? detailLines[0] ?? 'Import failed');
+         setImportErrorDetails(detailLines);
+         toast({
+           title: 'Import failed',
+           description: primaryError ?? detailLines[0] ?? 'All rows failed to import.',
+           variant: 'destructive',
+         });
+       } else if (result.successCount > 0) {
          toast({
            title: `✅ ${result.successCount}/${totalInFile} imported successfully`,
            description: result.failedCount > 0 
@@ -201,6 +229,12 @@
              : result.skippedCount > 0 
                ? `${result.skippedCount} skipped (duplicates)`
                : 'All items imported without errors',
+         });
+       } else if (result.failedCount > 0 || result.errors.length > 0) {
+         toast({
+           title: 'Import completed with errors',
+           description: `${result.failedCount} failed · ${result.errors[0] ?? 'See summary for details'}`,
+           variant: 'destructive',
          });
        }
 
@@ -211,17 +245,35 @@
        };
 
      } catch (error) {
-       const message = error instanceof Error ? error.message : 'Import failed';
+       const bulkError = error instanceof BulkImportRequestError
+         ? error
+         : new BulkImportRequestError(
+             error instanceof Error ? error.message : 'Import failed',
+             { details: [error instanceof Error ? error.message : 'Import failed'] },
+           );
+       const detailLines = bulkError.details.length > 0 ? bulkError.details : [bulkError.message];
+
+       setImportError(bulkError.message);
+       setImportErrorDetails(detailLines);
+       setImportSummary(null);
+
        toast({
-         title: "Import Failed",
-         description: message,
-         variant: "destructive"
+         title: bulkError.status ? `Import failed (HTTP ${bulkError.status})` : 'Import failed',
+         description: bulkError.message,
+         variant: 'destructive',
        });
+
+       console.error(
+         'Bulk import failed:',
+         bulkError.message,
+         bulkError.status != null ? `(HTTP ${bulkError.status})` : '',
+         detailLines,
+       );
        
        return {
          successCount: 0,
          errorCount: selectedRows.length,
-         errors: [message]
+         errors: detailLines,
        };
      } finally {
        setIsLoading(false);
@@ -244,6 +296,8 @@
      setAnalysisMessage('');
      setFileMetadata(null);
      setImportSummary(null);
+     setImportError(null);
+     setImportErrorDetails([]);
    }, []);
 
   const downloadTemplate = useCallback((localizedHeaders?: string[], exampleData?: Record<string, any>[]) => {
@@ -319,6 +373,8 @@
      analysisMessage,
      fileMetadata,
      importSummary,
+     importError,
+     importErrorDetails,
 
      // Actions
      processFile,

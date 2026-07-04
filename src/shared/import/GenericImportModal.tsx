@@ -548,6 +548,22 @@ function MappingStep<T>({
  
     return (
       <div className="h-full flex flex-col space-y-3 sm:space-y-4 min-h-0">
+        {importHook.importError && (
+          <Alert variant="destructive" className="flex-shrink-0">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="space-y-2">
+              <p className="font-semibold">{importHook.importError}</p>
+              {importHook.importErrorDetails.length > 1 && (
+                <ul className="list-disc pl-4 space-y-1 text-xs sm:text-sm max-h-40 overflow-y-auto">
+                  {importHook.importErrorDetails.map((line, idx) => (
+                    <li key={idx} className="break-words">{line}</li>
+                  ))}
+                </ul>
+              )}
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 flex-shrink-0">
           <div>
             <h3 className="text-base sm:text-lg font-semibold">{t('bulkImport.preview.title', 'Import Preview')}</h3>
@@ -712,10 +728,12 @@ function ImportSummaryStep({
   onClose: () => void; 
   t: any;
 }) {
-  const allSuccess = summary.failedCount === 0 && summary.invalidRows === 0;
+  const allSuccess = summary.failedCount === 0 && summary.invalidRows === 0 && !summary.requestFailed;
   const [showInvalidDetails, setShowInvalidDetails] = useState(false);
   const [showDuplicateDetails, setShowDuplicateDetails] = useState(false);
-  const [showErrorDetails, setShowErrorDetails] = useState(false);
+  const [showErrorDetails, setShowErrorDetails] = useState(
+    Boolean(summary.requestFailed || summary.errors.length > 0),
+  );
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -739,6 +757,23 @@ function ImportSummaryStep({
           {t('bulkImport.summary.subtitle', '{{success}} item(s) imported out of {{total}} in file', { success: summary.successCount, total: summary.totalInFile })}
         </p>
       </div>
+
+      {summary.requestFailed && summary.primaryError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="space-y-2">
+            <p className="font-semibold">
+              {t('bulkImport.summary.requestFailedTitle', 'Import could not complete')}
+            </p>
+            <p className="text-sm whitespace-pre-wrap break-words">{summary.primaryError}</p>
+            {summary.httpStatus && (
+              <p className="text-xs text-muted-foreground">
+                {t('bulkImport.summary.httpStatus', 'HTTP status')}: {summary.httpStatus}
+              </p>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
