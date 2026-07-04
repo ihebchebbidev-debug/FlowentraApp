@@ -12,7 +12,7 @@ namespace MyApi.Modules.Roles.Data.Configurations
             {
                 entity.ToTable("Roles");
                 entity.HasKey(e => e.Id);
-                entity.HasIndex(e => e.Name).IsUnique();
+                entity.HasIndex(e => new { e.Name, e.TenantId }).IsUnique();
                 entity.HasIndex(e => e.IsActive);
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("NOW()");
                 entity.Property(e => e.IsActive).HasDefaultValue(true);

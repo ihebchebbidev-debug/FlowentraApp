@@ -30,6 +30,7 @@ using MyApi.Modules.UserAiSettings.Services;
 using MyApi.Modules.OfflineHydration.Services;
 using MyApi.Modules.WebsiteBuilder.Services;
 using MyApi.Modules.Sync.Services;
+using MyApi.Modules.Plugins.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.ResponseCompression;
@@ -379,6 +380,9 @@ builder.Services.AddScoped<IPdfSettingsService, PdfSettingsService>();
 
 // App Settings Service (Global key-value application settings)
 builder.Services.AddScoped<IAppSettingsService, AppSettingsService>();
+
+// Plugin / module activation toggles (/api/plugins)
+builder.Services.AddScoped<IPluginService, PluginService>();
 
 // Offline hydration module preferences (per user / tenant)
 builder.Services.AddScoped<IOfflineHydrationPreferencesService, OfflineHydrationPreferencesService>();

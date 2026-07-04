@@ -1,0 +1,21 @@
+﻿Article Name,Reference,Description,Type,Category,Status,Stock,Min Stock,Cost Price,Sell Price,Base Price (Services),Duration (Hours),Supplier,Location
+Ethernet Cable Cat6 305m,IMP-MAT-001,High-speed network cable roll,material,Cabling,active,150,20,85,149,,,TechCables,Warehouse A
+Copper Pipe 22mm,IMP-MAT-002,Plumbing copper pipe per meter,material,Plumbing,active,500,50,4.5,8.9,,,Plomberie Pro,Warehouse B
+HVAC Filter HEPA,IMP-MAT-003,Replacement HEPA filter unit,material,HVAC,active,80,15,22,45,,,ClimaParts,Warehouse A
+Circuit Breaker 32A,IMP-MAT-004,Modular circuit breaker,material,Electrical,active,120,25,8.5,16,,,ElectroDist,Warehouse C
+Refrigerant R410A 11kg,IMP-MAT-005,Refrigerant gas cylinder,material,HVAC,active,30,5,95,165,,,FrigoSupply,Warehouse D
+WiFi Router Pro,IMP-MAT-006,Dual-band business router,material,Network,active,25,5,89,149,,,NetGear,Warehouse A
+Disque SSD 500Go,IMP-MAT-007,High performance SSD drive,material,Storage,active,50,10,45,79,,,Samsung,Warehouse C
+Onduleur 1500VA,IMP-MAT-008,Server protection UPS,material,Power,active,20,5,180,299,,,APC,Warehouse A
+Rack Serveur 42U,IMP-MAT-009,Standard 42-unit server rack,material,Infrastructure,active,5,1,450,699,,,APC,Warehouse D
+Switch 24 Ports,IMP-MAT-010,Manageable Gigabit switch,material,Network,active,15,3,120,199,,,Cisco,Warehouse A
+Cable HDMI 3m,IMP-MAT-011,HDMI 2.1 cable,material,Cabling,active,200,30,6,14,,,TechCables,Warehouse B
+Thermostat Digital,IMP-MAT-012,Programmable room thermostat,material,HVAC,active,40,8,35,65,,,ClimaParts,Warehouse A
+HVAC Installation,IMP-SRV-001,Complete split AC installation,service,Services,active,,,,,350,4,,
+Preventive Maintenance,IMP-SRV-002,Quarterly maintenance visit,service,Services,active,,,,,180,2,,
+Emergency Repair,IMP-SRV-003,Urgent breakdown call-out,service,Services,active,,,,,120,1.5,,
+Network Audit,IMP-SRV-004,On-site network infrastructure audit,service,Services,active,,,,,450,6,,
+Electrical Inspection,IMP-SRV-005,Electrical safety inspection,service,Services,active,,,,,200,3,,
+Plumbing Diagnostic,IMP-SRV-006,Plumbing fault diagnosis,service,Services,active,,,,,90,1,,
+User Training Session,IMP-SRV-007,End-user software training,service,Services,active,,,,,100,1.5,,
+Commissioning Handover,IMP-SRV-008,System commissioning and client handover,service,Services,active,,,,,280,3,,

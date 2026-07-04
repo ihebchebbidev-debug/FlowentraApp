@@ -124,7 +124,13 @@ export const useContactImport = () => {
         setUploadProgress(75);
         setAnalysisMessage('⚡ Generating predictions...');
         
-        const aiResult = await aiColumnMapper.predictColumnMapping(fileHeaders, data, language);
+        const isTemplateFile = result.templateDetection?.isTemplate === true;
+        const aiResult = await aiColumnMapper.predictColumnMapping(
+          fileHeaders,
+          data,
+          language,
+          isTemplateFile
+        );
         console.log('AI predictions received:', aiResult);
         
         predictions = aiResult;
@@ -175,9 +181,6 @@ export const useContactImport = () => {
       // Brief pause to show completion
       await new Promise(resolve => setTimeout(resolve, 400));
       
-      setCurrentStep('mapping');
-      console.log('Applied column mapping:', finalMapping);
-
       if (mode === 'structured') {
         const validation = validateStructuredImport(fileHeaders);
         if (!validation.isValid) {
@@ -186,9 +189,26 @@ export const useContactImport = () => {
             description: validation.errors.join(', '),
             variant: "destructive"
           });
+          resetImport();
           return;
         }
+
+        const structuredMapping = createStructuredColumnMapping(fileHeaders);
+        setColumnMapping(structuredMapping);
+        const previewData = generateImportPreview(data, structuredMapping);
+        setPreview(previewData);
+        setCurrentStep('preview');
+        console.log('Structured import — auto-mapped columns:', structuredMapping);
+
+        toast({
+          title: "File processed successfully!",
+          description: `${previewData.validRows} valid contact(s) ready to import (${previewData.totalRows} rows)`
+        });
+        return;
       }
+
+      setCurrentStep('mapping');
+      console.log('Applied column mapping:', finalMapping);
 
       toast({
         title: "File processed successfully!",
@@ -285,15 +305,23 @@ export const useContactImport = () => {
     try {
       // Prepare contacts for bulk import
       const contactsToImport = selectedRows.map(row => {
-        const fullName = row.data.fullName || row.data.companyName || 'Unknown Contact';
-        const nameParts = fullName.split(' ');
-        const firstName = nameParts[0] || '';
-        const lastName = nameParts.slice(1).join(' ') || '';
-        
+        let firstName = (row.data.firstName || '').trim();
+        let lastName = (row.data.lastName || '').trim();
+        const fullName = (row.data.fullName || row.data.companyName || '').trim();
+
+        if (!firstName && !lastName && fullName) {
+          const nameParts = fullName.split(/\s+/);
+          firstName = nameParts[0] || '';
+          lastName = nameParts.slice(1).join(' ') || '';
+        }
+        if (!firstName && fullName) firstName = fullName;
+
+        const displayName = fullName || `${firstName} ${lastName}`.trim() || 'Unknown Contact';
+
         return {
           firstName,
           lastName,
-          name: fullName,
+          name: displayName,
           email: row.data.email || '',
           phone: row.data.phone || undefined,
           company: row.data.companyName || undefined,
