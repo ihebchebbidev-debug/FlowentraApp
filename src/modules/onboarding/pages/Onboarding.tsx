@@ -11,7 +11,11 @@ import { useNavigate } from "react-router-dom";
 import { authService } from '@/services/authService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTenantMap } from '@/contexts/TenantMapContext';
-import { bootstrapActiveCompany } from '@/utils/bootstrapCompany';
+import {
+  ensureActiveCompanyPinned,
+  hasActiveCompanySelection,
+  isMainAdminFromStorage,
+} from '@/utils/bootstrapCompany';
 import { useTranslation } from 'react-i18next';
 import useOnboardingTranslations from '../hooks/useOnboardingTranslations';
 import { Check, User, Palette, Briefcase, Building2, Mail, Rocket, Camera } from "lucide-react";
@@ -42,7 +46,7 @@ export interface OnboardingData {
 
 const Onboarding = () => {
   const navigate = useNavigate();
-  const { refreshUser, isMainAdmin } = useAuth();
+  const { refreshUser } = useAuth();
   const { refetch: refetchTenants } = useTenantMap();
   const currentUser = authService.getCurrentUserFromStorage();
   const { t } = useTranslation();
@@ -79,11 +83,23 @@ const Onboarding = () => {
       return;
     }
     const userData = authService.getCurrentUserFromStorage();
-    const hasCompletedOnboarding = userData?.onboardingCompleted || localStorage.getItem('onboarding-completed');
-    if (hasCompletedOnboarding) {
+    const hasCompletedOnboarding =
+      userData?.onboardingCompleted || localStorage.getItem('onboarding-completed');
+    if (!hasCompletedOnboarding) return;
+
+    let cancelled = false;
+    void (async () => {
+      const freshTenants = await refetchTenants({ bustCache: true });
+      if (cancelled) return;
+      await ensureActiveCompanyPinned(isMainAdminFromStorage(), freshTenants);
+      if (cancelled) return;
       navigate('/dashboard', { replace: true });
-    }
-  }, [navigate]);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate, refetchTenants]);
 
   useEffect(() => {
     if (currentUser &&
@@ -195,14 +211,18 @@ const Onboarding = () => {
       }
 
       await refreshUser();
-      // Company row is created when onboardingCompleted flips on the backend.
-      // Bust the stale empty tenant cache from signup/login and pin the new company.
-      await refetchTenants({ bustCache: true });
-      await bootstrapActiveCompany(isMainAdmin);
-      navigate('/dashboard', { replace: true });
+      const freshTenants = await refetchTenants({ bustCache: true });
+      await ensureActiveCompanyPinned(isMainAdminFromStorage(), freshTenants);
+
+      if (hasActiveCompanySelection()) {
+        navigate('/dashboard', { replace: true });
+        return;
+      }
+
+      navigate('/select-company', { replace: true });
     } catch (err) {
       console.error('Failed to complete onboarding:', err);
-      navigate('/dashboard', { replace: true });
+      navigate('/select-company', { replace: true });
     }
   };
 

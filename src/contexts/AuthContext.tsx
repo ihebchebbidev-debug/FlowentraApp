@@ -267,8 +267,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       const response = await authService.signup(signupData);
       if (response.success && response.user) {
+        authService.saveUserToStoragePublic(response.user);
+        const isMain = checkIsMainAdmin();
         setUser(response.user);
         setIsAuthenticated(true);
+        setIsMainAdmin(isMain);
         return { success: true };
       }
       return { success: false, message: response.message };

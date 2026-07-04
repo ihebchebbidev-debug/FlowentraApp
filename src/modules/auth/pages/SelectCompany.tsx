@@ -5,6 +5,8 @@
  *
  * Main admins also see a "View all companies" option at the bottom for audit
  * mode; regular users only get the cards.
+ *
+ * Skipped automatically when the user has exactly one company.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -23,8 +25,17 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenantMap } from "@/contexts/TenantMapContext";
-import { setActiveCompany, getActiveCompanyId } from "@/utils/targetTenant";
-import { bootstrapActiveCompany } from "@/utils/bootstrapCompany";
+import {
+  setActiveCompany,
+  isActiveCompanyViewAll,
+  onTargetTenantChanged,
+} from "@/utils/targetTenant";
+import {
+  ensureActiveCompanyPinned,
+  filterActiveTenants,
+  hasActiveCompanySelection,
+  isMainAdminFromStorage,
+} from "@/utils/bootstrapCompany";
 import { buildAssetUrl } from "@/config/api";
 import { setCompanyLogo, setCompanyLogoExplicitNone } from "@/hooks/useCompanyLogo";
 import { useUserType } from "@/hooks/useUserType";
@@ -47,25 +58,40 @@ export default function SelectCompany() {
   const { isMainAdminUser } = useUserType();
   const [busy, setBusy] = useState<string | null>(null);
   const [brokenLogos, setBrokenLogos] = useState<Record<number, boolean>>({});
+  const [pinRevision, setPinRevision] = useState(0);
   const emptyRetryRef = useRef(false);
   const autoPickRef = useRef(false);
 
   const returnTo =
     (location.state as { from?: string } | null)?.from ?? "/dashboard";
 
+  const effectiveMainAdmin = isMainAdminUser || isMainAdminFromStorage();
+
   useEffect(() => {
     document.title = "Select Company — Flowentra";
   }, []);
 
-  // If user is not authenticated, kick to login.
+  useEffect(() => onTargetTenantChanged(() => setPinRevision((n) => n + 1)), []);
+
   useEffect(() => {
     if (!authLoading && !isAuthenticated) navigate("/login", { replace: true });
   }, [authLoading, isAuthenticated, navigate]);
 
-  const activeTenants = useMemo(
-    () => (tenants || []).filter((t) => t.isActive !== false),
-    [tenants]
-  );
+  const activeTenants = useMemo(() => filterActiveTenants(tenants || []), [tenants]);
+
+  const redirectIfPinned = useCallback(() => {
+    if (hasActiveCompanySelection()) {
+      navigate(returnTo, { replace: true });
+      return true;
+    }
+    return false;
+  }, [navigate, returnTo]);
+
+  // Already pinned — skip this page entirely.
+  useEffect(() => {
+    if (!loaded) return;
+    redirectIfPinned();
+  }, [loaded, pinRevision, redirectIfPinned]);
 
   const pick = useCallback((tenantId: number, label: string) => {
     setBusy(label);
@@ -79,42 +105,41 @@ export default function SelectCompany() {
     setActiveCompany({ id: tenantId, reload: true });
   }, [activeTenants]);
 
-  // Already pinned (e.g. after onboarding bootstrap) — skip this page.
-  useEffect(() => {
-    if (!loaded) return;
-    if (getActiveCompanyId() !== undefined) {
-      navigate(returnTo, { replace: true });
-    }
-  }, [loaded, navigate, returnTo]);
-
   // Single company: auto-open workspace, no picker needed.
   useEffect(() => {
     if (!loaded || autoPickRef.current || activeTenants.length !== 1) return;
+    if (hasActiveCompanySelection()) return;
+
     autoPickRef.current = true;
     const only = activeTenants[0];
     const label = only.companyName || only.slug;
     setBusy(label);
-    void bootstrapActiveCompany(isMainAdminUser).then((result) => {
-      if (result.pinned) {
+
+    void ensureActiveCompanyPinned(effectiveMainAdmin, activeTenants).then((result) => {
+      if (result.pinned || hasActiveCompanySelection()) {
         navigate(returnTo, { replace: true });
         return;
       }
       pick(only.id, label);
     });
-  }, [loaded, activeTenants, isMainAdminUser, navigate, returnTo, pick]);
+  }, [loaded, activeTenants, effectiveMainAdmin, navigate, returnTo, pick]);
 
-  // Stale empty cache after onboarding — one fresh refetch before showing dead-end UI.
+  // Stale empty cache after onboarding — one fresh refetch before dead-end UI.
   useEffect(() => {
     if (!loaded || emptyRetryRef.current || activeTenants.length > 0) return;
+    if (hasActiveCompanySelection()) return;
+
     emptyRetryRef.current = true;
-    void refetch({ bustCache: true }).then(() => {
-      void bootstrapActiveCompany(isMainAdminUser);
+    void refetch({ bustCache: true }).then(async (freshTenants) => {
+      const result = await ensureActiveCompanyPinned(effectiveMainAdmin, freshTenants);
+      if (result.pinned || hasActiveCompanySelection()) {
+        navigate(returnTo, { replace: true });
+      }
     });
-  }, [loaded, activeTenants.length, refetch, isMainAdminUser]);
+  }, [loaded, activeTenants.length, refetch, effectiveMainAdmin, navigate, returnTo]);
 
   const pickViewAll = () => {
     setBusy("__all__");
-    // Pre-write the default company's logo for view-all mode (same as login page).
     const defaultTenant = activeTenants.find(t => t.isDefault) ?? activeTenants[0];
     const defaultLogo = (defaultTenant as any)?.companyLogoUrl as string | null | undefined;
     if (defaultLogo) setCompanyLogo(defaultLogo);
@@ -122,9 +147,32 @@ export default function SelectCompany() {
     setActiveCompany({ viewAll: true, reload: true });
   };
 
+  const isAutoSelecting =
+    loaded &&
+    activeTenants.length === 1 &&
+    !hasActiveCompanySelection() &&
+    !isActiveCompanyViewAll();
+
+  const isResolving = !loaded || isAutoSelecting || (busy !== null && activeTenants.length <= 1);
+
+  if (isResolving) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex items-center text-muted-foreground">
+          <Loader2 className="h-5 w-5 animate-spin mr-2" />
+          {isAutoSelecting ? "Opening your workspace…" : "Loading your companies…"}
+        </div>
+      </div>
+    );
+  }
+
+  // Pinned while rendering — redirect on next paint.
+  if (hasActiveCompanySelection()) {
+    return null;
+  }
+
   return (
     <div className="relative min-h-screen flex items-center justify-center p-6 bg-background">
-      {/* Ambient background */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-gradient-to-br from-background via-background to-muted/40"
@@ -135,7 +183,6 @@ export default function SelectCompany() {
       />
 
       <div className="relative w-full max-w-5xl">
-        {/* Header */}
         <div className="mb-10 text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-card/60 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
@@ -150,13 +197,7 @@ export default function SelectCompany() {
           </p>
         </div>
 
-        {/* Body */}
-        {!loaded ? (
-          <div className="flex items-center justify-center py-20 text-muted-foreground">
-            <Loader2 className="h-5 w-5 animate-spin mr-2" />
-            Loading your companies…
-          </div>
-        ) : activeTenants.length === 0 ? (
+        {activeTenants.length === 0 ? (
           <Card className="border-dashed">
             <CardContent className="p-10 text-center">
               <div className="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
@@ -164,11 +205,11 @@ export default function SelectCompany() {
               </div>
               <h2 className="text-base font-medium text-foreground">No company available</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                {isMainAdminUser
+                {effectiveMainAdmin
                   ? "Finish onboarding to create your first workspace, or retry loading companies."
                   : "Contact your administrator to be assigned to a workspace."}
               </p>
-              {isMainAdminUser && (
+              {effectiveMainAdmin && (
                 <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
                   <Button
                     variant="default"
@@ -180,9 +221,13 @@ export default function SelectCompany() {
                     variant="outline"
                     onClick={() => {
                       emptyRetryRef.current = false;
-                      void refetch({ bustCache: true }).then(() =>
-                        bootstrapActiveCompany(true),
-                      );
+                      autoPickRef.current = false;
+                      void refetch({ bustCache: true }).then(async (freshTenants) => {
+                        const result = await ensureActiveCompanyPinned(true, freshTenants);
+                        if (result.pinned || hasActiveCompanySelection()) {
+                          navigate(returnTo, { replace: true });
+                        }
+                      });
                     }}
                   >
                     Retry
@@ -221,9 +266,7 @@ export default function SelectCompany() {
                       isBusy && "border-primary/60 shadow-lg"
                     )}
                   >
-                    {/* Logo banner */}
                     <div className="relative h-28 bg-gradient-to-br from-muted/60 via-muted/30 to-background border-b border-border/60 flex items-center justify-center overflow-hidden">
-                      {/* Subtle dotted pattern for empty-logo state */}
                       {!showLogo && (
                         <div
                           aria-hidden
@@ -324,8 +367,7 @@ export default function SelectCompany() {
           </div>
         )}
 
-        {/* Admin "view all" */}
-        {isMainAdminUser && activeTenants.length > 1 && (
+        {effectiveMainAdmin && activeTenants.length > 1 && (
           <div className="mt-8 flex justify-center">
             <Button
               variant="outline"
@@ -346,7 +388,6 @@ export default function SelectCompany() {
           </div>
         )}
 
-        {/* Footer */}
         <div className="mt-12 flex flex-col items-center gap-3">
           <Button
             variant="ghost"

@@ -22,6 +22,7 @@ import {
   onTargetTenantChanged,
   setActiveCompany,
 } from "@/utils/targetTenant";
+import { filterActiveTenants } from "@/utils/bootstrapCompany";
 
 export function RequireCompany({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -31,7 +32,7 @@ export function RequireCompany({ children }: { children: ReactNode }) {
 
   useEffect(() => onTargetTenantChanged(() => setTenantRevision((n) => n + 1)), []);
 
-  const activeTenants = tenants.filter((t) => t.isActive !== false);
+  const activeTenants = filterActiveTenants(tenants);
 
   useEffect(() => {
     if (!tenantsLoaded || !isAuthenticated) return;

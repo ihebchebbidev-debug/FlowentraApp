@@ -140,6 +140,8 @@ export function SetupLoadingStep({ data, onComplete }: SetupLoadingStepProps) {
         { id: 'finalize', action: markOnboardingComplete }
       ];
 
+      let successCount = 0;
+
       for (let i = 0; i < steps.length; i++) {
         if (!mountedRef.current) {
           console.log('[Onboarding] Component unmounted, stopping steps');
@@ -153,6 +155,7 @@ export function SetupLoadingStep({ data, onComplete }: SetupLoadingStepProps) {
           console.log(`[Onboarding] Executing step: ${step.id}`);
           await step.action();
           console.log(`[Onboarding] Step completed: ${step.id}`);
+          successCount += 1;
           setCompletedSteps(prev => [...prev, step.id]);
           
           // Visual feedback delay
@@ -168,12 +171,16 @@ export function SetupLoadingStep({ data, onComplete }: SetupLoadingStepProps) {
 
           // Non-critical steps: continue after a short pause.
           await new Promise(resolve => setTimeout(resolve, 1500));
+          successCount += 1;
           setCompletedSteps(prev => [...prev, step.id]);
         }
       }
 
-      // All steps completed
       if (!mountedRef.current) return;
+      if (successCount < setupStepKeys.length) {
+        console.warn('[Onboarding] Setup incomplete — not calling onComplete');
+        return;
+      }
       console.log('[Onboarding] All steps completed, calling onComplete');
       setTimeout(() => {
         if (!mountedRef.current) return;
