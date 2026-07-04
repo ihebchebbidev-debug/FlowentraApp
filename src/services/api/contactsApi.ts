@@ -9,6 +9,7 @@ import type {
   BulkImportResult,
 } from '@/types/contacts';
 import { apiFetch } from './apiClient';
+import { bulkImportErrorFromThrown } from '@/shared/import/parseBulkImportResponse';
 
 export const contactsApi = {
   // Get all contacts with filtering and pagination
@@ -123,7 +124,7 @@ export const contactsApi = {
     });
 
     if (error || !data) {
-      throw new Error(error || 'Failed to import contacts');
+      throw bulkImportErrorFromThrown(new Error(error || 'Failed to import contacts'));
     }
 
     return data;

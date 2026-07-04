@@ -58,7 +58,14 @@ export function extractApiErrorMessage(body: unknown, status?: number): string {
 
   if (typeof record.title === 'string' && record.title.trim()) {
     const detail = typeof record.detail === 'string' ? record.detail.trim() : '';
-    return withStatus(detail ? `${record.title}: ${detail}` : record.title.trim());
+    if (detail && detail !== record.title.trim()) {
+      return withStatus(`${record.title.trim()}: ${detail}`);
+    }
+    return withStatus(record.title.trim());
+  }
+
+  if (typeof record.detail === 'string' && record.detail.trim()) {
+    return withStatus(record.detail.trim());
   }
 
   try {
@@ -81,10 +88,32 @@ export function extractValidationErrorLines(body: unknown): string[] {
   if (!bag || typeof bag !== 'object' || Array.isArray(bag)) return [];
   return Object.entries(bag as Record<string, unknown>).flatMap(([field, msgs]) => {
     const list = Array.isArray(msgs) ? msgs : [msgs];
+    const label = humanizeValidationField(field);
     return list
       .filter((m) => m != null && String(m).trim())
-      .map((m) => `${field}: ${String(m).trim()}`);
+      .map((m) => `${label}: ${String(m).trim()}`);
   });
+}
+
+/**
+ * Turn ASP.NET paths like `Articles[16].Duration` into readable labels.
+ * Array index is 0-based in JSON → Excel row ≈ index + 2 (header row).
+ */
+function humanizeValidationField(field: string): string {
+  const arrayMatch = field.match(/^(\w+)\[(\d+)\]\.(.+)$/);
+  if (arrayMatch) {
+    const [, collection, index, prop] = arrayMatch;
+    const excelRow = Number(index) + 2;
+    const friendlyCollection = collection.replace(/([a-z])([A-Z])/g, '$1 $2');
+    return `Row ${excelRow} (${friendlyCollection} · ${prop})`;
+  }
+
+  const reqMatch = field.match(/^(\w+)\.(\w+)$/);
+  if (reqMatch) {
+    return `${reqMatch[1]}.${reqMatch[2]}`;
+  }
+
+  return field;
 }
 
 /** Full detail list for UI display (validation lines + primary message). */

@@ -28,6 +28,7 @@ import { getSyntheticDataForOfflineCacheMissGet } from "@/services/offline/offli
 import { getOfflineDetailPlaceholder } from "@/services/offline/offlineDetailPlaceholders";
 import { reportApiErrorIncident } from "@/services/incident/incidentService";
 import { pushBreadcrumb } from "@/services/incident/incidentBreadcrumbs";
+import { extractApiErrorMessage } from "@/utils/extractApiErrorMessage";
 import { toast } from "sonner";
 
 const axiosInstance = axios.create({
@@ -154,12 +155,7 @@ axiosInstance.interceptors.response.use(
       const method = (cfg.method || "get").toUpperCase();
       const endpoint = toRelativeApiEndpoint(axios.getUri(cfg));
       const data = response.data as Record<string, unknown> | undefined;
-      const nestedError = data?.error as Record<string, unknown> | undefined;
-      const message =
-        (typeof nestedError?.message === "string" ? nestedError.message : null) ||
-        (typeof data?.message === "string" ? data.message : null) ||
-        error.message ||
-        `HTTP ${response.status}`;
+      const message = extractApiErrorMessage(data, response.status) || error.message || `HTTP ${response.status}`;
       reportApiErrorIncident({
         endpoint,
         method,

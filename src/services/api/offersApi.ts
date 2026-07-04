@@ -122,7 +122,7 @@ export interface OfferSearchParams {
 // Helper to unwrap apiFetch result and throw on error
 function unwrap<T>(result: { data: T | null; status: number; error?: string }, fallbackMsg: string): T {
   if (result.error || result.data === null) {
-    throw new Error(result.error || fallbackMsg);
+    throw bulkImportErrorFromThrown(new Error(result.error || fallbackMsg));
   }
   return result.data;
 }

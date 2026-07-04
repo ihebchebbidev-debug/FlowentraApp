@@ -19,6 +19,7 @@ import { isOfflineNoCache503, parseOfflineNoCacheBody } from '@/services/offline
 import { toast } from 'sonner';
 import { reportApiErrorIncident, reportNetworkErrorIncident } from '@/services/incident/incidentService';
 import { pushBreadcrumb } from '@/services/incident/incidentBreadcrumbs';
+import { extractApiErrorMessage } from '@/utils/extractApiErrorMessage';
 
 // Helper to get auth token
 const getAuthToken = (): string | null => {
@@ -298,12 +299,7 @@ export const apiFetch = async <T>(
       }
 
       const errorData = await response.json().catch(() => ({ message: 'Request failed' }));
-      // Support both flat { message } and the backend envelope { success:false, error:{ code, message } }.
-      const errorMessage =
-        errorData?.error?.message ||
-        errorData?.message ||
-        (typeof errorData?.error === 'string' ? errorData.error : null) ||
-        `HTTP ${response.status}`;
+      const errorMessage = extractApiErrorMessage(errorData, response.status);
       
       // Log errors (except for endpoints we skip)
       if (!shouldSkipLogging && method !== 'GET') {

@@ -13,7 +13,7 @@ import {
   validateStructuredImport,
   createStructuredColumnMapping 
 } from '../utils/import.utils';
-import { aiColumnMapper } from '../services/aiColumnMapper.service';
+import { formatImportFailure } from '@/shared/import/parseBulkImportResponse';
 
 export const useContactImport = () => {
   const { toast } = useToast();
@@ -31,6 +31,8 @@ export const useContactImport = () => {
   const [aiPredictions, setAiPredictions] = useState<any>(null);
   const [analysisMessage, setAnalysisMessage] = useState<string>('');
   const [fileMetadata, setFileMetadata] = useState<any>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importErrorDetails, setImportErrorDetails] = useState<string[]>([]);
 
   const detectLanguage = useCallback((headers: string[], data: any[][]): 'en' | 'fr' | 'de' => {
     const text = [...headers, ...data.flat()].join(' ').toLowerCase();
@@ -301,9 +303,10 @@ export const useContactImport = () => {
     }
 
     setIsLoading(true);
+    setImportError(null);
+    setImportErrorDetails([]);
 
     try {
-      // Prepare contacts for bulk import
       const contactsToImport = selectedRows.map(row => {
         let firstName = (row.data.firstName || '').trim();
         let lastName = (row.data.lastName || '').trim();
@@ -345,6 +348,9 @@ export const useContactImport = () => {
         description: `Successfully imported ${result.successCount} contacts${result.failedCount > 0 ? `, ${result.failedCount} failed` : ''}`
       });
 
+      setImportError(null);
+      setImportErrorDetails([]);
+
       return {
         successCount: result.successCount,
         errorCount: result.failedCount,
@@ -352,17 +358,27 @@ export const useContactImport = () => {
       };
 
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Import failed';
+      const failure = formatImportFailure(error);
+      setImportError(failure.message);
+      setImportErrorDetails(failure.details);
+
       toast({
-        title: "Import Failed",
-        description: message,
+        title: failure.status ? `Import failed (HTTP ${failure.status})` : 'Import Failed',
+        description: failure.details[0] ?? failure.message,
         variant: "destructive"
       });
+
+      console.error(
+        'Contact bulk import failed:',
+        failure.message,
+        failure.status != null ? `(HTTP ${failure.status})` : '',
+        failure.details,
+      );
       
       return {
         successCount: 0,
         errorCount: selectedRows.length,
-        errors: [message]
+        errors: failure.details.length > 0 ? failure.details : [failure.message]
       };
     } finally {
       setIsLoading(false);
@@ -383,6 +399,8 @@ export const useContactImport = () => {
     setAiPredictions(null);
     setAnalysisMessage('');
     setFileMetadata(null);
+    setImportError(null);
+    setImportErrorDetails([]);
   }, []);
 
   const deleteDuplicateRows = useCallback((duplicateIds: string[]) => {
@@ -451,6 +469,8 @@ export const useContactImport = () => {
     aiPredictions,
     analysisMessage,
     fileMetadata,
+    importError,
+    importErrorDetails,
 
     // Actions
     processFile,

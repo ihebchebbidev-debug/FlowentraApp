@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, Download, FileSpreadsheet, ArrowLeft, Users } from 'lucide-react';
+import { Upload, Download, FileSpreadsheet, ArrowLeft, Users, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useContactImport } from '../hooks/useContactImport';
 import { DynamicImportTab } from '../components/import/DynamicImportTab';
 import { StructuredImportTab } from '../components/import/StructuredImportTab';
@@ -246,6 +247,21 @@ export default function ImportContacts() {
 
         {importHook.currentStep === 'preview' && (
           <div className="space-y-6">
+            {importHook.importError && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="space-y-2">
+                  <p className="font-semibold">{importHook.importError}</p>
+                  {importHook.importErrorDetails.length > 0 && (
+                    <ul className="list-disc pl-4 space-y-1 text-sm max-h-40 overflow-y-auto">
+                      {importHook.importErrorDetails.map((line, idx) => (
+                        <li key={idx} className="break-words">{line}</li>
+                      ))}
+                    </ul>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
             {/* Preview Header */}
             <Card className="shadow-card border-0">
               <CardHeader>
@@ -265,8 +281,10 @@ export default function ImportContacts() {
                     </Button>
                     <Button 
                       onClick={async () => {
-                        await importHook.executeImport();
-                        handleImportComplete();
+                        const result = await importHook.executeImport();
+                        if (result.successCount > 0 && result.errorCount === 0) {
+                          handleImportComplete();
+                        }
                       }} 
                       disabled={importHook.isLoading}
                       className="bg-primary text-white hover:bg-primary/90"

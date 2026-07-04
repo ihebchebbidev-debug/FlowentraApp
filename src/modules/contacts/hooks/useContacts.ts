@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { contactsApi } from '@/services/api/contactsApi';
+import { formatImportFailure } from '@/shared/import/parseBulkImportResponse';
 import { queryKeys, STALE_TIMES, CACHE_TIMES } from '@/lib/queryClient';
 import type { 
   Contact, 
@@ -71,8 +72,9 @@ export function useContacts(params?: ContactSearchParams) {
         toast.error(`${result.failedCount} contacts failed to import`);
       }
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to import contacts');
+    onError: (error: unknown) => {
+      const failure = formatImportFailure(error);
+      toast.error(failure.details[0] ?? failure.message);
     },
   });
 

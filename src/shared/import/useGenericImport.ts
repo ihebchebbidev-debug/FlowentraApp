@@ -13,7 +13,7 @@ import {
   autoMapColumns,
   generateExcelTemplate 
 } from './utils';
-import { BulkImportRequestError } from './parseBulkImportResponse';
+import { formatImportFailure } from './parseBulkImportResponse';
  
  export type ImportStep = 'upload' | 'analyzing' | 'mapping' | 'preview' | 'summary';
 
@@ -245,30 +245,23 @@ import { BulkImportRequestError } from './parseBulkImportResponse';
        };
 
      } catch (error) {
-       const bulkError = error instanceof BulkImportRequestError
-         ? error
-         : new BulkImportRequestError(
-             error instanceof Error ? error.message : 'Import failed',
-             { details: [error instanceof Error ? error.message : 'Import failed'] },
-           );
-       const detailLines = bulkError.details.length > 0
-         ? bulkError.details
-         : bulkError.message.split('\n').map((l) => l.trim()).filter(Boolean);
+       const failure = formatImportFailure(error);
+       const detailLines = failure.details;
 
-       setImportError(bulkError.message);
+       setImportError(failure.message);
        setImportErrorDetails(detailLines);
        setImportSummary(null);
 
        toast({
-         title: bulkError.status ? `Import failed (HTTP ${bulkError.status})` : 'Import failed',
-         description: bulkError.message,
+         title: failure.status ? `Import failed (HTTP ${failure.status})` : 'Import failed',
+         description: detailLines[0] ?? failure.message,
          variant: 'destructive',
        });
 
        console.error(
          'Bulk import failed:',
-         bulkError.message,
-         bulkError.status != null ? `(HTTP ${bulkError.status})` : '',
+         failure.message,
+         failure.status != null ? `(HTTP ${failure.status})` : '',
          detailLines,
        );
        

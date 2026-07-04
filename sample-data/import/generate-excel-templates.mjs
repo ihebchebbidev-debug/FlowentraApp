@@ -16,6 +16,10 @@ const ARTICLE_TYPES = new Set(['material', 'service']);
 const ARTICLE_STATUSES = new Set([
   'available', 'active', 'low_stock', 'out_of_stock', 'discontinued', 'inactive',
 ]);
+const INSTALLATION_STATUSES = new Set([
+  'active', 'inactive', 'maintenance', 'decommissioned', 'pending', 'installed', 'retired',
+]);
+const SERIAL_RE = /^[a-zA-Z0-9\-_]+$/;
 
 function validatePhone(phone) {
   if (!phone) return true;
@@ -62,6 +66,24 @@ function validateArticle(row) {
     if (row.duration !== '' && row.duration != null && (isNaN(Number(row.duration)) || Number(row.duration) < 0)) {
       errors.push('invalid duration');
     }
+  }
+  return errors;
+}
+
+function validateInstallation(row) {
+  const errors = [];
+  if (!row.name?.trim()) errors.push('missing name');
+  if (row.name && row.name.length > 255) errors.push('name too long');
+  if (row.serialNumber) {
+    if (row.serialNumber.length > 100) errors.push('serial too long');
+    if (!SERIAL_RE.test(row.serialNumber.trim())) errors.push('invalid serial format');
+  }
+  if (row.status && !INSTALLATION_STATUSES.has(String(row.status).toLowerCase().trim())) {
+    errors.push(`invalid status: ${row.status}`);
+  }
+  if (row.contactId !== '' && row.contactId != null) {
+    const n = Number(String(row.contactId).replace(/\s/g, ''));
+    if (!Number.isInteger(n) || n < 0) errors.push('invalid contactId');
   }
   return errors;
 }
@@ -147,8 +169,48 @@ const ARTICLES = [
   { name: 'Commissioning Handover', sku: 'IMP-SRV-008', description: 'System commissioning and client handover', type: 'service', category: 'Services', status: 'active', stock: '', minStock: '', costPrice: '', sellPrice: '', basePrice: 280, duration: 3, supplier: '', location: '' },
 ];
 
+// Headers match InstallationsList GenericImportModal field labels (English) for auto-mapping.
+const INSTALLATION_HEADERS = [
+  'Name',
+  'Contact ID',
+  'Model',
+  'Manufacturer',
+  'Serial Number',
+  'Category',
+  'Type',
+  'Status',
+  'Site Address',
+  'Installation Type',
+  'Notes',
+  'Matricule / Licence Plate',
+];
+
+const INSTALLATIONS = [
+  { name: 'Rooftop PV Array Block A', contactId: '', model: 'PV-485W-72', manufacturer: 'Jinko Solar', serialNumber: 'IMP-INS-001', category: 'Solar', type: 'Photovoltaic', status: 'active', siteAddress: '12 Avenue Habib Bourguiba, Tunis 1000', installationType: 'Rooftop', notes: '20 panels — import test row 1', matricule: '' },
+  { name: 'Hybrid Inverter Site 1', contactId: '', model: 'HYB-8K', manufacturer: 'Huawei', serialNumber: 'IMP-INS-002', category: 'Solar', type: 'Inverter', status: 'active', siteAddress: '45 Rue de la Liberte, Sfax 3000', installationType: 'Technical Room', notes: '8kW hybrid inverter', matricule: '' },
+  { name: 'LFP Battery Bank 10kWh', contactId: '', model: 'LFP-10', manufacturer: 'Pylontech', serialNumber: 'IMP-INS-003', category: 'Storage', type: 'Battery', status: 'active', siteAddress: '8 Impasse des Oliviers, Ariana 2080', installationType: 'Indoor', notes: 'Wall-mounted battery stack', matricule: '' },
+  { name: 'Split AC Office Unit', contactId: '', model: 'FTXM35N', manufacturer: 'Daikin', serialNumber: 'IMP-INS-004', category: 'HVAC', type: 'Split', status: 'active', siteAddress: 'Avenue Mohamed V, Hammamet 8050', installationType: 'Wall Mount', notes: 'Annual service contract', matricule: '' },
+  { name: 'VRF Outdoor Unit', contactId: '', model: 'REYQ-T', manufacturer: 'Daikin', serialNumber: 'IMP-INS-005', category: 'HVAC', type: 'VRF', status: 'active', siteAddress: 'Rue Ibn Khaldoun, Nabeul 8000', installationType: 'Outdoor', notes: 'Commercial building', matricule: '' },
+  { name: 'Fire Detection Panel', contactId: '', model: 'FC720', manufacturer: 'Siemens', serialNumber: 'IMP-INS-006', category: 'Security', type: 'Detection', status: 'active', siteAddress: 'Les Berges du Lac, Tunis', installationType: 'Building', notes: 'Weekly test required', matricule: '' },
+  { name: 'Diesel Generator 80kVA', contactId: '', model: 'DE-80', manufacturer: 'Caterpillar', serialNumber: 'IMP-INS-007', category: 'Electrical', type: 'Diesel', status: 'active', siteAddress: 'Route de Bizerte, Menzel Bourguiba', installationType: 'Outdoor Shelter', notes: 'Monthly load test', matricule: 'GEN-80-007' },
+  { name: 'Pool Heat Pump', contactId: '', model: 'HP-300', manufacturer: 'Zodiac', serialNumber: 'IMP-INS-008', category: 'Pool', type: 'Heat-Pump', status: 'active', siteAddress: 'Centre Ville, Sousse 4000', installationType: 'Outdoor', notes: 'Seasonal commissioning', matricule: '' },
+  { name: 'Air Handling Unit Hospital Wing', contactId: '', model: 'AHU-3000', manufacturer: 'Carrier', serialNumber: 'IMP-INS-009', category: 'HVAC', type: 'Central', status: 'maintenance', siteAddress: 'Zone Industrielle, Ben Arous', installationType: 'Technical Room', notes: 'Filter replacement due', matricule: '' },
+  { name: 'Elevator Passenger Bank B', contactId: '', model: 'ELV-6P', manufacturer: 'Otis', serialNumber: 'IMP-INS-010', category: 'Transport', type: 'Electric', status: 'active', siteAddress: 'Rue du Pacha, Tunis 1002', installationType: 'Shaft', notes: '6-person capacity', matricule: '' },
+  { name: 'Solar Water Heater 300L', contactId: '', model: 'SWH-300', manufacturer: 'Ariston', serialNumber: 'IMP-INS-011', category: 'Solar', type: 'Thermal', status: 'active', siteAddress: 'Parc Technologique El Ghazala, Ariana', installationType: 'Rooftop', notes: 'Residential villa', matricule: '' },
+  { name: 'Compressed Air Screw Unit', contactId: '', model: 'GA-37', manufacturer: 'Atlas Copco', serialNumber: 'IMP-INS-012', category: 'Industrial', type: 'Compressor', status: 'active', siteAddress: 'Route de La Marsa, Tunis', installationType: 'Technical Room', notes: 'Oil change every 2000h', matricule: '' },
+  { name: 'BMS Controller Main', contactId: '', model: 'Desigo CC', manufacturer: 'Siemens', serialNumber: 'IMP-INS-013', category: 'Automation', type: 'BMS', status: 'active', siteAddress: 'Zone Industrielle, Ben Arous', installationType: 'Control Room', notes: 'Integrated HVAC + lighting', matricule: '' },
+  { name: 'EV Charger Type 2', contactId: '', model: 'EVC-22', manufacturer: 'ABB', serialNumber: 'IMP-INS-014', category: 'Electrical', type: 'EV-Charger', status: 'active', siteAddress: 'Cite Ennasr, Tunis', installationType: 'Parking', notes: '22kW three-phase', matricule: '' },
+  { name: 'Cold Room Compressor', contactId: '', model: 'CR-40', manufacturer: 'Bitzer', serialNumber: 'IMP-INS-015', category: 'Refrigeration', type: 'Compressor', status: 'active', siteAddress: 'Avenue Farhat Hached, Sfax', installationType: 'Cold Room', notes: 'Restaurant cold storage', matricule: '' },
+  { name: 'CCTV NVR Rack Install', contactId: '', model: 'NVR-32', manufacturer: 'Hikvision', serialNumber: 'IMP-INS-016', category: 'Security', type: 'CCTV', status: 'active', siteAddress: 'Route de Gabes, Sfax 3000', installationType: 'Server Room', notes: '32-channel NVR', matricule: '' },
+  { name: 'Water Treatment RO Plant', contactId: '', model: 'RO-500', manufacturer: 'Veolia', serialNumber: 'IMP-INS-017', category: 'Water', type: 'Reverse-Osmosis', status: 'active', siteAddress: 'Medina, Kairouan', installationType: 'Plant Room', notes: '500 L/h capacity', matricule: '' },
+  { name: 'Legacy Chiller Decommissioned', contactId: '', model: 'CH-200', manufacturer: 'Trane', serialNumber: 'IMP-INS-018', category: 'HVAC', type: 'Chiller', status: 'decommissioned', siteAddress: 'Avenue 7 Novembre, Monastir', installationType: 'Roof', notes: 'Awaiting removal', matricule: '' },
+  { name: 'Pending Solar Extension', contactId: '', model: 'PV-500W', manufacturer: 'Longi', serialNumber: 'IMP-INS-019', category: 'Solar', type: 'Photovoltaic', status: 'pending', siteAddress: 'Route de Bizerte, Tunis Nord', installationType: 'Rooftop', notes: 'Phase 2 extension', matricule: '' },
+  { name: 'Installed Heat Recovery Unit', contactId: '', model: 'HRU-150', manufacturer: 'Aldes', serialNumber: 'IMP-INS-020', category: 'Ventilation', type: 'Heat-Recovery', status: 'installed', siteAddress: 'Les Jardins de Carthage, Tunis', installationType: 'Ceiling', notes: 'Commissioned Q2 2026', matricule: '' },
+];
+
 if (CONTACTS.length !== 20) throw new Error(`Expected 20 contacts, got ${CONTACTS.length}`);
 if (ARTICLES.length !== 20) throw new Error(`Expected 20 articles, got ${ARTICLES.length}`);
+if (INSTALLATIONS.length !== 20) throw new Error(`Expected 20 installations, got ${INSTALLATIONS.length}`);
 
 CONTACTS.forEach((row, i) => {
   const errs = validateContactStructured(row);
@@ -163,7 +225,14 @@ ARTICLES.forEach((row, i) => {
 assertUnique(ARTICLES.map((a) => a.sku), 'article sku');
 assertUnique(ARTICLES.map((a) => a.name), 'article name');
 
-console.log('Validation passed: 20 contacts + 20 articles, all unique emails/SKUs');
+INSTALLATIONS.forEach((row, i) => {
+  const errs = validateInstallation(row);
+  if (errs.length) throw new Error(`Installation row ${i + 1} (${row.name}): ${errs.join(', ')}`);
+});
+assertUnique(INSTALLATIONS.map((i) => i.serialNumber), 'installation serial');
+assertUnique(INSTALLATIONS.map((i) => i.name), 'installation name');
+
+console.log('Validation passed: 20 contacts + 20 articles + 20 installations');
 
 function writeXlsx(filename, sheetName, rows, colWidths) {
   const ws = XLSX.utils.aoa_to_sheet(rows);
@@ -201,4 +270,18 @@ const articleRows = [
 writeXlsx('articles-import-test.xlsx', 'Articles Template', articleRows, [28, 14, 40, 10, 14, 10, 8, 10, 12, 12, 18, 14, 16, 16].map((w) => ({ wch: w })));
 writeCsvUtf8Bom('articles-import-test.csv', articleRows.map((row) => row.map(csvEscape).join(',')));
 
+const installationRows = [
+  INSTALLATION_HEADERS,
+  ...INSTALLATIONS.map((i) => [
+    i.name, i.contactId, i.model, i.manufacturer, i.serialNumber, i.category, i.type,
+    i.status, i.siteAddress, i.installationType, i.notes, i.matricule,
+  ]),
+];
+
+writeXlsx('installations-import-test.xlsx', 'Installations Template', installationRows, [32, 12, 14, 16, 16, 14, 14, 12, 36, 18, 32, 18].map((w) => ({ wch: w })));
+writeCsvUtf8Bom('installations-import-test.csv', installationRows.map((row) => row.map(csvEscape).join(',')));
+
 console.log('\nDone — sample-data/import/');
+console.log('  contacts-import-test.xlsx   → /dashboard/contacts (Structured Import tab)');
+console.log('  articles-import-test.xlsx   → /dashboard/inventory-services → Import');
+console.log('  installations-import-test.xlsx → /dashboard/field/installations → Import');

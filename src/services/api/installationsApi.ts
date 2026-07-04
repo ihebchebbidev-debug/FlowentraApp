@@ -1,4 +1,5 @@
 import api from '@/services/api/axiosInstance';
+import { bulkImportErrorFromAxios } from '@/shared/import/parseBulkImportResponse';
 import type {
   InstallationDto,
   CreateInstallationDto,
@@ -164,33 +165,7 @@ export const installationsApi = {
   },
 
   async bulkImport(request: InstallationBulkImportRequest): Promise<InstallationBulkImportResult> {
-    const normalizeUtc = (value: unknown) => {
-      if (typeof value !== 'string') return value;
-      if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return `${value}T00:00:00Z`;
-      return value;
-    };
-
-    const backendInstallations = request.installations.map(installation => ({
-      contactId: installation.contactId,
-      siteAddress: installation.siteAddress || installation.name || 'Default Site',
-      installationType: installation.installationType || installation.type || 'general',
-      installationDate: normalizeUtc(new Date().toISOString()),
-      status: installation.status || 'active',
-      warrantyExpiry: installation.warrantyTo ? normalizeUtc(installation.warrantyTo) : null,
-      warranty: {
-        hasWarranty: !!(installation.warrantyFrom || installation.warrantyTo),
-        warrantyFrom: installation.warrantyFrom,
-        warrantyTo: installation.warrantyTo,
-      },
-      notes: installation.notes || null,
-      name: installation.name || null,
-      model: installation.model || null,
-      manufacturer: installation.manufacturer || null,
-      category: installation.category || null,
-      type: installation.type || null,
-      serialNumber: installation.serialNumber || null,
-      matricule: installation.matricule || null,
-    }));
+    const backendInstallations = request.installations.map(mapInstallationRowForBulkImport);
 
     try {
       const response = await api.post(`/api/installations/import`, {
@@ -209,46 +184,8 @@ export const installationsApi = {
         errors: result.errors || [],
         importedItems: (result.importedInstallations || result.importedItems || []).map(normalizeInstallation),
       };
-    } catch (bulkError: any) {
-      console.log('Bulk import endpoint unavailable, falling back to individual creation:', bulkError.message);
-      
-      const results = {
-        totalProcessed: request.installations.length,
-        successCount: 0,
-        failedCount: 0,
-        skippedCount: 0,
-        errors: [] as string[],
-        importedItems: [] as any[],
-      };
-
-      for (let i = 0; i < backendInstallations.length; i++) {
-        const installation = backendInstallations[i];
-        try {
-          const created = await this.create({
-            contactId: installation.contactId,
-            name: installation.name || undefined,
-            model: installation.model || undefined,
-            manufacturer: installation.manufacturer || undefined,
-            serialNumber: installation.serialNumber || undefined,
-            category: installation.category || undefined,
-            type: installation.type || undefined,
-            status: installation.status || 'active',
-            siteAddress: installation.siteAddress,
-            installationType: installation.installationType,
-            notes: installation.notes || undefined,
-            warranty: installation.warranty,
-          } as any);
-          results.successCount++;
-          results.importedItems.push(created);
-        } catch (error: any) {
-          results.failedCount++;
-          const errorMsg = error.response?.data?.message || error.message || `Failed to import row ${i + 1}`;
-          results.errors.push(`Row ${i + 1}: ${errorMsg}`);
-          console.error(`Failed to import installation ${i + 1}:`, error);
-        }
-      }
-
-      return results;
+    } catch (bulkError: unknown) {
+      throw bulkImportErrorFromAxios(bulkError);
     }
   },
 };
@@ -282,4 +219,53 @@ export interface InstallationBulkImportResult {
   skippedCount: number;
   errors: string[];
   importedItems: any[];
+}
+
+function toImportInt(value: unknown): number {
+  if (value === undefined || value === null || value === '') return 0;
+  const n = Number(String(value).replace(/\s/g, '').replace(',', '.'));
+  if (!Number.isFinite(n)) return 0;
+  return Math.round(n);
+}
+
+/** Map frontend import row → CreateInstallationDto for POST /api/installations/import */
+function mapInstallationRowForBulkImport(
+  installation: InstallationBulkImportRequest['installations'][number],
+): Record<string, unknown> {
+  const contactId = toImportInt(installation.contactId);
+  const name = installation.name?.trim() || '';
+  const row: Record<string, unknown> = {
+    contactId,
+    name: name || undefined,
+    siteAddress: installation.siteAddress?.trim() || name || 'Default Site',
+    installationType:
+      installation.installationType?.trim() ||
+      installation.type?.trim() ||
+      'general',
+    installationDate: new Date().toISOString(),
+    status: installation.status?.trim() || 'active',
+  };
+
+  if (installation.model?.trim()) row.model = installation.model.trim();
+  if (installation.manufacturer?.trim()) row.manufacturer = installation.manufacturer.trim();
+  if (installation.category?.trim()) row.category = installation.category.trim();
+  if (installation.type?.trim()) row.type = installation.type.trim();
+  if (installation.serialNumber?.trim()) row.serialNumber = installation.serialNumber.trim();
+  if (installation.matricule?.trim()) row.matricule = installation.matricule.trim();
+  if (installation.notes?.trim()) row.notes = installation.notes.trim();
+
+  if (installation.warrantyFrom || installation.warrantyTo) {
+    row.warranty = {
+      hasWarranty: true,
+      warrantyFrom: installation.warrantyFrom ?? undefined,
+      warrantyTo: installation.warrantyTo ?? undefined,
+    };
+    if (installation.warrantyTo) {
+      row.warrantyExpiry = /^\d{4}-\d{2}-\d{2}$/.test(installation.warrantyTo)
+        ? `${installation.warrantyTo}T00:00:00Z`
+        : installation.warrantyTo;
+    }
+  }
+
+  return row;
 }

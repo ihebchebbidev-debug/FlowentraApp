@@ -10,7 +10,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, Download, FileSpreadsheet } from 'lucide-react';
+import { Upload, Download, FileSpreadsheet, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useContactImport } from '../../hooks/useContactImport';
 import { DynamicImportTab } from './DynamicImportTab';
 import { StructuredImportTab } from './StructuredImportTab';
@@ -108,6 +109,21 @@ export function ContactImportModal({ open, onOpenChange }: ContactImportModalPro
             </Tabs>
           ) : (
             <div className="h-full flex flex-col">
+              {importHook.importError && (
+                <Alert variant="destructive" className="mb-4 flex-shrink-0">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="space-y-2">
+                    <p className="font-semibold">{importHook.importError}</p>
+                    {importHook.importErrorDetails.length > 0 && (
+                      <ul className="list-disc pl-4 space-y-1 text-sm max-h-32 overflow-y-auto">
+                        {importHook.importErrorDetails.map((line, idx) => (
+                          <li key={idx} className="break-words">{line}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </AlertDescription>
+                </Alert>
+              )}
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-lg font-semibold">
@@ -123,7 +139,15 @@ export function ContactImportModal({ open, onOpenChange }: ContactImportModalPro
                   <Button variant="outline" onClick={importHook.resetImport}>
                     {isFrench ? 'Recommencer' : 'Start Over'}
                   </Button>
-                  <Button onClick={importHook.executeImport} disabled={importHook.isLoading}>
+                  <Button
+                    onClick={async () => {
+                      const result = await importHook.executeImport();
+                      if (result.successCount > 0 && result.errorCount === 0) {
+                        handleImportComplete();
+                      }
+                    }}
+                    disabled={importHook.isLoading}
+                  >
                     {importHook.isLoading 
                       ? (isFrench ? 'Import en cours...' : 'Importing...') 
                       : (isFrench ? 'Importer la Sélection' : 'Import Selected')}
