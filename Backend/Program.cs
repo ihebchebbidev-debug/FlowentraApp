@@ -43,7 +43,7 @@ using MyApi.Infrastructure.Caching;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container with camelCase JSON serialization
+// Add aservices to the container with camelCase JSON serialization
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
