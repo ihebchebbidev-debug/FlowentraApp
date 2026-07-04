@@ -292,12 +292,12 @@ namespace MyApi.Modules.Shared.Services
                         : log.Message,
                     Module = Cap(string.IsNullOrEmpty(log.Module) ? "System" : log.Module, 100),
                     Action = Cap(string.IsNullOrEmpty(log.Action) ? "other" : log.Action, 50),
-                    UserId = Cap(log.UserId, 100),
-                    UserName = Cap(log.UserName, 200),
-                    EntityType = Cap(log.EntityType, 100),
-                    EntityId = Cap(log.EntityId, 100),
+                    UserId = CapOptional(log.UserId, 100),
+                    UserName = CapOptional(log.UserName, 200),
+                    EntityType = CapOptional(log.EntityType, 100),
+                    EntityId = CapOptional(log.EntityId, 100),
                     Details = log.Details,
-                    IpAddress = Cap(log.IpAddress, 45),
+                    IpAddress = CapOptional(log.IpAddress, 45),
                     UserAgent = log.UserAgent,
                     Metadata = log.Metadata
                 };
@@ -323,7 +323,10 @@ namespace MyApi.Modules.Shared.Services
 
         // Trim a value to the backing column width so an over-length field can never
         // throw a 22001 and take the whole log entry down with it.
-        private static string? Cap(string? value, int max)
+        private static string Cap(string value, int max)
+            => value.Length > max ? value.Substring(0, max) : value;
+
+        private static string? CapOptional(string? value, int max)
             => value != null && value.Length > max ? value.Substring(0, max) : value;
 
         private static SystemLogDto MapToDto(SystemLog log)

@@ -205,7 +205,7 @@ namespace MyApi.Modules.WebsiteBuilder.Services
                     try { _ = System.Text.Json.JsonDocument.Parse(updateDto.ComponentsJson ?? "[]"); }
                     catch { throw new InvalidOperationException("componentsJson is not valid JSON."); }
 
-                    page.ComponentsJson = updateDto.ComponentsJson;
+                    page.ComponentsJson = updateDto.ComponentsJson ?? "[]";
                 }
 
                 page.ModifiedBy = modifiedByUser;

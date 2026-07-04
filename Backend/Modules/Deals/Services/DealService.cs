@@ -537,9 +537,29 @@ namespace MyApi.Modules.Deals.Services
             if (targetId == null) return;
             try
             {
-                await _context.Database.ExecuteSqlRawAsync(
-                    $"UPDATE \"{table}\" SET \"{column}\" = {{0}} WHERE \"Id\" = {{1}}",
-                    dealId, targetId.Value);
+                switch (table, column)
+                {
+                    case ("Sales", "DealId"):
+                        await _context.Database.ExecuteSqlRawAsync(
+                            @"UPDATE ""Sales"" SET ""DealId"" = {0} WHERE ""Id"" = {1}",
+                            dealId, targetId.Value);
+                        break;
+                    case ("Offers", "DealId"):
+                        await _context.Database.ExecuteSqlRawAsync(
+                            @"UPDATE ""Offers"" SET ""DealId"" = {0} WHERE ""Id"" = {1}",
+                            dealId, targetId.Value);
+                        break;
+                    case ("Projects", "ConvertedFromDealId"):
+                        await _context.Database.ExecuteSqlRawAsync(
+                            @"UPDATE ""Projects"" SET ""ConvertedFromDealId"" = {0} WHERE ""Id"" = {1}",
+                            dealId, targetId.Value);
+                        break;
+                    default:
+                        _logger.LogWarning(
+                            "Refusing back-link update for unknown table/column {Table}.{Column}",
+                            table, column);
+                        break;
+                }
             }
             catch (Exception ex)
             {

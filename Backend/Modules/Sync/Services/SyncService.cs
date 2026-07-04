@@ -2793,7 +2793,7 @@ namespace MyApi.Modules.Sync.Services
             return r.Id;
         }
 
-        private async Task<int?> ApplyHrAttendanceSettingsAsync(SyncOperationDto op, string user)
+        private Task<int?> ApplyHrAttendanceSettingsAsync(SyncOperationDto op, string user)
         {
             // Attendance settings sync is not supported by the current HR service surface.
             throw new NotSupportedException("hr_attendance_settings sync is not supported");
@@ -2811,7 +2811,7 @@ namespace MyApi.Modules.Sync.Services
             return uid;
         }
 
-        private async Task<int?> ApplyHrAttendanceImportAsync(SyncOperationDto op, string user)
+        private Task<int?> ApplyHrAttendanceImportAsync(SyncOperationDto op, string user)
         {
             // Attendance import sync is not supported by the current HR service surface.
             throw new NotSupportedException("hr_attendance_import sync is not supported");
