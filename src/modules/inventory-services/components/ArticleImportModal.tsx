@@ -25,7 +25,7 @@ export function ArticleImportModal({ open, onOpenChange }: ArticleImportModalPro
     { name: 'Rack Serveur 42U', sku: 'RAC-42U-005', description: 'Rack serveur standard 42 unités', type: 'material', category: 'Infrastructure', status: 'active', stock: 5, minStock: 1, costPrice: 450.00, sellPrice: 699.00, supplier: 'APC', location: 'Entrepôt D' },
     { name: 'Audit Sécurité', sku: 'SRV-SEC-003', description: 'Audit de sécurité informatique', type: 'service', category: 'Services', status: 'active', basePrice: 500.00, duration: 4, supplier: '', location: '' },
     { name: 'Onduleur 1500VA', sku: 'UPS-1500-006', description: 'Onduleur protection serveur', type: 'material', category: 'Alimentation', status: 'active', stock: 20, minStock: 5, costPrice: 180.00, sellPrice: 299.00, supplier: 'APC', location: 'Entrepôt A' },
-    { name: 'Formation Utilisateur', sku: 'SRV-FORM-004', description: 'Formation bureautique', type: 'service', category: 'Services', status: 'active', basePrice: 100.00, duration: 1.5, supplier: '', location: '' },
+    { name: 'Formation Utilisateur', sku: 'SRV-FORM-004', description: 'Formation bureautique', type: 'service', category: 'Services', status: 'active', basePrice: 100.00, duration: 2, supplier: '', location: '' },
   ] : [
     { name: 'Ethernet Cable Cat6', sku: 'CAB-ETH-001', description: 'High-speed network cable', type: 'material', category: 'Cabling', status: 'active', stock: 150, minStock: 20, costPrice: 5.50, sellPrice: 12.00, supplier: 'TechCables', location: 'Warehouse A' },
     { name: 'WiFi Router Pro', sku: 'ROU-WIFI-002', description: 'Professional dual-band router', type: 'material', category: 'Network', status: 'active', stock: 25, minStock: 5, costPrice: 89.00, sellPrice: 149.00, supplier: 'NetGear', location: 'Warehouse B' },
@@ -36,7 +36,7 @@ export function ArticleImportModal({ open, onOpenChange }: ArticleImportModalPro
     { name: 'Server Rack 42U', sku: 'RAC-42U-005', description: 'Standard 42-unit server rack', type: 'material', category: 'Infrastructure', status: 'active', stock: 5, minStock: 1, costPrice: 450.00, sellPrice: 699.00, supplier: 'APC', location: 'Warehouse D' },
     { name: 'Security Audit', sku: 'SRV-SEC-003', description: 'IT security audit service', type: 'service', category: 'Services', status: 'active', basePrice: 500.00, duration: 4, supplier: '', location: '' },
     { name: 'UPS 1500VA', sku: 'UPS-1500-006', description: 'Server protection UPS', type: 'material', category: 'Power', status: 'active', stock: 20, minStock: 5, costPrice: 180.00, sellPrice: 299.00, supplier: 'APC', location: 'Warehouse A' },
-    { name: 'User Training', sku: 'SRV-FORM-004', description: 'Office software training', type: 'service', category: 'Services', status: 'active', basePrice: 100.00, duration: 1.5, supplier: '', location: '' },
+    { name: 'User Training', sku: 'SRV-FORM-004', description: 'Office software training', type: 'service', category: 'Services', status: 'active', basePrice: 100.00, duration: 2, supplier: '', location: '' },
   ];
 
   const articleImportConfig: ImportConfig<any> = {

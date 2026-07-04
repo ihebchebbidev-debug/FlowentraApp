@@ -18,6 +18,17 @@ export function extractApiErrorMessage(body: unknown, status?: number): string {
   }
 
   const record = body as Record<string, unknown>;
+
+  // ASP.NET model-validation ProblemDetails: { title, errors: { "Field": ["msg"] } }
+  const validationLines = extractValidationErrorLines(record);
+  if (validationLines.length > 0) {
+    const title =
+      (typeof record.title === 'string' && record.title.trim()) ||
+      (typeof record.message === 'string' && record.message.trim()) ||
+      'Validation failed';
+    return withStatus(`${title}\n${validationLines.join('\n')}`);
+  }
+
   const nested = record.error;
 
   if (nested && typeof nested === 'object') {
@@ -60,6 +71,28 @@ export function extractApiErrorMessage(body: unknown, status?: number): string {
   }
 
   return withStatus('Request failed');
+}
+
+/** Field-level validation messages from ASP.NET ProblemDetails. */
+export function extractValidationErrorLines(body: unknown): string[] {
+  if (!body || typeof body !== 'object') return [];
+  const record = body as Record<string, unknown>;
+  const bag = record.errors;
+  if (!bag || typeof bag !== 'object' || Array.isArray(bag)) return [];
+  return Object.entries(bag as Record<string, unknown>).flatMap(([field, msgs]) => {
+    const list = Array.isArray(msgs) ? msgs : [msgs];
+    return list
+      .filter((m) => m != null && String(m).trim())
+      .map((m) => `${field}: ${String(m).trim()}`);
+  });
+}
+
+/** Full detail list for UI display (validation lines + primary message). */
+export function extractApiErrorDetails(body: unknown, status?: number): string[] {
+  const validation = extractValidationErrorLines(body);
+  if (validation.length > 0) return validation;
+  const message = extractApiErrorMessage(body, status);
+  return message ? [message] : [];
 }
 
 function formatHttpStatusPrefix(message: string, status?: number): string {

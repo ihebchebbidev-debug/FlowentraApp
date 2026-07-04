@@ -1,4 +1,4 @@
-import { extractApiErrorMessage, extractThrownErrorMessage } from '@/utils/extractApiErrorMessage';
+import { extractApiErrorMessage, extractApiErrorDetails, extractThrownErrorMessage } from '@/utils/extractApiErrorMessage';
 import type { BulkImportResult } from './types';
 
 /** Thrown when the bulk-import HTTP request itself fails (not per-row validation). */
@@ -28,9 +28,10 @@ export async function parseBulkImportHttpResponse<TPayload>(
 
   if (!response.ok) {
     const message = extractApiErrorMessage(body, response.status);
+    const details = extractApiErrorDetails(body, response.status);
     throw new BulkImportRequestError(message, {
       status: response.status,
-      details: [message],
+      details: details.length > 0 ? details : [message],
     });
   }
 
@@ -40,9 +41,10 @@ export async function parseBulkImportHttpResponse<TPayload>(
   // Backend returned 200 but success:false
   if (envelope.success === false) {
     const message = extractApiErrorMessage(envelope, response.status);
+    const details = extractApiErrorDetails(envelope, response.status);
     throw new BulkImportRequestError(message, {
       status: response.status,
-      details: [message],
+      details: details.length > 0 ? details : [message],
     });
   }
 

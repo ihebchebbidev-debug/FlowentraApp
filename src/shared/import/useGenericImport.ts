@@ -251,7 +251,9 @@ import { BulkImportRequestError } from './parseBulkImportResponse';
              error instanceof Error ? error.message : 'Import failed',
              { details: [error instanceof Error ? error.message : 'Import failed'] },
            );
-       const detailLines = bulkError.details.length > 0 ? bulkError.details : [bulkError.message];
+       const detailLines = bulkError.details.length > 0
+         ? bulkError.details
+         : bulkError.message.split('\n').map((l) => l.trim()).filter(Boolean);
 
        setImportError(bulkError.message);
        setImportErrorDetails(detailLines);

@@ -13,9 +13,9 @@ Cable HDMI 3m,IMP-MAT-011,HDMI 2.1 cable,material,Cabling,active,200,30,6,14,,,T
 Thermostat Digital,IMP-MAT-012,Programmable room thermostat,material,HVAC,active,40,8,35,65,,,ClimaParts,Warehouse A
 HVAC Installation,IMP-SRV-001,Complete split AC installation,service,Services,active,,,,,350,4,,
 Preventive Maintenance,IMP-SRV-002,Quarterly maintenance visit,service,Services,active,,,,,180,2,,
-Emergency Repair,IMP-SRV-003,Urgent breakdown call-out,service,Services,active,,,,,120,1.5,,
+Emergency Repair,IMP-SRV-003,Urgent breakdown call-out,service,Services,active,,,,,120,2,,
 Network Audit,IMP-SRV-004,On-site network infrastructure audit,service,Services,active,,,,,450,6,,
 Electrical Inspection,IMP-SRV-005,Electrical safety inspection,service,Services,active,,,,,200,3,,
 Plumbing Diagnostic,IMP-SRV-006,Plumbing fault diagnosis,service,Services,active,,,,,90,1,,
-User Training Session,IMP-SRV-007,End-user software training,service,Services,active,,,,,100,1.5,,
+User Training Session,IMP-SRV-007,End-user software training,service,Services,active,,,,,100,2,,
 Commissioning Handover,IMP-SRV-008,System commissioning and client handover,service,Services,active,,,,,280,3,,

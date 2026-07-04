@@ -595,21 +595,8 @@ export interface ArticleBulkImportRequest {
     */
    async bulkImport(request: ArticleBulkImportRequest): Promise<ArticleBulkImportResult> {
      try {
-       // Transform articles to match backend CreateArticleDto format
-       const backendArticles = request.articles.map(article => ({
-         name: article.name,
-         articleNumber: article.sku || null, // Backend will auto-generate if null
-         description: article.description || '',
-         type: article.type || 'material',
-         unit: article.unit || 'piece',
-         isActive: true,
-         purchasePrice: article.costPrice || 0,
-         salesPrice: article.sellPrice || article.basePrice || 0,
-         stockQuantity: article.type === 'service' ? 0 : (article.stock || 0),
-         minStockLevel: article.minStock,
-         supplier: article.supplier,
-         duration: article.duration,
-       }));
+       // Map to CreateArticleRequestDto (bulk import endpoint) — ints only for stock/duration.
+       const backendArticles = request.articles.map(mapArticleRowForBulkImport);
  
        const response = await fetch(`${API_URL}/api/articles/import`, {
          method: 'POST',
@@ -638,3 +625,55 @@ export interface ArticleBulkImportRequest {
      }
    }
  };
+
+/** Coerce Excel decimals to integers for backend int? fields (stock, duration). */
+function toImportInt(value: unknown): number | undefined {
+  if (value === undefined || value === null || value === '') return undefined;
+  const n = Number(value);
+  if (!Number.isFinite(n)) return undefined;
+  return Math.round(n);
+}
+
+/** Build payload for POST /api/articles/import (CreateArticleRequestDto). */
+function mapArticleRowForBulkImport(
+  article: ArticleBulkImportRequest['articles'][number],
+): Record<string, unknown> {
+  const type = article.type === 'service' ? 'service' : 'material';
+  const row: Record<string, unknown> = {
+    name: String(article.name ?? '').trim(),
+    description: article.description ?? '',
+    type,
+    unit: article.unit ?? 'piece',
+    status: 'active',
+    isActive: true,
+  };
+
+  const sku = article.sku?.trim();
+  if (sku) {
+    row.sku = sku;
+    row.articleNumber = sku;
+  }
+  if (article.category?.trim()) row.category = article.category.trim();
+  if (article.supplier?.trim()) row.supplier = article.supplier.trim();
+  if (article.location?.trim()) row.location = article.location.trim();
+
+  if (type === 'service') {
+    const basePrice = Number(article.basePrice ?? article.sellPrice ?? 0) || 0;
+    row.basePrice = basePrice;
+    row.sellPrice = basePrice;
+    row.salesPrice = basePrice;
+    row.stock = 0;
+    const duration = toImportInt(article.duration);
+    if (duration !== undefined) row.duration = duration;
+  } else {
+    row.stock = toImportInt(article.stock) ?? 0;
+    const minStock = toImportInt(article.minStock);
+    if (minStock !== undefined) row.minStock = minStock;
+    row.costPrice = Number(article.costPrice ?? 0) || 0;
+    row.sellPrice = Number(article.sellPrice ?? 0) || 0;
+    row.purchasePrice = row.costPrice;
+    row.salesPrice = row.sellPrice;
+  }
+
+  return row;
+}
