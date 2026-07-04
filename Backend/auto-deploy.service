@@ -9,7 +9,7 @@ Type=simple
 User=backend
 Group=backend
 
-ExecStart=/home/backend/FlowentraApp/Backend/auto-deploy.sh
+ExecStart=/home/backend/FlowentraApp_new/Backend/auto-deploy.sh
 
 # Restart the watcher automatically if it ever crashes
 Restart=always

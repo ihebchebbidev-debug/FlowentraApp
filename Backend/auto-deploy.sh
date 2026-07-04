@@ -19,7 +19,8 @@
 set -uo pipefail
 
 # ── Configuration ─────────────────────────────────────────────────────────────
-REPO_DIR="/home/backend/FlowentraApp/Backend"   # absolute path to cloned repo
+# VPS runs from FlowentraApp_new (see stack traces in journalctl). Use that path here.
+REPO_DIR="/home/backend/FlowentraApp_new/Backend"   # absolute path to cloned repo
 PUBLISH_DIR="/home/backend/publish"             # dotnet publish output
 SERVICE_NAME="backend"                          # systemd service to restart
 BRANCH="main"                                   # branch to track
