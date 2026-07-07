@@ -23,7 +23,7 @@ export function RequireCompany({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
   const { loaded: tenantsLoaded, tenants, refetch } = useTenantMap();
   const location = useLocation();
-  const [, tenantRevision] = useState(0);
+  const [tenantRevision, setTenantRevision] = useState(0);
   const [resolving, setResolving] = useState(false);
   const emptyResolveRef = useRef(false);
 

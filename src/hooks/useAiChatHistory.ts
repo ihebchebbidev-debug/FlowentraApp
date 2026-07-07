@@ -46,7 +46,7 @@ export function useAiChatHistory() {
       const response = await aiChatApi.getConversations(1, 50, includeArchived);
       setConversations(response.conversations.map(transformConversation));
     } catch (error) {
-      console.error('Failed to fetch conversations:', error);
+      console.warn('Failed to fetch conversations:', error);
       // Silently fail - conversations just won't load
     } finally {
       setIsLoading(false);
