@@ -1057,9 +1057,9 @@ app.MapHub<WorkflowHub>("/hubs/workflow").RequireCors("SignalRPolicy");
 app.MapGet("/", () => Results.Redirect("/swagger"));
 
 // ✅ ENHANCED Health endpoint with DB connectivity + cache stats
-app.MapGet("/health", (IServiceProvider sp) =>
+var healthHandler = (IServiceProvider sp) =>
 {
-    var cacheService = sp.GetRequiredService<ICacheService>();
+    var cacheService = sp.GetRequiredService<MyApi.Infrastructure.ICacheService>();
     var stats = cacheService.GetStats();
     return new
     {
@@ -1073,7 +1073,10 @@ app.MapGet("/health", (IServiceProvider sp) =>
             hitRate = stats.HitRate
         }
     };
-});
+};
+
+app.MapGet("/health", healthHandler);
+app.MapGet("/api/health", healthHandler);
 
 // DEBUG: Tenant resolution check
 app.MapGet("/api/debug/tenant", (HttpContext context, ITenantDbContextFactory factory) =>
