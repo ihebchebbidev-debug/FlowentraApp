@@ -1059,7 +1059,7 @@ app.MapGet("/", () => Results.Redirect("/swagger"));
 // ✅ ENHANCED Health endpoint with DB connectivity + cache stats
 var healthHandler = (IServiceProvider sp) =>
 {
-    var cacheService = sp.GetRequiredService<MyApi.Infrastructure.ICacheService>();
+    var cacheService = sp.GetRequiredService<ICacheService>();
     var stats = cacheService.GetStats();
     return new
     {
