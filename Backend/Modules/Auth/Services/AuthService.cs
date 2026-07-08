@@ -259,14 +259,26 @@ namespace MyApi.Modules.Auth.Services
                 {
                     try
                     {
-                        using var doc = System.Text.Json.JsonDocument.Parse(admin.PreferencesJson);
-                        var root = doc.RootElement;
-                        adminPreferences = new AdminPreferencesDto
+                        var jsonToParse = admin.PreferencesJson;
+                        // Handle double-serialized JSON strings
+                        if (jsonToParse.StartsWith("\"") && jsonToParse.EndsWith("\""))
                         {
-                            Theme = root.TryGetProperty("theme", out var t) ? t.GetString() : null,
-                            Language = root.TryGetProperty("language", out var l) ? l.GetString() : null,
-                            PrimaryColor = root.TryGetProperty("primaryColor", out var c) ? c.GetString() : null
-                        };
+                            try { jsonToParse = System.Text.Json.JsonSerializer.Deserialize<string>(jsonToParse) ?? jsonToParse; }
+                            catch { }
+                        }
+
+                        using var doc = System.Text.Json.JsonDocument.Parse(jsonToParse);
+                        var root = doc.RootElement;
+                        
+                        if (root.ValueKind == System.Text.Json.JsonValueKind.Object)
+                        {
+                            adminPreferences = new AdminPreferencesDto
+                            {
+                                Theme = root.TryGetProperty("theme", out var t) && t.ValueKind == System.Text.Json.JsonValueKind.String ? t.GetString() : null,
+                                Language = root.TryGetProperty("language", out var l) && l.ValueKind == System.Text.Json.JsonValueKind.String ? l.GetString() : null,
+                                PrimaryColor = root.TryGetProperty("primaryColor", out var c) && c.ValueKind == System.Text.Json.JsonValueKind.String ? c.GetString() : null
+                            };
+                        }
                     }
                     catch (Exception ex)
                     {
