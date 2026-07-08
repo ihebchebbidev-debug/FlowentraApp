@@ -50,6 +50,8 @@ import offersAddEn from '../modules/offers/locale/add.en.json';
 import offersListFr from '../modules/offers/locale/list.fr.json';
 import offersDetailFr from '../modules/offers/locale/detail.fr.json';
 import offersAddFr from '../modules/offers/locale/add.fr.json';
+import reportingEn from '../modules/reporting/locales/en.json';
+import reportingFr from '../modules/reporting/locales/fr.json';
 import lookupsEn from '../modules/lookups/locale/en.json';
 import lookupsFr from '../modules/lookups/locale/fr.json';
 import documentsEn from '../modules/documents/locale/en.json';
@@ -1187,6 +1189,12 @@ const flattenedCalendarEn = flattenToDotted(calendarEn);
 const flattenedCalendarFr = flattenToDotted(calendarFr);
 i18n.addResourceBundle('en', 'calendar', flattenedCalendarEn, true, true);
 i18n.addResourceBundle('fr', 'calendar', flattenedCalendarFr, true, true);
+
+// Register reporting namespace
+const flattenedReportingEn = flattenToDotted(reportingEn);
+const flattenedReportingFr = flattenToDotted(reportingFr);
+i18n.addResourceBundle('en', 'reporting', flattenedReportingEn, true, true);
+i18n.addResourceBundle('fr', 'reporting', flattenedReportingFr, true, true);
 
 // Register suppliers namespace for proper translation resolution
 // Add BOTH nested and flattened to ensure translations resolve regardless of how i18next looks them up

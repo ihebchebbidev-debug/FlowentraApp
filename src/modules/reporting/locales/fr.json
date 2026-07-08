@@ -1,0 +1,61 @@
+{
+  "sales": {
+    "title": "Tableau de Bord des Ventes",
+    "yoyComparison": "Comparaison d'une Année sur l'Autre",
+    "offersByStatus": "Offres par Statut",
+    "salesByStatus": "Commandes par Statut",
+    "conversionTrend": "Tendance du Taux de Conversion",
+    "topCustomers": "Meilleurs Clients",
+    "contact": "Contact",
+    "openOrders": "Commandes Ouvertes",
+    "revenue": "Revenu"
+  },
+  "service": {
+    "title": "Tableau de Bord des Services",
+    "completionByMonth": "% d'Achèvement par Mois",
+    "workOrdersByStatus": "Ordres de Travail par Statut",
+    "workOrdersByType": "Ordres de Travail par Type",
+    "dispatchesPerTech": "Interventions par Technicien",
+    "consumedVsPlanned": "Heures Consommées vs Planifiées",
+    "technicianDetails": "Détails du Technicien",
+    "technician": "Technicien",
+    "assignments": "Affectations",
+    "completionRate": "% d'Achèvement"
+  },
+  "finance": {
+    "title": "Tableau de Bord Financier",
+    "invoiceStatus": "Statut des Factures",
+    "recentInvoices": "Factures Récentes",
+    "invoiceNumber": "Numéro de Facture",
+    "customer": "Client",
+    "status": "Statut",
+    "amount": "Montant"
+  },
+  "hr": {
+    "title": "Tableau de Bord RH",
+    "headcountByDept": "Effectif par Département",
+    "salaryByDept": "Coût Salarial par Département",
+    "performance": "Répartition des Performances",
+    "hiringVsTurnover": "Embauches vs Départs",
+    "employeeList": "Détails des Employés",
+    "employee": "Employé",
+    "department": "Département",
+    "performanceGrade": "Note de Performance",
+    "salary": "Salaire"
+  },
+  "purchase": {
+    "title": "Tableau de Bord des Achats",
+    "spendBySupplier": "Dépenses par Fournisseur",
+    "spendByCategory": "Dépenses par Catégorie",
+    "receiptStatus": "Statut des Réceptions",
+    "poSpendTrend": "Tendance des Dépenses de Commandes",
+    "poDetails": "Détails des Commandes d'Achat",
+    "poNumber": "Numéro de Commande",
+    "supplier": "Fournisseur",
+    "status": "Statut",
+    "amount": "Montant"
+  },
+  "general": {
+    "fromLastMonth": "par rapport au mois dernier"
+  }
+}

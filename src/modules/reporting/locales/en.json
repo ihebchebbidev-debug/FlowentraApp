@@ -1,0 +1,61 @@
+{
+  "sales": {
+    "title": "Sales Dashboard",
+    "yoyComparison": "Year-over-Year Comparison",
+    "offersByStatus": "Offers by Status",
+    "salesByStatus": "Sales Orders by Status",
+    "conversionTrend": "Offer Conversion Rate Trend",
+    "topCustomers": "Top Customers",
+    "contact": "Contact",
+    "openOrders": "Open Orders",
+    "revenue": "Revenue"
+  },
+  "service": {
+    "title": "Service Dashboard",
+    "completionByMonth": "Completion % by Month",
+    "workOrdersByStatus": "Work Orders by Status",
+    "workOrdersByType": "Work Orders by Type",
+    "dispatchesPerTech": "Dispatches per Technician",
+    "consumedVsPlanned": "Consumed vs Planned Hours",
+    "technicianDetails": "Technician Details",
+    "technician": "Technician",
+    "assignments": "Assignments",
+    "completionRate": "Completion %"
+  },
+  "finance": {
+    "title": "Finance Dashboard",
+    "invoiceStatus": "Invoice Status",
+    "recentInvoices": "Recent Invoices",
+    "invoiceNumber": "Invoice Number",
+    "customer": "Customer",
+    "status": "Status",
+    "amount": "Amount"
+  },
+  "hr": {
+    "title": "HR Dashboard",
+    "headcountByDept": "Headcount by Department",
+    "salaryByDept": "Salary Cost by Department",
+    "performance": "Performance Distribution",
+    "hiringVsTurnover": "Hiring vs Turnover",
+    "employeeList": "Employee Details",
+    "employee": "Employee",
+    "department": "Department",
+    "performanceGrade": "Performance Grade",
+    "salary": "Salary"
+  },
+  "purchase": {
+    "title": "Purchase Dashboard",
+    "spendBySupplier": "Spend by Supplier",
+    "spendByCategory": "Spend by Category",
+    "receiptStatus": "Receipt Status",
+    "poSpendTrend": "PO Spend Trend",
+    "poDetails": "Purchase Order Details",
+    "poNumber": "PO Number",
+    "supplier": "Supplier",
+    "status": "Status",
+    "amount": "Amount"
+  },
+  "general": {
+    "fromLastMonth": "from last month"
+  }
+}

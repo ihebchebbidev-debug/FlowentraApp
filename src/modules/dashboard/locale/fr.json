@@ -118,7 +118,13 @@
     "departments": "Départements",
     "serviceOrders": "Ordres de service",
     "dispatches": "Opérations",
-    "installations": "Installations"
+    "installations": "Installations",
+    "reporting": "Rapports",
+    "salesDashboard": "Ventes",
+    "serviceDashboard": "Service",
+    "financeDashboard": "Finance",
+    "hrDashboard": "RH",
+    "purchaseDashboard": "Achats"
   },
   "overview": {
     "greetingMorning": "Bonjour",

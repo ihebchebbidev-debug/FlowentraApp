@@ -314,6 +314,12 @@ export function TopNavigation() {
       'crm_dashboard': 'sidebarSub.crmDashboard',
       'field dashboard': 'sidebarSub.fieldDashboard',
       'field_dashboard': 'sidebarSub.fieldDashboard',
+      'reporting': 'sidebarSub.reporting',
+      'sales_dashboard': 'sidebarSub.salesDashboard',
+      'service_dashboard': 'sidebarSub.serviceDashboard',
+      'finance_dashboard': 'sidebarSub.financeDashboard',
+      'hr_dashboard': 'sidebarSub.hrDashboard',
+      'purchase_dashboard': 'sidebarSub.purchaseDashboard',
       // Sales dropdown
       'offers': 'offers',
       'orders': 'orders',
