@@ -40,6 +40,7 @@ import { SettingsModule } from "@/modules/settings/SettingsModule";
 import { NotificationsModule } from "@/modules/notifications/NotificationsModule";
 import HelpModule from "./HelpModule";
 const PurchasesModule = lazyWithRetry(() => import("@/modules/purchases/PurchasesModule").then(m => ({ default: m.PurchasesModule })));
+const ReportingModule = lazyWithRetry(() => import("@/modules/reporting/ReportingModule").then(m => ({ default: m.ReportingModule })));
 
 export function DashboardContent() {
   return (
@@ -206,6 +207,13 @@ export function DashboardContent() {
             </Suspense>
           </PermissionRoute>
         } />
+        
+        <Route path="reporting/*" element={
+          <Suspense fallback={<PageSkeleton />}>
+            <ReportingModule />
+          </Suspense>
+        } />
+
         {/* Help/Support route */}
         <Route path="help/*" element={<HelpModule />} />
         {/* Projects: standalone /dashboard/projects URLs redirect into the tasks module */}

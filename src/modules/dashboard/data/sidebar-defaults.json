@@ -385,6 +385,46 @@
       "position": 5,
       "active": true,
       "meta": {}
+    },
+    {
+      "id": "reporting-1111-1111-1111-111111111111",
+      "tenantId": null,
+      "title": "reporting",
+      "url": "/dashboard/reporting",
+      "description": "Reporting dashboards",
+      "iconId": "a9999999-9999-9999-9999-999999999999",
+      "iconName": "BarChart3",
+      "group": "workspace",
+      "position": 2,
+      "active": true,
+      "dropdown": [
+        {
+          "title": "sales_dashboard",
+          "url": "/dashboard/reporting/sales",
+          "description": "Sales reporting"
+        },
+        {
+          "title": "service_dashboard",
+          "url": "/dashboard/reporting/service",
+          "description": "Service reporting"
+        },
+        {
+          "title": "finance_dashboard",
+          "url": "/dashboard/reporting/finance",
+          "description": "Finance reporting"
+        },
+        {
+          "title": "hr_dashboard",
+          "url": "/dashboard/reporting/hr",
+          "description": "HR reporting"
+        },
+        {
+          "title": "purchase_dashboard",
+          "url": "/dashboard/reporting/purchase",
+          "description": "Purchase reporting"
+        }
+      ],
+      "meta": {}
     }
   ]
 }
