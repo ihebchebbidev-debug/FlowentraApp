@@ -192,8 +192,17 @@ export async function generateSiteHtmlWithStats(
     }
   }
 
+  // 6b. Generate sitemap.xml and robots.txt for basic SEO infrastructure.
+  //     Uses the site's canonicalBase if set, otherwise emits root-relative paths.
+  const seoFiles = generateSeoFiles(site);
+
   // Combine modified HTML files with extracted assets and platform configs
-  const finalFiles = [...extractionResult.modifiedFiles, ...extractionResult.assets, ...platformFiles];
+  const finalFiles = [
+    ...extractionResult.modifiedFiles,
+    ...extractionResult.assets,
+    ...platformFiles,
+    ...seoFiles,
+  ];
 
   // Final progress update
   onProgress?.({
@@ -287,6 +296,68 @@ function extractGoogleFonts(theme: SiteTheme): string {
     .map((f) => `family=${encodeURIComponent(f)}:wght@300;400;500;600;700;800`)
     .join('&');
   return `https://fonts.googleapis.com/css2?${params}&display=swap`;
+}
+
+// ──────────────────────────────────────────────────
+// SEO auxiliary files: sitemap.xml + robots.txt
+// ──────────────────────────────────────────────────
+
+/**
+ * Generate sitemap.xml (with per-page + translated-page entries) and robots.txt.
+ * If the site has a canonicalBase URL, absolute URLs are emitted; otherwise
+ * root-relative paths are used and a TODO note is added to robots.txt.
+ */
+function generateSeoFiles(site: WebsiteSite): ExportedFile[] {
+  const files: ExportedFile[] = [];
+  const base = ((site as any).canonicalBase as string | undefined)?.replace(/\/+$/, '') || '';
+  const now = new Date().toISOString().slice(0, 10);
+
+  type SitemapEntry = { loc: string; lastmod: string; priority: string; changefreq: string };
+  const entries: SitemapEntry[] = [];
+
+  for (const page of site.pages) {
+    const path = page.isHomePage ? '/' : `/${page.slug}/`;
+    entries.push({
+      loc: `${base}${path}`,
+      lastmod: now,
+      priority: page.isHomePage ? '1.0' : '0.7',
+      changefreq: page.isHomePage ? 'weekly' : 'monthly',
+    });
+    if (page.translations) {
+      for (const lang of Object.keys(page.translations)) {
+        const tPath = page.isHomePage ? `/${lang}/` : `/${lang}/${page.slug}/`;
+        entries.push({
+          loc: `${base}${tPath}`,
+          lastmod: now,
+          priority: page.isHomePage ? '0.9' : '0.6',
+          changefreq: 'monthly',
+        });
+      }
+    }
+  }
+
+  const urls = entries
+    .map(
+      (e) =>
+        `  <url>\n    <loc>${escHtml(e.loc)}</loc>\n    <lastmod>${e.lastmod}</lastmod>\n    <changefreq>${e.changefreq}</changefreq>\n    <priority>${e.priority}</priority>\n  </url>`,
+    )
+    .join('\n');
+  const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
+
+  files.push({ path: 'sitemap.xml', content: sitemap });
+
+  const robots = [
+    'User-agent: *',
+    'Allow: /',
+    '',
+    base
+      ? `Sitemap: ${base}/sitemap.xml`
+      : '# Sitemap: add your absolute domain here, e.g. https://example.com/sitemap.xml',
+    '',
+  ].join('\n');
+  files.push({ path: 'robots.txt', content: robots });
+
+  return files;
 }
 
 // ──────────────────────────────────────────────────

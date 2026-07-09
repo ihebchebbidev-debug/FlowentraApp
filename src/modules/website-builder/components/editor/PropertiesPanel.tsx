@@ -78,15 +78,67 @@ interface PropertiesPanelProps {
 }
 
 // ── Number prop renderer ──
+/**
+ * Config map for numeric props: any key listed here renders as a Slider
+ * with the given min/max/step/unit. Everything else falls back to a
+ * plain number input.
+ */
+const NUMERIC_SLIDER_CONFIG: Record<string, { label?: string; min: number; max: number; step?: number; unit?: string }> = {
+  overlayOpacity: { label: 'Overlay Opacity', min: 0, max: 100, unit: '%' },
+  opacity: { label: 'Opacity', min: 0, max: 100, unit: '%' },
+  height: { min: 100, max: 800, unit: 'px' },
+  minHeight: { label: 'Min Height', min: 100, max: 900, unit: 'px' },
+  maxHeight: { label: 'Max Height', min: 100, max: 1200, unit: 'px' },
+  width: { min: 50, max: 1600, unit: 'px' },
+  maxWidth: { label: 'Max Width', min: 200, max: 1600, unit: 'px' },
+  columns: { min: 1, max: 6 },
+  gap: { min: 0, max: 96, unit: 'px' },
+  gapX: { label: 'Gap X', min: 0, max: 96, unit: 'px' },
+  gapY: { label: 'Gap Y', min: 0, max: 96, unit: 'px' },
+  padding: { min: 0, max: 160, unit: 'px' },
+  paddingX: { label: 'Padding X', min: 0, max: 160, unit: 'px' },
+  paddingY: { label: 'Padding Y', min: 0, max: 160, unit: 'px' },
+  margin: { min: 0, max: 160, unit: 'px' },
+  borderRadius: { label: 'Border Radius', min: 0, max: 64, unit: 'px' },
+  borderWidth: { label: 'Border Width', min: 0, max: 16, unit: 'px' },
+  fontSize: { label: 'Font Size', min: 8, max: 96, unit: 'px' },
+  lineHeight: { label: 'Line Height', min: 0.8, max: 3, step: 0.1 },
+  letterSpacing: { label: 'Letter Spacing', min: -0.1, max: 0.5, step: 0.01, unit: 'em' },
+  duration: { label: 'Duration', min: 0, max: 10, step: 0.1, unit: 's' },
+  delay: { label: 'Delay', min: 0, max: 5, step: 0.1, unit: 's' },
+  speed: { min: 0, max: 100 },
+  interval: { min: 1, max: 30, unit: 's' },
+  autoplaySpeed: { label: 'Autoplay Speed', min: 500, max: 10000, step: 100, unit: 'ms' },
+  rows: { min: 1, max: 12 },
+  itemsPerPage: { label: 'Items per Page', min: 1, max: 48 },
+  limit: { min: 1, max: 100 },
+  maxItems: { label: 'Max Items', min: 1, max: 100 },
+  rating: { min: 0, max: 5, step: 0.5 },
+  offsetX: { label: 'Offset X', min: -200, max: 200, unit: 'px' },
+  offsetY: { label: 'Offset Y', min: -200, max: 200, unit: 'px' },
+  zIndex: { label: 'Z-Index', min: 0, max: 100 },
+  blur: { min: 0, max: 40, unit: 'px' },
+  scale: { min: 0.5, max: 2, step: 0.1 },
+  rotate: { label: 'Rotate', min: -180, max: 180, unit: '°' },
+  progress: { min: 0, max: 100, unit: '%' },
+  percentage: { min: 0, max: 100, unit: '%' },
+};
+
 function renderNumberProp(key: string, value: number, onChange: (v: number) => void) {
-  if (key === 'overlayOpacity') {
-    return <SliderEditor key={key} label="Overlay Opacity" value={value} min={0} max={100} unit="%" onChange={onChange} />;
-  }
-  if (key === 'height' && typeof value === 'number') {
-    return <SliderEditor key={key} label="Height" value={value} min={100} max={800} unit="px" onChange={onChange} />;
-  }
-  if (key === 'columns' && typeof value === 'number') {
-    return <SliderEditor key={key} label="Columns" value={value} min={1} max={6} onChange={onChange} />;
+  const cfg = NUMERIC_SLIDER_CONFIG[key];
+  if (cfg && typeof value === 'number') {
+    return (
+      <SliderEditor
+        key={key}
+        label={cfg.label || formatLabel(key)}
+        value={value}
+        min={cfg.min}
+        max={cfg.max}
+        step={cfg.step}
+        unit={cfg.unit}
+        onChange={onChange}
+      />
+    );
   }
   return (
     <div key={key} className="space-y-1.5">

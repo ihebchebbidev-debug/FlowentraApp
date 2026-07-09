@@ -30,6 +30,15 @@ import { churchMinistryTemplate } from './churchMinistry';
 import { internationalBusinessTemplate } from './internationalBusiness';
 import { paintBodyShopTemplate } from './paintBodyShop';
 import { premiumEcommerceTemplate } from './premiumEcommerce';
+import { comingSoonTemplate } from './comingSoon';
+import { personalTemplate } from './personal';
+// Wave 2 additions
+import { docsTemplate } from './docs';
+import { eventConferenceTemplate } from './eventConference';
+import { realEstateLuxuryTemplate } from './realEstateLuxury';
+import { darkCreativeTemplate } from './darkCreative';
+import { ecoBrandTemplate } from './ecoBrand';
+import { therapistTemplate } from './therapist';
 // Contact page templates
 import { contactPageCorporateTemplate } from './contactPageCorporate';
 import { contactPageCreativeTemplate } from './contactPageCreative';
@@ -62,6 +71,15 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   internationalBusinessTemplate,
   paintBodyShopTemplate,
   premiumEcommerceTemplate,
+  comingSoonTemplate,
+  personalTemplate,
+  // Wave 2 additions
+  docsTemplate,
+  eventConferenceTemplate,
+  realEstateLuxuryTemplate,
+  darkCreativeTemplate,
+  ecoBrandTemplate,
+  therapistTemplate,
   // Contact page templates
   contactPageCorporateTemplate,
   contactPageCreativeTemplate,
