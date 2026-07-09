@@ -286,12 +286,12 @@ namespace MyApi.Modules.Shared.Services
                 {
                     TenantId = tenantId,
                     Timestamp = log.Timestamp == default ? DateTime.UtcNow : log.Timestamp,
-                    Level = Cap(string.IsNullOrEmpty(log.Level) ? "error" : log.Level, 20),
+                    Level = NormalizeLevel(log.Level),
                     Message = string.IsNullOrEmpty(log.Message)
                         ? "(system log written without tenant context)"
                         : log.Message,
                     Module = Cap(string.IsNullOrEmpty(log.Module) ? "System" : log.Module, 100),
-                    Action = Cap(string.IsNullOrEmpty(log.Action) ? "other" : log.Action, 50),
+                    Action = NormalizeAction(log.Action),
                     UserId = CapOptional(log.UserId, 100),
                     UserName = CapOptional(log.UserName, 200),
                     EntityType = CapOptional(log.EntityType, 100),
@@ -328,6 +328,55 @@ namespace MyApi.Modules.Shared.Services
 
         private static string? CapOptional(string? value, int max)
             => value != null && value.Length > max ? value.Substring(0, max) : value;
+
+        // The SystemLogs table enforces a CHECK constraint that limits Action to a
+        // fixed vocabulary. Anything else (e.g. "forgot_password", "send_email")
+        // would blow up the whole insert with 23514. Normalize to the allowed set
+        // and fall back to "other" for unknown values.
+        private static readonly HashSet<string> AllowedActions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "create", "read", "update", "delete", "login", "logout", "export", "import", "other"
+        };
+
+        private static readonly HashSet<string> AllowedLevels = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "info", "warning", "error", "success"
+        };
+
+        private static string NormalizeAction(string? action)
+        {
+            if (string.IsNullOrWhiteSpace(action)) return "other";
+            var trimmed = action.Trim().ToLowerInvariant();
+            if (AllowedActions.Contains(trimmed)) return trimmed;
+
+            // Best-effort mapping of common verbs onto the allowed vocabulary.
+            return trimmed switch
+            {
+                "add" or "insert" or "register" or "signup" or "sign_up" => "create",
+                "view" or "list" or "get" or "fetch" or "search" => "read",
+                "edit" or "modify" or "patch" or "reset" or "reset_password" or "forgot_password" or "change_password" => "update",
+                "remove" or "destroy" or "purge" or "cleanup" => "delete",
+                "signin" or "sign_in" or "authenticate" => "login",
+                "signout" or "sign_out" => "logout",
+                "send" or "email" or "send_email" or "notify" or "notification" => "other",
+                _ => "other"
+            };
+        }
+
+        private static string NormalizeLevel(string? level)
+        {
+            if (string.IsNullOrWhiteSpace(level)) return "error";
+            var trimmed = level.Trim().ToLowerInvariant();
+            if (AllowedLevels.Contains(trimmed)) return trimmed;
+            return trimmed switch
+            {
+                "warn" => "warning",
+                "err" or "fail" or "fatal" or "critical" => "error",
+                "ok" or "done" => "success",
+                _ => "info"
+            };
+        }
+
 
         private static SystemLogDto MapToDto(SystemLog log)
         {

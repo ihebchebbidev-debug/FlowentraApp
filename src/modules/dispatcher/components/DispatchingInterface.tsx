@@ -277,7 +277,7 @@ export function DispatchingInterface() {
   const planningDisplay = useMemo(() => ({
     // Guard the empty-array case: `[] ?? x` keeps `[]` (it's not nullish), which
     // would make the label resolver fall back to the order number for every card.
-    cardPrimaryFields: profileSettings.cardPrimaryFields?.length ? profileSettings.cardPrimaryFields : ['serviceOrderNumber'],
+    cardPrimaryFields: (profileSettings.cardPrimaryFields?.length ? profileSettings.cardPrimaryFields : ['serviceOrderNumber']) as PlanningDisplay['cardPrimaryFields'],
     cardSeparator: profileSettings.cardSeparator ?? ' - ',
     hoverFields: profileSettings.hoverFields ?? [],
     showJobsOnHover: profileSettings.showJobsOnHover ?? true,

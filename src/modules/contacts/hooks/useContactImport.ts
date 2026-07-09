@@ -14,6 +14,7 @@ import {
   createStructuredColumnMapping 
 } from '../utils/import.utils';
 import { formatImportFailure } from '@/shared/import/parseBulkImportResponse';
+import { aiColumnMapper } from '../services/aiColumnMapper.service';
 
 export const useContactImport = () => {
   const { toast } = useToast();

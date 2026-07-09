@@ -73,14 +73,18 @@ namespace MyApi.Modules.Dashboards.Controllers
             foreach (var g in groups)
             {
                 int total = g.Count();
-                int won = g.Count(x => x.Status.ToLower() == "accepted" || x.Status.ToLower() == "won");
+                int won = g.Count(x =>
+                {
+                    var s = (x.Status ?? string.Empty).ToLowerInvariant();
+                    return s == "accepted" || s == "won";
+                });
                 decimal rate = total > 0 ? (decimal)won / total * 100m : 0m;
-                
+
                 report.ConversionTrend.Add(new ChartDataPointDto
                 {
                     Name = $"{new DateTime(g.Key.Year, g.Key.Month, 1):MMM}",
                     Value = Math.Round(rate, 1),
-                    Target = 50m // Example target line
+                    Target = 50m
                 });
             }
 

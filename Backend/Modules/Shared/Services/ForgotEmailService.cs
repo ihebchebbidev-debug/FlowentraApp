@@ -26,8 +26,8 @@ namespace MyApi.Modules.Shared.Services
         // OVH SMTP Configuration
         private const string SMTP_HOST = "ssl0.ovh.net";
         private const int SMTP_PORT = 465;
-        private const string SMTP_USERNAME = "testadminsupportgermararaza@spadadibattaglia.com";
-        private const string SMTP_PASSWORD = "Dadouhibou2025";
+        private const string SMTP_USERNAME = "support@flowentra.app";
+        private const string SMTP_PASSWORD = "Zaleyo2026";
         private const bool USE_SSL = true;
 
         public ForgotEmailService(
