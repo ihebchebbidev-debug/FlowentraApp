@@ -422,7 +422,6 @@ export const en = {
       // Card field labels
       field_service_order_number: "Service order number",
       field_service_order_name: "Service order name",
-      field_description: "Description",
       field_contact_name: "Contact / customer name",
       field_customer_company: "Company",
       field_customer_phone: "Phone",

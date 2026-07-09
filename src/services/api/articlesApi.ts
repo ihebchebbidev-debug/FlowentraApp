@@ -585,7 +585,7 @@ export interface ArticleBulkImportRequest {
    failedCount: number;
    skippedCount: number;
    errors: string[];
-   importedItems: any[];
+   importedItems?: any[];
  }
  
  export const articlesBulkImportApi = {

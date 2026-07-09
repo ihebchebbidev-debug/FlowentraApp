@@ -1,5 +1,7 @@
+import { useReportFilters } from '../store/useReportFiltersStore';
+import { filterByStatusName, sliceByPeriod } from '../utils/applyFilters';
 import { useTranslation } from 'react-i18next';
-import { Users, Briefcase, Award, UserPlus, Loader2 } from 'lucide-react';
+import { Users, Briefcase, Award, UserPlus } from 'lucide-react';
 import {
   BarChart, Bar, PieChart, Pie, Cell, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -10,13 +12,15 @@ import { KpiCard } from '../components/KpiCard';
 import { ChartCard } from '../components/ChartCard';
 import { RagBadge } from '../components/RagDot';
 import { CHART_COLORS, AXIS_TICK, GRID_STROKE, tooltipStyle } from '../components/chartTheme';
+import { DashboardSkeleton } from '../components/DashboardSkeleton';
 import { useReportingHr } from '../hooks/useReporting';
 
 const SOURCE = 'HR' as const;
 
 export const HrDashboard = () => {
   const { t } = useTranslation('reporting');
-  const { data, isLoading, refetch, isFetching } = useReportingHr();
+  const { values: appliedFilters, setValues: setAppliedFilters } = useReportFilters('hr');
+  const { data, isLoading, refetch, isFetching, error } = useReportingHr(appliedFilters);
 
   const filters = [
     { key: 'period', label: t('filters.period', 'Period'), options: [
@@ -28,12 +32,15 @@ export const HrDashboard = () => {
     ]},
   ];
 
-  const headcount = data?.headcountByDepartment ?? [];
-  const salary = data?.salaryByDepartment ?? [];
+  const period = appliedFilters.period;
+  const dept = appliedFilters.dept;
+  const headcount = filterByStatusName(data?.headcountByDepartment ?? [], dept);
+  const salary = filterByStatusName(data?.salaryByDepartment ?? [], dept);
   const performance = data?.performanceDistribution ?? [];
-  const hiring = data?.hiringVsTurnover ?? [];
+  const hiring = sliceByPeriod(data?.hiringVsTurnover ?? [], period);
   const employees = data?.employeeTable ?? [];
   const totalHeadcount = headcount.reduce((s, x) => s + Number(x.value ?? 0), 0);
+  const totalHires = hiring.reduce((s, x) => s + Number(x.series1 ?? 0), 0);
 
   return (
     <ReportShell
@@ -43,17 +50,18 @@ export const HrDashboard = () => {
       subtitle={t('hr.subtitle', 'Headcount, salaries, performance & hiring')}
       onRefresh={() => refetch()}
       isRefreshing={isFetching}
+      error={error}
     >
-      <FilterBar filters={filters} />
+      <FilterBar filters={filters} onApply={setAppliedFilters} />
       {isLoading ? (
-        <div className="flex h-40 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        <DashboardSkeleton kpis={4} rows={[2,2,1]} />
       ) : (
         <>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <KpiCard icon={Users} tone="purple" tag="LIVE" value={totalHeadcount || '—'} label={t('hr.kpi.headcount', 'Total Headcount')} />
             <KpiCard icon={Briefcase} tone="info" tag="MONTH" value={new Intl.NumberFormat(undefined, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(salary.reduce((s, x) => s + Number(x.value ?? 0), 0))} label={t('hr.kpi.salary', 'Monthly Salary Cost')} />
             <KpiCard icon={Award} tone="success" tag="AVG" value="B+" label={t('hr.kpi.performance', 'Avg Performance Grade')} />
-            <KpiCard icon={UserPlus} tone="accent" tag="YTD" value={hiring.length} label={t('hr.kpi.hires', 'New Hires')} />
+            <KpiCard icon={UserPlus} tone="accent" tag="YTD" value={totalHires || '—'} label={t('hr.kpi.hires', 'New Hires')} />
           </div>
 
           <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">

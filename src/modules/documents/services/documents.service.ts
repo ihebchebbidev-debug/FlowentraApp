@@ -13,7 +13,7 @@ const EMPTY_DOCUMENT_STATS: DocumentStats = {
   totalSize: 0,
   crmFiles: 0,
   fieldFiles: 0,
-  byModule: { contacts: 0, sales: 0, offers: 0, services: 0, projects: 0, field: 0 },
+  byModule: { contacts: 0, sales: 0, offers: 0, services: 0, projects: 0, field: 0, deals: 0 },
   recentActivity: 0,
 };
 

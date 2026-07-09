@@ -39,6 +39,7 @@ const MODULE_ICONS: Record<PermissionModule, React.ReactNode> = {
   articles: <Package className="h-4 w-4" />,
   offers: <FileText className="h-4 w-4" />,
   sales: <ShoppingCart className="h-4 w-4" />,
+  deals: <DollarSign className="h-4 w-4" />,
   // Field Service
   installations: <Building2 className="h-4 w-4" />,
   service_orders: <Wrench className="h-4 w-4" />,

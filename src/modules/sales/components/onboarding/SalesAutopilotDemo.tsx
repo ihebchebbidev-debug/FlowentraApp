@@ -283,7 +283,7 @@ function PageDetail({ state }: { state: SalesDemoState }) {
             <div id="sa-demo-item-checklist" className="bg-card border border-primary/30 ring-1 ring-primary/15 rounded-lg p-4 space-y-2">
               <p className="text-sm font-medium mb-1 inline-flex items-center gap-2"><ListChecks className="h-4 w-4 text-primary" /> Service line: Annual Maintenance Plan <span className="text-[10px] font-normal text-primary">· follows to the job →</span></p>
               {[['Inspect & clean unit', false], ['Replace filters', false], ['Performance test & report', false]].map(c => (
-                <div key={c[0]} className="flex items-center gap-2 text-xs"><span className="h-4 w-4 rounded border border-border inline-flex items-center justify-center" /><span>{c[0]}</span></div>
+                <div key={c[0] as string} className="flex items-center gap-2 text-xs"><span className="h-4 w-4 rounded border border-border inline-flex items-center justify-center" /><span>{c[0]}</span></div>
               ))}
               <p className="text-[10px] text-muted-foreground pt-1">Carried from the offer; flows to the service-order job and the dispatch.</p>
             </div>

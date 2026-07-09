@@ -1,5 +1,7 @@
+import { useReportFilters } from '../store/useReportFiltersStore';
+import { filterByStatusName, sliceByPeriod } from '../utils/applyFilters';
 import { useTranslation } from 'react-i18next';
-import { Wrench, ClipboardList, Truck, Timer, Loader2 } from 'lucide-react';
+import { Wrench, ClipboardList, Truck, Timer } from 'lucide-react';
 import {
   BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, ComposedChart, ReferenceLine,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -10,13 +12,15 @@ import { KpiCard } from '../components/KpiCard';
 import { ChartCard } from '../components/ChartCard';
 import { RagBadge } from '../components/RagDot';
 import { CHART_COLORS, AXIS_TICK, GRID_STROKE, tooltipStyle } from '../components/chartTheme';
+import { DashboardSkeleton } from '../components/DashboardSkeleton';
 import { useReportingService } from '../hooks/useReporting';
 
 const SOURCE = 'Service' as const;
 
 export const ServiceDashboard = () => {
   const { t } = useTranslation('reporting');
-  const { data, isLoading, refetch, isFetching } = useReportingService();
+  const { values: appliedFilters, setValues: setAppliedFilters } = useReportFilters('service');
+  const { data, isLoading, refetch, isFetching, error } = useReportingService(appliedFilters);
 
   const filters = [
     { key: 'period', label: t('filters.period', 'Period'), options: [
@@ -34,9 +38,12 @@ export const ServiceDashboard = () => {
     ]},
   ];
 
-  const completion = data?.completionByMonth ?? [];
-  const byStatus = data?.workOrdersByStatus ?? [];
-  const byType = data?.workOrdersByType ?? [];
+  const period = appliedFilters.period;
+  const status = appliedFilters.status;
+  const type = appliedFilters.type;
+  const completion = sliceByPeriod(data?.completionByMonth ?? [], period);
+  const byStatus = filterByStatusName(data?.workOrdersByStatus ?? [], status);
+  const byType = filterByStatusName(data?.workOrdersByType ?? [], type);
   const dispatches = data?.dispatchesPerTech ?? [];
   const techs = data?.technicianTable ?? [];
   const currentYear = new Date().getFullYear();
@@ -50,16 +57,17 @@ export const ServiceDashboard = () => {
       subtitle={t('service.subtitle', 'Completion, planning & technician profitability')}
       onRefresh={() => refetch()}
       isRefreshing={isFetching}
+      error={error}
     >
-      <FilterBar filters={filters} />
+      <FilterBar filters={filters} onApply={setAppliedFilters} />
       {isLoading ? (
-        <div className="flex h-40 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        <DashboardSkeleton kpis={4} rows={[3,2,1]} />
       ) : (
         <>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <KpiCard icon={ClipboardList} tone="accent" tag="YTD" value={`${avgCompletion.toFixed(0)}%`} suffix="/ target 90%" label={t('service.kpi.completion', 'Completion Rate vs Target')} trend={avgCompletion >= 90 ? 'on target' : `${(90 - avgCompletion).toFixed(1)} pts below`} trendDirection={avgCompletion >= 90 ? 'up' : 'down'} rag={avgCompletion >= 90 ? 'green' : avgCompletion >= 75 ? 'yellow' : 'red'} />
             <KpiCard icon={ClipboardList} tone="info" tag="LIVE" value={byStatus.reduce((s, o) => s + Number(o.value ?? 0), 0)} label={t('service.kpi.openWos', 'Work Orders')} trendDirection="down" />
-            <KpiCard icon={Truck} tone="warning" tag="AVG" value={dispatches.length || '—'} label={t('service.kpi.dispatches', 'Active Technicians')} trendDirection="neutral" />
+            <KpiCard icon={Truck} tone="warning" tag="LIVE" value={techs.length || '—'} label={t('service.kpi.dispatches', 'Active Technicians')} trendDirection="neutral" />
             <KpiCard icon={Timer} tone="success" tag="YTD" value="94%" label={t('service.kpi.efficiency', 'Time Efficiency')} trend={t('service.kpi.vsPriorYear', 'vs prior year')} trendDirection="up" />
           </div>
 

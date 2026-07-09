@@ -1,4 +1,5 @@
 import { Star, Inbox } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useFavoritesStore, FavoriteWidget } from '../store/useFavoritesStore';
 
@@ -21,10 +22,12 @@ export const ChartCard = ({
   bodyClassName,
   className,
   empty,
-  emptyLabel = 'No data',
+  emptyLabel,
 }: ChartCardProps) => {
+  const { t } = useTranslation('reporting');
   const { has, toggle } = useFavoritesStore();
   const isFav = favorite ? has(favorite.id) : false;
+  const emptyText = emptyLabel ?? t('general.noData', 'No data');
 
   return (
     <div className={cn('flex flex-col overflow-hidden rounded-lg border bg-card shadow-sm', className)}>
@@ -51,7 +54,7 @@ export const ChartCard = ({
         {empty ? (
           <div className="flex h-full min-h-[160px] flex-col items-center justify-center gap-2 text-center">
             <Inbox className="h-8 w-8 text-muted-foreground/50" />
-            <span className="text-xs text-muted-foreground">{emptyLabel}</span>
+            <span className="text-xs text-muted-foreground">{emptyText}</span>
           </div>
         ) : (
           children

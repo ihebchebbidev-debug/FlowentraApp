@@ -415,6 +415,7 @@ const Onboarding = () => {
                       <CurrentStepComponent
                         data={data}
                         onNext={handleNext}
+                        onComplete={handleComplete}
                         {...(currentStep > 0 ? { onBack: handleBack } : {})}
                         isFirst={currentStep === 0}
                       />

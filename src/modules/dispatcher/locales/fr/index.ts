@@ -422,7 +422,6 @@ export const fr = {
       // Libellés des champs
       field_service_order_number: "Numéro d'ordre de service",
       field_service_order_name: "Nom de l'ordre de service",
-      field_description: "Description",
       field_contact_name: "Nom du contact / client",
       field_customer_company: "Société",
       field_customer_phone: "Téléphone",

@@ -1,5 +1,7 @@
+import { useReportFilters } from '../store/useReportFiltersStore';
+import { filterByStatusName, filterTableByStatus } from '../utils/applyFilters';
 import { useTranslation } from 'react-i18next';
-import { Landmark, Receipt, Wallet, TrendingDown, TrendingUp, Loader2 } from 'lucide-react';
+import { Landmark, Receipt, Wallet, TrendingDown, TrendingUp } from 'lucide-react';
 import {
   BarChart, Bar, PieChart, Pie, Cell, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -10,6 +12,7 @@ import { KpiCard } from '../components/KpiCard';
 import { ChartCard } from '../components/ChartCard';
 import { RagBadge } from '../components/RagDot';
 import { CHART_COLORS, AXIS_TICK, GRID_STROKE, tooltipStyle, RAG_COLORS } from '../components/chartTheme';
+import { DashboardSkeleton } from '../components/DashboardSkeleton';
 import { useReportingFinance } from '../hooks/useReporting';
 
 const SOURCE = 'Finance' as const;
@@ -17,7 +20,8 @@ const iconByIdx = [Wallet, Receipt, TrendingUp, TrendingDown];
 
 export const FinanceDashboard = () => {
   const { t } = useTranslation('reporting');
-  const { data, isLoading, refetch, isFetching } = useReportingFinance();
+  const { values: appliedFilters, setValues: setAppliedFilters } = useReportFilters('finance');
+  const { data, isLoading, refetch, isFetching, error } = useReportingFinance(appliedFilters);
 
   const filters = [
     { key: 'period', label: t('filters.period', 'Period'), options: [
@@ -31,10 +35,11 @@ export const FinanceDashboard = () => {
     ]},
   ];
 
+  const status = appliedFilters.status;
   const kpis = data?.kpis ?? [];
-  const donut = data?.invoiceStatusDonut ?? [];
+  const donut = filterByStatusName(data?.invoiceStatusDonut ?? [], status);
   const expenses = data?.expensesByCategory ?? [];
-  const invoices = data?.invoiceTable ?? [];
+  const invoices = filterTableByStatus(data?.invoiceTable ?? [], status);
   const donutColors = ['green', 'yellow', 'red', 'neutral'] as const;
 
   return (
@@ -45,10 +50,11 @@ export const FinanceDashboard = () => {
       subtitle={t('finance.subtitle', 'Invoices, payments & expenses with RAG flags')}
       onRefresh={() => refetch()}
       isRefreshing={isFetching}
+      error={error}
     >
-      <FilterBar filters={filters} />
+      <FilterBar filters={filters} onApply={setAppliedFilters} />
       {isLoading ? (
-        <div className="flex h-40 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        <DashboardSkeleton kpis={4} rows={[2,1]} />
       ) : (
         <>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -61,7 +67,7 @@ export const FinanceDashboard = () => {
               const Icon = iconByIdx[i] || Wallet;
               const tone = k.ragStatus === 'green' ? 'success' : k.ragStatus === 'yellow' ? 'warning' : k.ragStatus === 'red' ? 'destructive' : 'info';
               return (
-                <KpiCard key={i} icon={Icon} tone={tone as any} value={k.formattedValue} label={k.title} trend={k.trend} rag={k.ragStatus as any} trendDirection={k.trend?.startsWith('-') ? 'down' : 'up'} />
+                <KpiCard key={i} icon={Icon} tone={tone as any} value={k.formattedValue} label={k.title} trend={k.trend} rag={k.ragStatus as any} trendDirection={!k.trend ? 'neutral' : k.trend.startsWith('-') ? 'down' : 'up'} />
               );
             })}
           </div>

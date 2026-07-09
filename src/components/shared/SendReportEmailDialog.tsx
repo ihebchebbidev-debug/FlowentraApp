@@ -21,7 +21,7 @@ interface SendReportEmailDialogProps {
   /** File name for the attachment */
   fileName: string;
   /** Report type for email subject/body generation */
-  reportType: 'offer' | 'sale' | 'payment';
+  reportType: 'offer' | 'sale' | 'payment' | 'deal';
   /** Report number/ID for the subject */
   reportNumber: string;
   /** Report title */

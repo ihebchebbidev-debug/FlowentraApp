@@ -14,7 +14,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Users, ArrowLeft, Settings, LayoutGrid, List } from "lucide-react";
+import { Plus, Users, ArrowLeft, Settings, LayoutGrid, List, CheckSquare } from "lucide-react";
 import { DroppableColumn } from './DroppableColumn';
 import { DraggableTaskCard } from './DraggableTaskCard';
 import { TaskDetailModal } from './TaskDetailModal';

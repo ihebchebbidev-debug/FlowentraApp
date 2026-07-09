@@ -546,7 +546,7 @@ export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries
       };
 
       const expenseLog = {
-        type: (editingExpenseId ? 'expense_updated' : 'expense_added') as const,
+        type: (editingExpenseId ? 'expense_updated' : 'expense_added') as 'expense_updated' | 'expense_added',
         userName: currentUser.name,
         expenseType: expenseFormData.type,
         amount: expenseFormData.amount,

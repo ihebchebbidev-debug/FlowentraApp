@@ -32,7 +32,7 @@ interface OfferPDFPreviewModalProps {
   /** Downloaded/shared file name prefix (default "quote"). */
   filePrefix?: string;
   /** Report type passed to the email dialog (default "offer"). */
-  reportType?: string;
+  reportType?: 'offer' | 'payment' | 'sale' | 'deal';
 }
 
 export function OfferPDFPreviewModal({

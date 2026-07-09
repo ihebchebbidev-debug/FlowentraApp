@@ -63,6 +63,10 @@ export const ENTITY_TYPE_LABELS: Record<EntityType, { en: string; fr: string }> 
   installation: { en: 'Installation', fr: 'Installation' },
   project: { en: 'Project', fr: 'Projet' },
   user: { en: 'User', fr: 'Utilisateur' },
+  deal: { en: 'Deal', fr: 'Affaire' },
+  offer_item: { en: 'Offer Item', fr: 'Ligne d\'offre' },
+  sale_item: { en: 'Sale Item', fr: 'Ligne de vente' },
+  service_order_job: { en: 'Service Order Job', fr: 'Tâche d\'ordre de service' },
 };
 
 // Workflow order for document propagation

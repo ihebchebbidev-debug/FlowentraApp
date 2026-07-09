@@ -480,7 +480,7 @@ export const tasksApi = {
   // Create project task
   async createProjectTask(request: CreateProjectTaskRequestDto): Promise<Task> {
     const payload = buildCreateProjectTaskPayload(
-      request as Record<string, unknown>,
+      request as unknown as Record<string, unknown>,
       request.projectId ?? request.relatedEntityId
     );
 

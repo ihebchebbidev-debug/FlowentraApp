@@ -385,7 +385,7 @@ export function UnifiedDocumentsSection({
     }
     if (deletingFileDoc) {
       try {
-        const fileName = deletingFileDoc.name || deletingFileDoc.fileName || 'File';
+        const fileName = (deletingFileDoc as any).name || deletingFileDoc.fileName || 'File';
         await DocumentsService.deleteDocument(deletingFileDoc.id);
         setFileDocuments(prev => prev.filter(d => d.id !== deletingFileDoc!.id));
         await logProjectDocActivity(`File removed: ${fileName}`);

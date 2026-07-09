@@ -76,10 +76,11 @@ export function RequireCompany({ children }: { children: ReactNode }) {
     );
   }
 
-  // Zero companies (setup not finished) — recovery screen, not a multi pick.
+  // Zero companies (setup not finished) — send to /onboarding.
+  // The company picker is only meaningful when there are 2+ companies.
   return (
     <Navigate
-      to="/select-company"
+      to="/onboarding"
       replace
       state={{ from: location.pathname + location.search }}
     />

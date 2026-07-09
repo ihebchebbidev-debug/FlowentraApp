@@ -133,7 +133,7 @@ export function TopNavigation() {
   const { hasPermission, isMainAdmin, isLoading: permissionsLoading } = usePermissions();
   const { enabled: offlineEnabled, pendingCount, setEnabled: setOfflineEnabled } = useOffline();
   const aiAssistantAvailable = useAiAssistantAvailable();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const fullName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.email || 'User';
   
   
@@ -837,12 +837,16 @@ export function TopNavigation() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56 bg-background/95 backdrop-blur-sm border border-border/50 shadow-xl rounded-xl p-2 z-[100]">
-                    <DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => navigate('/dashboard/settings/profile')}>
                       <User className="mr-2 h-4 w-4" />
                       <span>{t('profile')}</span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={async () => {
+                        try { await logout(); } finally { navigate('/login', { replace: true }); }
+                      }}
+                    >
                       <LogOut className="mr-2 h-4 w-4" />
                       <span>{t('dashboard:signOut')}</span>
                     </DropdownMenuItem>

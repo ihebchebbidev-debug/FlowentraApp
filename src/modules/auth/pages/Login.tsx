@@ -52,13 +52,16 @@ const Index = () => {
       if (userData) {
         try {
           const user = JSON.parse(userData);
-          const isStaffUser = user.userType === 'RegularUser' || 
-                              (!user.companyName && !user.companyWebsite && user.industry);
-          const hasCompletedOnboarding = user.onboardingCompleted === true || 
-                                         isStaffUser || 
+          // MainAdminUser (id===1 / loginType='admin') is NEVER staff. The old
+          // heuristic misclassified fresh signups as staff and skipped /onboarding.
+          const loginType = localStorage.getItem('login_type') || sessionStorage.getItem('login_type');
+          const isMainAdmin = user.id === 1 || loginType === 'admin';
+          const isStaffUser = !isMainAdmin && (user.userType === 'RegularUser' || (typeof user.id === 'number' && user.id >= 2));
+          const hasCompletedOnboarding = user.onboardingCompleted === true ||
+                                         isStaffUser ||
                                          localStorage.getItem('onboarding-completed');
-          
-          console.log('[Login] Navigation decision:', { isStaffUser, hasCompletedOnboarding, onboardingCompleted: user.onboardingCompleted, userType: user.userType });
+
+          console.log('[Login] Navigation decision:', { isMainAdmin, isStaffUser, hasCompletedOnboarding, onboardingCompleted: user.onboardingCompleted, userType: user.userType });
           
           if (hasCompletedOnboarding) {
             const from = (location.state as any)?.from?.pathname || '/dashboard';
@@ -97,8 +100,9 @@ const Index = () => {
             const user = JSON.parse(userData);
             // Staff users (created by admin) have onboardingCompleted=true from backend
             // They also have empty companyName/companyWebsite and role in industry field
-            const isStaffUser = user.userType === 'RegularUser' || 
-                          (!user.companyName && !user.companyWebsite && user.industry);
+            const loginType2 = localStorage.getItem('login_type') || sessionStorage.getItem('login_type');
+            const isMainAdmin2 = user.id === 1 || loginType2 === 'admin';
+            const isStaffUser = !isMainAdmin2 && (user.userType === 'RegularUser' || (typeof user.id === 'number' && user.id >= 2));
             
             // Store user role for access control
             if (user.industry && isStaffUser) {

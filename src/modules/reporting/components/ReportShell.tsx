@@ -1,4 +1,4 @@
-import { LucideIcon, RefreshCw, Download, SlidersHorizontal, Building2 } from 'lucide-react';
+import { LucideIcon, RefreshCw, Download, SlidersHorizontal, Building2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -25,6 +25,7 @@ interface ReportShellProps {
   subtitle?: string;
   onRefresh?: () => void;
   isRefreshing?: boolean;
+  error?: unknown;
   actions?: React.ReactNode;
   children: React.ReactNode;
 }
@@ -36,6 +37,7 @@ export const ReportShell = ({
   subtitle,
   onRefresh,
   isRefreshing,
+  error,
   actions,
   children,
 }: ReportShellProps) => {
@@ -85,6 +87,24 @@ export const ReportShell = ({
           )}
         </div>
       </header>
+      {error ? (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+        >
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span className="flex-1">
+            {tr('general.loadError', 'Failed to load report')}
+            {(error as { message?: string })?.message ? ` — ${(error as { message?: string }).message}` : ''}
+          </span>
+          {onRefresh && (
+            <Button size="sm" variant="outline" className="h-7" onClick={onRefresh} disabled={isRefreshing}>
+              <RefreshCw className={cn('mr-1.5 h-3 w-3', isRefreshing && 'animate-spin')} />
+              {tr('general.retry', 'Retry')}
+            </Button>
+          )}
+        </div>
+      ) : null}
       {children}
     </div>
   );

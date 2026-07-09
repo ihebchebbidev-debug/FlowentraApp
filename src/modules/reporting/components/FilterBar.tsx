@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Filter, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -14,7 +14,10 @@ export interface FilterOption {
 
 interface FilterBarProps {
   filters: FilterOption[];
+  /** Persisted / applied values used to hydrate the controls on mount */
+  initialValues?: Record<string, string>;
   onApply?: (values: Record<string, string>) => void;
+  onClear?: () => void;
 }
 
 const Controls = ({
@@ -67,21 +70,33 @@ const Controls = ({
   );
 };
 
-export const FilterBar = ({ filters, onApply }: FilterBarProps) => {
+export const FilterBar = ({ filters, initialValues, onApply, onClear }: FilterBarProps) => {
   const { t } = useTranslation('reporting');
-  const initial = Object.fromEntries(
-    filters.map((f) => [f.key, f.defaultValue ?? f.options[0]?.value ?? ''])
+  const defaults = useMemo(
+    () =>
+      Object.fromEntries(
+        filters.map((f) => [f.key, f.defaultValue ?? f.options[0]?.value ?? ''])
+      ) as Record<string, string>,
+    [filters]
   );
-  const [values, setValues] = useState<Record<string, string>>(initial);
+  const [values, setValues] = useState<Record<string, string>>({ ...defaults, ...(initialValues ?? {}) });
   const [open, setOpen] = useState(false);
+
+  // Re-hydrate controls when persisted values arrive (e.g. after navigating
+  // back to the page).
+  useEffect(() => {
+    setValues({ ...defaults, ...(initialValues ?? {}) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(initialValues), defaults]);
 
   const apply = () => {
     onApply?.(values);
     setOpen(false);
   };
   const clear = () => {
-    setValues(initial);
-    onApply?.(initial);
+    setValues(defaults);
+    onClear?.();
+    onApply?.(defaults);
   };
 
   return (

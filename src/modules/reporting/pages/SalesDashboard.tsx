@@ -10,15 +10,18 @@ import { KpiCard } from '../components/KpiCard';
 import { ChartCard } from '../components/ChartCard';
 import { ProgressRow } from '../components/ProgressRow';
 import { RagBadge } from '../components/RagDot';
+import { DashboardSkeleton } from '../components/DashboardSkeleton';
 import { CHART_COLORS, AXIS_TICK, GRID_STROKE, tooltipStyle } from '../components/chartTheme';
 import { useReportingSales } from '../hooks/useReporting';
-import { Loader2 } from 'lucide-react';
+import { useReportFilters } from '../store/useReportFiltersStore';
+import { filterByStatusName, filterTableByStatus, sliceByPeriod } from '../utils/applyFilters';
 
 const SOURCE = 'Sales' as const;
 
 export const SalesDashboard = () => {
   const { t } = useTranslation('reporting');
-  const { data, isLoading, refetch, isFetching } = useReportingSales();
+  const { values: appliedFilters, setValues: setAppliedFilters } = useReportFilters('sales');
+  const { data, isLoading, refetch, isFetching, error } = useReportingSales(appliedFilters);
 
   const filters = [
     { key: 'period', label: t('filters.period', 'Period'), options: [
@@ -33,11 +36,13 @@ export const SalesDashboard = () => {
     ]},
   ];
 
-  const offersByStatus = data?.offersByStatus ?? [];
-  const salesByStatus = data?.salesByStatus ?? [];
-  const conversion = data?.conversionTrend ?? [];
+  const period = appliedFilters.period;
+  const status = appliedFilters.status;
+  const offersByStatus = filterByStatusName(data?.offersByStatus ?? [], status);
+  const salesByStatus = filterByStatusName(data?.salesByStatus ?? [], status);
+  const conversion = sliceByPeriod(data?.conversionTrend ?? [], period);
   const yoy = data?.yoyComparison ?? [];
-  const topCustomers = data?.topCustomers ?? [];
+  const topCustomers = filterTableByStatus(data?.topCustomers ?? [], status);
   const currentYear = new Date().getFullYear();
 
   return (
@@ -48,11 +53,12 @@ export const SalesDashboard = () => {
       subtitle={t('sales.subtitle', 'Commercial pipeline: offers, orders, conversion, customers')}
       onRefresh={() => refetch()}
       isRefreshing={isFetching}
+      error={error}
     >
-      <FilterBar filters={filters} />
+      <FilterBar filters={filters} initialValues={appliedFilters} onApply={setAppliedFilters} />
 
       {isLoading ? (
-        <div className="flex h-40 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        <DashboardSkeleton kpis={4} rows={[3, 2, 1]} />
       ) : (
         <>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">

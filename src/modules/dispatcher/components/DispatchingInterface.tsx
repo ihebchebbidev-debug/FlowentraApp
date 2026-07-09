@@ -34,7 +34,7 @@ import type { Job, CalendarViewType, Technician } from "../types";
 import { appSettingsApi } from "@/services/api/appSettingsApi";
 import { startOfWeek, endOfWeek, addDays } from "date-fns";
 import { autoFillDay, rankTechniciansForJob } from "../utils/planningAssist";
-import { PlanningDisplayProvider } from "../context/PlanningDisplayContext";
+import { PlanningDisplayProvider, type PlanningDisplay } from "../context/PlanningDisplayContext";
 
 export function DispatchingInterface() {
   const { t } = useTranslation();

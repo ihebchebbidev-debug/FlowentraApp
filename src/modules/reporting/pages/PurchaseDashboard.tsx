@@ -1,5 +1,7 @@
+import { useReportFilters } from '../store/useReportFiltersStore';
+import { filterByStatusName, sliceByPeriod } from '../utils/applyFilters';
 import { useTranslation } from 'react-i18next';
-import { ShoppingCart, Package, Truck, DollarSign, Loader2 } from 'lucide-react';
+import { ShoppingCart, Package, Truck, DollarSign } from 'lucide-react';
 import {
   BarChart, Bar, PieChart, Pie, Cell, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -10,13 +12,15 @@ import { KpiCard } from '../components/KpiCard';
 import { ChartCard } from '../components/ChartCard';
 import { RagBadge } from '../components/RagDot';
 import { CHART_COLORS, AXIS_TICK, GRID_STROKE, tooltipStyle, RAG_COLORS } from '../components/chartTheme';
+import { DashboardSkeleton } from '../components/DashboardSkeleton';
 import { useReportingPurchase } from '../hooks/useReporting';
 
 const SOURCE = 'Purchase' as const;
 
 export const PurchaseDashboard = () => {
   const { t } = useTranslation('reporting');
-  const { data, isLoading, refetch, isFetching } = useReportingPurchase();
+  const { values: appliedFilters, setValues: setAppliedFilters } = useReportFilters('purchase');
+  const { data, isLoading, refetch, isFetching, error } = useReportingPurchase(appliedFilters);
 
   const filters = [
     { key: 'period', label: t('filters.period', 'Period'), options: [
@@ -28,10 +32,12 @@ export const PurchaseDashboard = () => {
     ]},
   ];
 
-  const bySupplier = data?.spendBySupplier ?? [];
+  const period = appliedFilters.period;
+  const supplier = appliedFilters.supplier;
+  const bySupplier = filterByStatusName(data?.spendBySupplier ?? [], supplier);
   const byCategory = data?.spendByCategory ?? [];
   const receiptStatus = data?.receiptStatus ?? [];
-  const trend = data?.poSpendTrend ?? [];
+  const trend = sliceByPeriod(data?.poSpendTrend ?? [], period);
   const pos = data?.poTable ?? [];
   const totalSpend = bySupplier.reduce((s, x) => s + Number(x.value ?? 0), 0);
   const receiptColors = ['green', 'yellow', 'red', 'neutral'] as const;
@@ -44,10 +50,11 @@ export const PurchaseDashboard = () => {
       subtitle={t('purchase.subtitle', 'Suppliers, spend, articles & receipts')}
       onRefresh={() => refetch()}
       isRefreshing={isFetching}
+      error={error}
     >
-      <FilterBar filters={filters} />
+      <FilterBar filters={filters} onApply={setAppliedFilters} />
       {isLoading ? (
-        <div className="flex h-40 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        <DashboardSkeleton kpis={4} rows={[3,1,1]} />
       ) : (
         <>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
