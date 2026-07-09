@@ -1,153 +1,143 @@
-import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { Users, Briefcase, Award, UserPlus, Loader2 } from 'lucide-react';
+import {
+  BarChart, Bar, PieChart, Pie, Cell, LineChart, Line,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+} from 'recharts';
+import { ReportShell } from '../components/ReportShell';
+import { FilterBar } from '../components/FilterBar';
+import { KpiCard } from '../components/KpiCard';
+import { ChartCard } from '../components/ChartCard';
+import { RagBadge } from '../components/RagDot';
+import { CHART_COLORS, AXIS_TICK, GRID_STROKE, tooltipStyle } from '../components/chartTheme';
 import { useReportingHr } from '../hooks/useReporting';
-import { Loader2, AlertCircle } from 'lucide-react';
 
-const COLORS = ['#2563eb', '#16a34a', '#d97706', '#dc2626', '#9333ea', '#0ea5e9'];
-
-const EmptyChart = ({ label }: { label: string }) => (
-  <div className="flex h-full items-center justify-center text-sm text-muted-foreground">{label}</div>
-);
+const SOURCE = 'HR' as const;
 
 export const HrDashboard = () => {
   const { t } = useTranslation('reporting');
-  const { data, isLoading, isError, error, refetch } = useReportingHr();
+  const { data, isLoading, refetch, isFetching } = useReportingHr();
 
-  if (isLoading) {
-    return <div className="flex h-full items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
-  }
+  const filters = [
+    { key: 'period', label: t('filters.period', 'Period'), options: [
+      { value: '12m', label: t('filters.last12', 'Last 12 Months') },
+      { value: 'ytd', label: t('filters.ytd', 'This Year') },
+    ]},
+    { key: 'dept', label: t('hr.department', 'Department'), options: [
+      { value: 'all', label: t('filters.all', 'All') },
+    ]},
+  ];
 
-  if (isError) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center gap-2 p-8 text-center">
-        <AlertCircle className="h-8 w-8 text-destructive" />
-        <p className="text-sm text-muted-foreground">{(error as Error)?.message ?? t('reporting.general.loadError', 'Failed to load report')}</p>
-        <button onClick={() => refetch()} className="text-sm text-primary underline">{t('reporting.general.retry', 'Retry')}</button>
-      </div>
-    );
-  }
-
-  const headcountByDepartment = data?.headcountByDepartment ?? [];
-  const salaryByDepartment = data?.salaryByDepartment ?? [];
-  const performanceDistribution = data?.performanceDistribution ?? [];
-  const hiringVsTurnover = data?.hiringVsTurnover ?? [];
-  const employeeTable = data?.employeeTable ?? [];
-  const empty = t('reporting.general.noData', 'No data');
+  const headcount = data?.headcountByDepartment ?? [];
+  const salary = data?.salaryByDepartment ?? [];
+  const performance = data?.performanceDistribution ?? [];
+  const hiring = data?.hiringVsTurnover ?? [];
+  const employees = data?.employeeTable ?? [];
+  const totalHeadcount = headcount.reduce((s, x) => s + Number(x.value ?? 0), 0);
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">{t('reporting.hr.title', 'HR Dashboard')}</h2>
-      </div>
+    <ReportShell
+      icon={Users}
+      tone="purple"
+      title={t('hr.title', 'HR Dashboard')}
+      subtitle={t('hr.subtitle', 'Headcount, salaries, performance & hiring')}
+      onRefresh={() => refetch()}
+      isRefreshing={isFetching}
+    >
+      <FilterBar filters={filters} />
+      {isLoading ? (
+        <div className="flex h-40 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <KpiCard icon={Users} tone="purple" tag="LIVE" value={totalHeadcount || '—'} label={t('hr.kpi.headcount', 'Total Headcount')} />
+            <KpiCard icon={Briefcase} tone="info" tag="MONTH" value={new Intl.NumberFormat(undefined, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(salary.reduce((s, x) => s + Number(x.value ?? 0), 0))} label={t('hr.kpi.salary', 'Monthly Salary Cost')} />
+            <KpiCard icon={Award} tone="success" tag="AVG" value="B+" label={t('hr.kpi.performance', 'Avg Performance Grade')} />
+            <KpiCard icon={UserPlus} tone="accent" tag="YTD" value={hiring.length} label={t('hr.kpi.hires', 'New Hires')} />
+          </div>
 
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
-        <Card>
-          <CardHeader><CardTitle>{t('reporting.hr.headcountByDept', 'Headcount by Department')}</CardTitle></CardHeader>
-          <CardContent className="h-[300px]">
-            {headcountByDepartment.length === 0 ? <EmptyChart label={empty} /> : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={headcountByDepartment}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis fontSize={12} tickLine={false} axisLine={false} />
-                  <RechartsTooltip />
-                  <Bar dataKey="value" fill={COLORS[0]} radius={[4, 4, 0, 0]} />
+          <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
+            <ChartCard title={t('hr.headcount', 'Headcount by Department')} favorite={{ id: 'h-head', title: 'Headcount by Department', source: SOURCE }} empty={!headcount.length} emptyLabel={t('hr.empty', 'HR data will appear once populated')}>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={headcount}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_STROKE} />
+                  <XAxis dataKey="name" tick={AXIS_TICK} tickLine={false} axisLine={false} />
+                  <YAxis tick={AXIS_TICK} tickLine={false} axisLine={false} />
+                  <Tooltip {...tooltipStyle} />
+                  <Bar dataKey="value" fill="hsl(var(--chart-6))" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader><CardTitle>{t('reporting.hr.salaryByDept', 'Salary Cost by Department')}</CardTitle></CardHeader>
-          <CardContent className="h-[300px]">
-            {salaryByDepartment.length === 0 ? <EmptyChart label={empty} /> : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={salaryByDepartment}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis fontSize={12} tickLine={false} axisLine={false} />
-                  <RechartsTooltip />
-                  <Bar dataKey="value" fill={COLORS[1]} radius={[4, 4, 0, 0]} />
+            </ChartCard>
+            <ChartCard title={t('hr.salary', 'Salary Cost by Department')} favorite={{ id: 'h-sal', title: 'Salary Cost by Department', source: SOURCE }} empty={!salary.length} emptyLabel={t('hr.empty', 'HR data will appear once populated')}>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={salary}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_STROKE} />
+                  <XAxis dataKey="name" tick={AXIS_TICK} tickLine={false} axisLine={false} />
+                  <YAxis tick={AXIS_TICK} tickLine={false} axisLine={false} />
+                  <Tooltip {...tooltipStyle} />
+                  <Bar dataKey="value" fill="hsl(var(--chart-2))" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
+            </ChartCard>
+          </div>
 
-        <Card>
-          <CardHeader><CardTitle>{t('reporting.hr.performance', 'Performance Distribution')}</CardTitle></CardHeader>
-          <CardContent className="h-[300px]">
-            {performanceDistribution.length === 0 ? <EmptyChart label={empty} /> : (
-              <ResponsiveContainer width="100%" height="100%">
+          <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
+            <ChartCard title={t('hr.performance', 'Performance Distribution')} favorite={{ id: 'h-perf', title: 'Performance Distribution', source: SOURCE }} empty={!performance.length} emptyLabel={t('hr.empty', 'HR data will appear once populated')}>
+              <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
-                  <Pie data={performanceDistribution} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                    {performanceDistribution.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
+                  <Pie data={performance} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3} dataKey="value" nameKey="name">
+                    {performance.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
                   </Pie>
-                  <RechartsTooltip />
-                  <Legend />
+                  <Tooltip {...tooltipStyle} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
                 </PieChart>
               </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader><CardTitle>{t('reporting.hr.hiringVsTurnover', 'Hiring vs Turnover')}</CardTitle></CardHeader>
-          <CardContent className="h-[300px]">
-            {hiringVsTurnover.length === 0 ? <EmptyChart label={empty} /> : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={hiringVsTurnover}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis fontSize={12} tickLine={false} axisLine={false} />
-                  <RechartsTooltip />
-                  <Legend />
-                  <Bar dataKey="series1" name="Hired" fill={COLORS[1]} radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="series2" name="Turnover" fill={COLORS[3]} radius={[2, 2, 0, 0]} />
-                </BarChart>
+            </ChartCard>
+            <ChartCard title={t('hr.hiring', 'Hiring vs Turnover')} favorite={{ id: 'h-hire', title: 'Hiring vs Turnover', source: SOURCE }} empty={!hiring.length} emptyLabel={t('hr.empty', 'HR data will appear once populated')}>
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={hiring}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_STROKE} />
+                  <XAxis dataKey="name" tick={AXIS_TICK} tickLine={false} axisLine={false} />
+                  <YAxis tick={AXIS_TICK} tickLine={false} axisLine={false} />
+                  <Tooltip {...tooltipStyle} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Line type="monotone" dataKey="series1" name={t('hr.hires', 'Hires')} stroke="hsl(var(--chart-3))" strokeWidth={2} />
+                  <Line type="monotone" dataKey="series2" name={t('hr.leavers', 'Leavers')} stroke="hsl(var(--rag-red))" strokeWidth={2} />
+                </LineChart>
               </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader><CardTitle>{t('reporting.hr.employeeList', 'Employee Details')}</CardTitle></CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('reporting.hr.employee', 'Employee')}</TableHead>
-                  <TableHead>{t('reporting.hr.department', 'Department')}</TableHead>
-                  <TableHead>{t('reporting.hr.performanceGrade', 'Grade')}</TableHead>
-                  <TableHead className="text-right">{t('reporting.hr.salary', 'Salary')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {employeeTable.length === 0 ? (
-                  <TableRow><TableCell colSpan={4} className="text-center text-sm text-muted-foreground">{empty}</TableCell></TableRow>
-                ) : employeeTable.map((emp) => (
-                  <TableRow key={emp.id}>
-                    <TableCell className="font-medium">{emp.title}</TableCell>
-                    <TableCell>{emp.subtitle}</TableCell>
-                    <TableCell>{emp.status}</TableCell>
-                    <TableCell className="text-right font-semibold">
-                      {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(emp.amount ?? 0)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            </ChartCard>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+
+          <div className="mt-3">
+            <ChartCard title={t('hr.employeeTable', 'Employee Detail')} favorite={{ id: 'h-emp', title: 'Employees', source: SOURCE }} bodyClassName="p-0" empty={!employees.length} emptyLabel={t('hr.empty', 'Employee table not yet populated')}>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead className="bg-muted/50 text-[11px] uppercase tracking-wide text-muted-foreground">
+                    <tr>
+                      <th className="whitespace-nowrap px-3 py-2 text-left">{t('hr.employee', 'Employee')}</th>
+                      <th className="whitespace-nowrap px-3 py-2 text-left">{t('hr.department', 'Department')}</th>
+                      <th className="whitespace-nowrap px-3 py-2 text-left">{t('hr.grade', 'Grade')}</th>
+                      <th className="whitespace-nowrap px-3 py-2 text-right">{t('hr.salaryCol', 'Salary')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {employees.map((e) => (
+                      <tr key={e.id} className="border-t hover:bg-muted/30">
+                        <td className="whitespace-nowrap px-3 py-2 font-medium">{e.title}</td>
+                        <td className="whitespace-nowrap px-3 py-2">{e.subtitle}</td>
+                        <td className="whitespace-nowrap px-3 py-2"><RagBadge status={(e.ragDot as any) || 'neutral'}>{e.status}</RagBadge></td>
+                        <td className="whitespace-nowrap px-3 py-2 text-right font-semibold">
+                          {new Intl.NumberFormat(undefined, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(Number(e.amount ?? 0))}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </ChartCard>
+          </div>
+        </>
+      )}
+    </ReportShell>
   );
 };

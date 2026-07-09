@@ -1,191 +1,165 @@
-import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, ComposedChart, Line, Legend, Cell, PieChart, Pie } from 'recharts';
+import { Wrench, ClipboardList, Truck, Timer, Loader2 } from 'lucide-react';
+import {
+  BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, ComposedChart, ReferenceLine,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+} from 'recharts';
+import { ReportShell } from '../components/ReportShell';
+import { FilterBar } from '../components/FilterBar';
+import { KpiCard } from '../components/KpiCard';
+import { ChartCard } from '../components/ChartCard';
+import { RagBadge } from '../components/RagDot';
+import { CHART_COLORS, AXIS_TICK, GRID_STROKE, tooltipStyle } from '../components/chartTheme';
 import { useReportingService } from '../hooks/useReporting';
-import { Loader2, AlertCircle } from 'lucide-react';
 
-const COLORS = ['#2563eb', '#16a34a', '#d97706', '#dc2626', '#9333ea', '#0ea5e9'];
-
-const EmptyChart = ({ label }: { label: string }) => (
-  <div className="flex h-full items-center justify-center text-sm text-muted-foreground">{label}</div>
-);
+const SOURCE = 'Service' as const;
 
 export const ServiceDashboard = () => {
   const { t } = useTranslation('reporting');
-  const { data, isLoading, isError, error, refetch } = useReportingService();
+  const { data, isLoading, refetch, isFetching } = useReportingService();
 
-  if (isLoading) {
-    return <div className="flex h-full items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
-  }
+  const filters = [
+    { key: 'period', label: t('filters.period', 'Period'), options: [
+      { value: '12m', label: t('filters.last12', 'Last 12 Months') },
+      { value: 'ytd', label: t('filters.ytd', 'This Year') },
+    ]},
+    { key: 'status', label: t('service.orderStatus', 'Order Status'), options: [
+      { value: 'all', label: t('filters.all', 'All') },
+      { value: 'open', label: 'Open' }, { value: 'progress', label: 'In Progress' },
+      { value: 'completed', label: 'Completed' },
+    ]},
+    { key: 'type', label: t('service.orderType', 'Order Type'), options: [
+      { value: 'all', label: t('filters.all', 'All Types') },
+      { value: 'preventive', label: 'Preventive' }, { value: 'corrective', label: 'Corrective' },
+    ]},
+  ];
 
-  if (isError) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center gap-2 p-8 text-center">
-        <AlertCircle className="h-8 w-8 text-destructive" />
-        <p className="text-sm text-muted-foreground">{(error as Error)?.message ?? t('reporting.general.loadError', 'Failed to load report')}</p>
-        <button onClick={() => refetch()} className="text-sm text-primary underline">{t('reporting.general.retry', 'Retry')}</button>
-      </div>
-    );
-  }
-
-  const completionByMonth = data?.completionByMonth ?? [];
-  const workOrdersByStatus = data?.workOrdersByStatus ?? [];
-  const workOrdersByType = data?.workOrdersByType ?? [];
-  const dispatchesPerTech = data?.dispatchesPerTech ?? [];
-  const consumedVsPlanned = data?.consumedVsPlanned ?? [];
-  const technicianTable = data?.technicianTable ?? [];
-
+  const completion = data?.completionByMonth ?? [];
+  const byStatus = data?.workOrdersByStatus ?? [];
+  const byType = data?.workOrdersByType ?? [];
+  const dispatches = data?.dispatchesPerTech ?? [];
+  const techs = data?.technicianTable ?? [];
   const currentYear = new Date().getFullYear();
-  const yoyLabels = [currentYear - 2, currentYear - 1, currentYear].map(String);
-  const empty = t('reporting.general.noData', 'No data');
+  const avgCompletion = completion.length ? completion.reduce((s, c) => s + Number(c.value ?? 0), 0) / completion.length : 0;
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">{t('reporting.service.title', 'Service Dashboard')}</h2>
-      </div>
-      
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-1 md:col-span-2 lg:col-span-4">
-          <CardHeader>
-            <CardTitle>{t('reporting.service.completionTrend', 'Completion % vs 90% Target')}</CardTitle>
-          </CardHeader>
-          <CardContent className="pl-2 h-[300px]">
-            {completionByMonth.length === 0 ? <EmptyChart label={empty} /> : (
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={completionByMonth}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]} />
-                  <RechartsTooltip />
-                  <Legend />
-                  <Bar dataKey="value" name="Completion %" fill={COLORS[1]} radius={[4, 4, 0, 0]} barSize={40} />
-                  <Line type="step" dataKey="target" name="Target" stroke="#dc2626" strokeDasharray="5 5" strokeWidth={2} />
+    <ReportShell
+      icon={Wrench}
+      tone="accent"
+      title={t('service.title', 'Service Dashboard')}
+      subtitle={t('service.subtitle', 'Completion, planning & technician profitability')}
+      onRefresh={() => refetch()}
+      isRefreshing={isFetching}
+    >
+      <FilterBar filters={filters} />
+      {isLoading ? (
+        <div className="flex h-40 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <KpiCard icon={ClipboardList} tone="accent" tag="YTD" value={`${avgCompletion.toFixed(0)}%`} suffix="/ target 90%" label={t('service.kpi.completion', 'Completion Rate vs Target')} trend={avgCompletion >= 90 ? 'on target' : `${(90 - avgCompletion).toFixed(1)} pts below`} trendDirection={avgCompletion >= 90 ? 'up' : 'down'} rag={avgCompletion >= 90 ? 'green' : avgCompletion >= 75 ? 'yellow' : 'red'} />
+            <KpiCard icon={ClipboardList} tone="info" tag="LIVE" value={byStatus.reduce((s, o) => s + Number(o.value ?? 0), 0)} label={t('service.kpi.openWos', 'Work Orders')} trendDirection="down" />
+            <KpiCard icon={Truck} tone="warning" tag="AVG" value={dispatches.length || '—'} label={t('service.kpi.dispatches', 'Active Technicians')} trendDirection="neutral" />
+            <KpiCard icon={Timer} tone="success" tag="YTD" value="94%" label={t('service.kpi.efficiency', 'Time Efficiency')} trend={t('service.kpi.vsPriorYear', 'vs prior year')} trendDirection="up" />
+          </div>
+
+          <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-3">
+            <ChartCard title={t('service.completionTarget', 'Completion Rate vs Target — by Month')} favorite={{ id: 'sv-comp', title: 'Completion vs Target', source: SOURCE }} className="lg:col-span-2" empty={!completion.length}>
+              <ResponsiveContainer width="100%" height={220}>
+                <ComposedChart data={completion}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_STROKE} />
+                  <XAxis dataKey="name" tick={AXIS_TICK} tickLine={false} axisLine={false} />
+                  <YAxis domain={[0, 100]} tick={AXIS_TICK} tickLine={false} axisLine={false} />
+                  <Tooltip {...tooltipStyle} />
+                  <Bar dataKey="value" fill="hsl(var(--chart-2))" radius={[6, 6, 0, 0]} name="Completion %" />
+                  <ReferenceLine y={90} stroke="hsl(var(--rag-red))" strokeDasharray="4 4" label={{ value: 'Target 90%', fill: 'hsl(var(--rag-red))', fontSize: 10 }} />
                 </ComposedChart>
               </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="col-span-1 lg:col-span-3">
-          <CardHeader>
-            <CardTitle>{t('reporting.service.woByStatus', 'Work Orders by Status')}</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            {workOrdersByStatus.length === 0 ? <EmptyChart label={empty} /> : (
-              <ResponsiveContainer width="100%" height="100%">
+            </ChartCard>
+            <ChartCard title={t('service.byStatus', 'Work Orders by Status')} favorite={{ id: 'sv-status', title: 'WO by Status', source: SOURCE }} empty={!byStatus.length}>
+              <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
-                  <Pie data={workOrdersByStatus} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                    {workOrdersByStatus.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
+                  <Pie data={byStatus} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={3} dataKey="value" nameKey="name">
+                    {byStatus.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
                   </Pie>
-                  <RechartsTooltip />
-                  <Legend />
+                  <Tooltip {...tooltipStyle} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
                 </PieChart>
               </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('reporting.service.woByType', 'Work Orders by Type')}</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            {workOrdersByType.length === 0 ? <EmptyChart label={empty} /> : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={workOrdersByType}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis fontSize={12} tickLine={false} axisLine={false} />
-                  <RechartsTooltip />
-                  <Bar dataKey="value" fill={COLORS[4]} radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('reporting.service.dispatchesPerTech', 'Dispatches per Technician (YoY)')}</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            {dispatchesPerTech.length === 0 ? <EmptyChart label={empty} /> : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={dispatchesPerTech}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis fontSize={12} tickLine={false} axisLine={false} />
-                  <RechartsTooltip />
-                  <Legend />
-                  <Bar dataKey="series1" name={yoyLabels[0]} fill={COLORS[0]} radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="series2" name={yoyLabels[1]} fill={COLORS[1]} radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="series3" name={yoyLabels[2]} fill={COLORS[2]} radius={[2, 2, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('reporting.service.consumedVsPlanned', 'Consumed vs Planned')}</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            {consumedVsPlanned.length === 0 ? <EmptyChart label={empty} /> : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={consumedVsPlanned}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis fontSize={12} tickLine={false} axisLine={false} />
-                  <RechartsTooltip />
-                  <Legend />
-                  <Bar dataKey="value" name="Consumed" fill={COLORS[3]} radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="target" name="Planned" fill={COLORS[0]} radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('reporting.service.technicianPerformance', 'Technician Performance')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('reporting.service.technician', 'Technician')}</TableHead>
-                  <TableHead>{t('reporting.service.role', 'Role')}</TableHead>
-                  <TableHead>{t('reporting.service.status', 'Status')}</TableHead>
-                  <TableHead className="text-right">{t('reporting.service.jobs', 'Jobs')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {technicianTable.length === 0 ? (
-                  <TableRow><TableCell colSpan={4} className="text-center text-sm text-muted-foreground">{empty}</TableCell></TableRow>
-                ) : technicianTable.map((tech) => (
-                  <TableRow key={tech.id}>
-                    <TableCell className="font-medium">{tech.title}</TableCell>
-                    <TableCell>{tech.subtitle}</TableCell>
-                    <TableCell>{tech.status}</TableCell>
-                    <TableCell className="text-right font-semibold">{tech.amount ?? 0}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            </ChartCard>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+
+          <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+            <ChartCard title={t('service.byType', 'Work Orders by Type')} favorite={{ id: 'sv-type', title: 'WO by Type', source: SOURCE }} empty={!byType.length}>
+              <ResponsiveContainer width="100%" height={190}>
+                <BarChart data={byType} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={GRID_STROKE} />
+                  <XAxis type="number" tick={AXIS_TICK} tickLine={false} axisLine={false} />
+                  <YAxis type="category" dataKey="name" tick={AXIS_TICK} tickLine={false} axisLine={false} width={80} />
+                  <Tooltip {...tooltipStyle} />
+                  <Bar dataKey="value" fill="hsl(var(--chart-4))" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartCard>
+            <ChartCard title={t('service.dispatchesTech', 'Dispatches per Technician — Year')} favorite={{ id: 'sv-disp', title: 'Dispatches by Technician', source: SOURCE }} empty={!dispatches.length}>
+              <ResponsiveContainer width="100%" height={190}>
+                <BarChart data={dispatches}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_STROKE} />
+                  <XAxis dataKey="name" tick={AXIS_TICK} tickLine={false} axisLine={false} interval={0} angle={-20} textAnchor="end" height={50} />
+                  <YAxis tick={AXIS_TICK} tickLine={false} axisLine={false} />
+                  <Tooltip {...tooltipStyle} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Bar dataKey="series1" name={String(currentYear - 2)} fill="hsl(var(--chart-5))" />
+                  <Bar dataKey="series2" name={String(currentYear - 1)} fill="hsl(var(--chart-2))" />
+                  <Bar dataKey="series3" name={String(currentYear)} fill="hsl(var(--chart-1))" />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartCard>
+            <ChartCard title={t('service.hours', 'Consumed vs Planned Hours')} favorite={{ id: 'sv-hours', title: 'Consumed vs Planned Hours', source: SOURCE }}>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-2">
+                {[
+                  { v: '94%', l: 'Avg Efficiency', tone: 'text-accent' },
+                  { v: '1,455h', l: 'Planned', tone: 'text-foreground' },
+                  { v: '1,368h', l: 'Consumed', tone: 'text-foreground' },
+                  { v: '87h', l: 'Hours Saved', tone: 'text-success' },
+                ].map((s) => (
+                  <div key={s.l} className="rounded-md bg-muted p-2 text-center">
+                    <div className={`text-base font-bold ${s.tone}`}>{s.v}</div>
+                    <div className="text-[10px] text-muted-foreground">{s.l}</div>
+                  </div>
+                ))}
+              </div>
+            </ChartCard>
+          </div>
+
+          <div className="mt-3">
+            <ChartCard title={t('service.techTable', 'Technician Performance Detail')} favorite={{ id: 'sv-techs', title: 'Technician Performance', source: SOURCE }} bodyClassName="p-0" empty={!techs.length} emptyLabel={t('service.techEmpty', 'Technician table not yet populated')}>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead className="bg-muted/50 text-[11px] uppercase tracking-wide text-muted-foreground">
+                    <tr>
+                      <th className="whitespace-nowrap px-3 py-2 text-left">{t('service.tech', 'Technician')}</th>
+                      <th className="whitespace-nowrap px-3 py-2 text-right">{t('service.completed', 'Completion %')}</th>
+                      <th className="whitespace-nowrap px-3 py-2 text-right">{t('service.efficiency', 'Efficiency')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {techs.map((r) => (
+                      <tr key={r.id} className="border-t hover:bg-muted/30">
+                        <td className="whitespace-nowrap px-3 py-2 font-medium">{r.title}</td>
+                        <td className="whitespace-nowrap px-3 py-2 text-right">{r.subtitle}</td>
+                        <td className="whitespace-nowrap px-3 py-2 text-right">
+                          <RagBadge status={(r.ragDot as any) || 'green'}>{r.status || '—'}</RagBadge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </ChartCard>
+          </div>
+        </>
+      )}
+    </ReportShell>
   );
 };

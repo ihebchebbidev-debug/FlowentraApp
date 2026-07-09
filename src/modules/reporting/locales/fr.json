@@ -1,61 +1,156 @@
 {
-  "sales": {
-    "title": "Tableau de Bord des Ventes",
-    "yoyComparison": "Comparaison d'une Année sur l'Autre",
-    "offersByStatus": "Offres par Statut",
-    "salesByStatus": "Commandes par Statut",
-    "conversionTrend": "Tendance du Taux de Conversion",
-    "topCustomers": "Meilleurs Clients",
-    "contact": "Contact",
-    "openOrders": "Commandes Ouvertes",
-    "revenue": "Revenu"
+  "scope": {
+    "allCompanies": "Toutes les sociétés",
+    "currentCompany": "Société active"
   },
-  "service": {
-    "title": "Tableau de Bord des Services",
-    "completionByMonth": "% d'Achèvement par Mois",
-    "workOrdersByStatus": "Ordres de Travail par Statut",
-    "workOrdersByType": "Ordres de Travail par Type",
-    "dispatchesPerTech": "Interventions par Technicien",
-    "consumedVsPlanned": "Heures Consommées vs Planifiées",
-    "technicianDetails": "Détails du Technicien",
-    "technician": "Technicien",
-    "assignments": "Affectations",
-    "completionRate": "% d'Achèvement"
+  "actions": {
+    "filters": "Filters",
+    "export": "Export",
+    "refresh": "Refresh"
   },
-  "finance": {
-    "title": "Tableau de Bord Financier",
-    "invoiceStatus": "Statut des Factures",
-    "recentInvoices": "Factures Récentes",
-    "invoiceNumber": "Numéro de Facture",
-    "customer": "Client",
-    "status": "Statut",
-    "amount": "Montant"
-  },
-  "hr": {
-    "title": "Tableau de Bord RH",
-    "headcountByDept": "Effectif par Département",
-    "salaryByDept": "Coût Salarial par Département",
-    "performance": "Répartition des Performances",
-    "hiringVsTurnover": "Embauches vs Départs",
-    "employeeList": "Détails des Employés",
-    "employee": "Employé",
-    "department": "Département",
-    "performanceGrade": "Note de Performance",
-    "salary": "Salaire"
-  },
-  "purchase": {
-    "title": "Tableau de Bord des Achats",
-    "spendBySupplier": "Dépenses par Fournisseur",
-    "spendByCategory": "Dépenses par Catégorie",
-    "receiptStatus": "Statut des Réceptions",
-    "poSpendTrend": "Tendance des Dépenses de Commandes",
-    "poDetails": "Détails des Commandes d'Achat",
-    "poNumber": "Numéro de Commande",
-    "supplier": "Fournisseur",
-    "status": "Statut",
-    "amount": "Montant"
+  "filters": {
+    "title": "Filters",
+    "apply": "Apply",
+    "clear": "Clear",
+    "period": "Period",
+    "all": "All",
+    "last12": "Last 12 Months",
+    "ytd": "This Year",
+    "lastQuarter": "Last Quarter"
   },
   "general": {
-    "fromLastMonth": "par rapport au mois dernier"
+    "noData": "No data",
+    "loadError": "Failed to load report",
+    "retry": "Retry",
+    "fromLastMonth": "from last month"
+  },
+  "my": {
+    "title": "My Dashboard",
+    "subtitle": "Your favorited widgets from all reports",
+    "emptyTitle": "No widgets pinned yet",
+    "emptyDesc": "Click the ☆ star on any widget in the dashboards below to pin it here.",
+    "open": "Open"
+  },
+  "sales": {
+    "title": "Sales Dashboard",
+    "subtitle": "Commercial pipeline: offers, orders, conversion, customers",
+    "orderStatus": "Order Status",
+    "yoyComparison": "Sales Orders — Year Comparison",
+    "offersByStatus": "Offers by Status",
+    "salesByStatus": "Sales Orders by Status",
+    "conversionTrend": "Offer Conversion Trend",
+    "ordersByType": "Orders & Offers by Type",
+    "topCustomers": "Top Customers",
+    "customer": "Customer",
+    "revenue": "Revenue",
+    "status": "Status",
+    "active": "Active",
+    "kpi": {
+      "totalOffers": "Total Offers",
+      "conversion": "Offer Conversion Rate",
+      "openOrders": "Sales Orders",
+      "topCustomers": "Top Customers",
+      "vsPriorYear": "vs prior year",
+      "target": "target 50%",
+      "thisPeriod": "this period"
+    }
+  },
+  "service": {
+    "title": "Service Dashboard",
+    "subtitle": "Completion, planning & technician profitability",
+    "orderStatus": "Order Status",
+    "orderType": "Order Type",
+    "completionTarget": "Completion Rate vs Target — by Month",
+    "byStatus": "Work Orders by Status",
+    "byType": "Work Orders by Type",
+    "dispatchesTech": "Dispatches per Technician — Year",
+    "hours": "Consumed vs Planned Hours",
+    "techTable": "Technician Performance Detail",
+    "tech": "Technician",
+    "completed": "Completion %",
+    "efficiency": "Efficiency",
+    "techEmpty": "Technician table not yet populated",
+    "kpi": {
+      "completion": "Completion Rate vs Target",
+      "openWos": "Work Orders",
+      "dispatches": "Active Technicians",
+      "efficiency": "Time Efficiency",
+      "vsPriorYear": "vs prior year"
+    }
+  },
+  "finance": {
+    "title": "Finance Dashboard",
+    "subtitle": "Invoices, payments & expenses with RAG flags",
+    "invoiceStatus": "Invoice Status",
+    "expenses": "Expenses by Category",
+    "expensesEmpty": "Expense categories not yet available",
+    "invoiceTable": "Recent Invoices",
+    "invoiceEmpty": "Invoice detail rows not yet populated",
+    "invoiceNumber": "Invoice",
+    "customer": "Customer",
+    "status": "Status",
+    "amount": "Amount",
+    "kpi": {
+      "revenue": "Total Revenue",
+      "pending": "Pending Collection",
+      "overdue": "Overdue",
+      "cash": "Cash Position"
+    }
+  },
+  "hr": {
+    "title": "HR Dashboard",
+    "subtitle": "Headcount, salaries, performance & hiring",
+    "department": "Department",
+    "headcount": "Headcount by Department",
+    "salary": "Salary Cost by Department",
+    "performance": "Performance Distribution",
+    "hiring": "Hiring vs Turnover",
+    "hires": "Hires",
+    "leavers": "Leavers",
+    "employeeTable": "Employee Detail",
+    "employee": "Employee",
+    "grade": "Grade",
+    "salaryCol": "Salary",
+    "empty": "HR data will appear once populated",
+    "kpi": {
+      "headcount": "Total Headcount",
+      "salary": "Monthly Salary Cost",
+      "performance": "Avg Performance Grade",
+      "hires": "New Hires"
+    }
+  },
+  "purchase": {
+    "title": "Purchase Dashboard",
+    "subtitle": "Suppliers, spend, articles & receipts",
+    "supplier": "Supplier",
+    "spendSupplier": "Spend by Supplier — Top 8",
+    "spendCategory": "Spend by Category",
+    "receiptStatus": "Receipt Status",
+    "trend": "PO Spend Trend",
+    "poTable": "Purchase Order Detail",
+    "poNumber": "PO",
+    "status": "Status",
+    "amount": "Amount",
+    "empty": "Purchase data will appear once populated",
+    "kpi": {
+      "spend": "Total Spend",
+      "pos": "Purchase Orders",
+      "suppliers": "Active Suppliers",
+      "receipt": "Receipt Rate"
+    }
+  },
+  "export": {
+    "title": "Export Reports",
+    "subtitle": "Download report data in your preferred format",
+    "settings": "Export Settings",
+    "dateRange": "Date Range",
+    "format": "Format",
+    "reports": "Reports to Include",
+    "generate": "Generate Export",
+    "recent": "Recent Exports",
+    "noExports": "No exports yet. Generate one to see it here.",
+    "queued": "Export queued",
+    "queuedDesc": "Backend export generation is not yet implemented — the UI is ready for wiring.",
+    "pickOne": "Select at least one report"
   }
 }

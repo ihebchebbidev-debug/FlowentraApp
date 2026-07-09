@@ -1,163 +1,142 @@
-import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line } from 'recharts';
+import { ShoppingCart, Package, Truck, DollarSign, Loader2 } from 'lucide-react';
+import {
+  BarChart, Bar, PieChart, Pie, Cell, LineChart, Line,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+} from 'recharts';
+import { ReportShell } from '../components/ReportShell';
+import { FilterBar } from '../components/FilterBar';
+import { KpiCard } from '../components/KpiCard';
+import { ChartCard } from '../components/ChartCard';
+import { RagBadge } from '../components/RagDot';
+import { CHART_COLORS, AXIS_TICK, GRID_STROKE, tooltipStyle, RAG_COLORS } from '../components/chartTheme';
 import { useReportingPurchase } from '../hooks/useReporting';
-import { Loader2, AlertCircle } from 'lucide-react';
 
-const COLORS = ['#2563eb', '#16a34a', '#d97706', '#dc2626', '#9333ea', '#0ea5e9', '#f97316', '#14b8a6'];
-
-const RagDot = ({ status }: { status: string }) => {
-  let colorClass = 'bg-gray-400';
-  if (status === 'green') colorClass = 'bg-green-500';
-  if (status === 'yellow') colorClass = 'bg-yellow-500';
-  if (status === 'red') colorClass = 'bg-red-500';
-  return <div className={`h-3 w-3 rounded-full ${colorClass}`} />;
-};
-
-const EmptyChart = ({ label }: { label: string }) => (
-  <div className="flex h-full items-center justify-center text-sm text-muted-foreground">{label}</div>
-);
+const SOURCE = 'Purchase' as const;
 
 export const PurchaseDashboard = () => {
   const { t } = useTranslation('reporting');
-  const { data, isLoading, isError, error, refetch } = useReportingPurchase();
+  const { data, isLoading, refetch, isFetching } = useReportingPurchase();
 
-  if (isLoading) {
-    return <div className="flex h-full items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
-  }
+  const filters = [
+    { key: 'period', label: t('filters.period', 'Period'), options: [
+      { value: '12m', label: t('filters.last12', 'Last 12 Months') },
+      { value: 'ytd', label: t('filters.ytd', 'This Year') },
+    ]},
+    { key: 'supplier', label: t('purchase.supplier', 'Supplier'), options: [
+      { value: 'all', label: t('filters.all', 'All Suppliers') },
+    ]},
+  ];
 
-  if (isError) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center gap-2 p-8 text-center">
-        <AlertCircle className="h-8 w-8 text-destructive" />
-        <p className="text-sm text-muted-foreground">{(error as Error)?.message ?? t('reporting.general.loadError', 'Failed to load report')}</p>
-        <button onClick={() => refetch()} className="text-sm text-primary underline">{t('reporting.general.retry', 'Retry')}</button>
-      </div>
-    );
-  }
-
-  const spendBySupplier = data?.spendBySupplier ?? [];
-  const spendByCategory = data?.spendByCategory ?? [];
+  const bySupplier = data?.spendBySupplier ?? [];
+  const byCategory = data?.spendByCategory ?? [];
   const receiptStatus = data?.receiptStatus ?? [];
-  const poSpendTrend = data?.poSpendTrend ?? [];
-  const poTable = data?.poTable ?? [];
-  const empty = t('reporting.general.noData', 'No data');
+  const trend = data?.poSpendTrend ?? [];
+  const pos = data?.poTable ?? [];
+  const totalSpend = bySupplier.reduce((s, x) => s + Number(x.value ?? 0), 0);
+  const receiptColors = ['green', 'yellow', 'red', 'neutral'] as const;
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">{t('reporting.purchase.title', 'Purchase Dashboard')}</h2>
-      </div>
+    <ReportShell
+      icon={ShoppingCart}
+      tone="warning"
+      title={t('purchase.title', 'Purchase Dashboard')}
+      subtitle={t('purchase.subtitle', 'Suppliers, spend, articles & receipts')}
+      onRefresh={() => refetch()}
+      isRefreshing={isFetching}
+    >
+      <FilterBar filters={filters} />
+      {isLoading ? (
+        <div className="flex h-40 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <KpiCard icon={DollarSign} tone="warning" tag="YTD" value={new Intl.NumberFormat(undefined, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0, notation: 'compact' }).format(totalSpend)} label={t('purchase.kpi.spend', 'Total Spend')} />
+            <KpiCard icon={ShoppingCart} tone="primary" tag="LIVE" value={pos.length || '—'} label={t('purchase.kpi.pos', 'Purchase Orders')} />
+            <KpiCard icon={Package} tone="info" tag="AVG" value={bySupplier.length || '—'} label={t('purchase.kpi.suppliers', 'Active Suppliers')} />
+            <KpiCard icon={Truck} tone="accent" tag="AVG" value={receiptStatus.length ? `${((receiptStatus.find(r => r.name?.toLowerCase() === 'received')?.value ?? 0) as number / Math.max(receiptStatus.reduce((s, x) => s + Number(x.value ?? 0), 0), 1) * 100).toFixed(0)}%` : '—'} label={t('purchase.kpi.receipt', 'Receipt Rate')} />
+          </div>
 
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
-        <Card>
-          <CardHeader><CardTitle>{t('reporting.purchase.spendBySupplier', 'Spend by Supplier')}</CardTitle></CardHeader>
-          <CardContent className="h-[300px]">
-            {spendBySupplier.length === 0 ? <EmptyChart label={empty} /> : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={spendBySupplier} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                  <XAxis type="number" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis type="category" dataKey="name" fontSize={12} tickLine={false} axisLine={false} width={100} />
-                  <RechartsTooltip />
-                  <Bar dataKey="value" fill={COLORS[0]} radius={[0, 4, 4, 0]} />
+          <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-3">
+            <ChartCard title={t('purchase.spendSupplier', 'Spend by Supplier — Top 8')} favorite={{ id: 'p-sup', title: 'Spend by Supplier', source: SOURCE }} className="lg:col-span-2" empty={!bySupplier.length} emptyLabel={t('purchase.empty', 'Purchase data will appear once populated')}>
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={bySupplier.slice(0, 8)} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={GRID_STROKE} />
+                  <XAxis type="number" tick={AXIS_TICK} tickLine={false} axisLine={false} />
+                  <YAxis type="category" dataKey="name" tick={AXIS_TICK} tickLine={false} axisLine={false} width={100} />
+                  <Tooltip {...tooltipStyle} />
+                  <Bar dataKey="value" fill="hsl(var(--chart-4))" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
+            </ChartCard>
+            <div className="grid grid-cols-1 gap-3">
+              <ChartCard title={t('purchase.spendCategory', 'Spend by Category')} favorite={{ id: 'p-cat', title: 'Spend by Category', source: SOURCE }} empty={!byCategory.length} emptyLabel={t('purchase.empty', 'Purchase data will appear once populated')}>
+                <ResponsiveContainer width="100%" height={110}>
+                  <PieChart>
+                    <Pie data={byCategory} cx="50%" cy="50%" innerRadius={30} outerRadius={50} dataKey="value" nameKey="name">
+                      {byCategory.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+                    </Pie>
+                    <Tooltip {...tooltipStyle} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </ChartCard>
+              <ChartCard title={t('purchase.receiptStatus', 'Receipt Status')} favorite={{ id: 'p-rec', title: 'Receipt Status', source: SOURCE }} empty={!receiptStatus.length} emptyLabel={t('purchase.empty', 'Purchase data will appear once populated')}>
+                <ResponsiveContainer width="100%" height={110}>
+                  <PieChart>
+                    <Pie data={receiptStatus} cx="50%" cy="50%" innerRadius={30} outerRadius={50} dataKey="value" nameKey="name">
+                      {receiptStatus.map((_, i) => <Cell key={i} fill={RAG_COLORS[receiptColors[i % receiptColors.length]]} />)}
+                    </Pie>
+                    <Tooltip {...tooltipStyle} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </ChartCard>
+            </div>
+          </div>
 
-        <Card>
-          <CardHeader><CardTitle>{t('reporting.purchase.spendByCategory', 'Spend by Category')}</CardTitle></CardHeader>
-          <CardContent className="h-[300px]">
-            {spendByCategory.length === 0 ? <EmptyChart label={empty} /> : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={spendByCategory} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                    {spendByCategory.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <RechartsTooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader><CardTitle>{t('reporting.purchase.receiptStatus', 'Receipt Status')}</CardTitle></CardHeader>
-          <CardContent className="h-[300px]">
-            {receiptStatus.length === 0 ? <EmptyChart label={empty} /> : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={receiptStatus} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                    {receiptStatus.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <RechartsTooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader><CardTitle>{t('reporting.purchase.poSpendTrend', 'PO Spend Trend')}</CardTitle></CardHeader>
-          <CardContent className="h-[300px]">
-            {poSpendTrend.length === 0 ? <EmptyChart label={empty} /> : (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={poSpendTrend}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis fontSize={12} tickLine={false} axisLine={false} />
-                  <RechartsTooltip />
-                  <Line type="monotone" dataKey="value" stroke={COLORS[0]} strokeWidth={2} dot={{ fill: COLORS[0] }} />
+          <div className="mt-3">
+            <ChartCard title={t('purchase.trend', 'PO Spend Trend')} favorite={{ id: 'p-trend', title: 'PO Spend Trend', source: SOURCE }} empty={!trend.length} emptyLabel={t('purchase.empty', 'Purchase data will appear once populated')}>
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={trend}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_STROKE} />
+                  <XAxis dataKey="name" tick={AXIS_TICK} tickLine={false} axisLine={false} />
+                  <YAxis tick={AXIS_TICK} tickLine={false} axisLine={false} />
+                  <Tooltip {...tooltipStyle} />
+                  <Line type="monotone" dataKey="value" stroke="hsl(var(--chart-4))" strokeWidth={2} dot={{ r: 3 }} />
                 </LineChart>
               </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader><CardTitle>{t('reporting.purchase.poDetails', 'Purchase Order Details')}</CardTitle></CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[50px]"></TableHead>
-                  <TableHead>{t('reporting.purchase.poNumber', 'PO Number')}</TableHead>
-                  <TableHead>{t('reporting.purchase.supplier', 'Supplier')}</TableHead>
-                  <TableHead>{t('reporting.purchase.status', 'Status')}</TableHead>
-                  <TableHead className="text-right">{t('reporting.purchase.amount', 'Amount')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {poTable.length === 0 ? (
-                  <TableRow><TableCell colSpan={5} className="text-center text-sm text-muted-foreground">{empty}</TableCell></TableRow>
-                ) : poTable.map((po) => (
-                  <TableRow key={po.id} className={po.ragDot === 'red' ? 'bg-red-50 dark:bg-red-950/20' : ''}>
-                    <TableCell><RagDot status={po.ragDot} /></TableCell>
-                    <TableCell className="font-medium">{po.title}</TableCell>
-                    <TableCell>{po.subtitle}</TableCell>
-                    <TableCell>{po.status}</TableCell>
-                    <TableCell className="text-right font-semibold">
-                      {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(po.amount ?? 0)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            </ChartCard>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+
+          <div className="mt-3">
+            <ChartCard title={t('purchase.poTable', 'Purchase Order Detail')} favorite={{ id: 'p-po', title: 'Purchase Orders', source: SOURCE }} bodyClassName="p-0" empty={!pos.length} emptyLabel={t('purchase.empty', 'PO detail table not yet populated')}>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead className="bg-muted/50 text-[11px] uppercase tracking-wide text-muted-foreground">
+                    <tr>
+                      <th className="whitespace-nowrap px-3 py-2 text-left">{t('purchase.poNumber', 'PO')}</th>
+                      <th className="whitespace-nowrap px-3 py-2 text-left">{t('purchase.supplier', 'Supplier')}</th>
+                      <th className="whitespace-nowrap px-3 py-2 text-left">{t('purchase.status', 'Status')}</th>
+                      <th className="whitespace-nowrap px-3 py-2 text-right">{t('purchase.amount', 'Amount')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pos.map((p) => (
+                      <tr key={p.id} className={`border-t hover:bg-muted/30 ${p.ragDot === 'red' ? 'bg-destructive/5' : ''}`}>
+                        <td className="whitespace-nowrap px-3 py-2 font-medium">{p.title}</td>
+                        <td className="whitespace-nowrap px-3 py-2">{p.subtitle}</td>
+                        <td className="whitespace-nowrap px-3 py-2"><RagBadge status={(p.ragDot as any) || 'neutral'}>{p.status}</RagBadge></td>
+                        <td className="whitespace-nowrap px-3 py-2 text-right font-semibold">
+                          {new Intl.NumberFormat(undefined, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(Number(p.amount ?? 0))}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </ChartCard>
+          </div>
+        </>
+      )}
+    </ReportShell>
   );
 };

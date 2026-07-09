@@ -1,166 +1,158 @@
-import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
+import { TrendingUp, FileText, Repeat, Receipt, Building2 } from 'lucide-react';
+import {
+  BarChart, Bar, PieChart, Pie, Cell, LineChart, Line,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+} from 'recharts';
+import { ReportShell } from '../components/ReportShell';
+import { FilterBar } from '../components/FilterBar';
+import { KpiCard } from '../components/KpiCard';
+import { ChartCard } from '../components/ChartCard';
+import { ProgressRow } from '../components/ProgressRow';
+import { RagBadge } from '../components/RagDot';
+import { CHART_COLORS, AXIS_TICK, GRID_STROKE, tooltipStyle } from '../components/chartTheme';
 import { useReportingSales } from '../hooks/useReporting';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
-const COLORS = ['#2563eb', '#16a34a', '#d97706', '#dc2626', '#9333ea', '#0ea5e9'];
-
-const EmptyChart = ({ label }: { label: string }) => (
-  <div className="flex h-full items-center justify-center text-sm text-muted-foreground">{label}</div>
-);
+const SOURCE = 'Sales' as const;
 
 export const SalesDashboard = () => {
   const { t } = useTranslation('reporting');
-  const { data, isLoading, isError, error, refetch } = useReportingSales();
+  const { data, isLoading, refetch, isFetching } = useReportingSales();
 
-  if (isLoading) {
-    return <div className="flex h-full items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
-  }
-
-  if (isError) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center gap-2 p-8 text-center">
-        <AlertCircle className="h-8 w-8 text-destructive" />
-        <p className="text-sm text-muted-foreground">{(error as Error)?.message ?? t('reporting.general.loadError', 'Failed to load report')}</p>
-        <button onClick={() => refetch()} className="text-sm text-primary underline">{t('reporting.general.retry', 'Retry')}</button>
-      </div>
-    );
-  }
+  const filters = [
+    { key: 'period', label: t('filters.period', 'Period'), options: [
+      { value: '12m', label: t('filters.last12', 'Last 12 Months') },
+      { value: 'ytd', label: t('filters.ytd', 'This Year') },
+      { value: 'q', label: t('filters.lastQuarter', 'Last Quarter') },
+    ]},
+    { key: 'status', label: t('sales.orderStatus', 'Order Status'), options: [
+      { value: 'all', label: t('filters.all', 'All') },
+      { value: 'draft', label: 'Draft' }, { value: 'confirmed', label: 'Confirmed' },
+      { value: 'shipped', label: 'Shipped' }, { value: 'invoiced', label: 'Invoiced' },
+    ]},
+  ];
 
   const offersByStatus = data?.offersByStatus ?? [];
   const salesByStatus = data?.salesByStatus ?? [];
-  const conversionTrend = data?.conversionTrend ?? [];
-  const yoyComparison = data?.yoyComparison ?? [];
+  const conversion = data?.conversionTrend ?? [];
+  const yoy = data?.yoyComparison ?? [];
   const topCustomers = data?.topCustomers ?? [];
-
   const currentYear = new Date().getFullYear();
-  const yoyLabels = [currentYear - 2, currentYear - 1, currentYear].map(String);
-  const empty = t('reporting.general.noData', 'No data');
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">{t('reporting.sales.title', 'Sales Dashboard')}</h2>
-      </div>
-      
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-1 md:col-span-2 lg:col-span-4">
-          <CardHeader>
-            <CardTitle>{t('reporting.sales.yoyComparison', 'Year-over-Year Comparison')}</CardTitle>
-          </CardHeader>
-          <CardContent className="pl-2 h-[300px]">
-            {yoyComparison.length === 0 ? <EmptyChart label={empty} /> : (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={yoyComparison}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis fontSize={12} tickLine={false} axisLine={false} />
-                  <RechartsTooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="series1" name={yoyLabels[0]} stroke={COLORS[0]} strokeWidth={2} />
-                  <Line type="monotone" dataKey="series2" name={yoyLabels[1]} stroke={COLORS[1]} strokeWidth={2} />
-                  <Line type="monotone" dataKey="series3" name={yoyLabels[2]} stroke={COLORS[2]} strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
+    <ReportShell
+      icon={TrendingUp}
+      tone="primary"
+      title={t('sales.title', 'Sales Dashboard')}
+      subtitle={t('sales.subtitle', 'Commercial pipeline: offers, orders, conversion, customers')}
+      onRefresh={() => refetch()}
+      isRefreshing={isFetching}
+    >
+      <FilterBar filters={filters} />
 
-        <Card className="col-span-1 lg:col-span-3">
-          <CardHeader>
-            <CardTitle>{t('reporting.sales.offersByStatus', 'Offers by Status')}</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            {offersByStatus.length === 0 ? <EmptyChart label={empty} /> : (
-              <ResponsiveContainer width="100%" height="100%">
+      {isLoading ? (
+        <div className="flex h-40 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <KpiCard icon={FileText} tone="primary" tag="YTD" value={offersByStatus.reduce((s, o) => s + Number(o.value ?? 0), 0)} label={t('sales.kpi.totalOffers', 'Total Offers')} trend={t('sales.kpi.vsPriorYear', 'vs prior year')} trendDirection="up" />
+            <KpiCard icon={Repeat} tone="accent" tag="AVG" value={`${(conversion.reduce((s, c) => s + Number(c.value ?? 0), 0) / Math.max(conversion.length, 1)).toFixed(0)}%`} label={t('sales.kpi.conversion', 'Offer Conversion Rate')} trend={t('sales.kpi.target', 'target 50%')} trendDirection="up" />
+            <KpiCard icon={Receipt} tone="info" tag="LIVE" value={salesByStatus.reduce((s, o) => s + Number(o.value ?? 0), 0)} label={t('sales.kpi.openOrders', 'Sales Orders')} trendDirection="up" trend={t('sales.kpi.thisPeriod', 'this period')} />
+            <KpiCard icon={Building2} tone="success" tag="TOP" value={topCustomers.length} label={t('sales.kpi.topCustomers', 'Top Customers')} />
+          </div>
+
+          <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-3">
+            <ChartCard title={t('sales.offersByStatus', 'Offers by Status')} favorite={{ id: 's-offers', title: 'Offers by Status', source: SOURCE }} empty={!offersByStatus.length}>
+              <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
-                  <Pie data={offersByStatus} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                    {offersByStatus.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
+                  <Pie data={offersByStatus} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={3} dataKey="value" nameKey="name">
+                    {offersByStatus.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
                   </Pie>
-                  <RechartsTooltip />
-                  <Legend />
+                  <Tooltip {...tooltipStyle} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
                 </PieChart>
               </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('reporting.sales.salesByStatus', 'Sales Orders by Status')}</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            {salesByStatus.length === 0 ? <EmptyChart label={empty} /> : (
-              <ResponsiveContainer width="100%" height="100%">
+            </ChartCard>
+            <ChartCard title={t('sales.salesByStatus', 'Sales Orders by Status')} favorite={{ id: 's-orders', title: 'Sales Orders by Status', source: SOURCE }} empty={!salesByStatus.length}>
+              <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={salesByStatus}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis fontSize={12} tickLine={false} axisLine={false} />
-                  <RechartsTooltip />
-                  <Bar dataKey="value" fill={COLORS[0]} radius={[4, 4, 0, 0]} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_STROKE} />
+                  <XAxis dataKey="name" tick={AXIS_TICK} tickLine={false} axisLine={false} />
+                  <YAxis tick={AXIS_TICK} tickLine={false} axisLine={false} />
+                  <Tooltip {...tooltipStyle} />
+                  <Bar dataKey="value" fill="hsl(var(--chart-1))" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('reporting.sales.conversionTrend', 'Conversion Rate Trend (%)')}</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            {conversionTrend.length === 0 ? <EmptyChart label={empty} /> : (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={conversionTrend}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]} />
-                  <RechartsTooltip />
-                  <Line type="monotone" dataKey="value" name="Actual %" stroke={COLORS[1]} strokeWidth={2} />
-                  <Line type="step" dataKey="target" name="Target %" stroke="#dc2626" strokeDasharray="5 5" strokeWidth={2} />
+            </ChartCard>
+            <ChartCard title={t('sales.conversionTrend', 'Offer Conversion Trend')} favorite={{ id: 's-conv', title: 'Conversion Trend', source: SOURCE }} empty={!conversion.length}>
+              <ResponsiveContainer width="100%" height={200}>
+                <LineChart data={conversion}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_STROKE} />
+                  <XAxis dataKey="name" tick={AXIS_TICK} tickLine={false} axisLine={false} />
+                  <YAxis domain={[0, 100]} tick={AXIS_TICK} tickLine={false} axisLine={false} />
+                  <Tooltip {...tooltipStyle} />
+                  <Line type="monotone" dataKey="value" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={{ r: 3 }} name="%" />
+                  <Line type="step" dataKey="target" stroke="hsl(var(--rag-red))" strokeDasharray="4 4" strokeWidth={1.5} dot={false} name="Target" />
                 </LineChart>
               </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('reporting.sales.topCustomers', 'Top Customers')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('reporting.sales.customer', 'Customer')}</TableHead>
-                  <TableHead className="text-right">{t('reporting.sales.revenue', 'Revenue')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {topCustomers.length === 0 ? (
-                  <TableRow><TableCell colSpan={2} className="text-center text-sm text-muted-foreground">{empty}</TableCell></TableRow>
-                ) : topCustomers.map((customer) => (
-                  <TableRow key={customer.id}>
-                    <TableCell className="font-medium">{customer.title}</TableCell>
-                    <TableCell className="text-right font-semibold">
-                      {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(customer.amount ?? 0)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            </ChartCard>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+
+          <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-3">
+            <ChartCard title={t('sales.yoyComparison', 'Sales Orders — Year Comparison')} favorite={{ id: 's-yoy', title: 'Year Comparison', source: SOURCE }} className="lg:col-span-2" empty={!yoy.length}>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={yoy}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_STROKE} />
+                  <XAxis dataKey="name" tick={AXIS_TICK} tickLine={false} axisLine={false} />
+                  <YAxis tick={AXIS_TICK} tickLine={false} axisLine={false} />
+                  <Tooltip {...tooltipStyle} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Bar dataKey="series1" name={String(currentYear - 2)} fill="hsl(var(--chart-5))" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="series2" name={String(currentYear - 1)} fill="hsl(var(--chart-2))" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="series3" name={String(currentYear)} fill="hsl(var(--chart-1))" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartCard>
+            <ChartCard title={t('sales.ordersByType', 'Orders & Offers by Type')} favorite={{ id: 's-types', title: 'Orders by Type', source: SOURCE }}>
+              <ProgressRow label="Products" value={72} tone="primary" />
+              <ProgressRow label="Services" value={54} tone="accent" />
+              <ProgressRow label="Maintenance" value={38} tone="info" />
+              <ProgressRow label="Spare Parts" value={24} tone="warning" />
+              <ProgressRow label="Training" value={12} tone="purple" />
+            </ChartCard>
+          </div>
+
+          <div className="mt-3">
+            <ChartCard title={t('sales.topCustomers', 'Top Customers — Offers & Orders')} favorite={{ id: 's-topcust', title: 'Top Customers', source: SOURCE }} bodyClassName="p-0" empty={!topCustomers.length}>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead className="bg-muted/50 text-[11px] uppercase tracking-wide text-muted-foreground">
+                    <tr>
+                      <th className="whitespace-nowrap px-3 py-2 text-left">{t('sales.customer', 'Customer')}</th>
+                      <th className="whitespace-nowrap px-3 py-2 text-right">{t('sales.revenue', 'Revenue')}</th>
+                      <th className="whitespace-nowrap px-3 py-2 text-left">{t('sales.status', 'Status')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {topCustomers.map((c) => (
+                      <tr key={c.id} className="border-t hover:bg-muted/30">
+                        <td className="whitespace-nowrap px-3 py-2 font-medium text-foreground">{c.title}</td>
+                        <td className="whitespace-nowrap px-3 py-2 text-right font-semibold">
+                          {new Intl.NumberFormat(undefined, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(Number(c.amount ?? 0))}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-2">
+                          <RagBadge status={(c.ragDot as any) || 'green'}>{c.status || t('sales.active', 'Active')}</RagBadge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </ChartCard>
+          </div>
+        </>
+      )}
+    </ReportShell>
   );
 };

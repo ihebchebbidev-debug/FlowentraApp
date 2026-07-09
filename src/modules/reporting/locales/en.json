@@ -1,61 +1,156 @@
 {
+  "scope": {
+    "allCompanies": "All companies",
+    "currentCompany": "Current company"
+  },
+  "actions": {
+    "filters": "Filters",
+    "export": "Export",
+    "refresh": "Refresh"
+  },
+  "filters": {
+    "title": "Filters",
+    "apply": "Apply",
+    "clear": "Clear",
+    "period": "Period",
+    "all": "All",
+    "last12": "Last 12 Months",
+    "ytd": "This Year",
+    "lastQuarter": "Last Quarter"
+  },
+  "general": {
+    "noData": "No data",
+    "loadError": "Failed to load report",
+    "retry": "Retry",
+    "fromLastMonth": "from last month"
+  },
+  "my": {
+    "title": "My Dashboard",
+    "subtitle": "Your favorited widgets from all reports",
+    "emptyTitle": "No widgets pinned yet",
+    "emptyDesc": "Click the ☆ star on any widget in the dashboards below to pin it here.",
+    "open": "Open"
+  },
   "sales": {
     "title": "Sales Dashboard",
-    "yoyComparison": "Year-over-Year Comparison",
+    "subtitle": "Commercial pipeline: offers, orders, conversion, customers",
+    "orderStatus": "Order Status",
+    "yoyComparison": "Sales Orders — Year Comparison",
     "offersByStatus": "Offers by Status",
     "salesByStatus": "Sales Orders by Status",
-    "conversionTrend": "Offer Conversion Rate Trend",
+    "conversionTrend": "Offer Conversion Trend",
+    "ordersByType": "Orders & Offers by Type",
     "topCustomers": "Top Customers",
-    "contact": "Contact",
-    "openOrders": "Open Orders",
-    "revenue": "Revenue"
+    "customer": "Customer",
+    "revenue": "Revenue",
+    "status": "Status",
+    "active": "Active",
+    "kpi": {
+      "totalOffers": "Total Offers",
+      "conversion": "Offer Conversion Rate",
+      "openOrders": "Sales Orders",
+      "topCustomers": "Top Customers",
+      "vsPriorYear": "vs prior year",
+      "target": "target 50%",
+      "thisPeriod": "this period"
+    }
   },
   "service": {
     "title": "Service Dashboard",
-    "completionByMonth": "Completion % by Month",
-    "workOrdersByStatus": "Work Orders by Status",
-    "workOrdersByType": "Work Orders by Type",
-    "dispatchesPerTech": "Dispatches per Technician",
-    "consumedVsPlanned": "Consumed vs Planned Hours",
-    "technicianDetails": "Technician Details",
-    "technician": "Technician",
-    "assignments": "Assignments",
-    "completionRate": "Completion %"
+    "subtitle": "Completion, planning & technician profitability",
+    "orderStatus": "Order Status",
+    "orderType": "Order Type",
+    "completionTarget": "Completion Rate vs Target — by Month",
+    "byStatus": "Work Orders by Status",
+    "byType": "Work Orders by Type",
+    "dispatchesTech": "Dispatches per Technician — Year",
+    "hours": "Consumed vs Planned Hours",
+    "techTable": "Technician Performance Detail",
+    "tech": "Technician",
+    "completed": "Completion %",
+    "efficiency": "Efficiency",
+    "techEmpty": "Technician table not yet populated",
+    "kpi": {
+      "completion": "Completion Rate vs Target",
+      "openWos": "Work Orders",
+      "dispatches": "Active Technicians",
+      "efficiency": "Time Efficiency",
+      "vsPriorYear": "vs prior year"
+    }
   },
   "finance": {
     "title": "Finance Dashboard",
+    "subtitle": "Invoices, payments & expenses with RAG flags",
     "invoiceStatus": "Invoice Status",
-    "recentInvoices": "Recent Invoices",
-    "invoiceNumber": "Invoice Number",
+    "expenses": "Expenses by Category",
+    "expensesEmpty": "Expense categories not yet available",
+    "invoiceTable": "Recent Invoices",
+    "invoiceEmpty": "Invoice detail rows not yet populated",
+    "invoiceNumber": "Invoice",
     "customer": "Customer",
     "status": "Status",
-    "amount": "Amount"
+    "amount": "Amount",
+    "kpi": {
+      "revenue": "Total Revenue",
+      "pending": "Pending Collection",
+      "overdue": "Overdue",
+      "cash": "Cash Position"
+    }
   },
   "hr": {
     "title": "HR Dashboard",
-    "headcountByDept": "Headcount by Department",
-    "salaryByDept": "Salary Cost by Department",
-    "performance": "Performance Distribution",
-    "hiringVsTurnover": "Hiring vs Turnover",
-    "employeeList": "Employee Details",
-    "employee": "Employee",
+    "subtitle": "Headcount, salaries, performance & hiring",
     "department": "Department",
-    "performanceGrade": "Performance Grade",
-    "salary": "Salary"
+    "headcount": "Headcount by Department",
+    "salary": "Salary Cost by Department",
+    "performance": "Performance Distribution",
+    "hiring": "Hiring vs Turnover",
+    "hires": "Hires",
+    "leavers": "Leavers",
+    "employeeTable": "Employee Detail",
+    "employee": "Employee",
+    "grade": "Grade",
+    "salaryCol": "Salary",
+    "empty": "HR data will appear once populated",
+    "kpi": {
+      "headcount": "Total Headcount",
+      "salary": "Monthly Salary Cost",
+      "performance": "Avg Performance Grade",
+      "hires": "New Hires"
+    }
   },
   "purchase": {
     "title": "Purchase Dashboard",
-    "spendBySupplier": "Spend by Supplier",
-    "spendByCategory": "Spend by Category",
-    "receiptStatus": "Receipt Status",
-    "poSpendTrend": "PO Spend Trend",
-    "poDetails": "Purchase Order Details",
-    "poNumber": "PO Number",
+    "subtitle": "Suppliers, spend, articles & receipts",
     "supplier": "Supplier",
+    "spendSupplier": "Spend by Supplier — Top 8",
+    "spendCategory": "Spend by Category",
+    "receiptStatus": "Receipt Status",
+    "trend": "PO Spend Trend",
+    "poTable": "Purchase Order Detail",
+    "poNumber": "PO",
     "status": "Status",
-    "amount": "Amount"
+    "amount": "Amount",
+    "empty": "Purchase data will appear once populated",
+    "kpi": {
+      "spend": "Total Spend",
+      "pos": "Purchase Orders",
+      "suppliers": "Active Suppliers",
+      "receipt": "Receipt Rate"
+    }
   },
-  "general": {
-    "fromLastMonth": "from last month"
+  "export": {
+    "title": "Export Reports",
+    "subtitle": "Download report data in your preferred format",
+    "settings": "Export Settings",
+    "dateRange": "Date Range",
+    "format": "Format",
+    "reports": "Reports to Include",
+    "generate": "Generate Export",
+    "recent": "Recent Exports",
+    "noExports": "No exports yet. Generate one to see it here.",
+    "queued": "Export queued",
+    "queuedDesc": "Backend export generation is not yet implemented — the UI is ready for wiring.",
+    "pickOne": "Select at least one report"
   }
 }
