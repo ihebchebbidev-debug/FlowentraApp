@@ -118,7 +118,7 @@ export const FinanceDashboard = () => {
                         <td className="whitespace-nowrap px-3 py-2">{inv.subtitle}</td>
                         <td className="whitespace-nowrap px-3 py-2"><RagBadge status={(inv.ragDot as any) || 'neutral'}>{inv.status}</RagBadge></td>
                         <td className="whitespace-nowrap px-3 py-2 text-right font-semibold">
-                          {new Intl.NumberFormat(undefined, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(Number(inv.amount ?? 0))}
+                          {new Intl.NumberFormat(undefined, { style: 'currency', currency: 'TND', maximumFractionDigits: 0 }).format(Number(inv.amount ?? 0))}
                         </td>
                       </tr>
                     ))}

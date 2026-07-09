@@ -59,7 +59,7 @@ export const HrDashboard = () => {
         <>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <KpiCard icon={Users} tone="purple" tag="LIVE" value={totalHeadcount || '—'} label={t('hr.kpi.headcount', 'Total Headcount')} />
-            <KpiCard icon={Briefcase} tone="info" tag="MONTH" value={new Intl.NumberFormat(undefined, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(salary.reduce((s, x) => s + Number(x.value ?? 0), 0))} label={t('hr.kpi.salary', 'Monthly Salary Cost')} />
+            <KpiCard icon={Briefcase} tone="info" tag="MONTH" value={new Intl.NumberFormat(undefined, { style: 'currency', currency: 'TND', maximumFractionDigits: 0 }).format(salary.reduce((s, x) => s + Number(x.value ?? 0), 0))} label={t('hr.kpi.salary', 'Monthly Salary Cost')} />
             <KpiCard icon={Award} tone="success" tag="AVG" value="B+" label={t('hr.kpi.performance', 'Avg Performance Grade')} />
             <KpiCard icon={UserPlus} tone="accent" tag="YTD" value={totalHires || '—'} label={t('hr.kpi.hires', 'New Hires')} />
           </div>
@@ -135,7 +135,7 @@ export const HrDashboard = () => {
                         <td className="whitespace-nowrap px-3 py-2">{e.subtitle}</td>
                         <td className="whitespace-nowrap px-3 py-2"><RagBadge status={(e.ragDot as any) || 'neutral'}>{e.status}</RagBadge></td>
                         <td className="whitespace-nowrap px-3 py-2 text-right font-semibold">
-                          {new Intl.NumberFormat(undefined, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(Number(e.amount ?? 0))}
+                          {new Intl.NumberFormat(undefined, { style: 'currency', currency: 'TND', maximumFractionDigits: 0 }).format(Number(e.amount ?? 0))}
                         </td>
                       </tr>
                     ))}

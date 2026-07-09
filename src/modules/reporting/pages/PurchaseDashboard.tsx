@@ -58,7 +58,7 @@ export const PurchaseDashboard = () => {
       ) : (
         <>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <KpiCard icon={DollarSign} tone="warning" tag="YTD" value={new Intl.NumberFormat(undefined, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0, notation: 'compact' }).format(totalSpend)} label={t('purchase.kpi.spend', 'Total Spend')} />
+            <KpiCard icon={DollarSign} tone="warning" tag="YTD" value={new Intl.NumberFormat(undefined, { style: 'currency', currency: 'TND', maximumFractionDigits: 0, notation: 'compact' }).format(totalSpend)} label={t('purchase.kpi.spend', 'Total Spend')} />
             <KpiCard icon={ShoppingCart} tone="primary" tag="LIVE" value={pos.length || '—'} label={t('purchase.kpi.pos', 'Purchase Orders')} />
             <KpiCard icon={Package} tone="info" tag="AVG" value={bySupplier.length || '—'} label={t('purchase.kpi.suppliers', 'Active Suppliers')} />
             <KpiCard icon={Truck} tone="accent" tag="AVG" value={receiptStatus.length ? `${((receiptStatus.find(r => r.name?.toLowerCase() === 'received')?.value ?? 0) as number / Math.max(receiptStatus.reduce((s, x) => s + Number(x.value ?? 0), 0), 1) * 100).toFixed(0)}%` : '—'} label={t('purchase.kpi.receipt', 'Receipt Rate')} />
@@ -133,7 +133,7 @@ export const PurchaseDashboard = () => {
                         <td className="whitespace-nowrap px-3 py-2">{p.subtitle}</td>
                         <td className="whitespace-nowrap px-3 py-2"><RagBadge status={(p.ragDot as any) || 'neutral'}>{p.status}</RagBadge></td>
                         <td className="whitespace-nowrap px-3 py-2 text-right font-semibold">
-                          {new Intl.NumberFormat(undefined, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(Number(p.amount ?? 0))}
+                          {new Intl.NumberFormat(undefined, { style: 'currency', currency: 'TND', maximumFractionDigits: 0 }).format(Number(p.amount ?? 0))}
                         </td>
                       </tr>
                     ))}
