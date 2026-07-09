@@ -15,7 +15,7 @@ interface SaleItemsManagerProps {
   readonly?: boolean;
 }
 
-export function SaleItemsManager({ items, onUpdateItems, currency = 'USD', readonly = false }: SaleItemsManagerProps) {
+export function SaleItemsManager({ items, onUpdateItems, currency = 'TND', readonly = false }: SaleItemsManagerProps) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<SaleItem | null>(null);
 

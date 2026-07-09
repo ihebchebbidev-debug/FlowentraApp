@@ -54,7 +54,7 @@ export function AccountSettings({ section }: AccountSettingsProps = {}) {
     timezone: 'UTC',
     dateFormat: 'MM/DD/YYYY',
     timeFormat: '12h',
-    currency: 'USD',
+    currency: 'TND',
     sidebarCollapsed: false,
     compactMode: false,
     showTooltips: true,

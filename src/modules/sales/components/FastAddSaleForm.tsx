@@ -84,7 +84,7 @@ export function FastAddSaleForm({ onSuccess, onSwitchToDetailed }: FastAddSaleFo
         customerPhone: "",
         customerAddress: "",
         priority: (defaultPriority?.id || "medium") as any,
-        currency: "USD",
+        currency: "TND",
         deliveryDate: undefined,
         items: [],
         notes: "",

@@ -837,7 +837,7 @@ export function TopNavigation() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56 bg-background/95 backdrop-blur-sm border border-border/50 shadow-xl rounded-xl p-2 z-[100]">
-                    <DropdownMenuItem onSelect={() => navigate('/dashboard/settings/profile')}>
+                    <DropdownMenuItem onSelect={() => navigate('/dashboard/settings')}>
                       <User className="mr-2 h-4 w-4" />
                       <span>{t('profile')}</span>
                     </DropdownMenuItem>

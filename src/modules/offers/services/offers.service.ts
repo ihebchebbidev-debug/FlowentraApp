@@ -77,7 +77,7 @@ const mapApiToLocal = (apiOffer: ApiOffer): Offer => {
     contactLongitude: contactLongitude,
     contactHasLocation: contactHasLocation,
     amount: apiOffer.totalAmount || 0,
-    currency: (apiOffer.currency || 'USD') as 'USD' | 'EUR' | 'GBP' | 'TND',
+    currency: (apiOffer.currency || 'TND') as 'USD' | 'EUR' | 'GBP' | 'TND',
     status: apiOffer.status as Offer['status'],
     category: (apiOffer.category || 'potential') as Offer['category'],
     source: (apiOffer.source || 'direct_customer') as Offer['source'],

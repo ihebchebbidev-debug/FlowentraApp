@@ -14,7 +14,7 @@ namespace MyApi.Modules.Dispatches.DTOs
         public string Type { get; set; } = null!;
         [Required]
         public decimal Amount { get; set; }
-        public string Currency { get; set; } = "USD";
+        public string Currency { get; set; } = "TND";
         public string? Description { get; set; }
         public DateTime? Date { get; set; }
         public string? OverrunReason { get; set; }

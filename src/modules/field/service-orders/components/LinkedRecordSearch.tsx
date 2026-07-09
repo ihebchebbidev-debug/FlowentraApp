@@ -77,7 +77,7 @@ export default function LinkedRecordSearch({ onSelect, selectedRecord }: Props) 
   const formatCurrency = (amount: number, currency: string) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: currency || 'USD'
+      currency: currency || 'TND'
     }).format(amount);
   };
 

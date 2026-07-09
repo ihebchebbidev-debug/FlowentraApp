@@ -72,7 +72,7 @@ const mapApiToLocal = (apiSale: ApiSale & { offer?: { id?: number; offerNumber?:
     contactLongitude: contactLongitude,
     contactHasLocation: contactHasLocation,
     amount: apiSale.totalAmount || 0,
-    currency: (apiSale.currency || 'USD') as 'USD' | 'EUR' | 'GBP' | 'TND',
+    currency: (apiSale.currency || 'TND') as 'USD' | 'EUR' | 'GBP' | 'TND',
     status: normalizeStatus(saleStatusConfig, apiSale.status as any) as any,
     stage: (apiSale.stage || 'offer') as any,
     priority: (apiSale.priority || 'medium') as any,

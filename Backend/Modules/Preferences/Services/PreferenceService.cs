@@ -50,7 +50,7 @@ namespace MyApi.Modules.Preferences.Services
                 Timezone = dto.Timezone ?? "UTC",
                 DateFormat = dto.DateFormat ?? "MM/DD/YYYY",
                 TimeFormat = dto.TimeFormat ?? "12h",
-                Currency = dto.Currency ?? "USD",
+                Currency = dto.Currency ?? "TND",
                 NumberFormat = dto.NumberFormat,
                 Notifications = dto.Notifications,
                 SidebarCollapsed = dto.SidebarCollapsed ?? false,

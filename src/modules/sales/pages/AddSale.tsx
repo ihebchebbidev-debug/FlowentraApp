@@ -65,7 +65,7 @@ export function AddSale() {
     status: "created",
     priority: "medium",
     amount: 0,
-    currency: "USD",
+    currency: "TND",
     deliveryDate: undefined,
     items: [],
     notes: "",

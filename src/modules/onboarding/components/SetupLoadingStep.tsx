@@ -65,7 +65,7 @@ export function SetupLoadingStep({ data, onComplete }: SetupLoadingStepProps) {
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       dateFormat: 'MM/DD/YYYY',
       timeFormat: '12h',
-      currency: 'USD',
+      currency: 'TND',
       numberFormat: 'comma',
       notifications: '{}',
       sidebarCollapsed: false,

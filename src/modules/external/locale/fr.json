@@ -1,4 +1,8 @@
 {
+  "plugin": {
+    "name": "APIs Externes",
+    "description": "Créez et gérez des points d'accès API pour recevoir des données de sources externes."
+  },
   "external": {
     "title": "APIs Externes",
     "description": "Créez et gérez des points d'accès API pour recevoir des données de sources externes.",

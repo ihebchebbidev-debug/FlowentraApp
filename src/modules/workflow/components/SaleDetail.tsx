@@ -18,7 +18,7 @@ const mockSale: Sale = {
   contactName: "John Smith",
   contactCompany: "TechCorp Inc.",
   amount: 25000,
-  currency: 'USD',
+  currency: 'TND',
   status: 'closed',
   stage: 'closed',
   priority: 'high',

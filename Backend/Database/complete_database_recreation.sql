@@ -83,7 +83,7 @@ CREATE TABLE "UserPreferences" (
     "Timezone" VARCHAR(100),
     "DateFormat" VARCHAR(20) NOT NULL DEFAULT 'MM/DD/YYYY',
     "TimeFormat" VARCHAR(5) NOT NULL DEFAULT '12h',
-    "Currency" VARCHAR(5) NOT NULL DEFAULT 'USD',
+    "Currency" VARCHAR(5) NOT NULL DEFAULT 'TND',
     "NumberFormat" VARCHAR(10) NOT NULL DEFAULT 'comma',
     "Notifications" TEXT DEFAULT '{}',
     "SidebarCollapsed" BOOLEAN NOT NULL DEFAULT FALSE,

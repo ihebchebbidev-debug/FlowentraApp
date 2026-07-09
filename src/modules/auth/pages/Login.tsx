@@ -154,7 +154,7 @@ const Index = () => {
       timezone: 'UTC',
       dateFormat: 'MM/DD/YYYY',
       timeFormat: '12h',
-      currency: 'USD'
+      currency: 'TND'
     });
 
     try {

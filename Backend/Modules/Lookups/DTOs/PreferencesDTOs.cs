@@ -23,7 +23,7 @@ namespace MyApi.Modules.Lookups.DTOs
         public string? Timezone { get; set; }
         public string DateFormat { get; set; } = "MM/DD/YYYY";
         public string TimeFormat { get; set; } = "12h";
-        public string Currency { get; set; } = "USD";
+        public string Currency { get; set; } = "TND";
         public string NumberFormat { get; set; } = "comma";
         public string? Notifications { get; set; } = "{}";
         public bool SidebarCollapsed { get; set; } = false;
@@ -63,7 +63,7 @@ namespace MyApi.Modules.Lookups.DTOs
         public string? Timezone { get; set; }
         public string DateFormat { get; set; } = "MM/DD/YYYY";
         public string TimeFormat { get; set; } = "12h";
-        public string Currency { get; set; } = "USD";
+        public string Currency { get; set; } = "TND";
         public string NumberFormat { get; set; } = "comma";
         public string? Notifications { get; set; } = "{}";
         public bool? SidebarCollapsed { get; set; }

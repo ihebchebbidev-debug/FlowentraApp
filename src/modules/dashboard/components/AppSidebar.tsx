@@ -193,6 +193,12 @@ export function AppSidebar() {
     if (key === 'todo') return t('projects');
     if (key === 'time-expenses') return t('timeExpenses');
     if (key === 'external') {
+      // Prefer the module namespace to avoid collisions with the generic
+      // "external" string in the shared namespace.
+      const nsTitle = t('external:external.title');
+      if (typeof nsTitle === 'string' && nsTitle !== 'external:external.title' && nsTitle !== 'external.title') return nsTitle;
+      const pluginTitle = t('external:plugin.name');
+      if (typeof pluginTitle === 'string' && pluginTitle !== 'external:plugin.name' && pluginTitle !== 'plugin.name') return pluginTitle;
       const ext = t('external.title');
       if (typeof ext === 'string' && ext !== 'external.title') return ext;
       return 'External APIs';
@@ -278,6 +284,10 @@ export function AppSidebar() {
     };
     // Avoid calling t(key) for keys known to resolve to objects in some locales
     if (key === 'external') {
+      const nsDesc = t('external:external.description');
+      if (typeof nsDesc === 'string' && !isLikelyRaw(nsDesc) && nsDesc !== 'external:external.description') return nsDesc;
+      const pluginDesc = t('external:plugin.description');
+      if (typeof pluginDesc === 'string' && !isLikelyRaw(pluginDesc) && pluginDesc !== 'external:plugin.description') return pluginDesc;
       const desc = t('external.description');
       if (typeof desc === 'string' && !isLikelyRaw(desc)) return desc;
       return fallback ?? '';

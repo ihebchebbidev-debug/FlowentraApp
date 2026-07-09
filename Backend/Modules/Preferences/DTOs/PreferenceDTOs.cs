@@ -29,7 +29,7 @@ namespace MyApi.Modules.Preferences.DTOs
         public string? TimeFormat { get; set; } = "12h";
         
         [JsonPropertyName("currency")]
-        public string? Currency { get; set; } = "USD";
+        public string? Currency { get; set; } = "TND";
         
         [JsonPropertyName("numberFormat")]
         public string? NumberFormat { get; set; }

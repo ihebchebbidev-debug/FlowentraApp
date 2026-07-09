@@ -1,4 +1,8 @@
 {
+  "plugin": {
+    "name": "External APIs",
+    "description": "Create and manage custom API endpoints to receive data from external sources."
+  },
   "external": {
     "title": "External APIs",
     "description": "Create and manage custom API endpoints to receive data from external sources.",

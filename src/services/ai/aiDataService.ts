@@ -710,7 +710,7 @@ export const aiDataQueries = {
       const totalValue = sum(deals);
       const closed = won.length + lost.length;
       const winRate = closed > 0 ? Math.round((won.length / closed) * 100) : 0;
-      const currency = deals.find((d: any) => d.currency)?.currency || 'USD';
+      const currency = deals.find((d: any) => d.currency)?.currency || 'TND';
 
       return {
         success: true,
@@ -2484,7 +2484,7 @@ export const aiDataQueries = {
 
       deals.slice(0, 5).forEach((d: any) => {
         const stageIcon = d.stage === 'won' ? '✅' : d.stage === 'lost' ? '❌' : d.stage === 'negotiation' ? '🤝' : d.stage === 'proposal' ? '📄' : '🔍';
-        const currency = d.currency || 'USD';
+        const currency = d.currency || 'TND';
         result += `${stageIcon} **${d.title}**${d.dealNumber ? ` (${d.dealNumber})` : ''}\n`;
         result += `   Stage: ${d.stage} | Value: ${(Number(d.estimatedValue) || 0).toLocaleString()} ${currency} | Probability: ${d.probability ?? 0}%\n`;
         if (d.contactName) result += `   Contact: ${d.contactName}\n`;

@@ -6,12 +6,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useTheme } from "@/hooks/useTheme";
 import { usePreferences } from "@/hooks/usePreferences";
 import { usePermissions } from "@/hooks/usePermissions";
-import { Palette, Sun, Moon, Monitor, Sidebar, Layout, Table, List, Loader2, Check, CheckCircle2 } from "lucide-react";
+import { Palette, Sun, Moon, Monitor, Sidebar, Layout, Table, List, Loader2, Check, CheckCircle2, Coins, Lock } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ToastAction } from "@/components/ui/toast";
 import { toast } from "@/hooks/use-toast";
 import i18n from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
+import { SUPPORTED_CURRENCIES, DEFAULT_CURRENCY_CODE } from "@/lib/currencies";
+import { useUserType } from "@/hooks/useUserType";
 
 const languages = [
   { code: 'en', name: 'English' },
@@ -50,6 +52,25 @@ export function UserPreferencesTab() {
   const { preferences, updatePreferences, applyColorTheme } = usePreferences();
   const { setTheme } = useTheme();
   const { hasPermission, isMainAdmin } = usePermissions();
+  const { isMainAdminUser } = useUserType();
+  const currentCurrency = preferences?.currency || DEFAULT_CURRENCY_CODE;
+
+  const handleCurrencyChange = async (code: string) => {
+    try {
+      await updatePreferences({ currency: code });
+      toast({
+        title: t('preferences.currencyUpdatedTitle', 'Currency updated'),
+        description: t('preferences.currencyUpdatedDesc', 'The new currency applies to all users.'),
+      });
+    } catch (error: any) {
+      console.error('[UserPreferencesTab] Currency update failed:', error);
+      toast({
+        title: t('preferences.currencyUpdateFailedTitle', 'Update failed'),
+        description: error?.message || t('preferences.currencyUpdateFailedDesc', 'Could not update the currency.'),
+        variant: 'destructive',
+      });
+    }
+  };
 
   const canEditSettings = isMainAdmin || hasPermission('settings', 'update');
 
@@ -391,6 +412,51 @@ export function UserPreferencesTab() {
                 );
               })}
             </RadioGroup>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Currency Card (global, MainAdminUser only) */}
+      <Card className="shadow-card border-0 bg-card">
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
+            <Coins className="h-4 w-4 text-primary" />
+            {t('preferences.currencyTitle', 'Currency')}
+            {!isMainAdminUser && <Lock className="h-3.5 w-3.5 text-muted-foreground ml-1" />}
+          </CardTitle>
+          <CardDescription className="text-xs">
+            {isMainAdminUser
+              ? t('preferences.currencyDescAdmin', 'Set the global currency. Applies to every user in the workspace. Default: TND.')
+              : t('preferences.currencyDescUser', 'Only the main administrator can change the global currency.')}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-4 sm:p-6">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="min-w-0">
+              <Label className="text-sm font-medium">
+                {t('preferences.currencyLabel', 'Application currency')}
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                {t('preferences.currencyHint', 'Used across reports, offers, sales, purchases and HR.')}
+              </p>
+            </div>
+            <Select
+              value={currentCurrency}
+              onValueChange={handleCurrencyChange}
+              disabled={!isMainAdminUser}
+            >
+              <SelectTrigger className="w-[220px] bg-background">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border shadow-lg z-50 max-h-80">
+                {SUPPORTED_CURRENCIES.map(c => (
+                  <SelectItem key={c.code} value={c.code}>
+                    <span className="font-mono mr-2">{c.code}</span>
+                    <span className="text-muted-foreground">{c.symbol} · {c.name}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>

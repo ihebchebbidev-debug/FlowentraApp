@@ -435,7 +435,7 @@ export const dispatchesApi = {
       serviceOrderJobId: expense.serviceOrderJobId ?? null,
       type: expense.type,
       amount: expense.amount,
-      currency: expense.currency || 'USD',
+      currency: expense.currency || 'TND',
       description: expense.description || null,
       date: expense.date,
       overrunReason: expense.overrunReason || null,

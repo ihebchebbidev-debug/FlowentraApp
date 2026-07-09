@@ -180,12 +180,22 @@ export const SUPPORTED_CURRENCIES: CurrencyOption[] = [
 
 export const DEFAULT_CURRENCY_CODE = 'TND';
 
+/** Guaranteed TND fallback option (used whenever lookup fails). */
+export const DEFAULT_CURRENCY: CurrencyOption =
+  SUPPORTED_CURRENCIES.find(c => c.code === DEFAULT_CURRENCY_CODE) ??
+  { code: 'TND', name: 'Tunisian Dinar', symbol: 'د.ت' };
+
 export function getCurrencyByCode(code?: string | null): CurrencyOption {
-  if (!code) return SUPPORTED_CURRENCIES[0];
-  return (
-    SUPPORTED_CURRENCIES.find(c => c.code.toUpperCase() === code.toUpperCase()) ??
-    { code: code.toUpperCase(), name: code.toUpperCase(), symbol: code.toUpperCase() }
-  );
+  try {
+    if (!code) return DEFAULT_CURRENCY;
+    const upper = String(code).toUpperCase();
+    const match = SUPPORTED_CURRENCIES.find(c => c.code.toUpperCase() === upper);
+    if (match) return match;
+    if (!upper.trim()) return DEFAULT_CURRENCY;
+    return { code: upper, name: upper, symbol: upper };
+  } catch {
+    return DEFAULT_CURRENCY;
+  }
 }
 
 /**
@@ -200,13 +210,19 @@ export function getGlobalCurrencyCode(): string {
     const raw = typeof localStorage !== 'undefined' ? localStorage.getItem('user-preferences') : null;
     if (raw) {
       const p = JSON.parse(raw);
-      if (p?.currency) return String(p.currency).toUpperCase();
+      if (p?.currency) {
+        const c = String(p.currency).trim().toUpperCase();
+        if (c) return c;
+      }
     }
     const ud = typeof localStorage !== 'undefined' ? localStorage.getItem('user_data') : null;
     if (ud) {
       const u = JSON.parse(ud);
       const prefs = typeof u?.preferences === 'string' ? JSON.parse(u.preferences) : u?.preferences;
-      if (prefs?.currency) return String(prefs.currency).toUpperCase();
+      if (prefs?.currency) {
+        const c = String(prefs.currency).trim().toUpperCase();
+        if (c) return c;
+      }
     }
   } catch {}
   return DEFAULT_CURRENCY_CODE;
@@ -214,16 +230,14 @@ export function getGlobalCurrencyCode(): string {
 
 /**
  * Shared helper: resolve a currency code with a guaranteed 'TND' fallback.
- * Prefers an explicit per-record code (e.g. order.currency), otherwise the
- * global preference from getGlobalCurrencyCode(), otherwise DEFAULT_CURRENCY_CODE ('TND').
- * Use this everywhere in the app instead of writing `x || 'TND'` inline.
+ * Any error, empty value, or missing preference falls back to DEFAULT_CURRENCY_CODE.
  */
 export function resolveCurrencyCode(preferred?: string | null): string {
-  const p = preferred?.toString().trim();
-  if (p) return p.toUpperCase();
   try {
+    const p = preferred == null ? '' : String(preferred).trim();
+    if (p) return p.toUpperCase();
     const code = getGlobalCurrencyCode();
-    if (code) return code;
+    if (code && code.trim()) return code.toUpperCase();
   } catch {}
   return DEFAULT_CURRENCY_CODE;
 }

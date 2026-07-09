@@ -47,7 +47,7 @@ export function EditSale() {
     status: "created",
     priority: "medium",
     amount: 0,
-    currency: "USD",
+    currency: "TND",
     customerName: "",
     customerEmail: "",
     customerPhone: "",
