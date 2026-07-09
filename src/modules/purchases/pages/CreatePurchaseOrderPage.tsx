@@ -1,3 +1,4 @@
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -24,6 +25,7 @@ interface SupplierOption { id: string; name: string; }
 
 export default function CreatePurchaseOrderPage() {
   const { t } = useTranslation('purchases');
+  const { current: currency } = useCurrency();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   // Optional prefill query params:
@@ -430,7 +432,7 @@ export default function CreatePurchaseOrderPage() {
                           <SelectTrigger className="h-7 text-xs w-14 px-1"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="percentage">%</SelectItem>
-                            <SelectItem value="fixed">TND</SelectItem>
+                            <SelectItem value="fixed">{currency.code}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -464,8 +466,8 @@ export default function CreatePurchaseOrderPage() {
           <CardContent className="p-4">
             <div className="flex justify-end">
               <div className="w-72 space-y-1.5 text-xs">
-                <div className="flex justify-between"><span className="text-muted-foreground">{t('fields.subtotal')}</span><span>{fmt(subtotal)} TND</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">{t('fields.tax')}</span><span>{fmt(taxAmount)} TND</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">{t('fields.subtotal')}</span><span>{fmt(subtotal)} {currency.code}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">{t('fields.tax')}</span><span>{fmt(taxAmount)} {currency.code}</span></div>
                 <div className="flex justify-between items-center">
                   <Label className="text-xs text-muted-foreground m-0">{t('fields.fiscalStamp')}</Label>
                   <Input
@@ -478,7 +480,7 @@ export default function CreatePurchaseOrderPage() {
                   />
                 </div>
                 <Separator />
-                <div className="flex justify-between font-bold text-sm"><span>{t('fields.grandTotal')}</span><span>{fmt(grandTotal)} TND</span></div>
+                <div className="flex justify-between font-bold text-sm"><span>{t('fields.grandTotal')}</span><span>{fmt(grandTotal)} {currency.code}</span></div>
               </div>
             </div>
           </CardContent>

@@ -2,6 +2,7 @@
 // This service queries the actual APIs to answer data-related questions
 import { getCurrentTenant, TENANT_HEADER } from '@/utils/tenant';
 import { API_URL } from '@/config/api';
+import { getGlobalCurrencyCode } from '@/lib/currencies';
 import { articlesApi } from '@/services/api/articlesApi';
 import { offersApi } from '@/services/api/offersApi';
 import { salesApi } from '@/services/api/salesApi';
@@ -21,6 +22,8 @@ import lookupsApi, { currenciesApi, prioritiesApi, leaveTypesApi, skillsApi as s
 import { permissionsApi } from '@/services/api/permissionsApi';
 import type { PermissionModule, PermissionAction } from '@/types/permissions';
 import { offerStatusConfig, saleStatusConfig, normalizeStatus, type EntityStatusConfig } from '@/config/entity-statuses';
+
+
 
 // Group items by canonical status (collapses aliases like created→draft, won→accepted)
 function groupByCanonicalStatus<T extends { status?: string }>(
@@ -218,7 +221,7 @@ export const aiDataQueries = {
 
       return {
         success: true,
-        data: `📋 **Offers Overview**:\n- Total: **${offers.length} offers**\n- Total value: **${totalValue.toLocaleString()} TND**\n\n**By Status:**\n${statusBreakdown}`
+        data: `📋 **Offers Overview**:\n- Total: **${offers.length} offers**\n- Total value: **${totalValue.toLocaleString()} ${getGlobalCurrencyCode()}**\n\n**By Status:**\n${statusBreakdown}`
       };
     } catch (error) {
       return { success: false, data: '', error: 'Could not fetch offers data' };
@@ -241,7 +244,7 @@ export const aiDataQueries = {
 
       return {
         success: true,
-        data: `💰 **Sales Overview**:\n- Total: **${sales.length} sales**\n- Total value: **${totalValue.toLocaleString()} TND**\n\n**By Status:**\n${statusBreakdown}`
+        data: `💰 **Sales Overview**:\n- Total: **${sales.length} sales**\n- Total value: **${totalValue.toLocaleString()} ${getGlobalCurrencyCode()}**\n\n**By Status:**\n${statusBreakdown}`
       };
     } catch (error) {
       return { success: false, data: '', error: 'Could not fetch sales data' };
@@ -1064,12 +1067,12 @@ export const aiDataQueries = {
 
       monthlyData.forEach(m => {
         const bar = '█'.repeat(Math.min(10, Math.floor(m.salesValue / (avgMonthlySales / 5) || 1)));
-        result += `  ${m.month}: ${bar} **${m.salesValue.toLocaleString()} TND** (${m.salesCount} sales)\n`;
+        result += `  ${m.month}: ${bar} **${m.salesValue.toLocaleString()} ${getGlobalCurrencyCode()}** (${m.salesCount} sales)\n`;
       });
 
       result += `\n**Summary:**\n`;
-      result += `- Total (6 months): **${totalSalesValue.toLocaleString()} TND**\n`;
-      result += `- Monthly average: **${Math.round(avgMonthlySales).toLocaleString()} TND**\n`;
+      result += `- Total (6 months): **${totalSalesValue.toLocaleString()} ${getGlobalCurrencyCode()}**\n`;
+      result += `- Monthly average: **${Math.round(avgMonthlySales).toLocaleString()} ${getGlobalCurrencyCode()}**\n`;
       result += `- Current trend: ${salesTrend} (${salesChange > 0 ? '+' : ''}${salesChange.toFixed(1)}%)\n`;
 
       return { success: true, data: result };
@@ -1307,7 +1310,7 @@ export const aiDataQueries = {
 
       result += `**Performance Metrics:**\n`;
       result += `- 🎯 Conversion Rate: **${conversionRate.toFixed(1)}%**\n`;
-      result += `- 💰 Average Offer Value: **${avgOfferValue.toLocaleString()} TND**\n`;
+      result += `- 💰 Average Offer Value: **${avgOfferValue.toLocaleString()} ${getGlobalCurrencyCode()}**\n`;
       result += `- ⏱️ Average Days to Convert: **${avgDaysToConvert} days**\n\n`;
 
       // Recommendations
@@ -1360,17 +1363,17 @@ export const aiDataQueries = {
 
       let result = `💰 **Sales Pipeline Analysis**:\n\n`;
       result += `**Active Pipeline:**\n`;
-      result += `- Total value: **${activePipelineValue.toLocaleString()} TND**\n`;
+      result += `- Total value: **${activePipelineValue.toLocaleString()} ${getGlobalCurrencyCode()}**\n`;
       result += `- Number of offers: **${activePipelineCount}**\n`;
-      result += `- Weighted forecast: **${weightedValue.toLocaleString()} TND**\n\n`;
+      result += `- Weighted forecast: **${weightedValue.toLocaleString()} ${getGlobalCurrencyCode()}**\n\n`;
 
       result += `**By Stage:**\n`;
-      result += `  📝 Created: ${pipeline.draft.count} offers (${pipeline.draft.value.toLocaleString()} TND)\n`;
-      result += `  📤 Sent: ${pipeline.sent.count} offers (${pipeline.sent.value.toLocaleString()} TND)\n`;
-      result += `  🤝 Negotiation: ${pipeline.negotiation.count} offers (${pipeline.negotiation.value.toLocaleString()} TND)\n`;
-      result += `  ✅ Accepted: ${pipeline.accepted.count} offers (${pipeline.accepted.value.toLocaleString()} TND)\n`;
-      result += `  ❌ Rejected: ${pipeline.rejected.count} offers (${pipeline.rejected.value.toLocaleString()} TND)\n`;
-      result += `  ⏰ Expired: ${pipeline.expired.count} offers (${pipeline.expired.value.toLocaleString()} TND)\n`;
+      result += `  📝 Created: ${pipeline.draft.count} offers (${pipeline.draft.value.toLocaleString()} ${getGlobalCurrencyCode()})\n`;
+      result += `  📤 Sent: ${pipeline.sent.count} offers (${pipeline.sent.value.toLocaleString()} ${getGlobalCurrencyCode()})\n`;
+      result += `  🤝 Negotiation: ${pipeline.negotiation.count} offers (${pipeline.negotiation.value.toLocaleString()} ${getGlobalCurrencyCode()})\n`;
+      result += `  ✅ Accepted: ${pipeline.accepted.count} offers (${pipeline.accepted.value.toLocaleString()} ${getGlobalCurrencyCode()})\n`;
+      result += `  ❌ Rejected: ${pipeline.rejected.count} offers (${pipeline.rejected.value.toLocaleString()} ${getGlobalCurrencyCode()})\n`;
+      result += `  ⏰ Expired: ${pipeline.expired.count} offers (${pipeline.expired.value.toLocaleString()} ${getGlobalCurrencyCode()})\n`;
 
       return { success: true, data: result };
     } catch (error) {
@@ -1688,7 +1691,7 @@ export const aiDataQueries = {
         result += `\n🏆 **Top Customers by Revenue:**\n`;
         topCustomers.forEach((c, i) => {
           const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '  ';
-          result += `${medal} **${c.name}**: ${c.total.toLocaleString()} TND (${c.count} orders)\n`;
+          result += `${medal} **${c.name}**: ${c.total.toLocaleString()} ${getGlobalCurrencyCode()} (${c.count} orders)\n`;
         });
       }
 
@@ -1821,11 +1824,11 @@ export const aiDataQueries = {
 
       result += `**📋 Offers:**\n`;
       result += `- New offers created: **${newOffers}**\n`;
-      result += `- Total value: **${offersValue.toLocaleString()} TND**\n\n`;
+      result += `- Total value: **${offersValue.toLocaleString()} ${getGlobalCurrencyCode()}**\n\n`;
 
       result += `**💰 Sales:**\n`;
       result += `- New sales: **${newSales}**\n`;
-      result += `- Revenue: **${salesValue.toLocaleString()} TND**\n\n`;
+      result += `- Revenue: **${salesValue.toLocaleString()} ${getGlobalCurrencyCode()}**\n\n`;
 
       result += `**🚚 Field Operations:**\n`;
       result += `- Dispatches scheduled: **${totalWeekDispatches}**\n`;
@@ -2384,7 +2387,7 @@ export const aiDataQueries = {
       matched.slice(0, 5).forEach((o: any) => {
         const statusIcon = o.status === 'accepted' ? '✅' : o.status === 'rejected' ? '❌' : o.status === 'sent' ? '📤' : '📝';
         result += `${statusIcon} **${o.offerNumber || o.title}**\n`;
-        result += `   Status: ${o.status} | Amount: ${(o.totalAmount || 0).toLocaleString()} TND\n`;
+        result += `   Status: ${o.status} | Amount: ${(o.totalAmount || 0).toLocaleString()} ${getGlobalCurrencyCode()}\n`;
         if (o.contactName) result += `   Customer: ${o.contactName}\n`;
         if (o.createdAt) result += `   Created: ${formatDate(new Date(o.createdAt))}\n`;
         result += `   🔗 [View Offer](/dashboard/offers/${o.id})\n\n`;
@@ -2420,7 +2423,7 @@ export const aiDataQueries = {
       matched.slice(0, 5).forEach((s: any) => {
         const statusIcon = s.status === 'completed' ? '✅' : s.status === 'cancelled' ? '❌' : '🔄';
         result += `${statusIcon} **${s.saleNumber || s.title}**\n`;
-        result += `   Status: ${s.status} | Amount: ${(s.totalAmount || 0).toLocaleString()} TND\n`;
+        result += `   Status: ${s.status} | Amount: ${(s.totalAmount || 0).toLocaleString()} ${getGlobalCurrencyCode()}\n`;
         if (s.contactName) result += `   Customer: ${s.contactName}\n`;
         if (s.createdAt) result += `   Created: ${formatDate(new Date(s.createdAt))}\n`;
         result += `   🔗 [View Sale](/dashboard/sales/${s.id})\n\n`;
@@ -2672,13 +2675,13 @@ export const aiDataQueries = {
       let result = `📈 **Business Metrics Overview**:\n\n`;
 
       result += `**Sales Performance:**\n`;
-      result += `  - Total sales: **${sales.length}** (${totalSalesValue.toLocaleString()} TND)\n`;
-      result += `  - This month: **${thisMonthSales.length}** (${thisMonthRevenue.toLocaleString()} TND)\n`;
-      result += `  - Average sale value: **${avgSaleValue.toLocaleString()} TND**\n\n`;
+      result += `  - Total sales: **${sales.length}** (${totalSalesValue.toLocaleString()} ${getGlobalCurrencyCode()})\n`;
+      result += `  - This month: **${thisMonthSales.length}** (${thisMonthRevenue.toLocaleString()} ${getGlobalCurrencyCode()})\n`;
+      result += `  - Average sale value: **${avgSaleValue.toLocaleString()} ${getGlobalCurrencyCode()}**\n\n`;
 
       result += `**Offers Pipeline:**\n`;
-      result += `  - Total offers: **${offers.length}** (${totalOfferValue.toLocaleString()} TND)\n`;
-      result += `  - Average offer value: **${avgOfferValue.toLocaleString()} TND**\n\n`;
+      result += `  - Total offers: **${offers.length}** (${totalOfferValue.toLocaleString()} ${getGlobalCurrencyCode()})\n`;
+      result += `  - Average offer value: **${avgOfferValue.toLocaleString()} ${getGlobalCurrencyCode()}**\n\n`;
 
       result += `**Operations:**\n`;
       result += `  - Total contacts: **${totalContacts}**\n`;
@@ -3254,11 +3257,11 @@ export const aiDataQueries = {
 
       let result = `💰 **Field Service Revenue**:\n\n`;
       result += `**Overall:**\n`;
-      result += `- Total service revenue: **${totalRevenue.toLocaleString()} TND**\n`;
+      result += `- Total service revenue: **${totalRevenue.toLocaleString()} ${getGlobalCurrencyCode()}**\n`;
       result += `- Completed jobs: **${completedJobs}**\n`;
-      result += `- Avg revenue per job: **${avgRevenuePerJob.toLocaleString()} TND**\n\n`;
+      result += `- Avg revenue per job: **${avgRevenuePerJob.toLocaleString()} ${getGlobalCurrencyCode()}**\n\n`;
       result += `**This Month:**\n`;
-      result += `- Revenue: **${thisMonthRevenue.toLocaleString()} TND**\n`;
+      result += `- Revenue: **${thisMonthRevenue.toLocaleString()} ${getGlobalCurrencyCode()}**\n`;
       result += `- Jobs: **${thisMonthSales.length}**\n`;
 
       return { success: true, data: result };
@@ -3883,7 +3886,7 @@ export const aiDataQueries = {
       result += `**Status:** ${statusIcons[offer.status] || '📋'} ${offer.status}\n`;
       result += `**Customer:** ${offer.contactName || 'Not specified'}\n`;
       if (offer.title) result += `**Title:** ${offer.title}\n`;
-      if (offer.totalAmount) result += `**Amount:** ${offer.totalAmount.toLocaleString()} TND\n`;
+      if (offer.totalAmount) result += `**Amount:** ${offer.totalAmount.toLocaleString()} ${getGlobalCurrencyCode()}\n`;
       if (offer.validUntil) result += `**Valid Until:** ${formatDate(new Date(offer.validUntil))}\n`;
 
       result += `\n🔗 [View Offer](/dashboard/crm/offers/${offer.id})`;
@@ -3922,7 +3925,7 @@ export const aiDataQueries = {
       result += `**Status:** ${statusIcons[sale.status] || '📋'} ${sale.status}\n`;
       result += `**Customer:** ${sale.contactName || 'Not specified'}\n`;
       if (sale.title) result += `**Title:** ${sale.title}\n`;
-      if (sale.totalAmount) result += `**Amount:** ${sale.totalAmount.toLocaleString()} TND\n`;
+      if (sale.totalAmount) result += `**Amount:** ${sale.totalAmount.toLocaleString()} ${getGlobalCurrencyCode()}\n`;
 
       result += `\n🔗 [View Sale](/dashboard/crm/sales/${sale.id})`;
 
@@ -4363,12 +4366,12 @@ export const aiDataQueries = {
 
       result += `**Summary:**\n`;
       result += `- Total offers: **${offers.length}**\n`;
-      result += `- Total value: **${totalValue.toLocaleString()} TND**\n\n`;
+      result += `- Total value: **${totalValue.toLocaleString()} ${getGlobalCurrencyCode()}**\n\n`;
 
       result += `**By Status:**\n`;
       Object.entries(byStatus).forEach(([s, data]) => {
         const statusIcon = s === 'accepted' ? '✅' : s === 'sent' ? '📨' : s === 'draft' ? '📝' : s === 'rejected' ? '❌' : '📋';
-        result += `${statusIcon} ${s}: ${data.count} (${data.value.toLocaleString()} TND)\n`;
+        result += `${statusIcon} ${s}: ${data.count} (${data.value.toLocaleString()} ${getGlobalCurrencyCode()})\n`;
       });
 
       result += `\n**Latest Offers (top 10):**\n`;
@@ -4378,7 +4381,7 @@ export const aiDataQueries = {
 
       sorted.slice(0, 10).forEach((o: any) => {
         const date = new Date(o.createdAt || o.date).toLocaleDateString();
-        result += `- **${o.offerNumber || 'N/A'}** | ${o.contactName || o.contact?.name || 'Unknown'} | ${(o.totalAmount || 0).toLocaleString()} TND | ${o.status} | ${date}\n`;
+        result += `- **${o.offerNumber || 'N/A'}** | ${o.contactName || o.contact?.name || 'Unknown'} | ${(o.totalAmount || 0).toLocaleString()} ${getGlobalCurrencyCode()} | ${o.status} | ${date}\n`;
       });
 
       if (offers.length > 10) {
@@ -4451,12 +4454,12 @@ export const aiDataQueries = {
 
       result += `**Summary:**\n`;
       result += `- Total sales: **${sales.length}**\n`;
-      result += `- Total revenue: **${totalValue.toLocaleString()} TND**\n\n`;
+      result += `- Total revenue: **${totalValue.toLocaleString()} ${getGlobalCurrencyCode()}**\n\n`;
 
       result += `**By Status:**\n`;
       Object.entries(byStatus).forEach(([st, data]) => {
         const statusIcon = st === 'completed' ? '✅' : st === 'pending' ? '⏳' : st === 'in_progress' ? '🔄' : '📋';
-        result += `${statusIcon} ${st}: ${data.count} (${data.value.toLocaleString()} TND)\n`;
+        result += `${statusIcon} ${st}: ${data.count} (${data.value.toLocaleString()} ${getGlobalCurrencyCode()})\n`;
       });
 
       result += `\n**Latest Sales (top 10):**\n`;
@@ -4466,7 +4469,7 @@ export const aiDataQueries = {
 
       sorted.slice(0, 10).forEach((s: any) => {
         const date = new Date(s.createdAt || s.date).toLocaleDateString();
-        result += `- **${s.saleNumber || s.orderNumber || 'N/A'}** | ${s.contactName || s.contact?.name || 'Unknown'} | ${(s.totalAmount || 0).toLocaleString()} TND | ${s.status} | ${date}\n`;
+        result += `- **${s.saleNumber || s.orderNumber || 'N/A'}** | ${s.contactName || s.contact?.name || 'Unknown'} | ${(s.totalAmount || 0).toLocaleString()} ${getGlobalCurrencyCode()} | ${s.status} | ${date}\n`;
       });
 
       if (sales.length > 10) {
@@ -4651,7 +4654,7 @@ export const aiDataQueries = {
           const price = item.unitPrice || item.price || 0;
           const lineTotal = item.lineTotal || item.total || (qty * price);
           result += `${i + 1}. ${item.articleName || item.name || item.description || 'Item'}\n`;
-          result += `   Qty: ${qty} × ${price.toLocaleString()} TND = ${lineTotal.toLocaleString()} TND\n`;
+          result += `   Qty: ${qty} × ${price.toLocaleString()} ${getGlobalCurrencyCode()} = ${lineTotal.toLocaleString()} ${getGlobalCurrencyCode()}\n`;
         });
         if (entityData.items.length > 10) {
           result += `   _... and ${entityData.items.length - 10} more items_\n`;
@@ -4661,12 +4664,12 @@ export const aiDataQueries = {
       }
 
       result += `\n**━━━━━━━━━━━━━━━━━━━━━━**\n`;
-      result += `   Subtotal: ${entityData.subtotal.toLocaleString()} TND\n`;
+      result += `   Subtotal: ${entityData.subtotal.toLocaleString()} ${getGlobalCurrencyCode()}\n`;
       if (entityData.discount > 0) {
-        result += `   Discount: -${entityData.discount.toLocaleString()} TND\n`;
+        result += `   Discount: -${entityData.discount.toLocaleString()} ${getGlobalCurrencyCode()}\n`;
       }
-      result += `   Tax (TVA): ${entityData.tax.toLocaleString()} TND\n`;
-      result += `   **TOTAL: ${entityData.total.toLocaleString()} TND**\n`;
+      result += `   Tax (TVA): ${entityData.tax.toLocaleString()} ${getGlobalCurrencyCode()}\n`;
+      result += `   **TOTAL: ${entityData.total.toLocaleString()} ${getGlobalCurrencyCode()}**\n`;
       result += `**━━━━━━━━━━━━━━━━━━━━━━**\n\n`;
 
       // Add action links
@@ -4722,7 +4725,7 @@ export const aiDataQueries = {
       if (matchingOffers.length > 0) {
         result += `**📋 Offers (${matchingOffers.length}):**\n`;
         matchingOffers.slice(0, 5).forEach((o: any) => {
-          result += `- **${o.offerNumber}** | ${o.contactName || o.contact?.name || 'Unknown'} | ${(o.totalAmount || 0).toLocaleString()} TND | ${o.status}\n`;
+          result += `- **${o.offerNumber}** | ${o.contactName || o.contact?.name || 'Unknown'} | ${(o.totalAmount || 0).toLocaleString()} ${getGlobalCurrencyCode()} | ${o.status}\n`;
           result += `  Say: "generate invoice from offer ${o.offerNumber}"\n`;
         });
         result += '\n';
@@ -4732,7 +4735,7 @@ export const aiDataQueries = {
         result += `**💰 Sales (${matchingSales.length}):**\n`;
         matchingSales.slice(0, 5).forEach((s: any) => {
           const num = s.saleNumber || s.orderNumber;
-          result += `- **${num}** | ${s.contactName || s.contact?.name || 'Unknown'} | ${(s.totalAmount || 0).toLocaleString()} TND | ${s.status}\n`;
+          result += `- **${num}** | ${s.contactName || s.contact?.name || 'Unknown'} | ${(s.totalAmount || 0).toLocaleString()} ${getGlobalCurrencyCode()} | ${s.status}\n`;
           result += `  Say: "generate invoice from sale ${num}"\n`;
         });
       }
@@ -4801,7 +4804,7 @@ export const aiDataQueries = {
       const confidence = coeffOfVariation < 20 ? 'High' : coeffOfVariation < 40 ? 'Medium' : 'Low';
 
       let result = `🔮 **Revenue Forecast**\n\n`;
-      result += `**Next Month Prediction:** ${predictedRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })} TND\n`;
+      result += `**Next Month Prediction:** ${predictedRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })} ${getGlobalCurrencyCode()}\n`;
       result += `${trendIcon} **Trend:** ${trendPercent}% compared to average\n`;
       result += `📊 **Confidence:** ${confidence}\n\n`;
 
@@ -4809,7 +4812,7 @@ export const aiDataQueries = {
       sortedMonths.forEach(month => {
         const data = monthlyData[month];
         const monthName = new Date(month + '-01').toLocaleString('en', { month: 'short', year: 'numeric' });
-        result += `- ${monthName}: ${data.revenue.toLocaleString()} TND (${data.count} sales)\n`;
+        result += `- ${monthName}: ${data.revenue.toLocaleString()} ${getGlobalCurrencyCode()} (${data.count} sales)\n`;
       });
 
       result += `\n💡 **Insight:** Based on your ${n}-month trend, ${parseFloat(trendPercent) > 10 ? 'revenue is growing steadily. Keep up the momentum!' :
@@ -4902,8 +4905,8 @@ export const aiDataQueries = {
       let result = `📊 **Comparative Analytics: This ${periodLabel} vs Last ${periodLabel}**\n\n`;
 
       result += `**💰 Revenue:**\n`;
-      result += `  ${getIcon(currentRevenue, prevRevenue)} Current: ${currentRevenue.toLocaleString()} TND\n`;
-      result += `  ⏮️ Previous: ${prevRevenue.toLocaleString()} TND\n`;
+      result += `  ${getIcon(currentRevenue, prevRevenue)} Current: ${currentRevenue.toLocaleString()} ${getGlobalCurrencyCode()}\n`;
+      result += `  ⏮️ Previous: ${prevRevenue.toLocaleString()} ${getGlobalCurrencyCode()}\n`;
       result += `  📈 Change: ${calcChange(currentRevenue, prevRevenue)}%\n\n`;
 
       result += `**🛒 Sales:**\n`;
@@ -5127,7 +5130,7 @@ export const aiDataQueries = {
           anomalies.push({
             type: 'Unusual Sale',
             severity: 'medium',
-            message: `Sale ${s.saleNumber || s.id} (${(s.totalAmount || 0).toLocaleString()} TND) is ${((s.totalAmount - avgSale) / avgSale * 100).toFixed(0)}% above average`
+            message: `Sale ${s.saleNumber || s.id} (${(s.totalAmount || 0).toLocaleString()} ${getGlobalCurrencyCode()}) is ${((s.totalAmount - avgSale) / avgSale * 100).toFixed(0)}% above average`
           });
         });
       }
@@ -5291,7 +5294,7 @@ export const aiDataQueries = {
       } else {
         atRisk.slice(0, 5).forEach(c => {
           const daysSince = c.lastActivity ? Math.floor((now.getTime() - c.lastActivity.getTime()) / (1000 * 60 * 60 * 24)) : 0;
-          result += `- **${c.name}**: ${c.totalSpent.toLocaleString()} TND spent, ${daysSince} days since last activity\n`;
+          result += `- **${c.name}**: ${c.totalSpent.toLocaleString()} ${getGlobalCurrencyCode()} spent, ${daysSince} days since last activity\n`;
         });
         if (atRisk.length > 5) {
           result += `_... and ${atRisk.length - 5} more_\n`;
@@ -5304,7 +5307,7 @@ export const aiDataQueries = {
         result += `All customers have recent activity!\n`;
       } else {
         result += `${dormant.length} customers haven't been active in 6+ months.\n`;
-        result += `Total potential revenue at risk: ${dormant.reduce((sum, c) => sum + c.totalSpent, 0).toLocaleString()} TND\n\n`;
+        result += `Total potential revenue at risk: ${dormant.reduce((sum, c) => sum + c.totalSpent, 0).toLocaleString()} ${getGlobalCurrencyCode()}\n\n`;
       }
 
       result += `**💡 Recommendations:**\n`;
@@ -5387,14 +5390,14 @@ export const aiDataQueries = {
       let result = `💹 **Profitability Analysis**\n\n`;
 
       result += `**📊 Overall Performance:**\n`;
-      result += `- Total Revenue: ${totalRevenue.toLocaleString()} TND\n`;
-      result += `- Total Cost: ${totalCost.toLocaleString()} TND\n`;
-      result += `- **Gross Profit: ${totalProfit.toLocaleString()} TND**\n`;
+      result += `- Total Revenue: ${totalRevenue.toLocaleString()} ${getGlobalCurrencyCode()}\n`;
+      result += `- Total Cost: ${totalCost.toLocaleString()} ${getGlobalCurrencyCode()}\n`;
+      result += `- **Gross Profit: ${totalProfit.toLocaleString()} ${getGlobalCurrencyCode()}**\n`;
       result += `- **Margin: ${overallMargin.toFixed(1)}%**\n\n`;
 
       result += `**🏆 Top Profit Generators:**\n`;
       profitData.slice(0, 5).forEach((a, i) => {
-        result += `${i + 1}. **${a.name}**: ${a.profit.toLocaleString()} TND profit (${a.margin.toFixed(1)}% margin, ${a.quantity} sold)\n`;
+        result += `${i + 1}. **${a.name}**: ${a.profit.toLocaleString()} ${getGlobalCurrencyCode()} profit (${a.margin.toFixed(1)}% margin, ${a.quantity} sold)\n`;
       });
 
       const lowMargin = profitData.filter(a => a.margin < 20 && a.quantity > 0);
@@ -5547,7 +5550,7 @@ const formatArticleResults = (articles: any[], searchTerm: string): DataQueryRes
     result += `${typeIcon} **${a.name}**\n`;
     if (a.sku) result += `   Reference: ${a.sku}\n`;
     if (stock !== undefined) result += `   Stock: ${stock}\n`;
-    if (a.price) result += `   Price: ${a.price.toLocaleString()} TND\n`;
+    if (a.price) result += `   Price: ${a.price.toLocaleString()} ${getGlobalCurrencyCode()}\n`;
     result += `   🔗 [View Article](/dashboard/articles/${a.id})\n\n`;
   });
 

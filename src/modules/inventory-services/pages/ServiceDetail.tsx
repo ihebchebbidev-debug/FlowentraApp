@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 // import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -179,6 +180,7 @@ const getStatusIcon = (status: string) => {
 };
 
 export default function ServiceDetail() {
+  const { current: currency } = useCurrency();
   const { t } = useTranslation('inventory-services');
   const { id } = useParams();
   const navigate = useNavigate();
@@ -279,7 +281,7 @@ export default function ServiceDetail() {
                 </DialogHeader>
                 <div className="space-y-4 pt-4">
                   <div className="space-y-2">
-                    <Label>Current Price: {service.basePrice} TND</Label>
+                    <Label>Current Price: {service.basePrice} {currency.code}</Label>
                   </div>
                   
                   <div className="space-y-2">
@@ -335,7 +337,7 @@ export default function ServiceDetail() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Base Price</p>
-                  <p className="text-xl font-bold">{service.basePrice} TND</p>
+                  <p className="text-xl font-bold">{service.basePrice} {currency.code}</p>
                 </div>
               </div>
             </CardContent>
@@ -379,7 +381,7 @@ export default function ServiceDetail() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Revenue</p>
-                  <p className="text-xl font-bold">{service.estimatedRevenue?.toFixed(0)} TND</p>
+                  <p className="text-xl font-bold">{service.estimatedRevenue?.toFixed(0)} {currency.code}</p>
                 </div>
               </div>
             </CardContent>
@@ -489,16 +491,16 @@ export default function ServiceDetail() {
                   <CardContent className="space-y-3">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Base Price:</span>
-                      <span className="font-semibold">{service.basePrice} TND</span>
+                      <span className="font-semibold">{service.basePrice} {currency.code}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Hourly Rate:</span>
-                      <span className="font-semibold">{service.duration ? (service.basePrice / service.duration).toFixed(2) : '—'} TND/h</span>
+                      <span className="font-semibold">{service.duration ? (service.basePrice / service.duration).toFixed(2) : '—'} {currency.code}/h</span>
                     </div>
                     <div className="flex justify-between border-t pt-2">
                       <span className="text-muted-foreground">Est. Revenue:</span>
                       <div className="text-right">
-                        <span className="font-semibold text-success">{service.estimatedRevenue?.toFixed(0)} TND</span>
+                        <span className="font-semibold text-success">{service.estimatedRevenue?.toFixed(0)} {currency.code}</span>
                         <span className="text-xs text-muted-foreground ml-1">total</span>
                       </div>
                     </div>
@@ -553,7 +555,7 @@ export default function ServiceDetail() {
                           </div>
                         </div>
                         <Badge className="status-success">
-                          {sale.soldPrice} TND
+                          {sale.soldPrice} {currency.code}
                         </Badge>
                       </div>
                       
@@ -578,7 +580,7 @@ export default function ServiceDetail() {
                           <span className="text-sm text-muted-foreground ml-1">({sale.rating}/5)</span>
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          Sold: {sale.soldPrice} TND
+                          Sold: {sale.soldPrice} {currency.code}
                         </div>
                       </div>
                       
@@ -630,7 +632,7 @@ export default function ServiceDetail() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-accent mb-2">
-                    {service.estimatedRevenue?.toFixed(0)} TND
+                    {service.estimatedRevenue?.toFixed(0)} {currency.code}
                   </div>
                   <p className="text-sm text-muted-foreground">
                     Total from all bookings

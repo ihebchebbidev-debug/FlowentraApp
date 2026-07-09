@@ -24,6 +24,7 @@ import { PurchasePageHeader } from "../components/PurchasePageHeader";
 import { PurchaseErrorBoundary, PurchaseErrorFallback } from "../components/PurchaseErrorBoundary";
 import { ChartSkeleton } from "../components/PurchaseSkeletons";
 import type { PurchaseOrder, SupplierInvoice } from "../types";
+import { useCurrency } from '@/shared/hooks/useCurrency';
 
 /**
  * Supplier Performance Scorecard
@@ -74,6 +75,7 @@ function gradeFor(score: number): { letter: string; variant: 'default' | 'second
 
 function SupplierPerformanceContent() {
   const { t } = useTranslation('purchases');
+  const { current: currency } = useCurrency();
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [invoices, setInvoices] = useState<SupplierInvoice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -306,7 +308,7 @@ function SupplierPerformanceContent() {
 
   const kpis = [
     { icon: Award, label: t('reports.supplierPerformance.totalSuppliers', 'Active suppliers'), value: String(summary.total), tone: 'text-primary bg-primary/10' },
-    { icon: Wallet, label: t('reports.supplierPerformance.totalSpend', 'Total spend'), value: `${fmt(summary.totalSpend)} TND`, tone: 'text-emerald-600 bg-emerald-500/10' },
+    { icon: Wallet, label: t('reports.supplierPerformance.totalSpend', 'Total spend'), value: `${fmt(summary.totalSpend)} ${currency.code}`, tone: 'text-emerald-600 bg-emerald-500/10' },
     { icon: TrendingUp, label: t('reports.supplierPerformance.avgScore', 'Avg score'), value: `${summary.avgScore}/100`, tone: 'text-blue-600 bg-blue-500/10' },
     { icon: AlertTriangle, label: t('reports.supplierPerformance.overdueSuppliers', 'With overdue inv.'), value: String(summary.overdueSuppliers), tone: 'text-destructive bg-destructive/10' },
   ];
@@ -385,7 +387,7 @@ function SupplierPerformanceContent() {
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                     <XAxis dataKey="name" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} interval={0} angle={-15} textAnchor="end" height={50} />
                     <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} tickFormatter={fmtCompact} />
-                    <Tooltip contentStyle={tooltipStyle} formatter={(v: any) => `${fmt(Number(v))} TND`} />
+                    <Tooltip contentStyle={tooltipStyle} formatter={(v: any) => `${fmt(Number(v))} ${currency.code}`} />
                     <Bar dataKey="spend" radius={[4, 4, 0, 0]}>
                       {topSpend.map((row, i) => (
                         <Cell key={i} fill={row.score >= 85 ? 'hsl(142 71% 45%)' : row.score >= 70 ? 'hsl(217 91% 60%)' : row.score >= 50 ? 'hsl(38 92% 50%)' : 'hsl(0 84% 60%)'} />
@@ -483,13 +485,13 @@ function SupplierPerformanceContent() {
                 </ResponsiveContainer>
               </div>
               <div>
-                <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">{t('reports.supplierPerformance.spend', 'Spend')} (TND)</div>
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">{t('reports.supplierPerformance.spend', 'Spend')} ({currency.code})</div>
                 <ResponsiveContainer width="100%" height={180}>
                   <LineChart data={trendData} margin={{ top: 5, right: 8, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                     <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} />
                     <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} tickFormatter={fmtCompact} />
-                    <Tooltip contentStyle={tooltipStyle} formatter={(v: any) => `${fmt(Number(v))} TND`} />
+                    <Tooltip contentStyle={tooltipStyle} formatter={(v: any) => `${fmt(Number(v))} ${currency.code}`} />
                     <Line type="monotone" dataKey="spend" stroke="hsl(38 92% 50%)" strokeWidth={2} dot={{ r: 3 }} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -597,6 +599,7 @@ function statusVariant(status: string): 'default' | 'secondary' | 'destructive' 
 }
 
 function SupplierDetailDrawer({ supplierId, onClose, rows, orders, invoices, fmt, t }: DrawerProps) {
+  const { current: currency } = useCurrency();
   const row = supplierId ? rows.find(r => r.supplierId === supplierId) : null;
   const supplierOrders = useMemo(
     () => supplierId ? orders.filter(o => String(o.supplierId) === supplierId).sort((a, b) => (b.orderDate || '').localeCompare(a.orderDate || '')) : [],
@@ -635,7 +638,7 @@ function SupplierDetailDrawer({ supplierId, onClose, rows, orders, invoices, fmt
                 <div className="grid grid-cols-2 gap-2">
                   {[
                     { icon: Package, label: t('reports.supplierPerformance.poCount', 'POs'), value: String(row.poCount) },
-                    { icon: Wallet, label: t('reports.supplierPerformance.spend', 'Total spend'), value: `${fmt(row.totalSpend)} TND` },
+                    { icon: Wallet, label: t('reports.supplierPerformance.spend', 'Total spend'), value: `${fmt(row.totalSpend)} ${currency.code}` },
                     { icon: Truck, label: t('reports.supplierPerformance.onTime', 'On-time %'), value: row.onTimePct === null ? '—' : `${Math.round(row.onTimePct)}%` },
                     { icon: Clock, label: t('reports.supplierPerformance.avgLead', 'Avg lead'), value: row.avgLead === null ? '—' : `${Math.round(row.avgLead)}d` },
                     { icon: Receipt, label: t('reports.supplierPerformance.invoices', 'Invoices'), value: String(row.invoiceCount) },

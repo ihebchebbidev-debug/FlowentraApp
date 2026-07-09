@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { resolveCurrencyCode } from '@/lib/currencies';
 import { useTranslation } from 'react-i18next';
 import {
   X, Play, Pause, RotateCcw, Volume2, VolumeX, Languages,
@@ -181,7 +182,7 @@ function PageDashboard({ state }: { state: PurchaseDemoState }) {
         <StatCard id="po-demo-stat-orders"   icon={<ShoppingCart className="h-3.5 w-3.5 text-chart-1" />} label="Total Orders"       value={5}          />
         <StatCard id="po-demo-stat-receipts" icon={<Package className="h-3.5 w-3.5 text-chart-2" />}     label="Pending Receipts"  value={2}          />
         <StatCard id="po-demo-stat-invoices" icon={<FileText className="h-3.5 w-3.5 text-chart-3" />}    label="Open Invoices"     value={3}          />
-        <StatCard id="po-demo-stat-spend"    icon={<DollarSign className="h-3.5 w-3.5 text-chart-4" />}  label="Monthly Spend"     value="14,290 TND" />
+        <StatCard id="po-demo-stat-spend"    icon={<DollarSign className="h-3.5 w-3.5 text-chart-4" />}  label="Monthly Spend"     value={`14,290 ${resolveCurrencyCode()}`} />
       </div>
 
       {/* Tables */}
@@ -286,7 +287,7 @@ function PageOrdersList({ state }: { state: PurchaseDemoState }) {
           { key: 'all',      label: 'Total',       value: DEMO_ORDERS.length, icon: <ShoppingCart className="h-3.5 w-3.5" /> },
           { key: 'open',     label: 'Open',        value: 4, icon: <Clock className="h-3.5 w-3.5 text-amber-500" /> },
           { key: 'received', label: 'Received',    value: 1, icon: <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> },
-          { key: 'value',    label: 'Total Value', value: '61,990 TND', icon: <DollarSign className="h-3.5 w-3.5 text-blue-500" /> },
+          { key: 'value',    label: 'Total Value', value: `61,990 ${resolveCurrencyCode()}`, icon: <DollarSign className="h-3.5 w-3.5 text-blue-500" /> },
         ].map(s => (
           <div
             key={s.key}
@@ -420,7 +421,7 @@ function PageOrdersList({ state }: { state: PurchaseDemoState }) {
                     <td className="px-3 py-2.5 text-muted-foreground">{po.date}</td>
                     <td className="px-3 py-2.5"><StatusBadge status={po.status} small /></td>
                     <td className="px-3 py-2.5"><StatusBadge status={po.payment} small /></td>
-                    <td className="px-3 py-2.5 text-right font-medium">{fmt(po.total)} TND</td>
+                    <td className="px-3 py-2.5 text-right font-medium">{fmt(po.total)} {resolveCurrencyCode()}</td>
                     <td className="px-3 py-2.5 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <div className="h-6 w-6 rounded border border-border flex items-center justify-center text-muted-foreground cursor-default hover:bg-muted/50">
@@ -505,18 +506,18 @@ function PageOrderCreate({ state }: { state: PurchaseDemoState }) {
                       <td className="px-3 py-2 font-medium">Hydraulic Cylinder HY-200</td>
                       <td className="px-3 py-2 text-right">10</td>
                       <td className="px-3 py-2 text-right">
-                        1,200 TND
-                        <div id="po-demo-last-price" className="text-[10px] text-amber-600">Last: 1,150 TND</div>
+                        1,200 {resolveCurrencyCode()}
+                        <div id="po-demo-last-price" className="text-[10px] text-amber-600">Last: 1,150 {resolveCurrencyCode()}</div>
                       </td>
                       <td className="px-3 py-2 text-right">19%</td>
-                      <td className="px-3 py-2 text-right font-medium">14,280 TND</td>
+                      <td className="px-3 py-2 text-right font-medium">14,280 {resolveCurrencyCode()}</td>
                     </tr>
                     <tr>
                       <td className="px-3 py-2 font-medium">Mounting Bracket MB-45</td>
                       <td className="px-3 py-2 text-right">20</td>
-                      <td className="px-3 py-2 text-right">450 TND</td>
+                      <td className="px-3 py-2 text-right">450 {resolveCurrencyCode()}</td>
                       <td className="px-3 py-2 text-right">19%</td>
-                      <td className="px-3 py-2 text-right font-medium">10,710 TND</td>
+                      <td className="px-3 py-2 text-right font-medium">10,710 {resolveCurrencyCode()}</td>
                     </tr>
                   </>
                 ) : (
@@ -530,9 +531,9 @@ function PageOrderCreate({ state }: { state: PurchaseDemoState }) {
         {/* Totals */}
         <div id="po-demo-create-totals" className={`transition-all ${step < 2 ? 'opacity-40' : ''}`}>
           <div className="bg-muted/40 rounded-lg p-4 space-y-1.5 text-sm">
-            <div className="flex justify-between text-muted-foreground"><span>Subtotal</span><span>{step >= 2 ? '21,000 TND' : '—'}</span></div>
-            <div className="flex justify-between text-muted-foreground"><span>Tax (19%)</span><span>{step >= 2 ? '3,990 TND' : '—'}</span></div>
-            <div className="flex justify-between font-semibold text-foreground pt-1 border-t border-border mt-1"><span>Grand Total</span><span>{step >= 2 ? '24,990 TND' : '—'}</span></div>
+            <div className="flex justify-between text-muted-foreground"><span>Subtotal</span><span>{step >= 2 ? `21,000 ${resolveCurrencyCode()}` : '—'}</span></div>
+            <div className="flex justify-between text-muted-foreground"><span>Tax (19%)</span><span>{step >= 2 ? `3,990 ${resolveCurrencyCode()}` : '—'}</span></div>
+            <div className="flex justify-between font-semibold text-foreground pt-1 border-t border-border mt-1"><span>Grand Total</span><span>{step >= 2 ? `24,990 ${resolveCurrencyCode()}` : '—'}</span></div>
           </div>
           {step >= 3 && (
             <div className="mt-3">
@@ -644,15 +645,15 @@ function PageOrderDetail({ state }: { state: PurchaseDemoState }) {
                     <td className="px-4 py-2.5 font-medium">Hydraulic Cylinder HY-200</td>
                     <td className="px-4 py-2.5 text-right">20</td>
                     <td className="px-4 py-2.5 text-right text-amber-600 font-medium">12</td>
-                    <td className="px-4 py-2.5 text-right">1,200 TND</td>
-                    <td className="px-4 py-2.5 text-right font-medium">24,000 TND</td>
+                    <td className="px-4 py-2.5 text-right">1,200 {resolveCurrencyCode()}</td>
+                    <td className="px-4 py-2.5 text-right font-medium">24,000 {resolveCurrencyCode()}</td>
                   </tr>
                   <tr>
                     <td className="px-4 py-2.5 font-medium">Mounting Bracket MB-45</td>
                     <td className="px-4 py-2.5 text-right">50</td>
                     <td className="px-4 py-2.5 text-right text-green-600 font-medium">50</td>
-                    <td className="px-4 py-2.5 text-right">170 TND</td>
-                    <td className="px-4 py-2.5 text-right font-medium">8,500 TND</td>
+                    <td className="px-4 py-2.5 text-right">170 {resolveCurrencyCode()}</td>
+                    <td className="px-4 py-2.5 text-right font-medium">8,500 {resolveCurrencyCode()}</td>
                   </tr>
                 </tbody>
               </table>
@@ -660,9 +661,9 @@ function PageOrderDetail({ state }: { state: PurchaseDemoState }) {
 
             <div id="po-demo-detail-financial" className="grid md:grid-cols-2 gap-4">
               <div className="bg-muted/40 rounded-lg p-4 space-y-2 text-sm">
-                <div className="flex justify-between text-muted-foreground"><span>Subtotal</span><span>27,310 TND</span></div>
-                <div className="flex justify-between text-muted-foreground"><span>Tax (19%)</span><span>5,190 TND</span></div>
-                <div className="flex justify-between font-semibold text-foreground border-t border-border pt-2"><span>Grand Total</span><span>32,500 TND</span></div>
+                <div className="flex justify-between text-muted-foreground"><span>Subtotal</span><span>27,310 {resolveCurrencyCode()}</span></div>
+                <div className="flex justify-between text-muted-foreground"><span>Tax (19%)</span><span>5,190 {resolveCurrencyCode()}</span></div>
+                <div className="flex justify-between font-semibold text-foreground border-t border-border pt-2"><span>Grand Total</span><span>32,500 {resolveCurrencyCode()}</span></div>
               </div>
               <div className="bg-card border border-border rounded-lg p-4 space-y-1.5 text-xs">
                 <p className="text-xs font-semibold text-foreground mb-2">Supplier Info</p>
@@ -741,8 +742,8 @@ function PageOrderDetail({ state }: { state: PurchaseDemoState }) {
                   <td className="px-4 py-2.5 font-medium text-primary">INV-F-2025-002</td>
                   <td className="px-4 py-2.5 text-muted-foreground">2025-05-10</td>
                   <td className="px-4 py-2.5"><StatusBadge status="partially_paid" small /></td>
-                  <td className="px-4 py-2.5 text-right font-medium">32,500 TND</td>
-                  <td className="px-4 py-2.5 text-right text-amber-600 font-medium">1,625 TND</td>
+                  <td className="px-4 py-2.5 text-right font-medium">32,500 {resolveCurrencyCode()}</td>
+                  <td className="px-4 py-2.5 text-right text-amber-600 font-medium">1,625 {resolveCurrencyCode()}</td>
                 </tr>
               </tbody>
             </table>
@@ -985,9 +986,9 @@ function PageInvoicesList({ state: _ }: { state: PurchaseDemoState }) {
                   <td className="px-4 py-2.5 text-blue-600">{si.poNum}</td>
                   <td className="px-4 py-2.5 truncate max-w-[120px]">{si.supplier}</td>
                   <td className="px-4 py-2.5"><StatusBadge status={si.status} small /></td>
-                  <td className="px-4 py-2.5 text-right font-medium">{fmt(si.total)} TND</td>
+                  <td className="px-4 py-2.5 text-right font-medium">{fmt(si.total)} {resolveCurrencyCode()}</td>
                   <td className="px-4 py-2.5 text-right">
-                    {si.rs ? <span className="text-amber-600 font-medium">{fmt(si.rs)} TND</span> : <span className="text-muted-foreground">—</span>}
+                    {si.rs ? <span className="text-amber-600 font-medium">{fmt(si.rs)} {resolveCurrencyCode()}</span> : <span className="text-muted-foreground">—</span>}
                   </td>
                   <td className="px-4 py-2.5">
                     {si.fel === 'registered' && <span className="text-[10px] text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full font-medium">Registered</span>}
@@ -1038,11 +1039,11 @@ function PageInvoiceCreate() {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-medium text-foreground mb-1.5">Amount (excl. tax) *</label>
-            <div className="h-9 px-3 rounded-md border border-border text-sm flex items-center text-foreground">7,353 TND</div>
+            <div className="h-9 px-3 rounded-md border border-border text-sm flex items-center text-foreground">7,353 {resolveCurrencyCode()}</div>
           </div>
           <div>
             <label className="block text-xs font-medium text-foreground mb-1.5">Tax Amount</label>
-            <div className="h-9 px-3 rounded-md border border-border text-sm flex items-center text-foreground">1,397 TND</div>
+            <div className="h-9 px-3 rounded-md border border-border text-sm flex items-center text-foreground">1,397 {resolveCurrencyCode()}</div>
           </div>
         </div>
         <div>
@@ -1083,11 +1084,11 @@ function PageInvoiceDetail() {
       <div className="grid md:grid-cols-2 gap-4">
         <div className="bg-card border border-border rounded-lg p-4 space-y-2.5 text-xs">
           <p className="text-xs font-semibold mb-1">Invoice Summary</p>
-          <div className="flex justify-between"><span className="text-muted-foreground">Amount (excl. tax)</span><span>{fmt(27310)} TND</span></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Tax (19%)</span><span>5,190 TND</span></div>
-          <div className="flex justify-between font-semibold border-t border-border pt-2"><span>Grand Total</span><span>{fmt(INV.total)} TND</span></div>
-          <div className="flex justify-between text-amber-600 font-medium"><span>RS Deduction (5%)</span><span>— {fmt(INV.rs!)} TND</span></div>
-          <div className="flex justify-between font-bold text-foreground border-t border-border pt-2"><span>Net to Pay</span><span>{fmt(INV.total - INV.rs!)} TND</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Amount (excl. tax)</span><span>{fmt(27310)} {resolveCurrencyCode()}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Tax (19%)</span><span>5,190 {resolveCurrencyCode()}</span></div>
+          <div className="flex justify-between font-semibold border-t border-border pt-2"><span>Grand Total</span><span>{fmt(INV.total)} {resolveCurrencyCode()}</span></div>
+          <div className="flex justify-between text-amber-600 font-medium"><span>RS Deduction (5%)</span><span>— {fmt(INV.rs!)} {resolveCurrencyCode()}</span></div>
+          <div className="flex justify-between font-bold text-foreground border-t border-border pt-2"><span>Net to Pay</span><span>{fmt(INV.total - INV.rs!)} {resolveCurrencyCode()}</span></div>
         </div>
 
         <div className="space-y-3">
@@ -1136,7 +1137,7 @@ function PageCompliance() {
           </div>
           <div className="p-4 space-y-3">
             <div>
-              <p className="text-2xl font-bold text-foreground">2,385 <span className="text-sm font-normal text-muted-foreground">TND</span></p>
+              <p className="text-2xl font-bold text-foreground">2,385 <span className="text-sm font-normal text-muted-foreground">{resolveCurrencyCode()}</span></p>
               <p className="text-xs text-muted-foreground">Total RS liability this year</p>
             </div>
             {DEMO_INVOICES.filter(i => i.rs).map(inv => (
@@ -1145,7 +1146,7 @@ function PageCompliance() {
                   <p className="font-medium">{inv.num}</p>
                   <p className="text-muted-foreground">{inv.supplier.split(' ')[0]}</p>
                 </div>
-                <span className="font-medium text-amber-600">{fmt(inv.rs!)} TND</span>
+                <span className="font-medium text-amber-600">{fmt(inv.rs!)} {resolveCurrencyCode()}</span>
               </div>
             ))}
           </div>
@@ -1308,7 +1309,7 @@ function PageSupplierPerformance() {
           <thead><tr className="bg-muted/30 border-b border-border/60">
             <th className="text-left px-4 py-2.5 text-muted-foreground font-medium">Supplier</th>
             <th className="text-right px-4 py-2.5 text-muted-foreground font-medium">POs</th>
-            <th className="text-right px-4 py-2.5 text-muted-foreground font-medium">Spend (TND)</th>
+            <th className="text-right px-4 py-2.5 text-muted-foreground font-medium">Spend ({resolveCurrencyCode()})</th>
             <th className="text-right px-4 py-2.5 text-muted-foreground font-medium">On-Time</th>
             <th className="text-right px-4 py-2.5 text-muted-foreground font-medium">Avg Lead</th>
             <th className="text-center px-4 py-2.5 text-muted-foreground font-medium">Grade</th>
@@ -1500,7 +1501,7 @@ function PageOrderPdfPreview() {
             <div className="flex justify-between text-slate-600"><span>Remise</span><span>0.000</span></div>
             <div className="flex justify-between text-slate-600"><span>TVA (19%)</span><span>5,189.900</span></div>
             <div className="flex justify-between text-slate-600"><span>Timbre fiscal</span><span>1.000</span></div>
-            <div className="flex justify-between font-bold text-base text-slate-900 border-t-2 border-slate-300 pt-1.5 mt-1"><span>Total TTC</span><span>32,500.900 TND</span></div>
+            <div className="flex justify-between font-bold text-base text-slate-900 border-t-2 border-slate-300 pt-1.5 mt-1"><span>Total TTC</span><span>32,500.900 {resolveCurrencyCode()}</span></div>
             <p className="text-[10px] text-slate-500 italic mt-2">Arrêté la présente commande à la somme de trente-deux mille cinq cents dinars et neuf cents millimes.</p>
           </div>
         </div>
@@ -1789,15 +1790,15 @@ function PageOrderTejXml({ state }: { state: PurchaseDemoState }) {
       <div className="grid grid-cols-3 gap-3 text-xs">
         <div className="bg-card border border-border rounded-lg p-3">
           <p className="text-[10px] text-muted-foreground font-medium uppercase">Total HT</p>
-          <p className="text-base font-bold text-foreground mt-0.5">27,310.000 TND</p>
+          <p className="text-base font-bold text-foreground mt-0.5">27,310.000 {resolveCurrencyCode()}</p>
         </div>
         <div className="bg-card border border-border rounded-lg p-3">
           <p className="text-[10px] text-muted-foreground font-medium uppercase">Total RS</p>
-          <p className="text-base font-bold text-amber-600 mt-0.5">1,625.000 TND</p>
+          <p className="text-base font-bold text-amber-600 mt-0.5">1,625.000 {resolveCurrencyCode()}</p>
         </div>
         <div className="bg-card border border-border rounded-lg p-3">
           <p className="text-[10px] text-muted-foreground font-medium uppercase">Net Servi</p>
-          <p className="text-base font-bold text-green-600 mt-0.5">30,875.900 TND</p>
+          <p className="text-base font-bold text-green-600 mt-0.5">30,875.900 {resolveCurrencyCode()}</p>
         </div>
       </div>
     </div>
@@ -1919,7 +1920,7 @@ function PageArticleSuppliers({ state }: { state: PurchaseDemoState }) {
           <thead><tr className="bg-muted/30 border-b border-border/60">
             <th className="text-left px-3 py-2 text-muted-foreground font-medium">Supplier</th>
             <th className="text-left px-3 py-2 text-muted-foreground font-medium">Supplier Ref</th>
-            <th className="text-right px-3 py-2 text-muted-foreground font-medium">Price (TND)</th>
+            <th className="text-right px-3 py-2 text-muted-foreground font-medium">Price ({resolveCurrencyCode()})</th>
             <th className="text-right px-3 py-2 text-muted-foreground font-medium">MOQ</th>
             <th className="text-right px-3 py-2 text-muted-foreground font-medium">Lead time</th>
             <th className="text-center px-3 py-2 text-muted-foreground font-medium" id="po-demo-as-preferred">Preferred</th>
@@ -2034,9 +2035,9 @@ function PageInvoicePayment({ state }: { state: PurchaseDemoState }) {
       <div className="grid md:grid-cols-2 gap-4">
         <div className="bg-card border border-border rounded-lg p-4 space-y-2 text-xs">
           <p className="text-xs font-semibold mb-1">Payment Status</p>
-          <div className="flex justify-between"><span className="text-muted-foreground">Grand Total</span><span className="font-medium">{fmt(INV.total)} TND</span></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Amount Paid</span><span className="text-green-600 font-medium">{fmt(paid)} TND</span></div>
-          <div className="flex justify-between border-t border-border pt-2"><span className="text-muted-foreground">Remaining</span><span className={remaining > 0 ? 'text-amber-600 font-semibold' : 'text-green-600 font-semibold'}>{fmt(remaining)} TND</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Grand Total</span><span className="font-medium">{fmt(INV.total)} {resolveCurrencyCode()}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Amount Paid</span><span className="text-green-600 font-medium">{fmt(paid)} {resolveCurrencyCode()}</span></div>
+          <div className="flex justify-between border-t border-border pt-2"><span className="text-muted-foreground">Remaining</span><span className={remaining > 0 ? 'text-amber-600 font-semibold' : 'text-green-600 font-semibold'}>{fmt(remaining)} {resolveCurrencyCode()}</span></div>
           <div className="h-1.5 rounded-full bg-muted overflow-hidden mt-1">
             <div className="h-full bg-green-500 transition-all" style={{ width: `${(paid / INV.total) * 100}%` }} />
           </div>
@@ -2107,7 +2108,7 @@ function PageInvoicePayment({ state }: { state: PurchaseDemoState }) {
               </div>
             </div>
             <div>
-              <label className="block text-[10px] font-medium text-muted-foreground mb-1">Amount (TND)</label>
+              <label className="block text-[10px] font-medium text-muted-foreground mb-1">Amount ({resolveCurrencyCode()})</label>
               <div className={`h-9 px-3 rounded-md border text-sm flex items-center justify-between transition-colors ${state.paymentStep === 2 ? 'border-primary bg-primary/5 text-foreground font-semibold' : 'border-border text-foreground'}`}>
                 <span>{state.paymentStep === 2 ? fmt(remaining + 0) : '0'}</span>
                 <span className="text-[10px] text-muted-foreground">Max: {fmt(INV.total - 12000)}</span>
@@ -2217,7 +2218,7 @@ function PagePriceEvolution() {
       {/* Chart */}
       <div id="po-demo-pe-chart" className="bg-card border border-border rounded-lg p-5">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-sm font-semibold">Purchase Price (TND)</p>
+          <p className="text-sm font-semibold">Purchase Price ({resolveCurrencyCode()})</p>
           <div className="flex gap-3 text-xs">
             {series.map(s => (
               <div key={s.name} className="flex items-center gap-1.5">
@@ -2355,7 +2356,7 @@ function PageInvoiceAging() {
       <div id="po-demo-aging-table" className="bg-card border border-border rounded-lg overflow-hidden">
         <div className="px-4 py-3 border-b border-border/60 flex items-center justify-between">
           <span className="text-sm font-medium">Outstanding Invoices</span>
-          <span className="text-[10px] text-muted-foreground">Total {fmt(total)} TND</span>
+          <span className="text-[10px] text-muted-foreground">Total {fmt(total)} {resolveCurrencyCode()}</span>
         </div>
         <table className="w-full text-xs">
           <thead><tr className="bg-muted/30 border-b border-border/60">
@@ -2363,7 +2364,7 @@ function PageInvoiceAging() {
             <th className="text-left px-3 py-2 text-muted-foreground font-medium">Supplier</th>
             <th className="text-left px-3 py-2 text-muted-foreground font-medium">Due Date</th>
             <th className="text-right px-3 py-2 text-muted-foreground font-medium">Days Overdue</th>
-            <th className="text-right px-3 py-2 text-muted-foreground font-medium">Outstanding (TND)</th>
+            <th className="text-right px-3 py-2 text-muted-foreground font-medium">Outstanding ({resolveCurrencyCode()})</th>
             <th className="text-center px-3 py-2 text-muted-foreground font-medium">Bucket</th>
           </tr></thead>
           <tbody>

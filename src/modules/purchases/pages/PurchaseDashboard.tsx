@@ -1,3 +1,4 @@
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -26,6 +27,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 function PurchaseDashboardContent() {
   const { t } = useTranslation('purchases');
+  const { current: currency } = useCurrency();
   const navigate = useNavigate();
   const [stats, setStats] = useState<PurchaseStats | null>(null);
   const [recentOrders, setRecentOrders] = useState<PurchaseOrder[]>([]);
@@ -123,7 +125,7 @@ function PurchaseDashboardContent() {
               },
               {
                 label: t('dashboard.monthlySpend'),
-                value: `${fmt(stats?.monthlySpend ?? 0)} TND`,
+                value: `${fmt(stats?.monthlySpend ?? 0)} ${currency.code}`,
                 icon: DollarSign,
                 color: 'text-chart-4',
                 bg: 'bg-chart-4/10',

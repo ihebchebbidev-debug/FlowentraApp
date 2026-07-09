@@ -1,3 +1,4 @@
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -12,6 +13,7 @@ import type { SupplierInvoice, PurchaseStats } from "../types";
 
 function ComplianceDashboardContent() {
   const { t } = useTranslation('purchases');
+  const { current: currency } = useCurrency();
   const navigate = useNavigate();
   const [invoices, setInvoices] = useState<SupplierInvoice[]>([]);
   const [stats, setStats] = useState<PurchaseStats | null>(null);
@@ -59,7 +61,7 @@ function ComplianceDashboardContent() {
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Shield className="h-4 w-4 text-amber-500" /> {t('compliance.rs')}</CardTitle></CardHeader>
             <CardContent className="space-y-3">
-              <div className="text-2xl font-bold">{fmt(stats?.rsTotal ?? 0)} <span className="text-xs font-normal text-muted-foreground">TND</span></div>
+              <div className="text-2xl font-bold">{fmt(stats?.rsTotal ?? 0)} <span className="text-xs font-normal text-muted-foreground">{currency.code}</span></div>
               <p className="text-xs text-muted-foreground">{t('compliance.totalRsThisYear')}</p>
               <div className="space-y-2">
                 {rsInvoices.map(inv => (
@@ -68,7 +70,7 @@ function ComplianceDashboardContent() {
                       <p className="text-xs font-medium">{inv.invoiceNumber}</p>
                       <p className="text-[10px] text-muted-foreground">{inv.supplierName}</p>
                     </div>
-                    <span className="text-xs font-medium">{fmt(inv.rsAmount)} TND</span>
+                    <span className="text-xs font-medium">{fmt(inv.rsAmount)} {currency.code}</span>
                   </div>
                 ))}
               </div>

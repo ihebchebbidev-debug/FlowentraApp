@@ -1,3 +1,4 @@
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -39,6 +40,7 @@ function bucketOf(daysOverdue: number): Bucket {
 
 function InvoiceAgingContent() {
   const { t } = useTranslation('purchases');
+  const { current: currency } = useCurrency();
   const navigate = useNavigate();
   const [invoices, setInvoices] = useState<SupplierInvoice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -114,7 +116,7 @@ function InvoiceAgingContent() {
               <CardContent className="p-3">
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{t(`reports.aging.bucket.${b}`, BUCKET_LABELS[b])}</div>
                 <div className={b === 'b90plus' ? 'text-base font-semibold mt-1 text-destructive' : 'text-base font-semibold mt-1'}>
-                  {fmt(perBucket[b])} TND
+                  {fmt(perBucket[b])} {currency.code}
                 </div>
               </CardContent>
             </Card>
@@ -124,7 +126,7 @@ function InvoiceAgingContent() {
         <Card>
           <CardHeader className="pb-2 flex flex-row items-center justify-between">
             <CardTitle className="text-sm">{t('reports.aging.total', 'Total outstanding')}</CardTitle>
-            <span className="text-sm font-semibold">{fmt(totalOutstanding)} TND</span>
+            <span className="text-sm font-semibold">{fmt(totalOutstanding)} {currency.code}</span>
           </CardHeader>
         </Card>
 
@@ -191,7 +193,7 @@ function InvoiceAgingContent() {
                           {t(`reports.aging.bucket.${bucket}`, BUCKET_LABELS[bucket])}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-xs text-right font-medium">{fmt(outstanding)} TND</TableCell>
+                      <TableCell className="text-xs text-right font-medium">{fmt(outstanding)} {currency.code}</TableCell>
                     </TableRow>
                   ))
                 )}

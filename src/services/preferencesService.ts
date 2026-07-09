@@ -85,7 +85,7 @@ class PreferencesService {
         timezone: preferences.timezone || 'UTC',
         dateFormat: preferences.dateFormat || 'MM/DD/YYYY',
         timeFormat: preferences.timeFormat || '12h',
-        currency: preferences.currency || 'USD',
+        currency: preferences.currency || 'TND',
         numberFormat: preferences.numberFormat || 'comma',
         notifications: preferences.notifications || '{}',
         sidebarCollapsed: preferences.sidebarCollapsed || false,
@@ -155,7 +155,7 @@ class PreferencesService {
         timezone: preferences.timezone ?? existingPrefs.timezone ?? 'UTC',
         dateFormat: preferences.dateFormat ?? existingPrefs.dateFormat ?? 'MM/DD/YYYY',
         timeFormat: preferences.timeFormat ?? existingPrefs.timeFormat ?? '12h',
-        currency: preferences.currency ?? existingPrefs.currency ?? 'USD',
+        currency: preferences.currency ?? existingPrefs.currency ?? 'TND',
         numberFormat: preferences.numberFormat || 'comma',
         notifications: preferences.notifications || '{}',
         sidebarCollapsed: preferences.sidebarCollapsed ?? false,
@@ -355,7 +355,7 @@ class PreferencesService {
       timezone: 'UTC',
       dateFormat: 'MM/DD/YYYY',
       timeFormat: '12h',
-      currency: 'USD',
+      currency: 'TND',
     } as UserPreferences;
   }
 

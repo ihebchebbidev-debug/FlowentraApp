@@ -196,7 +196,7 @@ namespace MyApi.Modules.Offers.Services
                 Status = createDto.Status ?? "draft",
                 Category = createDto.Category,
                 Source = createDto.Source,
-                Currency = createDto.Currency ?? "USD",
+                Currency = createDto.Currency ?? "TND",
                 ValidUntil = createDto.ValidUntil,
                 BillingAddress = createDto.BillingAddress,
                 BillingPostalCode = createDto.BillingPostalCode,

@@ -39,6 +39,7 @@ function PurchaseOrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation('purchases');
+  const { current: currency } = useCurrency();
   const [activeTab, setActiveTab] = useState('overview');
   const [isPdfOpen, setIsPdfOpen] = useState(false);
   const { format: formatCurrency } = useCurrency();
@@ -498,7 +499,7 @@ function PurchaseOrderDetailPage() {
                                 <SelectTrigger className="h-7 text-xs w-14 px-1"><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="percentage">%</SelectItem>
-                                  <SelectItem value="fixed">TND</SelectItem>
+                                  <SelectItem value="fixed">{currency.code}</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
@@ -557,7 +558,7 @@ function PurchaseOrderDetailPage() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm font-medium">{inv.invoiceNumber}</p>
-                          <p className="text-xs text-muted-foreground">{inv.invoiceDate} &bull; {fmt(inv.grandTotal)} TND</p>
+                          <p className="text-xs text-muted-foreground">{inv.invoiceDate} &bull; {fmt(inv.grandTotal)} {currency.code}</p>
                         </div>
                         <Badge variant="outline">{t(`invoiceStatus.${inv.status}`)}</Badge>
                       </div>

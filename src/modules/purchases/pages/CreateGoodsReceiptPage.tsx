@@ -1,3 +1,4 @@
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -18,6 +19,7 @@ import type { PurchaseOrder } from "../types";
 
 export default function CreateGoodsReceiptPage() {
   const { t } = useTranslation('purchases');
+  const { current: currency } = useCurrency();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const preselectedPoId = searchParams.get('poId') || '';
@@ -149,7 +151,7 @@ export default function CreateGoodsReceiptPage() {
                 <div className="p-2 rounded bg-muted/50 text-xs space-y-1">
                   <div className="flex justify-between"><span className="text-muted-foreground">{t('fields.supplier')}</span><span className="font-medium">{selectedPO.supplierName}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">{t('fields.date')}</span><span>{selectedPO.orderDate}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">{t('fields.total')}</span><span>{selectedPO.grandTotal.toLocaleString('fr-TN', { minimumFractionDigits: 2 })} TND</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">{t('fields.total')}</span><span>{selectedPO.grandTotal.toLocaleString('fr-TN', { minimumFractionDigits: 2 })} {currency.code}</span></div>
                 </div>
               )}
             </CardContent>

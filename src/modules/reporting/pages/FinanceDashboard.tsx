@@ -14,12 +14,14 @@ import { RagBadge } from '../components/RagDot';
 import { CHART_COLORS, AXIS_TICK, GRID_STROKE, tooltipStyle, RAG_COLORS } from '../components/chartTheme';
 import { DashboardSkeleton } from '../components/DashboardSkeleton';
 import { useReportingFinance } from '../hooks/useReporting';
+import { useCurrency } from '@/shared/hooks/useCurrency';
 
 const SOURCE = 'Finance' as const;
 const iconByIdx = [Wallet, Receipt, TrendingUp, TrendingDown];
 
 export const FinanceDashboard = () => {
   const { t } = useTranslation('reporting');
+  const { current: currency } = useCurrency();
   const { values: appliedFilters, setValues: setAppliedFilters } = useReportFilters('finance');
   const { data, isLoading, refetch, isFetching, error } = useReportingFinance(appliedFilters);
 
@@ -118,7 +120,7 @@ export const FinanceDashboard = () => {
                         <td className="whitespace-nowrap px-3 py-2">{inv.subtitle}</td>
                         <td className="whitespace-nowrap px-3 py-2"><RagBadge status={(inv.ragDot as any) || 'neutral'}>{inv.status}</RagBadge></td>
                         <td className="whitespace-nowrap px-3 py-2 text-right font-semibold">
-                          {new Intl.NumberFormat(undefined, { style: 'currency', currency: 'TND', maximumFractionDigits: 0 }).format(Number(inv.amount ?? 0))}
+                          {new Intl.NumberFormat(undefined, { style: 'currency', currency: currency.code, maximumFractionDigits: 0 }).format(Number(inv.amount ?? 0))}
                         </td>
                       </tr>
                     ))}

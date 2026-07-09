@@ -664,7 +664,7 @@ export function SalesList() {
           sales={filteredSales}
           onSaleClick={handleSaleClick}
           onStatusChange={(saleId, newStatus) => updateSaleStatus(saleId, newStatus)}
-          formatCurrency={(val: number) => `${val.toLocaleString()} TND`}
+          formatCurrency={formatCurrency}
         />
       ) : viewMode === 'list' ? (
         <div className="p-3 sm:p-4 lg:p-6">

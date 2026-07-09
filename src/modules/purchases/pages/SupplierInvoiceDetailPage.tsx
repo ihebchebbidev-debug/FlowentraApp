@@ -37,6 +37,7 @@ function SupplierInvoiceDetailContent() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation('purchases');
+  const { current: currency } = useCurrency();
   const [activeTab, setActiveTab] = useState('overview');
   const [isPdfOpen, setIsPdfOpen] = useState(false);
   const { format: formatCurrency } = useCurrency();
@@ -531,7 +532,7 @@ function SupplierInvoiceDetailContent() {
                   {inv.rsApplicable && <>
                     <div className="flex justify-between"><span className="text-muted-foreground">{t('compliance.rsType')}</span><span>{rsType?.labelFr || inv.rsTypeCode}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">{t('compliance.rate')}</span><span>{rsType?.rate}%</span></div>
-                    <div className="flex justify-between font-medium"><span>{t('compliance.rsAmount')}</span><span>{fmt(inv.rsAmount)} TND</span></div>
+                    <div className="flex justify-between font-medium"><span>{t('compliance.rsAmount')}</span><span>{fmt(inv.rsAmount)} {currency.code}</span></div>
                   </>}
                 </CardContent>
               </Card>

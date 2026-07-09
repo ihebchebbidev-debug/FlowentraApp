@@ -13,6 +13,7 @@ import { RagBadge } from '../components/RagDot';
 import { DashboardSkeleton } from '../components/DashboardSkeleton';
 import { CHART_COLORS, AXIS_TICK, GRID_STROKE, tooltipStyle } from '../components/chartTheme';
 import { useReportingSales } from '../hooks/useReporting';
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import { useReportFilters } from '../store/useReportFiltersStore';
 import { filterByStatusName, filterTableByStatus, sliceByPeriod } from '../utils/applyFilters';
 
@@ -20,6 +21,7 @@ const SOURCE = 'Sales' as const;
 
 export const SalesDashboard = () => {
   const { t } = useTranslation('reporting');
+  const { current: currency } = useCurrency();
   const { values: appliedFilters, setValues: setAppliedFilters } = useReportFilters('sales');
   const { data, isLoading, refetch, isFetching, error } = useReportingSales(appliedFilters);
 
@@ -145,7 +147,7 @@ export const SalesDashboard = () => {
                       <tr key={c.id} className="border-t hover:bg-muted/30">
                         <td className="whitespace-nowrap px-3 py-2 font-medium text-foreground">{c.title}</td>
                         <td className="whitespace-nowrap px-3 py-2 text-right font-semibold">
-                          {new Intl.NumberFormat(undefined, { style: 'currency', currency: 'TND', maximumFractionDigits: 0 }).format(Number(c.amount ?? 0))}
+                          {new Intl.NumberFormat(undefined, { style: 'currency', currency: currency.code, maximumFractionDigits: 0 }).format(Number(c.amount ?? 0))}
                         </td>
                         <td className="whitespace-nowrap px-3 py-2">
                           <RagBadge status={(c.ragDot as any) || 'green'}>{c.status || t('sales.active', 'Active')}</RagBadge>

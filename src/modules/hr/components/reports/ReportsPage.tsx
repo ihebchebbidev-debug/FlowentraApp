@@ -18,9 +18,11 @@ import dayjs from 'dayjs';
 import { useQuery } from '@tanstack/react-query';
 import { schedulesApi, type UserLeave } from '@/services/api/schedulesApi';
 import * as XLSX from 'xlsx';
+import { useCurrency } from '@/shared/hooks/useCurrency';
 
 export function ReportsPage() {
   const { t } = useTranslation('hr');
+  const { current: currency } = useCurrency();
   const [year, setYear] = useState(dayjs().year());
   const [month, setMonth] = useState(dayjs().month() + 1);
 
@@ -228,7 +230,7 @@ export function ReportsPage() {
                   <CardTitle className="text-base">{t('reportsPage.payrollTitle')}</CardTitle>
                   <div className="flex items-center gap-2">
                     {(() => {
-                      const header = ['Metric', 'Amount (TND)'];
+                      const header = ['Metric', `Amount (${currency.code})`];
                       const rows = [
                         [t('reportsPage.totalGross'), Number(totals.gross.toFixed(3))],
                         [t('reportsPage.totalNet'), Number(totals.net.toFixed(3))],

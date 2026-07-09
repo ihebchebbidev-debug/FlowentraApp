@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
 import { ShoppingCart, Clock, CheckCircle2, DollarSign } from "lucide-react";
 import { formatStatValue } from "@/lib/formatters";
+import { getGlobalCurrencyCode } from "@/lib/currencies";
 import { cn } from "@/lib/utils";
 
 interface Stats {
@@ -59,7 +60,7 @@ export function PurchaseOrdersStats({ stats, selected, onSelect }: Props) {
     {
       key: "value",
       label: t("orders.stats.value", "Total Value"),
-      value: `${fmt(stats.totalValue)} TND`,
+      value: `${fmt(stats.totalValue)} ${getGlobalCurrencyCode()}`,
       icon: DollarSign,
       color: "text-chart-4",
       bg: "bg-chart-4/10",

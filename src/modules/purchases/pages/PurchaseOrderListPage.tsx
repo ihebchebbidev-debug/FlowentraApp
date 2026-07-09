@@ -1,3 +1,4 @@
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -65,6 +66,7 @@ const initials = (name: string): string =>
 
 function PurchaseOrderListContent() {
   const { t } = useTranslation("purchases");
+  const { current: currency } = useCurrency();
   const navigate = useNavigate();
 
   // Search & filters
@@ -372,7 +374,7 @@ function PurchaseOrderListContent() {
     {
       key: "value",
       label: t("orders.stats.value", "Total Value"),
-      value: `${fmt(stats.totalValue)} TND`,
+      value: `${fmt(stats.totalValue)} ${currency.code}`,
       icon: DollarSign,
       color: "text-chart-4",
       bg: "bg-chart-4/10",
@@ -539,7 +541,7 @@ function PurchaseOrderListContent() {
                             onClick={(e) => e.stopPropagation()}
                           >
                             <span className="text-sm font-semibold text-primary">
-                              {fmt(po.grandTotal)} TND
+                              {fmt(po.grandTotal)} {currency.code}
                             </span>
                             <div className="flex gap-2">
                               <Button
@@ -644,7 +646,7 @@ function PurchaseOrderListContent() {
                                     {t(`paymentStatus.${po.paymentStatus}`)}
                                   </Badge>
                                 </TableCell>
-                                <TableCell className="text-xs text-right font-medium">{fmt(po.grandTotal)} TND</TableCell>
+                                <TableCell className="text-xs text-right font-medium">{fmt(po.grandTotal)} {currency.code}</TableCell>
                                 <TableCell className="text-right">
                                   <TableRowActions
                                     actions={[
@@ -727,7 +729,7 @@ function PurchaseOrderListContent() {
                             </div>
                           </div>
                           <div className="text-right shrink-0">
-                            <div className="text-sm font-semibold">{fmt(po.grandTotal)} TND</div>
+                            <div className="text-sm font-semibold">{fmt(po.grandTotal)} {currency.code}</div>
                             <Badge variant="outline" className="text-[10px] mt-0.5">
                               {t(`paymentStatus.${po.paymentStatus}`)}
                             </Badge>

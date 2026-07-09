@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import { TransferModal } from "../../articles/components/TransferModal";
 
 // Mock inventory data - replace with real data from Supabase
@@ -169,6 +170,7 @@ const getLocationIcon = (locationType: string) => {
 };
 
 export default function InventoryDetail() {
+  const { current: currency } = useCurrency();
   const { id } = useParams();
   const { toast } = useToast();
   const item = mockInventoryItems.find(i => i.id === id);
@@ -420,8 +422,8 @@ export default function InventoryDetail() {
               <DollarSign className="h-4 w-4 text-chart-2" />
               <span className="text-xs font-medium text-muted-foreground">Sell Price</span>
             </div>
-            <p className="text-lg sm:text-xl font-bold text-foreground">{item.sellPrice} TND</p>
-            <p className="text-xs text-muted-foreground">Cost: {item.price} TND</p>
+            <p className="text-lg sm:text-xl font-bold text-foreground">{item.sellPrice} {currency.code}</p>
+            <p className="text-xs text-muted-foreground">Cost: {item.price} {currency.code}</p>
           </CardContent>
         </Card>
         
@@ -442,7 +444,7 @@ export default function InventoryDetail() {
               <DollarSign className="h-4 w-4 text-chart-4" />
               <span className="text-xs font-medium text-muted-foreground">Total Value</span>
             </div>
-            <p className="text-lg sm:text-xl font-bold text-foreground">{(item.stock * item.sellPrice).toFixed(2)} TND</p>
+            <p className="text-lg sm:text-xl font-bold text-foreground">{(item.stock * item.sellPrice).toFixed(2)} {currency.code}</p>
             <p className="text-xs text-muted-foreground">At sell price</p>
           </CardContent>
         </Card>
@@ -485,11 +487,11 @@ export default function InventoryDetail() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">Cost Price</Label>
-                    <p className="text-sm sm:text-base text-foreground mt-1 font-semibold">{item.price} TND</p>
+                    <p className="text-sm sm:text-base text-foreground mt-1 font-semibold">{item.price} {currency.code}</p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">Sell Price</Label>
-                    <p className="text-sm sm:text-base text-foreground mt-1 font-semibold">{item.sellPrice} TND</p>
+                    <p className="text-sm sm:text-base text-foreground mt-1 font-semibold">{item.sellPrice} {currency.code}</p>
                   </div>
                 </div>
 
@@ -678,7 +680,7 @@ export default function InventoryDetail() {
                           </TableCell>
                           <TableCell className="text-sm">{log.performedBy}</TableCell>
                           <TableCell className="text-sm">
-                            {log.cost ? `${log.cost} TND` : '-'}
+                            {log.cost ? `${log.cost} ${currency.code}` : '-'}
                           </TableCell>
                           <TableCell>
                             <Button

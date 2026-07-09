@@ -1,3 +1,4 @@
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -25,6 +26,7 @@ interface SupplierOption { id: string; name: string; mf?: string; }
 
 export default function CreateSupplierInvoicePage() {
   const { t } = useTranslation('purchases');
+  const { current: currency } = useCurrency();
   const navigate = useNavigate();
   const { targetTenantId, handleTenantChange, isTenantRequired } = useTargetTenant();
   const [supplierId, setSupplierId] = useState('');
@@ -203,7 +205,7 @@ export default function CreateSupplierInvoicePage() {
                     purchaseOnly
                   />
                   <div className="p-2 bg-amber-50 dark:bg-amber-900/20 rounded text-xs">
-                    <p className="font-medium text-amber-700 dark:text-amber-400">{t('compliance.rsAmount')}: {fmt(rsAmount)} TND</p>
+                    <p className="font-medium text-amber-700 dark:text-amber-400">{t('compliance.rsAmount')}: {fmt(rsAmount)} {currency.code}</p>
                     <p className="text-[10px] text-muted-foreground mt-1">{t('compliance.rsNote')}</p>
                   </div>
                 </>
@@ -268,7 +270,7 @@ export default function CreateSupplierInvoicePage() {
                   </div>
                 )}
                 <Separator />
-                <div className="flex justify-between font-bold text-sm"><span>{t('fields.grandTotal')}</span><span>{fmt(grandTotal)} TND</span></div>
+                <div className="flex justify-between font-bold text-sm"><span>{t('fields.grandTotal')}</span><span>{fmt(grandTotal)} {currency.code}</span></div>
               </div>
             </div>
           </CardContent>
