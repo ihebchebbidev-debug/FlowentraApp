@@ -310,7 +310,7 @@ private async Task<SendEmailResultDto> SendGmailEmailAsync(ConnectedEmailAccount
         var secure = custom.SmtpSecurity?.ToLower() == "ssl" ? SecureSocketOptions.SslOnConnect
             : custom.SmtpSecurity?.ToLower() == "tls" ? SecureSocketOptions.StartTls : SecureSocketOptions.Auto;
 
-        await smtp.ConnectAsync(custom.SmtpServer, custom.SmtpPort ?? 25, secure);
+        await smtp.ConnectAsync(custom.SmtpServer ?? string.Empty, custom.SmtpPort ?? 25, secure);
         if (!string.IsNullOrEmpty(custom.Email) && !string.IsNullOrEmpty(password))
             await smtp.AuthenticateAsync(custom.Email, password);
 

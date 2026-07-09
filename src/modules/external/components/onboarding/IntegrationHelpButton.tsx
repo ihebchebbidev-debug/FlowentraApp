@@ -1,4 +1,4 @@
-import { useLocation } from 'react-router-dom';
+// (auto-open removed) — demo now only starts when the user clicks "Watch Demo"
 import { useTranslation } from 'react-i18next';
 import { Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,12 +10,11 @@ import { useIntegrationOnboarding } from '../../hooks/useIntegrationOnboarding';
  * Replaces the former floating bottom-right help popup.
  */
 export function IntegrationHelpButton() {
-  const location = useLocation();
   const { t } = useTranslation();
 
-  // Auto-open tour only on the hub index route
-  const isIndexRoute = /\/external\/?$/.test(location.pathname);
-  const { isOpen, open, close } = useIntegrationOnboarding({ autoOpen: isIndexRoute });
+  // Manual trigger only — never auto-open the demo.
+  const { isOpen, open, close } = useIntegrationOnboarding({ autoOpen: false });
+
 
   return (
     <>

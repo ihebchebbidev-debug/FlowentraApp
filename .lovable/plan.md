@@ -1,87 +1,100 @@
 
-## Goal
+# Workflow module — full fix & polish plan
 
-Match the customer spec (`Reporting_Module.docx`) and the visual reference (`reporting.html`) across the reporting module. Every dashboard becomes filter-bar + KPI grid + chart grid + detail table, with RAG dots, star-to-pin favorites, and an Export Reports tab. Works on desktop, tablet, and mobile.
+Scope: `src/modules/workflow/**` (frontend) + `Backend/Modules/WorkflowEngine/**` (engine, executors, resolver) + templates. Arabic locale is **out** per your instruction.
 
-## Scope
+## Phase 1 — P0 blockers (silent data loss)
 
-Frontend only. No backend changes in this pass — existing `/api/reporting/*` endpoints stay; missing data (HR, Purchase, expenses, invoice detail rows) renders empty-state cards instead of silently blank charts. Backend expansion can be a follow-up.
+1. **Variable resolver: switch from node-ID to label-slug lookup**
+   - Backend `WorkflowNodeExecutor` / `WorkflowGraphExecutor` resolver: accept both `{{node_<id>.field}}` (legacy) and `{{label_slug.field}}` (current UI).
+   - Build a `slug → nodeOutput` map at execution start from `node.data.label` (slugified same way as `VariablePicker.tsx:366`).
+   - Fallback order: slug → nodeId → context root key. Log a warning when a token resolves to nothing so users see it in the execution log.
+   - Add unit test covering rename-safe resolution.
 
-## Deliverables
+2. **`saveWorkflow` stale closure** (`useWorkflowApi.ts:167`)
+   - Add missing deps to `useCallback` (or refactor to `useRef` for the workflows list).
+   - Wrap writes in an optimistic update + rollback on error.
 
-1. **Design tokens** (`index.css` + `tailwind.config.ts`)
-   - Add semantic RAG tokens: `--rag-green/yellow/red/orange`, `--chart-1..6`, `--surface-muted`.
-   - No hardcoded hex in components (fixes current violations).
+3. **Wire up dead node executors** in `WorkflowNodeExecutor`:
+   - `human-input-form` → park execution as `waiting_input`, create a `WorkflowApproval`-like input request row (reuse `WorkflowApprovals` with a new `Kind` = `input` column, migration included), resume via existing approvals controller.
+   - `wait-for-event` → park as `waiting_event`, add `WaitingEventKey` column + resume endpoint `POST /workflows/executions/{id}/events/{key}`.
+   - `create-deal` → call `IDealService.CreateAsync` with mapped context.
+   - `update-deal-status` → call `IDealService.UpdateStatusAsync`.
+   - Remove the incorrect `ExecuteDelayAsync` fallthrough; default now throws `NotImplementedException` with node type in message so future gaps aren't silent.
 
-2. **Shared reporting primitives** in `src/modules/reporting/components/`
-   - `ReportShell` — page header (icon + title + subtitle + actions: Filters / Export / Refresh).
-   - `FilterBar` — period + entity filters + Clear/Apply (per-dashboard config).
-   - `KpiCard` — icon, tag chip, value, label, trend row, RAG corner accent.
-   - `ChartCard` — title, star button, body slot, empty/loading/error states.
-   - `RagDot`, `RagBadge`, `ProgressRow`, `DataTable` (RAG row highlight + sticky header on mobile).
-   - `EmptyState` for not-yet-implemented sections.
+## Phase 2 — P1 UX
 
-3. **Favorites store** — Zustand + localStorage. Star on any `ChartCard` pins its `{id, title, source}` for `MyDashboard` to render.
+4. **Undo/redo + autosave** in `WorkflowBuilder`
+   - Extract history stack hook `useWorkflowHistory` (max 50 states, debounced push).
+   - Autosave every 5s if dirty and workflow has an id; toast on failure only.
+   - Keyboard: ⌘Z / ⌘⇧Z.
 
-4. **Dashboards rebuilt to match the reference**
-   - **Sales**: 4 KPIs, 3-across (Offers by Status / Orders by Status / Conversion Trend), Year Comparison (8-col) + Orders by Type progress list (4-col), Top Customers table with Conv% + status badges.
-   - **Service**: 4 KPIs, Completion vs 90% target line (8) + WO by Status (4), 3-across (WO by Type / Year Comp / Dispatches by Tech), Consumed vs Planned Hours summary strip + chart, Technician Performance table with efficiency RAG badges.
-   - **Finance**: 4 RAG KPIs, Invoice Status donut + Payment Collection vs Target + Expense Categories vs Budget + Cash Flow, Invoice detail table with row RAG highlighting.
-   - **HR**: Headcount + Salary by Department (side-by-side bars), Performance donut + Hiring vs Turnover, Employee table (contract type, band, grade, tenure).
-   - **Purchase**: Spend by Supplier (horizontal bar top 8), Spend by Category donut + Receipt Status donut, Articles by Supplier stacked bar, PO Spend trend, PO detail table with overdue row highlighting.
+5. **True palette drag-drop**
+   - `NodePalette` items become HTML5 draggable; canvas `onDrop` computes React Flow position via `screenToFlowPosition`.
 
-5. **New tabs**
-   - **My Dashboard** (default route) — grid of starred widgets; empty state with jump buttons to each dashboard.
-   - **Export Reports** — date range, format radios (XLSX/PDF/CSV), scope checkboxes, saved-export list. UI only in this pass; wires to a stub `exportApi.request(...)` (returns not-implemented toast) so the surface is real without backend work.
+6. **Wire draft/publish** (`workflowApi.ts:239-263`)
+   - Add Draft/Published state badge in `WorkflowVersionBadge`.
+   - "Save draft" vs "Publish" buttons; only published workflows are picked up by trigger service (backend filter on `Status = 'published'`, migration adds column with default `published` for existing rows).
 
-6. **Routing** — update `ReportingModule.tsx` to add `my` (default) and `export` routes; add reporting sub-nav entry pattern so all 7 tabs are reachable.
+7. **Compound condition builder** (AND/OR groups)
+   - New `ConditionGroup` type: `{ op: 'AND'|'OR', rules: (Rule|ConditionGroup)[] }`.
+   - Refactor `ConditionNode` + `ConditionalConfigModal` to render a nested group editor (max depth 3).
+   - Backend evaluator updated with recursive evaluator; unit tests for AND/OR/nested.
 
-7. **Responsiveness**
-   - Grid drops: 4→2→1 for KPIs, 3→1 for chart rows, 8/4 split → stacked on `<lg`.
-   - Filter bar wraps and becomes a bottom-sheet trigger on `<md` (Sheet component).
-   - Tables get horizontal scroll wrapper + sticky first column on `<md`.
-   - Charts use `ResponsiveContainer` with min-height tuned per breakpoint.
-   - Verified with Playwright at 375 / 768 / 1440 px.
+8. **Responsive `NodeConfigPanel`**
+   - `w-[400px]` → `w-full sm:w-[400px]`, drawer on `<sm`, resizable via `react-resizable-panels` on ≥sm.
 
-8. **i18n** — extend `locales/en.json` + `fr.json` with all new labels (KPI names, filter labels, empty states, export UI).
+9. **Cron validator**
+   - Add `cron-parser` dep, live-validate + human-readable next-run preview.
+
+10. **Execution history: parse context**
+    - `WorkflowExecutionHistory` renders `context` as a collapsible JSON tree (`react-json-view-lite`), plus per-step input/output.
+
+## Phase 3 — P2 polish
+
+11. Split `WorkflowBuilder.tsx` (2375 LOC) into: `useWorkflowBuilderState`, `WorkflowCanvas`, `WorkflowToolbar`, `WorkflowSidebar`. Target <500 LOC per file. Behavior unchanged.
+12. Dry-run / simulation mode: backend endpoint `POST /workflows/{id}/simulate` executes with `dryRun=true`, node executors short-circuit side effects and record what they *would* do. Frontend "Test run" button + result panel.
+13. Execution list pagination (offset+limit; backend already supports it, expose in UI).
+14. Polling backoff: exponential 5s → 60s cap when no new executions; reset on activity.
+15. Remove Arabic — confirm none present (nothing to do).
+
+## Phase 4 — Domain templates (production-ready)
+
+Rewrite `src/modules/workflow/data/workflowTemplates.ts` with the following, each fully wired (trigger → nodes → edges validated against real entity statuses in `src/config/entity-statuses/`):
+
+| # | Template | Trigger | Flow |
+|---|----------|---------|------|
+| 1 | **Auto-quote follow-up** | Offer status → `sent` | Wait 3d → If not `accepted` → Send follow-up email → Wait 4d → If still not `accepted` → Create task for salesperson |
+| 2 | **Won offer → Sale + Project** | Offer → `accepted` | Create Sale from offer → Create Project → Notify PM → Send thank-you email to client |
+| 3 | **Sale paid → Dispatch** | Sale → `paid` | Create Service Order → Auto-assign nearest technician → SMS/email confirm to client |
+| 4 | **Service completed → Invoice + Review** | Service Order → `completed` | Generate invoice → Email invoice → Wait 2d → Send review request |
+| 5 | **Overdue invoice reminders** | Cron daily 9:00 | Query unpaid sales past due → For each: send reminder (escalating tone by days late 7/14/30) → After 30d create collection task |
+| 6 | **New lead intake (landing form → deal)** | External endpoint webhook | Create Contact if new → Create Deal (stage: `new`) → Assign round-robin → Notify assignee |
+| 7 | **Deal stalled** | Cron daily | Find deals in `negotiation` >7d → Notify owner + manager → If >14d escalate to admin approval |
+| 8 | **Low stock → PO draft** | Stock transaction, item qty < min | Create purchase order draft with preferred supplier → Notify purchasing |
+| 9 | **New employee onboarding** | HR: employee created | Create onboarding tasks (5 predefined) → Schedule welcome email today + day-3 + day-7 → Create training calendar events |
+| 10 | **Support ticket SLA** | Support ticket created | Wait per priority (P1=1h, P2=4h, P3=1d) → If still `open` → Escalate + notify manager |
+| 11 | **Contract renewal 60d** | Cron daily | Find contracts expiring in 60/30/7 days → Send renewal email + create task |
+| 12 | **Dispatch running late** | Dispatch entry ETA passed & status ≠ `arrived` | SMS client with delay estimate → Notify dispatcher |
+
+Each template ships with: icon, category, description, tags, difficulty (Beginner/Intermediate), estimated setup time, and pre-filled node configs using real field names from `entity-fields.ts`. Templates gallery already exists — enrich `WorkflowTemplatesGallery.tsx` with category filter chips + preview modal showing the graph.
 
 ## Technical notes
 
-- Keep Recharts (already installed) — no ECharts swap. All colors via `hsl(var(--chart-N))`.
-- No new deps except `zustand` (already in project — verify) for favorites.
-- No changes to `useReporting.ts` hooks or `reportingApi.ts` shapes; new UI degrades gracefully when arrays are empty (all HR/Purchase cards will show `EmptyState` until backend is filled in — noted in the module for later work).
-- Currency: use `Intl.NumberFormat` with tenant currency from `PreferencesProvider` instead of hardcoded USD.
-- Backend gaps to schedule next (not in this pass): populate HR + Purchase endpoints, add `ExpensesByCategory` + `InvoiceTable` to Finance, fix YoY month-gap bug, fix `Take(5)` ordering, add date-range/filter params.
+- Migrations added under `Backend/Neon/`: `32_workflow_input_and_events.sql` (Kind/WaitingEventKey columns), `33_workflow_status_draft.sql` (Status column on `WorkflowDefinitions`). Include GRANTs and indexes.
+- No breaking API changes — all new endpoints additive.
+- New deps: `cron-parser`, `react-json-view-lite`. No new backend deps.
+- Full test pass: `bunx vitest run src/modules/workflow` after each phase; backend has no test harness in repo, so guard with careful diffs + build.
 
-## File map
+## Delivery order
 
-```text
-src/modules/reporting/
-  components/
-    ReportShell.tsx
-    FilterBar.tsx
-    KpiCard.tsx
-    ChartCard.tsx
-    DataTable.tsx
-    RagDot.tsx  RagBadge.tsx  ProgressRow.tsx  EmptyState.tsx
-  store/
-    useFavoritesStore.ts
-  pages/
-    MyDashboard.tsx        (new)
-    SalesDashboard.tsx     (rewrite)
-    ServiceDashboard.tsx   (rewrite)
-    FinanceDashboard.tsx   (rewrite)
-    HrDashboard.tsx        (rewrite)
-    PurchaseDashboard.tsx  (rewrite)
-    ExportReports.tsx      (new)
-  ReportingModule.tsx      (add my + export routes)
-  locales/en.json, fr.json (extend)
-src/index.css              (add RAG + chart tokens)
-tailwind.config.ts         (map tokens)
-```
+Ship Phase 1 first as a single commit (safe to deploy on its own — pure bugfix). Then 2, 3, 4 in sequence. Each phase leaves the app in a working state.
 
-## Out of scope for this pass
+## Rough effort
 
-- Real export generation (PDF/XLSX/CSV) — UI only.
-- Backend endpoint expansion.
-- Server-side filters actually filtering the API — filter bar is wired to local state + query params, ready for backend params later.
+- Phase 1: M (bug-focused, targeted)
+- Phase 2: L
+- Phase 3: L
+- Phase 4: M (mostly data + gallery polish)
+
+Reply **"go"** to start Phase 1, or tell me to reshuffle priorities / drop items.

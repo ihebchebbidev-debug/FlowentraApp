@@ -64,6 +64,13 @@ namespace MyApi.Modules.WorkflowEngine.Services
         public string? UserId { get; set; }
         public Dictionary<string, object?> Variables { get; set; } = new();
         public Dictionary<string, object?> NodeOutputs { get; set; } = new();
+        /// <summary>
+        /// Maps a slugified node label (lowercase, whitespace → underscore) to the
+        /// real node ID. Populated once per execution by <c>WorkflowGraphExecutor</c>
+        /// so the variable resolver can honour references like
+        /// <c>{{welcome_email.subject}}</c> even after the user renames a node.
+        /// </summary>
+        public Dictionary<string, string> LabelSlugToNodeId { get; set; } = new(StringComparer.OrdinalIgnoreCase);
         public DateTime StartedAt { get; set; } = DateTime.UtcNow;
     }
 

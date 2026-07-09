@@ -57,6 +57,25 @@ namespace MyApi.Modules.WorkflowEngine.Services
                 var nodes = ParseNodes(workflow.Nodes);
                 var edges = ParseEdges(workflow.Edges);
 
+                // P0 FIX: build label-slug → nodeId map so variable references like
+                // {{welcome_email.subject}} (emitted by the frontend VariablePicker)
+                // survive node ID changes AND node renames. Duplicates: last one wins,
+                // but we log a warning so users can spot ambiguous references.
+                foreach (var nd in nodes)
+                {
+                    if (string.IsNullOrWhiteSpace(nd.Label)) continue;
+                    var slug = System.Text.RegularExpressions.Regex
+                        .Replace(nd.Label.Trim(), @"\s+", "_").ToLowerInvariant();
+                    if (string.IsNullOrEmpty(slug)) continue;
+                    if (context.LabelSlugToNodeId.TryGetValue(slug, out var existing) && existing != nd.Id)
+                    {
+                        _logger.LogWarning(
+                            "[WORKFLOW-GRAPH] Duplicate node label slug '{Slug}' — variable references may be ambiguous (nodes: {A}, {B})",
+                            slug, existing, nd.Id);
+                    }
+                    context.LabelSlugToNodeId[slug] = nd.Id;
+                }
+
                 if (!nodes.Any())
                 {
                     return new GraphExecutionResult
@@ -155,7 +174,12 @@ namespace MyApi.Modules.WorkflowEngine.Services
                     {
                         result.NodesExecuted++;
 
-                        // Store output for downstream nodes
+                        // Store output for downstream nodes. We store under BOTH keys so
+                        // the resolver can look up {{nodeId.field}} (via NodeOutputs[nodeId])
+                        // and the historical "{nodeId}.output" bucket. Prior versions only
+                        // stored the latter which meant no {{nodeId.x}} reference ever
+                        // resolved (see WorkflowNodeExecutor.ResolveVariables).
+                        context.NodeOutputs[node.Id] = nodeResult.Output;
                         context.NodeOutputs[$"{node.Id}.output"] = nodeResult.Output;
                         
                         // If entity was created, store in context

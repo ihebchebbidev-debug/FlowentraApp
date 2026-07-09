@@ -110,7 +110,7 @@ namespace MyApi.Modules.Dashboards.Controllers
 
             // 5. Top Customers
             var topSales = await context.Sales
-                .Where(s => s.ContactId != null)
+                .Where(s => s.ContactId != 0)
                 .GroupBy(s => s.ContactId)
                 .Select(g => new { ContactId = g.Key, Revenue = g.Sum(x => x.TotalAmount) })
                 .OrderByDescending(x => x.Revenue)

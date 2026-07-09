@@ -51,6 +51,25 @@ import { workflowExecutionsApi, WorkflowExecution, WorkflowExecutionLog } from '
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
+/**
+ * Pretty-print a JSON string payload from an execution log or context blob.
+ * Falls back to the raw string when the value isn't valid JSON so users still
+ * see something useful (backend occasionally stores non-JSON error strings).
+ */
+function JsonBlock({ label, value }: { label: string; value?: string | null }) {
+  if (!value) return null;
+  let pretty = value;
+  try { pretty = JSON.stringify(JSON.parse(value), null, 2); } catch { /* raw */ }
+  return (
+    <details className="mt-2 rounded border border-border bg-background/60 open:bg-background">
+      <summary className="cursor-pointer px-2 py-1 text-xs font-medium text-muted-foreground hover:text-foreground">
+        {label}
+      </summary>
+      <pre className="px-2 pb-2 text-[11px] leading-snug text-foreground whitespace-pre-wrap break-all max-h-64 overflow-auto">{pretty}</pre>
+    </details>
+  );
+}
+
 interface WorkflowExecutionHistoryProps {
   workflowId?: number;
   workflowName?: string;
@@ -523,6 +542,11 @@ function ExecutionCard({
               </div>
             )}
 
+            {/* Runtime context — the full variable bag captured at the time
+                the execution paused/finished. Invaluable when debugging why a
+                variable didn't resolve or which entity IDs were in flight. */}
+            <JsonBlock label="Execution context (variables + node outputs)" value={execution.context} />
+
             {execution.logs && execution.logs.length > 0 ? (
               <div className="space-y-2">
                 <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
@@ -594,6 +618,11 @@ function LogEntry({ log, isLast, getLogStatusIcon, t }: LogEntryProps) {
             {log.error}
           </div>
         )}
+
+        {/* Per-step input/output so users can see exactly what each node
+            received and produced — critical for debugging variable references. */}
+        <JsonBlock label="Input" value={log.input} />
+        <JsonBlock label="Output" value={log.output} />
       </div>
     </div>
   );

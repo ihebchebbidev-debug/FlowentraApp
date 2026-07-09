@@ -101,7 +101,7 @@ namespace MyApi.Modules.EmailAccounts.Controllers
                 smtp.ServerCertificateValidationCallback = (s, c, h, e) => true;
                 var secure = cfg.SmtpSecurity?.ToLower() == "ssl" ? SecureSocketOptions.SslOnConnect
                     : cfg.SmtpSecurity?.ToLower() == "tls" ? SecureSocketOptions.StartTls : SecureSocketOptions.None;
-                smtp.Connect(cfg.SmtpServer, cfg.SmtpPort ?? 25, secure);
+                smtp.Connect(cfg.SmtpServer ?? string.Empty, cfg.SmtpPort ?? 25, secure);
                 if (!string.IsNullOrEmpty(cfg.Email) && !string.IsNullOrEmpty(cfg.Password))
                     smtp.Authenticate(cfg.Email, cfg.Password);
                 smtp.Send(message);

@@ -15,6 +15,42 @@ import { Node, Edge } from '@xyflow/react';
 import { EntityType, StatusOption } from '../../data/entity-statuses';
 import { useEntityStatuses } from '../../hooks/useEntityStatuses';
 import { VariablePicker } from './VariablePicker';
+import { CronExpressionParser } from 'cron-parser';
+
+/**
+ * Validate a cron expression + show the next 3 fire times so users can sanity
+ * check what they typed. Uses the standard 5-field POSIX format; timezone is
+ * honoured when the field is set (defaults to UTC in the schedule config).
+ */
+function CronHelper({ expression, timezone }: { expression: string; timezone?: string }) {
+  const preview = useMemo(() => {
+    const expr = (expression || '').trim();
+    if (!expr) return { ok: false as const, error: null };
+    try {
+      const it = CronExpressionParser.parse(expr, { tz: timezone || 'UTC' });
+      const runs: string[] = [];
+      for (let i = 0; i < 3; i++) runs.push(it.next().toDate().toLocaleString());
+      return { ok: true as const, runs };
+    } catch (e: any) {
+      return { ok: false as const, error: e?.message || 'Invalid cron expression' };
+    }
+  }, [expression, timezone]);
+
+  if (!expression?.trim()) return null;
+  if (!preview.ok) {
+    return (
+      <p className="text-xs text-destructive mt-1">
+        {preview.error ?? 'Invalid cron expression'}
+      </p>
+    );
+  }
+  return (
+    <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
+      <div className="font-medium text-foreground">Next runs:</div>
+      {preview.runs.map((r, i) => <div key={i}>• {r}</div>)}
+    </div>
+  );
+}
 
 export interface NodeConfig {
   name?: string;
@@ -251,7 +287,7 @@ export function NodeConfigPanel({ isOpen, onClose, nodeId, nodeData, onSave, nod
 
   return (
     <div className={cn(
-      'fixed right-0 top-0 h-full w-[400px] z-50',
+      'fixed right-0 top-0 h-full w-full sm:w-[400px] max-w-full z-50',
       'bg-card border-l border-border shadow-xl',
       'transform transition-transform duration-300',
       isOpen ? 'translate-x-0' : 'translate-x-full'
@@ -1353,6 +1389,7 @@ export function NodeConfigPanel({ isOpen, onClose, nodeId, nodeData, onSave, nod
                   <p className="text-xs text-muted-foreground">
                     {t('cronHelp', 'e.g., "0 9 * * 1-5" = weekdays at 9am')}
                   </p>
+                  <CronHelper expression={config.cronExpression || ''} timezone={config.timezone} />
                 </div>
 
                 <div className="space-y-2">

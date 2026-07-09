@@ -250,6 +250,14 @@ export function TopNavigation() {
     // Keep Projects only as CRM sub-itdem; parent is Tasks
     if (key === 'todo') return t('projects');
     if (key === 'time-expenses') return t('time-expenses');
+    if (key === 'external') {
+      const nsTitle = t('external:external.title');
+      if (typeof nsTitle === 'string' && nsTitle !== 'external:external.title' && nsTitle !== 'external.title') return nsTitle;
+      const pluginTitle = t('external:plugin.name');
+      if (typeof pluginTitle === 'string' && pluginTitle !== 'external:plugin.name' && pluginTitle !== 'plugin.name') return pluginTitle;
+      return 'External APIs';
+    }
+
 
     const isLikelyRaw = (val: any) => {
       if (typeof val !== 'string') return false;
@@ -473,10 +481,10 @@ export function TopNavigation() {
     const isDropdownOpen = dropdownStates[item.id] || false;
     const itemIsActive = hasDropdown ? isDropdownActive(item.dropdown) : isActive(item.url);
 
-    // Icon color: use item override or primary brand color (matches desktop)
+    // Icon color: use item override or main primary theme color (matches desktop AppSidebar)
     const iconColorStyle: React.CSSProperties = item.iconColor
       ? { color: item.iconColor.startsWith('#') ? item.iconColor : `hsl(${item.iconColor})` }
-      : { color: 'hsl(var(--sidebar-primary))' };
+      : { color: 'hsl(var(--primary))' };
 
     if (hasDropdown) {
       return (

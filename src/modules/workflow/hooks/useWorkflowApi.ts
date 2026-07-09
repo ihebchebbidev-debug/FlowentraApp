@@ -160,11 +160,15 @@ export function useWorkflowApi() {
         const updated = await workflowApi.update(Number(currentWorkflow.id), dto);
         const mapped = mapApiToSavedWorkflow(updated);
         
-        setWorkflows(prev => prev.map(w => w.id === mapped.id ? mapped : w));
+        // P0 FIX: use functional setState so we back up the freshest list
+        // (previously used `workflows` from closure → stale copy meant the
+        // localStorage backup could drop concurrent updates).
+        setWorkflows(prev => {
+          const next = prev.map(w => w.id === mapped.id ? mapped : w);
+          saveToLocalStorage(next);
+          return next;
+        });
         setCurrentWorkflow(mapped);
-        
-        // Also save to localStorage as backup
-        saveToLocalStorage(workflows.map(w => w.id === mapped.id ? mapped : w));
         
         return mapped;
       } else {
@@ -180,12 +184,12 @@ export function useWorkflowApi() {
         const created = await workflowApi.create(dto);
         const mapped = mapApiToSavedWorkflow(created);
         
-        const updatedWorkflows = [...workflows, mapped];
-        setWorkflows(updatedWorkflows);
+        setWorkflows(prev => {
+          const next = [...prev, mapped];
+          saveToLocalStorage(next);
+          return next;
+        });
         setCurrentWorkflow(mapped);
-        
-        // Also save to localStorage as backup
-        saveToLocalStorage(updatedWorkflows);
         
         return mapped;
       }
@@ -196,7 +200,7 @@ export function useWorkflowApi() {
     } finally {
       setLoading(false);
     }
-  }, [currentWorkflow, workflows]);
+  }, [currentWorkflow]);
 
   // Local storage helpers
   const saveToLocalStorage = (workflows: SavedWorkflow[]) => {

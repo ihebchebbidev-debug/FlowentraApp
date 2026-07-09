@@ -70,6 +70,8 @@ import { WorkflowVersionBadge, type WorkflowVersionStatus } from './panels/Workf
 import { WorkflowDebugConsole } from './WorkflowDebugConsole';
 import { WorkflowTemplatesGallery } from './WorkflowTemplatesGallery';
 import { WorkflowGroupsManager } from './WorkflowGroupsManager';
+import { useWorkflowHistory } from '../hooks/useWorkflowHistory';
+import { Undo2, Redo2, FileCheck, FileEdit } from 'lucide-react';
 
 // Collision-safe id generator. `Date.now()` collides when two ids are minted in
 // the same millisecond (rapid add/duplicate), which corrupts React Flow rendering
@@ -143,9 +145,24 @@ export function WorkflowBuilder() {
 
   // Last *persisted* canvas state — used to revert when the user cancels an edit.
   const baselineRef = useRef<{ nodes: Node[]; edges: Edge[] }>({ nodes: [], edges: [] });
+  // Undo/redo history. Snapshots are recorded (debounced) by the
+  // handleNodes/EdgesChangeWithTracking callbacks; undo/redo apply the
+  // snapshot back to React Flow and mark the change as a replay so the
+  // resulting state update doesn't push a fresh entry on the stack.
+  const history = useWorkflowHistory({ nodes: [], edges: [] });
+
   const setBaseline = useCallback((n: Node[], e: Edge[]) => {
     baselineRef.current = { nodes: [...n], edges: [...e] };
-  }, []);
+    // Any time the persisted baseline changes (initial load, save, or a load
+    // from the manager), the undo/redo timeline resets — the previous edits
+    // no longer describe a valid path from the new baseline.
+    history.reset({ nodes: [...n], edges: [...e] });
+  }, [history]);
+
+  // Autosave state — kept as refs so the debounced timer inside the effect
+  // always sees fresh values without re-registering on every keystroke.
+  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [lastAutosaveAt, setLastAutosaveAt] = useState<Date | null>(null);
 
   // Track if auto-reconciliation should run
   const shouldAutoReconcileRef = useRef(false);
@@ -696,10 +713,14 @@ export function WorkflowBuilder() {
       );
       if (hasRealChange) {
         setHasUnsavedChanges(true);
+        // Snapshot for undo. useNodesState will apply `changes` synchronously
+        // right after this callback returns, so we read the *upcoming* state
+        // via the functional form on the next tick — safer than diffing.
+        setTimeout(() => history.record({ nodes, edges }), 0);
       }
     }
     onNodesChange(changes);
-  }, [onNodesChange, isEditMode]);
+  }, [onNodesChange, isEditMode, history, nodes, edges]);
 
   const handleEdgesChangeWithTracking = useCallback((changes: any) => {
     if (isEditMode && changes.length > 0) {
@@ -708,30 +729,80 @@ export function WorkflowBuilder() {
       );
       if (hasRealChange) {
         setHasUnsavedChanges(true);
+        setTimeout(() => history.record({ nodes, edges }), 0);
       }
     }
     onEdgesChange(changes);
-  }, [onEdgesChange, isEditMode]);
+  }, [onEdgesChange, isEditMode, history, nodes, edges]);
 
-  // Save workflow to backend
-  const handleSaveWorkflow = useCallback(async () => {
+  // Undo/redo handlers. `isReplayingRef` prevents the resulting state change
+  // from being recorded as a new history entry.
+  const handleUndo = useCallback(() => {
+    const prev = history.undo();
+    if (!prev) return;
+    history.isReplayingRef.current = true;
+    setNodes(prev.nodes);
+    setEdges(prev.edges);
+    setHasUnsavedChanges(true);
+    setTimeout(() => { history.isReplayingRef.current = false; }, 0);
+  }, [history, setNodes, setEdges]);
+
+  const handleRedo = useCallback(() => {
+    const next = history.redo();
+    if (!next) return;
+    history.isReplayingRef.current = true;
+    setNodes(next.nodes);
+    setEdges(next.edges);
+    setHasUnsavedChanges(true);
+    setTimeout(() => { history.isReplayingRef.current = false; }, 0);
+  }, [history, setNodes, setEdges]);
+
+  // Keyboard: ⌘Z / Ctrl+Z = undo, ⌘⇧Z / Ctrl+Y = redo. Only active in edit
+  // mode and only when the user isn't typing in a form control.
+  useEffect(() => {
+    if (!isEditMode) return;
+    const isTyping = (el: EventTarget | null) => {
+      if (!(el instanceof HTMLElement)) return false;
+      const tag = el.tagName;
+      return tag === 'INPUT' || tag === 'TEXTAREA' || el.isContentEditable;
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (isTyping(e.target)) return;
+      const mod = e.metaKey || e.ctrlKey;
+      if (!mod) return;
+      const k = e.key.toLowerCase();
+      if (k === 'z' && !e.shiftKey) { e.preventDefault(); handleUndo(); }
+      else if ((k === 'z' && e.shiftKey) || k === 'y') { e.preventDefault(); handleRedo(); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isEditMode, handleUndo, handleRedo]);
+
+  // Shared persist path used by both the manual Save button and the autosave
+  // effect. `silent=true` suppresses success toasts and keeps the user in
+  // edit mode; validation errors are still surfaced so users don't lose data
+  // to an invalid autosave silently.
+  const persistWorkflow = useCallback(async (opts?: { silent?: boolean }) => {
+    const silent = !!opts?.silent;
     if (!currentWorkflowId) {
-      toast.error(t('noWorkflowSelected'));
-      return;
+      if (!silent) toast.error(t('noWorkflowSelected'));
+      return false;
     }
 
     // Validate before persisting — block on hard errors, warn (but allow) on warnings.
     const { WorkflowValidator } = await import('../utils/workflowValidator');
     const validation = WorkflowValidator.validateWorkflow(nodes, edges);
     if (!validation.isValid) {
-      toast.error(validation.errors[0] || t('saveFailed'), {
-        description: validation.errors.length > 1
-          ? t('validationErrorsCount', { count: validation.errors.length, defaultValue: `${validation.errors.length} validation errors` })
-          : undefined,
-      });
-      return;
+      if (!silent) {
+        toast.error(validation.errors[0] || t('saveFailed'), {
+          description: validation.errors.length > 1
+            ? t('validationErrorsCount', { count: validation.errors.length, defaultValue: `${validation.errors.length} validation errors` })
+            : undefined,
+        });
+      }
+      return false;
     }
-    if (validation.warnings.length > 0) {
+    if (!silent && validation.warnings.length > 0) {
       toast.warning(validation.warnings[0], { duration: 4000 });
     }
 
@@ -749,16 +820,96 @@ export function WorkflowBuilder() {
       });
 
       setHasUnsavedChanges(false);
-      setIsEditMode(false);
       setBaseline(nodes, edges);
-      toast.success(t('saved'), { duration: 2500 });
+      if (silent) {
+        setLastAutosaveAt(new Date());
+      } else {
+        setIsEditMode(false);
+        toast.success(t('saved'), { duration: 2500 });
+      }
+      return true;
     } catch (err) {
       console.error('Failed to save workflow:', err);
-      toast.error(t('saveFailed'));
+      toast.error(silent ? t('autosaveFailed', 'Autosave failed — click Save to retry') : t('saveFailed'));
+      return false;
     } finally {
       setIsSaving(false);
     }
   }, [currentWorkflowId, nodes, edges, t, setBaseline]);
+
+  const handleSaveWorkflow = useCallback(() => persistWorkflow(), [persistWorkflow]);
+
+  // Autosave: debounce 5 s after the last unsaved change. Skipped mid-save
+  // to avoid overlapping requests. Cleared when the user leaves edit mode.
+  useEffect(() => {
+    if (!isEditMode || !hasUnsavedChanges || !currentWorkflowId || isSaving) return;
+    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    autosaveTimerRef.current = setTimeout(() => { persistWorkflow({ silent: true }); }, 5000);
+    return () => {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = null;
+      }
+    };
+  }, [isEditMode, hasUnsavedChanges, currentWorkflowId, isSaving, persistWorkflow]);
+
+  // ─── Draft / Publish handlers ─────────────────────────────────────────
+  // Backed by the existing workflowApi endpoints (createDraft / promote /
+  // archive). They return the updated (or newly-created) definition; we
+  // refresh the version badge + swap the current workflow ID when a draft
+  // copy is created so the user immediately edits the new version.
+  const handleCreateDraft = useCallback(async () => {
+    if (!currentWorkflowId) return;
+    try {
+      const draft = await workflowApi.createDraft(currentWorkflowId);
+      setVersionStatus('draft');
+      setWorkflowVersion(draft.version ?? 1);
+      // Draft may be a new workflow row — switch to it so subsequent edits
+      // target the draft, not the still-active original.
+      if (draft.id && draft.id !== currentWorkflowId) setCurrentWorkflowId(draft.id);
+      toast.success(t('version.draftCreated', 'Draft created — editing draft version'));
+      setIsEditMode(true);
+    } catch (err) {
+      console.error('createDraft failed:', err);
+      toast.error(t('version.draftFailed', 'Could not create draft'));
+    }
+  }, [currentWorkflowId, t]);
+
+  const handlePublish = useCallback(async () => {
+    if (!currentWorkflowId) return;
+    // Persist any pending edits first — publishing a stale draft would silently
+    // discard the user's latest edits.
+    if (hasUnsavedChanges) {
+      const ok = await persistWorkflow();
+      if (!ok) return;
+    }
+    try {
+      const promoted = await workflowApi.promote(currentWorkflowId);
+      setVersionStatus('active');
+      setWorkflowVersion(promoted.version ?? 1);
+      toast.success(t('version.promoted', 'Version promoted to active'));
+      setIsEditMode(false);
+    } catch (err) {
+      console.error('promote failed:', err);
+      toast.error(t('version.promoteFailed', 'Could not publish workflow'));
+    }
+  }, [currentWorkflowId, hasUnsavedChanges, persistWorkflow, t]);
+
+  const handleArchive = useCallback(async () => {
+    if (!currentWorkflowId) return;
+    try {
+      const ok = await workflowApi.archive(currentWorkflowId);
+      if (ok) {
+        setVersionStatus('archived');
+        toast.success(t('version.archived', 'Version archived'));
+      } else {
+        toast.error(t('version.archiveFailed', 'Could not archive version'));
+      }
+    } catch (err) {
+      console.error('archive failed:', err);
+      toast.error(t('version.archiveFailed', 'Could not archive version'));
+    }
+  }, [currentWorkflowId, t]);
 
   // Cancel edit mode — actually revert the canvas to the last saved state.
   const handleCancelEdit = useCallback(() => {
@@ -1797,8 +1948,15 @@ export function WorkflowBuilder() {
             </div>
           )}
           
-          {/* Version badge */}
-          <WorkflowVersionBadge currentVersion={workflowVersion} versionStatus={versionStatus} isActive={isWorkflowActive} />
+          {/* Version badge with draft / publish / archive actions */}
+          <WorkflowVersionBadge
+            currentVersion={workflowVersion}
+            versionStatus={versionStatus}
+            isActive={isWorkflowActive}
+            onCreateDraft={handleCreateDraft}
+            onPromoteToActive={handlePublish}
+            onArchive={handleArchive}
+          />
         </div>
         
         {/* Right: Actions */}
@@ -1917,6 +2075,50 @@ export function WorkflowBuilder() {
           {/* Edit/Save Toggle */}
           {isEditMode ? (
             <div className="flex items-center gap-2">
+              {/* Undo / redo — only visible in edit mode. Disabled state
+                  drives users toward the correct affordance rather than a
+                  silent no-op click. */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={handleUndo}
+                      disabled={!history.canUndo || isSaving}
+                      aria-label={t('undo', 'Undo')}
+                    >
+                      <Undo2 className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{t('undo', 'Undo')} (⌘Z)</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={handleRedo}
+                      disabled={!history.canRedo || isSaving}
+                      aria-label={t('redo', 'Redo')}
+                    >
+                      <Redo2 className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{t('redo', 'Redo')} (⌘⇧Z)</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              {/* Autosave heartbeat — quiet reassurance so users know their
+                  work is safe without pulling focus. */}
+              {lastAutosaveAt && (
+                <span className="text-[10px] text-muted-foreground hidden md:inline">
+                  {t('autosavedAt', 'Autosaved {{time}}', { time: lastAutosaveAt.toLocaleTimeString() })}
+                </span>
+              )}
+
               <Button
                 variant="outline"
                 onClick={handleCancelEdit}
@@ -1939,17 +2141,48 @@ export function WorkflowBuilder() {
                 )}
                 {t('save')}
               </Button>
+
+              {/* Publish shortcut — surfaced next to Save so users don't have
+                  to hunt through the version-badge dropdown when they're
+                  actively iterating on a draft. */}
+              {versionStatus === 'draft' && (
+                <Button
+                  onClick={handlePublish}
+                  disabled={isSaving}
+                  size="sm"
+                  variant="secondary"
+                >
+                  <FileCheck className="h-4 w-4 mr-2" />
+                  {t('version.publish', 'Publish')}
+                </Button>
+              )}
             </div>
           ) : (
-            <Button
-              variant="outline"
-              onClick={() => setIsEditMode(true)}
-              disabled={workflowLoading || nodes.length === 0}
-              size="sm"
-            >
-              <Edit3 className="h-4 w-4 mr-2" />
-              {t('common.edit')}
-            </Button>
+            <div className="flex items-center gap-1.5">
+              <Button
+                variant="outline"
+                onClick={() => setIsEditMode(true)}
+                disabled={workflowLoading || nodes.length === 0}
+                size="sm"
+              >
+                <Edit3 className="h-4 w-4 mr-2" />
+                {t('common.edit')}
+              </Button>
+              {/* When an active version is loaded, offer a one-click "Edit
+                  draft" shortcut that creates a draft copy and enters edit
+                  mode. Keeps published versions immutable-by-default. */}
+              {versionStatus === 'active' && currentWorkflowId && (
+                <Button
+                  variant="ghost"
+                  onClick={handleCreateDraft}
+                  disabled={workflowLoading}
+                  size="sm"
+                >
+                  <FileEdit className="h-4 w-4 mr-2" />
+                  {t('version.createDraft', 'Create draft')}
+                </Button>
+              )}
+            </div>
           )}
           
           {/* Workflow Active/Inactive Toggle - only show when not editing */}

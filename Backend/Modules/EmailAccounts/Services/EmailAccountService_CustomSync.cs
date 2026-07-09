@@ -47,6 +47,7 @@ namespace MyApi.Modules.EmailAccounts.Services
                 imap.Authenticate(custom.Email, password);
 
                 var inbox = imap.Inbox;
+                if (inbox == null) return (0, 0);
                 inbox.Open(MailKit.FolderAccess.ReadOnly);
                 var uids = inbox.Search(SearchQuery.All);
                 var take = uids.Count > maxResults ? uids.TakeLast(maxResults) : uids;

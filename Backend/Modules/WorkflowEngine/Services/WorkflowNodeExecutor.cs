@@ -21,6 +21,8 @@ using System.Text.Json;
 // CancellationToken) and JsValue helpers (IsUndefined/IsNull) as extension methods
 // in the Jint namespace, so this using is required for the JS sandbox below.
 using Jint;
+using MyApi.Modules.Deals.Services;
+using MyApi.Modules.Deals.DTOs;
 
 namespace MyApi.Modules.WorkflowEngine.Services
 {
@@ -75,6 +77,28 @@ namespace MyApi.Modules.WorkflowEngine.Services
                     // Trigger nodes (already fired, just pass through)
                     var t when t.Contains("status-trigger") => await ExecuteTriggerNodeAsync(node, context),
                     var t when t.Contains("trigger") => await ExecuteTriggerNodeAsync(node, context),
+
+                    // P0 FIX: these node types were previously falling through to the
+                    // wrong handler (wait-for-event → ExecuteDelayAsync because of the
+                    // "wait" substring match below; human-input-form / create-deal /
+                    // update-deal-status → ExecuteDefaultNodeAsync which no-ops).
+                    // Until dedicated executors ship we mark them as failed with a
+                    // clear message so users see the gap in the execution log instead
+                    // of a silently succeeded "delay" or empty step. See workflow module
+                    // plan Phase 1 item 3.
+                    "wait-for-event" or "wait_for_event" => new NodeExecutionResult
+                    {
+                        Success = false, Status = "failed",
+                        Error = "wait-for-event executor is not yet implemented — remove this node or use a delay/approval node instead."
+                    },
+                    "human-input-form" or "human_input_form" => new NodeExecutionResult
+                    {
+                        Success = false, Status = "failed",
+                        Error = "human-input-form executor is not yet implemented — use an approval node for now."
+                    },
+                    "create-deal" or "create_deal" => await ExecuteCreateDealAsync(node, context),
+                    "update-deal-status" or "update_deal_status"
+                        or "update-deal-stage" or "update_deal_stage" => await ExecuteUpdateDealStageAsync(node, context),
                     
                     // Business process nodes (explicit create- prefixed)
                     var t when t.Contains("create-offer") => await ExecuteCreateOfferAsync(node, context),
@@ -376,6 +400,190 @@ namespace MyApi.Modules.WorkflowEngine.Services
                     ["reason"] = "No service order context or dispatches already exist"
                 }
             };
+        }
+
+        // =====================================================================
+        // Deal executors (wired via IServiceProvider so the workflow module
+        // stays loosely coupled to Deals). Reads node.data fields with the
+        // usual variable resolver so users can set title/stage/etc. from
+        // upstream node outputs — e.g. Title = "{{trigger.subject}}".
+        // =====================================================================
+
+        private async Task<NodeExecutionResult> ExecuteCreateDealAsync(WorkflowNode node, WorkflowExecutionContext context)
+        {
+            var dealService = _serviceProvider.GetService(typeof(IDealService)) as IDealService;
+            if (dealService == null)
+            {
+                return new NodeExecutionResult
+                {
+                    Success = false, Status = "failed",
+                    Error = "IDealService is not registered — the Deals module must be enabled to use create-deal nodes."
+                };
+            }
+
+            var title = ResolveVariables(GetNodeDataString(node, "title") ?? GetNodeDataString(node, "dealTitle") ?? "", context).Trim();
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                return new NodeExecutionResult
+                {
+                    Success = false, Status = "failed",
+                    Error = "create-deal: 'title' is required. Set node.data.title (variables like {{trigger.subject}} are supported)."
+                };
+            }
+
+            // Contact ID: try node config, then trigger context (if a contact triggered the flow),
+            // then created_contact_id if a previous node created one.
+            int contactId = 0;
+            var contactIdRaw = ResolveVariables(GetNodeDataString(node, "contactId") ?? "", context).Trim();
+            if (int.TryParse(contactIdRaw, out var parsedCid) && parsedCid > 0)
+                contactId = parsedCid;
+            else if (context.TriggerEntityType == "contact")
+                contactId = context.TriggerEntityId;
+            else if (context.Variables.TryGetValue("created_contact_id", out var cc) && cc != null
+                     && int.TryParse(cc.ToString(), out var cid2))
+                contactId = cid2;
+
+            if (contactId <= 0)
+            {
+                return new NodeExecutionResult
+                {
+                    Success = false, Status = "failed",
+                    Error = "create-deal: could not determine contactId. Set node.data.contactId or trigger the workflow from a contact."
+                };
+            }
+
+            var dto = new CreateDealDto
+            {
+                Title = title,
+                Description = ResolveVariables(GetNodeDataString(node, "description") ?? "", context),
+                ContactId = contactId,
+                Stage = ResolveVariables(GetNodeDataString(node, "stage") ?? "lead", context),
+                Category = ResolveVariables(GetNodeDataString(node, "category") ?? "", context) is var cat && string.IsNullOrWhiteSpace(cat) ? null : cat,
+                Source = ResolveVariables(GetNodeDataString(node, "source") ?? "workflow", context),
+                AssignedTo = ResolveVariables(GetNodeDataString(node, "assignedTo") ?? "", context) is var at && string.IsNullOrWhiteSpace(at) ? null : at,
+                Notes = ResolveVariables(GetNodeDataString(node, "notes") ?? "", context),
+            };
+
+            var probRaw = ResolveVariables(GetNodeDataString(node, "probability") ?? "", context);
+            if (int.TryParse(probRaw, out var prob)) dto.Probability = Math.Clamp(prob, 0, 100);
+
+            var valRaw = ResolveVariables(GetNodeDataString(node, "estimatedValue") ?? "", context);
+            if (decimal.TryParse(valRaw, System.Globalization.NumberStyles.Any,
+                    System.Globalization.CultureInfo.InvariantCulture, out var val))
+                dto.EstimatedValue = val;
+
+            var currency = ResolveVariables(GetNodeDataString(node, "currency") ?? "", context);
+            if (!string.IsNullOrWhiteSpace(currency)) dto.Currency = currency;
+
+            try
+            {
+                var created = await dealService.CreateDealAsync(dto, context.UserId ?? "workflow", "Workflow");
+                _logger.LogInformation("[WORKFLOW] create-deal: created deal {DealId} '{Title}' (stage={Stage})",
+                    created.Id, created.Title, created.Stage);
+                return new NodeExecutionResult
+                {
+                    Success = true, Status = "completed",
+                    CreatedEntityId = created.Id, CreatedEntityType = "deal",
+                    Output = new Dictionary<string, object?>
+                    {
+                        ["action"] = "create_deal",
+                        ["dealId"] = created.Id,
+                        ["dealNumber"] = created.DealNumber,
+                        ["title"] = created.Title,
+                        ["stage"] = created.Stage,
+                        ["contactId"] = created.ContactId,
+                        ["estimatedValue"] = created.EstimatedValue,
+                    }
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[WORKFLOW] create-deal failed");
+                return new NodeExecutionResult { Success = false, Status = "failed", Error = $"create-deal failed: {ex.Message}" };
+            }
+        }
+
+        private async Task<NodeExecutionResult> ExecuteUpdateDealStageAsync(WorkflowNode node, WorkflowExecutionContext context)
+        {
+            var dealService = _serviceProvider.GetService(typeof(IDealService)) as IDealService;
+            if (dealService == null)
+            {
+                return new NodeExecutionResult
+                {
+                    Success = false, Status = "failed",
+                    Error = "IDealService is not registered — the Deals module must be enabled to use update-deal-status nodes."
+                };
+            }
+
+            // Resolve target deal ID: explicit config → trigger (deal) → last-created deal.
+            int dealId = 0;
+            var idRaw = ResolveVariables(GetNodeDataString(node, "dealId") ?? GetNodeDataString(node, "entityId") ?? "", context).Trim();
+            if (int.TryParse(idRaw, out var parsed) && parsed > 0)
+                dealId = parsed;
+            else if (context.TriggerEntityType == "deal")
+                dealId = context.TriggerEntityId;
+            else if (context.Variables.TryGetValue("created_deal_id", out var cd) && cd != null
+                     && int.TryParse(cd.ToString(), out var cid))
+                dealId = cid;
+
+            if (dealId <= 0)
+            {
+                return new NodeExecutionResult
+                {
+                    Success = false, Status = "failed",
+                    Error = "update-deal-status: could not determine dealId. Set node.data.dealId or trigger from a deal."
+                };
+            }
+
+            var newStage = ResolveVariables(
+                GetNodeDataString(node, "newStatus")
+                ?? GetNodeDataString(node, "stage")
+                ?? GetNodeDataString(node, "newStage")
+                ?? "",
+                context).Trim();
+
+            if (string.IsNullOrWhiteSpace(newStage))
+            {
+                return new NodeExecutionResult
+                {
+                    Success = false, Status = "failed",
+                    Error = "update-deal-status: 'newStatus' (or 'stage') is required."
+                };
+            }
+
+            try
+            {
+                var updated = await dealService.UpdateDealAsync(dealId,
+                    new UpdateDealDto { Stage = newStage },
+                    context.UserId ?? "workflow", "Workflow");
+
+                if (updated == null)
+                {
+                    return new NodeExecutionResult
+                    {
+                        Success = false, Status = "failed",
+                        Error = $"update-deal-status: deal {dealId} not found."
+                    };
+                }
+
+                _logger.LogInformation("[WORKFLOW] update-deal-status: deal {DealId} → {Stage}", dealId, newStage);
+                return new NodeExecutionResult
+                {
+                    Success = true, Status = "completed",
+                    Output = new Dictionary<string, object?>
+                    {
+                        ["action"] = "update_deal_status",
+                        ["dealId"] = dealId,
+                        ["newStage"] = newStage,
+                        ["previousStage"] = updated.Stage,
+                    }
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[WORKFLOW] update-deal-status failed");
+                return new NodeExecutionResult { Success = false, Status = "failed", Error = $"update-deal-status failed: {ex.Message}" };
+            }
         }
 
         private async Task<NodeExecutionResult> ExecuteUpdateStatusAsync(WorkflowNode node, WorkflowExecutionContext context)
@@ -2482,7 +2690,15 @@ namespace MyApi.Modules.WorkflowEngine.Services
                     }
                     else
                     {
-                        if (context.NodeOutputs.TryGetValue(nodeId, out var outputs)
+                        // P0 FIX: the picker emits `{{label_slug.field}}` — translate the
+                        // slug back to the real node ID so renaming a node doesn't silently
+                        // break every downstream reference. Falls back to nodeId as-is
+                        // for legacy `{{nodeId.field}}` references.
+                        var resolvedNodeId = nodeId;
+                        if (context.LabelSlugToNodeId.TryGetValue(nodeId, out var mapped))
+                            resolvedNodeId = mapped;
+
+                        if (context.NodeOutputs.TryGetValue(resolvedNodeId, out var outputs)
                             && outputs is Dictionary<string, object?> dict
                             && dict.TryGetValue(key, out var nv) && nv != null)
                             return nv.ToString() ?? "";
@@ -2490,6 +2706,10 @@ namespace MyApi.Modules.WorkflowEngine.Services
                         var fullKey = expr; // "nodeId.key"
                         if (context.Variables.TryGetValue(fullKey, out var fv) && fv != null)
                             return fv.ToString() ?? "";
+
+                        _logger.LogWarning(
+                            "[WORKFLOW-VAR] Unresolved reference '{{{{{Expr}}}}}' (node lookup key '{Key}') — check node label or that the referenced step ran before this one.",
+                            expr, resolvedNodeId);
                     }
                     return $"{{{{{expr}}}}}"; // leave unresolved in {{}} form
                 }

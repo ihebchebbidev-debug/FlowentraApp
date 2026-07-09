@@ -160,11 +160,20 @@ export function MobileNavigation() {
   const resolveTitle = (key: string) => {
     if (!key) return key;
 
+    if (key === 'external') {
+      const nsTitle = t('external:external.title');
+      if (typeof nsTitle === 'string' && nsTitle !== 'external:external.title' && nsTitle !== 'external.title') return nsTitle;
+      const pluginTitle = t('external:plugin.name');
+      if (typeof pluginTitle === 'string' && pluginTitle !== 'external:plugin.name' && pluginTitle !== 'plugin.name') return pluginTitle;
+      return 'External APIs';
+    }
+
     const isLikelyRaw = (val: any) => {
       if (typeof val !== 'string') return false;
       const v = val.trim();
       return v === key || v === `${key}.title`;
     };
+
 
     const direct = t(key);
     if (typeof direct === 'string' && direct.trim() !== '' && !isLikelyRaw(direct)) return direct;
