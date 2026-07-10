@@ -21,6 +21,7 @@ import { generateThemeCss, generateScriptsJs } from './htmlExporter';
 import { optimizeImage, formatBytes, DEFAULT_OPTIMIZATION_OPTIONS } from './imageOptimizer';
 import type { ImageOptimizationOptions } from './imageOptimizer';
 import { type HostingPlatform, getHostingPreset } from './hostingPresets';
+import { buildDomainArtifacts, type SiteConfig } from './domainConfig';
 
 // ──────────────────────────────────────────────────
 // Types
@@ -31,6 +32,8 @@ export interface ReactExportOptions {
   imageOptimization?: ImageOptimizationOptions;
   /** Target hosting platform (for config files) */
   platform?: HostingPlatform;
+  /** Custom domain / canonical URL configuration */
+  site?: SiteConfig;
 }
 
 export interface ReactExportResult {
@@ -165,6 +168,9 @@ export async function generateReactProjectWithStats(
   };
 
   const pages = Array.isArray(site.pages) ? site.pages : [];
+
+  // ── Resolve custom-domain artifacts (CNAME, _redirects, DEPLOYMENT.md, canonical URL) ──
+  const domainArtifacts = buildDomainArtifacts(options?.site, options?.platform, prefix);
   
   // Count translations for progress tracking
   let translationCount = 0;
@@ -305,6 +311,16 @@ export async function generateReactProjectWithStats(
   ${siteDescription ? `<meta name="description" content="${escapeHtml(siteDescription)}" />` : ''}
   <meta name="theme-color" content="${safeTheme.primaryColor}" />
   ${site.favicon ? `<link rel="icon" href="${escapeHtml(site.favicon)}" />` : ''}
+  ${domainArtifacts.siteUrl ? `<link rel="canonical" href="${escapeHtml(domainArtifacts.siteUrl)}/" />` : ''}
+  <meta property="og:title" content="${escapeHtml(site.name || 'My Website')}" />
+  ${siteDescription ? `<meta property="og:description" content="${escapeHtml(siteDescription)}" />` : ''}
+  <meta property="og:type" content="website" />
+  ${domainArtifacts.siteUrl ? `<meta property="og:url" content="${escapeHtml(domainArtifacts.siteUrl)}/" />` : ''}
+  ${site.favicon ? `<meta property="og:image" content="${escapeHtml(site.favicon)}" />` : ''}
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="${escapeHtml(site.name || 'My Website')}" />
+  ${siteDescription ? `<meta name="twitter:description" content="${escapeHtml(siteDescription)}" />` : ''}
+  ${site.favicon ? `<meta name="twitter:image" content="${escapeHtml(site.favicon)}" />` : ''}
   ${fonts ? `<link rel="preconnect" href="https://fonts.googleapis.com" />\n  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />\n  <link href="${fonts}" rel="stylesheet" />` : ''}
   <script>
     // Apply saved theme before first paint to prevent flash
@@ -681,9 +697,24 @@ export async function generateReactProjectWithStats(
 
   // ── Add README ──
   const platformName = options?.platform ? getHostingPreset(options.platform).name : null;
+  // One-click deploy buttons work best when the user pushes the exported folder
+  // to a public git repo — the URL placeholder makes that obvious.
+  const REPO_PLACEHOLDER = '<your-github-user>/<your-repo>';
+  const deployButtons = [
+    `[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/${REPO_PLACEHOLDER})`,
+    `[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/${REPO_PLACEHOLDER})`,
+    `[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/${REPO_PLACEHOLDER})`,
+  ].join(' ');
+
   const deploySection = options?.platform
     ? [
         `## Deploy to ${platformName}`,
+        ``,
+        deployButtons,
+        ``,
+        `Replace \`${REPO_PLACEHOLDER}\` with your actual repo path after pushing to GitHub.`,
+        ``,
+        `### Manual steps`,
         ``,
         ...getHostingPreset(options.platform).deploySteps.map((s, i) => `${i + 1}. ${s}`),
         ``,
@@ -691,14 +722,23 @@ export async function generateReactProjectWithStats(
     : [
         `## Deployment`,
         ``,
+        deployButtons,
+        ``,
         `This is a single-page application (SPA). When deploying, configure your`,
         `hosting provider to serve \`index.html\` for all routes.`,
         ``,
-        `**Netlify**: Add a \`netlify.toml\` or use the [\`_redirects\` file](https://docs.netlify.com/routing/redirects/)`,
-        `**Vercel**: Add a \`vercel.json\` with [rewrites](https://vercel.com/docs/projects/project-configuration#rewrites)`,
-        `**Cloudflare Pages**: Use a \`_redirects\` file in \`public/\``,
+        `- **Netlify** — [\`_redirects\` docs](https://docs.netlify.com/routing/redirects/)`,
+        `- **Vercel** — [rewrites docs](https://vercel.com/docs/projects/project-configuration#rewrites)`,
+        `- **Cloudflare Pages** — [\`_redirects\` docs](https://developers.cloudflare.com/pages/configuration/redirects/)`,
         ``,
       ];
+
+  // Fold the domain artifacts (DNS table + records) directly into the README so
+  // the user has everything in one place — DEPLOYMENT.md is a duplicate for
+  // those who prefer it standalone.
+  const domainSection = domainArtifacts.deploymentDocs
+    ? [`## Custom Domain`, domainArtifacts.deploymentDocs, ``]
+    : [];
 
   files.push({ path: `${prefix}/README.md`, content: [
     `# ${site.name || 'My Website'}`,
@@ -721,6 +761,7 @@ export async function generateReactProjectWithStats(
     `The production output is in the \`dist/\` folder.`,
     ``,
     ...deploySection,
+    ...domainSection,
     `---`,
     ``,
     `Built with React, Vite, and TypeScript. Pages are lazy-loaded for optimal performance.`,
@@ -728,9 +769,10 @@ export async function generateReactProjectWithStats(
   ].join('\n') });
 
   // ── Generate SEO files: sitemap.xml & robots.txt ──
-  const siteUrl = site.publishedUrl
-    ? site.publishedUrl.replace(/\/$/, '')
-    : `https://${prefix}.example.com`; // placeholder — update after deploying
+  const siteUrl = domainArtifacts.siteUrl
+    ?? (site.publishedUrl
+      ? site.publishedUrl.replace(/\/$/, '')
+      : `https://${prefix}.example.com`); // placeholder — update after deploying
 
   const today = new Date().toISOString().split('T')[0];
   const sitemapUrls = allRoutes.map(r => {
@@ -766,6 +808,14 @@ export async function generateReactProjectWithStats(
     `Disallow: /api/`,
     ``,
   ].join('\n') });
+
+  // ── Custom-domain files (CNAME, _redirects, DEPLOYMENT.md).
+  //    Override any preset file that shares the same path. ──
+  for (const f of domainArtifacts.files) {
+    const idx = files.findIndex(x => x.path === f.path);
+    if (idx >= 0) files.splice(idx, 1);
+    files.push(f);
+  }
 
   onProgress?.({ phase: 'generating', current: totalPages + 4, total: totalPages + 4, message: 'Done!' });
 

@@ -45,8 +45,13 @@ export function DeployGuide({ open, onOpenChange, format }: DeployGuideProps) {
               <DeployOption
                 icon={<Github className="h-5 w-5" />}
                 title="GitHub Pages"
-                description="Push to a GitHub repo and enable Pages."
-                steps={['Create a new GitHub repository', 'Upload the unzipped files', 'Go to Settings → Pages', 'Select "main" branch → Save']}
+                description="Includes a ready-to-run GitHub Actions workflow — zero config."
+                steps={[
+                  'Create a new GitHub repository and push the unzipped folder',
+                  'In the repo: Settings → Pages → Source: "GitHub Actions"',
+                  'The bundled .github/workflows/deploy.yml deploys automatically',
+                  'Watch the Actions tab — your URL appears when the run finishes',
+                ]}
                 link="https://pages.github.com"
               />
               <DeployOption
@@ -71,6 +76,18 @@ export function DeployGuide({ open, onOpenChange, format }: DeployGuideProps) {
                 description="Connect your GitHub repo for automatic deployments."
                 steps={['Push to GitHub', 'Go to app.netlify.com', 'Click "Add new site" → Import from Git', 'Build command: npm run build, Publish: dist']}
                 link="https://app.netlify.com"
+              />
+              <DeployOption
+                icon={<Github className="h-5 w-5" />}
+                title="GitHub Pages (free, auto-deploy)"
+                description="Ships with a Vite build workflow — push to main and it deploys itself."
+                steps={[
+                  'Push the exported folder to a new GitHub repo',
+                  'Settings → Pages → Source: "GitHub Actions"',
+                  'For project pages, set base: process.env.BASE_PATH ?? "/" in vite.config.ts',
+                  'Every push to main rebuilds and redeploys — no local build needed',
+                ]}
+                link="https://pages.github.com"
               />
               <DeployOption
                 icon={<Upload className="h-5 w-5 text-orange-500" />}

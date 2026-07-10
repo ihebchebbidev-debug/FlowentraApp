@@ -43,6 +43,9 @@ import { therapistTemplate } from './therapist';
 import { contactPageCorporateTemplate } from './contactPageCorporate';
 import { contactPageCreativeTemplate } from './contactPageCreative';
 import { contactPageMinimalTemplate } from './contactPageMinimal';
+// New e-commerce templates powered by the storeRules engine
+import { digitalDownloadsTemplate } from './digitalDownloads';
+import { subscriptionBoxTemplate } from './subscriptionBox';
 
 export const SITE_TEMPLATES: SiteTemplate[] = [
   carRepairTemplate,
@@ -84,6 +87,9 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   contactPageCorporateTemplate,
   contactPageCreativeTemplate,
   contactPageMinimalTemplate,
+  // New e-commerce templates
+  digitalDownloadsTemplate,
+  subscriptionBoxTemplate,
 ];
 export function getTemplateCategories(): string[] {
   return [...new Set(SITE_TEMPLATES.map(t => t.category))];

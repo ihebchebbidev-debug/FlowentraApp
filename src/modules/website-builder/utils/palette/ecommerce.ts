@@ -19,7 +19,7 @@ export const ECOMMERCE_PALETTE: PaletteItem[] = [
     },
   },
   {
-    type: 'product-card', label: 'Compact Product Grid', icon: 'LayoutGrid', category: 'business',
+    type: 'product-card', label: 'Compact Product Grid', icon: 'Boxes', category: 'business',
     description: 'Smaller cards in tight grid',
     defaultProps: {
       title: 'Trending Now', columns: 4, variant: 'compact', showWishlist: true, showRating: false,
@@ -32,7 +32,7 @@ export const ECOMMERCE_PALETTE: PaletteItem[] = [
     },
   },
   {
-    type: 'product-card', label: 'Product List (Horizontal)', icon: 'List', category: 'business',
+    type: 'product-card', label: 'Product List (Horizontal)', icon: 'AlignJustify', category: 'business',
     description: 'Horizontal cards stacked',
     defaultProps: {
       title: 'Featured Items', variant: 'horizontal', showWishlist: true, showRating: true,
@@ -44,7 +44,7 @@ export const ECOMMERCE_PALETTE: PaletteItem[] = [
     },
   },
   {
-    type: 'product-card', label: 'Product Overlay Cards', icon: 'Layers', category: 'business',
+    type: 'product-card', label: 'Product Overlay Cards', icon: 'Blend', category: 'business',
     description: 'Full-image with info overlay',
     defaultProps: {
       title: 'Shop the Collection', columns: 3, variant: 'overlay', showWishlist: true, showRating: true,
@@ -234,7 +234,7 @@ export const ECOMMERCE_PALETTE: PaletteItem[] = [
     },
   },
   {
-    type: 'checkout', label: 'Step-by-Step Checkout', icon: 'Briefcase', category: 'business',
+    type: 'checkout', label: 'Step-by-Step Checkout', icon: 'Route', category: 'business',
     description: 'Multi-step checkout flow',
     defaultProps: {
       title: 'Secure Checkout', variant: 'split',
@@ -301,6 +301,40 @@ export const ECOMMERCE_PALETTE: PaletteItem[] = [
         { name: 'Silk Tie', price: '$35', inStock: false },
         { name: 'Cufflinks Set', price: '$65', inStock: true },
       ],
+    },
+  },
+
+  // ── Order Confirmation ──
+  {
+    type: 'order-confirmation', label: 'Order Confirmation', icon: 'CheckCircle2', category: 'business',
+    description: 'Thank-you page with order summary & totals',
+    defaultProps: {
+      variant: 'centered',
+      title: 'Thank you for your order!',
+      subtitle: 'Your order has been placed and is being processed.',
+      continueShoppingLabel: 'Continue Shopping',
+      continueShoppingUrl: '/',
+      showPrintButton: true,
+      showNextSteps: true,
+      supportEmail: '',
+      nextSteps: [
+        { icon: 'mail', title: 'Confirmation email', description: 'Sent to your inbox with all the details.' },
+        { icon: 'package', title: 'Packing your order', description: "We'll notify you when it ships." },
+        { icon: 'truck', title: 'On the way', description: 'Track your delivery in real time.' },
+      ],
+    },
+  },
+  {
+    type: 'order-confirmation', label: 'Order Confirmation (Split)', icon: 'PackageCheck', category: 'business',
+    description: 'Two-column receipt with next steps',
+    defaultProps: {
+      variant: 'split',
+      title: 'Order Confirmed 🎉',
+      subtitle: "We've received your order and are getting it ready.",
+      continueShoppingLabel: 'Keep Shopping',
+      continueShoppingUrl: '/',
+      showPrintButton: true,
+      showNextSteps: true,
     },
   },
 ];

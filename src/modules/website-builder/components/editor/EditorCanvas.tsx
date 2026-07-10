@@ -367,7 +367,12 @@ export function EditorCanvas({
           className={`mx-auto rounded-xl shadow-sm border border-border/50 min-h-[600px] transition-all duration-300 overflow-hidden relative ${
             isRtlPreview ? 'ring-2 ring-amber-500/30' : ''
           }`}
-          style={{ maxWidth: deviceWidths[device], backgroundColor: '#ffffff' }}
+          style={{
+            maxWidth: deviceWidths[device],
+            backgroundColor: theme?.backgroundColor || '#ffffff',
+            color: theme?.textColor,
+            fontFamily: theme?.bodyFont,
+          }}
           dir={isRtlPreview ? 'rtl' : 'ltr'}
           onClick={() => onSelect('')}
         >

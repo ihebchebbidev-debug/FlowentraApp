@@ -25,7 +25,7 @@ export const BUSINESS_PALETTE: PaletteItem[] = [
     },
   },
   {
-    type: 'service-card', label: 'Services (Minimal)', icon: 'LayoutGrid', category: 'business',
+    type: 'service-card', label: 'Services (Minimal)', icon: 'SquareStack', category: 'business',
     description: 'Clean centered, no borders',
     defaultProps: {
       title: 'What We Offer', subtitle: 'Simple solutions for complex problems',
@@ -204,7 +204,7 @@ export const BUSINESS_PALETTE: PaletteItem[] = [
     defaultProps: { title: 'Launching Soon', targetDate: new Date(Date.now() + 30 * 86400000).toISOString() },
   },
   {
-    type: 'popup', label: 'Popup / Modal', icon: 'Layers', category: 'business',
+    type: 'popup', label: 'Popup / Modal', icon: 'Sparkle', category: 'business',
     description: 'Overlay modal with CTA',
     defaultProps: { title: 'Special Offer!', text: 'Sign up now and get 20% off your first order.', ctaText: 'Claim Offer', ctaLink: '#', imageUrl: '' },
   },

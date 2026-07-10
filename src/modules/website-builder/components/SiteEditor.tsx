@@ -12,7 +12,7 @@ import { EditorCanvas } from './editor/EditorCanvas';
 import { LeftPanel } from './editor/LeftPanel';
 import { RightPanelContent, RightPanel } from './editor/RightPanelContent';
 import { DeviceComparison } from './editor/DeviceComparison';
-import { ComponentRenderer } from './renderer/ComponentRenderer';
+import { SitePreview } from './SitePreview';
 import { Button } from '@/components/ui/button';
 import { ClipboardPaste } from 'lucide-react';
 import { createLogger } from '@/utils/logger';
@@ -189,30 +189,37 @@ export function SiteEditor({ site, onBack, onSiteUpdate }: SiteEditorProps) {
     isMobile, insertAtIndex, onBack, handleAddComponent, siteActions, handleRightPanelChange,
   ]);
 
-  // Preview mode
+  // Preview mode — iframe-isolated, pixel-parity with the published site.
+  // We merge unsaved edits from the editor into the site pages so users
+  // preview *their current draft*, not the last saved state.
   if (showPreview && currentPage) {
-    const handlePreviewUpdate = (id: string, newProps: Record<string, any>) => {
-      if ('currentLanguage' in newProps) {
-        const langCode = newProps.currentLanguage;
-        const defaultLang = site.defaultLanguage || 'en';
-        setActiveLanguage(langCode === defaultLang ? null : langCode);
-      }
+    const previewSite: WebsiteSite = {
+      ...site,
+      pages: site.pages.map((p) =>
+        p.id === currentPageId
+          ? activeLanguage
+            ? {
+                ...p,
+                translations: {
+                  ...(p.translations || {}),
+                  [activeLanguage]: {
+                    ...(p.translations?.[activeLanguage] || { seo: p.seo }),
+                    components: editor.components,
+                  },
+                },
+              }
+            : { ...p, components: editor.components }
+          : p
+      ),
     };
-
     return (
-      <div className="h-full flex flex-col">
-        <div className="h-12 border-b border-border/60 bg-card flex items-center justify-between px-4">
-          <span className="text-sm font-semibold">{t('wb:common.preview')}: {currentPage.title}{activeLangLabel ? ` (${activeLangLabel})` : ''}</span>
-          <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setShowPreview(false)}>
-            {t('wb:editor.closePreview')}
-          </Button>
-        </div>
-        <div className="flex-1 overflow-auto bg-background">
-          {editor.components.map(comp => (
-            <ComponentRenderer key={comp.id} component={comp} device={editor.device} theme={site.theme} activeLanguage={activeLanguage} onUpdate={handlePreviewUpdate} />
-          ))}
-        </div>
-      </div>
+      <SitePreview
+        site={previewSite}
+        initialPageId={currentPageId}
+        initialLanguage={activeLanguage}
+        initialDevice={editor.device}
+        onClose={() => setShowPreview(false)}
+      />
     );
   }
 

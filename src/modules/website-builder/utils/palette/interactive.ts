@@ -7,7 +7,7 @@ export const INTERACTIVE_PALETTE: PaletteItem[] = [
     defaultProps: { text: 'Click Me', link: '#', variant: 'primary', size: 'md' },
   },
   {
-    type: 'button-group', label: 'Button Group', icon: 'ToggleLeft', category: 'interactive',
+    type: 'button-group', label: 'Button Group', icon: 'Rows2', category: 'interactive',
     description: 'Row of action buttons',
     defaultProps: { buttons: [{ text: 'Primary', link: '#', variant: 'primary' }, { text: 'Secondary', link: '#', variant: 'outline' }], alignment: 'center' },
   },
@@ -22,7 +22,7 @@ export const INTERACTIVE_PALETTE: PaletteItem[] = [
     },
   },
   {
-    type: 'contact-form', label: 'Contact Card', icon: 'MessageSquare', category: 'interactive',
+    type: 'contact-form', label: 'Contact Card', icon: 'Send', category: 'interactive',
     description: 'Contact form in a card',
     defaultProps: {
       title: 'Get in Touch', subtitle: 'Fill out the form below',
@@ -50,7 +50,7 @@ export const INTERACTIVE_PALETTE: PaletteItem[] = [
     },
   },
   {
-    type: 'form', label: 'Two-Column Form', icon: 'Columns', category: 'interactive',
+    type: 'form', label: 'Two-Column Form', icon: 'Columns2', category: 'interactive',
     description: 'Side-by-side fields layout',
     defaultProps: {
       title: 'Apply Now', layout: 'two-column', variant: 'bordered',
@@ -112,7 +112,7 @@ export const INTERACTIVE_PALETTE: PaletteItem[] = [
     },
   },
   {
-    type: 'newsletter', label: 'Newsletter Card', icon: 'MessageSquare', category: 'interactive',
+    type: 'newsletter', label: 'Newsletter Card', icon: 'PictureInPicture2', category: 'interactive',
     description: 'Newsletter in elevated card',
     defaultProps: {
       title: 'Get Insider Updates', subtitle: 'Weekly tips, exclusive content, and early access.',
@@ -122,7 +122,7 @@ export const INTERACTIVE_PALETTE: PaletteItem[] = [
     },
   },
   {
-    type: 'newsletter', label: 'Newsletter Split', icon: 'Columns', category: 'interactive',
+    type: 'newsletter', label: 'Newsletter Split', icon: 'PanelsTopLeft', category: 'interactive',
     description: 'Two-column text + form',
     defaultProps: {
       title: 'Subscribe to Our Newsletter', subtitle: 'Stay in the loop with product updates, tips and exclusive offers delivered to your inbox.',
@@ -181,12 +181,12 @@ export const INTERACTIVE_PALETTE: PaletteItem[] = [
     defaultProps: { title: 'Follow Us', links: [{ platform: 'twitter', url: '#' }, { platform: 'instagram', url: '#' }, { platform: 'linkedin', url: '#' }, { platform: 'youtube', url: '#' }] },
   },
   {
-    type: 'tabs', label: 'Tabs (Underline)', icon: 'LayoutGrid', category: 'interactive',
+    type: 'tabs', label: 'Tabs (Underline)', icon: 'AlignJustify', category: 'interactive',
     description: 'Classic underline tabs',
     defaultProps: { title: '', variant: 'underline', tabAlignment: 'center', tabs: [{ label: 'Overview', content: '<p>Overview tab content.</p>' }, { label: 'Features', content: '<p>Features here.</p>' }, { label: 'Details', content: '<p>Details go here.</p>' }] },
   },
   {
-    type: 'tabs', label: 'Pill Tabs', icon: 'ToggleLeft', category: 'interactive',
+    type: 'tabs', label: 'Pill Tabs', icon: 'CircleDot', category: 'interactive',
     description: 'Rounded pill-style tabs',
     defaultProps: { title: 'Explore', variant: 'pills', tabAlignment: 'center', tabs: [{ label: 'All', content: '<p>All items.</p>' }, { label: 'Popular', content: '<p>Popular items.</p>' }, { label: 'Recent', content: '<p>Recent items.</p>' }] },
   },
@@ -196,12 +196,12 @@ export const INTERACTIVE_PALETTE: PaletteItem[] = [
     defaultProps: { title: 'Learn More', variant: 'cards', tabAlignment: 'center', tabs: [{ label: 'Basics', content: '<p>Start with the basics.</p>' }, { label: 'Advanced', content: '<p>Advanced techniques.</p>' }, { label: 'Pro Tips', content: '<p>Pro-level tips.</p>' }] },
   },
   {
-    type: 'tabs', label: 'Vertical Tabs', icon: 'PanelLeft', category: 'interactive',
+    type: 'tabs', label: 'Vertical Tabs', icon: 'PanelRight', category: 'interactive',
     description: 'Side navigation tabs',
     defaultProps: { title: 'Documentation', variant: 'vertical', tabs: [{ label: 'Getting Started', content: '<p>Welcome to the docs.</p>' }, { label: 'API Reference', content: '<p>API documentation.</p>' }, { label: 'Examples', content: '<p>Code examples.</p>' }, { label: 'FAQ', content: '<p>Frequently asked questions.</p>' }] },
   },
   {
-    type: 'tabs', label: 'Boxed Tabs', icon: 'Square', category: 'interactive',
+    type: 'tabs', label: 'Boxed Tabs', icon: 'RectangleHorizontal', category: 'interactive',
     description: 'Bordered box-style tabs',
     defaultProps: { title: '', variant: 'boxed', tabAlignment: 'left', tabs: [{ label: 'Tab 1', content: '<p>Content for tab 1.</p>' }, { label: 'Tab 2', content: '<p>Content for tab 2.</p>' }] },
   },

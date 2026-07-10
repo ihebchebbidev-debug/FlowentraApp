@@ -25,7 +25,9 @@ import { LogoUploader } from './LogoUploader';
 import { LogoEditor } from './LogoEditor';
 import { ImageUploader } from './ImageUploader';
 import { FormSettingsEditor } from './FormSettingsEditor';
+import { StoreRulesEditor, RULES_ENABLED_BLOCKS } from './StoreRulesEditor';
 import { DimensionsEditor } from './DimensionsEditor';
+import { DesignPanel } from './DesignPanel';
 import { LanguageSwitcherEditor } from './LanguageSwitcherEditor';
 import { NavbarStylePresets } from './NavbarStylePresets';
 import { FooterStylePresets } from './FooterStylePresets';
@@ -400,6 +402,14 @@ export function PropertiesPanel({ component, onUpdate, onUpdateStyles, onUpdateV
           />
         </EditorSection>
 
+        {/* Universal Design — typography, background, border, effects per breakpoint */}
+        <EditorSection title={t('wb:properties.design', 'Design')} defaultOpen={false}>
+          <DesignPanel
+            styles={component.styles || {}}
+            onChange={(newStyles) => onUpdateStyles(component.id, newStyles)}
+          />
+        </EditorSection>
+
         {/* Responsive visibility — hide this block per device (like WordPress) */}
         <EditorSection title={t('wb:properties.visibility', 'Visibility')} defaultOpen={false}>
           <p className="text-[10px] text-muted-foreground/60 leading-snug mb-1">
@@ -551,6 +561,11 @@ export function PropertiesPanel({ component, onUpdate, onUpdateStyles, onUpdateV
         {/* Form Settings — only for form components */}
         {FORM_COMPONENTS.has(component.type) && (
           <FormSettingsEditor component={component} onPropChange={handlePropChange} />
+        )}
+
+        {/* Store Rules — cart / mini-cart / checkout / order-confirmation */}
+        {RULES_ENABLED_BLOCKS.has(component.type) && (
+          <StoreRulesEditor component={component} onPropChange={handlePropChange} />
         )}
       </div>
     </ScrollArea>

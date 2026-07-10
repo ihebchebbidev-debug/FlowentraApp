@@ -131,6 +131,7 @@ const ECOMMERCE_BLOCKS: Record<string, LazyBlock> = {
   'mini-cart':        lazyBlock(() => import('./blocks/MiniCartBlock'), 'MiniCartBlock'),
   'product-filter':   lazyBlock(() => import('./blocks/ProductFilterBlock'), 'ProductFilterBlock'),
   checkout:           lazyBlock(() => import('./blocks/CheckoutBlock'), 'CheckoutBlock'),
+  'order-confirmation': lazyBlock(() => import('./blocks/OrderConfirmationBlock'), 'OrderConfirmationBlock'),
 };
 
 /* ═══════════════════════════════════════

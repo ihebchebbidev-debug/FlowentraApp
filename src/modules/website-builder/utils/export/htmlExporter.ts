@@ -15,6 +15,7 @@ import { componentToHtml } from './blockToHtml';
 import { extractImageAssets, type ImageExtractionOptions } from './imageAssetExtractor';
 import type { ImageOptimizationOptions } from './imageOptimizer';
 import { type HostingPlatform, getHostingPreset } from './hostingPresets';
+import { buildDomainArtifacts, type SiteConfig } from './domainConfig';
 
 // ──────────────────────────────────────────────────
 // Types
@@ -39,6 +40,8 @@ export interface HtmlExportOptions {
   platform?: HostingPlatform;
   /** Image optimization settings */
   imageOptimization?: ImageOptimizationOptions;
+  /** Custom domain / canonical URL configuration */
+  site?: SiteConfig;
 }
 
 // ──────────────────────────────────────────────────
@@ -182,6 +185,14 @@ export async function generateSiteHtmlWithStats(
   if (options?.platform) {
     const preset = getHostingPreset(options.platform);
     for (const configFile of preset.configFiles) {
+      // The React/Vite build workflow and vite.config hint don't apply to
+      // the pure-HTML export — swap in a static-file Pages workflow instead.
+      if (
+        configFile.path === '.github/workflows/deploy.yml' ||
+        configFile.path === 'vite.config.pages.txt'
+      ) {
+        continue;
+      }
       // Skip empty placeholder files
       if (configFile.content || configFile.path === '.nojekyll') {
         platformFiles.push({
@@ -190,18 +201,63 @@ export async function generateSiteHtmlWithStats(
         });
       }
     }
+    if (options.platform === 'github-pages') {
+      platformFiles.push({
+        path: '.github/workflows/deploy.yml',
+        content: `name: Deploy static site to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: \${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          # Repo root is the site — no build step needed for the HTML export.
+          path: .
+      - id: deployment
+        uses: actions/deploy-pages@v4
+`,
+      });
+    }
   }
 
-  // 6b. Generate sitemap.xml and robots.txt for basic SEO infrastructure.
-  //     Uses the site's canonicalBase if set, otherwise emits root-relative paths.
-  const seoFiles = generateSeoFiles(site);
+  // 6b. Resolve custom-domain artifacts (CNAME, _redirects, DEPLOYMENT.md).
+  const domainArtifacts = buildDomainArtifacts(options?.site, options?.platform, '');
+
+  // 6c. Generate sitemap.xml and robots.txt. Custom-domain URL (if set) overrides
+  //     the site's canonicalBase.
+  const seoFiles = generateSeoFiles(site, domainArtifacts.siteUrl ?? undefined);
+
+  // 6d. Dedup platform files that are overridden by domain files (e.g. _redirects).
+  const domainPaths = new Set(domainArtifacts.files.map(f => f.path));
+  const filteredPlatformFiles = platformFiles.filter(f => !domainPaths.has(f.path));
 
   // Combine modified HTML files with extracted assets and platform configs
   const finalFiles = [
     ...extractionResult.modifiedFiles,
     ...extractionResult.assets,
-    ...platformFiles,
+    ...filteredPlatformFiles,
     ...seoFiles,
+    ...domainArtifacts.files,
   ];
 
   // Final progress update
@@ -307,9 +363,9 @@ function extractGoogleFonts(theme: SiteTheme): string {
  * If the site has a canonicalBase URL, absolute URLs are emitted; otherwise
  * root-relative paths are used and a TODO note is added to robots.txt.
  */
-function generateSeoFiles(site: WebsiteSite): ExportedFile[] {
+function generateSeoFiles(site: WebsiteSite, siteUrlOverride?: string): ExportedFile[] {
   const files: ExportedFile[] = [];
-  const base = ((site as any).canonicalBase as string | undefined)?.replace(/\/+$/, '') || '';
+  const base = (siteUrlOverride ?? ((site as any).canonicalBase as string | undefined))?.replace(/\/+$/, '') || '';
   const now = new Date().toISOString().slice(0, 10);
 
   type SitemapEntry = { loc: string; lastmod: string; priority: string; changefreq: string };

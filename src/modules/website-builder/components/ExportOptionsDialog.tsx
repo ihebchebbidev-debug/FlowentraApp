@@ -1,7 +1,7 @@
 /**
  * Export Options Dialog
  */
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Download, Globe, Github, Zap, Triangle, Cloud,
   Image as ImageIcon, Settings2, Sparkles, Gauge, FileImage,
-  ExternalLink, FileCode, Eye, Loader2,
+  ExternalLink, FileCode, Eye, Loader2, Link2,
 } from 'lucide-react';
 import { 
   HOSTING_PRESETS, type HostingPlatform, type HostingPreset, getHostingPreset,
@@ -23,6 +23,11 @@ import {
 import { 
   type ImageOptimizationOptions, DEFAULT_OPTIMIZATION_OPTIONS, formatBytes,
 } from '../utils/export/imageOptimizer';
+import { normalizeDomain, type SiteConfig } from '../utils/export/domainConfig';
+import { loadExportConfig, saveExportConfig } from '../utils/export/exportConfigStorage';
+import { Input } from '@/components/ui/input';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { DomainWorkbench } from './DomainWorkbench';
 
 export type ExportFormat = 'html' | 'react';
 
@@ -35,12 +40,15 @@ interface ExportOptionsDialogProps {
   pageCount: number;
   componentCount: number;
   initialFormat?: ExportFormat;
+  /** Site being exported — enables per-site persistence of these settings. */
+  siteId?: string;
 }
 
 export interface ExportSettings {
   format: ExportFormat;
   platform: HostingPlatform;
   imageOptimization: ImageOptimizationOptions;
+  site: SiteConfig;
 }
 
 const PLATFORM_ICONS: Record<string, React.ReactNode> = {
@@ -53,7 +61,7 @@ const PLATFORM_ICONS: Record<string, React.ReactNode> = {
 
 export function ExportOptionsDialog({
   open, onOpenChange, onExport, onPreview,
-  isPreviewLoading = false, pageCount, componentCount, initialFormat = 'react',
+  isPreviewLoading = false, pageCount, componentCount, initialFormat = 'react', siteId,
 }: ExportOptionsDialogProps) {
   const { t } = useTranslation('wb');
   const [selectedFormat] = useState<ExportFormat>('react');
@@ -62,6 +70,31 @@ export function ExportOptionsDialog({
   const [convertToWebP, setConvertToWebP] = useState(false);
   const [quality, setQuality] = useState(85);
   const [maxWidth, setMaxWidth] = useState(1920);
+  const [customDomain, setCustomDomain] = useState('');
+  const [preferredHost, setPreferredHost] = useState<'apex' | 'www'>('apex');
+  const [useHttps, setUseHttps] = useState(true);
+  const [providerHandle, setProviderHandle] = useState('');
+
+  // Hydrate from persisted per-site config each time the dialog opens.
+  useEffect(() => {
+    if (!open) return;
+    const persisted = loadExportConfig(siteId);
+    if (!persisted) return;
+    if (persisted.platform) setSelectedPlatform(persisted.platform);
+    if (persisted.site) {
+      setCustomDomain(persisted.site.customDomain ?? '');
+      setPreferredHost(persisted.site.preferredHost === 'www' ? 'www' : 'apex');
+      setUseHttps(persisted.site.useHttps !== false);
+      setProviderHandle(persisted.site.providerHandle ?? '');
+    }
+    const io = persisted.imageOptimization;
+    if (io) {
+      if (typeof io.enabled === 'boolean') setOptimizationEnabled(io.enabled);
+      if (typeof io.convertToWebP === 'boolean') setConvertToWebP(io.convertToWebP);
+      if (typeof io.quality === 'number') setQuality(Math.round(io.quality * 100));
+      if (typeof io.maxWidth === 'number') setMaxWidth(io.maxWidth);
+    }
+  }, [open, siteId]);
 
   const selectedPreset = useMemo(() => getHostingPreset(selectedPlatform), [selectedPlatform]);
 
@@ -81,11 +114,46 @@ export function ExportOptionsDialog({
       quality: quality / 100, maxWidth,
       maxHeight: Math.round(maxWidth * (9 / 16)),
     };
-    return { format: selectedFormat, platform: selectedPlatform, imageOptimization };
+    return {
+      format: selectedFormat,
+      platform: selectedPlatform,
+      imageOptimization,
+      site: {
+        customDomain: normalizeDomain(customDomain) || undefined,
+        preferredHost,
+        useHttps,
+        providerHandle: providerHandle.trim() || undefined,
+      },
+    };
   };
 
-  const handleExport = () => { onExport(buildSettings()); onOpenChange(false); };
-  const handlePreview = () => { onPreview?.(buildSettings()); };
+  const handleHint =
+    selectedPlatform === 'github-pages' ? 'e.g. octocat (from octocat.github.io)'
+    : selectedPlatform === 'netlify'    ? 'e.g. my-site (from my-site.netlify.app)'
+    : selectedPlatform === 'cloudflare' ? 'e.g. my-project (from my-project.pages.dev)'
+    : selectedPlatform === 'vercel'     ? 'Not required — Vercel uses a fixed CNAME target'
+    : 'CNAME target given by your host';
+  const handleLabel =
+    selectedPlatform === 'github-pages' ? 'GitHub username'
+    : selectedPlatform === 'netlify'    ? 'Netlify site slug'
+    : selectedPlatform === 'cloudflare' ? 'Cloudflare Pages project'
+    : 'Provider handle';
+  const handleDisabled = selectedPlatform === 'vercel';
+
+  const persist = (s: ExportSettings) => {
+    saveExportConfig(siteId, {
+      platform: s.platform,
+      site: s.site,
+      imageOptimization: {
+        enabled: s.imageOptimization.enabled,
+        convertToWebP: s.imageOptimization.convertToWebP,
+        quality: s.imageOptimization.quality,
+        maxWidth: s.imageOptimization.maxWidth,
+      },
+    });
+  };
+  const handleExport = () => { const s = buildSettings(); persist(s); onExport(s); onOpenChange(false); };
+  const handlePreview = () => { const s = buildSettings(); persist(s); onPreview?.(s); };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -113,10 +181,14 @@ export function ExportOptionsDialog({
         </div>
 
         <Tabs defaultValue="platform" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="platform" className="text-xs">
               <Globe className="h-3.5 w-3.5 mr-1.5" />
               {selectedFormat === 'html' ? t('exportOptions.hostingPlatform') : t('exportOptions.platform')}
+            </TabsTrigger>
+            <TabsTrigger value="domain" className="text-xs">
+              <Link2 className="h-3.5 w-3.5 mr-1.5" />
+              Domain
             </TabsTrigger>
             <TabsTrigger value="images" className="text-xs">
               <ImageIcon className="h-3.5 w-3.5 mr-1.5" />
@@ -181,6 +253,103 @@ export function ExportOptionsDialog({
                     <li className="text-primary">{t('exportOptions.moreSteps', { count: selectedPreset.deploySteps.length - 3 })}</li>
                   )}
                 </ol>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Domain / Custom URL Tab */}
+          <TabsContent value="domain" className="mt-4 space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="custom-domain" className="text-sm font-medium">Custom domain</Label>
+              <Input
+                id="custom-domain"
+                placeholder="mywebsite.com"
+                value={customDomain}
+                onChange={(e) => setCustomDomain(e.target.value)}
+                className="font-mono text-sm"
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Bare domain, no <code>https://</code> or path. Leave blank to use a placeholder URL.
+              </p>
+              {customDomain && !normalizeDomain(customDomain) && (
+                <p className="text-[10px] text-destructive">Doesn't look like a valid domain.</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Primary host</Label>
+              <RadioGroup
+                value={preferredHost}
+                onValueChange={(v) => setPreferredHost(v as 'apex' | 'www')}
+                className="grid grid-cols-2 gap-2"
+              >
+                <label className={`flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer text-sm ${preferredHost === 'apex' ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'}`}>
+                  <RadioGroupItem value="apex" />
+                  <span className="font-mono text-xs">{normalizeDomain(customDomain) || 'mywebsite.com'}</span>
+                </label>
+                <label className={`flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer text-sm ${preferredHost === 'www' ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'}`}>
+                  <RadioGroupItem value="www" />
+                  <span className="font-mono text-xs">www.{normalizeDomain(customDomain) || 'mywebsite.com'}</span>
+                </label>
+              </RadioGroup>
+              <p className="text-[10px] text-muted-foreground">
+                The other host will be 301-redirected to your primary.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-lg border">
+              <div>
+                <Label className="text-sm font-medium">Use HTTPS</Label>
+                <p className="text-xs text-muted-foreground">Emit <code>https://</code> URLs in sitemap & canonical</p>
+              </div>
+              <Switch checked={useHttps} onCheckedChange={setUseHttps} />
+            </div>
+
+            {normalizeDomain(customDomain) && (
+              <div className="p-3 rounded-lg bg-muted/50 space-y-1.5 text-xs">
+                <div className="font-medium text-muted-foreground flex items-center gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5" /> Will be added to your export:
+                </div>
+                <ul className="space-y-0.5 pl-4 list-disc text-muted-foreground">
+                  {selectedPlatform === 'github-pages' && <li><code>public/CNAME</code> file</li>}
+                  {(selectedPlatform === 'netlify' || selectedPlatform === 'cloudflare') && (
+                    <li><code>public/_redirects</code> with 301 apex↔www rule</li>
+                  )}
+                  <li>Canonical <code>&lt;link&gt;</code> in <code>index.html</code></li>
+                  <li>Absolute URLs in <code>sitemap.xml</code> &amp; <code>robots.txt</code></li>
+                  <li><code>DEPLOYMENT.md</code> with DNS records for your registrar</li>
+                </ul>
+              </div>
+            )}
+
+            {/* Provider handle — interpolates the exact CNAME target */}
+            <div className="space-y-2">
+              <Label htmlFor="provider-handle" className="text-sm font-medium">{handleLabel}</Label>
+              <Input
+                id="provider-handle"
+                placeholder={handleHint}
+                value={providerHandle}
+                onChange={(e) => setProviderHandle(e.target.value.trim())}
+                disabled={handleDisabled}
+                className="font-mono text-sm"
+              />
+              <p className="text-[10px] text-muted-foreground">{handleHint}</p>
+            </div>
+
+            {/* Live DNS records + Verify button */}
+            {normalizeDomain(customDomain) && (
+              <div className="space-y-2 pt-1">
+                <Label className="text-sm font-medium">DNS records &amp; verification</Label>
+                <DomainWorkbench
+                  compact
+                  platform={selectedPlatform}
+                  site={{
+                    customDomain: normalizeDomain(customDomain),
+                    preferredHost,
+                    useHttps,
+                    providerHandle: providerHandle.trim() || undefined,
+                  }}
+                />
               </div>
             )}
           </TabsContent>

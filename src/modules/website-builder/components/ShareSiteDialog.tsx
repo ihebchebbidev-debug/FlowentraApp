@@ -129,7 +129,7 @@ export function ShareSiteDialog({ site, open, onOpenChange }: ShareSiteDialogPro
 
   const handleHtmlExportWithOptions = async (settings: ExportSettings) => {
     // ExportSettings now includes format, but this handler is only for HTML
-    const { platform, imageOptimization } = settings;
+    const { platform, imageOptimization, site: siteCfg } = settings;
     setHtmlExporting(true);
     setExportFormat('html');
     setExportProgress(null);
@@ -143,6 +143,7 @@ export function ShareSiteDialog({ site, open, onOpenChange }: ShareSiteDialogPro
       const exportOptions: HtmlExportOptions = {
         platform,
         imageOptimization,
+        site: siteCfg,
       };
       
       const result = await generateSiteHtmlWithStats(site, handleProgressUpdate, exportOptions);
@@ -189,6 +190,7 @@ export function ShareSiteDialog({ site, open, onOpenChange }: ShareSiteDialogPro
       const result = await generateSiteHtmlWithStats(site, undefined, {
         imageOptimization: settings.imageOptimization,
         platform: settings.platform,
+        site: settings.site,
       });
 
       const indexFile = result.files.find(f => f.path === 'index.html');
@@ -542,6 +544,7 @@ export function ShareSiteDialog({ site, open, onOpenChange }: ShareSiteDialogPro
           isPreviewLoading={isPreviewLoading}
           pageCount={site.pages.length}
           componentCount={totalComponents}
+          siteId={site.id}
         />
         
         {/* Export Progress Dialog */}

@@ -22,7 +22,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import {
   Download, Eye, FileCode, FileText, FileImage, Folder, Loader2,
-  ExternalLink, Smartphone, Tablet, Monitor, Copy, Check, AlertCircle,
+  ExternalLink, Smartphone, Tablet, Monitor, Copy, Check, AlertCircle, Rocket,
 } from 'lucide-react';
 import type { WebsiteSite } from '../types';
 import { generateSiteHtmlWithStats } from '../utils/export/htmlExporter';
@@ -181,7 +181,7 @@ export function ExportPreviewDialog({ site, settings, open, onOpenChange }: Expo
         const result = await builder(
           site,
           (p) => { if (!cancelled) setProgress(p); },
-          { imageOptimization: settings.imageOptimization, platform: settings.platform },
+          { imageOptimization: settings.imageOptimization, platform: settings.platform, site: settings.site },
         );
 
         if (cancelled) return;
@@ -495,6 +495,36 @@ export function ExportPreviewDialog({ site, settings, open, onOpenChange }: Expo
         )}
 
         <DialogFooter className="px-6 py-4 border-t gap-2">
+          <div className="mr-auto hidden sm:flex items-center gap-2 text-[11px] text-muted-foreground">
+            <Rocket className="h-3.5 w-3.5 text-primary" />
+            <span>Free deploy:</span>
+            <a
+              href="https://app.netlify.com/drop"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline inline-flex items-center gap-0.5 font-medium"
+            >
+              Netlify Drop <ExternalLink className="h-3 w-3" />
+            </a>
+            <span className="text-muted-foreground/60">·</span>
+            <a
+              href="https://dash.cloudflare.com/?to=/:account/pages/new/upload"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline inline-flex items-center gap-0.5 font-medium"
+            >
+              Cloudflare Pages <ExternalLink className="h-3 w-3" />
+            </a>
+            <span className="text-muted-foreground/60">·</span>
+            <a
+              href="https://vercel.com/new"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline inline-flex items-center gap-0.5 font-medium"
+            >
+              Vercel <ExternalLink className="h-3 w-3" />
+            </a>
+          </div>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isDownloading}>
             {t('wb:exportOptions.cancel', { defaultValue: 'Cancel' })}
           </Button>

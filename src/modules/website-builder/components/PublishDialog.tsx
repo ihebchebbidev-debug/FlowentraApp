@@ -150,6 +150,7 @@ export function PublishDialog({ site, open, onOpenChange, onSiteUpdate }: Publis
         pageCount={site.pages.length}
         componentCount={totalComponents}
         initialFormat={exportInitialFormat}
+        siteId={site.id}
       />
 
       <ExportPreviewDialog

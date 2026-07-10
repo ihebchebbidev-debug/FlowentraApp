@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ThemeSwatches } from '../ThemeSwatches';
 
 const PRESET_COLORS = [
   '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e',
@@ -19,9 +20,11 @@ interface ColorPickerProps {
   value: string;
   onChange: (value: string) => void;
   description?: string;
+  /** Show the site's theme tokens as a first-class swatch row. Default true. */
+  showThemeSwatches?: boolean;
 }
 
-export function ColorPicker({ label, value, onChange, description }: ColorPickerProps) {
+export function ColorPicker({ label, value, onChange, description, showThemeSwatches = true }: ColorPickerProps) {
   const [showPresets, setShowPresets] = useState(false);
 
   return (
@@ -53,6 +56,12 @@ export function ColorPicker({ label, value, onChange, description }: ColorPicker
           {showPresets ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
         </Button>
       </div>
+      {showThemeSwatches && (
+        <div className="space-y-1">
+          <span className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground/60">Theme</span>
+          <ThemeSwatches currentValue={value} onSelect={onChange} />
+        </div>
+      )}
       {showPresets && (
         <div className="grid grid-cols-8 gap-1 p-2 bg-muted/20 rounded-lg border border-border/20">
           {PRESET_COLORS.map(color => (

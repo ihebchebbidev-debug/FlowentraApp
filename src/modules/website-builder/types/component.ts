@@ -25,7 +25,7 @@ export type ComponentType =
   | 'tabs' | 'faq' | 'progress' | 'timeline' | 'form' | 'login-form' | 'signup-form' | 'search-bar' | 'rating' | 'avatar'
   // E-Commerce
   | 'product-card' | 'product-detail' | 'product-carousel' | 'quick-view' | 'wishlist-grid' | 'cart'
-  | 'product-filter' | 'checkout'
+  | 'product-filter' | 'checkout' | 'order-confirmation'
   // Blog & Content
   | 'blog-grid' | 'comments' | 'tags-cloud'
   // User & Account

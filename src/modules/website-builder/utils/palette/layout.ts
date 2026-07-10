@@ -60,7 +60,7 @@ export const LAYOUT_PALETTE: PaletteItem[] = [
     defaultProps: { padding: 'py-16 px-6', variant: 'glass', maxWidth: 'md' },
   },
   {
-    type: 'section', label: 'Gradient Section', icon: 'Palette', category: 'layout',
+    type: 'section', label: 'Gradient Section', icon: 'Contrast', category: 'layout',
     description: 'Section with gradient background',
     defaultProps: { padding: 'py-16 px-6', variant: 'gradient', maxWidth: 'lg', gradientAngle: 135 },
   },
@@ -81,12 +81,12 @@ export const LAYOUT_PALETTE: PaletteItem[] = [
     defaultProps: { columns: 2, gap: 24, variant: 'default', layout: 'equal', verticalAlign: 'stretch' },
   },
   {
-    type: 'columns', label: 'Card Columns', icon: 'LayoutGrid', category: 'layout',
+    type: 'columns', label: 'Card Columns', icon: 'Boxes', category: 'layout',
     description: 'Columns with card styling',
     defaultProps: { columns: 3, gap: 24, variant: 'cards', layout: 'equal', verticalAlign: 'stretch' },
   },
   {
-    type: 'columns', label: 'Sidebar Layout', icon: 'PanelLeft', category: 'layout',
+    type: 'columns', label: 'Sidebar Layout', icon: 'PanelLeftOpen', category: 'layout',
     description: '1/3 + 2/3 asymmetric layout',
     defaultProps: { columns: 2, gap: 32, variant: 'default', layout: '1-2', verticalAlign: 'top' },
   },

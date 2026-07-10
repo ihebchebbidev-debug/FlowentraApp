@@ -18,7 +18,7 @@ export const IMG = {
   autoDetail: 'https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=800&h=600&fit=crop&q=80',
 
   // Restaurant
-  restaurantHero: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1920&h=1080&fit=crop&q=80',
+  restaurantHero: '/__l5e/assets-v1/2b8f25d9-a278-4f13-834c-a59f29f9d069/restaurant-hero.jpg',
   food1: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&h=600&fit=crop&q=80',
   food2: 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=600&h=600&fit=crop&q=80',
   food3: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=600&h=600&fit=crop&q=80',
@@ -28,7 +28,7 @@ export const IMG = {
   restaurantInterior: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&h=600&fit=crop&q=80',
 
   // Portfolio / Creative
-  portfolioHero: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=1920&h=1080&fit=crop&q=80',
+  portfolioHero: '/__l5e/assets-v1/a2568b1e-eeac-4ea2-be63-7cfee1996612/portfolio-hero.jpg',
   design1: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=600&h=600&fit=crop&q=80',
   design2: 'https://images.unsplash.com/photo-1558655146-9f40138edfeb?w=600&h=600&fit=crop&q=80',
   design3: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&h=600&fit=crop&q=80',
@@ -46,7 +46,7 @@ export const IMG = {
   houseInterior: 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=800&h=600&fit=crop&q=80',
 
   // Fitness
-  fitnessHero: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1920&h=1080&fit=crop&q=80',
+  fitnessHero: '/__l5e/assets-v1/1d074a31-5738-4d37-9154-3885fd165a9d/fitness-hero.jpg',
   gym1: 'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=600&h=600&fit=crop&q=80',
   gym2: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=600&h=600&fit=crop&q=80',
   gym3: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=600&h=600&fit=crop&q=80',
@@ -71,7 +71,7 @@ export const IMG = {
   photo6: 'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=600&h=600&fit=crop&q=80',
 
   // E-Commerce
-  ecomHero: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1920&h=1080&fit=crop&q=80',
+  ecomHero: '/__l5e/assets-v1/4a14dcee-6b0d-4c61-ab91-a20be3f1e8c8/ecommerce-hero.jpg',
   fashion1: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=600&h=600&fit=crop&q=80',
   fashion2: 'https://images.unsplash.com/photo-1558171813-4c088753af8f?w=600&h=600&fit=crop&q=80',
   fashion3: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=600&h=600&fit=crop&q=80',
@@ -90,7 +90,7 @@ export const IMG = {
   boutiqueStore: 'https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=800&h=600&fit=crop&q=80',
 
   // SaaS
-  saasHero: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1920&h=1080&fit=crop&q=80',
+  saasHero: '/__l5e/assets-v1/6295d1c7-a493-4e00-9ab4-a74af125b883/saas-hero.jpg',
 
   // Education
   eduHero: 'https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=1920&h=1080&fit=crop&q=80',
@@ -108,7 +108,7 @@ export const IMG = {
   wedding6: 'https://images.unsplash.com/photo-1460978812857-470ed1c77af0?w=600&h=600&fit=crop&q=80',
 
   // Consulting
-  consultHero: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=1920&h=1080&fit=crop&q=80',
+  consultHero: '/__l5e/assets-v1/ad3141e4-5fee-46d5-8c56-7bf5ce530ecd/consulting-hero.jpg',
 
   // Nonprofit
   nonprofitHero: 'https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=1920&h=1080&fit=crop&q=80',

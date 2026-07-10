@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ShoppingCart, X, Plus, Minus, Trash2 } from 'lucide-react';
 import { SiteTheme } from '../../../types';
 import { useEcommerceStore } from '../../../hooks/useEcommerceStore';
 import { formatStorePrice } from '../../../utils/storeCurrency';
+import { computeCartTotals, StoreRules } from '../../../utils/storeRules';
 
 /**
  * MiniCartBlock — a persistent, Shopify-style floating cart.
@@ -23,6 +24,8 @@ interface MiniCartBlockProps {
   emptyText?: string;
   /** Show the button even when the cart is empty. */
   showWhenEmpty?: boolean;
+  /** Live discount/shipping/tax preview using the same engine as Cart/Checkout. */
+  rules?: StoreRules;
   theme: SiteTheme;
   isEditing?: boolean;
   style?: React.CSSProperties;
@@ -44,6 +47,7 @@ export function MiniCartBlock({
   checkoutText = 'Checkout',
   emptyText = 'Your cart is empty',
   showWhenEmpty = true,
+  rules,
   theme,
   isEditing = false,
   style,
@@ -53,6 +57,11 @@ export function MiniCartBlock({
 
   const accent = buttonColor || theme.primaryColor;
   const money = (n: number) => formatStorePrice(n, theme);
+
+  const totals = useMemo(
+    () => (rules ? computeCartTotals(cart, rules) : null),
+    [rules, cart],
+  );
 
   if (!showWhenEmpty && cartCount === 0 && !isEditing) return null;
 
@@ -163,10 +172,32 @@ export function MiniCartBlock({
             {/* Footer */}
             {cart.length > 0 && (
               <div className="border-t px-4 py-3 space-y-3" style={{ borderColor: `${theme.textColor}15` }}>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="opacity-70">Subtotal</span>
-                  <span className="font-semibold text-base">{money(cartTotal)}</span>
-                </div>
+                {totals ? (
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-xs opacity-70">
+                      <span>Subtotal</span>
+                      <span>{money(totals.subtotal)}</span>
+                    </div>
+                    {totals.discount > 0 && (
+                      <div className="flex items-center justify-between text-xs" style={{ color: accent }}>
+                        <span>Discount</span>
+                        <span>−{money(totals.discount)}</span>
+                      </div>
+                    )}
+                    {totals.notes.slice(0, 1).map((n, i) => (
+                      <div key={i} className="text-[10px] opacity-60">{n}</div>
+                    ))}
+                    <div className="flex items-center justify-between text-sm pt-1 border-t" style={{ borderColor: `${theme.textColor}15` }}>
+                      <span className="opacity-70">Total</span>
+                      <span className="font-semibold text-base">{money(totals.total)}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="opacity-70">Subtotal</span>
+                    <span className="font-semibold text-base">{money(cartTotal)}</span>
+                  </div>
+                )}
                 <a
                   href={isEditing ? undefined : checkoutLink}
                   onClick={(e) => { if (isEditing) e.preventDefault(); }}

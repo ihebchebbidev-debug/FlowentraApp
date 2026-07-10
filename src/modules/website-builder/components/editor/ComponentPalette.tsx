@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { COMPONENT_PALETTE } from '../../utils/palette';
 import {
@@ -20,6 +20,14 @@ import {
   Gift, AlertTriangle, Sparkles, Webhook,
   SlidersHorizontal, CreditCard, Heart, Eye, ListOrdered,
   AlignCenter, Award, CirclePlay, CircleArrowUp,
+  // Newly added mappings (were falling back to Square)
+  ArrowRight, ArrowUp, BookOpen, Camera, Cloud, Cpu, Database, Figma,
+  Headphones, Lightbulb, Lock, Mic, PenTool, Rocket, RotateCcw,
+  Smartphone, TrendingUp, Truck, Waves,
+  // De-duplication set: unique icons for previously repeated palette entries
+  Boxes, SquareStack, Grid2x2, PanelsTopLeft, PanelLeftOpen, PanelRight,
+  Send, Contrast, AlignJustify, RectangleHorizontal, Route, PackageCheck,
+  Sparkle, Crosshair, Blend, Contact, Rows2, CircleDot, PictureInPicture2,
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
@@ -45,8 +53,15 @@ const ICON_MAP: Record<string, React.FC<any>> = {
   Gift, AlertTriangle, Sparkles, Webhook,
   SlidersHorizontal, CreditCard, Heart, Eye, ListOrdered,
   AlignCenter, Award, CirclePlay, CircleArrowUp,
+  ArrowRight, ArrowUp, BookOpen, Camera, Cloud, Cpu, Database, Figma,
+  Headphones, Lightbulb, Lock, Mic, PenTool, Rocket, RotateCcw,
+  Smartphone, TrendingUp, Truck, Waves,
+  Boxes, SquareStack, Grid2x2, PanelsTopLeft, PanelLeftOpen, PanelRight,
+  Send, Contrast, AlignJustify, RectangleHorizontal, Route, PackageCheck,
+  Sparkle, Crosshair, Blend, Contact, Rows2, CircleDot, PictureInPicture2,
   // Aliases for palette icon names that differ from lucide export names
   Columns: Columns2,
+  Grid3x3: Grid3X3, // case variant used in some palette entries
   PlayCircle: CirclePlay,
   ArrowUpCircle: CircleArrowUp,
 };
@@ -563,18 +578,68 @@ interface ComponentPaletteProps {
   onAdd: (type: string) => void;
 }
 
+/** Human labels for categories, used when matching search against a category name. */
+const CATEGORY_LABELS: Record<string, string[]> = {
+  layout: ['layout', 'structure', 'sections', 'hero', 'columns'],
+  navigation: ['navigation', 'nav', 'menu', 'navbar', 'footer', 'header'],
+  text: ['text', 'typography', 'heading', 'paragraph', 'content'],
+  media: ['media', 'image', 'video', 'gallery', 'audio'],
+  business: ['business', 'features', 'pricing', 'testimonials', 'stats', 'cta', 'team'],
+  interactive: ['interactive', 'form', 'contact', 'accordion', 'tabs'],
+  blog: ['blog', 'products', 'articles', 'ecommerce', 'shop', 'store', 'cart'],
+  advanced: ['advanced', 'html', 'embed', 'cookie', 'map'],
+};
+
 export function ComponentPalette({ onAdd }: ComponentPaletteProps) {
   const { t } = useTranslation('wb');
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set(['layout', 'navigation', 'business']));
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const filtered = searchTerm
-    ? COMPONENT_PALETTE.filter(p =>
-        p.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (p.description || '').toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    : COMPONENT_PALETTE;
+  // Tokenised search: splits query on whitespace, requires every token to match somewhere
+  // (label, type, description, or the block's category name). Case-insensitive.
+  const filtered = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return COMPONENT_PALETTE;
+    const tokens = q.split(/\s+/).filter(Boolean);
+    return COMPONENT_PALETTE.filter((p) => {
+      const catAliases = (CATEGORY_LABELS[p.category] || [p.category]).join(' ');
+      const haystack = [
+        p.label,
+        p.type,
+        p.description || '',
+        p.category,
+        catAliases,
+        p.icon || '',
+      ].join(' ').toLowerCase();
+      return tokens.every((tok) => haystack.includes(tok));
+    });
+  }, [searchTerm]);
+
+  // Cmd/Ctrl+K focuses the search box for keyboard-first users.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        // Only hijack if the palette is visible in the DOM
+        if (inputRef.current) {
+          e.preventDefault();
+          inputRef.current.focus();
+          inputRef.current.select();
+        }
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  const handleSearchKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      setSearchTerm('');
+      inputRef.current?.blur();
+    } else if (e.key === 'Enter' && searchTerm && filtered.length > 0) {
+      onAdd(filtered[0].type);
+    }
+  }, [searchTerm, filtered, onAdd]);
 
   const toggleCategory = useCallback((key: string) => {
     setExpandedCats(prev => {
@@ -646,18 +711,37 @@ export function ComponentPalette({ onAdd }: ComponentPaletteProps) {
         {/* Search */}
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/40" />
-           <Input
+          <Input
+            ref={inputRef}
             placeholder={t('palette.searchBlocks')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="h-8 text-xs pl-8 bg-muted/30 border-border/30 rounded-lg"
+            onKeyDown={handleSearchKeyDown}
+            className="h-8 text-xs pl-8 pr-14 bg-muted/30 border-border/30 rounded-lg"
+            aria-label={t('palette.searchBlocks')}
           />
+          {searchTerm ? (
+            <button
+              type="button"
+              onClick={() => { setSearchTerm(''); inputRef.current?.focus(); }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground/50 hover:text-foreground px-1 py-0.5 rounded"
+              aria-label="Clear search"
+            >
+              esc
+            </button>
+          ) : (
+            <kbd className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-mono text-muted-foreground/40 px-1.5 py-0.5 border border-border/30 rounded bg-background/60 pointer-events-none">
+              ⌘K
+            </kbd>
+          )}
         </div>
 
         {/* Drag hint */}
         <p className="text-[9px] text-muted-foreground/40 px-0.5 flex items-center gap-1">
           <GripVertical className="h-2.5 w-2.5" />
-          {t('palette.dragHint')}
+          {searchTerm
+            ? <>Press <span className="font-mono">Enter</span> to add the first match</>
+            : t('palette.dragHint')}
         </p>
 
         {searchTerm ? (
@@ -666,11 +750,26 @@ export function ComponentPalette({ onAdd }: ComponentPaletteProps) {
               {t('palette.results', { count: filtered.length })}
             </p>
             <div className="space-y-1">
-              {filtered.map((item, idx) => renderItem(item, idx))}
+              {/* Group search results by category so users always see origin */}
+              {CATEGORY_KEYS.map((cat) => {
+                const catItems = filtered.filter((p) => p.category === cat.key);
+                if (catItems.length === 0) return null;
+                return (
+                  <div key={cat.key} className="space-y-0.5">
+                    <div className="flex items-center gap-1.5 px-1 pt-1 text-[9px] uppercase tracking-wide text-muted-foreground/50 font-semibold">
+                      <span>{cat.emoji}</span>
+                      <span>{t(`palette.${cat.i18nKey}`)}</span>
+                      <span className="tabular-nums opacity-60">({catItems.length})</span>
+                    </div>
+                    {catItems.map((item, idx) => renderItem(item, idx, true))}
+                  </div>
+                );
+              })}
               {filtered.length === 0 && (
                 <div className="text-center py-8">
                   <Search className="h-6 w-6 mx-auto text-muted-foreground/20 mb-2" />
                   <p className="text-xs text-muted-foreground/50">{t('palette.noBlocksMatch', { term: searchTerm })}</p>
+                  <p className="text-[10px] text-muted-foreground/40 mt-1">Try “hero”, “form”, “pricing”, “video”…</p>
                 </div>
               )}
             </div>

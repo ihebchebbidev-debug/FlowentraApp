@@ -2,7 +2,7 @@ import { PaletteItem } from '../../types';
 
 export const MEDIA_PALETTE: PaletteItem[] = [
   {
-    type: 'image-text', label: 'Image + Text', icon: 'PanelLeft', category: 'media',
+    type: 'image-text', label: 'Image + Text', icon: 'Contact', category: 'media',
     description: 'Side-by-side image and text',
     defaultProps: { title: 'Our Mission', description: 'We believe in creating exceptional products that make a real difference.', imageUrl: '', imagePosition: 'left' },
   },
@@ -22,12 +22,12 @@ export const MEDIA_PALETTE: PaletteItem[] = [
     defaultProps: { url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', aspectRatio: '16/9', variant: 'standard', showTitle: true, shadow: true },
   },
   {
-    type: 'video-embed', label: 'Featured Video', icon: 'Play', category: 'media',
+    type: 'video-embed', label: 'Featured Video', icon: 'CirclePlay', category: 'media',
     description: 'Large centered video with frame',
     defaultProps: { url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', variant: 'featured', title: 'Watch Our Story', description: 'See how we make a difference.', aspectRatio: '16/9', showTitle: true, shadow: true },
   },
   {
-    type: 'video-embed', label: 'Video Grid', icon: 'LayoutGrid', category: 'media',
+    type: 'video-embed', label: 'Video Grid', icon: 'Grid2x2', category: 'media',
     description: 'Grid of video thumbnails',
     defaultProps: {
       url: '', variant: 'grid', title: 'Our Videos', columns: 3, aspectRatio: '16/9',
@@ -85,7 +85,7 @@ export const MEDIA_PALETTE: PaletteItem[] = [
     },
   },
   {
-    type: 'map', label: 'Map Overlay', icon: 'Layers', category: 'media',
+    type: 'map', label: 'Map Overlay', icon: 'Crosshair', category: 'media',
     description: 'Map with floating contact card',
     defaultProps: {
       address: 'San Francisco, CA', height: 500, variant: 'overlay', mapTheme: 'dark', zoom: 15,
