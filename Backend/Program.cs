@@ -390,6 +390,7 @@ builder.Services.AddScoped<IPluginService, PluginService>();
 // Offline hydration module preferences (per user / tenant)
 builder.Services.AddScoped<IOfflineHydrationPreferencesService, OfflineHydrationPreferencesService>();
 builder.Services.AddScoped<MyApi.Modules.Reporting.Services.IReportingFavoritesService, MyApi.Modules.Reporting.Services.ReportingFavoritesService>();
+builder.Services.AddScoped<MyApi.Modules.Dashboards.Services.IDashboardLayoutService, MyApi.Modules.Dashboards.Services.DashboardLayoutService>();
 
 // User UI preferences (theme, layout) — /api/Preferences
 builder.Services.AddScoped<MyApi.Modules.Preferences.Services.IPreferenceService, MyApi.Modules.Preferences.Services.PreferenceService>();

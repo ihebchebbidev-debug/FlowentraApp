@@ -2,13 +2,33 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { ThemedBarChart } from '@/components/charts/ThemedBarChart';
 import { DonutChartComponent } from '@/components/charts/DonutChartComponent';
 import dayjs from 'dayjs';
-import { PinnedReportingWidgets } from './PinnedReportingWidgets';
+import {
+  DndContext,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+  sortableKeyboardCoordinates,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { useDashboardLayout } from '../store/useDashboardLayoutStore';
+import { useFavoritesStore } from '@/modules/reporting/store/useFavoritesStore';
+import { FavoriteWidgetCard, getWidgetSize } from '@/modules/reporting/widgets/FavoriteWidgets';
 import {
   Users,
   FileText,
@@ -27,6 +47,14 @@ import {
   Wallet,
   ArrowUp,
   ArrowDown,
+  ExternalLink,
+  Settings2,
+  Check,
+  Plus,
+  GripVertical,
+  X,
+  RotateCcw,
+  Star,
 } from 'lucide-react';
 
 // ───────────────────────────────────────────────────────────────
@@ -158,11 +186,111 @@ const SkeletonGrid = ({ n }: { n: number }) => (
   </div>
 );
 
+// ── Customizable-grid plumbing ───────────────────────────────
+// Card sizes map to column spans in a 4-col grid (2-col on small screens).
+type CardSize = 'kpi' | 'half' | 'wide';
+const SPAN: Record<CardSize, string> = {
+  kpi: 'col-span-1',
+  half: 'col-span-1 sm:col-span-2 lg:col-span-2',
+  wide: 'col-span-1 sm:col-span-2 lg:col-span-4',
+};
+// Reporting widget sizes → dashboard card sizes.
+const reportingSizeToCard = (id: string): CardSize => {
+  const s = getWidgetSize(id);
+  return s === 'kpi' ? 'kpi' : s === 'chart' ? 'half' : 'wide';
+};
+
+interface DashboardCard {
+  id: string;
+  size: CardSize;
+  node: React.ReactNode;
+  /** True for pinned reporting widgets (removed by un-pinning, not hiding). */
+  reporting?: boolean;
+}
+
+function SortableCard({
+  card,
+  customizing,
+  onRemove,
+  onOpen,
+}: {
+  card: DashboardCard;
+  customizing: boolean;
+  onRemove: () => void;
+  onOpen?: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: card.id,
+    disabled: !customizing,
+  });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 20 : undefined,
+  };
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        SPAN[card.size],
+        'group relative min-w-0',
+        isDragging && 'opacity-80'
+      )}
+    >
+      {customizing && (
+        <div className="absolute -top-2 left-2 right-2 z-30 flex items-center justify-between">
+          <button
+            type="button"
+            {...attributes}
+            {...listeners}
+            aria-label="Drag to reorder"
+            className="flex cursor-grab items-center gap-1 rounded-full border bg-card px-2 py-0.5 text-[10px] font-medium text-muted-foreground shadow-sm hover:text-foreground active:cursor-grabbing"
+          >
+            <GripVertical className="h-3 w-3" /> Move
+          </button>
+          <button
+            type="button"
+            onClick={onRemove}
+            aria-label="Remove card"
+            className="flex items-center justify-center rounded-full border bg-card p-1 text-muted-foreground shadow-sm transition hover:text-destructive"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      )}
+      {!customizing && card.reporting && onOpen && (
+        <button
+          type="button"
+          onClick={onOpen}
+          aria-label="Open source report"
+          className="absolute right-2 top-2 z-20 hidden items-center gap-1 rounded-full border bg-card px-2 py-0.5 text-[10px] font-medium text-muted-foreground shadow-sm transition hover:text-foreground group-hover:flex"
+        >
+          <ExternalLink className="h-3 w-3" />
+        </button>
+      )}
+      <div className={cn('h-full', customizing && 'pointer-events-none ring-2 ring-dashed ring-border rounded-xl')}>
+        {card.node}
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardOverview() {
   const { format } = useCurrency();
   const { t } = useTranslation('dashboard');
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  // Per-user customizable dashboard layout (synced to account) + pinned widgets.
+  const { order, hidden, setOrder, hide, unhide, reset } = useDashboardLayout();
+  const { widgets: pinnedWidgets, remove: unpinWidget } = useFavoritesStore();
+  const [customizing, setCustomizing] = React.useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   const greeting = React.useMemo(() => {
     const h = new Date().getHours();
@@ -288,56 +416,43 @@ export default function DashboardOverview() {
     [articles],
   );
 
-  return (
-    <div className="space-y-5 p-3 sm:p-5 max-w-[1600px] mx-auto">
-      {/* ══ Header · greeting + quick actions ══ */}
-      <div className="min-w-0">
-        <h1 className="text-[22px] font-bold leading-tight tracking-tight truncate">
-          {greeting}{user?.firstName ? `, ${user.firstName}` : ''} 👋
-        </h1>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          {dayjs().format('dddd, D MMMM YYYY')} · {t('overview.welcomeMessage', { defaultValue: "Here's an overview of your business" })}
-        </p>
-      </div>
-
-      {/* Pinned reporting widgets — user-customizable default dashboard */}
-      <PinnedReportingWidgets />
-
-      {/* KPI row — the headline numbers, no section chrome */}
-      {isLoading ? (
-        <SkeletonGrid n={5} />
-      ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-          <KpiCard
-            icon={TrendingUp}
-            tone={(revenueMoM.delta ?? 0) >= 0 ? 'success' : 'danger'}
-            label={t('overview.revenueThisMonth', { defaultValue: 'Revenue (this month)' })}
-            value={format(Math.round(revenueMoM.thisMonth))}
-            trend={revenueMoM.delta}
-            onClick={() => navigate('/dashboard/sales')}
-          />
-          <KpiCard icon={ShoppingCart} tone="success" label={t('overview.activeSales', { defaultValue: 'Active sales' })} value={activeSales} onClick={() => navigate('/dashboard/sales')} />
-          <KpiCard icon={FileText} tone="info" label={t('overview.openOffers', { defaultValue: 'Open offers' })} value={openOffers} onClick={() => navigate('/dashboard/offers')} />
-          <KpiCard icon={Wrench} tone="warning" label={t('overview.activeServiceOrders', { defaultValue: 'Active service orders' })} value={activeServiceOrders} onClick={() => navigate('/dashboard/field/service-orders/list')} />
-          <KpiCard icon={Users} tone="primary" label={t('overview.totalContacts', { defaultValue: 'Contacts' })} value={totalContacts || '-'} onClick={() => navigate('/dashboard/contacts')} />
-        </div>
-      )}
-
-      {/* Charts — one bar, one donut. That's it. */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-        <Panel className="lg:col-span-2" title={t('overview.revenueTrend', { defaultValue: 'Revenue — last 6 months' })}>
+  // ── Default cards (individually removable / reorderable) ─────
+  const defaultCards: DashboardCard[] = [
+    {
+      id: 'kpi-revenue', size: 'kpi', node: (
+        <KpiCard
+          icon={TrendingUp}
+          tone={(revenueMoM.delta ?? 0) >= 0 ? 'success' : 'danger'}
+          label={t('overview.revenueThisMonth', { defaultValue: 'Revenue (this month)' })}
+          value={format(Math.round(revenueMoM.thisMonth))}
+          trend={revenueMoM.delta}
+          onClick={() => navigate('/dashboard/sales')}
+        />
+      ),
+    },
+    { id: 'kpi-active-sales', size: 'kpi', node: <KpiCard icon={ShoppingCart} tone="success" label={t('overview.activeSales', { defaultValue: 'Active sales' })} value={activeSales} onClick={() => navigate('/dashboard/sales')} /> },
+    { id: 'kpi-open-offers', size: 'kpi', node: <KpiCard icon={FileText} tone="info" label={t('overview.openOffers', { defaultValue: 'Open offers' })} value={openOffers} onClick={() => navigate('/dashboard/offers')} /> },
+    { id: 'kpi-active-so', size: 'kpi', node: <KpiCard icon={Wrench} tone="warning" label={t('overview.activeServiceOrders', { defaultValue: 'Active service orders' })} value={activeServiceOrders} onClick={() => navigate('/dashboard/field/service-orders/list')} /> },
+    { id: 'kpi-contacts', size: 'kpi', node: <KpiCard icon={Users} tone="primary" label={t('overview.totalContacts', { defaultValue: 'Contacts' })} value={totalContacts || '-'} onClick={() => navigate('/dashboard/contacts')} /> },
+    {
+      id: 'chart-revenue-trend', size: 'wide', node: (
+        <Panel className="h-full" title={t('overview.revenueTrend', { defaultValue: 'Revenue — last 6 months' })}>
           <ThemedBarChart data={revenueTrend} height={240} />
         </Panel>
-        <Panel title={t('overview.serviceOrderStatus', { defaultValue: 'Service orders by status' })}>
+      ),
+    },
+    {
+      id: 'chart-service-status', size: 'half', node: (
+        <Panel className="h-full" title={t('overview.serviceOrderStatus', { defaultValue: 'Service orders by status' })}>
           {serviceOrderStatus.length > 0
             ? <DonutChartComponent data={serviceOrderStatus} height={240} innerRadius={58} outerRadius={92} centerValue={serviceOrders.length} centerLabel={t('overview.total', { defaultValue: 'Total' })} />
             : <div className="h-[240px] flex items-center justify-center text-sm text-muted-foreground">{t('overview.noData', { defaultValue: 'No data yet' })}</div>}
         </Panel>
-      </div>
-
-      {/* Team — one panel: summary strip + per-technician table */}
-      {!isLoading && (
-        <div className={`${PANEL} overflow-hidden`}>
+      ),
+    },
+    {
+      id: 'panel-team', size: 'wide', node: (
+        <div className={`${PANEL} h-full overflow-hidden`}>
           <PanelHead
             icon={UserCheck}
             title={t('overview.section.team', { defaultValue: 'Team performance' })}
@@ -381,57 +496,203 @@ export default function DashboardOverview() {
             </div>
           )}
         </div>
+      ),
+    },
+    {
+      id: 'chart-stock-status', size: 'half', node: (
+        <Panel className="h-full" title={t('overview.stockBreakdown', { defaultValue: 'Stock status' })}>
+          {stockDonut.length > 0
+            ? <DonutChartComponent data={stockDonut} height={220} innerRadius={56} outerRadius={90} centerValue={stockStats.total} centerLabel={t('overview.totalArticles', { defaultValue: 'Total articles' })} />
+            : <div className="h-[220px] flex items-center justify-center text-sm text-muted-foreground">{t('overview.noData', { defaultValue: 'No data yet' })}</div>}
+        </Panel>
+      ),
+    },
+    {
+      id: 'panel-stock', size: 'wide', node: (
+        <div className={`${PANEL} h-full overflow-hidden`}>
+          <PanelHead
+            icon={Boxes}
+            title={t('overview.section.stock', { defaultValue: 'Inventory & stock' })}
+            onViewAll={() => navigate('/dashboard/inventory-services')}
+            viewAllLabel={t('overview.openInventory', { defaultValue: 'Inventory' })}
+          />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 px-4 pb-4">
+            <Stat icon={Package} tone="primary" label={t('overview.totalArticles', { defaultValue: 'Total articles' })} value={stockStats.total} />
+            <Stat icon={Wallet} tone="success" label={t('overview.stockValue', { defaultValue: 'Stock value' })} value={stockStats.value > 0 ? format(Math.round(stockStats.value)) : '—'} />
+            <Stat icon={AlertTriangle} tone="warning" label={t('overview.lowStock', { defaultValue: 'Low stock' })} value={stockStats.low} />
+            <Stat icon={XCircle} tone="danger" label={t('overview.outOfStock', { defaultValue: 'Out of stock' })} value={stockStats.out} />
+          </div>
+          <div className="border-t border-border/60 px-4 py-3">
+            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">{t('overview.needsRestock', { defaultValue: 'Needs restocking' })}</p>
+            {lowStockItems.length === 0 ? (
+              <div className="py-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                {t('overview.allStocked', { defaultValue: 'Everything is well stocked ✓' })}
+              </div>
+            ) : (
+              <div className="divide-y divide-border/60">
+                {lowStockItems.slice(0, 5).map((a: any) => (
+                  <div key={a.id} className="flex items-center justify-between gap-3 py-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className={`h-2 w-2 rounded-full shrink-0 ${(a.status || '').toLowerCase() === 'out_of_stock' ? 'bg-red-500' : 'bg-amber-500'}`} />
+                      <span className="text-sm truncate">{a.name || a.title || `#${a.id}`}</span>
+                    </div>
+                    <div className="text-right shrink-0 tabular-nums">
+                      <span className={`text-sm font-semibold ${(a.status || '').toLowerCase() === 'out_of_stock' ? 'text-red-600' : 'text-amber-600'}`}>{a.stock ?? 0}</span>
+                      <span className="text-xs text-muted-foreground"> / {t('overview.min', { defaultValue: 'min' })} {a.minStock ?? 0}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      ),
+    },
+  ];
+
+  const reportingRoute: Record<string, string> = {
+    Sales: '/dashboard/reporting/sales',
+    Service: '/dashboard/reporting/service',
+    Finance: '/dashboard/reporting/finance',
+    HR: '/dashboard/reporting/hr',
+    Purchase: '/dashboard/reporting/purchase',
+  };
+
+  // Pinned reporting widgets become individual cards, fully interleaved.
+  const reportingCards: DashboardCard[] = pinnedWidgets.map((w) => ({
+    id: w.id,
+    size: reportingSizeToCard(w.id),
+    reporting: true,
+    node: <FavoriteWidgetCard fav={w} />,
+  }));
+
+  const known = [...defaultCards, ...reportingCards];
+  const cardById = new Map(known.map((c) => [c.id, c]));
+  const hiddenSet = new Set(hidden);
+  const knownIds = known.map((c) => c.id);
+
+  // Ordered visible cards: saved order first, then any new cards appended.
+  const orderedIds = [
+    ...order.filter((id) => cardById.has(id) && !hiddenSet.has(id)),
+    ...knownIds.filter((id) => !order.includes(id) && !hiddenSet.has(id)),
+  ];
+  const visibleCards = orderedIds.map((id) => cardById.get(id)!).filter(Boolean);
+  const hiddenDefaults = defaultCards.filter((c) => hiddenSet.has(c.id));
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = orderedIds.indexOf(String(active.id));
+    const newIndex = orderedIds.indexOf(String(over.id));
+    if (oldIndex < 0 || newIndex < 0) return;
+    setOrder(arrayMove(orderedIds, oldIndex, newIndex));
+  };
+
+  const handleRemove = (card: DashboardCard) => {
+    if (card.reporting) unpinWidget(card.id);
+    else hide(card.id);
+  };
+
+  return (
+    <div className="space-y-5 p-3 sm:p-5 max-w-[1600px] mx-auto">
+      {/* ══ Header · greeting + customize toggle ══ */}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-[22px] font-bold leading-tight tracking-tight truncate">
+            {greeting}{user?.firstName ? `, ${user.firstName}` : ''} 👋
+          </h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {dayjs().format('dddd, D MMMM YYYY')} · {t('overview.welcomeMessage', { defaultValue: "Here's an overview of your business" })}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {customizing && (
+            <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" onClick={reset}>
+              <RotateCcw className="h-3.5 w-3.5" />
+              {t('overview.resetLayout', { defaultValue: 'Reset' })}
+            </Button>
+          )}
+          <Button
+            variant={customizing ? 'default' : 'outline'}
+            size="sm"
+            className="h-8 gap-1.5 text-xs"
+            onClick={() => setCustomizing((v) => !v)}
+          >
+            {customizing ? <Check className="h-3.5 w-3.5" /> : <Settings2 className="h-3.5 w-3.5" />}
+            {customizing ? t('overview.doneCustomizing', { defaultValue: 'Done' }) : t('overview.customize', { defaultValue: 'Customize' })}
+          </Button>
+        </div>
+      </div>
+
+      {/* Customize helper bar: re-add removed cards + pin hint */}
+      {customizing && (
+        <div className="rounded-lg border border-dashed bg-muted/30 p-3">
+          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+            <Settings2 className="h-3.5 w-3.5" />
+            {t('overview.customizeHint', { defaultValue: 'Drag cards to reorder, remove any you don’t need, and re-add them below. Star widgets in Reporting to pin them here.' })}
+          </div>
+          {hiddenDefaults.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {hiddenDefaults.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => unhide(c.id)}
+                  className="inline-flex items-center gap-1 rounded-full border bg-card px-2.5 py-1 text-[11px] font-medium text-foreground shadow-sm transition hover:border-primary/40 hover:text-primary"
+                >
+                  <Plus className="h-3 w-3" />
+                  {c.id.replace(/^kpi-|^chart-|^panel-/, '').replace(/-/g, ' ')}
+                </button>
+              ))}
+            </div>
+          )}
+          {pinnedWidgets.length === 0 && (
+            <div className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <Star className="h-3.5 w-3.5" />
+              {t('overview.noPinnedHint', { defaultValue: 'No reporting widgets pinned yet — open a Reporting dashboard and tap the ☆ star on any card.' })}
+            </div>
+          )}
+        </div>
       )}
 
-      {/* Inventory — donut + summary strip with the items needing attention */}
-      {!isLoading && (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-          <Panel title={t('overview.stockBreakdown', { defaultValue: 'Stock status' })}>
-            {stockDonut.length > 0
-              ? <DonutChartComponent data={stockDonut} height={220} innerRadius={56} outerRadius={90} centerValue={stockStats.total} centerLabel={t('overview.totalArticles', { defaultValue: 'Total articles' })} />
-              : <div className="h-[220px] flex items-center justify-center text-sm text-muted-foreground">{t('overview.noData', { defaultValue: 'No data yet' })}</div>}
-          </Panel>
+      {isLoading ? (
+        <SkeletonGrid n={5} />
+      ) : (
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={orderedIds} strategy={rectSortingStrategy}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {visibleCards.map((card) => (
+                <SortableCard
+                  key={card.id}
+                  card={card}
+                  customizing={customizing}
+                  onRemove={() => handleRemove(card)}
+                  onOpen={
+                    card.reporting
+                      ? () => {
+                          const w = pinnedWidgets.find((x) => x.id === card.id);
+                          if (w) navigate(reportingRoute[w.source]);
+                        }
+                      : undefined
+                  }
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      )}
 
-          <div className={`${PANEL} lg:col-span-2 overflow-hidden`}>
-            <PanelHead
-              icon={Boxes}
-              title={t('overview.section.stock', { defaultValue: 'Inventory & stock' })}
-              onViewAll={() => navigate('/dashboard/inventory-services')}
-              viewAllLabel={t('overview.openInventory', { defaultValue: 'Inventory' })}
-            />
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 px-4 pb-4">
-              <Stat icon={Package} tone="primary" label={t('overview.totalArticles', { defaultValue: 'Total articles' })} value={stockStats.total} />
-              <Stat icon={Wallet} tone="success" label={t('overview.stockValue', { defaultValue: 'Stock value' })} value={stockStats.value > 0 ? format(Math.round(stockStats.value)) : '—'} />
-              <Stat icon={AlertTriangle} tone="warning" label={t('overview.lowStock', { defaultValue: 'Low stock' })} value={stockStats.low} />
-              <Stat icon={XCircle} tone="danger" label={t('overview.outOfStock', { defaultValue: 'Out of stock' })} value={stockStats.out} />
-            </div>
-            <div className="border-t border-border/60 px-4 py-3">
-              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">{t('overview.needsRestock', { defaultValue: 'Needs restocking' })}</p>
-              {lowStockItems.length === 0 ? (
-                <div className="py-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                  {t('overview.allStocked', { defaultValue: 'Everything is well stocked ✓' })}
-                </div>
-              ) : (
-                <div className="divide-y divide-border/60">
-                  {lowStockItems.slice(0, 5).map((a: any) => (
-                    <div key={a.id} className="flex items-center justify-between gap-3 py-2">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <span className={`h-2 w-2 rounded-full shrink-0 ${(a.status || '').toLowerCase() === 'out_of_stock' ? 'bg-red-500' : 'bg-amber-500'}`} />
-                        <span className="text-sm truncate">{a.name || a.title || `#${a.id}`}</span>
-                      </div>
-                      <div className="text-right shrink-0 tabular-nums">
-                        <span className={`text-sm font-semibold ${(a.status || '').toLowerCase() === 'out_of_stock' ? 'text-red-600' : 'text-amber-600'}`}>{a.stock ?? 0}</span>
-                        <span className="text-xs text-muted-foreground"> / {t('overview.min', { defaultValue: 'min' })} {a.minStock ?? 0}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+      {!customizing && visibleCards.length === 0 && (
+        <div className="rounded-lg border border-dashed bg-muted/30 p-8 text-center">
+          <p className="text-sm text-muted-foreground">{t('overview.emptyLayout', { defaultValue: 'You’ve removed all cards.' })}</p>
+          <Button variant="outline" size="sm" className="mt-3 gap-1.5" onClick={reset}>
+            <RotateCcw className="h-3.5 w-3.5" />
+            {t('overview.resetLayout', { defaultValue: 'Reset to default' })}
+          </Button>
         </div>
       )}
     </div>
   );
 }
+

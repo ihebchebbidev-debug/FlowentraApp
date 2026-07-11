@@ -292,6 +292,9 @@ namespace MyApi.Data
         // Reporting Module — pinned dashboard widgets per user/scope
         public DbSet<MyApi.Modules.Reporting.Models.ReportingFavorite> ReportingFavorites { get; set; }
 
+        // Dashboards Module — per-user main dashboard layout (card order + hidden)
+        public DbSet<MyApi.Modules.Dashboards.Models.DashboardLayout> DashboardLayouts { get; set; }
+
         // External Endpoints Module
         public DbSet<MyApi.Modules.ExternalEndpoints.Models.ExternalEndpoint> ExternalEndpoints { get; set; }
         public DbSet<MyApi.Modules.ExternalEndpoints.Models.ExternalEndpointLog> ExternalEndpointLogs { get; set; }
@@ -678,6 +681,16 @@ namespace MyApi.Data
                 entity.Property(e => e.Source).HasMaxLength(40).IsRequired();
                 entity.HasIndex(e => new { e.TenantId, e.UserId, e.Scope, e.WidgetId }).IsUnique();
                 entity.HasIndex(e => new { e.TenantId, e.UserId, e.Scope, e.Position });
+            });
+
+            modelBuilder.Entity<MyApi.Modules.Dashboards.Models.DashboardLayout>(entity =>
+            {
+                entity.ToTable("DashboardLayouts");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Scope).HasMaxLength(64).IsRequired();
+                entity.Property(e => e.OrderJson).HasColumnType("jsonb").IsRequired();
+                entity.Property(e => e.HiddenJson).HasColumnType("jsonb").IsRequired();
+                entity.HasIndex(e => new { e.TenantId, e.UserId, e.Scope }).IsUnique();
             });
 
             // External Endpoints Module configurations
