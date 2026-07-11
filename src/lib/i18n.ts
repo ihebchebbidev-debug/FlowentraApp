@@ -896,6 +896,107 @@ const savedLanguage = getUserLanguage();
 
 i18n.use(initReactI18next).init({ resources, lng: savedLanguage, fallbackLng: 'en', interpolation: { escapeValue: false } });
 
+// Register planning keys under the default 'translation' namespace so the
+// shared Plan-vs-Actual UI (PlannedInlineList / OverrunBadge) renders in
+// both English and French regardless of the caller's namespace.
+const planningEn = {
+  planning: {
+    plannedBadge: 'Planned',
+    plannedTimeSection: 'Planned time',
+    plannedExpensesSection: 'Planned expenses',
+    plannedMaterialsSection: 'Planned materials',
+    planTime: 'Plan Time',
+    planExpense: 'Plan Expense',
+    planMaterial: 'Plan Material',
+    noTime: 'No planned time',
+    noExpenses: 'No planned expenses',
+    noMaterials: 'No planned materials',
+    editEntry: 'Edit planned entry',
+    jobLabel: 'Job',
+    noParent: 'Cannot plan without a linked job',
+    savedToast: 'Plan saved',
+    confirmDelete: 'Delete this planned entry?',
+    technicianCount: 'Technicians',
+    durationMinutes: 'Duration (min)',
+    hourlyRate: 'Hourly rate (optional)',
+    expenseType: 'Expense type',
+    amount: 'Amount',
+    currency: 'Currency',
+    materialName: 'Material / article name',
+    materialNamePh: 'e.g. Solar panel 450W',
+    quantity: 'Quantity',
+    unit: 'Unit',
+    unitPrice: 'Unit price',
+    description: 'Description (optional)',
+    searchArticle: 'Search article (global)',
+    searchArticlePh: 'Name, SKU, category…',
+    noArticles: 'No articles match your search.',
+    pickedArticle: 'Selected',
+    expenseTypes: {
+      travel: 'Travel',
+      per_diem: 'Per diem',
+      materials: 'Materials',
+      subcontractor: 'Subcontractor',
+    },
+    overrun: {
+      onPlan: 'On plan',
+      nearLimit: 'Near limit',
+      overBudget: 'Over budget',
+      over: 'over by',
+    },
+  },
+};
+const planningFr = {
+  planning: {
+    plannedBadge: 'Planifié',
+    plannedTimeSection: 'Temps planifié',
+    plannedExpensesSection: 'Frais planifiés',
+    plannedMaterialsSection: 'Matériel planifié',
+    planTime: 'Planifier temps',
+    planExpense: 'Planifier frais',
+    planMaterial: 'Planifier matériel',
+    noTime: 'Aucun temps planifié',
+    noExpenses: 'Aucun frais planifié',
+    noMaterials: 'Aucun matériel planifié',
+    editEntry: 'Modifier l’entrée planifiée',
+    jobLabel: 'Intervention',
+    noParent: 'Impossible de planifier sans intervention liée',
+    savedToast: 'Planification enregistrée',
+    confirmDelete: 'Supprimer cette entrée planifiée ?',
+    technicianCount: 'Techniciens',
+    durationMinutes: 'Durée (min)',
+    hourlyRate: 'Taux horaire (optionnel)',
+    expenseType: 'Type de frais',
+    amount: 'Montant',
+    currency: 'Devise',
+    materialName: 'Nom du matériel / article',
+    materialNamePh: 'ex. Panneau solaire 450W',
+    quantity: 'Quantité',
+    unit: 'Unité',
+    unitPrice: 'Prix unitaire',
+    description: 'Description (optionnel)',
+    searchArticle: 'Rechercher un article (global)',
+    searchArticlePh: 'Nom, SKU, catégorie…',
+    noArticles: 'Aucun article ne correspond à votre recherche.',
+    pickedArticle: 'Sélectionné',
+    expenseTypes: {
+      travel: 'Déplacement',
+      per_diem: 'Indemnité journalière',
+      materials: 'Matériel',
+      subcontractor: 'Sous-traitance',
+    },
+    overrun: {
+      onPlan: 'Conforme',
+      nearLimit: 'Proche limite',
+      overBudget: 'Dépassement',
+      over: 'dépasse de',
+    },
+  },
+};
+i18n.addResourceBundle('en', 'translation', planningEn, true, true);
+i18n.addResourceBundle('fr', 'translation', planningFr, true, true);
+i18n.addResourceBundle('de', 'translation', planningEn, true, true);
+
 // Register offers namespace so useTranslation('offers') resolves correctly
 const offersNamespaceEn = { ...(offersEn as any || {}), ...(offersListEn as any || {}), ...(offersDetailEn as any || {}), ...(offersAddEn as any || {}) };
 const offersNamespaceFr = { ...(offersFr as any || {}), ...(offersListFr as any || {}), ...(offersDetailFr as any || {}), ...(offersAddFr as any || {}) };

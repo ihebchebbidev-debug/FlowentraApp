@@ -60,10 +60,10 @@ export const HrDashboard = () => {
       ) : (
         <>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <KpiCard icon={Users} tone="purple" tag="LIVE" value={totalHeadcount || '—'} label={t('hr.kpi.headcount', 'Total Headcount')} />
-            <KpiCard icon={Briefcase} tone="info" tag="MONTH" value={new Intl.NumberFormat(undefined, { style: 'currency', currency: currency.code, maximumFractionDigits: 0 }).format(salary.reduce((s, x) => s + Number(x.value ?? 0), 0))} label={t('hr.kpi.salary', 'Monthly Salary Cost')} />
-            <KpiCard icon={Award} tone="success" tag="AVG" value="B+" label={t('hr.kpi.performance', 'Avg Performance Grade')} />
-            <KpiCard icon={UserPlus} tone="accent" tag="YTD" value={totalHires || '—'} label={t('hr.kpi.hires', 'New Hires')} />
+            <KpiCard favorite={{ id: 'h-kpi-head', title: 'Total Headcount', source: SOURCE }} icon={Users} tone="purple" tag="LIVE" value={totalHeadcount || '—'} label={t('hr.kpi.headcount', 'Total Headcount')} />
+            <KpiCard favorite={{ id: 'h-kpi-sal', title: 'Monthly Salary Cost', source: SOURCE }} icon={Briefcase} tone="info" tag="MONTH" value={new Intl.NumberFormat(undefined, { style: 'currency', currency: currency.code, maximumFractionDigits: 0 }).format(salary.reduce((s, x) => s + Number(x.value ?? 0), 0))} label={t('hr.kpi.salary', 'Monthly Salary Cost')} />
+            <KpiCard favorite={{ id: 'h-kpi-perf', title: 'Avg Performance Grade', source: SOURCE }} icon={Award} tone="success" tag="AVG" value="B+" label={t('hr.kpi.performance', 'Avg Performance Grade')} />
+            <KpiCard favorite={{ id: 'h-kpi-hires', title: 'New Hires', source: SOURCE }} icon={UserPlus} tone="accent" tag="YTD" value={totalHires || '—'} label={t('hr.kpi.hires', 'New Hires')} />
           </div>
 
           <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">

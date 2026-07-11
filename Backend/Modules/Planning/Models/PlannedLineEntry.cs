@@ -54,6 +54,21 @@ namespace MyApi.Modules.Planning.Models
         [MaxLength(500)]
         public string? Description { get; set; }
 
+        // ---- material fields (kind = "material") ----
+        public int? ArticleId { get; set; }
+
+        [MaxLength(200)]
+        public string? ArticleName { get; set; }
+
+        [Column(TypeName = "decimal(18,3)")]
+        public decimal? Quantity { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? UnitPrice { get; set; }
+
+        [MaxLength(20)]
+        public string? Unit { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         [MaxLength(100)]
         public string? CreatedBy { get; set; }

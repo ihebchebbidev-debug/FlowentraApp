@@ -15,7 +15,7 @@ namespace MyApi.Modules.Planning.Services
         private static readonly HashSet<string> ValidParents = new(StringComparer.OrdinalIgnoreCase)
             { "offer_item", "sale_item", "service_order_job" };
         private static readonly HashSet<string> ValidKinds = new(StringComparer.OrdinalIgnoreCase)
-            { "time", "expense" };
+            { "time", "expense", "material" };
         private static readonly HashSet<string> ValidExpenseTypes = new(StringComparer.OrdinalIgnoreCase)
             { "travel", "per_diem", "materials", "subcontractor" };
 
@@ -52,6 +52,11 @@ namespace MyApi.Modules.Planning.Services
                 PlannedAmount = dto.PlannedAmount,
                 Currency = dto.Currency,
                 Description = dto.Description,
+                ArticleId = dto.ArticleId,
+                ArticleName = dto.ArticleName,
+                Quantity = dto.Quantity,
+                UnitPrice = dto.UnitPrice,
+                Unit = dto.Unit,
                 CreatedBy = userId,
                 CreatedAt = DateTime.UtcNow,
             };
@@ -73,6 +78,11 @@ namespace MyApi.Modules.Planning.Services
             entity.PlannedAmount = dto.PlannedAmount;
             entity.Currency = dto.Currency;
             entity.Description = dto.Description;
+            entity.ArticleId = dto.ArticleId;
+            entity.ArticleName = dto.ArticleName;
+            entity.Quantity = dto.Quantity;
+            entity.UnitPrice = dto.UnitPrice;
+            entity.Unit = dto.Unit;
             entity.ModifiedBy = userId;
             entity.ModifiedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();
@@ -111,6 +121,11 @@ namespace MyApi.Modules.Planning.Services
                     PlannedAmount = s.PlannedAmount,
                     Currency = s.Currency,
                     Description = s.Description,
+                    ArticleId = s.ArticleId,
+                    ArticleName = s.ArticleName,
+                    Quantity = s.Quantity,
+                    UnitPrice = s.UnitPrice,
+                    Unit = s.Unit,
                     CreatedBy = userId,
                     CreatedAt = DateTime.UtcNow,
                 });
@@ -131,6 +146,17 @@ namespace MyApi.Modules.Planning.Services
                 .Where(p => p.Kind == "expense" && !string.IsNullOrEmpty(p.ExpenseType))
                 .GroupBy(p => p.ExpenseType!)
                 .ToDictionary(g => g.Key, g => g.Sum(x => x.PlannedAmount ?? 0));
+
+            // Planned materials (kind='material') roll into the "materials" bucket for
+            // backwards-compat totals so overrun gating stays consistent.
+            var plannedMaterialTotal = planned
+                .Where(p => p.Kind == "material")
+                .Sum(p => (p.Quantity ?? 0) * (p.UnitPrice ?? 0));
+            if (plannedMaterialTotal > 0)
+            {
+                plannedExpenseByType.TryGetValue("materials", out var curPlannedMat);
+                plannedExpenseByType["materials"] = curPlannedMat + plannedMaterialTotal;
+            }
 
             // Actuals come from dispatch TimeEntries/Expenses on dispatches linked to this job.
             // Best-effort: aggregate via DispatchJobs that reference this ServiceOrderJob.
@@ -292,18 +318,25 @@ namespace MyApi.Modules.Planning.Services
         private static void ValidateKind(CreatePlannedLineEntryDto dto)
         {
             if (!ValidKinds.Contains(dto.Kind))
-                throw new ArgumentException($"Invalid kind '{dto.Kind}'. Allowed: time, expense");
+                throw new ArgumentException($"Invalid kind '{dto.Kind}'. Allowed: time, expense, material");
             if (string.Equals(dto.Kind, "time", StringComparison.OrdinalIgnoreCase))
             {
                 if ((dto.PlannedMinutes ?? 0) <= 0)
                     throw new ArgumentException("PlannedMinutes is required and must be > 0 for time entries");
             }
-            else
+            else if (string.Equals(dto.Kind, "expense", StringComparison.OrdinalIgnoreCase))
             {
                 if (string.IsNullOrWhiteSpace(dto.ExpenseType) || !ValidExpenseTypes.Contains(dto.ExpenseType))
                     throw new ArgumentException("ExpenseType is required (travel|per_diem|materials|subcontractor)");
                 if ((dto.PlannedAmount ?? 0) <= 0)
                     throw new ArgumentException("PlannedAmount is required and must be > 0 for expense entries");
+            }
+            else // material
+            {
+                if ((dto.ArticleId ?? 0) <= 0 && string.IsNullOrWhiteSpace(dto.ArticleName))
+                    throw new ArgumentException("ArticleId or ArticleName is required for material entries");
+                if ((dto.Quantity ?? 0) <= 0)
+                    throw new ArgumentException("Quantity is required and must be > 0 for material entries");
             }
         }
 
@@ -321,6 +354,11 @@ namespace MyApi.Modules.Planning.Services
             PlannedAmount = p.PlannedAmount,
             Currency = p.Currency,
             Description = p.Description,
+            ArticleId = p.ArticleId,
+            ArticleName = p.ArticleName,
+            Quantity = p.Quantity,
+            UnitPrice = p.UnitPrice,
+            Unit = p.Unit,
         };
     }
 }

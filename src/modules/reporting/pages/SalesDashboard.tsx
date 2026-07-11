@@ -64,10 +64,10 @@ export const SalesDashboard = () => {
       ) : (
         <>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <KpiCard icon={FileText} tone="primary" tag="YTD" value={offersByStatus.reduce((s, o) => s + Number(o.value ?? 0), 0)} label={t('sales.kpi.totalOffers', 'Total Offers')} trend={t('sales.kpi.vsPriorYear', 'vs prior year')} trendDirection="up" />
-            <KpiCard icon={Repeat} tone="accent" tag="AVG" value={`${(conversion.reduce((s, c) => s + Number(c.value ?? 0), 0) / Math.max(conversion.length, 1)).toFixed(0)}%`} label={t('sales.kpi.conversion', 'Offer Conversion Rate')} trend={t('sales.kpi.target', 'target 50%')} trendDirection="up" />
-            <KpiCard icon={Receipt} tone="info" tag="LIVE" value={salesByStatus.reduce((s, o) => s + Number(o.value ?? 0), 0)} label={t('sales.kpi.openOrders', 'Sales Orders')} trendDirection="up" trend={t('sales.kpi.thisPeriod', 'this period')} />
-            <KpiCard icon={Building2} tone="success" tag="TOP" value={topCustomers.length} label={t('sales.kpi.topCustomers', 'Top Customers')} />
+            <KpiCard favorite={{ id: 's-kpi-offers', title: 'Total Offers', source: SOURCE }} icon={FileText} tone="primary" tag="YTD" value={offersByStatus.reduce((s, o) => s + Number(o.value ?? 0), 0)} label={t('sales.kpi.totalOffers', 'Total Offers')} trend={t('sales.kpi.vsPriorYear', 'vs prior year')} trendDirection="up" />
+            <KpiCard favorite={{ id: 's-kpi-conv', title: 'Offer Conversion Rate', source: SOURCE }} icon={Repeat} tone="accent" tag="AVG" value={`${(conversion.reduce((s, c) => s + Number(c.value ?? 0), 0) / Math.max(conversion.length, 1)).toFixed(0)}%`} label={t('sales.kpi.conversion', 'Offer Conversion Rate')} trend={t('sales.kpi.target', 'target 50%')} trendDirection="up" />
+            <KpiCard favorite={{ id: 's-kpi-orders', title: 'Sales Orders', source: SOURCE }} icon={Receipt} tone="info" tag="LIVE" value={salesByStatus.reduce((s, o) => s + Number(o.value ?? 0), 0)} label={t('sales.kpi.openOrders', 'Sales Orders')} trendDirection="up" trend={t('sales.kpi.thisPeriod', 'this period')} />
+            <KpiCard favorite={{ id: 's-kpi-topcust', title: 'Top Customers', source: SOURCE }} icon={Building2} tone="success" tag="TOP" value={topCustomers.length} label={t('sales.kpi.topCustomers', 'Top Customers')} />
           </div>
 
           <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-3">

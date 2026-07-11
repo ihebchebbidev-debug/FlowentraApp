@@ -16,11 +16,16 @@ namespace MyApi.Modules.Planning.DTOs
         public decimal? PlannedAmount { get; set; }
         public string? Currency { get; set; }
         public string? Description { get; set; }
+        public int? ArticleId { get; set; }
+        public string? ArticleName { get; set; }
+        public decimal? Quantity { get; set; }
+        public decimal? UnitPrice { get; set; }
+        public string? Unit { get; set; }
     }
 
     public class CreatePlannedLineEntryDto
     {
-        [Required] public string Kind { get; set; } = "time"; // time|expense
+        [Required] public string Kind { get; set; } = "time"; // time|expense|material
         public int? PlannedMinutes { get; set; }
         public int? TechnicianCount { get; set; }
         public decimal? HourlyRate { get; set; }
@@ -28,6 +33,11 @@ namespace MyApi.Modules.Planning.DTOs
         public decimal? PlannedAmount { get; set; }
         public string? Currency { get; set; }
         public string? Description { get; set; }
+        public int? ArticleId { get; set; }
+        public string? ArticleName { get; set; }
+        public decimal? Quantity { get; set; }
+        public decimal? UnitPrice { get; set; }
+        public string? Unit { get; set; }
     }
 
     public class UpdatePlannedLineEntryDto : CreatePlannedLineEntryDto { }

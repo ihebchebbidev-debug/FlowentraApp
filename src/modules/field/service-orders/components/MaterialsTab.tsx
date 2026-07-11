@@ -46,6 +46,8 @@ import {
 
 import { API_URL } from '@/config/api';
 import { getUnitLabel } from "@/constants/units";
+import { PlannedInlineList } from "@/shared/components/planning/PlannedInlineList";
+import { PlannedTotalsBadge } from "@/shared/components/planning/OverrunBadge";
 
 interface Dispatch {
   id: number;
@@ -112,9 +114,11 @@ interface ServiceOrder {
 interface MaterialsTabProps {
   serviceOrder: ServiceOrder;
   onUpdate?: () => void;
+  jobIds?: number[];
+  jobLabels?: Record<number, string>;
 }
 
-export function MaterialsTab({ serviceOrder, onUpdate }: MaterialsTabProps) {
+export function MaterialsTab({ serviceOrder, onUpdate, jobIds = [], jobLabels }: MaterialsTabProps) {
   const [aggregatedMaterials, setAggregatedMaterials] = useState<AggregatedMaterial[]>([]);
   const [dispatches, setDispatches] = useState<Dispatch[]>([]);
   const [loading, setLoading] = useState(true);
@@ -648,12 +652,32 @@ export function MaterialsTab({ serviceOrder, onUpdate }: MaterialsTabProps) {
 
   return (
     <>
+      {jobIds.length > 0 && (
+        <div className="mb-4">
+          <PlannedInlineList
+            parentType="service_order_job"
+            parentIds={jobIds}
+            jobLabels={jobLabels}
+            kind="material"
+            currency={(serviceOrder as any)?.currency || 'TND'}
+          />
+        </div>
+      )}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Package className="h-4 w-4 text-primary" />
               Materials Used ({materialsWithDetails.length})
+              {jobIds.length > 0 && (
+                <PlannedTotalsBadge
+                  parentType="service_order_job"
+                  parentIds={jobIds}
+                  kind="material"
+                  actual={totalCost}
+                  currency={(serviceOrder as any)?.currency || 'TND'}
+                />
+              )}
             </CardTitle>
             <Button 
               size="sm" 

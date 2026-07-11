@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useCompanyLogo } from "@/hooks/useCompanyLogo";
-import { useDashboards } from '@/modules/dashboard-builder/hooks/useDashboards';
+
 import { 
   Users, 
   CheckSquare, 
@@ -154,7 +154,7 @@ export function AppSidebar() {
   const { t } = useTranslation();
   const { t: tDash } = useTranslation('dashboard');
   const { hasPermission, isMainAdmin, isLoading: permissionsLoading } = usePermissions();
-  const { dashboards } = useDashboards();
+  
 
   // Favorites state
   const [favorites, setFavorites] = useState<string[]>(loadFavorites);
@@ -341,8 +341,7 @@ export function AppSidebar() {
       !existing.some(item => item.url === '/dashboard/website-builder') ||
       existing.some(item => item.title === 'emails' && item.active !== false) ||
       !existing.some(item => item.title === 'calendar' && item.url === '/dashboard/calendar') ||
-      (existing.some(item => item.title === 'dashboard' && item.dropdown && !item.dropdown.some(d => d.title === 'dashboard_builder'))) ||
-      (existing.some(item => item.title === 'dashboard' && item.dropdown && item.dropdown.some(d => d.title === 'crm_dashboard' || d.title === 'field_dashboard'))) ||
+      (existing.some(item => item.title === 'dashboard' && item.dropdown && item.dropdown.length > 0)) ||
       existing.some(item => item.title === 'suppliers') ||
       !existing.some(item => item.title === 'contacts' && item.dropdown?.some(d => d.title === 'suppliers'));
     
@@ -432,31 +431,21 @@ export function AppSidebar() {
     }
   }, []);
 
-  // Build dynamic dashboard sub-items from user-created dashboards
-  const dashboardSubItems = useMemo(() => {
-    return dashboards.map(d => ({
-      title: d.name, // already user-facing, not a translation key
-      url: `/dashboard/dashboards?id=${d.id}`,
-      description: d.description || '',
-      _isDynamicDashboard: true, // flag so resolveSubItemTitle can skip translation
-    }));
-  }, [dashboards]);
-
-  const mapItems = (items: typeof configuredItems, fallbackIcon: any) => 
+  const mapItems = (items: typeof configuredItems, fallbackIcon: any) =>
     items.map(i => {
       const iconName = i.icon as IconName | undefined;
-      let IconComp = iconName && (ICON_REGISTRY as any)[iconName] ? (ICON_REGISTRY as any)[iconName] : fallbackIcon;
-      // Inject user dashboards into the dashboard dropdown
-      let dropdown = i.dropdown || undefined;
-      if (i.title === 'dashboard' && dropdown) {
-        dropdown = [...dropdown, ...dashboardSubItems];
+      const IconComp = iconName && (ICON_REGISTRY as any)[iconName] ? (ICON_REGISTRY as any)[iconName] : fallbackIcon;
+      // For the top-level dashboard item, force a plain link to /dashboard
+      // (no dropdown, no dashboard-builder sub-items).
+      if (i.title === 'dashboard') {
+        return { ...i, icon: IconComp, url: '/dashboard', dropdown: undefined };
       }
-      return { ...i, icon: IconComp, dropdown };
+      return { ...i, icon: IconComp, dropdown: i.dropdown || undefined };
     });
 
-  const workspaceItems = useMemo(() => 
+  const workspaceItems = useMemo(() =>
     mapItems(configuredItems.filter(i => i.group === 'workspace' && i.active && canViewItem(i.title)), Home),
-    [configuredItems, isMainAdmin, permissionsLoading, dashboards]);
+    [configuredItems, isMainAdmin, permissionsLoading]);
 
   const crmItems = useMemo(() => 
     mapItems(configuredItems.filter(i => i.group === 'crm' && i.active && canViewItem(i.title)), Users),

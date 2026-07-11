@@ -939,7 +939,9 @@ namespace MyApi.Modules.Auth.Services
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            var expiresAt = DateTime.UtcNow.AddHours(24); // 24 hours expiry
+            // Long-lived token (10 years) — matches ValidateLifetime=false so users
+            // are never asked to reconnect.
+            var expiresAt = DateTime.UtcNow.AddYears(10);
 
             var token = new JwtSecurityToken(
                 issuer: jwtIssuer,
@@ -1132,7 +1134,9 @@ namespace MyApi.Modules.Auth.Services
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            var expiresAt = DateTime.UtcNow.AddHours(24);
+            // Long-lived token (10 years) — matches ValidateLifetime=false so users
+            // are never asked to reconnect.
+            var expiresAt = DateTime.UtcNow.AddYears(10);
 
             var token = new JwtSecurityToken(
                 issuer: jwtIssuer,

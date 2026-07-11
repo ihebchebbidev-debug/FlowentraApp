@@ -28,8 +28,8 @@ import { MaterialsTab } from "../components/MaterialsTab";
 import { ServiceOrderActivityTab } from "../components/ServiceOrderActivityTab";
 import { DocumentsTab } from "../components/DocumentsTab";
 import { ChecklistsSection } from "@/modules/shared/components/documents";
-import PlanVsActualPanel from "@/shared/components/planning/PlanVsActualPanel";
-import { PlannedEntriesEditor } from "@/shared/components/planning/PlannedEntriesEditor";
+// Plan-vs-Actual stats panel + separate planned editor were removed —
+// planned rows now render inline inside each tab via PlannedInlineList.
 import { cn } from "@/lib/utils";
 import { CompanyBadge } from "@/components/CompanyBadge";
 import { TenantSelector } from "@/components/TenantSelector";
@@ -1378,33 +1378,6 @@ export default function ServiceOrderDetail() {
           {/* Time & Expenses Tab */}
           <TabsContent value="time_expenses">
             <div className="space-y-4">
-              {mappedJobs.length > 0 && (
-                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                  {mappedJobs.map(j => (
-                    <PlanVsActualPanel key={j.id} serviceOrderJobId={j.id} />
-                  ))}
-                </div>
-              )}
-              {/* G11: planned-entry editor per job — critical for direct/solo SOs that never had upstream planning */}
-              {mappedJobs.length > 0 && (
-                <Card>
-                  <CardContent className="pt-6 space-y-6">
-                    {mappedJobs.map(j => (
-                      <div key={`planned-${j.id}`} className="space-y-2">
-                        <div className="text-sm font-medium text-muted-foreground">
-                          {j.title || `Job #${j.id}`}
-                        </div>
-                        <PlannedEntriesEditor
-                          parentType="service_order_job"
-                          parentId={Number(j.id)}
-                          currency={(serviceOrderForComponents as any)?.currency || 'TND'}
-                        />
-                        {/* Checklists are shown in the dedicated Checklists tab, not per job here. */}
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              )}
               <Card>
                 <CardContent className="pt-6">
                   <TimeExpensesTab
@@ -1412,6 +1385,8 @@ export default function ServiceOrderDetail() {
                     timeEntries={timeEntries}
                     expenses={expenses}
                     onUpdate={fetchRelatedData}
+                    jobIds={mappedJobs.map(j => Number(j.id))}
+                    jobLabels={Object.fromEntries(mappedJobs.map(j => [Number(j.id), j.title || `Job #${j.id}`]))}
                   />
                 </CardContent>
               </Card>
@@ -1424,6 +1399,8 @@ export default function ServiceOrderDetail() {
             <MaterialsTab
               serviceOrder={serviceOrderForComponents}
               onUpdate={fetchRelatedData}
+              jobIds={mappedJobs.map(j => Number(j.id))}
+              jobLabels={Object.fromEntries(mappedJobs.map(j => [Number(j.id), j.title || `Job #${j.id}`]))}
             />
           </TabsContent>
 

@@ -60,10 +60,10 @@ export const PurchaseDashboard = () => {
       ) : (
         <>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <KpiCard icon={DollarSign} tone="warning" tag="YTD" value={new Intl.NumberFormat(undefined, { style: 'currency', currency: currency.code, maximumFractionDigits: 0, notation: 'compact' }).format(totalSpend)} label={t('purchase.kpi.spend', 'Total Spend')} />
-            <KpiCard icon={ShoppingCart} tone="primary" tag="LIVE" value={pos.length || '—'} label={t('purchase.kpi.pos', 'Purchase Orders')} />
-            <KpiCard icon={Package} tone="info" tag="AVG" value={bySupplier.length || '—'} label={t('purchase.kpi.suppliers', 'Active Suppliers')} />
-            <KpiCard icon={Truck} tone="accent" tag="AVG" value={receiptStatus.length ? `${((receiptStatus.find(r => r.name?.toLowerCase() === 'received')?.value ?? 0) as number / Math.max(receiptStatus.reduce((s, x) => s + Number(x.value ?? 0), 0), 1) * 100).toFixed(0)}%` : '—'} label={t('purchase.kpi.receipt', 'Receipt Rate')} />
+            <KpiCard favorite={{ id: 'p-kpi-spend', title: 'Total Spend', source: SOURCE }} icon={DollarSign} tone="warning" tag="YTD" value={new Intl.NumberFormat(undefined, { style: 'currency', currency: currency.code, maximumFractionDigits: 0, notation: 'compact' }).format(totalSpend)} label={t('purchase.kpi.spend', 'Total Spend')} />
+            <KpiCard favorite={{ id: 'p-kpi-pos', title: 'Purchase Orders', source: SOURCE }} icon={ShoppingCart} tone="primary" tag="LIVE" value={pos.length || '—'} label={t('purchase.kpi.pos', 'Purchase Orders')} />
+            <KpiCard favorite={{ id: 'p-kpi-sup', title: 'Active Suppliers', source: SOURCE }} icon={Package} tone="info" tag="AVG" value={bySupplier.length || '—'} label={t('purchase.kpi.suppliers', 'Active Suppliers')} />
+            <KpiCard favorite={{ id: 'p-kpi-rec', title: 'Receipt Rate', source: SOURCE }} icon={Truck} tone="accent" tag="AVG" value={receiptStatus.length ? `${((receiptStatus.find(r => r.name?.toLowerCase() === 'received')?.value ?? 0) as number / Math.max(receiptStatus.reduce((s, x) => s + Number(x.value ?? 0), 0), 1) * 100).toFixed(0)}%` : '—'} label={t('purchase.kpi.receipt', 'Receipt Rate')} />
           </div>
 
           <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-3">

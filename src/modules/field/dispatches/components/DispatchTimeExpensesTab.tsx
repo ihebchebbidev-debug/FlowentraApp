@@ -29,6 +29,8 @@ import { dispatchesApi, type TimeEntry, type Expense, type DispatchJobSummary } 
 import { toast } from "sonner";
 import { logDispatchActivityWithPropagation, formatDurationForLog, calculateDurationMinutes } from "@/services/activityLogger";
 import { useWorkTypes, useExpenseTypes } from "@/modules/lookups/hooks/useLookups";
+import { PlannedInlineList } from "@/shared/components/planning/PlannedInlineList";
+import { PlannedTotalsBadge } from "@/shared/components/planning/OverrunBadge";
 
 interface DispatchTimeExpensesTabProps {
   dispatchId: number;
@@ -764,14 +766,40 @@ export function DispatchTimeExpensesTab({
 
   return (
     <Card>
-      <CardContent className="p-6">
+      <CardContent className="p-6 space-y-6">
+        {dispatchJobs.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <PlannedInlineList
+              parentType="service_order_job"
+              parentIds={dispatchJobs.map(j => j.id)}
+              jobLabels={Object.fromEntries(dispatchJobs.map(j => [j.id, j.title || `#${j.id}`]))}
+              kind="time"
+            />
+            <PlannedInlineList
+              parentType="service_order_job"
+              parentIds={dispatchJobs.map(j => j.id)}
+              jobLabels={Object.fromEntries(dispatchJobs.map(j => [j.id, j.title || `#${j.id}`]))}
+              kind="expense"
+            />
+          </div>
+        )}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Time Tracking Section */}
         <div>
           <div className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <h3 className="text-sm font-medium">
-              {t('dispatches.time_booking.title', 'Time Tracking')} ({timeEntries.length})
-            </h3>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-sm font-medium">
+                {t('dispatches.time_booking.title', 'Time Tracking')} ({timeEntries.length})
+              </h3>
+              {dispatchJobs.length > 0 && (
+                <PlannedTotalsBadge
+                  parentType="service_order_job"
+                  parentIds={dispatchJobs.map(j => j.id)}
+                  kind="time"
+                  actual={Math.round(totalHours * 60)}
+                />
+              )}
+            </div>
             <Button 
               size="sm"
               variant="outline"
@@ -862,9 +890,19 @@ export function DispatchTimeExpensesTab({
         {/* Expense Tracking Section */}
         <div>
           <div className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <h3 className="text-sm font-medium">
-              {t('dispatches.expense_booking.title', 'Expense Tracking')} ({expenses.length})
-            </h3>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-sm font-medium">
+                {t('dispatches.expense_booking.title', 'Expense Tracking')} ({expenses.length})
+              </h3>
+              {dispatchJobs.length > 0 && (
+                <PlannedTotalsBadge
+                  parentType="service_order_job"
+                  parentIds={dispatchJobs.map(j => j.id)}
+                  kind="expense"
+                  actual={totalExpenses}
+                />
+              )}
+            </div>
             <Button 
               size="sm"
               variant="outline"

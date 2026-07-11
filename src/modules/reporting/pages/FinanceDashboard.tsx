@@ -69,7 +69,7 @@ export const FinanceDashboard = () => {
               const Icon = iconByIdx[i] || Wallet;
               const tone = k.ragStatus === 'green' ? 'success' : k.ragStatus === 'yellow' ? 'warning' : k.ragStatus === 'red' ? 'destructive' : 'info';
               return (
-                <KpiCard key={i} icon={Icon} tone={tone as any} value={k.formattedValue} label={k.title} trend={k.trend} rag={k.ragStatus as any} trendDirection={!k.trend ? 'neutral' : k.trend.startsWith('-') ? 'down' : 'up'} />
+                <KpiCard favorite={{ id: `f-kpi-${i}`, title: k.title, source: SOURCE }} key={i} icon={Icon} tone={tone as any} value={k.formattedValue} label={k.title} trend={k.trend} rag={k.ragStatus as any} trendDirection={!k.trend ? 'neutral' : k.trend.startsWith('-') ? 'down' : 'up'} />
               );
             })}
           </div>

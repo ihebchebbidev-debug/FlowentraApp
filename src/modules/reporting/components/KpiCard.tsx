@@ -1,6 +1,7 @@
-import { ArrowUp, ArrowDown, Minus, LucideIcon } from 'lucide-react';
+import { ArrowUp, ArrowDown, Minus, LucideIcon, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { RagDot, RagStatus } from './RagDot';
+import { useFavoritesStore, FavoriteWidget } from '../store/useFavoritesStore';
 
 export type KpiTone = 'primary' | 'accent' | 'info' | 'success' | 'warning' | 'destructive' | 'purple';
 
@@ -14,6 +15,7 @@ interface KpiCardProps {
   trendDirection?: 'up' | 'down' | 'neutral';
   rag?: RagStatus;
   suffix?: React.ReactNode;
+  favorite?: FavoriteWidget;
 }
 
 const toneMap: Record<KpiTone, { bg: string; fg: string; corner: string }> = {
@@ -36,11 +38,14 @@ export const KpiCard = ({
   trendDirection = 'neutral',
   rag,
   suffix,
+  favorite,
 }: KpiCardProps) => {
   const t = toneMap[tone];
   const TrendIcon = trendDirection === 'up' ? ArrowUp : trendDirection === 'down' ? ArrowDown : Minus;
   const trendCls =
     trendDirection === 'up' ? 'text-success' : trendDirection === 'down' ? 'text-destructive' : 'text-muted-foreground';
+  const { has, toggle } = useFavoritesStore();
+  const isFav = favorite ? has(favorite.id) : false;
 
   return (
     <div className="relative overflow-hidden rounded-lg border bg-card p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
@@ -48,11 +53,24 @@ export const KpiCard = ({
         aria-hidden
         className={cn('absolute right-0 top-0 h-14 w-14 rounded-bl-[3.5rem] opacity-[0.08]', t.corner)}
       />
+      {favorite && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); toggle(favorite); }}
+          aria-label={isFav ? 'Unpin from My Dashboard' : 'Pin to My Dashboard'}
+          className={cn(
+            'absolute right-1.5 top-1.5 z-10 flex h-6 w-6 items-center justify-center rounded transition',
+            isFav ? 'text-warning' : 'text-muted-foreground/60 hover:text-warning'
+          )}
+        >
+          <Star className={cn('h-3.5 w-3.5', isFav && 'fill-current')} />
+        </button>
+      )}
       <div className="flex items-center justify-between">
         <div className={cn('flex h-8 w-8 items-center justify-center rounded-md', t.bg)}>
           <Icon className={cn('h-4 w-4', t.fg)} />
         </div>
-        <div className="flex items-center gap-2">
+        <div className={cn('flex items-center gap-2', favorite && 'mr-7')}>
           {rag && <RagDot status={rag} />}
           {tag && (
             <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-muted-foreground">

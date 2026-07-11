@@ -38,6 +38,8 @@ import { format } from "date-fns";
 import { logDispatchActivityWithPropagation } from "@/services/activityLogger";
 
 import { API_URL } from '@/config/api';
+import { PlannedInlineList } from "@/shared/components/planning/PlannedInlineList";
+import { PlannedTotalsBadge } from "@/shared/components/planning/OverrunBadge";
 
 // Service order material type (comes from SO API)
 interface ServiceOrderMaterial {
@@ -564,12 +566,30 @@ export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onData
 
   return (
     <>
+      {dispatchJobs.length > 0 && (
+        <div className="mb-4">
+          <PlannedInlineList
+            parentType="service_order_job"
+            parentIds={dispatchJobs.map(j => j.id)}
+            jobLabels={Object.fromEntries(dispatchJobs.map(j => [j.id, j.title || `#${j.id}`]))}
+            kind="material"
+          />
+        </div>
+      )}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Wrench className="h-4 w-4 text-primary" />
               {t('materials_tab.materials_used')} ({materials.length})
+              {dispatchJobs.length > 0 && (
+                <PlannedTotalsBadge
+                  parentType="service_order_job"
+                  parentIds={dispatchJobs.map(j => j.id)}
+                  kind="material"
+                  actual={totalCost}
+                />
+              )}
             </CardTitle>
             <div className="flex items-center gap-2">
               {isMultiJob && (

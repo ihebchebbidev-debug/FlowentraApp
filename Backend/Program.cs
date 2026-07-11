@@ -263,11 +263,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         {
             ValidateIssuer = true,
             ValidateAudience = true,
-            ValidateLifetime = true,
+            // Session expiration disabled — tokens are accepted regardless of `exp`
+            // so users are never prompted to reconnect / re-login.
+            ValidateLifetime = false,
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"] ?? "MyApi",
             ValidAudience = builder.Configuration["Jwt:Audience"] ?? "MyApiClients",
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+            ClockSkew = TimeSpan.Zero
         };
     });
 
@@ -386,6 +389,7 @@ builder.Services.AddScoped<IPluginService, PluginService>();
 
 // Offline hydration module preferences (per user / tenant)
 builder.Services.AddScoped<IOfflineHydrationPreferencesService, OfflineHydrationPreferencesService>();
+builder.Services.AddScoped<MyApi.Modules.Reporting.Services.IReportingFavoritesService, MyApi.Modules.Reporting.Services.ReportingFavoritesService>();
 
 // User UI preferences (theme, layout) — /api/Preferences
 builder.Services.AddScoped<MyApi.Modules.Preferences.Services.IPreferenceService, MyApi.Modules.Preferences.Services.PreferenceService>();

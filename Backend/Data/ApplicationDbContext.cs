@@ -289,6 +289,9 @@ namespace MyApi.Data
 
         public DbSet<OfflineHydrationPreference> OfflineHydrationPreferences { get; set; }
 
+        // Reporting Module — pinned dashboard widgets per user/scope
+        public DbSet<MyApi.Modules.Reporting.Models.ReportingFavorite> ReportingFavorites { get; set; }
+
         // External Endpoints Module
         public DbSet<MyApi.Modules.ExternalEndpoints.Models.ExternalEndpoint> ExternalEndpoints { get; set; }
         public DbSet<MyApi.Modules.ExternalEndpoints.Models.ExternalEndpointLog> ExternalEndpointLogs { get; set; }
@@ -663,6 +666,18 @@ namespace MyApi.Data
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.ModulesJson).HasColumnType("jsonb").IsRequired();
                 entity.HasIndex(e => new { e.TenantId, e.UserId }).IsUnique();
+            });
+
+            modelBuilder.Entity<MyApi.Modules.Reporting.Models.ReportingFavorite>(entity =>
+            {
+                entity.ToTable("ReportingFavorites");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Scope).HasMaxLength(64).IsRequired();
+                entity.Property(e => e.WidgetId).HasMaxLength(200).IsRequired();
+                entity.Property(e => e.Title).HasMaxLength(300).IsRequired();
+                entity.Property(e => e.Source).HasMaxLength(40).IsRequired();
+                entity.HasIndex(e => new { e.TenantId, e.UserId, e.Scope, e.WidgetId }).IsUnique();
+                entity.HasIndex(e => new { e.TenantId, e.UserId, e.Scope, e.Position });
             });
 
             // External Endpoints Module configurations

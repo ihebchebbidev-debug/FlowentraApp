@@ -2,7 +2,7 @@
 // that flow through to service order jobs and gate dispatch overruns.
 import { apiFetch } from './api/apiClient';
 
-export type PlannedEntryKind = 'time' | 'expense';
+export type PlannedEntryKind = 'time' | 'expense' | 'material';
 export type PlannedExpenseType = 'travel' | 'per_diem' | 'materials' | 'subcontractor';
 export type PlannedParentType = 'offer_item' | 'sale_item' | 'service_order_job';
 
@@ -19,6 +19,11 @@ export interface PlannedLineEntry {
   plannedAmount?: number | null;
   currency?: string | null;
   description?: string | null;
+  articleId?: number | null;
+  articleName?: string | null;
+  quantity?: number | null;
+  unitPrice?: number | null;
+  unit?: string | null;
 }
 
 export interface CreatePlannedLineEntry {
@@ -30,6 +35,11 @@ export interface CreatePlannedLineEntry {
   plannedAmount?: number | null;
   currency?: string | null;
   description?: string | null;
+  articleId?: number | null;
+  articleName?: string | null;
+  quantity?: number | null;
+  unitPrice?: number | null;
+  unit?: string | null;
 }
 
 export interface PlanVsActualBucket {
@@ -100,3 +110,8 @@ export const sumPlannedExpenses = (entries: PlannedLineEntry[]): number =>
   entries
     .filter(e => e.kind === 'expense')
     .reduce((s, e) => s + (e.plannedAmount ?? 0), 0);
+
+export const sumPlannedMaterials = (entries: PlannedLineEntry[]): number =>
+  entries
+    .filter(e => e.kind === 'material')
+    .reduce((s, e) => s + (e.quantity ?? 0) * (e.unitPrice ?? 0), 0);

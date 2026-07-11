@@ -8,6 +8,7 @@ import { useDashboardData } from '../hooks/useDashboardData';
 import { ThemedBarChart } from '@/components/charts/ThemedBarChart';
 import { DonutChartComponent } from '@/components/charts/DonutChartComponent';
 import dayjs from 'dayjs';
+import { PinnedReportingWidgets } from './PinnedReportingWidgets';
 import {
   Users,
   FileText,
@@ -26,8 +27,6 @@ import {
   Wallet,
   ArrowUp,
   ArrowDown,
-  Plus,
-  LayoutDashboard,
 } from 'lucide-react';
 
 // ───────────────────────────────────────────────────────────────
@@ -172,11 +171,6 @@ export default function DashboardOverview() {
     return t('overview.greetingEvening', { defaultValue: 'Good evening' });
   }, [t]);
 
-  const quickActions = [
-    { label: t('overview.newSale', { defaultValue: 'New sale' }), to: '/dashboard/sales/add' },
-    { label: t('overview.newOffer', { defaultValue: 'New offer' }), to: '/dashboard/offers/add' },
-    { label: t('overview.newServiceOrder', { defaultValue: 'New service order' }), to: '/dashboard/field/service-orders/create' },
-  ];
 
   const {
     sales,
@@ -297,26 +291,17 @@ export default function DashboardOverview() {
   return (
     <div className="space-y-5 p-3 sm:p-5 max-w-[1600px] mx-auto">
       {/* ══ Header · greeting + quick actions ══ */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-[22px] font-bold leading-tight tracking-tight truncate">
-            {greeting}{user?.firstName ? `, ${user.firstName}` : ''} 👋
-          </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {dayjs().format('dddd, D MMMM YYYY')} · {t('overview.welcomeMessage', { defaultValue: "Here's an overview of your business" })}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {quickActions.map(a => (
-            <Button key={a.to} variant="outline" size="sm" className="gap-1.5" onClick={() => navigate(a.to)}>
-              <Plus className="h-3.5 w-3.5" /> {a.label}
-            </Button>
-          ))}
-          <Button size="sm" className="gap-1.5" onClick={() => navigate('/dashboard/dashboards')}>
-            <LayoutDashboard className="h-3.5 w-3.5" /> {t('overview.newDashboard', { defaultValue: 'New dashboard' })}
-          </Button>
-        </div>
+      <div className="min-w-0">
+        <h1 className="text-[22px] font-bold leading-tight tracking-tight truncate">
+          {greeting}{user?.firstName ? `, ${user.firstName}` : ''} 👋
+        </h1>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          {dayjs().format('dddd, D MMMM YYYY')} · {t('overview.welcomeMessage', { defaultValue: "Here's an overview of your business" })}
+        </p>
       </div>
+
+      {/* Pinned reporting widgets — user-customizable default dashboard */}
+      <PinnedReportingWidgets />
 
       {/* KPI row — the headline numbers, no section chrome */}
       {isLoading ? (

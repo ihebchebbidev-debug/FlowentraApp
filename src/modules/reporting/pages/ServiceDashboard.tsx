@@ -94,10 +94,10 @@ export const ServiceDashboard = () => {
       ) : (
         <>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <KpiCard icon={ClipboardList} tone="accent" tag="YTD" value={`${avgCompletion.toFixed(0)}%`} suffix="/ target 90%" label={t('service.kpi.completion', 'Completion Rate vs Target')} trend={avgCompletion >= 90 ? 'on target' : `${(90 - avgCompletion).toFixed(1)} pts below`} trendDirection={avgCompletion >= 90 ? 'up' : 'down'} rag={avgCompletion >= 90 ? 'green' : avgCompletion >= 75 ? 'yellow' : 'red'} />
-            <KpiCard icon={ClipboardList} tone="info" tag="LIVE" value={byStatusAll.reduce((s, o) => s + Number(o.value ?? 0), 0)} label={t('service.kpi.openWos', 'Work Orders')} trendDirection="down" />
-            <KpiCard icon={Truck} tone="warning" tag="LIVE" value={techs.length || '—'} label={t('service.kpi.dispatches', 'Active Technicians')} trendDirection="neutral" />
-            <KpiCard icon={Timer} tone="success" tag="YTD" value="94%" label={t('service.kpi.efficiency', 'Time Efficiency')} trend={t('service.kpi.vsPriorYear', 'vs prior year')} trendDirection="up" />
+            <KpiCard favorite={{ id: 'sv-kpi-comp', title: 'Completion Rate vs Target', source: SOURCE }} icon={ClipboardList} tone="accent" tag="YTD" value={`${avgCompletion.toFixed(0)}%`} suffix="/ target 90%" label={t('service.kpi.completion', 'Completion Rate vs Target')} trend={avgCompletion >= 90 ? 'on target' : `${(90 - avgCompletion).toFixed(1)} pts below`} trendDirection={avgCompletion >= 90 ? 'up' : 'down'} rag={avgCompletion >= 90 ? 'green' : avgCompletion >= 75 ? 'yellow' : 'red'} />
+            <KpiCard favorite={{ id: 'sv-kpi-wo', title: 'Work Orders', source: SOURCE }} icon={ClipboardList} tone="info" tag="LIVE" value={byStatusAll.reduce((s, o) => s + Number(o.value ?? 0), 0)} label={t('service.kpi.openWos', 'Work Orders')} trendDirection="down" />
+            <KpiCard favorite={{ id: 'sv-kpi-techs', title: 'Active Technicians', source: SOURCE }} icon={Truck} tone="warning" tag="LIVE" value={techs.length || '—'} label={t('service.kpi.dispatches', 'Active Technicians')} trendDirection="neutral" />
+            <KpiCard favorite={{ id: 'sv-kpi-eff', title: 'Time Efficiency', source: SOURCE }} icon={Timer} tone="success" tag="YTD" value="94%" label={t('service.kpi.efficiency', 'Time Efficiency')} trend={t('service.kpi.vsPriorYear', 'vs prior year')} trendDirection="up" />
           </div>
 
           <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-3">

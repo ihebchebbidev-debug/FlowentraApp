@@ -31,12 +31,16 @@ interface AggregatedExpenseEntry extends Omit<ExpenseEntry, 'dispatchId'> {
 }
 
 import { DatePicker } from "@/components/ui/date-time-picker";
+import { PlannedInlineList } from "@/shared/components/planning/PlannedInlineList";
+import { PlannedTotalsBadge } from "@/shared/components/planning/OverrunBadge";
 
 interface TimeExpensesTabProps {
   serviceOrder: any;
   timeEntries?: any[];
   expenses?: any[];
   onUpdate?: () => void;
+  jobIds?: number[];
+  jobLabels?: Record<number, string>;
 }
 
 interface AggregatedTimeEntry {
@@ -59,7 +63,7 @@ interface AggregatedTimeEntry {
 
 import { API_URL } from '@/config/api';
 
-export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries, expenses: externalExpenses, onUpdate }: TimeExpensesTabProps) {
+export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries, expenses: externalExpenses, onUpdate, jobIds = [], jobLabels }: TimeExpensesTabProps) {
   const { t } = useTranslation('service_orders');
   const location = useLocation();
   
@@ -758,7 +762,25 @@ export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries
 
   return (
     <div className="space-y-6">
-      {/* Summary Cards */}
+      {/* Planned rows (inline, tagged with a "Planned" badge) */}
+      {jobIds.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <PlannedInlineList
+            parentType="service_order_job"
+            parentIds={jobIds}
+            jobLabels={jobLabels}
+            kind="time"
+            currency={(serviceOrder as any)?.currency || 'TND'}
+          />
+          <PlannedInlineList
+            parentType="service_order_job"
+            parentIds={jobIds}
+            jobLabels={jobLabels}
+            kind="expense"
+            currency={(serviceOrder as any)?.currency || 'TND'}
+          />
+        </div>
+      )}
 
       {isLoadingAggregatedData ? (
         <ContentSkeleton rows={8} />
@@ -767,9 +789,19 @@ export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries
           {/* Time Tracking Section */}
           <div>
             <div className="flex flex-row items-center justify-between space-y-0 pb-4">
-              <h3 className="text-sm font-medium">
-                {t('time_booking.title')} ({aggregatedTimeEntries.length})
-              </h3>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-sm font-medium">
+                  {t('time_booking.title')} ({aggregatedTimeEntries.length})
+                </h3>
+                {jobIds.length > 0 && (
+                  <PlannedTotalsBadge
+                    parentType="service_order_job"
+                    parentIds={jobIds}
+                    kind="time"
+                    actual={aggregatedTimeEntries.reduce((s, e) => s + (e.duration || 0), 0)}
+                  />
+                )}
+              </div>
               <Dialog open={isTimeDialogOpen} onOpenChange={setIsTimeDialogOpen}>
                 <DialogTrigger asChild>
                   <Button 
@@ -1070,9 +1102,20 @@ export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries
           {/* Expense Tracking Section */}
           <div>
             <div className="flex flex-row items-center justify-between space-y-0 pb-4">
-              <h3 className="text-sm font-medium">
-                {t('expense_booking.title')} ({aggregatedExpenses.length})
-              </h3>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-sm font-medium">
+                  {t('expense_booking.title')} ({aggregatedExpenses.length})
+                </h3>
+                {jobIds.length > 0 && (
+                  <PlannedTotalsBadge
+                    parentType="service_order_job"
+                    parentIds={jobIds}
+                    kind="expense"
+                    actual={aggregatedExpenses.reduce((s, e) => s + (e.amount || 0), 0)}
+                    currency={(serviceOrder as any)?.currency || 'TND'}
+                  />
+                )}
+              </div>
               <Dialog open={isExpenseDialogOpen} onOpenChange={setIsExpenseDialogOpen}>
                 <DialogTrigger asChild>
                   <Button 
