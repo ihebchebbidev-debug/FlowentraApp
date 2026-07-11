@@ -19,7 +19,7 @@
     "emptyState": "No FAQs match your search. Try different keywords."
   },
   "support": {
-    "title": "Support Center",
+    "title": "Service Desk",
     "subtitle": "Get help and find answers",
     "categories": "Support Categories",
     "popularArticles": "Popular Articles",
@@ -356,7 +356,7 @@
     "settings": "Settings"
   },
   "supportChoice": {
-    "title": "Support",
+    "title": "Service Desk",
     "subtitle": "How can we help you today?",
     "createTicket": "Report an Issue",
     "createTicketDesc": "Describe a problem and our team will handle it",
@@ -364,7 +364,7 @@
     "viewTicketsDesc": "Check the status of your submitted tickets"
   },
   "plugin": {
-    "name": "Support",
+    "name": "Service Desk",
     "description": "Customer support tickets and case management.",
     "category": "Comms"
   }

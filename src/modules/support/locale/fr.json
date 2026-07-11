@@ -19,7 +19,7 @@
     "emptyState": "Aucune FAQ ne correspond à votre recherche. Essayez d'autres mots-clés."
   },
   "support": {
-    "title": "Centre de Support",
+    "title": "Service Desk",
     "subtitle": "Obtenez de l'aide et trouvez des réponses",
     "categories": "Catégories de Support",
     "popularArticles": "Articles Populaires",
@@ -356,7 +356,7 @@
     "settings": "Paramètres"
   },
   "supportChoice": {
-    "title": "Support",
+    "title": "Service Desk",
     "subtitle": "Comment pouvons-nous vous aider aujourd'hui ?",
     "createTicket": "Signaler un problème",
     "createTicketDesc": "Décrivez un problème et notre équipe s'en occupera",
@@ -364,7 +364,7 @@
     "viewTicketsDesc": "Consultez l'état de vos tickets soumis"
   },
   "plugin": {
-    "name": "Support",
+    "name": "Service Desk",
     "description": "Tickets de support client et gestion des cas.",
     "category": "Comms"
   }

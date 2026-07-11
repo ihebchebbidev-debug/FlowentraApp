@@ -9,7 +9,7 @@ const TicketsAdminPage = lazyWithRetry(() => import("@/pages/TicketsAdminPage"))
 
 // Lazy load CRM Dashboard for better initial load
 const DashboardOverview = lazyWithRetry(() => import("./DashboardOverview"));
-const DashboardBuilderPage = lazyWithRetry(() => import("@/modules/dashboard-builder/components/DashboardManager").then(m => ({ default: m.DashboardManager })));
+// Dashboard builder removed — only a single default dashboard is shown.
 // Lazy load heavy table/data modules for better performance
 const ContactsModule = lazyWithRetry(() => import("@/modules/contacts/ContactsModule").then(m => ({ default: m.ContactsModule })));
 const SuppliersModule = lazyWithRetry(() => import("@/modules/contacts/SuppliersModule").then(m => ({ default: m.SuppliersModule })));
@@ -51,11 +51,8 @@ export function DashboardContent() {
             <DashboardOverview />
           </Suspense>
         } />
-        <Route path="dashboards" element={
-          <Suspense fallback={<PageSkeleton />}>
-            <DashboardBuilderPage />
-          </Suspense>
-        } />
+        <Route path="dashboards" element={<Navigate to="/dashboard" replace />} />
+
 
         <Route path="contacts/*" element={
           <PermissionRoute module="contacts" action="read">

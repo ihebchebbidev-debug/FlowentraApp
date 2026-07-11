@@ -35,6 +35,7 @@ export interface OnboardingData {
     primaryColor: string;
     layoutMode: 'sidebar' | 'topbar';
     dataView: 'table' | 'list' | 'grid';
+    currency: string;
   };
   workArea: string;
   companyInfo?: {
@@ -67,7 +68,8 @@ const Onboarding = () => {
       language: 'en',
       primaryColor: 'blue',
       layoutMode: 'sidebar',
-      dataView: 'table'
+      dataView: 'table',
+      currency: 'TND'
     },
     workArea: '',
     companyInfo: {

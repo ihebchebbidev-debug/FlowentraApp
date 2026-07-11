@@ -33,13 +33,7 @@
       "group": "workspace",
       "position": 0,
       "active": true,
-      "dropdown": [
-        {
-          "title": "dashboard_builder",
-          "url": "/dashboard/dashboards",
-          "description": "Custom dashboards"
-        }
-      ],
+      "dropdown": [],
       "meta": {}
     },
     {
@@ -370,8 +364,8 @@
       "iconName": "BarChart3",
       "group": "system",
       "position": 4,
-      "active": true,
-      "meta": {}
+      "active": false,
+      "meta": { "hidden": true }
     },
     {
       "id": "external-1111-1111-1111-111111111111",

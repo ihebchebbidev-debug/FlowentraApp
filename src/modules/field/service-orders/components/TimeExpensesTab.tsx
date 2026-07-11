@@ -30,15 +30,7 @@ interface AggregatedExpenseEntry extends Omit<ExpenseEntry, 'dispatchId'> {
   source?: 'dispatch' | 'service-order';
 }
 
-// DatePicker fallback - use Input type="date" if no DatePicker component exists
-const DatePicker = ({ value, onChange, className }: { value?: Date; onChange: (date: Date | undefined) => void; className?: string }) => (
-  <Input
-    type="date"
-    className={className}
-    value={value ? format(value, 'yyyy-MM-dd') : ''}
-    onChange={(e) => onChange(e.target.value ? new Date(e.target.value) : undefined)}
-  />
-);
+import { DatePicker } from "@/components/ui/date-time-picker";
 
 interface TimeExpensesTabProps {
   serviceOrder: any;
@@ -141,6 +133,7 @@ export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries
   const [timeEntryMode, setTimeEntryMode] = useState<'duration' | 'range'>('duration');
   const [timeFrom, setTimeFrom] = useState('08:00');
   const [timeTo, setTimeTo] = useState('09:00');
+  const [timeEntryDate, setTimeEntryDate] = useState<Date>(new Date());
 
   const [isTimeDialogOpen, setIsTimeDialogOpen] = useState(false);
   const [isExpenseDialogOpen, setIsExpenseDialogOpen] = useState(false);
@@ -479,17 +472,19 @@ export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries
       let endTime: Date;
 
       if (timeEntryMode === 'range') {
-        // Use today's date with the from/to times
-        const today = new Date();
+        // Use the selected date with the from/to times
+        const day = timeEntryDate || new Date();
         const [fh, fm] = timeFrom.split(':').map(Number);
         const [th, tm] = timeTo.split(':').map(Number);
-        startTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), fh, fm);
-        endTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), th, tm);
+        startTime = new Date(day.getFullYear(), day.getMonth(), day.getDate(), fh, fm);
+        endTime = new Date(day.getFullYear(), day.getMonth(), day.getDate(), th, tm);
       } else {
-        // Calculate from duration
+        // Anchor the entry to the selected date, preserving current time-of-day.
         const now = new Date();
-        startTime = now;
-        endTime = new Date(now.getTime() + timeFormData.duration * 60000);
+        const anchor = new Date(timeEntryDate || now);
+        anchor.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), 0);
+        startTime = anchor;
+        endTime = new Date(anchor.getTime() + timeFormData.duration * 60000);
       }
       
       const entryData = {
@@ -861,6 +856,15 @@ export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries
                           ))}
                         </SelectContent>
                       </Select>
+                    </div>
+                    {/* Date picker */}
+                    <div>
+                      <Label>{t('time_booking.date', 'Date')}</Label>
+                      <DatePicker
+                        value={timeEntryDate}
+                        onChange={(d) => d && setTimeEntryDate(d)}
+                        placeholder={t('time_booking.pick_date', 'Pick a date')}
+                      />
                     </div>
                     {/* Mode Switch */}
                     <div className="flex items-center justify-between">

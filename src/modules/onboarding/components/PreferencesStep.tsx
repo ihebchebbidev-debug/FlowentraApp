@@ -5,9 +5,10 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { OnboardingData } from "../pages/Onboarding";
 import { useTheme } from "@/hooks/useTheme";
-import { Palette, Globe2, Sun, Moon, Monitor, ArrowLeft, ArrowRight, Sidebar, Layout, Table, List, Loader2, Check, Sparkles } from "lucide-react";
+import { Palette, Globe2, Sun, Moon, Monitor, ArrowLeft, ArrowRight, Sidebar, Layout, Table, List, Loader2, Check, Sparkles, Coins } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useLoading } from "@/shared/contexts/LoadingContext";
+import { SUPPORTED_CURRENCIES, DEFAULT_CURRENCY_CODE } from "@/lib/currencies";
 
 interface PreferencesStepProps {
   data: OnboardingData;
@@ -289,8 +290,38 @@ export function PreferencesStep({
         </SectionCard>
       </div>
 
-      {/* Bottom row: Layout & Data View side by side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+      {/* Bottom row: Layout, Data View, Currency */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+        {/* Currency Selection */}
+        <SectionCard>
+          <SectionHeader
+            icon={Coins}
+            title={t('onboarding.steps.preferences.currency.title', 'Currency')}
+            subtitle={t('onboarding.steps.preferences.currency.description', 'Applied across all invoices, offers and reports.')}
+            iconBg="bg-primary/10 text-primary"
+          />
+          <Select
+            value={formData.currency || DEFAULT_CURRENCY_CODE}
+            onValueChange={(value: string) => setFormData({ ...formData, currency: value })}
+          >
+            <SelectTrigger className="w-full bg-background">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-popover border shadow-lg z-50 max-h-72">
+              {SUPPORTED_CURRENCIES.map(c => (
+                <SelectItem key={c.code} value={c.code}>
+                  <span className="font-mono mr-2">{c.code}</span>
+                  <span className="text-muted-foreground text-xs">{c.symbol} · {c.name}</span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-[11px] text-muted-foreground mt-2">
+            {t('onboarding.steps.preferences.currency.hint', 'You can change this later in Settings.')}
+          </p>
+        </SectionCard>
+
+
         {/* Layout Mode */}
         <SectionCard>
           <SectionHeader

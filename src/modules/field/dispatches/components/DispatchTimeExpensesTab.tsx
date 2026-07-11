@@ -82,9 +82,10 @@ export function DispatchTimeExpensesTab({
     if (preselectedJobId != null && dispatchJobs.some(j => j.id === preselectedJobId)) return preselectedJobId;
     return dispatchJobs[0]?.id ?? null;
   };
-  // Only allow adding time/expenses when dispatch is in_progress (block closed, completed, cancelled, etc.)
-  const canAddEntries = dispatchStatus === 'in_progress';
-  const isClosedStatus = ['closed', 'completed', 'cancelled'].includes(dispatchStatus || '');
+  // Allow adding time/expenses while the dispatch is in progress OR after it's completed
+  // (late entries / corrections). Only truly closed or cancelled dispatches are locked.
+  const canAddEntries = ['in_progress', 'completed'].includes(dispatchStatus || '');
+  const isClosedStatus = ['closed', 'cancelled'].includes(dispatchStatus || '');
   const { t } = useTranslation('job-detail');
   const location = useLocation();
   
@@ -289,9 +290,10 @@ export function DispatchTimeExpensesTab({
   }, [expenseTypeLookups]);
 
   // Time entry form state
-  const [timeEntryMode, setTimeEntryMode] = useState<'times' | 'duration'>('times');
+  const [timeEntryMode, setTimeEntryMode] = useState<'times' | 'duration'>('duration');
   const [durationHours, setDurationHours] = useState(0);
   const [durationMinutes, setDurationMinutes] = useState(0);
+  const [durationDate, setDurationDate] = useState<Date>(new Date());
   const [timeFormData, setTimeFormData] = useState({
     workType: 'work',
     startTime: null as Date | null,
@@ -353,6 +355,7 @@ export function DispatchTimeExpensesTab({
     });
     setDurationHours(0);
     setDurationMinutes(0);
+    setDurationDate(new Date());
     // Pre-select the current job (falls back to the first) for multi-job dispatches.
     setSelectedTimeJobId(defaultJobId());
   };
@@ -377,8 +380,11 @@ export function DispatchTimeExpensesTab({
         return null;
       }
       const now = new Date();
-      const start = new Date(now.getTime() - totalMins * 60000);
-      return { startTime: start, endTime: now };
+      // Anchor the entry to the selected date, preserving current time-of-day as the end.
+      const anchor = new Date(durationDate);
+      anchor.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), 0);
+      const start = new Date(anchor.getTime() - totalMins * 60000);
+      return { startTime: start, endTime: anchor };
     }
     if (!timeFormData.startTime || !timeFormData.endTime) {
       toast.error(t('dispatches.time_booking.select_times', 'Please select start and end times'));
@@ -1061,6 +1067,14 @@ export function DispatchTimeExpensesTab({
               </>
             ) : (
               <div className="space-y-3">
+                <div>
+                  <Label className="mb-1 block">{t('dispatches.time_booking.date', 'Date')}</Label>
+                  <DatePicker
+                    value={durationDate}
+                    onChange={(d) => d && setDurationDate(d)}
+                    placeholder={t('dispatches.time_booking.pick_date', 'Pick a date')}
+                  />
+                </div>
                 <Label>{t('dispatches.time_booking.duration', 'Duration')}</Label>
                 <div className="flex items-center gap-3">
                   <div className="flex-1">

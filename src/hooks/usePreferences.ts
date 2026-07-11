@@ -264,16 +264,20 @@ export function usePreferencesManager() {
       if (userData) {
         try {
           const user = JSON.parse(userData);
-          
-          // ONLY MainAdminUser (id=1) can update preferences
-          // Regular users cannot modify - their updates are ignored on backend
-          if (user.id === 1) {
-            const result = await preferencesService.updateUserPreferencesWithUserId('1', newPreferences);
-            console.log('[usePreferences] MainAdminUser preferences updated:', result.message);
+
+          // Persist to backend for the CURRENT authenticated user.
+          // (The Auth API updates PreferencesJson on MainAdminUsers by id — do not
+          // hardcode id=1: multi-tenant admins have different ids.)
+          if (user?.id != null) {
+            const result = await preferencesService.updateUserPreferencesWithUserId(
+              String(user.id),
+              newPreferences
+            );
+            console.log('[usePreferences] Preferences persisted for user', user.id, ':', result.message);
           } else {
-            console.warn('[usePreferences] Regular users cannot update preferences - only MainAdminUser can');
+            console.warn('[usePreferences] No user.id in user_data — saving locally only');
           }
-          
+
           // Always save locally for immediate effect
           preferencesService.savePreferencesLocally(newPreferences as UserPreferences);
         } catch (parseError) {

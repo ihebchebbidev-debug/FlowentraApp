@@ -21,17 +21,18 @@ export const dispatchStatusConfig: EntityStatusConfig = {
     { id: 'pending',    translationKey: 'dispatches.statuses.pending',    workflowTranslationKey: 'status.dispatch.pending',    color: 'default',     isTerminal: false },
     { id: 'planned',    translationKey: 'dispatches.statuses.planned',    workflowTranslationKey: 'status.dispatch.planned',    color: 'info',        isTerminal: false },
     { id: 'assigned',   translationKey: 'dispatches.statuses.assigned',   workflowTranslationKey: 'status.dispatch.assigned',   color: 'info',        isTerminal: false },
+    // id kept as 'confirmed' for backend/workflow compatibility; label is "Released" per customer.
     { id: 'confirmed',  translationKey: 'dispatches.statuses.confirmed',  workflowTranslationKey: 'status.dispatch.confirmed',  color: 'primary',     isTerminal: false },
-    { id: 'rejected',   translationKey: 'dispatches.statuses.rejected',   workflowTranslationKey: 'status.dispatch.rejected',   color: 'destructive', isTerminal: false, isNegative: true },
+    { id: 'rejected',   translationKey: 'dispatches.statuses.rejected',   workflowTranslationKey: 'status.dispatch.rejected',   color: 'destructive', isTerminal: true,  isNegative: true },
     { id: 'in_progress', translationKey: 'dispatches.statuses.in_progress', workflowTranslationKey: 'status.dispatch.in_progress', color: 'primary', isTerminal: false },
     { id: 'completed',  translationKey: 'dispatches.statuses.completed',  workflowTranslationKey: 'status.dispatch.completed',  color: 'success',     isTerminal: true },
     { id: 'cancelled',  translationKey: 'dispatches.statuses.cancelled',  workflowTranslationKey: 'status.dispatch.cancelled',  color: 'destructive', isTerminal: true, isNegative: true },
   ],
 
   workflow: {
-    // Happy path: Pending → Planned → Assigned → Confirmed → In Progress → Completed
+    // Happy path: Pending → Planned → Assigned → Released → In Progress → Completed
     steps: ['planned', 'assigned', 'confirmed', 'in_progress', 'completed'],
-    terminalStatuses: ['completed', 'cancelled'],
+    terminalStatuses: ['completed', 'cancelled', 'rejected'],
     branchStatuses: {
       planned: ['rejected'],  // Rejection can branch from planned…
       assigned: ['rejected'], // …or after a technician was assigned

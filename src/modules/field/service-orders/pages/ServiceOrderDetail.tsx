@@ -21,6 +21,7 @@ import { ArrowLeft, Clock, Users, Package, Calendar, CheckCircle, AlertCircle, U
 import { CollapsibleSearch } from "@/components/ui/collapsible-search";
 import { JobsTable } from "../components/JobsTable";
 import { DispatchesTable } from "../components/DispatchesTable";
+import { PlanDispatchModal } from "../components/PlanDispatchModal";
 import { ServiceOrderStatusFlow, type ServiceOrderStatus } from "../components/ServiceOrderStatusFlow";
 import { TimeExpensesTab } from "../components/TimeExpensesTab";
 import { MaterialsTab } from "../components/MaterialsTab";
@@ -244,6 +245,7 @@ export default function ServiceOrderDetail() {
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [jobConversionMode, setJobConversionMode] = useState<'installation' | 'service'>('installation');
+  const [isPlanDispatchOpen, setIsPlanDispatchOpen] = useState(false);
 
   // Status flow management - uses actual backend status IDs directly (no mapping needed)
   const [currentStatusFlow, setCurrentStatusFlow] = useState<ServiceOrderStatus>('pending');
@@ -1355,6 +1357,16 @@ export default function ServiceOrderDetail() {
           <TabsContent value="dispatches">
             <Card>
               <CardContent>
+                <div className="flex items-center justify-end pt-4">
+                  <Button
+                    size="sm"
+                    onClick={() => setIsPlanDispatchOpen(true)}
+                    disabled={!serviceOrder || mappedJobs.length === 0}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    {t('plan_dispatch.button')}
+                  </Button>
+                </div>
                 <DispatchesTable
                   dispatches={mappedDispatches}
                   onDispatchUpdate={handleRefresh}
@@ -1387,10 +1399,7 @@ export default function ServiceOrderDetail() {
                           parentId={Number(j.id)}
                           currency={(serviceOrderForComponents as any)?.currency || 'TND'}
                         />
-                        {/* Checklists carried from the offer/sale service line. */}
-                        {Number(j.id) > 0 && (
-                          <ChecklistsSection entityType="service_order_job" entityId={Number(j.id)} />
-                        )}
+                        {/* Checklists are shown in the dedicated Checklists tab, not per job here. */}
                       </div>
                     ))}
                   </CardContent>
@@ -1447,6 +1456,29 @@ export default function ServiceOrderDetail() {
             />
           </TabsContent>
         </Tabs>
+
+        {serviceOrder && (
+          <PlanDispatchModal
+            open={isPlanDispatchOpen}
+            onOpenChange={setIsPlanDispatchOpen}
+            serviceOrder={{
+              id: serviceOrder.id,
+              siteAddress: (serviceOrder as any).siteAddress,
+              contactId: (serviceOrder as any).contactId,
+            }}
+            jobs={mappedJobs.map(j => ({
+              id: j.id,
+              title: j.title,
+              status: j.status,
+              installationId: j.installationId || undefined,
+              installationName: j.installationName || undefined,
+              estimatedDuration: j.estimatedDuration,
+            }))}
+            jobConversionMode={jobConversionMode}
+            onCreated={handleRefresh}
+          />
+        )}
+
 
         <ProfessionalShareModal
           isOpen={isShareModalOpen}
