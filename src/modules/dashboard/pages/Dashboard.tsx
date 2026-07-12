@@ -1,5 +1,6 @@
 import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/modules/dashboard/components/AppSidebar";
+import { WorkspaceSidebar } from "@/modules/dashboard/components/WorkspaceSidebar";
+import { MobileWorkspaceNav } from "@/modules/dashboard/components/MobileWorkspaceNav";
 import { DashboardHeader } from "@/modules/dashboard/components/DashboardHeader";
 import { DashboardContent } from "@/modules/dashboard/components/DashboardContent";
 import { TopNavigation } from "@/components/navigation/TopNavigation";
@@ -34,7 +35,7 @@ function DashboardLayout() {
       <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-background">
         <ProductTour isRunning={isRunning} onEnd={endTour} />
         <CommandPalette />
-        <TopNavigation />
+        <MobileWorkspaceNav />
         <main className="min-w-0 flex-1 overflow-x-hidden">
           <DashboardContent />
         </main>
@@ -85,7 +86,7 @@ function DashboardLayout() {
 
     return (
       <>
-        <AppSidebar />
+        <WorkspaceSidebar />
         <div className="min-w-0 flex-1 flex flex-col relative">
           <DashboardHeader />
           <main className="min-w-0 flex-1 overflow-auto overflow-x-hidden">
