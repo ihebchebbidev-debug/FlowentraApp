@@ -1,6 +1,12 @@
-import React from "react";
-import { ChevronRight, Check, X, Loader2 } from "lucide-react";
+import React, { useMemo } from "react";
+import { Check, X, Loader2, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export interface StatusStepDef {
   id: string;
@@ -11,20 +17,37 @@ export interface StatusStepDef {
 }
 
 export interface StatusFlowStepperProps {
+  /** Ordered list of workflow step ids (happy path). */
   steps: string[];
   currentStatus: string;
   getStepDef: (id: string) => StatusStepDef;
   onAdvance?: (statusId: string) => void;
   onBack?: (statusId: string) => void;
+  /** Branch/alternate next-statuses available from the current step. */
   branches?: string[];
   isUpdating?: boolean;
   disabled?: boolean;
   updatingLabel?: string;
+  /** @deprecated kept for API compatibility. */
   layoutIdPrefix?: string;
+  /** @deprecated kept for API compatibility. */
   prevStepId?: string | null;
+  /** @deprecated kept for API compatibility. */
   nextStepId?: string | null;
 }
 
+/**
+ * Creatio-style horizontal status pipeline.
+ * Renders every workflow step as a connected chevron segment:
+ *   • completed steps → success (green) filled
+ *   • current step    → success (green) highlighted + dropdown arrow if there
+ *                       are branch/alternate choices (multi-choice)
+ *   • future steps    → muted, clickable to advance forward one step
+ *   • negative terminal (declined/cancelled/rejected) → destructive
+ *
+ * Responsive: full-width row that horizontally scrolls on narrow screens.
+ * Each segment enforces a minimum width so labels never truncate.
+ */
 export function StatusFlowStepper({
   steps,
   currentStatus,
@@ -35,229 +58,215 @@ export function StatusFlowStepper({
   isUpdating = false,
   disabled = false,
   updatingLabel = "Updating...",
-  layoutIdPrefix,
-  prevStepId: overridePrevStepId,
-  nextStepId: overrideNextStepId,
 }: StatusFlowStepperProps) {
-  const currentIndex = steps.indexOf(currentStatus);
-  const validCurrentIndex = currentIndex >= 0 ? currentIndex : 0;
-  
   const currentDef = getStepDef(currentStatus);
-  const isTerminal = currentDef?.isTerminal;
+  const isCurrentTerminal = !!currentDef?.isTerminal;
+  const isCurrentNegative = !!currentDef?.isNegative;
 
-  // Find previous step if not at the beginning
-  const computedPrevStepId = validCurrentIndex > 0 ? steps[validCurrentIndex - 1] : null;
-  const computedNextStepId = validCurrentIndex < steps.length - 1 && !isTerminal ? steps[validCurrentIndex + 1] : null;
+  // Effective step list: guarantee the current status is visible, even if it's
+  // a terminal/negative branch outside the happy path (e.g. declined, cancelled).
+  const effectiveSteps = useMemo(() => {
+    if (steps.includes(currentStatus)) return steps;
+    return [...steps, currentStatus];
+  }, [steps, currentStatus]);
 
-  const prevStepId = overridePrevStepId !== undefined ? overridePrevStepId : computedPrevStepId;
-  const nextStepId = overrideNextStepId !== undefined ? overrideNextStepId : computedNextStepId;
+  const currentIndex = effectiveSteps.indexOf(currentStatus);
+  const validCurrentIndex = currentIndex >= 0 ? currentIndex : 0;
 
-  // Don't show next if there are branches (unless we want to show both?)
-  // Actually, specs say: visible steps are previous + current + next OR branches
-  const hasBranches = branches.length > 0 && !isTerminal;
-  const showNext = !!nextStepId;
+  const canInteract = !disabled && !isUpdating;
+  const hasBranches = branches.length > 0 && !isCurrentTerminal;
 
-  const handleNext = () => {
-    if (disabled || isUpdating || !onAdvance || !nextStepId) return;
-    onAdvance(nextStepId);
-  };
-
-  const handleBranch = (branchId: string) => {
-    if (disabled || isUpdating || !onAdvance) return;
-    onAdvance(branchId);
-  };
-
-  const handlePrev = () => {
-    if (disabled || isUpdating || !onBack || !prevStepId) return;
-    onBack(prevStepId);
-  };
-
-  const StepBadge = ({
-    stepId,
-    type,
-    onClick,
-    isBranch = false
-  }: {
-    stepId: string;
-    type: "prev" | "current" | "next" | "branch";
-    onClick?: () => void;
-    isBranch?: boolean;
-  }) => {
-    const def = getStepDef(stepId);
-    if (!def) return null;
-
-    const isCurrent = type === "current";
-    const isPrev = type === "prev";
-    const isNext = type === "next";
-
-    // Content container based on type
-    const badgeContent = (() => {
-      // 1. Current Terminal
-      if (isCurrent && def.isTerminal) {
-        return (
-          <div
-            className={cn(
-              "flex items-center gap-1.5 px-2.5 py-1 rounded-md border transition-colors shadow-sm",
-              def.isNegative
-                ? "bg-destructive/8 border-destructive/20 text-destructive"
-                : "bg-success/8 border-success/20 text-success"
-            )}
-          >
-            {def.isNegative ? (
-              <X className="h-3 w-3 shrink-0" />
-            ) : (
-              <Check className="h-3 w-3 shrink-0" />
-            )}
-            <span className="text-xs font-semibold whitespace-nowrap">
-              {def.label}
-            </span>
-          </div>
-        );
-      }
-
-      // 2. Current Active
-      if (isCurrent) {
-        return (
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary/8 border border-primary/20 shadow-sm transition-colors text-primary">
-            {isUpdating ? (
-              <Loader2 className="h-3 w-3 shrink-0 animate-spin" />
-            ) : (
-              <div className="w-2 h-2 rounded-full bg-primary shrink-0" />
-            )}
-            <span className="text-xs font-semibold whitespace-nowrap">
-              {def.label}
-            </span>
-          </div>
-        );
-      }
-
-      // 3. Previous Step
-      if (isPrev) {
-        return (
-          <button
-            onClick={onClick}
-            disabled={disabled || isUpdating || !onBack}
-            className={cn(
-              "flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-colors text-muted-foreground/50",
-              onBack && !disabled && !isUpdating ? "hover:bg-muted/50 cursor-pointer" : "cursor-default"
-            )}
-          >
-            <Check className="h-3 w-3 shrink-0 text-muted-foreground/35" />
-            <span className="text-xs font-medium whitespace-nowrap">
-              {def.label}
-            </span>
-          </button>
-        );
-      }
-
-      // 4. Branch
-      if (isBranch) {
-        return (
-          <button
-            onClick={onClick}
-            disabled={disabled || isUpdating}
-            className={cn(
-              "flex items-center gap-1.5 px-2.5 py-1 rounded-md border transition-colors disabled:opacity-50 text-xs font-medium whitespace-nowrap cursor-pointer",
-              def.isNegative
-                ? "text-destructive/70 border-destructive/15 hover:bg-destructive/8"
-                : "text-success/70 border-success/15 hover:bg-success/8"
-            )}
-          >
-            {def.icon ? (
-               <span className="shrink-0 flex items-center justify-center [&>svg]:w-3 [&>svg]:h-3">{def.icon}</span>
-            ) : def.isNegative ? (
-              <X className="h-3 w-3 shrink-0" />
-            ) : (
-              <Check className="h-3 w-3 shrink-0" />
-            )}
-            <span>{def.label}</span>
-          </button>
-        );
-      }
-
-      // 5. Next Step
-      return (
-        <button
-          onClick={onClick}
-          disabled={disabled || isUpdating || !onAdvance}
-          className={cn(
-            "flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-colors text-muted-foreground/50",
-            onAdvance && !disabled && !isUpdating ? "hover:bg-muted/50 cursor-pointer" : "cursor-default"
-          )}
-        >
-          <div className="w-2 h-2 rounded-full border border-muted-foreground/25 shrink-0" />
-          <span className="text-xs font-medium whitespace-nowrap">
-             {def.label}
-          </span>
-        </button>
-      );
-    })();
-
-    return badgeContent;
+  const handleSegmentClick = (stepId: string, index: number) => {
+    if (!canInteract) return;
+    if (index === validCurrentIndex) return;
+    if (index < validCurrentIndex) {
+      onBack?.(stepId);
+      return;
+    }
+    // Only allow advancing exactly one step at a time via segment click.
+    if (index === validCurrentIndex + 1) {
+      onAdvance?.(stepId);
+    }
   };
 
   return (
-    <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-        
-        {isUpdating && !onAdvance && !onBack ? (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-muted/50 border border-border">
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-            <span className="text-xs font-medium text-muted-foreground">
-              {updatingLabel}
-            </span>
+    <div
+      className="w-full flex items-stretch gap-0 py-0.5 overflow-x-auto sm:overflow-visible no-scrollbar"
+      role="list"
+      aria-label="Status pipeline"
+    >
+      {effectiveSteps.map((stepId, index) => {
+        const def = getStepDef(stepId);
+        if (!def) return null;
+
+        const isCompleted = index < validCurrentIndex;
+        const isCurrent = index === validCurrentIndex;
+        const isFuture = index > validCurrentIndex;
+        const isFirst = index === 0;
+        const isLast = index === effectiveSteps.length - 1;
+
+        // Colour tier
+        const tone = (() => {
+          if (isCurrent && isCurrentNegative) return "negative-current";
+          if (isCurrent) return "current";
+          if (isCompleted) return "done";
+          if (def.isNegative) return "negative-future";
+          return "future";
+        })();
+
+        const toneClasses: Record<string, string> = {
+          done: "bg-success text-success-foreground hover:bg-success/90",
+          current: "bg-success text-success-foreground ring-1 ring-success/40 shadow-sm",
+          "negative-current":
+            "bg-destructive text-destructive-foreground ring-1 ring-destructive/40 shadow-sm",
+          future:
+            "bg-muted-foreground/25 text-foreground/80 hover:bg-muted-foreground/35 border-y border-r border-border/60",
+          "negative-future":
+            "bg-muted-foreground/20 text-foreground/70 hover:bg-destructive/15 border-y border-r border-border/60",
+        };
+        if (isFirst) {
+          toneClasses.future = toneClasses.future.replace("border-r", "border");
+          toneClasses["negative-future"] = toneClasses["negative-future"].replace(
+            "border-r",
+            "border"
+          );
+        }
+
+        // Chevron shape via clip-path. First segment gets a flat left edge,
+        // last segment gets a flat right edge.
+        const clipStyle: React.CSSProperties = (() => {
+          const notch = 12; // px
+          if (isFirst && isLast) return {};
+          if (isFirst) {
+            return {
+              clipPath: `polygon(0 0, calc(100% - ${notch}px) 0, 100% 50%, calc(100% - ${notch}px) 100%, 0 100%)`,
+            };
+          }
+          if (isLast) {
+            return {
+              clipPath: `polygon(0 0, 100% 0, 100% 100%, 0 100%, ${notch}px 50%)`,
+            };
+          }
+          return {
+            clipPath: `polygon(0 0, calc(100% - ${notch}px) 0, 100% 50%, calc(100% - ${notch}px) 100%, 0 100%, ${notch}px 50%)`,
+          };
+        })();
+
+        const clickable =
+          canInteract &&
+          !isCurrent &&
+          (index < validCurrentIndex || index === validCurrentIndex + 1);
+
+        // The current segment is interactive only when it has branch choices
+        // (dropdown menu). Otherwise it's inert but not visually disabled.
+        const isCurrentBranchTrigger = isCurrent && hasBranches && canInteract;
+        const buttonEnabled = clickable || isCurrentBranchTrigger;
+
+        const paddingLeft = isFirst ? "pl-3 sm:pl-4" : "pl-5 sm:pl-6";
+        const paddingRight = isLast ? "pr-3 sm:pr-4" : "pr-4 sm:pr-5";
+
+        const segment = (
+          <button
+            type="button"
+            role="listitem"
+            aria-current={isCurrent ? "step" : undefined}
+            disabled={!buttonEnabled}
+            onClick={isCurrentBranchTrigger ? undefined : () => handleSegmentClick(stepId, index)}
+            style={clipStyle}
+            className={cn(
+              "relative flex w-full items-center justify-center gap-1.5 h-9 sm:h-10",
+              "text-[11px] sm:text-xs font-semibold whitespace-nowrap transition-colors",
+              paddingLeft,
+              paddingRight,
+              toneClasses[tone],
+              buttonEnabled ? "cursor-pointer" : "cursor-default",
+              !clickable && !isCurrent && isFuture && "opacity-95"
+            )}
+          >
+
+            {isCurrent && isUpdating ? (
+              <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
+            ) : isCompleted ? (
+              <Check className="h-3.5 w-3.5 shrink-0 opacity-90" />
+            ) : isCurrent && isCurrentNegative ? (
+              <X className="h-3.5 w-3.5 shrink-0" />
+            ) : isCurrent ? (
+              <span className="h-2 w-2 rounded-full bg-current shrink-0" />
+            ) : def.icon ? (
+              <span className="shrink-0 flex items-center [&>svg]:w-3.5 [&>svg]:h-3.5">
+                {def.icon}
+              </span>
+            ) : (
+              <span className="h-1.5 w-1.5 rounded-full bg-current/40 shrink-0" />
+            )}
+            <span className="truncate">{def.label}</span>
+            {isCurrent && hasBranches && (
+              <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-90" aria-hidden />
+            )}
+          </button>
+        );
+
+        // Wrap the current segment in a dropdown when there are branches.
+        if (isCurrent && hasBranches) {
+          return (
+            <div
+              key={stepId}
+              className={cn(
+                "relative flex flex-1 min-w-[8rem] sm:min-w-0",
+                !isFirst && "-ml-3 sm:-ml-3.5"
+              )}
+            >
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild disabled={!canInteract}>
+                  {segment}
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="min-w-[10rem]">
+                  {branches.map((branchId) => {
+                    const bDef = getStepDef(branchId);
+                    if (!bDef) return null;
+                    return (
+                      <DropdownMenuItem
+                        key={branchId}
+                        onSelect={() => onAdvance?.(branchId)}
+                        className={cn(
+                          "gap-2 text-sm",
+                          bDef.isNegative && "text-destructive focus:text-destructive"
+                        )}
+                      >
+                        {bDef.isNegative ? (
+                          <X className="h-3.5 w-3.5" />
+                        ) : (
+                          <Check className="h-3.5 w-3.5 text-success" />
+                        )}
+                        <span>{bDef.label}</span>
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          );
+        }
+
+        return (
+          <div
+            key={stepId}
+            className={cn(
+              "relative flex flex-1 min-w-[8rem] sm:min-w-0",
+              !isFirst && "-ml-3 sm:-ml-3.5"
+            )}
+          >
+            {segment}
           </div>
-        ) : (
-          <>
-            {/* Previous Step */}
-            {prevStepId && (
-              <>
-                <StepBadge 
-                  stepId={prevStepId} 
-                  type="prev" 
-                  onClick={handlePrev} 
-                />
-                <ChevronRight className="h-3.5 w-3.5 text-border shrink-0" />
-              </>
-            )}
+        );
+      })}
 
-            {/* Current Step */}
-            <StepBadge stepId={currentStatus} type="current" />
-
-            {/* Next Step */}
-            {showNext && (
-              <>
-                <ChevronRight className="h-3.5 w-3.5 text-border shrink-0" />
-                <StepBadge 
-                  stepId={nextStepId} 
-                  type="next" 
-                  onClick={handleNext} 
-                />
-              </>
-            )}
-
-            {/* Branches */}
-            {hasBranches && (
-              <>
-                <ChevronRight className="h-3.5 w-3.5 text-border shrink-0" />
-                <div className="flex items-center gap-1 sm:gap-1.5">
-                  {branches.map((branchId, idx) => (
-                    <React.Fragment key={branchId}>
-                      {idx > 0 && (
-                        <span className="text-[10px] text-muted-foreground/30">/</span>
-                      )}
-                      <StepBadge 
-                        stepId={branchId} 
-                        type="branch" 
-                        isBranch 
-                        onClick={() => handleBranch(branchId)} 
-                      />
-                    </React.Fragment>
-                  ))}
-                </div>
-              </>
-            )}
-          </>
-        )}
-      </div>
+      {isUpdating && !onAdvance && !onBack && (
+        <div className="ml-3 flex items-center gap-2 text-xs text-muted-foreground">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          <span>{updatingLabel}</span>
+        </div>
+      )}
+    </div>
   );
 }

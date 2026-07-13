@@ -406,7 +406,7 @@ export function OfferDetail() {
         </div>
 
         {/* ── Desktop Header – Compact Card Style ── */}
-        <div className="hidden md:block p-4 lg:p-6">
+        <div className="hidden md:block p-4 lg:p-6 space-y-3">
           <div className="flex items-center gap-4">
             {/* Back Button */}
             <Button
@@ -444,15 +444,9 @@ export function OfferDetail() {
                     <TenantSelector value={(offer as any)?.tenantId} readOnly compact onChange={() => {}} />
                   </div>
 
-                  {/* Right: Status Flow + Actions */}
+                  {/* Right: Actions only – status flow moved to its own row below */}
                   <div className="flex items-center gap-4 shrink-0">
-                    <OfferStatusFlow
-                      currentStatus={offer.status}
-                      onStatusChange={handleStatusFlowChange}
-                      disabled={actionLoading !== null}
-                      isUpdating={actionLoading !== null}
-                    />
-                    <div className="h-8 w-px bg-border/50" />
+
                     <TooltipProvider delayDuration={300}>
                       <div className="flex items-center gap-2">
                         <Tooltip>
@@ -516,7 +510,18 @@ export function OfferDetail() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Status pipeline – its own full-width row under the header card */}
+          <div className="pl-13">
+            <OfferStatusFlow
+              currentStatus={offer.status}
+              onStatusChange={handleStatusFlowChange}
+              disabled={actionLoading !== null}
+              isUpdating={actionLoading !== null}
+            />
+          </div>
         </div>
+
       </div>
 
       <div className="px-4 py-6 space-y-6">

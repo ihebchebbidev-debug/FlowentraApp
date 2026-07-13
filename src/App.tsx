@@ -337,6 +337,7 @@ const App = () => {
                     <Route path="/onboarding" element={<Onboarding />} />
                     {/* API Testing System */}
                     <Route path="/tests" element={<ApiTestsPage />} />
+
                     {/* Redirect standalone paths into dashboard so sidebar shows. PrefixRedirect preserves trailing segments (e.g. /sales/9 → /dashboard/sales/9). */}
                     <Route path="/offers" element={<Navigate to="/dashboard/offers" replace />} />
                     <Route path="/offers/*" element={<PrefixRedirect to="/dashboard/offers" />} />

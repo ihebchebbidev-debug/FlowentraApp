@@ -374,7 +374,7 @@ export function SaleDetail() {
         </div>
 
         {/* Desktop Header - Compact Card Style */}
-        <div className="hidden md:block p-4 lg:p-6">
+        <div className="hidden md:block p-4 lg:p-6 space-y-3">
           <div className="flex items-center gap-4">
             {/* Back Button */}
             <Button
@@ -407,16 +407,9 @@ export function SaleDetail() {
                     <TenantSelector value={(sale as any)?.tenantId} readOnly compact onChange={() => {}} />
                   </div>
 
-                  {/* Right: Status Flow + Actions */}
+                  {/* Right: Actions only – status pipeline moved below */}
                   <div className="flex items-center gap-4 shrink-0">
-                    <SaleStatusFlow
-                      currentStatus={sale.status}
-                      onStatusChange={handleStatusChange}
-                      sale={sale}
-                      isUpdating={isStatusUpdating}
-                    />
 
-                    <div className="h-8 w-px bg-border/50" />
 
                     <TooltipProvider delayDuration={300}>
                       <div className="flex items-center gap-2">
@@ -455,7 +448,18 @@ export function SaleDetail() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Status pipeline – own full-width row */}
+          <div className="pl-13">
+            <SaleStatusFlow
+              currentStatus={sale.status}
+              onStatusChange={handleStatusChange}
+              sale={sale}
+              isUpdating={isStatusUpdating}
+            />
+          </div>
         </div>
+
       </div>
 
       {/* Service Order Status Banner - Only shown when sale has service items */}

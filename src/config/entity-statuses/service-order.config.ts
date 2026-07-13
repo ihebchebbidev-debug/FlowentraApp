@@ -38,8 +38,8 @@ export const serviceOrderStatusConfig: EntityStatusConfig = {
   ],
 
   workflow: {
-    // Happy path: Pending → Ready for Planning → Scheduled → In Progress → Technically Completed → Ready for Invoice → Invoiced → Closed
-    steps: ['pending', 'ready_for_planning', 'scheduled', 'in_progress', 'technically_completed', 'ready_for_invoice', 'invoiced', 'closed'],
+    // Happy path: Pending → Ready for Planning → Planned → Scheduled → In Progress → Technically Completed → Ready for Invoice → Invoiced → Closed
+    steps: ['pending', 'ready_for_planning', 'planned', 'scheduled', 'in_progress', 'technically_completed', 'ready_for_invoice', 'invoiced', 'closed'],
     terminalStatuses: ['closed', 'cancelled'],
     branchStatuses: {
       // From in_progress, can branch to on_hold or partially_completed (based on dispatch status)

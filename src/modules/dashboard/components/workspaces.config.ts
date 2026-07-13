@@ -109,7 +109,7 @@ export const WORKSPACES: Workspace[] = [
     landingUrl: "/dashboard/tasks/projects",
     modules: [
       { key: "projects", label: "Projects", url: "/dashboard/tasks/projects", icon: "FolderKanban", pluginCode: "PL0004PROJECTS" },
-      { key: "tasks", label: "Tasks", url: "/dashboard/tasks", icon: "CheckSquare", pluginCode: "PL0011TASKS" },
+      { key: "contacts", label: "Contacts", url: "/dashboard/contacts", icon: "Users", pluginCode: "PL0001CONTACTS" },
       { key: "calendar", label: "Calendar", url: "/dashboard/calendar", icon: "Calendar", pluginCode: "PL0010CALENDAR" },
       { key: "documents", label: "Documents", url: "/dashboard/documents", icon: "Folder", pluginCode: "PL0012DOCUMENTS" },
     ],
