@@ -21,14 +21,11 @@ export const offerStatusConfig: EntityStatusConfig = {
   ],
 
   workflow: {
-    // Created → User can immediately choose: Accept OR Reject
-    // No intermediate "Sent" step
-    steps: ['draft'],
+    // Full pipeline rendered inline: Draft → Sent → Accepted (Declined shown as branch)
+    steps: ['draft', 'sent', 'accepted'],
     terminalStatuses: ['accepted', 'declined', 'cancelled'],
     branchStatuses: {
-      // From draft, user can directly accept or reject
       draft: ['accepted', 'declined'],
-      // For backward compatibility: old offers with "sent" status can also accept/reject
       sent: ['accepted', 'declined'],
     },
   },

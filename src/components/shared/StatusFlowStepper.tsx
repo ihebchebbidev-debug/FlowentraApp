@@ -1,5 +1,5 @@
-import React, { useMemo } from "react";
-import { Check, X, Loader2, ChevronDown } from "lucide-react";
+import React, { useEffect, useMemo, useRef } from "react";
+import { Check, X, Loader2, ChevronDown, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -59,13 +59,26 @@ export function StatusFlowStepper({
   disabled = false,
   updatingLabel = "Updating...",
 }: StatusFlowStepperProps) {
-  const currentDef = getStepDef(currentStatus);
+  const rawCurrentDef = getStepDef(currentStatus);
+  // Fallback: if the current status is unknown (no label from config), synthesize
+  // a safe display definition so the stepper never renders blank.
+  const isUnknownStatus =
+    !currentStatus || !rawCurrentDef || !rawCurrentDef.label;
+  const currentDef: StatusStepDef = isUnknownStatus
+    ? {
+        id: currentStatus || "unknown",
+        label: currentStatus
+          ? String(currentStatus).replace(/[_-]+/g, " ")
+          : "Unknown",
+      }
+    : rawCurrentDef;
   const isCurrentTerminal = !!currentDef?.isTerminal;
   const isCurrentNegative = !!currentDef?.isNegative;
 
   // Effective step list: guarantee the current status is visible, even if it's
   // a terminal/negative branch outside the happy path (e.g. declined, cancelled).
   const effectiveSteps = useMemo(() => {
+    if (!currentStatus) return steps;
     if (steps.includes(currentStatus)) return steps;
     return [...steps, currentStatus];
   }, [steps, currentStatus]);
@@ -75,6 +88,15 @@ export function StatusFlowStepper({
 
   const canInteract = !disabled && !isUpdating;
   const hasBranches = branches.length > 0 && !isCurrentTerminal;
+
+  const currentRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    currentRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+      inline: "center",
+    });
+  }, [currentStatus]);
 
   const handleSegmentClick = (stepId: string, index: number) => {
     if (!canInteract) return;
@@ -89,15 +111,58 @@ export function StatusFlowStepper({
     }
   };
 
+  // Safe wrapper: never return undefined — synthesize a readable label from the id.
+  const safeGetStepDef = (id: string): StatusStepDef => {
+    const d = getStepDef(id);
+    if (d && d.label) return d;
+    return {
+      id,
+      label: id ? String(id).replace(/[_-]+/g, " ") : "Unknown",
+    };
+  };
+
+  // Fallback UI: no steps configured at all → show the current status as a
+  // single, unmistakable pill so users still see where the entity stands.
+  if (effectiveSteps.length === 0) {
+    return (
+      <div
+        className="w-full flex items-center gap-2 py-0.5"
+        role="status"
+        aria-label="Current status"
+      >
+        <div
+          className={cn(
+            "inline-flex items-center gap-2 rounded-md px-3 py-2 text-xs sm:text-sm font-semibold",
+            isCurrentNegative
+              ? "bg-destructive/10 text-destructive ring-1 ring-destructive/30"
+              : isUnknownStatus
+                ? "bg-muted text-foreground ring-1 ring-border"
+                : "bg-success/10 text-success ring-1 ring-success/30"
+          )}
+        >
+          {isUnknownStatus ? (
+            <AlertCircle className="h-4 w-4 shrink-0" />
+          ) : isCurrentNegative ? (
+            <X className="h-4 w-4 shrink-0" />
+          ) : (
+            <Check className="h-4 w-4 shrink-0" />
+          )}
+          <span className="capitalize truncate">{currentDef.label}</span>
+          {isUpdating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
-      className="w-full flex items-stretch gap-0 py-0.5 overflow-x-auto sm:overflow-visible no-scrollbar"
+      className="w-full flex items-stretch gap-0 py-0.5 overflow-x-auto sm:overflow-visible no-scrollbar -mx-1 px-1 sm:mx-0 sm:px-0 snap-x snap-mandatory sm:snap-none"
       role="list"
       aria-label="Status pipeline"
     >
       {effectiveSteps.map((stepId, index) => {
-        const def = getStepDef(stepId);
-        if (!def) return null;
+        const def = safeGetStepDef(stepId);
+        const isUnknownSegment = index === validCurrentIndex && isUnknownStatus;
 
         const isCompleted = index < validCurrentIndex;
         const isCurrent = index === validCurrentIndex;
@@ -107,6 +172,7 @@ export function StatusFlowStepper({
 
         // Colour tier
         const tone = (() => {
+          if (isCurrent && isUnknownSegment) return "unknown-current";
           if (isCurrent && isCurrentNegative) return "negative-current";
           if (isCurrent) return "current";
           if (isCompleted) return "done";
@@ -119,6 +185,8 @@ export function StatusFlowStepper({
           current: "bg-success text-success-foreground ring-1 ring-success/40 shadow-sm",
           "negative-current":
             "bg-destructive text-destructive-foreground ring-1 ring-destructive/40 shadow-sm",
+          "unknown-current":
+            "bg-warning text-warning-foreground ring-1 ring-warning/40 shadow-sm",
           future:
             "bg-muted-foreground/25 text-foreground/80 hover:bg-muted-foreground/35 border-y border-r border-border/60",
           "negative-future":
@@ -186,6 +254,8 @@ export function StatusFlowStepper({
 
             {isCurrent && isUpdating ? (
               <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
+            ) : isCurrent && isUnknownSegment ? (
+              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
             ) : isCompleted ? (
               <Check className="h-3.5 w-3.5 shrink-0 opacity-90" />
             ) : isCurrent && isCurrentNegative ? (
@@ -199,37 +269,36 @@ export function StatusFlowStepper({
             ) : (
               <span className="h-1.5 w-1.5 rounded-full bg-current/40 shrink-0" />
             )}
-            <span className="truncate">{def.label}</span>
+            <span className="truncate capitalize">{def.label}</span>
             {isCurrent && hasBranches && (
               <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-90" aria-hidden />
             )}
           </button>
         );
 
+        const wrapperClass = cn(
+          "relative flex flex-1 min-w-[7rem] sm:min-w-0 snap-start sm:snap-align-none",
+          isCurrent && "min-w-[8.5rem]",
+          !isFirst && "-ml-3 sm:-ml-3.5"
+        );
+
         // Wrap the current segment in a dropdown when there are branches.
         if (isCurrent && hasBranches) {
           return (
-            <div
-              key={stepId}
-              className={cn(
-                "relative flex flex-1 min-w-[8rem] sm:min-w-0",
-                !isFirst && "-ml-3 sm:-ml-3.5"
-              )}
-            >
+            <div key={stepId} className={wrapperClass} ref={currentRef}>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild disabled={!canInteract}>
                   {segment}
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="min-w-[10rem]">
+                <DropdownMenuContent align="start" className="min-w-[12rem]">
                   {branches.map((branchId) => {
-                    const bDef = getStepDef(branchId);
-                    if (!bDef) return null;
+                    const bDef = safeGetStepDef(branchId);
                     return (
                       <DropdownMenuItem
                         key={branchId}
                         onSelect={() => onAdvance?.(branchId)}
                         className={cn(
-                          "gap-2 text-sm",
+                          "gap-2 text-sm capitalize",
                           bDef.isNegative && "text-destructive focus:text-destructive"
                         )}
                       >
@@ -251,10 +320,8 @@ export function StatusFlowStepper({
         return (
           <div
             key={stepId}
-            className={cn(
-              "relative flex flex-1 min-w-[8rem] sm:min-w-0",
-              !isFirst && "-ml-3 sm:-ml-3.5"
-            )}
+            className={wrapperClass}
+            ref={isCurrent ? currentRef : undefined}
           >
             {segment}
           </div>

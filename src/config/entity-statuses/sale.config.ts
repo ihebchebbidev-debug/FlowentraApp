@@ -21,13 +21,12 @@ export const saleStatusConfig: EntityStatusConfig = {
   ],
 
   workflow: {
-    // Happy path: Created → In Progress → Invoiced → Closed
-    steps: ['created', 'in_progress', 'invoiced', 'closed'],
+    // Full pipeline rendered inline: Created → In Progress → Partially Invoiced → Invoiced → Closed
+    steps: ['created', 'in_progress', 'partially_invoiced', 'invoiced', 'closed'],
     terminalStatuses: ['closed', 'cancelled'],
     branchStatuses: {
-      // After 'in_progress', can go to invoiced OR partially_invoiced
+      // After 'in_progress', can jump directly to invoiced OR go through partially_invoiced
       in_progress: ['invoiced', 'partially_invoiced'],
-      // After 'partially_invoiced', next is invoiced
       partially_invoiced: ['invoiced'],
     },
   },
