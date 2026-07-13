@@ -64,7 +64,7 @@ import { isViewAllMode } from '@/utils/tenant';
 import { CompanyBadge } from '@/components/CompanyBadge';
 import { useFilteredByCompany } from '@/components/CompanyFilter';
 import { CreateActionButton } from '@/components/CreateActionButton';
-import { getInitialViewMode } from '../../../hooks/getInitialViewMode';
+import { getInitialViewMode, useEnforceListOnMobile } from '../../../hooks/getInitialViewMode';
 import { OffersAutopilotDemo } from './onboarding/OffersAutopilotDemo';
 
 // Helper to calculate total amount from items including taxes
@@ -83,6 +83,7 @@ export function OffersList() {
   const navigate = useNavigate();
   const { canCreate, canRead, canUpdate, canDelete, isLoading: permissionsLoading, isMainAdmin } = usePermissions();
   const [viewMode, setViewMode] = useState<'list' | 'table' | 'kanban'>(() => getInitialViewMode(['list','table','kanban'] as const, 'table'));
+  useEnforceListOnMobile(viewMode, setViewMode, ['list','table','kanban'] as const);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | string>('all');
   const [showFilterBar, setShowFilterBar] = useState(false);

@@ -1,63 +1,63 @@
+
 ## Goal
 
-Remove the standalone "Plan vs Actual" statistics UI and the separate "Planned time & expenses" block on Service Orders and Dispatches. Instead, planned rows appear **inline** in the same Time / Expenses / Materials lists as actuals, visually tagged with a "Planned" badge and a different style. Users add planned rows via new **Plan Time / Plan Expense / Plan Materials** buttons that sit next to the existing "Add" buttons.
+Fix the awkward "in-between" viewport range (roughly 640–1024px) where the desktop layout is cramped but mobile hasn't kicked in yet, and — as the customer requested — remove the table view entirely on mobile across every module so only the list/card version remains.
 
-## Backend
+## Problem today
 
-1. **Extend `PlannedLineEntry`** (`Backend/Modules/Planning/Models/PlannedLineEntry.cs`) to support a third kind `material`:
-   - New nullable fields: `ArticleId (int?)`, `ArticleName (string?, 200)`, `Quantity (decimal(18,3)?)`, `UnitPrice (decimal(18,2)?)`, `Unit (string?, 20)`.
-   - Update `Kind` validation to accept `time | expense | material`.
-2. **Migration** `Backend/Migrations/20260712_PlannedLineEntries_AddMaterial.sql` — `ALTER TABLE PlannedLineEntries ADD COLUMN ...` for the five new columns (nullable, safe on existing rows).
-3. **DTOs** — extend `PlannedLineEntryDto` / `CreatePlannedLineEntryDto` with the same fields; service validates that `material` kind requires `ArticleId` (or `ArticleName`) and `Quantity > 0`.
-4. **`PlannedLineEntryService`**:
-   - `ValidateKind` — accept `material`, require quantity + (articleId or articleName).
-   - `Map`/create/update — persist the new columns.
-   - `GetPlanVsActualAsync` — planned material total feeds the existing `materials` expense bucket for backwards-compat totals.
+- `MOBILE_BREAKPOINT = 768` in `use-mobile.tsx`, `useLayoutMode.ts`, and `getInitialViewMode.ts`. Between 768–1100px the sidebar, headers and tables render at desktop widths but with almost no room, producing horizontal scroll and cramped controls.
+- `getInitialViewMode` only forces `list` on the **initial** render. If the user opens the module on desktop in `table` view and then resizes/DevTools down, the table stays and looks broken.
+- Every list toolbar (Contacts, Offers, Sales, Deals, Service Orders, Dispatches, Installations, Inventory, Articles, Purchase Orders, Supplier Invoices, Goods Receipts, Field Clients, Field Inventory, Lookups, Inventory-Services) still renders the "Table" toggle button on mobile.
 
-## Frontend service
+## Changes
 
-5. `src/services/plannedEntriesService.ts` — extend `PlannedEntryKind` to `'time' | 'expense' | 'material'`, add optional fields on `PlannedLineEntry` / `CreatePlannedLineEntry`, add `sumPlannedMaterials` helper (`quantity * unitPrice`).
+### 1. Unify and raise the mobile breakpoint
 
-## Shared inline UI
+- New single source of truth: `src/hooks/getInitialViewMode.ts` already exports `MOBILE_BREAKPOINT`. Bump to `1024` and export it.
+- Update `src/hooks/use-mobile.tsx` and `src/hooks/useLayoutMode.ts` to import that constant instead of hard-coding `768`. Result: sidebar collapses, mobile layout kicks in, and list-only enforcement all switch together at ≤1023px.
 
-6. New reusable button `src/shared/components/planning/PlanEntryButton.tsx` that opens the existing planned-entry editor dialog scoped to one `kind` (`time | expense | material`). Extracts the dialog from `PlannedEntriesEditor` and adds a material form (article picker + quantity + unit price).
-7. New helper `usePlannedEntriesForJobs(jobIds[])` in `src/shared/components/planning/usePlannedEntries.ts` — batches `plannedEntriesApi.list` calls for all jobs on a Service Order or Dispatch and returns a merged array with `parentId` preserved.
+### 2. Reactive "force list on mobile" hook
 
-## Service Orders — `ServiceOrderDetail.tsx`
+Add `useEnforceListOnMobile(viewMode, setViewMode, allowed)` in `getInitialViewMode.ts`:
 
-8. Delete the `PlanVsActualPanel` grid and the `PlannedEntriesEditor` per-job block on the `time_expenses` tab. Keep the tab, but only render `<TimeExpensesTab />` and `<MaterialsTab />` (already there).
-9. Pass `jobIds` down to `TimeExpensesTab` and `MaterialsTab`.
+- Subscribes to the same `(max-width: 1023px)` media query.
+- When the viewport becomes mobile AND `viewMode !== 'list'` AND `'list'` is in `allowed`, call `setViewMode('list')`.
+- Also exports `useIsListForcedMobile()` returning a boolean so toolbars can hide the table/grid/kanban toggle buttons.
 
-## `TimeExpensesTab.tsx`
+### 3. Wire the hook into every list module
 
-10. Load planned entries for all job ids via the new hook.
-11. Merge planned `time` rows into the Time table and planned `expense` rows into the Expenses table as read-model rows with `source: 'planned'`. Style them with a muted background, a `Badge` labeled "Planned", and an inline edit/delete that calls `plannedEntriesApi.update/remove`.
-12. Next to each existing "Add time entry" / "Add expense" button, add **Plan Time** and **Plan Expense** buttons using `PlanEntryButton`.
+For each file below: call `useEnforceListOnMobile(viewMode, setViewMode, allowed)` right after the `useState`, and wrap the non-list toggle buttons in `{!isListForcedMobile && (...)}`:
 
-## `MaterialsTab.tsx`
+- `src/modules/contacts/components/ContactsList.tsx`
+- `src/modules/offers/components/OffersList.tsx`
+- `src/modules/sales/hooks/useSalesList.ts` + `src/modules/sales/components/SalesList.tsx`
+- `src/modules/deals/components/DealsList.tsx`
+- `src/modules/field/service-orders/pages/ServiceOrdersList.tsx`
+- `src/modules/field/dispatches/...` list page
+- `src/modules/field/installations/pages/InstallationsList.tsx`
+- `src/modules/field/FieldCustomers/components/ClientsList.tsx`
+- `src/modules/field/InventoryField/components/InventoryList.tsx`
+- `src/modules/inventory-services/components/InventoryServicesList.tsx`
+- `src/modules/inventory-services/components/ArticlesList.tsx`
+- `src/modules/articles/hooks/useArticlesList.ts`
+- `src/modules/purchases/pages/PurchaseOrderListPage.tsx`
+- `src/modules/purchases/pages/SupplierInvoiceListPage.tsx`
+- `src/modules/purchases/pages/GoodsReceiptListPage.tsx`
+- `src/modules/lookups/hooks/useLookupsModule.ts`
+- `src/modules/tasks/components/ProjectManager.tsx` (kanban/grid/list — force list on mobile, hide kanban/grid buttons)
 
-13. Load planned entries and filter `kind === 'material'`. Merge them as inline rows in the materials list with the same "Planned" badge treatment.
-14. Add a **Plan Material** button next to the existing "Add Material" button.
+### 4. No visual redesign on desktop
 
-## Dispatches (mirror of the above)
-
-15. Locate dispatch equivalents (`src/modules/field/dispatches/**`) — find the time/expense/material tabs on the dispatch detail. Apply steps 10–14 there, using the dispatch's own service-order-job id(s) as parent.
-16. Remove any `PlanVsActualPanel` render inside dispatch pages (if present).
-
-## Cleanup
-
-17. Delete `PlanVsActualPanel.tsx` (no more callers).
-18. Simplify `PlannedEntriesEditor.tsx` — keep the internals used by `PlanEntryButton` (dialog + form) but drop the outer stats/list wrapper. Or delete the file if fully replaced.
-19. Keep `Offers / Sales` usages of `PlannedEntriesEditor` untouched (item modals) — they still need the compact editor for authoring plans on offer/sale lines. If we simplify the shared editor, keep a `variant="compact"` prop so those pages still work.
+Only the breakpoint and the mobile toggle visibility change. Desktop table views, filters, and page layouts are untouched at ≥1024px.
 
 ## Verification
 
-- `tsgo` typecheck must pass.
-- Manual: open a Service Order → Time & Expenses tab → confirm no stats panel; add a planned time via "Plan Time" → row appears inline with Planned badge; refresh page → still there. Repeat for expense and material. Repeat on Dispatch detail.
-- Existing offer/sale item planning modals still open and save.
+- Typecheck.
+- Playwright: capture Contacts, Offers, Sales, Purchase Orders at 1280, 1000, 800, 500px. Confirm ≤1023px auto-switches to list, table toggle button is hidden, and the sidebar / topbar collapses cleanly with no horizontal scroll.
+- Manually resize DevTools from 1400 → 400px and confirm no in-between broken state.
 
-## Technical notes
+## Non-goals
 
-- Merging read-model rows: planned rows use synthetic ids like `planned-{id}` so React keys don't collide with actuals.
-- The existing dispatch-overrun gating logic that reads `PlannedLineEntry` totals continues to work unchanged (planned materials contribute to the `materials` bucket in `GetPlanVsActualAsync`).
-- No data migration for existing rows — new columns are nullable; old `expense` rows with `expenseType='materials'` keep working.
+- No changes to the list/card row markup itself.
+- No changes to detail pages (already migrated to underline tabs).
+- No changes to modal/dialog tab groups.

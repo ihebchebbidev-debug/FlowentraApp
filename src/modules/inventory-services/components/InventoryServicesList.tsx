@@ -15,7 +15,7 @@ import { InventoryListView } from "./InventoryListView";
 import { InventoryTableView } from "./InventoryTableView";
 import { useArticles } from "@/modules/articles/hooks/useArticles";
 import { ArticleImportModal } from "./ArticleImportModal";
-import { getInitialViewMode } from '../../../hooks/getInitialViewMode';
+import { getInitialViewMode, useEnforceListOnMobile } from '../../../hooks/getInitialViewMode';
 
 // Helper to translate status
 const translateStatus = (status: string, t: (key: string, options?: any) => string): string => {
@@ -100,6 +100,7 @@ export function InventoryServicesList() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<'list' | 'table'>(() => getInitialViewMode(['list','table'] as const, 'table'));
+  useEnforceListOnMobile(viewMode, setViewMode, ['list','table'] as const);
   const [filterType, setFilterType] = useState<'all' | 'material' | 'service' | 'low_stock'>('all');
   const [filterLocation, setFilterLocation] = useState<string>('all');
   const [selectedStat, setSelectedStat] = useState<string>('all');

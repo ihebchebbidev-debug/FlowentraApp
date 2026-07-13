@@ -96,15 +96,13 @@ export function LeavesPage() {
 
       <div className="p-3 sm:p-4 lg:p-6">
         <Tabs defaultValue="calendar">
-          <TabsList className={cn(
-            "w-full h-auto p-1 bg-muted/50 rounded-lg grid gap-1",
-            "grid-cols-2 sm:grid-cols-4"
-          )}>
-            <TabsTrigger value="calendar" className="px-4 py-2.5 text-sm font-medium">{t('leavesPage.calendarTab')}</TabsTrigger>
-            <TabsTrigger value="list" className="px-4 py-2.5 text-sm font-medium">{t('leavesPage.listTab')}</TabsTrigger>
-            <TabsTrigger value="balances" className="px-4 py-2.5 text-sm font-medium">{t('leavesPage.balancesTab')}</TabsTrigger>
-            <TabsTrigger value="approvals" className="px-4 py-2.5 text-sm font-medium">{t('leavesPage.approvalsTab')}</TabsTrigger>
+          <TabsList variant="underline">
+            <TabsTrigger value="calendar">{t('leavesPage.calendarTab')}</TabsTrigger>
+            <TabsTrigger value="list">{t('leavesPage.listTab')}</TabsTrigger>
+            <TabsTrigger value="balances">{t('leavesPage.balancesTab')}</TabsTrigger>
+            <TabsTrigger value="approvals">{t('leavesPage.approvalsTab')}</TabsTrigger>
           </TabsList>
+
 
           <TabsContent value="calendar" className="mt-3">
             <LeavesCalendar events={calendarEvents} isLoading={employeesQuery.isLoading || leavesQuery.isLoading || leavesQuery.isFetching} />

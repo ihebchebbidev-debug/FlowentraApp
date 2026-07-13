@@ -567,23 +567,14 @@ export function OfferDetail() {
                 );
               })()
             ) : (
-              <TabsList className="w-full h-auto p-1 bg-muted/50 rounded-lg grid grid-cols-5">
-                <TabsTrigger value="overview" className="px-4 py-2.5 text-sm font-medium">
-                  {t('tabs.overview')}
-                </TabsTrigger>
-                <TabsTrigger value="items" className="px-4 py-2.5 text-sm font-medium">
-                  {t('tabs.items')}
-                </TabsTrigger>
-                <TabsTrigger value="notes" className="px-4 py-2.5 text-sm font-medium">
-                  {t('tabs.notes')}
-                </TabsTrigger>
-                <TabsTrigger value="checklists" className="px-4 py-2.5 text-sm font-medium">
-                  {t('tabs.checklists')}
-                </TabsTrigger>
-                <TabsTrigger value="documents" className="px-4 py-2.5 text-sm font-medium">
-                  {t('tabs.documents')}
-                </TabsTrigger>
+              <TabsList variant="underline">
+                <TabsTrigger value="overview">{t('tabs.overview')}</TabsTrigger>
+                <TabsTrigger value="items">{t('tabs.items')}</TabsTrigger>
+                <TabsTrigger value="notes">{t('tabs.notes')}</TabsTrigger>
+                <TabsTrigger value="checklists">{t('tabs.checklists')}</TabsTrigger>
+                <TabsTrigger value="documents">{t('tabs.documents')}</TabsTrigger>
               </TabsList>
+
             )}
           </div>
 

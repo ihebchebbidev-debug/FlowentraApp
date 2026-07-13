@@ -1,4 +1,5 @@
 import { useState, useEffect, createContext, useContext } from 'react';
+import { MOBILE_BREAKPOINT } from './getInitialViewMode';
 
 type LayoutMode = 'sidebar' | 'topbar';
 
@@ -22,7 +23,7 @@ export function useLayoutMode() {
 
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
     };
     
     checkMobile();

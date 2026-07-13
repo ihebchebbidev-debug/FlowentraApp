@@ -288,7 +288,7 @@ export function IntegrationHub() {
 
       {/* Tabs */}
       <Tabs defaultValue="connections">
-        <TabsList>
+        <TabsList variant="underline">
           <TabsTrigger value="connections" className="gap-2">
             <Plug className="h-3.5 w-3.5" />
             {t('hub.tabs.connections', 'Connections')}
@@ -304,6 +304,7 @@ export function IntegrationHub() {
             )}
           </TabsTrigger>
         </TabsList>
+
 
         {/* ── CONNECTIONS TAB ── */}
         <TabsContent value="connections" className="space-y-6 mt-4">

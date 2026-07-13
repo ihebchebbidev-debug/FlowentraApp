@@ -63,12 +63,13 @@ export function RecruitmentPage() {
       />
       <div className="p-4 md:p-6">
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList>
+          <TabsList variant="underline">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="openings">Job openings</TabsTrigger>
             <TabsTrigger value="applicants">Applicants</TabsTrigger>
             <TabsTrigger value="interviews">Interviews</TabsTrigger>
           </TabsList>
+
 
           <TabsContent value="dashboard" className="mt-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

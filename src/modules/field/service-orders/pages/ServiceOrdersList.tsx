@@ -56,7 +56,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useActionLogger } from "@/hooks/useActionLogger";
 import { ServiceOrdersKanbanView } from "../components/ServiceOrdersKanbanView";
 import { DropdownMenuLabel } from "@radix-ui/react-dropdown-menu";
-import { getInitialViewMode } from '../../../../hooks/getInitialViewMode';
+import { getInitialViewMode, useEnforceListOnMobile } from '../../../../hooks/getInitialViewMode';
 
 export default function ServiceOrdersList() {
   console.log("ServiceOrdersList rendering");
@@ -68,6 +68,7 @@ export default function ServiceOrdersList() {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<ServiceOrderFilters>({});
   const [viewMode, setViewMode] = useState<'list' | 'table' | 'kanban'>(() => getInitialViewMode(['list','table','kanban'] as const, 'table'));
+  useEnforceListOnMobile(viewMode, setViewMode, ['list','table','kanban'] as const);
   const [showMap, setShowMap] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | string>('all');

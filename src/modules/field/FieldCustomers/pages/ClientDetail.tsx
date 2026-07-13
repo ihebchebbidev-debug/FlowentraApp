@@ -176,12 +176,13 @@ export default function ClientDetail() {
 
       <main className="p-3 sm:p-4 lg:p-6">
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList>
+          <TabsList variant="underline">
             <TabsTrigger value="overview">{t('field_customers:overview', 'Overview')}</TabsTrigger>
             <TabsTrigger value="todos">{t('field_customers:todos', 'To-Dos')}</TabsTrigger>
             <TabsTrigger value="documents">{t('field_customers:documents', 'Documents')}</TabsTrigger>
             <TabsTrigger value="service_orders">{t('field_customers:service_orders', 'Service Orders')}</TabsTrigger>
           </TabsList>
+
 
           <TabsContent value="overview">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

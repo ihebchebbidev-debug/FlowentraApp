@@ -364,29 +364,30 @@ const ArticleDetail = () => {
       {/* Main Content with Tabs */}
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid grid-cols-3 md:grid-cols-5 gap-1 h-auto p-1">
-            <TabsTrigger value="overview" className="text-xs md:text-sm gap-1.5">
+          <TabsList variant="underline">
+            <TabsTrigger value="overview" className="gap-1.5">
               <LayoutDashboard className="h-4 w-4 hidden sm:block" />
               {t('detail.tabs.overview')}
             </TabsTrigger>
-            <TabsTrigger value="serviceOrders" className="text-xs md:text-sm gap-1.5">
+            <TabsTrigger value="serviceOrders" className="gap-1.5">
               <ClipboardList className="h-4 w-4 hidden sm:block" />
               <span className="hidden md:inline">{t('detail.tabs.service_orders')}</span>
               <span className="md:hidden">S.O.</span>
             </TabsTrigger>
-            <TabsTrigger value="offers" className="text-xs md:text-sm gap-1.5">
+            <TabsTrigger value="offers" className="gap-1.5">
               <FileText className="h-4 w-4 hidden sm:block" />
               {t('detail.tabs.offers')}
             </TabsTrigger>
-            <TabsTrigger value="sales" className="text-xs md:text-sm gap-1.5">
+            <TabsTrigger value="sales" className="gap-1.5">
               <ShoppingCart className="h-4 w-4 hidden sm:block" />
               {t('detail.tabs.sales')}
             </TabsTrigger>
-            <TabsTrigger value="notes" className="text-xs md:text-sm gap-1.5">
+            <TabsTrigger value="notes" className="gap-1.5">
               <StickyNote className="h-4 w-4 hidden sm:block" />
               {t('detail.tabs.notes')}
             </TabsTrigger>
           </TabsList>
+
 
           {/* Overview Tab */}
           <TabsContent value="overview">

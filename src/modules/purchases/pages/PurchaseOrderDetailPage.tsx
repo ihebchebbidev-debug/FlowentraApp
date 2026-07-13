@@ -353,13 +353,14 @@ function PurchaseOrderDetailPage() {
           })()}
           {/* Desktop: tab pills */}
           <div className="hidden md:block">
-            <TabsList className="h-8">
-              <TabsTrigger value="overview" className="text-xs">{t('tabs.overview')}</TabsTrigger>
-              <TabsTrigger value="items" className="text-xs">{t('tabs.items')}</TabsTrigger>
-              <TabsTrigger value="receipts" className="text-xs">{t('tabs.receipts')} ({receipts.length})</TabsTrigger>
-              <TabsTrigger value="invoices" className="text-xs">{t('tabs.invoices')} ({invoices.length})</TabsTrigger>
-              <TabsTrigger value="activity" className="text-xs">{t('tabs.activity')}</TabsTrigger>
+            <TabsList variant="underline">
+              <TabsTrigger value="overview">{t('tabs.overview')}</TabsTrigger>
+              <TabsTrigger value="items">{t('tabs.items')}</TabsTrigger>
+              <TabsTrigger value="receipts">{t('tabs.receipts')} ({receipts.length})</TabsTrigger>
+              <TabsTrigger value="invoices">{t('tabs.invoices')} ({invoices.length})</TabsTrigger>
+              <TabsTrigger value="activity">{t('tabs.activity')}</TabsTrigger>
             </TabsList>
+
           </div>
 
           <TabsContent value="overview" className="mt-4">

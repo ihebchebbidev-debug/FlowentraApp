@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useEnforceListOnMobile } from "@/hooks/getInitialViewMode";
 import { useTranslation } from "react-i18next";
 import { usePaginatedData } from "@/shared/hooks/usePagination";
 import { formatStatValue } from "@/lib/formatters";
@@ -77,6 +78,7 @@ export function ProjectManager({ onSwitchToTasks: _onSwitchToTasks }: ProjectMan
   const [filterTimeframe, setFilterTimeframe] = useState<'all' | '7' | '30' | '365'>('all');
   const [showFilterBar, setShowFilterBar] = useState(false);
   const [viewMode, setViewMode] = useState<'kanban' | 'grid' | 'list'>(getInitialViewMode);
+  useEnforceListOnMobile(viewMode, setViewMode, ['kanban', 'grid', 'list'] as const);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);

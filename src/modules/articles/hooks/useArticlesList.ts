@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { ArticlesService, type InventoryArticle } from "../services/articles.service";
 import { Package, CheckCircle, AlertTriangle, DollarSign } from "lucide-react";
 import { useLookups } from "@/shared/contexts/LookupsContext";
+import { useEnforceListOnMobile } from "@/hooks/getInitialViewMode";
 
 export type ListViewMode = "grid" | "list";
 
@@ -16,6 +17,7 @@ export function useArticlesList() {
   };
 
   const [viewMode, setViewMode] = useState<ListViewMode>(getInitialViewMode);
+  useEnforceListOnMobile(viewMode, setViewMode, ['grid', 'list'] as const);
   const [filterStatus, setFilterStatus] = useState<"all" | string>("all");
   const [filterCategory, setFilterCategory] = useState<"all" | string>("all");
   

@@ -283,17 +283,14 @@ export default function ContactDetailPage() {
               </Select>
             ) : (
               /* Desktop: tab pills */
-              <TabsList
-                className={`w-full h-auto p-1 bg-muted/50 rounded-lg grid gap-0 ${
-                  isSupplierRoute ? 'grid-cols-4' : 'grid-cols-7'
-                }`}
-              >
+              <TabsList variant="underline">
                 {tabConfig.map((tab) => (
-                  <TabsTrigger key={tab} value={tab} className="px-3 py-2 text-sm font-medium">
+                  <TabsTrigger key={tab} value={tab}>
                     {TAB_META[tab]?.label() ?? tab}
                   </TabsTrigger>
                 ))}
               </TabsList>
+
             )}
           </div>
 

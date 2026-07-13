@@ -2,13 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import type { LookupItem } from "../services/lookups.service";
 import { LookupsService } from "../services/lookups.service";
 import type { Category, Group } from "../types";
-import { getInitialViewMode } from '../../../hooks/getInitialViewMode';
+import { getInitialViewMode, useEnforceListOnMobile } from '../../../hooks/getInitialViewMode';
 
 export function useLookupsModule(initialGroup: Group = 'crm', initialCategory: Category = 'todos') {
   const [category, setCategory] = useState<Category>(initialCategory);
   const [group, setGroup] = useState<Group>(initialGroup);
   const [mode, setMode] = useState<'hub' | 'category'>('hub');
   const [viewMode, setViewMode] = useState<'list' | 'table'>(() => getInitialViewMode(['list','table'] as const, 'table'));
+  useEnforceListOnMobile(viewMode, setViewMode, ['list','table'] as const);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterHasColor, setFilterHasColor] = useState<'all' | 'yes' | 'no'>('all');
   const [filterDefaultOnly, setFilterDefaultOnly] = useState(false);

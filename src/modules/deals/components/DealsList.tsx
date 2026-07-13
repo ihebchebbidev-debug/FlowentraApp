@@ -25,7 +25,7 @@ import { DealsKanbanView } from "./DealsKanbanView";
 import { ConvertDealModal } from "./ConvertDealModal";
 import { DealsAutopilotDemo } from "./onboarding/DealsAutopilotDemo";
 import type { Deal } from "@/services/api/dealsApi";
-import { getInitialViewMode } from "../../../hooks/getInitialViewMode";
+import { getInitialViewMode, useEnforceListOnMobile } from "../../../hooks/getInitialViewMode";
 import { usePermissions } from "@/hooks/usePermissions";
 
 type StatFilter = "all" | "open" | "won" | "lost";
@@ -41,6 +41,7 @@ export function DealsList() {
   const hasDeleteAccess = isMainAdmin || canDelete('deals');
 
   const [viewMode, setViewMode] = useState<"list" | "table" | "kanban">(() => getInitialViewMode(["list", "table", "kanban"] as const, "table"));
+  useEnforceListOnMobile(viewMode, setViewMode, ["list","table","kanban"] as const);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStat, setSelectedStat] = useState<StatFilter>("all");
   const [showFilterBar, setShowFilterBar] = useState(false);

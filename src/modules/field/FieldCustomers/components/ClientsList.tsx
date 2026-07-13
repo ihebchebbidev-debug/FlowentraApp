@@ -23,7 +23,7 @@ import {
 
 // Import mock data from JSON file
 import { useContacts } from "@/modules/contacts/hooks/useContacts";
-import { getInitialViewMode } from '../../../../hooks/getInitialViewMode';
+import { getInitialViewMode, useEnforceListOnMobile } from '../../../../hooks/getInitialViewMode';
 
 interface Client {
   id: number;
@@ -43,6 +43,7 @@ export default function ClientsList() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'list' | 'table'>(() => getInitialViewMode(['list','table'] as const, 'table'));
+  useEnforceListOnMobile(viewMode, setViewMode, ['list','table'] as const);
   const [query, setQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<'all' | string>('all');
   const [filterType, setFilterType] = useState<'all' | string>('all');

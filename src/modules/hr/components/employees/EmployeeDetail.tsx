@@ -245,7 +245,7 @@ export function EmployeeDetail() {
           })()}
           {/* Desktop: tab pills */}
           <div className="hidden md:block">
-            <TabsList className={cn('w-full h-auto p-1 bg-muted/50 rounded-lg grid gap-1', 'grid-cols-7')}>
+            <TabsList variant="underline">
               <TabsTrigger value="profile">{t('tabs.profile')}</TabsTrigger>
               <TabsTrigger value="salary">{t('tabs.salary')}</TabsTrigger>
               <TabsTrigger value="cnss">{t('tabs.cnss')}</TabsTrigger>
@@ -254,6 +254,7 @@ export function EmployeeDetail() {
               <TabsTrigger value="documents">{t('tabs.documents')}</TabsTrigger>
               <TabsTrigger value="history">{t('tabs.history')}</TabsTrigger>
             </TabsList>
+
           </div>
 
           <TabsContent value="profile" className="mt-3 space-y-3">

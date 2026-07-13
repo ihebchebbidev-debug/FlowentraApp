@@ -280,14 +280,15 @@ export default function InstallationDetail() {
           })()}
           {/* Desktop: tab pills */}
           <div className="hidden md:block">
-            <TabsList className="grid grid-cols-6 gap-1 h-auto p-1">
-              <TabsTrigger value="overview" className="text-sm">{t('detail.tabs.overview')}</TabsTrigger>
-              <TabsTrigger value="serviceOrders" className="text-sm">{t('detail.tabs.service_orders')}</TabsTrigger>
-              <TabsTrigger value="offers" className="text-sm">{t('detail.tabs.offers')}</TabsTrigger>
-              <TabsTrigger value="sales" className="text-sm">{t('detail.tabs.sales')}</TabsTrigger>
-              <TabsTrigger value="documents" className="text-sm">{t('detail.tabs.documents')}</TabsTrigger>
-              <TabsTrigger value="notes" className="text-sm">{t('detail.tabs.notes')}</TabsTrigger>
+            <TabsList variant="underline">
+              <TabsTrigger value="overview">{t('detail.tabs.overview')}</TabsTrigger>
+              <TabsTrigger value="serviceOrders">{t('detail.tabs.service_orders')}</TabsTrigger>
+              <TabsTrigger value="offers">{t('detail.tabs.offers')}</TabsTrigger>
+              <TabsTrigger value="sales">{t('detail.tabs.sales')}</TabsTrigger>
+              <TabsTrigger value="documents">{t('detail.tabs.documents')}</TabsTrigger>
+              <TabsTrigger value="notes">{t('detail.tabs.notes')}</TabsTrigger>
             </TabsList>
+
           </div>
 
           {/* Overview Tab */}

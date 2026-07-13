@@ -665,16 +665,17 @@ function SupplierDetailDrawer({ supplierId, onClose, rows, orders, invoices, fmt
                 </div>
 
                 <Tabs defaultValue="orders">
-                  <TabsList className="w-full grid grid-cols-2">
-                    <TabsTrigger value="orders" className="text-xs">
+                  <TabsList variant="underline">
+                    <TabsTrigger value="orders">
                       <Package className="h-3.5 w-3.5 mr-1.5" />
                       {t('reports.supplierPerformance.poCount', 'POs')} ({supplierOrders.length})
                     </TabsTrigger>
-                    <TabsTrigger value="invoices" className="text-xs">
+                    <TabsTrigger value="invoices">
                       <Receipt className="h-3.5 w-3.5 mr-1.5" />
                       {t('reports.supplierPerformance.invoices', 'Invoices')} ({supplierInvoices.length})
                     </TabsTrigger>
                   </TabsList>
+
 
                   <TabsContent value="orders" className="mt-3">
                     {supplierOrders.length === 0 ? (

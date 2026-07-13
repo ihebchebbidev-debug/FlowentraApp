@@ -43,7 +43,7 @@ import { ExportModal, type ExportConfig } from "@/components/shared/ExportModal"
 import { TableRowActions } from "@/shared/components/TableRowActions";
 import { formatStatValue } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
-import { getInitialViewMode } from '../../../hooks/getInitialViewMode';
+import { getInitialViewMode, useEnforceListOnMobile } from '../../../hooks/getInitialViewMode';
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
@@ -78,6 +78,7 @@ function PurchaseOrderListContent() {
   const [activeSmartFilter, setActiveSmartFilter] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'table'>(() => getInitialViewMode(['list','table'] as const, 'table'));
+  useEnforceListOnMobile(viewMode, setViewMode, ['list','table'] as const);
   const [showExport, setShowExport] = useState(false);
   const [companyId, setCompanyId] = useState<CompanyFilterValue>("all");
 

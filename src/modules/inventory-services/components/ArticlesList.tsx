@@ -26,7 +26,7 @@ import { CompanyBadge } from '@/components/CompanyBadge';
 
 import articleStatuses from '@/data/mock/article-statuses.json';
 import { CreateActionButton } from '@/components/CreateActionButton';
-import { getInitialViewMode } from '@/hooks/getInitialViewMode';
+import { getInitialViewMode, useEnforceListOnMobile } from '@/hooks/getInitialViewMode';
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -64,6 +64,7 @@ export function ArticlesList() {
   const [filterLocation, setFilterLocation] = useState<'all' | string>('all');
   const [filterSupplier, setFilterSupplier] = useState<'all' | string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => getInitialViewMode(['grid', 'list'] as const, 'grid'));
+  useEnforceListOnMobile(viewMode, setViewMode, ['grid','list'] as const);
   
   // Permission checks (disabled in view-all mode)
   const viewAll = isViewAllMode();

@@ -392,22 +392,23 @@ export default function ServiceDetail() {
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-          <div className="border-b border-border px-4 sm:px-6">
-            <TabsList className="grid w-full sm:w-fit grid-cols-3 h-auto">
-              <TabsTrigger value="overview" className="gap-2 text-xs sm:text-sm py-2 sm:py-3">
-                <Wrench className="h-3 w-3 sm:h-4 sm:w-4" />
+          <div className="px-4 sm:px-6">
+            <TabsList variant="underline">
+              <TabsTrigger value="overview" className="gap-2">
+                <Wrench className="h-4 w-4" />
                 Overview
               </TabsTrigger>
-              <TabsTrigger value="bookings" className="gap-2 text-xs sm:text-sm py-2 sm:py-3">
-                <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+              <TabsTrigger value="bookings" className="gap-2">
+                <Calendar className="h-4 w-4" />
                 Recent Sales
               </TabsTrigger>
-              <TabsTrigger value="performance" className="gap-2 text-xs sm:text-sm py-2 sm:py-3">
-                <Award className="h-3 w-3 sm:h-4 sm:w-4" />
+              <TabsTrigger value="performance" className="gap-2">
+                <Award className="h-4 w-4" />
                 Performance
               </TabsTrigger>
             </TabsList>
           </div>
+
 
           <TabsContent value="overview" className="flex-1 p-4 sm:p-6 space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

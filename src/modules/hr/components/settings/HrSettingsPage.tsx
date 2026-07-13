@@ -100,11 +100,12 @@ export function HrSettingsPage() {
 
       <div className="p-3 sm:p-4 lg:p-6">
         <Tabs defaultValue="cnss">
-          <TabsList>
+          <TabsList variant="underline">
             <TabsTrigger value="cnss">{t('settingsPage.tabs.cnss')}</TabsTrigger>
             <TabsTrigger value="holidays">{t('settingsPage.tabs.holidays')}</TabsTrigger>
             <TabsTrigger value="general">{t('settingsPage.tabs.general')}</TabsTrigger>
           </TabsList>
+
 
           <TabsContent value="cnss" className="mt-3 space-y-4">
             <Card className="shadow-card border-0 bg-card">

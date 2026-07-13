@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useEnforceListOnMobile } from "@/hooks/getInitialViewMode";
 import { usePaginatedData } from "@/shared/hooks/usePagination";
 import { formatStatValue } from "@/lib/formatters";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -55,6 +56,7 @@ export function ContactsList() {
   };
   
   const [viewMode, setViewMode] = useState<'list' | 'table'>(getInitialViewMode);
+  useEnforceListOnMobile(viewMode, setViewMode, ['list', 'table'] as const);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | string>('all');
   const [filterType, setFilterType] = useState<'all' | string>('all');

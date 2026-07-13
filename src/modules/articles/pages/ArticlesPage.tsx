@@ -37,7 +37,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { ArticleForm } from '../components/ArticleForm';
 import { InventoryTransactionDialog } from '../components/InventoryTransactionDialog';
 import { useArticles, useArticleTransactions } from '../hooks/useArticles';

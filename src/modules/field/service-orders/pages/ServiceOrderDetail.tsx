@@ -1196,16 +1196,17 @@ export default function ServiceOrderDetail() {
               );
             })()
           ) : (
-            <TabsList className="grid grid-cols-4 md:grid-cols-8 gap-1 h-auto p-1">
-              <TabsTrigger value="overview" className="text-xs md:text-sm">{t('tabs.overview')}</TabsTrigger>
-              <TabsTrigger value="jobs" className="text-xs md:text-sm">{t('tabs.jobs')}</TabsTrigger>
-              <TabsTrigger value="dispatches" className="text-xs md:text-sm">{t('tabs.dispatches')}</TabsTrigger>
-              <TabsTrigger value="time_expenses" className="text-xs md:text-sm">{t('tabs.time_expenses')}</TabsTrigger>
-              <TabsTrigger value="materials" className="text-xs md:text-sm">{t('tabs.materials')}</TabsTrigger>
-              <TabsTrigger value="attachments" className="text-xs md:text-sm">{t('tabs.attachments')}</TabsTrigger>
-              <TabsTrigger value="checklists" className="text-xs md:text-sm">{t('tabs.checklists')}</TabsTrigger>
-              <TabsTrigger value="activity" className="text-xs md:text-sm">{t('tabs.activity')}</TabsTrigger>
+            <TabsList variant="underline">
+              <TabsTrigger value="overview">{t('tabs.overview')}</TabsTrigger>
+              <TabsTrigger value="jobs">{t('tabs.jobs')}</TabsTrigger>
+              <TabsTrigger value="dispatches">{t('tabs.dispatches')}</TabsTrigger>
+              <TabsTrigger value="time_expenses">{t('tabs.time_expenses')}</TabsTrigger>
+              <TabsTrigger value="materials">{t('tabs.materials')}</TabsTrigger>
+              <TabsTrigger value="attachments">{t('tabs.attachments')}</TabsTrigger>
+              <TabsTrigger value="checklists">{t('tabs.checklists')}</TabsTrigger>
+              <TabsTrigger value="activity">{t('tabs.activity')}</TabsTrigger>
             </TabsList>
+
           )}
 
           {/* Overview Tab */}

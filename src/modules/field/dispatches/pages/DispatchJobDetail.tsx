@@ -715,31 +715,16 @@ export default function DispatchJobDetail() {
 
           {/* Desktop: scrollable tab pills */}
           <div className="hidden md:block w-full mb-6">
-            <TabsList className="w-full h-auto p-1 bg-muted/50 rounded-lg lg:grid lg:grid-cols-7 lg:gap-0">
-              <div className="flex lg:contents overflow-x-auto mask-fade-right gap-1 lg:gap-0 pb-1 lg:pb-0">
-                <TabsTrigger value="overview" className="whitespace-nowrap px-4 py-2.5 min-w-[100px] flex-shrink-0 lg:flex-1 lg:min-w-0 text-sm font-medium">
-                  {t('dispatch_detail.overview')}
-                 </TabsTrigger>
-                <TabsTrigger value="jobs" className="whitespace-nowrap px-4 py-2.5 min-w-[70px] flex-shrink-0 lg:flex-1 lg:min-w-0 text-sm font-medium">
-                  {t('tabs.jobs')}
-                 </TabsTrigger>
-                <TabsTrigger value="time_expenses" className="whitespace-nowrap px-4 py-2.5 min-w-[120px] flex-shrink-0 lg:flex-1 lg:min-w-0 text-sm font-medium">
-                  {t('tabs.time_expenses')}
-                 </TabsTrigger>
-                <TabsTrigger value="materials" className="whitespace-nowrap px-4 py-2.5 min-w-[90px] flex-shrink-0 lg:flex-1 lg:min-w-0 text-sm font-medium">
-                  {t('dispatch_detail.materials')}
-                 </TabsTrigger>
-                <TabsTrigger value="attachments" className="whitespace-nowrap px-4 py-2.5 min-w-[100px] flex-shrink-0 lg:flex-1 lg:min-w-0 text-sm font-medium">
-                  {t('tabs.attachments')}
-                 </TabsTrigger>
-                <TabsTrigger value="checklists" className="whitespace-nowrap px-4 py-2.5 min-w-[100px] flex-shrink-0 lg:flex-1 lg:min-w-0 text-sm font-medium">
-                  {t('tabs.checklists')}
-                 </TabsTrigger>
-                <TabsTrigger value="activity" className="whitespace-nowrap px-4 py-2.5 min-w-[80px] flex-shrink-0 lg:flex-1 lg:min-w-0 text-sm font-medium">
-                  {t('tabs.activity')}
-                </TabsTrigger>
-              </div>
+            <TabsList variant="underline">
+              <TabsTrigger value="overview">{t('dispatch_detail.overview')}</TabsTrigger>
+              <TabsTrigger value="jobs">{t('tabs.jobs')}</TabsTrigger>
+              <TabsTrigger value="time_expenses">{t('tabs.time_expenses')}</TabsTrigger>
+              <TabsTrigger value="materials">{t('dispatch_detail.materials')}</TabsTrigger>
+              <TabsTrigger value="attachments">{t('tabs.attachments')}</TabsTrigger>
+              <TabsTrigger value="checklists">{t('tabs.checklists')}</TabsTrigger>
+              <TabsTrigger value="activity">{t('tabs.activity')}</TabsTrigger>
             </TabsList>
+
           </div>
 
           {/* Overview Tab */}

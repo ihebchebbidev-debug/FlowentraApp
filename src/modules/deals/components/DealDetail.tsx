@@ -271,7 +271,7 @@ export function DealDetail() {
           })()}
           {/* Desktop: tab pills */}
           <div className="hidden md:block">
-            <TabsList className="w-full h-auto p-1 bg-muted/50 rounded-lg grid grid-cols-6">
+            <TabsList variant="underline">
               <TabsTrigger value="overview">{t("detail.tabs.overview")}</TabsTrigger>
               <TabsTrigger value="items">{t("detail.tabs.items")}</TabsTrigger>
               <TabsTrigger value="documents">{t("detail.tabs.documents")}</TabsTrigger>
@@ -279,6 +279,7 @@ export function DealDetail() {
               <TabsTrigger value="activity">{t("detail.tabs.activity")}</TabsTrigger>
               <TabsTrigger value="notes">{t("detail.tabs.notes")}</TabsTrigger>
             </TabsList>
+
           </div>
 
           <div className="mt-6">

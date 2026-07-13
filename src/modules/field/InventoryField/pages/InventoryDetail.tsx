@@ -191,11 +191,12 @@ export default function InventoryDetail() {
 
       <main className="p-3 sm:p-4 lg:p-6">
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList>
+          <TabsList variant="underline">
             <TabsTrigger value="overview">{t('inventory_field:overview', 'Overview')}</TabsTrigger>
             <TabsTrigger value="maintenance">{t('inventory_field:maintenance', 'Maintenance')}</TabsTrigger>
             <TabsTrigger value="documents">{t('inventory_field:documents', 'Documents')}</TabsTrigger>
           </TabsList>
+
 
           <TabsContent value="overview">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

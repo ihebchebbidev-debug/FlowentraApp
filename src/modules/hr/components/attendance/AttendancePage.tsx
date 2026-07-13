@@ -348,10 +348,11 @@ export function AttendancePage() {
           <Alert><AlertDescription>{t('attendancePage.noEmployeesHint')}</AlertDescription></Alert>
         ) : (
           <Tabs defaultValue="list" className="space-y-4">
-            <TabsList>
+            <TabsList variant="underline">
               <TabsTrigger value="list">{t('attendancePage.listView')}</TabsTrigger>
               <TabsTrigger value="month">{t('attendancePage.matrixView')}</TabsTrigger>
             </TabsList>
+
 
             <TabsContent value="list">
               <Card className="shadow-card border-0 bg-card">

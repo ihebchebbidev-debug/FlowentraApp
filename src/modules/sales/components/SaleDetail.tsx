@@ -608,26 +608,15 @@ export function SaleDetail() {
                 );
               })()
             ) : (
-              <TabsList className="w-full h-auto p-1 bg-muted/50 rounded-lg grid grid-cols-6">
-                <TabsTrigger value="overview" className="px-4 py-2.5 text-sm font-medium">
-                  {t('tabs.overview')}
-                </TabsTrigger>
-                <TabsTrigger value="items" className="px-4 py-2.5 text-sm font-medium">
-                  {t('tabs.items')}
-                </TabsTrigger>
-                <TabsTrigger value="payments" className="px-4 py-2.5 text-sm font-medium">
-                  {t('payments:title', 'Payments')}
-                </TabsTrigger>
-                <TabsTrigger value="notes" className="px-4 py-2.5 text-sm font-medium">
-                  {t('tabs.notesActivity')}
-                </TabsTrigger>
-                <TabsTrigger value="checklists" className="px-4 py-2.5 text-sm font-medium">
-                  {t('tabs.checklists')}
-                </TabsTrigger>
-                <TabsTrigger value="documents" className="px-4 py-2.5 text-sm font-medium">
-                  {t('tabs.documents')}
-                </TabsTrigger>
+              <TabsList variant="underline">
+                <TabsTrigger value="overview">{t('tabs.overview')}</TabsTrigger>
+                <TabsTrigger value="items">{t('tabs.items')}</TabsTrigger>
+                <TabsTrigger value="payments">{t('payments:title', 'Payments')}</TabsTrigger>
+                <TabsTrigger value="notes">{t('tabs.notesActivity')}</TabsTrigger>
+                <TabsTrigger value="checklists">{t('tabs.checklists')}</TabsTrigger>
+                <TabsTrigger value="documents">{t('tabs.documents')}</TabsTrigger>
               </TabsList>
+
             )}
           </div>
 

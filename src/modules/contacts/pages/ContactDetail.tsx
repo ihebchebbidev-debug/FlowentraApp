@@ -175,14 +175,15 @@ export default function ContactDetail() {
                 </div>
                 {/* Desktop: tab pills */}
                 <div className="hidden md:block">
-                  <TabsList className="inline-flex h-auto p-1 bg-muted rounded-lg w-full md:grid md:grid-cols-3 lg:grid-cols-6 md:w-full">
-                    <TabsTrigger value="overview" className="whitespace-nowrap px-3 py-2 text-sm">{t('detail.tabs.overview')}</TabsTrigger>
-                    <TabsTrigger value="projects" className="whitespace-nowrap px-3 py-2 text-sm">{t('detail.tabs.projects')}</TabsTrigger>
-                    <TabsTrigger value="todos" className="whitespace-nowrap px-3 py-2 text-sm">{t('detail.tabs.tasks')}</TabsTrigger>
-                    <TabsTrigger value="sales" className="whitespace-nowrap px-3 py-2 text-sm">{t('detail.tabs.sales')}</TabsTrigger>
-                    <TabsTrigger value="notes" className="whitespace-nowrap px-3 py-2 text-sm">{t('detail.tabs.notes')}</TabsTrigger>
-                    <TabsTrigger value="documents" className="whitespace-nowrap px-3 py-2 text-sm">{t('detail.tabs.files')}</TabsTrigger>
+                  <TabsList variant="underline">
+                    <TabsTrigger value="overview">{t('detail.tabs.overview')}</TabsTrigger>
+                    <TabsTrigger value="projects">{t('detail.tabs.projects')}</TabsTrigger>
+                    <TabsTrigger value="todos">{t('detail.tabs.tasks')}</TabsTrigger>
+                    <TabsTrigger value="sales">{t('detail.tabs.sales')}</TabsTrigger>
+                    <TabsTrigger value="notes">{t('detail.tabs.notes')}</TabsTrigger>
+                    <TabsTrigger value="documents">{t('detail.tabs.files')}</TabsTrigger>
                   </TabsList>
+
                 </div>
               </div>
             );

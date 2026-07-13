@@ -38,7 +38,7 @@ import { ExportModal, type ExportConfig } from "@/components/shared/ExportModal"
 import { TableRowActions } from "@/shared/components/TableRowActions";
 import { formatStatValue } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
-import { getInitialViewMode } from '../../../hooks/getInitialViewMode';
+import { getInitialViewMode, useEnforceListOnMobile } from '../../../hooks/getInitialViewMode';
 
 const STATUS_COLORS: Record<string, string> = {
   partial: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
@@ -66,6 +66,7 @@ function GoodsReceiptListContent() {
   const [selectedStat, setSelectedStat] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'table'>(() => getInitialViewMode(['list','table'] as const, 'table'));
+  useEnforceListOnMobile(viewMode, setViewMode, ['list','table'] as const);
   const [showExport, setShowExport] = useState(false);
   const [companyId, setCompanyId] = useState<CompanyFilterValue>("all");
 

@@ -274,23 +274,22 @@ const ArticleDetail = () => {
                 );
               })()
             ) : (
-              /* Desktop: scrollable tab pills */
-              <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
-                <TabsList className="inline-flex h-auto p-1 bg-muted rounded-lg min-w-max">
-                  <TabsTrigger value="overview" className="gap-2 text-sm py-3 px-4 whitespace-nowrap">
-                    <Package className="h-4 w-4" />{t("detail.overview")}
-                  </TabsTrigger>
-                  <TabsTrigger value="inventory" className="gap-2 text-sm py-3 px-4 whitespace-nowrap">
-                    <Warehouse className="h-4 w-4" />{t("detail.inventory")}
-                  </TabsTrigger>
-                  <TabsTrigger value="activity" className="gap-2 text-sm py-3 px-4 whitespace-nowrap">
-                    <Activity className="h-4 w-4" />{t("detail.activity")}
-                  </TabsTrigger>
-                  <TabsTrigger value="suppliers" className="gap-2 text-sm py-3 px-4 whitespace-nowrap">
-                    <Users className="h-4 w-4" />{t("detail.suppliers_tab", "Suppliers")}
-                  </TabsTrigger>
-                </TabsList>
-              </div>
+              /* Desktop: underline tabs */
+              <TabsList variant="underline">
+                <TabsTrigger value="overview" className="gap-2">
+                  <Package className="h-4 w-4" />{t("detail.overview")}
+                </TabsTrigger>
+                <TabsTrigger value="inventory" className="gap-2">
+                  <Warehouse className="h-4 w-4" />{t("detail.inventory")}
+                </TabsTrigger>
+                <TabsTrigger value="activity" className="gap-2">
+                  <Activity className="h-4 w-4" />{t("detail.activity")}
+                </TabsTrigger>
+                <TabsTrigger value="suppliers" className="gap-2">
+                  <Users className="h-4 w-4" />{t("detail.suppliers_tab", "Suppliers")}
+                </TabsTrigger>
+              </TabsList>
+
             )}
           </div>
 

@@ -263,12 +263,12 @@ export function ArticleDetails() {
       <div className="p-3 sm:p-6 max-w-7xl mx-auto">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           {/* Responsive Tabs */}
-          <div className="border-b border-border mb-6">
-            <TabsList className="inline-flex h-auto p-1 bg-muted rounded-lg w-full overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent md:grid md:grid-cols-2 md:w-auto">
-              <TabsTrigger value="overview" className="whitespace-nowrap px-3 py-2 text-sm">
+          <div className="mb-6">
+            <TabsList variant="underline">
+              <TabsTrigger value="overview">
                 {t('detail.tabs.overview')}
               </TabsTrigger>
-              <TabsTrigger value="notes" className="whitespace-nowrap px-3 py-2 text-sm">
+              <TabsTrigger value="notes">
                 {t('detail.tabs.notes')}
                 {notes.length > 0 && (
                   <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
@@ -278,6 +278,7 @@ export function ArticleDetails() {
               </TabsTrigger>
             </TabsList>
           </div>
+
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="mt-0 space-y-6">

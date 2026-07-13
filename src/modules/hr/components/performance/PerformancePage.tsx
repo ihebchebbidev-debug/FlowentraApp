@@ -18,11 +18,12 @@ export function PerformancePage() {
       />
       <div className="p-4 md:p-6">
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList>
+          <TabsList variant="underline">
             <TabsTrigger value="goals">Goals</TabsTrigger>
             <TabsTrigger value="cycles">Review cycles</TabsTrigger>
             <TabsTrigger value="reviews">Reviews</TabsTrigger>
           </TabsList>
+
           <TabsContent value="goals" className="mt-4"><GoalsTab /></TabsContent>
           <TabsContent value="cycles" className="mt-4"><ReviewCyclesTab /></TabsContent>
           <TabsContent value="reviews" className="mt-4"><ReviewsTab /></TabsContent>

@@ -146,12 +146,13 @@ export function ReportsPage() {
         </Card>
 
         <Tabs defaultValue="cost">
-          <TabsList>
+          <TabsList variant="underline">
             <TabsTrigger value="cost">{t('reportsPage.tabs.cost')}</TabsTrigger>
             <TabsTrigger value="payroll">{t('reportsPage.tabs.payroll')}</TabsTrigger>
             <TabsTrigger value="cnss">{t('reportsPage.tabs.cnss')}</TabsTrigger>
             <TabsTrigger value="absences">{t('reportsPage.tabs.absences')}</TabsTrigger>
           </TabsList>
+
 
           <TabsContent value="cost" className="mt-3">
             <Card className="shadow-card border-0 bg-card">

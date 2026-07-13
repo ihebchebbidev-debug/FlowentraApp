@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
 import { usePaginatedData } from "@/shared/hooks/usePagination";
-import { getInitialViewMode } from '../../../hooks/getInitialViewMode';
+import { getInitialViewMode, useEnforceListOnMobile } from '../../../hooks/getInitialViewMode';
 
 export function useSalesList(sales: any[]) {
   const [viewMode, setViewMode] = useState<'list' | 'table'>(() => getInitialViewMode(['list','table'] as const, 'table'));
+  useEnforceListOnMobile(viewMode, setViewMode, ['list','table'] as const);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | string>('all');
   const [filterStage, setFilterStage] = useState<'all' | string>('all');

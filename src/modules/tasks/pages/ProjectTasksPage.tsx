@@ -573,32 +573,17 @@ export default function ProjectTasksPage() {
                 </SelectContent>
               </Select>
             ) : (
-              <TabsList className="w-full h-auto p-1 bg-muted/50 rounded-lg grid grid-cols-8">
-                <TabsTrigger value="overview" className="px-2 py-2 text-xs sm:text-sm font-medium">
-                  {t('projects.detail.tabs.overview')}
-                </TabsTrigger>
-                <TabsTrigger value="offers" className="px-2 py-2 text-xs sm:text-sm font-medium">
-                  {t('projects.detail.tabs.offers')}
-                </TabsTrigger>
-                <TabsTrigger value="deals" className="px-2 py-2 text-xs sm:text-sm font-medium">
-                  {t('projects.detail.tabs.deals')}
-                </TabsTrigger>
-                <TabsTrigger value="tasks" className="px-2 py-2 text-xs sm:text-sm font-medium">
-                  {t('projects.detail.tabs.tasks')}
-                </TabsTrigger>
-                <TabsTrigger value="team" className="px-2 py-2 text-xs sm:text-sm font-medium">
-                  {t('projects.detail.tabs.team')}
-                </TabsTrigger>
-                <TabsTrigger value="documents" className="px-2 py-2 text-xs sm:text-sm font-medium">
-                  {t('projects.detail.tabs.documents')}
-                </TabsTrigger>
-                <TabsTrigger value="checklists" className="px-2 py-2 text-xs sm:text-sm font-medium">
-                  {t('projects.detail.tabs.checklists', 'Checklists')}
-                </TabsTrigger>
-                <TabsTrigger value="activity" className="px-2 py-2 text-xs sm:text-sm font-medium">
-                  {t('projects.detail.tabs.notesActivity', 'Notes & Activity')}
-                </TabsTrigger>
+              <TabsList variant="underline">
+                <TabsTrigger value="overview">{t('projects.detail.tabs.overview')}</TabsTrigger>
+                <TabsTrigger value="offers">{t('projects.detail.tabs.offers')}</TabsTrigger>
+                <TabsTrigger value="deals">{t('projects.detail.tabs.deals')}</TabsTrigger>
+                <TabsTrigger value="tasks">{t('projects.detail.tabs.tasks')}</TabsTrigger>
+                <TabsTrigger value="team">{t('projects.detail.tabs.team')}</TabsTrigger>
+                <TabsTrigger value="documents">{t('projects.detail.tabs.documents')}</TabsTrigger>
+                <TabsTrigger value="checklists">{t('projects.detail.tabs.checklists', 'Checklists')}</TabsTrigger>
+                <TabsTrigger value="activity">{t('projects.detail.tabs.notesActivity', 'Notes & Activity')}</TabsTrigger>
               </TabsList>
+
             )}
           </div>
 

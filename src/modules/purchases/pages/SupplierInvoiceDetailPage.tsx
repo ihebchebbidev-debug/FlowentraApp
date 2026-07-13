@@ -404,11 +404,12 @@ function SupplierInvoiceDetailContent() {
         </Card>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="h-8">
-            <TabsTrigger value="overview" className="text-xs">{t('tabs.overview')}</TabsTrigger>
-            <TabsTrigger value="items" className="text-xs">{t('tabs.items')}</TabsTrigger>
-            <TabsTrigger value="compliance" className="text-xs">{t('tabs.compliance')}</TabsTrigger>
+          <TabsList variant="underline">
+            <TabsTrigger value="overview">{t('tabs.overview')}</TabsTrigger>
+            <TabsTrigger value="items">{t('tabs.items')}</TabsTrigger>
+            <TabsTrigger value="compliance">{t('tabs.compliance')}</TabsTrigger>
           </TabsList>
+
 
           <TabsContent value="overview" className="mt-4">
             <div className="grid md:grid-cols-2 gap-4">

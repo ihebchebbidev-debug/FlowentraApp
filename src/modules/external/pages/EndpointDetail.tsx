@@ -282,10 +282,11 @@ export function EndpointDetail() {
 
       {/* Tabs: Logs / Settings */}
       <Tabs defaultValue="logs">
-        <TabsList>
+        <TabsList variant="underline">
           <TabsTrigger value="logs">{t('external.detail.tabs.logs')}</TabsTrigger>
           <TabsTrigger value="settings">{t('external.detail.tabs.settings')}</TabsTrigger>
         </TabsList>
+
         <TabsContent value="logs" className="mt-4">
           <EndpointLogsTable endpointId={Number(id)} />
         </TabsContent>
