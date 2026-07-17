@@ -39,6 +39,14 @@ namespace MyApi.Modules.ServiceOrders.Services
             _formDocuments = formDocuments;
         }
 
+        // Phase A (A6): single formula for per-job estimated duration.
+        // Denominator = number of jobs actually created (never a mix of items + orphans).
+        private static int? AverageDurationPerJob(DateTime? start, DateTime? end, int jobCount)
+        {
+            if (!start.HasValue || !end.HasValue || jobCount <= 0) return null;
+            return (int)(end.Value - start.Value).TotalHours / jobCount;
+        }
+
         // =====================================================================
         // DIRECT CREATION (no Offer / Sale parent)
         // =====================================================================
@@ -300,6 +308,11 @@ namespace MyApi.Modules.ServiceOrders.Services
             var strategy = _context.Database.CreateExecutionStrategy();
             await strategy.ExecuteAsync(async () =>
             {
+                // Phase A (A7): retry-safe. On a strategy retry, EF may still hold
+                // tracked entities from the failed attempt — clear them so we never
+                // double-insert or update detached rows.
+                _context.ChangeTracker.Clear();
+                createdServiceOrderId = 0;
                 await using var tx = await _context.Database.BeginTransactionAsync();
             // Verify sale exists with its items
                 var sale = await _context.Sales
@@ -449,9 +462,9 @@ namespace MyApi.Modules.ServiceOrders.Services
                                 InstallationId = int.TryParse(group.Key, out var _grpIid) ? _grpIid : (int?)null,
                                 InstallationName = installationName,
                                 WorkType = DetermineWorkType(items.First().ItemName),
-                                EstimatedDuration = createDto.StartDate.HasValue && createDto.TargetCompletionDate.HasValue
-                                    ? (int)(createDto.TargetCompletionDate.Value - createDto.StartDate.Value).TotalHours / Math.Max(groupedByInstallation.Count() + orphanItems.Count(), 1)
-                                    : null,
+                                EstimatedDuration = AverageDurationPerJob(
+                                    createDto.StartDate, createDto.TargetCompletionDate,
+                                    groupedByInstallation.Count() + orphanItems.Count()),
                                 EstimatedCost = totalCost,
                                 CompletionPercentage = 0,
                                 AssignedTechnicianIds = createDto.AssignedTechnicianIds?.Select(id => id.ToString()).ToArray(),
@@ -485,9 +498,9 @@ namespace MyApi.Modules.ServiceOrders.Services
                                 InstallationId = null,
                                 InstallationName = null,
                                 WorkType = DetermineWorkType(item.ItemName),
-                                EstimatedDuration = createDto.StartDate.HasValue && createDto.TargetCompletionDate.HasValue
-                                    ? (int)(createDto.TargetCompletionDate.Value - createDto.StartDate.Value).TotalHours / Math.Max(serviceItems.Count, 1)
-                                    : null,
+                                EstimatedDuration = AverageDurationPerJob(
+                                    createDto.StartDate, createDto.TargetCompletionDate,
+                                    groupedByInstallation.Count() + orphanItems.Count()),
                                 EstimatedCost = item.LineTotal > 0 ? item.LineTotal : (item.UnitPrice * item.Quantity),
                                 CompletionPercentage = 0,
                                 AssignedTechnicianIds = createDto.AssignedTechnicianIds?.Select(id => id.ToString()).ToArray(),
@@ -511,9 +524,8 @@ namespace MyApi.Modules.ServiceOrders.Services
                             InstallationId = int.TryParse(item.InstallationId, out var _sbJobIid) ? _sbJobIid : (int?)null,
                             InstallationName = item.InstallationName,
                             WorkType = DetermineWorkType(item.ItemName),
-                            EstimatedDuration = createDto.StartDate.HasValue && createDto.TargetCompletionDate.HasValue
-                                ? (int)(createDto.TargetCompletionDate.Value - createDto.StartDate.Value).TotalHours / (serviceItems.Count > 0 ? serviceItems.Count : 1)
-                                : null,
+                            EstimatedDuration = AverageDurationPerJob(
+                                createDto.StartDate, createDto.TargetCompletionDate, serviceItems.Count),
                             EstimatedCost = item.LineTotal > 0 ? item.LineTotal : (item.UnitPrice * item.Quantity),
                             CompletionPercentage = 0,
                             AssignedTechnicianIds = createDto.AssignedTechnicianIds?.Select(id => id.ToString()).ToArray(),
@@ -527,9 +539,11 @@ namespace MyApi.Modules.ServiceOrders.Services
 
                     // Carry planned time/expenses from sale items → service order jobs (Stage 2).
                     // A job may aggregate multiple sale items (installation-grouped); SaleItemId stores "1,2,3".
-                    // Copy ONLY from the primary (first) sale item to avoid stacking duplicate
-                    // planned budgets when several lines share an installation. The lineage anchor
-                    // OriginOfferItemId is preserved on the copied rows.
+                    // Phase A (A1): copy planned entries from EVERY source sale item in the group.
+                    // Previously only the first item's plans were carried through, which silently
+                    // dropped 30–80% of planned budget on installation-grouped sales.
+                    // CopyAsync is idempotent (see PlannedLineEntryService), so a strategy retry
+                    // does not stack duplicates.
                     if (_plannedEntries != null || _formDocuments != null)
                     {
                         foreach (var j in jobs)
@@ -544,11 +558,10 @@ namespace MyApi.Modules.ServiceOrders.Services
                                 .ToList();
                             if (saleItemIds.Count == 0) continue;
 
-                            // Planned time/expenses: copy ONLY from the primary (first) sale item to
-                            // avoid stacking duplicate planned budgets when lines share an installation.
                             if (_plannedEntries != null)
                             {
-                                await _plannedEntries.CopyAsync("sale_item", saleItemIds[0], "service_order_job", j.Id, userId);
+                                foreach (var sid in saleItemIds)
+                                    await _plannedEntries.CopyAsync("sale_item", sid, "service_order_job", j.Id, userId);
                             }
 
                             // Checklists: copy from EVERY sale item the job aggregates, so each service

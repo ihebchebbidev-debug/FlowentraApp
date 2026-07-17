@@ -163,6 +163,9 @@ namespace MyApi.Modules.WorkflowEngine.Services
                             var saleItem = new SaleItem
                             {
                                 SaleId = sale.Id,
+                                // Phase A (A2): FK lineage back to the OfferItem so planning
+                                // copy / invoicing rollups never need positional pairing.
+                                OriginOfferItemId = offerItem.Id,
                                 ArticleId = offerItem.ArticleId,
                                 Description = offerItem.Description ?? offerItem.ItemName ?? "Item",
                                 Quantity = offerItem.Quantity,
@@ -398,6 +401,10 @@ namespace MyApi.Modules.WorkflowEngine.Services
                 // the primary (first) sale item of each job seeds planned entries
                 // to avoid stacking duplicates on installation-grouped jobs.
                 var planSeeds = new List<(int SaleItemId, ServiceOrderJob Job)>();
+                // Phase A (A1): every sale item that ends up in an (installation-grouped) job
+                // must contribute its planned entries. Keep the full list per job, not just the
+                // first item, so multi-line installations don't silently lose planned budget.
+                var planSeedsAll = new List<(int SaleItemId, ServiceOrderJob Job)>();
 
                 if (jobConversionMode == "installation")
                 {
@@ -433,6 +440,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
                         };
                         jobs.Add(job);
                         planSeeds.Add((items.First().Id, job));
+                        foreach (var it in items) planSeedsAll.Add((it.Id, job));
                         foreach (var item in items)
                         {
                             item.ServiceOrderGenerated = true;
@@ -459,6 +467,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
                         };
                         jobs.Add(job);
                         planSeeds.Add((item.Id, job));
+                        planSeedsAll.Add((item.Id, job));
                         item.ServiceOrderGenerated = true;
                         item.ServiceOrderId = serviceOrder.Id.ToString();
                     }
@@ -485,6 +494,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
                         };
                         jobs.Add(job);
                         planSeeds.Add((serviceItem.Id, job));
+                        planSeedsAll.Add((serviceItem.Id, job));
                         serviceItem.ServiceOrderGenerated = true;
                         serviceItem.ServiceOrderId = serviceOrder.Id.ToString();
                     }
@@ -498,7 +508,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
                 // silently producing jobs without their planned budget.
                 if (_plannedEntries != null || _formDocuments != null)
                 {
-                    foreach (var (saleItemId, job) in planSeeds)
+                    foreach (var (saleItemId, job) in planSeedsAll)
                     {
                         if (_plannedEntries != null)
                             await _plannedEntries.CopyAsync("sale_item", saleItemId, "service_order_job", job.Id, userId ?? "system");

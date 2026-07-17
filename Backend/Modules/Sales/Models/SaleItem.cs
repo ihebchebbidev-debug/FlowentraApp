@@ -93,6 +93,14 @@ namespace MyApi.Modules.Sales.Models
         [MaxLength(10)]
         public string? Currency { get; set; }
 
+        // Phase A (A2): FK lineage back to the OfferItem this SaleItem was
+        // converted from. Explicit anchor so downstream code (planning copy,
+        // materials rollup, invoicing) never has to rely on array-index pairing
+        // between offer.Items and sale.Items. Nullable — direct-created sales
+        // and deal→sale conversions leave it NULL.
+        [Column("OriginOfferItemId")]
+        public int? OriginOfferItemId { get; set; }
+
         // Navigation Property
         [ForeignKey("SaleId")]
         public virtual Sale? Sale { get; set; }

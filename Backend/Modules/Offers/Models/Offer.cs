@@ -167,6 +167,13 @@ namespace MyApi.Modules.Offers.Models
         [Column("ConvertedAt")]
         public DateTime? ConvertedAt { get; set; }
 
+        // Phase A (A3): timestamp for the "accept without convert" branch of
+        // ConvertOfferAsync. Together with ConvertedToSaleId this lets the
+        // idempotency guard reject a second accept call whether or not a sale
+        // was ever created, without falsifying conversion analytics.
+        [Column("AcceptedWithoutConversionAt")]
+        public DateTime? AcceptedWithoutConversionAt { get; set; }
+
         [Column("SentCount")]
         public int SentCount { get; set; } = 0;
 

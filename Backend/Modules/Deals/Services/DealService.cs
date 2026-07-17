@@ -9,6 +9,7 @@ using MyApi.Modules.Projects.Services;
 using MyApi.Modules.Offers.DTOs;
 using MyApi.Modules.Offers.Services;
 using MyApi.Modules.WorkflowEngine.Services;
+using MyApi.Modules.Planning.Services;
 
 namespace MyApi.Modules.Deals.Services
 {
@@ -22,6 +23,7 @@ namespace MyApi.Modules.Deals.Services
         private readonly ITaskService _taskService;
         private readonly IWorkflowTriggerService? _workflowTriggerService;
         private readonly MyApi.Modules.Numbering.Services.INumberingService? _numberingService;
+        private readonly IPlannedLineEntryService? _plannedEntries;
 
         // Stages considered "open" (still in the pipeline)
         private static readonly string[] OpenStages = { "lead", "qualified", "proposal", "negotiation" };
@@ -34,7 +36,8 @@ namespace MyApi.Modules.Deals.Services
             IOfferService offerService,
             ITaskService taskService,
             IWorkflowTriggerService? workflowTriggerService = null,
-            MyApi.Modules.Numbering.Services.INumberingService? numberingService = null)
+            MyApi.Modules.Numbering.Services.INumberingService? numberingService = null,
+            IPlannedLineEntryService? plannedEntries = null)
         {
             _context = context;
             _logger = logger;
@@ -44,6 +47,7 @@ namespace MyApi.Modules.Deals.Services
             _taskService = taskService;
             _workflowTriggerService = workflowTriggerService;
             _numberingService = numberingService;
+            _plannedEntries = plannedEntries;
         }
 
         // ── Queries ──
@@ -450,6 +454,22 @@ namespace MyApi.Modules.Deals.Services
                     result.SaleId = sale.Id;
                     saleBackId = sale.Id;
                     deal.ConvertedToSaleId = sale.Id.ToString();
+
+                    // Phase A (A5): carry planned time/expenses/materials from
+                    // deal items → new sale items. Pairing here is index-based
+                    // because deal→sale creation is a single, fresh insert with
+                    // no concurrent writer, so the order matches the input DTO.
+                    if (_plannedEntries != null && sale.Items != null)
+                    {
+                        var dealItems = (deal.Items ?? new List<DealItem>())
+                            .OrderBy(i => i.DisplayOrder).ThenBy(i => i.Id).ToList();
+                        var saleItemsOrdered = sale.Items
+                            .OrderBy(i => i.DisplayOrder).ThenBy(i => i.Id).ToList();
+                        for (int i = 0; i < dealItems.Count && i < saleItemsOrdered.Count; i++)
+                        {
+                            await _plannedEntries.CopyAsync("deal_item", dealItems[i].Id, "sale_item", saleItemsOrdered[i].Id, userId);
+                        }
+                    }
                 }
 
                 // ── Deal → Offer ──
@@ -488,11 +508,27 @@ namespace MyApi.Modules.Deals.Services
                     result.OfferId = offer.Id;
                     offerBackId = offer.Id;
                     deal.ConvertedToOfferId = offer.Id.ToString();
+
+                    // Phase A (A5): copy planned entries from deal items → new offer items.
+                    if (_plannedEntries != null && offer.Items != null)
+                    {
+                        var dealItems = (deal.Items ?? new List<DealItem>())
+                            .OrderBy(i => i.DisplayOrder).ThenBy(i => i.Id).ToList();
+                        var offerItemsOrdered = offer.Items
+                            .OrderBy(i => i.DisplayOrder).ThenBy(i => i.Id).ToList();
+                        for (int i = 0; i < dealItems.Count && i < offerItemsOrdered.Count; i++)
+                        {
+                            await _plannedEntries.CopyAsync("deal_item", dealItems[i].Id, "offer_item", offerItemsOrdered[i].Id, userId);
+                        }
+                    }
                 }
 
                 deal.ConvertedAt = DateTime.UtcNow;
-                // A converted deal is won (unless only an offer was drafted).
-                if (dto.ConvertToSale || dto.ConvertToProject)
+                // Phase A (A4): a deal is "won" as soon as it's converted to ANY
+                // downstream artifact — sale, project, OR offer. Leaving an
+                // offer-only conversion open re-listed the same deal in the
+                // pipeline and let it be reconverted.
+                if (dto.ConvertToSale || dto.ConvertToProject || dto.ConvertToOffer)
                 {
                     deal.Stage = "won";
                     deal.ActualCloseDate ??= DateTime.UtcNow;

@@ -589,9 +589,14 @@ namespace MyApi.Modules.Offers.Services
             if (offer == null)
                 throw new KeyNotFoundException($"Offer with ID {id} not found");
 
-            // Prevent duplicate conversions
+            // Phase A (A3): duplicate-accept guard. Reject when:
+            //   * the offer was already converted to a sale, OR
+            //   * the offer was already accepted without conversion (avoids
+            //     re-firing activity + workflow triggers on repeat clicks).
             if (!string.IsNullOrEmpty(offer.ConvertedToSaleId))
                 throw new InvalidOperationException($"Offer {id} has already been converted to Sale {offer.ConvertedToSaleId}");
+            if (offer.Status == "accepted" && offer.AcceptedWithoutConversionAt.HasValue)
+                throw new InvalidOperationException($"Offer {id} has already been accepted");
 
             // Honor project-level conversion settings (single per-tenant row).
             var projectSettingsRow = await _context.Set<MyApi.Modules.Projects.Models.ProjectSettings>()
@@ -635,6 +640,9 @@ namespace MyApi.Modules.Offers.Services
             int? serviceOrderId = null;
             int formDocumentsCopied = 0;
             MyApi.Modules.Sales.Models.Sale? createdSale = null;
+            // Phase A (A8): surface non-fatal post-commit failures to the caller
+            // instead of swallowing them into logs.
+            var warnings = new List<string>();
 
             // ── Atomic DB writes: sale + items + planned entries + offer status ──
             // Wrapped in a transaction so a mid-conversion failure does NOT leave a
@@ -643,6 +651,11 @@ namespace MyApi.Modules.Offers.Services
             var strategy = _context.Database.CreateExecutionStrategy();
             await strategy.ExecuteAsync(async () =>
             {
+                // Phase A (A7): retry-safe — drop stale tracked entities before starting.
+                _context.ChangeTracker.Clear();
+                saleId = null;
+                serviceOrderId = null;
+                createdSale = null;
                 await using var tx = await _context.Database.BeginTransactionAsync();
                 try
                 {
@@ -713,6 +726,8 @@ namespace MyApi.Modules.Offers.Services
                         var saleItems = offer.Items.OrderBy(i => i.DisplayOrder).ThenBy(i => i.Id).Select(oi => new MyApi.Modules.Sales.Models.SaleItem
                         {
                             SaleId = sale.Id,
+                            // Phase A (A2): explicit FK to the source offer item.
+                            OriginOfferItemId = oi.Id,
                             Type = oi.Type,
                             ArticleId = oi.ArticleId,
                             ItemName = oi.ItemName,
@@ -749,25 +764,39 @@ namespace MyApi.Modules.Offers.Services
                     // we never end up with sale items but no planned budget.
                     if ((_plannedEntries != null || _formDocumentService != null) && offer.Items != null && offer.Items.Any())
                     {
-                        var srcOfferItems = offer.Items.OrderBy(i => i.DisplayOrder).ThenBy(i => i.Id).ToList();
+                        // Phase A (A2): pair by explicit FK, not array index. Positional
+                        // pairing silently mis-attributes planned budgets whenever the
+                        // insert order diverges from offer.Items order (added filters,
+                        // gift lines, concurrent writers).
                         var newSaleItems = await _context.SaleItems
-                            .Where(si => si.SaleId == sale.Id)
-                            .OrderBy(si => si.Id)
+                            .Where(si => si.SaleId == sale.Id && si.OriginOfferItemId != null)
                             .ToListAsync();
-                        for (int i = 0; i < srcOfferItems.Count && i < newSaleItems.Count; i++)
+                        var byOffer = newSaleItems.ToDictionary(si => si.OriginOfferItemId!.Value);
+                        foreach (var oi in offer.Items)
                         {
+                            if (!byOffer.TryGetValue(oi.Id, out var newSi)) continue;
                             if (_plannedEntries != null)
-                                await _plannedEntries.CopyAsync("offer_item", srcOfferItems[i].Id, "sale_item", newSaleItems[i].Id, userId);
+                                await _plannedEntries.CopyAsync("offer_item", oi.Id, "sale_item", newSi.Id, userId);
                             if (_formDocumentService != null)
-                                await _formDocumentService.CopyItemDocumentsAsync("offer_item", srcOfferItems[i].Id, "sale_item", newSaleItems[i].Id, userId);
+                                await _formDocumentService.CopyItemDocumentsAsync("offer_item", oi.Id, "sale_item", newSi.Id, userId);
                         }
                     }
                 }
 
                 // ── Update offer status and conversion tracking ──
+                // Phase A (A3): only record a real conversion if a sale was created.
+                // Otherwise mark it "accepted without conversion" so the guard above
+                // rejects a second accept call and analytics stay truthful.
                 offer.Status = "accepted";
-                offer.ConvertedToSaleId = saleId?.ToString();
-                offer.ConvertedAt = DateTime.UtcNow;
+                if (saleId.HasValue)
+                {
+                    offer.ConvertedToSaleId = saleId.Value.ToString();
+                    offer.ConvertedAt = DateTime.UtcNow;
+                }
+                else
+                {
+                    offer.AcceptedWithoutConversionAt = DateTime.UtcNow;
+                }
                 offer.UpdatedAt = DateTime.UtcNow;
 
                 // Log conversion activity on the offer
@@ -806,6 +835,7 @@ namespace MyApi.Modules.Offers.Services
                     _logger.LogError(ex,
                         "Failed to copy form documents from Offer {OfferId} to Sale {SaleId}",
                         id, createdSale.Id);
+                    warnings.Add($"form_documents_copy_failed: {ex.Message}");
                 }
 
                 if (_workflowTriggerService != null)
@@ -819,6 +849,7 @@ namespace MyApi.Modules.Offers.Services
                     catch (Exception ex)
                     {
                         _logger.LogError(ex, "Failed to trigger workflow for sale {SaleId} created from offer {OfferId}", createdSale.Id, id);
+                        warnings.Add($"workflow_trigger_failed_sale: {ex.Message}");
                     }
                 }
             }
@@ -835,6 +866,7 @@ namespace MyApi.Modules.Offers.Services
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Failed to trigger workflow for offer {OfferId} conversion", id);
+                    warnings.Add($"workflow_trigger_failed_offer: {ex.Message}");
                 }
             }
 
@@ -845,7 +877,8 @@ namespace MyApi.Modules.Offers.Services
                 SaleId = saleId,
                 ServiceOrderId = serviceOrderId,
                 FormDocumentsCopied = formDocumentsCopied,
-                Offer = updatedOffer
+                Offer = updatedOffer,
+                Warnings = warnings
             };
         }
 

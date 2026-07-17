@@ -13,7 +13,7 @@ namespace MyApi.Modules.Planning.Services
     {
         private readonly ApplicationDbContext _db;
         private static readonly HashSet<string> ValidParents = new(StringComparer.OrdinalIgnoreCase)
-            { "offer_item", "sale_item", "service_order_job" };
+            { "offer_item", "sale_item", "service_order_job", "deal_item" };
         private static readonly HashSet<string> ValidKinds = new(StringComparer.OrdinalIgnoreCase)
             { "time", "expense", "material" };
         private static readonly HashSet<string> ValidExpenseTypes = new(StringComparer.OrdinalIgnoreCase)
@@ -106,11 +106,22 @@ namespace MyApi.Modules.Planning.Services
                 .ToListAsync();
             if (src.Count == 0) return;
 
+            // Phase A (A1): make CopyAsync idempotent. A workflow retry or a loop
+            // that re-invokes copy for the same (source→target, kind, article,
+            // description) must never stack duplicate planned rows on the target.
+            var targetType = targetParentType.ToLower();
+            var existing = await _db.Set<PlannedLineEntry>()
+                .Where(p => p.ParentType == targetType && p.ParentId == targetParentId)
+                .ToListAsync();
+            static string Key(PlannedLineEntry p) =>
+                $"{p.Kind}|{p.ArticleId?.ToString() ?? "-"}|{p.ExpenseType ?? "-"}|{p.Description ?? p.ArticleName ?? "-"}|{p.OriginOfferItemId?.ToString() ?? "-"}";
+            var existingKeys = new HashSet<string>(existing.Select(Key));
+
             foreach (var s in src)
             {
-                _db.Set<PlannedLineEntry>().Add(new PlannedLineEntry
+                var candidate = new PlannedLineEntry
                 {
-                    ParentType = targetParentType.ToLower(),
+                    ParentType = targetType,
                     ParentId = targetParentId,
                     OriginOfferItemId = s.OriginOfferItemId ?? (sourceParentType.Equals("offer_item", StringComparison.OrdinalIgnoreCase) ? s.ParentId : null),
                     Kind = s.Kind,
@@ -128,7 +139,9 @@ namespace MyApi.Modules.Planning.Services
                     Unit = s.Unit,
                     CreatedBy = userId,
                     CreatedAt = DateTime.UtcNow,
-                });
+                };
+                if (existingKeys.Add(Key(candidate)))
+                    _db.Set<PlannedLineEntry>().Add(candidate);
             }
             await _db.SaveChangesAsync();
         }

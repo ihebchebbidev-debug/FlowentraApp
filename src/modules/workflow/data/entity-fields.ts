@@ -106,7 +106,9 @@ export const saleFields: EntityField[] = [
   { path: 'saleNumber', label: 'Sale Number', type: 'string', category: 'core' },
   { path: 'title', label: 'Title', type: 'string', category: 'core' },
   { path: 'status', label: 'Status', type: 'enum', category: 'status', enumValues: ['open', 'in_progress', 'closed', 'cancelled', 'invoiced'] },
-  { path: 'fulfillmentStatus', label: 'Fulfillment Status', type: 'enum', category: 'status', enumValues: ['unfulfilled', 'partial', 'fulfilled'] },
+  // Phase A (A9): 'fulfillmentStatus' removed from workflow triggers — it's
+  // computed from sale items (not persisted on Sale) and the enum here didn't
+  // match reality, so any rule using it silently mis-fired.
   // Financial
   { path: 'totalAmount', label: 'Total Amount', type: 'number', category: 'financial' },
   { path: 'paidAmount', label: 'Paid Amount', type: 'number', category: 'financial' },
