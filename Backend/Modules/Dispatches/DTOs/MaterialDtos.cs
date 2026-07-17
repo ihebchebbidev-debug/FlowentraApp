@@ -34,6 +34,8 @@ namespace MyApi.Modules.Dispatches.DTOs
         public string? Sku { get; set; }
         public string? Description { get; set; }
         public int Quantity { get; set; }
+        /// <summary>Planned/budgeted quantity from the originating Sale item. Null for dispatch-sourced rows.</summary>
+        public decimal? EstimatedQuantity { get; set; }
         public decimal UnitPrice { get; set; }
         public decimal TotalPrice { get; set; }
         public string Status { get; set; } = null!;

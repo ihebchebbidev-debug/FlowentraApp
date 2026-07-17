@@ -1409,6 +1409,44 @@ namespace MyApi.Modules.ServiceOrders.Services
             return "maintenance";
         }
 
+        /// <summary>
+        /// Resolve every dispatch attributable to a service order through the same THREE paths used by the
+        /// invoice summary, so downstream reads (materials, expenses, time, notes, dispatches list) and the
+        /// invoice transfer all agree on the same set of dispatches:
+        ///   (a) Dispatch.ServiceOrderId points at us (installation / whole-SO dispatches).
+        ///   (b) DispatchJobs join table links to one of our jobs (multi-job dispatches).
+        ///   (c) Legacy: Dispatch.JobId string equals one of our job ids (old single-job dispatches).
+        ///   (d) Dispatch.InstallationId matches an installation on our jobs.
+        /// Soft-deleted dispatches (and soft-deleted join rows) are always excluded.
+        /// </summary>
+        private async Task<List<int>> ResolveLinkedDispatchIdsAsync(ServiceOrder serviceOrder)
+        {
+            var jobIds = serviceOrder.Jobs?.Select(j => j.Id).ToList() ?? new List<int>();
+            var installationIds = serviceOrder.Jobs?
+                .Where(j => j.InstallationId.HasValue)
+                .Select(j => j.InstallationId!.Value)
+                .Distinct()
+                .ToList() ?? new List<int>();
+            var jobIdStrings = jobIds.Select(j => j.ToString()).ToList();
+
+            var dispatchIdsViaJoin = await _context.Set<DispatchJob>()
+                .Where(dj => !dj.IsDeleted && jobIds.Contains(dj.JobId))
+                .Select(dj => dj.DispatchId)
+                .Distinct()
+                .ToListAsync();
+
+            return await _context.Dispatches
+                .Where(d => !d.IsDeleted && (
+                       d.ServiceOrderId == serviceOrder.Id
+                    || dispatchIdsViaJoin.Contains(d.Id)
+                    || (d.JobId != null && jobIdStrings.Contains(d.JobId))
+                    || (d.InstallationId.HasValue && installationIds.Contains(d.InstallationId.Value))
+                ))
+                .Select(d => d.Id)
+                .Distinct()
+                .ToListAsync();
+        }
+
         // ============== AGGREGATION METHODS ==============
 
         public async Task<List<DispatchDto>> GetDispatchesForServiceOrderAsync(int serviceOrderId)
@@ -1420,11 +1458,11 @@ namespace MyApi.Modules.ServiceOrders.Services
             if (serviceOrder == null)
                 throw new KeyNotFoundException($"Service order with ID {serviceOrderId} not found");
 
-            var jobIdStrings = serviceOrder.Jobs?.Select(j => j.Id.ToString()).ToList() ?? new List<string>();
-            
+            var linkedDispatchIds = await ResolveLinkedDispatchIdsAsync(serviceOrder);
+
             // Include AssignedTechnicians to properly populate technician data
             var dispatches = await _context.Dispatches
-                .Where(d => d.JobId != null && jobIdStrings.Contains(d.JobId))
+                .Where(d => linkedDispatchIds.Contains(d.Id))
                 .Include(d => d.AssignedTechnicians)
                 .AsSingleQuery()
                 .ToListAsync();
@@ -1507,13 +1545,8 @@ namespace MyApi.Modules.ServiceOrders.Services
                 SourceTable = "service_order"
             }));
 
-            // 2. Get time entries from dispatches
-            var jobIdStrings = serviceOrder.Jobs?.Select(j => j.Id.ToString()).ToList() ?? new List<string>();
-            
-            var dispatchIds = await _context.Dispatches
-                .Where(d => d.JobId != null && jobIdStrings.Contains(d.JobId))
-                .Select(d => d.Id)
-                .ToListAsync();
+            // 2. Get time entries from dispatches (installation / multi-job / legacy paths)
+            var dispatchIds = await ResolveLinkedDispatchIdsAsync(serviceOrder);
 
             var timeEntries = await _context.TimeEntries
                 .Where(te => dispatchIds.Contains(te.DispatchId))
@@ -1571,13 +1604,8 @@ namespace MyApi.Modules.ServiceOrders.Services
                 SourceTable = "service_order"
             }));
 
-            // 2. Get expenses from dispatches
-            var jobIdStrings = serviceOrder.Jobs?.Select(j => j.Id.ToString()).ToList() ?? new List<string>();
-            
-            var dispatchIds = await _context.Dispatches
-                .Where(d => d.JobId != null && jobIdStrings.Contains(d.JobId))
-                .Select(d => d.Id)
-                .ToListAsync();
+            // 2. Get expenses from dispatches (installation / multi-job / legacy paths)
+            var dispatchIds = await ResolveLinkedDispatchIdsAsync(serviceOrder);
 
             var expenses = await _context.DispatchExpenses
                 .Where(e => dispatchIds.Contains(e.DispatchId))
@@ -1627,6 +1655,7 @@ namespace MyApi.Modules.ServiceOrders.Services
                 Sku = m.Sku,
                 Description = m.Description ?? m.Name,
                 Quantity = (int)m.Quantity,
+                EstimatedQuantity = m.EstimatedQuantity ?? m.Quantity,
                 UnitPrice = m.UnitPrice,
                 TotalPrice = m.TotalPrice,
                 Status = m.Status,
@@ -1644,13 +1673,8 @@ namespace MyApi.Modules.ServiceOrders.Services
                 SourceTable = "service_order"
             }));
 
-            // 2. Get materials from dispatches (used during work execution)
-            var jobIdStrings = serviceOrder.Jobs?.Select(j => j.Id.ToString()).ToList() ?? new List<string>();
-            
-            var dispatchIds = await _context.Dispatches
-                .Where(d => d.JobId != null && jobIdStrings.Contains(d.JobId))
-                .Select(d => d.Id)
-                .ToListAsync();
+            // 2. Get materials from dispatches (installation / multi-job / legacy paths)
+            var dispatchIds = await ResolveLinkedDispatchIdsAsync(serviceOrder);
 
             var dispatchMaterials = await _context.DispatchMaterials
                 .Where(m => dispatchIds.Contains(m.DispatchId))
@@ -1705,13 +1729,8 @@ namespace MyApi.Modules.ServiceOrders.Services
                 CreatedAt = n.CreatedAt
             }));
 
-            // Also get notes from dispatches (existing behavior)
-            var jobIdStrings = serviceOrder.Jobs?.Select(j => j.Id.ToString()).ToList() ?? new List<string>();
-            
-            var dispatchIds = await _context.Dispatches
-                .Where(d => d.JobId != null && jobIdStrings.Contains(d.JobId))
-                .Select(d => d.Id)
-                .ToListAsync();
+            // Also get notes from dispatches (installation / multi-job / legacy paths, soft-delete aware)
+            var dispatchIds = await ResolveLinkedDispatchIdsAsync(serviceOrder);
 
             var dispatchNotes = await _context.DispatchNotes
                 .Where(n => dispatchIds.Contains(n.DispatchId))
@@ -2307,12 +2326,51 @@ namespace MyApi.Modules.ServiceOrders.Services
 
             _logger.LogInformation("PrepareForInvoice: SO={Id}, SaleId={SaleId}, current sale items={Count}", id, saleId, sale.Items?.Count ?? 0);
 
-            // Pre-compute linked dispatch IDs for dispatch table lookups
-            var jobIdStrings = serviceOrder.Jobs?.Select(j => j.Id.ToString()).ToList() ?? new List<string>();
-            var linkedDispatchIds = await _context.Dispatches
-                .Where(d => d.JobId != null && jobIdStrings.Contains(d.JobId))
-                .Select(d => d.Id)
-                .ToListAsync();
+            // Resolve linked dispatches through installation / multi-job / legacy paths, soft-delete aware.
+            // Using the same helper as GetInvoiceSummary keeps the two views strictly in sync.
+            var linkedDispatchIds = await ResolveLinkedDispatchIdsAsync(serviceOrder);
+
+            // Idempotency for dispatch-sourced lines: DispatchMaterials / DispatchExpenses / dispatch TimeEntries
+            // do NOT carry an InvoiceStatus column, so we cannot filter individual rows as "already transferred".
+            // If a previous PrepareForInvoice call already produced sale items for THIS service order, we refuse
+            // to add any dispatch-sourced lines a second time - otherwise the customer would be double-billed.
+            // (SO-sourced entities are still safely re-checked via their InvoiceStatus flag below.)
+            var previouslyTransferred = (sale.Items ?? new List<Sales.Models.SaleItem>())
+                .Any(si => si.ServiceOrderId == id.ToString());
+
+            // Fail fast: if dispatch-sourced lines were requested but a previous run already put items
+            // on the sale for this SO, silently skipping them would look like a success while quietly
+            // dropping the user's selection. Force an explicit error so the caller can retry safely
+            // (either by clearing the sale, or by manually adding the missing lines to the sale).
+            var dispatchRequested =
+                (dto.DispatchMaterialIds?.Any() == true) ||
+                (dto.DispatchExpenseIds?.Any() == true) ||
+                (dto.DispatchTimeEntryIds?.Any() == true);
+            if (previouslyTransferred && dispatchRequested)
+            {
+                throw new InvalidOperationException(
+                    "This sale already contains items transferred from this service order in a previous run. " +
+                    "Dispatch-sourced materials, expenses, or time entries cannot be re-transferred automatically " +
+                    "(dispatch rows do not track invoice status). Add them to the sale manually, or reset the linked sale before retrying.");
+            }
+
+            // Currency guard: SaleItems inherit the Sale's currency (there is no per-line currency column),
+            // so we refuse to transfer expenses whose currency differs from the sale to avoid silently
+            // billing e.g. a USD expense as if it were TND.
+            if (dto.ExpenseIds?.Any() == true)
+            {
+                var mismatched = await _context.ServiceOrderExpenses
+                    .Where(e => dto.ExpenseIds.Contains(e.Id) && e.ServiceOrderId == id
+                        && e.InvoiceStatus == null && e.Currency != sale.Currency)
+                    .Select(e => new { e.Id, e.Currency })
+                    .ToListAsync();
+                if (mismatched.Any())
+                {
+                    throw new InvalidOperationException(
+                        $"Currency mismatch: {mismatched.Count} expense(s) are not in the sale's currency ({sale.Currency}). " +
+                        $"Convert them before transferring. Offending expense IDs: {string.Join(", ", mismatched.Select(m => m.Id))}.");
+                }
+            }
 
             var newSaleItems = new List<Sales.Models.SaleItem>();
             var currentDisplayOrder = (sale.Items?.Count ?? 0);
@@ -2326,8 +2384,10 @@ namespace MyApi.Modules.ServiceOrders.Services
             if (dto.MaterialIds != null && dto.MaterialIds.Any())
             {
                 var materials = await _context.ServiceOrderMaterials
-                    .Where(m => dto.MaterialIds.Contains(m.Id) && m.ServiceOrderId == id 
-                        && (m.InvoiceStatus == null || m.InvoiceStatus == "selected_for_invoice"))
+                    .Where(m => dto.MaterialIds.Contains(m.Id) && m.ServiceOrderId == id
+                        // Idempotency: only pick up rows that have NEVER been transferred.
+                        // A row marked "selected_for_invoice" is already on the sale.
+                        && m.InvoiceStatus == null)
                     .ToListAsync();
 
                 _logger.LogInformation("PrepareForInvoice: Found {Count} SO materials (requested: {Requested})", materials.Count, dto.MaterialIds.Count);
@@ -2356,7 +2416,7 @@ namespace MyApi.Modules.ServiceOrders.Services
             }
 
             // ===== MATERIALS FROM DispatchMaterials =====
-            if (dto.DispatchMaterialIds != null && dto.DispatchMaterialIds.Any())
+            if (!previouslyTransferred && dto.DispatchMaterialIds != null && dto.DispatchMaterialIds.Any())
             {
                 var dispatchMats = await _context.DispatchMaterials
                     .Where(m => dto.DispatchMaterialIds.Contains(m.Id) && linkedDispatchIds.Contains(m.DispatchId))
@@ -2388,7 +2448,7 @@ namespace MyApi.Modules.ServiceOrders.Services
             {
                 var soExpenses = await _context.ServiceOrderExpenses
                     .Where(e => dto.ExpenseIds.Contains(e.Id) && e.ServiceOrderId == id
-                        && (e.InvoiceStatus == null || e.InvoiceStatus == "selected_for_invoice"))
+                        && e.InvoiceStatus == null)
                     .ToListAsync();
 
                 _logger.LogInformation("PrepareForInvoice: Found {Count} SO expenses (requested: {Requested})", soExpenses.Count, dto.ExpenseIds.Count);
@@ -2413,7 +2473,7 @@ namespace MyApi.Modules.ServiceOrders.Services
             }
 
             // ===== EXPENSES FROM DispatchExpenses =====
-            if (dto.DispatchExpenseIds != null && dto.DispatchExpenseIds.Any())
+            if (!previouslyTransferred && dto.DispatchExpenseIds != null && dto.DispatchExpenseIds.Any())
             {
                 var dispatchExpenses = await _context.DispatchExpenses
                     .Where(e => dto.DispatchExpenseIds.Contains(e.Id) && linkedDispatchIds.Contains(e.DispatchId))
@@ -2443,8 +2503,8 @@ namespace MyApi.Modules.ServiceOrders.Services
             if (dto.TimeEntryIds != null && dto.TimeEntryIds.Any())
             {
                 var timeEntries = await _context.ServiceOrderTimeEntries
-                    .Where(t => dto.TimeEntryIds.Contains(t.Id) && t.ServiceOrderId == id && t.Billable 
-                        && (t.InvoiceStatus == null || t.InvoiceStatus == "selected_for_invoice"))
+                    .Where(t => dto.TimeEntryIds.Contains(t.Id) && t.ServiceOrderId == id && t.Billable
+                        && t.InvoiceStatus == null)
                     .ToListAsync();
 
                 _logger.LogInformation("PrepareForInvoice: Found {Count} SO time entries (requested: {Requested})", timeEntries.Count, dto.TimeEntryIds.Count);
@@ -2473,7 +2533,7 @@ namespace MyApi.Modules.ServiceOrders.Services
             }
 
             // ===== TIME ENTRIES FROM Dispatch TimeEntries =====
-            if (dto.DispatchTimeEntryIds != null && dto.DispatchTimeEntryIds.Any())
+            if (!previouslyTransferred && dto.DispatchTimeEntryIds != null && dto.DispatchTimeEntryIds.Any())
             {
                 var dispatchTimeEntries = await _context.TimeEntries
                     .Where(t => dto.DispatchTimeEntryIds.Contains(t.Id) && linkedDispatchIds.Contains(t.DispatchId))
@@ -2481,20 +2541,44 @@ namespace MyApi.Modules.ServiceOrders.Services
 
                 _logger.LogInformation("PrepareForInvoice: Found {Count} dispatch time entries (requested: {Requested})", dispatchTimeEntries.Count, dto.DispatchTimeEntryIds.Count);
 
+                // Dispatch TimeEntries have no HourlyRate column. To avoid billing labor at $0 whenever a
+                // technician logs time through the field app, fall back to the most recent HourlyRate the
+                // same technician used on ServiceOrderTimeEntries. If none exists, we still record the line
+                // (so the user sees the work) but flag it in the description for manual pricing.
+                var technicianIdStrings = dispatchTimeEntries
+                    .Select(t => t.TechnicianId.ToString())
+                    .Distinct()
+                    .ToList();
+                var fallbackRates = await _context.ServiceOrderTimeEntries
+                    .Where(t => t.TechnicianId != null && technicianIdStrings.Contains(t.TechnicianId) && t.HourlyRate != null)
+                    .GroupBy(t => t.TechnicianId!)
+                    .Select(g => new { TechnicianId = g.Key, Rate = g.OrderByDescending(x => x.CreatedAt).First().HourlyRate })
+                    .ToDictionaryAsync(x => x.TechnicianId, x => x.Rate ?? 0m);
+
                 foreach (var te in dispatchTimeEntries)
                 {
                     currentDisplayOrder++;
                     var duration = te.Duration ?? 0;
                     var hours = duration / 60.0m;
-                    // Dispatch TimeEntries don't have HourlyRate/TotalCost - use 0
-                    var total = hours * 0; // No rate info available
+                    var rate = fallbackRates.TryGetValue(te.TechnicianId.ToString(), out var r) ? r : 0m;
+                    var total = hours * rate;
+                    var needsPricing = rate == 0m && duration > 0;
+
+                    var description = te.Description ?? $"Time entry - {te.WorkType ?? "work"} ({duration} min)";
+                    if (needsPricing)
+                    {
+                        description += " [rate not set - edit before invoicing]";
+                        _logger.LogWarning(
+                            "PrepareForInvoice: Dispatch time entry {TeId} for technician {Tech} has no available hourly rate; line added at 0.",
+                            te.Id, te.TechnicianId);
+                    }
 
                     newSaleItems.Add(new Sales.Models.SaleItem
                     {
                         SaleId = saleId,
                         Type = "service",
                         ItemName = $"Labor: {te.WorkType ?? "work"}",
-                        Description = te.Description ?? $"Time entry - {te.WorkType ?? "work"} ({duration} min)",
+                        Description = description,
                         Quantity = 1,
                         UnitPrice = total,
                         LineTotal = total,
@@ -2512,7 +2596,15 @@ namespace MyApi.Modules.ServiceOrders.Services
 
             if (hasRequestedIds && !newSaleItems.Any())
             {
-                throw new InvalidOperationException("Items were requested for transfer but none could be found or matched. Check that the IDs exist and belong to this service order.");
+                if (previouslyTransferred)
+                {
+                    throw new InvalidOperationException(
+                        "These items have already been transferred to the sale in a previous run. " +
+                        "Open the sale to edit, or reset the linked service order/sale before retrying.");
+                }
+                throw new InvalidOperationException(
+                    "Items were requested for transfer but none could be found or matched. " +
+                    "Check that the IDs exist and belong to this service order.");
             }
 
             // Use execution strategy to support retrying transactions with Npgsql
