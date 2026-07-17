@@ -347,6 +347,7 @@ namespace MyApi.Modules.ServiceOrders.DTOs
         public string? Sku { get; set; }
         public string? Description { get; set; }
         public decimal Quantity { get; set; } = 1;
+        public decimal? EstimatedQuantity { get; set; }
         public decimal UnitPrice { get; set; } = 0;
         public string? Unit { get; set; }
         public string? InternalComment { get; set; }

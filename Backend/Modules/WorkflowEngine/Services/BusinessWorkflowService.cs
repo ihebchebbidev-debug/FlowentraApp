@@ -422,7 +422,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
                             JobDescription = "Services: " + string.Join(", ", serviceNames),
                             Description = string.Join("\n", items.Select(i =>
                                 $"- {i.ItemName}: {i.Quantity} x {i.UnitPrice:F2} = {(i.LineTotal > 0 ? i.LineTotal : i.UnitPrice * i.Quantity):F2}")),
-                            InstallationId = group.Key,
+                            InstallationId = int.TryParse(group.Key, out var _gkId) ? _gkId : (int?)null,
                             InstallationName = installationName,
                             Status = "unscheduled",
                             EstimatedCost = totalCost,
@@ -474,7 +474,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
                             Title = serviceItem.ItemName ?? serviceItem.Description ?? "Service Job",
                             Description = serviceItem.Description ?? "",
                             JobDescription = serviceItem.Description ?? serviceItem.ItemName ?? "Service job from sale",
-                            InstallationId = serviceItem.InstallationId,
+                            InstallationId = int.TryParse(serviceItem.InstallationId, out var _siId) ? _siId : (int?)null,
                             InstallationName = serviceItem.InstallationName,
                             Status = "unscheduled",
                             EstimatedCost = serviceItem.LineTotal,
@@ -527,7 +527,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
                             TotalPrice = materialItem.LineTotal,
                             Status = "pending",
                             Source = "sale_conversion",
-                            InstallationId = materialItem.InstallationId,
+                            InstallationId = int.TryParse(materialItem.InstallationId, out var _miId) ? _miId : (int?)null,
                             InstallationName = materialItem.InstallationName,
                             CreatedBy = userId ?? "system",
                             CreatedAt = DateTime.UtcNow

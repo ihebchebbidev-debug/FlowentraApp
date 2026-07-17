@@ -93,9 +93,9 @@ namespace MyApi.Modules.Planning.Services
                     // a single installation dispatch and append this job to it instead of creating
                     // a new per-job dispatch.
                     if (conversionMode == "installation"
-                        && !string.IsNullOrEmpty(job.InstallationId)
-                        && int.TryParse(job.InstallationId, out var installationIdInt))
+                        && job.InstallationId.HasValue)
                     {
+                        var installationIdInt = job.InstallationId.Value;
                         dispatch = await _dispatchService.AddJobsToInstallationDispatchAsync(
                             installationIdInt,
                             job.InstallationName ?? $"Installation #{installationIdInt}",
