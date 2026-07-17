@@ -65,6 +65,7 @@ interface MaterialEntry {
   sku?: string;
   description?: string;
   quantity: number;
+  estimatedQuantity?: number;
   unitPrice?: number;
   unitCost?: number;
   totalPrice?: number;
@@ -144,6 +145,7 @@ export function MaterialsTab({ serviceOrder, onUpdate, jobIds = [], jobLabels }:
   const [materialToEdit, setMaterialToEdit] = useState<AggregatedMaterial | null>(null);
   const [editFormData, setEditFormData] = useState({
     quantity: 1,
+    estimatedQuantity: undefined as number | undefined,
     unitPrice: 0,
     description: '',
     internalComment: '',
@@ -464,6 +466,10 @@ export function MaterialsTab({ serviceOrder, onUpdate, jobIds = [], jobLabels }:
         sku: materialData.sku || materialData.articleSku || undefined,
         description: materialData.description || undefined,
         quantity: materialData.quantity || 1,
+        estimatedQuantity:
+          typeof materialData.estimatedQuantity === 'number'
+            ? materialData.estimatedQuantity
+            : (materialData.quantity || 1),
         unitPrice: materialData.unitPrice || 0,
         internalComment: materialData.internalComment || undefined,
         externalComment: materialData.externalComment || undefined,
@@ -561,6 +567,7 @@ export function MaterialsTab({ serviceOrder, onUpdate, jobIds = [], jobLabels }:
     setMaterialToEdit(material);
     setEditFormData({
       quantity: material.quantity || 1,
+      estimatedQuantity: material.estimatedQuantity,
       unitPrice: material.resolvedUnitCost || material.unitPrice || material.unitCost || 0,
       description: material.description || '',
       internalComment: material.internalComment || '',
@@ -594,6 +601,7 @@ export function MaterialsTab({ serviceOrder, onUpdate, jobIds = [], jobLabels }:
       } else {
         await serviceOrdersApi.updateMaterial(serviceOrderId, materialToEdit.id, {
           quantity: editFormData.quantity,
+          estimatedQuantity: editFormData.estimatedQuantity,
           unitPrice: editFormData.unitPrice,
           description: editFormData.description || undefined,
           internalComment: editFormData.internalComment || undefined,
@@ -610,6 +618,7 @@ export function MaterialsTab({ serviceOrder, onUpdate, jobIds = [], jobLabels }:
           return {
             ...m,
             quantity: editFormData.quantity,
+            estimatedQuantity: editFormData.estimatedQuantity ?? m.estimatedQuantity,
             unitPrice: editFormData.unitPrice,
             unitCost: editFormData.unitPrice,
             description: editFormData.description,
@@ -700,7 +709,7 @@ export function MaterialsTab({ serviceOrder, onUpdate, jobIds = [], jobLabels }:
                     <tr className="border-b">
                       <th className="text-left p-4 text-sm font-medium text-muted-foreground">Material</th>
                       <th className="text-left p-4 text-sm font-medium text-muted-foreground">Installation</th>
-                      <th className="text-left p-4 text-sm font-medium text-muted-foreground">Qty</th>
+                      <th className="text-left p-4 text-sm font-medium text-muted-foreground">Qty / Est.</th>
                       <th className="text-left p-4 text-sm font-medium text-muted-foreground">Unit Cost</th>
                       <th className="text-left p-4 text-sm font-medium text-muted-foreground">Total</th>
                       <th className="text-right p-4 text-sm font-medium text-muted-foreground">Actions</th>
@@ -731,7 +740,32 @@ export function MaterialsTab({ serviceOrder, onUpdate, jobIds = [], jobLabels }:
                               <span className="text-muted-foreground">-</span>
                             )}
                           </td>
-                          <td className="px-4 py-3 text-sm">{material.quantity} {getUnitLabel(material.unit || 'piece')}</td>
+                          <td className="px-4 py-3 text-sm">
+                            {(() => {
+                              const unitLabel = getUnitLabel(material.unit || 'piece');
+                              const est = material.estimatedQuantity;
+                              const hasEst = typeof est === 'number' && est > 0;
+                              const isOverrun = hasEst && material.quantity > (est as number);
+                              return (
+                                <div className="flex flex-col gap-0.5">
+                                  <span
+                                    className={isOverrun ? 'font-semibold text-destructive' : ''}
+                                    title={isOverrun ? `Overrun: exceeds estimate by ${(material.quantity - (est as number)).toFixed(2)} ${unitLabel}` : undefined}
+                                  >
+                                    {material.quantity} {unitLabel}
+                                    {isOverrun && (
+                                      <span className="ml-1 rounded-full bg-destructive/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-destructive">
+                                        Overrun
+                                      </span>
+                                    )}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">
+                                    Est: {hasEst ? `${est} ${unitLabel}` : '—'}
+                                  </span>
+                                </div>
+                              );
+                            })()}
+                          </td>
                           <td className="px-4 py-3 text-sm">{formatCurrency(unitCost)}</td>
                           <td className="px-4 py-3 text-sm font-medium">{formatCurrency(materialTotalCost)}</td>
                           <td className="px-4 py-3 text-right">
@@ -874,7 +908,27 @@ export function MaterialsTab({ serviceOrder, onUpdate, jobIds = [], jobLabels }:
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">Quantity</p>
-                  <p className="font-medium">{materialToView.quantity}</p>
+                  {(() => {
+                    const est = materialToView.estimatedQuantity;
+                    const hasEst = typeof est === 'number' && est > 0;
+                    const isOverrun = hasEst && materialToView.quantity > (est as number);
+                    return (
+                      <p className={`font-medium ${isOverrun ? 'text-destructive' : ''}`}>
+                        {materialToView.quantity}
+                        {isOverrun && (
+                          <span className="ml-2 rounded-full bg-destructive/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-destructive">
+                            Overrun
+                          </span>
+                        )}
+                      </p>
+                    );
+                  })()}
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Estimated Qty</p>
+                  <p className="font-medium">
+                    {typeof materialToView.estimatedQuantity === 'number' ? materialToView.estimatedQuantity : '—'}
+                  </p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">Unit Cost</p>
@@ -1016,8 +1070,30 @@ export function MaterialsTab({ serviceOrder, onUpdate, jobIds = [], jobLabels }:
                     value={editFormData.quantity}
                     onChange={(e) => setEditFormData(prev => ({ ...prev, quantity: Math.max(1, parseInt(e.target.value) || 1) }))}
                   />
+                  {typeof editFormData.estimatedQuantity === 'number' &&
+                    editFormData.estimatedQuantity > 0 &&
+                    editFormData.quantity > editFormData.estimatedQuantity && (
+                      <p className="text-xs text-destructive">
+                        Exceeds estimated by {editFormData.quantity - editFormData.estimatedQuantity}
+                      </p>
+                    )}
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="edit-est-qty">Estimated Qty</Label>
+                  <Input
+                    id="edit-est-qty"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={editFormData.estimatedQuantity ?? ''}
+                    placeholder="Planned amount"
+                    onChange={(e) => setEditFormData(prev => ({
+                      ...prev,
+                      estimatedQuantity: e.target.value === '' ? undefined : parseFloat(e.target.value) || 0,
+                    }))}
+                  />
+                </div>
+                <div className="space-y-2 col-span-2">
                   <Label htmlFor="edit-price">Unit Price</Label>
                   <Input
                     id="edit-price"

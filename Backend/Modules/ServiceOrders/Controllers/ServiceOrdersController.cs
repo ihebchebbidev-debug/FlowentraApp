@@ -192,6 +192,41 @@ namespace MyApi.Modules.ServiceOrders.Controllers
             }
         }
 
+        /// <summary>POST /api/service-orders/{serviceOrderId}/jobs — add a new job to an existing service order (aligned with client serviceOrdersApi.createJob).</summary>
+        [HttpPost("{serviceOrderId:int}/jobs")]
+        public async Task<IActionResult> CreateServiceOrderJob(int serviceOrderId, [FromBody] CreateServiceOrderJobDto dto)
+        {
+            if (dto == null || string.IsNullOrWhiteSpace(dto.Title))
+                return BadRequest(new { success = false, error = new { code = "INVALID_REQUEST", message = "Title is required" } });
+            try
+            {
+                var userId = GetCurrentUserId();
+                var job = await _serviceOrderService.CreateServiceOrderJobAsync(serviceOrderId, dto, userId);
+                await _systemLogService.LogSuccessAsync(
+                    $"Job '{job.Title}' added to service order {serviceOrderId}",
+                    "ServiceOrders", "create", userId, GetCurrentUserName(),
+                    "ServiceOrderJob", job.Id.ToString());
+                return CreatedAtAction(
+                    nameof(GetServiceOrderJob),
+                    new { serviceOrderId, jobId = job.Id },
+                    new { success = true, data = job });
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = "Service order not found" } });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { success = false, error = new { code = "INVALID_REQUEST", message = ex.Message } });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating job for service order {ServiceOrderId}", serviceOrderId);
+                return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = "An error occurred" } });
+            }
+        }
+
+
         /// <summary>PATCH /api/service-orders/{serviceOrderId}/jobs/{jobId}/status — aligned with client updateJobStatus (primary)</summary>
         [HttpPatch("{serviceOrderId:int}/jobs/{jobId:int}/status")]
         public async Task<IActionResult> PatchServiceOrderJobStatus(int serviceOrderId, int jobId, [FromBody] UpdateServiceOrderJobStatusDto dto)

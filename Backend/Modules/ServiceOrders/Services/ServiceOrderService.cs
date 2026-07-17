@@ -164,6 +164,7 @@ namespace MyApi.Modules.ServiceOrders.Services
                     Sku = m.Sku,
                     Description = m.Description,
                     Quantity = m.Quantity,
+                    EstimatedQuantity = m.EstimatedQuantity ?? m.Quantity,
                     UnitPrice = m.UnitPrice,
                     TotalPrice = m.Quantity * m.UnitPrice,
                     Status = "pending",
@@ -588,6 +589,7 @@ namespace MyApi.Modules.ServiceOrders.Services
                         Sku = item.ItemCode,
                         Description = item.Description,
                         Quantity = item.Quantity,
+                        EstimatedQuantity = item.Quantity,
                         UnitPrice = item.UnitPrice,
                         TotalPrice = item.LineTotal > 0 ? item.LineTotal : (item.UnitPrice * item.Quantity),
                         Status = "pending",
@@ -1338,6 +1340,7 @@ namespace MyApi.Modules.ServiceOrders.Services
                     Sku = m.Sku,
                     Description = m.Description,
                     Quantity = m.Quantity,
+                    EstimatedQuantity = m.EstimatedQuantity ?? m.Quantity,
                     UnitPrice = m.UnitPrice,
                     TotalPrice = m.TotalPrice,
                     Status = m.Status,
@@ -1744,11 +1747,32 @@ namespace MyApi.Modules.ServiceOrders.Services
                 contact = await _context.Contacts.FindAsync(serviceOrder.ContactId);
             }
 
-            var jobIdStrings = serviceOrder.Jobs?.Select(j => j.Id.ToString()).ToList() ?? new List<string>();
-            
-            // Get all dispatches for this service order's jobs
+            var jobIds = serviceOrder.Jobs?.Select(j => j.Id).ToList() ?? new List<int>();
+            var installationIds = serviceOrder.Jobs?
+                .Where(j => j.InstallationId.HasValue)
+                .Select(j => j.InstallationId!.Value)
+                .Distinct()
+                .ToList() ?? new List<int>();
+
+            // Resolve dispatches attributable to this SO through THREE paths (any one match):
+            //   (a) Dispatch.ServiceOrderId points at us (installation / whole-SO dispatches).
+            //   (b) DispatchJobs join table links to one of our jobs (multi-job dispatches).
+            //   (c) Legacy: Dispatch.JobId string equals one of our job ids (old single-job dispatches).
+            // Always exclude soft-deleted dispatches so rollups don't double-count.
+            var jobIdStrings = jobIds.Select(j => j.ToString()).ToList();
+            var dispatchIdsViaJoin = await _context.Set<DispatchJob>()
+                .Where(dj => !dj.IsDeleted && jobIds.Contains(dj.JobId))
+                .Select(dj => dj.DispatchId)
+                .Distinct()
+                .ToListAsync();
+
             var dispatches = await _context.Dispatches
-                .Where(d => d.JobId != null && jobIdStrings.Contains(d.JobId))
+                .Where(d => !d.IsDeleted && (
+                       d.ServiceOrderId == serviceOrderId
+                    || dispatchIdsViaJoin.Contains(d.Id)
+                    || (d.JobId != null && jobIdStrings.Contains(d.JobId))
+                    || (d.InstallationId.HasValue && installationIds.Contains(d.InstallationId.Value))
+                ))
                 .ToListAsync();
 
             var dispatchIds = dispatches.Select(d => d.Id).ToList();
@@ -1770,11 +1794,19 @@ namespace MyApi.Modules.ServiceOrders.Services
                 .Where(n => dispatchIds.Contains(n.DispatchId))
                 .ToListAsync();
 
-            // Build dispatch summaries
+            // Build dispatch summaries. JobId can come from legacy string, DispatchJobs join, or 0 for whole-SO/installation dispatches.
+            var dispatchJobLinks = await _context.Set<DispatchJob>()
+                .Where(dj => !dj.IsDeleted && dispatchIds.Contains(dj.DispatchId))
+                .Select(dj => new { dj.DispatchId, dj.JobId })
+                .ToListAsync();
+            var jobLinkByDispatch = dispatchJobLinks
+                .GroupBy(x => x.DispatchId)
+                .ToDictionary(g => g.Key, g => g.Select(x => x.JobId).FirstOrDefault());
+
             var dispatchSummaries = dispatches.Select(d => new DispatchSummaryDto
             {
                 Id = d.Id,
-                JobId = int.TryParse(d.JobId, out var jid) ? jid : 0,
+                JobId = int.TryParse(d.JobId, out var jid) ? jid : jobLinkByDispatch.GetValueOrDefault(d.Id, 0),
                 TechnicianId = d.AssignedTechnicians?.FirstOrDefault()?.TechnicianId.ToString(),
                 Status = d.Status ?? "pending",
                 ScheduledDate = d.ScheduledDate,
@@ -1859,6 +1891,7 @@ namespace MyApi.Modules.ServiceOrders.Services
                 Sku = dto.Sku,
                 Description = dto.Description,
                 Quantity = dto.Quantity,
+                EstimatedQuantity = dto.EstimatedQuantity ?? dto.Quantity,
                 UnitPrice = dto.UnitPrice,
                 TotalPrice = dto.Quantity * dto.UnitPrice,
                 Status = "pending",
@@ -1888,6 +1921,7 @@ namespace MyApi.Modules.ServiceOrders.Services
                 Sku = material.Sku,
                 Description = material.Description,
                 Quantity = material.Quantity,
+                EstimatedQuantity = material.EstimatedQuantity ?? material.Quantity,
                 UnitPrice = material.UnitPrice,
                 TotalPrice = material.TotalPrice,
                 Status = material.Status,
@@ -1917,6 +1951,7 @@ namespace MyApi.Modules.ServiceOrders.Services
             if (dto.Sku != null) material.Sku = dto.Sku;
             if (dto.Description != null) material.Description = dto.Description;
             if (dto.Quantity.HasValue) material.Quantity = dto.Quantity.Value;
+            if (dto.EstimatedQuantity.HasValue) material.EstimatedQuantity = dto.EstimatedQuantity.Value;
             if (dto.UnitPrice.HasValue) material.UnitPrice = dto.UnitPrice.Value;
             if (dto.Quantity.HasValue || dto.UnitPrice.HasValue)
                 material.TotalPrice = material.Quantity * material.UnitPrice;
@@ -1941,6 +1976,7 @@ namespace MyApi.Modules.ServiceOrders.Services
                 Sku = material.Sku,
                 Description = material.Description,
                 Quantity = material.Quantity,
+                EstimatedQuantity = material.EstimatedQuantity ?? material.Quantity,
                 UnitPrice = material.UnitPrice,
                 TotalPrice = material.TotalPrice,
                 Status = material.Status,
@@ -2110,6 +2146,47 @@ namespace MyApi.Modules.ServiceOrders.Services
                 .AsNoTracking()
                 .FirstOrDefaultAsync(j => j.Id == jobId && j.ServiceOrderId == serviceOrderId);
             return job == null ? null : MapServiceOrderJobToDto(job, null);
+        }
+
+        public async Task<ServiceOrderJobDto> CreateServiceOrderJobAsync(int serviceOrderId, CreateServiceOrderJobDto dto, string userId)
+        {
+            if (dto == null) throw new ArgumentNullException(nameof(dto));
+            if (string.IsNullOrWhiteSpace(dto.Title))
+                throw new ArgumentException("Title is required", nameof(dto));
+
+            var serviceOrder = await _context.ServiceOrders.FirstOrDefaultAsync(so => so.Id == serviceOrderId);
+            if (serviceOrder == null)
+                throw new KeyNotFoundException($"Service order with ID {serviceOrderId} not found");
+
+            var job = new ServiceOrderJob
+            {
+                ServiceOrderId = serviceOrderId,
+                Title = dto.Title.Trim(),
+                Description = dto.Description,
+                JobDescription = dto.JobDescription,
+                Status = string.IsNullOrWhiteSpace(dto.Status) ? "unscheduled" : dto.Status,
+                Priority = dto.Priority ?? "medium",
+                WorkType = dto.WorkType,
+                EstimatedDuration = dto.EstimatedDuration,
+                EstimatedCost = dto.EstimatedCost ?? 0,
+                InstallationId = dto.InstallationId,
+                InstallationName = dto.InstallationName,
+                Notes = dto.Notes,
+                AssignedTechnicianIds = dto.AssignedTechnicianIds,
+                RequiredSkills = dto.RequiredSkills,
+                CompletionPercentage = 0,
+                ActualCost = 0,
+                UpdatedAt = DateTime.UtcNow,
+            };
+
+            _context.ServiceOrderJobs.Add(job);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "[SO-JOB-CREATE] Job {JobId} added to service order {ServiceOrderId} by {UserId}",
+                job.Id, serviceOrderId, userId);
+
+            return MapServiceOrderJobToDto(job, null);
         }
 
         public async Task<ServiceOrderJobDto> PatchServiceOrderJobStatusAsync(int serviceOrderId, int jobId, UpdateServiceOrderJobStatusDto dto, string userId)

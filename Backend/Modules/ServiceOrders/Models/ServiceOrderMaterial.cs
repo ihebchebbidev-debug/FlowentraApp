@@ -46,6 +46,14 @@ namespace MyApi.Modules.ServiceOrders.Models
         [Column("Quantity", TypeName = "decimal(18,2)")]
         public decimal Quantity { get; set; }
 
+        /// <summary>
+        /// Planned/estimated quantity for this material line (what was expected).
+        /// Distinct from <see cref="Quantity"/>, which represents the delivered/used amount.
+        /// Falls back to <see cref="Quantity"/> when not explicitly set (legacy rows).
+        /// </summary>
+        [Column("EstimatedQuantity", TypeName = "decimal(18,2)")]
+        public decimal? EstimatedQuantity { get; set; }
+
         [Required]
         [Column("UnitPrice", TypeName = "decimal(18,2)")]
         public decimal UnitPrice { get; set; }

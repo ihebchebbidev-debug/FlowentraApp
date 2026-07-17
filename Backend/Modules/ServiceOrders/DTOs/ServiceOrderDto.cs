@@ -68,6 +68,8 @@ namespace MyApi.Modules.ServiceOrders.DTOs
         public string? Sku { get; set; }
         public string? Description { get; set; }
         public decimal Quantity { get; set; }
+        /// <summary>Planned quantity (falls back to Quantity for legacy rows).</summary>
+        public decimal? EstimatedQuantity { get; set; }
         public decimal UnitPrice { get; set; }
         public decimal TotalPrice { get; set; }
         public string Status { get; set; } = "pending";
@@ -92,6 +94,8 @@ namespace MyApi.Modules.ServiceOrders.DTOs
         public string? Sku { get; set; }
         public string? Description { get; set; }
         public decimal Quantity { get; set; }
+        /// <summary>Planned/estimated quantity. Defaults to Quantity if omitted.</summary>
+        public decimal? EstimatedQuantity { get; set; }
         public decimal UnitPrice { get; set; }
         public string? InternalComment { get; set; }
         public string? ExternalComment { get; set; }
@@ -107,6 +111,7 @@ namespace MyApi.Modules.ServiceOrders.DTOs
         public string? Sku { get; set; }
         public string? Description { get; set; }
         public decimal? Quantity { get; set; }
+        public decimal? EstimatedQuantity { get; set; }
         public decimal? UnitPrice { get; set; }
         public string? InternalComment { get; set; }
         public string? ExternalComment { get; set; }
@@ -208,6 +213,26 @@ namespace MyApi.Modules.ServiceOrders.DTOs
         public decimal? EstimatedCost { get; set; }
         public int? CompletionPercentage { get; set; }
         public string[]? AssignedTechnicianIds { get; set; }
+    }
+
+    /// <summary>Body for POST /api/service-orders/{soId}/jobs — add a new job to an existing service order.</summary>
+    public class CreateServiceOrderJobDto
+    {
+        [System.ComponentModel.DataAnnotations.Required]
+        public string Title { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public string? JobDescription { get; set; }
+        public string? Priority { get; set; }
+        public string? WorkType { get; set; }
+        public int? EstimatedDuration { get; set; }
+        public decimal? EstimatedCost { get; set; }
+        /// <summary>Optional installation to scope this job to. Accepts int or numeric string.</summary>
+        public int? InstallationId { get; set; }
+        public string? InstallationName { get; set; }
+        public string? Notes { get; set; }
+        public string[]? AssignedTechnicianIds { get; set; }
+        public string[]? RequiredSkills { get; set; }
+        public string? Status { get; set; }
     }
 
     public class CreateServiceOrderDto

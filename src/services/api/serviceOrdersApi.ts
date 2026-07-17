@@ -328,6 +328,7 @@ export const serviceOrdersApi = {
     sku?: string;
     description?: string;
     quantity: number;
+    estimatedQuantity?: number;
     unitPrice: number;
     internalComment?: string;
     externalComment?: string;
@@ -342,6 +343,7 @@ export const serviceOrdersApi = {
       sku: material.sku || null,
       description: material.description || null,
       quantity: material.quantity,
+      estimatedQuantity: material.estimatedQuantity ?? material.quantity,
       unitPrice: material.unitPrice,
       internalComment: material.internalComment || null,
       externalComment: material.externalComment || null,
@@ -417,6 +419,7 @@ export const serviceOrdersApi = {
     sku?: string;
     description?: string;
     quantity?: number;
+    estimatedQuantity?: number;
     unitPrice?: number;
     internalComment?: string;
     externalComment?: string;

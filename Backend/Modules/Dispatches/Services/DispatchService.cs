@@ -1283,17 +1283,6 @@ namespace MyApi.Modules.Dispatches.Services
             var newMinutes = (decimal)(dto.EndTime - dto.StartTime).TotalMinutes;
             if (newMinutes < 0) newMinutes = 0;
 
-            // Soft-cap overrun check against planned totals (Stage 2). Scoped to the
-            // specific job on a multi-job dispatch so each job is capped to its own plan.
-            var (plannedMin, actualMin) = await GetPlannedAndActualMinutesAsync(dispatchId, dto.ServiceOrderJobId);
-            bool willOverrun = plannedMin > 0 && (actualMin + newMinutes) > plannedMin;
-            if (willOverrun && string.IsNullOrWhiteSpace(dto.OverrunReason))
-            {
-                throw new InvalidOperationException(
-                    $"Logging {newMinutes} min would exceed planned budget ({actualMin}/{plannedMin} min already logged). " +
-                    "Provide 'overrunReason' to confirm.");
-            }
-
             // Denormalize InstallationId so per-installation roll-ups don't need to
             // traverse Dispatch -> Job. Prefer the dispatch's installation (installation-
             // scoped dispatch); fall back to the specific job's installation.
@@ -1306,23 +1295,41 @@ namespace MyApi.Modules.Dispatches.Services
                     .FirstOrDefaultAsync();
             }
 
-            var te = new TimeEntry
+            TimeEntry te;
+            // Serializable tx closes the TOCTOU window between the overrun read and the insert.
+            using (var tx = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable))
             {
-                DispatchId = dispatchId,
-                ServiceOrderJobId = dto.ServiceOrderJobId,
-                InstallationId = resolvedInstallationId,
-                TechnicianId = int.TryParse(dto.TechnicianId, out var tid) ? tid : 0,
-                WorkType = dto.WorkType,
-                StartTime = dto.StartTime,
-                EndTime = dto.EndTime,
-                Duration = newMinutes,
-                Description = dto.Description,
-                CreatedDate = DateTime.UtcNow,
-                OverrunFlag = willOverrun,
-                OverrunReason = willOverrun ? dto.OverrunReason : null,
-            };
-            _db.TimeEntries.Add(te);
-            await _db.SaveChangesAsync();
+                var (plannedMin, actualMin) = await GetPlannedAndActualMinutesAsync(dispatchId, dto.ServiceOrderJobId);
+                bool willOverrun = plannedMin > 0 && (actualMin + newMinutes) > plannedMin;
+                if (willOverrun && string.IsNullOrWhiteSpace(dto.OverrunReason))
+                {
+                    throw new InvalidOperationException(
+                        $"Logging {newMinutes} min would exceed planned budget ({actualMin}/{plannedMin} min already logged). " +
+                        "Provide 'overrunReason' to confirm.");
+                }
+
+                te = new TimeEntry
+                {
+                    DispatchId = dispatchId,
+                    ServiceOrderJobId = dto.ServiceOrderJobId,
+                    InstallationId = resolvedInstallationId,
+                    TechnicianId = int.TryParse(dto.TechnicianId, out var tid) ? tid : 0,
+                    WorkType = dto.WorkType,
+                    StartTime = dto.StartTime,
+                    EndTime = dto.EndTime,
+                    Duration = newMinutes,
+                    Description = dto.Description,
+                    CreatedDate = DateTime.UtcNow,
+                    OverrunFlag = willOverrun,
+                    OverrunReason = willOverrun ? dto.OverrunReason : null,
+                };
+                _db.TimeEntries.Add(te);
+                await _db.SaveChangesAsync();
+                await tx.CommitAsync();
+            }
+
+            // Auto-rollup the parent ServiceOrderJob (ActualHours / ActualDuration / ActualCost / CompletionPercentage).
+            await RecalculateServiceOrderJobRollupAsync(dto.ServiceOrderJobId);
 
             // Propagate time entry to parent Sale/Offer activities
             await PropagateTimeEntryToSaleAsync(d, te, userId);
@@ -1342,6 +1349,49 @@ namespace MyApi.Modules.Dispatches.Services
                 OverrunFlag = te.OverrunFlag,
                 OverrunReason = te.OverrunReason,
             };
+        }
+
+        /// <summary>
+        /// Recompute ServiceOrderJob.ActualHours / ActualDuration / ActualCost /
+        /// CompletionPercentage from live TimeEntries + Expenses + Materials whose parent
+        /// Dispatch is NOT soft-deleted. Called after every add/delete of a child record so
+        /// plan-vs-actual UI stays truthful without a background job.
+        /// </summary>
+        private async Task RecalculateServiceOrderJobRollupAsync(int? serviceOrderJobId)
+        {
+            if (!serviceOrderJobId.HasValue) return;
+            var jobId = serviceOrderJobId.Value;
+            var job = await _db.ServiceOrderJobs.FirstOrDefaultAsync(j => j.Id == jobId);
+            if (job == null) return;
+
+            var totalMinutes = await (from te in _db.TimeEntries
+                                      join dp in _db.Dispatches on te.DispatchId equals dp.Id
+                                      where te.ServiceOrderJobId == jobId && !dp.IsDeleted
+                                      select (te.Duration ?? 0m)).SumAsync();
+
+            var totalExp = await (from e in _db.DispatchExpenses
+                                  join dp in _db.Dispatches on e.DispatchId equals dp.Id
+                                  where e.ServiceOrderJobId == jobId && !dp.IsDeleted
+                                  select e.Amount).SumAsync();
+
+            var totalMat = await (from m in _db.DispatchMaterials
+                                  join dp in _db.Dispatches on m.DispatchId equals dp.Id
+                                  where m.ServiceOrderJobId == jobId && !dp.IsDeleted
+                                  select m.TotalPrice).SumAsync();
+
+            job.ActualHours = Math.Round(totalMinutes / 60m, 2);
+            job.ActualDuration = (int)totalMinutes;
+            job.ActualCost = totalExp + totalMat;
+
+            // CompletionPercentage: derive from planned minutes when known, cap at 100.
+            // Don't override a manual 100% completion set through the status flow.
+            if (job.EstimatedDuration.HasValue && job.EstimatedDuration.Value > 0 && job.Status != "completed")
+            {
+                var pct = (int)Math.Min(100m, Math.Round((totalMinutes / job.EstimatedDuration.Value) * 100m));
+                job.CompletionPercentage = pct;
+            }
+            job.UpdatedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
         }
 
         /// <summary>
@@ -1498,8 +1548,11 @@ namespace MyApi.Modules.Dispatches.Services
             var te = await _db.TimeEntries.FirstOrDefaultAsync(t => t.Id == timeEntryId && t.DispatchId == dispatchId);
             if (te == null) throw new KeyNotFoundException("Time entry not found");
 
+            var jobIdForRollup = te.ServiceOrderJobId;
             _db.TimeEntries.Remove(te);
             await _db.SaveChangesAsync();
+
+            await RecalculateServiceOrderJobRollupAsync(jobIdForRollup);
         }
 
         public async Task<ExpenseDto> AddExpenseAsync(int dispatchId, CreateExpenseDto dto, string userId)
@@ -1507,17 +1560,6 @@ namespace MyApi.Modules.Dispatches.Services
             var d = await _db.Dispatches.FirstOrDefaultAsync(x => x.Id == dispatchId && !x.IsDeleted);
             if (d == null) throw new KeyNotFoundException($"Dispatch {dispatchId} not found");
             await ValidateJobBelongsToDispatchAsync(dispatchId, dto.ServiceOrderJobId);
-
-            // Soft-cap overrun check on expenses bucketed by type (Stage 2). Scoped to the
-            // specific job on a multi-job dispatch so each job is capped to its own plan.
-            var (plannedAmt, actualAmt) = await GetPlannedAndActualExpenseAsync(dispatchId, dto.Type, dto.ServiceOrderJobId);
-            bool willOverrun = plannedAmt > 0 && (actualAmt + dto.Amount) > plannedAmt;
-            if (willOverrun && string.IsNullOrWhiteSpace(dto.OverrunReason))
-            {
-                throw new InvalidOperationException(
-                    $"Expense of {dto.Amount} would exceed planned '{dto.Type}' budget ({actualAmt}/{plannedAmt}). " +
-                    "Provide 'overrunReason' to confirm.");
-            }
 
             int? expInstallationId = d.InstallationId;
             if (expInstallationId == null && dto.ServiceOrderJobId.HasValue)
@@ -1528,23 +1570,39 @@ namespace MyApi.Modules.Dispatches.Services
                     .FirstOrDefaultAsync();
             }
 
-            var exp = new Expense
+            Expense exp;
+            using (var tx = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable))
             {
-                DispatchId = dispatchId,
-                ServiceOrderJobId = dto.ServiceOrderJobId,
-                InstallationId = expInstallationId,
-                ExpenseType = dto.Type,
-                TechnicianId = dto.TechnicianId,
-                Amount = dto.Amount,
-                Description = dto.Description,
-                ExpenseDate = dto.Date ?? DateTime.UtcNow,
-                RecordedBy = userId,
-                CreatedDate = DateTime.UtcNow,
-                OverrunFlag = willOverrun,
-                OverrunReason = willOverrun ? dto.OverrunReason : null,
-            };
-            _db.DispatchExpenses.Add(exp);
-            await _db.SaveChangesAsync();
+                var (plannedAmt, actualAmt) = await GetPlannedAndActualExpenseAsync(dispatchId, dto.Type, dto.ServiceOrderJobId);
+                bool willOverrun = plannedAmt > 0 && (actualAmt + dto.Amount) > plannedAmt;
+                if (willOverrun && string.IsNullOrWhiteSpace(dto.OverrunReason))
+                {
+                    throw new InvalidOperationException(
+                        $"Expense of {dto.Amount} would exceed planned '{dto.Type}' budget ({actualAmt}/{plannedAmt}). " +
+                        "Provide 'overrunReason' to confirm.");
+                }
+
+                exp = new Expense
+                {
+                    DispatchId = dispatchId,
+                    ServiceOrderJobId = dto.ServiceOrderJobId,
+                    InstallationId = expInstallationId,
+                    ExpenseType = dto.Type,
+                    TechnicianId = dto.TechnicianId,
+                    Amount = dto.Amount,
+                    Description = dto.Description,
+                    ExpenseDate = dto.Date ?? DateTime.UtcNow,
+                    RecordedBy = userId,
+                    CreatedDate = DateTime.UtcNow,
+                    OverrunFlag = willOverrun,
+                    OverrunReason = willOverrun ? dto.OverrunReason : null,
+                };
+                _db.DispatchExpenses.Add(exp);
+                await _db.SaveChangesAsync();
+                await tx.CommitAsync();
+            }
+
+            await RecalculateServiceOrderJobRollupAsync(dto.ServiceOrderJobId);
 
             // Propagate expense to parent Sale/Offer activities
             await PropagateExpenseToSaleAsync(d, exp, userId);
@@ -1628,8 +1686,11 @@ namespace MyApi.Modules.Dispatches.Services
             var exp = await _db.DispatchExpenses.FirstOrDefaultAsync(e => e.Id == expenseId && e.DispatchId == dispatchId);
             if (exp == null) throw new KeyNotFoundException("Expense not found");
 
+            var jobIdForRollup = exp.ServiceOrderJobId;
             _db.DispatchExpenses.Remove(exp);
             await _db.SaveChangesAsync();
+
+            await RecalculateServiceOrderJobRollupAsync(jobIdForRollup);
         }
 
         public async Task<MaterialDto> AddMaterialUsageAsync(int dispatchId, CreateMaterialUsageDto dto, string userId)
@@ -1672,22 +1733,43 @@ namespace MyApi.Modules.Dispatches.Services
                     .FirstOrDefaultAsync();
             }
 
-            var mat = new MaterialUsage
+            var lineTotal = dto.Quantity * (dto.UnitPrice ?? 0);
+            MaterialUsage mat;
+            using (var tx = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable))
             {
-                DispatchId = dispatchId,
-                ServiceOrderJobId = dto.ServiceOrderJobId,
-                InstallationId = matInstallationId,
-                ArticleId = articleId,
-                Quantity = dto.Quantity,
-                Description = dto.Description ?? string.Empty,
-                UnitPrice = dto.UnitPrice ?? 0,
-                TotalPrice = dto.Quantity * (dto.UnitPrice ?? 0),
-                RecordedBy = userId,
-                UsedDate = DateTime.UtcNow,
-                Unit = unitValue
-            };
-            _db.DispatchMaterials.Add(mat);
-            await _db.SaveChangesAsync();
+                // Soft-cap overrun: mirror TimeEntry/Expense. Compares against planned material
+                // total on the job (Kind="material"). NULL / zero planned = no cap.
+                var (plannedMatAmt, actualMatAmt) = await GetPlannedAndActualMaterialAsync(dispatchId, dto.ServiceOrderJobId);
+                bool willOverrun = plannedMatAmt > 0 && (actualMatAmt + lineTotal) > plannedMatAmt;
+                if (willOverrun && string.IsNullOrWhiteSpace(dto.OverrunReason))
+                {
+                    throw new InvalidOperationException(
+                        $"Material of {lineTotal:0.##} would exceed planned material budget ({actualMatAmt:0.##}/{plannedMatAmt:0.##}). " +
+                        "Provide 'overrunReason' to confirm.");
+                }
+
+                mat = new MaterialUsage
+                {
+                    DispatchId = dispatchId,
+                    ServiceOrderJobId = dto.ServiceOrderJobId,
+                    InstallationId = matInstallationId,
+                    ArticleId = articleId,
+                    Quantity = dto.Quantity,
+                    Description = dto.Description ?? string.Empty,
+                    UnitPrice = dto.UnitPrice ?? 0,
+                    TotalPrice = lineTotal,
+                    RecordedBy = userId,
+                    UsedDate = DateTime.UtcNow,
+                    Unit = unitValue,
+                    OverrunFlag = willOverrun,
+                    OverrunReason = willOverrun ? dto.OverrunReason : null,
+                };
+                _db.DispatchMaterials.Add(mat);
+                await _db.SaveChangesAsync();
+                await tx.CommitAsync();
+            }
+
+            await RecalculateServiceOrderJobRollupAsync(dto.ServiceOrderJobId);
 
             // Propagate material usage to parent Sale/Offer activities
             await PropagateMaterialToSaleAsync(d, mat, userId);
@@ -1705,8 +1787,44 @@ namespace MyApi.Modules.Dispatches.Services
                 TotalPrice = mat.TotalPrice,
                 Status = "pending", 
                 CreatedAt = mat.UsedDate,
-                Unit = mat.Unit
+                Unit = mat.Unit,
+                OverrunFlag = mat.OverrunFlag,
+                OverrunReason = mat.OverrunReason,
             };
+        }
+
+        /// <summary>
+        /// Planned vs actual material spend for the soft-cap overrun check. Mirrors
+        /// <see cref="GetPlannedAndActualExpenseAsync"/> but for PlannedLineEntry.Kind = "material".
+        /// </summary>
+        private async Task<(decimal plannedAmount, decimal actualAmount)> GetPlannedAndActualMaterialAsync(int dispatchId, int? serviceOrderJobId = null)
+        {
+            List<int> jobIds;
+            if (serviceOrderJobId.HasValue)
+            {
+                jobIds = new List<int> { serviceOrderJobId.Value };
+            }
+            else
+            {
+                jobIds = await _db.Set<DispatchJob>()
+                    .Where(dj => dj.DispatchId == dispatchId && !dj.IsDeleted)
+                    .Select(dj => dj.JobId)
+                    .Distinct()
+                    .ToListAsync();
+                if (jobIds.Count == 0) return (0, 0);
+            }
+
+            decimal plannedTotal = await _db.Set<MyApi.Modules.Planning.Models.PlannedLineEntry>()
+                .Where(p => p.ParentType == "service_order_job"
+                    && jobIds.Contains(p.ParentId)
+                    && p.Kind == "material")
+                .SumAsync(p => (decimal?)p.PlannedAmount ?? 0m);
+
+            decimal actualTotal = await _db.DispatchMaterials
+                .Where(m => m.DispatchId == dispatchId
+                    && (serviceOrderJobId == null || m.ServiceOrderJobId == serviceOrderJobId))
+                .SumAsync(m => (decimal?)m.TotalPrice ?? 0m);
+            return (plannedTotal, actualTotal);
         }
 
         public async Task<IEnumerable<MaterialDto>> GetMaterialsAsync(int dispatchId)

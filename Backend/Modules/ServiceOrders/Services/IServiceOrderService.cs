@@ -30,6 +30,7 @@ namespace MyApi.Modules.ServiceOrders.Services
         );
         Task<ServiceOrderDto?> GetServiceOrderByIdAsync(int id, bool includeJobs = true);
         Task<ServiceOrderJobDto?> GetServiceOrderJobAsync(int serviceOrderId, int jobId);
+        Task<ServiceOrderJobDto> CreateServiceOrderJobAsync(int serviceOrderId, CreateServiceOrderJobDto dto, string userId);
         Task<ServiceOrderJobDto> PatchServiceOrderJobStatusAsync(int serviceOrderId, int jobId, UpdateServiceOrderJobStatusDto dto, string userId);
         Task<ServiceOrderJobDto> UpdateServiceOrderJobAsync(int serviceOrderId, int jobId, UpdateServiceOrderJobDto dto, string userId);
         Task<ServiceOrderDto> UpdateServiceOrderAsync(int id, UpdateServiceOrderDto updateDto, string userId);

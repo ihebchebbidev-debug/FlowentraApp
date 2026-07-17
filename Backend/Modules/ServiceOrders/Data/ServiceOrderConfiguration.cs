@@ -49,6 +49,9 @@ namespace MyApi.Modules.ServiceOrders.Data
             builder.Property(m => m.Replacing).HasColumnName("Replacing");
             builder.Property(m => m.OldArticleModel).HasColumnName("OldArticleModel").HasMaxLength(255);
             builder.Property(m => m.OldArticleStatus).HasColumnName("OldArticleStatus").HasMaxLength(50);
+            builder.Property(m => m.EstimatedQuantity)
+                .HasColumnName("EstimatedQuantity")
+                .HasColumnType("decimal(18,2)");
         }
     }
 

@@ -18,6 +18,8 @@ namespace MyApi.Modules.Dispatches.DTOs
         public string? Description { get; set; }
         public decimal? UnitPrice { get; set; }
         public string? Unit { get; set; }
+        /// <summary>Required when logging this line would exceed the planned material budget.</summary>
+        public string? OverrunReason { get; set; }
     }
 
     public class MaterialDto
@@ -48,6 +50,8 @@ namespace MyApi.Modules.Dispatches.DTOs
         public string? InvoiceStatus { get; set; }
         public string? SourceTable { get; set; } // "service_order" or "dispatch"
         public string? Unit { get; set; }
+        public bool OverrunFlag { get; set; }
+        public string? OverrunReason { get; set; }
     }
 
     public class ApproveMaterialDto

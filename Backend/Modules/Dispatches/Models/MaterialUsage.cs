@@ -60,5 +60,13 @@ namespace MyApi.Modules.Dispatches.Models
         [Column("Unit")]
         [MaxLength(20)]
         public string Unit { get; set; } = "piece";
+
+        /// <summary>Set when this material line pushed cumulative actuals beyond the planned material budget.</summary>
+        [Column("OverrunFlag")]
+        public bool OverrunFlag { get; set; } = false;
+
+        [Column("OverrunReason")]
+        [MaxLength(500)]
+        public string? OverrunReason { get; set; }
     }
 }
