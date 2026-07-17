@@ -23,6 +23,10 @@ namespace MyApi.Modules.Dispatches.Models
         [Column("ServiceOrderJobId")]
         public int? ServiceOrderJobId { get; set; }
 
+        // Denormalized installation the expense rolls up to (see TimeEntry.InstallationId).
+        [Column("InstallationId")]
+        public int? InstallationId { get; set; }
+
         [Required]
         [Column("ExpenseType")]
         [MaxLength(50)]

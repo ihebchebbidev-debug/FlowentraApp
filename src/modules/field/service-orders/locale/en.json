@@ -272,16 +272,13 @@
     "error": "Failed to delete service order"
   },
   "bulk": {
-    "selectAll": "Select all service orders",
-    "selectItem": "Select {{name}}",
     "selectedCount": "{{count}} service order(s) selected",
     "deselectAll": "Deselect All",
     "deleteSelected": "Delete Selected",
-    "deleteTitle": "Delete Multiple Service Orders",
-    "deleteDescription": "Are you sure you want to delete {{count}} service order(s)? This action cannot be undone.",
-    "deletingProgress": "Deleting service orders...",
+    "deleteConfirmTitle": "Delete {{count}} Service Order(s)?",
+    "deleteConfirmDescription": "This will permanently delete {{count}} service order(s) and all associated jobs and dispatches.",
     "deleting": "Deleting...",
-    "deleteSuccess": "Service orders deleted successfully"
+    "deleteSuccess": "Successfully deleted {{count}} service order(s)"
   },
   "detail": {
     "back": "Back",
@@ -433,15 +430,6 @@
     "select_date_required": "Please select a date",
     "invalid_time_range": "End time must be after start time"
   },
-  "bulk": {
-    "selectedCount": "{{count}} service order(s) selected",
-    "deselectAll": "Deselect All",
-    "deleteSelected": "Delete Selected",
-    "deleteConfirmTitle": "Delete {{count}} Service Order(s)?",
-    "deleteConfirmDescription": "This will permanently delete {{count}} service order(s) and all associated jobs and dispatches.",
-    "deleting": "Deleting...",
-    "deleteSuccess": "Successfully deleted {{count}} service order(s)"
-  },
   "invoicePreparation": {
     "title": "Prepare Invoice",
     "description": "Select the materials, expenses, and time entries to transfer to the linked sale for invoicing.",
@@ -544,6 +532,27 @@
     "conflicts_title": "Scheduling conflicts",
     "conflicts_blocked": "Resolve conflicts or change the time before planning this dispatch.",
     "conflict_tech_line": "{{name}} is already booked on {{count}} dispatch(es):",
-    "conflict_item": "#{{number}} · {{start}}–{{end}} ({{status}})"
+    "conflict_item": "#{{number}} · {{start}}–{{end}} ({{status}})",
+    "preview_conflicts_click": "Click a conflict to see which time window and installations are affected.",
+    "preview_focused_overlap": "Overlaps with #{{number}} · {{start}}–{{end}} on {{name}}",
+    "preview_affected_note": "All {{count}} installation group(s) below share this technician and time window.",
+    "preview_clear_focus": "Clear",
+    "no_installation_label": "No installation",
+    "split_by_installation": "Split into one dispatch per installation ({{count}})",
+    "split_success": "Created {{count}} dispatches",
+    "path_split_by_installation": "Will create {{count}} dispatches, one per installation.",
+    "preview_title": "Review split · {{count}} dispatches",
+    "preview_description": "Review how selected jobs will be grouped before creating the dispatches.",
+    "preview_no_techs": "No technicians",
+    "preview_conflicts_warning": "Some technicians have overlapping dispatches at this slot.",
+    "preview_via_so": "via service order",
+    "preview_jobs_count": "{{count}} jobs",
+    "preview_footnote": "{{count}} dispatches will be created with the shared schedule above.",
+    "preview_open": "Preview split ({{count}})",
+    "preview_back": "Back to edit",
+    "preview_confirm": "Confirm & create {{count}} dispatches",
+    "sequence_back_to_back": "Sequence back-to-back (avoid self-overlap)",
+    "sequence_active": "Each of the {{count}} dispatches gets its own start time, staggered by the group's estimated duration.",
+    "parallel_warning": "All {{count}} dispatches will run in parallel on the same technicians — each technician will be double-booked across them."
   }
 }

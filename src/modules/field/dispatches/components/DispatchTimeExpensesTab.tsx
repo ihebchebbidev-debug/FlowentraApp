@@ -79,8 +79,11 @@ export function DispatchTimeExpensesTab({
   };
   // Default job for new entries: the "current" job if it belongs to this dispatch,
   // otherwise the first job. Always changeable in the dialog.
+  // NOTE: We also default on single-job dispatches so serviceOrderJobId is always
+  // persisted — otherwise entries land with a NULL job id and drop out of per-job
+  // and per-installation rollups.
   const defaultJobId = (): number | null => {
-    if (!isMultiJob) return null;
+    if (dispatchJobs.length === 0) return null;
     if (preselectedJobId != null && dispatchJobs.some(j => j.id === preselectedJobId)) return preselectedJobId;
     return dispatchJobs[0]?.id ?? null;
   };
@@ -313,9 +316,30 @@ export function DispatchTimeExpensesTab({
     date: new Date().toISOString().split('T')[0],
   });
 
-  // Which job (of a multi-job dispatch) the new time/expense entry is for.
-  const [selectedTimeJobId, setSelectedTimeJobId] = useState<number | null>(null);
-  const [selectedExpenseJobId, setSelectedExpenseJobId] = useState<number | null>(null);
+  // Which job the new time/expense entry is for. Defaulted even in single-job dispatches
+  // so serviceOrderJobId is always persisted (see defaultJobId note above).
+  const [selectedTimeJobId, setSelectedTimeJobId] = useState<number | null>(() => {
+    if (dispatchJobs.length === 0) return null;
+    if (preselectedJobId != null && dispatchJobs.some(j => j.id === preselectedJobId)) return preselectedJobId;
+    return dispatchJobs[0]?.id ?? null;
+  });
+  const [selectedExpenseJobId, setSelectedExpenseJobId] = useState<number | null>(() => {
+    if (dispatchJobs.length === 0) return null;
+    if (preselectedJobId != null && dispatchJobs.some(j => j.id === preselectedJobId)) return preselectedJobId;
+    return dispatchJobs[0]?.id ?? null;
+  });
+
+  // Keep the defaulted job in sync when dispatch data loads asynchronously.
+  useEffect(() => {
+    if (dispatchJobs.length === 0) return;
+    const preferred = (preselectedJobId != null && dispatchJobs.some(j => j.id === preselectedJobId))
+      ? preselectedJobId
+      : dispatchJobs[0]?.id ?? null;
+    setSelectedTimeJobId(prev => (prev != null && dispatchJobs.some(j => j.id === prev)) ? prev : preferred);
+    setSelectedExpenseJobId(prev => (prev != null && dispatchJobs.some(j => j.id === prev)) ? prev : preferred);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatchJobs.length, preselectedJobId]);
+
 
   // Sync form state when defaults are loaded
   useEffect(() => {
@@ -417,7 +441,7 @@ export function DispatchTimeExpensesTab({
       await dispatchesApi.addTimeEntry(dispatchId, {
         technicianId: currentUser.id,
         technicianName: currentUser.name,
-        serviceOrderJobId: selectedTimeJobId ?? undefined,
+        serviceOrderJobId: selectedTimeJobId ?? dispatchJobs[0]?.id ?? undefined,
         workType: timeFormData.workType,
         startTime: times.startTime.toISOString(),
         endTime: times.endTime.toISOString(),
@@ -469,7 +493,7 @@ export function DispatchTimeExpensesTab({
       await dispatchesApi.addExpense(dispatchId, {
         technicianId: currentUser.id,
         technicianName: currentUser.name,
-        serviceOrderJobId: selectedExpenseJobId ?? undefined,
+        serviceOrderJobId: selectedExpenseJobId ?? dispatchJobs[0]?.id ?? undefined,
         type: expenseFormData.type,
         amount: expenseFormData.amount,
         currency: expenseFormData.currency,

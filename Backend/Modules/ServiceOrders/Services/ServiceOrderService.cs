@@ -145,8 +145,9 @@ namespace MyApi.Modules.ServiceOrders.Services
                     EstimatedDuration = createDto.EstimatedDuration,
                     EstimatedCost = materialTotal > 0 ? materialTotal : (createDto.EstimatedCost ?? 0),
                     AssignedTechnicianIds = createDto.AssignedTechnicianIds,
-                    InstallationId = (createDto.InstallationIds != null && createDto.InstallationIds.Length > 0)
-                        ? createDto.InstallationIds[0] : null
+                    InstallationId = (createDto.InstallationIds != null && createDto.InstallationIds.Length > 0
+                                        && int.TryParse(createDto.InstallationIds[0], out var _defIid))
+                        ? _defIid : (int?)null
                 };
                 _context.ServiceOrderJobs.Add(defaultJob);
                 await _context.SaveChangesAsync();
@@ -443,7 +444,7 @@ namespace MyApi.Modules.ServiceOrders.Services
                                     $"- {i.ItemName}: {i.Quantity} x {i.UnitPrice:F2} = {(i.LineTotal > 0 ? i.LineTotal : i.UnitPrice * i.Quantity):F2}")),
                                 Status = "unscheduled",
                                 Priority = createDto.Priority ?? "medium",
-                                InstallationId = group.Key,
+                                InstallationId = int.TryParse(group.Key, out var _grpIid) ? _grpIid : (int?)null,
                                 InstallationName = installationName,
                                 WorkType = DetermineWorkType(items.First().ItemName),
                                 EstimatedDuration = createDto.StartDate.HasValue && createDto.TargetCompletionDate.HasValue
@@ -505,7 +506,7 @@ namespace MyApi.Modules.ServiceOrders.Services
                             Description = item.Description,
                             Status = "unscheduled",
                             Priority = createDto.Priority ?? "medium",
-                            InstallationId = item.InstallationId,
+                            InstallationId = int.TryParse(item.InstallationId, out var _sbJobIid) ? _sbJobIid : (int?)null,
                             InstallationName = item.InstallationName,
                             WorkType = DetermineWorkType(item.ItemName),
                             EstimatedDuration = createDto.StartDate.HasValue && createDto.TargetCompletionDate.HasValue
@@ -591,7 +592,7 @@ namespace MyApi.Modules.ServiceOrders.Services
                         TotalPrice = item.LineTotal > 0 ? item.LineTotal : (item.UnitPrice * item.Quantity),
                         Status = "pending",
                         Source = "sale_conversion",
-                        InstallationId = item.InstallationId,
+                        InstallationId = int.TryParse(item.InstallationId, out var _matIid) ? _matIid : (int?)null,
                         InstallationName = item.InstallationName,
                         CreatedBy = userId,
                         CreatedAt = DateTime.UtcNow
@@ -1312,7 +1313,7 @@ namespace MyApi.Modules.ServiceOrders.Services
                     Title = j.Title ?? string.Empty,
                     Description = j.Description,
                     Status = j.Status,
-                    InstallationId = j.InstallationId,
+                    InstallationId = j.InstallationId?.ToString(),
                     WorkType = j.WorkType,
                     EstimatedDuration = j.EstimatedDuration,
                     EstimatedCost = j.EstimatedCost,
@@ -1346,7 +1347,7 @@ namespace MyApi.Modules.ServiceOrders.Services
                     Replacing = m.Replacing,
                     OldArticleModel = m.OldArticleModel,
                     OldArticleStatus = m.OldArticleStatus,
-                    InstallationId = m.InstallationId,
+                    InstallationId = m.InstallationId?.ToString(),
                     InstallationName = m.InstallationName,
                     CreatedBy = m.CreatedBy,
                     CreatedAt = m.CreatedAt
@@ -1632,7 +1633,7 @@ namespace MyApi.Modules.ServiceOrders.Services
                 Replacing = m.Replacing,
                 OldArticleModel = m.OldArticleModel,
                 OldArticleStatus = m.OldArticleStatus,
-                InstallationId = m.InstallationId,
+                InstallationId = m.InstallationId?.ToString(),
                 InstallationName = m.InstallationName,
                 CreatedBy = m.CreatedBy,
                 CreatedAt = m.CreatedAt,
@@ -1896,7 +1897,7 @@ namespace MyApi.Modules.ServiceOrders.Services
                 Replacing = material.Replacing,
                 OldArticleModel = material.OldArticleModel,
                 OldArticleStatus = material.OldArticleStatus,
-                InstallationId = material.InstallationId,
+                InstallationId = material.InstallationId?.ToString(),
                 InstallationName = material.InstallationName,
                 CreatedBy = material.CreatedBy,
                 CreatedAt = material.CreatedAt,
@@ -1949,7 +1950,7 @@ namespace MyApi.Modules.ServiceOrders.Services
                 Replacing = material.Replacing,
                 OldArticleModel = material.OldArticleModel,
                 OldArticleStatus = material.OldArticleStatus,
-                InstallationId = material.InstallationId,
+                InstallationId = material.InstallationId?.ToString(),
                 InstallationName = material.InstallationName,
                 CreatedBy = material.CreatedBy,
                 CreatedAt = material.CreatedAt
@@ -2190,7 +2191,7 @@ namespace MyApi.Modules.ServiceOrders.Services
                 Title = j.Title ?? string.Empty,
                 Description = j.Description,
                 Status = j.Status,
-                InstallationId = j.InstallationId,
+                InstallationId = j.InstallationId?.ToString(),
                 WorkType = j.WorkType,
                 EstimatedDuration = j.EstimatedDuration,
                 EstimatedCost = j.EstimatedCost,
@@ -2268,7 +2269,7 @@ namespace MyApi.Modules.ServiceOrders.Services
                         UnitPrice = mat.UnitPrice,
                         LineTotal = mat.TotalPrice,
                         ArticleId = mat.ArticleId,
-                        InstallationId = mat.InstallationId,
+                        InstallationId = mat.InstallationId?.ToString(),
                         InstallationName = mat.InstallationName,
                         ServiceOrderId = id.ToString(),
                         DisplayOrder = currentDisplayOrder

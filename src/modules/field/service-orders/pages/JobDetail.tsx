@@ -7,189 +7,165 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Search, X } from "lucide-react";
-import { CreateJobData, Job } from "../entities/jobs/types";
-import { Article } from "@/modules/inventory-services/types";
-import { Installation } from "@/modules/field/installations/types";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { useLookups } from '@/shared/contexts/LookupsContext';
-// Mock data - replace with actual data fetching
-const mockArticles: Article[] = [
-  { 
-    id: "1", 
-    name: "Réparation moteur", 
-    type: "service", 
-    category: "Mécanique", 
-    status: "active", 
-    basePrice: 150, 
-    duration: 120,
-    tags: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    createdBy: "admin",
-    modifiedBy: "admin"
-  },
-  { 
-    id: "2", 
-    name: "Huile moteur 5W30", 
-    type: "material", 
-    category: "Lubrifiant", 
-    status: "active", 
-    stock: 50, 
-    costPrice: 25, 
-    sellPrice: 35, 
-    supplier: "Total",
-    tags: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    createdBy: "admin",
-    modifiedBy: "admin"
-  },
-  { 
-    id: "3", 
-    name: "Diagnostic électronique", 
-    type: "service", 
-    category: "Électronique", 
-    status: "active", 
-    basePrice: 80, 
-    duration: 60,
-    tags: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    createdBy: "admin",
-    modifiedBy: "admin"
-  },
-  { 
-    id: "4", 
-    name: "Filtre à air", 
-    type: "material", 
-    category: "Filtration", 
-    status: "active", 
-    stock: 30, 
-    costPrice: 15, 
-    sellPrice: 25, 
-    supplier: "Bosch",
-    tags: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    createdBy: "admin",
-    modifiedBy: "admin"
-  }
-];
+import { PlannedEntriesEditor } from '@/shared/components/planning/PlannedEntriesEditor';
+import { serviceOrdersApi, type ServiceOrderJob } from '@/services/api/serviceOrdersApi';
+import { installationsApi } from '@/services/api/installationsApi';
+import type { InstallationDto } from '@/modules/field/installations/types';
 
-const mockInstallations: Installation[] = [
-  {
-    id: "inst-1",
-    name: "Véhicule principal - BMW X5 2020",
-    model: "BMW X5",
-    description: "Véhicule principal du client",
-    location: "Garage client",
-    manufacturer: "BMW",
-    hasWarranty: true,
-    type: "external",
-    customer: {
-      id: "cust-1",
-      company: "Tech Solutions Inc.",
-      contactPerson: "Jean Dupont",
-      phone: "+1 (555) 987-6543",
-      email: "jean@techsolutions.com",
-      address: {
-        street: "123 Main St",
-        city: "Montreal",
-        state: "QC",
-        zipCode: "H1A 1A1",
-        country: "Canada"
-      }
-    },
-    relatedServiceOrders: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    createdBy: "user-1",
-    modifiedBy: "user-1"
-  }
-];
+type JobFormState = {
+  title: string;
+  jobDescription: string;
+  priority: string;
+  workType: string;
+  estimatedDuration: number;
+  installationId?: number;
+  notes: string;
+};
+
+const DEFAULT_FORM: JobFormState = {
+  title: "",
+  jobDescription: "",
+  priority: "medium",
+  workType: "maintenance",
+  estimatedDuration: 60,
+  installationId: undefined,
+  notes: "",
+};
 
 export default function JobDetail() {
   const { serviceOrderId, jobId } = useParams<{ serviceOrderId: string; jobId?: string }>();
   const navigate = useNavigate();
-  const isEdit = !!jobId;
+  const isEdit = !!jobId && !isNaN(Number(jobId));
+  const jobIdNum = isEdit ? Number(jobId) : null;
+  const soIdNum = serviceOrderId ? Number(serviceOrderId) : null;
+
   const { priorities: lookupPriorities, getDefaultPriority } = useLookups();
 
-  const [formData, setFormData] = useState<Partial<CreateJobData>>({
-    serviceOrderId: serviceOrderId || "",
-    title: "",
-    description: "",
-    priority: "medium",
-    requiredSkills: [],
-    estimatedDuration: 60,
-    estimatedCost: 0,
-    workType: "maintenance",
-    workLocation: "",
-    installationId: mockInstallations[0]?.id,
-    specialInstructions: "",
-    notes: ""
-  });
+  const [formData, setFormData] = useState<JobFormState>(DEFAULT_FORM);
+  const [installations, setInstallations] = useState<InstallationDto[]>([]);
+  const [loadingJob, setLoadingJob] = useState(isEdit);
+  const [saving, setSaving] = useState(false);
+  const [currentStatus, setCurrentStatus] = useState<string>('pending');
 
-  // Auto-select priority: default one or single option
+  // Load installations
   useEffect(() => {
-    if (lookupPriorities.length > 0 && (!formData.priority || formData.priority === 'medium')) {
-      const defaultPriority = getDefaultPriority();
-      if (defaultPriority) {
-        setFormData(prev => ({ ...prev, priority: defaultPriority.id as CreateJobData['priority'] }));
+    installationsApi.getAll({ pageSize: 200 })
+      .then(res => setInstallations(res.installations || []))
+      .catch(err => console.warn('Failed to load installations:', err));
+  }, []);
+
+  // Load existing job on edit
+  useEffect(() => {
+    if (!isEdit || !soIdNum || !jobIdNum) return;
+    let cancelled = false;
+    setLoadingJob(true);
+    serviceOrdersApi.getJobById(soIdNum, jobIdNum)
+      .then(job => {
+        if (cancelled || !job) return;
+        setCurrentStatus(job.status || 'pending');
+        setFormData({
+          title: job.title || '',
+          jobDescription: job.jobDescription || '',
+          priority: job.priority || 'medium',
+          workType: job.workType || 'maintenance',
+          estimatedDuration: job.estimatedDuration || 60,
+          installationId: job.installationId,
+          notes: job.notes || '',
+        });
+      })
+      .catch(err => console.error('Failed to load job:', err))
+      .finally(() => { if (!cancelled) setLoadingJob(false); });
+    return () => { cancelled = true; };
+  }, [isEdit, soIdNum, jobIdNum]);
+
+  // Auto-select priority default when creating
+  useEffect(() => {
+    if (isEdit) return;
+    if (lookupPriorities.length > 0 && formData.priority === 'medium') {
+      const dp = getDefaultPriority();
+      if (dp) {
+        setFormData(prev => ({ ...prev, priority: dp.id }));
       } else if (lookupPriorities.length === 1) {
-        setFormData(prev => ({ ...prev, priority: lookupPriorities[0].id as CreateJobData['priority'] }));
+        setFormData(prev => ({ ...prev, priority: lookupPriorities[0].id }));
       }
     }
-  }, [lookupPriorities, getDefaultPriority]);
+  }, [lookupPriorities, getDefaultPriority, isEdit, formData.priority]);
 
-  const [selectedArticles, setSelectedArticles] = useState<Article[]>([]);
-  const [articleSearch, setArticleSearch] = useState("");
-  const [showArticleSearch, setShowArticleSearch] = useState(false);
-
-  const filteredArticles = mockArticles.filter(article =>
-    article.name.toLowerCase().includes(articleSearch.toLowerCase()) &&
-    !selectedArticles.find(selected => selected.id === article.id)
-  );
-
-  const handleAddArticle = (article: Article) => {
-    setSelectedArticles([...selectedArticles, article]);
-    setArticleSearch("");
-    setShowArticleSearch(false);
-  };
-
-  const handleRemoveArticle = (articleId: string) => {
-    setSelectedArticles(selectedArticles.filter(a => a.id !== articleId));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Job data:", formData);
-    console.log("Selected articles:", selectedArticles);
-    // TODO: Save job data
-    navigate(`/dashboard/field/service-orders/${serviceOrderId}`);
+    if (!soIdNum) {
+      toast.error("Missing service order reference");
+      return;
+    }
+    if (!formData.title.trim()) {
+      toast.error("Title is required");
+      return;
+    }
+    setSaving(true);
+    try {
+      const payload: Partial<ServiceOrderJob> & { title: string } = {
+        title: formData.title.trim(),
+        jobDescription: formData.jobDescription,
+        priority: formData.priority,
+        workType: formData.workType,
+        estimatedDuration: formData.estimatedDuration,
+        installationId: formData.installationId,
+        notes: formData.notes,
+      };
+      if (isEdit && jobIdNum) {
+        await serviceOrdersApi.updateJob(soIdNum, jobIdNum, payload);
+        toast.success("Job updated");
+      } else {
+        const created = await serviceOrdersApi.createJob(soIdNum, payload);
+        toast.success("Job created");
+        // Navigate to edit route so planned entries editor becomes available
+        if (created?.id) {
+          navigate(`/dashboard/field/service-orders/${soIdNum}/jobs/${created.id}`, { replace: true });
+          return;
+        }
+      }
+      navigate(`/dashboard/field/service-orders/${soIdNum}`);
+    } catch (err: any) {
+      console.error('Failed to save job:', err);
+      toast.error(err?.message || 'Failed to save job');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const selectedInstallation = mockInstallations.find(inst => inst.id === formData.installationId);
+  const selectedInstallation = installations.find(i => Number(i.id) === Number(formData.installationId));
+
+  if (loadingJob) {
+    return (
+      <div className="p-6 flex items-center gap-2 text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" /> Loading job…
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <Button 
-          variant="ghost" 
-          size="sm" 
+        <Button
+          variant="ghost"
+          size="sm"
           className="gap-2"
           onClick={() => navigate(`/dashboard/field/service-orders/${serviceOrderId}`)}
         >
           <ArrowLeft className="h-4 w-4" />
           Retour à l'ordre de service
         </Button>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline">Statut: En attente</Badge>
-        </div>
+        {isEdit && (
+          <Badge variant="outline">Statut: {currentStatus}</Badge>
+        )}
       </div>
 
       <div className="space-y-2">
         <h1 className="text-2xl font-bold">
-          {isEdit ? `Modifier le job ${jobId}` : "Créer un nouveau job"}
+          {isEdit ? `Modifier le job #${jobId}` : "Créer un nouveau job"}
         </h1>
         <p className="text-muted-foreground">
           Ordre de service: {serviceOrderId}
@@ -208,7 +184,7 @@ export default function JobDetail() {
                 <Input
                   id="title"
                   value={formData.title}
-                  onChange={(e) => setFormData({...formData, title: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   placeholder="Ex: Réparation moteur BMW"
                   required
                 />
@@ -218,11 +194,9 @@ export default function JobDetail() {
                 <Label htmlFor="priority">Priorité *</Label>
                 <Select
                   value={formData.priority}
-                  onValueChange={(value: Job['priority']) => setFormData({...formData, priority: value})}
+                  onValueChange={(v) => setFormData({ ...formData, priority: v })}
                 >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="low">Faible</SelectItem>
                     <SelectItem value="medium">Moyenne</SelectItem>
@@ -236,11 +210,9 @@ export default function JobDetail() {
                 <Label htmlFor="workType">Type de travail *</Label>
                 <Select
                   value={formData.workType}
-                  onValueChange={(value: Job['workType']) => setFormData({...formData, workType: value})}
+                  onValueChange={(v) => setFormData({ ...formData, workType: v })}
                 >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="maintenance">Maintenance</SelectItem>
                     <SelectItem value="repair">Réparation</SelectItem>
@@ -257,8 +229,8 @@ export default function JobDetail() {
                   id="estimatedDuration"
                   type="number"
                   value={formData.estimatedDuration}
-                  onChange={(e) => setFormData({...formData, estimatedDuration: parseInt(e.target.value)})}
-                  min="1"
+                  onChange={(e) => setFormData({ ...formData, estimatedDuration: Math.max(1, parseInt(e.target.value) || 60) })}
+                  min={1}
                   required
                 />
               </div>
@@ -268,21 +240,10 @@ export default function JobDetail() {
               <Label htmlFor="description">Description *</Label>
               <Textarea
                 id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                value={formData.jobDescription}
+                onChange={(e) => setFormData({ ...formData, jobDescription: e.target.value })}
                 placeholder="Décrivez le travail à effectuer..."
                 rows={3}
-                required
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="workLocation">Lieu de travail *</Label>
-              <Input
-                id="workLocation"
-                value={formData.workLocation}
-                onChange={(e) => setFormData({...formData, workLocation: e.target.value})}
-                placeholder="Ex: Atelier, Chez le client, Sur site"
                 required
               />
             </div>
@@ -295,136 +256,67 @@ export default function JobDetail() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="installation">Installation concernée *</Label>
+              <Label htmlFor="installation">Installation concernée</Label>
               <Select
-                value={formData.installationId}
-                onValueChange={(value) => setFormData({...formData, installationId: value})}
+                value={formData.installationId ? String(formData.installationId) : "__none__"}
+                onValueChange={(v) => setFormData({
+                  ...formData,
+                  installationId: v === "__none__" ? undefined : Number(v),
+                })}
               >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {mockInstallations.map((installation) => (
-                    <SelectItem key={installation.id} value={installation.id}>
-                      {installation.name} - {installation.model}
+                  <SelectItem value="__none__">Aucune</SelectItem>
+                  {installations.map((installation) => (
+                    <SelectItem key={installation.id} value={String(installation.id)}>
+                      {installation.name}{installation.model ? ` — ${installation.model}` : ''}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            
+
             {selectedInstallation && (
-              <div className="p-3 bg-muted rounded-lg">
-                <p className="text-sm">
-                  <strong>Client:</strong> {selectedInstallation.customer.company}
-                </p>
-                <p className="text-sm">
-                  <strong>Localisation:</strong> {selectedInstallation.location}
-                </p>
+              <div className="p-3 bg-muted rounded-lg text-sm space-y-1">
+                {selectedInstallation.manufacturer && (
+                  <p><strong>Fabricant:</strong> {selectedInstallation.manufacturer}</p>
+                )}
+                {selectedInstallation.serialNumber && (
+                  <p><strong>N° série:</strong> {selectedInstallation.serialNumber}</p>
+                )}
+                {selectedInstallation.siteAddress && (
+                  <p><strong>Adresse:</strong> {selectedInstallation.siteAddress}</p>
+                )}
               </div>
             )}
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Articles requis</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="relative">
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full justify-start gap-2"
-                onClick={() => setShowArticleSearch(!showArticleSearch)}
-              >
-                <Search className="h-4 w-4" />
-                Ajouter des articles (services ou matériaux)
-              </Button>
-
-              {showArticleSearch && (
-                <div className="absolute top-full left-0 right-0 z-10 mt-1 bg-background border rounded-md shadow-lg">
-                  <div className="p-2">
-                    <Input
-                      placeholder="Rechercher un article..."
-                      value={articleSearch}
-                      onChange={(e) => setArticleSearch(e.target.value)}
-                      autoFocus
-                    />
-                  </div>
-                  <div className="max-h-48 overflow-y-auto">
-                    {filteredArticles.map((article) => (
-                      <button
-                        key={article.id}
-                        type="button"
-                        className="w-full p-2 text-left hover:bg-muted flex items-center justify-between"
-                        onClick={() => handleAddArticle(article)}
-                      >
-                        <div>
-                          <p className="font-medium">{article.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {article.type === 'service' ? 'Service' : 'Matériau'} - {article.category}
-                          </p>
-                        </div>
-                        <Badge variant="outline">{article.type}</Badge>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {selectedArticles.length > 0 && (
-              <div className="space-y-2">
-                <Label>Articles sélectionnés:</Label>
-                {selectedArticles.map((article) => (
-                  <div key={article.id} className="flex items-center justify-between p-2 border rounded">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">{article.type}</Badge>
-                      <span>{article.name}</span>
-                      <span className="text-sm text-muted-foreground">({article.category})</span>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveArticle(article.id)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        {isEdit && jobIdNum && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Planification (temps &amp; frais prévus)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <PlannedEntriesEditor
+                parentType="service_order_job"
+                parentId={jobIdNum}
+              />
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>
-            <CardTitle>Instructions et notes</CardTitle>
+            <CardTitle>Notes</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="specialInstructions">Instructions spéciales</Label>
-              <Textarea
-                id="specialInstructions"
-                value={formData.specialInstructions}
-                onChange={(e) => setFormData({...formData, specialInstructions: e.target.value})}
-                placeholder="Instructions particulières pour ce job..."
-                rows={2}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                id="notes"
-                value={formData.notes}
-                onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                placeholder="Notes additionnelles..."
-                rows={2}
-              />
-            </div>
+          <CardContent>
+            <Textarea
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              placeholder="Notes additionnelles..."
+              rows={3}
+            />
           </CardContent>
         </Card>
 
@@ -433,11 +325,13 @@ export default function JobDetail() {
             type="button"
             variant="outline"
             onClick={() => navigate(`/dashboard/field/service-orders/${serviceOrderId}`)}
+            disabled={saving}
           >
             Annuler
           </Button>
-          <Button type="submit">
-            {isEdit ? "Modifier le job" : "Créer le job"}
+          <Button type="submit" disabled={saving}>
+            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isEdit ? "Enregistrer les modifications" : "Créer le job"}
           </Button>
         </div>
       </form>

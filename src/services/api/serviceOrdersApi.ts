@@ -448,6 +448,30 @@ export const serviceOrdersApi = {
     return data?.data || data;
   },
 
+  // ========== JOB CRUD ==========
+  // Assumes backend exposes standard REST routes:
+  //   POST /api/service-orders/:soId/jobs
+  //   PUT  /api/service-orders/:soId/jobs/:jobId
+  // If the backend uses different verbs/paths, adjust here.
+  async createJob(serviceOrderId: number, job: Partial<ServiceOrderJob> & { title: string }): Promise<ServiceOrderJob> {
+    const result = await apiFetch<any>(`/api/service-orders/${serviceOrderId}/jobs`, {
+      method: 'POST',
+      body: JSON.stringify(job),
+    });
+    const data = unwrap(result, 'Failed to create job');
+    return data.data || data;
+  },
+
+  async updateJob(serviceOrderId: number, jobId: number, job: Partial<ServiceOrderJob>): Promise<ServiceOrderJob> {
+    const paths = serviceOrderJobPaths(serviceOrderId, jobId);
+    const result = await apiFetch<any>(paths.base, {
+      method: 'PUT',
+      body: JSON.stringify(job),
+    });
+    const data = unwrap(result, 'Failed to update job');
+    return data.data || data;
+  },
+
   // Reconcile the service order's status from its dispatches. The cascade logic
   // now lives on the server (single source of truth); this just triggers it.
   async recalculateStatus(serviceOrderId: number): Promise<ServiceOrder> {

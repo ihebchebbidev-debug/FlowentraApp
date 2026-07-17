@@ -114,13 +114,13 @@ export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onData
   // "current job" preselection never fights a manual choice.
   const [materialJobTouched, setMaterialJobTouched] = useState(false);
   useEffect(() => {
-    if (!isMultiJob || materialJobTouched) return;
-    // Preselect the current job if it belongs to this dispatch, else the first job.
+    // Default the job even on single-job dispatches so serviceOrderJobId is always persisted.
+    if (dispatchJobs.length === 0 || materialJobTouched) return;
     const preferred = (preselectedJobId != null && dispatchJobs.some(j => j.id === preselectedJobId))
       ? preselectedJobId
       : (dispatchJobs[0]?.id ?? null);
     if (preferred !== selectedMaterialJobId) setSelectedMaterialJobId(preferred);
-  }, [isMultiJob, dispatchJobs, preselectedJobId, materialJobTouched, selectedMaterialJobId]);
+  }, [dispatchJobs, preselectedJobId, materialJobTouched, selectedMaterialJobId]);
   const jobLabel = (id?: number | null) => {
     if (id == null) return '';
     const j = dispatchJobs.find(x => x.id === id);
@@ -404,7 +404,7 @@ export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onData
       await dispatchesApi.addMaterial(dispatchId, {
         articleId: materialData.articleId,
         articleName: materialData.articleName,
-        serviceOrderJobId: selectedMaterialJobId ?? undefined,
+        serviceOrderJobId: selectedMaterialJobId ?? dispatchJobs[0]?.id ?? undefined,
         quantity: materialData.quantity || 1,
         unitPrice: materialData.unitPrice || 0,
         usedBy: currentUser.name,

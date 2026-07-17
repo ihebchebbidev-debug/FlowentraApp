@@ -49,9 +49,11 @@ namespace MyApi.Modules.ServiceOrders.Models
         [MaxLength(50)]
         public string? SaleItemId { get; set; }
 
+        // FK to Installations.Id. Stored as INT to match every other layer
+        // (Installation.Id, Dispatch.InstallationId, and the new denormalized
+        // InstallationId on TimeEntries/Expenses/MaterialUsage).
         [Column("InstallationId")]
-        [MaxLength(50)]
-        public string? InstallationId { get; set; }
+        public int? InstallationId { get; set; }
 
         [Column("InstallationName")]
         [MaxLength(255)]

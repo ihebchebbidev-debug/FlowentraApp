@@ -23,6 +23,12 @@ namespace MyApi.Modules.Dispatches.Models
         [Column("ServiceOrderJobId")]
         public int? ServiceOrderJobId { get; set; }
 
+        // Denormalized installation the entry rolls up to. Set at write time from the
+        // parent Dispatch (installation-scoped) or from the linked ServiceOrderJob.
+        // Enables per-installation plan-vs-actual roll-ups without traversing joins.
+        [Column("InstallationId")]
+        public int? InstallationId { get; set; }
+
         [Required]
         [Column("TechnicianId")]
         public int TechnicianId { get; set; }

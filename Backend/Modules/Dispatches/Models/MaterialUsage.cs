@@ -23,6 +23,10 @@ namespace MyApi.Modules.Dispatches.Models
         [Column("ServiceOrderJobId")]
         public int? ServiceOrderJobId { get; set; }
 
+        // Denormalized installation the material rolls up to (see TimeEntry.InstallationId).
+        [Column("InstallationId")]
+        public int? InstallationId { get; set; }
+
         [Column("ArticleId")]
         public int? ArticleId { get; set; }
 

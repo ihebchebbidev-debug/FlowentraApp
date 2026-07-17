@@ -1294,10 +1294,23 @@ namespace MyApi.Modules.Dispatches.Services
                     "Provide 'overrunReason' to confirm.");
             }
 
+            // Denormalize InstallationId so per-installation roll-ups don't need to
+            // traverse Dispatch -> Job. Prefer the dispatch's installation (installation-
+            // scoped dispatch); fall back to the specific job's installation.
+            int? resolvedInstallationId = d.InstallationId;
+            if (resolvedInstallationId == null && dto.ServiceOrderJobId.HasValue)
+            {
+                resolvedInstallationId = await _db.ServiceOrderJobs
+                    .Where(j => j.Id == dto.ServiceOrderJobId.Value)
+                    .Select(j => j.InstallationId)
+                    .FirstOrDefaultAsync();
+            }
+
             var te = new TimeEntry
             {
                 DispatchId = dispatchId,
                 ServiceOrderJobId = dto.ServiceOrderJobId,
+                InstallationId = resolvedInstallationId,
                 TechnicianId = int.TryParse(dto.TechnicianId, out var tid) ? tid : 0,
                 WorkType = dto.WorkType,
                 StartTime = dto.StartTime,
@@ -1506,10 +1519,20 @@ namespace MyApi.Modules.Dispatches.Services
                     "Provide 'overrunReason' to confirm.");
             }
 
+            int? expInstallationId = d.InstallationId;
+            if (expInstallationId == null && dto.ServiceOrderJobId.HasValue)
+            {
+                expInstallationId = await _db.ServiceOrderJobs
+                    .Where(j => j.Id == dto.ServiceOrderJobId.Value)
+                    .Select(j => j.InstallationId)
+                    .FirstOrDefaultAsync();
+            }
+
             var exp = new Expense
             {
                 DispatchId = dispatchId,
                 ServiceOrderJobId = dto.ServiceOrderJobId,
+                InstallationId = expInstallationId,
                 ExpenseType = dto.Type,
                 TechnicianId = dto.TechnicianId,
                 Amount = dto.Amount,
@@ -1640,10 +1663,20 @@ namespace MyApi.Modules.Dispatches.Services
                     unitValue = articleForUnit.Unit;
             }
 
+            int? matInstallationId = d.InstallationId;
+            if (matInstallationId == null && dto.ServiceOrderJobId.HasValue)
+            {
+                matInstallationId = await _db.ServiceOrderJobs
+                    .Where(j => j.Id == dto.ServiceOrderJobId.Value)
+                    .Select(j => j.InstallationId)
+                    .FirstOrDefaultAsync();
+            }
+
             var mat = new MaterialUsage
             {
                 DispatchId = dispatchId,
                 ServiceOrderJobId = dto.ServiceOrderJobId,
+                InstallationId = matInstallationId,
                 ArticleId = articleId,
                 Quantity = dto.Quantity,
                 Description = dto.Description ?? string.Empty,

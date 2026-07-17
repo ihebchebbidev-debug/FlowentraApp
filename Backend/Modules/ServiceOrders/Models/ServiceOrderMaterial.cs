@@ -81,9 +81,9 @@ namespace MyApi.Modules.ServiceOrders.Models
         [MaxLength(50)]
         public string? OldArticleStatus { get; set; }
 
+        // FK to Installations.Id. INT for cross-layer consistency (see ServiceOrderJob.InstallationId).
         [Column("InstallationId")]
-        [MaxLength(50)]
-        public string? InstallationId { get; set; }
+        public int? InstallationId { get; set; }
 
         [Column("InstallationName")]
         [MaxLength(255)]

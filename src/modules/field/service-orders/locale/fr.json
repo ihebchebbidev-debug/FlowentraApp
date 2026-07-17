@@ -232,7 +232,6 @@
     "previous": "Précédent",
     "next": "Suivant"
   },
-
   "delete_modal": {
     "title": "Supprimer l'Ordre de Service",
     "description": "Êtes-vous sûr de vouloir supprimer cet ordre de service ? Cette action est irréversible.",
@@ -243,20 +242,15 @@
     "success": "Ordre de service supprimé avec succès",
     "error": "Échec de la suppression de l'ordre de service"
   },
-
   "bulk": {
-    "selectAll": "Sélectionner tous les ordres de service",
-    "selectItem": "Sélectionner {{name}}",
     "selectedCount": "{{count}} ordre(s) de service sélectionné(s)",
     "deselectAll": "Tout Désélectionner",
     "deleteSelected": "Supprimer la Sélection",
-    "deleteTitle": "Supprimer Plusieurs Ordres de Service",
-    "deleteDescription": "Êtes-vous sûr de vouloir supprimer {{count}} ordre(s) de service ? Cette action est irréversible.",
-    "deletingProgress": "Suppression en cours...",
+    "deleteConfirmTitle": "Supprimer {{count}} ordre(s) de service ?",
+    "deleteConfirmDescription": "Cela supprimera définitivement {{count}} ordre(s) de service et tous les travaux et interventions associés.",
     "deleting": "Suppression...",
-    "deleteSuccess": "Ordres de service supprimés avec succès"
+    "deleteSuccess": "{{count}} ordre(s) de service supprimé(s) avec succès"
   },
-
   "detail": {
     "back": "Retour",
     "download_report": "Télécharger le Rapport",
@@ -341,14 +335,12 @@
     "send_failed": "Échec de l'Envoi de l'Email",
     "send_failed_description": "Impossible d'envoyer l'email. Veuillez réessayer plus tard"
   },
-  
   "pdfSettings": {
     "showCompanyName": "Afficher le Nom de l'Entreprise",
     "showCompanyNameDescription": "Afficher le nom de l'entreprise dans l'en-tête du PDF",
     "logoSize": "Taille du Logo",
     "logoSizeDescription": "Ajustez la taille du logo dans l'en-tête du PDF (24px - 120px)"
   },
-
   "pdf": {
     "customerInformation": "Informations Client",
     "email": "Email :",
@@ -388,7 +380,6 @@
     "page": "Page",
     "thankYouMessage": "Merci d'avoir choisi nos services."
   },
-
   "jobs_table": {
     "search_placeholder": "Rechercher des tâches...",
     "filters": "Filtres",
@@ -418,7 +409,6 @@
     "job_singular": "tâche",
     "job_plural": "tâches"
   },
-
   "schedule_modal": {
     "title": "Planifier une Tâche",
     "description": "Planifier l'intervention pour « {{jobTitle}} »",
@@ -440,16 +430,6 @@
     "select_date_required": "Veuillez sélectionner une date",
     "invalid_time_range": "L'heure de fin doit être après l'heure de début"
   },
-  "bulk": {
-    "selectedCount": "{{count}} ordre(s) de service sélectionné(s)",
-    "deselectAll": "Tout Désélectionner",
-    "deleteSelected": "Supprimer la Sélection",
-    "deleteConfirmTitle": "Supprimer {{count}} ordre(s) de service ?",
-    "deleteConfirmDescription": "Cela supprimera définitivement {{count}} ordre(s) de service et tous les travaux et interventions associés.",
-    "deleting": "Suppression...",
-    "deleteSuccess": "{{count}} ordre(s) de service supprimé(s) avec succès"
-  },
-
   "invoicePreparation": {
     "title": "Préparer la Facture",
     "description": "Sélectionnez les matériaux, frais et entrées de temps à transférer vers la vente liée pour facturation.",
@@ -469,7 +449,6 @@
     "success": "Éléments transférés à la vente avec succès. Statut mis à jour vers Prêt pour Facturation.",
     "error": "Échec de la préparation de la facture"
   },
-
   "sendReport": {
     "title": "Envoyer le rapport par Email",
     "description": "Envoyez ce rapport de service en pièce jointe PDF via votre compte email connecté",
@@ -495,7 +474,6 @@
     "deliveryOk": "OK",
     "sendViaEmail": "Envoyer par Email"
   },
-
   "material_form": {
     "select_material": "Sélectionner un matériau...",
     "assign_to_job": "Assigner au Travail",
@@ -555,6 +533,27 @@
     "conflicts_title": "Conflits de planification",
     "conflicts_blocked": "Résolvez les conflits ou modifiez l'horaire avant de planifier cette intervention.",
     "conflict_tech_line": "{{name}} est déjà occupé sur {{count}} intervention(s) :",
-    "conflict_item": "#{{number}} · {{start}}–{{end}} ({{status}})"
+    "conflict_item": "#{{number}} · {{start}}–{{end}} ({{status}})",
+    "preview_conflicts_click": "Cliquez sur un conflit pour voir la plage horaire et les installations concernées.",
+    "preview_focused_overlap": "Chevauchement avec #{{number}} · {{start}}–{{end}} sur {{name}}",
+    "preview_affected_note": "Les {{count}} groupe(s) d'installation ci-dessous partagent ce technicien et cette plage horaire.",
+    "preview_clear_focus": "Effacer",
+    "no_installation_label": "Aucune installation",
+    "split_by_installation": "Créer une intervention par installation ({{count}})",
+    "split_success": "{{count}} interventions créées",
+    "path_split_by_installation": "{{count}} interventions seront créées, une par installation.",
+    "preview_title": "Vérifier la répartition · {{count}} interventions",
+    "preview_description": "Vérifiez comment les jobs sélectionnés seront regroupés avant de créer les interventions.",
+    "preview_no_techs": "Aucun technicien",
+    "preview_conflicts_warning": "Certains techniciens ont des interventions qui se chevauchent sur ce créneau.",
+    "preview_via_so": "via bon de service",
+    "preview_jobs_count": "{{count}} jobs",
+    "preview_footnote": "{{count}} interventions seront créées avec l'horaire partagé ci-dessus.",
+    "preview_open": "Prévisualiser la répartition ({{count}})",
+    "preview_back": "Retour à l'édition",
+    "preview_confirm": "Confirmer et créer {{count}} interventions",
+    "sequence_back_to_back": "Séquencer à la suite (éviter le chevauchement)",
+    "sequence_active": "Chacune des {{count}} interventions démarre à son propre horaire, décalé selon la durée estimée du groupe.",
+    "parallel_warning": "Les {{count}} interventions se dérouleront en parallèle sur les mêmes techniciens — chaque technicien sera surchargé simultanément."
   }
 }

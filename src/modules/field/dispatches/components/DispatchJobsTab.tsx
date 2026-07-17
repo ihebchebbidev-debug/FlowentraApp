@@ -382,33 +382,45 @@ export function DispatchJobsTab({
           </div>
         )}
 
-        {/* Jobs Table */}
+        {/* Jobs — grouped by installation */}
         {filteredJobs.length === 0 ? (
           <p className="text-muted-foreground text-center py-8">
             {t('jobs_tab.no_jobs_match')}
           </p>
-        ) : (
-          <div className="overflow-x-auto">
+        ) : (() => {
+          const groups = new Map<string, { installationId?: number; installationName?: string; jobs: typeof filteredJobs }>();
+          for (const j of filteredJobs) {
+            const key = j.installationId != null ? String(j.installationId) : '__none__';
+            if (!groups.has(key)) {
+              groups.set(key, { installationId: j.installationId, installationName: j.installationName, jobs: [] });
+            }
+            groups.get(key)!.jobs.push(j);
+          }
+          const groupList = Array.from(groups.entries());
+
+          const renderRows = (rows: typeof filteredJobs) => (
             <table className="w-full">
               <thead>
                 <tr className="border-b bg-muted/30">
                   <th className="text-left p-4 text-sm font-medium text-muted-foreground">{t('jobs_tab.job')}</th>
                   <th className="text-left p-4 text-sm font-medium text-muted-foreground">{t('jobs_tab.status')}</th>
                   <th className="text-left p-4 text-sm font-medium text-muted-foreground">{t('jobs_tab.work_type')}</th>
-                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">{t('jobs_tab.installation')}</th>
                   {onSelectCurrentJob && filteredJobs.length > 1 && (
                     <th className="text-right p-4 text-sm font-medium text-muted-foreground">{t('jobs_tab.current_job', 'Current')}</th>
                   )}
                 </tr>
               </thead>
               <tbody>
-                {filteredJobs.map((jobItem) => (
+                {rows.map((jobItem) => (
                   <tr key={jobItem.id} className="border-b hover:bg-muted/50 transition-colors">
                     <td className="px-4 py-3">
                       <div className="space-y-1">
                         <div className="font-medium text-sm">{jobItem.title}</div>
                         <div className="text-sm text-muted-foreground">
                           <span>{jobItem.jobNumber}</span>
+                          {jobItem.estimatedDuration ? (
+                            <span className="ml-2">· {formatDuration(jobItem.estimatedDuration)}</span>
+                          ) : null}
                         </div>
                       </div>
                     </td>
@@ -422,33 +434,6 @@ export function DispatchJobsTab({
                     </td>
                     <td className="px-4 py-3">
                       <span className="capitalize text-sm">{jobItem.workType.replace('_', ' ')}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        {jobItem.installationName ? (
-                          <>
-                            <Building2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                            <span 
-                              className="text-sm cursor-pointer hover:text-primary hover:underline transition-colors font-medium"
-                              onClick={() => navigate(`/dashboard/installations/${jobItem.installationId}`)}
-                            >
-                              {jobItem.installationName}
-                            </span>
-                          </>
-                        ) : jobItem.installationId ? (
-                          <>
-                            <Building2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                            <span 
-                              className="text-sm text-muted-foreground cursor-pointer hover:text-primary hover:underline transition-colors"
-                              onClick={() => navigate(`/dashboard/installations/${jobItem.installationId}`)}
-                            >
-                              Installation #{jobItem.installationId}
-                            </span>
-                          </>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">{t('jobs_tab.no_installation')}</span>
-                        )}
-                      </div>
                     </td>
                     {onSelectCurrentJob && filteredJobs.length > 1 && (
                       <td className="px-4 py-3 text-right">
@@ -470,8 +455,52 @@ export function DispatchJobsTab({
                 ))}
               </tbody>
             </table>
-          </div>
-        )}
+          );
+
+          return (
+            <div className="space-y-4">
+              {groupList.map(([key, grp]) => {
+                const label = key === '__none__'
+                  ? t('jobs_tab.no_installation', 'No installation')
+                  : (grp.installationName || `Installation #${grp.installationId}`);
+                const groupDuration = grp.jobs.reduce((sum, j) => sum + (j.estimatedDuration || 0), 0);
+                return (
+                  <div key={key} className="rounded-lg border overflow-hidden">
+                    <div className="flex items-center justify-between gap-2 px-4 py-2.5 bg-primary/5 border-b border-primary/20">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Building2 className="h-4 w-4 text-primary flex-shrink-0" />
+                        {key !== '__none__' && grp.installationId != null ? (
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/dashboard/field/installations/${grp.installationId}`)}
+                            className="text-sm font-semibold text-foreground hover:text-primary hover:underline truncate text-left"
+                          >
+                            {label}
+                          </button>
+                        ) : (
+                          <span className="text-sm font-semibold text-foreground truncate">{label}</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <Badge variant="outline" className="text-[11px]">
+                          {t('jobs_tab.jobs_count', { count: grp.jobs.length })}
+                        </Badge>
+                        {groupDuration > 0 && (
+                          <Badge variant="outline" className="text-[11px]">
+                            {formatDuration(groupDuration)}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <div className="overflow-x-auto">
+                      {renderRows(grp.jobs)}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
       </CardContent>
     </Card>
   );
