@@ -178,7 +178,8 @@ namespace MyApi.Modules.WorkflowEngine.Services
                                 InstallationId = offerItem.InstallationId,
                                 InstallationName = offerItem.InstallationName,
                                 RequiresServiceOrder = offerItem.Type == "service",
-                                FulfillmentStatus = "pending"
+                                FulfillmentStatus = "pending",
+                                Currency = sale.Currency
                             };
                             _db.SaleItems.Add(saleItem);
                             offerItemToSaleItem.Add((offerItem.Id, saleItem));

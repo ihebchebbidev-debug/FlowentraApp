@@ -85,6 +85,14 @@ namespace MyApi.Modules.Sales.Models
         [MaxLength(20)]
         public string? FulfillmentStatus { get; set; }
 
+        // Currency this line was priced in. Populated from Sale.Currency at write
+        // time so every historical line remembers its currency even if the parent
+        // sale is later re-currencied. Nullable for legacy rows (interpreted as
+        // the parent sale's Currency).
+        [Column("Currency")]
+        [MaxLength(10)]
+        public string? Currency { get; set; }
+
         // Navigation Property
         [ForeignKey("SaleId")]
         public virtual Sale? Sale { get; set; }

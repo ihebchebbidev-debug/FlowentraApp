@@ -446,6 +446,7 @@
     "alreadySelected": "Already selected",
     "itemsSelected": "{{count}} item(s) selected",
     "success": "Items transferred to sale successfully. Status updated to Ready for Invoice.",
+    "retry": "Edit invoice items",
     "error": "Failed to prepare invoice"
   },
   "sendReport": {

@@ -208,6 +208,8 @@ namespace MyApi.Modules.Sales.Services
                     InstallationId = itemDto.InstallationId,
                     InstallationName = itemDto.InstallationName,
                     RequiresServiceOrder = itemDto.RequiresServiceOrder,
+                    // Stamp the sale's currency so each historical line remembers its own currency.
+                    Currency = sale.Currency,
                     // Preserve the exact order items were selected/sent in.
                     DisplayOrder = itemDto.DisplayOrder ?? index
                 }).ToList();
@@ -340,6 +342,8 @@ namespace MyApi.Modules.Sales.Services
                             RequiresServiceOrder = offerItem.Type == "service",
                             FulfillmentStatus = "pending",
                             TaxRate = 0,
+                            // Inherit the parent sale's currency so offer→sale copy is currency-safe.
+                            Currency = sale.Currency,
                             DisplayOrder = offerItem.DisplayOrder
                         };
                         _context.SaleItems.Add(saleItem);
@@ -707,6 +711,8 @@ namespace MyApi.Modules.Sales.Services
                 InstallationId = itemDto.InstallationId,
                 InstallationName = itemDto.InstallationName,
                 RequiresServiceOrder = itemDto.RequiresServiceOrder,
+                // New lines always inherit the parent sale's currency.
+                Currency = sale.Currency,
                 DisplayOrder = itemDto.DisplayOrder ?? (nextOrder + 1)
             };
 
@@ -868,7 +874,8 @@ namespace MyApi.Modules.Sales.Services
                 ServiceOrderGenerated = item.ServiceOrderGenerated,
                 ServiceOrderId = item.ServiceOrderId,
                 FulfillmentStatus = item.FulfillmentStatus,
-                DisplayOrder = item.DisplayOrder
+                DisplayOrder = item.DisplayOrder,
+                Currency = item.Currency
             };
         }
 

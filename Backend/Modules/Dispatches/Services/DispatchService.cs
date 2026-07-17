@@ -1590,6 +1590,10 @@ namespace MyApi.Modules.Dispatches.Services
                     ExpenseType = dto.Type,
                     TechnicianId = dto.TechnicianId,
                     Amount = dto.Amount,
+                    // Persist the declared currency so downstream invoice validation
+                    // can reject cross-currency lines. Falls back to null (interpreted
+                    // as the sale's currency) when the caller omits it.
+                    Currency = string.IsNullOrWhiteSpace(dto.Currency) ? null : dto.Currency.Trim().ToUpperInvariant(),
                     Description = dto.Description,
                     ExpenseDate = dto.Date ?? DateTime.UtcNow,
                     RecordedBy = userId,
@@ -1615,7 +1619,8 @@ namespace MyApi.Modules.Dispatches.Services
                 TechnicianId = exp.TechnicianId ?? dto.TechnicianId ?? userId,
                 Type = exp.ExpenseType, 
                 Amount = exp.Amount,
-                Currency = dto.Currency,
+                // Round-trip the persisted currency so the client sees exactly what was stored.
+                Currency = exp.Currency,
                 Description = exp.Description,
                 Date = exp.ExpenseDate,
                 Status = "pending", 
@@ -1636,6 +1641,7 @@ namespace MyApi.Modules.Dispatches.Services
                 TechnicianId = e.TechnicianId ?? e.RecordedBy,
                 Type = e.ExpenseType, 
                 Amount = e.Amount,
+                Currency = e.Currency,
                 Description = e.Description,
                 Date = e.ExpenseDate,
                 Status = "pending", 
@@ -1662,6 +1668,8 @@ namespace MyApi.Modules.Dispatches.Services
             if (dto.Amount.HasValue) exp.Amount = dto.Amount.Value;
             if (dto.Description != null) exp.Description = dto.Description;
             if (dto.Date.HasValue) exp.ExpenseDate = dto.Date.Value;
+            if (!string.IsNullOrWhiteSpace(dto.Currency))
+                exp.Currency = dto.Currency.Trim().ToUpperInvariant();
 
             await _db.SaveChangesAsync();
 
@@ -1673,7 +1681,7 @@ namespace MyApi.Modules.Dispatches.Services
                 TechnicianId = exp.RecordedBy,
                 Type = exp.ExpenseType, 
                 Amount = exp.Amount,
-                Currency = dto.Currency,
+                Currency = exp.Currency,
                 Description = exp.Description,
                 Date = exp.ExpenseDate,
                 Status = "pending", 

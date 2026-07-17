@@ -270,7 +270,8 @@ namespace MyApi.Modules.ServiceOrders.Services
                     DiscountType = "percentage",
                     ServiceOrderGenerated = true,
                     ServiceOrderId = order.Id.ToString(),
-                    FulfillmentStatus = "fulfilled"
+                    FulfillmentStatus = "fulfilled",
+                    Currency = sale.Currency
                 }).ToList();
                 _context.SaleItems.AddRange(items);
                 await _context.SaveChangesAsync();
@@ -1618,7 +1619,9 @@ namespace MyApi.Modules.ServiceOrders.Services
                 TechnicianId = e.RecordedBy ?? "",
                 Type = e.ExpenseType ?? "other",
                 Amount = e.Amount,
-                Currency = "TND",
+                // Expose the real persisted currency (nullable). Callers that need to
+                // compare against sale.Currency should treat null as "sale currency".
+                Currency = e.Currency,
                 Description = e.Description,
                 Status = "pending",
                 Date = e.ExpenseDate,
@@ -2313,9 +2316,19 @@ namespace MyApi.Modules.ServiceOrders.Services
             if (serviceOrder == null)
                 throw new KeyNotFoundException($"Service order with ID {id} not found");
 
-            // Allow both technically_completed and ready_for_invoice (retry scenario)
-            if (serviceOrder.Status != "technically_completed" && serviceOrder.Status != "ready_for_invoice")
-                throw new InvalidOperationException("Service order must be in 'technically_completed' or 'ready_for_invoice' status to prepare for invoice");
+            // Accept every status that means "field work is done, billing can start":
+            //  - technically_completed : all dispatches completed (BusinessWorkflowService)
+            //  - partially_completed   : some dispatches completed (BusinessWorkflowService, line 836)
+            //  - completed             : ApproveAsync / CompleteAsync final-completion paths
+            //  - ready_for_invoice     : retry / add-more-items after a previous transfer
+            // The FE normalizes partially_completed and completed to "ready_for_invoice"
+            // for display, so refusing them here surfaced a confusing error on the exact
+            // click the UI was inviting.
+            var invoiceableStatuses = new[] { "technically_completed", "partially_completed", "completed", "ready_for_invoice" };
+            if (!invoiceableStatuses.Contains(serviceOrder.Status))
+                throw new InvalidOperationException(
+                    $"Service order status '{serviceOrder.Status}' is not eligible for invoice preparation. " +
+                    "Expected one of: technically_completed, partially_completed, completed, ready_for_invoice.");
 
             if (string.IsNullOrEmpty(serviceOrder.SaleId) || !int.TryParse(serviceOrder.SaleId, out int saleId))
                 throw new InvalidOperationException("Service order must be linked to a sale to prepare for invoice");
@@ -2354,22 +2367,45 @@ namespace MyApi.Modules.ServiceOrders.Services
                     "(dispatch rows do not track invoice status). Add them to the sale manually, or reset the linked sale before retrying.");
             }
 
-            // Currency guard: SaleItems inherit the Sale's currency (there is no per-line currency column),
-            // so we refuse to transfer expenses whose currency differs from the sale to avoid silently
-            // billing e.g. a USD expense as if it were TND.
+            // Currency guard: every SaleItem inherits `Sale.Currency` at write time (see below),
+            // so we refuse to transfer any currency-carrying source row whose declared currency
+            // differs from the sale to avoid silently billing e.g. a USD expense as if it were TND.
+            // Rows with a null/empty Currency are trusted as "sale currency" (legacy + rows on
+            // models that don't carry a currency column, like materials/time entries).
+            var saleCurrency = (sale.Currency ?? "").Trim().ToUpperInvariant();
+            var mismatches = new List<string>();
+
             if (dto.ExpenseIds?.Any() == true)
             {
-                var mismatched = await _context.ServiceOrderExpenses
+                var soMismatched = await _context.ServiceOrderExpenses
                     .Where(e => dto.ExpenseIds.Contains(e.Id) && e.ServiceOrderId == id
-                        && e.InvoiceStatus == null && e.Currency != sale.Currency)
+                        && e.InvoiceStatus == null
+                        && e.Currency != null && e.Currency != ""
+                        && e.Currency.ToUpper() != saleCurrency)
                     .Select(e => new { e.Id, e.Currency })
                     .ToListAsync();
-                if (mismatched.Any())
-                {
-                    throw new InvalidOperationException(
-                        $"Currency mismatch: {mismatched.Count} expense(s) are not in the sale's currency ({sale.Currency}). " +
-                        $"Convert them before transferring. Offending expense IDs: {string.Join(", ", mismatched.Select(m => m.Id))}.");
-                }
+                mismatches.AddRange(soMismatched.Select(m => $"SO expense #{m.Id} ({m.Currency})"));
+            }
+
+            if (dto.DispatchExpenseIds?.Any() == true)
+            {
+                // Dispatch expenses may carry an explicit Currency now (post-migration). Legacy
+                // rows without a currency default to null → treated as sale currency (no mismatch).
+                var dispatchMismatched = await _context.DispatchExpenses
+                    .Where(e => dto.DispatchExpenseIds.Contains(e.Id)
+                        && linkedDispatchIds.Contains(e.DispatchId)
+                        && e.Currency != null && e.Currency != ""
+                        && e.Currency!.ToUpper() != saleCurrency)
+                    .Select(e => new { e.Id, e.Currency })
+                    .ToListAsync();
+                mismatches.AddRange(dispatchMismatched.Select(m => $"Dispatch expense #{m.Id} ({m.Currency})"));
+            }
+
+            if (mismatches.Any())
+            {
+                throw new InvalidOperationException(
+                    $"Currency mismatch: {mismatches.Count} line(s) are not in the sale's currency ({sale.Currency}). " +
+                    $"Convert them before transferring. Offending items: {string.Join(", ", mismatches)}.");
             }
 
             var newSaleItems = new List<Sales.Models.SaleItem>();
@@ -2409,7 +2445,8 @@ namespace MyApi.Modules.ServiceOrders.Services
                         InstallationId = mat.InstallationId?.ToString(),
                         InstallationName = mat.InstallationName,
                         ServiceOrderId = id.ToString(),
-                        DisplayOrder = currentDisplayOrder
+                        DisplayOrder = currentDisplayOrder,
+                        Currency = sale.Currency
                     });
                     soMaterialsToMark.Add(mat);
                 }
@@ -2438,7 +2475,8 @@ namespace MyApi.Modules.ServiceOrders.Services
                         LineTotal = mat.TotalPrice,
                         ArticleId = mat.ArticleId,
                         ServiceOrderId = id.ToString(),
-                        DisplayOrder = currentDisplayOrder
+                        DisplayOrder = currentDisplayOrder,
+                        Currency = sale.Currency
                     });
                 }
             }
@@ -2466,7 +2504,8 @@ namespace MyApi.Modules.ServiceOrders.Services
                         UnitPrice = exp.Amount,
                         LineTotal = exp.Amount,
                         ServiceOrderId = id.ToString(),
-                        DisplayOrder = currentDisplayOrder
+                        DisplayOrder = currentDisplayOrder,
+                        Currency = sale.Currency
                     });
                     soExpensesToMark.Add(exp);
                 }
@@ -2494,7 +2533,8 @@ namespace MyApi.Modules.ServiceOrders.Services
                         UnitPrice = dExp.Amount,
                         LineTotal = dExp.Amount,
                         ServiceOrderId = id.ToString(),
-                        DisplayOrder = currentDisplayOrder
+                        DisplayOrder = currentDisplayOrder,
+                        Currency = sale.Currency
                     });
                 }
             }
@@ -2526,7 +2566,8 @@ namespace MyApi.Modules.ServiceOrders.Services
                         UnitPrice = total,
                         LineTotal = total,
                         ServiceOrderId = id.ToString(),
-                        DisplayOrder = currentDisplayOrder
+                        DisplayOrder = currentDisplayOrder,
+                        Currency = sale.Currency
                     });
                     soTimeEntriesToMark.Add(te);
                 }
@@ -2583,7 +2624,8 @@ namespace MyApi.Modules.ServiceOrders.Services
                         UnitPrice = total,
                         LineTotal = total,
                         ServiceOrderId = id.ToString(),
-                        DisplayOrder = currentDisplayOrder
+                        DisplayOrder = currentDisplayOrder,
+                        Currency = sale.Currency
                     });
                 }
             }

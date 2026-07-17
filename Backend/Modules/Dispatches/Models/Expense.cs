@@ -40,6 +40,13 @@ namespace MyApi.Modules.Dispatches.Models
         [Column("Amount", TypeName = "decimal(18,2)")]
         public decimal Amount { get; set; }
 
+        // ISO-like currency code (TND, EUR, USD, ...). Nullable so legacy rows
+        // (pre-currency migration) stay valid and are interpreted as the sale's
+        // currency at invoice-prep time. See PrepareForInvoiceAsync currency guard.
+        [Column("Currency")]
+        [MaxLength(10)]
+        public string? Currency { get; set; }
+
         [Column("Description")]
         [MaxLength(500)]
         public string? Description { get; set; }

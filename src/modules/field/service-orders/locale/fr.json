@@ -447,6 +447,7 @@
     "alreadySelected": "Déjà sélectionné",
     "itemsSelected": "{{count}} élément(s) sélectionné(s)",
     "success": "Éléments transférés à la vente avec succès. Statut mis à jour vers Prêt pour Facturation.",
+    "retry": "Modifier les éléments de facture",
     "error": "Échec de la préparation de la facture"
   },
   "sendReport": {

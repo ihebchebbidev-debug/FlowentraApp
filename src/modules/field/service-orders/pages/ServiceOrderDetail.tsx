@@ -1032,6 +1032,20 @@ export default function ServiceOrderDetail() {
                 isUpdating={isStatusUpdating}
               />
             </div>
+            {(currentStatusFlow === 'technically_completed' || currentStatusFlow === 'ready_for_invoice') && (
+              <Button
+                size="sm"
+                variant={currentStatusFlow === 'ready_for_invoice' ? 'outline' : 'default'}
+                className="w-full gap-2"
+                onClick={() => setIsInvoiceModalOpen(true)}
+                disabled={!serviceOrder?.saleId}
+              >
+                <FileText className="h-4 w-4" />
+                {currentStatusFlow === 'ready_for_invoice'
+                  ? t('invoicePreparation.retry', { defaultValue: 'Edit invoice items' })
+                  : t('invoicePreparation.title')}
+              </Button>
+            )}
           </div>
         </div>
 
@@ -1138,12 +1152,28 @@ export default function ServiceOrderDetail() {
           </div>
 
           {/* Status pipeline – own full-width row */}
-          <div className="pl-13">
-            <ServiceOrderStatusFlow
-              currentStatus={currentStatusFlow}
-              onStatusChange={handleStatusChange}
-              isUpdating={isStatusUpdating}
-            />
+          <div className="pl-13 flex items-center gap-3">
+            <div className="flex-1 min-w-0">
+              <ServiceOrderStatusFlow
+                currentStatus={currentStatusFlow}
+                onStatusChange={handleStatusChange}
+                isUpdating={isStatusUpdating}
+              />
+            </div>
+            {(currentStatusFlow === 'technically_completed' || currentStatusFlow === 'ready_for_invoice') && (
+              <Button
+                size="sm"
+                variant={currentStatusFlow === 'ready_for_invoice' ? 'outline' : 'default'}
+                className="gap-2 shrink-0"
+                onClick={() => setIsInvoiceModalOpen(true)}
+                disabled={!serviceOrder?.saleId}
+              >
+                <FileText className="h-4 w-4" />
+                {currentStatusFlow === 'ready_for_invoice'
+                  ? t('invoicePreparation.retry', { defaultValue: 'Edit invoice items' })
+                  : t('invoicePreparation.title')}
+              </Button>
+            )}
           </div>
         </div>
 
