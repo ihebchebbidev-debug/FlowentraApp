@@ -107,7 +107,6 @@ const mapApiToLocal = (apiSale: ApiSale & { offer?: { id?: number; offerNumber?:
         installationName: item.installationName,
         requiresServiceOrder: item.requiresServiceOrder,
         serviceOrderGenerated: item.serviceOrderGenerated,
-        fulfillmentStatus: item.fulfillmentStatus,
         serviceOrderId: item.serviceOrderId,
       };
     }),

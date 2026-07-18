@@ -337,6 +337,9 @@ builder.Services.AddScoped<IInstallationNoteService, InstallationNoteService>();
 
 builder.Services.AddScoped<IServiceOrderService, ServiceOrderService>();
 
+// Invoices Module Services (Phase B)
+builder.Services.AddScoped<MyApi.Modules.Invoices.Services.IInvoiceService, MyApi.Modules.Invoices.Services.InvoiceService>();
+
 // Dispatches Module Services
 builder.Services.AddScoped<MyApi.Modules.Dispatches.Services.IDispatchService, MyApi.Modules.Dispatches.Services.DispatchService>();
 
@@ -365,6 +368,7 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 
 // System Logging Services
 builder.Services.AddScoped<ISystemLogService, SystemLogService>();
+builder.Services.AddScoped<IActivityLogger, ActivityLogger>();
 
 // AI Chat Module Services
 builder.Services.AddScoped<IAiChatService, AiChatService>();

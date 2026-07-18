@@ -18,7 +18,6 @@ export interface SaleItem {
   requiresServiceOrder?: boolean;
   serviceOrderGenerated?: boolean;
   serviceOrderId?: string;
-  fulfillmentStatus?: string;
 }
 
 export interface SaleContact {

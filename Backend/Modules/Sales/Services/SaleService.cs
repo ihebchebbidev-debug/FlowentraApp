@@ -18,6 +18,7 @@ namespace MyApi.Modules.Sales.Services
         private readonly MyApi.Modules.Numbering.Services.INumberingService? _numberingService;
         private readonly MyApi.Modules.Planning.Services.IPlannedLineEntryService? _plannedEntries;
         private readonly MyApi.Modules.Shared.Services.IEntityFormDocumentService? _formDocuments;
+        private readonly MyApi.Modules.Shared.Services.IActivityLogger? _activityLogger;
 
         public SaleService(
             ApplicationDbContext context,
@@ -26,7 +27,8 @@ namespace MyApi.Modules.Sales.Services
             IWorkflowTriggerService? workflowTriggerService = null,
             MyApi.Modules.Numbering.Services.INumberingService? numberingService = null,
             MyApi.Modules.Planning.Services.IPlannedLineEntryService? plannedEntries = null,
-            MyApi.Modules.Shared.Services.IEntityFormDocumentService? formDocuments = null)
+            MyApi.Modules.Shared.Services.IEntityFormDocumentService? formDocuments = null,
+            MyApi.Modules.Shared.Services.IActivityLogger? activityLogger = null)
         {
             _context = context;
             _logger = logger;
@@ -35,6 +37,7 @@ namespace MyApi.Modules.Sales.Services
             _numberingService = numberingService;
             _plannedEntries = plannedEntries;
             _formDocuments = formDocuments;
+            _activityLogger = activityLogger;
         }
 
 
@@ -720,6 +723,23 @@ namespace MyApi.Modules.Sales.Services
             await _context.SaveChangesAsync();
 
             var addedItem = await _context.SaleItems.FindAsync(item.Id);
+
+            if (_activityLogger != null)
+            {
+                await _activityLogger.LogAsync(new MyApi.Modules.Shared.Services.ActivityLogEntry
+                {
+                    Module = "Sales",
+                    Action = "item_added",
+                    EntityType = "SaleItem",
+                    EntityId = item.Id.ToString(),
+                    ParentEntityType = "Sale",
+                    ParentEntityId = saleId,
+                    UserId = sale.CreatedBy,
+                    UserName = sale.CreatedByName,
+                    Message = $"Item added: {item.ItemName} (qty {item.Quantity})",
+                });
+            }
+
             return MapItemToDto(addedItem!);
         }
 
@@ -730,6 +750,10 @@ namespace MyApi.Modules.Sales.Services
 
             if (item == null)
                 throw new KeyNotFoundException($"Item with ID {itemId} not found in sale {saleId}");
+
+            var oldName = item.ItemName;
+            var oldQty = item.Quantity;
+            var oldPrice = item.UnitPrice;
 
             item.Type = itemDto.Type;
             item.ArticleId = itemDto.ArticleId;
@@ -746,6 +770,21 @@ namespace MyApi.Modules.Sales.Services
 
             await _context.SaveChangesAsync();
 
+            if (_activityLogger != null)
+            {
+                await _activityLogger.LogAsync(new MyApi.Modules.Shared.Services.ActivityLogEntry
+                {
+                    Module = "Sales",
+                    Action = "item_updated",
+                    EntityType = "SaleItem",
+                    EntityId = itemId.ToString(),
+                    ParentEntityType = "Sale",
+                    ParentEntityId = saleId,
+                    Message = $"Item updated: {item.ItemName} (qty {oldQty}→{item.Quantity}, price {oldPrice}→{item.UnitPrice})",
+                    Details = oldName != item.ItemName ? $"renamed from {oldName}" : null,
+                });
+            }
+
             var updatedItem = await _context.SaleItems.FindAsync(itemId);
             return MapItemToDto(updatedItem!);
         }
@@ -758,8 +797,26 @@ namespace MyApi.Modules.Sales.Services
             if (item == null)
                 return false;
 
+            var snapshotName = item.ItemName;
+            var snapshotQty = item.Quantity;
+
             _context.SaleItems.Remove(item);
             await _context.SaveChangesAsync();
+
+            if (_activityLogger != null)
+            {
+                await _activityLogger.LogAsync(new MyApi.Modules.Shared.Services.ActivityLogEntry
+                {
+                    Module = "Sales",
+                    Action = "item_deleted",
+                    EntityType = "SaleItem",
+                    EntityId = itemId.ToString(),
+                    ParentEntityType = "Sale",
+                    ParentEntityId = saleId,
+                    Message = $"Item removed: {snapshotName} (qty {snapshotQty})",
+                });
+            }
+
             return true;
         }
 

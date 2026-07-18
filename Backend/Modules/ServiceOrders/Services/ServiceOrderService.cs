@@ -20,6 +20,7 @@ namespace MyApi.Modules.ServiceOrders.Services
         private readonly IAppSettingsService? _appSettingsService;
         private readonly MyApi.Modules.Planning.Services.IPlannedLineEntryService? _plannedEntries;
         private readonly MyApi.Modules.Shared.Services.IEntityFormDocumentService? _formDocuments;
+        private readonly MyApi.Modules.Invoices.Services.IInvoiceService? _invoiceService;
 
         public ServiceOrderService(
             ApplicationDbContext context,
@@ -28,7 +29,8 @@ namespace MyApi.Modules.ServiceOrders.Services
             MyApi.Modules.Numbering.Services.INumberingService? numberingService = null,
             IAppSettingsService? appSettingsService = null,
             MyApi.Modules.Planning.Services.IPlannedLineEntryService? plannedEntries = null,
-            MyApi.Modules.Shared.Services.IEntityFormDocumentService? formDocuments = null)
+            MyApi.Modules.Shared.Services.IEntityFormDocumentService? formDocuments = null,
+            MyApi.Modules.Invoices.Services.IInvoiceService? invoiceService = null)
         {
             _context = context;
             _logger = logger;
@@ -37,6 +39,7 @@ namespace MyApi.Modules.ServiceOrders.Services
             _appSettingsService = appSettingsService;
             _plannedEntries = plannedEntries;
             _formDocuments = formDocuments;
+            _invoiceService = invoiceService;
         }
 
         // Phase A (A6): single formula for per-job estimated duration.
@@ -298,6 +301,20 @@ namespace MyApi.Modules.ServiceOrders.Services
 
         public async Task<ServiceOrderDto> CreateFromSaleAsync(int saleId, CreateServiceOrderDto createDto, string userId)
         {
+            // --- Task 3: idempotent creation. Fast pre-check (outside the retry loop) so
+            // repeated clicks return the existing SO instead of throwing. A concurrent race
+            // is caught below via DbUpdateException on the unique index.
+            var preCheckSaleIdStr = saleId.ToString();
+            var preExisting = await _context.ServiceOrders
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s => s.SaleId == preCheckSaleIdStr && !s.IsDeleted);
+            if (preExisting != null)
+            {
+                _logger.LogInformation("CreateFromSaleAsync: returning existing ServiceOrder {Id} for Sale {SaleId} (idempotent)", preExisting.Id, saleId);
+                var existingDto = await GetServiceOrderByIdAsync(preExisting.Id);
+                return existingDto!;
+            }
+
             try
             {
             // Atomic creation: ServiceOrder + jobs + planned entries + materials + sale flags
@@ -313,7 +330,7 @@ namespace MyApi.Modules.ServiceOrders.Services
                 // double-insert or update detached rows.
                 _context.ChangeTracker.Clear();
                 createdServiceOrderId = 0;
-                await using var tx = await _context.Database.BeginTransactionAsync();
+                await using var tx = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
             // Verify sale exists with its items
                 var sale = await _context.Sales
                     .Include(s => s.Items)
@@ -321,11 +338,16 @@ namespace MyApi.Modules.ServiceOrders.Services
                 if (sale == null)
                     throw new KeyNotFoundException($"Sale with ID {saleId} not found");
 
-                // Check if service order already exists for this sale
+                // Re-check inside the serializable transaction (race guard). The DB-level
+                // partial unique index (ux_serviceorders_tenant_saleid) is the hard fence.
                 var saleIdStr = saleId.ToString();
-                var existingOrder = await _context.ServiceOrders.FirstOrDefaultAsync(s => s.SaleId == saleIdStr);
+                var existingOrder = await _context.ServiceOrders.FirstOrDefaultAsync(s => s.SaleId == saleIdStr && !s.IsDeleted);
                 if (existingOrder != null)
-                    throw new InvalidOperationException($"Service order already exists for sale {saleId}");
+                {
+                    createdServiceOrderId = existingOrder.Id;
+                    await tx.CommitAsync();
+                    return;
+                }
 
                 // Get service-type items from the sale (these become jobs)
                 var serviceItems = sale.Items?.Where(i => i.Type?.ToLower() == "service").ToList() ?? new List<Sales.Models.SaleItem>();
@@ -632,11 +654,41 @@ namespace MyApi.Modules.ServiceOrders.Services
                 var result = await GetServiceOrderByIdAsync(createdServiceOrderId);
                 return result!;
             }
+            catch (DbUpdateException dupEx) when (IsUniqueSaleIdViolation(dupEx))
+            {
+                // Concurrent race: another request already created the SO. Return it.
+                _logger.LogWarning(dupEx, "Duplicate ServiceOrder creation for Sale {SaleId} caught by unique index; returning existing", saleId);
+                var saleIdStr = saleId.ToString();
+                var existing = await _context.ServiceOrders.AsNoTracking()
+                    .FirstOrDefaultAsync(s => s.SaleId == saleIdStr && !s.IsDeleted);
+                if (existing != null)
+                    return (await GetServiceOrderByIdAsync(existing.Id))!;
+                throw;
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating service order from sale {SaleId}: {Message}", saleId, ex.Message);
                 throw;
             }
+        }
+
+        private static bool IsUniqueSaleIdViolation(DbUpdateException ex)
+        {
+            // Npgsql throws PostgresException with SqlState 23505 for unique_violation.
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                var sqlState = inner.GetType().GetProperty("SqlState")?.GetValue(inner) as string;
+                if (sqlState == "23505")
+                {
+                    var msg = inner.Message ?? string.Empty;
+                    if (msg.Contains("ux_serviceorders_tenant_saleid", StringComparison.OrdinalIgnoreCase)
+                        || msg.Contains("SaleId", StringComparison.OrdinalIgnoreCase))
+                        return true;
+                }
+                inner = inner.InnerException;
+            }
+            return false;
         }
 
         public async Task<PaginatedServiceOrderResponse> GetServiceOrdersAsync(
@@ -2714,6 +2766,20 @@ namespace MyApi.Modules.ServiceOrders.Services
                     throw new InvalidOperationException($"Failed to transfer items to sale: {ex.InnerException?.Message ?? ex.Message}");
                 }
             });
+
+            // Phase B: snapshot the sale into a draft invoice on the ledger.
+            // Best-effort — a failure here must not undo the transfer above.
+            if (_invoiceService != null)
+            {
+                try
+                {
+                    await _invoiceService.CreateDraftFromSaleAsync(saleId, userId, id);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "PrepareForInvoice: draft invoice creation failed for SO {Id} / Sale {SaleId}", id, saleId);
+                }
+            }
 
             return (await GetServiceOrderByIdAsync(id))!;
         }

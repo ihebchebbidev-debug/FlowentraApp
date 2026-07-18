@@ -77,6 +77,9 @@
   "conversion_success": "Offre convertie avec succès",
   "converted_to_sale": "Convertie en Vente",
   "converted_to_service_order": "Convertie en Ordre de Service",
+  "convert": {
+    "partial_warning": "Conversion réussie avec avertissements"
+  },
   "conversion": {
     "convert_offer": "Convertir l'Offre",
     "will_convert_products": "Convertira {{count}} produit(s) en articles de vente",

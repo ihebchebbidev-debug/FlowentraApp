@@ -54,10 +54,21 @@ namespace MyApi.Modules.Dispatches.DTOs
         public string? Unit { get; set; }
         public bool OverrunFlag { get; set; }
         public string? OverrunReason { get; set; }
+
+        // Approval workflow (mirrors ExpenseDto)
+        public string ApprovalStatus { get; set; } = "pending"; // pending | approved | rejected
+        public string? ApprovedBy { get; set; }
+        public DateTime? ApprovedAt { get; set; }
+        public string? RejectionReason { get; set; }
     }
 
     public class ApproveMaterialDto
     {
-        public string ApprovedBy { get; set; } = null!;
+        /// <summary>True to approve, false to reject. Defaults to true for backwards compatibility.</summary>
+        public bool Approved { get; set; } = true;
+        /// <summary>Required when Approved == false.</summary>
+        public string? RejectionReason { get; set; }
+        /// <summary>Legacy field; ignored when the caller identity is derived from the auth context.</summary>
+        public string? ApprovedBy { get; set; }
     }
 }

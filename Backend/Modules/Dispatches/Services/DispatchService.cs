@@ -9,6 +9,8 @@ using MyApi.Modules.Dispatches.DTOs;
 using MyApi.Modules.Dispatches.Models;
 using MyApi.Modules.Dispatches.Mapping;
 using MyApi.Modules.WorkflowEngine.Services;
+using MyApi.Modules.Articles.Services;
+using MyApi.Modules.Articles.DTOs;
 
 namespace MyApi.Modules.Dispatches.Services
 {
@@ -19,19 +21,25 @@ namespace MyApi.Modules.Dispatches.Services
         private readonly IWorkflowTriggerService? _workflowTriggerService;
         private readonly MyApi.Modules.Numbering.Services.INumberingService? _numberingService;
         private readonly MyApi.Modules.Planning.Services.IPlannedLineEntryService? _plannedEntries;
+        private readonly IStockTransactionService? _stockTransactionService;
+        private readonly MyApi.Modules.Shared.Services.IActivityLogger? _activityLogger;
 
         public DispatchService(
-            ApplicationDbContext db, 
+            ApplicationDbContext db,
             ILogger<DispatchService> logger,
             IWorkflowTriggerService? workflowTriggerService = null,
             MyApi.Modules.Numbering.Services.INumberingService? numberingService = null,
-            MyApi.Modules.Planning.Services.IPlannedLineEntryService? plannedEntries = null)
+            MyApi.Modules.Planning.Services.IPlannedLineEntryService? plannedEntries = null,
+            IStockTransactionService? stockTransactionService = null,
+            MyApi.Modules.Shared.Services.IActivityLogger? activityLogger = null)
         {
             _db = db;
             _logger = logger;
             _workflowTriggerService = workflowTriggerService;
             _numberingService = numberingService;
             _plannedEntries = plannedEntries;
+            _stockTransactionService = stockTransactionService;
+            _activityLogger = activityLogger;
         }
 
         // Helper to build a map of technicianId -> display name for a dispatch
@@ -1771,10 +1779,53 @@ namespace MyApi.Modules.Dispatches.Services
                     Unit = unitValue,
                     OverrunFlag = willOverrun,
                     OverrunReason = willOverrun ? dto.OverrunReason : null,
+                    ApprovalStatus = "pending",
                 };
                 _db.DispatchMaterials.Add(mat);
                 await _db.SaveChangesAsync();
                 await tx.CommitAsync();
+            }
+
+            // --- Task 2: deduct stock when the line references a real article ---
+            // Free-text materials (no ArticleId) skip inventory. The stock service
+            // manages its own transaction (execution strategy) so it must run AFTER
+            // the material tx commits. On failure we compensate by deleting the
+            // material row so caller sees an atomic error.
+            if (articleId.HasValue && dto.Quantity > 0 && _stockTransactionService != null)
+            {
+                try
+                {
+                    await _stockTransactionService.CreateTransactionAsync(new CreateStockTransactionDto
+                    {
+                        ArticleId = articleId.Value,
+                        TransactionType = "remove",
+                        Quantity = dto.Quantity,
+                        Reason = "Material used on dispatch",
+                        ReferenceType = "dispatch_material",
+                        ReferenceId = mat.Id.ToString(),
+                        ReferenceNumber = d.DispatchNumber,
+                        Notes = dto.Description,
+                    }, userId);
+                }
+                catch (Exception ex)
+                {
+                    // Compensate: remove the material row so the API call is atomic.
+                    try
+                    {
+                        _db.DispatchMaterials.Remove(mat);
+                        await _db.SaveChangesAsync();
+                    }
+                    catch (Exception rollbackEx)
+                    {
+                        _logger.LogError(rollbackEx, "Failed to compensate MaterialUsage {MaterialId} after stock deduction error", mat.Id);
+                    }
+
+                    if (ex is InvalidOperationException iox && ex.Message.Contains("Insufficient stock", StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new InvalidOperationException($"dispatches.material.insufficientStock: {ex.Message}", ex);
+                    }
+                    throw;
+                }
             }
 
             await RecalculateServiceOrderJobRollupAsync(dto.ServiceOrderJobId);
@@ -1782,8 +1833,28 @@ namespace MyApi.Modules.Dispatches.Services
             // Propagate material usage to parent Sale/Offer activities
             await PropagateMaterialToSaleAsync(d, mat, userId);
 
-            return new MaterialDto 
-            { 
+            // Also record on the Dispatch's own audit stream (SystemLog) so the
+            // dispatch drawer's Activity tab shows the material line, matching
+            // the requirement that "every action" be logged.
+            if (_activityLogger != null)
+            {
+                await _activityLogger.LogAsync(new MyApi.Modules.Shared.Services.ActivityLogEntry
+                {
+                    Module = "Dispatches",
+                    Action = "material_added",
+                    EntityType = "MaterialUsage",
+                    EntityId = mat.Id.ToString(),
+                    ParentEntityType = null,
+                    ParentEntityId = null,
+                    UserId = userId,
+                    Message = $"Material added to dispatch {d.DispatchNumber}: {mat.Description ?? mat.ArticleId?.ToString()} (qty {mat.Quantity})",
+                    Details = System.Text.Json.JsonSerializer.Serialize(new { dispatchId, mat.Id, mat.ArticleId, mat.Quantity, mat.UnitPrice, mat.TotalPrice }),
+                });
+            }
+
+
+            return new MaterialDto
+            {
                 Id = mat.Id,
                 DispatchId = mat.DispatchId,
                 ServiceOrderJobId = mat.ServiceOrderJobId,
@@ -1793,11 +1864,15 @@ namespace MyApi.Modules.Dispatches.Services
                 Quantity = (int)mat.Quantity,
                 UnitPrice = mat.UnitPrice,
                 TotalPrice = mat.TotalPrice,
-                Status = "pending", 
+                Status = mat.ApprovalStatus,
                 CreatedAt = mat.UsedDate,
                 Unit = mat.Unit,
                 OverrunFlag = mat.OverrunFlag,
                 OverrunReason = mat.OverrunReason,
+                ApprovalStatus = mat.ApprovalStatus,
+                ApprovedBy = mat.ApprovedBy,
+                ApprovedAt = mat.ApprovedAt,
+                RejectionReason = mat.RejectionReason,
             };
         }
 
@@ -1838,8 +1913,8 @@ namespace MyApi.Modules.Dispatches.Services
         public async Task<IEnumerable<MaterialDto>> GetMaterialsAsync(int dispatchId)
         {
             var items = await _db.DispatchMaterials.Where(m => m.DispatchId == dispatchId).ToListAsync();
-            return items.Select(m => new MaterialDto 
-            { 
+            return items.Select(m => new MaterialDto
+            {
                 Id = m.Id,
                 DispatchId = m.DispatchId,
                 ServiceOrderJobId = m.ServiceOrderJobId,
@@ -1849,9 +1924,15 @@ namespace MyApi.Modules.Dispatches.Services
                 Quantity = (int)m.Quantity,
                 UnitPrice = m.UnitPrice,
                 TotalPrice = m.TotalPrice,
-                Status = "pending", 
+                Status = m.ApprovalStatus,
                 CreatedAt = m.UsedDate,
-                Unit = m.Unit
+                Unit = m.Unit,
+                OverrunFlag = m.OverrunFlag,
+                OverrunReason = m.OverrunReason,
+                ApprovalStatus = m.ApprovalStatus,
+                ApprovedBy = m.ApprovedBy,
+                ApprovedAt = m.ApprovedAt,
+                RejectionReason = m.RejectionReason,
             }).ToList();
         }
 
@@ -1859,7 +1940,47 @@ namespace MyApi.Modules.Dispatches.Services
         {
             var m = await _db.DispatchMaterials.FirstOrDefaultAsync(x => x.Id == materialId && x.DispatchId == dispatchId);
             if (m == null) throw new KeyNotFoundException("Material not found");
+
+            if (dto.Approved)
+            {
+                m.ApprovalStatus = "approved";
+                m.ApprovedBy = userId;
+                m.ApprovedAt = DateTime.UtcNow;
+                m.RejectionReason = null;
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(dto.RejectionReason))
+                    throw new ArgumentException("RejectionReason is required when rejecting a material line");
+
+                m.ApprovalStatus = "rejected";
+                m.RejectionReason = dto.RejectionReason?.Trim();
+                m.ApprovedBy = null;
+                m.ApprovedAt = null;
+            }
+
             await _db.SaveChangesAsync();
+            _logger.LogInformation(
+                "Material {MaterialId} on Dispatch {DispatchId} set to {Status} by {UserId}",
+                materialId, dispatchId, m.ApprovalStatus, userId);
+
+            if (_activityLogger != null)
+            {
+                await _activityLogger.LogAsync(new MyApi.Modules.Shared.Services.ActivityLogEntry
+                {
+                    Module = "Dispatches",
+                    Action = dto.Approved ? "material_approved" : "material_rejected",
+                    EntityType = "MaterialUsage",
+                    EntityId = materialId.ToString(),
+                    ParentEntityType = null,
+                    ParentEntityId = null,
+                    UserId = userId,
+                    Message = dto.Approved
+                        ? $"Material line #{materialId} approved on dispatch {dispatchId}"
+                        : $"Material line #{materialId} rejected on dispatch {dispatchId}: {dto.RejectionReason}",
+                    Details = dto.RejectionReason,
+                });
+            }
         }
 
         public async Task<AttachmentUploadResponseDto> UploadAttachmentAsync(int dispatchId, Microsoft.AspNetCore.Http.IFormFile file, string category, string? description, double? latitude, double? longitude, string userId)
@@ -1880,6 +2001,22 @@ namespace MyApi.Modules.Dispatches.Services
             };
             _db.DispatchAttachments.Add(att);
             await _db.SaveChangesAsync();
+
+            if (_activityLogger != null)
+            {
+                await _activityLogger.LogAsync(new MyApi.Modules.Shared.Services.ActivityLogEntry
+                {
+                    Module = "Dispatches",
+                    Action = "attachment_uploaded",
+                    EntityType = "DispatchAttachment",
+                    EntityId = att.Id.ToString(),
+                    ParentEntityType = null,
+                    ParentEntityId = null,
+                    UserId = userId,
+                    Message = $"Attachment uploaded to dispatch {d.DispatchNumber}: {att.FileName} ({att.FileSize} bytes)",
+                    Details = category,
+                });
+            }
 
             return new AttachmentUploadResponseDto { Id = att.Id, FileName = att.FileName, Category = att.Category };
         }

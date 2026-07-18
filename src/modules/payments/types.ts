@@ -1,6 +1,6 @@
 // Payment Module Types — shared for Offers & Sales
 
-export type EntityType = 'offer' | 'sale';
+export type EntityType = 'offer' | 'sale' | 'invoice';
 export type PaymentStatus = 'unpaid' | 'partially_paid' | 'fully_paid';
 export type PaymentMethod = 'cash' | 'bank_transfer' | 'check' | 'card' | 'other';
 export type PlanStatus = 'active' | 'completed' | 'cancelled';

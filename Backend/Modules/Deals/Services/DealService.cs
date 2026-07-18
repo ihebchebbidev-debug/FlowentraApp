@@ -24,6 +24,7 @@ namespace MyApi.Modules.Deals.Services
         private readonly IWorkflowTriggerService? _workflowTriggerService;
         private readonly MyApi.Modules.Numbering.Services.INumberingService? _numberingService;
         private readonly IPlannedLineEntryService? _plannedEntries;
+        private readonly MyApi.Modules.Shared.Services.IActivityLogger? _activityLogger;
 
         // Stages considered "open" (still in the pipeline)
         private static readonly string[] OpenStages = { "lead", "qualified", "proposal", "negotiation" };
@@ -37,7 +38,8 @@ namespace MyApi.Modules.Deals.Services
             ITaskService taskService,
             IWorkflowTriggerService? workflowTriggerService = null,
             MyApi.Modules.Numbering.Services.INumberingService? numberingService = null,
-            IPlannedLineEntryService? plannedEntries = null)
+            IPlannedLineEntryService? plannedEntries = null,
+            MyApi.Modules.Shared.Services.IActivityLogger? activityLogger = null)
         {
             _context = context;
             _logger = logger;
@@ -48,6 +50,29 @@ namespace MyApi.Modules.Deals.Services
             _workflowTriggerService = workflowTriggerService;
             _numberingService = numberingService;
             _plannedEntries = plannedEntries;
+            _activityLogger = activityLogger;
+        }
+
+        private Task LogActivityAsync(string action, string entityType, string entityId, int dealId,
+            string message, string userId, string? userName = null, string? details = null,
+            string? oldValue = null, string? newValue = null)
+        {
+            if (_activityLogger == null) return Task.CompletedTask;
+            return _activityLogger.LogAsync(new MyApi.Modules.Shared.Services.ActivityLogEntry
+            {
+                Module = "Deals",
+                Action = action,
+                EntityType = entityType,
+                EntityId = entityId,
+                ParentEntityType = "Deal",
+                ParentEntityId = dealId,
+                UserId = userId,
+                UserName = userName,
+                Message = message,
+                Details = details,
+                OldValue = oldValue,
+                NewValue = newValue,
+            });
         }
 
         // ── Queries ──
@@ -291,6 +316,9 @@ namespace MyApi.Modules.Deals.Services
             deal.DeletedAt = DateTime.UtcNow;
             deal.DeletedBy = userId;
             await _context.SaveChangesAsync();
+
+            await LogActivityAsync("delete", "Deal", id.ToString(), id,
+                $"Deal deleted: {deal.Title}", userId);
             return true;
         }
 
@@ -563,6 +591,15 @@ namespace MyApi.Modules.Deals.Services
             await TrySetBackLinkAsync("Offers", "DealId", id, offerBackId);
             await TrySetBackLinkAsync("Projects", "ConvertedFromDealId", id, projectBackId);
 
+            // Timeline entry so the deal's Activity tab shows the conversion.
+            var targets = new List<string>();
+            if (saleBackId.HasValue) targets.Add($"Sale #{saleBackId}");
+            if (offerBackId.HasValue) targets.Add($"Offer #{offerBackId}");
+            if (projectBackId.HasValue) targets.Add($"Project #{projectBackId}");
+            await LogActivityAsync("converted", "Deal", id.ToString(), id,
+                $"Deal converted to {string.Join(", ", targets)}", userId, userName,
+                details: System.Text.Json.JsonSerializer.Serialize(new { saleBackId, offerBackId, projectBackId }));
+
             return result;
         }
 
@@ -607,7 +644,7 @@ namespace MyApi.Modules.Deals.Services
 
         // ── Items ──
 
-        public async Task<DealItemDto?> AddDealItemAsync(int dealId, CreateDealItemDto dto)
+        public async Task<DealItemDto?> AddDealItemAsync(int dealId, CreateDealItemDto dto, string userId = "system", string? userName = null)
         {
             var deal = await _context.Deals.Include(d => d.Items).FirstOrDefaultAsync(d => d.Id == dealId && !d.IsDeleted);
             if (deal == null) return null;
@@ -619,13 +656,20 @@ namespace MyApi.Modules.Deals.Services
             deal.EstimatedValue = RecomputeValue(await ReloadWithItems(dealId));
             deal.ModifiedDate = DateTime.UtcNow;
             await _context.SaveChangesAsync();
+
+            await LogActivityAsync("item_added", "DealItem", item.Id.ToString(), dealId,
+                $"Item added: {item.ItemName} (qty {item.Quantity})", userId, userName);
             return MapItem(item);
         }
 
-        public async Task<DealItemDto?> UpdateDealItemAsync(int dealId, int itemId, CreateDealItemDto dto)
+        public async Task<DealItemDto?> UpdateDealItemAsync(int dealId, int itemId, CreateDealItemDto dto, string userId = "system", string? userName = null)
         {
             var item = await _context.DealItems.FirstOrDefaultAsync(i => i.Id == itemId && i.DealId == dealId);
             if (item == null) return null;
+            var oldName = item.ItemName;
+            var oldQty = item.Quantity;
+            var oldPrice = item.UnitPrice;
+
             item.ArticleId = dto.ArticleId;
             item.Type = dto.Type;
             item.ItemName = dto.ItemName;
@@ -641,13 +685,21 @@ namespace MyApi.Modules.Deals.Services
             await _context.SaveChangesAsync();
             var deal = await ReloadWithItems(dealId);
             if (deal != null) { deal.EstimatedValue = RecomputeValue(deal); deal.ModifiedDate = DateTime.UtcNow; await _context.SaveChangesAsync(); }
+
+            await LogActivityAsync("item_updated", "DealItem", itemId.ToString(), dealId,
+                $"Item updated: {item.ItemName} (qty {oldQty}→{item.Quantity}, price {oldPrice}→{item.UnitPrice})",
+                userId, userName,
+                details: oldName != item.ItemName ? $"renamed from {oldName}" : null);
             return MapItem(item);
         }
 
-        public async Task<bool> DeleteDealItemAsync(int dealId, int itemId)
+        public async Task<bool> DeleteDealItemAsync(int dealId, int itemId, string userId = "system", string? userName = null)
         {
             var item = await _context.DealItems.FirstOrDefaultAsync(i => i.Id == itemId && i.DealId == dealId);
             if (item == null) return false;
+            var snapshotName = item.ItemName;
+            var snapshotQty = item.Quantity;
+
             _context.DealItems.Remove(item);
             await _context.SaveChangesAsync();
             var deal = await ReloadWithItems(dealId);
@@ -660,6 +712,9 @@ namespace MyApi.Modules.Deals.Services
                 deal.ModifiedDate = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
             }
+
+            await LogActivityAsync("item_deleted", "DealItem", itemId.ToString(), dealId,
+                $"Item removed: {snapshotName} (qty {snapshotQty})", userId, userName);
             return true;
         }
 

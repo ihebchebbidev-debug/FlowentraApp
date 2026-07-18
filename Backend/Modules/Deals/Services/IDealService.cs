@@ -26,9 +26,9 @@ namespace MyApi.Modules.Deals.Services
         Task<ConvertDealResultDto> ConvertDealAsync(int id, ConvertDealDto convertDto, string userId, string? userName = null);
 
         // Items
-        Task<DealItemDto?> AddDealItemAsync(int dealId, CreateDealItemDto itemDto);
-        Task<DealItemDto?> UpdateDealItemAsync(int dealId, int itemId, CreateDealItemDto itemDto);
-        Task<bool> DeleteDealItemAsync(int dealId, int itemId);
+        Task<DealItemDto?> AddDealItemAsync(int dealId, CreateDealItemDto itemDto, string userId = "system", string? userName = null);
+        Task<DealItemDto?> UpdateDealItemAsync(int dealId, int itemId, CreateDealItemDto itemDto, string userId = "system", string? userName = null);
+        Task<bool> DeleteDealItemAsync(int dealId, int itemId, string userId = "system", string? userName = null);
 
         // Activities
         Task<List<DealActivityDto>> GetDealActivitiesAsync(int dealId, string? type = null, int page = 1, int limit = 20);

@@ -838,7 +838,6 @@ export const salesTests: TestDefinition[] = [
             unitPrice: 175,
             discount: 5,
             requiresServiceOrder: true,
-            fulfillmentStatus: 'pending',
           }),
         }
       );

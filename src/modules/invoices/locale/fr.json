@@ -1,0 +1,15 @@
+{
+  "title": "Factures",
+  "empty": "Aucune facture pour ce contact pour le moment.",
+  "empty_filtered": "Aucune facture ne correspond à vos filtres.",
+  "search_placeholder": "Rechercher par numéro, titre ou notes…",
+  "filters": { "date_from": "Date de début", "date_to": "Date de fin", "clear": "Effacer les filtres" },
+  "pagination": { "summary": "{{count}} sur {{total}} affichées", "page_of": "Page {{page}} sur {{total}}" },
+  "status": { "all": "Toutes", "draft": "Brouillon", "posted": "Émise", "paid": "Payée", "void": "Annulée" },
+  "columns": { "number": "Numéro", "issue_date": "Date d'émission", "due_date": "Échéance", "total": "Total", "paid": "Payé", "due": "Reste dû", "status": "Statut" },
+  "actions": { "new_from_sale": "Nouvelle depuis vente", "post": "Émettre", "void": "Annuler", "delete": "Supprimer", "open_sale": "Ouvrir la vente", "open_service_order": "Ouvrir l'ordre de service" },
+  "detail": { "no_number_yet": "Brouillon (pas encore numéroté)", "sale": "Vente", "service_order": "Ordre de service", "subtotal": "Sous-total", "tax": "TVA", "grand_total": "Total", "amount_paid": "Payé", "amount_due": "Reste dû", "lines": "Lignes", "payments": "Paiements" },
+  "confirm": { "post_title": "Émettre cette facture ?", "post_body": "Un numéro sera attribué et la facture deviendra définitive.", "void_title": "Annuler cette facture ?", "void_body": "Cette action est irréversible. Motif facultatif.", "void_reason": "Motif (facultatif)", "delete_title": "Supprimer ce brouillon ?", "delete_body": "Le brouillon sera supprimé définitivement." },
+  "toast": { "created": "Brouillon de facture créé", "create_failed": "Impossible de créer la facture", "posted": "Facture émise", "post_failed": "Impossible d'émettre la facture", "voided": "Facture annulée", "void_failed": "Impossible d'annuler la facture", "deleted": "Facture supprimée", "delete_failed": "Impossible de supprimer la facture" },
+  "create_from_sale": { "title": "Créer une facture depuis une vente", "pick_sale": "Choisir une vente", "no_eligible_sales": "Aucune vente éligible pour ce contact.", "confirm": "Créer le brouillon" }
+}

@@ -13,7 +13,8 @@ import AddTagModal from "../components/AddTagModal";
 import { ContactProjectsManager } from "../components/ContactProjectsManager";
 import { ContactTasksManager } from "../components/ContactTasksManager";
 import { ContactSales } from "../components/ContactSales";
-import { TrendingUp, FileText, PlusCircle, LayoutDashboard, FolderKanban, CheckSquare, StickyNote } from "lucide-react";
+import { ContactInvoicesTab } from "@/modules/invoices/components/ContactInvoicesTab";
+import { TrendingUp, FileText, PlusCircle, LayoutDashboard, FolderKanban, CheckSquare, StickyNote, Receipt } from "lucide-react";
 import { ContactDetailHeader } from "../components/detail/ContactDetailHeader";
 import { ContactOverviewCards } from "../components/detail/ContactOverviewCards";
 import { ContactNotesSection } from "../components/detail/ContactNotesSection";
@@ -140,6 +141,7 @@ export default function ContactDetail() {
               { value: 'projects',   icon: FolderKanban,    label: t('detail.tabs.projects') },
               { value: 'todos',      icon: CheckSquare,     label: t('detail.tabs.tasks') },
               { value: 'sales',      icon: TrendingUp,      label: t('detail.tabs.sales') },
+              { value: 'invoices',   icon: Receipt,         label: t('detail.tabs.invoices') },
               { value: 'notes',      icon: StickyNote,      label: t('detail.tabs.notes') },
               { value: 'documents',  icon: FileText,        label: t('detail.tabs.files') },
             ];
@@ -180,6 +182,7 @@ export default function ContactDetail() {
                     <TabsTrigger value="projects">{t('detail.tabs.projects')}</TabsTrigger>
                     <TabsTrigger value="todos">{t('detail.tabs.tasks')}</TabsTrigger>
                     <TabsTrigger value="sales">{t('detail.tabs.sales')}</TabsTrigger>
+                    <TabsTrigger value="invoices">{t('detail.tabs.invoices')}</TabsTrigger>
                     <TabsTrigger value="notes">{t('detail.tabs.notes')}</TabsTrigger>
                     <TabsTrigger value="documents">{t('detail.tabs.files')}</TabsTrigger>
                   </TabsList>
@@ -226,6 +229,10 @@ export default function ContactDetail() {
                 <ContactSales contactId={id!} contactName={contact.name} />
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="invoices" className="mt-0">
+            <ContactInvoicesTab contactId={parseInt(id!, 10)} />
           </TabsContent>
 
           <TabsContent value="notes" className="mt-0">

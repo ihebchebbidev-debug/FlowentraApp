@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MyApi.Data;
 using MyApi.Modules.Payments.DTOs;
 using MyApi.Modules.Payments.Models;
+using MyApi.Modules.Invoices.Services;
 
 namespace MyApi.Modules.Payments.Services
 {
@@ -9,11 +10,16 @@ namespace MyApi.Modules.Payments.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<PaymentService> _logger;
+        private readonly IInvoiceService? _invoiceService;
 
-        public PaymentService(ApplicationDbContext context, ILogger<PaymentService> logger)
+        public PaymentService(
+            ApplicationDbContext context,
+            ILogger<PaymentService> logger,
+            IInvoiceService? invoiceService = null)
         {
             _context = context;
             _logger = logger;
+            _invoiceService = invoiceService;
         }
 
         // ── Payments ──────────────────────────────────
@@ -347,6 +353,11 @@ namespace MyApi.Modules.Payments.Services
                 var sale = await _context.Sales.FirstOrDefaultAsync(s => s.Id.ToString() == entityId && !s.IsDeleted);
                 return sale?.TotalAmount ?? 0;
             }
+            else if (entityType == "invoice")
+            {
+                var invoice = await _context.Invoices.FirstOrDefaultAsync(i => i.Id.ToString() == entityId && !i.IsDeleted);
+                return invoice?.GrandTotal ?? 0;
+            }
             else
             {
                 var offer = await _context.Offers.FirstOrDefaultAsync(o => o.Id.ToString() == entityId && !o.IsDeleted);
@@ -363,6 +374,15 @@ namespace MyApi.Modules.Payments.Services
                 {
                     var contact = await _context.Contacts.FirstOrDefaultAsync(c => c.Id == sale.ContactId && !c.IsDeleted);
                     return (sale.Title ?? $"Sale #{sale.SaleNumber}", contact?.Name ?? "");
+                }
+            }
+            else if (entityType == "invoice")
+            {
+                var invoice = await _context.Invoices.FirstOrDefaultAsync(i => i.Id.ToString() == entityId && !i.IsDeleted);
+                if (invoice != null)
+                {
+                    var contact = await _context.Contacts.FirstOrDefaultAsync(c => c.Id == invoice.ContactId && !c.IsDeleted);
+                    return (invoice.Title ?? $"Invoice #{invoice.InvoiceNumber ?? invoice.Id.ToString()}", contact?.Name ?? "");
                 }
             }
             else
@@ -385,6 +405,11 @@ namespace MyApi.Modules.Payments.Services
                 var sale = await _context.Sales.FirstOrDefaultAsync(s => s.Id.ToString() == entityId && !s.IsDeleted);
                 contactId = sale?.ContactId;
             }
+            else if (entityType == "invoice")
+            {
+                var invoice = await _context.Invoices.FirstOrDefaultAsync(i => i.Id.ToString() == entityId && !i.IsDeleted);
+                contactId = invoice?.ContactId;
+            }
             else
             {
                 var offer = await _context.Offers.FirstOrDefaultAsync(o => o.Id.ToString() == entityId && !o.IsDeleted);
@@ -398,9 +423,15 @@ namespace MyApi.Modules.Payments.Services
         private async Task UpdateEntityPaymentStatusAsync(string entityType, string entityId)
         {
             var summary = await GetPaymentSummaryAsync(entityType, entityId);
-            // This would update the paid_amount and payment_status columns
-            // on the sales/offers table once those columns exist
-            // For now, the summary is computed on-the-fly
+            // Push the recomputed paid-amount into the invoice ledger so its
+            // AmountPaid / Status columns stay in sync with Payments. Sale and
+            // offer paid-amount columns are still computed on the fly.
+            if (entityType == "invoice" && _invoiceService != null
+                && int.TryParse(entityId, out var invoiceId))
+            {
+                try { await _invoiceService.RecalculatePaymentStateAsync(invoiceId); }
+                catch (Exception ex) { _logger.LogWarning(ex, "Failed to sync invoice {Id} payment state", invoiceId); }
+            }
         }
 
         // ── Mappers ───────────────────────────────────

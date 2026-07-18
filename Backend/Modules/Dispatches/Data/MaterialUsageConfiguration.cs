@@ -20,6 +20,10 @@ namespace MyApi.Modules.Dispatches.Data
             builder.Property(m => m.Unit).HasMaxLength(20).IsRequired();
             builder.Property(m => m.OverrunFlag).HasDefaultValue(false);
             builder.Property(m => m.OverrunReason).HasMaxLength(500);
+            builder.Property(m => m.ApprovalStatus).HasMaxLength(20).HasDefaultValue("pending");
+            builder.Property(m => m.ApprovedBy).HasMaxLength(100);
+            builder.Property(m => m.ApprovedAt);
+            builder.Property(m => m.RejectionReason).HasMaxLength(500);
         }
     }
 }

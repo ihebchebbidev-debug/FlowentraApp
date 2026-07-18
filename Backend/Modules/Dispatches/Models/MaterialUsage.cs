@@ -68,5 +68,21 @@ namespace MyApi.Modules.Dispatches.Models
         [Column("OverrunReason")]
         [MaxLength(500)]
         public string? OverrunReason { get; set; }
+
+        // --- Approval workflow (mirrors Expenses) ---
+        [Column("ApprovalStatus")]
+        [MaxLength(20)]
+        public string ApprovalStatus { get; set; } = "pending"; // pending | approved | rejected
+
+        [Column("ApprovedBy")]
+        [MaxLength(100)]
+        public string? ApprovedBy { get; set; }
+
+        [Column("ApprovedAt")]
+        public DateTime? ApprovedAt { get; set; }
+
+        [Column("RejectionReason")]
+        [MaxLength(500)]
+        public string? RejectionReason { get; set; }
     }
 }

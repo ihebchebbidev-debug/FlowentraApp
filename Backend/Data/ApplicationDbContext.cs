@@ -173,6 +173,10 @@ namespace MyApi.Data
         public DbSet<ServiceOrderExpense> ServiceOrderExpenses { get; set; }
         public DbSet<ServiceOrderNote> ServiceOrderNotes { get; set; }
 
+        // Invoices Module (Phase B)
+        public DbSet<MyApi.Modules.Invoices.Models.Invoice> Invoices { get; set; }
+        public DbSet<MyApi.Modules.Invoices.Models.InvoiceLine> InvoiceLines { get; set; }
+
         // Planning Module
         public DbSet<UserWorkingHours> UserWorkingHours { get; set; }
         public DbSet<UserLeave> UserLeaves { get; set; }
@@ -615,6 +619,10 @@ namespace MyApi.Data
             modelBuilder.ApplyConfiguration(new ServiceOrderTimeEntryConfiguration());
             modelBuilder.ApplyConfiguration(new ServiceOrderExpenseConfiguration());
             modelBuilder.ApplyConfiguration(new MyApi.Modules.Planning.Data.PlannedLineEntryConfiguration());
+
+            // Invoices domain configurations (Phase B)
+            new MyApi.Modules.Invoices.Data.InvoiceConfiguration().Configure(modelBuilder);
+            new MyApi.Modules.Invoices.Data.InvoiceLineConfiguration().Configure(modelBuilder);
             
             // Notifications configuration
             new NotificationConfiguration().Configure(modelBuilder);

@@ -705,8 +705,7 @@ const getMigrationData = (): MigrationFile[] => {
             installationName: { type: "string", required: false },
             requiresServiceOrder: { type: "boolean", default: false },
             serviceOrderGenerated: { type: "boolean", default: false },
-            serviceOrderId: { type: "string", required: false, foreignKey: "FIELD.service_orders.id" },
-            fulfillmentStatus: { type: "string", required: false, enum: ["pending", "delivered", "cancelled"] }
+            serviceOrderId: { type: "string", required: false, foreignKey: "FIELD.service_orders.id" }
           },
           indexes: ["saleId", "type", "installationId", "serviceOrderId"]
         },

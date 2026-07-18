@@ -162,7 +162,7 @@ namespace MyApi.Modules.Deals.Controllers
         {
             try
             {
-                var item = await _dealService.AddDealItemAsync(id, itemDto);
+                var item = await _dealService.AddDealItemAsync(id, itemDto, GetCurrentUserId(), GetCurrentUserName());
                 if (item == null) return NotFound(new { success = false, error = new { code = "DEAL_NOT_FOUND", message = "Deal not found" } });
                 return Ok(new { success = true, data = item });
             }
@@ -178,7 +178,7 @@ namespace MyApi.Modules.Deals.Controllers
         {
             try
             {
-                var item = await _dealService.UpdateDealItemAsync(id, itemId, itemDto);
+                var item = await _dealService.UpdateDealItemAsync(id, itemId, itemDto, GetCurrentUserId(), GetCurrentUserName());
                 if (item == null) return NotFound(new { success = false, error = new { code = "ITEM_NOT_FOUND", message = "Item not found" } });
                 return Ok(new { success = true, data = item });
             }
@@ -194,7 +194,7 @@ namespace MyApi.Modules.Deals.Controllers
         {
             try
             {
-                var ok = await _dealService.DeleteDealItemAsync(id, itemId);
+                var ok = await _dealService.DeleteDealItemAsync(id, itemId, GetCurrentUserId(), GetCurrentUserName());
                 if (!ok) return NotFound(new { success = false, error = new { code = "ITEM_NOT_FOUND", message = "Item not found" } });
                 return Ok(new { success = true });
             }

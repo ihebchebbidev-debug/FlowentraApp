@@ -1367,7 +1367,7 @@ return result;`;
             <p className="font-semibold text-foreground">Entity Data Fields</p>
             <div className="space-y-1 text-[10px]">
               <p><strong>Dispatch:</strong> dispatchNumber, status, priority, scheduledDate, siteAddress, contact.name, contact.email, assignedTechnicians[0].email, completionPercentage</p>
-              <p><strong>Sale:</strong> saleNumber, status, totalAmount, paidAmount, contact.email, items[].type, items[].requiresServiceOrder, fulfillmentStatus</p>
+              <p><strong>Sale:</strong> saleNumber, status, totalAmount, paidAmount, contact.email, items[].type, items[].requiresServiceOrder</p>
               <p><strong>Offer:</strong> offerNumber, status, totalAmount, validUntil, contact.email, items[].type</p>
               <p><strong>Service Order:</strong> serviceOrderNumber, status, serviceCount, completedDispatchCount, assignedTo, contact.email</p>
               <p><strong>Contact:</strong> name, email, phone, company, status, type, tags</p>

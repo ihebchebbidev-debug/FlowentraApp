@@ -163,17 +163,61 @@ namespace MyApi.Modules.Documents.Controllers
         private readonly ILogger<DocumentsController> _logger;
         private readonly IWebHostEnvironment _env;
         private readonly DocumentCompressionService _compressionService;
+        private readonly MyApi.Modules.Shared.Services.IActivityLogger? _activityLogger;
 
         public DocumentsController(
             ApplicationDbContext db,
             ILogger<DocumentsController> logger,
             IWebHostEnvironment env,
-            ILogger<DocumentCompressionService> compressionLogger)
+            ILogger<DocumentCompressionService> compressionLogger,
+            MyApi.Modules.Shared.Services.IActivityLogger? activityLogger = null)
         {
             _db = db;
             _logger = logger;
             _env = env;
             _compressionService = new DocumentCompressionService(compressionLogger);
+            _activityLogger = activityLogger;
+        }
+
+        // Map "sales|offers|deals|projects|services|field" module tags to the
+        // parent entity type understood by IActivityLogger. Anything else (e.g.
+        // "contacts", "general") is treated as unparented — SystemLog only.
+        private static string? ResolveParentEntityType(string? moduleType) => moduleType?.ToLowerInvariant() switch
+        {
+            "offers" or "offer" => "Offer",
+            "sales" or "sale" => "Sale",
+            "deals" or "deal" => "Deal",
+            "projects" or "project" => "Project",
+            // ServiceOrders + Dispatches have no per-entity Activity table; log
+            // as SystemLog only (still auditable, just not on a parent timeline).
+            _ => null,
+        };
+
+        private async Task LogDocumentActivityAsync(string action, Document doc, string message)
+        {
+            if (_activityLogger == null) return;
+            var parentType = ResolveParentEntityType(doc.ModuleType);
+            int? parentId = null;
+            if (parentType != null && int.TryParse(doc.ModuleId, out var pid)) parentId = pid;
+
+            var userId = User?.FindFirst("sub")?.Value
+                ?? User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var userName = User?.Identity?.Name
+                ?? User?.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
+
+            await _activityLogger.LogAsync(new MyApi.Modules.Shared.Services.ActivityLogEntry
+            {
+                Module = "Documents",
+                Action = action,
+                EntityType = "Document",
+                EntityId = doc.Id.ToString(),
+                ParentEntityType = parentType,
+                ParentEntityId = parentId,
+                UserId = userId,
+                UserName = userName,
+                Message = message,
+                Details = doc.FileName,
+            });
         }
 
         /// <summary>
@@ -392,6 +436,12 @@ namespace MyApi.Modules.Documents.Controllers
                 _db.Documents.Add(doc);
                 await _db.SaveChangesAsync();
 
+                await LogDocumentActivityAsync("document_linked",
+                    doc,
+                    doc.ResourceType == "link"
+                        ? $"Linked document: {doc.OriginalName} → {doc.ExternalUrl}"
+                        : $"Document record created: {doc.OriginalName}");
+
                 return Ok(new { success = true, document = doc });
             }
             catch (Exception ex)
@@ -517,6 +567,12 @@ namespace MyApi.Modules.Documents.Controllers
 
                 await _db.SaveChangesAsync();
 
+                foreach (var d in uploadedDocs)
+                {
+                    await LogDocumentActivityAsync("document_uploaded", d,
+                        $"Document uploaded: {d.OriginalName} ({d.OriginalFileSize} bytes)");
+                }
+
                 _logger.LogInformation("Uploaded {Count} document(s) by user {User}", uploadedDocs.Count, userId);
 
                 return Ok(new
@@ -604,6 +660,9 @@ namespace MyApi.Modules.Documents.Controllers
 
                 _db.Documents.Remove(doc);
                 await _db.SaveChangesAsync();
+
+                await LogDocumentActivityAsync("document_deleted", doc,
+                    $"Document deleted: {doc.OriginalName}");
 
                 return Ok(new { success = true, message = "Document deleted successfully" });
             }

@@ -44,6 +44,8 @@ import offersEn from '../modules/offers/locale/en.json';
 import offersFr from '../modules/offers/locale/fr.json';
 import dealsEn from '../modules/deals/locale/en.json';
 import dealsFr from '../modules/deals/locale/fr.json';
+import invoicesEn from '../modules/invoices/locale/en.json';
+import invoicesFr from '../modules/invoices/locale/fr.json';
 import offersListEn from '../modules/offers/locale/list.en.json';
 import offersDetailEn from '../modules/offers/locale/detail.en.json';
 import offersAddEn from '../modules/offers/locale/add.en.json';
@@ -1095,6 +1097,10 @@ i18n.addResourceBundle('en', 'sales', salesEn, true, true);
 i18n.addResourceBundle('en', 'sales', flattenedSalesEn, true, true);
 i18n.addResourceBundle('fr', 'sales', salesFr, true, true);
 i18n.addResourceBundle('fr', 'sales', flattenedSalesFr, true, true);
+
+// Register invoices namespace so useTranslation('invoices') resolves correctly
+i18n.addResourceBundle('en', 'invoices', invoicesEn, true, true);
+i18n.addResourceBundle('fr', 'invoices', invoicesFr, true, true);
 
 // Register lookups namespace for proper translation resolution
 i18n.addResourceBundle('en', 'lookups', lookupsEn, true, true);

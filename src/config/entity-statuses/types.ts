@@ -51,7 +51,7 @@ export interface EntityStatusConfig {
   defaultStatus: string;
 }
 
-export type EntityType = 'offer' | 'sale' | 'service_order' | 'dispatch' | 'job' | 'deal';
+export type EntityType = 'offer' | 'sale' | 'service_order' | 'dispatch' | 'job' | 'deal' | 'invoice';
 
 /** Helper to get a status definition by ID from a config */
 export function getStatusById(config: EntityStatusConfig, statusId: string): StatusDefinition | undefined {

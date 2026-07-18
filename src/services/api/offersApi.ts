@@ -193,14 +193,21 @@ export const offersApi = {
     if (result.error) throw new Error(result.error);
   },
 
-  async convertToSale(offerId: number): Promise<{ saleId: number; serviceOrderId?: number }> {
-    const result = await apiFetch<any>(`/api/sales/from-offer/${offerId}`, { method: 'POST' });
-    const data = unwrap(result, 'Failed to convert offer to sale');
-    const saleId = data?.data?.id ?? data?.id;
-    if (typeof saleId !== 'number') {
-      throw new Error('Conversion succeeded but no saleId returned');
+  async convertToSale(offerId: number): Promise<{ saleId: number; serviceOrderId?: number; warnings?: string[]; message?: string; alreadyConverted?: boolean }> {
+    const result = await apiFetch<any>(`/api/sales/from-offer/${offerId}`, { method: "POST" });
+    const data = unwrap(result, "Failed to convert offer to sale");
+    const innerData = data?.data || data;
+    const saleId = innerData?.id ?? innerData?.saleId;
+    if (typeof saleId !== "number") {
+      throw new Error("Conversion succeeded but no saleId returned");
     }
-    return { saleId };
+    return {
+      saleId,
+      serviceOrderId: innerData?.serviceOrderId,
+      warnings: innerData?.warnings,
+      message: innerData?.message,
+      alreadyConverted: innerData?.alreadyConverted
+    };
   },
 
   async renew(offerId: number): Promise<Offer> {

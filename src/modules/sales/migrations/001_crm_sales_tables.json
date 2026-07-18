@@ -161,8 +161,7 @@
         "installationName": { "type": "string", "required": false, "description": "Display name of installation" },
         "requiresServiceOrder": { "type": "boolean", "default": false, "description": "Flag indicating if this item needs service order generation" },
         "serviceOrderGenerated": { "type": "boolean", "default": false, "description": "Track if service order was created for this item" },
-        "serviceOrderId": { "type": "string", "required": false, "foreignKey": "FIELD.service_orders.id", "description": "Reference to generated service order" },
-        "fulfillmentStatus": { "type": "string", "required": false, "enum": ["pending", "delivered", "cancelled"], "description": "For material items - delivery status" }
+        "serviceOrderId": { "type": "string", "required": false, "foreignKey": "FIELD.service_orders.id", "description": "Reference to generated service order" }
       },
       "indexes": ["saleId", "type", "installationId", "serviceOrderId"],
       "constraints": [

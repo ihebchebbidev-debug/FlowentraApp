@@ -1,9 +1,11 @@
+import { useTranslation } from "react-i18next";
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Offer, OfferFilters, OfferStats } from '../types';
 import { OffersService } from '../services/offers.service';
 
 export function useOffers() {
+  const { t } = useTranslation("offers");
   const [offers, setOffers] = useState<Offer[]>([]);
   const [stats, setStats] = useState<OfferStats>({
     totalOffers: 0,
@@ -102,6 +104,15 @@ export function useOffers() {
       }
       
       toast.success(message);
+      if (result?.warnings && result.warnings.length > 0) {
+        const shown = result.warnings.slice(0, 2);
+        const extra = result.warnings.length - shown.length;
+        const body = extra > 0 ? `${shown.join(" • ")} • +${extra} more` : shown.join(" • ");
+        toast.warning(t("convert.partial_warning", { defaultValue: "Converted with warnings" }), {
+          description: body,
+          duration: 8000,
+        });
+      }
       fetchOffers();
       return result;
     } catch (error) {

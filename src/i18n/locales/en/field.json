@@ -47,5 +47,21 @@
       "confirm": "Delete"
     }
   },
-  "actions": "Actions"
+  "actions": "Actions",
+  "dispatches": {
+    "material": {
+      "approve": "Approve",
+      "reject": "Reject",
+      "rejectionReason": "Rejection reason",
+      "approvedBy": "Approved by",
+      "approvedAt": "Approved at",
+      "insufficientStock": "Insufficient stock for this article",
+      "stockAdjusted": "Stock adjusted: -{{qty}} {{unit}}",
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      }
+    }
+  }
 }

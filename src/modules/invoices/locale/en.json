@@ -1,0 +1,15 @@
+{
+  "title": "Invoices",
+  "empty": "No invoices for this contact yet.",
+  "empty_filtered": "No invoices match your filters.",
+  "search_placeholder": "Search by number, title or notes…",
+  "filters": { "date_from": "From date", "date_to": "To date", "clear": "Clear filters" },
+  "pagination": { "summary": "Showing {{count}} of {{total}}", "page_of": "Page {{page}} of {{total}}" },
+  "status": { "all": "All", "draft": "Draft", "posted": "Posted", "paid": "Paid", "void": "Void" },
+  "columns": { "number": "Number", "issue_date": "Issue date", "due_date": "Due date", "total": "Total", "paid": "Paid", "due": "Due", "status": "Status" },
+  "actions": { "new_from_sale": "New from sale", "post": "Post", "void": "Void", "delete": "Delete", "open_sale": "Open sale", "open_service_order": "Open service order" },
+  "detail": { "no_number_yet": "Draft (no number yet)", "sale": "Sale", "service_order": "Service order", "subtotal": "Subtotal", "tax": "Tax", "grand_total": "Total", "amount_paid": "Paid", "amount_due": "Due", "lines": "Lines", "payments": "Payments" },
+  "confirm": { "post_title": "Post this invoice?", "post_body": "A number will be assigned and the invoice becomes final.", "void_title": "Void this invoice?", "void_body": "This cannot be undone. Optionally provide a reason.", "void_reason": "Reason (optional)", "delete_title": "Delete this draft?", "delete_body": "The draft will be removed permanently." },
+  "toast": { "created": "Draft invoice created", "create_failed": "Could not create invoice", "posted": "Invoice posted", "post_failed": "Could not post invoice", "voided": "Invoice voided", "void_failed": "Could not void invoice", "deleted": "Invoice deleted", "delete_failed": "Could not delete invoice" },
+  "create_from_sale": { "title": "Create invoice from sale", "pick_sale": "Pick a sale", "no_eligible_sales": "No eligible sales for this contact.", "confirm": "Create draft" }
+}

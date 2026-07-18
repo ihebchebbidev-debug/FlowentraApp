@@ -47,5 +47,21 @@
       "confirm": "Supprimer"
     }
   },
-  "actions": "Actions"
+  "actions": "Actions",
+  "dispatches": {
+    "material": {
+      "approve": "Approuver",
+      "reject": "Rejeter",
+      "rejectionReason": "Motif du rejet",
+      "approvedBy": "Approuvé par",
+      "approvedAt": "Approuvé le",
+      "insufficientStock": "Stock insuffisant pour cet article",
+      "stockAdjusted": "Stock ajusté : -{{qty}} {{unit}}",
+      "status": {
+        "pending": "En attente",
+        "approved": "Approuvé",
+        "rejected": "Rejeté"
+      }
+    }
+  }
 }

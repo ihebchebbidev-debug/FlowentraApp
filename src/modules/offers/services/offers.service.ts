@@ -436,16 +436,16 @@ if (data.validUntil !== undefined) {
     await offersApi.delete(numId);
   }
 
-  static async convertOffer(data: ConvertOfferData): Promise<{ saleId?: string; serviceOrderId?: string; alreadyConverted?: boolean }> {
+  static async convertOffer(data: ConvertOfferData): Promise<{ saleId?: string; serviceOrderId?: string; alreadyConverted?: boolean; warnings?: string[] }> {
     const numId = parseInt(data.offerId, 10);
-    if (isNaN(numId)) throw new Error('Invalid offer ID');
+    if (isNaN(numId)) throw new Error("Invalid offer ID");
 
     // First, check if offer is already converted (idempotency protection)
     const existingOffer = await this.getOfferById(data.offerId);
     if (existingOffer?.convertedToSaleId) {
       // Verify that the linked sale actually exists (it might have been deleted)
       try {
-        const { salesApi } = await import('@/services/api/salesApi');
+        const { salesApi } = await import("@/services/api/salesApi");
         const saleId = parseInt(existingOffer.convertedToSaleId, 10);
         if (!isNaN(saleId)) {
           await salesApi.getById(saleId);
@@ -456,19 +456,30 @@ if (data.validUntil !== undefined) {
           };
         }
       } catch (error) {
-        // Sale doesn't exist anymore (was deleted) - proceed with new conversion
-        console.info('Previously linked sale was deleted, proceeding with new conversion');
+        // Sale doesn"t exist anymore (was deleted) - proceed with new conversion
+        console.info("Previously linked sale was deleted, proceeding with new conversion");
       }
     }
 
-    const result: { saleId?: string; serviceOrderId?: string; alreadyConverted?: boolean } = {};
+    const result: { saleId?: string; serviceOrderId?: string; alreadyConverted?: boolean; warnings?: string[] } = {};
+    const allWarnings: string[] = [];
 
     if (data.convertToSale) {
       const saleResult = await offersApi.convertToSale(numId);
       if (saleResult.saleId !== null && saleResult.saleId !== undefined) {
         result.saleId = String(saleResult.saleId);
-        result.alreadyConverted = false;
+        result.alreadyConverted = saleResult.alreadyConverted ?? false;
       }
+      if (saleResult.serviceOrderId) {
+        result.serviceOrderId = String(saleResult.serviceOrderId);
+      }
+      if (saleResult.warnings) {
+        allWarnings.push(...saleResult.warnings);
+      }
+    }
+
+    if (allWarnings.length > 0) {
+      result.warnings = Array.from(new Set(allWarnings));
     }
 
     return result;
