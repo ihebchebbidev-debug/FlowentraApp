@@ -417,6 +417,12 @@
         "deleteSuccess": "Note deleted successfully",
         "deleteError": "Failed to delete note"
       },
+      "notesActivity": {
+        "title": "Notes & Activity",
+        "postedNote": "posted a note",
+        "noEntries": "No notes or activity yet",
+        "noEntriesHint": "Add a note or work on the project to see activity here"
+      },
       "documents": {
         "title": "Project Documents"
       },

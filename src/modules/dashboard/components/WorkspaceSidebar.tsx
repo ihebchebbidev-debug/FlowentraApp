@@ -127,11 +127,45 @@ export function WorkspaceSidebar() {
   // Which workspace's module sidebar is shown. Seed from the current route so
   // route navigation/remounts keep the module sidebar visible after selection.
   const NO_SECONDARY = new Set(["settings", "lookups"]);
-  const [openId, setOpenId] = useState<string | null>(() =>
-    detected && location.pathname !== "/dashboard" && !NO_SECONDARY.has(detected.id)
-      ? detected.id
-      : null
-  );
+  const WORKSPACE_STORAGE_KEY = "sidebar.openWorkspaceId";
+
+  // Prefer a persisted workspace choice on deep-link/refresh when the current
+  // path also belongs to that workspace. This disambiguates shared routes
+  // (Contacts appears in Sales, Service, and Projects) so the user stays in
+  // the workspace they were last using.
+  const seedOpenId = (): string | null => {
+    if (location.pathname === "/dashboard") return null;
+    let stored: string | null = null;
+    try {
+      stored = typeof window !== "undefined"
+        ? window.sessionStorage.getItem(WORKSPACE_STORAGE_KEY)
+        : null;
+    } catch {
+      stored = null;
+    }
+    if (stored && !NO_SECONDARY.has(stored)) {
+      const ws = WORKSPACES.find((w) => w.id === stored);
+      const owns = ws?.modules.some((m) => {
+        const base = m.url.split("?")[0];
+        return location.pathname === base || location.pathname.startsWith(base + "/");
+      });
+      if (owns) return stored;
+    }
+    return detected && !NO_SECONDARY.has(detected.id) ? detected.id : null;
+  };
+  const [openId, setOpenIdState] = useState<string | null>(seedOpenId);
+
+  const setOpenId = (id: string | null) => {
+    setOpenIdState(id);
+    try {
+      if (typeof window === "undefined") return;
+      if (id) window.sessionStorage.setItem(WORKSPACE_STORAGE_KEY, id);
+      else window.sessionStorage.removeItem(WORKSPACE_STORAGE_KEY);
+    } catch {
+      /* noop */
+    }
+  };
+
 
   // Refs so we can restore focus to the trigger button when the panel closes
   // (Esc / X), and move focus into the panel when it opens.
@@ -147,15 +181,33 @@ export function WorkspaceSidebar() {
 
   // When the route TRANSITIONS into a different workspace (e.g. via a link
   // outside the sidebar), keep the panel in sync — but only on an actual
-  // change of `detected`.
-  const prevDetectedId = useRef<string | undefined>(detected?.id);
+  // change of `detected`. If the current open workspace also contains the
+  // new path (shared modules like Contacts appear in Sales/Service/Projects),
+  // keep the current workspace open instead of jumping to another one.
+  const prevPathname = useRef(location.pathname);
   useEffect(() => {
+    if (prevPathname.current === location.pathname) return;
+    prevPathname.current = location.pathname;
     const nextId = detected?.id;
-    if (nextId && nextId !== prevDetectedId.current && openId && openId !== nextId) {
-      setOpenId(NO_SECONDARY.has(nextId) ? null : nextId);
+    if (!nextId || !openId || openId === nextId) {
+      prevDetectedId.current = nextId;
+      return;
     }
+    // If the currently open workspace still owns the new path, stay.
+    const currentWs = WORKSPACES.find((w) => w.id === openId);
+    const stillInCurrent = currentWs?.modules.some((m) => {
+      const base = m.url.split("?")[0];
+      return location.pathname === base || location.pathname.startsWith(base + "/");
+    });
+    if (stillInCurrent) {
+      prevDetectedId.current = nextId;
+      return;
+    }
+    setOpenId(NO_SECONDARY.has(nextId) ? null : nextId);
     prevDetectedId.current = nextId;
-  }, [detected, openId]);
+  }, [location.pathname, detected, openId]);
+  const prevDetectedId = useRef<string | undefined>(detected?.id);
+
 
   const activeWs: Workspace | null =
     openId ? WORKSPACES.find((w) => w.id === openId) ?? null : null;

@@ -26,10 +26,9 @@ import { useLayoutModeContext } from "@/hooks/useLayoutMode";
 import { ProjectOverviewTab } from '../components/project-detail/ProjectOverviewTab';
 import { ProjectTasksTab } from '../components/project-detail/ProjectTasksTab';
 import { ProjectTeamTab } from '../components/project-detail/ProjectTeamTab';
-import { ProjectNotesTab } from '../components/project-detail/ProjectNotesTab';
+import { ProjectNotesActivityTab } from '../components/project-detail/ProjectNotesActivityTab';
 import { ProjectDocumentsTab } from '../components/project-detail/ProjectDocumentsTab';
 import { ChecklistsSection } from '@/modules/shared/components/documents';
-import { ProjectActivityTab } from '../components/project-detail/ProjectActivityTab';
 import { ProjectOffersTab } from '../components/project-detail/ProjectOffersTab';
 import { EditProjectModal } from '../components/EditProjectModal';
 import { QuickTaskModal } from '../components/QuickTaskModal';
@@ -668,9 +667,8 @@ export default function ProjectTasksPage() {
               </TabsContent>
 
               {/* Combined Notes & Activity */}
-              <TabsContent value="activity" className="mt-0 space-y-6">
-                <ProjectNotesTab project={project} />
-                <ProjectActivityTab project={project} />
+              <TabsContent value="activity" className="mt-0">
+                <ProjectNotesActivityTab project={project} />
               </TabsContent>
             </div>
           </div>

@@ -417,6 +417,12 @@
         "deleteSuccess": "Note supprimée avec succès",
         "deleteError": "Échec de la suppression de la note"
       },
+      "notesActivity": {
+        "title": "Notes et activité",
+        "postedNote": "a publié une note",
+        "noEntries": "Aucune note ou activité pour le moment",
+        "noEntriesHint": "Ajoutez une note ou travaillez sur le projet pour voir l'activité ici"
+      },
       "documents": {
         "title": "Documents du Projet"
       },
