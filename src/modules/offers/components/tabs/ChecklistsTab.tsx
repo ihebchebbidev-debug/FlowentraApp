@@ -12,6 +12,9 @@ export function ChecklistsTab({ offer }: ChecklistsTabProps) {
       entityId={offer.id}
       linkedEntityType={offer.convertedToSaleId ? "sale" : undefined}
       linkedEntityId={offer.convertedToSaleId}
+      additionalSources={(offer.items ?? [])
+        .map((it: any) => ({ type: 'offer_item' as const, id: Number(it.id) }))
+        .filter(s => !isNaN(s.id))}
     />
   );
 }

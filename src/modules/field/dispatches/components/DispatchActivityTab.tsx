@@ -11,7 +11,7 @@ import { MessageSquare, Plus, Loader2, RefreshCw, Settings, User } from "lucide-
 import { dispatchesApi, type DispatchActivityLog } from "@/services/api/dispatchesApi";
 import { usersApi } from "@/services/api/usersApi";
 import { toast } from "sonner";
-import { translateNote } from "@/modules/shared/utils/noteTranslation";
+import { translateNote, translateActivityType, getStatusLabel } from "@/modules/shared/utils/noteTranslation";
 
 import { API_URL } from '@/config/api';
 import { getAuthHeaders } from '@/utils/apiHeaders';
@@ -392,7 +392,7 @@ export function DispatchActivityTab({ dispatchId, onDataChange, createdAt, dispa
                             </Badge>
                           )}
                           <Badge className={`${getActivityBadgeColor(activity.type)} text-xs border`}>
-                            {activity.type.replace(/_/g, ' ')}
+                            {translateActivityType(activity.type, currentLocale)}
                           </Badge>
                           <span className="text-sm text-muted-foreground">
                             {format(new Date(activity.createdAt), 'MMM d, yyyy • HH:mm')}
@@ -411,9 +411,9 @@ export function DispatchActivityTab({ dispatchId, onDataChange, createdAt, dispa
 
                       {activity.oldValue && activity.newValue && (
                         <div className="text-sm text-muted-foreground flex items-center gap-2">
-                          <span className="line-through">{activity.oldValue}</span>
+                          <span className="line-through">{getStatusLabel(activity.oldValue, currentLocale)}</span>
                           <span>→</span>
-                          <span className="font-medium">{activity.newValue}</span>
+                          <span className="font-medium">{getStatusLabel(activity.newValue, currentLocale)}</span>
                         </div>
                       )}
                     </div>

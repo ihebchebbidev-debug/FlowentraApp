@@ -144,6 +144,12 @@ interface ChecklistsSectionProps {
   entityId: number | string;
   linkedEntityType?: EntityType;
   linkedEntityId?: number | string;
+  /**
+   * Extra entity sources whose checklists should be merged into the same
+   * container (e.g. per-job checklists shown alongside dispatch-level ones,
+   * per-item checklists shown alongside offer/sale-level ones).
+   */
+  additionalSources?: Array<{ type: EntityType; id: number | string }>;
 }
 
 interface ExtendedFormDocument extends EntityFormDocument {
@@ -155,6 +161,7 @@ export function ChecklistsSection({
   entityId,
   linkedEntityType,
   linkedEntityId,
+  additionalSources,
 }: ChecklistsSectionProps) {
   const { i18n } = useTranslation();
   const language = (i18n.language.startsWith('fr') ? 'fr' : 'en') as 'en' | 'fr';
@@ -174,28 +181,43 @@ export function ChecklistsSection({
   const [linkedLoading, setLinkedLoading] = useState(false);
 
   const fetchLinkedDocuments = useCallback(async () => {
-    if (!linkedEntityType || !linkedEntityId) {
-      setLinkedDocuments([]);
-      return;
+    const sources: Array<{ type: EntityType; id: number }> = [];
+
+    if (linkedEntityType && linkedEntityId !== undefined && linkedEntityId !== null) {
+      const n = typeof linkedEntityId === 'string' ? parseInt(linkedEntityId, 10) : linkedEntityId;
+      if (!isNaN(n)) sources.push({ type: linkedEntityType, id: n });
     }
 
-    const numericId = typeof linkedEntityId === 'string' ? parseInt(linkedEntityId, 10) : linkedEntityId;
-    if (isNaN(numericId)) {
+    for (const s of additionalSources ?? []) {
+      const n = typeof s.id === 'string' ? parseInt(s.id, 10) : s.id;
+      if (!isNaN(n)) sources.push({ type: s.type, id: n });
+    }
+
+    if (sources.length === 0) {
       setLinkedDocuments([]);
       return;
     }
 
     try {
       setLinkedLoading(true);
-      const data = await entityFormDocumentsService.getByEntity(linkedEntityType, numericId);
-      setLinkedDocuments(data);
+      const results = await Promise.allSettled(
+        sources.map(s => entityFormDocumentsService.getByEntity(s.type, s.id))
+      );
+      const merged: EntityFormDocument[] = [];
+      results.forEach((r, idx) => {
+        if (r.status === 'fulfilled') {
+          // Tag each doc with the source so the merged list preserves origin.
+          r.value.forEach(d => merged.push({ ...d, entity_type: sources[idx].type } as any));
+        }
+      });
+      setLinkedDocuments(merged);
     } catch (err) {
       console.error('Failed to fetch linked form documents:', err);
       setLinkedDocuments([]);
     } finally {
       setLinkedLoading(false);
     }
-  }, [linkedEntityType, linkedEntityId]);
+  }, [linkedEntityType, linkedEntityId, JSON.stringify(additionalSources ?? [])]);
 
   useEffect(() => {
     fetchLinkedDocuments();
@@ -204,7 +226,7 @@ export function ChecklistsSection({
   // Combine documents with source indication
   const allDocuments: ExtendedFormDocument[] = [
     ...mainDocuments.map(doc => ({ ...doc, source: entityType })),
-    ...linkedDocuments.map(doc => ({ ...doc, source: linkedEntityType as EntityType })),
+    ...linkedDocuments.map(doc => ({ ...doc, source: (doc.entity_type as EntityType) ?? (linkedEntityType as EntityType) })),
   ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   const loading = mainLoading || linkedLoading;

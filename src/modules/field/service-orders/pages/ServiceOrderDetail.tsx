@@ -1456,6 +1456,9 @@ export default function ServiceOrderDetail() {
               entityId={Number(id)}
               linkedEntityType={serviceOrder?.saleId ? "sale" : undefined}
               linkedEntityId={serviceOrder?.saleId ? (typeof serviceOrder.saleId === 'string' ? parseInt(serviceOrder.saleId) : serviceOrder.saleId) : undefined}
+              additionalSources={(serviceOrder?.jobs ?? [])
+                .map(j => ({ type: 'service_order_job' as const, id: Number(j.id) }))
+                .filter(s => !isNaN(s.id))}
             />
           </TabsContent>
 

@@ -8,6 +8,8 @@ import { Plus, MessageSquare, Trash2, Loader2, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { usersApi } from "@/services/api/usersApi";
+import { useTranslation } from "react-i18next";
+import { translateNote, translateActivityType, getStatusLabel } from "@/modules/shared/utils/noteTranslation";
 
 import { API_URL } from '@/config/api';
 
@@ -38,6 +40,8 @@ export function ActivityNotesTab({
   onDeleteNote,
   onRefresh 
 }: ActivityNotesTabProps) {
+  const { i18n } = useTranslation();
+  const currentLocale = (i18n.language.startsWith('fr') ? 'fr' : 'en') as 'en' | 'fr';
   const [activities, setActivities] = useState<Activity[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isAddingNote, setIsAddingNote] = useState(false);
@@ -332,7 +336,7 @@ export function ActivityNotesTab({
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 flex-wrap">
                           <Badge className={`${getActivityBadgeColor(activity.type)} text-xs border`}>
-                            {activity.type.replace(/_/g, ' ')}
+                            {translateActivityType(activity.type, currentLocale)}
                           </Badge>
                           <span className="text-xs text-muted-foreground">
                             {format(new Date(activity.createdAt), 'MMM d, yyyy • HH:mm')}
@@ -358,14 +362,14 @@ export function ActivityNotesTab({
                       </div>
                       
                       <p className="text-sm text-foreground leading-relaxed">
-                        {activity.description}
+                        {translateNote(activity.description, currentLocale)}
                       </p>
 
                       {activity.oldValue && activity.newValue && (
                         <div className="text-xs text-muted-foreground flex items-center gap-2">
-                          <span className="line-through">{activity.oldValue}</span>
+                          <span className="line-through">{getStatusLabel(activity.oldValue, currentLocale)}</span>
                           <span>→</span>
-                          <span className="font-medium">{activity.newValue}</span>
+                          <span className="font-medium">{getStatusLabel(activity.newValue, currentLocale)}</span>
                         </div>
                       )}
                     </div>

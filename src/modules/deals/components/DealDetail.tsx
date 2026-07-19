@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { translateNote } from "@/modules/shared/utils/noteTranslation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -614,7 +615,8 @@ function ChecklistsTab({ deal }: { deal: Deal }) {
 }
 
 function ActivityTab({ dealId }: { dealId: number }) {
-  const { t } = useTranslation("deals");
+  const { t, i18n } = useTranslation("deals");
+  const currentLocale = (i18n.language.startsWith("fr") ? "fr" : "en") as "en" | "fr";
   const [activities, setActivities] = useState<DealActivity[]>([]);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
@@ -650,7 +652,7 @@ function ActivityTab({ dealId }: { dealId: number }) {
             {activities.map(a => (
               <div key={a.id} className="flex items-start gap-2 border-l-2 border-muted pl-3 py-1">
                 <div className="min-w-0">
-                  <p className="text-sm">{a.description}</p>
+                  <p className="text-sm">{translateNote(a.description || "", currentLocale)}</p>
                   <p className="text-xs text-muted-foreground">
                     {t(`activity.types.${a.type}`, a.type)} · {format(new Date(a.createdAt), "dd MMM yyyy HH:mm")}
                     {a.createdByName ? ` · ${a.createdByName}` : ""}
