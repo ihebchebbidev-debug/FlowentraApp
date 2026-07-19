@@ -372,7 +372,12 @@
         "actualHours": "Heures Réelles",
         "progress": "Progression",
         "quickStats": "Statistiques Rapides",
-        "projectDates": "Dates du Projet"
+        "projectDates": "Dates du Projet",
+        "linkedRecords": "Enregistrements liés",
+        "linkedOffers": "Devis",
+        "linkedSales": "Ventes",
+        "linkedServiceOrders": "Bons de service",
+        "linkedDispatches": "Interventions"
       },
       "team": {
         "title": "Membres de l'Équipe",
@@ -388,7 +393,12 @@
         "confirmRemoveDesc": "Ce membre n'aura plus accès à ce projet.",
         "selectMember": "Sélectionner un membre à ajouter...",
         "allAdded": "Tous les utilisateurs sont déjà dans l'équipe",
-        "workload": "Charge de travail"
+        "workload": "Charge de travail",
+        "memberAdded": "Membre ajouté",
+        "memberAddedDesc": "{{name}} a été ajouté à {{project}}.",
+        "addFailed": "Échec de l'ajout du membre",
+        "memberRemoved": "Membre retiré",
+        "removeFailed": "Échec du retrait du membre"
       },
       "notes": {
         "title": "Notes du Projet",
@@ -398,6 +408,7 @@
         "noNotesHint": "Ajoutez des notes pour suivre les informations importantes",
         "post": "Publier la Note",
         "deleteConfirm": "Supprimer cette note ?",
+        "deleteDescription": "Cette action est irréversible.",
         "by": "par",
         "loadError": "Échec du chargement des notes",
         "emptyError": "La note ne peut pas être vide",

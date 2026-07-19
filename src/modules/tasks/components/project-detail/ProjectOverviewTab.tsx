@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Project } from "../../types";
 import { cn } from "@/lib/utils";
+import { formatCurrencyValue } from "@/lib/formatters";
 
 interface Technician {
   id: string;
@@ -161,7 +162,7 @@ export function ProjectOverviewTab({
                 </p>
                 <div className="flex items-center gap-2">
                   <Wallet className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-semibold">{project.budget.toLocaleString()}</span>
+                  <span className="text-sm font-semibold">{formatCurrencyValue(project.budget, project.currency)}</span>
                 </div>
               </div>
             )}
@@ -331,13 +332,13 @@ export function ProjectOverviewTab({
 
       <Card>
         <CardHeader>
-          <CardTitle>Linked records</CardTitle>
+          <CardTitle>{t("projects.detail.overview.linkedRecords")}</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-          <div>Offers: {projectLinks?.offers?.length ?? 0}</div>
-          <div>Sales: {projectLinks?.sales?.length ?? 0}</div>
-          <div>Service Orders: {projectLinks?.serviceOrders?.length ?? 0}</div>
-          <div>Dispatches: {projectLinks?.dispatches?.length ?? 0}</div>
+          <div>{t("projects.detail.overview.linkedOffers")}: {projectLinks?.offers?.length ?? 0}</div>
+          <div>{t("projects.detail.overview.linkedSales")}: {projectLinks?.sales?.length ?? 0}</div>
+          <div>{t("projects.detail.overview.linkedServiceOrders")}: {projectLinks?.serviceOrders?.length ?? 0}</div>
+          <div>{t("projects.detail.overview.linkedDispatches")}: {projectLinks?.dispatches?.length ?? 0}</div>
         </CardContent>
       </Card>
 

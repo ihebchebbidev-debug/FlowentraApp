@@ -278,8 +278,14 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
   const dimensions = getZoomDimensions();
 
   // Filter jobs by status and active planning profile settings
+  // Raw merged schedule — used for collision detection so filtered-out (completed,
+  // rejected, cancelled, or manually hidden) dispatches still block new drops/resizes.
+  const rawAssignedJobs = useMemo<Record<string, Job[]>>(
+    () => ({ ...assignedJobs, ...previewJobs }),
+    [assignedJobs, previewJobs]
+  );
+
   const filteredAssignedJobs = useMemo(() => {
-    const merged = { ...assignedJobs, ...previewJobs };
     const {
       displayClosedDispatches,
       displayRejectedDispatches,
@@ -288,8 +294,8 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
     } = profileSettings;
 
     const filtered: Record<string, Job[]> = {};
-    for (const key of Object.keys(merged)) {
-      filtered[key] = merged[key].filter(job => {
+    for (const key of Object.keys(rawAssignedJobs)) {
+      filtered[key] = rawAssignedJobs[key].filter(job => {
         const jobStatus = (job.status || 'pending').toLowerCase();
         // Profile-driven dispatch visibility
         if (!displayClosedDispatches && (jobStatus === 'closed' || jobStatus === 'completed')) return false;
@@ -302,7 +308,7 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
       });
     }
     return filtered;
-  }, [assignedJobs, previewJobs, statusFilter, profileSettings]);
+  }, [rawAssignedJobs, statusFilter, profileSettings]);
 
   // Per-technician dynamic row heights driven by stacked-lane count.
   // Keep in sync with CalendarGrid LANE_HEIGHT constant.
@@ -471,9 +477,10 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
         const totalDurationMinutes = group.jobs.reduce((sum, j) => sum + (j.estimatedDuration || 60), 0);
         const scheduledEnd = new Date(newScheduledStart.getTime() + totalDurationMinutes * 60 * 1000);
 
-        // Collision check using total duration
+        // Collision check using total duration — use raw schedule so hidden
+        // (completed/rejected/cancelled/filtered) dispatches still block the slot.
         const dateKey = `${technicianId}-${format(date, 'yyyy-MM-dd')}`;
-        const existingJobs = filteredAssignedJobs[dateKey] || [];
+        const existingJobs = rawAssignedJobs[dateKey] || [];
         const collision = CollisionService.checkCollision(newScheduledStart, scheduledEnd, existingJobs);
 
         const openInstallationModal = (chosenStart: Date) => {
@@ -555,9 +562,9 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
         // New assignment - use default 3 hour duration
         const scheduledEnd = addHours(newScheduledStart, 3);
 
-        // Check for collisions with existing jobs
+        // Check for collisions against the raw schedule (hidden dispatches still block).
         const dateKey = `${technicianId}-${format(date, 'yyyy-MM-dd')}`;
-        const existingJobs = filteredAssignedJobs[dateKey] || [];
+        const existingJobs = rawAssignedJobs[dateKey] || [];
         const collision = CollisionService.checkCollision(newScheduledStart, scheduledEnd, existingJobs);
 
         const techForJob = technicians.find(t => t.id === technicianId) || null;
@@ -864,6 +871,26 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
 
   const handleJobResize = useCallback(async (jobId: string, newEnd: Date) => {
     try {
+      // Locate the job in the raw schedule (across all tech/date buckets).
+      let currentJob: Job | undefined;
+      let currentKey: string | undefined;
+      for (const key of Object.keys(rawAssignedJobs)) {
+        const found = rawAssignedJobs[key].find(j => j.id === jobId);
+        if (found) { currentJob = found; currentKey = key; break; }
+      }
+
+      if (currentJob && currentKey && currentJob.scheduledStart) {
+        const start = currentJob.scheduledStart instanceof Date
+          ? currentJob.scheduledStart
+          : new Date(currentJob.scheduledStart);
+        const neighbours = rawAssignedJobs[currentKey] || [];
+        const collision = CollisionService.checkCollision(start, newEnd, neighbours, jobId);
+        if (collision.hasCollision) {
+          toast.error(collision.message || t('dispatcher.failed_to_resize_job'));
+          return;
+        }
+      }
+
       await DispatcherService.resizeJob(jobId, newEnd);
       const refreshedJobs = await loadAssignedJobs();
       const updatedJob = Object.values(refreshedJobs).flat().find(job => job.id === jobId) || null;
@@ -873,7 +900,7 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
       console.error('Failed to resize job:', error);
       toast.error(t('dispatcher.failed_to_resize_job'));
     }
-  }, [loadAssignedJobs, t]);
+  }, [loadAssignedJobs, rawAssignedJobs, t]);
 
   const handleJobClick = useCallback((job: Job) => {
     // Allow clicking on locked jobs to show their locked status

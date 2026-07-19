@@ -212,8 +212,8 @@ export function AddMaterialModal({
             </div>
           )}
 
-          {/* Quantity, Estimated Quantity (SO only) and Unit Price */}
-          <div className={`grid grid-cols-1 gap-4 ${context === 'service_order' ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
+          {/* Quantity and Estimated Quantity (both contexts) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="quantity" className="text-sm font-medium">
                 {t('quantity')} ({getUnitLabel(selectedUnit, t)}) <span className="text-destructive">*</span>
@@ -227,8 +227,7 @@ export function AddMaterialModal({
                 onChange={(e) => setFormData({ ...formData, quantity: parseFloat(e.target.value) || 0.01 })}
                 required
               />
-              {context === 'service_order' &&
-                typeof formData.estimatedQuantity === 'number' &&
+              {typeof formData.estimatedQuantity === 'number' &&
                 formData.estimatedQuantity > 0 &&
                 formData.quantity > formData.estimatedQuantity && (
                   <p className="text-xs text-destructive">
@@ -237,47 +236,24 @@ export function AddMaterialModal({
                 )}
             </div>
 
-            {context === 'service_order' && (
-              <div className="space-y-2">
-                <Label htmlFor="estimatedQuantity" className="text-sm font-medium">
-                  Estimated Qty ({getUnitLabel(selectedUnit, t)})
-                </Label>
-                <Input
-                  id="estimatedQuantity"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={formData.estimatedQuantity ?? ''}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      estimatedQuantity: e.target.value === '' ? undefined : parseFloat(e.target.value) || 0,
-                    })
-                  }
-                  placeholder="Planned amount"
-                />
-              </div>
-            )}
-
             <div className="space-y-2">
-              <Label htmlFor="unitPrice" className="text-sm font-medium">
-                {t('unit_cost')} (TND) <span className="text-destructive">*</span>
+              <Label htmlFor="estimatedQuantity" className="text-sm font-medium">
+                Estimated Qty ({getUnitLabel(selectedUnit, t)})
               </Label>
-              <div className="relative">
-                <Input
-                  id="unitPrice"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.unitPrice}
-                  onChange={(e) => setFormData({ ...formData, unitPrice: parseFloat(e.target.value) || 0 })}
-                  required
-                  className="pr-14"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                  TND
-                </span>
-              </div>
+              <Input
+                id="estimatedQuantity"
+                type="number"
+                min="0"
+                step="0.01"
+                value={formData.estimatedQuantity ?? ''}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    estimatedQuantity: e.target.value === '' ? undefined : parseFloat(e.target.value) || 0,
+                  })
+                }
+                placeholder="Planned amount"
+              />
             </div>
           </div>
 

@@ -101,11 +101,14 @@ export function ProjectTeamTab({
       project.name
     );
     if (ok) {
-      toast({ title: "Member added", description: `${user.name} added to the project.` });
+      toast({
+        title: t("projects.detail.team.memberAdded"),
+        description: t("projects.detail.team.memberAddedDesc", { name: user.name, project: project.name }),
+      });
       setSelectedMemberToAdd("");
       onTeamUpdated?.();
     } else {
-      toast({ title: "Failed to add member", variant: "destructive" });
+      toast({ title: t("projects.detail.team.addFailed"), variant: "destructive" });
     }
   };
 
@@ -114,10 +117,10 @@ export function ProjectTeamTab({
     const memberId = selectedMemberToRemove;
     const ok = await ProjectsService.removeTeamMember(Number(project.id), Number(memberId));
     if (ok) {
-      toast({ title: "Member removed" });
+      toast({ title: t("projects.detail.team.memberRemoved") });
       onTeamUpdated?.();
     } else {
-      toast({ title: "Failed to remove member", variant: "destructive" });
+      toast({ title: t("projects.detail.team.removeFailed"), variant: "destructive" });
     }
     setSelectedMemberToRemove(null);
   };

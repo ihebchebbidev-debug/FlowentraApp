@@ -372,7 +372,12 @@
         "actualHours": "Actual Hours",
         "progress": "Progress",
         "quickStats": "Quick Stats",
-        "projectDates": "Project Dates"
+        "projectDates": "Project Dates",
+        "linkedRecords": "Linked records",
+        "linkedOffers": "Offers",
+        "linkedSales": "Sales",
+        "linkedServiceOrders": "Service Orders",
+        "linkedDispatches": "Dispatches"
       },
       "team": {
         "title": "Team Members",
@@ -388,7 +393,12 @@
         "confirmRemoveDesc": "This member will no longer have access to this project.",
         "selectMember": "Select a team member to add...",
         "allAdded": "All available users are already in the team",
-        "workload": "Workload"
+        "workload": "Workload",
+        "memberAdded": "Member added",
+        "memberAddedDesc": "{{name}} added to {{project}}.",
+        "addFailed": "Failed to add member",
+        "memberRemoved": "Member removed",
+        "removeFailed": "Failed to remove member"
       },
       "notes": {
         "title": "Project Notes",
@@ -398,6 +408,7 @@
         "noNotesHint": "Add notes to keep track of important information",
         "post": "Post Note",
         "deleteConfirm": "Delete this note?",
+        "deleteDescription": "This action cannot be undone.",
         "by": "by",
         "loadError": "Failed to load notes",
         "emptyError": "Note cannot be empty",

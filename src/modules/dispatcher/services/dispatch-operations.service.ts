@@ -3,8 +3,16 @@
 import { dispatchesApi, type Dispatch, type CreateDispatchFromJobRequest } from '@/services/api/dispatchesApi';
 import { serviceOrdersApi } from '@/services/api/serviceOrdersApi';
 import { notificationsApi } from '@/services/api/notificationsApi';
+import { format } from 'date-fns';
 import { cacheService } from './cache.service';
 import type { Job, Technician, ServiceOrder, InstallationGroup } from '../types';
+
+// Local-day key used to bucket dispatches per technician per date.
+// MUST match the calendar's `format(date, 'yyyy-MM-dd')` so lookups line up
+// regardless of the browser timezone.
+function toLocalDayKey(date: Date): string {
+  return format(date, 'yyyy-MM-dd');
+}
 
 // ── Helpers ──────────────────────────────────────────
 
@@ -916,7 +924,7 @@ export class DispatchOperationsService {
   // ── Assigned jobs for calendar ─────────────────────
 
   static async getAssignedJobsForTechnician(technicianId: string, date: Date): Promise<Job[]> {
-    const cacheKey = `${technicianId}-${date.toISOString().split('T')[0]}`;
+    const cacheKey = `${technicianId}-${toLocalDayKey(date)}`;
     const cached = cacheService.getAssignedJobs(cacheKey);
     if (cached) return cached;
 
@@ -994,7 +1002,7 @@ export class DispatchOperationsService {
         const isShared = allTechIds.length > 1;
         const scheduledDateStr = dispatch.scheduledDate || dispatch.scheduling?.scheduledDate;
         const scheduledDate = scheduledDateStr ? new Date(scheduledDateStr) : new Date();
-        const dateKey = scheduledDate.toISOString().split('T')[0];
+        const dateKey = toLocalDayKey(scheduledDate);
 
         // Replicate the dispatch under each assigned technician row
         for (const matchingTechId of matchedTechIds) {

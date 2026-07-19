@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { FileText, CheckCircle2, Plus, Handshake } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { dealsApi } from '@/services/api/dealsApi';
+import { formatCurrencyValue } from '@/lib/formatters';
 
 interface LinkedEntity {
   entityType: string;
@@ -93,7 +94,7 @@ export function ProjectOffersTab({ projectLinks, mode = 'offers', sales, project
         <div className="flex items-center gap-3">
           {totalAmount > 0 && (
             <div className="text-sm text-muted-foreground">
-              {t('projects.detail.offers.total')}: <span className="font-semibold text-foreground">{totalAmount.toFixed(2)}</span>
+              {t('projects.detail.offers.total')}: <span className="font-semibold text-foreground">{formatCurrencyValue(totalAmount)}</span>
             </div>
           )}
           {isDeals ? (
@@ -154,7 +155,7 @@ export function ProjectOffersTab({ projectLinks, mode = 'offers', sales, project
                     {it.status ? <Badge variant="outline" className="text-xs capitalize">{it.status}</Badge> : '—'}
                   </TableCell>
                   <TableCell className="text-right font-semibold">
-                    {it.amount != null ? it.amount.toFixed(2) : '—'}
+                    {it.amount != null ? formatCurrencyValue(it.amount) : '—'}
                   </TableCell>
                   <TableCell className="text-right text-sm text-muted-foreground">
                     {it.date ? new Date(it.date).toLocaleDateString() : '—'}

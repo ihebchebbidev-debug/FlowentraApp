@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { format } from 'date-fns';
 import { schedulesApi, type UserFullSchedule, type DaySchedule } from '@/services/api/schedulesApi';
 
 export interface TechnicianScheduleInfo {
@@ -26,7 +27,7 @@ export function useTechnicianSchedule(technicianIds: string[]) {
     
     const today = new Date();
     const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
-    const todayStr = today.toISOString().split('T')[0];
+    const todayStr = format(today, 'yyyy-MM-dd');
     
     const newScheduleMap: TechnicianScheduleMap = {};
     
@@ -55,8 +56,8 @@ export function useTechnicianSchedule(technicianIds: string[]) {
           
           // Check if on leave today
           const activeLeave = schedule.leaves?.find(leave => {
-            const startDate = new Date(leave.startDate).toISOString().split('T')[0];
-            const endDate = new Date(leave.endDate).toISOString().split('T')[0];
+            const startDate = format(new Date(leave.startDate), 'yyyy-MM-dd');
+            const endDate = format(new Date(leave.endDate), 'yyyy-MM-dd');
             return todayStr >= startDate && todayStr <= endDate && leave.status === 'approved';
           });
           

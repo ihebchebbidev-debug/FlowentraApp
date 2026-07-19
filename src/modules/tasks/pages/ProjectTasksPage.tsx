@@ -203,7 +203,10 @@ export default function ProjectTasksPage() {
       assignee: (pt.assignee as string) || pt.assigneeName || '',
       assigneeId: pt.assigneeId || '',
       assigneeProfilePicUrl: pt.assigneeProfilePicUrl,
-      dueDate: pt.dueDate instanceof Date ? pt.dueDate.toLocaleDateString() : String(pt.dueDate || ''),
+      // Keep as ISO string so `new Date(task.dueDate)` re-parses correctly in every
+      // locale. Previously used `toLocaleDateString()` which produced DD/MM/YYYY in
+      // fr-FR and silently broke overdue detection and date filtering.
+      dueDate: pt.dueDate instanceof Date ? pt.dueDate.toISOString() : String(pt.dueDate || ''),
       status,
       columnId,
       createdAt: pt.createdAt || new Date(),
@@ -652,7 +655,7 @@ export default function ProjectTasksPage() {
                   project={project}
                   technicians={technicians}
                   tasksState={tasksState}
-                  onTeamUpdated={fetchProject}
+                  onTeamUpdated={() => { fetchProject(); fetchTasks(); }}
                 />
               </TabsContent>
 

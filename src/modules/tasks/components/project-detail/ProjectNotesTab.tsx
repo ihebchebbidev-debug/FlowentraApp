@@ -234,7 +234,7 @@ export function ProjectNotesTab({ project }: ProjectNotesTabProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>{t("projects.detail.notes.deleteConfirm")}</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone.
+              {t("projects.detail.notes.deleteDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
