@@ -130,9 +130,11 @@ export default function ContactDetailPage() {
 
   // For suppliers we don't show CRM-related tabs (offers, sales, service orders, installations).
   // Instead, we show an Articles tab listing articles linked via article-suppliers.
+  // Purchases tab is supplier-only: the Purchases module deals exclusively with
+  // supplier (fournisseur) transactions, so we hide it on contact/company detail pages.
   const tabConfig = isSupplierRoute
     ? (['overview', 'articles', 'purchases', 'notes'] as const)
-    : (['overview', 'installations', 'offers', 'sales', 'serviceOrders', 'purchases', 'notes'] as const);
+    : (['overview', 'installations', 'offers', 'sales', 'serviceOrders', 'notes'] as const);
 
   const TAB_META: Record<string, { icon: LucideIcon; label: () => string }> = {
     overview:       { icon: LayoutDashboard, label: () => t('detail.tabs.overview') },
@@ -345,10 +347,12 @@ export default function ContactDetailPage() {
             </TabsContent>
           )}
 
-          {/* Purchases Tab */}
-          <TabsContent value="purchases">
-            <ContactPurchaseHistoryTab contactId={contact.id} contactName={contact.name || ''} />
-          </TabsContent>
+          {/* Purchases Tab — supplier-only */}
+          {isSupplierRoute && (
+            <TabsContent value="purchases">
+              <ContactPurchaseHistoryTab contactId={contact.id} contactName={contact.name || ''} />
+            </TabsContent>
+          )}
 
           {/* Notes Tab */}
           <TabsContent value="notes">

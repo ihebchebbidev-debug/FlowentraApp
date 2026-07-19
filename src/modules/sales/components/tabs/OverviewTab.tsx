@@ -4,13 +4,11 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ExternalLink, FileText } from "lucide-react";
 import { Sale } from "../../types";
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { offersApi } from '@/services/api/offersApi';
-import { getStatusColorClass } from "@/config/entity-statuses";
 
 interface OverviewTabProps {
   sale: Sale;
@@ -42,8 +40,6 @@ export function OverviewTab({ sale }: OverviewTabProps) {
   }, [sale.offerId, sale.offerNumber]);
 
   const displayOfferNumber = sale.offerNumber || fetchedOfferNumber;
-
-  const getStatusColor = (status: string) => getStatusColorClass('sale', status);
 
   const formatDate = (date: Date | string) => new Date(date).toLocaleDateString();
 
@@ -133,15 +129,6 @@ export function OverviewTab({ sale }: OverviewTabProps) {
                     {sale.discountType === 'percentage' && ` (${sale.discount}%)`}
                   </p>
                 )}
-              </div>
-
-              <div>
-                <span className="text-sm text-muted-foreground">{t('overview.currentStatus')}</span>
-                <div className="mt-1">
-                  <Badge className={`${getStatusColor(sale.status)}`}>
-                    {t(sale.status)}
-                  </Badge>
-                </div>
               </div>
 
               <DetailField label={t('overview.createdBy')} value={sale.createdByName || t('overview.unknown')} />

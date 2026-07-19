@@ -3,13 +3,11 @@ import { calculateEntityTotal } from "@/lib/calculateTotal";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ExternalLink, FileText } from "lucide-react";
 import { Offer } from "../../types";
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { useLookups } from '@/shared/contexts/LookupsContext';
-import { getStatusColorClass } from "@/config/entity-statuses";
 
 interface OverviewTabProps {
   offer: Offer;
@@ -20,8 +18,6 @@ export function OverviewTab({ offer }: OverviewTabProps) {
   const navigate = useNavigate();
   const { format: formatCurrency } = useCurrency();
   const { offerCategories, offerSources } = useLookups();
-
-  const statusColor = (status: string) => getStatusColorClass('offer', status);
 
   const formatDate = (date: Date | string | null | undefined) => {
     if (!date) return t('overviewTab.notSpecified');
@@ -131,15 +127,6 @@ export function OverviewTab({ offer }: OverviewTabProps) {
               </div>
 
               <DetailField label={t('overviewTab.validUntil')} value={formatDate(offer.validUntil)} />
-
-              <div>
-                <span className="text-sm text-muted-foreground">{t('overviewTab.currentStatus')}</span>
-                <div className="mt-1">
-                  <Badge className={`${statusColor(offer.status)} border`}>
-                    {t(`status.${offer.status}`)}
-                  </Badge>
-                </div>
-              </div>
 
               <DetailField label={t('category')} value={getCategoryName(offer.category)} />
               <DetailField label={t('source')} value={getSourceName(offer.source)} />

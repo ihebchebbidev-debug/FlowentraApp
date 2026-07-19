@@ -566,16 +566,6 @@ export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onData
 
   return (
     <>
-      {dispatchJobs.length > 0 && (
-        <div className="mb-4">
-          <PlannedInlineList
-            parentType="service_order_job"
-            parentIds={dispatchJobs.map(j => j.id)}
-            jobLabels={Object.fromEntries(dispatchJobs.map(j => [j.id, j.title || `#${j.id}`]))}
-            kind="material"
-          />
-        </div>
-      )}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
@@ -629,6 +619,16 @@ export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onData
           )}
         </CardHeader>
         <CardContent>
+          {dispatchJobs.length > 0 && (
+            <div className="mb-4">
+              <PlannedInlineList
+                parentType="service_order_job"
+                parentIds={dispatchJobs.map(j => j.id)}
+                jobLabels={Object.fromEntries(dispatchJobs.map(j => [j.id, j.title || `#${j.id}`]))}
+                kind="material"
+              />
+            </div>
+          )}
           {materialsWithDetails.length > 0 ? (
             <>
               <div className="overflow-x-auto">

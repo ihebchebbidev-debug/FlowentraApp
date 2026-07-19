@@ -661,47 +661,47 @@ export function MaterialsTab({ serviceOrder, onUpdate, jobIds = [], jobLabels }:
 
   return (
     <>
-      {jobIds.length > 0 && (
-        <div className="mb-4">
-          <PlannedInlineList
-            parentType="service_order_job"
-            parentIds={jobIds}
-            jobLabels={jobLabels}
-            kind="material"
-            currency={(serviceOrder as any)?.currency || 'TND'}
-          />
-        </div>
-      )}
       <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Package className="h-4 w-4 text-primary" />
-              Materials Used ({materialsWithDetails.length})
-              {jobIds.length > 0 && (
-                <PlannedTotalsBadge
-                  parentType="service_order_job"
-                  parentIds={jobIds}
-                  kind="material"
-                  actual={totalCost}
-                  currency={(serviceOrder as any)?.currency || 'TND'}
-                />
-              )}
-            </CardTitle>
-            <Button 
-              size="sm" 
-              variant="outline" 
-              className="gap-2"
-              onClick={() => setIsMaterialModalOpen(true)}
-            >
-              <Plus className="h-4 w-4" />
-              Add Material
-            </Button>
-          </div>
-        </CardHeader>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <Package className="h-4 w-4 text-primary" />
+            Materials Used ({materialsWithDetails.length})
+            {jobIds.length > 0 && (
+              <PlannedTotalsBadge
+                parentType="service_order_job"
+                parentIds={jobIds}
+                kind="material"
+                actual={totalCost}
+                currency={(serviceOrder as any)?.currency || 'TND'}
+              />
+            )}
+          </CardTitle>
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className="gap-2"
+            onClick={() => setIsMaterialModalOpen(true)}
+          >
+            <Plus className="h-4 w-4" />
+            Add Material
+          </Button>
+        </div>
+      </CardHeader>
 
-        <CardContent>
-          {materialsWithDetails.length > 0 ? (
+      <CardContent>
+        {jobIds.length > 0 && (
+          <div className="mb-4">
+            <PlannedInlineList
+              parentType="service_order_job"
+              parentIds={jobIds}
+              jobLabels={jobLabels}
+              kind="material"
+              currency={(serviceOrder as any)?.currency || 'TND'}
+            />
+          </div>
+        )}
+        {materialsWithDetails.length > 0 ? (
             <>
               <div className="overflow-x-auto">
                 <table className="w-full">

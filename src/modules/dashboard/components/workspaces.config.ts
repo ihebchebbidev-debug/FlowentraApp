@@ -91,18 +91,6 @@ export const WORKSPACES: Workspace[] = [
     ],
   },
   {
-    id: "field",
-    label: "Field Ops",
-    icon: "HardHat",
-    landingUrl: "/dashboard/field/service-orders/list",
-    modules: [
-      { key: "service-orders", label: "Service orders", url: "/dashboard/field/service-orders/list", icon: "ClipboardList", pluginCode: "PL0016SERVICEORDERS" },
-      { key: "dispatches", label: "Dispatches", url: "/dashboard/field/dispatcher", icon: "Send", pluginCode: "PL0017DISPATCHES" },
-      { key: "planning", label: "Planning board", url: "/dashboard/field/dispatcher/interface", icon: "CalendarDays", pluginCode: "PL0023SCHEDULING" },
-      { key: "time-expenses", label: "Time & expenses", url: "/dashboard/field/time-expenses", icon: "Clock", pluginCode: "PL0021TIMEEXPENSES" },
-    ],
-  },
-  {
     id: "projects",
     label: "Projects",
     icon: "FolderKanban",
