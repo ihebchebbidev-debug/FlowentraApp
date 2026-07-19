@@ -2409,28 +2409,29 @@ namespace MyApi.Modules.ServiceOrders.Services
             var linkedDispatchIds = await ResolveLinkedDispatchIdsAsync(serviceOrder);
 
             // Idempotency for dispatch-sourced lines: DispatchMaterials / DispatchExpenses / dispatch TimeEntries
-            // do NOT carry an InvoiceStatus column, so we cannot filter individual rows as "already transferred".
-            // If a previous PrepareForInvoice call already produced sale items for THIS service order, we refuse
-            // to add any dispatch-sourced lines a second time - otherwise the customer would be double-billed.
-            // (SO-sourced entities are still safely re-checked via their InvoiceStatus flag below.)
-            var previouslyTransferred = (sale.Items ?? new List<Sales.Models.SaleItem>())
-                .Any(si => si.ServiceOrderId == id.ToString());
+            // do NOT carry an InvoiceStatus column, so we can't flip a per-row flag like we do for
+            // SO-sourced entities. Instead we build a signature set from existing SaleItems already
+            // tagged with this ServiceOrderId and silently skip any incoming dispatch row that would
+            // produce the same signature. This lets the user re-open "Prepare for invoice" freely
+            // to push newly-added dispatch items to the sale without being blocked, and without
+            // double-billing rows that were transferred in a previous run.
+            var existingSoSaleItems = (sale.Items ?? new List<Sales.Models.SaleItem>())
+                .Where(si => si.ServiceOrderId == id.ToString())
+                .ToList();
 
-            // Fail fast: if dispatch-sourced lines were requested but a previous run already put items
-            // on the sale for this SO, silently skipping them would look like a success while quietly
-            // dropping the user's selection. Force an explicit error so the caller can retry safely
-            // (either by clearing the sale, or by manually adding the missing lines to the sale).
-            var dispatchRequested =
-                (dto.DispatchMaterialIds?.Any() == true) ||
-                (dto.DispatchExpenseIds?.Any() == true) ||
-                (dto.DispatchTimeEntryIds?.Any() == true);
-            if (previouslyTransferred && dispatchRequested)
-            {
-                throw new InvalidOperationException(
-                    "This sale already contains items transferred from this service order in a previous run. " +
-                    "Dispatch-sourced materials, expenses, or time entries cannot be re-transferred automatically " +
-                    "(dispatch rows do not track invoice status). Add them to the sale manually, or reset the linked sale before retrying.");
-            }
+            static string BuildSaleItemSignature(string? type, string? itemName, string? description, decimal unitPrice, decimal quantity)
+                => string.Join("|",
+                    (type ?? "").Trim().ToLowerInvariant(),
+                    (itemName ?? "").Trim().ToLowerInvariant(),
+                    (description ?? "").Trim().ToLowerInvariant(),
+                    Math.Round(unitPrice, 4).ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    Math.Round(quantity, 4).ToString(System.Globalization.CultureInfo.InvariantCulture));
+
+            var existingSignatures = new HashSet<string>(
+                existingSoSaleItems.Select(si => BuildSaleItemSignature(si.Type, si.ItemName, si.Description, si.UnitPrice, si.Quantity)));
+
+            var previouslyTransferred = existingSoSaleItems.Any();
+
 
             // Currency guard: every SaleItem inherits `Sale.Currency` at write time (see below),
             // so we refuse to transfer any currency-carrying source row whose declared currency
@@ -2518,7 +2519,7 @@ namespace MyApi.Modules.ServiceOrders.Services
             }
 
             // ===== MATERIALS FROM DispatchMaterials =====
-            if (!previouslyTransferred && dto.DispatchMaterialIds != null && dto.DispatchMaterialIds.Any())
+            if (dto.DispatchMaterialIds != null && dto.DispatchMaterialIds.Any())
             {
                 var dispatchMats = await _context.DispatchMaterials
                     .Where(m => dto.DispatchMaterialIds.Contains(m.Id) && linkedDispatchIds.Contains(m.DispatchId))
@@ -2528,13 +2529,22 @@ namespace MyApi.Modules.ServiceOrders.Services
 
                 foreach (var mat in dispatchMats)
                 {
+                    var name = mat.Description ?? $"Material #{mat.Id}";
+                    var desc = mat.Description ?? "Material from dispatch";
+                    var signature = BuildSaleItemSignature("article", name, desc, mat.UnitPrice, mat.Quantity);
+                    if (!existingSignatures.Add(signature))
+                    {
+                        _logger.LogInformation("PrepareForInvoice: Skipping duplicate dispatch material #{Id} (already on sale)", mat.Id);
+                        continue;
+                    }
+
                     currentDisplayOrder++;
                     newSaleItems.Add(new Sales.Models.SaleItem
                     {
                         SaleId = saleId,
                         Type = "article",
-                        ItemName = mat.Description ?? $"Material #{mat.Id}",
-                        Description = mat.Description ?? $"Material from dispatch",
+                        ItemName = name,
+                        Description = desc,
                         Quantity = mat.Quantity,
                         UnitPrice = mat.UnitPrice,
                         LineTotal = mat.TotalPrice,
@@ -2545,6 +2555,7 @@ namespace MyApi.Modules.ServiceOrders.Services
                     });
                 }
             }
+
 
             // ===== EXPENSES FROM ServiceOrderExpenses =====
             if (dto.ExpenseIds != null && dto.ExpenseIds.Any())
@@ -2577,7 +2588,7 @@ namespace MyApi.Modules.ServiceOrders.Services
             }
 
             // ===== EXPENSES FROM DispatchExpenses =====
-            if (!previouslyTransferred && dto.DispatchExpenseIds != null && dto.DispatchExpenseIds.Any())
+            if (dto.DispatchExpenseIds != null && dto.DispatchExpenseIds.Any())
             {
                 var dispatchExpenses = await _context.DispatchExpenses
                     .Where(e => dto.DispatchExpenseIds.Contains(e.Id) && linkedDispatchIds.Contains(e.DispatchId))
@@ -2587,13 +2598,22 @@ namespace MyApi.Modules.ServiceOrders.Services
 
                 foreach (var dExp in dispatchExpenses)
                 {
+                    var name = $"Expense: {dExp.ExpenseType}";
+                    var desc = dExp.Description ?? $"Expense - {dExp.ExpenseType}";
+                    var signature = BuildSaleItemSignature("service", name, desc, dExp.Amount, 1m);
+                    if (!existingSignatures.Add(signature))
+                    {
+                        _logger.LogInformation("PrepareForInvoice: Skipping duplicate dispatch expense #{Id} (already on sale)", dExp.Id);
+                        continue;
+                    }
+
                     currentDisplayOrder++;
                     newSaleItems.Add(new Sales.Models.SaleItem
                     {
                         SaleId = saleId,
                         Type = "service",
-                        ItemName = $"Expense: {dExp.ExpenseType}",
-                        Description = dExp.Description ?? $"Expense - {dExp.ExpenseType}",
+                        ItemName = name,
+                        Description = desc,
                         Quantity = 1,
                         UnitPrice = dExp.Amount,
                         LineTotal = dExp.Amount,
@@ -2603,6 +2623,7 @@ namespace MyApi.Modules.ServiceOrders.Services
                     });
                 }
             }
+
 
             // ===== TIME ENTRIES FROM ServiceOrderTimeEntries =====
             if (dto.TimeEntryIds != null && dto.TimeEntryIds.Any())
@@ -2639,7 +2660,7 @@ namespace MyApi.Modules.ServiceOrders.Services
             }
 
             // ===== TIME ENTRIES FROM Dispatch TimeEntries =====
-            if (!previouslyTransferred && dto.DispatchTimeEntryIds != null && dto.DispatchTimeEntryIds.Any())
+            if (dto.DispatchTimeEntryIds != null && dto.DispatchTimeEntryIds.Any())
             {
                 var dispatchTimeEntries = await _context.TimeEntries
                     .Where(t => dto.DispatchTimeEntryIds.Contains(t.Id) && linkedDispatchIds.Contains(t.DispatchId))
@@ -2663,7 +2684,6 @@ namespace MyApi.Modules.ServiceOrders.Services
 
                 foreach (var te in dispatchTimeEntries)
                 {
-                    currentDisplayOrder++;
                     var duration = te.Duration ?? 0;
                     var hours = duration / 60.0m;
                     var rate = fallbackRates.TryGetValue(te.TechnicianId.ToString(), out var r) ? r : 0m;
@@ -2679,11 +2699,20 @@ namespace MyApi.Modules.ServiceOrders.Services
                             te.Id, te.TechnicianId);
                     }
 
+                    var name = $"Labor: {te.WorkType ?? "work"}";
+                    var signature = BuildSaleItemSignature("service", name, description, total, 1m);
+                    if (!existingSignatures.Add(signature))
+                    {
+                        _logger.LogInformation("PrepareForInvoice: Skipping duplicate dispatch time entry #{Id} (already on sale)", te.Id);
+                        continue;
+                    }
+
+                    currentDisplayOrder++;
                     newSaleItems.Add(new Sales.Models.SaleItem
                     {
                         SaleId = saleId,
                         Type = "service",
-                        ItemName = $"Labor: {te.WorkType ?? "work"}",
+                        ItemName = name,
                         Description = description,
                         Quantity = 1,
                         UnitPrice = total,
@@ -2695,6 +2724,7 @@ namespace MyApi.Modules.ServiceOrders.Services
                 }
             }
 
+
             _logger.LogInformation("PrepareForInvoice: Total new sale items to add: {Count}", newSaleItems.Count);
 
             // Check that at least something was found if IDs were requested
@@ -2703,16 +2733,23 @@ namespace MyApi.Modules.ServiceOrders.Services
 
             if (hasRequestedIds && !newSaleItems.Any())
             {
+                // Nothing new to add. If a prior run already transferred everything the caller re-selected,
+                // treat this as a successful no-op (the SO status is still (re)promoted below) so the UI
+                // is never blocked when the user re-opens "Prepare for invoice" without adding new items.
                 if (previouslyTransferred)
                 {
-                    throw new InvalidOperationException(
-                        "These items have already been transferred to the sale in a previous run. " +
-                        "Open the sale to edit, or reset the linked service order/sale before retrying.");
+                    _logger.LogInformation(
+                        "PrepareForInvoice: SO {Id} - all requested items were already on sale {SaleId}; no-op, status will still be advanced.",
+                        id, saleId);
                 }
-                throw new InvalidOperationException(
-                    "Items were requested for transfer but none could be found or matched. " +
-                    "Check that the IDs exist and belong to this service order.");
+                else
+                {
+                    throw new InvalidOperationException(
+                        "Items were requested for transfer but none could be found or matched. " +
+                        "Check that the IDs exist and belong to this service order.");
+                }
             }
+
 
             // Use execution strategy to support retrying transactions with Npgsql
             var strategy = _context.Database.CreateExecutionStrategy();
