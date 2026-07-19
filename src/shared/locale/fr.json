@@ -1,12 +1,12 @@
 {
   "inventory_services": "Inventaire & Services",
   "tasks": "Projets & Tâches",
-  "project_management": "Gestion de Projet", 
+  "project_management": "Gestion de Projet",
   "dashboard": "Tableau de Bord",
   "contacts": "Contacts",
   "sales": "Factures",
   "todo": "Tâches",
-  "articles": "Articles", 
+  "articles": "Articles",
   "calendar": "Calendrier",
   "email-calendar": "Emails & Calendrier",
   "emails": "Emails",
@@ -18,7 +18,7 @@
   "planner": "Planificateur",
   "time-expenses": "Temps & Dépenses",
   "documents": "Documents",
-  "lookups": "Données de Référence", 
+  "lookups": "Données de Référence",
   "settings": "Paramètres",
   "offers": "Devis",
   "hr": "Ressources Humaines",
@@ -34,7 +34,18 @@
   "performance": "Performance",
   "recruitment": "Recrutement",
   "daily_tasks": "Tâches Quotidiennes",
-  "projects": "Projets",
+  "projects": {
+    "listView": {
+      "searchPlaceholder": "Rechercher des tâches...",
+      "all": "Tout",
+      "pending": "En attente",
+      "completed": "Terminées",
+      "addTask": "Ajouter une tâche",
+      "tasks": "Tâches",
+      "noTasksMatch": "Aucune tâche ne correspond à votre recherche ou filtre",
+      "noTasks": "Aucune tâche. Créez votre première tâche !"
+    }
+  },
   "dispatches": "Opérations",
   "installations": "Installations",
   "system": "Système",
@@ -115,18 +126,6 @@
     "timeout": "La demande de localisation a expiré. Veuillez réessayer.",
     "unknownError": "Une erreur inconnue s'est produite lors de l'obtention de votre position."
   },
-  "projects": {
-    "listView": {
-      "searchPlaceholder": "Rechercher des tâches...",
-      "all": "Tout",
-      "pending": "En attente",
-      "completed": "Terminées",
-      "addTask": "Ajouter une tâche",
-      "tasks": "Tâches",
-      "noTasksMatch": "Aucune tâche ne correspond à votre recherche ou filtre",
-      "noTasks": "Aucune tâche. Créez votre première tâche !"
-    }
-  },
   "cancel": "Annuler",
   "statusTransition": {
     "updating": "Mise à jour..."
@@ -168,5 +167,46 @@
   "purchase_orders": "Bons de Commande",
   "goods_receipts": "Réceptions",
   "supplier_invoices": "Factures Fournisseurs",
-  "compliance": "Conformité"
+  "compliance": "Conformité",
+  "planning": {
+    "plannedBadge": "Planifié",
+    "plannedTimeSection": "Temps planifié",
+    "plannedExpensesSection": "Dépenses planifiées",
+    "plannedMaterialsSection": "Matériaux planifiés",
+    "planTime": "Planifier le temps",
+    "planExpense": "Planifier une dépense",
+    "planMaterial": "Planifier un matériau",
+    "noTime": "Aucun temps planifié",
+    "noExpenses": "Aucune dépense planifiée",
+    "noMaterials": "Aucun matériau planifié",
+    "noParent": "Impossible de planifier sans tâche liée",
+    "savedToast": "Planification enregistrée",
+    "confirmDelete": "Supprimer cette entrée planifiée ?",
+    "editEntry": "Modifier l'entrée planifiée",
+    "jobLabel": "Tâche",
+    "technicianCount": "Techniciens",
+    "durationMinutes": "Durée (min)",
+    "hourlyRate": "Taux horaire (optionnel)",
+    "expenseType": "Type de dépense",
+    "amount": "Montant",
+    "currency": "Devise",
+    "materialName": "Nom du matériau / article",
+    "materialNamePh": "ex. Panneau solaire 450W",
+    "quantity": "Quantité",
+    "unit": "Unité",
+    "unitPrice": "Prix unitaire",
+    "description": "Description (optionnel)",
+    "expenseTypes": {
+      "travel": "Déplacement",
+      "per_diem": "Indemnité journalière",
+      "materials": "Matériaux",
+      "subcontractor": "Sous-traitant"
+    },
+    "overrun": {
+      "onPlan": "Dans le plan",
+      "nearLimit": "Proche de la limite",
+      "overBudget": "Dépassement",
+      "over": "dépassé de"
+    }
+  }
 }

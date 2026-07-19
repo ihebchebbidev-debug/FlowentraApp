@@ -620,12 +620,14 @@ export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onData
         </CardHeader>
         <CardContent>
           {dispatchJobs.length > 0 && (
-            <div className="mb-4">
+            <div className="mb-4 empty:hidden">
               <PlannedInlineList
                 parentType="service_order_job"
                 parentIds={dispatchJobs.map(j => j.id)}
                 jobLabels={Object.fromEntries(dispatchJobs.map(j => [j.id, j.title || `#${j.id}`]))}
                 kind="material"
+                readOnly
+                hideWhenEmpty
               />
             </div>
           )}

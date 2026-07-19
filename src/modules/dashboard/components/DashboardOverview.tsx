@@ -29,6 +29,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useDashboardLayout } from '../store/useDashboardLayoutStore';
 import { useFavoritesStore } from '@/modules/reporting/store/useFavoritesStore';
 import { FavoriteWidgetCard, getWidgetSize } from '@/modules/reporting/widgets/FavoriteWidgets';
+import { DashboardCustomizeSheet, type CustomizeRow } from './DashboardCustomizeSheet';
 import {
   Users,
   FileText,
@@ -49,12 +50,7 @@ import {
   ArrowDown,
   ExternalLink,
   Settings2,
-  Check,
-  Plus,
-  GripVertical,
-  X,
   RotateCcw,
-  Star,
 } from 'lucide-react';
 
 // ───────────────────────────────────────────────────────────────
@@ -210,18 +206,13 @@ interface DashboardCard {
 
 function SortableCard({
   card,
-  customizing,
-  onRemove,
   onOpen,
 }: {
   card: DashboardCard;
-  customizing: boolean;
-  onRemove: () => void;
   onOpen?: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: card.id,
-    disabled: !customizing,
   });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -235,43 +226,26 @@ function SortableCard({
       className={cn(
         SPAN[card.size],
         'group relative min-w-0',
-        isDragging && 'opacity-80'
+        isDragging && 'opacity-80 shadow-lg ring-2 ring-primary/40 rounded-xl'
       )}
+      {...attributes}
+      {...listeners}
     >
-      {customizing && (
-        <div className="absolute -top-2 left-2 right-2 z-30 flex items-center justify-between">
-          <button
-            type="button"
-            {...attributes}
-            {...listeners}
-            aria-label="Drag to reorder"
-            className="flex cursor-grab items-center gap-1 rounded-full border bg-card px-2 py-0.5 text-[10px] font-medium text-muted-foreground shadow-sm hover:text-foreground active:cursor-grabbing"
-          >
-            <GripVertical className="h-3 w-3" /> Move
-          </button>
-          <button
-            type="button"
-            onClick={onRemove}
-            aria-label="Remove card"
-            className="flex items-center justify-center rounded-full border bg-card p-1 text-muted-foreground shadow-sm transition hover:text-destructive"
-          >
-            <X className="h-3 w-3" />
-          </button>
-        </div>
-      )}
-      {!customizing && card.reporting && onOpen && (
+      {card.reporting && onOpen && (
         <button
           type="button"
-          onClick={onOpen}
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpen();
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
           aria-label="Open source report"
           className="absolute right-2 top-2 z-20 hidden items-center gap-1 rounded-full border bg-card px-2 py-0.5 text-[10px] font-medium text-muted-foreground shadow-sm transition hover:text-foreground group-hover:flex"
         >
           <ExternalLink className="h-3 w-3" />
         </button>
       )}
-      <div className={cn('h-full', customizing && 'pointer-events-none ring-2 ring-dashed ring-border rounded-xl')}>
-        {card.node}
-      </div>
+      <div className="h-full">{card.node}</div>
     </div>
   );
 }
@@ -285,7 +259,7 @@ export default function DashboardOverview() {
   // Per-user customizable dashboard layout (synced to account) + pinned widgets.
   const { order, hidden, setOrder, hide, unhide, reset } = useDashboardLayout();
   const { widgets: pinnedWidgets, remove: unpinWidget } = useFavoritesStore();
-  const [customizing, setCustomizing] = React.useState(false);
+  const [customizeOpen, setCustomizeOpen] = React.useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -567,16 +541,30 @@ export default function DashboardOverview() {
     node: <FavoriteWidgetCard fav={w} />,
   }));
 
-  const known = [...defaultCards, ...reportingCards];
+  const known = [...reportingCards, ...defaultCards];
   const cardById = new Map(known.map((c) => [c.id, c]));
   const hiddenSet = new Set(hidden);
-  const knownIds = known.map((c) => c.id);
+  const reportingIdSet = new Set(reportingCards.map((c) => c.id));
+  const defaultIdSet = new Set(defaultCards.map((c) => c.id));
 
-  // Ordered visible cards: saved order first, then any new cards appended.
-  const orderedIds = [
-    ...order.filter((id) => cardById.has(id) && !hiddenSet.has(id)),
-    ...knownIds.filter((id) => !order.includes(id) && !hiddenSet.has(id)),
+  // Pinned reporting widgets always render at the TOP of the dashboard,
+  // ahead of any default cards, so newly-starred widgets are immediately
+  // visible above the user's existing layout. Within each group we still
+  // respect the user's saved drag-and-drop order, and any newly-added
+  // cards are appended to the end of their group.
+  const orderReportingIds = [
+    ...order.filter((id) => reportingIdSet.has(id) && !hiddenSet.has(id)),
+    ...reportingCards
+      .map((c) => c.id)
+      .filter((id) => !order.includes(id) && !hiddenSet.has(id)),
   ];
+  const orderDefaultIds = [
+    ...order.filter((id) => defaultIdSet.has(id) && !hiddenSet.has(id)),
+    ...defaultCards
+      .map((c) => c.id)
+      .filter((id) => !order.includes(id) && !hiddenSet.has(id)),
+  ];
+  const orderedIds = [...orderReportingIds, ...orderDefaultIds];
   const visibleCards = orderedIds.map((id) => cardById.get(id)!).filter(Boolean);
   const hiddenDefaults = defaultCards.filter((c) => hiddenSet.has(c.id));
 
@@ -589,14 +577,71 @@ export default function DashboardOverview() {
     setOrder(arrayMove(orderedIds, oldIndex, newIndex));
   };
 
-  const handleRemove = (card: DashboardCard) => {
-    if (card.reporting) unpinWidget(card.id);
-    else hide(card.id);
+  // ── Customize sheet plumbing ─────────────────────────────────
+  // Human-readable labels for default cards so the settings panel doesn't
+  // show raw ids. Keep in sync with `defaultCards` above.
+  const defaultLabels: Record<string, string> = {
+    'kpi-revenue': t('overview.revenueThisMonth', { defaultValue: 'Revenue (this month)' }),
+    'kpi-active-sales': t('overview.activeSales', { defaultValue: 'Active sales' }),
+    'kpi-open-offers': t('overview.openOffers', { defaultValue: 'Open offers' }),
+    'kpi-active-so': t('overview.activeServiceOrders', { defaultValue: 'Active service orders' }),
+    'kpi-contacts': t('overview.totalContacts', { defaultValue: 'Contacts' }),
+    'chart-revenue-trend': t('overview.revenueTrend', { defaultValue: 'Revenue — last 6 months' }),
+    'chart-service-status': t('overview.serviceOrderStatus', { defaultValue: 'Service orders by status' }),
+    'panel-team': t('overview.section.team', { defaultValue: 'Team performance' }),
+    'chart-stock-status': t('overview.stockBreakdown', { defaultValue: 'Stock status' }),
+    'panel-stock': t('overview.section.stock', { defaultValue: 'Inventory & stock' }),
+  };
+
+  const defaultRows: CustomizeRow[] = defaultCards.map((c) => ({
+    id: c.id,
+    label: defaultLabels[c.id] ?? c.id,
+  }));
+  const pinnedRows: CustomizeRow[] = pinnedWidgets.map((w) => ({
+    id: w.id,
+    label: w.title,
+    caption: w.source,
+  }));
+
+  // For the sheet we need BOTH visible and hidden ids in one ordered list
+  // per group so hidden rows still appear and can be toggled back on.
+  const pinnedOrderForSheet = [
+    ...order.filter((id) => reportingIdSet.has(id)),
+    ...reportingCards.map((c) => c.id).filter((id) => !order.includes(id)),
+  ];
+  const defaultOrderForSheet = [
+    ...order.filter((id) => defaultIdSet.has(id)),
+    ...defaultCards.map((c) => c.id).filter((id) => !order.includes(id)),
+  ];
+
+  const reorderGroup = (nextGroupIds: string[], otherGroupIds: string[], reportingFirst: boolean) => {
+    const combined = reportingFirst
+      ? [...nextGroupIds, ...otherGroupIds]
+      : [...otherGroupIds, ...nextGroupIds];
+    setOrder(combined);
   };
 
   return (
     <div className="space-y-5 p-3 sm:p-5 max-w-[1600px] mx-auto">
-      {/* ══ Header · greeting + customize toggle ══ */}
+      <DashboardCustomizeSheet
+        open={customizeOpen}
+        onOpenChange={setCustomizeOpen}
+        pinnedRows={pinnedRows}
+        pinnedOrder={pinnedOrderForSheet}
+        hiddenSet={hiddenSet}
+        onReorderPinned={(ids) => reorderGroup(ids, defaultOrderForSheet, true)}
+        onHidePinned={(id) => hide(id)}
+        onShowPinned={(id) => unhide(id)}
+        onUnpin={(id) => unpinWidget(id)}
+        defaultRows={defaultRows}
+        defaultOrder={defaultOrderForSheet}
+        onReorderDefault={(ids) => reorderGroup(ids, pinnedOrderForSheet, false)}
+        onHideDefault={(id) => hide(id)}
+        onShowDefault={(id) => unhide(id)}
+        onResetAll={reset}
+      />
+
+      {/* ══ Header · greeting + customize button ══ */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-[22px] font-bold leading-tight tracking-tight truncate">
@@ -607,54 +652,22 @@ export default function DashboardOverview() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {customizing && (
-            <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" onClick={reset}>
-              <RotateCcw className="h-3.5 w-3.5" />
-              {t('overview.resetLayout', { defaultValue: 'Reset' })}
-            </Button>
-          )}
           <Button
-            variant={customizing ? 'default' : 'outline'}
+            variant="outline"
             size="sm"
             className="h-8 gap-1.5 text-xs"
-            onClick={() => setCustomizing((v) => !v)}
+            onClick={() => setCustomizeOpen(true)}
           >
-            {customizing ? <Check className="h-3.5 w-3.5" /> : <Settings2 className="h-3.5 w-3.5" />}
-            {customizing ? t('overview.doneCustomizing', { defaultValue: 'Done' }) : t('overview.customize', { defaultValue: 'Customize' })}
+            <Settings2 className="h-3.5 w-3.5" />
+            {t('overview.customize', { defaultValue: 'Customize' })}
+            {(hiddenDefaults.length > 0 || pinnedWidgets.length > 0) && (
+              <span className="ml-1 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                {pinnedWidgets.length + hiddenDefaults.length}
+              </span>
+            )}
           </Button>
         </div>
       </div>
-
-      {/* Customize helper bar: re-add removed cards + pin hint */}
-      {customizing && (
-        <div className="rounded-lg border border-dashed bg-muted/30 p-3">
-          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-            <Settings2 className="h-3.5 w-3.5" />
-            {t('overview.customizeHint', { defaultValue: 'Drag cards to reorder, remove any you don’t need, and re-add them below. Star widgets in Reporting to pin them here.' })}
-          </div>
-          {hiddenDefaults.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {hiddenDefaults.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => unhide(c.id)}
-                  className="inline-flex items-center gap-1 rounded-full border bg-card px-2.5 py-1 text-[11px] font-medium text-foreground shadow-sm transition hover:border-primary/40 hover:text-primary"
-                >
-                  <Plus className="h-3 w-3" />
-                  {c.id.replace(/^kpi-|^chart-|^panel-/, '').replace(/-/g, ' ')}
-                </button>
-              ))}
-            </div>
-          )}
-          {pinnedWidgets.length === 0 && (
-            <div className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-              <Star className="h-3.5 w-3.5" />
-              {t('overview.noPinnedHint', { defaultValue: 'No reporting widgets pinned yet — open a Reporting dashboard and tap the ☆ star on any card.' })}
-            </div>
-          )}
-        </div>
-      )}
 
       {isLoading ? (
         <SkeletonGrid n={5} />
@@ -666,8 +679,6 @@ export default function DashboardOverview() {
                 <SortableCard
                   key={card.id}
                   card={card}
-                  customizing={customizing}
-                  onRemove={() => handleRemove(card)}
                   onOpen={
                     card.reporting
                       ? () => {
@@ -683,7 +694,7 @@ export default function DashboardOverview() {
         </DndContext>
       )}
 
-      {!customizing && visibleCards.length === 0 && (
+      {visibleCards.length === 0 && !isLoading && (
         <div className="rounded-lg border border-dashed bg-muted/30 p-8 text-center">
           <p className="text-sm text-muted-foreground">{t('overview.emptyLayout', { defaultValue: 'You’ve removed all cards.' })}</p>
           <Button variant="outline" size="sm" className="mt-3 gap-1.5" onClick={reset}>

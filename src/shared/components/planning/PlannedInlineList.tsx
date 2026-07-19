@@ -51,6 +51,12 @@ interface Props {
   kind: PlannedEntryKind;
   currency?: string;
   readOnly?: boolean;
+  /**
+   * When true, the whole section is not rendered if there are no planned
+   * entries of this kind. Used in Dispatches, where users shouldn't see
+   * an empty "Planned" section (planning happens on the job/service order).
+   */
+  hideWhenEmpty?: boolean;
 }
 
 const EXPENSE_TYPES: PlannedExpenseType[] = ['travel', 'per_diem', 'materials', 'subcontractor'];
@@ -62,6 +68,7 @@ export function PlannedInlineList({
   kind,
   currency = 'TND',
   readOnly = false,
+  hideWhenEmpty = false,
 }: Props) {
   const { t } = useTranslation();
   const { entries, reload } = usePlannedEntries(parentType, parentIds);
@@ -78,6 +85,8 @@ export function PlannedInlineList({
     normalizedIds[0] ?? null
   );
   const [draft, setDraft] = useState<CreatePlannedLineEntry>(defaultDraft(kind, currency));
+
+  if (hideWhenEmpty && filtered.length === 0) return null;
 
   const openAdd = () => {
     setEditing(null);

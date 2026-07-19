@@ -792,18 +792,22 @@ export function DispatchTimeExpensesTab({
     <Card>
       <CardContent className="p-6 space-y-6">
         {dispatchJobs.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 empty:hidden">
             <PlannedInlineList
               parentType="service_order_job"
               parentIds={dispatchJobs.map(j => j.id)}
               jobLabels={Object.fromEntries(dispatchJobs.map(j => [j.id, j.title || `#${j.id}`]))}
               kind="time"
+              readOnly
+              hideWhenEmpty
             />
             <PlannedInlineList
               parentType="service_order_job"
               parentIds={dispatchJobs.map(j => j.id)}
               jobLabels={Object.fromEntries(dispatchJobs.map(j => [j.id, j.title || `#${j.id}`]))}
               kind="expense"
+              readOnly
+              hideWhenEmpty
             />
           </div>
         )}

@@ -18,6 +18,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { Article } from "@/modules/inventory-services/types";
 import FileUploader from "@/modules/support/components/FileUploader";
 import { getUnitLabel, isDecimalUnit } from "@/constants/units";
@@ -79,6 +90,8 @@ export function AddMaterialModal({
   };
 
   const [selectedUnit, setSelectedUnit] = useState<string>('piece');
+  const [materialPickerOpen, setMaterialPickerOpen] = useState(false);
+
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<MaterialUsage>({
@@ -174,18 +187,67 @@ export function AddMaterialModal({
             <Label htmlFor="material" className="text-sm font-medium">
               {t('materials')} <span className="text-destructive">*</span>
             </Label>
-            <Select value={formData.articleId} onValueChange={handleMaterialChange}>
-              <SelectTrigger>
-                <SelectValue placeholder={t('material_form.select_material')} />
-              </SelectTrigger>
-              <SelectContent className="bg-background border border-border shadow-lg z-50">
-                {materialArticles.map((article) => (
-                  <SelectItem key={article.id} value={article.id}>
-                    {article.name} {article.sku ? `(${article.sku})` : ""} — {getUnitLabel(article.unit || 'piece', t)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={materialPickerOpen} onOpenChange={setMaterialPickerOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={materialPickerOpen}
+                  className="w-full justify-between font-normal"
+                >
+                  <span className="truncate">
+                    {formData.articleId
+                      ? (() => {
+                          const a = materialArticles.find(m => m.id === formData.articleId);
+                          return a
+                            ? `${a.name}${a.sku ? ` (${a.sku})` : ''} — ${getUnitLabel(a.unit || 'piece', t)}`
+                            : formData.articleName;
+                        })()
+                      : t('material_form.select_material')}
+                  </span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0 bg-popover border border-border shadow-lg z-50" align="start">
+                <Command
+                  filter={(value, search) => {
+                    const a = materialArticles.find(m => m.id === value);
+                    if (!a) return 0;
+                    const hay = `${a.name} ${a.sku ?? ''}`.toLowerCase();
+                    return hay.includes(search.toLowerCase()) ? 1 : 0;
+                  }}
+                >
+                  <CommandInput placeholder={t('material_form.select_material')} />
+                  <CommandList>
+                    <CommandEmpty>{tCommon('no_results') || 'No results'}</CommandEmpty>
+                    <CommandGroup>
+                      {materialArticles.map((article) => (
+                        <CommandItem
+                          key={article.id}
+                          value={article.id}
+                          onSelect={(val) => {
+                            handleMaterialChange(val);
+                            setMaterialPickerOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              'mr-2 h-4 w-4',
+                              formData.articleId === article.id ? 'opacity-100' : 'opacity-0'
+                            )}
+                          />
+                          <span className="truncate">
+                            {article.name} {article.sku ? `(${article.sku})` : ''} — {getUnitLabel(article.unit || 'piece', t)}
+                          </span>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+
           </div>
 
           {/* Job Selection - Only show for service orders */}
