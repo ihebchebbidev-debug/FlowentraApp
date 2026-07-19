@@ -1305,36 +1305,41 @@ namespace MyApi.Modules.Dispatches.Services
 
             TimeEntry te;
             // Serializable tx closes the TOCTOU window between the overrun read and the insert.
-            using (var tx = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable))
+            // Wrap in execution strategy to be compatible with EnableRetryOnFailure.
+            var strategy = _db.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
             {
-                var (plannedMin, actualMin) = await GetPlannedAndActualMinutesAsync(dispatchId, dto.ServiceOrderJobId);
-                bool willOverrun = plannedMin > 0 && (actualMin + newMinutes) > plannedMin;
-                if (willOverrun && string.IsNullOrWhiteSpace(dto.OverrunReason))
+                using (var tx = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable))
                 {
-                    throw new InvalidOperationException(
-                        $"Logging {newMinutes} min would exceed planned budget ({actualMin}/{plannedMin} min already logged). " +
-                        "Provide 'overrunReason' to confirm.");
-                }
+                    var (plannedMin, actualMin) = await GetPlannedAndActualMinutesAsync(dispatchId, dto.ServiceOrderJobId);
+                    bool willOverrun = plannedMin > 0 && (actualMin + newMinutes) > plannedMin;
+                    if (willOverrun && string.IsNullOrWhiteSpace(dto.OverrunReason))
+                    {
+                        throw new InvalidOperationException(
+                            $"Logging {newMinutes} min would exceed planned budget ({actualMin}/{plannedMin} min already logged). " +
+                            "Provide 'overrunReason' to confirm.");
+                    }
 
-                te = new TimeEntry
-                {
-                    DispatchId = dispatchId,
-                    ServiceOrderJobId = dto.ServiceOrderJobId,
-                    InstallationId = resolvedInstallationId,
-                    TechnicianId = int.TryParse(dto.TechnicianId, out var tid) ? tid : 0,
-                    WorkType = dto.WorkType,
-                    StartTime = dto.StartTime,
-                    EndTime = dto.EndTime,
-                    Duration = newMinutes,
-                    Description = dto.Description,
-                    CreatedDate = DateTime.UtcNow,
-                    OverrunFlag = willOverrun,
-                    OverrunReason = willOverrun ? dto.OverrunReason : null,
-                };
-                _db.TimeEntries.Add(te);
-                await _db.SaveChangesAsync();
-                await tx.CommitAsync();
-            }
+                    te = new TimeEntry
+                    {
+                        DispatchId = dispatchId,
+                        ServiceOrderJobId = dto.ServiceOrderJobId,
+                        InstallationId = resolvedInstallationId,
+                        TechnicianId = int.TryParse(dto.TechnicianId, out var tid) ? tid : 0,
+                        WorkType = dto.WorkType,
+                        StartTime = dto.StartTime,
+                        EndTime = dto.EndTime,
+                        Duration = newMinutes,
+                        Description = dto.Description,
+                        CreatedDate = DateTime.UtcNow,
+                        OverrunFlag = willOverrun,
+                        OverrunReason = willOverrun ? dto.OverrunReason : null,
+                    };
+                    _db.TimeEntries.Add(te);
+                    await _db.SaveChangesAsync();
+                    await tx.CommitAsync();
+                }
+            });
 
             // Auto-rollup the parent ServiceOrderJob (ActualHours / ActualDuration / ActualCost / CompletionPercentage).
             await RecalculateServiceOrderJobRollupAsync(dto.ServiceOrderJobId);
@@ -1579,40 +1584,45 @@ namespace MyApi.Modules.Dispatches.Services
             }
 
             Expense exp;
-            using (var tx = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable))
+            // Wrap in execution strategy to be compatible with EnableRetryOnFailure.
+            var expStrategy = _db.Database.CreateExecutionStrategy();
+            await expStrategy.ExecuteAsync(async () =>
             {
-                var (plannedAmt, actualAmt) = await GetPlannedAndActualExpenseAsync(dispatchId, dto.Type, dto.ServiceOrderJobId);
-                bool willOverrun = plannedAmt > 0 && (actualAmt + dto.Amount) > plannedAmt;
-                if (willOverrun && string.IsNullOrWhiteSpace(dto.OverrunReason))
+                using (var tx = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable))
                 {
-                    throw new InvalidOperationException(
-                        $"Expense of {dto.Amount} would exceed planned '{dto.Type}' budget ({actualAmt}/{plannedAmt}). " +
-                        "Provide 'overrunReason' to confirm.");
-                }
+                    var (plannedAmt, actualAmt) = await GetPlannedAndActualExpenseAsync(dispatchId, dto.Type, dto.ServiceOrderJobId);
+                    bool willOverrun = plannedAmt > 0 && (actualAmt + dto.Amount) > plannedAmt;
+                    if (willOverrun && string.IsNullOrWhiteSpace(dto.OverrunReason))
+                    {
+                        throw new InvalidOperationException(
+                            $"Expense of {dto.Amount} would exceed planned '{dto.Type}' budget ({actualAmt}/{plannedAmt}). " +
+                            "Provide 'overrunReason' to confirm.");
+                    }
 
-                exp = new Expense
-                {
-                    DispatchId = dispatchId,
-                    ServiceOrderJobId = dto.ServiceOrderJobId,
-                    InstallationId = expInstallationId,
-                    ExpenseType = dto.Type,
-                    TechnicianId = dto.TechnicianId,
-                    Amount = dto.Amount,
-                    // Persist the declared currency so downstream invoice validation
-                    // can reject cross-currency lines. Falls back to null (interpreted
-                    // as the sale's currency) when the caller omits it.
-                    Currency = string.IsNullOrWhiteSpace(dto.Currency) ? null : dto.Currency.Trim().ToUpperInvariant(),
-                    Description = dto.Description,
-                    ExpenseDate = dto.Date ?? DateTime.UtcNow,
-                    RecordedBy = userId,
-                    CreatedDate = DateTime.UtcNow,
-                    OverrunFlag = willOverrun,
-                    OverrunReason = willOverrun ? dto.OverrunReason : null,
-                };
-                _db.DispatchExpenses.Add(exp);
-                await _db.SaveChangesAsync();
-                await tx.CommitAsync();
-            }
+                    exp = new Expense
+                    {
+                        DispatchId = dispatchId,
+                        ServiceOrderJobId = dto.ServiceOrderJobId,
+                        InstallationId = expInstallationId,
+                        ExpenseType = dto.Type,
+                        TechnicianId = dto.TechnicianId,
+                        Amount = dto.Amount,
+                        // Persist the declared currency so downstream invoice validation
+                        // can reject cross-currency lines. Falls back to null (interpreted
+                        // as the sale's currency) when the caller omits it.
+                        Currency = string.IsNullOrWhiteSpace(dto.Currency) ? null : dto.Currency.Trim().ToUpperInvariant(),
+                        Description = dto.Description,
+                        ExpenseDate = dto.Date ?? DateTime.UtcNow,
+                        RecordedBy = userId,
+                        CreatedDate = DateTime.UtcNow,
+                        OverrunFlag = willOverrun,
+                        OverrunReason = willOverrun ? dto.OverrunReason : null,
+                    };
+                    _db.DispatchExpenses.Add(exp);
+                    await _db.SaveChangesAsync();
+                    await tx.CommitAsync();
+                }
+            });
 
             await RecalculateServiceOrderJobRollupAsync(dto.ServiceOrderJobId);
 
@@ -1751,40 +1761,45 @@ namespace MyApi.Modules.Dispatches.Services
 
             var lineTotal = dto.Quantity * (dto.UnitPrice ?? 0);
             MaterialUsage mat;
-            using (var tx = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable))
+            // Wrap in execution strategy to be compatible with EnableRetryOnFailure.
+            var matStrategy = _db.Database.CreateExecutionStrategy();
+            await matStrategy.ExecuteAsync(async () =>
             {
-                // Soft-cap overrun: mirror TimeEntry/Expense. Compares against planned material
-                // total on the job (Kind="material"). NULL / zero planned = no cap.
-                var (plannedMatAmt, actualMatAmt) = await GetPlannedAndActualMaterialAsync(dispatchId, dto.ServiceOrderJobId);
-                bool willOverrun = plannedMatAmt > 0 && (actualMatAmt + lineTotal) > plannedMatAmt;
-                if (willOverrun && string.IsNullOrWhiteSpace(dto.OverrunReason))
+                using (var tx = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable))
                 {
-                    throw new InvalidOperationException(
-                        $"Material of {lineTotal:0.##} would exceed planned material budget ({actualMatAmt:0.##}/{plannedMatAmt:0.##}). " +
-                        "Provide 'overrunReason' to confirm.");
-                }
+                    // Soft-cap overrun: mirror TimeEntry/Expense. Compares against planned material
+                    // total on the job (Kind="material"). NULL / zero planned = no cap.
+                    var (plannedMatAmt, actualMatAmt) = await GetPlannedAndActualMaterialAsync(dispatchId, dto.ServiceOrderJobId);
+                    bool willOverrun = plannedMatAmt > 0 && (actualMatAmt + lineTotal) > plannedMatAmt;
+                    if (willOverrun && string.IsNullOrWhiteSpace(dto.OverrunReason))
+                    {
+                        throw new InvalidOperationException(
+                            $"Material of {lineTotal:0.##} would exceed planned material budget ({actualMatAmt:0.##}/{plannedMatAmt:0.##}). " +
+                            "Provide 'overrunReason' to confirm.");
+                    }
 
-                mat = new MaterialUsage
-                {
-                    DispatchId = dispatchId,
-                    ServiceOrderJobId = dto.ServiceOrderJobId,
-                    InstallationId = matInstallationId,
-                    ArticleId = articleId,
-                    Quantity = dto.Quantity,
-                    Description = dto.Description ?? string.Empty,
-                    UnitPrice = dto.UnitPrice ?? 0,
-                    TotalPrice = lineTotal,
-                    RecordedBy = userId,
-                    UsedDate = DateTime.UtcNow,
-                    Unit = unitValue,
-                    OverrunFlag = willOverrun,
-                    OverrunReason = willOverrun ? dto.OverrunReason : null,
-                    ApprovalStatus = "pending",
-                };
-                _db.DispatchMaterials.Add(mat);
-                await _db.SaveChangesAsync();
-                await tx.CommitAsync();
-            }
+                    mat = new MaterialUsage
+                    {
+                        DispatchId = dispatchId,
+                        ServiceOrderJobId = dto.ServiceOrderJobId,
+                        InstallationId = matInstallationId,
+                        ArticleId = articleId,
+                        Quantity = dto.Quantity,
+                        Description = dto.Description ?? string.Empty,
+                        UnitPrice = dto.UnitPrice ?? 0,
+                        TotalPrice = lineTotal,
+                        RecordedBy = userId,
+                        UsedDate = DateTime.UtcNow,
+                        Unit = unitValue,
+                        OverrunFlag = willOverrun,
+                        OverrunReason = willOverrun ? dto.OverrunReason : null,
+                        ApprovalStatus = "pending",
+                    };
+                    _db.DispatchMaterials.Add(mat);
+                    await _db.SaveChangesAsync();
+                    await tx.CommitAsync();
+                }
+            });
 
             // --- Task 2: deduct stock when the line references a real article ---
             // Free-text materials (no ArticleId) skip inventory. The stock service
