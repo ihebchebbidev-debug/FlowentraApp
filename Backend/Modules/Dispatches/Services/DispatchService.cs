@@ -1303,7 +1303,7 @@ namespace MyApi.Modules.Dispatches.Services
                     .FirstOrDefaultAsync();
             }
 
-            TimeEntry te;
+            TimeEntry te = null!;
             // Serializable tx closes the TOCTOU window between the overrun read and the insert.
             // Wrap in execution strategy to be compatible with EnableRetryOnFailure.
             var strategy = _db.Database.CreateExecutionStrategy();
@@ -1583,7 +1583,7 @@ namespace MyApi.Modules.Dispatches.Services
                     .FirstOrDefaultAsync();
             }
 
-            Expense exp;
+            Expense exp = null!;
             // Wrap in execution strategy to be compatible with EnableRetryOnFailure.
             var expStrategy = _db.Database.CreateExecutionStrategy();
             await expStrategy.ExecuteAsync(async () =>
@@ -1760,7 +1760,7 @@ namespace MyApi.Modules.Dispatches.Services
             }
 
             var lineTotal = dto.Quantity * (dto.UnitPrice ?? 0);
-            MaterialUsage mat;
+            MaterialUsage mat = null!;
             // Wrap in execution strategy to be compatible with EnableRetryOnFailure.
             var matStrategy = _db.Database.CreateExecutionStrategy();
             await matStrategy.ExecuteAsync(async () =>
