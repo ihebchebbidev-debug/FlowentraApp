@@ -73,9 +73,15 @@ export class JobMappingService {
               const jobId = String(job.id);
               const isDispatched = dispatchedJobIds.has(jobId);
               const jobStatus = (job.status || 'pending').toLowerCase();
-              const isPlannedOrCompleted = ['completed', 'cancelled', 'dispatched', 'in_progress', 'scheduled', 'planned', 'assigned'].includes(jobStatus);
+              // Only completed/cancelled are truly terminal. Statuses like
+              // scheduled/planned/assigned/dispatched/in_progress are derived
+              // from the presence of an active dispatch — if the dispatch was
+              // deleted, the job status on the backend may still be stale, so
+              // we must fall back to the authoritative `isDispatched` signal
+              // to decide whether the job should reappear as unassigned.
+              const isTerminal = ['completed', 'cancelled'].includes(jobStatus);
 
-              if (!isDispatched && !isPlannedOrCompleted) {
+              if (!isDispatched && !isTerminal) {
                 const mappedJob = JobMappingService.mapApiJobToLocal(job, fullOrder);
                 unassignedJobs.push(mappedJob);
                 allUnassignedJobs.push(mappedJob);

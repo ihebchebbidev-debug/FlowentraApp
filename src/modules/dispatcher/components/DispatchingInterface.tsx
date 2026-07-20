@@ -11,6 +11,7 @@ import {
   Wand2,
   Sparkles,
   Play,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { isViewAllWriteBlocked } from "@/utils/targetTenant";
@@ -19,6 +20,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -33,8 +36,10 @@ import { useActivePlanningProfile } from "../hooks/usePlanningProfile";
 import type { Job, CalendarViewType, Technician } from "../types";
 import { appSettingsApi } from "@/services/api/appSettingsApi";
 import { startOfWeek, endOfWeek, addDays } from "date-fns";
-import { autoFillDay, rankTechniciansForJob } from "../utils/planningAssist";
+import { autoFillDay, autoFillDays, rankTechniciansForJob, type PlacementRecord } from "../utils/planningAssist";
+import { PlanningTimelineDialog } from "./PlanningTimelineDialog";
 import { PlanningDisplayProvider, type PlanningDisplay } from "../context/PlanningDisplayContext";
+
 
 export function DispatchingInterface() {
   const { t } = useTranslation();
@@ -140,6 +145,29 @@ export function DispatchingInterface() {
   // Auto-fill day state
   const [autoFillOpen, setAutoFillOpen] = useState(false);
   const [autoFilling, setAutoFilling] = useState(false);
+  const [timelineOpen, setTimelineOpen] = useState(false);
+  const [lastRun, setLastRun] = useState<{ placements: PlacementRecord[]; assigned: number; skipped: number; daysUsed?: number } | null>(null);
+
+  // How many service orders (or jobs, when grouping is off) the user wants the
+  // auto-fill run to consider. Defaults to "all" once the modal opens.
+  const groupSO = profileSettings.autoFillSingleDispatchPerOrder;
+  const totalUnits = useMemo(() => {
+    if (groupSO) {
+      const ids = new Set<string>();
+      let looseJobs = 0;
+      for (const j of jobs) {
+        if (j.serviceOrderId) ids.add(j.serviceOrderId);
+        else looseJobs += 1;
+      }
+      return ids.size + looseJobs;
+    }
+    return jobs.length;
+  }, [jobs, groupSO]);
+  const [maxUnitsInput, setMaxUnitsInput] = useState<string>("");
+  useEffect(() => {
+    if (autoFillOpen) setMaxUnitsInput(String(totalUnits));
+  }, [autoFillOpen, totalUnits]);
+
   // Disable scheduling actions while viewing all companies (no single company selected).
   const viewAllGuard = useMutationActionGuard();
 
@@ -186,12 +214,59 @@ export function DispatchingInterface() {
       // otherwise fill the first day of the period the dispatcher navigated to.
       const now = new Date();
       const targetDay = (now >= viewedRange.from && now <= viewedRange.to) ? now : viewedRange.from;
-      const res = await autoFillDay(targetDay, jobs, visibleTechnicians, {
+
+      // Cap the pool of jobs to what the user picked in the dialog. When grouping
+      // by service order is on we count SOs (all jobs of a picked SO come along);
+      // otherwise we simply cap the job list.
+      const parsed = parseInt(maxUnitsInput, 10);
+      const cap = Number.isFinite(parsed) && parsed > 0 ? parsed : totalUnits;
+      let jobsToPlan: Job[] = jobs;
+      if (cap < totalUnits) {
+        if (groupSO) {
+          const pickedSO = new Set<string>();
+          let looseCount = 0;
+          const acceptedIds = new Set<string>();
+          for (const j of jobs) {
+            const soId = j.serviceOrderId;
+            if (soId) {
+              if (pickedSO.has(soId)) { acceptedIds.add(j.id); continue; }
+              if (pickedSO.size + looseCount >= cap) continue;
+              pickedSO.add(soId);
+              acceptedIds.add(j.id);
+            } else {
+              if (pickedSO.size + looseCount >= cap) continue;
+              looseCount += 1;
+              acceptedIds.add(j.id);
+            }
+          }
+          jobsToPlan = jobs.filter(j => acceptedIds.has(j.id));
+        } else {
+          jobsToPlan = jobs.slice(0, cap);
+        }
+      }
+
+      // Multi-day horizon: any job that can't fit today rolls to the next day
+      // (up to 7 days ahead) before being counted as skipped. This alone kills
+      // the vast majority of "N jobs could not be placed" messages caused by
+      // a full first day or a very large service order.
+      const res = await autoFillDays(targetDay, 7, jobsToPlan, visibleTechnicians, {
         allowSchedulingInPast: profileSettings.allowSchedulingInPast,
         bufferMinutes: 15,
         groupByServiceOrder: profileSettings.autoFillSingleDispatchPerOrder,
+        autoDegroupOversized: true,
       });
+      // Store placements + open the multi-day timeline preview when anything was placed.
+      if (res.placements && res.placements.length > 0) {
+        setLastRun({
+          placements: res.placements,
+          assigned: res.assigned,
+          skipped: res.skipped,
+          daysUsed: res.daysUsed,
+        });
+        setTimelineOpen(true);
+      }
       if (res.assigned > 0) toast.success(t('dispatcher.autofill.success', { defaultValue: '{{n}} job(s) auto-scheduled', n: res.assigned }));
+
       if (res.skipped > 0) {
         const reason = res.summary || res.skipReasons?.[0];
         toast.warning(
@@ -411,7 +486,20 @@ export function DispatchingInterface() {
               <Wand2 className={`h-4 w-4 ${autoFilling ? 'animate-pulse' : ''}`} />
               <span>{t('dispatcher.autofill.button', { defaultValue: 'Auto-fill day' })}</span>
             </Button>
+            {lastRun && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setTimelineOpen(true)}
+                className="gap-1.5 h-8"
+                title={t('dispatcher.timeline.reopen', { defaultValue: 'Show last auto-plan timeline' })}
+              >
+                <CalendarIcon className="h-3.5 w-3.5" />
+                <span className="hidden lg:inline">{t('dispatcher.timeline.button', { defaultValue: 'Timeline' })}</span>
+              </Button>
+            )}
           </div>
+
 
           <Button
             variant="outline"
@@ -426,7 +514,7 @@ export function DispatchingInterface() {
         </div>
       </header>
 
-      <AlertDialog open={autoFillOpen} onOpenChange={setAutoFillOpen}>
+      <AlertDialog open={autoFillOpen} onOpenChange={(o) => { if (!autoFilling) setAutoFillOpen(o); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t('dispatcher.autofill.confirm_title', { defaultValue: "Auto-fill today's planning?" })}</AlertDialogTitle>
@@ -438,6 +526,39 @@ export function DispatchingInterface() {
               })}
             </AlertDialogDescription>
           </AlertDialogHeader>
+
+          <div className="space-y-2 py-2">
+            <Label htmlFor="autofill-max-units" className="text-sm">
+              {groupSO
+                ? t('dispatcher.autofill.max_service_orders', { defaultValue: 'Number of service orders to auto-fill' })
+                : t('dispatcher.autofill.max_jobs', { defaultValue: 'Number of jobs to auto-fill' })}
+            </Label>
+            <div className="flex items-center gap-2">
+              <Input
+                id="autofill-max-units"
+                type="number"
+                min={1}
+                max={totalUnits}
+                value={maxUnitsInput}
+                onChange={(e) => setMaxUnitsInput(e.target.value)}
+                disabled={autoFilling}
+                className="w-32"
+              />
+              <span className="text-xs text-muted-foreground">
+                {t('dispatcher.autofill.available', { defaultValue: 'of {{n}} available', n: totalUnits })}
+              </span>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                disabled={autoFilling}
+                onClick={() => setMaxUnitsInput(String(totalUnits))}
+              >
+                {t('common.all', { defaultValue: 'All' })}
+              </Button>
+            </div>
+          </div>
+
           <AlertDialogFooter>
             <AlertDialogCancel disabled={autoFilling}>{t('common.cancel', { defaultValue: 'Cancel' })}</AlertDialogCancel>
             <AlertDialogAction onClick={runAutoFill} disabled={autoFilling}>
@@ -446,6 +567,29 @@ export function DispatchingInterface() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Full-screen processing overlay while auto-fill runs */}
+      {autoFilling && (
+        <div
+          role="alertdialog"
+          aria-busy="true"
+          aria-live="assertive"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+        >
+          <div className="flex flex-col items-center gap-4 rounded-lg bg-card px-8 py-6 shadow-xl border border-border">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            <div className="text-center">
+              <p className="text-base font-medium text-foreground">
+                {t('dispatcher.autofill.processing', { defaultValue: 'Auto-filling planning…' })}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {t('dispatcher.autofill.processing_hint', { defaultValue: 'Please wait while we schedule your jobs.' })}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
 
 
 
@@ -572,7 +716,20 @@ export function DispatchingInterface() {
 
       {/* Autopilot product demo */}
       <PlanningAutopilotDemo open={demoOpen} onClose={() => setDemoOpen(false)} />
+
+      {/* Multi-day timeline preview of the last auto-plan run */}
+      {lastRun && (
+        <PlanningTimelineDialog
+          open={timelineOpen}
+          onClose={() => setTimelineOpen(false)}
+          placements={lastRun.placements}
+          assigned={lastRun.assigned}
+          skipped={lastRun.skipped}
+          daysUsed={lastRun.daysUsed}
+        />
+      )}
     </div>
+
     </PlanningDisplayProvider>
   );
 }

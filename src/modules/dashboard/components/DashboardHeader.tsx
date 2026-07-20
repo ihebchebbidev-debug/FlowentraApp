@@ -171,14 +171,15 @@ export function DashboardHeader() {
     <header data-tour="dashboard-header" className="h-14 min-w-0 max-w-full border-b border-border bg-card sticky top-0 z-50">
       <div className="flex h-full min-w-0 items-center justify-between px-4 gap-3">
         <div className="flex items-center gap-4 flex-shrink-0">
-          {/* App Logo — show in topbar mode always, or in sidebar mode when collapsed (desktop only).
-              Hidden on the planner interface where the sidebar logo is already visible. */}
-          {!isPlannerInterface && (layoutMode === 'topbar' || (layoutMode === 'sidebar' && sidebarState === 'collapsed' && !isMobile)) && companyLogo && (
+          {/* App Logo — show in topbar mode always, or in sidebar mode when collapsed (desktop only),
+              including on the planner interface where the sidebar auto-collapses. Sits next to the
+              global search on the left of the header. */}
+          {(layoutMode === 'topbar' || (layoutMode === 'sidebar' && sidebarState === 'collapsed' && !isMobile) || (isPlannerInterface && !isMobile)) && companyLogo && (
             <div className="flex items-center gap-3">
-              <img 
-                src={companyLogo} 
-                alt="Company Logo" 
-                className="h-14 object-contain"
+              <img
+                src={companyLogo}
+                alt="Company Logo"
+                className="h-10 object-contain"
               />
             </div>
           )}

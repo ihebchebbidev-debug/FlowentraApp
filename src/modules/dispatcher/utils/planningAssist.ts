@@ -105,6 +105,25 @@ function priorityWeight(p?: string): number {
   }
 }
 
+export interface PlacementRecord {
+  /** Local calendar day the placement lives on (00:00 of that day). */
+  day: Date;
+  technicianId: string;
+  technicianName: string;
+  jobId: string;
+  jobTitle: string;
+  customerName?: string;
+  serviceOrderId?: string;
+  serviceOrderTitle?: string;
+  priority: string;
+  scheduledStart: Date;
+  scheduledEnd: Date;
+  /** True when part of a multi-job service-order dispatch. */
+  grouped?: boolean;
+  /** Estimated travel distance in km from the tech's previous stop (or start location). */
+  travelKm?: number | null;
+}
+
 export interface AutoFillResult {
   assigned: number;
   skipped: number;
@@ -113,7 +132,18 @@ export interface AutoFillResult {
   skipReasons: string[];
   /** Top-level reason when nothing could be placed at all (e.g. day already over). */
   summary?: string;
+  /**
+   * Jobs that could not be placed on this day. Populated when `returnUnplaced`
+   * is true — the multi-day orchestrator uses this to retry on the next day.
+   * When populated, they are NOT counted in `skipped` for the same run.
+   */
+  unplaced?: Job[];
+  /** Number of distinct days that received at least one placement (multi-day runs). */
+  daysUsed?: number;
+  /** Detailed per-placement log for timeline visualisation. */
+  placements?: PlacementRecord[];
 }
+
 
 /** Highest priority among a set of jobs (drives a grouped unit's priority). */
 function highestPriority(jobs: Job[]): string {
@@ -155,9 +185,24 @@ export async function autoFillDay(
     bufferMinutes?: number;
     /** When true, create one dispatch per service order (all its jobs) instead of per job. */
     groupByServiceOrder?: boolean;
+    /**
+     * When true, don't count jobs that couldn't fit today as `skipped` —
+     * return them in `unplaced` so the multi-day orchestrator can retry
+     * them on the next day. (Skip reasons are still collected.)
+     */
+    returnUnplaced?: boolean;
+    /**
+     * When true (default), a grouped service-order unit that is inherently too
+     * long for any single technician's shift is automatically un-grouped and
+     * its jobs are placed individually instead of being rejected with
+     * "needs multiple days". Only applies when `groupByServiceOrder` is on.
+     */
+    autoDegroupOversized?: boolean;
   } = { allowSchedulingInPast: false },
 ): Promise<AutoFillResult> {
-  const result: AutoFillResult = { assigned: 0, skipped: 0, errors: [], skipReasons: [] };
+  const result: AutoFillResult = { assigned: 0, skipped: 0, errors: [], skipReasons: [], placements: [] };
+  if (opts.returnUnplaced) result.unplaced = [];
+
   if (technicians.length === 0) {
     result.errors.push('No visible technicians');
     return result;
@@ -210,20 +255,35 @@ export async function autoFillDay(
   }
 
   // §3.4: place important/long units first so they fit before the day fills up.
+  // Improved: units with a hard due-date are considered first (earliest deadline first),
+  // then priority, then longest duration (longer jobs are hardest to fit later).
+  const dueTs = (u: PlaceUnit): number => {
+    const d = (u.rep as Job & { dueDate?: Date | string }).dueDate;
+    if (!d) return Number.POSITIVE_INFINITY;
+    const t = new Date(d).getTime();
+    return Number.isFinite(t) ? t : Number.POSITIVE_INFINITY;
+  };
   units.sort((a, b) => {
+    const da = dueTs(a), db = dueTs(b);
+    if (da !== db) return da - db;
     const pw = priorityWeight(b.priority) - priorityWeight(a.priority);
     if (pw !== 0) return pw;
     return b.durationMin - a.durationMin;
   });
+
 
   // §3.1 + §3.3: per-tech cursor and per-tech existing assignments cache
   const cursors = new Map<string, Date>();
   const endTimes = new Map<string, Date>();
   const existingByTech = new Map<string, Job[]>();
   const skipTech = new Set<string>();
+  // Location of each tech's most recent placed stop (drives travel-aware ranking
+  // for subsequent placements). Falls back to tech.location on first placement.
+  const lastLocByTech = new Map<string, { lat?: number; lng?: number } | undefined>();
   const now = new Date();
   const isToday = startOfDay.getTime() === todayStart.getTime();
   const buffer = (opts.bufferMinutes ?? 0) * 60_000;
+
 
   // Dedup collector for user-visible skip reasons — hoisted so both the tech
   // init loop and the placement loop below can add to it.
@@ -332,7 +392,13 @@ export async function autoFillDay(
       : 'Every visible technician has no remaining time on this day (fully booked or working hours ended).';
     result.summary = reason;
     result.skipReasons.push(reason);
-    result.skipped = units.reduce((s, u) => s + u.jobs.length, 0);
+    const totalJobs = units.reduce((s, u) => s + u.jobs.length, 0);
+    if (opts.returnUnplaced) {
+      // Defer everything to the next day of the multi-day pass.
+      for (const u of units) result.unplaced!.push(...u.jobs);
+    } else {
+      result.skipped = totalJobs;
+    }
     return result;
   }
 
@@ -345,7 +411,13 @@ export async function autoFillDay(
   const isPriority = (v: unknown): v is ValidPriority =>
     typeof v === 'string' && (PRIORITIES as readonly string[]).includes(v);
 
-  for (const unit of units) {
+  // Use a mutable queue so an oversized grouped unit can be un-grouped and its
+  // individual jobs re-queued in place (instead of being rejected wholesale).
+  const queue: PlaceUnit[] = [...units];
+  const autoDegroup = opts.autoDegroupOversized !== false; // default true
+
+  while (queue.length > 0) {
+    const unit = queue.shift()!;
     // §3.9: pass current per-tech counts so ranker applies load-balancing penalty.
     const eligible = technicians.filter(t => !skipTech.has(t.id));
     const ranked = rankTechniciansForJob(unit.rep, eligible, counts);
@@ -362,29 +434,51 @@ export async function autoFillDay(
       addReason('No eligible technicians (schedules could not be loaded).');
     }
 
-    // M5: distinguish "unit is inherently too long for any working day" from
-    // "day is already full". If unitDuration exceeds every eligible tech's
-    // available window on this day, it needs manual multi-day scheduling.
+    // Does this unit fit inside any eligible tech's raw shift window on this day?
     const fitsAnyWindow = eligible.some(t => {
       const s = timeOnDay(day, t.workingHours?.start || '09:00').getTime();
       const e = timeOnDay(day, t.workingHours?.end   || '17:00').getTime();
       return (e - s) >= durationMs;
     });
     if (!fitsAnyWindow) {
+      // Grouped SO too long for any single shift? Auto-degroup into per-job
+      // units — they'll place across the day (and, in multi-day mode, spill
+      // to subsequent days) instead of being rejected wholesale.
+      if (autoDegroup && unit.jobs.length > 1) {
+        for (const j of unit.jobs) {
+          queue.push({
+            rep: j,
+            jobs: [j],
+            priority: j.priority || unit.priority || 'medium',
+            durationMin: j.estimatedDuration || 60,
+            serviceOrderId: j.serviceOrderId,
+          });
+        }
+        continue;
+      }
+      // Single job that's inherently too long for one shift. In multi-day
+      // mode the orchestrator would still not be able to split it, so surface
+      // the reason and either defer (unplaced) or skip.
       addReason('Job needs multiple days — schedule manually.');
-      result.skipped += unit.jobs.length;
+      if (opts.returnUnplaced) {
+        result.unplaced!.push(...unit.jobs);
+      } else {
+        result.skipped += unit.jobs.length;
+      }
       continue;
     }
 
+    // Best-fit across all ranked technicians: evaluate every eligible candidate
+    // and pick the one whose slot ends earliest — packs the day tighter and
+    // leaves more room for later units.
+    interface Candidate { r: typeof ranked[number]; slotStart: Date; jobEnd: Date; existing: Job[]; tid: string; travelKm: number | null; }
+    const candidates: Candidate[] = [];
     for (const r of ranked) {
       const tid = r.technician.id;
       if ((counts.get(tid) ?? 0) >= maxPer) { sawCapReached = true; continue; }
       const cursor = cursors.get(tid)!;
       const end = endTimes.get(tid)!;
       const existing = existingByTech.get(tid) ?? [];
-
-      // §3.1: ask collision service for the first free slot >= cursor that
-      // doesn't overlap any existing job and ends before working-hours end.
       const slotStart = CollisionService.findNextAvailableSlot(
         cursor,
         durationMin,
@@ -394,11 +488,28 @@ export async function autoFillDay(
       if (!slotStart) { sawNoSlot = true; continue; }
       const jobEnd = new Date(slotStart.getTime() + durationMs);
       if (jobEnd.getTime() > end.getTime()) { sawOverEnd = true; continue; }
+      // Travel-aware: distance from tech's previous stop (or home base) to this job.
+      const from = lastLocByTech.get(tid) ?? r.technician.location;
+      const travelKm = distanceKm(from, unit.rep.location);
+      candidates.push({ r, slotStart, jobEnd, existing, tid, travelKm });
+    }
 
+    // Best-fit sort: earliest jobEnd first (tightest pack); tie-break by shorter
+    // travel distance (route continuity), then higher technician score.
+    candidates.sort((a, b) => {
+      const t = a.jobEnd.getTime() - b.jobEnd.getTime();
+      if (t !== 0) return t;
+      const at = a.travelKm ?? 9999;
+      const bt = b.travelKm ?? 9999;
+      if (at !== bt) return at - bt;
+      return b.r.score - a.r.score;
+    });
+
+
+    for (const c of candidates) {
       try {
-        const techName = `${r.technician.firstName} ${r.technician.lastName}`.trim();
-        if (opts.groupByServiceOrder && unit.serviceOrderId) {
-          // One dispatch holding all of the service order's jobs.
+        const techName = `${c.r.technician.firstName} ${c.r.technician.lastName}`.trim();
+        if (opts.groupByServiceOrder && unit.serviceOrderId && unit.jobs.length > 1) {
           const so: ServiceOrder = {
             id: unit.serviceOrderId,
             title: unit.rep.serviceOrderTitle || unit.rep.title || '',
@@ -410,23 +521,47 @@ export async function autoFillDay(
             location: unit.rep.location,
             createdAt: new Date(),
           };
-          await DispatcherService.assignServiceOrderAsSingleDispatch(so, tid, slotStart, techName, unitPriority);
+          await DispatcherService.assignServiceOrderAsSingleDispatch(so, c.tid, c.slotStart, techName, unitPriority);
         } else {
-          await DispatcherService.assignJob(unit.jobs[0].id, tid, slotStart, jobEnd, techName, unitPriority);
+          await DispatcherService.assignJob(unit.jobs[0].id, c.tid, c.slotStart, c.jobEnd, techName, unitPriority);
         }
-        // §3.1: also push the just-placed unit into the local existing list
-        // so the next iteration's collision check sees it.
-        existing.push({ ...(unit.rep as Job), scheduledStart: slotStart, scheduledEnd: jobEnd });
-        existingByTech.set(tid, existing);
-        cursors.set(tid, jobEnd);
-        counts.set(tid, (counts.get(tid) ?? 0) + 1);
+        c.existing.push({ ...(unit.rep as Job), scheduledStart: c.slotStart, scheduledEnd: c.jobEnd });
+        existingByTech.set(c.tid, c.existing);
+        cursors.set(c.tid, c.jobEnd);
+        counts.set(c.tid, (counts.get(c.tid) ?? 0) + 1);
+        lastLocByTech.set(c.tid, unit.rep.location);
         result.assigned += unit.jobs.length;
+        // Record every job in the unit as its own placement row (for the timeline).
+        const techName2 = `${c.r.technician.firstName} ${c.r.technician.lastName}`.trim();
+        const dayKey = new Date(startOfDay);
+        let cursorStart = c.slotStart;
+        for (const j of unit.jobs) {
+          const dur = Math.max(1, Math.ceil(j.estimatedDuration || 60));
+          const jStart = unit.jobs.length === 1 ? c.slotStart : cursorStart;
+          const jEnd = unit.jobs.length === 1 ? c.jobEnd : new Date(cursorStart.getTime() + dur * 60_000);
+          result.placements!.push({
+            day: dayKey,
+            technicianId: c.tid,
+            technicianName: techName2,
+            jobId: j.id,
+            jobTitle: j.title,
+            customerName: j.customerName,
+            serviceOrderId: j.serviceOrderId,
+            serviceOrderTitle: j.serviceOrderTitle,
+            priority: unitPriority,
+            scheduledStart: jStart,
+            scheduledEnd: jEnd,
+            grouped: unit.jobs.length > 1,
+            travelKm: c.travelKm,
+          });
+          cursorStart = jEnd;
+        }
         placed = true;
         break;
+
       } catch (e) {
         const msg = `${unit.rep.serviceOrderTitle || unit.rep.title}: ${e instanceof Error ? e.message : 'assign failed'}`;
         result.errors.push(msg);
-        // §3.11: surface the first few errors instead of swallowing all of them silently.
         if (errorLogged < 5) {
           console.error('[autoFillDay] assign failed', msg, e);
           errorLogged++;
@@ -435,8 +570,12 @@ export async function autoFillDay(
     }
 
     if (!placed) {
-      result.skipped += unit.jobs.length;
-      // Attribute a reason for this unit (priority: over-end > no-slot > cap).
+      // Defer to next day when the orchestrator is running a multi-day pass.
+      if (opts.returnUnplaced) {
+        result.unplaced!.push(...unit.jobs);
+      } else {
+        result.skipped += unit.jobs.length;
+      }
       if (sawOverEnd) addReason(`Duration (${durationMin} min) does not fit before working-hours end on any technician.`);
       else if (sawNoSlot) addReason('No free slot before working-hours end on any technician.');
       else if (sawCapReached) addReason(`Every technician has already reached the per-day cap (${maxPer} jobs).`);
@@ -448,4 +587,85 @@ export async function autoFillDay(
   }
 
   return result;
+}
+
+/**
+ * Multi-day auto-fill: runs {@link autoFillDay} for a horizon of consecutive
+ * days starting at `startDay`. Any jobs that couldn't fit on a given day roll
+ * over to the next day (via `returnUnplaced`), until either the queue empties
+ * or the horizon is exhausted. Only after the last day are the still-unplaced
+ * jobs counted as `skipped` and a summary reason is set.
+ *
+ * This is what powers the dispatcher's "Auto plan" button — the multi-day
+ * horizon means a single big service order or a busy day no longer produces
+ * "N jobs could not be placed" messages the moment the first day is full.
+ */
+export async function autoFillDays(
+  startDay: Date,
+  horizonDays: number,
+  unassignedJobs: Job[] | ServiceOrder[],
+  technicians: Technician[],
+  opts: {
+    allowSchedulingInPast: boolean;
+    maxJobsPerTech?: number;
+    bufferMinutes?: number;
+    groupByServiceOrder?: boolean;
+    autoDegroupOversized?: boolean;
+  } = { allowSchedulingInPast: false },
+): Promise<AutoFillResult> {
+  const totalDays = Math.max(1, Math.floor(horizonDays));
+  const combined: AutoFillResult = {
+    assigned: 0,
+    skipped: 0,
+    errors: [],
+    skipReasons: [],
+    daysUsed: 0,
+    placements: [],
+  };
+
+  const seen = new Set<string>();
+  const addReason = (r: string) => {
+    if (!r || seen.has(r) || combined.skipReasons.length >= 5) return;
+    seen.add(r);
+    combined.skipReasons.push(r);
+  };
+
+  // Flatten to jobs up front — the orchestrator carries `Job[]` between days.
+  let queue: Job[] = [];
+  for (const item of unassignedJobs) {
+    if ('jobs' in item && Array.isArray((item as ServiceOrder).jobs)) {
+      queue.push(...(item as ServiceOrder).jobs);
+    } else {
+      queue.push(item as Job);
+    }
+  }
+
+  for (let i = 0; i < totalDays && queue.length > 0; i++) {
+    const day = new Date(startDay);
+    day.setDate(day.getDate() + i);
+    // Only the LAST day counts unplaced as skipped; earlier days defer.
+    const isLastDay = i === totalDays - 1;
+    const res = await autoFillDay(day, queue, technicians, {
+      ...opts,
+      returnUnplaced: !isLastDay,
+    });
+    combined.assigned += res.assigned;
+    combined.errors.push(...res.errors);
+    if (res.placements?.length) combined.placements!.push(...res.placements);
+    res.skipReasons.forEach(addReason);
+    if (res.assigned > 0) combined.daysUsed = (combined.daysUsed ?? 0) + 1;
+
+    if (isLastDay) {
+      combined.skipped += res.skipped;
+    } else {
+      queue = res.unplaced ?? [];
+    }
+  }
+
+  if (combined.assigned === 0 && combined.skipped > 0 && combined.skipReasons.length > 0) {
+    combined.summary = combined.skipReasons[0];
+  } else if (combined.assigned > 0 && (combined.daysUsed ?? 0) > 1) {
+    combined.summary = `Scheduled across ${combined.daysUsed} day(s).`;
+  }
+  return combined;
 }
