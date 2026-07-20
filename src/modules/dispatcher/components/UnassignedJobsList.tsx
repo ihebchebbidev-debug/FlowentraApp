@@ -695,8 +695,8 @@ export function UnassignedJobsList({
 
 
   return (
-    <Card className="h-full rounded-none border-0">
-      <CardHeader className="p-3 pb-2">
+    <Card className="flex h-full min-h-0 flex-col rounded-none border-0">
+      <CardHeader className="shrink-0 p-3 pb-2">
         <h3 className="text-sm font-semibold mb-1.5">{t('dispatcher.service_orders')}</h3>
         
 
@@ -800,8 +800,8 @@ export function UnassignedJobsList({
         </Button>
 
       </CardHeader>
-      <CardContent className="p-0">
-        <ScrollArea className="h-full">
+      <CardContent className="min-h-0 flex-1 overflow-hidden p-0">
+        <ScrollArea className="h-full [&_[data-orientation=vertical]]:w-1.5 [&_[data-orientation=vertical]>div]:bg-primary/70">
           <div className="space-y-1.5 p-2 pt-0">
             {isLoading ? (
               <div className="space-y-3">

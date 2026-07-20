@@ -26,7 +26,7 @@ import "./lib/i18n";
 import { ScrollToTop } from "./shared/components/ScrollToTop";
 import AppLoader from "./shared/components/AppLoader";
 import { runWhenIdle, preloadDashboard, preloadSupport, preloadOnboarding, preloadLogin } from "./shared/prefetch";
-import { AuthProvider } from "./contexts/AuthContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { PreferencesProvider } from "./contexts/PreferencesProvider";
 import { OfflineProvider } from "./contexts/OfflineContext";
 import { TenantMapProvider } from "./contexts/TenantMapContext";

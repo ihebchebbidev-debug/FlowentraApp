@@ -1,10 +1,11 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import * as Icons from "lucide-react";
-import { PackageOpen, Settings as SettingsIcon, LogOut, Sun, Moon, Monitor } from "lucide-react";
+import { PackageOpen, Settings as SettingsIcon, LogOut, Sun, Moon, Monitor, PanelLeftOpen, PanelLeftClose } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCompanyLogo } from "@/hooks/useCompanyLogo";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSidebar } from "@/components/ui/sidebar";
 import { useTheme, type Theme } from "@/hooks/useTheme";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import {
@@ -118,6 +119,7 @@ export function WorkspaceSidebar() {
   const { isEnabled } = usePlugins();
   const companyLogo = useCompanyLogo();
   const { user, logout } = useAuth();
+  const { open: sidebarOpen, setOpen: setSidebarOpen } = useSidebar();
 
   const detected = useMemo(
     () => findWorkspaceForPath(location.pathname),
@@ -322,9 +324,116 @@ export function WorkspaceSidebar() {
 
   const panelId = "workspace-secondary-panel";
 
+  // ── Collapsed (icon-only) variant ──────────────────────────────────────────
+  // Auto-collapse is driven by Dashboard.tsx (setOpen(false) on dispatcher).
+  // Users can toggle back manually via the expand button.
+  if (!sidebarOpen) {
+    return (
+      <aside className="sticky top-0 self-start z-40 flex h-screen w-14 shrink-0 flex-col border-r border-border bg-background">
+        {/* Logo */}
+        <button
+          type="button"
+          onClick={() => navigate("/dashboard")}
+          className="relative flex h-20 shrink-0 items-center justify-center overflow-hidden border-b border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          title="Home"
+          aria-label="Go to dashboard home"
+        >
+          {companyLogo ? (
+            <img src={companyLogo} alt="Company Logo" className="max-h-12 max-w-full object-contain" />
+          ) : (
+            <Icons.LayoutGrid className="h-7 w-7 text-primary" aria-hidden="true" />
+          )}
+        </button>
+
+        {/* Expand toggle */}
+        <div className="flex justify-center border-b border-border py-2">
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(true)}
+            className="rounded p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label="Open sidebar"
+            title="Open sidebar"
+          >
+            <PanelLeftOpen aria-hidden="true" className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Workspace icons */}
+        <div className="flex-1 overflow-y-auto py-2">
+          <div className="flex flex-col items-center gap-1">
+            {WORKSPACES.map((ws) => {
+              const isCurrent = detected?.id === ws.id;
+              return (
+                <button
+                  key={ws.id}
+                  type="button"
+                  onClick={() => {
+                    setSidebarOpen(true);
+                    handleWorkspaceClick(ws, false);
+                  }}
+                  aria-current={isCurrent ? "page" : undefined}
+                  title={ws.label}
+                  aria-label={ws.label}
+                  className={cn(
+                    "flex h-10 w-10 items-center justify-center rounded-md transition-colors",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    isCurrent
+                      ? "bg-accent text-accent-foreground"
+                      : "text-foreground/80 hover:bg-accent/50 hover:text-foreground"
+                  )}
+                >
+                  <Icon name={ws.icon} className="h-5 w-5" />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* User avatar */}
+        <div className="mt-auto shrink-0 border-t border-border p-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-label="Open account menu"
+                className="flex w-full items-center justify-center rounded-md p-1 hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <UserAvatar
+                  src={user?.profilePictureUrl}
+                  name={`${user?.firstName || ""} ${user?.lastName || ""}`}
+                  seed={user?.id ?? "user"}
+                  size="sm"
+                />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="right" align="end" className="w-56 p-1">
+              <ThemePicker />
+              <DropdownMenuSeparator className="my-1" />
+              <DropdownMenuItem
+                onClick={() => navigate("/dashboard/settings")}
+                className="gap-2 rounded-md px-2.5 py-1.5 text-sm"
+              >
+                <SettingsIcon aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
+                Settings
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="my-1" />
+              <DropdownMenuItem
+                onClick={handleSignOut}
+                className="gap-2 rounded-md px-2.5 py-1.5 text-sm"
+              >
+                <LogOut aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
+                Sign out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </aside>
+    );
+  }
+
   if (activeWs) {
     return (
-      <aside className="relative z-40 flex h-screen w-[240px] shrink-0 border-r border-border bg-background">
+      <aside className="sticky top-0 self-start z-40 flex h-screen w-[240px] shrink-0 border-r border-border bg-background">
         <nav
           key={activeWs.id}
           ref={panelRef}
@@ -356,16 +465,27 @@ export function WorkspaceSidebar() {
               <Icon name={activeWs.icon} className="h-5 w-5 shrink-0 text-primary" />
               <h2 className="truncate text-base font-semibold">{activeWs.label}</h2>
             </div>
-            <button
-              ref={closeBtnRef}
-              type="button"
-              onClick={(e) => closePanel({ restoreFocus: e.detail === 0 })}
-              className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label={`Back to workspaces`}
-              title="Back to workspaces"
-            >
-              <Icons.ChevronLeft aria-hidden="true" className="h-5 w-5" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                ref={closeBtnRef}
+                type="button"
+                onClick={(e) => closePanel({ restoreFocus: e.detail === 0 })}
+                className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label={`Back to workspaces`}
+                title="Back to workspaces"
+              >
+                <Icons.ChevronLeft aria-hidden="true" className="h-5 w-5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setSidebarOpen(false)}
+                className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label="Collapse sidebar"
+                title="Collapse sidebar"
+              >
+                <PanelLeftClose aria-hidden="true" className="h-4 w-4" />
+              </button>
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto p-2">
@@ -450,7 +570,7 @@ export function WorkspaceSidebar() {
   }
 
   return (
-    <aside className="relative z-40 flex h-screen shrink-0 border-r border-border bg-background">
+    <aside className="sticky top-0 self-start z-40 flex h-screen shrink-0 border-r border-border bg-background">
       {/* Primary sidebar — list of workspaces */}
       <nav className="flex h-screen w-[240px] flex-col bg-background" aria-label="Workspaces">
         {/* Logo on top — larger */}
@@ -472,12 +592,23 @@ export function WorkspaceSidebar() {
 
         {/* Workspaces list */}
         <div className="min-h-0 flex-1 overflow-y-auto p-2">
-          <p
-            id="workspaces-heading"
-            className="px-2 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
-          >
-            Workspaces
-          </p>
+          <div className="flex items-center justify-between px-2 pb-1 pt-2">
+            <p
+              id="workspaces-heading"
+              className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+            >
+              Workspaces
+            </p>
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(false)}
+              className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label="Collapse sidebar"
+              title="Collapse sidebar"
+            >
+              <PanelLeftClose aria-hidden="true" className="h-4 w-4" />
+            </button>
+          </div>
           <div
             role="list"
             aria-labelledby="workspaces-heading"

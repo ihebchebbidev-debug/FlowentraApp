@@ -30,6 +30,14 @@ export const de = {
     status_scheduled: "Geplant",
     status_not_working: "Arbeitet nicht",
     status_over_capacity: "Überlastet",
+    status_on_break: "In Pause",
+    status_on_mission: "Im Einsatz",
+    status_before_shift: "Vor Schichtbeginn",
+    status_after_shift: "Nach Schichtende",
+    status_no_schedule: "Kein Zeitplan",
+    status_unavailable: "Nicht verfügbar",
+    status_sick: "Krank",
+    status_off: "Abwesend",
     
     // Priority
     priority: "Priorität",

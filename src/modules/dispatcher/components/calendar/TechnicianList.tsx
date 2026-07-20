@@ -23,6 +23,23 @@ import { toast } from "@/hooks/use-toast";
 
 type TechnicianStatus = 'available' | 'busy' | 'not_working' | 'offline' | 'on_leave' | 'over_capacity';
 
+const TECHNICIAN_STATUS_FALLBACKS: Record<string, string> = {
+  available: 'Available',
+  busy: 'Busy',
+  offline: 'Offline',
+  on_leave: 'On Leave',
+  not_working: 'Not Working',
+  over_capacity: 'Over Capacity',
+  on_break: 'On Break',
+  on_mission: 'On Mission',
+  before_shift: 'Before Shift',
+  after_shift: 'After Shift',
+  no_schedule: 'No Schedule',
+  unavailable: 'Unavailable',
+  sick: 'Sick',
+  off: 'Off',
+};
+
 interface TechnicianListProps {
   technicians: Technician[];
   /** Optional dynamic row heights keyed by technician id (must match calendar grid row heights). */
@@ -58,10 +75,20 @@ export function TechnicianList({
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'available': return 'bg-success/10 text-success border-success/20';
-      case 'busy': return 'bg-warning/10 text-warning border-warning/20';
+      case 'busy':
+      case 'on_break':
+      case 'before_shift':
+      case 'after_shift':
+        return 'bg-warning/10 text-warning border-warning/20';
+      case 'on_mission': return 'bg-primary/10 text-primary border-primary/20';
       case 'offline': return 'bg-muted text-muted-foreground border-border';
       case 'on_leave': return 'bg-secondary text-secondary-foreground border-border';
-      case 'not_working': return 'bg-destructive/10 text-destructive border-destructive/20';
+      case 'not_working':
+      case 'no_schedule':
+      case 'unavailable':
+      case 'sick':
+      case 'off':
+        return 'bg-destructive/10 text-destructive border-destructive/20';
       case 'over_capacity': return 'bg-warning/10 text-warning border-warning/20';
       default: return 'bg-muted text-muted-foreground border-border';
     }
@@ -71,24 +98,30 @@ export function TechnicianList({
     if (hex) return '';
     switch (status) {
       case 'available': return 'bg-success';
-      case 'busy': return 'bg-warning';
+      case 'busy':
+      case 'on_break':
+      case 'before_shift':
+      case 'after_shift':
+        return 'bg-warning';
+      case 'on_mission': return 'bg-primary';
       case 'offline': return 'bg-muted-foreground';
       case 'on_leave': return 'bg-secondary-foreground';
-      case 'not_working': return 'bg-destructive';
+      case 'not_working':
+      case 'no_schedule':
+      case 'unavailable':
+      case 'sick':
+      case 'off':
+        return 'bg-destructive';
       case 'over_capacity': return 'bg-warning';
       default: return 'bg-muted-foreground';
     }
   };
 
   const getStatusLabel = (status: string) => {
-    const statusKey = `dispatcher.status_${status}`;
-    const translated = t(statusKey);
-    if (translated === statusKey) {
-      const schedulingKey = `scheduling.status_${status}`;
-      const schedulingTranslated = t(schedulingKey);
-      return schedulingTranslated !== schedulingKey ? schedulingTranslated : status;
-    }
-    return translated;
+    const normalizedStatus = status || 'offline';
+    const fallback = TECHNICIAN_STATUS_FALLBACKS[normalizedStatus] || normalizedStatus.replace(/_/g, ' ');
+    const schedulingLabel = t(`scheduling.status_${normalizedStatus}`, { defaultValue: fallback });
+    return t(`dispatcher.status_${normalizedStatus}`, { defaultValue: schedulingLabel });
   };
 
   const getTimeAwareStatus = (
@@ -187,9 +220,19 @@ export function TechnicianList({
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'available': return <CheckCircle className="h-2.5 w-2.5 text-success" />;
-      case 'busy': return <AlertTriangle className="h-2.5 w-2.5 text-warning" />;
+      case 'busy':
+      case 'on_break':
+      case 'before_shift':
+      case 'after_shift':
+        return <AlertTriangle className="h-2.5 w-2.5 text-warning" />;
+      case 'on_mission': return <Briefcase className="h-2.5 w-2.5 text-primary" />;
       case 'on_leave': return <Circle className="h-2.5 w-2.5 text-secondary-foreground" />;
-      case 'not_working': return <XCircle className="h-2.5 w-2.5 text-destructive" />;
+      case 'not_working':
+      case 'no_schedule':
+      case 'unavailable':
+      case 'sick':
+      case 'off':
+        return <XCircle className="h-2.5 w-2.5 text-destructive" />;
       case 'offline': return <XCircle className="h-2.5 w-2.5 text-muted-foreground" />;
       case 'over_capacity': return <AlertTriangle className="h-2.5 w-2.5 text-warning" />;
       default: return <Circle className="h-2.5 w-2.5 text-muted-foreground" />;

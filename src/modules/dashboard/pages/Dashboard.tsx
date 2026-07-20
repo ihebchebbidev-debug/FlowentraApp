@@ -87,9 +87,9 @@ function DashboardLayout() {
     return (
       <>
         <WorkspaceSidebar />
-        <div className="min-w-0 flex-1 flex flex-col relative">
+        <div className="min-w-0 min-h-0 h-screen flex-1 flex flex-col relative overflow-hidden">
           <DashboardHeader />
-          <main className="min-w-0 flex-1 overflow-auto overflow-x-hidden">
+          <main className="min-w-0 min-h-0 flex-1 overflow-auto overflow-x-hidden">
             <DashboardContent />
           </main>
         </div>
@@ -100,7 +100,7 @@ function DashboardLayout() {
   // Default sidebar layout
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full max-w-full overflow-x-hidden bg-background">
+      <div className="h-screen flex w-full max-w-full overflow-hidden bg-background">
         <ProductTour isRunning={isRunning} onEnd={endTour} />
         <CommandPalette />
         <SidebarWrapper />

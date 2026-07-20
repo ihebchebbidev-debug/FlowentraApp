@@ -294,7 +294,7 @@ export function DispatchingInterface() {
 
   return (
     <PlanningDisplayProvider value={planningDisplay}>
-    <div className="flex flex-col h-screen w-full bg-background overflow-hidden relative">
+    <div className="flex flex-col h-[calc(100vh-3.5rem)] min-h-0 w-full bg-background overflow-hidden relative">
       {/* Header (consistent with Articles/Contacts pattern) */}
       <header className="flex items-center justify-between gap-2 p-3 sm:p-4 border-b border-border bg-card/50 backdrop-blur">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
@@ -455,7 +455,7 @@ export function DispatchingInterface() {
           {viewMode === 'calendar' ? (
             <>
               {/* Center - Calendar with horizontal scroll container */}
-              <div className="flex-1 min-w-0 max-w-[calc(100vw-240px)]">
+              <div className="flex-1 min-w-0 min-h-0 overflow-hidden">
                 <CustomCalendar
                   view={calendarView}
                   technicians={visibleTechnicians}
@@ -469,7 +469,7 @@ export function DispatchingInterface() {
               </div>
 
               {/* Right Sidebar - Always visible, fixed width */}
-              <div className="w-60 max-w-60 border-l bg-card flex-shrink-0 overflow-hidden">
+              <div className="w-60 max-w-60 min-h-0 border-l bg-card flex-shrink-0 overflow-hidden">
                 <UnassignedJobsList
                   jobs={jobs}
                   isLoading={!loadingState.serviceOrdersLoaded || isRefreshing}

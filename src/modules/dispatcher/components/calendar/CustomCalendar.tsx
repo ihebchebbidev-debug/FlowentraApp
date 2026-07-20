@@ -124,9 +124,10 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
       setDateAreaWidth(Math.max(0, viewportNodeRef.current.clientWidth - TECH_COL_WIDTH));
     }
   }, [TECH_COL_WIDTH]);
-  const MIN_HOUR_WIDTH = 11;  // smallest readable hour cell before falling back to scroll
+  const MIN_HOUR_WIDTH = 11;  // smallest readable hour cell before falling back to scroll in overview-sized ranges
   const calendarRootRef = useRef<HTMLDivElement>(null);
   const [dateAreaWidth, setDateAreaWidth] = useState(0);
+  const [calendarViewportHeight, setCalendarViewportHeight] = useState(0);
   const viewportRoRef = useRef<ResizeObserver | null>(null);
   // Callback ref: (re)attaches a ResizeObserver to the scroll viewport whenever
   // it mounts/unmounts (e.g. switching between detailed and overview modes).
@@ -135,7 +136,10 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
     viewportRoRef.current = null;
     viewportNodeRef.current = node;
     if (!node) return;
-    const measure = () => setDateAreaWidth(Math.max(0, node.clientWidth - techColWidthRef.current));
+    const measure = () => {
+      setDateAreaWidth(Math.max(0, node.clientWidth - techColWidthRef.current));
+      setCalendarViewportHeight(node.clientHeight);
+    };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(node);
@@ -248,11 +252,6 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
     const z = zoomMap[zoomLevel];
     const hours = Math.max(1, workingHours.length);
 
-    // xl / xxl are explicit "zoom in" levels → always horizontal scroll.
-    if (zoomLevel === 'xl' || zoomLevel === 'xxl') {
-      return { dateWidth: z.dateWidth, hourWidth: z.hourWidth, widthMode: 'scroll', showHourLabels: true, hourTextSize: z.hourTextSize };
-    }
-
     // More than 7 days → overview grid handles layout; keep nominal scroll sizing.
     if (dates.length > 7) {
       return { dateWidth: z.dateWidth, hourWidth: z.hourWidth, widthMode: 'scroll', showHourLabels: true, hourTextSize: z.hourTextSize };
@@ -269,11 +268,6 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
     // always fills edge-to-edge (no empty gap before the sidebar). Fractional
     // px is fine — job blocks use this same hourWidth, so alignment is exact.
     const fillHour = dateArea / (dates.length * hours);
-
-    // Too cramped to read at this many days → horizontal scroll at min width.
-    if (fillHour < MIN_HOUR_WIDTH) {
-      return { dateWidth: MIN_HOUR_WIDTH * hours, hourWidth: MIN_HOUR_WIDTH, widthMode: 'scroll', showHourLabels: true, hourTextSize: z.hourTextSize };
-    }
 
     const hourTextSize = fillHour >= 34 ? '13px' : fillHour >= 26 ? '12px' : fillHour >= 20 ? '11px' : '10px';
     return { dateWidth: fillHour * hours, hourWidth: fillHour, widthMode: 'auto', showHourLabels: true, hourTextSize };
@@ -314,12 +308,19 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
     return filtered;
   }, [rawAssignedJobs, statusFilter, profileSettings]);
 
-  // Per-technician dynamic row heights driven by stacked-lane count.
+  // Per-technician dynamic row heights driven by stacked lanes, but stretched
+  // to fill the full remaining board height when only a few users are visible.
   // Keep in sync with CalendarGrid LANE_HEIGHT constant.
   const LANE_HEIGHT = profileSettings.compactRows ? 26 : 36;
   const MIN_ROW_HEIGHT = profileSettings.compactRows ? 56 : 80;
+  const HEADER_HEIGHT = 80;
   const rowHeights = useMemo(() => {
     const heights: Record<string, number> = {};
+    const visibleCount = Math.max(1, displayedTechnicians.length);
+    const fillRowHeight = Math.max(
+      MIN_ROW_HEIGHT,
+      Math.floor(Math.max(0, calendarViewportHeight - HEADER_HEIGHT) / visibleCount),
+    );
     for (const tech of displayedTechnicians) {
       const buckets: Job[][] = [];
       for (const date of dates) {
@@ -328,10 +329,10 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
         if (list && list.length > 0) buckets.push(list);
       }
       const lanes = buckets.length > 0 ? computeMaxLanes(buckets) : 1;
-      heights[tech.id] = Math.max(MIN_ROW_HEIGHT, lanes * LANE_HEIGHT + 12);
+      heights[tech.id] = Math.max(fillRowHeight, lanes * LANE_HEIGHT + 12);
     }
     return heights;
-  }, [displayedTechnicians, dates, filteredAssignedJobs]);
+  }, [displayedTechnicians, dates, filteredAssignedJobs, calendarViewportHeight, MIN_ROW_HEIGHT, LANE_HEIGHT]);
 
   useEffect(() => {
     void loadAssignedJobs();
@@ -1203,7 +1204,10 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
       ) : (
         /* Detailed Planning Mode (≤7 days) */
         <>
-          <div ref={setViewportRef} className="flex-1 overflow-y-auto overflow-x-auto">
+          <div
+            ref={setViewportRef}
+            className={`flex-1 min-h-0 overflow-y-auto ${dimensions.widthMode === 'auto' ? 'overflow-x-hidden' : 'overflow-x-auto'}`}
+          >
             <CalendarHeader
               dates={dates}
               workingHours={workingHours}
@@ -1211,7 +1215,7 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
               includeWeekends={settings.includeWeekends}
               isMobile={isMobile}
             />
-            <div className="flex">
+            <div className="flex min-h-[calc(100%-5rem)]">
               <TechnicianList technicians={displayedTechnicians} rowHeights={rowHeights} isMobile={isMobile} />
 
               <CalendarGrid

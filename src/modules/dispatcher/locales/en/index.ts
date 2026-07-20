@@ -36,6 +36,14 @@ export const en = {
     status_scheduled: "Scheduled",
     status_not_working: "Not Working",
     status_over_capacity: "Over Capacity",
+    status_on_break: "On Break",
+    status_on_mission: "On Mission",
+    status_before_shift: "Before Shift",
+    status_after_shift: "After Shift",
+    status_no_schedule: "No Schedule",
+    status_unavailable: "Unavailable",
+    status_sick: "Sick",
+    status_off: "Off",
     
     // Priority
     priority: "Priority",
