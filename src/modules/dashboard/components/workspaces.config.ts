@@ -164,14 +164,37 @@ export const WORKSPACES: Workspace[] = [
   },
 ];
 
+const MODULE_URL_ALIASES: Record<string, string[]> = {
+  "/dashboard/field/dispatcher": ["/dashboard/field/dispatches"],
+};
+
+export function getWorkspaceModuleMatchBases(url: string): string[] {
+  const [base] = url.split("?");
+  const bases = new Set<string>([base]);
+
+  if (base.endsWith("/list")) {
+    bases.add(base.slice(0, -"/list".length));
+  }
+
+  MODULE_URL_ALIASES[base]?.forEach((alias) => bases.add(alias));
+  return Array.from(bases);
+}
+
+export function workspaceModuleMatchesPath(url: string, pathname: string): boolean {
+  return getWorkspaceModuleMatchBases(url).some(
+    (base) => pathname === base || pathname.startsWith(base + "/")
+  );
+}
+
 export function findWorkspaceForPath(pathname: string): Workspace | undefined {
   // Best-match by longest module url prefix.
   let best: { ws: Workspace; len: number } | undefined;
   for (const ws of WORKSPACES) {
     for (const m of ws.modules) {
-      const base = m.url.split("?")[0];
-      if (pathname === base || pathname.startsWith(base + "/")) {
-        if (!best || base.length > best.len) best = { ws, len: base.length };
+      for (const base of getWorkspaceModuleMatchBases(m.url)) {
+        if (pathname === base || pathname.startsWith(base + "/")) {
+          if (!best || base.length > best.len) best = { ws, len: base.length };
+        }
       }
     }
   }

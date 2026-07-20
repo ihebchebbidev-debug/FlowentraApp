@@ -50,6 +50,7 @@ import { ServiceOrder, ServiceOrderFilters } from "../types";
 import { MapOverlay } from "@/components/shared/MapOverlay";
 import { mapServiceOrdersToMapItems } from "@/components/shared/mappers";
 import { ExportModal } from "../components/ExportModal";
+import TableLayout, { Column } from "@/components/shared/TableLayout";
 import { serviceOrdersApi } from "@/services/api/serviceOrdersApi";
 import { toast } from "sonner";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -921,156 +922,131 @@ export default function ServiceOrdersList() {
                   </p>
                 </div>
               ) : (
-                <>
-
-                  <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
-                    style={{ WebkitOverflowScrolling: 'touch' }}>
-                    <Table className="min-w-[700px]">
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-12">
-                            <Checkbox
-                              checked={allSelected}
-                              onCheckedChange={handleSelectAll}
-                              aria-label={t('bulk.selectAll')}
-                              className={someSelected ? "data-[state=checked]:bg-primary" : ""}
-                            />
-                          </TableHead>
-                          <TableHead className="w-[150px]">{t('list.table_order')}</TableHead>
-                          {isViewAllMode() && <TableHead>{t('list.table_company', 'Company')}</TableHead>}
-                          <TableHead>{t('list.table_customer')}</TableHead>
-                          <TableHead>{t('list.table_status')}</TableHead>
-                          <TableHead>{t('list.table_sale')}</TableHead>
-                          <TableHead>{t('list.table_created')}</TableHead>
-                          <TableHead className="w-[50px]"></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {pagination.data.map((order) => {
-                          const isSelected = selectedIds.has(order.id);
-                          return (
-                            <TableRow
-                              key={order.id}
-                              className={`cursor-pointer hover:bg-muted/50 group ${isSelected ? 'bg-muted/30' : ''}`}
-                              onClick={() => handleServiceOrderClick(order)}
+                <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
+                  style={{ WebkitOverflowScrolling: 'touch' }}>
+                  <TableLayout
+                    items={pagination.data}
+                    rowKey={(order: ServiceOrder) => order.id}
+                    onRowClick={handleServiceOrderClick}
+                    tableClassName="w-full table-fixed min-w-[900px]"
+                    enableSelection
+                    selectedIds={selectedIds}
+                    onSelectionChange={(ids) => setSelectedIds(ids as Set<string>)}
+                    enablePagination
+                    itemsPerPage={5}
+                    currentPage={pagination.state.currentPage}
+                    onPageChange={pagination.actions.goToPage}
+                    totalItems={filteredServiceOrders.length}
+                    emptyTitle={t('no_service_orders')}
+                    emptyDescription={t('no_service_orders_description')}
+                    columns={[
+                      {
+                        key: 'order',
+                        title: t('list.table_order'),
+                        width: 'w-[150px]',
+                        render: (order: ServiceOrder) => (
+                          <div className="min-w-0">
+                            <p className="text-sm text-foreground truncate">{order.orderNumber}</p>
+                          </div>
+                        )
+                      },
+                      ...(isViewAllMode() ? [{
+                        key: 'company',
+                        title: t('list.table_company', 'Company'),
+                        render: (order: ServiceOrder) => <CompanyBadge tenantId={(order as any).tenantId} forceShow />,
+                      } as Column<ServiceOrder>] : []),
+                      {
+                        key: 'customer',
+                        title: t('list.table_customer'),
+                        render: (order: ServiceOrder) => (
+                          <div>
+                            <Link
+                              to={`/dashboard/contacts/${order.customer.id}`}
+                              className="text-foreground hover:text-primary hover:underline transition-colors"
+                              onClick={(e) => e.stopPropagation()}
                             >
-                              <TableCell onClick={(e) => e.stopPropagation()}>
-                                <Checkbox
-                                  checked={isSelected}
-                                  onCheckedChange={(checked) => handleSelectItem(order.id, !!checked)}
-                                  aria-label={t('bulk.selectItem', { name: order.orderNumber })}
-                                />
-                              </TableCell>
-                              <TableCell className="py-4">
-                                <div className="min-w-0">
-                                  <p className="text-sm text-foreground truncate">{order.orderNumber}</p>
-                                </div>
-                              </TableCell>
-                              {isViewAllMode() && (
-                                <TableCell className="py-4"><CompanyBadge tenantId={(order as any).tenantId} forceShow /></TableCell>
-                              )}
-                              <TableCell className="py-4">
-                                <div>
-                                  <Link
-                                    to={`/dashboard/contacts/${order.customer.id}`}
-                                    className="text-foreground hover:text-primary hover:underline transition-colors"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    {order.customer.company}
-                                  </Link>
-                                  {order.customer.contactPerson && order.customer.contactPerson !== order.customer.company && (
-                                    <p className="text-sm text-muted-foreground">{order.customer.contactPerson}</p>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell className="py-4">
-                                <Badge className={`${getStatusColor(order.status)} text-xs`}>
-                                  {t(`statuses.${order.status}`)}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="py-4">
-                                {order.saleId ? (
-                                  <Link
-                                    to={`/dashboard/sales/${order.saleId}`}
-                                    className="text-sm text-primary hover:underline inline-flex items-center gap-1"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <ClipboardList className="h-3 w-3" />
-                                    <span>{order.saleNumber || `Sale #${order.saleId}`}</span>
-                                  </Link>
-                                ) : (
-                                  <span className="text-sm text-muted-foreground">—</span>
-                                )}
-                              </TableCell>
-                              <TableCell className="py-4">
-                                <div className="flex items-center gap-1 text-sm">
-                                  <Calendar className="h-3 w-3 text-muted-foreground" />
-                                  <span>{order.createdAt.toLocaleDateString()}</span>
-                                </div>
-                              </TableCell>
-                              <TableCell className="py-4" onClick={(e) => e.stopPropagation()}>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" className="h-8 w-8 p-0">
-                                      <span className="sr-only">Open menu</span>
-                                      <MoreVertical className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>{t('list.actions')}</DropdownMenuLabel>
-                                    <DropdownMenuItem onClick={() => handleServiceOrderClick(order)}>
-                                      <Eye className="mr-2 h-4 w-4" />
-                                      {t('list.view_details')}
+                              {order.customer.company}
+                            </Link>
+                            {order.customer.contactPerson && order.customer.contactPerson !== order.customer.company && (
+                              <p className="text-sm text-muted-foreground">{order.customer.contactPerson}</p>
+                            )}
+                          </div>
+                        )
+                      },
+                      {
+                        key: 'status',
+                        title: t('list.table_status'),
+                        render: (order: ServiceOrder) => (
+                          <Badge className={`${getStatusColor(order.status)} text-xs`}>
+                            {t(`statuses.${order.status}`)}
+                          </Badge>
+                        )
+                      },
+                      {
+                        key: 'sale',
+                        title: t('list.table_sale'),
+                        render: (order: ServiceOrder) => (
+                          order.saleId ? (
+                            <Link
+                              to={`/dashboard/sales/${order.saleId}`}
+                              className="text-sm text-primary hover:underline inline-flex items-center gap-1"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <ClipboardList className="h-3 w-3" />
+                              <span>{order.saleNumber || `Sale #${order.saleId}`}</span>
+                            </Link>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">—</span>
+                          )
+                        )
+                      },
+                      {
+                        key: 'created',
+                        title: t('list.table_created'),
+                        render: (order: ServiceOrder) => (
+                          <div className="flex items-center gap-1 text-sm">
+                            <Calendar className="h-3 w-3 text-muted-foreground" />
+                            <span>{order.createdAt.toLocaleDateString()}</span>
+                          </div>
+                        )
+                      },
+                      {
+                        key: 'actions',
+                        title: '',
+                        width: 'w-[50px]',
+                        resizable: false,
+                        render: (order: ServiceOrder) => (
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                  <span className="sr-only">Open menu</span>
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>{t('list.actions')}</DropdownMenuLabel>
+                                <DropdownMenuItem onClick={() => handleServiceOrderClick(order)}>
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  {t('list.view_details')}
+                                </DropdownMenuItem>
+                                {hasDeleteAccess && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem className="text-destructive" onClick={(e) => handleDeleteClick(order, e as any)}>
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      {t('list.delete_order')}
                                     </DropdownMenuItem>
-                                    {hasDeleteAccess && (
-                                      <>
-                                        <DropdownMenuSeparator />
-                                        <DropdownMenuItem className="text-destructive" onClick={(e) => handleDeleteClick(order, e as any)}>
-                                          <Trash2 className="mr-2 h-4 w-4" />
-                                          {t('list.delete_order')}
-                                        </DropdownMenuItem>
-                                      </>
-                                    )}
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                    {filteredServiceOrders.length > 5 && (
-                      <div className="border-t border-border p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm text-muted-foreground">
-                              {t('list.showing_results', { start: pagination.info.startIndex + 1, end: pagination.info.endIndex, total: filteredServiceOrders.length })}
-                            </p>
+                                  </>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={pagination.actions.previousPage}
-                              disabled={!pagination.info.hasPreviousPage}
-                              className="px-3 py-1 text-sm border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
-                            >
-                              {t('list.previous')}
-                            </button>
-                            <span className="px-3 py-1 text-sm">
-                              {pagination.state.currentPage} of {pagination.info.totalPages}
-                            </span>
-                            <button
-                              onClick={pagination.actions.nextPage}
-                              disabled={!pagination.info.hasNextPage}
-                              className="px-3 py-1 text-sm border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
-                            >
-                              {t('list.next')}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </>
+                        )
+                      }
+                    ]}
+                  />
+                </div>
               )}
             </CardContent>
           </Card>
@@ -1106,87 +1082,109 @@ export default function ServiceOrdersList() {
               ) : (
                 <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
                   style={{ WebkitOverflowScrolling: 'touch' }}>
-                  <Table className="min-w-[900px]">
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[150px]">{t('list.table_order')}</TableHead>
-                        <TableHead>{t('list.table_customer')}</TableHead>
-                        <TableHead>{t('list.table_location')}</TableHead>
-                        <TableHead>{t('list.table_status')}</TableHead>
-                        <TableHead>{t('list.table_priority')}</TableHead>
-                        <TableHead>{t('list.table_cost')}</TableHead>
-                        <TableHead>{t('list.table_technicians')}</TableHead>
-                        <TableHead>{t('list.table_created')}</TableHead>
-                        <TableHead className="w-[50px]"></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {pagination.data.map((order) => (
-                        <TableRow
-                          key={order.id}
-                          className="cursor-pointer hover:bg-muted/50 group"
-                          onClick={() => handleServiceOrderClick(order)}
-                        >
-                          <TableCell className="py-4">
-                            <div className="flex items-center gap-3">
-                              <Avatar className="h-10 w-10 flex-shrink-0">
-                                <AvatarFallback className="text-sm bg-primary/10 text-primary">
-                                  <ClipboardList className="h-5 w-5" />
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="min-w-0">
-                                <p className="text-foreground truncate">{order.orderNumber}</p>
-                                <p className="text-sm text-muted-foreground">#{order.id}</p>
-                              </div>
+                  <TableLayout
+                    items={pagination.data}
+                    rowKey={(order: ServiceOrder) => order.id}
+                    onRowClick={handleServiceOrderClick}
+                    tableClassName="w-full table-fixed min-w-[900px]"
+                    columns={[
+                      {
+                        key: 'order',
+                        title: t('list.table_order'),
+                        width: 'w-[150px]',
+                        render: (order: ServiceOrder) => (
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-10 w-10 flex-shrink-0">
+                              <AvatarFallback className="text-sm bg-primary/10 text-primary">
+                                <ClipboardList className="h-5 w-5" />
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0">
+                              <p className="text-foreground truncate">{order.orderNumber}</p>
+                              <p className="text-sm text-muted-foreground">#{order.id}</p>
                             </div>
-                          </TableCell>
-                          <TableCell className="py-4">
-                            <div>
-                              <p className="text-foreground">{order.customer.company}</p>
-                              <p className="text-sm text-muted-foreground">{order.customer.contactPerson}</p>
-                            </div>
-                          </TableCell>
-                          <TableCell className="py-4">
-                            <div className="flex items-center gap-2 text-sm">
-                              <MapPin className="h-3 w-3 text-muted-foreground" />
-                              <span className="truncate">{order.repair.location}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="py-4">
-                            <Badge className={`${getStatusColor(order.status)} text-xs`}>
-                              {t(`statuses.${order.status}`)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="py-4">
-                            <Badge className={`${getPriorityColor(order.priority)} text-xs`}>
-                              {t(`priorities.${order.priority}`)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="py-4">
-                            <span className="font-medium">{order.financials.estimatedCost.toLocaleString()} TND</span>
-                          </TableCell>
-                          <TableCell className="py-4">
-                            <div className="flex items-center gap-1 text-sm">
-                              <User className="h-3 w-3 text-muted-foreground" />
-                              <span>{order.assignedTechnicians.length}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="py-4">
-                            <div className="flex items-center gap-1 text-sm">
-                              <Calendar className="h-3 w-3 text-muted-foreground" />
-                              <span>{order.createdAt.toLocaleDateString()}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="py-4">
-                            <TableRowActions actions={[
-                              { icon: Eye, label: t('list.view_details'), onClick: (e) => { e.stopPropagation(); handleServiceOrderClick(order); } },
-                              { icon: Trash2, label: t('list.delete_order'), onClick: (e) => { e.stopPropagation(); handleDeleteClick(order, e as any); }, variant: 'destructive', show: hasDeleteAccess }
-                            ]} />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                          </div>
+                        )
+                      },
+                      {
+                        key: 'customer',
+                        title: t('list.table_customer'),
+                        render: (order: ServiceOrder) => (
+                          <div>
+                            <p className="text-foreground">{order.customer.company}</p>
+                            <p className="text-sm text-muted-foreground">{order.customer.contactPerson}</p>
+                          </div>
+                        )
+                      },
+                      {
+                        key: 'location',
+                        title: t('list.table_location'),
+                        render: (order: ServiceOrder) => (
+                          <div className="flex items-center gap-2 text-sm">
+                            <MapPin className="h-3 w-3 text-muted-foreground" />
+                            <span className="truncate">{order.repair.location}</span>
+                          </div>
+                        )
+                      },
+                      {
+                        key: 'status',
+                        title: t('list.table_status'),
+                        render: (order: ServiceOrder) => (
+                          <Badge className={`${getStatusColor(order.status)} text-xs`}>
+                            {t(`statuses.${order.status}`)}
+                          </Badge>
+                        )
+                      },
+                      {
+                        key: 'priority',
+                        title: t('list.table_priority'),
+                        render: (order: ServiceOrder) => (
+                          <Badge className={`${getPriorityColor(order.priority)} text-xs`}>
+                            {t(`priorities.${order.priority}`)}
+                          </Badge>
+                        )
+                      },
+                      {
+                        key: 'cost',
+                        title: t('list.table_cost'),
+                        render: (order: ServiceOrder) => (
+                          <span className="font-medium">{order.financials.estimatedCost.toLocaleString()} TND</span>
+                        )
+                      },
+                      {
+                        key: 'technicians',
+                        title: t('list.table_technicians'),
+                        render: (order: ServiceOrder) => (
+                          <div className="flex items-center gap-1 text-sm">
+                            <User className="h-3 w-3 text-muted-foreground" />
+                            <span>{order.assignedTechnicians.length}</span>
+                          </div>
+                        )
+                      },
+                      {
+                        key: 'created',
+                        title: t('list.table_created'),
+                        render: (order: ServiceOrder) => (
+                          <div className="flex items-center gap-1 text-sm">
+                            <Calendar className="h-3 w-3 text-muted-foreground" />
+                            <span>{order.createdAt.toLocaleDateString()}</span>
+                          </div>
+                        )
+                      },
+                      {
+                        key: 'actions',
+                        title: '',
+                        width: 'w-[50px]',
+                        resizable: false,
+                        render: (order: ServiceOrder) => (
+                          <TableRowActions actions={[
+                            { icon: Eye, label: t('list.view_details'), onClick: (e) => { e.stopPropagation(); handleServiceOrderClick(order); } },
+                            { icon: Trash2, label: t('list.delete_order'), onClick: (e) => { e.stopPropagation(); handleDeleteClick(order, e as any); }, variant: 'destructive', show: hasDeleteAccess }
+                          ]} />
+                        )
+                      }
+                    ]}
+                  />
                 </div>
               )}
 

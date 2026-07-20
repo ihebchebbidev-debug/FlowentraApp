@@ -52,6 +52,8 @@ export function ServiceOrderStatusFlow({
       disabled={disabled}
       isUpdating={isUpdating}
       updatingLabel={t('updating', { defaultValue: 'Updating...' })}
+      maxPastVisible={3}
+      maxFutureVisible={3}
     />
   );
 }

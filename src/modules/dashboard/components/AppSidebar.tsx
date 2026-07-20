@@ -468,6 +468,30 @@ export function AppSidebar() {
     }).filter(Boolean) as typeof workspaceItems;
   }, [favorites, workspaceItems, crmItems, serviceItems, systemItems]);
 
+  // Some sidebar items point at a "list" URL or an alias route, but the
+  // actual detail/child routes live under a related base. Expose all bases
+  // an item should match so that submenus stay highlighted on detail pages.
+  const SIDEBAR_URL_ALIASES: Record<string, string[]> = {
+    '/dashboard/field/dispatcher': ['/dashboard/field/dispatches'],
+  };
+  const getItemMatchBases = (itemUrl: string): string[] => {
+    const [base] = itemUrl.split('?');
+    const bases = new Set<string>([base]);
+    if (base.endsWith('/list')) bases.add(base.slice(0, -'/list'.length));
+    const aliases = SIDEBAR_URL_ALIASES[base];
+    if (aliases) aliases.forEach(b => bases.add(b));
+    return Array.from(bases);
+  };
+  const matchesSubItemPath = (itemUrl: string) => {
+    const [pathBase, pathSearch] = itemUrl.split('?');
+    const fullCurrentPath = currentPath + currentSearch;
+    if (fullCurrentPath === itemUrl) return true;
+    if (currentPath === pathBase) return true;
+    if (pathSearch && currentPath === pathBase && currentSearch === `?${pathSearch}`) return true;
+    if (pathSearch) return false;
+    return getItemMatchBases(itemUrl).some(base => currentPath.startsWith(base + '/'));
+  };
+
   const isActive = (path: string, dropdownContext?: Array<{ url: string }>) => {
     const [pathBase, pathSearch] = path.split('?');
     const fullCurrentPath = currentPath + currentSearch;
@@ -487,19 +511,24 @@ export function AppSidebar() {
     }
     if (currentPath === path && !currentSearch) return true;
     // startsWith matching for detail pages — but only match the MOST specific sibling
-    if (currentPath.startsWith(pathBase + '/')) {
+    const matchBases = getItemMatchBases(path);
+    const matchedBase = matchBases.find(b => currentPath.startsWith(b + '/'));
+    if (matchedBase) {
       // Check top-level configured items for a more specific match
       const moreSpecificTopLevel = configuredItems.find(item => {
         if (item.url === path || !item.active) return false;
-        const itemBase = item.url.split('?')[0];
-        return itemBase.startsWith(pathBase + '/') && currentPath.startsWith(itemBase);
+        return getItemMatchBases(item.url).some(itemBase =>
+          itemBase.startsWith(matchedBase + '/') && currentPath.startsWith(itemBase)
+        );
       });
       if (moreSpecificTopLevel) return false;
       // Check sibling dropdown items for a more specific match
       if (dropdownContext) {
         const moreSpecificSibling = dropdownContext.some(sibling => {
-          const [siblingBase] = sibling.url.split('?');
-          return siblingBase !== pathBase && siblingBase.startsWith(pathBase + '/') && currentPath.startsWith(siblingBase);
+          if (sibling.url === path) return false;
+          return getItemMatchBases(sibling.url).some(siblingBase =>
+            siblingBase !== matchedBase && siblingBase.startsWith(matchedBase + '/') && currentPath.startsWith(siblingBase)
+          );
         });
         if (moreSpecificSibling) return false;
       }
@@ -510,6 +539,7 @@ export function AppSidebar() {
 
   const isDropdownActive = (dropdown: Array<{ url: string }>) =>
     dropdown.some(item => isActive(item.url));
+
 
   // per-group collapse state (persisted)
   const [workspaceOpen, setWorkspaceOpen] = useState(() => (localStorage.getItem('sidebar-group-workspace') ?? 'open') === 'open');
@@ -522,15 +552,7 @@ export function AppSidebar() {
     const initialStates: Record<string, boolean> = {};
     configuredItems.forEach(item => {
       if (item.dropdown && item.dropdown.length > 0) {
-        const hasActiveChild = item.dropdown.some(subItem => {
-          const [pathBase, pathSearch] = subItem.url.split('?');
-          const fullCurrentPath = location.pathname + location.search;
-          if (fullCurrentPath === subItem.url) return true;
-          if (location.pathname === subItem.url) return true;
-          if (pathSearch && location.pathname === pathBase && location.search === `?${pathSearch}`) return true;
-          if (location.pathname.startsWith(pathBase + '/')) return true;
-          return false;
-        });
+        const hasActiveChild = item.dropdown.some(subItem => matchesSubItemPath(subItem.url));
         if (hasActiveChild) initialStates[item.id!] = true;
       }
     });
@@ -540,21 +562,15 @@ export function AppSidebar() {
   useEffect(() => {
     configuredItems.forEach(item => {
       if (item.dropdown && item.dropdown.length > 0) {
-        const hasActiveChild = item.dropdown.some(subItem => {
-          const [pathBase, pathSearch] = subItem.url.split('?');
-          const fullCurrentPath = location.pathname + location.search;
-          if (fullCurrentPath === subItem.url) return true;
-          if (location.pathname === subItem.url) return true;
-          if (pathSearch && location.pathname === pathBase && location.search === `?${pathSearch}`) return true;
-          if (location.pathname.startsWith(pathBase + '/')) return true;
-          return false;
-        });
+        const hasActiveChild = item.dropdown.some(subItem => matchesSubItemPath(subItem.url));
         if (hasActiveChild && !dropdownStates[item.id!]) {
           setDropdownStates(prev => ({ ...prev, [item.id!]: true }));
         }
       }
     });
+     
   }, [location.pathname, location.search, configuredItems]);
+
 
   const toggleGroup = (key: string, setter: React.Dispatch<React.SetStateAction<boolean>>) => {
     setter(v => {

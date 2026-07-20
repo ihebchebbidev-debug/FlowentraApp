@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import TableLayout, { Column } from "@/components/shared/TableLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -938,90 +939,91 @@ export function OffersList() {
 
                   <div className="overflow-x-auto w-full scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
                     style={{ WebkitOverflowScrolling: 'touch' }}>
-                    <Table className="min-w-[640px]">
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-12">
-                            <Checkbox
-                              checked={allSelected}
-                              onCheckedChange={handleSelectAll}
-                              aria-label={t('bulk.selectAll')}
-                              className={someSelected ? "data-[state=checked]:bg-primary" : ""}
-                            />
-                          </TableHead>
-                          <TableHead className="w-[200px]">{t('table.offer')}</TableHead>
-                          {isViewAllMode() && <TableHead>{t('table.company', 'Company')}</TableHead>}
-                          <TableHead>{t('table.contact')}</TableHead>
-                          <TableHead>{t('table.amount')}</TableHead>
-                          <TableHead>{t('table.status')}</TableHead>
-                          <TableHead>{t('table.validUntil')}</TableHead>
-                          <TableHead className="w-[50px]"></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {pagination.data.map((offer) => {
-                          const isSelected = selectedIds.has(offer.id);
-                          return (
-                            <TableRow
-                              key={offer.id}
-                              className={`cursor-pointer hover:bg-muted/50 group ${isSelected ? 'bg-muted/30' : ''}`}
-                              onClick={() => handleOfferClick(offer)}
-                            >
-                              <TableCell onClick={(e) => e.stopPropagation()}>
-                                <Checkbox
-                                  checked={isSelected}
-                                  onCheckedChange={(checked) => handleSelectItem(offer.id, !!checked)}
-                                  aria-label={t('bulk.selectItem', { name: offer.title })}
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <div className="min-w-0">
-                                  <div className="text-sm text-foreground break-words line-clamp-2">{offer.title}</div>
-                                  <div className="text-sm text-muted-foreground">{offer.offerNumber}</div>
-                                </div>
-                              </TableCell>
-                              {isViewAllMode() && (
-                                <TableCell><CompanyBadge tenantId={(offer as any).tenantId} forceShow /></TableCell>
-                              )}
-                              <TableCell>
-                                <div>
-                                  <div className="text-sm text-foreground">
-                                    {offer.contactName}
-                                  </div>
-                                  <div className="text-sm text-muted-foreground">{offer.contactCompany}</div>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="text-sm text-foreground">
-                                  {Math.floor(calculateItemsTotal(offer)).toLocaleString()} {offer.currency}
-                                  <span className="text-sm text-muted-foreground ml-1">({t('inclTva')})</span>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <Badge className={getStatusColor(offer.status)}>
-                                    {t(getStatusTranslationKey('offer', offer.status))}
-                                  </Badge>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="text-sm text-muted-foreground">
-                                  {offer.validUntil ? formatDate(offer.validUntil) : t('noExpiryDate')}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <TableRowActions actions={[
-                                  { icon: Eye, label: t('table.viewDetails'), onClick: (e) => { e.stopPropagation(); handleOfferClick(offer); } },
-                                  { icon: Edit, label: t('table.editOffer'), onClick: (e) => { e.stopPropagation(); navigate(`/dashboard/offers/${offer.id}/edit`); }, show: hasUpdateAccess },
-                                  { icon: FileText, label: t('report', 'Report'), onClick: (e) => { e.stopPropagation(); window.open(`/dashboard/offers/${offer.id}/report`, '_blank'); } },
-                                  { icon: Trash2, label: t('deleteConfirm.confirm'), onClick: (e) => { e.stopPropagation(); handleDeleteClick(offer.id); }, variant: 'destructive', show: hasDeleteAccess }
-                                ]} />
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
+                    <TableLayout
+                      items={pagination.data}
+                      rowKey={(offer: Offer) => offer.id}
+                      onRowClick={handleOfferClick}
+                      tableClassName="w-full table-fixed min-w-[900px]"
+                      enableSelection={true}
+                      selectedIds={selectedIds as unknown as Set<string | number>}
+                      onSelectionChange={(ids) => setSelectedIds(ids as Set<string>)}
+                      emptyTitle={t("no_offers_found")}
+                      emptyDescription={t("listView.noOffersDescription") || "Get started by creating your first offer"}
+                      columns={[
+                        {
+                          key: 'offer',
+                          title: t('table.offer'),
+                          width: 'w-[200px]',
+                          render: (offer: Offer) => (
+                            <div className="min-w-0">
+                              <div className="text-sm text-foreground break-words line-clamp-2">{offer.title}</div>
+                              <div className="text-sm text-muted-foreground">{offer.offerNumber}</div>
+                            </div>
+                          )
+                        },
+                        ...(isViewAllMode() ? [{
+                          key: 'company',
+                          title: t('table.company', 'Company'),
+                          render: (offer: Offer) => <CompanyBadge tenantId={(offer as any).tenantId} forceShow />,
+                        } as Column<Offer>] : []),
+                        {
+                          key: 'contact',
+                          title: t('table.contact'),
+                          render: (offer: Offer) => (
+                            <div>
+                              <div className="text-sm text-foreground">
+                                {offer.contactName}
+                              </div>
+                              <div className="text-sm text-muted-foreground">{offer.contactCompany}</div>
+                            </div>
+                          )
+                        },
+                        {
+                          key: 'amount',
+                          title: t('table.amount'),
+                          render: (offer: Offer) => (
+                            <div className="text-sm text-foreground">
+                              {Math.floor(calculateItemsTotal(offer)).toLocaleString()} {offer.currency}
+                              <span className="text-sm text-muted-foreground ml-1">({t('inclTva')})</span>
+                            </div>
+                          )
+                        },
+                        {
+                          key: 'status',
+                          title: t('table.status'),
+                          render: (offer: Offer) => (
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Badge className={getStatusColor(offer.status)}>
+                                {t(getStatusTranslationKey('offer', offer.status))}
+                              </Badge>
+                            </div>
+                          )
+                        },
+                        {
+                          key: 'validUntil',
+                          title: t('table.validUntil'),
+                          render: (offer: Offer) => (
+                            <div className="text-sm text-muted-foreground">
+                              {offer.validUntil ? formatDate(offer.validUntil) : t('noExpiryDate')}
+                            </div>
+                          )
+                        },
+                        {
+                          key: 'actions',
+                          title: '',
+                          width: 'w-[50px]',
+                          resizable: false,
+                          render: (offer: Offer) => (
+                            <TableRowActions actions={[
+                              { icon: Eye, label: t('table.viewDetails'), onClick: (e) => { e.stopPropagation(); handleOfferClick(offer); } },
+                              { icon: Edit, label: t('table.editOffer'), onClick: (e) => { e.stopPropagation(); navigate(`/dashboard/offers/${offer.id}/edit`); }, show: hasUpdateAccess },
+                              { icon: FileText, label: t('report', 'Report'), onClick: (e) => { e.stopPropagation(); window.open(`/dashboard/offers/${offer.id}/report`, '_blank'); } },
+                              { icon: Trash2, label: t('deleteConfirm.confirm'), onClick: (e) => { e.stopPropagation(); handleDeleteClick(offer.id); }, variant: 'destructive', show: hasDeleteAccess }
+                            ]} />
+                          )
+                        }
+                      ]}
+                    />
                   </div>
                 </>
               )}

@@ -420,8 +420,8 @@ html {
    or translations. If you prefer explicit edits, we can remove the
    <p> tags from each header component instead.
 */
-.text-\[11px\].text-muted-foreground,
-.text-muted-foreground.text-\[11px\] {
+p.text-\[11px\].text-muted-foreground,
+p.text-muted-foreground.text-\[11px\] {
   display: none !important;
 }
 

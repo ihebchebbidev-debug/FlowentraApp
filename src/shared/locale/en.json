@@ -208,5 +208,17 @@
       "overBudget": "Over budget",
       "over": "over by"
     }
+  },
+  "statusFlow": {
+    "pipelineLabel": "Status pipeline",
+    "currentStatusLabel": "Current status",
+    "stepOf": "Step {{current}} of {{total}}",
+    "change": "Change",
+    "changeStatus": "Change status",
+    "back": "Back",
+    "advance": "Advance",
+    "done": "Done",
+    "updating": "Updating...",
+    "unknown": "Unknown"
   }
 }

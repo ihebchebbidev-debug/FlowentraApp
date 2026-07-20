@@ -273,6 +273,8 @@
   },
   "bulk": {
     "selectedCount": "{{count}} service order(s) selected",
+    "selectAll": "Select all",
+    "selectItem": "Select {{name}}",
     "deselectAll": "Deselect All",
     "deleteSelected": "Delete Selected",
     "deleteConfirmTitle": "Delete {{count}} Service Order(s)?",

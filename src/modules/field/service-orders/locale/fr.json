@@ -244,6 +244,8 @@
   },
   "bulk": {
     "selectedCount": "{{count}} ordre(s) de service sélectionné(s)",
+    "selectAll": "Tout sélectionner",
+    "selectItem": "Sélectionner {{name}}",
     "deselectAll": "Tout Désélectionner",
     "deleteSelected": "Supprimer la Sélection",
     "deleteConfirmTitle": "Supprimer {{count}} ordre(s) de service ?",

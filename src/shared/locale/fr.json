@@ -208,5 +208,17 @@
       "overBudget": "Dépassement",
       "over": "dépassé de"
     }
+  },
+  "statusFlow": {
+    "pipelineLabel": "Pipeline de statuts",
+    "currentStatusLabel": "Statut actuel",
+    "stepOf": "Étape {{current}} sur {{total}}",
+    "change": "Modifier",
+    "changeStatus": "Modifier le statut",
+    "back": "Retour",
+    "advance": "Avancer",
+    "done": "Terminé",
+    "updating": "Mise à jour...",
+    "unknown": "Inconnu"
   }
 }

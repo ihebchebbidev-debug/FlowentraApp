@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import TableLayout from "@/components/shared/TableLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -969,92 +970,96 @@ export default function InstallationsList() {
 
             <Card className="shadow-card">
               <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-12">
-                        <Checkbox
-                          checked={allSelected}
-                          onCheckedChange={handleSelectAll}
-                          aria-label={t('bulk.selectAll')}
-                          className={someSelected ? "data-[state=checked]:bg-primary" : ""}
-                        />
-                      </TableHead>
-                      <TableHead>{t('list.table_installation')}</TableHead>
-                      {isViewAllMode() && <TableHead>{t('list.table_company', 'Company')}</TableHead>}
-                      <TableHead>{t('list.table_type')}</TableHead>
-                      <TableHead>{t('manufacturer')}</TableHead>
-                      <TableHead>{t('list.table_customer')}</TableHead>
-                      <TableHead>{t('list.table_warranty')}</TableHead>
-                      <TableHead className="w-16">{t('list.actions')}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {pagination.data.map((installation) => {
-                      const warrantyStatus = getWarrantyStatus(installation.warranty);
-                      const customer = installation.contactId ? contactsMap.get(installation.contactId) : null;
-                      const isSelected = selectedIds.has(installation.id!);
-                      return (
-                        <TableRow 
-                          key={installation.id} 
-                          className={`cursor-pointer hover:bg-muted/50 ${isSelected ? 'bg-muted/30' : ''}`}
-                          onClick={() => handleInstallationClick(installation)}
-                        >
-                          <TableCell onClick={(e) => e.stopPropagation()}>
-                            <Checkbox
-                              checked={isSelected}
-                              onCheckedChange={(checked) => handleSelectItem(installation.id!, !!checked)}
-                              aria-label={t('bulk.selectItem', { name: installation.name })}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <div className="min-w-0">
-                              <p className="text-sm text-foreground truncate">{installation.name}</p>
-                            </div>
-                          </TableCell>
-                          {isViewAllMode() && (
-                            <TableCell><CompanyBadge tenantId={(installation as any).tenantId} forceShow /></TableCell>
-                          )}
-                          <TableCell>
-                            <Badge className={getTypeColor(!customer ? 'internal' : installation.type)}>
-                              {!customer ? t('internal') : (installation.type === 'internal' ? t('internal') : t('external'))}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <p className="text-sm text-foreground">{installation.manufacturer}</p>
-                          </TableCell>
-                          <TableCell onClick={(e) => e.stopPropagation()}>
-                            {installation.contactId && installation.contactId !== 0 && customer ? (
-                              <div className="min-w-0">
-                                <Link 
-                                  to={`/dashboard/contacts/${customer.id}`}
-                                  className="flex items-center gap-1 text-primary hover:underline font-medium truncate"
-                                >
-                                  {customer.name}
-                                  <ExternalLink className="h-3 w-3 flex-shrink-0" />
-                                </Link>
-                              </div>
-                            ) : (
-                              <span className="text-sm text-muted-foreground">-</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={warrantyStatus.color}>
-                              {warrantyStatus.text}
-                            </Badge>
-                          </TableCell>
-                          <TableCell onClick={(e) => e.stopPropagation()}>
-                            <TableRowActions actions={[
-                              { icon: Eye, label: t('list.view_details'), onClick: (e) => { e.stopPropagation(); navigate(`/dashboard/field/installations/${installation.id}`); } },
-                              { icon: Edit, label: t('list.edit'), onClick: (e) => { e.stopPropagation(); navigate(`/dashboard/field/installations/${installation.id}/edit`); }, show: hasUpdateAccess },
-                              { icon: Trash2, label: t('list.delete'), onClick: (e) => { e.stopPropagation(); openDeleteDialog(installation); }, variant: 'destructive', show: hasDeleteAccess }
-                            ]} />
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+<TableLayout
+                  items={pagination.data}
+                  rowKey={(installation: any) => installation.id}
+                  onRowClick={handleInstallationClick}
+                  tableClassName="w-full table-fixed min-w-[900px]"
+                  enableSelection={true}
+                  selectedIds={selectedIds as unknown as Set<string | number>}
+                  onSelectionChange={(ids) => setSelectedIds(ids as Set<number>)}
+                  columns={[
+                    {
+                      key: 'installation',
+                      title: t('list.table_installation'),
+                      render: (installation: any) => (
+                        <div className="min-w-0">
+                          <p className="text-sm text-foreground truncate">{installation.name}</p>
+                        </div>
+                      )
+                    },
+                    ...(isViewAllMode() ? [{
+                      key: 'company',
+                      title: t('list.table_company', 'Company'),
+                      render: (installation: any) => <CompanyBadge tenantId={installation.tenantId} forceShow />,
+                    }] : []),
+                    {
+                      key: 'type',
+                      title: t('list.table_type'),
+                      render: (installation: any) => {
+                        const customer = installation.contactId ? contactsMap.get(installation.contactId) : null;
+                        return (
+                          <Badge className={getTypeColor(!customer ? 'internal' : installation.type)}>
+                            {!customer ? t('internal') : (installation.type === 'internal' ? t('internal') : t('external'))}
+                          </Badge>
+                        );
+                      }
+                    },
+                    {
+                      key: 'manufacturer',
+                      title: t('manufacturer'),
+                      render: (installation: any) => (
+                        <p className="text-sm text-foreground">{installation.manufacturer}</p>
+                      )
+                    },
+                    {
+                      key: 'customer',
+                      title: t('list.table_customer'),
+                      render: (installation: any) => {
+                        const customer = installation.contactId ? contactsMap.get(installation.contactId) : null;
+                        return installation.contactId && installation.contactId !== 0 && customer ? (
+                          <div className="min-w-0" onClick={(e) => e.stopPropagation()}>
+                            <Link
+                              to={`/dashboard/contacts/${customer.id}`}
+                              className="flex items-center gap-1 text-primary hover:underline font-medium truncate"
+                            >
+                              {customer.name}
+                              <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                            </Link>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">-</span>
+                        );
+                      }
+                    },
+                    {
+                      key: 'warranty',
+                      title: t('list.table_warranty'),
+                      render: (installation: any) => {
+                        const warrantyStatus = getWarrantyStatus(installation.warranty);
+                        return (
+                          <Badge className={warrantyStatus.color}>
+                            {warrantyStatus.text}
+                          </Badge>
+                        );
+                      }
+                    },
+                    {
+                      key: 'actions',
+                      title: t('list.actions'),
+                      width: 'w-16',
+                      render: (installation: any) => (
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <TableRowActions actions={[
+                            { icon: Eye, label: t('list.view_details'), onClick: (e) => { e.stopPropagation(); navigate(`/dashboard/field/installations/${installation.id}`); } },
+                            { icon: Edit, label: t('list.edit'), onClick: (e) => { e.stopPropagation(); navigate(`/dashboard/field/installations/${installation.id}/edit`); }, show: hasUpdateAccess },
+                            { icon: Trash2, label: t('list.delete'), onClick: (e) => { e.stopPropagation(); openDeleteDialog(installation); }, variant: 'destructive', show: hasDeleteAccess }
+                          ]} />
+                        </div>
+                      )
+                    }
+                  ]}
+                />
                 {filteredInstallations.length > 0 && (
                   <div className="border-t border-border px-4 py-2">
                     <PageSizeSelector

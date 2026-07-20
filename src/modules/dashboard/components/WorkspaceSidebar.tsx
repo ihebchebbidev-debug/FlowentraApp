@@ -18,6 +18,8 @@ import {
 import {
   WORKSPACES,
   findWorkspaceForPath,
+  getWorkspaceModuleMatchBases,
+  workspaceModuleMatchesPath,
   type Workspace,
   type WorkspaceModule,
   type SidebarModuleItemProps,
@@ -147,10 +149,7 @@ export function WorkspaceSidebar() {
     }
     if (stored && !NO_SECONDARY.has(stored)) {
       const ws = WORKSPACES.find((w) => w.id === stored);
-      const owns = ws?.modules.some((m) => {
-        const base = m.url.split("?")[0];
-        return location.pathname === base || location.pathname.startsWith(base + "/");
-      });
+      const owns = ws?.modules.some((m) => workspaceModuleMatchesPath(m.url, location.pathname));
       if (owns) return stored;
     }
     return detected && !NO_SECONDARY.has(detected.id) ? detected.id : null;
@@ -197,10 +196,7 @@ export function WorkspaceSidebar() {
     }
     // If the currently open workspace still owns the new path, stay.
     const currentWs = WORKSPACES.find((w) => w.id === openId);
-    const stillInCurrent = currentWs?.modules.some((m) => {
-      const base = m.url.split("?")[0];
-      return location.pathname === base || location.pathname.startsWith(base + "/");
-    });
+    const stillInCurrent = currentWs?.modules.some((m) => workspaceModuleMatchesPath(m.url, location.pathname));
     if (stillInCurrent) {
       prevDetectedId.current = nextId;
       return;
@@ -215,19 +211,21 @@ export function WorkspaceSidebar() {
     openId ? WORKSPACES.find((w) => w.id === openId) ?? null : null;
 
   const isPathActive = (url: string, siblings?: { url: string }[]) => {
-    const base = url.split("?")[0];
-    const matches =
-      location.pathname === base || location.pathname.startsWith(base + "/");
-    if (!matches) return false;
+    const bases = getWorkspaceModuleMatchBases(url);
+    const matchedBase = bases.find(
+      (base) => location.pathname === base || location.pathname.startsWith(base + "/")
+    );
+    if (!matchedBase) return false;
     // If a sibling module has a more specific base that also matches the
     // current path, defer to that one so only the most specific link lights up.
     if (siblings) {
       for (const s of siblings) {
-        const sBase = s.url.split("?")[0];
-        if (sBase === base) continue;
-        if (sBase.length > base.length && sBase.startsWith(base) &&
-            (location.pathname === sBase || location.pathname.startsWith(sBase + "/"))) {
-          return false;
+        for (const sBase of getWorkspaceModuleMatchBases(s.url)) {
+          if (sBase === matchedBase) continue;
+          if (sBase.length > matchedBase.length && sBase.startsWith(matchedBase) &&
+              (location.pathname === sBase || location.pathname.startsWith(sBase + "/"))) {
+            return false;
+          }
         }
       }
     }

@@ -59,6 +59,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useDispatchDeletion } from "../hooks/useDispatchDeletion";
 import { useToast } from "@/hooks/use-toast";
 import { CreateActionButton } from '@/components/CreateActionButton';
+import TableLayout, { Column } from "@/components/shared/TableLayout";
 
 export default function DispatchesList() {
   const { t } = useTranslation();
@@ -512,107 +513,125 @@ export default function DispatchesList() {
 
                 {/* Desktop table — hidden on mobile */}
                 <div className="hidden md:block overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        {hasDeleteAccess && (
-                          <TableHead className="w-12">
-                            <Checkbox
-                              checked={isAllSelected}
-                              onCheckedChange={handleSelectAll}
-                              aria-label={t('dispatches.bulk.select_all')}
-                            />
-                          </TableHead>
-                        )}
-                        <TableHead>{t('dispatches.job_number')}</TableHead>
-                        {isViewAllMode() && <TableHead>Company</TableHead>}
-                        <TableHead>{t('dispatches.customer')}</TableHead>
-                        <TableHead>{t('dispatches.scheduled_date')}</TableHead>
-                        <TableHead>{t('dispatches.technicians')}</TableHead>
-                        <TableHead>{t('dispatches.overview.current_status')}</TableHead>
-                        <TableHead>{t('dispatches.job_info.priority')}</TableHead>
-                        <TableHead className="text-right">{t('common.actions')}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredDispatches.map((dispatch) => (
-                        <TableRow
-                          key={dispatch.id}
-                          className="cursor-pointer hover:bg-muted/50 group"
-                        >
-                          {hasDeleteAccess && (
-                            <TableCell onClick={(e) => e.stopPropagation()}>
-                              <Checkbox
-                                checked={selectedIds.has(dispatch.id)}
-                                onCheckedChange={(checked) => handleSelectItem(dispatch.id, !!checked)}
-                                aria-label={t('dispatches.bulk.select_item')}
-                              />
-                            </TableCell>
-                          )}
-                          <TableCell onClick={() => handleDispatchClick(dispatch)}>
+                  <TableLayout
+                    items={filteredDispatches}
+                    rowKey={(dispatch) => dispatch.id}
+                    onRowClick={handleDispatchClick}
+                    tableClassName="w-full table-fixed min-w-[900px]"
+                    enableSelection={hasDeleteAccess}
+                    selectedIds={selectedIds}
+                    onSelectionChange={(ids) => setSelectedIds(ids as Set<string>)}
+                    bulkActions={hasDeleteAccess && selectedIds.size > 0 ? (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => setShowBulkDeleteDialog(true)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        {t('dispatches.bulk.delete_selected')} ({selectedIds.size})
+                      </Button>
+                    ) : undefined}
+                    emptyTitle={t('dispatches.no_dispatches')}
+                    emptyDescription={t('dispatches.no_dispatches_description')}
+                    columns={[
+                      {
+                        key: 'jobNumber',
+                        title: t('dispatches.job_number'),
+                        render: (dispatch) => (
+                          <div>
                             <div>{dispatch.jobNumber}</div>
                             <div className="text-sm text-muted-foreground truncate max-w-[200px]">
                               {dispatch.title}
                             </div>
-                          </TableCell>
-                          {isViewAllMode() && (
-                            <TableCell><CompanyBadge tenantId={(dispatch as any).tenantId} forceShow /></TableCell>
-                          )}
-                          <TableCell onClick={() => handleDispatchClick(dispatch)}>
-                            <div className="flex items-center gap-2">
-                              <Users className="h-4 w-4 text-primary" />
-                              <div>
-                                <div>{dispatch.customer.company}</div>
-                                <div className="text-sm text-muted-foreground flex items-center gap-1">
-                                  <MapPin className="h-3 w-3" />
-                                  {dispatch.customer.address.city}
-                                </div>
+                          </div>
+                        )
+                      },
+                      ...(isViewAllMode() ? [{
+                        key: 'company',
+                        title: 'Company',
+                        render: (dispatch: DispatchJob) => <CompanyBadge tenantId={(dispatch as any).tenantId} forceShow />,
+                      } as Column<DispatchJob>] : []),
+                      {
+                        key: 'customer',
+                        title: t('dispatches.customer'),
+                        render: (dispatch) => (
+                          <div className="flex items-center gap-2">
+                            <Users className="h-4 w-4 text-primary" />
+                            <div>
+                              <div>{dispatch.customer.company}</div>
+                              <div className="text-sm text-muted-foreground flex items-center gap-1">
+                                <MapPin className="h-3 w-3" />
+                                {dispatch.customer.address.city}
                               </div>
                             </div>
-                          </TableCell>
-                          <TableCell onClick={() => handleDispatchClick(dispatch)}>
-                            <div className="flex items-center gap-2">
-                              <Calendar className="h-4 w-4 text-primary" />
-                              <div>
-                                <div>{dispatch.scheduledDate?.toLocaleDateString()}</div>
-                                <div className="text-sm text-muted-foreground flex items-center gap-1">
-                                  <Clock className="h-3 w-3" />
-                                  {dispatch.scheduledStartTime} - {dispatch.scheduledEndTime}
-                                </div>
+                          </div>
+                        )
+                      },
+                      {
+                        key: 'scheduledDate',
+                        title: t('dispatches.scheduled_date'),
+                        render: (dispatch) => (
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-primary" />
+                            <div>
+                              <div>{dispatch.scheduledDate?.toLocaleDateString()}</div>
+                              <div className="text-sm text-muted-foreground flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {dispatch.scheduledStartTime} - {dispatch.scheduledEndTime}
                               </div>
                             </div>
-                          </TableCell>
-                          <TableCell onClick={() => handleDispatchClick(dispatch)}>
-                            {dispatch.assignedTechnicians.length > 0 ? (
-                              <div className="flex flex-wrap gap-1">
-                                {dispatch.assignedTechnicians.slice(0, 2).map((tech) => (
-                                  <Badge key={tech.id} variant="secondary" className="text-xs">
-                                    {tech.name}
-                                  </Badge>
-                                ))}
-                                {dispatch.assignedTechnicians.length > 2 && (
-                                  <Badge variant="outline" className="text-xs">
-                                    +{dispatch.assignedTechnicians.length - 2}
-                                  </Badge>
-                                )}
-                              </div>
-                            ) : (
-                              <span className="text-muted-foreground text-sm">
-                                {t('dispatches.overview.none_assigned')}
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell onClick={() => handleDispatchClick(dispatch)}>
-                            <Badge className={`${getStatusColor(dispatch.status)} text-xs font-medium`}>
-                              {t(`dispatches.statuses.${dispatch.status}`)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell onClick={() => handleDispatchClick(dispatch)}>
-                            <Badge className={`${getPriorityColor(dispatch.priority)} text-xs font-medium`}>
-                              {t(`dispatches.priorities.${dispatch.priority}`)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                          </div>
+                        )
+                      },
+                      {
+                        key: 'technicians',
+                        title: t('dispatches.technicians'),
+                        render: (dispatch) => (
+                          dispatch.assignedTechnicians.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {dispatch.assignedTechnicians.slice(0, 2).map((tech) => (
+                                <Badge key={tech.id} variant="secondary" className="text-xs">
+                                  {tech.name}
+                                </Badge>
+                              ))}
+                              {dispatch.assignedTechnicians.length > 2 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{dispatch.assignedTechnicians.length - 2}
+                                </Badge>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">
+                              {t('dispatches.overview.none_assigned')}
+                            </span>
+                          )
+                        )
+                      },
+                      {
+                        key: 'status',
+                        title: t('dispatches.overview.current_status'),
+                        render: (dispatch) => (
+                          <Badge className={`${getStatusColor(dispatch.status)} text-xs font-medium`}>
+                            {t(`dispatches.statuses.${dispatch.status}`)}
+                          </Badge>
+                        )
+                      },
+                      {
+                        key: 'priority',
+                        title: t('dispatches.job_info.priority'),
+                        render: (dispatch) => (
+                          <Badge className={`${getPriorityColor(dispatch.priority)} text-xs font-medium`}>
+                            {t(`dispatches.priorities.${dispatch.priority}`)}
+                          </Badge>
+                        )
+                      },
+                      {
+                        key: 'actions',
+                        title: t('common.actions'),
+                        headerClass: 'text-right',
+                        cellClass: 'px-3 py-2 text-right',
+                        render: (dispatch) => (
+                          <div onClick={(e) => e.stopPropagation()}>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -632,7 +651,6 @@ export default function DispatchesList() {
                                     {t('common.edit')}
                                   </DropdownMenuItem>
                                 )}
-                                {/* Report action */}
                                 <DropdownMenuItem onClick={() => window.open(`/dashboard/field/dispatches/${dispatch.id}/report`, '_blank')}>
                                   <FileText className="h-4 w-4 mr-2" />
                                   {t('common.report', 'Report')}
@@ -651,11 +669,11 @@ export default function DispatchesList() {
                                 )}
                               </DropdownMenuContent>
                             </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                          </div>
+                        )
+                      }
+                    ]}
+                  />
                 </div>
               </>
             )}
