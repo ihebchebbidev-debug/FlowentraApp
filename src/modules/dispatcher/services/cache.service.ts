@@ -5,6 +5,7 @@ import type { Dispatch } from '@/services/api/dispatchesApi';
 // Cache TTLs (milliseconds)
 const DISPATCHES_CACHE_TTL = 60000;
 const ASSIGNED_JOBS_CACHE_TTL = 30000;
+const ASSIGNED_JOBS_MAX_ENTRIES = 200;
 const UNASSIGNED_JOBS_CACHE_TTL = 45000;
 const TECHNICIANS_CACHE_TTL = 120000;
 
@@ -99,7 +100,16 @@ class DispatcherCacheService {
     return null;
   }
   setAssignedJobs(key: string, jobs: Job[]): void {
-    this._assignedJobs.set(key, { jobs, timestamp: Date.now() });
+    // Lazy sweep of TTL-expired entries + bounded size (LRU-ish via insertion order).
+    const now = Date.now();
+    for (const [k, v] of this._assignedJobs) {
+      if (now - v.timestamp >= ASSIGNED_JOBS_CACHE_TTL) this._assignedJobs.delete(k);
+    }
+    if (this._assignedJobs.size >= ASSIGNED_JOBS_MAX_ENTRIES) {
+      const oldest = this._assignedJobs.keys().next().value;
+      if (oldest !== undefined) this._assignedJobs.delete(oldest);
+    }
+    this._assignedJobs.set(key, { jobs, timestamp: now });
   }
 
   // ── Installation names ─────────────────────────────

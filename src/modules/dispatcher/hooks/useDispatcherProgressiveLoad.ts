@@ -33,9 +33,13 @@ export function useDispatcherProgressiveLoad(): UseDispatcherProgressiveLoadRetu
   
   const isLoadingRef = useRef(false);
   const hasInitializedRef = useRef(false);
+  const pendingForceRef = useRef(false);
 
   const loadData = useCallback(async (forceRefresh = false) => {
-    if (isLoadingRef.current) return;
+    if (isLoadingRef.current) {
+      if (forceRefresh) pendingForceRef.current = true;
+      return;
+    }
     isLoadingRef.current = true;
 
     try {
@@ -136,6 +140,10 @@ export function useDispatcherProgressiveLoad(): UseDispatcherProgressiveLoadRetu
       }));
     } finally {
       isLoadingRef.current = false;
+      if (pendingForceRef.current) {
+        pendingForceRef.current = false;
+        void loadData(true);
+      }
     }
   }, []);
 

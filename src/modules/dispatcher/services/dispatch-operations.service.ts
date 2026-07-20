@@ -6,6 +6,22 @@ import { notificationsApi } from '@/services/api/notificationsApi';
 import { format } from 'date-fns';
 import { cacheService } from './cache.service';
 import type { Job, Technician, ServiceOrder, InstallationGroup } from '../types';
+import { normalizeTechId } from '../utils/technicianId';
+import { toast } from 'sonner';
+import i18n from '@/lib/i18n';
+
+// Small helper so silent side-effect failures (audit notes, notifications) are
+// at least visible to the dispatcher instead of vanishing into a swallowed catch.
+function reportSideEffectFailure(err: unknown, context: string) {
+  console.warn(`[dispatch] side-effect failed (${context})`, err);
+  try {
+    toast.warning(
+      i18n.t('dispatcher.sideEffect.failed', {
+        defaultValue: 'Assignment saved, but a follow-up action failed',
+      })
+    );
+  } catch { /* toast host may not be mounted (tests) */ }
+}
 
 // Local-day key used to bucket dispatches per technician per date.
 // MUST match the calendar's `format(date, 'yyyy-MM-dd')` so lookups line up
@@ -103,7 +119,7 @@ export function extractAllTechnicianIdsFromDispatch(dispatch: Dispatch): string[
   const push = (raw: unknown) => {
     if (raw === null || raw === undefined) return;
     const id = String(raw);
-    const numeric = id.match(/\d+/)?.[0] || id;
+    const numeric = normalizeTechId(id) || id;
     if (!numeric || seen.has(numeric)) return;
     seen.add(numeric);
     ids.push(numeric);
@@ -129,8 +145,8 @@ export function technicianMatchesDispatch(dispatch: Dispatch, technicianId: stri
   const dispatchTechId = extractTechnicianIdFromDispatch(dispatch);
   if (!dispatchTechId) return false;
 
-  const dispatchNumeric = dispatchTechId.match(/\d+/)?.[0] || dispatchTechId;
-  const techNumeric = technicianId.match(/\d+/)?.[0] || technicianId;
+  const dispatchNumeric = normalizeTechId(dispatchTechId) || dispatchTechId;
+  const techNumeric = normalizeTechId(technicianId) || technicianId;
 
   return dispatchTechId === technicianId || dispatchNumeric === techNumeric;
 }
@@ -182,7 +198,7 @@ export class DispatchOperationsService {
     siteAddress?: string,
     scheduledEndDate?: Date
   ): Promise<Dispatch> {
-    const backendTechnicianId = technicianId.match(/\d+/)?.[0] || technicianId;
+    const backendTechnicianId = normalizeTechId(technicianId) || technicianId;
 
     // Format start/end times as TimeSpan "HH:mm:ss"
     const pad = (n: number) => String(n).padStart(2, '0');
@@ -258,7 +274,7 @@ export class DispatchOperationsService {
               `• Scheduled: ${scheduledStart.toLocaleDateString()} at ${scheduledStart.toLocaleTimeString()}`,
             type: 'dispatch_created'
           });
-        } catch { /* ignore */ }
+        } catch (err) { reportSideEffectFailure(err, 'assignJob:addNote'); }
       }
 
       // Create notification for assigned technician
@@ -276,7 +292,7 @@ export class DispatchOperationsService {
             relatedEntityType: 'dispatch'
           });
         }
-      } catch { /* ignore */ }
+      } catch (err) { reportSideEffectFailure(err, 'assignJob:notify'); }
 
       cacheService.invalidateDispatchData();
       return dispatch;
@@ -352,7 +368,7 @@ export class DispatchOperationsService {
 
     try {
       installationsBeingAssigned.add(soKey);
-      const backendTechId = technicianId.match(/\d+/)?.[0] || technicianId;
+      const backendTechId = normalizeTechId(technicianId) || technicianId;
       const jobIds = serviceOrder.jobs.map(j => parseInt(j.id, 10)).filter(id => !isNaN(id));
       if (jobIds.length === 0) throw new Error('No valid job IDs found');
 
@@ -404,7 +420,7 @@ export class DispatchOperationsService {
             `• Scheduled: ${startTime.toLocaleDateString()} at ${startTime.toLocaleTimeString()}`,
           type: 'dispatch_created'
         });
-      } catch { /* ignore */ }
+      } catch (err) { reportSideEffectFailure(err, 'assignSO:addNote'); }
 
       // Notification to technician
       try {
@@ -421,7 +437,7 @@ export class DispatchOperationsService {
             relatedEntityType: 'dispatch'
           });
         }
-      } catch { /* ignore */ }
+      } catch (err) { reportSideEffectFailure(err, 'assignSO:notify'); }
 
       cacheService.invalidateDispatchData();
       return dispatch;
@@ -450,7 +466,7 @@ export class DispatchOperationsService {
 
     try {
       installationsBeingAssigned.add(groupKey);
-      const backendTechId = technicianId.match(/\d+/)?.[0] || technicianId;
+      const backendTechId = normalizeTechId(technicianId) || technicianId;
       const jobIds = installationGroup.jobs.map(j => parseInt(j.id, 10)).filter(id => !isNaN(id));
 
       if (jobIds.length === 0) throw new Error('No valid job IDs found');

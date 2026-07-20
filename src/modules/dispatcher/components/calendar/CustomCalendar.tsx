@@ -20,6 +20,10 @@ import { toast } from "sonner";
 import { schedulesApi, type UserLeave, type UserFullSchedule } from "@/services/api/schedulesApi";
 import { maxLanes as computeMaxLanes } from "../../utils/lanes";
 import { useActivePlanningProfile } from "../../hooks/usePlanningProfile";
+import {
+  getBlockedIntervalsForDay,
+  findBlockingInterval,
+} from "../../services/blockedIntervals.service";
 
 // Leave data structure for calendar display
 export interface TechnicianLeave {
@@ -360,7 +364,13 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
     }
   };
 
-  const handleDrop = async (e: React.DragEvent, technicianId: string, date: Date, hour: number) => {
+  const handleDrop = async (
+    e: React.DragEvent,
+    technicianId: string,
+    date: Date,
+    hour: number,
+    minutes: number = 0,
+  ) => {
     e.preventDefault();
     e.stopPropagation();
     setDragOverSlot(null);
@@ -368,12 +378,35 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
     // Profile-driven safety gate: scheduling in the past
     if (!profileSettings.allowSchedulingInPast) {
       const slot = new Date(date);
-      slot.setHours(hour, 0, 0, 0);
+      slot.setHours(hour, minutes, 0, 0);
       if (slot.getTime() < Date.now() - 60 * 60 * 1000) {
         toast.error(t('dispatcher.profiles.cannot_schedule_past', { defaultValue: 'Scheduling in the past is disabled in your planning profile.' }));
         return;
       }
     }
+
+    // Blocked-interval guard: refuse drops that overlap approved leaves, the
+    // configured lunch break, or a day the tech isn't scheduled to work.
+    // Uses the same leaves/availability the calendar already loaded.
+    const availability = technicianAvailability.find(a => a.technicianId === technicianId) || null;
+    const techLeaves = technicianLeaves.filter(l => l.technicianId === technicianId);
+    const blockedIntervals = getBlockedIntervalsForDay(date, availability, techLeaves);
+    const rejectIfBlocked = (start: Date, end: Date): boolean => {
+      const hit = findBlockingInterval(start, end, blockedIntervals);
+      if (!hit) return false;
+      const key = hit.reason === 'leave'
+        ? 'dispatcher.drop.error.on_leave'
+        : hit.reason === 'day_off'
+          ? 'dispatcher.drop.error.day_off'
+          : 'dispatcher.drop.error.on_break';
+      const fallback = hit.reason === 'leave'
+        ? 'Technician is on leave during this time'
+        : hit.reason === 'day_off'
+          ? "Technician doesn't work on this day"
+          : 'Technician is on a break during this time';
+      toast.error(t(key, { defaultValue: fallback }));
+      return true;
+    };
 
     try {
       const dataText = e.dataTransfer.getData('application/json');
@@ -403,7 +436,10 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
       if (data.type === 'serviceOrder') {
         const serviceOrder = data.item as ServiceOrder;
         const newScheduledStart = new Date(date);
-        newScheduledStart.setHours(hour, 0, 0, 0);
+        newScheduledStart.setHours(hour, minutes, 0, 0);
+        const soDurationMin = (serviceOrder.jobs || []).reduce((s, j) => s + (j.estimatedDuration || 60), 0) || 60;
+        const soEnd = new Date(newScheduledStart.getTime() + soDurationMin * 60_000);
+        if (rejectIfBlocked(newScheduledStart, soEnd)) return;
         const technician = technicians.find(t => t.id === technicianId) || null;
 
         // Installation mode: split SO into installation groups -> 1 dispatch per installation.
@@ -470,12 +506,13 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
       if (data.type === 'installationGroup') {
         const group = data.item as InstallationGroup;
         const newScheduledStart = new Date(date);
-        newScheduledStart.setHours(hour, 0, 0, 0);
+        newScheduledStart.setHours(hour, minutes, 0, 0);
         const technician = technicians.find(t => t.id === technicianId) || null;
 
         // Calculate total duration from all jobs
         const totalDurationMinutes = group.jobs.reduce((sum, j) => sum + (j.estimatedDuration || 60), 0);
         const scheduledEnd = new Date(newScheduledStart.getTime() + totalDurationMinutes * 60 * 1000);
+        if (rejectIfBlocked(newScheduledStart, scheduledEnd)) return;
 
         // Collision check using total duration — use raw schedule so hidden
         // (completed/rejected/cancelled/filtered) dispatches still block the slot.
@@ -524,7 +561,16 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
       
       // Use exact date and hour from drop location
       const newScheduledStart = new Date(date);
-      newScheduledStart.setHours(hour, 0, 0, 0);
+      newScheduledStart.setHours(hour, minutes, 0, 0);
+      // Determine effective duration for blocked-interval check (reschedule =
+      // preserve original duration; new assignment = estimated or 3h default).
+      let effectiveDurationMs = (job.estimatedDuration || 180) * 60_000;
+      if (data.isReschedule && job.scheduledStart && job.scheduledEnd) {
+        const s = job.scheduledStart instanceof Date ? job.scheduledStart : new Date(job.scheduledStart);
+        const e2 = job.scheduledEnd instanceof Date ? job.scheduledEnd : new Date(job.scheduledEnd);
+        effectiveDurationMs = Math.max(15 * 60_000, e2.getTime() - s.getTime());
+      }
+      if (rejectIfBlocked(newScheduledStart, new Date(newScheduledStart.getTime() + effectiveDurationMs))) return;
       
       // Find the technician for display
       const technician = technicians.find(t => t.id === technicianId) || null;
@@ -1014,7 +1060,6 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
   };
 
   const loadTechnicianLeaves = async () => {
-    console.log('Loading technician leaves...');
     const allLeaves: TechnicianLeave[] = [];
     
     try {
@@ -1043,7 +1088,6 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
       const results = await Promise.all(fetchPromises);
       results.forEach(techLeaves => allLeaves.push(...techLeaves));
       
-      console.log('All technician leaves loaded:', allLeaves);
       setTechnicianLeaves(allLeaves);
     } catch (error) {
       console.error('Failed to load technician leaves:', error);
@@ -1052,7 +1096,6 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
 
   // Load technician availability (working hours, status) for calendar display
   const loadTechnicianAvailability = async () => {
-    console.log('Loading technician availability...');
     const allAvailability: TechnicianAvailability[] = [];
     
     try {
@@ -1081,7 +1124,6 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
       const results = await Promise.all(fetchPromises);
       allAvailability.push(...results);
       
-      console.log('All technician availability loaded:', allAvailability);
       setTechnicianAvailability(allAvailability);
     } catch (error) {
       console.error('Failed to load technician availability:', error);
@@ -1189,6 +1231,7 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
                 onPreviewResize={handlePreviewResize}
                 includeWeekends={settings.includeWeekends}
                 rowHeights={rowHeights}
+                dropSnapMinutes={(profileSettings as { dropSnapMinutes?: number }).dropSnapMinutes ?? 15}
               />
             </div>
           </div>

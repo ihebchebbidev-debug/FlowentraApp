@@ -29,11 +29,12 @@ interface CalendarGridProps {
   dragOverSlot: { technicianId: string; date: Date; hour: number } | null;
   onDragOver: (e: React.DragEvent, technicianId: string, date: Date, hour: number) => void;
   onDragLeave: (e: React.DragEvent) => void;
-  onDrop: (e: React.DragEvent, technicianId: string, date: Date, hour: number) => void;
+  onDrop: (e: React.DragEvent, technicianId: string, date: Date, hour: number, minutes?: number) => void;
   onJobResize: (jobId: string, newEnd: Date) => void;
   onJobClick: (job: Job) => void;
   includeWeekends: boolean;
   rowHeights?: Record<string, number>;
+  dropSnapMinutes?: number;
 }
 
 export function CalendarGrid({
@@ -53,6 +54,7 @@ export function CalendarGrid({
   onPreviewResize,
   includeWeekends,
   rowHeights,
+  dropSnapMinutes = 15,
 }: CalendarGridProps & { onPreviewResize?: (jobId: string, newEnd: Date) => void }) {
   const { t } = useTranslation();
   const { dateWidth, hourWidth, widthMode } = dimensions;
@@ -238,17 +240,7 @@ export function CalendarGrid({
     
     // Position relative to working hours (8 AM = hour 0)
     const workingHourOffset = hours - workingHours[0];
-    
-    console.log('Job positioning:', {
-      jobId: job.id,
-      scheduledStart: job.scheduledStart,
-      dayStart,
-      minutesFromStart,
-      hours,
-      workingHourOffset,
-      hourWidth: dimensions.hourWidth
-    });
-    
+
     return {
       left: `${Math.max(0, workingHourOffset) * dimensions.hourWidth}px`,
       top: '4px'
@@ -376,7 +368,19 @@ export function CalendarGrid({
                         }`}
                         onDragOver={(e) => !isHourDisabled && onDragOver(e, technician.id, date, hour)}
                         onDragLeave={(e) => !isHourDisabled && onDragLeave(e)}
-                        onDrop={(e) => !isHourDisabled && onDrop(e, technician.id, date, hour)}
+                        onDrop={(e) => {
+                          if (isHourDisabled) return;
+                          // Minute precision: convert vertical drop position inside the
+                          // hour cell into minutes, snapped to dropSnapMinutes.
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          const pct = rect.height > 0
+                            ? Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height))
+                            : 0;
+                          const snap = dropSnapMinutes > 0 ? dropSnapMinutes : 15;
+                          const raw = pct * 60;
+                          const minutes = Math.min(59, Math.round(raw / snap) * snap);
+                          onDrop(e, technician.id, date, hour, minutes);
+                        }}
                       >
                         {/* Hour outside working hours - subtle red stripe */}
                         {!isWithinWorkHours && !isDayNotPlannable && (

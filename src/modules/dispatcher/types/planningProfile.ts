@@ -60,6 +60,8 @@ export interface PlanningProfileSettings {
   allowUnassigningDispatches: boolean;
   confirmOnOverlap: boolean;
   autoCollapseCompleted: boolean;
+  // Drop snap in minutes for drag-drop scheduling (5/10/15/30/60).
+  dropSnapMinutes: number;
 }
 
 export const DEFAULT_PLANNING_SETTINGS: PlanningProfileSettings = {
@@ -90,6 +92,7 @@ export const DEFAULT_PLANNING_SETTINGS: PlanningProfileSettings = {
   allowUnassigningDispatches: true,
   confirmOnOverlap: true,
   autoCollapseCompleted: false,
+  dropSnapMinutes: 15,
 };
 
 export interface PlanningProfile {

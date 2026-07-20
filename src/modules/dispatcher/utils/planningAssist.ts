@@ -3,6 +3,15 @@
 import type { Job, ServiceOrder, Technician } from '../types';
 import { DispatcherService } from '../services/dispatcher.service';
 import { CollisionService } from '../services/collision.service';
+import { schedulesApi, type UserLeave } from '@/services/api/schedulesApi';
+import { normalizeTechId } from './technicianId';
+import {
+  getBlockedIntervalsForDay,
+  isTechnicianFullyBlocked,
+  type BlockedInterval,
+} from '../services/blockedIntervals.service';
+import type { TechnicianAvailability } from '../components/calendar/types';
+import type { TechnicianLeave } from '../components/calendar/CustomCalendar';
 
 /** Haversine distance in km between two lat/lng points. */
 function distanceKm(a?: { lat?: number; lng?: number }, b?: { lat?: number; lng?: number }): number | null {
@@ -216,27 +225,83 @@ export async function autoFillDay(
   const isToday = startOfDay.getTime() === todayStart.getTime();
   const buffer = (opts.bufferMinutes ?? 0) * 60_000;
 
+  // Dedup collector for user-visible skip reasons — hoisted so both the tech
+  // init loop and the placement loop below can add to it.
+  const seenReasons = new Set<string>();
+  const addReason = (r: string) => {
+    if (seenReasons.has(r) || result.skipReasons.length >= 5) return;
+    seenReasons.add(r);
+    result.skipReasons.push(r);
+  };
+
   for (const t of technicians) {
     const whStart = timeOnDay(day, t.workingHours?.start || '09:00');
     const whEnd   = timeOnDay(day, t.workingHours?.end   || '17:00');
 
     // §3.1: fetch what's already on this tech's calendar today, so we never
-    // overwrite or double-book existing assignments.
+    // overwrite or double-book existing assignments. In parallel, pull the
+    // technician's full schedule (working hours, day off, lunch break, and
+    // approved leaves) so blocked intervals become part of the "existing" set.
     let existing: Job[] = [];
-    let fetchFailed = false;
-    try {
-      existing = await DispatcherService.getAssignedJobsForTechnician(t.id, day);
-    } catch (e) {
-      console.error(`[autoFillDay] failed to load existing jobs for ${t.id}`, e);
-      fetchFailed = true;
-    }
-    if (fetchFailed) {
+    let schedule: Awaited<ReturnType<typeof schedulesApi.getSchedule>> | null = null;
+    let leaves: UserLeave[] = [];
+    const numericId = normalizeTechId(t.id) || t.id;
+    const [existingRes, schedRes, leavesRes] = await Promise.allSettled([
+      DispatcherService.getAssignedJobsForTechnician(t.id, day),
+      schedulesApi.getSchedule(numericId),
+      schedulesApi.getLeaves(numericId),
+    ]);
+    if (existingRes.status === 'fulfilled') {
+      existing = existingRes.value;
+    } else {
       // §3.1 safety: if we can't see existing assignments, skip this tech entirely
       // rather than risk double-booking.
+      console.error(`[autoFillDay] failed to load existing jobs for ${t.id}`, existingRes.reason);
       skipTech.add(t.id);
       result.errors.push(`Skipped ${t.firstName} ${t.lastName}: could not load existing schedule`);
       continue;
     }
+    if (schedRes.status === 'fulfilled') schedule = schedRes.value;
+    if (leavesRes.status === 'fulfilled') leaves = leavesRes.value;
+
+    // Blocked intervals (leaves, day off, lunch break) are treated as existing
+    // work so findNextAvailableSlot cannot place a job on top of them.
+    const availability: TechnicianAvailability | null = schedule ? {
+      technicianId: t.id,
+      status: schedule.status || 'available',
+      scheduleNote: schedule.scheduleNote,
+      daySchedules: schedule.daySchedules || {},
+    } : null;
+    const mappedLeaves: TechnicianLeave[] = (leaves || []).map(l => ({
+      id: l.id,
+      technicianId: t.id,
+      leaveType: l.leaveType,
+      startDate: new Date(l.startDate),
+      endDate: new Date(l.endDate),
+      status: l.status,
+      reason: l.reason,
+    }));
+
+    if (isTechnicianFullyBlocked(day, availability, mappedLeaves)) {
+      // Fully off (approved leave or non-working day) → don't schedule anything.
+      skipTech.add(t.id);
+      addReason(`${t.firstName} ${t.lastName} is on leave or off on this day.`);
+      continue;
+    }
+
+    const blockedIntervals: BlockedInterval[] = getBlockedIntervalsForDay(day, availability, mappedLeaves);
+    if (blockedIntervals.length > 0) {
+      // Inject as pseudo-jobs so the collision scanner naturally routes around them.
+      const synthetic: Job[] = blockedIntervals.map((iv, i) => ({
+        id: `__blocked_${t.id}_${i}`,
+        title: iv.reason === 'leave' ? 'On leave' : iv.reason === 'break' ? 'Break' : 'Day off',
+        scheduledStart: iv.start,
+        scheduledEnd: iv.end,
+        status: 'blocked',
+      } as unknown as Job));
+      existing = [...existing, ...synthetic];
+    }
+
     existingByTech.set(t.id, existing);
 
     // Cursor = max(working-hours start, last existing jobEnd, [now+buffer if today])
@@ -274,12 +339,11 @@ export async function autoFillDay(
   const counts = new Map<string, number>();
   const maxPer = opts.maxJobsPerTech ?? 8;
   let errorLogged = 0;
-  const seenReasons = new Set<string>();
-  const addReason = (r: string) => {
-    if (seenReasons.has(r) || result.skipReasons.length >= 5) return;
-    seenReasons.add(r);
-    result.skipReasons.push(r);
-  };
+
+  const PRIORITIES = ['low', 'medium', 'high', 'urgent'] as const;
+  type ValidPriority = typeof PRIORITIES[number];
+  const isPriority = (v: unknown): v is ValidPriority =>
+    typeof v === 'string' && (PRIORITIES as readonly string[]).includes(v);
 
   for (const unit of units) {
     // §3.9: pass current per-tech counts so ranker applies load-balancing penalty.
@@ -287,7 +351,7 @@ export async function autoFillDay(
     const ranked = rankTechniciansForJob(unit.rep, eligible, counts);
     const durationMin = Math.max(1, Math.ceil(unit.durationMin));
     const durationMs = durationMin * 60_000;
-    const unitPriority = (unit.priority || 'medium') as 'low' | 'medium' | 'high' | 'urgent';
+    const unitPriority: ValidPriority = isPriority(unit.priority) ? unit.priority : 'medium';
     let placed = false;
     // Track per-unit reasons so we can report an accurate cause when nothing fits.
     let sawCapReached = false;
@@ -296,6 +360,20 @@ export async function autoFillDay(
 
     if (ranked.length === 0) {
       addReason('No eligible technicians (schedules could not be loaded).');
+    }
+
+    // M5: distinguish "unit is inherently too long for any working day" from
+    // "day is already full". If unitDuration exceeds every eligible tech's
+    // available window on this day, it needs manual multi-day scheduling.
+    const fitsAnyWindow = eligible.some(t => {
+      const s = timeOnDay(day, t.workingHours?.start || '09:00').getTime();
+      const e = timeOnDay(day, t.workingHours?.end   || '17:00').getTime();
+      return (e - s) >= durationMs;
+    });
+    if (!fitsAnyWindow) {
+      addReason('Job needs multiple days — schedule manually.');
+      result.skipped += unit.jobs.length;
+      continue;
     }
 
     for (const r of ranked) {

@@ -345,12 +345,12 @@ export function DashboardHeader() {
             prefill={reportIssuePrefill}
           />
 
-          {/* Layout toggle */}
-          {!isMobile && (
+          {/* Layout toggle — hidden for now */}
+          {/* {!isMobile && (
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleLayoutMode} title={layoutMode === 'sidebar' ? t('switchToTopNavigation') : t('switchToSidebar')}>
               {layoutMode === 'sidebar' ? <LayoutGrid className="h-4 w-4" /> : <Sidebar className="h-4 w-4" />}
             </Button>
-          )}
+          )} */}
 
           {/* User avatar last — only when sidebar is in topbar mode (sidebar version owns the profile otherwise) */}
           {layoutMode === 'topbar' && (

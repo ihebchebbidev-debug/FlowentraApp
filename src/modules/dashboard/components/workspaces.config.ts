@@ -50,9 +50,8 @@ export const WORKSPACES: Workspace[] = [
     id: "reporting",
     label: "Reporting",
     icon: "BarChart3",
-    landingUrl: "/dashboard/reporting/my",
+    landingUrl: "/dashboard/reporting/sales",
     modules: [
-      { key: "my-dash", label: "My dashboard", url: "/dashboard/reporting/my", icon: "LayoutDashboard" },
       { key: "sales-report", label: "Sales", url: "/dashboard/reporting/sales", icon: "TrendingUp" },
       { key: "service-report", label: "Service", url: "/dashboard/reporting/service", icon: "Wrench" },
       { key: "purchase-report", label: "Purchases", url: "/dashboard/reporting/purchase", icon: "ShoppingCart" },

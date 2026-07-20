@@ -458,7 +458,21 @@ export const fr = {
       failed: "Échec du remplissage automatique",
       run: "Lancer le remplissage",
       confirm_title: "Remplissage automatique de la journée ?",
-      confirm_desc: "Cela assignera jusqu'à {{n}} tâche(s) non assignée(s) à vos {{m}} technicien(s) visible(s), placées consécutivement dans leurs heures de travail. Vous pourrez ajuster ensuite."
+      confirm_desc: "Cela assignera jusqu'à {{n}} tâche(s) non assignée(s) à vos {{m}} technicien(s) visible(s), placées consécutivement dans leurs heures de travail. Vous pourrez ajuster ensuite.",
+      skip: {
+        slot_taken: "Créneau déjà pris par un autre planificateur",
+        needs_multi_day: "La tâche nécessite plusieurs jours — planifier manuellement"
+      }
+    },
+    sideEffect: {
+      failed: "Affectation enregistrée, mais une action de suivi a échoué"
+    },
+    drop: {
+      error: {
+        on_leave: "Le technicien est en congé à ce moment",
+        day_off: "Le technicien ne travaille pas ce jour-là",
+        on_break: "Le technicien est en pause à ce moment"
+      }
     }
   }
 };

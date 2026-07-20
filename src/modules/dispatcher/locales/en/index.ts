@@ -458,7 +458,21 @@ export const en = {
       failed: "Auto-fill failed",
       run: "Run auto-fill",
       confirm_title: "Auto-fill today's planning?",
-      confirm_desc: "This will assign up to {{n}} unassigned job(s) to your {{m}} visible technician(s), placed back-to-back inside their working hours. You can adjust afterwards."
+      confirm_desc: "This will assign up to {{n}} unassigned job(s) to your {{m}} visible technician(s), placed back-to-back inside their working hours. You can adjust afterwards.",
+      skip: {
+        slot_taken: "Slot was taken by another dispatcher",
+        needs_multi_day: "Job needs multiple days — schedule manually"
+      }
+    },
+    sideEffect: {
+      failed: "Assignment saved, but a follow-up action failed"
+    },
+    drop: {
+      error: {
+        on_leave: "Technician is on leave during this time",
+        day_off: "Technician doesn't work on this day",
+        on_break: "Technician is on a break during this time"
+      }
     }
   }
 };

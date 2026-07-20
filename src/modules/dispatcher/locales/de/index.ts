@@ -267,5 +267,22 @@ export const de = {
       manage_profiles: "Planungsprofile verwalten",
       currently_active: "Derzeit aktiv"
     }
+    ,
+    autofill: {
+      skip: {
+        slot_taken: "Zeitfenster wurde von einem anderen Disponenten belegt",
+        needs_multi_day: "Auftrag benötigt mehrere Tage — bitte manuell planen"
+      }
+    },
+    sideEffect: {
+      failed: "Zuweisung gespeichert, aber eine Folgeaktion ist fehlgeschlagen"
+    },
+    drop: {
+      error: {
+        on_leave: "Techniker ist in dieser Zeit im Urlaub",
+        day_off: "Techniker arbeitet an diesem Tag nicht",
+        on_break: "Techniker macht in dieser Zeit eine Pause"
+      }
+    }
   }
 };

@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { planningProfilesApi } from '../services/planningProfilesApi';
 import {
@@ -26,14 +27,21 @@ export function useActivePlanningProfile() {
     queryFn: () => planningProfilesApi.getActive(),
     staleTime: 30_000,
   });
+  // Stable identity — recompute only when the query data actually changes,
+  // so downstream memos (visibleTechnicians, filteredAssignedJobs, …) don't
+  // invalidate on every render.
+  const settings = useMemo(
+    () => ({ ...DEFAULT_PLANNING_SETTINGS, ...(q.data?.settings ?? {}) }),
+    [q.data]
+  );
+  const visibleUserIds = useMemo(() => q.data?.visibleUserIds ?? [], [q.data]);
+  const requiredSkillIds = useMemo(() => q.data?.requiredSkillIds ?? [], [q.data]);
   return {
     ...q,
     profile: q.data,
-    // Merge with defaults so profiles saved before a setting existed still get
-    // every key (e.g. the card-display fields) — never undefined downstream.
-    settings: { ...DEFAULT_PLANNING_SETTINGS, ...(q.data?.settings ?? {}) },
-    visibleUserIds: q.data?.visibleUserIds ?? [],
-    requiredSkillIds: q.data?.requiredSkillIds ?? [],
+    settings,
+    visibleUserIds,
+    requiredSkillIds,
   };
 }
 
