@@ -212,9 +212,24 @@ export function WorkspaceSidebar() {
   const activeWs: Workspace | null =
     openId ? WORKSPACES.find((w) => w.id === openId) ?? null : null;
 
-  const isPathActive = (url: string) => {
+  const isPathActive = (url: string, siblings?: { url: string }[]) => {
     const base = url.split("?")[0];
-    return location.pathname === base || location.pathname.startsWith(base + "/");
+    const matches =
+      location.pathname === base || location.pathname.startsWith(base + "/");
+    if (!matches) return false;
+    // If a sibling module has a more specific base that also matches the
+    // current path, defer to that one so only the most specific link lights up.
+    if (siblings) {
+      for (const s of siblings) {
+        const sBase = s.url.split("?")[0];
+        if (sBase === base) continue;
+        if (sBase.length > base.length && sBase.startsWith(base) &&
+            (location.pathname === sBase || location.pathname.startsWith(sBase + "/"))) {
+          return false;
+        }
+      }
+    }
+    return true;
   };
 
   const activeModules = useMemo(
@@ -362,7 +377,7 @@ export function WorkspaceSidebar() {
                     url={m.url}
                     icon={m.icon}
                     label={m.label}
-                    active={isPathActive(m.url)}
+                    active={isPathActive(m.url, activeModules)}
                     linkRef={idx === 0 ? firstModuleRef : undefined}
                   />
                 ))}

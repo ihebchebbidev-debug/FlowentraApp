@@ -192,7 +192,14 @@ export function DispatchingInterface() {
         groupByServiceOrder: profileSettings.autoFillSingleDispatchPerOrder,
       });
       if (res.assigned > 0) toast.success(t('dispatcher.autofill.success', { defaultValue: '{{n}} job(s) auto-scheduled', n: res.assigned }));
-      if (res.skipped > 0) toast.warning(t('dispatcher.autofill.skipped', { defaultValue: '{{n}} job(s) could not be placed', n: res.skipped }));
+      if (res.skipped > 0) {
+        const reason = res.summary || res.skipReasons?.[0];
+        toast.warning(
+          t('dispatcher.autofill.skipped', { defaultValue: '{{n}} job(s) could not be placed', n: res.skipped }),
+          reason ? { description: reason } : undefined,
+        );
+        if (res.skipReasons?.length) console.warn('[auto-fill] skip reasons:', res.skipReasons);
+      }
       if (res.errors.length > 0) {
         console.warn('Auto-fill errors:', res.errors);
         toast.error(t('dispatcher.autofill.errors', {

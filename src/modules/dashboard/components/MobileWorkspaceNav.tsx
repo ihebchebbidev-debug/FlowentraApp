@@ -217,8 +217,15 @@ export function MobileWorkspaceNav() {
                 <div className="flex flex-col gap-2">
                   {modulesForView.map((m) => {
                     const base = m.url.split("?")[0];
-                    const active =
+                    const matches =
                       location.pathname === base || location.pathname.startsWith(base + "/");
+                    // Only the most specific sibling should highlight.
+                    const overriddenBySibling = matches && modulesForView.some((s) => {
+                      const sBase = s.url.split("?")[0];
+                      return sBase !== base && sBase.length > base.length && sBase.startsWith(base) &&
+                        (location.pathname === sBase || location.pathname.startsWith(sBase + "/"));
+                    });
+                    const active = matches && !overriddenBySibling;
                     return (
                       <button
                         key={m.key}

@@ -44,7 +44,21 @@ export const WORKSPACES: Workspace[] = [
     landingUrl: "/dashboard",
     modules: [
       { key: "overview", label: "Overview", url: "/dashboard", icon: "Home" },
-      { key: "reporting", label: "Reporting", url: "/dashboard/reporting", icon: "BarChart3" },
+    ],
+  },
+  {
+    id: "reporting",
+    label: "Reporting",
+    icon: "BarChart3",
+    landingUrl: "/dashboard/reporting/my",
+    modules: [
+      { key: "my-dash", label: "My dashboard", url: "/dashboard/reporting/my", icon: "LayoutDashboard" },
+      { key: "sales-report", label: "Sales", url: "/dashboard/reporting/sales", icon: "TrendingUp" },
+      { key: "service-report", label: "Service", url: "/dashboard/reporting/service", icon: "Wrench" },
+      { key: "purchase-report", label: "Purchases", url: "/dashboard/reporting/purchase", icon: "ShoppingCart" },
+      { key: "finance-report", label: "Finance", url: "/dashboard/reporting/finance", icon: "DollarSign" },
+      { key: "hr-report", label: "HR", url: "/dashboard/reporting/hr", icon: "UserCog" },
+      { key: "export-report", label: "Export reports", url: "/dashboard/reporting/export", icon: "Download" },
     ],
   },
   {

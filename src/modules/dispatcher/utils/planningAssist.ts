@@ -100,6 +100,10 @@ export interface AutoFillResult {
   assigned: number;
   skipped: number;
   errors: string[];
+  /** Human-readable reasons why units could not be placed (first few, deduped). */
+  skipReasons: string[];
+  /** Top-level reason when nothing could be placed at all (e.g. day already over). */
+  summary?: string;
 }
 
 /** Highest priority among a set of jobs (drives a grouped unit's priority). */
@@ -144,7 +148,7 @@ export async function autoFillDay(
     groupByServiceOrder?: boolean;
   } = { allowSchedulingInPast: false },
 ): Promise<AutoFillResult> {
-  const result: AutoFillResult = { assigned: 0, skipped: 0, errors: [] };
+  const result: AutoFillResult = { assigned: 0, skipped: 0, errors: [], skipReasons: [] };
   if (technicians.length === 0) {
     result.errors.push('No visible technicians');
     return result;
@@ -247,9 +251,35 @@ export async function autoFillDay(
     cursors.set(t.id, new Date(cursorMs));
     endTimes.set(t.id, whEnd);
   }
+
+  // Diagnose: if every eligible tech's cursor is already past their working-hours
+  // end, nothing can ever be placed. Surface a single, clear reason instead of
+  // silently reporting "N jobs could not be placed" with no explanation.
+  const eligibleTechs = technicians.filter(t => !skipTech.has(t.id));
+  const allDayOver = eligibleTechs.length > 0 && eligibleTechs.every(t => {
+    const c = cursors.get(t.id);
+    const e = endTimes.get(t.id);
+    return c && e && c.getTime() >= e.getTime();
+  });
+  if (allDayOver && units.length > 0) {
+    const reason = isToday
+      ? 'The workday is already over for every visible technician (current time is past their working-hours end, or their day is fully booked). Try tomorrow, extend working hours, or enable "Allow scheduling in the past".'
+      : 'Every visible technician has no remaining time on this day (fully booked or working hours ended).';
+    result.summary = reason;
+    result.skipReasons.push(reason);
+    result.skipped = units.reduce((s, u) => s + u.jobs.length, 0);
+    return result;
+  }
+
   const counts = new Map<string, number>();
   const maxPer = opts.maxJobsPerTech ?? 8;
   let errorLogged = 0;
+  const seenReasons = new Set<string>();
+  const addReason = (r: string) => {
+    if (seenReasons.has(r) || result.skipReasons.length >= 5) return;
+    seenReasons.add(r);
+    result.skipReasons.push(r);
+  };
 
   for (const unit of units) {
     // §3.9: pass current per-tech counts so ranker applies load-balancing penalty.
@@ -259,10 +289,18 @@ export async function autoFillDay(
     const durationMs = durationMin * 60_000;
     const unitPriority = (unit.priority || 'medium') as 'low' | 'medium' | 'high' | 'urgent';
     let placed = false;
+    // Track per-unit reasons so we can report an accurate cause when nothing fits.
+    let sawCapReached = false;
+    let sawNoSlot = false;
+    let sawOverEnd = false;
+
+    if (ranked.length === 0) {
+      addReason('No eligible technicians (schedules could not be loaded).');
+    }
 
     for (const r of ranked) {
       const tid = r.technician.id;
-      if ((counts.get(tid) ?? 0) >= maxPer) continue;
+      if ((counts.get(tid) ?? 0) >= maxPer) { sawCapReached = true; continue; }
       const cursor = cursors.get(tid)!;
       const end = endTimes.get(tid)!;
       const existing = existingByTech.get(tid) ?? [];
@@ -275,9 +313,9 @@ export async function autoFillDay(
         existing,
         end.getHours() + end.getMinutes() / 60,
       );
-      if (!slotStart) continue;
+      if (!slotStart) { sawNoSlot = true; continue; }
       const jobEnd = new Date(slotStart.getTime() + durationMs);
-      if (jobEnd.getTime() > end.getTime()) continue;
+      if (jobEnd.getTime() > end.getTime()) { sawOverEnd = true; continue; }
 
       try {
         const techName = `${r.technician.firstName} ${r.technician.lastName}`.trim();
@@ -318,7 +356,18 @@ export async function autoFillDay(
       }
     }
 
-    if (!placed) result.skipped += unit.jobs.length;
+    if (!placed) {
+      result.skipped += unit.jobs.length;
+      // Attribute a reason for this unit (priority: over-end > no-slot > cap).
+      if (sawOverEnd) addReason(`Duration (${durationMin} min) does not fit before working-hours end on any technician.`);
+      else if (sawNoSlot) addReason('No free slot before working-hours end on any technician.');
+      else if (sawCapReached) addReason(`Every technician has already reached the per-day cap (${maxPer} jobs).`);
+    }
   }
+
+  if (!result.summary && result.assigned === 0 && result.skipped > 0 && result.skipReasons.length > 0) {
+    result.summary = result.skipReasons[0];
+  }
+
   return result;
 }
