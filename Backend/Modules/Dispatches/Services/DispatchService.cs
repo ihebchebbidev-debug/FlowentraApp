@@ -381,6 +381,18 @@ namespace MyApi.Modules.Dispatches.Services
                 .Include(d => d.DispatchJobs)
                 .FirstAsync(d => d.Id == dispatch.Id);
 
+            if (_contactActivity != null && createdDispatch.ContactId > 0)
+            {
+                await _contactActivity.LogAsync(
+                    contactId: createdDispatch.ContactId,
+                    type: MyApi.Modules.Contacts.Models.ContactActivityTypes.DispatchCreated,
+                    relatedEntityType: MyApi.Modules.Contacts.Models.ContactActivityEntityTypes.Dispatch,
+                    relatedEntityId: createdDispatch.Id,
+                    description: $"Dispatch {createdDispatch.DispatchNumber} was created",
+                    metadata: new { number = createdDispatch.DispatchNumber, status = createdDispatch.Status, priority = createdDispatch.Priority, scheduledDate = createdDispatch.ScheduledDate },
+                    createdBy: userId);
+            }
+
             var nameMap = await GetTechnicianNameMapForDispatchAsync(createdDispatch.Id);
             return DispatchMapping.ToDto(createdDispatch, nameMap);
         }
@@ -757,6 +769,30 @@ namespace MyApi.Modules.Dispatches.Services
             if (dto.Status == "technically_completed" || dto.Status == "completed") d.ActualEndTime = DateTime.UtcNow;
 
             await _db.SaveChangesAsync();
+
+            // Log status change to the contact activity feed
+            if (_contactActivity != null && oldStatus != dto.Status)
+            {
+                var contactId = d.ContactId;
+                if (contactId <= 0 && d.ServiceOrderId.HasValue)
+                {
+                    contactId = await _db.ServiceOrders
+                        .Where(so => so.Id == d.ServiceOrderId.Value)
+                        .Select(so => so.ContactId)
+                        .FirstOrDefaultAsync();
+                }
+                if (contactId > 0)
+                {
+                    await _contactActivity.LogAsync(
+                        contactId: contactId,
+                        type: MyApi.Modules.Contacts.Models.ContactActivityTypes.DispatchStatusChanged,
+                        relatedEntityType: MyApi.Modules.Contacts.Models.ContactActivityEntityTypes.Dispatch,
+                        relatedEntityId: d.Id,
+                        description: $"Dispatch {d.DispatchNumber} status: {oldStatus} → {dto.Status}",
+                        metadata: new { number = d.DispatchNumber, oldStatus, status = dto.Status },
+                        createdBy: userId);
+                }
+            }
 
             // Upward propagation: Log activity to parent Sale (and Offer)
             if (oldStatus != dto.Status && d.ServiceOrderId.HasValue)

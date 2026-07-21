@@ -9,11 +9,16 @@ namespace MyApi.Modules.Contacts.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<ContactService> _logger;
+        private readonly IContactActivityService? _contactActivity;
 
-        public ContactService(ApplicationDbContext context, ILogger<ContactService> logger)
+        public ContactService(
+            ApplicationDbContext context,
+            ILogger<ContactService> logger,
+            IContactActivityService? contactActivity = null)
         {
             _context = context;
             _logger = logger;
+            _contactActivity = contactActivity;
         }
 
         public async Task<ContactListResponseDto> GetAllContactsAsync(ContactSearchRequestDto? searchRequest = null)
@@ -282,6 +287,27 @@ namespace MyApi.Modules.Contacts.Services
                     return null;
                 }
 
+                // Capture original values BEFORE mutation so we can diff for the activity log.
+                var original = new Dictionary<string, string?>
+                {
+                    ["firstName"] = contact.FirstName,
+                    ["lastName"] = contact.LastName,
+                    ["name"] = contact.Name,
+                    ["email"] = contact.Email,
+                    ["phone"] = contact.Phone,
+                    ["company"] = contact.Company,
+                    ["position"] = contact.Position,
+                    ["address"] = contact.Address,
+                    ["city"] = contact.City,
+                    ["country"] = contact.Country,
+                    ["postalCode"] = contact.PostalCode,
+                    ["status"] = contact.Status,
+                    ["type"] = contact.Type,
+                    ["cin"] = contact.Cin,
+                    ["matriculeFiscale"] = contact.MatriculeFiscale,
+                    ["favorite"] = contact.Favorite.ToString(),
+                };
+
                 // Parse Name into FirstName/LastName if provided
                 if (!string.IsNullOrEmpty(updateDto.Name))
                 {
@@ -437,6 +463,54 @@ namespace MyApi.Modules.Contacts.Services
                 // Reload contact with related data
                 var updatedContact = await GetContactByIdAsync(id);
                 _logger.LogInformation("Contact updated successfully with ID {ContactId}", id);
+
+                // Log field-level changes to the contact activity feed (after commit).
+                if (_contactActivity != null)
+                {
+                    var current = new Dictionary<string, string?>
+                    {
+                        ["firstName"] = contact.FirstName,
+                        ["lastName"] = contact.LastName,
+                        ["name"] = contact.Name,
+                        ["email"] = contact.Email,
+                        ["phone"] = contact.Phone,
+                        ["company"] = contact.Company,
+                        ["position"] = contact.Position,
+                        ["address"] = contact.Address,
+                        ["city"] = contact.City,
+                        ["country"] = contact.Country,
+                        ["postalCode"] = contact.PostalCode,
+                        ["status"] = contact.Status,
+                        ["type"] = contact.Type,
+                        ["cin"] = contact.Cin,
+                        ["matriculeFiscale"] = contact.MatriculeFiscale,
+                        ["favorite"] = contact.Favorite.ToString(),
+                    };
+
+                    var changes = new List<ContactFieldChange>();
+                    foreach (var key in original.Keys)
+                    {
+                        var oldVal = original[key];
+                        var newVal = current[key];
+                        if (!string.Equals(oldVal ?? string.Empty, newVal ?? string.Empty, StringComparison.Ordinal))
+                        {
+                            changes.Add(new ContactFieldChange(key, oldVal, newVal));
+                        }
+                    }
+
+                    if (changes.Count > 0)
+                    {
+                        var fieldList = string.Join(", ", changes.Select(c => c.Field));
+                        await _contactActivity.LogAsync(
+                            contactId: id,
+                            type: ContactActivityTypes.ContactUpdated,
+                            relatedEntityType: null,
+                            relatedEntityId: null,
+                            description: $"Contact information updated ({fieldList})",
+                            metadata: new { changes },
+                            createdBy: modifiedByUser);
+                    }
+                }
 
                 return updatedContact;
             }
@@ -852,5 +926,7 @@ namespace MyApi.Modules.Contacts.Services
             }
             return false;
         }
+
+        private sealed record ContactFieldChange(string Field, string? OldValue, string? NewValue);
     }
 }

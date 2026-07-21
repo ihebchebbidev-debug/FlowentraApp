@@ -33,10 +33,10 @@ import { useState } from 'react';
 import { ContactForm } from '../components/ContactForm';
 import { AddNoteDialog } from '../components/AddNoteDialog';
 import { ContactOverviewTab } from '../components/detail/ContactOverviewTab';
-import { ContactNotesTab } from '../components/detail/ContactNotesTab';
+import { ContactTimelineTab } from '../components/detail/ContactTimelineTab';
 import { ContactRelatedTab } from '../components/detail/ContactRelatedTab';
 import { ContactPurchaseHistoryTab } from '../components/detail/ContactPurchaseHistoryTab';
-import { ContactActivityTab } from '../components/detail/ContactActivityTab';
+
 import { SupplierArticlesTab } from '../components/detail/SupplierArticlesTab';
 import { useQueryClient } from '@tanstack/react-query';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -145,8 +145,8 @@ export default function ContactDetailPage() {
   // Purchases tab is supplier-only: the Purchases module deals exclusively with
   // supplier (fournisseur) transactions, so we hide it on contact/company detail pages.
   const tabConfig = isSupplierRoute
-    ? (['overview', 'articles', 'purchases', 'activity', 'notes'] as const)
-    : (['overview', 'installations', 'offers', 'sales', 'serviceOrders', 'activity', 'notes'] as const);
+    ? (['overview', 'articles', 'purchases', 'timeline'] as const)
+    : (['overview', 'installations', 'offers', 'sales', 'serviceOrders', 'timeline'] as const);
 
   const TAB_META: Record<string, { icon: LucideIcon; label: () => string }> = {
     overview:       { icon: LayoutDashboard, label: () => t('detail.tabs.overview') },
@@ -155,9 +155,8 @@ export default function ContactDetailPage() {
     sales:          { icon: ShoppingCart,     label: () => t('detail.tabs.sales') },
     serviceOrders:  { icon: ClipboardList,    label: () => t('detail.tabs.service_orders') },
     purchases:      { icon: Package,          label: () => t('detail.tabs.purchases') },
-    notes:          { icon: StickyNote,       label: () => t('detail.tabs.notes') },
     articles:       { icon: Package,          label: () => t('detail.tabs.articles', 'Articles') },
-    activity:       { icon: Activity,         label: () => t('detail.tabs.activity') },
+    timeline:       { icon: Activity,         label: () => t('detail.tabs.timeline', 'Timeline') },
   };
 
   if (error || !contact) {
@@ -367,18 +366,14 @@ export default function ContactDetailPage() {
             </TabsContent>
           )}
 
-          {/* Activity Tab */}
-          <TabsContent value="activity">
-            <ContactActivityTab contactId={contact.id} />
-          </TabsContent>
-
-          {/* Notes Tab */}
-          <TabsContent value="notes">
-            <ContactNotesTab
+          {/* Timeline Tab — merged notes + activity feed */}
+          <TabsContent value="timeline">
+            <ContactTimelineTab
+              contactId={contact.id}
               notes={notes}
-              isLoading={notesLoading}
-              isCreating={isCreatingNote}
-              isDeleting={isDeletingNote}
+              notesLoading={notesLoading}
+              isCreatingNote={isCreatingNote}
+              isDeletingNote={isDeletingNote}
               deletingNoteId={deletingNoteId}
               onAddNote={() => setAddNoteOpen(true)}
               onEditNote={(n) => setEditingNote({ id: n.id, note: n.note })}

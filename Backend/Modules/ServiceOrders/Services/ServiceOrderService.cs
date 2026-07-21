@@ -667,6 +667,20 @@ namespace MyApi.Modules.ServiceOrders.Services
             });
 
                 var result = await GetServiceOrderByIdAsync(createdServiceOrderId);
+
+                // Log to contact activity feed (best-effort; won't throw)
+                if (_contactActivity != null && result != null && result.ContactId > 0)
+                {
+                    await _contactActivity.LogAsync(
+                        contactId: result.ContactId,
+                        type: MyApi.Modules.Contacts.Models.ContactActivityTypes.ServiceOrderCreated,
+                        relatedEntityType: MyApi.Modules.Contacts.Models.ContactActivityEntityTypes.ServiceOrder,
+                        relatedEntityId: result.Id,
+                        description: $"Service order {result.OrderNumber} was created from sale #{saleId}",
+                        metadata: new { number = result.OrderNumber, status = result.Status, fromSale = saleId },
+                        createdBy: userId);
+                }
+
                 return result!;
             }
             catch (DbUpdateException dupEx) when (IsUniqueSaleIdViolation(dupEx))
@@ -1071,6 +1085,19 @@ namespace MyApi.Modules.ServiceOrders.Services
                 {
                     _logger.LogError(ex, "Failed to trigger workflow for service order {ServiceOrderId} status change", id);
                 }
+            }
+
+            // Log status change to the contact activity feed
+            if (_contactActivity != null && serviceOrder.ContactId > 0 && oldStatus != statusDto.Status)
+            {
+                await _contactActivity.LogAsync(
+                    contactId: serviceOrder.ContactId,
+                    type: MyApi.Modules.Contacts.Models.ContactActivityTypes.ServiceOrderStatusChanged,
+                    relatedEntityType: MyApi.Modules.Contacts.Models.ContactActivityEntityTypes.ServiceOrder,
+                    relatedEntityId: serviceOrder.Id,
+                    description: $"Service order {serviceOrder.OrderNumber} status: {oldStatus} → {statusDto.Status}",
+                    metadata: new { number = serviceOrder.OrderNumber, oldStatus, status = statusDto.Status },
+                    createdBy: userId);
             }
 
             var result = await GetServiceOrderByIdAsync(id);

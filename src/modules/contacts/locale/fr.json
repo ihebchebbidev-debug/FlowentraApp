@@ -321,13 +321,22 @@
       "purchases": "Achats",
       "articles": "Articles",
       "activity": "Activité",
+      "timeline": "Chronologie",
       "tasks": "Tâches",
       "files": "Fichiers",
       "projects": "Projets"
     },
+    "timeline": {
+      "title": "Chronologie",
+      "empty": "Aucune activité ni note pour l'instant",
+      "addNote": "Ajouter une note",
+      "note": "Note"
+    },
     "activity": {
       "title": "Activité",
       "empty": "Aucune activité pour l'instant",
+      "view": "Voir",
+      "statusChangeDetail": "Statut modifié de {{from}} à {{to}}",
       "types": {
         "offer_created": "Offre créée",
         "offer_status_changed": "Statut de l'offre modifié",
@@ -341,7 +350,26 @@
         "installation_completed": "Installation terminée",
         "note_added": "Note ajoutée",
         "note_updated": "Note modifiée",
-        "note_deleted": "Note supprimée"
+        "note_deleted": "Note supprimée",
+        "contact_updated": "Informations du contact modifiées"
+      },
+      "fields": {
+        "firstName": "Prénom",
+        "lastName": "Nom",
+        "name": "Nom complet",
+        "email": "E-mail",
+        "phone": "Téléphone",
+        "company": "Société",
+        "position": "Poste",
+        "address": "Adresse",
+        "city": "Ville",
+        "country": "Pays",
+        "postalCode": "Code postal",
+        "status": "Statut",
+        "type": "Type",
+        "cin": "CIN",
+        "matriculeFiscale": "Matricule fiscal",
+        "favorite": "Favori"
       }
     },
     "articles": {

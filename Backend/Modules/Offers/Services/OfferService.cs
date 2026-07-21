@@ -388,6 +388,19 @@ namespace MyApi.Modules.Offers.Services
 
             await _context.SaveChangesAsync();
 
+            // Log status change to the contact activity feed
+            if (_contactActivity != null && offer.ContactId > 0 && updateDto.Status != null && oldStatus != updateDto.Status)
+            {
+                await _contactActivity.LogAsync(
+                    contactId: offer.ContactId,
+                    type: ContactActivityTypes.OfferStatusChanged,
+                    relatedEntityType: ContactActivityEntityTypes.Offer,
+                    relatedEntityId: offer.Id,
+                    description: $"Offer {offer.OfferNumber} status: {oldStatus} → {updateDto.Status}",
+                    metadata: new { number = offer.OfferNumber, title = offer.Title, oldStatus, status = updateDto.Status },
+                    createdBy: userId);
+            }
+
             // Trigger workflow automation for status change (after commit — fire-and-forget style)
             if (updateDto.Status != null && oldStatus != updateDto.Status && _workflowTriggerService != null)
             {

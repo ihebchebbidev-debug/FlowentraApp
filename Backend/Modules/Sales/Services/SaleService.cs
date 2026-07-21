@@ -586,6 +586,19 @@ namespace MyApi.Modules.Sales.Services
                 }
             }
 
+            // Log status change to the contact activity feed
+            if (_contactActivity != null && sale.ContactId > 0 && updateDto.Status != null && previousStatus != updateDto.Status)
+            {
+                await _contactActivity.LogAsync(
+                    contactId: sale.ContactId,
+                    type: MyApi.Modules.Contacts.Models.ContactActivityTypes.SaleStatusChanged,
+                    relatedEntityType: MyApi.Modules.Contacts.Models.ContactActivityEntityTypes.Sale,
+                    relatedEntityId: sale.Id,
+                    description: $"Sale {sale.SaleNumber} status: {previousStatus} → {updateDto.Status}",
+                    metadata: new { number = sale.SaleNumber, title = sale.Title, oldStatus = previousStatus, status = updateDto.Status },
+                    createdBy: userId);
+            }
+
             var updatedSale = await GetSaleByIdAsync(id);
             return updatedSale!;
         }

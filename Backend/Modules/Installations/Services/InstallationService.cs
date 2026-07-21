@@ -210,6 +210,9 @@ namespace MyApi.Modules.Installations.Services
             if (installation == null)
                 return null;
 
+            // Snapshot status BEFORE mutation so we can detect a completion transition below.
+            var oldStatus = installation.Status;
+
             // Update only provided fields
             if (updateDto.ContactId.HasValue) installation.ContactId = updateDto.ContactId.Value;
             if (updateDto.SiteAddress != null) installation.SiteAddress = updateDto.SiteAddress;
@@ -258,7 +261,24 @@ namespace MyApi.Modules.Installations.Services
             installation.ModifiedDate = DateTime.UtcNow;
             installation.ModifiedBy = userId;
 
+            var newStatus = updateDto.Status;
+
             await _context.SaveChangesAsync();
+
+            // Log installation completion to the contact activity feed
+            if (_contactActivity != null && installation.ContactId > 0 &&
+                newStatus != null && oldStatus != newStatus &&
+                (newStatus == "completed" || newStatus == "installed"))
+            {
+                await _contactActivity.LogAsync(
+                    contactId: installation.ContactId,
+                    type: MyApi.Modules.Contacts.Models.ContactActivityTypes.InstallationCompleted,
+                    relatedEntityType: MyApi.Modules.Contacts.Models.ContactActivityEntityTypes.Installation,
+                    relatedEntityId: installation.Id,
+                    description: $"Installation {installation.InstallationNumber} was completed",
+                    metadata: new { number = installation.InstallationNumber, name = installation.Name, oldStatus, status = newStatus },
+                    createdBy: userId);
+            }
 
             return MapToDto(installation);
         }

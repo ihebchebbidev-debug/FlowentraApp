@@ -81,6 +81,8 @@ namespace MyApi.Modules.Contacts.Models
 
         public const string InstallationCreated = "installation_created";
         public const string InstallationCompleted = "installation_completed";
+
+        public const string ContactUpdated = "contact_updated";
     }
 
     public static class ContactActivityEntityTypes

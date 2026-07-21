@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,6 +14,7 @@ import {
   Pencil,
   Trash2,
   CircleDot,
+  ArrowRight,
   type LucideIcon,
 } from 'lucide-react';
 import { useContactActivity, ContactActivityDto } from '../../hooks/useContactActivity';
@@ -39,19 +41,69 @@ const TYPE_META: Record<string, { icon: LucideIcon; color: string }> = {
   note_deleted:               { icon: Trash2,        color: 'text-rose-600 bg-rose-50 dark:bg-rose-950/40' },
 };
 
+// Map a ContactActivity RelatedEntityType to the app route that shows the entity.
+function pathFor(entityType?: string | null, entityId?: number | null): string | null {
+  if (!entityType || !entityId) return null;
+  switch (entityType) {
+    case 'Offer':        return `/dashboard/offers/${entityId}`;
+    case 'Sale':         return `/dashboard/sales/${entityId}`;
+    case 'ServiceOrder': return `/dashboard/field/service-orders/${entityId}`;
+    case 'Dispatch':     return `/dashboard/field/dispatches/${entityId}`;
+    case 'Installation': return `/dashboard/field/installations/${entityId}`;
+    default:             return null;
+  }
+}
+
 function parseMetadata(meta?: string | null): Record<string, any> | null {
   if (!meta) return null;
   try { return JSON.parse(meta); } catch { return null; }
 }
 
-function ActivityRow({ activity, t, locale }: { activity: ContactActivityDto; t: (k: string, o?: any) => string; locale: any }) {
+// Prefer a localized status label when the app has one; fall back to the raw token.
+function useStatusLabel() {
+  const { t } = useTranslation();
+  return (status?: string | null) => {
+    if (!status) return '';
+    // Try a few known translation namespaces; fall back to the raw value.
+    const candidates = [
+      `offers:status.${status}`,
+      `sales:status.${status}`,
+      `field:serviceOrders.status.${status}`,
+      `field:dispatches.status.${status}`,
+      `field:installations.status.${status}`,
+    ];
+    for (const key of candidates) {
+      const v = t(key, { defaultValue: '' });
+      if (v && v !== key) return v;
+    }
+    return status.replace(/_/g, ' ');
+  };
+}
+
+function ActivityRow({
+  activity,
+  t,
+  locale,
+  onOpenEntity,
+  statusLabel,
+}: {
+  activity: ContactActivityDto;
+  t: (k: string, o?: any) => string;
+  locale: any;
+  onOpenEntity: (path: string) => void;
+  statusLabel: (s?: string | null) => string;
+}) {
   const meta = TYPE_META[activity.type] ?? { icon: CircleDot, color: 'text-muted-foreground bg-muted' };
   const Icon = meta.icon;
   const md = parseMetadata(activity.metadata);
   const label = t(`activity.types.${activity.type}`, { defaultValue: activity.type.replace(/_/g, ' ') });
   const number = md?.number as string | undefined;
   const title = md?.title as string | undefined;
-  const status = md?.status as string | undefined;
+  const oldStatus = (md?.oldStatus as string | undefined) ?? undefined;
+  const newStatus = (md?.status as string | undefined) ?? undefined;
+  const isStatusChange = activity.type.endsWith('_status_changed');
+  const path = pathFor(activity.relatedEntityType, activity.relatedEntityId ?? undefined);
+
   const when = (() => {
     try {
       return formatDistanceToNow(parseISO(activity.createdAt), { addSuffix: true, locale });
@@ -68,10 +120,51 @@ function ActivityRow({ activity, t, locale }: { activity: ContactActivityDto; t:
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-medium text-sm">{label}</span>
-          {number && <Badge variant="outline" className="text-[10px] px-1.5 py-0">{number}</Badge>}
-          {status && <Badge variant="secondary" className="text-[10px] px-1.5 py-0 capitalize">{status}</Badge>}
+          {number && (
+            path ? (
+              <button
+                type="button"
+                onClick={() => onOpenEntity(path)}
+                className="text-[11px] px-1.5 py-0.5 rounded border border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 hover:underline transition font-mono"
+                title={t('activity.view', 'View')}
+              >
+                {number}
+              </button>
+            ) : (
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-mono">{number}</Badge>
+            )
+          )}
+          {isStatusChange && (oldStatus || newStatus) && (
+            <span className="inline-flex items-center gap-1 text-[11px]">
+              {oldStatus && (
+                <Badge variant="outline" className="px-1.5 py-0 capitalize text-muted-foreground">
+                  {statusLabel(oldStatus)}
+                </Badge>
+              )}
+              <ArrowRight className="h-3 w-3 text-muted-foreground" />
+              {newStatus && (
+                <Badge variant="secondary" className="px-1.5 py-0 capitalize">
+                  {statusLabel(newStatus)}
+                </Badge>
+              )}
+            </span>
+          )}
+          {!isStatusChange && newStatus && (
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 capitalize">
+              {statusLabel(newStatus)}
+            </Badge>
+          )}
         </div>
-        {(title || activity.description) && (
+        {isStatusChange && (oldStatus || newStatus) && (
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {t('activity.statusChangeDetail', {
+              defaultValue: 'Status changed from {{from}} to {{to}}',
+              from: statusLabel(oldStatus) || '—',
+              to: statusLabel(newStatus) || '—',
+            })}
+          </p>
+        )}
+        {!isStatusChange && (title || activity.description) && (
           <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2 break-words">
             {title || activity.description}
           </p>
@@ -79,6 +172,15 @@ function ActivityRow({ activity, t, locale }: { activity: ContactActivityDto; t:
         <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
           <span>{when}</span>
           {activity.createdBy && <span>• {activity.createdBy}</span>}
+          {path && (
+            <button
+              type="button"
+              onClick={() => onOpenEntity(path)}
+              className="text-primary hover:underline"
+            >
+              {t('activity.view', 'View')}
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -87,8 +189,10 @@ function ActivityRow({ activity, t, locale }: { activity: ContactActivityDto; t:
 
 export function ContactActivityTab({ contactId }: Props) {
   const { t, i18n } = useTranslation('contacts');
+  const navigate = useNavigate();
   const { activities, isLoading } = useContactActivity(contactId);
   const locale = i18n.language?.startsWith('fr') ? frLocale : enLocale;
+  const statusLabel = useStatusLabel();
 
   return (
     <Card>
@@ -117,7 +221,14 @@ export function ContactActivityTab({ contactId }: Props) {
         ) : (
           <div className="divide-y">
             {activities.map((a) => (
-              <ActivityRow key={a.id} activity={a} t={t} locale={locale} />
+              <ActivityRow
+                key={a.id}
+                activity={a}
+                t={t}
+                locale={locale}
+                onOpenEntity={(p) => navigate(p)}
+                statusLabel={statusLabel}
+              />
             ))}
           </div>
         )}

@@ -321,13 +321,22 @@
       "purchases": "Purchases",
       "articles": "Articles",
       "activity": "Activity",
+      "timeline": "Timeline",
       "tasks": "Tasks",
       "files": "Files",
       "projects": "Projects"
     },
+    "timeline": {
+      "title": "Timeline",
+      "empty": "No activity or notes yet",
+      "addNote": "Add note",
+      "note": "Note"
+    },
     "activity": {
       "title": "Activity",
       "empty": "No activity yet",
+      "view": "View",
+      "statusChangeDetail": "Status changed from {{from}} to {{to}}",
       "types": {
         "offer_created": "Offer created",
         "offer_status_changed": "Offer status changed",
@@ -341,7 +350,26 @@
         "installation_completed": "Installation completed",
         "note_added": "Note added",
         "note_updated": "Note updated",
-        "note_deleted": "Note deleted"
+        "note_deleted": "Note deleted",
+        "contact_updated": "Contact information updated"
+      },
+      "fields": {
+        "firstName": "First name",
+        "lastName": "Last name",
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone",
+        "company": "Company",
+        "position": "Position",
+        "address": "Address",
+        "city": "City",
+        "country": "Country",
+        "postalCode": "Postal code",
+        "status": "Status",
+        "type": "Type",
+        "cin": "CIN",
+        "matriculeFiscale": "Fiscal ID",
+        "favorite": "Favorite"
       }
     },
     "articles": {
