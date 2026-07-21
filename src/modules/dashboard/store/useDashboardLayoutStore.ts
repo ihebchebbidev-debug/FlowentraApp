@@ -1,7 +1,9 @@
 import { useEffect, useMemo } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import i18n from '@/lib/i18n';
 import { getActiveCompanyId, isActiveCompanyViewAll } from '@/utils/targetTenant';
+import { toast } from '@/hooks/use-toast';
 import {
   fetchDashboardLayout,
   saveDashboardLayout,
@@ -11,15 +13,17 @@ import {
 /**
  * Per-user customization of the main "/dashboard" landing page.
  *
- * The layout is scoped per active company (like reporting favorites) so it does
- * not leak across tenants. It is persisted to the backend
- * (`/api/DashboardLayout`) so it follows the user across devices/logins, with a
- * localStorage mirror for instant hydration and offline resilience.
+ * Scoped per active company (like reporting favorites) so it does not leak
+ * across tenants. Persisted to the backend (`/api/DashboardLayout`) so it
+ * follows the user across devices/logins, with a localStorage mirror for
+ * instant hydration and offline resilience.
  *
- *  - `order`  : ordered list of card ids (default cards + pinned reporting
- *               widget ids). Cards not present are appended in their natural order.
- *  - `hidden` : default card ids the user removed. (Reporting widgets are
- *               "removed" by un-pinning them via the favorites store.)
+ *  - `order`  : ordered list of **default** dashboard card ids ONLY. Pinned
+ *               reporting widget ids are NOT stored here anymore — pinned
+ *               widgets always render at the top of the dashboard, ordered
+ *               by the reporting favorites store (single source of truth).
+ *  - `hidden` : default card ids the user hid. Reporting widgets are "removed"
+ *               by un-pinning them via the favorites store.
  */
 export interface DashboardLayout {
   order: string[];
@@ -30,8 +34,8 @@ interface LayoutState {
   byScope: Record<string, DashboardLayout>;
   hydratedScopes: Record<string, boolean>;
   setScope: (scope: string, layout: DashboardLayout) => void;
-  markHydrated: (scope: string) => void;
-  patch: (scope: string, next: Partial<DashboardLayout>) => void;
+  markHydrated: (scope: string, value: boolean) => void;
+  patch: (scope: string, next: Partial<DashboardLayout>) => { prev: DashboardLayout };
 }
 
 const EMPTY: DashboardLayout = { order: [], hidden: [] };
@@ -43,11 +47,12 @@ const useLayoutStoreInternal = create<LayoutState>()(
       hydratedScopes: {},
       setScope: (scope, layout) =>
         set({ byScope: { ...get().byScope, [scope]: layout } }),
-      markHydrated: (scope) =>
-        set({ hydratedScopes: { ...get().hydratedScopes, [scope]: true } }),
+      markHydrated: (scope, value) =>
+        set({ hydratedScopes: { ...get().hydratedScopes, [scope]: value } }),
       patch: (scope, next) => {
-        const current = get().byScope[scope] ?? EMPTY;
-        set({ byScope: { ...get().byScope, [scope]: { ...current, ...next } } });
+        const prev = get().byScope[scope] ?? EMPTY;
+        set({ byScope: { ...get().byScope, [scope]: { ...prev, ...next } } });
+        return { prev };
       },
     }),
     {
@@ -75,7 +80,7 @@ const hydrateFromBackend = async (scope: string) => {
       order: Array.isArray(data?.order) ? data!.order : [],
       hidden: Array.isArray(data?.hidden) ? data!.hidden : [],
     });
-    useLayoutStoreInternal.getState().markHydrated(scope);
+    useLayoutStoreInternal.getState().markHydrated(scope, true);
   } catch {
     // Keep locally-persisted values on failure; retry next mount.
   } finally {
@@ -83,38 +88,57 @@ const hydrateFromBackend = async (scope: string) => {
   }
 };
 
-const persistLayout = async (scope: string, layout: DashboardLayout) => {
-  try {
-    await saveDashboardLayout({ scope, order: layout.order, hidden: layout.hidden });
-  } catch {
-    /* handled by apiClient */
-  }
+const persistLayout = (scope: string, layout: DashboardLayout, prev: DashboardLayout) => {
+  saveDashboardLayout({ scope, order: layout.order, hidden: layout.hidden }).catch((e) => {
+    // Roll back and force re-hydrate so client/server don't drift silently.
+    useLayoutStoreInternal.getState().setScope(scope, prev);
+    useLayoutStoreInternal.getState().markHydrated(scope, false);
+    const t = i18n.getFixedT(null, 'dashboard');
+    toast({
+      title: t('layout.saveFailedTitle', { defaultValue: 'Could not save your dashboard layout' }),
+      description: e?.message || t('layout.networkError', { defaultValue: 'Network error' }),
+      variant: 'destructive',
+    });
+  });
+};
+
+/**
+ * Cross-store cleanup called by the favorites store when a widget is unpinned:
+ * strips the id from `order` and `hidden` so orphan ids do not accumulate
+ * indefinitely in the JSONB blob. Safe to call for ids that aren't present.
+ */
+export const stripIdFromLayout = (scope: string, id: string) => {
+  const current = useLayoutStoreInternal.getState().byScope[scope] ?? EMPTY;
+  if (!current.order.includes(id) && !current.hidden.includes(id)) return;
+  const next: DashboardLayout = {
+    order: current.order.filter((x) => x !== id),
+    hidden: current.hidden.filter((x) => x !== id),
+  };
+  useLayoutStoreInternal.getState().setScope(scope, next);
+  persistLayout(scope, next, current);
 };
 
 export const useDashboardLayout = () => {
-  const byScope = useLayoutStoreInternal((s) => s.byScope);
-  const hydratedScopes = useLayoutStoreInternal((s) => s.hydratedScopes);
-  const patch = useLayoutStoreInternal((s) => s.patch);
   const scope = getScopeKey();
-  const layout = useMemo(() => byScope[scope] ?? EMPTY, [byScope, scope]);
-  const hydrated = !!hydratedScopes[scope];
+  const layoutRaw = useLayoutStoreInternal((s) => s.byScope[scope]);
+  const hydrated = useLayoutStoreInternal((s) => !!s.hydratedScopes[scope]);
+  const patch = useLayoutStoreInternal((s) => s.patch);
+  const layout = useMemo(() => layoutRaw ?? EMPTY, [layoutRaw]);
 
   useEffect(() => {
-    if (!hydratedScopes[scope]) {
-      void hydrateFromBackend(scope);
-    }
-  }, [scope, hydratedScopes]);
+    if (!hydrated) void hydrateFromBackend(scope);
+  }, [scope, hydrated]);
 
   const commit = (next: DashboardLayout) => {
-    patch(scope, next);
-    void persistLayout(scope, next);
+    const { prev } = patch(scope, next);
+    persistLayout(scope, next, prev);
   };
 
   return {
     order: layout.order,
     hidden: layout.hidden,
     hydrated,
-    /** Persist a new ordering of visible card ids. */
+    /** Persist a new ordering of default-card ids. */
     setOrder: (order: string[]) => commit({ order, hidden: layout.hidden }),
     /** Hide a default card. */
     hide: (id: string) =>
@@ -130,8 +154,18 @@ export const useDashboardLayout = () => {
       }),
     /** Reset to the built-in default layout. */
     reset: () => {
-      patch(scope, { order: [], hidden: [] });
-      void resetDashboardLayout(scope);
+      const prev = layout;
+      useLayoutStoreInternal.getState().setScope(scope, EMPTY);
+      resetDashboardLayout(scope).catch((e) => {
+        useLayoutStoreInternal.getState().setScope(scope, prev);
+        useLayoutStoreInternal.getState().markHydrated(scope, false);
+        const t = i18n.getFixedT(null, 'dashboard');
+        toast({
+          title: t('layout.resetFailedTitle', { defaultValue: 'Could not reset your dashboard layout' }),
+          description: e?.message || t('layout.networkError', { defaultValue: 'Network error' }),
+          variant: 'destructive',
+        });
+      });
     },
   };
 };

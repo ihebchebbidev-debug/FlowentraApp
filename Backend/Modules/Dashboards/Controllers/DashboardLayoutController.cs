@@ -12,10 +12,19 @@ namespace MyApi.Modules.Dashboards.Controllers;
 public class DashboardLayoutController : ControllerBase
 {
     private readonly IDashboardLayoutService _service;
+    private readonly ILogger<DashboardLayoutController> _logger;
 
-    public DashboardLayoutController(IDashboardLayoutService service)
+    // Hard caps so a buggy/malicious client can't push unbounded arrays into
+    // the jsonb columns. The main dashboard has < 20 cards in practice.
+    private const int MaxIds = 200;
+    private const int MaxIdLength = 200;
+
+    public DashboardLayoutController(
+        IDashboardLayoutService service,
+        ILogger<DashboardLayoutController> logger)
     {
         _service = service;
+        _logger = logger;
     }
 
     private int GetCurrentUserId()
@@ -25,6 +34,9 @@ public class DashboardLayoutController : ControllerBase
             throw new UnauthorizedAccessException("User ID not found in token");
         return id;
     }
+
+    private static bool AnyOversized(IEnumerable<string>? list) =>
+        list != null && list.Any(s => s == null || s.Length > MaxIdLength);
 
     [HttpGet]
     public async Task<IActionResult> Get([FromQuery] string? scope, CancellationToken ct)
@@ -40,7 +52,8 @@ public class DashboardLayoutController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { success = false, message = ex.Message });
+            _logger.LogError(ex, "DashboardLayout GET failed");
+            return StatusCode(500, new { success = false, message = "Failed to load layout" });
         }
     }
 
@@ -50,6 +63,13 @@ public class DashboardLayoutController : ControllerBase
         try
         {
             if (req == null) return BadRequest(new { success = false, message = "Body required" });
+            var order = req.Order ?? new List<string>();
+            var hidden = req.Hidden ?? new List<string>();
+            if (order.Count > MaxIds || hidden.Count > MaxIds)
+                return BadRequest(new { success = false, message = "Too many items in layout" });
+            if (AnyOversized(order) || AnyOversized(hidden))
+                return BadRequest(new { success = false, message = "One or more ids are too long" });
+
             var data = await _service.SaveAsync(GetCurrentUserId(), req, ct);
             return Ok(new { success = true, data });
         }
@@ -59,7 +79,8 @@ public class DashboardLayoutController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { success = false, message = ex.Message });
+            _logger.LogError(ex, "DashboardLayout SAVE failed");
+            return StatusCode(500, new { success = false, message = "Failed to save layout" });
         }
     }
 
@@ -77,7 +98,8 @@ public class DashboardLayoutController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { success = false, message = ex.Message });
+            _logger.LogError(ex, "DashboardLayout RESET failed");
+            return StatusCode(500, new { success = false, message = "Failed to reset layout" });
         }
     }
 }

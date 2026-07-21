@@ -60,7 +60,10 @@ interface PinnedCardProps {
 
 function PinnedCard({ w, onOpen, onRemove }: PinnedCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: w.id });
-  const Icon = sourceIcon[w.source];
+  // Defensive: if a legacy row somehow escapes the source allow-list in the
+  // store, fall back to the ☆ icon rather than throwing.
+  const Icon = sourceIcon[w.source] ?? Star;
+  const tone = sourceTone[w.source] ?? 'text-muted-foreground bg-muted';
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -72,33 +75,34 @@ function PinnedCard({ w, onOpen, onRemove }: PinnedCardProps) {
       style={style}
       className={cn(
         'group relative flex flex-col items-start gap-2 rounded-md border bg-background p-3 text-left transition',
-        isDragging ? 'shadow-lg ring-2 ring-primary/40' : 'hover:-translate-y-0.5 hover:shadow-md'
+        isDragging ? 'shadow-lg ring-2 ring-primary/40' : 'hover:-translate-y-0.5 hover:shadow-md focus-within:shadow-md'
       )}
     >
       <button
         type="button"
         {...attributes}
         {...listeners}
-        aria-label="Drag to reorder"
-        className="absolute left-1 top-1 cursor-grab rounded p-1 text-muted-foreground/60 opacity-0 transition hover:bg-muted hover:text-foreground group-hover:opacity-100 active:cursor-grabbing"
+        aria-label={`Drag to reorder ${w.title}`}
+        className="absolute left-1 top-1 cursor-grab rounded p-1 text-muted-foreground/60 opacity-0 transition hover:bg-muted hover:text-foreground group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring active:cursor-grabbing"
       >
         <GripVertical className="h-3 w-3" />
       </button>
       <button
         type="button"
         onClick={onRemove}
-        aria-label="Unpin"
-        className="absolute right-1 top-1 rounded p-1 text-muted-foreground opacity-0 transition hover:bg-muted hover:text-destructive group-hover:opacity-100"
+        aria-label={`Unpin ${w.title}`}
+        className="absolute right-1 top-1 rounded p-1 text-muted-foreground opacity-0 transition hover:bg-muted hover:text-destructive group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
       >
         <X className="h-3 w-3" />
       </button>
       <button
         type="button"
         onClick={onOpen}
-        className="flex w-full flex-col items-start gap-2 text-left"
+        aria-label={`Open ${w.source} reporting for ${w.title}`}
+        className="flex w-full flex-col items-start gap-2 text-left rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
       >
-        <div className={cn('flex h-7 w-7 items-center justify-center rounded-md', sourceTone[w.source])}>
-          <Icon className="h-3.5 w-3.5" />
+        <div className={cn('flex h-7 w-7 items-center justify-center rounded-md', tone)}>
+          <Icon className="h-3.5 w-3.5" aria-hidden="true" />
         </div>
         <div className="w-full">
           <div className="truncate text-xs font-semibold text-foreground">{w.title}</div>

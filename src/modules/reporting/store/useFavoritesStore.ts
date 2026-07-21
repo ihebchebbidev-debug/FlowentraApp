@@ -1,7 +1,9 @@
 import { useEffect, useMemo } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import i18n from '@/lib/i18n';
 import { getActiveCompanyId, isActiveCompanyViewAll } from '@/utils/targetTenant';
+import { toast } from '@/hooks/use-toast';
 import {
   fetchReportingFavorites,
   upsertReportingFavorite,
@@ -10,10 +12,18 @@ import {
   reorderReportingFavorites,
 } from '@/services/api/reportingFavoritesApi';
 
+export type FavoriteSource = 'Sales' | 'Service' | 'Finance' | 'HR' | 'Purchase';
+
+const KNOWN_SOURCES: readonly FavoriteSource[] = [
+  'Sales', 'Service', 'Finance', 'HR', 'Purchase',
+];
+export const isFavoriteSource = (s: unknown): s is FavoriteSource =>
+  typeof s === 'string' && (KNOWN_SOURCES as readonly string[]).includes(s);
+
 export interface FavoriteWidget {
   id: string;
   title: string;
-  source: 'Sales' | 'Service' | 'Finance' | 'HR' | 'Purchase';
+  source: FavoriteSource;
 }
 
 /**
@@ -27,11 +37,11 @@ interface FavoritesState {
   byScope: Record<string, FavoriteWidget[]>;
   hydratedScopes: Record<string, boolean>;
   setScope: (scope: string, widgets: FavoriteWidget[]) => void;
-  markHydrated: (scope: string) => void;
-  toggle: (scope: string, w: FavoriteWidget) => { added: boolean };
-  remove: (scope: string, id: string) => void;
-  clear: (scope: string) => void;
-  reorder: (scope: string, orderedIds: string[]) => void;
+  markHydrated: (scope: string, value: boolean) => void;
+  toggle: (scope: string, w: FavoriteWidget) => { added: boolean; prev: FavoriteWidget[] };
+  remove: (scope: string, id: string) => { prev: FavoriteWidget[] };
+  clear: (scope: string) => { prev: FavoriteWidget[] };
+  reorder: (scope: string, orderedIds: string[]) => { prev: FavoriteWidget[] };
 }
 
 const useFavoritesStoreInternal = create<FavoritesState>()(
@@ -41,39 +51,43 @@ const useFavoritesStoreInternal = create<FavoritesState>()(
       hydratedScopes: {},
       setScope: (scope, widgets) =>
         set({ byScope: { ...get().byScope, [scope]: widgets } }),
-      markHydrated: (scope) =>
-        set({ hydratedScopes: { ...get().hydratedScopes, [scope]: true } }),
+      markHydrated: (scope, value) =>
+        set({ hydratedScopes: { ...get().hydratedScopes, [scope]: value } }),
       toggle: (scope, w) => {
-        const list = get().byScope[scope] ?? [];
-        const exists = list.some((x) => x.id === w.id);
+        const prev = get().byScope[scope] ?? [];
+        const exists = prev.some((x) => x.id === w.id);
         set({
           byScope: {
             ...get().byScope,
-            [scope]: exists ? list.filter((x) => x.id !== w.id) : [...list, w],
+            [scope]: exists ? prev.filter((x) => x.id !== w.id) : [...prev, w],
           },
         });
-        return { added: !exists };
+        return { added: !exists, prev };
       },
-      remove: (scope, id) =>
+      remove: (scope, id) => {
+        const prev = get().byScope[scope] ?? [];
         set({
           byScope: {
             ...get().byScope,
-            [scope]: (get().byScope[scope] ?? []).filter((x) => x.id !== id),
+            [scope]: prev.filter((x) => x.id !== id),
           },
-        }),
-      clear: (scope) =>
-        set({
-          byScope: { ...get().byScope, [scope]: [] },
-        }),
+        });
+        return { prev };
+      },
+      clear: (scope) => {
+        const prev = get().byScope[scope] ?? [];
+        set({ byScope: { ...get().byScope, [scope]: [] } });
+        return { prev };
+      },
       reorder: (scope, orderedIds) => {
-        const list = get().byScope[scope] ?? [];
-        const map = new Map(list.map((w) => [w.id, w]));
+        const prev = get().byScope[scope] ?? [];
+        const map = new Map(prev.map((w) => [w.id, w]));
         const next = orderedIds
           .map((id) => map.get(id))
           .filter((w): w is FavoriteWidget => Boolean(w));
-        // preserve any items missing from orderedIds at the end
-        for (const w of list) if (!orderedIds.includes(w.id)) next.push(w);
+        for (const w of prev) if (!orderedIds.includes(w.id)) next.push(w);
         set({ byScope: { ...get().byScope, [scope]: next } });
+        return { prev };
       },
     }),
     {
@@ -97,13 +111,17 @@ const hydrateFromBackend = async (scope: string) => {
   try {
     const res = await fetchReportingFavorites(scope);
     const items = res?.data?.data?.items ?? [];
-    const widgets: FavoriteWidget[] = items.map((r) => ({
-      id: r.widgetId,
-      title: r.title,
-      source: r.source as FavoriteWidget['source'],
-    }));
+    // Defensive: drop any row with an unknown/legacy source rather than
+    // rendering `undefined` in <PinnedReportingWidgets> / <FavoriteWidgetCard>.
+    const widgets: FavoriteWidget[] = items
+      .filter((r) => isFavoriteSource(r.source))
+      .map((r) => ({
+        id: r.widgetId,
+        title: r.title,
+        source: r.source as FavoriteSource,
+      }));
     useFavoritesStoreInternal.getState().setScope(scope, widgets);
-    useFavoritesStoreInternal.getState().markHydrated(scope);
+    useFavoritesStoreInternal.getState().markHydrated(scope, true);
   } catch {
     // Keep locally-persisted values on failure; will retry next mount.
   } finally {
@@ -111,82 +129,77 @@ const hydrateFromBackend = async (scope: string) => {
   }
 };
 
-const persistAdd = async (scope: string, w: FavoriteWidget, position: number) => {
-  try {
-    await upsertReportingFavorite({
-      scope,
-      widgetId: w.id,
-      title: w.title,
-      source: w.source,
-      position,
-    });
-  } catch {
-    /* handled by apiClient */
-  }
+/** Rollback helper: revert `byScope[scope]` and force a re-hydrate next mount. */
+const rollback = (scope: string, prev: FavoriteWidget[], errMsg: string) => {
+  useFavoritesStoreInternal.getState().setScope(scope, prev);
+  useFavoritesStoreInternal.getState().markHydrated(scope, false);
+  const t = i18n.getFixedT(null, 'reporting');
+  toast({
+    title: t('favorites.saveFailedTitle', { defaultValue: 'Could not save your pinned widgets' }),
+    description: errMsg || t('favorites.networkError', { defaultValue: 'Network error' }),
+    variant: 'destructive',
+  });
 };
 
-const persistRemove = async (scope: string, id: string) => {
-  try {
-    await deleteReportingFavorite(scope, id);
-  } catch {
-    /* handled by apiClient */
-  }
-};
-
-const persistOrder = async (scope: string, orderedIds: string[]) => {
-  try {
-    await reorderReportingFavorites(scope, orderedIds);
-  } catch {
-    /* handled by apiClient */
-  }
-};
-
-const persistClear = async (scope: string) => {
-  try {
-    await deleteAllReportingFavorites(scope);
-  } catch {
-    /* handled by apiClient */
-  }
+/** Called from `remove()` and `toggle()` when unpinning, so orphan widget ids
+ *  don't pile up in `DashboardLayout.order`/`hidden`. Kept as a soft-import to
+ *  avoid a circular dependency between the two stores. */
+const scrubDashboardLayout = (scope: string, id: string) => {
+  // Dynamic import breaks the store↔store cycle at bundle time.
+  import('@/modules/dashboard/store/useDashboardLayoutStore')
+    .then((m) => m.stripIdFromLayout?.(scope, id))
+    .catch(() => { /* non-critical */ });
 };
 
 export const useFavoritesStore = () => {
-  const byScope = useFavoritesStoreInternal((s) => s.byScope);
-  const hydratedScopes = useFavoritesStoreInternal((s) => s.hydratedScopes);
+  const scope = getScopeKey();
+  // Scoped subscription: only re-render when THIS scope's list changes,
+  // not on any change to the global byScope map.
+  const widgetsRaw = useFavoritesStoreInternal((s) => s.byScope[scope]);
+  const hydrated = useFavoritesStoreInternal((s) => !!s.hydratedScopes[scope]);
   const toggleRaw = useFavoritesStoreInternal((s) => s.toggle);
   const removeRaw = useFavoritesStoreInternal((s) => s.remove);
   const reorderRaw = useFavoritesStoreInternal((s) => s.reorder);
   const clearRaw = useFavoritesStoreInternal((s) => s.clear);
-  const scope = getScopeKey();
-  const widgets = useMemo(() => byScope[scope] ?? [], [byScope, scope]);
+  const widgets = useMemo(() => widgetsRaw ?? [], [widgetsRaw]);
 
   useEffect(() => {
-    if (!hydratedScopes[scope]) {
-      void hydrateFromBackend(scope);
-    }
-  }, [scope, hydratedScopes]);
+    if (!hydrated) void hydrateFromBackend(scope);
+  }, [scope, hydrated]);
 
   return {
     widgets,
+    hydrated,
     toggle: (w: FavoriteWidget) => {
-      const { added } = toggleRaw(scope, w);
+      if (!isFavoriteSource(w.source)) return;
+      const { added, prev } = toggleRaw(scope, w);
       if (added) {
         const position = (useFavoritesStoreInternal.getState().byScope[scope] ?? []).length - 1;
-        void persistAdd(scope, w, position);
+        upsertReportingFavorite({
+          scope, widgetId: w.id, title: w.title, source: w.source, position,
+        }).catch((e) => rollback(scope, prev, e?.message || 'Network error'));
       } else {
-        void persistRemove(scope, w.id);
+        deleteReportingFavorite(scope, w.id)
+          .then(() => scrubDashboardLayout(scope, w.id))
+          .catch((e) => rollback(scope, prev, e?.message || 'Network error'));
       }
     },
     remove: (id: string) => {
-      removeRaw(scope, id);
-      void persistRemove(scope, id);
+      const { prev } = removeRaw(scope, id);
+      deleteReportingFavorite(scope, id)
+        .then(() => scrubDashboardLayout(scope, id))
+        .catch((e) => rollback(scope, prev, e?.message || 'Network error'));
     },
     reorder: (orderedIds: string[]) => {
-      reorderRaw(scope, orderedIds);
-      void persistOrder(scope, orderedIds);
+      const { prev } = reorderRaw(scope, orderedIds);
+      reorderReportingFavorites(scope, orderedIds)
+        .catch((e) => rollback(scope, prev, e?.message || 'Network error'));
     },
     resetAll: () => {
-      clearRaw(scope);
-      void persistClear(scope);
+      const { prev } = clearRaw(scope);
+      deleteAllReportingFavorites(scope)
+        .then(() => prev.forEach((w) => scrubDashboardLayout(scope, w.id)))
+        .catch((e) => rollback(scope, prev, e?.message || 'Network error'));
     },
     has: (id: string) => widgets.some((x) => x.id === id),
   };

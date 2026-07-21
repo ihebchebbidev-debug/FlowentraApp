@@ -12,10 +12,25 @@ namespace MyApi.Modules.Reporting.Controllers;
 public class ReportingFavoritesController : ControllerBase
 {
     private readonly IReportingFavoritesService _service;
+    private readonly ILogger<ReportingFavoritesController> _logger;
 
-    public ReportingFavoritesController(IReportingFavoritesService service)
+    // Allow-list of widget "sources". Keep in sync with the frontend
+    // `FavoriteWidget.source` union in src/modules/reporting/store/useFavoritesStore.ts.
+    private static readonly HashSet<string> AllowedSources = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Sales", "Service", "Finance", "HR", "Purchase",
+    };
+
+    // Guard against a runaway client pushing an unbounded reorder payload
+    // into the DB (each entry becomes a row update).
+    private const int MaxReorderIds = 200;
+
+    public ReportingFavoritesController(
+        IReportingFavoritesService service,
+        ILogger<ReportingFavoritesController> logger)
     {
         _service = service;
+        _logger = logger;
     }
 
     private int GetCurrentUserId()
@@ -40,7 +55,8 @@ public class ReportingFavoritesController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { success = false, message = ex.Message });
+            _logger.LogError(ex, "ReportingFavorites GET failed");
+            return StatusCode(500, new { success = false, message = "Failed to load favorites" });
         }
     }
 
@@ -51,6 +67,13 @@ public class ReportingFavoritesController : ControllerBase
         {
             if (req == null || string.IsNullOrWhiteSpace(req.WidgetId))
                 return BadRequest(new { success = false, message = "widgetId is required" });
+            if (req.WidgetId.Length > 200)
+                return BadRequest(new { success = false, message = "widgetId is too long" });
+            if (string.IsNullOrWhiteSpace(req.Title) || req.Title.Length > 300)
+                return BadRequest(new { success = false, message = "title must be 1..300 chars" });
+            if (!AllowedSources.Contains(req.Source))
+                return BadRequest(new { success = false, message = "source is invalid" });
+
             var data = await _service.UpsertAsync(GetCurrentUserId(), req, ct);
             return Ok(new { success = true, data });
         }
@@ -60,7 +83,8 @@ public class ReportingFavoritesController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { success = false, message = ex.Message });
+            _logger.LogError(ex, "ReportingFavorites UPSERT failed");
+            return StatusCode(500, new { success = false, message = "Failed to save favorite" });
         }
     }
 
@@ -78,7 +102,8 @@ public class ReportingFavoritesController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { success = false, message = ex.Message });
+            _logger.LogError(ex, "ReportingFavorites DELETE failed");
+            return StatusCode(500, new { success = false, message = "Failed to remove favorite" });
         }
     }
 
@@ -96,7 +121,8 @@ public class ReportingFavoritesController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { success = false, message = ex.Message });
+            _logger.LogError(ex, "ReportingFavorites DELETE ALL failed");
+            return StatusCode(500, new { success = false, message = "Failed to clear favorites" });
         }
     }
 
@@ -106,6 +132,11 @@ public class ReportingFavoritesController : ControllerBase
         try
         {
             if (req == null) return BadRequest(new { success = false, message = "Body required" });
+            if (req.OrderedWidgetIds == null)
+                return BadRequest(new { success = false, message = "orderedWidgetIds is required" });
+            if (req.OrderedWidgetIds.Count > MaxReorderIds)
+                return BadRequest(new { success = false, message = "Too many items in reorder payload" });
+
             await _service.ReorderAsync(GetCurrentUserId(), req, ct);
             return Ok(new { success = true });
         }
@@ -115,7 +146,8 @@ public class ReportingFavoritesController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { success = false, message = ex.Message });
+            _logger.LogError(ex, "ReportingFavorites REORDER failed");
+            return StatusCode(500, new { success = false, message = "Failed to reorder favorites" });
         }
     }
 }

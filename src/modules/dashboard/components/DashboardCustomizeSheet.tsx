@@ -87,12 +87,15 @@ function SortableRow({
   onToggleHide: () => void;
   extraAction?: React.ReactNode;
 }) {
+  const { t } = useTranslation('dashboard');
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 20 : undefined,
   };
+  const showLabel = t('customize.show', { defaultValue: 'Show' });
+  const hideLabel = t('customize.hide', { defaultValue: 'Hide' });
   return (
     <div
       ref={setNodeRef}
@@ -107,10 +110,10 @@ function SortableRow({
         type="button"
         {...attributes}
         {...listeners}
-        aria-label="Drag to reorder"
+        aria-label={t('customize.dragToReorder', { defaultValue: 'Drag to reorder' })}
         className="cursor-grab rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground active:cursor-grabbing"
       >
-        <GripVertical className="h-4 w-4" />
+        <GripVertical className="h-4 w-4" aria-hidden="true" />
       </button>
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm font-medium">{label}</div>
@@ -122,10 +125,11 @@ function SortableRow({
         size="icon"
         className="h-7 w-7"
         onClick={onToggleHide}
-        title={hidden ? 'Show' : 'Hide'}
-        aria-label={hidden ? 'Show' : 'Hide'}
+        title={hidden ? showLabel : hideLabel}
+        aria-label={hidden ? showLabel : hideLabel}
+        aria-pressed={hidden}
       >
-        {hidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        {hidden ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
       </Button>
       {extraAction}
     </div>
@@ -256,9 +260,9 @@ export function DashboardCustomizeSheet(props: Props) {
                               className="h-7 w-7 text-muted-foreground hover:text-destructive"
                               onClick={() => onUnpin(id)}
                               title={t('customize.unstar', { defaultValue: 'Unstar (remove favorite)' })}
-                              aria-label="Unstar"
+                              aria-label={t('customize.unstar', { defaultValue: 'Unstar (remove favorite)' })}
                             >
-                              <Star className="h-4 w-4 fill-current" />
+                              <Star className="h-4 w-4 fill-current" aria-hidden="true" />
                             </Button>
                           }
                         />

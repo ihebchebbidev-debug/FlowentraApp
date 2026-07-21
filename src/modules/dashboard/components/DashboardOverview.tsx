@@ -31,6 +31,16 @@ import { useFavoritesStore } from '@/modules/reporting/store/useFavoritesStore';
 import { FavoriteWidgetCard, getWidgetSize } from '@/modules/reporting/widgets/FavoriteWidgets';
 import { DashboardCustomizeSheet, type CustomizeRow } from './DashboardCustomizeSheet';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Users,
   FileText,
   ShoppingCart,
@@ -211,6 +221,7 @@ function SortableCard({
   card: DashboardCard;
   onOpen?: () => void;
 }) {
+  const { t } = useTranslation('dashboard');
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: card.id,
   });
@@ -239,7 +250,7 @@ function SortableCard({
             onOpen();
           }}
           onPointerDown={(e) => e.stopPropagation()}
-          aria-label="Open source report"
+          aria-label={t('overview.openSourceReport', { defaultValue: 'Open source report' })}
           className="absolute right-2 top-2 z-20 hidden items-center gap-1 rounded-full border bg-card px-2 py-0.5 text-[10px] font-medium text-muted-foreground shadow-sm transition hover:text-foreground group-hover:flex"
         >
           <ExternalLink className="h-3 w-3" />
@@ -257,9 +268,13 @@ export default function DashboardOverview() {
   const { user } = useAuth();
 
   // Per-user customizable dashboard layout (synced to account) + pinned widgets.
+  // NOTE: `order`/`hidden` in the layout store contain DEFAULT card ids only —
+  // pinned reporting widget ordering is owned by the favorites store and
+  // always renders at the TOP of the dashboard.
   const { order, hidden, setOrder, hide, unhide, reset } = useDashboardLayout();
-  const { widgets: pinnedWidgets, remove: unpinWidget } = useFavoritesStore();
+  const { widgets: pinnedWidgets, remove: unpinWidget, reorder: reorderFavorites } = useFavoritesStore();
   const [customizeOpen, setCustomizeOpen] = React.useState(false);
+  const [confirmResetOpen, setConfirmResetOpen] = React.useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -272,6 +287,7 @@ export default function DashboardOverview() {
     if (h < 18) return t('overview.greetingAfternoon', { defaultValue: 'Good afternoon' });
     return t('overview.greetingEvening', { defaultValue: 'Good evening' });
   }, [t]);
+
 
 
   const {
@@ -534,47 +550,84 @@ export default function DashboardOverview() {
   };
 
   // Pinned reporting widgets become individual cards, fully interleaved.
-  const reportingCards: DashboardCard[] = pinnedWidgets.map((w) => ({
-    id: w.id,
-    size: reportingSizeToCard(w.id),
-    reporting: true,
-    node: <FavoriteWidgetCard fav={w} />,
-  }));
+  const reportingCards: DashboardCard[] = React.useMemo(
+    () => pinnedWidgets.map((w) => ({
+      id: w.id,
+      size: reportingSizeToCard(w.id),
+      reporting: true,
+      node: <FavoriteWidgetCard fav={w} />,
+    })),
+    [pinnedWidgets],
+  );
 
-  const known = [...reportingCards, ...defaultCards];
-  const cardById = new Map(known.map((c) => [c.id, c]));
-  const hiddenSet = new Set(hidden);
-  const reportingIdSet = new Set(reportingCards.map((c) => c.id));
-  const defaultIdSet = new Set(defaultCards.map((c) => c.id));
+  const cardById = React.useMemo(
+    () => new Map([...reportingCards, ...defaultCards].map((c) => [c.id, c])),
+    [reportingCards, defaultCards],
+  );
+  const hiddenSet = React.useMemo(() => new Set(hidden), [hidden]);
+  const defaultIdSet = React.useMemo(
+    () => new Set(defaultCards.map((c) => c.id)),
+    [defaultCards],
+  );
 
-  // Pinned reporting widgets always render at the TOP of the dashboard,
-  // ahead of any default cards, so newly-starred widgets are immediately
-  // visible above the user's existing layout. Within each group we still
-  // respect the user's saved drag-and-drop order, and any newly-added
-  // cards are appended to the end of their group.
-  const orderReportingIds = [
-    ...order.filter((id) => reportingIdSet.has(id) && !hiddenSet.has(id)),
-    ...reportingCards
+  // Pinned reporting widgets ALWAYS render at the top of the dashboard —
+  // their order is owned solely by the reporting favorites store (single
+  // source of truth). Default cards follow, ordered by the dashboard layout
+  // store (which stores default-card ids only — no widget ids).
+  const pinnedIds = React.useMemo(
+    () => reportingCards.map((c) => c.id).filter((id) => !hiddenSet.has(id)),
+    [reportingCards, hiddenSet],
+  );
+  const defaultVisibleIds = React.useMemo(() => {
+    // Defensive: `order` may still contain legacy widget ids from before we
+    // split the two stores — filter them out here so ordering is stable.
+    const known = order.filter((id) => defaultIdSet.has(id) && !hiddenSet.has(id));
+    const appended = defaultCards
       .map((c) => c.id)
-      .filter((id) => !order.includes(id) && !hiddenSet.has(id)),
-  ];
-  const orderDefaultIds = [
-    ...order.filter((id) => defaultIdSet.has(id) && !hiddenSet.has(id)),
-    ...defaultCards
-      .map((c) => c.id)
-      .filter((id) => !order.includes(id) && !hiddenSet.has(id)),
-  ];
-  const orderedIds = [...orderReportingIds, ...orderDefaultIds];
-  const visibleCards = orderedIds.map((id) => cardById.get(id)!).filter(Boolean);
-  const hiddenDefaults = defaultCards.filter((c) => hiddenSet.has(c.id));
+      .filter((id) => !order.includes(id) && !hiddenSet.has(id));
+    return [...known, ...appended];
+  }, [order, defaultIdSet, defaultCards, hiddenSet]);
+
+  const orderedIds = React.useMemo(
+    () => [...pinnedIds, ...defaultVisibleIds],
+    [pinnedIds, defaultVisibleIds],
+  );
+  const visibleCards = React.useMemo(
+    () => orderedIds.map((id) => cardById.get(id)).filter((c): c is DashboardCard => Boolean(c)),
+    [orderedIds, cardById],
+  );
+  const hiddenDefaults = React.useMemo(
+    () => defaultCards.filter((c) => hiddenSet.has(c.id)),
+    [defaultCards, hiddenSet],
+  );
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const oldIndex = orderedIds.indexOf(String(active.id));
-    const newIndex = orderedIds.indexOf(String(over.id));
-    if (oldIndex < 0 || newIndex < 0) return;
-    setOrder(arrayMove(orderedIds, oldIndex, newIndex));
+    const activeId = String(active.id);
+    const overId = String(over.id);
+    const activeInPinned = pinnedIds.includes(activeId);
+    const overInPinned = pinnedIds.includes(overId);
+    // Block cross-group drag — pinned widgets always stay above defaults.
+    if (activeInPinned !== overInPinned) return;
+
+    if (activeInPinned) {
+      const oldIndex = pinnedIds.indexOf(activeId);
+      const newIndex = pinnedIds.indexOf(overId);
+      if (oldIndex < 0 || newIndex < 0) return;
+      reorderFavorites(arrayMove(pinnedIds, oldIndex, newIndex));
+    } else {
+      const oldIndex = defaultVisibleIds.indexOf(activeId);
+      const newIndex = defaultVisibleIds.indexOf(overId);
+      if (oldIndex < 0 || newIndex < 0) return;
+      // Preserve any currently-hidden default ids that live in `order` so
+      // toggling them back on doesn't lose their original slot.
+      const next = arrayMove(defaultVisibleIds, oldIndex, newIndex);
+      const preservedHidden = order.filter(
+        (id) => defaultIdSet.has(id) && !next.includes(id),
+      );
+      setOrder([...next, ...preservedHidden]);
+    }
   };
 
   // ── Customize sheet plumbing ─────────────────────────────────
@@ -603,23 +656,18 @@ export default function DashboardOverview() {
     caption: w.source,
   }));
 
-  // For the sheet we need BOTH visible and hidden ids in one ordered list
-  // per group so hidden rows still appear and can be toggled back on.
-  const pinnedOrderForSheet = [
-    ...order.filter((id) => reportingIdSet.has(id)),
-    ...reportingCards.map((c) => c.id).filter((id) => !order.includes(id)),
-  ];
-  const defaultOrderForSheet = [
-    ...order.filter((id) => defaultIdSet.has(id)),
-    ...defaultCards.map((c) => c.id).filter((id) => !order.includes(id)),
-  ];
+  // Sheet needs visible + hidden ids together per group so hidden rows still
+  // appear and can be toggled back on.
+  const pinnedOrderForSheet = React.useMemo(
+    () => reportingCards.map((c) => c.id),
+    [reportingCards],
+  );
+  const defaultOrderForSheet = React.useMemo(() => {
+    const known = order.filter((id) => defaultIdSet.has(id));
+    const appended = defaultCards.map((c) => c.id).filter((id) => !order.includes(id));
+    return [...known, ...appended];
+  }, [order, defaultIdSet, defaultCards]);
 
-  const reorderGroup = (nextGroupIds: string[], otherGroupIds: string[], reportingFirst: boolean) => {
-    const combined = reportingFirst
-      ? [...nextGroupIds, ...otherGroupIds]
-      : [...otherGroupIds, ...nextGroupIds];
-    setOrder(combined);
-  };
 
   return (
     <div className="space-y-5 p-3 sm:p-5 max-w-[1600px] mx-auto">
@@ -629,16 +677,16 @@ export default function DashboardOverview() {
         pinnedRows={pinnedRows}
         pinnedOrder={pinnedOrderForSheet}
         hiddenSet={hiddenSet}
-        onReorderPinned={(ids) => reorderGroup(ids, defaultOrderForSheet, true)}
+        onReorderPinned={(ids) => reorderFavorites(ids)}
         onHidePinned={(id) => hide(id)}
         onShowPinned={(id) => unhide(id)}
         onUnpin={(id) => unpinWidget(id)}
         defaultRows={defaultRows}
         defaultOrder={defaultOrderForSheet}
-        onReorderDefault={(ids) => reorderGroup(ids, pinnedOrderForSheet, false)}
+        onReorderDefault={(ids) => setOrder(ids)}
         onHideDefault={(id) => hide(id)}
         onShowDefault={(id) => unhide(id)}
-        onResetAll={reset}
+        onResetAll={() => setConfirmResetOpen(true)}
       />
 
       {/* ══ Header · greeting + customize button ══ */}
@@ -703,7 +751,32 @@ export default function DashboardOverview() {
           </Button>
         </div>
       )}
+
+      <AlertDialog open={confirmResetOpen} onOpenChange={setConfirmResetOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('overview.confirmResetTitle', { defaultValue: 'Reset your dashboard?' })}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('overview.confirmResetDesc', {
+                defaultValue:
+                  'This restores the default layout and shows all hidden cards. Your pinned reporting widgets are kept.',
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>
+              {t('common.cancel', { defaultValue: 'Cancel' })}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={() => reset()}>
+              {t('overview.resetLayout', { defaultValue: 'Reset to default' })}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
+
 

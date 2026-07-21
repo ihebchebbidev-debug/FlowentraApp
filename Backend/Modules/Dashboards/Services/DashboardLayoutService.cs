@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using MyApi.Data;
 using MyApi.Modules.Dashboards.DTOs;
 using MyApi.Modules.Dashboards.Models;
@@ -9,24 +10,29 @@ namespace MyApi.Modules.Dashboards.Services;
 public class DashboardLayoutService : IDashboardLayoutService
 {
     private readonly ApplicationDbContext _db;
+    private readonly ILogger<DashboardLayoutService>? _logger;
 
-    public DashboardLayoutService(ApplicationDbContext db)
+    public DashboardLayoutService(ApplicationDbContext db, ILogger<DashboardLayoutService>? logger = null)
     {
         _db = db;
+        _logger = logger;
     }
 
     private static string NormalizeScope(string? scope) =>
         string.IsNullOrWhiteSpace(scope) ? "default" : scope!.Trim();
 
-    private static List<string> ParseList(string? json)
+    private List<string> ParseList(string? json)
     {
         if (string.IsNullOrWhiteSpace(json)) return new List<string>();
         try
         {
             return JsonSerializer.Deserialize<List<string>>(json!) ?? new List<string>();
         }
-        catch
+        catch (Exception ex)
         {
+            // Malformed JSON in the DB shouldn't wipe the user's layout
+            // silently — log so ops can investigate.
+            _logger?.LogWarning(ex, "DashboardLayout JSON parse failed, defaulting to empty list");
             return new List<string>();
         }
     }
