@@ -30,6 +30,7 @@ namespace MyApi.Modules.HR.Services
         Task<List<HrPayrollRunDto>> ListPayrollRunsAsync(int year);
         Task<HrPayrollRunDto> GetPayrollRunAsync(int id);
         Task<HrPayrollRunDto> ConfirmPayrollRunAsync(int id, int actorUserId);
+        Task<HrPayrollRunDto> MarkPayrollRunPaidAsync(int id, int actorUserId);
         Task<object> GetPayslipAsync(int entryId);
 
         // ---- Departments ----

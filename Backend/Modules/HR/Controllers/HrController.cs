@@ -90,7 +90,20 @@ namespace MyApi.Modules.HR.Controllers
         public async Task<IActionResult> GetRun(int id) => Ok(new { success = true, data = await _hr.GetPayrollRunAsync(id) });
 
         [HttpPut("payroll/runs/{id:int}/confirm")]
-        public async Task<IActionResult> ConfirmRun(int id) => Ok(new { success = true, data = await _hr.ConfirmPayrollRunAsync(id, GetActorId()) });
+        public async Task<IActionResult> ConfirmRun(int id)
+        {
+            try { return Ok(new { success = true, data = await _hr.ConfirmPayrollRunAsync(id, GetActorId()) }); }
+            catch (KeyNotFoundException) { return NotFound(new { success = false, error = "Payroll run not found" }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { success = false, error = ex.Message }); }
+        }
+
+        [HttpPut("payroll/runs/{id:int}/pay")]
+        public async Task<IActionResult> MarkRunPaid(int id)
+        {
+            try { return Ok(new { success = true, data = await _hr.MarkPayrollRunPaidAsync(id, GetActorId()) }); }
+            catch (KeyNotFoundException) { return NotFound(new { success = false, error = "Payroll run not found" }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { success = false, error = ex.Message }); }
+        }
 
         [HttpGet("payroll/payslip/{entryId:int}")]
         public async Task<IActionResult> GetPayslip(int entryId) => Ok(new { success = true, data = await _hr.GetPayslipAsync(entryId) });

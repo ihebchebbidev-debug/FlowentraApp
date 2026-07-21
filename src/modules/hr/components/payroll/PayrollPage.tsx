@@ -1,70 +1,98 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PayrollRunDialog } from './PayrollRunDialog';
 import { PayrollSettings } from './PayrollSettings';
 import dayjs from 'dayjs';
-import { calculateTunisianNetSalary } from '../../utils/tunisianTaxEngine';
 import { PaySlipDetail } from './PaySlipDetail';
 import { formatTnd } from '../../utils/money';
 import { HRPageHeader } from '../HRPageHeader';
-import { Coins, Eye, FileDown, Wand2 } from 'lucide-react';
+import { Coins, Eye, FileDown, Loader2, Wand2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useEmployees } from '../../hooks/useEmployees';
-import { useBonuses } from '../../hooks/useBonuses';
-import { useAttendance } from '../../hooks/useAttendance';
+import { usePayrollRuns } from '../../hooks/usePayrollRuns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { UserAvatar } from '@/components/ui/user-avatar';
-import type { PayrollRun, PayrollEntry, SalaryBreakdown, EmployeeSalaryConfig } from '../../types/hr.types';
+import type { PayrollEntry, PayrollRun, SalaryBreakdown } from '../../types/hr.types';
 import { Checkbox } from '@/components/ui/checkbox';
 import { pdf } from '@react-pdf/renderer';
 import { PaySlipPDF } from './PaySlipPDF';
 import { useToast } from '@/hooks/use-toast';
+import { extractApiErrorMessage } from '@/utils/extractApiErrorMessage';
 
-type DraftRun = PayrollRun & {
-  kind: 'draft_local';
-  entries: Array<PayrollEntry & { breakdown: SalaryBreakdown; bonuses?: number; deductions?: number; issues?: string[] }>;
-};
-
-const LS_KEY = 'hr_payroll_draft_runs_v1';
-
-function loadDraftRuns(): DraftRun[] {
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as DraftRun[]) : [];
-  } catch {
-    return [];
+/**
+ * Build a SalaryBreakdown shape from a server-persisted PayrollEntry so the
+ * existing PaySlipDetail / PaySlipPDF components render unchanged.
+ */
+function entryToBreakdown(e: PayrollEntry): SalaryBreakdown {
+  // `details` is typed as a record client-side but the backend serialises it as
+  // a JSON string in some responses. Handle both without throwing.
+  let details: any = e.details ?? {};
+  if (typeof details === 'string') {
+    try { details = JSON.parse(details); } catch { details = {}; }
   }
-}
-
-function saveDraftRuns(runs: DraftRun[]) {
-  try { localStorage.setItem(LS_KEY, JSON.stringify(runs)); } catch { /* noop */ }
+  const rate = (details && typeof details === 'object' ? details.rate : null) ?? {};
+  const overtimeAmount = Number(details?.overtimeAmount ?? 0);
+  return {
+    grossSalary: Number(e.grossSalary || 0),
+    cnss: Number(e.cnss || 0),
+    cnssRate: Number(rate?.EmployeeRate ?? rate?.employeeRate ?? 0),
+    taxableGross: Number(e.taxableGross || 0),
+    abattement: Number(e.abattement || 0),
+    abattementDetail: { headOfFamily: 0, children: 0 },
+    taxableBase: Number(e.taxableBase || 0),
+    irpp: Number(e.irpp || 0),
+    irppBrackets: Array.isArray(details?.irppBrackets) ? details.irppBrackets : [],
+    css: Number(e.css || 0),
+    cssRate: Number(rate?.CssRate ?? rate?.cssRate ?? 0),
+    netSalary: Number(e.netSalary || 0),
+    totalHours: Number(e.totalHours || 0),
+    overtimeHours: Number(e.overtimeHours || 0),
+    overtimeAmount,
+  };
 }
 
 export function PayrollPage() {
   const { t } = useTranslation('hr');
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [draftRuns, setDraftRuns] = useState<DraftRun[]>(() => loadDraftRuns());
-  const [activeRunId, setActiveRunId] = useState<number | null>(draftRuns[0]?.id ?? null);
+  const [year, setYear] = useState<number>(dayjs().year());
+  const [activeRunId, setActiveRunId] = useState<number | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [activeEntryUserId, setActiveEntryUserId] = useState<number | null>(null);
   const [selectedUserIds, setSelectedUserIds] = useState<Set<number>>(new Set());
   const [isExporting, setIsExporting] = useState(false);
 
   const { employeesQuery } = useEmployees();
-  const activeRun = useMemo(() => draftRuns.find(r => r.id === activeRunId) ?? null, [activeRunId, draftRuns]);
-  const periodMonth = activeRun?.month ?? (dayjs().month() + 1);
-  const periodYear = activeRun?.year ?? dayjs().year();
+  const { runsQuery, generateMutation, confirmMutation, payMutation } = usePayrollRuns(year);
 
-  const { bonusesQuery } = useBonuses({ year: periodYear, month: periodMonth });
-  const { attendanceQuery, settingsQuery: attendanceSettingsQuery } = useAttendance({ year: periodYear, month: periodMonth });
+  const runs = runsQuery.data ?? [];
+  const activeRun = useMemo(
+    () => runs.find(r => r.id === activeRunId) ?? runs[0] ?? null,
+    [activeRunId, runs],
+  );
+
+  // Auto-select first run, and reset when the current active run disappears
+  // from the visible list (e.g. after switching year).
+  useEffect(() => {
+    if (runs.length === 0) {
+      if (activeRunId !== null) setActiveRunId(null);
+      if (selectedUserIds.size) setSelectedUserIds(new Set());
+      return;
+    }
+    const stillVisible = activeRunId != null && runs.some(r => r.id === activeRunId);
+    if (!stillVisible) {
+      setActiveRunId(runs[0].id);
+      setSelectedUserIds(new Set());
+    }
+  }, [runs, activeRunId, selectedUserIds.size]);
+
+  const periodMonth = activeRun?.month ?? (dayjs().month() + 1);
+  const periodYear = activeRun?.year ?? year;
 
   const users = useMemo(() => {
     const rows = employeesQuery.data ?? [];
@@ -78,16 +106,6 @@ export function PayrollPage() {
         profilePictureUrl: u.profilePictureUrl ?? null,
       }))
       .filter((u: any) => Number.isFinite(u.id) && u.id > 0);
-  }, [employeesQuery.data]);
-
-  const salaryByUserId = useMemo(() => {
-    const map = new Map<number, EmployeeSalaryConfig | null>();
-    for (const r of (employeesQuery.data ?? []) as any[]) {
-      const uid = Number(r?.user?.id);
-      if (!Number.isFinite(uid)) continue;
-      map.set(uid, (r?.salaryConfig ?? null) as any);
-    }
-    return map;
   }, [employeesQuery.data]);
 
   const statusBadgeClass = (status: string) => {
@@ -105,6 +123,11 @@ export function PayrollPage() {
     return activeRun.entries.find(e => e.userId === uid) ?? null;
   }, [activeEntryUserId, activeRun]);
 
+  const activeEntryBreakdown = useMemo(
+    () => (activeEntry ? entryToBreakdown(activeEntry) : null),
+    [activeEntry],
+  );
+
   const pdfLabels = useMemo(() => ({
     title: t('payrollDraft.pdf.title'),
     employee: t('payrollDraft.pdf.employee'),
@@ -120,13 +143,6 @@ export function PayrollPage() {
     net: t('payrollSlip.netSalary'),
   }), [t]);
 
-  const updateActiveRun = (patch: Partial<DraftRun>) => {
-    if (!activeRun) return;
-    const next = draftRuns.map(r => (r.id === activeRun.id ? ({ ...r, ...patch } as DraftRun) : r));
-    setDraftRuns(next);
-    saveDraftRuns(next);
-  };
-
   const canConfirm = Boolean(activeRun && String(activeRun.status) === 'draft');
   const canMarkPaid = Boolean(activeRun && String(activeRun.status) === 'confirmed');
 
@@ -138,14 +154,15 @@ export function PayrollPage() {
       setIsExporting(true);
       toast({ title: t('payrollDraft.export.preparing') });
       for (const uid of ids) {
-        const entry = activeRun.entries.find(e => e.userId === uid) as any;
-        if (!entry?.breakdown) continue;
+        const entry = activeRun.entries.find(e => e.userId === uid);
+        if (!entry) continue;
+        const breakdown = entryToBreakdown(entry);
         const name = users.find(u => u.id === uid)?.name ?? entry.userName ?? `#${uid}`;
         const safe = String(name).replace(/[\\/:*?"<>|]+/g, '-').trim() || `employee-${uid}`;
         const fileName = `payslip-${safe}-${String(activeRun.month).padStart(2, '0')}-${activeRun.year}.pdf`;
         const doc = (
           <PaySlipPDF
-            breakdown={entry.breakdown}
+            breakdown={breakdown}
             month={activeRun.month}
             year={activeRun.year}
             employeeName={name}
@@ -167,105 +184,44 @@ export function PayrollPage() {
     }
   };
 
-  const buildDraftRun = async (values: { month: number; year: number }) => {
-    const month = Number(values.month);
-    const year = Number(values.year);
-
-    // Bonuses for the period (already in scope)
-    const bonusesByUser = new Map<number, { bonuses: number; deductions: number }>();
-    for (const b of bonusesQuery.data ?? []) {
-      if (b.month !== month || b.year !== year) continue;
-      const cur = bonusesByUser.get(b.userId) ?? { bonuses: 0, deductions: 0 };
-      if (b.kind === 'other_cost' || Number(b.amount) < 0) cur.deductions += Math.abs(Number(b.amount || 0));
-      else cur.bonuses += Number(b.amount || 0);
-      bonusesByUser.set(b.userId, cur);
+  const handleGenerate = async (values: { month: number; year: number }) => {
+    try {
+      const run = await generateMutation.mutateAsync({ month: Number(values.month), year: Number(values.year) });
+      setYear(Number(values.year));
+      if (run?.id) setActiveRunId(run.id);
+      setSelectedUserIds(new Set());
+      toast({ title: t('payrollDraft.actions.generated', { defaultValue: 'Payroll run generated' }) });
+    } catch (e) {
+      toast({ title: t('common.error', { defaultValue: 'Error' }), description: extractApiErrorMessage(e), variant: 'destructive' });
+      throw e;
     }
-
-    // Attendance-derived overtime hours per user, mirroring backend logic.
-    const attSettings = attendanceSettingsQuery.data ?? null;
-    const standardHoursPerDay = Number(attSettings?.standardHoursPerDay ?? 8);
-    const overtimeMultiplier = Math.max(1, Number(attSettings?.overtimeMultiplier ?? 1.25));
-    const overtimeByUser = new Map<number, number>();
-    for (const r of attendanceQuery.data ?? []) {
-      const uid = Number(r.userId);
-      if (!Number.isFinite(uid)) continue;
-      overtimeByUser.set(uid, (overtimeByUser.get(uid) ?? 0) + Number(r.overtimeHours || 0));
-    }
-
-    const entries: DraftRun['entries'] = users.map((u) => {
-      const cfg = salaryByUserId.get(u.id) ?? null;
-      const issues: string[] = [];
-      if (!cfg || !Number.isFinite(Number(cfg.grossSalary))) issues.push(t('payrollDraft.issues.missingSalary'));
-      const userBonuses = bonusesByUser.get(u.id) ?? { bonuses: 0, deductions: 0 };
-      const baseGross = Number(cfg?.grossSalary ?? 0);
-      const overtimeHours = Number(overtimeByUser.get(u.id) ?? 0);
-      const hourlyRate = standardHoursPerDay > 0 ? baseGross / 26 / standardHoursPerDay : 0;
-      const overtimeAmount = Math.round(overtimeHours * hourlyRate * overtimeMultiplier * 1000) / 1000;
-      const adjustedGross = baseGross + userBonuses.bonuses + overtimeAmount;
-
-      const breakdown = calculateTunisianNetSalary({
-        grossSalary: adjustedGross,
-        isHeadOfFamily: Boolean(cfg?.isHeadOfFamily),
-        childrenCount: Number(cfg?.childrenCount || 0),
-        customDeductions: Number(cfg?.customDeductions || 0) + userBonuses.deductions,
-      });
-      // Surface overtime on the breakdown so payslip UI/PDF can render it.
-      breakdown.overtimeHours = overtimeHours;
-      breakdown.overtimeAmount = overtimeAmount;
-
-      const entry: PayrollEntry & { breakdown: SalaryBreakdown; bonuses: number; deductions: number; issues?: string[] } = {
-        id: Number(`${Date.now()}${u.id}`.slice(-12)),
-        payrollRunId: Number(`${Date.now()}`.slice(-9)),
-        userId: u.id,
-        userName: u.name,
-        grossSalary: Number(cfg?.grossSalary ?? 0),
-        cnss: breakdown.cnss,
-        taxableGross: breakdown.taxableGross,
-        abattement: breakdown.abattement,
-        taxableBase: breakdown.taxableBase,
-        irpp: breakdown.irpp,
-        css: breakdown.css,
-        netSalary: breakdown.netSalary,
-        workedDays: 0,
-        totalHours: 0,
-        overtimeHours,
-        leaveDays: 0,
-        details: { irppBrackets: breakdown.irppBrackets, bonuses: userBonuses.bonuses, deductions: userBonuses.deductions, overtimeHours, overtimeAmount, overtimeMultiplier, hourlyRate },
-        breakdown,
-        bonuses: userBonuses.bonuses,
-        deductions: userBonuses.deductions,
-        issues: issues.length ? issues : undefined,
-      };
-      return entry;
-    });
-
-    const totals = entries.reduce(
-      (acc, e) => {
-        acc.totalGross += Number(e.grossSalary || 0);
-        acc.totalNet += Number(e.netSalary || 0);
-        return acc;
-      },
-      { totalGross: 0, totalNet: 0 },
-    );
-
-    const run: DraftRun = {
-      kind: 'draft_local',
-      id: Date.now(),
-      month, year,
-      status: 'draft',
-      entries,
-      totalGross: totals.totalGross,
-      totalNet: totals.totalNet,
-      createdBy: 0,
-      createdAt: new Date().toISOString(),
-    };
-
-    const next = [run, ...draftRuns].slice(0, 24);
-    setDraftRuns(next);
-    saveDraftRuns(next);
-    setActiveRunId(run.id);
-    setSelectedUserIds(new Set());
   };
+
+  const handleConfirm = async () => {
+    if (!activeRun) return;
+    try {
+      await confirmMutation.mutateAsync(activeRun.id);
+      toast({ title: t('payrollDraft.actions.confirmed') });
+    } catch (e) {
+      toast({ title: t('common.error', { defaultValue: 'Error' }), description: extractApiErrorMessage(e), variant: 'destructive' });
+    }
+  };
+
+  const handleMarkPaid = async () => {
+    if (!activeRun) return;
+    try {
+      await payMutation.mutateAsync(activeRun.id);
+      toast({ title: t('payrollDraft.actions.paid') });
+    } catch (e) {
+      toast({ title: t('common.error', { defaultValue: 'Error' }), description: extractApiErrorMessage(e), variant: 'destructive' });
+    }
+  };
+
+  const totalCnss = activeRun?.totalCnss ?? activeRun?.entries?.reduce((a, e) => a + Number(e.cnss || 0), 0) ?? 0;
+  const totalIrpp = activeRun?.entries?.reduce((a, e) => a + Number(e.irpp || 0), 0) ?? 0;
+
+  const isLoading = runsQuery.isLoading;
+  const isMutating = generateMutation.isPending || confirmMutation.isPending || payMutation.isPending;
 
   return (
     <div className="flex flex-col">
@@ -276,10 +232,22 @@ export function PayrollPage() {
         accentColor="chart-3"
         backTo={{ to: '/dashboard/hr', label: t('dashboard') }}
         actions={
-          <Button size="sm" onClick={() => setDialogOpen(true)} className="gap-2">
-            <Wand2 className="h-4 w-4" />
-            {t('payrollPage.generatePayroll')}
-          </Button>
+          <div className="flex items-center gap-2">
+            <select
+              className="h-9 rounded-md border bg-background px-2 text-sm"
+              value={year}
+              onChange={(e) => setYear(Number(e.target.value))}
+              aria-label="Year"
+            >
+              {Array.from({ length: 5 }, (_, i) => dayjs().year() - 2 + i).map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+            <Button size="sm" onClick={() => setDialogOpen(true)} className="gap-2" disabled={isMutating}>
+              {generateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+              {t('payrollPage.generatePayroll')}
+            </Button>
+          </div>
         }
       />
 
@@ -296,10 +264,10 @@ export function PayrollPage() {
                   {t('payrollDraft.kpis.totalNet')}: {formatTnd(activeRun?.totalNet ?? 0)}
                 </Badge>
                 <Badge variant="secondary" className="text-[11px]">
-                  {t('payrollDraft.kpis.totalCnss')}: {formatTnd(activeRun?.entries?.reduce((a, e) => a + Number(e.cnss || 0), 0) ?? 0)}
+                  {t('payrollDraft.kpis.totalCnss')}: {formatTnd(totalCnss)}
                 </Badge>
                 <Badge variant="secondary" className="text-[11px]">
-                  {t('payrollDraft.kpis.totalIrpp')}: {formatTnd(activeRun?.entries?.reduce((a, e) => a + Number(e.irpp || 0), 0) ?? 0)}
+                  {t('payrollDraft.kpis.totalIrpp')}: {formatTnd(totalIrpp)}
                 </Badge>
                 <Badge variant="secondary" className="text-[11px]">
                   {t('payrollDraft.kpis.period')}: {String(periodMonth).padStart(2, '0')}/{periodYear}
@@ -314,7 +282,7 @@ export function PayrollPage() {
             <CardHeader>
               <div className="flex items-center justify-between gap-2">
                 <CardTitle className="text-base">{t('payrollPage.runsTitle')}</CardTitle>
-                <Badge variant="secondary" className="text-[11px]">{draftRuns.length}</Badge>
+                <Badge variant="secondary" className="text-[11px]">{runs.length}</Badge>
               </div>
             </CardHeader>
             <CardContent className="overflow-x-auto">
@@ -323,7 +291,11 @@ export function PayrollPage() {
                   {t('payrollDraft.runsHint')}
                 </AlertDescription>
               </Alert>
-              {draftRuns.length === 0 ? (
+              {isLoading ? (
+                <div className="py-10 text-center text-sm text-muted-foreground inline-flex items-center gap-2 justify-center w-full">
+                  <Loader2 className="h-4 w-4 animate-spin" /> {t('loading', { defaultValue: 'Loading…' })}
+                </div>
+              ) : runs.length === 0 ? (
                 <div className="py-10 text-center">
                   <div className="text-sm font-medium">{t('payrollDraft.emptyTitle')}</div>
                   <div className="text-xs text-muted-foreground mt-1">{t('payrollDraft.emptyHint')}</div>
@@ -339,8 +311,8 @@ export function PayrollPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {draftRuns.map(r => (
-                      <TableRow key={r.id} className={cn(activeRunId === r.id && 'bg-muted/30')}>
+                    {runs.map((r: PayrollRun) => (
+                      <TableRow key={r.id} className={cn(activeRun?.id === r.id && 'bg-muted/30')}>
                         <TableCell>{r.month}/{r.year}</TableCell>
                         <TableCell>
                           <span className={cn('inline-flex items-center rounded px-2 py-1 text-xs font-medium capitalize', statusBadgeClass(String(r.status)))}>
@@ -377,23 +349,21 @@ export function PayrollPage() {
                   </Button>
                   <Button
                     size="sm" variant={canConfirm ? 'default' : 'outline'}
-                    disabled={!canConfirm}
-                    onClick={() => {
-                      updateActiveRun({ status: 'confirmed', confirmedAt: new Date().toISOString() as any });
-                      toast({ title: t('payrollDraft.actions.confirmed') });
-                    }}
+                    disabled={!canConfirm || confirmMutation.isPending}
+                    onClick={handleConfirm}
                   >
-                    <span className="hidden sm:inline">{t('payrollDraft.actions.confirm')}</span>
+                    {confirmMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                      <span className="hidden sm:inline">{t('payrollDraft.actions.confirm')}</span>
+                    )}
                   </Button>
                   <Button
                     size="sm" variant={canMarkPaid ? 'default' : 'outline'}
-                    disabled={!canMarkPaid}
-                    onClick={() => {
-                      updateActiveRun({ status: 'paid' });
-                      toast({ title: t('payrollDraft.actions.paid') });
-                    }}
+                    disabled={!canMarkPaid || payMutation.isPending}
+                    onClick={handleMarkPaid}
                   >
-                    <span className="hidden sm:inline">{t('payrollDraft.actions.markPaid')}</span>
+                    {payMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                      <span className="hidden sm:inline">{t('payrollDraft.actions.markPaid')}</span>
+                    )}
                   </Button>
                 </div>
               </div>
@@ -421,7 +391,6 @@ export function PayrollPage() {
                       <TableHead>{t('employee.employee')}</TableHead>
                       <TableHead>{t('payrollDraft.gross')}</TableHead>
                       <TableHead>{t('payrollDraft.bonusesShort')}</TableHead>
-                      <TableHead>{t('payrollDraft.deductions')}</TableHead>
                       <TableHead>{t('payrollDraft.cnssShort')}</TableHead>
                       <TableHead>{t('payrollDraft.net')}</TableHead>
                       <TableHead className="text-right">{t('payrollDraft.details')}</TableHead>
@@ -430,7 +399,6 @@ export function PayrollPage() {
                   <TableBody>
                     {activeRun.entries.map(e => {
                       const u = users.find(x => x.id === e.userId);
-                      const hasIssues = (e as any).issues?.length;
                       const isSelected = selectedUserIds.has(e.userId);
                       return (
                         <TableRow key={e.userId}>
@@ -456,15 +424,9 @@ export function PayrollPage() {
                                 {u?.email ? <div className="truncate text-xs text-muted-foreground">{u.email}</div> : null}
                               </div>
                             </div>
-                            {hasIssues ? (
-                              <div className="mt-1 text-xs text-amber-700 dark:text-amber-200">
-                                {(e as any).issues?.join(' • ')}
-                              </div>
-                            ) : null}
                           </TableCell>
                           <TableCell>{formatTnd(e.grossSalary)}</TableCell>
-                          <TableCell className="text-primary">{formatTnd((e as any).bonuses ?? 0)}</TableCell>
-                          <TableCell className="text-destructive">{formatTnd((e as any).deductions ?? 0)}</TableCell>
+                          <TableCell className="text-primary">{formatTnd(Number(e.bonuses ?? 0))}</TableCell>
                           <TableCell className="text-muted-foreground">{formatTnd(e.cnss)}</TableCell>
                           <TableCell className="font-semibold text-primary">{formatTnd(e.netSalary)}</TableCell>
                           <TableCell className="text-right">
@@ -492,7 +454,8 @@ export function PayrollPage() {
       <PayrollRunDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        onConfirm={async (values) => { await buildDraftRun(values); }}
+        onConfirm={handleGenerate}
+        isSubmitting={generateMutation.isPending}
       />
 
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
@@ -500,8 +463,8 @@ export function PayrollPage() {
           <DialogHeader>
             <DialogTitle>{t('payrollDraft.slipTitle')}</DialogTitle>
           </DialogHeader>
-          {activeEntry ? (
-            <PaySlipDetail breakdown={(activeEntry as any).breakdown} />
+          {activeEntryBreakdown ? (
+            <PaySlipDetail breakdown={activeEntryBreakdown} />
           ) : (
             <div className="text-sm text-muted-foreground">{t('payrollDraft.noSlip')}</div>
           )}

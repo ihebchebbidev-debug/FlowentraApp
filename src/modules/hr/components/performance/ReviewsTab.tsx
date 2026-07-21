@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useReviewCycles, useReviews } from '../../hooks/usePerformance';
 import { useEmployees } from '../../hooks/useEmployees';
 import type { ReviewRating, ReviewStatus, HrPerformanceReview } from '../../types/performance.types';
+import { ConfirmDeleteButton } from '../common/ConfirmDeleteButton';
 
 const STATUS_VARIANT: Record<ReviewStatus, 'default' | 'secondary' | 'outline' | 'destructive'> = {
   pending: 'outline',
@@ -190,7 +191,14 @@ export function ReviewsTab() {
                       <Button size="icon" variant="ghost" onClick={() => openDetail(r)}>
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={() => deleteReview.mutate(r.id)}>Delete</Button>
+                      <ConfirmDeleteButton
+                        size="sm"
+                        variant="ghost"
+                        disabled={deleteReview.isPending}
+                        onConfirm={() => deleteReview.mutate(r.id)}
+                        triggerContent={<>Delete</>}
+                        title="Delete review?"
+                      />
                     </div>
                   </TableCell>
                 </TableRow>

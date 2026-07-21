@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useReviewCycles } from '../../hooks/usePerformance';
 import type { ReviewCycleFrequency, ReviewCycleStatus } from '../../types/performance.types';
+import { ConfirmDeleteButton } from '../common/ConfirmDeleteButton';
 
 export function ReviewCyclesTab() {
   const { toast } = useToast();
@@ -126,9 +127,14 @@ export function ReviewCyclesTab() {
                           <SelectItem value="closed">Closed</SelectItem>
                         </SelectContent>
                       </Select>
-                      <Button size="icon" variant="ghost" onClick={() => deleteCycle.mutate(c.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <ConfirmDeleteButton
+                        size="icon"
+                        variant="ghost"
+                        disabled={deleteCycle.isPending}
+                        onConfirm={() => deleteCycle.mutate(c.id)}
+                        triggerContent={<Trash2 className="h-4 w-4" />}
+                        title="Delete review cycle?"
+                      />
                     </div>
                   </TableCell>
                 </TableRow>

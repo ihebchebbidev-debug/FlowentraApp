@@ -570,10 +570,22 @@ namespace MyApi.Modules.HR.Services
         {
             var run = await _db.Set<HrPayrollRun>().FirstOrDefaultAsync(x => x.Id == id);
             if (run == null) throw new KeyNotFoundException("Payroll run not found");
+            if (run.Status == "paid") throw new InvalidOperationException("Payroll run already marked as paid");
             run.Status = "confirmed";
             run.ConfirmedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();
             await LogAsync(0, "payroll_confirmed", $"Payroll run {run.Month}/{run.Year} confirmed", new { runId = id }, actorUserId);
+            return await GetPayrollRunAsync(id);
+        }
+
+        public async Task<HrPayrollRunDto> MarkPayrollRunPaidAsync(int id, int actorUserId)
+        {
+            var run = await _db.Set<HrPayrollRun>().FirstOrDefaultAsync(x => x.Id == id);
+            if (run == null) throw new KeyNotFoundException("Payroll run not found");
+            if (run.Status != "confirmed") throw new InvalidOperationException("Payroll run must be confirmed before marking as paid");
+            run.Status = "paid";
+            await _db.SaveChangesAsync();
+            await LogAsync(0, "payroll_paid", $"Payroll run {run.Month}/{run.Year} marked paid", new { runId = id }, actorUserId);
             return await GetPayrollRunAsync(id);
         }
 

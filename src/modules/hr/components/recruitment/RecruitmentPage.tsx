@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ConfirmDeleteButton } from '../common/ConfirmDeleteButton';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
@@ -198,9 +199,14 @@ export function RecruitmentPage() {
                                   <SelectItem value="filled">Filled</SelectItem>
                                 </SelectContent>
                               </Select>
-                              <Button size="icon" variant="ghost" onClick={() => deleteOpening.mutate(o.id)}>
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              <ConfirmDeleteButton
+                                size="icon"
+                                variant="ghost"
+                                disabled={deleteOpening.isPending}
+                                onConfirm={() => deleteOpening.mutate(o.id)}
+                                triggerContent={<Trash2 className="h-4 w-4" />}
+                                title="Delete job opening?"
+                              />
                             </div>
                           </TableCell>
                         </TableRow>
@@ -383,9 +389,14 @@ function ApplicantsTab() {
                         </SelectContent>
                       </Select>
                       <Button size="sm" variant="ghost" onClick={() => setNotesFor(a.id)}>Notes</Button>
-                      <Button size="icon" variant="ghost" onClick={() => deleteApplicant.mutate(a.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <ConfirmDeleteButton
+                        size="icon"
+                        variant="ghost"
+                        disabled={deleteApplicant.isPending}
+                        onConfirm={() => deleteApplicant.mutate(a.id)}
+                        triggerContent={<Trash2 className="h-4 w-4" />}
+                        title="Delete applicant?"
+                      />
                     </div>
                   </TableCell>
                 </TableRow>
@@ -412,7 +423,14 @@ function ApplicantsTab() {
                 <li key={n.id} className="rounded border p-2 text-sm">
                   <div className="flex justify-between gap-2">
                     <div>{n.body}</div>
-                    <Button size="sm" variant="ghost" onClick={() => deleteNote.mutate(n.id)}>Delete</Button>
+                    <ConfirmDeleteButton
+                      size="sm"
+                      variant="ghost"
+                      disabled={deleteNote.isPending}
+                      onConfirm={() => deleteNote.mutate(n.id)}
+                      triggerContent={<>Delete</>}
+                      title="Delete note?"
+                    />
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">{n.authorName ?? 'System'} • {new Date(n.createdAt).toLocaleString()}</div>
                 </li>
@@ -553,9 +571,14 @@ function InterviewsTab() {
                           <SelectItem value="no_show">No show</SelectItem>
                         </SelectContent>
                       </Select>
-                      <Button size="icon" variant="ghost" onClick={() => deleteInterview.mutate(i.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <ConfirmDeleteButton
+                        size="icon"
+                        variant="ghost"
+                        disabled={deleteInterview.isPending}
+                        onConfirm={() => deleteInterview.mutate(i.id)}
+                        triggerContent={<Trash2 className="h-4 w-4" />}
+                        title="Delete interview?"
+                      />
                     </div>
                   </TableCell>
                 </TableRow>

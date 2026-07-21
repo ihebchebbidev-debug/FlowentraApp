@@ -157,6 +157,11 @@ export const hrApi = {
     return unwrapData(res);
   },
 
+  async markPayrollRunPaid(id: number): Promise<PayrollRun> {
+    const res = await axiosInstance.put(`/api/hr/payroll/runs/${id}/pay`);
+    return unwrapData(res);
+  },
+
   async getPaySlip(entryId: number): Promise<any> {
     const res = await axiosInstance.get(`/api/hr/payroll/payslip/${entryId}`);
     return unwrapData(res);

@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ConfirmDeleteButton } from '../common/ConfirmDeleteButton';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -373,13 +374,20 @@ export function AttendancePage() {
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">
                                 <Button size="icon" variant="ghost" onClick={() => openEdit(record)}><Pencil className="h-4 w-4" /></Button>
-                                <Button size="icon" variant="ghost" onClick={() => {
-                                  setTargetTenantId((record as any).tenantId ?? 0);
-                                  deleteAttendance.mutate(record.id, {
-                                    onSuccess: () => toast.success(t('attendancePage.deleted')),
-                                    onSettled: () => clearTargetTenant(),
-                                  });
-                                }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                <ConfirmDeleteButton
+                                  size="icon"
+                                  variant="ghost"
+                                  disabled={deleteAttendance.isPending}
+                                  onConfirm={() => {
+                                    setTargetTenantId((record as any).tenantId ?? 0);
+                                    deleteAttendance.mutate(record.id, {
+                                      onSuccess: () => toast.success(t('attendancePage.deleted')),
+                                      onSettled: () => clearTargetTenant(),
+                                    });
+                                  }}
+                                  triggerContent={<Trash2 className="h-4 w-4 text-destructive" />}
+                                  title={t('attendancePage.deleteTitle', { defaultValue: 'Delete attendance record?' })}
+                                />
                               </div>
                             </TableCell>
                           </TableRow>

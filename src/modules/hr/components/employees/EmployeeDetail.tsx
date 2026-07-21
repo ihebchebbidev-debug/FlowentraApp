@@ -18,6 +18,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { UserLeave } from '@/services/api/schedulesApi';
 import { EmployeeDocumentsTab } from './EmployeeDocumentsTab';
 import { useBonuses } from '../../hooks/useBonuses';
+import { ConfirmDeleteButton } from '../common/ConfirmDeleteButton';
 import { useAuditLog } from '../../hooks/useAuditLog';
 import { useSalaryHistory } from '../../hooks/useSalaryHistory';
 import { useCnssRates } from '../../hooks/useCnss';
@@ -438,9 +439,15 @@ export function EmployeeDetail() {
                             {(b.kind === 'other_cost' || Number(b.amount) < 0) ? '-' : '+'}{formatTnd(Math.abs(Number(b.amount)))}
                           </TableCell>
                           <TableCell>
-                            <Button size="icon" variant="ghost" onClick={() => deleteBonus.mutate(b.id)}>
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
+                            <ConfirmDeleteButton
+                              size="icon"
+                              variant="ghost"
+                              onConfirm={() => deleteBonus.mutate(b.id)}
+                              disabled={deleteBonus.isPending}
+                              triggerContent={<Trash2 className="h-4 w-4 text-destructive" />}
+                              title={t('bonuses.deleteTitle', { defaultValue: 'Delete bonus?' })}
+                              description={t('bonuses.deleteHint', { defaultValue: 'This action cannot be undone.' })}
+                            />
                           </TableCell>
                         </TableRow>
                       ))}

@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ConfirmDeleteButton } from '../common/ConfirmDeleteButton';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
@@ -217,9 +218,14 @@ export function GoalsTab() {
                           <SelectItem value="cancelled">Cancelled</SelectItem>
                         </SelectContent>
                       </Select>
-                      <Button size="icon" variant="ghost" onClick={() => deleteGoal.mutate(g.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <ConfirmDeleteButton
+                        size="icon"
+                        variant="ghost"
+                        disabled={deleteGoal.isPending}
+                        onConfirm={() => deleteGoal.mutate(g.id)}
+                        triggerContent={<Trash2 className="h-4 w-4" />}
+                        title="Delete goal?"
+                      />
                     </div>
                   </TableCell>
                 </TableRow>
