@@ -19,6 +19,7 @@ namespace MyApi.Modules.Sales.Services
         private readonly MyApi.Modules.Planning.Services.IPlannedLineEntryService? _plannedEntries;
         private readonly MyApi.Modules.Shared.Services.IEntityFormDocumentService? _formDocuments;
         private readonly MyApi.Modules.Shared.Services.IActivityLogger? _activityLogger;
+        private readonly MyApi.Modules.Contacts.Services.IContactActivityService? _contactActivity;
 
         public SaleService(
             ApplicationDbContext context,
@@ -28,7 +29,8 @@ namespace MyApi.Modules.Sales.Services
             MyApi.Modules.Numbering.Services.INumberingService? numberingService = null,
             MyApi.Modules.Planning.Services.IPlannedLineEntryService? plannedEntries = null,
             MyApi.Modules.Shared.Services.IEntityFormDocumentService? formDocuments = null,
-            MyApi.Modules.Shared.Services.IActivityLogger? activityLogger = null)
+            MyApi.Modules.Shared.Services.IActivityLogger? activityLogger = null,
+            MyApi.Modules.Contacts.Services.IContactActivityService? contactActivity = null)
         {
             _context = context;
             _logger = logger;
@@ -38,6 +40,7 @@ namespace MyApi.Modules.Sales.Services
             _plannedEntries = plannedEntries;
             _formDocuments = formDocuments;
             _activityLogger = activityLogger;
+            _contactActivity = contactActivity;
         }
 
 
@@ -221,6 +224,18 @@ namespace MyApi.Modules.Sales.Services
                 await _context.SaveChangesAsync();
             }
 
+            if (_contactActivity != null && sale.ContactId > 0)
+            {
+                await _contactActivity.LogAsync(
+                    contactId: sale.ContactId,
+                    type: MyApi.Modules.Contacts.Models.ContactActivityTypes.SaleCreated,
+                    relatedEntityType: MyApi.Modules.Contacts.Models.ContactActivityEntityTypes.Sale,
+                    relatedEntityId: sale.Id,
+                    description: $"Sale {sale.SaleNumber} '{sale.Title}' was created",
+                    metadata: new { number = sale.SaleNumber, title = sale.Title, status = sale.Status, currency = sale.Currency },
+                    createdBy: userId);
+            }
+
             var createdSale = await GetSaleByIdAsync(sale.Id);
             return createdSale!;
         }
@@ -393,6 +408,19 @@ namespace MyApi.Modules.Sales.Services
             });
 
             var createdSale = await GetSaleByIdAsync(createdSaleId);
+
+            if (_contactActivity != null && createdSale != null && createdSale.ContactId > 0)
+            {
+                await _contactActivity.LogAsync(
+                    contactId: createdSale.ContactId,
+                    type: MyApi.Modules.Contacts.Models.ContactActivityTypes.SaleCreated,
+                    relatedEntityType: MyApi.Modules.Contacts.Models.ContactActivityEntityTypes.Sale,
+                    relatedEntityId: createdSale.Id,
+                    description: $"Sale {createdSale.SaleNumber} was created from offer",
+                    metadata: new { number = createdSale.SaleNumber, fromOffer = offerId, status = createdSale.Status },
+                    createdBy: userId);
+            }
+
             return createdSale!;
         }
 

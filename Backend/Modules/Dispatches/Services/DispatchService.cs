@@ -23,6 +23,7 @@ namespace MyApi.Modules.Dispatches.Services
         private readonly MyApi.Modules.Planning.Services.IPlannedLineEntryService? _plannedEntries;
         private readonly IStockTransactionService? _stockTransactionService;
         private readonly MyApi.Modules.Shared.Services.IActivityLogger? _activityLogger;
+        private readonly MyApi.Modules.Contacts.Services.IContactActivityService? _contactActivity;
 
         public DispatchService(
             ApplicationDbContext db,
@@ -31,7 +32,8 @@ namespace MyApi.Modules.Dispatches.Services
             MyApi.Modules.Numbering.Services.INumberingService? numberingService = null,
             MyApi.Modules.Planning.Services.IPlannedLineEntryService? plannedEntries = null,
             IStockTransactionService? stockTransactionService = null,
-            MyApi.Modules.Shared.Services.IActivityLogger? activityLogger = null)
+            MyApi.Modules.Shared.Services.IActivityLogger? activityLogger = null,
+            MyApi.Modules.Contacts.Services.IContactActivityService? contactActivity = null)
         {
             _db = db;
             _logger = logger;
@@ -40,6 +42,7 @@ namespace MyApi.Modules.Dispatches.Services
             _plannedEntries = plannedEntries;
             _stockTransactionService = stockTransactionService;
             _activityLogger = activityLogger;
+            _contactActivity = contactActivity;
         }
 
         // Helper to build a map of technicianId -> display name for a dispatch
@@ -192,6 +195,18 @@ namespace MyApi.Modules.Dispatches.Services
 
             _logger.LogInformation("Dispatch created from job {JobId} with ID {DispatchId}, Status: {Status}, Technicians: {TechCount}",
                 jobId, dispatch.Id, status, dto.AssignedTechnicianIds?.Count ?? 0);
+
+            if (_contactActivity != null && contactId > 0)
+            {
+                await _contactActivity.LogAsync(
+                    contactId: contactId,
+                    type: MyApi.Modules.Contacts.Models.ContactActivityTypes.DispatchCreated,
+                    relatedEntityType: MyApi.Modules.Contacts.Models.ContactActivityEntityTypes.Dispatch,
+                    relatedEntityId: dispatch.Id,
+                    description: $"Dispatch {dispatch.DispatchNumber} was created",
+                    metadata: new { number = dispatch.DispatchNumber, status = dispatch.Status, priority = dispatch.Priority, scheduledDate = dispatch.ScheduledDate },
+                    createdBy: userId);
+            }
 
             // Reload dispatch with technicians for the DTO mapping
             var createdDispatch = await _db.Dispatches

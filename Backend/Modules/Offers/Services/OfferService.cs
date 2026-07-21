@@ -3,10 +3,12 @@ using MyApi.Data;
 using MyApi.Modules.Offers.DTOs;
 using MyApi.Modules.Offers.Models;
 using MyApi.Modules.Contacts.Models;
+using MyApi.Modules.Contacts.Services;
 using MyApi.Modules.Shared.Services;
 using MyApi.Modules.Articles.Services;
 using MyApi.Modules.WorkflowEngine.Services;
 using MyApi.Modules.Projects.Services;
+
 
 namespace MyApi.Modules.Offers.Services
 {
@@ -20,6 +22,7 @@ namespace MyApi.Modules.Offers.Services
         private readonly MyApi.Modules.Numbering.Services.INumberingService? _numberingService;
         private readonly MyApi.Modules.Planning.Services.IPlannedLineEntryService? _plannedEntries;
         private readonly IActivityLogger? _activityLogger;
+        private readonly IContactActivityService? _contactActivity;
 
         public OfferService(
             ApplicationDbContext context, 
@@ -29,7 +32,8 @@ namespace MyApi.Modules.Offers.Services
             IWorkflowTriggerService? workflowTriggerService = null,
             MyApi.Modules.Numbering.Services.INumberingService? numberingService = null,
             MyApi.Modules.Planning.Services.IPlannedLineEntryService? plannedEntries = null,
-            IActivityLogger? activityLogger = null)
+            IActivityLogger? activityLogger = null,
+            IContactActivityService? contactActivity = null)
         {
             _context = context;
             _logger = logger;
@@ -39,6 +43,7 @@ namespace MyApi.Modules.Offers.Services
             _numberingService = numberingService;
             _plannedEntries = plannedEntries;
             _activityLogger = activityLogger;
+            _contactActivity = contactActivity;
         }
 
         public async Task<PaginatedOfferResponse> GetOffersAsync(
@@ -277,6 +282,20 @@ namespace MyApi.Modules.Offers.Services
             }
 
             await _context.SaveChangesAsync();
+
+
+            // Log to contact activity feed
+            if (_contactActivity != null && offer.ContactId > 0)
+            {
+                await _contactActivity.LogAsync(
+                    contactId: offer.ContactId,
+                    type: ContactActivityTypes.OfferCreated,
+                    relatedEntityType: ContactActivityEntityTypes.Offer,
+                    relatedEntityId: offer.Id,
+                    description: $"Offer {offer.OfferNumber} '{offer.Title}' was created",
+                    metadata: new { number = offer.OfferNumber, title = offer.Title, status = offer.Status, currency = offer.Currency },
+                    createdBy: userId);
+            }
 
             var createdOffer = await GetOfferByIdAsync(offer.Id);
             return createdOffer!;

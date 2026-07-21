@@ -8,10 +8,14 @@ namespace MyApi.Modules.Installations.Services
     public class InstallationService : IInstallationService
     {
         private readonly ApplicationDbContext _context;
+        private readonly MyApi.Modules.Contacts.Services.IContactActivityService? _contactActivity;
 
-        public InstallationService(ApplicationDbContext context)
+        public InstallationService(
+            ApplicationDbContext context,
+            MyApi.Modules.Contacts.Services.IContactActivityService? contactActivity = null)
         {
             _context = context;
+            _contactActivity = contactActivity;
         }
 
         public async Task<PaginatedInstallationResponse> GetInstallationsAsync(
@@ -182,6 +186,18 @@ namespace MyApi.Modules.Installations.Services
                     // Detach the failed entity, bump the number, retry.
                     _context.Entry(installation).State = EntityState.Detached;
                 }
+            }
+
+            if (_contactActivity != null && installation.ContactId > 0)
+            {
+                await _contactActivity.LogAsync(
+                    contactId: installation.ContactId,
+                    type: MyApi.Modules.Contacts.Models.ContactActivityTypes.InstallationCreated,
+                    relatedEntityType: MyApi.Modules.Contacts.Models.ContactActivityEntityTypes.Installation,
+                    relatedEntityId: installation.Id,
+                    description: $"Installation {installation.InstallationNumber} was created",
+                    metadata: new { number = installation.InstallationNumber, name = installation.Name, installationType = installation.InstallationType, status = installation.Status },
+                    createdBy: userId);
             }
 
             return MapToDto(installation);

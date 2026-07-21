@@ -21,6 +21,7 @@ namespace MyApi.Modules.ServiceOrders.Services
         private readonly MyApi.Modules.Planning.Services.IPlannedLineEntryService? _plannedEntries;
         private readonly MyApi.Modules.Shared.Services.IEntityFormDocumentService? _formDocuments;
         private readonly MyApi.Modules.Invoices.Services.IInvoiceService? _invoiceService;
+        private readonly MyApi.Modules.Contacts.Services.IContactActivityService? _contactActivity;
 
         public ServiceOrderService(
             ApplicationDbContext context,
@@ -30,7 +31,8 @@ namespace MyApi.Modules.ServiceOrders.Services
             IAppSettingsService? appSettingsService = null,
             MyApi.Modules.Planning.Services.IPlannedLineEntryService? plannedEntries = null,
             MyApi.Modules.Shared.Services.IEntityFormDocumentService? formDocuments = null,
-            MyApi.Modules.Invoices.Services.IInvoiceService? invoiceService = null)
+            MyApi.Modules.Invoices.Services.IInvoiceService? invoiceService = null,
+            MyApi.Modules.Contacts.Services.IContactActivityService? contactActivity = null)
         {
             _context = context;
             _logger = logger;
@@ -40,6 +42,7 @@ namespace MyApi.Modules.ServiceOrders.Services
             _plannedEntries = plannedEntries;
             _formDocuments = formDocuments;
             _invoiceService = invoiceService;
+            _contactActivity = contactActivity;
         }
 
         // Phase A (A6): single formula for per-job estimated duration.
@@ -192,6 +195,18 @@ namespace MyApi.Modules.ServiceOrders.Services
 
             _logger.LogInformation("Direct service order {OrderNumber} (Id {Id}) created for contact {ContactId} by {UserId}",
                 serviceOrder.OrderNumber, serviceOrder.Id, serviceOrder.ContactId, userId);
+
+            if (_contactActivity != null && serviceOrder.ContactId > 0)
+            {
+                await _contactActivity.LogAsync(
+                    contactId: serviceOrder.ContactId,
+                    type: MyApi.Modules.Contacts.Models.ContactActivityTypes.ServiceOrderCreated,
+                    relatedEntityType: MyApi.Modules.Contacts.Models.ContactActivityEntityTypes.ServiceOrder,
+                    relatedEntityId: serviceOrder.Id,
+                    description: $"Service order {serviceOrder.OrderNumber} was created",
+                    metadata: new { number = serviceOrder.OrderNumber, status = serviceOrder.Status, serviceType = serviceOrder.ServiceType, priority = serviceOrder.Priority },
+                    createdBy: userId);
+            }
 
             var result = await GetServiceOrderByIdAsync(serviceOrder.Id);
             return result!;

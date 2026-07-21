@@ -325,6 +325,25 @@
       "files": "Files",
       "projects": "Projects"
     },
+    "activity": {
+      "title": "Activity",
+      "empty": "No activity yet",
+      "types": {
+        "offer_created": "Offer created",
+        "offer_status_changed": "Offer status changed",
+        "sale_created": "Sale created",
+        "sale_status_changed": "Sale status changed",
+        "service_order_created": "Service order created",
+        "service_order_status_changed": "Service order status changed",
+        "dispatch_created": "Dispatch created",
+        "dispatch_status_changed": "Dispatch status changed",
+        "installation_created": "Installation created",
+        "installation_completed": "Installation completed",
+        "note_added": "Note added",
+        "note_updated": "Note updated",
+        "note_deleted": "Note deleted"
+      }
+    },
     "articles": {
       "title": "Supplier Articles",
       "empty": "No articles linked to this supplier",
@@ -408,7 +427,14 @@
       "saved_success": "Notes saved",
       "saved_description": "Your note has been saved.",
       "add_failed": "Failed to add note",
-      "delete_failed": "Failed to delete note"
+      "delete_failed": "Failed to delete note",
+      "description": "Add a note to this contact's record.",
+      "adding": "Adding...",
+      "edit": "Edit Note",
+      "edit_description": "Update this note.",
+      "update": "Update Note",
+      "updating": "Updating...",
+      "update_failed": "Failed to update note"
     },
     "actions": {
       "favorite": "Add to Favorites",

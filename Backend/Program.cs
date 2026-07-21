@@ -291,6 +291,7 @@ builder.Services.AddScoped<ISkillService, SkillService>();
 // Contacts Module Services
 builder.Services.AddScoped<IContactService, ContactService>();
 builder.Services.AddScoped<IContactNoteService, ContactNoteService>();
+builder.Services.AddScoped<IContactActivityService, ContactActivityService>();
 builder.Services.AddScoped<IContactTagService, ContactTagService>();
 
 // Articles Module Services
@@ -848,6 +849,35 @@ CREATE INDEX IF NOT EXISTS ix_activated_modules_tenant
         catch (Exception ex)
         {
             migrationLogger.LogWarning(ex, "⚠️ Could not ensure ModuleScopeSettings table — feature will degrade to per_company.");
+        }
+
+        // ─── Ensure ContactActivities table exists (migrations are disabled) ───
+        // Idempotent: powers the "Activity" tab on the contact detail page.
+        try
+        {
+            context.Database.ExecuteSqlRaw(@"
+                CREATE TABLE IF NOT EXISTS ""ContactActivities"" (
+                    ""Id""                SERIAL       PRIMARY KEY,
+                    ""TenantId""          INTEGER      NOT NULL DEFAULT 0,
+                    ""ContactId""         INTEGER      NOT NULL,
+                    ""Type""              VARCHAR(60)  NOT NULL,
+                    ""RelatedEntityType"" VARCHAR(40)  NULL,
+                    ""RelatedEntityId""   INTEGER      NULL,
+                    ""Description""       VARCHAR(500) NULL,
+                    ""Metadata""          TEXT         NULL,
+                    ""CreatedAt""         TIMESTAMP    NOT NULL DEFAULT NOW(),
+                    ""CreatedBy""         VARCHAR(100) NULL
+                );
+                CREATE INDEX IF NOT EXISTS ""IX_ContactActivities_Contact_CreatedAt""
+                    ON ""ContactActivities"" (""TenantId"", ""ContactId"", ""CreatedAt"" DESC);
+                CREATE INDEX IF NOT EXISTS ""IX_ContactActivities_Related""
+                    ON ""ContactActivities"" (""TenantId"", ""RelatedEntityType"", ""RelatedEntityId"");
+            ");
+            migrationLogger.LogInformation("✅ ContactActivities table ensured (idempotent).");
+        }
+        catch (Exception ex)
+        {
+            migrationLogger.LogWarning(ex, "⚠️ Could not ensure ContactActivities table — contact activity feed will be unavailable.");
         }
     }
     catch (Exception ex)

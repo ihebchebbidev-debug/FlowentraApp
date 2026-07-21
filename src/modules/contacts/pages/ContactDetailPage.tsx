@@ -23,6 +23,7 @@ import {
   StickyNote,
   LayoutDashboard,
   Package,
+  Activity,
   type LucideIcon,
 } from 'lucide-react';
 import { useContact, useContacts } from '../hooks/useContacts';
@@ -35,6 +36,7 @@ import { ContactOverviewTab } from '../components/detail/ContactOverviewTab';
 import { ContactNotesTab } from '../components/detail/ContactNotesTab';
 import { ContactRelatedTab } from '../components/detail/ContactRelatedTab';
 import { ContactPurchaseHistoryTab } from '../components/detail/ContactPurchaseHistoryTab';
+import { ContactActivityTab } from '../components/detail/ContactActivityTab';
 import { SupplierArticlesTab } from '../components/detail/SupplierArticlesTab';
 import { useQueryClient } from '@tanstack/react-query';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -54,8 +56,10 @@ export default function ContactDetailPage() {
     notes, 
     isLoading: notesLoading, 
     createNote, 
+    updateNote,
     deleteNote,
     isCreating: isCreatingNote,
+    isUpdating: isUpdatingNote,
     isDeleting: isDeletingNote 
   } = useContactNotes(contactId);
   
@@ -64,6 +68,7 @@ export default function ContactDetailPage() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [addNoteOpen, setAddNoteOpen] = useState(false);
+  const [editingNote, setEditingNote] = useState<{ id: number; note: string } | null>(null);
   const [deletingNoteId, setDeletingNoteId] = useState<number | null>(null);
 
   // Fetch related records
@@ -110,6 +115,13 @@ export default function ContactDetailPage() {
     await refetch();
   };
 
+  const handleEditNote = async (note: string) => {
+    if (!editingNote) return;
+    await updateNote(editingNote.id, note);
+    setEditingNote(null);
+    await refetch();
+  };
+
   const handleDeleteNote = async (noteId: number) => {
     setDeletingNoteId(noteId);
     try {
@@ -133,8 +145,8 @@ export default function ContactDetailPage() {
   // Purchases tab is supplier-only: the Purchases module deals exclusively with
   // supplier (fournisseur) transactions, so we hide it on contact/company detail pages.
   const tabConfig = isSupplierRoute
-    ? (['overview', 'articles', 'purchases', 'notes'] as const)
-    : (['overview', 'installations', 'offers', 'sales', 'serviceOrders', 'notes'] as const);
+    ? (['overview', 'articles', 'purchases', 'activity', 'notes'] as const)
+    : (['overview', 'installations', 'offers', 'sales', 'serviceOrders', 'activity', 'notes'] as const);
 
   const TAB_META: Record<string, { icon: LucideIcon; label: () => string }> = {
     overview:       { icon: LayoutDashboard, label: () => t('detail.tabs.overview') },
@@ -145,6 +157,7 @@ export default function ContactDetailPage() {
     purchases:      { icon: Package,          label: () => t('detail.tabs.purchases') },
     notes:          { icon: StickyNote,       label: () => t('detail.tabs.notes') },
     articles:       { icon: Package,          label: () => t('detail.tabs.articles', 'Articles') },
+    activity:       { icon: Activity,         label: () => t('detail.tabs.activity') },
   };
 
   if (error || !contact) {
@@ -354,6 +367,11 @@ export default function ContactDetailPage() {
             </TabsContent>
           )}
 
+          {/* Activity Tab */}
+          <TabsContent value="activity">
+            <ContactActivityTab contactId={contact.id} />
+          </TabsContent>
+
           {/* Notes Tab */}
           <TabsContent value="notes">
             <ContactNotesTab
@@ -363,11 +381,13 @@ export default function ContactDetailPage() {
               isDeleting={isDeletingNote}
               deletingNoteId={deletingNoteId}
               onAddNote={() => setAddNoteOpen(true)}
+              onEditNote={(n) => setEditingNote({ id: n.id, note: n.note })}
               onDeleteNote={handleDeleteNote}
             />
           </TabsContent>
         </Tabs>
       </div>
+
 
       {/* Dialogs */}
       <ContactForm
@@ -383,6 +403,15 @@ export default function ContactDetailPage() {
         onOpenChange={setAddNoteOpen}
         onSubmit={handleAddNote}
         isLoading={isCreatingNote}
+      />
+
+      <AddNoteDialog
+        open={!!editingNote}
+        onOpenChange={(open) => { if (!open) setEditingNote(null); }}
+        onSubmit={handleEditNote}
+        isLoading={isUpdatingNote}
+        mode="edit"
+        initialValue={editingNote?.note ?? ''}
       />
     </div>
   );

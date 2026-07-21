@@ -325,6 +325,25 @@
       "files": "Fichiers",
       "projects": "Projets"
     },
+    "activity": {
+      "title": "Activité",
+      "empty": "Aucune activité pour l'instant",
+      "types": {
+        "offer_created": "Offre créée",
+        "offer_status_changed": "Statut de l'offre modifié",
+        "sale_created": "Vente créée",
+        "sale_status_changed": "Statut de la vente modifié",
+        "service_order_created": "Ordre de service créé",
+        "service_order_status_changed": "Statut de l'ordre de service modifié",
+        "dispatch_created": "Intervention créée",
+        "dispatch_status_changed": "Statut de l'intervention modifié",
+        "installation_created": "Installation créée",
+        "installation_completed": "Installation terminée",
+        "note_added": "Note ajoutée",
+        "note_updated": "Note modifiée",
+        "note_deleted": "Note supprimée"
+      }
+    },
     "articles": {
       "title": "Articles du fournisseur",
       "empty": "Aucun article lié à ce fournisseur",
@@ -408,7 +427,14 @@
       "saved_success": "Notes enregistrées",
       "saved_description": "Votre note a été enregistrée.",
       "add_failed": "Échec de l'ajout de la note",
-      "delete_failed": "Échec de la suppression de la note"
+      "delete_failed": "Échec de la suppression de la note",
+      "description": "Ajouter une note à la fiche de ce contact.",
+      "adding": "Ajout en cours...",
+      "edit": "Modifier la note",
+      "edit_description": "Mettre à jour cette note.",
+      "update": "Mettre à jour",
+      "updating": "Mise à jour...",
+      "update_failed": "Échec de la mise à jour de la note"
     },
     "actions": {
       "favorite": "Ajouter aux Favoris",

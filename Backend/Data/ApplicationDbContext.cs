@@ -89,6 +89,7 @@ namespace MyApi.Data
         // Contacts Module
         public DbSet<Contact> Contacts { get; set; }
         public DbSet<ContactNote> ContactNotes { get; set; }
+        public DbSet<ContactActivity> ContactActivities { get; set; }
         public DbSet<ContactTag> ContactTags { get; set; }
         public DbSet<ContactTagAssignment> ContactTagAssignments { get; set; }
 

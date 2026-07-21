@@ -9,11 +9,16 @@ namespace MyApi.Modules.Contacts.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<ContactNoteService> _logger;
+        private readonly IContactActivityService? _contactActivity;
 
-        public ContactNoteService(ApplicationDbContext context, ILogger<ContactNoteService> logger)
+        public ContactNoteService(
+            ApplicationDbContext context,
+            ILogger<ContactNoteService> logger,
+            IContactActivityService? contactActivity = null)
         {
             _context = context;
             _logger = logger;
+            _contactActivity = contactActivity;
         }
 
         public async Task<ContactNoteListResponseDto> GetNotesByContactIdAsync(int contactId)
@@ -83,6 +88,17 @@ namespace MyApi.Modules.Contacts.Services
                 _context.ContactNotes.Add(note);
                 await _context.SaveChangesAsync();
 
+                if (_contactActivity != null)
+                {
+                    await _contactActivity.LogAsync(
+                        contactId: note.ContactId,
+                        type: ContactActivityTypes.NoteAdded,
+                        relatedEntityType: ContactActivityEntityTypes.Note,
+                        relatedEntityId: note.Id,
+                        description: note.Note,
+                        createdBy: createdByUser);
+                }
+
                 _logger.LogInformation("Contact note created successfully with ID {NoteId}", note.Id);
                 return MapToNoteDto(note);
             }
@@ -110,6 +126,17 @@ namespace MyApi.Modules.Contacts.Services
 
                 await _context.SaveChangesAsync();
 
+                if (_contactActivity != null)
+                {
+                    await _contactActivity.LogAsync(
+                        contactId: note.ContactId,
+                        type: ContactActivityTypes.NoteUpdated,
+                        relatedEntityType: ContactActivityEntityTypes.Note,
+                        relatedEntityId: note.Id,
+                        description: note.Note,
+                        createdBy: note.CreatedBy);
+                }
+
                 _logger.LogInformation("Contact note updated successfully with ID {NoteId}", id);
                 return MapToNoteDto(note);
             }
@@ -133,8 +160,23 @@ namespace MyApi.Modules.Contacts.Services
                     return false;
                 }
 
+                var contactId = note.ContactId;
+                var noteText = note.Note;
+                var createdBy = note.CreatedBy;
+
                 _context.ContactNotes.Remove(note);
                 await _context.SaveChangesAsync();
+
+                if (_contactActivity != null)
+                {
+                    await _contactActivity.LogAsync(
+                        contactId: contactId,
+                        type: ContactActivityTypes.NoteDeleted,
+                        relatedEntityType: ContactActivityEntityTypes.Note,
+                        relatedEntityId: id,
+                        description: noteText,
+                        createdBy: createdBy);
+                }
 
                 _logger.LogInformation("Contact note deleted successfully with ID {NoteId}", id);
                 return true;
