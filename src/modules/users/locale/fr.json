@@ -144,5 +144,9 @@
     "name": "Utilisateurs",
     "description": "Comptes utilisateurs et rôles.",
     "category": "Système"
+  },
+  "retry": "Relancer",
+  "application": {
+    "errorTitle": "Erreur"
   }
 }

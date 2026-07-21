@@ -1,11 +1,11 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Users, Plus, Search, MoreHorizontal, User, Shield, Trash2, Edit } from "lucide-react";
+import { Users, Plus, Search, MoreHorizontal, Shield, Trash2, Edit, AlertCircle, Loader2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { usersApi, User as UserType } from "@/services/usersApi";
+import { usersApi, User as UserType } from "@/services/api/usersApi";
 import { AddUserModal } from "./AddUserModal";
 import { EditUserModal } from "./EditUserModal";
 import { RoleAssignmentModal } from "./RoleAssignmentModal";
@@ -28,12 +28,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { extractApiErrorMessage } from "@/utils/extractApiErrorMessage";
+import { emitDataEvent, onDataEvent } from "@/lib/dataEvents";
 
 export function UserManagement() {
   const { t } = useTranslation('settings');
   const { toast } = useToast();
   const [users, setUsers] = useState<UserType[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -41,28 +45,43 @@ export function UserManagement() {
   const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
   const [userToDelete, setUserToDelete] = useState<UserType | null>(null);
 
-  // Load users on component mount
-  useEffect(() => {
-    loadUsers();
-  }, []);
-
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async (signal?: AbortSignal) => {
     try {
       setLoading(true);
+      setLoadError(null);
       const response = await usersApi.getAll();
+      if (signal?.aborted) return;
       setUsers(response.users || []);
     } catch (error) {
+      if (signal?.aborted) return;
+      const msg = extractApiErrorMessage(error, t('users.failedToLoad'));
+      setLoadError(msg);
       toast({
         title: t('users.deleteErrorTitle'),
-        description: error instanceof Error ? error.message : t('users.failedToLoad'),
+        description: msg,
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
-  };
+  }, [t, toast]);
 
-  const handleDeleteUser = async (user: UserType) => {
+  useEffect(() => {
+    const controller = new AbortController();
+    loadUsers(controller.signal);
+    // Refresh when roles/skills/users change in other modules (e.g., role deleted → badges stale)
+    const offUsers = onDataEvent('users:changed', () => loadUsers(controller.signal));
+    const offRoles = onDataEvent('roles:changed', () => loadUsers(controller.signal));
+    return () => {
+      controller.abort();
+      offUsers();
+      offRoles();
+    };
+  }, [loadUsers]);
+
+  const handleDeleteUser = useCallback(async (user: UserType) => {
+    if (isDeleting) return;
+    setIsDeleting(true);
     try {
       await usersApi.delete(user.id);
       toast({
@@ -70,38 +89,51 @@ export function UserManagement() {
         description: t('users.deleteSuccess'),
       });
       setUserToDelete(null);
-      loadUsers();
+      emitDataEvent('users:changed');
+      // Removing a user also affects role userCount displayed elsewhere
+      emitDataEvent('roles:changed');
+      await loadUsers();
     } catch (error) {
       toast({
         title: t('users.deleteErrorTitle'),
-        description: error instanceof Error ? error.message : t('users.deleteFailed'),
+        description: extractApiErrorMessage(error, t('users.deleteFailed')),
         variant: "destructive",
       });
+    } finally {
+      setIsDeleting(false);
     }
-  };
+  }, [isDeleting, loadUsers, t, toast]);
 
-  const handleChangeRole = (user: UserType) => {
+  const handleChangeRole = useCallback((user: UserType) => {
     setSelectedUser(user);
     setShowRoleModal(true);
-  };
+  }, []);
 
-  const handleRoleAssigned = () => {
-    loadUsers(); // Refresh the list
-  };
+  const handleRoleAssigned = useCallback(() => {
+    emitDataEvent('users:changed');
+    emitDataEvent('roles:changed');
+    loadUsers();
+  }, [loadUsers]);
 
-  // Filter users based on search term
-  const filteredUsers = users.filter(user =>
-    user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.role?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Memoize filtered/derived data so we don't re-filter+sort the whole
+  // user list on every parent render (e.g., modal open/close, dropdown toggle).
+  const filteredUsers = useMemo(() => {
+    const q = searchTerm.toLowerCase();
+    if (!q) return users;
+    return users.filter(user =>
+      user.firstName.toLowerCase().includes(q) ||
+      user.lastName.toLowerCase().includes(q) ||
+      user.email.toLowerCase().includes(q) ||
+      (user.role?.toLowerCase().includes(q) ?? false)
+    );
+  }, [users, searchTerm]);
 
-  // Get recent logins (last 6 users sorted by login date)
-  const recentLogins = [...filteredUsers]
-    .filter(user => user.lastLoginAt)
-    .sort((a, b) => new Date(b.lastLoginAt!).getTime() - new Date(a.lastLoginAt!).getTime())
-    .slice(0, 6);
+  const recentLogins = useMemo(() => {
+    return [...filteredUsers]
+      .filter(user => user.lastLoginAt)
+      .sort((a, b) => new Date(b.lastLoginAt!).getTime() - new Date(a.lastLoginAt!).getTime())
+      .slice(0, 6);
+  }, [filteredUsers]);
 
   if (loading) {
     return (
@@ -148,6 +180,27 @@ export function UserManagement() {
             {t('users.addUser')}
           </Button>
           </div>
+
+          {loadError && (
+            <div
+              role="alert"
+              className="flex items-start gap-3 p-3 rounded-lg border border-destructive/40 bg-destructive/10 text-destructive"
+            >
+              <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">{t('users.deleteErrorTitle')}</p>
+                <p className="text-sm opacity-90 break-words">{loadError}</p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-destructive/40 text-destructive hover:bg-destructive/20"
+                onClick={() => loadUsers()}
+              >
+                {t('retry') || 'Retry'}
+              </Button>
+            </div>
+          )}
 
           {/* Users List */}
           <div className="space-y-3">
@@ -205,7 +258,7 @@ export function UserManagement() {
                 </div>
               </div>
             ))}
-            {filteredUsers.length === 0 && (
+            {filteredUsers.length === 0 && !loadError && (
               <div className="text-center py-8 text-muted-foreground">
                 {searchTerm ? t('users.noUsersMatchingSearch') : t('users.noUsersFound')}
               </div>
@@ -272,7 +325,7 @@ export function UserManagement() {
       <AddUserModal
         open={showAddModal}
         onOpenChange={setShowAddModal}
-        onUserAdded={loadUsers}
+        onUserAdded={() => { emitDataEvent('users:changed'); loadUsers(); }}
       />
 
       {/* Edit User Modal */}
@@ -280,7 +333,7 @@ export function UserManagement() {
         open={showEditModal}
         onOpenChange={setShowEditModal}
         user={selectedUser}
-        onUserUpdated={loadUsers}
+        onUserUpdated={() => { emitDataEvent('users:changed'); loadUsers(); }}
       />
 
       {/* Role Assignment Modal */}
@@ -292,7 +345,12 @@ export function UserManagement() {
       />
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
+      <AlertDialog
+        open={!!userToDelete}
+        onOpenChange={(open) => {
+          if (!open && !isDeleting) setUserToDelete(null);
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t('users.deleteTitle')}</AlertDialogTitle>
@@ -305,12 +363,24 @@ export function UserManagement() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>{t('cancel')}</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => userToDelete && handleDeleteUser(userToDelete)}
+              onClick={(e) => {
+                // Prevent the dialog from closing before the request resolves
+                e.preventDefault();
+                if (userToDelete) handleDeleteUser(userToDelete);
+              }}
+              disabled={isDeleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {t('delete')}
+              {isDeleting ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {t('delete')}
+                </span>
+              ) : (
+                t('delete')
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

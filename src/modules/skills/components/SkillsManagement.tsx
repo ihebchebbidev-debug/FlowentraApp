@@ -1,11 +1,11 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Wrench, Plus, Search, MoreHorizontal, Edit, Trash2 } from "lucide-react";
+import { Wrench, Plus, Search, MoreHorizontal, Edit, Trash2, AlertCircle } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,7 +15,9 @@ import {
 import { AddEditSkillModal } from "./AddEditSkillModal";
 import { DeleteConfirmationModal } from "@/shared/components";
 import { useToast } from "@/hooks/use-toast";
-import { skillsApi, Skill } from "@/services/skillsApi";
+import { skillsApi, Skill } from "@/services/api/skillsApi";
+import { extractApiErrorMessage } from "@/utils/extractApiErrorMessage";
+import { emitDataEvent, onDataEvent } from "@/lib/dataEvents";
 
 // Level badge styling
 const levelStyles: Record<string, string> = {
@@ -41,6 +43,8 @@ export function SkillsManagement() {
   const [skills, setSkills] = useState<Skill[]>([]);
   const [filteredSkills, setFilteredSkills] = useState<Skill[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSkill, setEditingSkill] = useState<Skill | null>(null);
@@ -48,38 +52,49 @@ export function SkillsManagement() {
   const [skillToDelete, setSkillToDelete] = useState<Skill | null>(null);
   const { toast } = useToast();
 
-  const fetchSkills = async () => {
+  const fetchSkills = useCallback(async (signal?: AbortSignal) => {
     try {
       setIsLoading(true);
+      setLoadError(null);
       const response = await skillsApi.getAll();
+      if (signal?.aborted) return;
       setSkills(response || []);
       setFilteredSkills(response || []);
-    } catch (error: any) {
+    } catch (error) {
+      if (signal?.aborted) return;
+      const msg = extractApiErrorMessage(error, t('common.toast.fetch_failed'));
+      setLoadError(msg);
       toast({
         title: t('common.toast.error'),
-        description: t('common.toast.fetch_failed'),
+        description: msg,
         variant: "destructive"
       });
     } finally {
-      setIsLoading(false);
+      if (!signal?.aborted) setIsLoading(false);
     }
-  };
+  }, [t, toast]);
 
   useEffect(() => {
-    fetchSkills();
-  }, []);
+    const controller = new AbortController();
+    fetchSkills(controller.signal);
+    const off = onDataEvent('skills:changed', () => fetchSkills(controller.signal));
+    return () => {
+      controller.abort();
+      off();
+    };
+  }, [fetchSkills]);
 
   // Filter skills based on search term
   useEffect(() => {
     if (!searchTerm) {
       setFilteredSkills(skills);
     } else {
-      const filtered = skills.filter(skill =>
-        skill.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        skill.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        skill.description?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setFilteredSkills(filtered);
+      const q = searchTerm.toLowerCase();
+      setFilteredSkills(skills.filter(skill =>
+        skill.name.toLowerCase().includes(q) ||
+        skill.category.toLowerCase().includes(q) ||
+        (skill.description?.toLowerCase().includes(q) ?? false)
+      ));
     }
   }, [searchTerm, skills]);
 
@@ -95,6 +110,9 @@ export function SkillsManagement() {
 
   const handleSaveSkill = async () => {
     setIsModalOpen(false);
+    emitDataEvent('skills:changed');
+    // Renaming a skill affects role skill labels
+    emitDataEvent('roles:changed');
     await fetchSkills();
     toast({
       title: t('common.toast.success'),
@@ -108,22 +126,26 @@ export function SkillsManagement() {
   };
 
   const confirmDeleteSkill = async () => {
-    if (!skillToDelete) return;
-    
+    if (!skillToDelete || isDeleting) return;
+    setIsDeleting(true);
     try {
       await skillsApi.delete(skillToDelete.id);
       toast({
         title: t('common.toast.success'),
         description: t('common.toast.deleted', { name: skillToDelete.name }),
       });
+      emitDataEvent('skills:changed');
+      emitDataEvent('roles:changed');
+      emitDataEvent('users:changed');
       await fetchSkills();
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: t('common.toast.error'),
-        description: t('common.toast.delete_failed'),
+        description: extractApiErrorMessage(error, t('common.toast.delete_failed')),
         variant: "destructive"
       });
     } finally {
+      setIsDeleting(false);
       setSkillToDelete(null);
       setIsDeleteModalOpen(false);
     }

@@ -49,5 +49,9 @@
     "name": "Skills",
     "description": "Manage employee skills and certifications.",
     "category": "HR"
+  },
+  "retry": "Retry",
+  "application": {
+    "errorTitle": "Error"
   }
 }

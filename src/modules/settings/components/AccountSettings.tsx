@@ -12,7 +12,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from 'react-i18next';
 import { toast } from "@/hooks/use-toast";
 import { authService } from "@/services/authService";
-import { usersApi } from "@/services/usersApi";
+import { usersApi } from "@/services/api/usersApi";
 import { useEmailValidation } from "@/modules/users/hooks/useEmailValidation";
 import { preferencesService, UserPreferences } from "@/services/preferencesService";
 import { CompanySettings } from "./CompanySettings";

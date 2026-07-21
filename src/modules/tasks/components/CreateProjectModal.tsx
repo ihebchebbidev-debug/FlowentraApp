@@ -26,7 +26,7 @@ import {
 import { Link, useLocation } from "react-router-dom";
 import { format } from "date-fns";
 import { Project } from "../types";
-import { usersApi } from "@/services/usersApi";
+import { usersApi } from "@/services/api/usersApi";
 import type { User } from "@/types/users";
 import { useProjectTypes } from "@/modules/lookups/hooks/useLookups";
 

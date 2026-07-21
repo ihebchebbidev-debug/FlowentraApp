@@ -144,5 +144,9 @@
     "name": "Users",
     "description": "User accounts and roles.",
     "category": "System"
+  },
+  "retry": "Retry",
+  "application": {
+    "errorTitle": "Error"
   }
 }

@@ -10,8 +10,8 @@ import { Plus, Users, Shield, Settings2, Palette, Filter, ChevronDown, Activity,
 import { SettingsAutopilotDemo } from "@/modules/settings/components/onboarding/SettingsAutopilotDemo";
 import { useLayoutModeContext } from "@/hooks/useLayoutMode";
 import { useQuery } from "@tanstack/react-query";
-import { usersApi } from "@/services/usersApi";
-import { rolesApi } from "@/services/rolesApi";
+import { usersApi } from "@/services/api/usersApi";
+import { rolesApi } from "@/services/api/rolesApi";
 import { User as UserType, Role } from "@/types/users";
 import { UsersTable } from "@/modules/users/components/UsersTable";
 import { CreateUserModal } from "@/modules/users/components/CreateUserModal";

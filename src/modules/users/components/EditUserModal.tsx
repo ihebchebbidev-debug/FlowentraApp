@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { usersApi, User, UpdateUserRequest } from "@/services/usersApi";
+import { usersApi, User, UpdateUserRequest } from "@/services/api/usersApi";
 import { skillsApi, type Skill, type UserSkill } from "@/services/api/skillsApi";
 import { User as UserIcon, KeyRound, Eye, EyeOff, Loader2, AlertCircle, Wrench, Plus, X, GraduationCap } from "lucide-react";
 import { ProfilePictureUpload } from "@/components/ui/profile-picture-upload";

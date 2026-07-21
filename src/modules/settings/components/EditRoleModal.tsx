@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { rolesApi } from "@/services/rolesApi";
+import { rolesApi } from "@/services/api/rolesApi";
 import { Role, UpdateRoleRequest } from "@/types/users";
 import { RolePermissionsEditor } from "./RolePermissionsEditor";
 import { Settings, Shield } from "lucide-react";

@@ -32,7 +32,7 @@ import { useLookups } from "@/shared/contexts/LookupsContext";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { TasksService } from "../services/tasks.service";
-import { usersApi } from "@/services/usersApi";
+import { usersApi } from "@/services/api/usersApi";
 import { projectsApi } from "@/services/api/projectsApi";
 import { notificationsApi } from "@/services/api/notificationsApi";
 import type { User } from "@/types/users";

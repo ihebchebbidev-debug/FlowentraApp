@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { rolesApi } from "@/services/rolesApi";
+import { rolesApi } from "@/services/api/rolesApi";
 import { User, Role } from "@/types/users";
 import { Loader2, Shield, X } from "lucide-react";
 import { broadcastPermissionChange } from "@/utils/permissionBroadcast";

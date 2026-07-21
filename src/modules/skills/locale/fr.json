@@ -49,5 +49,9 @@
     "name": "Compétences",
     "description": "Gérez les compétences et certifications des employés.",
     "category": "RH"
+  },
+  "retry": "Relancer",
+  "application": {
+    "errorTitle": "Erreur"
   }
 }

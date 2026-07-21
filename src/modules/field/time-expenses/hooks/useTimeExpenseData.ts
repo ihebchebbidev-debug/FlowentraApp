@@ -1,7 +1,7 @@
 import { useMemo, useCallback, useState, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { TimeExpenseEntry, User, TimeExpenseFilters, TimeExpenseSummary } from '../types';
-import { usersApi } from '@/services/usersApi';
+import { usersApi } from '@/services/api/usersApi';
 import { dispatchesApi } from '@/services/api/dispatchesApi';
 
 interface LoadingProgress {

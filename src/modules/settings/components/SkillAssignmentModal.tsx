@@ -6,8 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from 'react-i18next';
-import { skillsApi, Skill } from "@/services/skillsApi";
-import { Role } from "@/services/rolesApi";
+import { skillsApi, Skill } from "@/services/api/skillsApi";
+import { Role } from "@/services/api/rolesApi";
 import { Loader2, Zap, X } from "lucide-react";
 
 interface SkillAssignmentModalProps {

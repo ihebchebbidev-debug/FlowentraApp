@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { usersApi } from '@/services/usersApi';
+import { usersApi } from '@/services/api/usersApi';
 
 interface EmailValidationResult {
   isChecking: boolean;
@@ -12,6 +12,7 @@ export function useEmailValidation(excludeUserId?: number): EmailValidationResul
   const [isChecking, setIsChecking] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const requestSeqRef = useRef(0);
   const lastCheckedEmail = useRef<string>('');
 
   const clearError = useCallback(() => {
@@ -21,10 +22,11 @@ export function useEmailValidation(excludeUserId?: number): EmailValidationResul
 
   const validateEmail = useCallback((email: string) => {
     const trimmedEmail = email.trim().toLowerCase();
-    
+
     // Clear previous timeout
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
+      debounceRef.current = null;
     }
 
     // Clear error if email is empty or too short
@@ -49,39 +51,50 @@ export function useEmailValidation(excludeUserId?: number): EmailValidationResul
 
     // Debounce the API call — only show the spinner once the request actually fires,
     // not on every keystroke, so the submit button is never blocked mid-typing.
+    const seq = ++requestSeqRef.current;
     debounceRef.current = setTimeout(async () => {
       setIsChecking(true);
       try {
         // Ensure excludeUserId is passed as a number
         const excludeId = excludeUserId ? Number(excludeUserId) : undefined;
         const result = await usersApi.checkEmailExists(trimmedEmail, excludeId) as { exists: boolean; source?: string; userId?: number };
+        // Ignore stale responses (excludeUserId changed or newer request in flight)
+        if (seq !== requestSeqRef.current) return;
         lastCheckedEmail.current = trimmedEmail;
-        
+
         if (result.exists) {
           // Double-check: if the backend returns userId matching excluded user, ignore
           if (excludeId && result.userId != null && Number(result.userId) === excludeId) {
             setEmailError(null);
-          } else if (result.source === 'admin') {
-            setEmailError('This email is already in use by the main administrator');
           } else {
-            setEmailError('This email is already in use by another user');
+            // Generic message — do not disclose whether the address belongs to
+            // the main administrator vs a regular user (account enumeration).
+            setEmailError('This email is already in use');
           }
         } else {
           setEmailError(null);
         }
       } catch (error) {
+        if (seq !== requestSeqRef.current) return;
         console.warn('Failed to validate email:', error);
         setEmailError(null);
       } finally {
-        setIsChecking(false);
+        if (seq === requestSeqRef.current) setIsChecking(false);
       }
     }, 500);
   }, [excludeUserId]);
 
-  // Clear cached state when excludeUserId changes (switching between users)
+  // Clear cached state AND any pending debounced request when excludeUserId changes
+  // (switching between users). Bumping requestSeqRef invalidates any in-flight response.
   useEffect(() => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+    requestSeqRef.current++;
     lastCheckedEmail.current = '';
     setEmailError(null);
+    setIsChecking(false);
   }, [excludeUserId]);
 
   // Cleanup on unmount

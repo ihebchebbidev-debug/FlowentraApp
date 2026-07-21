@@ -21,7 +21,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { Column } from "../types";
-import { usersApi } from "@/services/usersApi";
+import { usersApi } from "@/services/api/usersApi";
 import type { User } from "@/types/users";
 
 interface ColumnManagerProps {

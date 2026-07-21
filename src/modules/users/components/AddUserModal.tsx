@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { usersApi, CreateUserRequest } from "@/services/usersApi";
+import { usersApi, CreateUserRequest } from "@/services/api/usersApi";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 
 interface AddUserModalProps {

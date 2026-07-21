@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { skillsApi, Skill, CreateSkillRequest, UpdateSkillRequest } from "@/services/skillsApi";
+import { skillsApi, Skill, CreateSkillRequest, UpdateSkillRequest } from "@/services/api/skillsApi";
 
 interface AddEditSkillModalProps {
   isOpen: boolean;
