@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -138,6 +139,11 @@ export function AddMaterialModal({
       onClose();
     } catch (error) {
       console.error('Failed to submit material:', error);
+      toast.error(
+        (error as any)?.message
+          ? `${t('add_material')}: ${(error as any).message}`
+          : t('material_form.save_failed', 'Failed to save material. Please try again.')
+      );
     } finally {
       setIsSubmitting(false);
     }

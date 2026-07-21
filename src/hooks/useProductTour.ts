@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useUserType } from './useUserType';
 
 const TOUR_COMPLETED_KEY = 'product-tour-completed';
-const TOUR_VERSION = '1'; // Increment to show tour again after major updates
+const TOUR_VERSION = '2'; // Increment to show tour again after major updates
 
 export interface UseProductTourReturn {
   shouldShowTour: boolean;

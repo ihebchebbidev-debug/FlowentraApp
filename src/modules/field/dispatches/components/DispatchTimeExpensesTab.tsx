@@ -328,6 +328,10 @@ export function DispatchTimeExpensesTab({
     if (preselectedJobId != null && dispatchJobs.some(j => j.id === preselectedJobId)) return preselectedJobId;
     return dispatchJobs[0]?.id ?? null;
   });
+  // Track whether the user has manually chosen a job so background refetches of
+  // `dispatchJobs` don't silently clobber their selection.
+  const [timeJobTouched, setTimeJobTouched] = useState(false);
+  const [expenseJobTouched, setExpenseJobTouched] = useState(false);
 
   // Keep the defaulted job in sync when dispatch data loads asynchronously.
   useEffect(() => {
@@ -335,8 +339,14 @@ export function DispatchTimeExpensesTab({
     const preferred = (preselectedJobId != null && dispatchJobs.some(j => j.id === preselectedJobId))
       ? preselectedJobId
       : dispatchJobs[0]?.id ?? null;
-    setSelectedTimeJobId(prev => (prev != null && dispatchJobs.some(j => j.id === prev)) ? prev : preferred);
-    setSelectedExpenseJobId(prev => (prev != null && dispatchJobs.some(j => j.id === prev)) ? prev : preferred);
+    setSelectedTimeJobId(prev => {
+      if (timeJobTouched && prev != null && dispatchJobs.some(j => j.id === prev)) return prev;
+      return (prev != null && dispatchJobs.some(j => j.id === prev)) ? prev : preferred;
+    });
+    setSelectedExpenseJobId(prev => {
+      if (expenseJobTouched && prev != null && dispatchJobs.some(j => j.id === prev)) return prev;
+      return (prev != null && dispatchJobs.some(j => j.id === prev)) ? prev : preferred;
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatchJobs.length, preselectedJobId]);
 
@@ -384,6 +394,7 @@ export function DispatchTimeExpensesTab({
     setDurationDate(new Date());
     // Pre-select the current job (falls back to the first) for multi-job dispatches.
     setSelectedTimeJobId(defaultJobId());
+    setTimeJobTouched(false);
   };
 
   const resetExpenseForm = () => {
@@ -395,6 +406,7 @@ export function DispatchTimeExpensesTab({
       date: new Date().toISOString().split('T')[0],
     });
     setSelectedExpenseJobId(defaultJobId());
+    setExpenseJobTouched(false);
   };
 
   // Resolve start/end times from duration mode if needed
@@ -1026,7 +1038,10 @@ export function DispatchTimeExpensesTab({
                 <Label>{t('dispatches.job_for_entry', 'Job')}</Label>
                 <Select
                   value={selectedTimeJobId != null ? String(selectedTimeJobId) : ''}
-                  onValueChange={(value) => setSelectedTimeJobId(value ? parseInt(value, 10) : null)}
+                  onValueChange={(value) => {
+                    setTimeJobTouched(true);
+                    setSelectedTimeJobId(value ? parseInt(value, 10) : null);
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder={t('dispatches.select_job', 'Select job')} />
@@ -1207,7 +1222,10 @@ export function DispatchTimeExpensesTab({
                 <Label>{t('dispatches.job_for_entry', 'Job')}</Label>
                 <Select
                   value={selectedExpenseJobId != null ? String(selectedExpenseJobId) : ''}
-                  onValueChange={(value) => setSelectedExpenseJobId(value ? parseInt(value, 10) : null)}
+                  onValueChange={(value) => {
+                    setExpenseJobTouched(true);
+                    setSelectedExpenseJobId(value ? parseInt(value, 10) : null);
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder={t('dispatches.select_job', 'Select job')} />

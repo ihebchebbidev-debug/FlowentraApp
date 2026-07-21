@@ -45,6 +45,22 @@ namespace MyApi.Modules.Dispatches.Services
             _contactActivity = contactActivity;
         }
 
+        // Reject obviously invalid schedule windows before any DB work.
+        // Runs on every create path so non-UI callers (mobile app, scripts) cannot
+        // persist zero/negative-duration or past-dated dispatches.
+        private void ValidateScheduleWindow(DateTime scheduledDate, TimeSpan? start, TimeSpan? end)
+        {
+            if (start.HasValue && end.HasValue && end.Value <= start.Value)
+                throw new ArgumentException("ScheduledEndTime must be strictly after ScheduledStartTime.");
+            if (start.HasValue && end.HasValue && (end.Value - start.Value) < TimeSpan.FromMinutes(1))
+                throw new ArgumentException("Dispatch duration must be at least one minute.");
+            // Allow same-day past times within a small grace window, but reject
+            // dispatches scheduled clearly in the past (> 1 day before today UTC).
+            var todayUtc = DateTime.UtcNow.Date;
+            if (scheduledDate.Date < todayUtc.AddDays(-1))
+                throw new ArgumentException("ScheduledDate cannot be more than one day in the past.");
+        }
+
         // Helper to build a map of technicianId -> display name for a dispatch
         private async Task<System.Collections.Generic.Dictionary<int, string>> GetTechnicianNameMapForDispatchAsync(int dispatchId)
         {
@@ -75,6 +91,7 @@ namespace MyApi.Modules.Dispatches.Services
         public async Task<DispatchDto> CreateFromJobAsync(int jobId, CreateDispatchFromJobDto dto, string userId)
         {
             _logger.LogInformation("CreateFromJobAsync called by {UserId} for Job {JobId} (AutoCreate technicians: {HasTech})", userId, jobId, dto.AssignedTechnicianIds?.Count ?? 0);
+            ValidateScheduleWindow(dto.ScheduledDate, dto.ScheduledStartTime, dto.ScheduledEndTime);
             // Get the job to find the related ServiceOrder and Contact
             var job = await _db.ServiceOrderJobs
                 .Include(j => j.ServiceOrder)
@@ -149,9 +166,19 @@ namespace MyApi.Modules.Dispatches.Services
             var strategy = _db.Database.CreateExecutionStrategy();
             await strategy.ExecuteAsync(async () =>
             {
-                await using var tx = await _db.Database.BeginTransactionAsync();
+                await using var tx = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
                 try
                 {
+                    // Race re-check inside the tx (DB unique indexes are the hard fence).
+                    var raceExisting = await _db.Dispatches
+                        .FirstOrDefaultAsync(d => d.JobId == jobId.ToString() && !d.IsDeleted);
+                    if (raceExisting != null)
+                    {
+                        _logger.LogWarning("CreateFromJobAsync: race caught, existing dispatch {DispatchId} for job {JobId}", raceExisting.Id, jobId);
+                        dispatch = raceExisting;
+                        await tx.CommitAsync();
+                        return;
+                    }
                     _db.Dispatches.Add(dispatch);
                     await _db.SaveChangesAsync();
 
@@ -221,6 +248,7 @@ namespace MyApi.Modules.Dispatches.Services
         {
             _logger.LogInformation("CreateFromInstallationAsync called by {UserId} for Installation {InstallationId} with {JobCount} jobs",
                 userId, dto.InstallationId, dto.JobIds.Count);
+            ValidateScheduleWindow(dto.ScheduledDate, dto.ScheduledStartTime, dto.ScheduledEndTime);
 
             // Validate all jobs exist
             var jobs = await _db.ServiceOrderJobs
@@ -319,9 +347,32 @@ namespace MyApi.Modules.Dispatches.Services
             var strategy = _db.Database.CreateExecutionStrategy();
             await strategy.ExecuteAsync(async () =>
             {
-                using var tx = await _db.Database.BeginTransactionAsync();
+                using var tx = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
                 try
                 {
+                    // Race re-check inside the serializable tx. The DB partial unique index
+                    // ux_dispatchjobs_tenant_jobid_active is the hard fence — this re-check
+                    // just yields a clean 409-style error instead of a raw DB constraint.
+                    var raceExistingJobs = await _db.Set<DispatchJob>()
+                        .Where(dj => dto.JobIds.Contains(dj.JobId) && !dj.IsDeleted)
+                        .Join(_db.Dispatches.Where(d => !d.IsDeleted),
+                            dj => dj.DispatchId, d => d.Id,
+                            (dj, d) => dj.JobId)
+                        .ToListAsync();
+                    if (raceExistingJobs.Any())
+                    {
+                        throw new InvalidOperationException($"Jobs already dispatched: {string.Join(", ", raceExistingJobs)}");
+                    }
+                    var raceLegacyIds = dto.JobIds.Select(id => id.ToString()).ToList();
+                    var raceLegacy = await _db.Dispatches
+                        .Where(d => !d.IsDeleted && d.JobId != null && raceLegacyIds.Contains(d.JobId))
+                        .Select(d => d.JobId)
+                        .ToListAsync();
+                    if (raceLegacy.Any())
+                    {
+                        throw new InvalidOperationException($"Jobs already dispatched (legacy): {string.Join(", ", raceLegacy)}");
+                    }
+
                     _db.Dispatches.Add(dispatch);
                     await _db.SaveChangesAsync();
 

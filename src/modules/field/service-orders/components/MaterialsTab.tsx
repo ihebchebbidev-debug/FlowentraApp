@@ -1066,9 +1066,10 @@ export function MaterialsTab({ serviceOrder, onUpdate, jobIds = [], jobLabels }:
                   <Input
                     id="edit-qty"
                     type="number"
-                    min={1}
+                    min={0.01}
+                    step="0.01"
                     value={editFormData.quantity}
-                    onChange={(e) => setEditFormData(prev => ({ ...prev, quantity: Math.max(1, parseInt(e.target.value) || 1) }))}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, quantity: Math.max(0.01, parseFloat(e.target.value) || 0.01) }))}
                   />
                   {typeof editFormData.estimatedQuantity === 'number' &&
                     editFormData.estimatedQuantity > 0 &&

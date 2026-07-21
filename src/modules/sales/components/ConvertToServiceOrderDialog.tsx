@@ -146,6 +146,15 @@ export function ConvertToServiceOrderDialog({
       return;
     }
 
+    // Guard: target date must be on or after start date to avoid negative
+    // EstimatedDuration on the backend.
+    if (startDate && targetDate && targetDate.getTime() < startDate.getTime()) {
+      toast.error(
+        t('convertDialog.targetBeforeStartError', 'Target completion date must be on or after the start date.')
+      );
+      return;
+    }
+
     try {
       setIsConverting(true);
       

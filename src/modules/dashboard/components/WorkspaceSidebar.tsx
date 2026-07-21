@@ -327,7 +327,7 @@ export function WorkspaceSidebar() {
   // Users can toggle back manually via the expand button.
   if (!sidebarOpen) {
     return (
-      <aside className="sticky top-0 self-start z-40 flex h-screen w-14 shrink-0 flex-col border-r border-border bg-background">
+      <aside data-tour="sidebar" className="sticky top-0 self-start z-40 flex h-screen w-14 shrink-0 flex-col border-r border-border bg-background">
         {/* Logo */}
         <button
           type="button"
@@ -358,7 +358,7 @@ export function WorkspaceSidebar() {
 
         {/* Workspace icons */}
         <div className="flex-1 overflow-y-auto py-2">
-          <div className="flex flex-col items-center gap-1">
+          <div data-tour="workspace-rail" className="flex flex-col items-center gap-1">
             {WORKSPACES.map((ws) => {
               const isCurrent = detected?.id === ws.id;
               return (
@@ -388,7 +388,7 @@ export function WorkspaceSidebar() {
         </div>
 
         {/* User avatar */}
-        <div className="mt-auto shrink-0 border-t border-border p-2">
+        <div data-tour="sidebar-user" className="mt-auto shrink-0 border-t border-border p-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
@@ -431,8 +431,9 @@ export function WorkspaceSidebar() {
 
   if (activeWs) {
     return (
-      <aside className="sticky top-0 self-start z-40 flex h-screen w-[240px] shrink-0 border-r border-border bg-background">
+      <aside data-tour="sidebar" className="sticky top-0 self-start z-40 flex h-screen w-[240px] shrink-0 border-r border-border bg-background">
         <nav
+          data-tour="module-panel"
           key={activeWs.id}
           ref={panelRef}
           id={panelId}
@@ -518,7 +519,7 @@ export function WorkspaceSidebar() {
           </div>
 
           {/* User pinned at bottom */}
-          <div className="mt-auto shrink-0 border-t border-border px-3 py-3">
+          <div data-tour="sidebar-user" className="mt-auto shrink-0 border-t border-border px-3 py-3">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
@@ -568,7 +569,7 @@ export function WorkspaceSidebar() {
   }
 
   return (
-    <aside className="sticky top-0 self-start z-40 flex h-screen shrink-0 border-r border-border bg-background">
+    <aside data-tour="sidebar" className="sticky top-0 self-start z-40 flex h-screen shrink-0 border-r border-border bg-background">
       {/* Primary sidebar — list of workspaces */}
       <nav className="flex h-screen w-[240px] flex-col bg-background" aria-label="Workspaces">
         {/* Logo on top — larger */}
@@ -608,6 +609,7 @@ export function WorkspaceSidebar() {
             </button>
           </div>
           <div
+            data-tour="workspace-rail"
             role="list"
             aria-labelledby="workspaces-heading"
             className="flex flex-col gap-0.5"
@@ -657,7 +659,7 @@ export function WorkspaceSidebar() {
         </div>
 
         {/* User pinned at the bottom */}
-        <div className="mt-auto shrink-0 border-t border-border px-3 py-3">
+        <div data-tour="sidebar-user" className="mt-auto shrink-0 border-t border-border px-3 py-3">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button

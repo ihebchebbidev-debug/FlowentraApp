@@ -25,11 +25,19 @@
     },
     "mobileMenu": {
       "title": "Navigation Menu 📱",
-      "content": "Tap this menu icon to access all modules: Workspace, CRM, Service, and System settings. Each section contains tools to manage your business efficiently."
+      "content": "Tap this menu to open your workspaces. Pick a workspace (Sales, Service, Projects, HR…) and its modules slide in — tap any module to jump straight to it."
     },
     "sidebar": {
       "title": "Navigation Sidebar 📌",
-      "content": "Your main navigation hub! All modules are organized into sections: Workspace (contacts, articles), CRM (offers, sales, todo), Service (dispatches, service orders), and System (settings, users). Click any item to explore."
+      "content": "Your main navigation. Everything is grouped into workspaces on the left. Use the collapse button in the top-right of the sidebar to shrink it to icons or expand it back."
+    },
+    "workspaceRail": {
+      "title": "Workspaces 🧭",
+      "content": "These are your workspaces — Dashboard, Reporting, Sales, Purchases, Service, Projects, HR, Integrations, Lookups and Settings. Click one to open its modules in the panel."
+    },
+    "modulePanel": {
+      "title": "Module panel 📂",
+      "content": "When you open a workspace, its modules appear here. Click a module to load it, use the chevron on top to go back to workspaces, or the collapse icon to shrink the sidebar."
     },
     "header": {
       "title": "Dashboard Header ⚡",
@@ -53,7 +61,11 @@
     },
     "userMenu": {
       "title": "Your Account Menu 👤",
-      "content": "Access your profile settings, change theme (light/dark mode), view preferences, replay this tour, and sign out. Your initials appear here for quick identification."
+      "content": "Your avatar lives at the bottom of the sidebar. Open it to switch theme (light / dark / auto), jump to Settings, replay this tour, or sign out."
+    },
+    "dashboardGrid": {
+      "title": "Your dashboard 📊",
+      "content": "This is your customizable landing page — KPIs, charts and favorite widgets. Drag cards to reorder them, and use the Customize button to hide cards or pin your saved reporting widgets."
     },
     "kpiCards": {
       "title": "KPI Dashboard Cards 📊",

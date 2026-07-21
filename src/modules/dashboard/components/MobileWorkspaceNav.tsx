@@ -142,7 +142,7 @@ export function MobileWorkspaceNav() {
     <header className="sticky top-0 z-40 flex h-14 items-center gap-2 border-b border-border bg-background px-3">
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
-          <Button variant="ghost" size="icon" aria-label="Open navigation">
+          <Button data-tour="mobile-menu" variant="ghost" size="icon" aria-label="Open navigation">
             <Menu className="h-5 w-5" />
           </Button>
         </SheetTrigger>

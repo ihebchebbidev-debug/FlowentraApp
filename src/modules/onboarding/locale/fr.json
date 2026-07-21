@@ -25,11 +25,19 @@
     },
     "mobileMenu": {
       "title": "Menu de navigation 📱",
-      "content": "Appuyez sur cette icône de menu pour accéder à tous les modules: Espace de travail, CRM, Service et Paramètres système. Chaque section contient des outils pour gérer efficacement votre entreprise."
+      "content": "Appuyez ici pour ouvrir vos espaces de travail. Choisissez un espace (Ventes, Service, Projets, RH…) et ses modules apparaissent — touchez-en un pour l'ouvrir."
     },
     "sidebar": {
       "title": "Barre de navigation 📌",
-      "content": "Votre hub de navigation principal! Tous les modules sont organisés en sections: Espace de travail (contacts, articles), CRM (offres, ventes, tâches), Service (dispatches, ordres de service), et Système (paramètres, utilisateurs). Cliquez pour explorer."
+      "content": "Votre navigation principale. Tout est regroupé par espaces de travail à gauche. Utilisez le bouton en haut à droite de la barre pour la réduire aux icônes ou la rouvrir."
+    },
+    "workspaceRail": {
+      "title": "Espaces de travail 🧭",
+      "content": "Voici vos espaces — Tableau de bord, Reporting, Ventes, Achats, Service, Projets, RH, Intégrations, Listes et Paramètres. Cliquez sur l'un d'eux pour afficher ses modules."
+    },
+    "modulePanel": {
+      "title": "Panneau des modules 📂",
+      "content": "Quand vous ouvrez un espace, ses modules s'affichent ici. Cliquez pour l'ouvrir, utilisez le chevron pour revenir aux espaces, ou l'icône de réduction pour compacter la barre."
     },
     "header": {
       "title": "En-tête du tableau de bord ⚡",
@@ -53,7 +61,11 @@
     },
     "userMenu": {
       "title": "Menu de votre compte 👤",
-      "content": "Accédez aux paramètres de profil, changez le thème (mode clair/sombre), consultez vos préférences, relancez cette visite et déconnectez-vous. Vos initiales apparaissent ici pour une identification rapide."
+      "content": "Votre avatar est en bas de la barre latérale. Ouvrez-le pour changer de thème (clair / sombre / auto), aller aux Paramètres, relancer cette visite ou vous déconnecter."
+    },
+    "dashboardGrid": {
+      "title": "Votre tableau de bord 📊",
+      "content": "Voici votre page d'accueil personnalisable — KPI, graphiques et widgets favoris. Glissez-déposez les cartes pour les réorganiser, ou utilisez Personnaliser pour masquer des cartes et épingler vos widgets de reporting."
     },
     "kpiCards": {
       "title": "Cartes indicateurs KPI 📊",

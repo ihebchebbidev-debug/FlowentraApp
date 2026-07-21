@@ -191,11 +191,29 @@ export function PlanDispatchModal({
 
   // Validation
   const timeValid = endTime > startTime;
+  // Reject dates clearly in the past (before today, browser-local). Same-day past
+  // times are allowed since same-day "log after the fact" is a real workflow.
+  const dateValid = (() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const picked = new Date(date);
+    picked.setHours(0, 0, 0, 0);
+    return picked.getTime() >= today.getTime();
+  })();
+  // Guard against zero/negative duration (defensive; timeValid already covers <=).
+  const durationValid = (() => {
+    if (!timeValid) return false;
+    const [sh, sm] = startTime.split(':').map(Number);
+    const [eh, em] = endTime.split(':').map(Number);
+    return (eh * 60 + em) - (sh * 60 + sm) >= 1;
+  })();
   const hasConflicts = Object.values(conflictsByTech).some(list => list.length > 0);
   const canSubmit =
     selectedJobIds.length > 0 &&
     technicianIds.length > 0 &&
     timeValid &&
+    dateValid &&
+    durationValid &&
     !hasConflicts &&
     !checkingConflicts &&
     !submitting;

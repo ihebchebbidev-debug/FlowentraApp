@@ -691,9 +691,27 @@ namespace MyApi.Modules.Offers.Services
                 saleId = null;
                 serviceOrderId = null;
                 createdSale = null;
-                await using var tx = await _context.Database.BeginTransactionAsync();
+                await using var tx = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
                 try
                 {
+                // Race guard (in-transaction re-check). The DB-level partial unique index
+                // ux_sales_tenant_offerid is the hard fence; this reload prevents the
+                // work from happening twice when two clients race the convert action.
+                var offerLatest = await _context.Offers
+                    .FirstOrDefaultAsync(o => o.Id == id);
+                if (offerLatest != null && !string.IsNullOrEmpty(offerLatest.ConvertedToSaleId))
+                {
+                    if (int.TryParse(offerLatest.ConvertedToSaleId, out var existingSaleId))
+                        saleId = existingSaleId;
+                    createdSale = null;
+                    await tx.CommitAsync();
+                    return;
+                }
+                if (offerLatest != null && offerLatest.Status == "accepted" && offerLatest.AcceptedWithoutConversionAt.HasValue && !convertDto.ConvertToSale)
+                {
+                    await tx.CommitAsync();
+                    return;
+                }
                 if (convertDto.ConvertToSale)
                 {
                     string saleNum;
@@ -776,7 +794,8 @@ namespace MyApi.Modules.Offers.Services
                             InstallationName = oi.InstallationName,
                             RequiresServiceOrder = oi.Type == "service",
                             FulfillmentStatus = "pending",
-                            TaxRate = 0,
+                            // Phase A: preserve per-line tax rate; sale-level Taxes is stored separately.
+                            TaxRate = oi.TaxRate,
                             DisplayOrder = oi.DisplayOrder
                         }).ToList();
                         _context.SaleItems.AddRange(saleItems);

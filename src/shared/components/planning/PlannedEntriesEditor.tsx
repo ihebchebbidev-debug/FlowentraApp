@@ -14,6 +14,16 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import {
   plannedEntriesApi,
@@ -47,6 +57,8 @@ export function PlannedEntriesEditor({ parentType, parentId, currency = 'TND', r
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<PlannedLineEntry | null>(null);
   const [draft, setDraft] = useState<CreatePlannedLineEntry>({ kind: 'time', technicianCount: 1, plannedMinutes: 60 });
+  const [pendingDelete, setPendingDelete] = useState<PlannedLineEntry | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const idReady = parentId !== null && parentId !== undefined && parentId !== '' && Number(parentId) > 0;
 
@@ -98,6 +110,13 @@ export function PlannedEntriesEditor({ parentType, parentId, currency = 'TND', r
       toast.error(t('planning.saveLineFirst', 'Save the line first, then plan time/expenses.'));
       return;
     }
+    if (draft.kind === 'time') {
+      const mins = Number(draft.plannedMinutes ?? 0);
+      if (!Number.isFinite(mins) || mins <= 0) {
+        toast.error(t('planning.durationRequired', 'Planned duration must be greater than 0 minutes.'));
+        return;
+      }
+    }
     try {
       if (editing) {
         await plannedEntriesApi.update(editing.id, draft);
@@ -112,13 +131,21 @@ export function PlannedEntriesEditor({ parentType, parentId, currency = 'TND', r
     }
   };
 
-  const remove = async (entry: PlannedLineEntry) => {
-    if (!confirm(t('planning.confirmDelete', 'Delete this planned entry?'))) return;
+  const remove = (entry: PlannedLineEntry) => {
+    setPendingDelete(entry);
+  };
+
+  const confirmRemove = async () => {
+    if (!pendingDelete) return;
+    setDeleting(true);
     try {
-      await plannedEntriesApi.remove(entry.id);
+      await plannedEntriesApi.remove(pendingDelete.id);
+      setPendingDelete(null);
       await reload();
     } catch (e: any) {
       toast.error(e?.message || 'Failed to delete');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -300,6 +327,27 @@ export function PlannedEntriesEditor({ parentType, parentId, currency = 'TND', r
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!pendingDelete} onOpenChange={(open) => !open && !deleting && setPendingDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('planning.confirmDeleteTitle', 'Delete planned entry?')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('planning.confirmDelete', 'Delete this planned entry?')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>{t('cancel', 'Cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); confirmRemove(); }}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? t('deleting', 'Deleting…') : t('delete', 'Delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

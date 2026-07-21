@@ -398,7 +398,9 @@ namespace MyApi.Modules.ServiceOrders.Services
                     StartDate = createDto.StartDate.HasValue ? DateTime.SpecifyKind(createDto.StartDate.Value, DateTimeKind.Utc) : null,
                     TargetCompletionDate = createDto.TargetCompletionDate.HasValue ? DateTime.SpecifyKind(createDto.TargetCompletionDate.Value, DateTimeKind.Utc) : null,
                     EstimatedDuration = createDto.StartDate.HasValue && createDto.TargetCompletionDate.HasValue
-                        ? (int)(createDto.TargetCompletionDate.Value - createDto.StartDate.Value).TotalHours
+                        ? (createDto.TargetCompletionDate.Value < createDto.StartDate.Value
+                            ? throw new ArgumentException("TargetCompletionDate must be on or after StartDate.")
+                            : (int)(createDto.TargetCompletionDate.Value - createDto.StartDate.Value).TotalHours)
                         : null,
                     EstimatedCost = sale.TotalAmount,
                     ActualCost = 0,

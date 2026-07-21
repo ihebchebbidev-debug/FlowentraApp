@@ -216,6 +216,15 @@ export function AddTimeExpenseDialog({
           description: timeForm.description || undefined,
         });
         toast.success(t('time-expenses:add_entry.updated_time', 'Time entry updated successfully'));
+      } else if (isEditing) {
+        toast.error(
+          t(
+            'time-expenses:add_entry.cannot_edit_without_dispatch',
+            'This entry has no linked dispatch and cannot be edited here. Open it from its service order instead.'
+          )
+        );
+        setSubmitting(false);
+        return;
       } else {
         await dispatchesApi.addTimeEntry(Number(timeForm.dispatchId), {
           technicianId: timeForm.technicianId,
@@ -276,6 +285,15 @@ export function AddTimeExpenseDialog({
           date: format(expenseForm.date, "yyyy-MM-dd'T'HH:mm:ss"),
         });
         toast.success(t('time-expenses:add_entry.updated_expense', 'Expense updated successfully'));
+      } else if (isEditing) {
+        toast.error(
+          t(
+            'time-expenses:add_entry.cannot_edit_without_dispatch',
+            'This entry has no linked dispatch and cannot be edited here. Open it from its service order instead.'
+          )
+        );
+        setSubmitting(false);
+        return;
       } else {
         await dispatchesApi.addExpense(Number(expenseForm.dispatchId), {
           technicianId: expenseForm.technicianId,

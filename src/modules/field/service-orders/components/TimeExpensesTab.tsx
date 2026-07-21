@@ -498,6 +498,8 @@ export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries
         startTime: startTime.toISOString(),
         endTime: endTime.toISOString(),
         description: timeFormData.description || undefined,
+        billable: timeFormData.billable,
+        hourlyRate: timeFormData.hourlyRate,
       };
 
       await dispatchesApi.addTimeEntry(selectedDispatchId!, entryData);

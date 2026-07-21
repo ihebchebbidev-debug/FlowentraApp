@@ -979,11 +979,12 @@ export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onData
                   <Input
                     id="edit-quantity"
                     type="number"
-                    min={1}
+                    min={0.01}
+                    step="0.01"
                     value={editFormData.quantity}
                     onChange={(e) => setEditFormData(prev => ({ 
                       ...prev, 
-                      quantity: Math.max(1, parseInt(e.target.value) || 1) 
+                      quantity: Math.max(0.01, parseFloat(e.target.value) || 0.01) 
                     }))}
                   />
                 </div>
