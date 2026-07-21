@@ -1000,6 +1000,39 @@ namespace MyApi.Modules.Dispatches.Services
             }
         }
 
+        /// <summary>
+        /// Cross-service idempotency probe used by <see cref="AddMaterialUsageAsync"/>.
+        /// Returns true when the parent Sale of the dispatch (resolved via
+        /// Dispatch → ServiceOrder → Sale) has already recorded a
+        /// <c>sale_deduction</c> stock transaction for the given article. In that
+        /// case the physical goods have already been taken out of inventory and
+        /// the dispatch-side deduction must be skipped to avoid double-counting.
+        /// </summary>
+        private async Task<bool> IsArticleAlreadyDeductedForParentSaleAsync(Dispatch dispatch, int articleId)
+        {
+            try
+            {
+                if (!dispatch.ServiceOrderId.HasValue) return false;
+                var serviceOrder = await _db.ServiceOrders.FindAsync(dispatch.ServiceOrderId);
+                if (serviceOrder == null || string.IsNullOrEmpty(serviceOrder.SaleId)) return false;
+
+                var saleRefId = serviceOrder.SaleId;
+                return await _db.StockTransactions.AnyAsync(t =>
+                    t.ArticleId == articleId
+                    && t.TransactionType == "sale_deduction"
+                    && t.ReferenceType == "sale"
+                    && t.ReferenceId == saleRefId);
+            }
+            catch (Exception ex)
+            {
+                // Fail open: if we cannot determine sale coverage, allow the
+                // dispatch deduction so stock isn't silently skipped. The DB-level
+                // partial unique index remains as last-line defence.
+                _logger.LogWarning(ex, "Failed to resolve parent sale for dispatch {DispatchId} while checking stock idempotency", dispatch.Id);
+                return false;
+            }
+        }
+
         public async Task<DispatchDto> StartDispatchAsync(int dispatchId, StartDispatchDto dto, string userId)
         {
             var d = await _db.Dispatches.FirstOrDefaultAsync(x => x.Id == dispatchId && !x.IsDeleted);
@@ -1808,6 +1841,22 @@ namespace MyApi.Modules.Dispatches.Services
             // material row so caller sees an atomic error.
             if (articleId.HasValue && dto.Quantity > 0 && _stockTransactionService != null)
             {
+                // Cross-service idempotency: if the parent Sale of this dispatch
+                // has already deducted stock for this exact article at sale close,
+                // do not deduct again here — that would double-count the same
+                // physical goods. Sale-level deduction wins because it covers the
+                // full sold quantity up front; any additional (unplanned) material
+                // on top of the sale would use a different article or a free-text
+                // line and therefore fall through to the deduction below.
+                bool coveredBySale = await IsArticleAlreadyDeductedForParentSaleAsync(d, articleId.Value);
+                if (coveredBySale)
+                {
+                    _logger.LogInformation(
+                        "Skipping dispatch stock deduction for material {MaterialId} article {ArticleId}: already deducted by parent Sale of dispatch {DispatchId}",
+                        mat.Id, articleId.Value, dispatchId);
+                }
+                else
+                {
                 try
                 {
                     await _stockTransactionService.CreateTransactionAsync(new CreateStockTransactionDto
@@ -1840,6 +1889,7 @@ namespace MyApi.Modules.Dispatches.Services
                         throw new InvalidOperationException($"dispatches.material.insufficientStock: {ex.Message}", ex);
                     }
                     throw;
+                }
                 }
             }
 

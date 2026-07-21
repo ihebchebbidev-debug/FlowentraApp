@@ -193,7 +193,13 @@
     "pickOne": "Choose at least one target",
     "alreadySale": "Already converted to a sale",
     "alreadyProject": "Already converted to a project",
-    "alreadyOffer": "Already converted to an offer"
+    "alreadyOffer": "Already converted to an offer",
+    "errors": {
+      "alreadyConvertedToProject": "This deal has already been converted to project #{{id}}.",
+      "alreadyConvertedToSale": "This deal has already been converted to sale #{{id}}.",
+      "alreadyConvertedToOffer": "This deal has already been converted to offer #{{id}}.",
+      "generic": "Failed to convert deal"
+    }
   },
   "toast": {
     "created": "Deal created",

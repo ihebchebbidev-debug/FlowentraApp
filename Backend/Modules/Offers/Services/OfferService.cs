@@ -597,9 +597,9 @@ namespace MyApi.Modules.Offers.Services
             //   * the offer was already accepted without conversion (avoids
             //     re-firing activity + workflow triggers on repeat clicks).
             if (!string.IsNullOrEmpty(offer.ConvertedToSaleId))
-                throw new InvalidOperationException($"Offer {id} has already been converted to Sale {offer.ConvertedToSaleId}");
+                throw new InvalidOperationException($"ALREADY_CONVERTED_SALE:{offer.ConvertedToSaleId}: Offer {id} has already been converted to Sale {offer.ConvertedToSaleId}");
             if (offer.Status == "accepted" && offer.AcceptedWithoutConversionAt.HasValue)
-                throw new InvalidOperationException($"Offer {id} has already been accepted");
+                throw new InvalidOperationException($"ALREADY_ACCEPTED:0: Offer {id} has already been accepted");
 
             // Honor project-level conversion settings (single per-tenant row).
             var projectSettingsRow = await _context.Set<MyApi.Modules.Projects.Models.ProjectSettings>()

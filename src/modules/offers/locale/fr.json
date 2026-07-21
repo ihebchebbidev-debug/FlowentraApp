@@ -92,7 +92,12 @@
     "original_offer_remains": "L'offre originale restera comme référence",
     "form_documents_copied": "Les documents de formulaire seront copiés vers la vente",
     "form_documents_count": "{{count}} document(s) de formulaire sera/seront copié(s)",
-    "convert_button": "Convertir l'Offre"
+    "convert_button": "Convertir l'Offre",
+    "errors": {
+      "alreadyConvertedToSale": "Cette offre a déjà été convertie en vente n°{{id}}.",
+      "alreadyAccepted": "Cette offre a déjà été acceptée.",
+      "generic": "Échec de la conversion de l'offre"
+    }
   },
   "all_offers": "Toutes les Offres",
   "by_status": "Par Statut",

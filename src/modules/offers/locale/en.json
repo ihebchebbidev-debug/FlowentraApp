@@ -92,7 +92,12 @@
     "original_offer_remains": "Original offer will remain for reference",
     "form_documents_copied": "Form documents will be copied to the sale",
     "form_documents_count": "{{count}} form document(s) will be copied",
-    "convert_button": "Convert Offer"
+    "convert_button": "Convert Offer",
+    "errors": {
+      "alreadyConvertedToSale": "This offer has already been converted to sale #{{id}}.",
+      "alreadyAccepted": "This offer has already been accepted.",
+      "generic": "Failed to convert offer"
+    }
   },
   "all_offers": "All Offers",
   "by_status": "By Status",

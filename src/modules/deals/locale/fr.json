@@ -193,7 +193,13 @@
     "pickOne": "Choisissez au moins une cible",
     "alreadySale": "Déjà convertie en vente",
     "alreadyProject": "Déjà convertie en projet",
-    "alreadyOffer": "Déjà convertie en offre"
+    "alreadyOffer": "Déjà convertie en offre",
+    "errors": {
+      "alreadyConvertedToProject": "Cette affaire a déjà été convertie en projet n°{{id}}.",
+      "alreadyConvertedToSale": "Cette affaire a déjà été convertie en vente n°{{id}}.",
+      "alreadyConvertedToOffer": "Cette affaire a déjà été convertie en offre n°{{id}}.",
+      "generic": "Échec de la conversion de l'affaire"
+    }
   },
   "toast": {
     "created": "Affaire créée",

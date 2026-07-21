@@ -388,7 +388,7 @@ namespace MyApi.Modules.Deals.Services
                 if (dto.ConvertToProject)
                 {
                     if (!string.IsNullOrEmpty(deal.ConvertedToProjectId))
-                        throw new InvalidOperationException($"Deal {id} has already been converted to Project {deal.ConvertedToProjectId}");
+                        throw new InvalidOperationException($"ALREADY_CONVERTED_PROJECT:{deal.ConvertedToProjectId}: Deal {id} has already been converted to Project {deal.ConvertedToProjectId}");
 
                     var projectDto = new CreateProjectRequestDto
                     {
@@ -451,7 +451,7 @@ namespace MyApi.Modules.Deals.Services
                 if (dto.ConvertToSale)
                 {
                     if (!string.IsNullOrEmpty(deal.ConvertedToSaleId))
-                        throw new InvalidOperationException($"Deal {id} has already been converted to Sale {deal.ConvertedToSaleId}");
+                        throw new InvalidOperationException($"ALREADY_CONVERTED_SALE:{deal.ConvertedToSaleId}: Deal {id} has already been converted to Sale {deal.ConvertedToSaleId}");
 
                     var saleDto = new CreateSaleDto
                     {
@@ -504,7 +504,7 @@ namespace MyApi.Modules.Deals.Services
                 if (dto.ConvertToOffer)
                 {
                     if (!string.IsNullOrEmpty(deal.ConvertedToOfferId))
-                        throw new InvalidOperationException($"Deal {id} has already been converted to Offer {deal.ConvertedToOfferId}");
+                        throw new InvalidOperationException($"ALREADY_CONVERTED_OFFER:{deal.ConvertedToOfferId}: Deal {id} has already been converted to Offer {deal.ConvertedToOfferId}");
 
                     var offerDto = new CreateOfferDto
                     {

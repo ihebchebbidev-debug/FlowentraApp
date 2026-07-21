@@ -125,6 +125,49 @@ namespace MyApi.Modules.Articles.Services
 
                 try
                 {
+                    // ── Idempotency guard ─────────────────────────────────────────
+                    // Physical stock movements are keyed by (article, reference_type,
+                    // reference_id, transaction_type). If a matching row already
+                    // exists we've already deducted these goods once — return the
+                    // existing transaction and do NOT touch stock again. Prevents
+                    // double-deduction from retries, sale close→reopen→close cycles,
+                    // and cross-service overlap between SaleService and DispatchService.
+                    //
+                    // Only enforced when both reference fields are populated AND the
+                    // type represents a real stock movement (skip "adjustment", "add",
+                    // "offer_added", manual returns, etc.).
+                    // Keep this set in sync with the partial unique index
+                    // "UX_stock_transactions_idempotency" (see migration
+                    // 20260724_StockTransaction_Idempotency.sql). The C# guard
+                    // and DB index MUST agree on which (transaction_type,
+                    // reference_type) pairs are treated as idempotent, otherwise
+                    // one layer collapses duplicates while the other allows them.
+                    var isIdempotentRefType = dto.ReferenceType == "sale"
+                        || dto.ReferenceType == "dispatch_material";
+                    var isIdempotentTxnType = dto.TransactionType == "sale_deduction"
+                        || dto.TransactionType == "remove"
+                        || dto.TransactionType == "return";
+                    if (isIdempotentTxnType
+                        && isIdempotentRefType
+                        && !string.IsNullOrEmpty(dto.ReferenceId))
+                    {
+                        var existing = await _context.Set<StockTransaction>()
+                            .Include(t => t.Article)
+                            .FirstOrDefaultAsync(t =>
+                                t.ArticleId == dto.ArticleId
+                                && t.TransactionType == dto.TransactionType
+                                && t.ReferenceType == dto.ReferenceType
+                                && t.ReferenceId == dto.ReferenceId);
+                        if (existing != null)
+                        {
+                            _logger.LogInformation(
+                                "Stock transaction is idempotent no-op: article {ArticleId} already has {Type} for {RefType}:{RefId} (txn {ExistingId})",
+                                dto.ArticleId, dto.TransactionType, dto.ReferenceType, dto.ReferenceId, existing.Id);
+                            await dbTransaction.CommitAsync();
+                            return MapToDto(existing);
+                        }
+                    }
+
                     // Lock the article row for update (prevents concurrent modifications)
                     var article = await _context.Set<Article>()
                         .FromSqlRaw("SELECT * FROM \"Articles\" WHERE \"Id\" = {0} AND \"TenantId\" = {1} FOR UPDATE", dto.ArticleId, _context.GetTenantId())
@@ -205,7 +248,52 @@ namespace MyApi.Modules.Articles.Services
                     }
 
                     _context.Set<StockTransaction>().Add(transaction);
-                    await _context.SaveChangesAsync();
+                    try
+                    {
+                        await _context.SaveChangesAsync();
+                    }
+                    catch (DbUpdateException dux) when (IsIdempotencyViolation(dux))
+                    {
+                        // Concurrent writer inserted the same idempotent transaction
+                        // between our SELECT and INSERT. Roll back the stock update
+                        // we just applied in-memory and return the winning row so
+                        // the API stays idempotent instead of failing the caller.
+                        await dbTransaction.RollbackAsync();
+
+                        // CRITICAL: the Article was loaded with FOR UPDATE and is
+                        // tracked as Modified (StockQuantity was set to newStock in
+                        // memory). The DB tx rollback does NOT revert the in-memory
+                        // change, and this scoped DbContext is shared with callers
+                        // like DispatchService — the next SaveChangesAsync would
+                        // silently re-persist the stale deduction, defeating the
+                        // whole idempotency guard. Reload from the DB to sync.
+                        try
+                        {
+                            await _context.Entry(article).ReloadAsync();
+                        }
+                        catch (Exception reloadEx)
+                        {
+                            _logger.LogWarning(reloadEx, "Failed to reload Article {ArticleId} after idempotency race; detaching to avoid stale write", article.Id);
+                            _context.Entry(article).State = EntityState.Detached;
+                        }
+
+                        var winner = await _context.Set<StockTransaction>()
+                            .Include(t => t.Article)
+                            .AsNoTracking()
+                            .FirstOrDefaultAsync(t =>
+                                t.ArticleId == dto.ArticleId
+                                && t.TransactionType == dto.TransactionType
+                                && t.ReferenceType == dto.ReferenceType
+                                && t.ReferenceId == dto.ReferenceId);
+                        if (winner != null)
+                        {
+                            _logger.LogInformation(
+                                "Stock idempotency race resolved for article {ArticleId} {Type} {RefType}:{RefId}; returning existing txn {Id}",
+                                dto.ArticleId, dto.TransactionType, dto.ReferenceType, dto.ReferenceId, winner.Id);
+                            return MapToDto(winner);
+                        }
+                        throw;
+                    }
 
                     // Commit the transaction
                     await dbTransaction.CommitAsync();
@@ -219,6 +307,26 @@ namespace MyApi.Modules.Articles.Services
                     throw;
                 }
             });
+        }
+
+        /// <summary>
+        /// Recognises the "UX_stock_transactions_idempotency" partial unique index
+        /// violation raised by Postgres when two concurrent writers try to record
+        /// the same physical stock movement.
+        /// </summary>
+        private static bool IsIdempotencyViolation(DbUpdateException ex)
+        {
+            for (Exception? e = ex; e != null; e = e.InnerException)
+            {
+                var msg = e.Message ?? string.Empty;
+                if (msg.Contains("UX_stock_transactions_idempotency", StringComparison.OrdinalIgnoreCase)
+                    || msg.Contains("stock_transactions_idempotency", StringComparison.OrdinalIgnoreCase))
+                    return true;
+                // Postgres error code 23505 = unique_violation.
+                if (msg.Contains("23505") && msg.Contains("stock_transactions", StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            return false;
         }
 
         public async Task<StockTransactionDto> AddStockAsync(

@@ -2,6 +2,47 @@
 // Migrated to use centralized apiFetch for automatic 401 retry, dedup, and logging
 import { apiFetch } from '@/services/api/apiClient';
 import { bulkImportErrorFromThrown } from '@/shared/import/parseBulkImportResponse';
+import i18n from '@/lib/i18n';
+
+/**
+ * Error thrown by `offersApi.convertToSale` when the backend rejects a repeat
+ * conversion. The user-facing `.message` is already translated; callers that
+ * want to branch on the reason (e.g. auto-navigate to the existing sale) can
+ * inspect `.code` / `.targetId`.
+ */
+export class OfferConversionError extends Error {
+  code: 'already_converted_to_sale' | 'already_accepted' | 'generic';
+  targetId?: number;
+  constructor(message: string, code: OfferConversionError['code'], targetId?: number) {
+    super(message);
+    this.name = 'OfferConversionError';
+    this.code = code;
+    this.targetId = targetId;
+  }
+}
+
+// Map a raw backend `InvalidOperationException` message (prefixed with an
+// ALREADY_* machine code by OfferService) to a translated OfferConversionError.
+// Returns null when the message does not match a known duplicate-conversion
+// pattern, letting callers rethrow the original error unchanged.
+function mapOfferConversionError(raw: string): OfferConversionError | null {
+  const saleMatch = raw.match(/ALREADY_CONVERTED_SALE:([^:\s]+)/);
+  if (saleMatch) {
+    const id = Number(saleMatch[1]);
+    return new OfferConversionError(
+      i18n.t('offers:conversion.errors.alreadyConvertedToSale', { id: saleMatch[1] }),
+      'already_converted_to_sale',
+      Number.isFinite(id) ? id : undefined,
+    );
+  }
+  if (raw.includes('ALREADY_ACCEPTED:')) {
+    return new OfferConversionError(
+      i18n.t('offers:conversion.errors.alreadyAccepted'),
+      'already_accepted',
+    );
+  }
+  return null;
+}
 
 // Types
 export interface OfferItem {
@@ -195,6 +236,11 @@ export const offersApi = {
 
   async convertToSale(offerId: number): Promise<{ saleId: number; serviceOrderId?: number; warnings?: string[]; message?: string; alreadyConverted?: boolean }> {
     const result = await apiFetch<any>(`/api/sales/from-offer/${offerId}`, { method: "POST" });
+    if (result.error) {
+      const mapped = mapOfferConversionError(result.error);
+      if (mapped) throw mapped;
+      throw new Error(result.error);
+    }
     const data = unwrap(result, "Failed to convert offer to sale");
     const innerData = data?.data || data;
     const saleId = innerData?.id ?? innerData?.saleId;

@@ -2,6 +2,43 @@
 // Uses the centralized apiFetch, which injects X-Tenant + X-Target-Tenant
 // headers automatically — same tenant scoping as every other module.
 import { apiFetch } from '@/services/api/apiClient';
+import i18n from '@/lib/i18n';
+
+/**
+ * Error thrown by `dealsApi.convert` when the backend rejects a repeat
+ * conversion (deal already turned into a project/sale/offer). `.message` is
+ * already translated for the current UI locale.
+ */
+export class DealConversionError extends Error {
+  code: 'already_converted_to_project' | 'already_converted_to_sale' | 'already_converted_to_offer' | 'generic';
+  targetId?: number;
+  constructor(message: string, code: DealConversionError['code'], targetId?: number) {
+    super(message);
+    this.name = 'DealConversionError';
+    this.code = code;
+    this.targetId = targetId;
+  }
+}
+
+function mapDealConversionError(raw: string): DealConversionError | null {
+  const specs: Array<[RegExp, DealConversionError['code'], string]> = [
+    [/ALREADY_CONVERTED_PROJECT:([^:\s]+)/, 'already_converted_to_project', 'deals:convert.errors.alreadyConvertedToProject'],
+    [/ALREADY_CONVERTED_SALE:([^:\s]+)/,    'already_converted_to_sale',    'deals:convert.errors.alreadyConvertedToSale'],
+    [/ALREADY_CONVERTED_OFFER:([^:\s]+)/,   'already_converted_to_offer',   'deals:convert.errors.alreadyConvertedToOffer'],
+  ];
+  for (const [re, code, key] of specs) {
+    const m = raw.match(re);
+    if (m) {
+      const id = Number(m[1]);
+      return new DealConversionError(
+        i18n.t(key, { id: m[1] }),
+        code,
+        Number.isFinite(id) ? id : undefined,
+      );
+    }
+  }
+  return null;
+}
 
 export type DealStage = 'lead' | 'qualified' | 'proposal' | 'negotiation' | 'won' | 'lost';
 
@@ -217,6 +254,11 @@ export const dealsApi = {
 
   async convert(id: number, request: ConvertDealRequest): Promise<ConvertDealResult> {
     const result = await apiFetch<any>(`/api/deals/${id}/convert`, { method: 'POST', body: JSON.stringify(request) });
+    if (result.error) {
+      const mapped = mapDealConversionError(result.error);
+      if (mapped) throw mapped;
+      throw new Error(result.error);
+    }
     const data = unwrap(result, 'Failed to convert deal');
     return data.data ?? data;
   },
