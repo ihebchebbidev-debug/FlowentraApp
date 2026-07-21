@@ -32,6 +32,12 @@ import {
 } from '../../types/planningProfile';
 import { PLANNING_CARD_FIELD_OPTIONS, PLANNING_CARD_FIELD_I18N_KEYS, planningFieldLabel } from '../../utils/planningCardFields';
 
+// Payload caps — must match Backend/Modules/PlanningProfiles/DTOs/PlanningProfileDtos.cs
+const MAX_NAME_LEN = 120;
+const MAX_DESCRIPTION_LEN = 2000;
+const MAX_VISIBLE_USERS = 500;
+const MAX_REQUIRED_SKILLS = 200;
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -103,14 +109,67 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
     toast.success(t('dispatcher.profiles.created', { defaultValue: 'Profile created' }));
   };
 
+  // Client-side validation mirroring the backend DTO constraints so we can
+  // block invalid payloads with a friendly toast before hitting the API.
+  const validateDraft = (d: PlanningProfile): string | null => {
+    const name = (d.name ?? '').trim();
+    if (!name) {
+      return t('dispatcher.profiles.validation.name_required', { defaultValue: 'Profile name is required.' });
+    }
+    if (name.length > MAX_NAME_LEN) {
+      return t('dispatcher.profiles.validation.name_too_long', {
+        defaultValue: 'Profile name must be {{max}} characters or fewer.',
+        max: MAX_NAME_LEN,
+      });
+    }
+    if ((d.description ?? '').length > MAX_DESCRIPTION_LEN) {
+      return t('dispatcher.profiles.validation.description_too_long', {
+        defaultValue: 'Description must be {{max}} characters or fewer.',
+        max: MAX_DESCRIPTION_LEN,
+      });
+    }
+    const users = d.visibleUserIds ?? [];
+    if (users.length > MAX_VISIBLE_USERS) {
+      return t('dispatcher.profiles.validation.too_many_users', {
+        defaultValue: 'Too many visible users selected ({{count}}). Maximum is {{max}}.',
+        count: users.length,
+        max: MAX_VISIBLE_USERS,
+      });
+    }
+    if (new Set(users.map(String)).size !== users.length) {
+      return t('dispatcher.profiles.validation.duplicate_users', {
+        defaultValue: 'Visible users contains duplicates.',
+      });
+    }
+    const skills = d.requiredSkillIds ?? [];
+    if (skills.length > MAX_REQUIRED_SKILLS) {
+      return t('dispatcher.profiles.validation.too_many_skills', {
+        defaultValue: 'Too many required skills selected ({{count}}). Maximum is {{max}}.',
+        count: skills.length,
+        max: MAX_REQUIRED_SKILLS,
+      });
+    }
+    if (new Set(skills.map(s => s.toLowerCase())).size !== skills.length) {
+      return t('dispatcher.profiles.validation.duplicate_skills', {
+        defaultValue: 'Required skills contains duplicates.',
+      });
+    }
+    return null;
+  };
+
   // Returns the persisted profile. Saving a never-persisted ("local-") profile
   // creates it on the backend and yields a NEW id, so callers must adopt it.
   const persistDraft = async () => {
     if (!draft) return null;
+    const validationError = validateDraft(draft);
+    if (validationError) {
+      toast.error(validationError);
+      throw new Error(validationError);
+    }
     const saved = await update.mutateAsync({
       id: draft.id,
       dto: {
-        name: draft.name,
+        name: draft.name.trim(),
         description: draft.description,
         color: draft.color,
         icon: draft.icon,
@@ -279,6 +338,7 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
                     <Input
                       value={draft.name}
                       onChange={e => setDraft({ ...draft, name: e.target.value })}
+                      maxLength={MAX_NAME_LEN}
                       className="text-sm sm:text-base font-semibold flex-1 sm:max-w-sm"
                       placeholder={t('dispatcher.profiles.name_placeholder', { defaultValue: 'Profile name' })}
                     />
@@ -318,6 +378,7 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
                             <Input
                               value={draft.name}
                               onChange={e => setDraft({ ...draft, name: e.target.value })}
+                              maxLength={MAX_NAME_LEN}
                               className="mt-1"
                             />
                           </div>
@@ -326,6 +387,7 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
                             <Textarea
                               value={draft.description ?? ''}
                               onChange={e => setDraft({ ...draft, description: e.target.value })}
+                              maxLength={MAX_DESCRIPTION_LEN}
                               className="mt-1"
                               rows={3}
                             />
@@ -705,6 +767,15 @@ function SkillsFilterTab({
   }, [skills, search]);
 
   const toggle = (name: string) => {
+    const isAdding = !requiredSkillIds.includes(name);
+    if (isAdding && requiredSkillIds.length >= MAX_REQUIRED_SKILLS) {
+      toast.error(t('dispatcher.profiles.validation.too_many_skills', {
+        defaultValue: 'Too many required skills selected ({{count}}). Maximum is {{max}}.',
+        count: requiredSkillIds.length,
+        max: MAX_REQUIRED_SKILLS,
+      }));
+      return;
+    }
     onChange(
       requiredSkillIds.includes(name)
         ? requiredSkillIds.filter(x => x !== name)
@@ -858,14 +929,41 @@ function VisibleUsersTab({ visibleUserIds, onChange }: { visibleUserIds: string[
   const allSelected = users.length > 0 && visibleUserIds.length === users.length;
 
   const toggle = (id: string) => {
+    const isAdding = !visibleUserIds.includes(id);
+    if (isAdding && visibleUserIds.length >= MAX_VISIBLE_USERS) {
+      toast.error(t('dispatcher.profiles.validation.too_many_users', {
+        defaultValue: 'Too many visible users selected ({{count}}). Maximum is {{max}}.',
+        count: visibleUserIds.length,
+        max: MAX_VISIBLE_USERS,
+      }));
+      return;
+    }
     onChange(visibleUserIds.includes(id) ? visibleUserIds.filter(x => x !== id) : [...visibleUserIds, id]);
+  };
+
+  const handleSelectAll = () => {
+    if (allSelected) {
+      onChange([]);
+      return;
+    }
+    const ids = users.map(u => u.id);
+    if (ids.length > MAX_VISIBLE_USERS) {
+      toast.error(t('dispatcher.profiles.validation.too_many_users', {
+        defaultValue: 'Too many visible users selected ({{count}}). Maximum is {{max}}.',
+        count: ids.length,
+        max: MAX_VISIBLE_USERS,
+      }));
+      onChange(ids.slice(0, MAX_VISIBLE_USERS));
+      return;
+    }
+    onChange(ids);
   };
 
   return (
     <div className="space-y-3">
       <div className="flex gap-2">
         <Input placeholder={t('common.search', { defaultValue: 'Search…' })} value={search} onChange={e => setSearch(e.target.value)} />
-        <Button variant="outline" size="sm" onClick={() => onChange(allSelected ? [] : users.map(u => u.id))}>
+        <Button variant="outline" size="sm" onClick={handleSelectAll}>
           {allSelected ? t('dispatcher.profiles.clear_all', { defaultValue: 'Clear all' }) : t('dispatcher.profiles.select_all', { defaultValue: 'Select all' })}
         </Button>
       </div>

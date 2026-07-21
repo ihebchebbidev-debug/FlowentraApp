@@ -440,7 +440,18 @@ export const fr = {
       field_duration: "Durée",
       field_address: "Adresse",
       field_technician: "Technicien",
-      field_job_count: "Nombre de tâches"
+      field_job_count: "Nombre de tâches",
+
+      // Validation côté client (reflète les limites du DTO backend)
+      validation: {
+        name_required: "Le nom du profil est obligatoire.",
+        name_too_long: "Le nom du profil doit contenir au maximum {{max}} caractères.",
+        description_too_long: "La description doit contenir au maximum {{max}} caractères.",
+        too_many_users: "Trop d'utilisateurs visibles sélectionnés ({{count}}). Le maximum est {{max}}.",
+        duplicate_users: "La liste des utilisateurs visibles contient des doublons.",
+        too_many_skills: "Trop de compétences requises sélectionnées ({{count}}). Le maximum est {{max}}.",
+        duplicate_skills: "La liste des compétences requises contient des doublons."
+      }
     },
 
     // Barre d'outils planification intelligente

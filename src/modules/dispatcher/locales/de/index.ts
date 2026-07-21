@@ -273,7 +273,18 @@ export const de = {
       no_active_profile: "Kein aktives Profil",
       change_profile: "Profil wechseln",
       manage_profiles: "Planungsprofile verwalten",
-      currently_active: "Derzeit aktiv"
+      currently_active: "Derzeit aktiv",
+
+      // Client-seitige Validierung (spiegelt Backend-DTO-Grenzen)
+      validation: {
+        name_required: "Der Profilname ist erforderlich.",
+        name_too_long: "Der Profilname darf höchstens {{max}} Zeichen enthalten.",
+        description_too_long: "Die Beschreibung darf höchstens {{max}} Zeichen enthalten.",
+        too_many_users: "Zu viele sichtbare Benutzer ausgewählt ({{count}}). Maximum ist {{max}}.",
+        duplicate_users: "Die sichtbaren Benutzer enthalten Duplikate.",
+        too_many_skills: "Zu viele erforderliche Skills ausgewählt ({{count}}). Maximum ist {{max}}.",
+        duplicate_skills: "Die erforderlichen Skills enthalten Duplikate."
+      }
     }
     ,
     autofill: {

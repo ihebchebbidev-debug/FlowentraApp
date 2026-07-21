@@ -440,7 +440,18 @@ export const en = {
       field_duration: "Duration",
       field_address: "Address",
       field_technician: "Technician",
-      field_job_count: "Number of jobs"
+      field_job_count: "Number of jobs",
+
+      // Client-side validation (mirrors backend DTO caps)
+      validation: {
+        name_required: "Profile name is required.",
+        name_too_long: "Profile name must be {{max}} characters or fewer.",
+        description_too_long: "Description must be {{max}} characters or fewer.",
+        too_many_users: "Too many visible users selected ({{count}}). Maximum is {{max}}.",
+        duplicate_users: "Visible users contains duplicates.",
+        too_many_skills: "Too many required skills selected ({{count}}). Maximum is {{max}}.",
+        duplicate_skills: "Required skills contains duplicates."
+      }
     },
 
     // Smart planning toolbar

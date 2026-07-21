@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using MyApi.Data;
 using MyApi.Modules.PlanningProfiles.DTOs;
 using MyApi.Modules.PlanningProfiles.Models;
@@ -12,28 +13,60 @@ namespace MyApi.Modules.PlanningProfiles.Services
 {
     public class PlanningProfileService : IPlanningProfileService
     {
+        // Hard caps for JSONB payloads to keep storage/parse cost bounded.
+        private const int MaxSettingsJsonBytes = 32 * 1024;   // 32 KB
+        private const int MaxVisibleUsers = 500;
+        private const int MaxRequiredSkills = 200;
+
         private readonly ApplicationDbContext _db;
-        public PlanningProfileService(ApplicationDbContext db) { _db = db; }
+        private readonly ILogger<PlanningProfileService> _logger;
+
+        public PlanningProfileService(ApplicationDbContext db, ILogger<PlanningProfileService> logger)
+        {
+            _db = db;
+            _logger = logger;
+        }
+
+        /// <summary>
+        /// A shared profile is visible to a user when either:
+        ///   (a) VisibleUserIds is empty (interpreted as "all users in tenant"), or
+        ///   (b) VisibleUserIds contains the user's id.
+        /// Owners always see their own profiles regardless of the visibility list.
+        /// </summary>
+        private static bool IsVisibleTo(PlanningProfile p, string currentUserId)
+        {
+            if (p.OwnerUserId == currentUserId) return true;
+            if (!p.IsShared) return false;
+            List<string> visible;
+            try { visible = JsonSerializer.Deserialize<List<string>>(p.VisibleUserIdsJson) ?? new(); }
+            catch { visible = new(); }
+            return visible.Count == 0 || visible.Contains(currentUserId);
+        }
 
         public async Task<List<PlanningProfileDto>> ListAsync(string currentUserId)
         {
-            var profiles = await _db.Set<PlanningProfile>()
+            // Prefilter in SQL to owned OR shared; final visible_user_ids check runs in memory
+            // (JSONB containment would require raw SQL / EF.Functions and the row count per
+            // tenant is small — profiles are user-authored dashboards, not high-volume data).
+            var candidates = await _db.Set<PlanningProfile>()
                 .Where(p => p.DeletedAt == null && (p.OwnerUserId == currentUserId || p.IsShared))
                 .OrderByDescending(p => p.UpdatedAt)
                 .ToListAsync();
-            return profiles.Select(ToDto).ToList();
+            return candidates.Where(p => IsVisibleTo(p, currentUserId)).Select(ToDto).ToList();
         }
 
         public async Task<PlanningProfileDto?> GetByIdAsync(int id, string currentUserId)
         {
             var p = await _db.Set<PlanningProfile>().FirstOrDefaultAsync(x => x.Id == id && x.DeletedAt == null);
             if (p == null) return null;
-            if (p.OwnerUserId != currentUserId && !p.IsShared) return null;
+            if (!IsVisibleTo(p, currentUserId)) return null;
             return ToDto(p);
         }
 
         public async Task<PlanningProfileDto> CreateAsync(CreatePlanningProfileDto dto, string currentUserId)
         {
+            ValidatePayload(dto.VisibleUserIds, dto.RequiredSkillIds, dto.Settings);
+
             var p = new PlanningProfile
             {
                 OwnerUserId = currentUserId,
@@ -58,6 +91,8 @@ namespace MyApi.Modules.PlanningProfiles.Services
             var p = await _db.Set<PlanningProfile>().FirstOrDefaultAsync(x => x.Id == id && x.DeletedAt == null)
                 ?? throw new InvalidOperationException("Profile not found");
             if (p.OwnerUserId != currentUserId) throw new UnauthorizedAccessException("Not owner");
+
+            ValidatePayload(dto.VisibleUserIds, dto.RequiredSkillIds, dto.Settings);
 
             if (dto.Name != null) p.Name = dto.Name;
             if (dto.Description != null) p.Description = dto.Description;
@@ -95,50 +130,98 @@ namespace MyApi.Modules.PlanningProfiles.Services
                     .FirstOrDefaultAsync();
                 return any != null ? ToDto(any) : null;
             }
-            var p = await _db.Set<PlanningProfile>().FirstOrDefaultAsync(x => x.Id == active.ProfileId && x.DeletedAt == null);
-            return p != null ? ToDto(p) : null;
+            var p = await _db.Set<PlanningProfile>()
+                .FirstOrDefaultAsync(x => x.Id == active.ProfileId && x.DeletedAt == null);
+            // Do not leak a profile the user is no longer allowed to see (e.g. share revoked
+            // after they set it active).
+            if (p == null || !IsVisibleTo(p, currentUserId)) return null;
+            return ToDto(p);
         }
 
         public async Task SetActiveAsync(int profileId, string currentUserId)
         {
             var p = await _db.Set<PlanningProfile>().FirstOrDefaultAsync(x => x.Id == profileId && x.DeletedAt == null)
                 ?? throw new InvalidOperationException("Profile not found");
-            if (p.OwnerUserId != currentUserId && !p.IsShared) throw new UnauthorizedAccessException();
+            if (!IsVisibleTo(p, currentUserId)) throw new UnauthorizedAccessException("Profile not visible to user");
 
-            var existing = await _db.Set<UserActivePlanningProfile>().FirstOrDefaultAsync(x => x.UserId == currentUserId);
-            if (existing == null)
+            // Retry once on concurrent insert: two calls can both read `existing == null`
+            // and race on the PK (user_id, tenant_id). The retry converts the loser into an
+            // update against the row the winner just wrote.
+            for (var attempt = 0; attempt < 2; attempt++)
             {
-                _db.Set<UserActivePlanningProfile>().Add(new UserActivePlanningProfile
+                var existing = await _db.Set<UserActivePlanningProfile>()
+                    .FirstOrDefaultAsync(x => x.UserId == currentUserId);
+                if (existing == null)
                 {
-                    UserId = currentUserId,
-                    ProfileId = profileId,
-                    UpdatedAt = DateTime.UtcNow,
-                });
+                    _db.Set<UserActivePlanningProfile>().Add(new UserActivePlanningProfile
+                    {
+                        UserId = currentUserId,
+                        ProfileId = profileId,
+                        UpdatedAt = DateTime.UtcNow,
+                    });
+                }
+                else
+                {
+                    existing.ProfileId = profileId;
+                    existing.UpdatedAt = DateTime.UtcNow;
+                }
+
+                try
+                {
+                    await _db.SaveChangesAsync();
+                    return;
+                }
+                catch (DbUpdateException) when (attempt == 0)
+                {
+                    // Detach the failed insert so the next attempt can update the winning row.
+                    foreach (var e in _db.ChangeTracker.Entries<UserActivePlanningProfile>().ToList())
+                        e.State = EntityState.Detached;
+                }
             }
-            else
-            {
-                existing.ProfileId = profileId;
-                existing.UpdatedAt = DateTime.UtcNow;
-            }
-            await _db.SaveChangesAsync();
         }
 
-        private static PlanningProfileDto ToDto(PlanningProfile p)
+        private static void ValidatePayload(List<string>? visibleUserIds, List<string>? requiredSkillIds, object? settings)
+        {
+            if (visibleUserIds != null && visibleUserIds.Count > MaxVisibleUsers)
+                throw new ArgumentException($"VisibleUserIds exceeds max ({MaxVisibleUsers}).");
+            if (requiredSkillIds != null && requiredSkillIds.Count > MaxRequiredSkills)
+                throw new ArgumentException($"RequiredSkillIds exceeds max ({MaxRequiredSkills}).");
+            if (settings != null)
+            {
+                var json = JsonSerializer.Serialize(settings);
+                if (System.Text.Encoding.UTF8.GetByteCount(json) > MaxSettingsJsonBytes)
+                    throw new ArgumentException($"Settings JSON exceeds max size ({MaxSettingsJsonBytes} bytes).");
+            }
+        }
+
+        private PlanningProfileDto ToDto(PlanningProfile p)
         {
             List<string> visible;
             try { visible = JsonSerializer.Deserialize<List<string>>(p.VisibleUserIdsJson) ?? new(); }
-            catch { visible = new(); }
+            catch (JsonException ex)
+            {
+                _logger.LogWarning(ex, "Corrupt visible_user_ids JSON on planning_profile {Id}", p.Id);
+                visible = new();
+            }
 
             List<string>? skills = null;
             if (!string.IsNullOrEmpty(p.RequiredSkillIdsJson))
             {
                 try { skills = JsonSerializer.Deserialize<List<string>>(p.RequiredSkillIdsJson); }
-                catch { skills = null; }
+                catch (JsonException ex)
+                {
+                    _logger.LogWarning(ex, "Corrupt required_skill_ids JSON on planning_profile {Id}", p.Id);
+                    skills = null;
+                }
             }
 
             object settings;
             try { settings = JsonSerializer.Deserialize<JsonElement>(p.SettingsJson); }
-            catch { settings = new { }; }
+            catch (JsonException ex)
+            {
+                _logger.LogWarning(ex, "Corrupt settings JSON on planning_profile {Id}", p.Id);
+                settings = new { };
+            }
 
             return new PlanningProfileDto
             {

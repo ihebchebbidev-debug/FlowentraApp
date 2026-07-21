@@ -74,8 +74,20 @@ function downloadBlob(blob: Blob, name: string) {
   URL.revokeObjectURL(url);
 }
 
+// Password gate is only enforced on the production flowentra.app domain
+// (and its subdomains). On any other host — localhost, preview URLs,
+// custom staging domains — the console is accessible without a password.
+function isGatedHost(): boolean {
+  if (typeof window === "undefined") return false;
+  const host = window.location.hostname.toLowerCase();
+  return host === "flowentra.app" || host.endsWith(".flowentra.app");
+}
+
 export default function DbConsolePage() {
-  const [unlocked, setUnlocked] = useState<boolean>(() => sessionStorage.getItem(UNLOCK_KEY) === "1");
+  const gated = isGatedHost();
+  const [unlocked, setUnlocked] = useState<boolean>(
+    () => !gated || sessionStorage.getItem(UNLOCK_KEY) === "1"
+  );
   const [pwd, setPwd] = useState("");
   const [sqlText, setSqlText] = useState<string>(
     () => localStorage.getItem("db-console:lastSql") || 'SELECT current_database(), current_user, now();'
