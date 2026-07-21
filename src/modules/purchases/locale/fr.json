@@ -402,6 +402,36 @@
     "error": "Erreur",
     "loadError": "Échec du chargement des données"
   },
+  "errors": {
+    "DUPLICATE_SUPPLIER_REF": "Cette référence fournisseur existe déjà pour ce fournisseur",
+    "INVALID_TRANSITION": "Ce changement de statut n'est pas autorisé depuis l'état actuel",
+    "ITEMS_FROZEN": "Les lignes ne peuvent plus être modifiées sur ce document",
+    "TEJ_INCOMPLETE": "L'export TEJ manque d'informations fiscales requises",
+    "OVER_RECEIPT": "La quantité reçue dépasse la quantité commandée",
+    "LINKED_INVOICE_BLOCK": "Ce bon de réception est rattaché à une facture et ne peut pas être modifié",
+    "PO_ITEM_MISMATCH": "Une des lignes n'appartient pas au bon de commande référencé",
+    "NEGATIVE_QUANTITY": "La quantité doit être supérieure à zéro",
+    "NEGATIVE_PRICE": "Le prix doit être supérieur ou égal à zéro",
+    "SOFT_DELETED_GR": "Le bon de réception sélectionné a été supprimé",
+    "VALIDATION_ERROR": "Certains champs n'ont pas passé la validation",
+    "FORBIDDEN": "Vous n'avez pas la permission d'effectuer cette action",
+    "NOT_FOUND": "L'enregistrement demandé est introuvable",
+    "CONFLICT": "Cette action est en conflit avec l'état actuel de l'enregistrement",
+    "missingFieldsList": "Manquant : {{fields}}",
+    "fields": {
+      "supplierTaxId": "Matricule fiscal fournisseur",
+      "supplierAddress": "Adresse fournisseur",
+      "supplierName": "Nom du fournisseur",
+      "invoiceRef": "Référence facture",
+      "invoiceDate": "Date de facture",
+      "rsType": "Type RS",
+      "rsRate": "Taux RS",
+      "totalTtc": "Total TTC",
+      "totalHt": "Total HT",
+      "totalTax": "Total taxe"
+    }
+  },
+
   "confirm": {
     "deleteTitle": "Supprimer cet élément ?",
     "deleteDesc": "Cette action est irréversible.",

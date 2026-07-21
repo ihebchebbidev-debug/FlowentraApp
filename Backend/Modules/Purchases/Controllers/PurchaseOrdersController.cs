@@ -134,18 +134,27 @@ namespace MyApi.Modules.Purchases.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateOrder([FromBody] CreatePurchaseOrderDto dto)
+        public async Task<IActionResult> CreateOrder(
+            [FromBody] CreatePurchaseOrderDto dto,
+            // Idempotency token — see GoodsReceiptsController.CreateReceipt.
+            [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey = null)
         {
             try
             {
                 var userId = GetUserId();
-                var order = await _service.CreateOrderAsync(dto, userId, GetUserName());
+                var order = await _service.CreateOrderAsync(dto, userId, GetUserName(), idempotencyKey);
                 await _systemLogService.LogSuccessAsync($"Purchase order created: {order.OrderNumber}", "Purchases", "create", userId, GetUserName(), "PurchaseOrder", order.Id.ToString());
                 return CreatedAtAction(nameof(GetOrder), new { id = order.Id }, new { success = true, data = order });
             }
             catch (KeyNotFoundException ex)
             {
                 return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = ex.Message } });
+            }
+            // Item-validation guards throw InvalidOperationException with a bracketed code
+            // (e.g. "[INVALID_QUANTITY] …"). Surface as 400 instead of 500.
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { success = false, error = new { code = "VALIDATION_ERROR", message = ex.Message } });
             }
             catch (Exception ex)
             {
@@ -154,6 +163,7 @@ namespace MyApi.Modules.Purchases.Controllers
                 return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.InnerException != null ? ex.Message + " :: " + ex.InnerException.Message : ex.Message, type = ex.GetType().Name, inner = ex.InnerException?.GetType().Name } });
             }
         }
+
 
         [HttpPatch("{id:int}")]
         public async Task<IActionResult> UpdateOrder(int id, [FromBody] UpdatePurchaseOrderDto dto)

@@ -1,5 +1,5 @@
 import { useCurrency } from '@/shared/hooks/useCurrency';
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +11,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Save, Package, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { purchaseOrderService, goodsReceiptService } from "../services/purchaseService";
+import { purchaseOrderService, goodsReceiptService, newIdempotencyKey } from "../services/purchaseService";
+import { toastApiError } from "../utils/apiErrorToast";
+
 import { PurchasePageHeader } from "../components/PurchasePageHeader";
 import { TenantSelector } from "@/components/TenantSelector";
 import { useTargetTenant } from "@/hooks/useTargetTenant";
@@ -31,6 +33,9 @@ export default function CreateGoodsReceiptPage() {
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
   const [pendingPOs, setPendingPOs] = useState<PurchaseOrder[]>([]);
+  // See CreatePurchaseOrderPage for the idempotency contract.
+  const idempotencyKeyRef = useRef<string>(newIdempotencyKey());
+
   const [selectedPO, setSelectedPO] = useState<PurchaseOrder | null>(null);
   const [items, setItems] = useState<{ poItemId: string; articleName: string; articleNumber: string; orderedQty: number; alreadyReceived: number; quantityReceived: number; quantityRejected: number; rejectionReason: string }[]>([]);
 
@@ -104,15 +109,19 @@ export default function CreateGoodsReceiptPage() {
           quantityRejected: i.quantityRejected,
           rejectionReason: i.rejectionReason || undefined,
         })),
-      } as any);
+      } as any, { idempotencyKey: idempotencyKeyRef.current });
       toast.success(t('receipts.created'));
       navigate('/dashboard/purchases/receipts');
     } catch (e: any) {
-      toast.error(e?.message || t('common.error', 'Failed'));
+      // Rotate on failure so retry after a fix isn't short-circuited to the
+      // failed record on the server.
+      idempotencyKeyRef.current = newIdempotencyKey();
+      toastApiError(e, t, { fallback: t('common.error', 'Failed') as string });
     } finally {
       setSaving(false);
     }
   };
+
 
   return (
     <div className="flex flex-col">

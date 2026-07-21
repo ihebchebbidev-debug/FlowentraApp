@@ -75,8 +75,19 @@ namespace MyApi.Modules.Purchases.Services
             return MapToDto(receipt, poNumber);
         }
 
-        public async Task<GoodsReceiptDto> CreateReceiptAsync(CreateGoodsReceiptDto dto, string userId, string? userName = null)
+        public async Task<GoodsReceiptDto> CreateReceiptAsync(CreateGoodsReceiptDto dto, string userId, string? userName = null, string? idempotencyKey = null)
         {
+            // Idempotency short-circuit: retried POST with same Idempotency-Key
+            // returns the existing receipt instead of over-receiving the PO.
+            if (!string.IsNullOrWhiteSpace(idempotencyKey))
+            {
+                var existingId = await _context.GoodsReceipts.AsNoTracking()
+                    .Where(g => g.IdempotencyKey == idempotencyKey && !g.IsDeleted)
+                    .Select(g => g.Id).FirstOrDefaultAsync();
+                if (existingId > 0)
+                    return (await GetReceiptByIdAsync(existingId))!;
+            }
+
             // Serializable isolation prevents two concurrent receipts for the same PO
             // from both passing the over-receipt check on stale ReceivedQty values.
             // EnableRetryOnFailure is on, so the user-initiated transaction has to
@@ -88,6 +99,7 @@ namespace MyApi.Modules.Purchases.Services
                 using var tx = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
                 try
                 {
+
                     var po = await _context.PurchaseOrders.Include(p => p.Items)
                         .FirstOrDefaultAsync(p => p.Id == dto.PurchaseOrderId && !p.IsDeleted)
                         ?? throw new KeyNotFoundException($"PurchaseOrder {dto.PurchaseOrderId} not found");
@@ -128,9 +140,11 @@ namespace MyApi.Modules.Purchases.Services
                         Notes = dto.Notes,
                         ReceivedBy = userId,
                         ReceivedByName = userName,
+                        IdempotencyKey = idempotencyKey,
                         CreatedBy = userId,
                         CreatedDate = DateTime.UtcNow
                     };
+
 
                     _context.GoodsReceipts.Add(receipt);
                     await _context.SaveChangesAsync();

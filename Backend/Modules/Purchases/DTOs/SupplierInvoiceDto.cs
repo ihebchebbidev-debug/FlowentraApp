@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace MyApi.Modules.Purchases.DTOs
 {
     public class SupplierInvoiceDto
@@ -71,72 +73,121 @@ namespace MyApi.Modules.Purchases.DTOs
         public int DisplayOrder { get; set; }
     }
 
+    // NOTE on validation:
+    // Data-annotation attributes below are enforced by [ApiController] model
+    // binding — the request short-circuits with a 400 ProblemDetails before
+    // the service is ever invoked. The service ALSO re-checks the same bounds
+    // (defense in depth) so any programmatic caller that bypasses model binding
+    // still can't slip a negative quantity into the totals recalculation.
     public class CreateSupplierInvoiceDto
     {
+        [MaxLength(100)]
         public string? SupplierInvoiceRef { get; set; }
+
+        [Range(1, int.MaxValue, ErrorMessage = "SupplierId must be a positive integer")]
         public int SupplierId { get; set; }
+
+        [Range(1, int.MaxValue)]
         public int? PurchaseOrderId { get; set; }
+
+        [Range(1, int.MaxValue)]
         public int? GoodsReceiptId { get; set; }
+
+        [Required]
         public DateTime InvoiceDate { get; set; }
+
+        [Required]
         public DateTime DueDate { get; set; }
+
+        [MaxLength(3)]
         public string Currency { get; set; } = "TND";
+
+        [Range(0, 9_999_999_999.99, ErrorMessage = "Discount cannot be negative")]
         public decimal Discount { get; set; }
+
+        [RegularExpression("^(percentage|fixed)$", ErrorMessage = "DiscountType must be 'percentage' or 'fixed'")]
         public string DiscountType { get; set; } = "percentage";
+
+        [Range(0, 9_999_999.999, ErrorMessage = "FiscalStamp cannot be negative")]
         public decimal FiscalStamp { get; set; } = 1.000m;
+
+        [MaxLength(50)]
         public string? PaymentMethod { get; set; }
+
+        [MaxLength(4000)]
         public string? Notes { get; set; }
+
         public bool RsApplicable { get; set; }
-        public string? RsTypeCode { get; set; }
-        public string? RsOperationCode { get; set; }
-        public string? Cnpc { get; set; }
+        [MaxLength(10)] public string? RsTypeCode { get; set; }
+        [MaxLength(20)] public string? RsOperationCode { get; set; }
+        [MaxLength(20)] public string? Cnpc { get; set; }
         public bool PriseEnCharge { get; set; }
-        public int? AnneeFacturation { get; set; }
-        public string? RsTvaCode { get; set; }
+        [Range(2000, 2100)] public int? AnneeFacturation { get; set; }
+        [MaxLength(20)] public string? RsTvaCode { get; set; }
+        [Range(0, 100, ErrorMessage = "RsTvaTaux must be between 0 and 100")]
         public decimal? RsTvaTaux { get; set; }
+
         public List<CreateSupplierInvoiceItemDto>? Items { get; set; }
     }
 
     public class CreateSupplierInvoiceItemDto
     {
+        [Range(1, int.MaxValue)]
         public int? PurchaseOrderItemId { get; set; }
+
+        [Range(1, int.MaxValue)]
         public int? ArticleId { get; set; }
+
+        [MaxLength(255)]
         public string? ArticleName { get; set; }
+
+        [Required(AllowEmptyStrings = false, ErrorMessage = "Description is required")]
+        [MaxLength(1000)]
         public string Description { get; set; } = string.Empty;
+
+        // Quantity MUST be strictly positive — a zero-qty line contributes
+        // nothing to totals and is almost always a UI bug, not a real intent.
+        [Range(0.0001, 9_999_999.9999, ErrorMessage = "Quantity must be greater than zero")]
         public decimal Quantity { get; set; } = 1;
+
+        [Range(0, 9_999_999_999.9999, ErrorMessage = "UnitPrice cannot be negative")]
         public decimal UnitPrice { get; set; }
+
+        [Range(0, 100, ErrorMessage = "TaxRate must be between 0 and 100")]
         public decimal TaxRate { get; set; } = 19;
     }
 
     public class UpdateSupplierInvoiceDto
     {
-        public string? SupplierInvoiceRef { get; set; }
-        public string? Status { get; set; }
+        [MaxLength(100)] public string? SupplierInvoiceRef { get; set; }
+        [MaxLength(30)]  public string? Status { get; set; }
         public DateTime? DueDate { get; set; }
-        public decimal? Discount { get; set; }
-        public string? DiscountType { get; set; }
-        public decimal? FiscalStamp { get; set; }
-        public string? PaymentMethod { get; set; }
+        [Range(0, 9_999_999_999.99)] public decimal? Discount { get; set; }
+        [RegularExpression("^(percentage|fixed)$")] public string? DiscountType { get; set; }
+        [Range(0, 9_999_999.999)] public decimal? FiscalStamp { get; set; }
+        [MaxLength(50)] public string? PaymentMethod { get; set; }
+        [Range(0, 9_999_999_999.99, ErrorMessage = "AmountPaid cannot be negative")]
         public decimal? AmountPaid { get; set; }
         public DateTime? PaymentDate { get; set; }
-        public string? Notes { get; set; }
+        [MaxLength(4000)] public string? Notes { get; set; }
         public bool? RsApplicable { get; set; }
-        public string? RsTypeCode { get; set; }
-        public string? RsOperationCode { get; set; }
-        public string? Cnpc { get; set; }
+        [MaxLength(10)] public string? RsTypeCode { get; set; }
+        [MaxLength(20)] public string? RsOperationCode { get; set; }
+        [MaxLength(20)] public string? Cnpc { get; set; }
         public bool? PriseEnCharge { get; set; }
-        public int? AnneeFacturation { get; set; }
-        public string? RefCertifChezDeclarant { get; set; }
-        public string? RsTvaCode { get; set; }
-        public decimal? RsTvaTaux { get; set; }
+        [Range(2000, 2100)] public int? AnneeFacturation { get; set; }
+        [MaxLength(50)] public string? RefCertifChezDeclarant { get; set; }
+        [MaxLength(20)] public string? RsTvaCode { get; set; }
+        [Range(0, 100)] public decimal? RsTvaTaux { get; set; }
         public short? TejActe { get; set; }
         // TEJ sync (Tunisian e-tax journal)
         public bool? TejSynced { get; set; }
         public DateTime? TejSyncDate { get; set; }
-        public string? TejSyncStatus { get; set; }
-        public string? TejErrorMessage { get; set; }
+        [MaxLength(20)] public string? TejSyncStatus { get; set; }
+        [MaxLength(2000)] public string? TejErrorMessage { get; set; }
         // Facture en ligne
-        public string? FactureEnLigneId { get; set; }
-        public string? FactureEnLigneStatus { get; set; }
+        [MaxLength(100)] public string? FactureEnLigneId { get; set; }
+        [MaxLength(20)] public string? FactureEnLigneStatus { get; set; }
         public DateTime? FactureEnLigneSentAt { get; set; }
     }
 

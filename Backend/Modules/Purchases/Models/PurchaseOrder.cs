@@ -151,6 +151,14 @@ namespace MyApi.Modules.Purchases.Models
         [MaxLength(100)]
         public string? ModifiedBy { get; set; }
 
+        // Client-supplied Idempotency-Key header value. Per-tenant unique index
+        // (see 20260721_Purchases_Deep_Hardening.sql) makes a retried POST with
+        // the same key return the existing PO instead of minting a duplicate.
+        [Column("IdempotencyKey")]
+        [MaxLength(64)]
+        public string? IdempotencyKey { get; set; }
+
+
         // Navigation
         [ForeignKey("SupplierId")]
         public virtual MyApi.Modules.Contacts.Models.Contact? Supplier { get; set; }

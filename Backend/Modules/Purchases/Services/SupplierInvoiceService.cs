@@ -75,8 +75,43 @@ namespace MyApi.Modules.Purchases.Services
             return MapToDto(inv, poNumber);
         }
 
-        public async Task<SupplierInvoiceDto> CreateInvoiceAsync(CreateSupplierInvoiceDto dto, string userId, string? userName = null)
+        public async Task<SupplierInvoiceDto> CreateInvoiceAsync(CreateSupplierInvoiceDto dto, string userId, string? userName = null, string? idempotencyKey = null)
         {
+            // ── Idempotency short-circuit ─────────────────────────────────
+            // A retried POST (double-click, mobile flakiness, reverse-proxy
+            // retry) carrying the same Idempotency-Key MUST NOT create a
+            // duplicate invoice. When we see a prior row with the same key
+            // for this tenant, return the existing DTO as-is.
+            if (!string.IsNullOrWhiteSpace(idempotencyKey))
+            {
+                var existingByKey = await _context.SupplierInvoices.AsNoTracking()
+                    .Where(i => i.IdempotencyKey == idempotencyKey && !i.IsDeleted)
+                    .Select(i => i.Id).FirstOrDefaultAsync();
+                if (existingByKey > 0)
+                    return (await GetInvoiceByIdAsync(existingByKey))!;
+            }
+
+            // ── Natural-key idempotency: (Supplier, SupplierInvoiceRef) ──
+            // Same supplier's invoice reference cannot be booked twice.
+            // Enforced at the DB layer by ux_supplier_invoices_tenant_supplier_ref;
+            // pre-check here so we can throw a structured error instead of a
+            // raw 23505 unique-violation string.
+            if (!string.IsNullOrWhiteSpace(dto.SupplierInvoiceRef))
+            {
+                var dupExists = await _context.SupplierInvoices.AsNoTracking()
+                    .AnyAsync(i => i.SupplierId == dto.SupplierId
+                                && i.SupplierInvoiceRef == dto.SupplierInvoiceRef
+                                && !i.IsDeleted);
+                if (dupExists)
+                    throw new InvalidOperationException($"[DUPLICATE_SUPPLIER_REF] An invoice with reference '{dto.SupplierInvoiceRef}' already exists for this supplier");
+            }
+
+            // Server-side re-validation of line-item bounds. DTO attributes
+            // already reject bad payloads at model binding, but any caller
+            // bypassing model binding still can't slip a negative quantity /
+            // price / tax-rate into the totals recalculation.
+            ValidateInvoiceItems(dto.Items);
+
             var supplier = await _context.Contacts.FindAsync(dto.SupplierId)
                 ?? throw new KeyNotFoundException($"Supplier {dto.SupplierId} not found");
 
@@ -93,14 +128,19 @@ namespace MyApi.Modules.Purchases.Services
             }
             if (dto.GoodsReceiptId.HasValue)
             {
+                // BUG FIX: soft-delete filter was missing on this lookup while the PO
+                // lookup two lines above filtered it. That allowed a new invoice to be
+                // linked to a soft-deleted goods receipt, corrupting the paid-vs-received
+                // reconciliation view. Match the PO filter.
                 var gr = await _context.GoodsReceipts.AsNoTracking()
-                    .FirstOrDefaultAsync(g => g.Id == dto.GoodsReceiptId.Value)
+                    .FirstOrDefaultAsync(g => g.Id == dto.GoodsReceiptId.Value && !g.IsDeleted)
                     ?? throw new KeyNotFoundException($"GoodsReceipt {dto.GoodsReceiptId} not found");
                 if (gr.SupplierId != dto.SupplierId)
                     throw new InvalidOperationException($"GoodsReceipt {gr.Id} belongs to a different supplier");
                 if (dto.PurchaseOrderId.HasValue && gr.PurchaseOrderId != dto.PurchaseOrderId.Value)
                     throw new InvalidOperationException($"GoodsReceipt {gr.Id} does not belong to PO {dto.PurchaseOrderId}");
             }
+
 
             string invoiceNumber;
             try { invoiceNumber = _numberingService != null ? await _numberingService.GetNextAsync("SupplierInvoice") : $"SI-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString()[..5].ToUpper()}"; }
@@ -131,9 +171,11 @@ namespace MyApi.Modules.Purchases.Services
                 AnneeFacturation = dto.AnneeFacturation ?? dto.InvoiceDate.Year,
                 RsTvaCode = dto.RsTvaCode,
                 RsTvaTaux = dto.RsTvaTaux,
+                IdempotencyKey = idempotencyKey,
                 CreatedBy = userId,
                 CreatedDate = DateTime.UtcNow
             };
+
 
             // Validate PO-item linkage BEFORE inserting anything so a bad batch doesn't
             // leave an orphan invoice header. Was: header was saved, items validated,
@@ -471,6 +513,11 @@ namespace MyApi.Modules.Purchases.Services
                     throw new InvalidOperationException($"PurchaseOrderItem {dto.PurchaseOrderItemId} does not belong to PO {invoice.PurchaseOrderId}");
             }
 
+            // Server-side re-validation matches CreateInvoiceAsync — item mutations
+            // arriving via a raw HTTP call (bypassing model binding) still can't
+            // slip a negative qty / price / tax-rate past the totals recalc.
+            ValidateInvoiceItem(dto);
+
             var item = new SupplierInvoiceItem
             {
                 SupplierInvoiceId = invoiceId,
@@ -501,7 +548,10 @@ namespace MyApi.Modules.Purchases.Services
             var item = invoice.Items?.FirstOrDefault(i => i.Id == itemId)
                 ?? throw new KeyNotFoundException($"Item {itemId} not found");
 
+            ValidateInvoiceItem(dto);
+
             item.ArticleId = dto.ArticleId.HasValue ? dto.ArticleId.Value.ToString() : null;
+
             item.ArticleName = dto.ArticleName;
             item.Description = dto.Description;
             item.Quantity = dto.Quantity;
@@ -582,7 +632,30 @@ namespace MyApi.Modules.Purchases.Services
             await _context.SaveChangesAsync();
         }
 
+        // Item validation guard. DTO attributes already reject bad payloads at
+        // model binding, but any caller bypassing the pipeline still hits these
+        // — negative quantities, negative prices, or tax rates outside 0-100
+        // would silently corrupt SubTotal / TaxAmount / GrandTotal.
+        private static void ValidateInvoiceItem(CreateSupplierInvoiceItemDto item)
+        {
+            if (item.Quantity <= 0)
+                throw new InvalidOperationException($"[INVALID_QUANTITY] Line quantity must be greater than zero (got {item.Quantity})");
+            if (item.UnitPrice < 0)
+                throw new InvalidOperationException($"[INVALID_UNIT_PRICE] Line unit price cannot be negative (got {item.UnitPrice})");
+            if (item.TaxRate < 0 || item.TaxRate > 100)
+                throw new InvalidOperationException($"[INVALID_TAX_RATE] Line tax rate must be between 0 and 100 (got {item.TaxRate})");
+            if (string.IsNullOrWhiteSpace(item.Description))
+                throw new InvalidOperationException("[INVALID_DESCRIPTION] Line description is required");
+        }
+
+        private static void ValidateInvoiceItems(IEnumerable<CreateSupplierInvoiceItemDto>? items)
+        {
+            if (items == null) return;
+            foreach (var i in items) ValidateInvoiceItem(i);
+        }
+
         private static SupplierInvoiceItemDto MapItemToDto(SupplierInvoiceItem i)
+
         {
             int? ParseInt(string? s) => !string.IsNullOrEmpty(s) && int.TryParse(s, out var v) ? v : (int?)null;
             return new SupplierInvoiceItemDto

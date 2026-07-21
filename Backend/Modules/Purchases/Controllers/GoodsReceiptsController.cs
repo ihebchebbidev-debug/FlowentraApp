@@ -63,12 +63,17 @@ namespace MyApi.Modules.Purchases.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateReceipt([FromBody] CreateGoodsReceiptDto dto)
+        public async Task<IActionResult> CreateReceipt(
+            [FromBody] CreateGoodsReceiptDto dto,
+            // Client-supplied idempotency token. When a POST is retried
+            // (double-click, network retry) with the same header value we
+            // return the existing GR instead of over-receiving the PO.
+            [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey = null)
         {
             try
             {
                 var userId = GetUserId();
-                var receipt = await _service.CreateReceiptAsync(dto, userId, GetUserName());
+                var receipt = await _service.CreateReceiptAsync(dto, userId, GetUserName(), idempotencyKey);
                 await _systemLogService.LogSuccessAsync($"Goods receipt created: {receipt.ReceiptNumber}", "Purchases", "create", userId, GetUserName(), "GoodsReceipt", receipt.Id.ToString());
                 return CreatedAtAction(nameof(GetReceipt), new { id = receipt.Id }, new { success = true, data = receipt });
             }
@@ -91,7 +96,12 @@ namespace MyApi.Modules.Purchases.Controllers
             }
         }
 
+        // Verb consistency across the purchases module: PO + SupplierInvoice both use PATCH
+        // for header updates, so accept PATCH here too. HttpPut is kept as an alias so any
+        // older client cached the previous route contract still works.
+        [HttpPatch("{id:int}")]
         [HttpPut("{id:int}")]
+
         public async Task<IActionResult> UpdateReceipt(int id, [FromBody] UpdateGoodsReceiptDto dto)
         {
             try

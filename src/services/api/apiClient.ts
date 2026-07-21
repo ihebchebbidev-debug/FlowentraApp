@@ -129,11 +129,18 @@ const VIEW_ALL_WRITE_EXEMPT_ENDPOINTS = [
   '/api/workflow', // best-effort workflow triggers are already fire-and-forget
 ];
 
-// API fetch wrapper with automatic token refresh on 401 and logging
+// API fetch wrapper with automatic token refresh on 401 and logging.
+//
+// `errorBody` is the raw parsed JSON returned by the server on a non-2xx
+// response (e.g. `{ success: false, error: { code, message, missing? } }`).
+// Callers that only need a human message can keep reading `.error`; callers
+// that need to branch on `error.code` (INVALID_TRANSITION, DUPLICATE_SUPPLIER_REF,
+// TEJ_INCOMPLETE, …) or read a `missing[]` list use `.errorBody`.
 export const apiFetch = async <T>(
   endpoint: string,
   options: RequestInit = {}
-): Promise<{ data: T | null; status: number; error?: string }> => {
+): Promise<{ data: T | null; status: number; error?: string; errorBody?: any }> => {
+
   const url = endpoint.startsWith('http') ? endpoint : `${API_URL}${endpoint}`;
   const method = options.method || 'GET';
   const isMutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase());
@@ -335,10 +342,15 @@ export const apiFetch = async <T>(
       }
 
       return {
-        data: null, 
-        status: response.status, 
-        error: errorMessage 
+        data: null,
+        status: response.status,
+        error: errorMessage,
+        // Preserve the raw error payload so callers can branch on error.code
+        // (e.g. DUPLICATE_SUPPLIER_REF, INVALID_TRANSITION) or read structured
+        // fields like `missing[]` without re-parsing the message string.
+        errorBody: errorData,
       };
+
     }
 
     // Handle empty responses (204 No Content)

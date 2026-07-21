@@ -402,6 +402,36 @@
     "error": "Error",
     "loadError": "Failed to load data"
   },
+  "errors": {
+    "DUPLICATE_SUPPLIER_REF": "This supplier reference already exists for this supplier",
+    "INVALID_TRANSITION": "This status change is not allowed from the current state",
+    "ITEMS_FROZEN": "Items can no longer be edited on this document",
+    "TEJ_INCOMPLETE": "TEJ export is missing required fiscal information",
+    "OVER_RECEIPT": "Received quantity exceeds the ordered quantity",
+    "LINKED_INVOICE_BLOCK": "This receipt is linked to an invoice and cannot be modified",
+    "PO_ITEM_MISMATCH": "One of the items does not belong to the referenced purchase order",
+    "NEGATIVE_QUANTITY": "Quantity must be greater than zero",
+    "NEGATIVE_PRICE": "Price must be greater than or equal to zero",
+    "SOFT_DELETED_GR": "The selected goods receipt has been deleted",
+    "VALIDATION_ERROR": "Some fields did not pass validation",
+    "FORBIDDEN": "You do not have permission to perform this action",
+    "NOT_FOUND": "The requested record was not found",
+    "CONFLICT": "This action conflicts with the current state of the record",
+    "missingFieldsList": "Missing: {{fields}}",
+    "fields": {
+      "supplierTaxId": "Supplier Tax ID",
+      "supplierAddress": "Supplier address",
+      "supplierName": "Supplier name",
+      "invoiceRef": "Invoice reference",
+      "invoiceDate": "Invoice date",
+      "rsType": "RS type",
+      "rsRate": "RS rate",
+      "totalTtc": "Total TTC",
+      "totalHt": "Total HT",
+      "totalTax": "Total tax"
+    }
+  },
+
   "confirm": {
     "deleteTitle": "Delete this item?",
     "deleteDesc": "This action cannot be undone.",

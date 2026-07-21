@@ -103,12 +103,16 @@ namespace MyApi.Modules.Purchases.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateInvoice([FromBody] CreateSupplierInvoiceDto dto)
+        public async Task<IActionResult> CreateInvoice(
+            [FromBody] CreateSupplierInvoiceDto dto,
+            // Idempotency token — retried POST with the same value returns the
+            // existing invoice instead of double-booking a financial document.
+            [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey = null)
         {
             try
             {
                 var userId = GetUserId();
-                var invoice = await _service.CreateInvoiceAsync(dto, userId, GetUserName());
+                var invoice = await _service.CreateInvoiceAsync(dto, userId, GetUserName(), idempotencyKey);
                 await _systemLogService.LogSuccessAsync($"Supplier invoice created: {invoice.InvoiceNumber}", "Purchases", "create", userId, GetUserName(), "SupplierInvoice", invoice.Id.ToString());
                 return CreatedAtAction(nameof(GetInvoice), new { id = invoice.Id }, new { success = true, data = invoice });
             }
@@ -116,11 +120,14 @@ namespace MyApi.Modules.Purchases.Controllers
             {
                 return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = ex.Message } });
             }
-            // Cross-supplier mismatch / orphan PO-item linkage / missing PO ref — these are
-            // user-correctable validation errors thrown by the service. Surface them as 400
-            // with the actual message instead of a generic 500.
+            // Cross-supplier mismatch / orphan PO-item linkage / missing PO ref /
+            // duplicate supplier-ref (natural-key idempotency) / negative qty etc.
+            // The service prefixes the message with a bracketed code so the FE can
+            // branch on it. Duplicate supplier-ref becomes 409 Conflict; the rest 400.
             catch (InvalidOperationException ex)
             {
+                if (ex.Message.StartsWith("[DUPLICATE_SUPPLIER_REF]", StringComparison.Ordinal))
+                    return Conflict(new { success = false, error = new { code = "DUPLICATE_SUPPLIER_REF", message = ex.Message } });
                 return BadRequest(new { success = false, error = new { code = "VALIDATION_ERROR", message = ex.Message } });
             }
             catch (Exception ex)
@@ -130,6 +137,7 @@ namespace MyApi.Modules.Purchases.Controllers
                 return StatusCode(500, new { success = false, error = new { code = "INTERNAL_ERROR", message = ex.InnerException != null ? ex.Message + " :: " + ex.InnerException.Message : ex.Message, type = ex.GetType().Name, inner = ex.InnerException?.GetType().Name } });
             }
         }
+
 
         [HttpPatch("{id:int}")]
         public async Task<IActionResult> UpdateInvoice(int id, [FromBody] UpdateSupplierInvoiceDto dto)

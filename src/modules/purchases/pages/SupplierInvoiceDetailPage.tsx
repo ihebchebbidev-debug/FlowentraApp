@@ -1,3 +1,4 @@
+import { toastApiError } from "../utils/apiErrorToast";
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -96,11 +97,11 @@ function SupplierInvoiceDetailContent() {
         if (missing.length > 0) {
           setTejMissing(missing);
         } else {
-          toast.error(e?.message || t('common.error', 'Failed to generate the TEJ XML'));
+          toastApiError(e, t, { fallback: t('common.error', 'Failed to generate the TEJ XML') as string });
         }
       }
     } catch (e: any) {
-      toast.error(e?.message || t('common.error', 'Failed to save supplier fiscal info'));
+      toastApiError(e, t, { fallback: t('common.error', 'Failed to save supplier fiscal info') as string });
     } finally {
       setSavingSupplierFiscalInfo(false);
     }
@@ -195,7 +196,7 @@ function SupplierInvoiceDetailContent() {
       }
       fetchData();
     } catch (e: any) {
-      toast.error(e?.message || t('common.error', 'Failed to save items'));
+      toastApiError(e, t, { fallback: t('common.error', 'Failed to save items') as string });
       fetchData();
     } finally {
       setSavingItems(false);
@@ -213,7 +214,7 @@ function SupplierInvoiceDetailContent() {
       setInv(updated);
       toast.success(t('actions.validated', 'Invoice validated'));
     } catch (e: any) {
-      toast.error(e?.message || t('common.error', 'Validation failed'));
+      toastApiError(e, t, { fallback: t('common.error', 'Validation failed') as string });
     } finally {
       setActionLoading(null);
     }
@@ -235,7 +236,7 @@ function SupplierInvoiceDetailContent() {
         setTejMissing(missing);
         setTejMissingOpen(true);
       } else {
-        toast.error(e?.message || t('common.error', 'Failed to generate the TEJ XML'));
+        toastApiError(e, t, { fallback: t('common.error', 'Failed to generate the TEJ XML') as string });
       }
     } finally {
       setActionLoading(null);
@@ -261,7 +262,7 @@ function SupplierInvoiceDetailContent() {
       if (missing.length > 0) {
         setTejMissing(missing); // keep the dialog open and surface what's still needed
       } else {
-        toast.error(e?.message || t('common.error', 'Failed to generate the TEJ XML'));
+        toastApiError(e, t, { fallback: t('common.error', 'Failed to generate the TEJ XML') as string });
       }
     } finally {
       setTejApplying(false);
@@ -276,7 +277,7 @@ function SupplierInvoiceDetailContent() {
       setInv(updated);
       toast.success(t('actions.factureEnLigneSent', 'Facture-en-Ligne sent'));
     } catch (e: any) {
-      toast.error(e?.message || t('common.error', 'Send failed'));
+      toastApiError(e, t, { fallback: t('common.error', 'Send failed') as string });
     } finally {
       setActionLoading(null);
     }
@@ -396,7 +397,7 @@ function SupplierInvoiceDetailContent() {
                   setInv(updated);
                   toast.success(t('status.updated', 'Status updated'));
                 } catch (e: any) {
-                  toast.error(e?.message || t('common.error', 'Failed'));
+                  toastApiError(e, t, { fallback: t('common.error', 'Failed') as string });
                 }
               }}
             />

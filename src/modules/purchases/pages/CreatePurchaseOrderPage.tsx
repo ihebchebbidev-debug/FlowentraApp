@@ -12,7 +12,9 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2, Save, FilePlus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { purchaseOrderService, articleSupplierService } from "../services/purchaseService";
+import { purchaseOrderService, articleSupplierService, newIdempotencyKey } from "../services/purchaseService";
+import { toastApiError } from "../utils/apiErrorToast";
+
 import { PurchasePageHeader } from "../components/PurchasePageHeader";
 import { apiFetch } from "@/services/api/apiClient";
 import { UNIT_OPTIONS, getUnitLabel } from "@/constants/units";
@@ -193,6 +195,12 @@ export default function CreatePurchaseOrderPage() {
   // single window-level listener always sees current state without re-binding.
   const handleSaveRef = useRef<() => void>(() => {});
   const addItemRef = useRef<() => void>(() => {});
+  // Stable idempotency key for this create screen. A double-click, network
+  // retry, or React Strict-Mode double-invoke all send the same key → server
+  // short-circuits to the already-created PO instead of writing a duplicate.
+  // Regenerated only after a successful submit (see handleSave).
+  const idempotencyKeyRef = useRef<string>(newIdempotencyKey());
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       // Ctrl/Cmd+S → save
@@ -267,12 +275,16 @@ export default function CreatePurchaseOrderPage() {
           displayOrder: idx,
           receivedQty: 0,
         })) as any,
-      } as any);
+      } as any, { idempotencyKey: idempotencyKeyRef.current });
       toast.success(t('orders.created'));
       navigate('/dashboard/purchases/orders');
     } catch (e: any) {
-      toast.error(e?.message || t('common.error', 'Failed to create order'));
+      // Rotate the key so a user who fixes the input and resubmits doesn't hit
+      // the server's short-circuit against the failed attempt.
+      idempotencyKeyRef.current = newIdempotencyKey();
+      toastApiError(e, t, { fallback: t('common.error', 'Failed to create order') as string });
     } finally {
+
       setSaving(false);
     }
   };

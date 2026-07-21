@@ -1,3 +1,4 @@
+import { toastApiError } from "../utils/apiErrorToast";
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -70,7 +71,7 @@ function PurchaseOrderDetailPage() {
         setTejMissing(missing);
         setTejMissingOpen(true);
       } else {
-        toast.error(e?.message || t('common.error', 'Failed to generate the TEJ XML'));
+        toastApiError(e, t, { fallback: t('common.error', 'Failed to generate the TEJ XML') as string });
       }
     } finally {
       setDownloadingTej(false);
@@ -108,7 +109,7 @@ function PurchaseOrderDetailPage() {
       const updated = await purchaseOrderService.validate(id);
       setPo(updated);
       toast.success(t('actions.validated'));
-    } catch (e: any) { toast.error(e?.message || t('common.error', 'Failed')); }
+    } catch (e: any) { toastApiError(e, t, { fallback: t('common.error', 'Failed') as string }); }
   };
 
   const handleSendToSupplier = async () => {
@@ -117,7 +118,7 @@ function PurchaseOrderDetailPage() {
       const updated = await purchaseOrderService.sendToSupplier(id);
       setPo(updated);
       toast.success(t('actions.sentToSupplier'));
-    } catch (e: any) { toast.error(e?.message || t('common.error', 'Failed')); }
+    } catch (e: any) { toastApiError(e, t, { fallback: t('common.error', 'Failed') as string }); }
   };
 
   // ── Items edit mode ──
@@ -234,7 +235,7 @@ function PurchaseOrderDetailPage() {
       }
       await fetchData();
     } catch (e: any) {
-      toast.error(e?.message || t('common.error', 'Failed to save items'));
+      toastApiError(e, t, { fallback: t('common.error', 'Failed to save items') as string });
       // On unexpected failure, refresh too so the user isn't stuck with a stale draft.
       await fetchData();
     } finally {
@@ -266,7 +267,7 @@ function PurchaseOrderDetailPage() {
       setPo(updated);
       toast.success(t('status.updated', 'Status updated'));
     } catch (e: any) {
-      toast.error(e?.message || t('common.error', 'Failed'));
+      toastApiError(e, t, { fallback: t('common.error', 'Failed') as string });
     }
   };
 

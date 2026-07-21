@@ -1,16 +1,29 @@
 import { apiFetch } from '@/services/api/apiClient';
+import { ApiError, apiErrorFromResult } from './apiError';
 import type {
   PurchaseOrder, GoodsReceipt, SupplierInvoice,
   ArticleSupplier, ArticleSupplierPriceHistory, PurchaseActivity, PurchaseStats,
   PurchaseOrderFilters, SupplierInvoiceFilters
 } from '../types';
 
-// apiFetch returns { data, status, error } where `data` is the parsed JSON body.
-// Backend wraps successful responses as { success: true, data: <payload> }.
-// So the actual payload is at result.data.data — we must peel BOTH layers.
+// Re-export so consumers only need one import path.
+export { ApiError } from './apiError';
+
+// apiFetch returns { data, status, error, errorBody } where `data` is the parsed
+// JSON body and `errorBody` is the raw failure payload.
+// Backend wraps successful responses as { success: true, data: <payload> } so
+// the actual payload is at result.data.data — peel both layers.
+//
+// On failure we now throw a structured ApiError carrying the backend `code`
+// (INVALID_TRANSITION, DUPLICATE_SUPPLIER_REF, ITEMS_FROZEN, TEJ_INCOMPLETE, …)
+// and any `missing[]` list. Callers that only need a message keep working via
+// `error.message`; callers that need to branch can do `if (e instanceof
+// ApiError && e.code === 'DUPLICATE_SUPPLIER_REF')`.
 const extract = async <T>(promise: Promise<any>, msg: string): Promise<T> => {
   const result = await promise;
-  if (result.error) throw new Error(result.error || msg);
+  if (result.error || (result.status >= 400 && result.status !== 0)) {
+    throw apiErrorFromResult(result, msg);
+  }
   const body = result.data;
   // If body is wrapped { success, data }, return inner; otherwise return body.
   if (body && typeof body === 'object' && 'success' in body && 'data' in body) {
@@ -19,15 +32,17 @@ const extract = async <T>(promise: Promise<any>, msg: string): Promise<T> => {
   return body as T;
 };
 
-// DELETE helper: apiFetch resolves on HTTP errors with `{ error }` instead of throwing.
-// Without this wrapper, callers' try/catch and Promise.allSettled never see backend
-// failures (4xx/5xx) — optimistic UI removes rows that the server still has.
+// DELETE helper: apiFetch resolves on HTTP errors with `{ error, errorBody }`
+// instead of throwing. Without this wrapper, callers' try/catch and
+// Promise.allSettled never see backend failures (4xx/5xx) — optimistic UI would
+// remove rows the server still has.
 const deleteRequest = async (endpoint: string, msg = 'Failed to delete'): Promise<void> => {
   const result = await apiFetch(endpoint, { method: 'DELETE' });
   if (result.error || (result.status >= 400 && result.status !== 0)) {
-    throw new Error(result.error || msg);
+    throw apiErrorFromResult(result, msg);
   }
 };
+
 
 /**
  * Download a binary TEJ/RiTEJ XML file from a backend endpoint. Triggers a browser
@@ -100,6 +115,32 @@ const qs = (params?: Record<string, any>): string => {
   return s ? `?${s}` : '';
 };
 
+/**
+ * Build a fresh idempotency key. Callers can either pass their own (to survive
+ * component re-mounts across a slow submit) or let the service mint one per
+ * call so a double-click / network retry still collapses to a single doc on
+ * the backend — the server treats the second POST as a lookup, not a create.
+ */
+export const newIdempotencyKey = (): string => {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return (crypto as any).randomUUID();
+  }
+  // RFC4122-ish fallback for older browsers.
+  return 'idem-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+};
+
+/** Merge an optional Idempotency-Key header onto a POST init. */
+const withIdempotency = (init: RequestInit, key?: string): RequestInit => {
+  if (!key) return init;
+  return {
+    ...init,
+    headers: { ...(init.headers as Record<string, string> | undefined), 'Idempotency-Key': key },
+  };
+};
+
+type CreateOpts = { idempotencyKey?: string };
+
+
 // ─── Article-Supplier ────────────────────────────────────────────────────────
 
 export const articleSupplierService = {
@@ -151,7 +192,7 @@ export const purchaseOrderService = {
   getStats: (dateFrom?: string, dateTo?: string) =>
     extract<PurchaseStats>(apiFetch(`/api/purchase-orders/stats${qs({ dateFrom, dateTo })}`), 'Failed to fetch stats'),
 
-  create: (data: Partial<PurchaseOrder> & { items?: any[] }) => {
+  create: (data: Partial<PurchaseOrder> & { items?: any[] }, opts: CreateOpts = {}) => {
     // Coerce supplierId to int; sanitize items (drop client-only ids, coerce articleId)
     const payload: any = {
       ...data,
@@ -165,10 +206,14 @@ export const purchaseOrderService = {
       })),
     };
     return extract<PurchaseOrder>(
-      apiFetch('/api/purchase-orders', { method: 'POST', body: JSON.stringify(payload) }),
+      apiFetch('/api/purchase-orders', withIdempotency(
+        { method: 'POST', body: JSON.stringify(payload) },
+        opts.idempotencyKey,
+      )),
       'Failed to create'
     );
   },
+
 
   update: (id: string, data: Partial<PurchaseOrder>) =>
     extract<PurchaseOrder>(apiFetch(`/api/purchase-orders/${id}`, { method: 'PATCH', body: JSON.stringify(data) }), 'Failed to update'),
@@ -246,7 +291,7 @@ export const goodsReceiptService = {
   getById: (id: string) =>
     extract<GoodsReceipt>(apiFetch(`/api/goods-receipts/${id}`), 'Failed to fetch receipt'),
 
-  create: (data: Partial<GoodsReceipt> & { items?: any[] }) => {
+  create: (data: Partial<GoodsReceipt> & { items?: any[] }, opts: CreateOpts = {}) => {
     const payload: any = {
       ...data,
       purchaseOrderId: toInt(data.purchaseOrderId),
@@ -256,10 +301,14 @@ export const goodsReceiptService = {
       })),
     };
     return extract<GoodsReceipt>(
-      apiFetch('/api/goods-receipts', { method: 'POST', body: JSON.stringify(payload) }),
+      apiFetch('/api/goods-receipts', withIdempotency(
+        { method: 'POST', body: JSON.stringify(payload) },
+        opts.idempotencyKey,
+      )),
       'Failed to create'
     );
   },
+
 
   // Editable receipts. Items with `id` → backend UPDATEs (qty delta reconciled
   // against PO.ReceivedQty + stock). Items without `id` → APPENDED. Existing
@@ -291,9 +340,12 @@ export const goodsReceiptService = {
       })),
     };
     return extract<GoodsReceipt>(
-      apiFetch(`/api/goods-receipts/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+      // Verb aligned with SupplierInvoices/PurchaseOrders; controller keeps PUT
+      // as a legacy alias so existing clients keep working.
+      apiFetch(`/api/goods-receipts/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
       'Failed to update receipt'
     );
+
   },
 
   delete: (id: string) =>
@@ -310,7 +362,7 @@ export const supplierInvoiceService = {
   getById: (id: string) =>
     extract<SupplierInvoice>(apiFetch(`/api/supplier-invoices/${id}`), 'Failed to fetch invoice'),
 
-  create: (data: Partial<SupplierInvoice> & { items?: any[] }) => {
+  create: (data: Partial<SupplierInvoice> & { items?: any[] }, opts: CreateOpts = {}) => {
     const payload: any = {
       ...data,
       supplierId: toInt(data.supplierId),
@@ -323,10 +375,14 @@ export const supplierInvoiceService = {
       })),
     };
     return extract<SupplierInvoice>(
-      apiFetch('/api/supplier-invoices', { method: 'POST', body: JSON.stringify(payload) }),
+      apiFetch('/api/supplier-invoices', withIdempotency(
+        { method: 'POST', body: JSON.stringify(payload) },
+        opts.idempotencyKey,
+      )),
       'Failed to create'
     );
   },
+
 
   update: (id: string, data: Partial<SupplierInvoice>) =>
     extract<SupplierInvoice>(apiFetch(`/api/supplier-invoices/${id}`, { method: 'PATCH', body: JSON.stringify(data) }), 'Failed to update'),

@@ -87,6 +87,14 @@ namespace MyApi.Modules.Purchases.Models
         [MaxLength(100)]
         public string? DeletedBy { get; set; }
 
+        // Client-supplied Idempotency-Key header value; per-tenant unique
+        // partial index guarantees retried POSTs return the existing receipt.
+        [Column("IdempotencyKey")]
+        [MaxLength(64)]
+        public string? IdempotencyKey { get; set; }
+
+
+
         // Navigation
         [ForeignKey("PurchaseOrderId")]
         public virtual PurchaseOrder? PurchaseOrder { get; set; }

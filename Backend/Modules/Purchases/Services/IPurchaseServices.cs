@@ -9,7 +9,7 @@ namespace MyApi.Modules.Purchases.Services
             DateTime? dateFrom = null, DateTime? dateTo = null, string? search = null,
             int page = 1, int limit = 20, string sortBy = "created_date", string sortOrder = "desc");
         Task<PurchaseOrderDto?> GetOrderByIdAsync(int id);
-        Task<PurchaseOrderDto> CreateOrderAsync(CreatePurchaseOrderDto dto, string userId, string? userName = null);
+        Task<PurchaseOrderDto> CreateOrderAsync(CreatePurchaseOrderDto dto, string userId, string? userName = null, string? idempotencyKey = null);
         Task<PurchaseOrderDto> UpdateOrderAsync(int id, UpdatePurchaseOrderDto dto, string userId, string? userName = null);
         Task<bool> DeleteOrderAsync(int id, string userId, string? userName = null);
         Task<PurchaseOrderStatsDto> GetStatsAsync(DateTime? dateFrom = null, DateTime? dateTo = null);
@@ -28,7 +28,7 @@ namespace MyApi.Modules.Purchases.Services
             DateTime? dateFrom = null, DateTime? dateTo = null, string? search = null,
             int page = 1, int limit = 20, string sortBy = "created_date", string sortOrder = "desc");
         Task<GoodsReceiptDto?> GetReceiptByIdAsync(int id);
-        Task<GoodsReceiptDto> CreateReceiptAsync(CreateGoodsReceiptDto dto, string userId, string? userName = null);
+        Task<GoodsReceiptDto> CreateReceiptAsync(CreateGoodsReceiptDto dto, string userId, string? userName = null, string? idempotencyKey = null);
         Task<GoodsReceiptDto> UpdateReceiptAsync(int id, UpdateGoodsReceiptDto dto, string userId, string? userName = null);
         Task<bool> DeleteReceiptAsync(int id, string userId, string? userName = null);
     }
@@ -40,7 +40,7 @@ namespace MyApi.Modules.Purchases.Services
             DateTime? dateFrom = null, DateTime? dateTo = null, string? search = null,
             int page = 1, int limit = 20, string sortBy = "created_date", string sortOrder = "desc");
         Task<SupplierInvoiceDto?> GetInvoiceByIdAsync(int id);
-        Task<SupplierInvoiceDto> CreateInvoiceAsync(CreateSupplierInvoiceDto dto, string userId, string? userName = null);
+        Task<SupplierInvoiceDto> CreateInvoiceAsync(CreateSupplierInvoiceDto dto, string userId, string? userName = null, string? idempotencyKey = null);
         Task<SupplierInvoiceDto> UpdateInvoiceAsync(int id, UpdateSupplierInvoiceDto dto, string userId, string? userName = null);
         Task<bool> DeleteInvoiceAsync(int id, string userId, string? userName = null);
         // Items

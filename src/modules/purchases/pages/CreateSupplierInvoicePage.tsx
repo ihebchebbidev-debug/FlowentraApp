@@ -1,5 +1,5 @@
 import { useCurrency } from '@/shared/hooks/useCurrency';
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +16,9 @@ import { RS_TRANSACTION_TYPES } from "@/modules/shared/types/retenue-source";
 import { TejOperationCodePicker } from "@/modules/shared/components/TejOperationCodePicker";
 import { legacyToTejOperationCode } from "@/modules/shared/constants/tejOperationCodes";
 import { PurchasePageHeader } from "../components/PurchasePageHeader";
-import { supplierInvoiceService } from "../services/purchaseService";
+import { supplierInvoiceService, newIdempotencyKey } from "../services/purchaseService";
+import { toastApiError } from "../utils/apiErrorToast";
+
 import { apiFetch } from "@/services/api/apiClient";
 import { TenantSelector } from "@/components/TenantSelector";
 import { useTargetTenant } from "@/hooks/useTargetTenant";
@@ -42,6 +44,9 @@ export default function CreateSupplierInvoicePage() {
   const [items, setItems] = useState<{ id: string; description: string; quantity: number; unitPrice: number; taxRate: number; lineTotal: number }[]>([]);
   const [fiscalStamp, setFiscalStamp] = useState<number>(1);
   const [saving, setSaving] = useState(false);
+  // See CreatePurchaseOrderPage for the idempotency contract.
+  const idempotencyKeyRef = useRef<string>(newIdempotencyKey());
+
   const [suppliers, setSuppliers] = useState<SupplierOption[]>([]);
   const [supplierFilter, setSupplierFilter] = useState('');
 
@@ -120,15 +125,19 @@ export default function CreateSupplierInvoicePage() {
           lineTotal: item.lineTotal,
           displayOrder: idx,
         })),
-      } as any);
+      } as any, { idempotencyKey: idempotencyKeyRef.current });
       toast.success(t('invoices.created'));
       navigate('/dashboard/purchases/invoices');
     } catch (e: any) {
-      toast.error(e?.message || t('common.error', 'Failed'));
+      // Rotate the key so a resubmit after fixing a duplicate ref / validation
+      // error isn't collapsed onto the failed attempt.
+      idempotencyKeyRef.current = newIdempotencyKey();
+      toastApiError(e, t, { fallback: t('common.error', 'Failed') as string });
     } finally {
       setSaving(false);
     }
   };
+
 
   return (
     <div className="flex flex-col">

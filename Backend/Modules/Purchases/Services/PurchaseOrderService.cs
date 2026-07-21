@@ -77,8 +77,23 @@ namespace MyApi.Modules.Purchases.Services
             return order == null ? null : MapToDto(order);
         }
 
-        public async Task<PurchaseOrderDto> CreateOrderAsync(CreatePurchaseOrderDto dto, string userId, string? userName = null)
+        public async Task<PurchaseOrderDto> CreateOrderAsync(CreatePurchaseOrderDto dto, string userId, string? userName = null, string? idempotencyKey = null)
         {
+            // Idempotency short-circuit: a retried POST with the same
+            // Idempotency-Key returns the existing PO instead of a duplicate.
+            if (!string.IsNullOrWhiteSpace(idempotencyKey))
+            {
+                var existingId = await _context.PurchaseOrders.AsNoTracking()
+                    .Where(p => p.IdempotencyKey == idempotencyKey && !p.IsDeleted)
+                    .Select(p => p.Id).FirstOrDefaultAsync();
+                if (existingId > 0)
+                    return (await GetOrderByIdAsync(existingId))!;
+            }
+
+            // Server-side re-validation of line-item bounds (defense in depth
+            // vs. any caller that bypasses DTO model binding).
+            ValidateOrderItems(dto.Items);
+
             var supplier = await _context.Contacts.FindAsync(dto.SupplierId)
                 ?? throw new KeyNotFoundException($"Supplier with ID {dto.SupplierId} not found");
 
@@ -112,9 +127,11 @@ namespace MyApi.Modules.Purchases.Services
                 DeliveryAddress = dto.DeliveryAddress,
                 ServiceOrderId = dto.ServiceOrderId,
                 SaleId = dto.SaleId,
+                IdempotencyKey = idempotencyKey,
                 CreatedBy = userId,
                 CreatedDate = DateTime.UtcNow
             };
+
 
             // EnableRetryOnFailure is on for the Npgsql provider, so user-initiated
             // transactions MUST go through an execution strategy. Calling
@@ -371,6 +388,9 @@ namespace MyApi.Modules.Purchases.Services
                     var order = await _context.PurchaseOrders.Include(o => o.Items).FirstOrDefaultAsync(o => o.Id == orderId && !o.IsDeleted)
                         ?? throw new KeyNotFoundException($"PurchaseOrder {orderId} not found");
                     EnsureItemsMutable(order);
+                    ValidateOrderItem(dto);
+
+
 
                     var item = new PurchaseOrderItem
                     {
@@ -408,12 +428,14 @@ namespace MyApi.Modules.Purchases.Services
                     var order = await _context.PurchaseOrders.Include(o => o.Items).FirstOrDefaultAsync(o => o.Id == orderId && !o.IsDeleted)
                         ?? throw new KeyNotFoundException($"PurchaseOrder {orderId} not found");
                     EnsureItemsMutable(order);
+                    ValidateOrderItem(dto);
 
                     var item = order.Items?.FirstOrDefault(i => i.Id == itemId)
                         ?? throw new KeyNotFoundException($"Item {itemId} not found");
 
                     if (dto.Quantity < item.ReceivedQty)
                         throw new InvalidOperationException($"Quantity ({dto.Quantity}) cannot be less than already-received qty ({item.ReceivedQty})");
+
 
                     item.ArticleId = dto.ArticleId; item.ArticleName = dto.ArticleName; item.ArticleNumber = dto.ArticleNumber;
                     item.SupplierRef = dto.SupplierRef; item.Description = dto.Description; item.Quantity = dto.Quantity;
@@ -510,7 +532,31 @@ namespace MyApi.Modules.Purchases.Services
 
         // Tax-EXCLUSIVE line total so Sum(LineTotal) reconciles to SubTotal.
         // Tax is tracked separately in PurchaseOrder.TaxAmount via RecalculateTotals.
+        // Item validation guard mirrors DTO [Range] attributes so a caller that
+        // bypasses model binding still can't slip negatives / out-of-range values
+        // into the totals recalculation.
+        private static void ValidateOrderItem(CreatePurchaseOrderItemDto item)
+        {
+            if (item.Quantity <= 0)
+                throw new InvalidOperationException($"[INVALID_QUANTITY] Line quantity must be greater than zero (got {item.Quantity})");
+            if (item.UnitPrice < 0)
+                throw new InvalidOperationException($"[INVALID_UNIT_PRICE] Line unit price cannot be negative (got {item.UnitPrice})");
+            if (item.TaxRate < 0 || item.TaxRate > 100)
+                throw new InvalidOperationException($"[INVALID_TAX_RATE] Line tax rate must be between 0 and 100 (got {item.TaxRate})");
+            if (item.Discount < 0)
+                throw new InvalidOperationException($"[INVALID_DISCOUNT] Line discount cannot be negative (got {item.Discount})");
+            if (string.IsNullOrWhiteSpace(item.Description))
+                throw new InvalidOperationException("[INVALID_DESCRIPTION] Line description is required");
+        }
+
+        private static void ValidateOrderItems(IEnumerable<CreatePurchaseOrderItemDto>? items)
+        {
+            if (items == null) return;
+            foreach (var i in items) ValidateOrderItem(i);
+        }
+
         private static decimal CalculateLineTotal(decimal qty, decimal price, decimal discount, string discountType, decimal taxRate)
+
         {
             var subtotal = qty * price;
             var discountAmount = discountType == "percentage" ? subtotal * discount / 100 : discount;

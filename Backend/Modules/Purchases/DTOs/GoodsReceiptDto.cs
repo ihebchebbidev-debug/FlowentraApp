@@ -1,4 +1,7 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace MyApi.Modules.Purchases.DTOs
+
 {
     public class GoodsReceiptDto
     {
@@ -39,21 +42,33 @@ namespace MyApi.Modules.Purchases.DTOs
 
     public class CreateGoodsReceiptDto
     {
+        [Range(1, int.MaxValue, ErrorMessage = "PurchaseOrderId must be a positive integer")]
         public int PurchaseOrderId { get; set; }
+
         public DateTime? ReceiptDate { get; set; }
-        public string? DeliveryNoteRef { get; set; }
-        public string? Notes { get; set; }
+
+        [MaxLength(100)] public string? DeliveryNoteRef { get; set; }
+        [MaxLength(4000)] public string? Notes { get; set; }
+
         public List<CreateGoodsReceiptItemDto>? Items { get; set; }
     }
 
     public class CreateGoodsReceiptItemDto
     {
+        [Range(1, int.MaxValue)]
         public int PurchaseOrderItemId { get; set; }
+
+        // Zero received is legitimate (line was ordered but not delivered on
+        // this drop) — only reject negatives.
+        [Range(0, 9_999_999.9999, ErrorMessage = "QuantityReceived cannot be negative")]
         public decimal QuantityReceived { get; set; }
+
+        [Range(0, 9_999_999.9999, ErrorMessage = "QuantityRejected cannot be negative")]
         public decimal QuantityRejected { get; set; }
-        public string? RejectionReason { get; set; }
-        public int? LocationId { get; set; }
-        public string? Notes { get; set; }
+
+        [MaxLength(500)] public string? RejectionReason { get; set; }
+        [Range(1, int.MaxValue)] public int? LocationId { get; set; }
+        [MaxLength(1000)] public string? Notes { get; set; }
     }
 
     // Update payload. Items with Id → UPDATE (qty delta re-reconciles PO.ReceivedQty
@@ -62,23 +77,24 @@ namespace MyApi.Modules.Purchases.DTOs
     public class UpdateGoodsReceiptDto
     {
         public DateTime? ReceiptDate { get; set; }
-        public string? DeliveryNoteRef { get; set; }
-        public string? Notes { get; set; }
+        [MaxLength(100)] public string? DeliveryNoteRef { get; set; }
+        [MaxLength(4000)] public string? Notes { get; set; }
         public List<UpdateGoodsReceiptItemDto>? Items { get; set; }
     }
 
     public class UpdateGoodsReceiptItemDto
     {
         public int? Id { get; set; }                       // null/0 → new item
-        public int PurchaseOrderItemId { get; set; }
-        public decimal QuantityReceived { get; set; }
-        public decimal QuantityRejected { get; set; }
-        public string? RejectionReason { get; set; }
-        public int? LocationId { get; set; }
-        public string? Notes { get; set; }
+        [Range(1, int.MaxValue)] public int PurchaseOrderItemId { get; set; }
+        [Range(0, 9_999_999.9999)] public decimal QuantityReceived { get; set; }
+        [Range(0, 9_999_999.9999)] public decimal QuantityRejected { get; set; }
+        [MaxLength(500)] public string? RejectionReason { get; set; }
+        [Range(1, int.MaxValue)] public int? LocationId { get; set; }
+        [MaxLength(1000)] public string? Notes { get; set; }
     }
 
     public class PaginatedGoodsReceiptResponse
+
     {
         public List<GoodsReceiptDto> Receipts { get; set; } = new();
         public PurchasePaginationInfo Pagination { get; set; } = new();
