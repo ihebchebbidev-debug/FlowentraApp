@@ -183,7 +183,7 @@ namespace MyApi.Modules.Installations.Controllers
         {
             try
             {
-                var result = await _installationService.DeleteInstallationAsync(id);
+                var result = await _installationService.DeleteInstallationAsync(id, GetCurrentUserId());
                 if (!result)
                 {
                     return NotFound(new { success = false, message = "Installation not found" });

@@ -24,7 +24,7 @@ namespace MyApi.Modules.Installations.Services
             string sortOrder = "desc"
         )
         {
-            var query = _context.Installations.AsNoTracking().AsQueryable();
+            var query = _context.Installations.AsNoTracking().Where(i => !i.IsDeleted).AsQueryable();
 
             // Apply filters
             if (!string.IsNullOrEmpty(search))
@@ -91,7 +91,7 @@ namespace MyApi.Modules.Installations.Services
             var installation = await _context.Installations
                 .AsNoTracking()
                 .Include(i => i.MaintenanceHistories)
-                .FirstOrDefaultAsync(i => i.Id == id);
+                .FirstOrDefaultAsync(i => i.Id == id && !i.IsDeleted);
 
             return installation == null ? null : MapToDto(installation);
         }
@@ -101,17 +101,10 @@ namespace MyApi.Modules.Installations.Services
             // Verify contact exists if contactId is provided
             if (createDto.ContactId > 0)
             {
-                var contactExists = await _context.Contacts.AnyAsync(c => c.Id == createDto.ContactId);
+                var contactExists = await _context.Contacts.AnyAsync(c => c.Id == createDto.ContactId && !c.IsDeleted);
                 if (!contactExists)
                     throw new KeyNotFoundException($"Contact with ID {createDto.ContactId} not found");
             }
-
-            // Generate installation number
-            var lastInstallation = await _context.Installations
-                .OrderByDescending(i => i.Id)
-                .FirstOrDefaultAsync();
-            var nextNumber = (lastInstallation?.Id ?? 0) + 1;
-            var installationNumber = $"INST-{DateTime.UtcNow.Year}-{nextNumber:D6}";
 
             // Build SiteAddress from Name if not provided
             var siteAddress = createDto.SiteAddress;
@@ -144,7 +137,7 @@ namespace MyApi.Modules.Installations.Services
 
             var installation = new Installation
             {
-                InstallationNumber = installationNumber,
+                InstallationNumber = string.Empty, // set below inside retry loop
                 ContactId = createDto.ContactId,
                 SiteAddress = siteAddress,
                 InstallationType = installationType,
@@ -164,15 +157,40 @@ namespace MyApi.Modules.Installations.Services
                 CreatedBy = userId
             };
 
-            _context.Installations.Add(installation);
-            await _context.SaveChangesAsync();
+            // Number-generation race is now guarded by the partial unique index
+            // UX_Installations_Tenant_InstallationNumber_Active. Retry up to 5
+            // times on unique-violation from a concurrent inserter.
+            const int maxAttempts = 5;
+            for (int attempt = 1; ; attempt++)
+            {
+                var lastInstallation = await _context.Installations
+                    .IgnoreQueryFilters()
+                    .OrderByDescending(i => i.Id)
+                    .Select(i => new { i.Id })
+                    .FirstOrDefaultAsync();
+                var nextNumber = (lastInstallation?.Id ?? 0) + attempt;
+                installation.InstallationNumber = $"INST-{DateTime.UtcNow.Year}-{nextNumber:D6}";
+
+                _context.Installations.Add(installation);
+                try
+                {
+                    await _context.SaveChangesAsync();
+                    break;
+                }
+                catch (DbUpdateException) when (attempt < maxAttempts)
+                {
+                    // Detach the failed entity, bump the number, retry.
+                    _context.Entry(installation).State = EntityState.Detached;
+                }
+            }
 
             return MapToDto(installation);
         }
 
         public async Task<InstallationDto?> UpdateInstallationAsync(int id, UpdateInstallationDto updateDto, string userId)
         {
-            var installation = await _context.Installations.FindAsync(id);
+            var installation = await _context.Installations
+                .FirstOrDefaultAsync(i => i.Id == id && !i.IsDeleted);
             if (installation == null)
                 return null;
 
@@ -182,7 +200,6 @@ namespace MyApi.Modules.Installations.Services
             if (updateDto.InstallationType != null) installation.InstallationType = updateDto.InstallationType;
             if (updateDto.InstallationDate.HasValue) installation.InstallationDate = updateDto.InstallationDate.Value;
             if (updateDto.Status != null) installation.Status = updateDto.Status;
-            if (updateDto.WarrantyExpiry.HasValue) installation.WarrantyExpiry = updateDto.WarrantyExpiry;
             if (updateDto.Notes != null) installation.Notes = updateDto.Notes;
             if (updateDto.Name != null) installation.Name = updateDto.Name;
             if (updateDto.Model != null) installation.Model = updateDto.Model;
@@ -192,11 +209,16 @@ namespace MyApi.Modules.Installations.Services
             if (updateDto.Category != null) installation.Category = updateDto.Category;
             if (updateDto.Type != null) installation.Type = updateDto.Type;
 
-            // Handle warranty DTO
+            // Warranty resolution: the structured Warranty DTO always wins over
+            // the flat WarrantyExpiry field to avoid the previous order-of-apply
+            // bug where WarrantyExpiry was set and then immediately nulled by
+            // Warranty.HasWarranty=false in the same request.
             if (updateDto.Warranty != null)
             {
                 if (updateDto.Warranty.HasWarranty)
                 {
+                    installation.WarrantyExpiry = null;
+                    installation.WarrantyFrom = null;
                     if (!string.IsNullOrEmpty(updateDto.Warranty.WarrantyTo) && DateTime.TryParse(updateDto.Warranty.WarrantyTo, out var parsedExpiry))
                     {
                         installation.WarrantyExpiry = parsedExpiry;
@@ -212,6 +234,10 @@ namespace MyApi.Modules.Installations.Services
                     installation.WarrantyFrom = null;
                 }
             }
+            else if (updateDto.WarrantyExpiry.HasValue)
+            {
+                installation.WarrantyExpiry = updateDto.WarrantyExpiry;
+            }
 
             installation.ModifiedDate = DateTime.UtcNow;
             installation.ModifiedBy = userId;
@@ -221,13 +247,22 @@ namespace MyApi.Modules.Installations.Services
             return MapToDto(installation);
         }
 
-        public async Task<bool> DeleteInstallationAsync(int id)
+        public async Task<bool> DeleteInstallationAsync(int id, string userId)
         {
-            var installation = await _context.Installations.FindAsync(id);
+            var installation = await _context.Installations
+                .FirstOrDefaultAsync(i => i.Id == id && !i.IsDeleted);
             if (installation == null)
                 return false;
 
-            _context.Installations.Remove(installation);
+            // Soft delete: hard delete would orphan denormalized InstallationId
+            // rows on TimeEntries/Expenses/MaterialUsage/ServiceOrderJobs/
+            // ServiceOrderMaterials (see 20260717 denormalization migration).
+            installation.IsDeleted = true;
+            installation.DeletedAt = DateTime.UtcNow;
+            installation.DeletedBy = userId;
+            installation.ModifiedDate = DateTime.UtcNow;
+            installation.ModifiedBy = userId;
+
             await _context.SaveChangesAsync();
             return true;
         }

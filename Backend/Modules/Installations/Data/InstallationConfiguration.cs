@@ -41,10 +41,14 @@ namespace MyApi.Modules.Installations.Data
                 .HasMaxLength(100);
 
             // Indexes
-            builder.HasIndex(i => i.InstallationNumber)
-                .IsUnique();
+            // Tenant-scoped unique (partial index enforced at the SQL level in
+            // 20260725_Modules_Deep_Hardening.sql WHERE "IsDeleted"=false).
+            // EF gets a non-unique composite index; the DB-level partial unique
+            // index is the authoritative guard.
+            builder.HasIndex(i => new { i.TenantId, i.InstallationNumber });
 
             builder.HasIndex(i => i.Matricule);
+            builder.HasIndex(i => i.IsDeleted);
 
             builder.HasIndex(i => i.ContactId);
             builder.HasIndex(i => i.Status);

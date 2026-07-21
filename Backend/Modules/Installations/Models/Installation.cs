@@ -6,9 +6,17 @@ namespace MyApi.Modules.Installations.Models
 {
     [ModuleScope("installations")]
     [Table("Installations")]
-    public class Installation : ITenantEntity
+    public class Installation : ITenantEntity, MyApi.Modules.Shared.Models.ISoftDeletable
     {
         public int TenantId { get; set; }
+
+        // Soft-delete columns (added 2026-07-25 to stop orphaned FK references
+        // on TimeEntries/Expenses/MaterialUsage/ServiceOrderJobs/ServiceOrderMaterials
+        // which carry a denormalized InstallationId without a real FK).
+        public bool IsDeleted { get; set; } = false;
+        public DateTime? DeletedAt { get; set; }
+        public string? DeletedBy { get; set; }
+
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }

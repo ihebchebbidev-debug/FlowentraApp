@@ -105,20 +105,11 @@ namespace MyApi.Modules.Articles.Services
 
         public async Task<ArticleDto> CreateArticleAsync(CreateArticleDto dto, string userId)
         {
-            // Generate article number if not provided
-            var articleNumber = dto.ArticleNumber;
-            if (string.IsNullOrEmpty(articleNumber))
-            {
-                var lastArticle = await _context.Set<Article>()
-                    .OrderByDescending(a => a.Id)
-                    .FirstOrDefaultAsync();
-                var nextNumber = (lastArticle?.Id ?? 0) + 1;
-                articleNumber = $"ART-{nextNumber:D6}";
-            }
-            
+            ValidateArticleNumbers(dto.PurchasePrice, dto.SalesPrice, dto.StockQuantity, dto.MinStockLevel);
+
             var article = new Article
             {
-                ArticleNumber = articleNumber,
+                ArticleNumber = dto.ArticleNumber ?? string.Empty,
                 Name = dto.Name,
                 Description = dto.Description,
                 CategoryId = dto.CategoryId,
@@ -140,16 +131,57 @@ namespace MyApi.Modules.Articles.Services
                 ModifiedBy = userId
             };
 
-            _context.Set<Article>().Add(article);
-            await _context.SaveChangesAsync();
+            var explicitNumber = !string.IsNullOrEmpty(dto.ArticleNumber);
+
+            // Number-generation race is guarded by the partial unique index
+            // UX_Articles_Tenant_ArticleNumber_Active. Retry up to 5 times on
+            // unique-violation from a concurrent inserter.
+            const int maxAttempts = 5;
+            for (int attempt = 1; ; attempt++)
+            {
+                if (!explicitNumber)
+                {
+                    var lastId = await _context.Set<Article>()
+                        .IgnoreQueryFilters()
+                        .OrderByDescending(a => a.Id)
+                        .Select(a => (int?)a.Id)
+                        .FirstOrDefaultAsync() ?? 0;
+                    article.ArticleNumber = $"ART-{(lastId + attempt):D6}";
+                }
+
+                _context.Set<Article>().Add(article);
+                try
+                {
+                    await _context.SaveChangesAsync();
+                    break;
+                }
+                catch (DbUpdateException) when (!explicitNumber && attempt < maxAttempts)
+                {
+                    _context.Entry(article).State = EntityState.Detached;
+                }
+            }
 
             return MapArticleToDto(article);
+        }
+
+        private static void ValidateArticleNumbers(decimal? purchasePrice, decimal? salesPrice, decimal? stockQuantity, decimal? minStockLevel)
+        {
+            if (purchasePrice.HasValue && purchasePrice.Value < 0)
+                throw new ArgumentException("PurchasePrice cannot be negative");
+            if (salesPrice.HasValue && salesPrice.Value < 0)
+                throw new ArgumentException("SalesPrice cannot be negative");
+            if (stockQuantity.HasValue && stockQuantity.Value < 0)
+                throw new ArgumentException("StockQuantity cannot be negative");
+            if (minStockLevel.HasValue && minStockLevel.Value < 0)
+                throw new ArgumentException("MinStockLevel cannot be negative");
         }
 
         public async Task<ArticleDto?> UpdateArticleAsync(string id, UpdateArticleDto dto, string userId)
         {
             if (!int.TryParse(id, out int articleId))
                 return null;
+
+            ValidateArticleNumbers(dto.PurchasePrice, dto.SalesPrice, dto.StockQuantity, dto.MinStockLevel);
 
             var article = await _context.Set<Article>()
                 .FirstOrDefaultAsync(a => a.Id == articleId && !a.IsDeleted);
@@ -175,6 +207,7 @@ namespace MyApi.Modules.Articles.Services
             if (dto.SkillsRequired != null) article.SkillsRequired = JsonSerializer.Serialize(dto.SkillsRequired);
             if (dto.TvaRate.HasValue) article.TvaRate = dto.TvaRate.Value;
             if (dto.IsActive.HasValue) article.IsActive = dto.IsActive.Value;
+
 
             article.ModifiedDate = DateTime.UtcNow;
             article.ModifiedBy = userId;
@@ -208,23 +241,71 @@ namespace MyApi.Modules.Articles.Services
         // Inventory Transaction Operations
         // =====================================================
 
+        /// <summary>
+        /// Legacy inventory transaction endpoint. Historically this created an
+        /// InventoryTransaction row without updating Article.StockQuantity,
+        /// producing silent stock drift. It now runs inside a transaction with a
+        /// pessimistic row lock on the article, applies the delta atomically to
+        /// StockQuantity, and rejects operations that would drive stock negative.
+        /// New code should call IStockTransactionService directly.
+        /// </summary>
         public async Task<InventoryTransactionDto> CreateTransactionAsync(CreateInventoryTransactionDto dto, string userId)
         {
-            var transaction = new InventoryTransaction
+            if (dto.Quantity == 0)
+                throw new ArgumentException("Transaction quantity cannot be zero");
+
+            var strategy = _context.Database.CreateExecutionStrategy();
+            InventoryTransaction? persisted = null;
+
+            await strategy.ExecuteAsync(async () =>
             {
-                ArticleId = dto.ArticleId,
-                TransactionType = dto.TransactionType,
-                Quantity = dto.Quantity,
-                TransactionDate = DateTime.UtcNow,
-                Reference = dto.Reference,
-                Notes = dto.Notes,
-                CreatedBy = userId
-            };
+                // Reset tracker so a retried attempt doesn't replay a prior mutation.
+                _context.ChangeTracker.Clear();
+                await using var tx = await _context.Database.BeginTransactionAsync();
 
-            _context.Set<InventoryTransaction>().Add(transaction);
-            await _context.SaveChangesAsync();
+                // Pessimistic row lock on the article to serialise concurrent updates.
+                var article = await _context.Set<Article>()
+                    .FromSqlInterpolated($"SELECT * FROM \"Articles\" WHERE \"Id\" = {dto.ArticleId} AND \"IsDeleted\" = false FOR UPDATE")
+                    .FirstOrDefaultAsync();
+                if (article == null)
+                    throw new KeyNotFoundException($"Article {dto.ArticleId} not found");
 
-            return MapTransactionToDto(transaction);
+                var type = (dto.TransactionType ?? string.Empty).ToLowerInvariant();
+                var delta = type switch
+                {
+                    "in" or "purchase" or "return" or "restock" => Math.Abs(dto.Quantity),
+                    "out" or "sale" or "consumption" or "issue" => -Math.Abs(dto.Quantity),
+                    "adjustment" or "adjust" => dto.Quantity, // signed
+                    _ => dto.Quantity
+                };
+
+                var newStock = article.StockQuantity + delta;
+                if (newStock < 0)
+                    throw new InvalidOperationException(
+                        $"Insufficient stock for article {article.ArticleNumber}: have {article.StockQuantity}, requested {-delta}");
+
+                article.StockQuantity = newStock;
+                article.ModifiedDate = DateTime.UtcNow;
+                article.ModifiedBy = userId;
+
+                var transaction = new InventoryTransaction
+                {
+                    ArticleId = dto.ArticleId,
+                    TransactionType = dto.TransactionType,
+                    Quantity = dto.Quantity,
+                    TransactionDate = DateTime.UtcNow,
+                    Reference = dto.Reference,
+                    Notes = dto.Notes,
+                    CreatedBy = userId
+                };
+                _context.Set<InventoryTransaction>().Add(transaction);
+
+                await _context.SaveChangesAsync();
+                await tx.CommitAsync();
+                persisted = transaction;
+            });
+
+            return MapTransactionToDto(persisted!);
         }
 
         public async Task<List<InventoryTransactionDto>> GetArticleTransactionsAsync(string articleId)
@@ -240,31 +321,82 @@ namespace MyApi.Modules.Articles.Services
             return transactions.Select(MapTransactionToDto).ToList();
         }
 
+        public async Task<List<InventoryTransactionDto>> GetAllTransactionsAsync(int limit = 500)
+        {
+            var transactions = await _context.Set<InventoryTransaction>()
+                .OrderByDescending(t => t.TransactionDate)
+                .Take(Math.Clamp(limit, 1, 5000))
+                .ToListAsync();
+            return transactions.Select(MapTransactionToDto).ToList();
+        }
+
+        /// <summary>
+        /// Batch stock adjustment. Each item is now applied as a signed
+        /// delta inside a single transaction with an audit-trail row
+        /// (adjustment) per article, matching StockTransactionService's
+        /// contract instead of silently overwriting StockQuantity.
+        /// </summary>
         public async Task<BatchOperationResultDto> BatchUpdateStockAsync(BatchUpdateStockDto dto, string userId)
         {
             var result = new BatchOperationResultDto { Success = true };
-
             var ids = dto.Items.Select(i => i.Id).ToList();
-            var articles = await _context.Set<Article>()
-                .Where(a => ids.Contains(a.Id))
-                .ToDictionaryAsync(a => a.Id);
 
-            foreach (var item in dto.Items)
+            var strategy = _context.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
             {
-                if (articles.TryGetValue(item.Id, out var article))
+                // Reset tracker so a retried attempt doesn't replay a prior mutation.
+                _context.ChangeTracker.Clear();
+                await using var tx = await _context.Database.BeginTransactionAsync();
+
+                // Lock all affected article rows in one round-trip.
+                var articles = await _context.Set<Article>()
+                    .FromSqlInterpolated($"SELECT * FROM \"Articles\" WHERE \"Id\" = ANY({ids}) AND \"IsDeleted\" = false FOR UPDATE")
+                    .ToDictionaryAsync(a => a.Id);
+
+                foreach (var item in dto.Items)
                 {
+                    if (!articles.TryGetValue(item.Id, out var article))
+                    {
+                        result.Failed++;
+                        result.Errors.Add($"Article {item.Id} not found");
+                        continue;
+                    }
+                    if (item.StockQuantity < 0)
+                    {
+                        result.Failed++;
+                        result.Errors.Add($"Article {item.Id}: stock cannot be negative");
+                        continue;
+                    }
+
+                    var delta = item.StockQuantity - article.StockQuantity;
                     article.StockQuantity = item.StockQuantity;
                     article.ModifiedDate = DateTime.UtcNow;
+                    article.ModifiedBy = userId;
+
+                    // Audit trail so batch updates leave forensic evidence.
+                    // Skip zero-delta rows so a no-op edit doesn't pollute history.
+                    if (delta != 0)
+                    {
+                        _context.Set<InventoryTransaction>().Add(new InventoryTransaction
+                        {
+                            ArticleId = article.Id,
+                            TransactionType = "adjustment",
+                            Quantity = delta,
+                            TransactionDate = DateTime.UtcNow,
+                            Reference = "batch_update",
+                            Notes = "Batch stock update",
+                            CreatedBy = userId
+                        });
+                    }
+
                     result.Updated++;
                 }
-                else
-                {
-                    result.Failed++;
-                    result.Errors.Add($"Article {item.Id} not found");
-                }
-            }
 
-            await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync();
+                await tx.CommitAsync();
+            });
+
+            result.Success = result.Failed == 0;
             return result;
         }
 

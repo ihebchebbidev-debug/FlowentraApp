@@ -172,11 +172,17 @@ namespace MyApi.Modules.Contacts.Services
                     lastName = createDto.Company?.Trim() ?? firstName;
                 }
 
-                // Check if email already exists (if email provided)
+                // Application-level pre-check for a friendly error. The
+                // authoritative guarantee comes from the partial unique index
+                // UX_Contacts_Tenant_Email_Active (added 2026-07-25) — its
+                // DbUpdateException is caught below so concurrent inserts
+                // cannot bypass this check.
                 if (!string.IsNullOrEmpty(createDto.Email))
                 {
                     var existingContact = await _context.Contacts
-                        .Where(c => c.Email != null && c.Email.ToLower() == createDto.Email.ToLower() && c.IsActive)
+                        .Where(c => c.Email != null
+                                    && c.Email.ToLower() == createDto.Email.ToLower()
+                                    && !c.IsDeleted)
                         .FirstOrDefaultAsync();
 
                     if (existingContact != null)
@@ -238,6 +244,11 @@ namespace MyApi.Modules.Contacts.Services
 
                         await tx.CommitAsync();
                     }
+                    catch (DbUpdateException dbEx) when (IsUniqueEmailViolation(dbEx))
+                    {
+                        await tx.RollbackAsync();
+                        throw new InvalidOperationException("A contact with this email already exists");
+                    }
                     catch
                     {
                         await tx.RollbackAsync();
@@ -289,12 +300,16 @@ namespace MyApi.Modules.Contacts.Services
                     try
                     {
 
-                    // Check email uniqueness if email is being changed — done inside transaction to prevent TOCTOU race
+                    // Check email uniqueness if email is being changed — done inside transaction to prevent TOCTOU race.
+                    // Filter includes !IsDeleted so soft-deleted contacts don't block reuse.
                     if (!string.IsNullOrEmpty(updateDto.Email) &&
                         (contact.Email == null || updateDto.Email.ToLower() != contact.Email.ToLower()))
                     {
                         var existingContact = await _context.Contacts
-                            .Where(c => c.Email != null && c.Email.ToLower() == updateDto.Email.ToLower() && c.IsActive && c.Id != id)
+                            .Where(c => c.Email != null
+                                        && c.Email.ToLower() == updateDto.Email.ToLower()
+                                        && !c.IsDeleted
+                                        && c.Id != id)
                             .FirstOrDefaultAsync();
 
                         if (existingContact != null)
@@ -406,6 +421,11 @@ namespace MyApi.Modules.Contacts.Services
                     await tx.CommitAsync();
 
                     } // end transaction try
+                    catch (DbUpdateException dbEx) when (IsUniqueEmailViolation(dbEx))
+                    {
+                        await tx.RollbackAsync();
+                        throw new InvalidOperationException("A contact with this email already exists");
+                    }
                     catch
                     {
                         await tx.RollbackAsync();
@@ -811,6 +831,26 @@ namespace MyApi.Modules.Contacts.Services
                     CreatedBy = n.CreatedBy
                 }).ToList() ?? new List<ContactNoteDto>()
             };
+        }
+
+        /// <summary>
+        /// Detects a unique-constraint violation on the Contacts email index
+        /// (UX_Contacts_Tenant_Email_Active). Postgres surfaces this as
+        /// SQLSTATE 23505 with a constraint name — walk the inner exception
+        /// chain and match on either.
+        /// </summary>
+        private static bool IsUniqueEmailViolation(DbUpdateException ex)
+        {
+            for (Exception? e = ex; e != null; e = e.InnerException)
+            {
+                var msg = e.Message ?? string.Empty;
+                if (msg.Contains("UX_Contacts_Tenant_Email_Active", StringComparison.OrdinalIgnoreCase))
+                    return true;
+                // Fallback: any 23505 that mentions the Email column on Contacts
+                if (msg.Contains("23505") && msg.Contains("Email", StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            return false;
         }
     }
 }

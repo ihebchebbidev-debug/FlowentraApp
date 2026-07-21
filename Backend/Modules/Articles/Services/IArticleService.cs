@@ -11,6 +11,7 @@ namespace MyApi.Modules.Articles.Services
         Task<bool> DeleteArticleAsync(string id, string userId);
         Task<InventoryTransactionDto> CreateTransactionAsync(CreateInventoryTransactionDto dto, string userId);
         Task<List<InventoryTransactionDto>> GetArticleTransactionsAsync(string articleId);
+        Task<List<InventoryTransactionDto>> GetAllTransactionsAsync(int limit = 500);
         Task<BatchOperationResultDto> BatchUpdateStockAsync(BatchUpdateStockDto dto, string userId);
         Task<List<ArticleCategoryDto>> GetAllCategoriesAsync();
         Task<ArticleCategoryDto> CreateCategoryAsync(CreateArticleCategoryDto dto);
