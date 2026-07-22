@@ -19,6 +19,8 @@ import { formatTnd } from '../../utils/money';
 import type { BonusCost } from '../../types/hr.types';
 import dayjs from 'dayjs';
 import { z } from 'zod';
+import { HrPermissionButton } from '../common/HrPermissionButton';
+import { useHrPermissionGuard } from '../../hooks/useHrPermissionGuard';
 
 const BONUS_KINDS = ['bonus', 'allowance', 'reimbursement', 'other_cost'] as const;
 const BONUS_FREQUENCIES = ['monthly', 'one_off'] as const;
@@ -41,6 +43,7 @@ type BonusFormValues = z.infer<typeof bonusFormSchema>;
 export function BonusesPage() {
   const { t } = useTranslation('hr');
   const { toast } = useToast();
+  const guardHr = useHrPermissionGuard();
   const [filterMonth, setFilterMonth] = useState<number>(dayjs().month() + 1);
   const [filterYear, setFilterYear] = useState<number>(dayjs().year());
   const [filterUser, setFilterUser] = useState<string>('all');
@@ -80,6 +83,7 @@ export function BonusesPage() {
   const [errors, setErrors] = useState<Partial<Record<keyof BonusFormValues, string>>>({});
 
   const submit = async () => {
+    if (!guardHr('create')) return;
     const parsed = bonusFormSchema.safeParse({
       userId, kind, label, amount,
       frequency: 'one_off' as const,
@@ -133,7 +137,7 @@ export function BonusesPage() {
         actions={
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" className="gap-2"><Plus className="h-4 w-4" /> {t('bonusesPage.add')}</Button>
+              <HrPermissionButton action="create" size="sm" className="gap-2"><Plus className="h-4 w-4" /> {t('bonusesPage.add')}</HrPermissionButton>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle>{t('bonusesPage.addTitle')}</DialogTitle></DialogHeader>
@@ -202,7 +206,7 @@ export function BonusesPage() {
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setOpen(false)}>{t('cancel')}</Button>
-                <Button onClick={submit} disabled={createBonus.isPending}>{t('save')}</Button>
+                <HrPermissionButton action="create" onClick={submit} disabled={createBonus.isPending}>{t('save')}</HrPermissionButton>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -295,9 +299,9 @@ export function BonusesPage() {
                       <TableCell>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button size="icon" variant="ghost" aria-label={t('delete', 'Delete') as string}>
+                            <HrPermissionButton action="delete" size="icon" variant="ghost" aria-label={t('delete', 'Delete') as string}>
                               <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
+                            </HrPermissionButton>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
@@ -309,7 +313,7 @@ export function BonusesPage() {
                             <AlertDialogFooter>
                               <AlertDialogCancel>{t('cancel', 'Cancel')}</AlertDialogCancel>
                               <AlertDialogAction
-                                onClick={() => deleteBonus.mutate(b.id)}
+                                onClick={() => { if (guardHr('delete')) deleteBonus.mutate(b.id); }}
                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                               >
                                 {t('delete', 'Delete')}

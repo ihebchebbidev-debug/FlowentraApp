@@ -27,7 +27,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { useCnssRates } from '../hooks/useCnss';
 import { formatTnd } from '../utils/money';
-import { calculateTunisianNetSalary } from '../utils/tunisianTaxEngine';
+import { calculateTunisianNetSalary, cnssRateToTaxEngineRates } from '../utils/tunisianTaxEngine';
 import { hrApi } from '../services/hrApi';
 import { selectEmployeeRows } from '../utils/employeeRows';
 
@@ -121,6 +121,11 @@ export function HRDashboard() {
     let totalNet = 0;
     let totalCnssEmployer = 0;
     const employerRate = Number(activeRateQuery.data?.employerRate ?? 0.1657);
+    // Use the ACTIVE backend CNSS rate (employee rate, CSS rate, salary
+    // ceiling, abattements, IRPP brackets) so the dashboard estimate
+    // matches backend payroll and the CNSS declaration.
+    const engineRates = cnssRateToTaxEngineRates(activeRateQuery.data as any);
+    const ceiling = Number(engineRates.salaryCeiling ?? 0);
     for (const r of employeeRows as any[]) {
       const cfg = r.salaryConfig;
       if (!cfg || !Number.isFinite(Number(cfg.grossSalary))) continue;
@@ -130,10 +135,13 @@ export function HRDashboard() {
         isHeadOfFamily: Boolean(cfg.isHeadOfFamily),
         childrenCount: Number(cfg.childrenCount || 0),
         customDeductions: cfg.customDeductions,
-      });
+      }, engineRates);
       totalGross += gross;
       totalNet += breakdown.netSalary;
-      totalCnssEmployer += gross * employerRate;
+      // Employer CNSS is capped at the same ceiling as employee CNSS
+      // (backend HrService: `capped = SalaryCeiling > 0 ? min(subject, SalaryCeiling) : subject`).
+      const employerBase = ceiling > 0 ? Math.min(gross, ceiling) : gross;
+      totalCnssEmployer += employerBase * employerRate;
     }
     return { totalGross, totalNet, totalCnssEmployer, totalCost: totalGross + totalCnssEmployer };
   }, [employeeRows, activeRateQuery.data]);

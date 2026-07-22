@@ -148,8 +148,13 @@ export function EmployeeDetail() {
 
   const cnssNumber = cfg?.cnssNumber ?? null;
   const grossForCnss = Number(cfg?.grossSalary ?? 0);
-  const employeeShare = grossForCnss * Number(activeRateQuery.data?.employeeRate ?? 0.0918);
-  const employerShare = grossForCnss * Number(activeRateQuery.data?.employerRate ?? 0.1657);
+  // Cap the CNSS base by the active salary ceiling, matching backend
+  // HrService (RunPayrollAsync / GetCnssDeclarationAsync): when
+  // `SalaryCeiling > 0`, CNSS is computed on `min(subject, ceiling)`.
+  const cnssCeiling = Number(activeRateQuery.data?.salaryCeiling ?? activeRateQuery.data?.ceiling ?? 0);
+  const cnssBase = cnssCeiling > 0 ? Math.min(grossForCnss, cnssCeiling) : grossForCnss;
+  const employeeShare = cnssBase * Number(activeRateQuery.data?.employeeRate ?? 0.0918);
+  const employerShare = cnssBase * Number(activeRateQuery.data?.employerRate ?? 0.1657);
 
   return (
     <div className="flex flex-col">

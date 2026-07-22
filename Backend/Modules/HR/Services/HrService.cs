@@ -121,6 +121,22 @@ namespace MyApi.Modules.HR.Services
 
         public async Task<HrEmployeeSalaryConfigDto> UpsertSalaryConfigAsync(int userId, UpsertSalaryConfigDto dto, int actorUserId)
         {
+            // Serialize concurrent salary edits for the same employee. Without this,
+            // two overlapping calls would each read the same `previousGross`, both
+            // write their own `newGross`, and both insert HrSalaryHistory rows
+            // claiming the same "previous" value — corrupting the audit trail
+            // (a jump from A to C would be recorded as two A→B and A→C rows
+            // instead of A→B and B→C). A transaction-scoped Postgres advisory
+            // lock keyed on (namespace, userId) queues concurrent writers so
+            // the second read observes the first writer's committed value.
+            // The lock covers both existing-row updates and first-time inserts,
+            // and is auto-released on COMMIT/ROLLBACK.
+            await using var tx = await _db.Database.BeginTransactionAsync();
+            const int SalaryLockNamespace = 0x48525F53; // 'HR_S'
+            await _db.Database.ExecuteSqlRawAsync(
+                "SELECT pg_advisory_xact_lock({0}, {1})",
+                SalaryLockNamespace, userId);
+
             var entity = await _db.Set<HrEmployeeSalaryConfig>().FirstOrDefaultAsync(x => x.UserId == userId);
             var isNew = entity == null;
             var previousGross = entity?.GrossSalary;
@@ -175,7 +191,20 @@ namespace MyApi.Modules.HR.Services
                 await LogAsync(userId, "profile_updated", "Employee profile updated", null, actorUserId);
             }
 
-            await _db.SaveChangesAsync();
+            try
+            {
+                await _db.SaveChangesAsync();
+                await tx.CommitAsync();
+            }
+            catch (DbUpdateException ex) when (isNew && IsUniqueViolation(ex))
+            {
+                // A concurrent writer created the row after our lock window
+                // (only possible if the lock was bypassed). Roll back and
+                // surface a retryable conflict rather than a duplicate row.
+                await tx.RollbackAsync();
+                throw new InvalidOperationException(
+                    "Salary configuration was modified concurrently. Please retry.", ex);
+            }
             return MapSalaryConfigDto(entity);
         }
 
@@ -420,6 +449,21 @@ namespace MyApi.Modules.HR.Services
         // ===========================================================================
         public async Task<HrPayrollRunDto> GeneratePayrollRunAsync(CreatePayrollRunDto dto, int createdByUserId)
         {
+            if (dto.Month < 1 || dto.Month > 12) throw new InvalidOperationException("Invalid month.");
+            if (dto.Year < 2000 || dto.Year > 2100) throw new InvalidOperationException("Invalid year.");
+
+            // Duplicate guard: prevent a second run for the same tenant/year/month
+            // (blocks double-clicks and concurrent admin submissions).
+            // Note: relies on tenant query filter; a DB-level unique index on
+            // (TenantId, year, month) enforces this if two requests race past the check.
+            var existing = await _db.Set<HrPayrollRun>().AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Year == dto.Year && x.Month == dto.Month);
+            if (existing != null)
+            {
+                throw new InvalidOperationException(
+                    $"A payroll run for {dto.Month:D2}/{dto.Year} already exists (status: {existing.Status}). Delete or reuse it instead of generating a duplicate.");
+            }
+
             var rate = await GetActiveCnssRateEntityAsync();
             var attendanceSettings = await GetAttendanceSettingsEntityAsync();
             var brackets = ParseBrackets(rate.IrppBracketsJson);
@@ -430,7 +474,16 @@ namespace MyApi.Modules.HR.Services
                 CreatedBy = createdByUserId, CreatedAt = DateTime.UtcNow
             };
             _db.Set<HrPayrollRun>().Add(run);
-            await _db.SaveChangesAsync();
+            try
+            {
+                await _db.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex) when (IsUniqueViolation(ex))
+            {
+                // Concurrent request won the race — surface a clean 4xx instead of a 500.
+                throw new InvalidOperationException(
+                    $"A payroll run for {dto.Month:D2}/{dto.Year} already exists.");
+            }
 
             var users = await _db.Users.AsNoTracking().Where(u => u.IsActive && !u.IsDeleted).ToListAsync();
             var userIds = users.Select(u => u.Id).ToList();
@@ -1076,6 +1129,12 @@ namespace MyApi.Modules.HR.Services
                 if (portion > 0) irpp += portion * rate;
             }
             return Math.Max(0, irpp);
+        }
+
+        private static bool IsUniqueViolation(DbUpdateException ex)
+        {
+            var msg = ex.InnerException?.Message ?? ex.Message ?? string.Empty;
+            return msg.Contains("23505") || msg.Contains("duplicate key value violates unique constraint");
         }
 
         private static HrCnssRateDto MapCnssRateDto(HrCnssRate x) => new()

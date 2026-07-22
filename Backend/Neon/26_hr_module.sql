@@ -33,48 +33,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS ix_hr_employee_salary_configs_tenant_user
 CREATE INDEX IF NOT EXISTS ix_hr_employee_salary_configs_tenantid
     ON hr_employee_salary_configs ("TenantId");
 
-CREATE TABLE IF NOT EXISTS hr_attendance_records (
-    id SERIAL PRIMARY KEY,
-    "TenantId" INT NOT NULL DEFAULT 0,
-    user_id INT NOT NULL,
-    date DATE NOT NULL,
-    check_in TIME NULL,
-    check_out TIME NULL,
-    break_duration INT NULL,
-    source VARCHAR(30) NOT NULL DEFAULT 'manual',
-    raw_data TEXT NULL,
-    hours_worked NUMERIC(10,2) NULL,
-    overtime_hours NUMERIC(10,2) NULL,
-    status VARCHAR(30) NOT NULL DEFAULT 'present',
-    notes TEXT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS ix_hr_attendance_records_tenant_user_date
-    ON hr_attendance_records ("TenantId", user_id, date);
-CREATE INDEX IF NOT EXISTS ix_hr_attendance_records_tenantid
-    ON hr_attendance_records ("TenantId");
-
-CREATE TABLE IF NOT EXISTS hr_attendance_settings (
-    id SERIAL PRIMARY KEY,
-    "TenantId" INT NOT NULL DEFAULT 0,
-    weekend_days TEXT NOT NULL DEFAULT '[0,6]',
-    standard_hours_per_day NUMERIC(10,2) NOT NULL DEFAULT 8,
-    overtime_threshold NUMERIC(10,2) NOT NULL DEFAULT 8,
-    overtime_multiplier NUMERIC(10,2) NOT NULL DEFAULT 1.5,
-    rounding_method VARCHAR(20) NOT NULL DEFAULT 'none',
-    calculation_method VARCHAR(30) NOT NULL DEFAULT 'actual_hours',
-    late_threshold_minutes INT NOT NULL DEFAULT 10,
-    holidays TEXT NOT NULL DEFAULT '[]',
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-);
-
-CREATE UNIQUE INDEX IF NOT EXISTS ix_hr_attendance_settings_tenant
-    ON hr_attendance_settings ("TenantId");
-CREATE INDEX IF NOT EXISTS ix_hr_attendance_settings_tenantid
-    ON hr_attendance_settings ("TenantId");
+-- Attendance tables (hr_attendance, hr_attendance_settings) live in the
+-- consolidated migration Backend/Migrations/20260722_HR_Attendance_Consolidate.sql.
+-- The legacy hr_attendance_records table was never mapped by any EF model
+-- and has been removed from this baseline.
 
 CREATE TABLE IF NOT EXISTS hr_departments (
     id SERIAL PRIMARY KEY,

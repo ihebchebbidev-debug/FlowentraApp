@@ -15,12 +15,15 @@ import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import dayjs from 'dayjs';
 import { getCurrentTenant } from '@/utils/tenant';
+import { HrPermissionButton } from '../common/HrPermissionButton';
+import { useHrPermissionGuard } from '../../hooks/useHrPermissionGuard';
 
 const HR_SETTINGS_KEY = () => `t:${getCurrentTenant() || 'default'}:hr_settings_v1`;
 
 export function HrSettingsPage() {
   const { t } = useTranslation('hr');
   const { toast } = useToast();
+  const guardHr = useHrPermissionGuard();
   const { ratesQuery, upsertRate } = useCnssRates();
   const [year, setYear] = useState(dayjs().year());
   const { holidaysQuery, createHoliday, deleteHoliday } = usePublicHolidays(year);
@@ -32,6 +35,7 @@ export function HrSettingsPage() {
   const [effectiveFrom, setEffectiveFrom] = useState(dayjs().format('YYYY-MM-DD'));
 
   const addRate = async () => {
+    if (!guardHr('update')) return;
     await upsertRate.mutateAsync({
       employeeRate: employeeRate / 100,
       employerRate: employerRate / 100,
@@ -48,6 +52,7 @@ export function HrSettingsPage() {
   const [holidayRecurring, setHolidayRecurring] = useState(false);
 
   const addHoliday = async () => {
+    if (!guardHr('create')) return;
     if (!holidayDate || !holidayName) {
       toast({ title: t('settingsPage.holidays.validation'), variant: 'destructive' });
       return;
@@ -68,6 +73,7 @@ export function HrSettingsPage() {
   });
 
   const saveConfig = () => {
+    if (!guardHr('configure')) return;
     try { localStorage.setItem(HR_SETTINGS_KEY(), JSON.stringify(config)); } catch { /* noop */ }
     toast({ title: t('settingsPage.general.saved') });
   };
@@ -130,9 +136,9 @@ export function HrSettingsPage() {
                   </div>
                 </div>
                 <div className="flex justify-end mt-3">
-                  <Button onClick={addRate} disabled={upsertRate.isPending} className="gap-2">
+                  <HrPermissionButton action="update" onClick={addRate} disabled={upsertRate.isPending} className="gap-2">
                     <Plus className="h-4 w-4" /> {t('settingsPage.cnss.add')}
-                  </Button>
+                  </HrPermissionButton>
                 </div>
               </CardContent>
             </Card>
@@ -192,9 +198,9 @@ export function HrSettingsPage() {
                       <Switch checked={holidayRecurring} onCheckedChange={setHolidayRecurring} />
                       <Label>{t('settingsPage.holidays.recurring')}</Label>
                     </div>
-                    <Button onClick={addHoliday} disabled={createHoliday.isPending} size="icon" className="ml-auto">
+                    <HrPermissionButton action="create" onClick={addHoliday} disabled={createHoliday.isPending} size="icon" className="ml-auto">
                       <Plus className="h-4 w-4" />
-                    </Button>
+                    </HrPermissionButton>
                   </div>
                 </div>
 
@@ -215,9 +221,9 @@ export function HrSettingsPage() {
                         <TableCell>{h.name}</TableCell>
                         <TableCell>{h.isRecurring ? '✓' : '—'}</TableCell>
                         <TableCell>
-                          <Button size="icon" variant="ghost" onClick={() => deleteHoliday.mutate(h.id)}>
+                          <HrPermissionButton action="delete" size="icon" variant="ghost" onClick={() => { if (guardHr('delete')) deleteHoliday.mutate(h.id); }}>
                             <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
+                          </HrPermissionButton>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -259,7 +265,7 @@ export function HrSettingsPage() {
                   </div>
                 </div>
                 <div className="flex justify-end">
-                  <Button onClick={saveConfig}>{t('save')}</Button>
+                  <HrPermissionButton action="configure" onClick={saveConfig}>{t('save')}</HrPermissionButton>
                 </div>
               </CardContent>
             </Card>

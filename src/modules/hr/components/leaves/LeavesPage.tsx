@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { useEmployees } from '../../hooks/useEmployees';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { HrPermissionButton } from '../common/HrPermissionButton';
 
 async function mapWithConcurrency<T, R>(items: T[], concurrency: number, fn: (item: T) => Promise<R>): Promise<R[]> {
   const results: R[] = [];
@@ -87,10 +88,10 @@ export function LeavesPage() {
         accentColor="chart-4"
         backTo={{ to: '/dashboard/hr', label: t('dashboard') }}
         actions={
-          <Button size="sm" onClick={() => setOpen(true)} className="gap-2">
+          <HrPermissionButton action="create" size="sm" onClick={() => setOpen(true)} className="gap-2">
             <Plus className="h-4 w-4" />
             {t('leavesPage.newRequest')}
-          </Button>
+          </HrPermissionButton>
         }
       />
 

@@ -12,7 +12,7 @@ import { HRPageHeader } from '../HRPageHeader';
 import { useEmployees } from '../../hooks/useEmployees';
 import { useBonuses } from '../../hooks/useBonuses';
 import { useCnssRates } from '../../hooks/useCnss';
-import { calculateTunisianNetSalary } from '../../utils/tunisianTaxEngine';
+import { calculateTunisianNetSalary, cnssRateToTaxEngineRates } from '../../utils/tunisianTaxEngine';
 import dayjs from 'dayjs';
 import { useQuery } from '@tanstack/react-query';
 import { schedulesApi, type UserLeave } from '@/services/api/schedulesApi';
@@ -31,6 +31,13 @@ export function ReportsPage() {
   const { bonusesQuery: ytdBonusesQuery } = useBonuses({ year });
 
   const employerRate = Number(activeRateQuery.data?.employerRate ?? 0.1657);
+  // Full tax-engine rates from the active backend CNSS row so IRPP/CSS/net
+  // and the ceiling-capped CNSS bases in reports match backend payroll.
+  const engineRates = useMemo(
+    () => cnssRateToTaxEngineRates(activeRateQuery.data as any),
+    [activeRateQuery.data],
+  );
+  const ceiling = Number(engineRates.salaryCeiling ?? 0);
 
   const employeeCostRows = useMemo(() => {
     const bonusByUser = new Map<number, { bonus: number; deduction: number }>();
@@ -53,18 +60,23 @@ export function ReportsPage() {
       const cfg = r.salaryConfig;
       const gross = Number(cfg?.grossSalary ?? 0);
       const ub = bonusByUser.get(Number(u?.id)) ?? { bonus: 0, deduction: 0 };
-      const cnssEmployer = gross * employerRate;
+      // Employer CNSS is capped at the salary ceiling, same rule the backend
+      // uses in HrService.RunPayrollAsync / GetCnssDeclarationAsync.
+      const employerBase = ceiling > 0 ? Math.min(gross + ub.bonus, ceiling) : gross + ub.bonus;
+      const cnssEmployer = employerBase * employerRate;
       const totalCost = gross + ub.bonus - ub.deduction + cnssEmployer;
       const breakdown = cfg ? calculateTunisianNetSalary({
         grossSalary: gross + ub.bonus,
         isHeadOfFamily: Boolean(cfg.isHeadOfFamily),
         childrenCount: Number(cfg.childrenCount || 0),
         customDeductions: Number(cfg.customDeductions || 0) + ub.deduction,
-      }) : null;
+      }, engineRates) : null;
       // YTD = Jan..selected month  => `month` months of base salary
       const ytdGross = gross * month;
       const ytdBonuses = ytdBonusByUser.get(Number(u?.id)) ?? 0;
-      const ytdEmployerCnss = ytdGross * employerRate;
+      // YTD employer CNSS also respects the ceiling per month (backend rule).
+      const ytdEmployerBase = ceiling > 0 ? Math.min(gross, ceiling) * month : ytdGross;
+      const ytdEmployerCnss = ytdEmployerBase * employerRate;
       const ytdTotalCost = ytdGross + ytdBonuses + ytdEmployerCnss;
       return {
         userId: Number(u?.id),
@@ -74,7 +86,7 @@ export function ReportsPage() {
         ytdGross, ytdBonuses, ytdEmployerCnss, ytdTotalCost,
       };
     });
-  }, [employeesQuery.data, bonusesQuery.data, ytdBonusesQuery.data, employerRate, month]);
+  }, [employeesQuery.data, bonusesQuery.data, ytdBonusesQuery.data, employerRate, month, engineRates, ceiling]);
 
   const totals = useMemo(() => employeeCostRows.reduce(
     (acc, r) => ({

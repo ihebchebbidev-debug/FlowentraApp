@@ -21,6 +21,8 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { setTargetTenantId, clearTargetTenant } from '@/utils/targetTenant';
+import { HrPermissionButton } from '../common/HrPermissionButton';
+import { useHrPermissionGuard } from '../../hooks/useHrPermissionGuard';
 
 type FormState = {
   id?: number;
@@ -170,6 +172,7 @@ function parseCsv(text: string) {
 
 export function AttendancePage() {
   const { t } = useTranslation('hr');
+  const guardHr = useHrPermissionGuard();
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [month, setMonth] = useState(dayjs().month() + 1);
   const [year, setYear] = useState(dayjs().year());
@@ -247,6 +250,7 @@ export function AttendancePage() {
     // Pin X-Target-Tenant so view-all mutations always have a target.
     // Default to TenantId=0 (default company) when no row/active filter context.
     const rowTenantId = (form as any).tenantId ?? 0;
+    if (!guardHr(form.id ? 'update' : 'create')) return;
     setTargetTenantId(rowTenantId);
     try {
       await upsertAttendance.mutateAsync({
@@ -318,8 +322,8 @@ export function AttendancePage() {
         actions={
           <div className="flex items-center gap-2">
             <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={onFileChange} />
-            <Button size="sm" variant="outline" className="gap-2" onClick={onImportClick}><Upload className="h-4 w-4" />{t('attendancePage.importCsv')}</Button>
-            <Button size="sm" className="gap-2" onClick={openCreate}><Plus className="h-4 w-4" />{t('attendancePage.addEntry')}</Button>
+            <HrPermissionButton action="import" size="sm" variant="outline" className="gap-2" onClick={onImportClick}><Upload className="h-4 w-4" />{t('attendancePage.importCsv')}</HrPermissionButton>
+            <HrPermissionButton action="create" size="sm" className="gap-2" onClick={openCreate}><Plus className="h-4 w-4" />{t('attendancePage.addEntry')}</HrPermissionButton>
           </div>
         }
       />
@@ -373,7 +377,7 @@ export function AttendancePage() {
                             <TableCell><Badge variant="outline">{t(`attendanceStatus.${record.status}`, { defaultValue: record.status })}</Badge></TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">
-                                <Button size="icon" variant="ghost" onClick={() => openEdit(record)}><Pencil className="h-4 w-4" /></Button>
+                                <HrPermissionButton action="update" size="icon" variant="ghost" onClick={() => openEdit(record)}><Pencil className="h-4 w-4" /></HrPermissionButton>
                                 <ConfirmDeleteButton
                                   size="icon"
                                   variant="ghost"

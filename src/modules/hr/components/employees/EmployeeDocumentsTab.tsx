@@ -13,6 +13,8 @@ import { useToast } from '@/hooks/use-toast';
 import { UploadThingDropzone, type UploadedFile } from '@/components/upload/UploadThingDropzone';
 import { useEmployeeDocuments } from '../../hooks/useEmployeeDocuments';
 import type { EmployeeDocument } from '../../types/hr.types';
+import { HrPermissionButton } from '../common/HrPermissionButton';
+import { useHrPermissionGuard } from '../../hooks/useHrPermissionGuard';
 
 const DOC_TYPES: EmployeeDocument['docType'][] = ['contract', 'payslip', 'id_card', 'cnss', 'medical', 'other'];
 
@@ -24,6 +26,7 @@ export function EmployeeDocumentsTab({ userId }: Props) {
   const { t } = useTranslation('hr');
   const { toast } = useToast();
   const { documentsQuery, createDocument, deleteDocument } = useEmployeeDocuments(userId);
+  const guardHr = useHrPermissionGuard();
 
   const [open, setOpen] = useState(false);
   const [docType, setDocType] = useState<EmployeeDocument['docType']>('contract');
@@ -41,6 +44,7 @@ export function EmployeeDocumentsTab({ userId }: Props) {
   };
 
   const handleSave = async () => {
+    if (!guardHr('create')) return;
     if (!uploaded) {
       toast({ title: t('documentsTab.fileRequired', 'Please upload a file first'), variant: 'destructive' });
       return;
@@ -65,6 +69,7 @@ export function EmployeeDocumentsTab({ userId }: Props) {
   };
 
   const handleDelete = async (id: number) => {
+    if (!guardHr('delete')) return;
     if (!confirm(t('documentsTab.confirmDelete', 'Delete this document?'))) return;
     try {
       await deleteDocument.mutateAsync(id);
@@ -84,7 +89,7 @@ export function EmployeeDocumentsTab({ userId }: Props) {
         </p>
         <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
           <DialogTrigger asChild>
-            <Button size="sm"><Plus className="h-4 w-4 mr-1" />{t('documentsTab.add', 'Add document')}</Button>
+            <HrPermissionButton action="create" size="sm"><Plus className="h-4 w-4 mr-1" />{t('documentsTab.add', 'Add document')}</HrPermissionButton>
           </DialogTrigger>
           <DialogContent className="sm:max-w-lg">
             <DialogHeader>
@@ -133,10 +138,10 @@ export function EmployeeDocumentsTab({ userId }: Props) {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>{t('cancel')}</Button>
-              <Button onClick={handleSave} disabled={createDocument.isPending || !uploaded}>
+              <HrPermissionButton action="create" onClick={handleSave} disabled={createDocument.isPending || !uploaded}>
                 {createDocument.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
                 {t('save')}
-              </Button>
+              </HrPermissionButton>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -193,7 +198,8 @@ export function EmployeeDocumentsTab({ userId }: Props) {
                         </a>
                       </Button>
                     )}
-                    <Button
+                    <HrPermissionButton
+                      action="delete"
                       size="icon"
                       variant="ghost"
                       onClick={() => handleDelete(d.id)}
@@ -201,7 +207,7 @@ export function EmployeeDocumentsTab({ userId }: Props) {
                       title={t('documentsTab.delete', 'Delete')}
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    </HrPermissionButton>
                   </div>
                 </TableCell>
               </TableRow>

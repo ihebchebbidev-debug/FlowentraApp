@@ -182,6 +182,8 @@ CREATE TABLE IF NOT EXISTS hr_attendance_settings (
     created_at               TIMESTAMP     NOT NULL DEFAULT NOW(),
     updated_at               TIMESTAMP     NOT NULL DEFAULT NOW()
 );
+CREATE UNIQUE INDEX IF NOT EXISTS ix_hr_attendance_settings_tenant
+    ON hr_attendance_settings ("TenantId");
 
 CREATE TABLE IF NOT EXISTS hr_cnss_rates (
     id                        SERIAL       PRIMARY KEY,
@@ -225,9 +227,11 @@ CREATE TABLE IF NOT EXISTS hr_attendance (
     notes          TEXT,
     source         VARCHAR(40)   NOT NULL DEFAULT 'manual',
     created_at     TIMESTAMP     NOT NULL DEFAULT NOW(),
-    updated_at     TIMESTAMP     NOT NULL DEFAULT NOW()
+    updated_at     TIMESTAMP     NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_hr_attendance_user_date UNIQUE ("TenantId", user_id, date)
 );
 CREATE INDEX IF NOT EXISTS "IX_hr_attendance_user_date" ON hr_attendance (user_id, date);
+CREATE INDEX IF NOT EXISTS ix_hr_attendance_period ON hr_attendance ("TenantId", date, user_id);
 
 CREATE TABLE IF NOT EXISTS hr_leave_balances (
     id               SERIAL        PRIMARY KEY,

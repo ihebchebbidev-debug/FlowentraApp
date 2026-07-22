@@ -23,6 +23,8 @@ import { pdf } from '@react-pdf/renderer';
 import { PaySlipPDF } from './PaySlipPDF';
 import { useToast } from '@/hooks/use-toast';
 import { extractApiErrorMessage } from '@/utils/extractApiErrorMessage';
+import { HrPermissionButton } from '../common/HrPermissionButton';
+import { useHrPermissionGuard } from '../../hooks/useHrPermissionGuard';
 
 /**
  * Build a SalaryBreakdown shape from a server-persisted PayrollEntry so the
@@ -69,6 +71,7 @@ export function PayrollPage() {
 
   const { employeesQuery } = useEmployees();
   const { runsQuery, generateMutation, confirmMutation, payMutation } = usePayrollRuns(year);
+  const guardHr = useHrPermissionGuard();
 
   const runs = runsQuery.data ?? [];
   const activeRun = useMemo(
@@ -185,6 +188,7 @@ export function PayrollPage() {
   };
 
   const handleGenerate = async (values: { month: number; year: number }) => {
+    if (!guardHr('create')) throw new Error('forbidden');
     try {
       const run = await generateMutation.mutateAsync({ month: Number(values.month), year: Number(values.year) });
       setYear(Number(values.year));
@@ -198,6 +202,7 @@ export function PayrollPage() {
   };
 
   const handleConfirm = async () => {
+    if (!guardHr('approve')) return;
     if (!activeRun) return;
     try {
       await confirmMutation.mutateAsync(activeRun.id);
@@ -208,6 +213,7 @@ export function PayrollPage() {
   };
 
   const handleMarkPaid = async () => {
+    if (!guardHr('approve')) return;
     if (!activeRun) return;
     try {
       await payMutation.mutateAsync(activeRun.id);
@@ -243,10 +249,10 @@ export function PayrollPage() {
                 <option key={y} value={y}>{y}</option>
               ))}
             </select>
-            <Button size="sm" onClick={() => setDialogOpen(true)} className="gap-2" disabled={isMutating}>
+            <HrPermissionButton action="create" size="sm" onClick={() => setDialogOpen(true)} className="gap-2" disabled={isMutating}>
               {generateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
               {t('payrollPage.generatePayroll')}
-            </Button>
+            </HrPermissionButton>
           </div>
         }
       />
@@ -347,7 +353,8 @@ export function PayrollPage() {
                     <FileDown className="h-4 w-4" />
                     <span className="hidden sm:inline">{isExporting ? t('payrollDraft.export.exporting') : t('payrollDraft.export.button')}</span>
                   </Button>
-                  <Button
+                  <HrPermissionButton
+                    action="approve"
                     size="sm" variant={canConfirm ? 'default' : 'outline'}
                     disabled={!canConfirm || confirmMutation.isPending}
                     onClick={handleConfirm}
@@ -355,8 +362,9 @@ export function PayrollPage() {
                     {confirmMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (
                       <span className="hidden sm:inline">{t('payrollDraft.actions.confirm')}</span>
                     )}
-                  </Button>
-                  <Button
+                  </HrPermissionButton>
+                  <HrPermissionButton
+                    action="approve"
                     size="sm" variant={canMarkPaid ? 'default' : 'outline'}
                     disabled={!canMarkPaid || payMutation.isPending}
                     onClick={handleMarkPaid}
@@ -364,7 +372,7 @@ export function PayrollPage() {
                     {payMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (
                       <span className="hidden sm:inline">{t('payrollDraft.actions.markPaid')}</span>
                     )}
-                  </Button>
+                  </HrPermissionButton>
                 </div>
               </div>
             </CardHeader>

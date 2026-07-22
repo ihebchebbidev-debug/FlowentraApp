@@ -29,6 +29,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { HrPermissionButton } from '../common/HrPermissionButton';
+import { useHrPermissionGuard } from '../../hooks/useHrPermissionGuard';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 
@@ -37,6 +39,7 @@ export function DepartmentsPage() {
   const { toast } = useToast();
   const { departmentsQuery, createDepartment, updateDepartment, deleteDepartment } = useDepartments();
   const { employeesQuery } = useEmployees();
+  const guardHr = useHrPermissionGuard();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
@@ -85,6 +88,7 @@ export function DepartmentsPage() {
   }, [departments, departmentNamesFromEmployees, employees]);
 
   const handleCreate = async () => {
+    if (!guardHr('create')) return;
     if (!formName.trim()) {
       toast({ title: t('departments.nameRequired'), variant: 'destructive' });
       return;
@@ -102,6 +106,7 @@ export function DepartmentsPage() {
   };
 
   const handleEdit = async () => {
+    if (!guardHr('update')) return;
     if (editId == null || !formName.trim()) return;
     try {
       await updateDepartment.mutateAsync({ id: editId, payload: { name: formName.trim(), code: formCode.trim() || undefined, description: formDescription.trim() || undefined } });
@@ -116,6 +121,7 @@ export function DepartmentsPage() {
   };
 
   const handleDelete = async () => {
+    if (!guardHr('delete')) return;
     if (deleteId == null) return;
     try {
       await deleteDepartment.mutateAsync(deleteId);
@@ -152,10 +158,10 @@ export function DepartmentsPage() {
             </Button>
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
               <DialogTrigger asChild>
-                <Button size="sm">
+                <HrPermissionButton action="create" size="sm">
                   <Plus className="h-4 w-4 mr-2" />
                   {t('departments.add')}
-                </Button>
+                </HrPermissionButton>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
@@ -180,9 +186,9 @@ export function DepartmentsPage() {
                   <Button variant="outline" onClick={() => setCreateOpen(false)}>
                     {t('cancel')}
                   </Button>
-                  <Button onClick={handleCreate} disabled={createDepartment.isPending}>
+                  <HrPermissionButton action="create" onClick={handleCreate} disabled={createDepartment.isPending}>
                     {t('save')}
-                  </Button>
+                  </HrPermissionButton>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -233,12 +239,12 @@ export function DepartmentsPage() {
                       <TableCell>
                         {d.id >= 0 && (
                           <div className="flex gap-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(d)}>
+                            <HrPermissionButton action="update" variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(d)}>
                               <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteId(d.id)}>
+                            </HrPermissionButton>
+                            <HrPermissionButton action="delete" variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteId(d.id)}>
                               <Trash2 className="h-4 w-4" />
-                            </Button>
+                            </HrPermissionButton>
                           </div>
                         )}
                       </TableCell>
@@ -275,9 +281,9 @@ export function DepartmentsPage() {
             <Button variant="outline" onClick={() => setEditId(null)}>
               {t('cancel')}
             </Button>
-            <Button onClick={handleEdit} disabled={updateDepartment.isPending}>
+            <HrPermissionButton action="update" onClick={handleEdit} disabled={updateDepartment.isPending}>
               {t('save')}
-            </Button>
+            </HrPermissionButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>

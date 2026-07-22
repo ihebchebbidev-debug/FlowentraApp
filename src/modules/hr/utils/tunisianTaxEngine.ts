@@ -8,12 +8,22 @@ export type TunisianTaxEngineRates = {
     headOfFamily: number; // default 150
     perChild: number; // default 100
   };
+  /**
+   * CNSS-subject salary ceiling in TND. `0` (default) means "no ceiling",
+   * mirroring the backend rule (`HrService`: `rate.SalaryCeiling > 0
+   * ? Math.min(subject, rate.SalaryCeiling) : subject`). When > 0, the
+   * CNSS base — and only the CNSS base — is capped at this value.
+   * Taxable gross, IRPP and CSS still derive from the true gross minus
+   * the (capped) CNSS, so previews match backend payroll numbers.
+   */
+  salaryCeiling?: number;
 };
 
 export const TUNISIAN_2025_DEFAULT_RATES: TunisianTaxEngineRates = {
   cnssRate: 0.0918,
   cssRate: 0.01,
   abattement: { headOfFamily: 150, perChild: 100 },
+  salaryCeiling: 0,
   brackets: [
     { from: 0, to: 416.67, rate: 0 },
     { from: 416.67, to: 833.33, rate: 0.15 },
@@ -29,6 +39,44 @@ export const TUNISIAN_2025_DEFAULT_RATES: TunisianTaxEngineRates = {
 const clampNonNegative = (n: number) => (Number.isFinite(n) ? Math.max(0, n) : 0);
 
 /**
+ * Map a backend `CnssRate` row to `TunisianTaxEngineRates` so that any
+ * frontend tax preview uses the SAME numbers the backend will apply at
+ * payroll time: employee CNSS rate, CSS rate, salary ceiling, abattements
+ * and progressive IRPP brackets. Falls back to `TUNISIAN_2025_DEFAULT_RATES`
+ * for any field the active row is missing.
+ */
+export function cnssRateToTaxEngineRates(
+  active: {
+    employeeRate?: number | null;
+    cssRate?: number | null;
+    salaryCeiling?: number | null;
+    ceiling?: number | null; // legacy alias
+    abattementHeadOfFamily?: number | null;
+    abattementPerChild?: number | null;
+    irppBrackets?: Array<{ from: number; to: number | null; rate: number }> | null;
+  } | null | undefined,
+): TunisianTaxEngineRates {
+  const d = TUNISIAN_2025_DEFAULT_RATES;
+  if (!active) return d;
+  const rawCeiling = Number(active.salaryCeiling ?? active.ceiling ?? 0);
+  const brackets = active.irppBrackets && active.irppBrackets.length > 0
+    ? active.irppBrackets.map((b) => ({ from: Number(b.from), to: b.to == null ? null : Number(b.to), rate: Number(b.rate) }))
+    : d.brackets;
+  return {
+    cnssRate: Number.isFinite(Number(active.employeeRate)) ? Number(active.employeeRate) : d.cnssRate,
+    cssRate: Number.isFinite(Number(active.cssRate)) ? Number(active.cssRate) : d.cssRate,
+    salaryCeiling: Number.isFinite(rawCeiling) && rawCeiling > 0 ? rawCeiling : 0,
+    abattement: {
+      headOfFamily: Number.isFinite(Number(active.abattementHeadOfFamily))
+        ? Number(active.abattementHeadOfFamily) : d.abattement.headOfFamily,
+      perChild: Number.isFinite(Number(active.abattementPerChild))
+        ? Number(active.abattementPerChild) : d.abattement.perChild,
+    },
+    brackets,
+  };
+}
+
+/**
  * Pure calculation engine (no dependencies).
  * Notes:
  * - Uses progressive taxation (per bracket portion).
@@ -42,10 +90,14 @@ export function calculateTunisianNetSalary(
   const childrenCount = clampNonNegative(input.childrenCount);
   const isHeadOfFamily = Boolean(input.isHeadOfFamily);
 
-  // Step 1 — CNSS
-  const cnss = grossSalary * rates.cnssRate;
+  // Step 1 — CNSS (cap the base by the configured ceiling, matching the
+  // backend rule in HrService.RunPayrollAsync / GetCnssDeclarationAsync:
+  // `capped = SalaryCeiling > 0 ? min(subject, SalaryCeiling) : subject`).
+  const ceiling = clampNonNegative(rates.salaryCeiling ?? 0);
+  const cnssBase = ceiling > 0 ? Math.min(grossSalary, ceiling) : grossSalary;
+  const cnss = cnssBase * rates.cnssRate;
 
-  // Step 2 — Taxable Gross
+  // Step 2 — Taxable Gross (uses TRUE gross minus employee CNSS, per backend)
   const taxableGross = grossSalary - cnss;
 
   // Step 3 — Abattement

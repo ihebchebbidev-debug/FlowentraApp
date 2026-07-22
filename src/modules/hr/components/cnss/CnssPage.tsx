@@ -15,6 +15,8 @@ import { formatTnd } from '../../utils/money';
 import { useToast } from '@/hooks/use-toast';
 import dayjs from 'dayjs';
 import { z } from 'zod';
+import { HrPermissionButton } from '../common/HrPermissionButton';
+import { useHrPermissionGuard } from '../../hooks/useHrPermissionGuard';
 
 const cnssRateSchema = z.object({
   employeeRatePct: z.coerce.number({ invalid_type_error: 'Employee rate is required' })
@@ -31,6 +33,7 @@ type CnssRateErrors = Partial<Record<'employeeRatePct' | 'employerRatePct' | 'ce
 export function CnssPage() {
   const { t } = useTranslation('hr');
   const { toast } = useToast();
+  const guardHr = useHrPermissionGuard();
   const { employeesQuery } = useEmployees();
   const { ratesQuery, activeRateQuery, upsertRate } = useCnssRates();
 
@@ -82,6 +85,7 @@ export function CnssPage() {
   }, [employeesQuery.data, employeeRate, employerRate, ceiling]);
 
   const saveRate = async () => {
+    if (!guardHr('update')) return;
     const parsed = cnssRateSchema.safeParse({
       employeeRatePct: employeeRate,
       employerRatePct: employerRate,
@@ -215,9 +219,9 @@ export function CnssPage() {
               </div>
             </div>
             <div className="flex justify-end mt-3">
-              <Button onClick={saveRate} disabled={upsertRate.isPending} className="gap-2">
+              <HrPermissionButton action="update" onClick={saveRate} disabled={upsertRate.isPending} className="gap-2">
                 <Save className="h-4 w-4" /> {t('cnssPage.saveRate')}
-              </Button>
+              </HrPermissionButton>
             </div>
 
             {(ratesQuery.data ?? []).length > 0 && (

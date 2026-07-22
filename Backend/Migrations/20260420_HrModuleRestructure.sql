@@ -1,7 +1,10 @@
 -- ============================================================================
 -- HR Module restructure migration (Tunisia-compliant)
 -- ----------------------------------------------------------------------------
--- 1. Drops attendance tables (no longer in scope per client spec)
+-- 1. Drops the dead `hr_attendance_records` relic (legacy Neon baseline table,
+--    never mapped by the EF model). Attendance itself IS in scope and is
+--    reconciled to the final `hr_attendance` / `hr_attendance_settings`
+--    schema by 20260722_HR_Attendance_Consolidate.sql.
 -- 2. Adds: hr_bonus_costs, hr_audit_logs, hr_cnss_rates, hr_public_holidays,
 --          hr_employee_documents, hr_salary_history
 -- All new tables include TenantId NOT NULL DEFAULT 0 (multi-tenant pattern)
@@ -9,9 +12,10 @@
 
 BEGIN;
 
--- ---- 1. Drop attendance (out of scope) ----
+-- ---- 1. Drop dead legacy attendance table (records; never used by code) ----
 DROP TABLE IF EXISTS hr_attendance_records CASCADE;
-DROP TABLE IF EXISTS hr_attendance_settings CASCADE;
+-- NOTE: hr_attendance_settings is intentionally NOT dropped here. Attendance
+-- is in scope; the settings table is reconciled by the consolidation migration.
 
 -- ---- 2. hr_bonus_costs ----
 CREATE TABLE IF NOT EXISTS hr_bonus_costs (

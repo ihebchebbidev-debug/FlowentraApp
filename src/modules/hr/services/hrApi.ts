@@ -1,7 +1,6 @@
 import axiosInstance from '@/services/api/axiosInstance';
 import { usersApi } from '@/services/api/usersApi';
 import type { User } from '@/types/users';
-import { getCurrentTenant } from '@/utils/tenant';
 import type {
   AuditLog,
   AttendanceImportResult,
@@ -169,139 +168,58 @@ export const hrApi = {
 
   // ---- Departments ----
   async getDepartments(): Promise<Department[]> {
-    try {
-      const res = await axiosInstance.get('/api/hr/departments');
-      return unwrapData(res);
-    } catch {
-      return loadDepartmentsFromStorage();
-    }
+    const res = await axiosInstance.get('/api/hr/departments');
+    return unwrapData(res);
   },
 
   async createDepartment(payload: Partial<Department>): Promise<Department> {
-    try {
-      const res = await axiosInstance.post('/api/hr/departments', payload);
-      return unwrapData(res);
-    } catch {
-      const list = loadDepartmentsFromStorage();
-      const id = list.length > 0 ? Math.max(...list.map(d => d.id)) + 1 : 1;
-      const newDept: Department = { id, name: payload.name ?? '', ...payload };
-      saveDepartmentsToStorage([...list, newDept]);
-      return newDept;
-    }
+    const res = await axiosInstance.post('/api/hr/departments', payload);
+    return unwrapData(res);
   },
 
   async updateDepartment(id: number, payload: Partial<Department>): Promise<Department> {
-    try {
-      const res = await axiosInstance.put(`/api/hr/departments/${id}`, payload);
-      return unwrapData(res);
-    } catch {
-      const list = loadDepartmentsFromStorage();
-      const idx = list.findIndex(d => d.id === id);
-      if (idx < 0) throw new Error('Department not found');
-      const updated = { ...list[idx], ...payload };
-      list[idx] = updated;
-      saveDepartmentsToStorage(list);
-      return updated;
-    }
+    const res = await axiosInstance.put(`/api/hr/departments/${id}`, payload);
+    return unwrapData(res);
   },
 
   async deleteDepartment(id: number): Promise<void> {
-    try {
-      await axiosInstance.delete(`/api/hr/departments/${id}`);
-    } catch {
-      const list = loadDepartmentsFromStorage().filter(d => d.id !== id);
-      saveDepartmentsToStorage(list);
-    }
+    await axiosInstance.delete(`/api/hr/departments/${id}`);
   },
 
   // ---- Bonuses & Costs ----
   async getBonuses(params?: { userId?: number; year?: number; month?: number; kind?: string }): Promise<BonusCost[]> {
-    try {
-      const qs = new URLSearchParams();
-      if (params?.userId) qs.set('userId', String(params.userId));
-      if (params?.year) qs.set('year', String(params.year));
-      if (params?.month) qs.set('month', String(params.month));
-      if (params?.kind) qs.set('kind', params.kind);
-      const res = await axiosInstance.get(`/api/hr/bonuses${qs.toString() ? `?${qs}` : ''}`);
-      return unwrapData(res);
-    } catch {
-      return loadFromStorage<BonusCost>('hr_bonuses_v1').filter(b => {
-        if (params?.userId && b.userId !== params.userId) return false;
-        if (params?.year && b.year !== params.year) return false;
-        if (params?.month && b.month !== params.month) return false;
-        if (params?.kind && b.kind !== params.kind) return false;
-        return true;
-      });
-    }
+    const qs = new URLSearchParams();
+    if (params?.userId) qs.set('userId', String(params.userId));
+    if (params?.year) qs.set('year', String(params.year));
+    if (params?.month) qs.set('month', String(params.month));
+    if (params?.kind) qs.set('kind', params.kind);
+    const res = await axiosInstance.get(`/api/hr/bonuses${qs.toString() ? `?${qs}` : ''}`);
+    return unwrapData(res);
   },
 
   async createBonus(payload: Partial<BonusCost>): Promise<BonusCost> {
-    try {
-      const res = await axiosInstance.post('/api/hr/bonuses', payload);
-      return unwrapData(res);
-    } catch {
-      const list = loadFromStorage<BonusCost>('hr_bonuses_v1');
-      const id = list.length ? Math.max(...list.map(b => b.id)) + 1 : 1;
-      const created: BonusCost = {
-        id,
-        userId: payload.userId ?? 0,
-        kind: payload.kind ?? 'bonus',
-        category: payload.category,
-        label: payload.label ?? '',
-        amount: Number(payload.amount ?? 0),
-        frequency: payload.frequency ?? 'one_off',
-        month: Number(payload.month ?? new Date().getMonth() + 1),
-        year: Number(payload.year ?? new Date().getFullYear()),
-        affectsPayroll: payload.affectsPayroll ?? true,
-        subjectToCnss: payload.subjectToCnss ?? false,
-        notes: payload.notes,
-        createdAt: new Date().toISOString(),
-      };
-      saveToStorage('hr_bonuses_v1', [created, ...list]);
-      return created;
-    }
+    const res = await axiosInstance.post('/api/hr/bonuses', payload);
+    return unwrapData(res);
   },
 
   async updateBonus(id: number, payload: Partial<BonusCost>): Promise<BonusCost> {
-    try {
-      const res = await axiosInstance.put(`/api/hr/bonuses/${id}`, payload);
-      return unwrapData(res);
-    } catch {
-      const list = loadFromStorage<BonusCost>('hr_bonuses_v1');
-      const idx = list.findIndex(b => b.id === id);
-      if (idx < 0) throw new Error('Bonus not found');
-      list[idx] = { ...list[idx], ...payload, id };
-      saveToStorage('hr_bonuses_v1', list);
-      return list[idx];
-    }
+    const res = await axiosInstance.put(`/api/hr/bonuses/${id}`, payload);
+    return unwrapData(res);
   },
 
   async deleteBonus(id: number): Promise<void> {
-    try {
-      await axiosInstance.delete(`/api/hr/bonuses/${id}`);
-    } catch {
-      saveToStorage('hr_bonuses_v1', loadFromStorage<BonusCost>('hr_bonuses_v1').filter(b => b.id !== id));
-    }
+    await axiosInstance.delete(`/api/hr/bonuses/${id}`);
   },
 
   // ---- CNSS ----
   async getCnssRates(): Promise<CnssRate[]> {
-    try {
-      const res = await axiosInstance.get('/api/hr/cnss/rates');
-      return unwrapData(res);
-    } catch {
-      return loadFromStorage<CnssRate>('hr_cnss_rates_v1');
-    }
+    const res = await axiosInstance.get('/api/hr/cnss/rates');
+    return unwrapData(res);
   },
 
   async getActiveCnssRate(): Promise<CnssRate | null> {
-    try {
-      const res = await axiosInstance.get('/api/hr/cnss/rates/active');
-      return unwrapData(res);
-    } catch {
-      const list = loadFromStorage<CnssRate>('hr_cnss_rates_v1');
-      return list.find(r => r.isActive) ?? null;
-    }
+    const res = await axiosInstance.get('/api/hr/cnss/rates/active');
+    return unwrapData(res);
   },
 
   async upsertCnssRate(payload: Partial<CnssRate>): Promise<CnssRate> {
@@ -325,33 +243,8 @@ export const hrApi = {
       isActive: payload.isActive ?? true,
       notes: payload.notes,
     };
-    try {
-      const res = await axiosInstance.put('/api/hr/cnss/rates', fullBody);
-      return unwrapData(res);
-    } catch {
-      const list = loadFromStorage<CnssRate>('hr_cnss_rates_v1');
-      const id = payload.id ?? (list.length ? Math.max(...list.map(r => r.id)) + 1 : 1);
-      const next: CnssRate = {
-        id,
-        effectiveFrom: fullBody.effectiveFrom,
-        employeeRate: fullBody.employeeRate,
-        employerRate: fullBody.employerRate,
-        cssRate: fullBody.cssRate,
-        salaryCeiling: fullBody.salaryCeiling,
-        abattementHeadOfFamily: fullBody.abattementHeadOfFamily,
-        abattementPerChild: fullBody.abattementPerChild,
-        irppBrackets: fullBody.irppBrackets,
-        isActive: fullBody.isActive,
-        notes: fullBody.notes,
-        ceiling: fullBody.salaryCeiling || null,
-      };
-      const updated = next.isActive ? list.map(r => ({ ...r, isActive: false })) : [...list];
-      const idx = updated.findIndex(r => r.id === id);
-      if (idx >= 0) updated[idx] = next;
-      else updated.push(next);
-      saveToStorage('hr_cnss_rates_v1', updated);
-      return next;
-    }
+    const res = await axiosInstance.put('/api/hr/cnss/rates', fullBody);
+    return unwrapData(res);
   },
 
   async getCnssDeclaration(year: number, month: number): Promise<any> {
@@ -361,98 +254,38 @@ export const hrApi = {
 
   // ---- Public Holidays ----
   async getPublicHolidays(year?: number): Promise<PublicHoliday[]> {
-    try {
-      const qs = year ? `?year=${year}` : '';
-      const res = await axiosInstance.get(`/api/hr/holidays${qs}`);
-      return unwrapData(res);
-    } catch {
-      return loadFromStorage<PublicHoliday>('hr_public_holidays_v1');
-    }
+    const qs = year ? `?year=${year}` : '';
+    const res = await axiosInstance.get(`/api/hr/holidays${qs}`);
+    return unwrapData(res);
   },
 
   async createPublicHoliday(payload: Partial<PublicHoliday>): Promise<PublicHoliday> {
-    try {
-      const res = await axiosInstance.post('/api/hr/holidays', payload);
-      return unwrapData(res);
-    } catch {
-      const list = loadFromStorage<PublicHoliday>('hr_public_holidays_v1');
-      const id = list.length ? Math.max(...list.map(h => h.id)) + 1 : 1;
-      const created: PublicHoliday = {
-        id,
-        date: payload.date ?? '',
-        name: payload.name ?? '',
-        isRecurring: payload.isRecurring ?? false,
-      };
-      saveToStorage('hr_public_holidays_v1', [...list, created]);
-      return created;
-    }
+    const res = await axiosInstance.post('/api/hr/holidays', payload);
+    return unwrapData(res);
   },
 
   async updatePublicHoliday(id: number, payload: Partial<PublicHoliday>): Promise<PublicHoliday> {
-    try {
-      const res = await axiosInstance.put(`/api/hr/holidays/${id}`, payload);
-      return unwrapData(res);
-    } catch {
-      const list = loadFromStorage<PublicHoliday>('hr_public_holidays_v1');
-      const idx = list.findIndex(h => h.id === id);
-      if (idx < 0) throw new Error('Holiday not found');
-      list[idx] = { ...list[idx], ...payload, id };
-      saveToStorage('hr_public_holidays_v1', list);
-      return list[idx];
-    }
+    const res = await axiosInstance.put(`/api/hr/holidays/${id}`, payload);
+    return unwrapData(res);
   },
 
   async deletePublicHoliday(id: number): Promise<void> {
-    try {
-      await axiosInstance.delete(`/api/hr/holidays/${id}`);
-    } catch {
-      saveToStorage('hr_public_holidays_v1', loadFromStorage<PublicHoliday>('hr_public_holidays_v1').filter(h => h.id !== id));
-    }
+    await axiosInstance.delete(`/api/hr/holidays/${id}`);
   },
 
   // ---- Documents ----
   async getEmployeeDocuments(userId: number): Promise<EmployeeDocument[]> {
-    try {
-      const res = await axiosInstance.get(`/api/hr/documents/${userId}`);
-      return unwrapData(res);
-    } catch {
-      return loadFromStorage<EmployeeDocument>(`hr_docs_${userId}`);
-    }
+    const res = await axiosInstance.get(`/api/hr/documents/${userId}`);
+    return unwrapData(res);
   },
 
   async createEmployeeDocument(payload: Partial<EmployeeDocument>): Promise<EmployeeDocument> {
-    try {
-      const res = await axiosInstance.post('/api/hr/documents', payload);
-      return unwrapData(res);
-    } catch {
-      const userId = Number(payload.userId);
-      const list = loadFromStorage<EmployeeDocument>(`hr_docs_${userId}`);
-      const id = list.length ? Math.max(...list.map(d => d.id)) + 1 : 1;
-      const created: EmployeeDocument = {
-        id,
-        userId,
-        docType: payload.docType ?? 'other',
-        title: payload.title ?? '',
-        fileUrl: payload.fileUrl ?? '',
-        fileName: payload.fileName,
-        mimeType: payload.mimeType,
-        fileSize: payload.fileSize,
-        issuedDate: payload.issuedDate,
-        expiresAt: payload.expiresAt,
-        createdAt: new Date().toISOString(),
-      };
-      saveToStorage(`hr_docs_${userId}`, [created, ...list]);
-      return created;
-    }
+    const res = await axiosInstance.post('/api/hr/documents', payload);
+    return unwrapData(res);
   },
 
-  async deleteEmployeeDocument(id: number, userId?: number): Promise<void> {
-    try {
-      await axiosInstance.delete(`/api/hr/documents/${id}`);
-    } catch {
-      if (!userId) return;
-      saveToStorage(`hr_docs_${userId}`, loadFromStorage<EmployeeDocument>(`hr_docs_${userId}`).filter(d => d.id !== id));
-    }
+  async deleteEmployeeDocument(id: number, _userId?: number): Promise<void> {
+    await axiosInstance.delete(`/api/hr/documents/${id}`);
   },
 
   // ---- Audit log ----
@@ -676,49 +509,3 @@ export const hrApi = {
     await axiosInstance.delete(`/api/hr/recruitment/notes/${id}`);
   },
 };
-
-// ---- LocalStorage helpers (offline fallback) ----
-
-const DEPARTMENTS_STORAGE_KEY = 'hr_departments_v1';
-
-/**
- * Tenant-scope a localStorage key so MainAdminUser switching tenants
- * never sees another company's HR fallback data.
- */
-function tenantKey(key: string): string {
-  const slug = (getCurrentTenant() || 'default').toString();
-  return `t:${slug}:${key}`;
-}
-
-function loadDepartmentsFromStorage(): Department[] {
-  return loadFromStorage<Department>(DEPARTMENTS_STORAGE_KEY);
-}
-
-function saveDepartmentsToStorage(list: Department[]) {
-  saveToStorage(DEPARTMENTS_STORAGE_KEY, list);
-}
-
-function loadFromStorage<T>(key: string): T[] {
-  try {
-    const raw = localStorage.getItem(tenantKey(key));
-    // Migrate legacy un-scoped data on first read (one-shot)
-    const legacy = raw ? null : localStorage.getItem(key);
-    const source = raw ?? legacy;
-    if (!source) return [];
-    if (!raw && legacy) {
-      try { localStorage.setItem(tenantKey(key), legacy); localStorage.removeItem(key); } catch { /* noop */ }
-    }
-    const parsed = JSON.parse(source);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveToStorage<T>(key: string, list: T[]) {
-  try {
-    localStorage.setItem(tenantKey(key), JSON.stringify(list));
-  } catch {
-    // ignore quota errors
-  }
-}

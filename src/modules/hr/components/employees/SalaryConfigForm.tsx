@@ -7,6 +7,8 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import type { EmployeeSalaryConfig, SalaryInput } from '../../types/hr.types';
 import { usePayrollCalculation } from '../../hooks/usePayrollCalculation';
+import { cnssRateToTaxEngineRates } from '../../utils/tunisianTaxEngine';
+import { useCnssRates } from '../../hooks/useCnss';
 import { formatTnd } from '../../utils/money';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -71,7 +73,12 @@ export function SalaryConfigForm(props: {
     childrenCount: Number(watch.childrenCount || 0),
     customDeductions: watch.customDeductions,
   };
-  const breakdown = usePayrollCalculation(salaryInput);
+  // Preview uses the ACTIVE backend CNSS rate (employee rate, CSS rate,
+  // salary ceiling, abattements, IRPP brackets) so the on-screen numbers
+  // match what backend payroll will produce for this employee.
+  const { activeRateQuery } = useCnssRates();
+  const engineRates = cnssRateToTaxEngineRates(activeRateQuery.data as any);
+  const breakdown = usePayrollCalculation(salaryInput, engineRates);
 
   return (
     <Card className="shadow-card border-0 bg-card">
