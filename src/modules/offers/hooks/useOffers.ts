@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Offer, OfferFilters, OfferStats } from '../types';
 import { OffersService } from '../services/offers.service';
+import { OfferConversionError } from '@/services/api/offersApi';
+
 
 export function useOffers() {
   const { t } = useTranslation("offers");
@@ -116,10 +118,21 @@ export function useOffers() {
       fetchOffers();
       return result;
     } catch (error) {
-      toast.error('Failed to convert offer');
+      if (error instanceof OfferConversionError) {
+        if (error.code === 'not_found') {
+          toast.error(error.message);
+          // Refresh so the stale/deleted offer disappears from the list.
+          fetchOffers();
+        } else {
+          toast.error(error.message);
+        }
+      } else {
+        toast.error(t('conversion.errors.generic', { defaultValue: 'Failed to convert offer' }));
+      }
       throw error;
     }
   };
+
 
   useEffect(() => {
     fetchOffers();

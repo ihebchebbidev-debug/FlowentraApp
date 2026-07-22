@@ -11,7 +11,7 @@ import i18n from '@/lib/i18n';
  * inspect `.code` / `.targetId`.
  */
 export class OfferConversionError extends Error {
-  code: 'already_converted_to_sale' | 'already_accepted' | 'generic';
+  code: 'already_converted_to_sale' | 'already_accepted' | 'not_found' | 'generic';
   targetId?: number;
   constructor(message: string, code: OfferConversionError['code'], targetId?: number) {
     super(message);
@@ -41,8 +41,18 @@ function mapOfferConversionError(raw: string): OfferConversionError | null {
       'already_accepted',
     );
   }
+  // Backend throws KeyNotFoundException("Offer with ID {id} not found") when
+  // the offer is missing OR soft-deleted. Surface a clear, user-facing message
+  // instead of the raw 404 error string.
+  if (/Offer with ID \d+ not found/i.test(raw) || /\[HTTP 404\]/i.test(raw)) {
+    return new OfferConversionError(
+      i18n.t('offers:conversion.errors.notFound'),
+      'not_found',
+    );
+  }
   return null;
 }
+
 
 // Types
 export interface OfferItem {

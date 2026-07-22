@@ -406,6 +406,10 @@ namespace MyApi.Modules.Articles.Services
 
                 try
                 {
+                    // ReferenceId is composite (saleId:itemId) so each SaleItem
+                    // line gets its own idempotency key. Keying on saleId alone
+                    // caused sales with two lines for the same article to be
+                    // silently deduplicated (only the first line deducted).
                     var transaction = await CreateTransactionAsync(new CreateStockTransactionDto
                     {
                         ArticleId = item.ArticleId.Value,
@@ -413,7 +417,7 @@ namespace MyApi.Modules.Articles.Services
                         Quantity = item.Quantity,
                         Reason = $"Stock deducted for closed sale",
                         ReferenceType = "sale",
-                        ReferenceId = saleId.ToString(),
+                        ReferenceId = $"{saleId}:{item.Id}",
                         ReferenceNumber = sale.SaleNumber,
                         Notes = $"Item: {item.ItemName}, Qty: {item.Quantity}"
                     }, userId, userName, ipAddress);
@@ -476,6 +480,8 @@ namespace MyApi.Modules.Articles.Services
 
                 try
                 {
+                    // Composite ReferenceId — mirrors DeductStockFromSaleAsync so
+                    // per-line returns remain distinct under the idempotency guard.
                     var transaction = await CreateTransactionAsync(new CreateStockTransactionDto
                     {
                         ArticleId = item.ArticleId.Value,
@@ -483,7 +489,7 @@ namespace MyApi.Modules.Articles.Services
                         Quantity = item.Quantity,
                         Reason = $"Stock restored from cancelled/reopened sale",
                         ReferenceType = "sale",
-                        ReferenceId = saleId.ToString(),
+                        ReferenceId = $"{saleId}:{item.Id}",
                         ReferenceNumber = sale.SaleNumber,
                         Notes = $"Item: {item.ItemName}, Qty: {item.Quantity}"
                     }, userId, userName, ipAddress);

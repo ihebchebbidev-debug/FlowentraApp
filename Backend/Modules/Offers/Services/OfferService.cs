@@ -620,9 +620,10 @@ namespace MyApi.Modules.Offers.Services
         {
             var offer = await _context.Offers
                 .Include(o => o.Items)
-                .FirstOrDefaultAsync(o => o.Id == id);
+                .FirstOrDefaultAsync(o => o.Id == id && !o.IsDeleted);
             if (offer == null)
                 throw new KeyNotFoundException($"Offer with ID {id} not found");
+
 
             // Phase A (A3): duplicate-accept guard. Reject when:
             //   * the offer was already converted to a sale, OR

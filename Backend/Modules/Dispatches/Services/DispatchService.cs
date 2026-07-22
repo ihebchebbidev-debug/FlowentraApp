@@ -1119,11 +1119,16 @@ namespace MyApi.Modules.Dispatches.Services
                 if (serviceOrder == null || string.IsNullOrEmpty(serviceOrder.SaleId)) return false;
 
                 var saleRefId = serviceOrder.SaleId;
+                // Sale deductions store ReferenceId as "{saleId}:{itemId}" (per-line
+                // idempotency). Legacy rows may still be the bare saleId, so accept
+                // either shape. Prefix match is safe because saleId is numeric and
+                // the separator ':' cannot appear in a bare id.
+                var prefix = saleRefId + ":";
                 return await _db.StockTransactions.AnyAsync(t =>
                     t.ArticleId == articleId
                     && t.TransactionType == "sale_deduction"
                     && t.ReferenceType == "sale"
-                    && t.ReferenceId == saleRefId);
+                    && (t.ReferenceId == saleRefId || t.ReferenceId!.StartsWith(prefix)));
             }
             catch (Exception ex)
             {

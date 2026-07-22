@@ -197,7 +197,12 @@ namespace MyApi.Modules.Articles.Services
             if (dto.Unit != null) article.Unit = dto.Unit;
             if (dto.PurchasePrice.HasValue) article.PurchasePrice = dto.PurchasePrice.Value;
             if (dto.SalesPrice.HasValue) article.SalesPrice = dto.SalesPrice.Value;
-            if (dto.StockQuantity.HasValue) article.StockQuantity = dto.StockQuantity.Value;
+            // NOTE: StockQuantity is intentionally NOT writable via the generic article
+            // PUT endpoint. All stock changes must go through IStockTransactionService so
+            // they take the FOR UPDATE row lock, produce a StockTransaction audit row,
+            // and enforce the negative-stock guard. Allowing a plain UPDATE here caused
+            // lost updates against concurrent stock movements with no forensic trail.
+            // Callers should POST to /api/stock-transactions (add/remove/adjustment).
             if (dto.MinStockLevel.HasValue) article.MinStockLevel = dto.MinStockLevel;
             if (dto.LocationId.HasValue) article.LocationId = dto.LocationId;
             if (dto.GroupId.HasValue) article.GroupId = dto.GroupId;

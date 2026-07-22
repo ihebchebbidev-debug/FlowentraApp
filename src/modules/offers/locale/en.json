@@ -96,6 +96,7 @@
     "errors": {
       "alreadyConvertedToSale": "This offer has already been converted to sale #{{id}}.",
       "alreadyAccepted": "This offer has already been accepted.",
+      "notFound": "This offer no longer exists or has been deleted. Refresh the list to see the latest offers.",
       "generic": "Failed to convert offer"
     }
   },

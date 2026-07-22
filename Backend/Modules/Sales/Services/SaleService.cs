@@ -507,29 +507,52 @@ namespace MyApi.Modules.Sales.Services
             // Get user name for stock transaction logging
             string userName = await ResolveUserNameAsync(userId);
 
-            // Deduct stock from materials when sale is closed
+            // Deduct stock from materials when sale is closed.
+            // If deduction reports failures (e.g., insufficient stock) or throws,
+            // revert the close so the sale state and inventory stay consistent —
+            // previously we swallowed errors and the sale closed "successfully"
+            // with wrong inventory numbers.
             if (isClosing && _stockTransactionService != null)
             {
+                async Task RevertCloseAsync()
+                {
+                    sale.Status = previousStatus;
+                    sale.ActualCloseDate = null;
+                    sale.UpdatedAt = DateTime.UtcNow;
+                    try { await _context.SaveChangesAsync(); }
+                    catch (Exception revertEx)
+                    {
+                        _logger.LogError(revertEx, "Failed to revert sale {SaleId} close after stock deduction failure", id);
+                    }
+                }
+
                 try
                 {
                     _logger.LogInformation("Sale {SaleId} closed, deducting stock for material items", id);
                     var result = await _stockTransactionService.DeductStockFromSaleAsync(id, userId, userName);
-                    
+
                     if (!result.Success)
                     {
-                        _logger.LogWarning("Some stock deductions failed for sale {SaleId}: {Errors}", 
-                            id, string.Join(", ", result.Errors));
+                        var errors = string.Join("; ", result.Errors);
+                        _logger.LogWarning("Stock deduction failed for sale {SaleId}: {Errors}", id, errors);
+                        await RevertCloseAsync();
+                        throw new InvalidOperationException(
+                            $"Cannot close sale: stock deduction failed. {errors}");
                     }
-                    else
-                    {
-                        _logger.LogInformation("Successfully deducted stock for {Count} items from sale {SaleId}", 
-                            result.ItemsDeducted, id);
-                    }
+
+                    _logger.LogInformation("Successfully deducted stock for {Count} items from sale {SaleId}",
+                        result.ItemsDeducted, id);
+                }
+                catch (InvalidOperationException)
+                {
+                    throw;
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error deducting stock for sale {SaleId}", id);
-                    // Don't fail the sale update, just log the error
+                    await RevertCloseAsync();
+                    throw new InvalidOperationException(
+                        $"Cannot close sale: stock deduction error — {ex.Message}", ex);
                 }
             }
 

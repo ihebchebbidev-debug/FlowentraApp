@@ -96,6 +96,7 @@
     "errors": {
       "alreadyConvertedToSale": "Cette offre a déjà été convertie en vente n°{{id}}.",
       "alreadyAccepted": "Cette offre a déjà été acceptée.",
+      "notFound": "Cette offre n'existe plus ou a été supprimée. Actualisez la liste pour voir les offres à jour.",
       "generic": "Échec de la conversion de l'offre"
     }
   },

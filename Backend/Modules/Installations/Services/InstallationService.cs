@@ -317,7 +317,11 @@ namespace MyApi.Modules.Installations.Services
 
         public async Task<MaintenanceHistoryDto> AddMaintenanceHistoryAsync(int installationId, CreateMaintenanceHistoryDto historyDto, string userId)
         {
-            var installation = await _context.Installations.FindAsync(installationId);
+            // Filter soft-deleted installations to match every other read path in
+            // this service (Get/Update/Delete) — prevents orphan maintenance rows
+            // being attached to installations users can no longer see.
+            var installation = await _context.Installations
+                .FirstOrDefaultAsync(i => i.Id == installationId && !i.IsDeleted);
             if (installation == null)
                 throw new KeyNotFoundException($"Installation with ID {installationId} not found");
 
