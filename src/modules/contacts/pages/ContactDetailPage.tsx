@@ -257,7 +257,7 @@ export default function ContactDetailPage() {
 
       {/* Main Content with Tabs */}
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6 bg-white p-4 rounded-md">
           <div className="w-full">
             {isMobile ? (
               /* Mobile: styled dropdown select */

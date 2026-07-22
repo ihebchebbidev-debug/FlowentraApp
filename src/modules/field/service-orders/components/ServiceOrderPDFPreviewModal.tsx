@@ -18,6 +18,8 @@ import { PDFMobileActions } from './PDF/PDFMobileActions';
 import { usePDFActions } from '../hooks/usePDFActions';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useCompanyLogo } from '@/hooks/useCompanyLogo';
+import { buildPdfFilename } from '@/shared/pdf/filename';
+import { toast } from 'sonner';
 
 interface ServiceOrderPDFPreviewModalProps {
   isOpen: boolean;
@@ -115,22 +117,31 @@ export function ServiceOrderPDFPreviewModal({
 
     const fetchInstallations = async () => {
       const data: Record<string, InstallationDetails> = {};
+      const failures: string[] = [];
       await Promise.all(installationIds.map(async (id) => {
         try {
           const inst = await installationsApi.getById(id);
-          data[id] = { 
-            name: inst.name, 
-            model: inst.model, 
-            serialNumber: inst.serialNumber, 
-            matricule: inst.matricule, 
+          data[id] = {
+            name: inst.name,
+            model: inst.model,
+            serialNumber: inst.serialNumber,
+            matricule: inst.matricule,
             manufacturer: inst.manufacturer,
             siteAddress: inst.siteAddress
           };
         } catch (error) {
-          console.warn(`[ServiceOrderPDFPreview] Failed to fetch installation ${id}:`, error);
+          failures.push(id);
+          console.error(`[ServiceOrderPDFPreview] Failed to fetch installation ${id}:`, error);
         }
       }));
       setInstallationsData(data);
+      if (failures.length > 0) {
+        toast.error(
+          failures.length === 1
+            ? `Could not load installation #${failures[0]} — PDF may be incomplete.`
+            : `Could not load ${failures.length} installations — PDF may be incomplete.`
+        );
+      }
     };
     fetchInstallations();
   }, [isOpen, serviceOrder]);
@@ -307,7 +318,7 @@ export function ServiceOrderPDFPreviewModal({
           open={isSendEmailOpen}
           onOpenChange={setIsSendEmailOpen}
           pdfDocument={pdfDocElement}
-          fileName={`service-report-${serviceOrder.orderNumber}.pdf`}
+          fileName={buildPdfFilename({ prefix: 'service-report', preferredId: serviceOrder.orderNumber, fallbackId: serviceOrder.id })}
           reportType="offer"
           reportNumber={serviceOrder.orderNumber || serviceOrder.id}
           reportTitle={serviceOrder.customer?.company || 'Service Order'}
@@ -321,7 +332,7 @@ export function ServiceOrderPDFPreviewModal({
           onClose={() => setSharePlatform(null)}
           platform={sharePlatform}
           pdfDocument={pdfDocElement}
-          fileName={`service-report-${serviceOrder.orderNumber}.pdf`}
+          fileName={buildPdfFilename({ prefix: 'service-report', preferredId: serviceOrder.orderNumber, fallbackId: serviceOrder.id })}
           shareText={`Service Report #${serviceOrder.orderNumber} - ${serviceOrder.customer?.company || 'Service Order'}`}
         />
       </DialogContent>

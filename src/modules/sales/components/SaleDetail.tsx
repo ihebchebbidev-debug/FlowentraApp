@@ -565,7 +565,7 @@ export function SaleDetail() {
       )}
 
       {/* Tabs Content */}
-      <div className="px-4 py-6">
+      <div className="px-4 py-6 bg-white">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <div className="w-full mb-6">
             {/* Mobile: Dropdown Select */}

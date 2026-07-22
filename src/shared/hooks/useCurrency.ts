@@ -32,6 +32,9 @@ export function useCurrency() {
 
   const format = (amount?: number) => {
     if (amount === undefined || amount === null) return '';
+    // Guard NaN / Infinity — otherwise Intl.NumberFormat would render "NaN"
+    // straight into PDFs and totals.
+    if (typeof amount !== 'number' || !Number.isFinite(amount)) return '-';
     if (amount === 0) return '-';
     try {
       const formatted = new Intl.NumberFormat('en-US', {

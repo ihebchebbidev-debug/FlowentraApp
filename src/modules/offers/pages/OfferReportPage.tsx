@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { toast } from 'sonner';
 import { useParams } from 'react-router-dom';
 import { PDFViewer } from '@react-pdf/renderer';
 import { OfferPDFDocument, InstallationDetails } from '../components/OfferPDFDocument';
@@ -57,7 +58,8 @@ export default function OfferReportPage() {
                   siteAddress: inst.siteAddress 
                 };
               } catch (error) {
-                console.warn(`[OfferReportPage] Failed to fetch installation ${instId}:`, error);
+                console.error(`[OfferReportPage] Failed to fetch installation ${instId}:`, error);
+                toast.error(`Could not load installation #${instId} — PDF may be incomplete.`);
               }
             }));
             setInstallationsData(data);

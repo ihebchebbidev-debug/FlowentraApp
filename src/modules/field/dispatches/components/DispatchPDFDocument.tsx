@@ -1,6 +1,9 @@
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 import { InstallationDataTable } from '@/shared/components/PDFInstallationTable';
 
+import { registerUnicodeFonts, UNICODE_FONT_FAMILY } from '@/shared/pdf/fonts';
+
+registerUnicodeFonts();
 /**
  * Professional Dispatch Technical Report
  * ─ Specific to one dispatch: customer, dispatch details, assigned technicians,
@@ -15,7 +18,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
     paddingTop: 20,
     paddingBottom: 12,
-    fontFamily: 'Helvetica',
+    fontFamily: UNICODE_FONT_FAMILY,
     fontSize: 9,
   },
 

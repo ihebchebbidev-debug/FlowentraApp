@@ -261,7 +261,8 @@ export default function DispatchJobDetail() {
                     status: installationData.status
                   });
                 } catch (installError) {
-                  console.warn('Failed to fetch installation:', installError);
+                  console.error('Failed to fetch installation:', installError);
+                  toast.error('Could not load linked installation — some details may be missing.');
                 }
               }
             }
@@ -670,7 +671,7 @@ export default function DispatchJobDetail() {
       <div className="px-3 sm:px-4 py-4 sm:py-6 space-y-6">
 
         {/* Main Content Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6 bg-white p-4 rounded-md">
           {/* Mobile: select dropdown */}
           {(() => {
             const TABS = [

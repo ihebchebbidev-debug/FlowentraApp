@@ -195,7 +195,7 @@ export function DealDetail() {
         </div>
       </div>
 
-      <div className="px-4 py-6 space-y-6">
+      <div className="px-4 py-6 space-y-6 bg-white">
         {/* Converted banner */}
         {converted && (
           <Card className="border-green-200 bg-green-50 dark:bg-green-900/10">

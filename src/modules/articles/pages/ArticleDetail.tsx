@@ -234,7 +234,7 @@ const ArticleDetail = () => {
 
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col bg-white p-4 rounded-md">
           <div className="border-b border-border px-3 sm:px-6 py-2 sm:py-0">
             {isMobile ? (
               /* Mobile: styled dropdown select */

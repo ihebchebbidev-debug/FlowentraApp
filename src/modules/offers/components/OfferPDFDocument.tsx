@@ -4,6 +4,9 @@ import { getStatusTranslationKey } from '@/config/entity-statuses';
 import { calculateEntityTotal } from '@/lib/calculateTotal';
 import { InstallationDataTable } from '@/shared/components/PDFInstallationTable';
 
+import { registerUnicodeFonts, UNICODE_FONT_FAMILY } from '@/shared/pdf/fonts';
+
+registerUnicodeFonts();
 // Professional devis/facture — structured, bordered sections, clean typography
 const styles = StyleSheet.create({
   page: {
@@ -12,7 +15,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
     paddingTop: 20,
     paddingBottom: 12,
-    fontFamily: 'Helvetica',
+    fontFamily: UNICODE_FONT_FAMILY,
     fontSize: 9,
   },
 

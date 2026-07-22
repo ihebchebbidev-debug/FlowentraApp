@@ -1,13 +1,10 @@
 import { useState, useEffect, useRef, useCallback, ReactElement, useMemo } from 'react';
 import { pdf } from '@react-pdf/renderer';
-import * as pdfjsLib from 'pdfjs-dist';
+import { pdfjsLib } from '@/shared/pdf/worker';
 import { PDFDocument as PDFLibDocument } from 'pdf-lib';
 import { Button } from '@/components/ui/button';
 import { Download, Eraser, PenLine, X, Undo2, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
-
-// Set up PDF.js worker for v3.x using CDN (avoids Vite ESM import issues)
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 interface Stroke {
   points: Array<{ x: number; y: number }>;

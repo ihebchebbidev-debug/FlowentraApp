@@ -19,6 +19,8 @@ import { useTranslation } from 'react-i18next';
 import { PDFAnnotationViewer, AnnotationsMap } from '@/components/shared/PDFAnnotationViewer';
 import { useCompanyLogo } from '@/hooks/useCompanyLogo';
 import { PdfLabelOverrides, applyPdfLabelOverrides } from './PDF/pdfLabels';
+import { buildPdfFilename } from '@/shared/pdf/filename';
+import { toast } from 'sonner';
 
 interface OfferPDFPreviewModalProps {
   isOpen: boolean;
@@ -206,22 +208,31 @@ export function OfferPDFPreviewModal({
 
     const fetchInstallations = async () => {
       const data: Record<string, InstallationDetails> = {};
+      const failures: string[] = [];
       await Promise.all(installationIds.map(async (id) => {
         try {
           const inst = await installationsApi.getById(id);
-          data[id] = { 
-            name: inst.name, 
-            model: inst.model, 
-            serialNumber: inst.serialNumber, 
-            matricule: inst.matricule, 
+          data[id] = {
+            name: inst.name,
+            model: inst.model,
+            serialNumber: inst.serialNumber,
+            matricule: inst.matricule,
             manufacturer: inst.manufacturer,
-            siteAddress: inst.siteAddress 
+            siteAddress: inst.siteAddress
           };
         } catch (error) {
-          console.warn(`[OfferPDFPreview] Failed to fetch installation ${id}:`, error);
+          failures.push(id);
+          console.error(`[OfferPDFPreview] Failed to fetch installation ${id}:`, error);
         }
       }));
       setInstallationsData(data);
+      if (failures.length > 0) {
+        toast.error(
+          failures.length === 1
+            ? `Could not load installation #${failures[0]} — PDF may be incomplete.`
+            : `Could not load ${failures.length} installations — PDF may be incomplete.`
+        );
+      }
     };
     fetchInstallations();
   }, [isOpen, offer]);
@@ -337,7 +348,7 @@ export function OfferPDFPreviewModal({
             <PDFAnnotationViewer
               key={`sign-${pdfKey}`}
               document={pdfDocElement}
-              fileName={`${filePrefix}-${offer.offerNumber || offer.id}-signed.pdf`}
+              fileName={buildPdfFilename({ prefix: filePrefix, preferredId: offer.offerNumber, fallbackId: offer.id, suffix: 'signed' })}
               isSigningMode={isSigningMode}
               onSigningModeChange={setIsSigningMode}
               onAnnotationsChange={setHasAnnotations}
@@ -348,7 +359,7 @@ export function OfferPDFPreviewModal({
             <PDFAnnotationViewer
               key={`view-${pdfKey}`}
               document={pdfDocElement}
-              fileName={`${filePrefix}-${offer.offerNumber || offer.id}.pdf`}
+              fileName={buildPdfFilename({ prefix: filePrefix, preferredId: offer.offerNumber, fallbackId: offer.id })}
               isSigningMode={false}
               onSigningModeChange={setIsSigningMode}
               onAnnotationsChange={setHasAnnotations}
@@ -385,7 +396,7 @@ export function OfferPDFPreviewModal({
           open={isSendEmailOpen}
           onOpenChange={setIsSendEmailOpen}
           pdfDocument={pdfDocElement}
-          fileName={`${filePrefix}-${offer.offerNumber || offer.id}.pdf`}
+          fileName={buildPdfFilename({ prefix: filePrefix, preferredId: offer.offerNumber, fallbackId: offer.id })}
           reportType={reportType}
           reportNumber={offer.offerNumber || offer.id}
           reportTitle={offer.title || ''}
@@ -400,7 +411,7 @@ export function OfferPDFPreviewModal({
           onClose={() => setSharePlatform(null)}
           platform={sharePlatform}
           pdfDocument={pdfDocElement}
-          fileName={`${filePrefix}-${offer.offerNumber || offer.id}.pdf`}
+          fileName={buildPdfFilename({ prefix: filePrefix, preferredId: offer.offerNumber, fallbackId: offer.id })}
           shareText={`${offer.title || pdfTranslations.offer} - ${offer.offerNumber || offer.id} - ${formatCurrency(offer.total ?? offer.totalAmount ?? offer.amount ?? 0)}`}
         />
       </DialogContent>

@@ -8,14 +8,20 @@ type TabsVariant = "default" | "underline"
 
 const TabsVariantContext = React.createContext<TabsVariant>("default")
 
-const Tabs = TabsPrimitive.Root
+const Tabs = React.forwardRef<
+  React.ElementRef<typeof TabsPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Root>
+>(({ className, ...props }, ref) => (
+  <TabsPrimitive.Root ref={ref} className={cn("bg-white", className)} {...props} />
+))
+Tabs.displayName = TabsPrimitive.Root.displayName
 
 const tabsListVariants = cva("inline-flex items-center text-muted-foreground", {
   variants: {
     variant: {
-      default: "h-9 justify-center rounded-md bg-muted/60 p-1",
+      default: "h-9 justify-center rounded-md bg-white p-1",
       underline:
-        "w-full h-10 gap-1 justify-start border-b border-border bg-background p-0 overflow-x-auto no-scrollbar md:overflow-visible",
+        "w-full h-10 gap-1 justify-start border-b border-border bg-white p-0 overflow-x-auto no-scrollbar md:overflow-visible",
     },
   },
   defaultVariants: { variant: "default" },
@@ -50,9 +56,9 @@ const tabsTriggerVariants = cva(
     variants: {
       variant: {
         default:
-          "rounded-sm px-3 py-1.5 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm",
+          "rounded-sm px-3 py-1.5 data-[state=active]:bg-white data-[state=active]:text-foreground data-[state=active]:shadow-sm",
         underline:
-          "relative px-3 sm:px-4 h-10 -mb-px border-b-2 border-transparent bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40 data-[state=active]:text-primary data-[state=active]:font-semibold data-[state=active]:border-primary data-[state=active]:bg-background md:flex-1",
+          "relative px-3 sm:px-4 h-10 -mb-px border-b-2 border-transparent bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40 data-[state=active]:text-primary data-[state=active]:font-semibold data-[state=active]:border-primary data-[state=active]:bg-white md:flex-1",
       },
     },
     defaultVariants: { variant: "default" },
@@ -86,7 +92,7 @@ const TabsContent = React.forwardRef<
   <TabsPrimitive.Content
     ref={ref}
     className={cn(
-      "ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+      "bg-white ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
       className
     )}
     {...props}

@@ -17,6 +17,8 @@ import { PDFMobileActions } from './PDF/PDFMobileActions';
 import { usePDFActions } from '../hooks/usePDFActions';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useCompanyLogo } from '@/hooks/useCompanyLogo';
+import { buildPdfFilename } from '@/shared/pdf/filename';
+import { toast } from 'sonner';
 
 interface DispatchPDFPreviewModalProps {
   isOpen: boolean;
@@ -264,7 +266,7 @@ export function DispatchPDFPreviewModal({
           open={isSendEmailOpen}
           onOpenChange={setIsSendEmailOpen}
           pdfDocument={pdfDocElement}
-          fileName={`dispatch-report-${dispatch.dispatchNumber}.pdf`}
+          fileName={buildPdfFilename({ prefix: 'dispatch-report', preferredId: dispatch.dispatchNumber, fallbackId: dispatch.id })}
           reportType="offer"
           reportNumber={dispatch.dispatchNumber || dispatch.id}
           reportTitle={`Dispatch ${dispatch.dispatchNumber}`}
@@ -278,7 +280,7 @@ export function DispatchPDFPreviewModal({
           onClose={() => setSharePlatform(null)}
           platform={sharePlatform}
           pdfDocument={pdfDocElement}
-          fileName={`dispatch-report-${dispatch.dispatchNumber}.pdf`}
+          fileName={buildPdfFilename({ prefix: 'dispatch-report', preferredId: dispatch.dispatchNumber, fallbackId: dispatch.id })}
           shareText={`Dispatch Report #${dispatch.dispatchNumber}`}
         />
       </DialogContent>

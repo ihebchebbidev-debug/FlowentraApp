@@ -429,16 +429,9 @@ export const logDispatchActivityWithPropagation = async (
     console.warn('Failed to publish propagation event:', e);
   }
 
-  // Fall back to a toast when there is no inline subscriber, so users on
-  // screens without the checklist still get feedback. Skip when silent or
-  // when the inline UI will render the same info.
-  if (!options?.silent && !hasPropagationSubscribers()) {
-    try {
-      emitPropagationToast(result);
-    } catch (e) {
-      console.warn('Failed to emit propagation toast:', e);
-    }
-  }
+  // Activity-trail sync toast removed per product request — propagation still
+  // happens silently in the background; failures are console-warned above.
+  void emitPropagationToast;
 
   return result;
 };

@@ -54,7 +54,10 @@ export default function JobDetail() {
   useEffect(() => {
     installationsApi.getAll({ pageSize: 200 })
       .then(res => setInstallations(res.installations || []))
-      .catch(err => console.warn('Failed to load installations:', err));
+      .catch(err => {
+        console.error('Failed to load installations:', err);
+        toast.error('Could not load installations list.');
+      });
   }, []);
 
   // Load existing job on edit

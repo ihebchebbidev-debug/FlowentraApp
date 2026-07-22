@@ -214,7 +214,7 @@ export function EmailComposer({
     const pages = pdfLibDoc.getPages();
 
     // We need page dimensions — render pages to get them
-    const pdfjsLib = await import('pdfjs-dist');
+    const { pdfjsLib } = await import('@/shared/pdf/worker');
     const pdfJsDoc = await pdfjsLib.getDocument({ data: new Uint8Array(originalBytes) }).promise;
 
     for (const [pageIndex, annotation] of pdfAnnotations.entries()) {
