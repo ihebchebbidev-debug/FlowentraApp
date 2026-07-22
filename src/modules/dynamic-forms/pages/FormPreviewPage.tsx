@@ -17,7 +17,8 @@ import { PDFDownloadLink } from '@react-pdf/renderer';
 import { useDynamicForm, useSubmitFormResponse } from '../hooks/useDynamicForms';
 import { useFormDynamicOptions } from '../hooks/useDynamicFieldOptions';
 import { FormField, STATUS_COLORS, FieldOption } from '../types';
-import { evaluateFieldVisibility } from '../utils/conditionEvaluator';
+import { evaluateFieldVisibility, getVisibleValues } from '../utils/conditionEvaluator';
+import { validateFormFields } from '../utils/formValidation';
 import { isMultiPageForm, getPageCount } from '../utils/pageUtils';
 import { SteppedFormPreview } from '../components/SteppedFormPreview';
 import { DynamicFormPDFDocument } from '../components/DynamicFormPDFDocument';
@@ -180,12 +181,34 @@ export default function FormPreviewPage() {
   
   const handleSaveResponse = async () => {
     if (!formId || !form) return;
-    
+
+    // Only persist values for fields that are currently visible. Hidden fields
+    // may contain stale answers from before the user changed a controlling
+    // input and must NOT be saved.
+    const visibleValues = getVisibleValues(form.fields, formValues);
+
+    // Validate visible fields against their type/required/pattern rules
+    // before hitting the API — the mutation was previously accepting
+    // anything that fit the DB schema.
+    const visibleFields = form.fields.filter(f =>
+      evaluateFieldVisibility(f, formValues)
+    );
+    const validation = validateFormFields(visibleFields, visibleValues, previewLang);
+    if (!validation.isValid) {
+      const firstError = validation.errors[0];
+      toast({
+        title: t('validation.failed', 'Validation failed'),
+        description: firstError?.message,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsSaving(true);
     try {
       await submitMutation.mutateAsync({
         form_id: formId,
-        responses: formValues,
+        responses: visibleValues,
         notes: '',
       });
     } catch (error) {

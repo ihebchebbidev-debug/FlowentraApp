@@ -21,6 +21,24 @@ import { reportApiErrorIncident, reportNetworkErrorIncident } from '@/services/i
 import { pushBreadcrumb } from '@/services/incident/incidentBreadcrumbs';
 import { extractApiErrorMessage } from '@/utils/extractApiErrorMessage';
 
+// ── Ambient error-toast suppression ────────────────────────────────────────
+// Some flows (e.g. best-effort activity propagation to parent entities) issue
+// side-effect requests whose failures must NOT surface to the user — the caller
+// already catches and warn-logs them. Without this, a failing propagation call
+// would fire an automatic `toast.error(...)` alongside the caller's own
+// `toast.success(...)`, producing the "succeeded AND request failed" double-
+// toast users have reported. Increment the counter around silent side effects.
+let suppressErrorToastDepth = 0;
+export const isApiErrorToastSuppressed = (): boolean => suppressErrorToastDepth > 0;
+export async function runWithSuppressedApiErrorToasts<T>(fn: () => Promise<T>): Promise<T> {
+  suppressErrorToastDepth++;
+  try {
+    return await fn();
+  } finally {
+    suppressErrorToastDepth = Math.max(0, suppressErrorToastDepth - 1);
+  }
+}
+
 // Helper to get auth token
 const getAuthToken = (): string | null => {
   return localStorage.getItem('access_token');
@@ -324,6 +342,7 @@ export const apiFetch = async <T>(
       const suppressToast = (options.headers as Record<string, string>)?.['X-Suppress-Error-Toast'] === 'true';
       if (
         !suppressToast &&
+        !isApiErrorToastSuppressed() &&
         method !== 'GET' &&
         response.status !== 401 &&
         !SKIP_LOGGING_ENDPOINTS.some(skip => endpoint.includes(skip))

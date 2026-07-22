@@ -92,6 +92,11 @@ export function useFormDynamicOptions(fields: FormField[], formValues: Record<st
   const isMountedRef = useRef(true);
   // Track parent values to detect changes
   const parentValuesRef = useRef<Record<string, any>>({});
+  // Per-field monotonically increasing request token. Only the latest
+  // request for a given field is allowed to update state; earlier in-flight
+  // requests (e.g. from a rapid parent change) are discarded so cascading
+  // dropdowns don't flash stale options.
+  const requestTokensRef = useRef<Record<string, number>>({});
 
   // Get fields that need dynamic data - memoized properly
   const dynamicFieldsKey = useMemo(() => {
@@ -144,9 +149,14 @@ export function useFormDynamicOptions(fields: FormField[], formValues: Record<st
     parentValue?: any
   ) => {
     if (!field.data_source || !field.use_dynamic_data) return;
-    
+
+    // Claim a new token for this field; any earlier in-flight request
+    // becomes stale the moment we increment this.
+    const token = (requestTokensRef.current[field.id] || 0) + 1;
+    requestTokensRef.current[field.id] = token;
+
     setLoadingFields(prev => new Set([...prev, field.id]));
-    
+
     try {
       // Build data source with parent filter if cascading
       let dataSource: DynamicDataSource = { ...field.data_source };
@@ -168,7 +178,11 @@ export function useFormDynamicOptions(fields: FormField[], formValues: Record<st
       }
       
       const options = await dynamicDataService.fetchFieldOptions(dataSource);
-      
+
+      // A newer request for this same field has been started while we were
+      // awaiting — drop this response entirely.
+      if (requestTokensRef.current[field.id] !== token) return;
+
       if (isMountedRef.current) {
         setOptionsMap(prev => ({ ...prev, [field.id]: options }));
         setErrors(prev => {
@@ -184,6 +198,7 @@ export function useFormDynamicOptions(fields: FormField[], formValues: Record<st
       }
     } catch (error: any) {
       console.error(`Failed to fetch dynamic options for ${field.id}:`, error);
+      if (requestTokensRef.current[field.id] !== token) return;
       if (isMountedRef.current) {
         setErrors(prev => ({ ...prev, [field.id]: error.message || 'Failed to load options' }));
         // Fallback to static options
@@ -192,7 +207,7 @@ export function useFormDynamicOptions(fields: FormField[], formValues: Record<st
         }
       }
     } finally {
-      if (isMountedRef.current) {
+      if (requestTokensRef.current[field.id] === token && isMountedRef.current) {
         setLoadingFields(prev => {
           const next = new Set(prev);
           next.delete(field.id);

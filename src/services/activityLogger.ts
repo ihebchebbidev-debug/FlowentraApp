@@ -1,13 +1,34 @@
 /**
  * Activity Logger Service
- * 
+ *
  * Provides utility functions to log activities (time entries, expenses, materials, status changes)
  * to dispatches and service orders via their notes API.
  * Also propagates activities up the chain: Dispatch → Service Order → Sale → Offer
  */
 
+import { toast } from 'sonner';
 import { dispatchesApi } from './api/dispatchesApi';
 import { serviceOrdersApi } from './api/serviceOrdersApi';
+import { runWithSuppressedApiErrorToasts } from './api/apiClient';
+import { publishPropagation, hasPropagationSubscribers } from './propagationBus';
+
+export type PropagationHopStatus = 'ok' | 'skipped' | 'failed';
+
+export interface PropagationHop {
+  status: PropagationHopStatus;
+  /** Why it was skipped ("no parent link") or the error message when failed. */
+  reason?: string;
+}
+
+export interface PropagationResult {
+  dispatch: PropagationHop;
+  serviceOrder: PropagationHop;
+  sale: PropagationHop;
+  offer: PropagationHop;
+}
+
+const errMsg = (e: unknown): string =>
+  e instanceof Error ? e.message : typeof e === 'string' ? e : 'unknown error';
 
 export type ActivityType = 
   | 'created'
@@ -199,54 +220,85 @@ const mapToParentActivityType = (type: ActivityType): string => {
 };
 
 /**
- * Log an activity to a dispatch
+ * Log an activity to a dispatch. Returns per-hop status so callers/propagation
+ * can report success without letting a note-write failure surface as a toast.
  */
 export const logDispatchActivity = async (
   dispatchId: number,
   details: ActivityDetails
-): Promise<void> => {
-  try {
-    const message = formatActivityMessage(details);
-    const category = getActivityCategory(details.type);
-    await dispatchesApi.addNote(dispatchId, message, category);
-    console.log(`Activity logged to dispatch ${dispatchId}:`, details.type);
-  } catch (error) {
-    console.warn(`Failed to log activity to dispatch ${dispatchId}:`, error);
-    // Don't throw - activity logging should not break the main operation
-  }
+): Promise<PropagationHop> => {
+  return runWithSuppressedApiErrorToasts(async () => {
+    try {
+      const message = formatActivityMessage(details);
+      const category = getActivityCategory(details.type);
+      await dispatchesApi.addNote(dispatchId, message, category);
+      console.log(`Activity logged to dispatch ${dispatchId}:`, details.type);
+      return { status: 'ok' } as PropagationHop;
+    } catch (error) {
+      console.warn(`Failed to log activity to dispatch ${dispatchId}:`, error);
+      return { status: 'failed', reason: errMsg(error) } as PropagationHop;
+    }
+  });
 };
 
 /**
- * Log an activity to a service order
+ * Log an activity to a service order (standalone helper, no propagation).
  */
 export const logServiceOrderActivity = async (
   serviceOrderId: number,
   details: ActivityDetails,
   dispatchNumber?: string
-): Promise<void> => {
-  try {
-    let message = formatActivityMessage(details);
-    
-    // Add dispatch reference if provided
-    if (dispatchNumber) {
-      message = `[From ${dispatchNumber}]\n${message}`;
+): Promise<PropagationHop> => {
+  return runWithSuppressedApiErrorToasts(async () => {
+    try {
+      let message = formatActivityMessage(details);
+      if (dispatchNumber) message = `[From ${dispatchNumber}]\n${message}`;
+
+      const noteType = getActivityCategory(details.type);
+      await serviceOrdersApi.addNote(serviceOrderId, { content: message, type: noteType });
+      console.log(`Activity logged to service order ${serviceOrderId}:`, details.type);
+      return { status: 'ok' } as PropagationHop;
+    } catch (error) {
+      console.warn(`Failed to log activity to service order ${serviceOrderId}:`, error);
+      return { status: 'failed', reason: errMsg(error) } as PropagationHop;
     }
-    
-    const noteType = getActivityCategory(details.type);
-    await serviceOrdersApi.addNote(serviceOrderId, {
-      content: message,
-      type: noteType,
-    });
-    console.log(`Activity logged to service order ${serviceOrderId}:`, details.type);
-  } catch (error) {
-    console.warn(`Failed to log activity to service order ${serviceOrderId}:`, error);
-    // Don't throw - activity logging should not break the main operation
+  });
+};
+
+/**
+ * Render a compact "Service Order ✓ · Sale ✓ · Offer —" toast so users see
+ * whether the parent-entity trail was updated. Non-blocking, info-level.
+ * Stays silent when there was nothing to propagate to (unlinked dispatch)
+ * and the dispatch note itself succeeded, to avoid noise.
+ */
+const emitPropagationToast = (result: PropagationResult): void => {
+  const hops: Array<[string, PropagationHop]> = [
+    ['Service Order', result.serviceOrder],
+    ['Sale', result.sale],
+    ['Offer', result.offer],
+  ];
+
+  const anyAttempted = hops.some(([, h]) => h.status !== 'skipped');
+  const anyFailed = hops.some(([, h]) => h.status === 'failed');
+  const dispatchFailed = result.dispatch.status === 'failed';
+
+  if (!anyAttempted && !dispatchFailed) return;
+
+  const glyph = (s: PropagationHopStatus) => (s === 'ok' ? '✓' : s === 'failed' ? '⚠' : '—');
+  const description = hops.map(([label, h]) => `${label} ${glyph(h.status)}`).join(' · ');
+
+  if (dispatchFailed || anyFailed) {
+    toast.message('Activity trail: partial sync', { description, duration: 4500 });
+  } else {
+    toast.message('Activity trail synced', { description, duration: 2500 });
   }
 };
 
 /**
- * Log an activity to a dispatch AND propagate it up to service order, sale, and offer
- * This is the main function to use for dispatch activities that should be visible in parent entities
+ * Log an activity to a dispatch AND propagate it up to service order, sale, and offer.
+ * Returns a PropagationResult describing each hop and fires a small info toast
+ * so users see whether parent entities were updated. Never throws — the primary
+ * business operation is unaffected by activity-log failures.
  */
 export const logDispatchActivityWithPropagation = async (
   dispatchId: number,
@@ -254,17 +306,25 @@ export const logDispatchActivityWithPropagation = async (
   options?: {
     dispatchNumber?: string;
     serviceOrderId?: number;
+    /** Suppress the follow-up summary toast (default false). */
+    silent?: boolean;
   }
-): Promise<void> => {
-  // 1. Log to dispatch notes
-  await logDispatchActivity(dispatchId, details);
-  
-  // 2. Try to get dispatch data to find service order and propagate up
-  try {
+): Promise<PropagationResult> => {
+  const result: PropagationResult = {
+    dispatch: { status: 'skipped' },
+    serviceOrder: { status: 'skipped' },
+    sale: { status: 'skipped' },
+    offer: { status: 'skipped' },
+  };
+
+  await runWithSuppressedApiErrorToasts(async () => {
+    // 1. Dispatch note
+    result.dispatch = await logDispatchActivity(dispatchId, details);
+
+    // 2. Resolve service order + dispatch number
     let serviceOrderId = options?.serviceOrderId;
     let dispatchNumber = options?.dispatchNumber;
-    
-    // If we don't have service order ID, fetch dispatch to get it
+
     if (!serviceOrderId) {
       try {
         const dispatch = await dispatchesApi.getById(dispatchId);
@@ -272,83 +332,117 @@ export const logDispatchActivityWithPropagation = async (
         dispatchNumber = dispatchNumber || dispatch.dispatchNumber || `DISP-${dispatchId}`;
       } catch (fetchError) {
         console.warn('Failed to fetch dispatch for propagation:', fetchError);
+        result.serviceOrder = { status: 'failed', reason: `dispatch lookup: ${errMsg(fetchError)}` };
         return;
       }
     }
-    
+
     if (!serviceOrderId) {
-      console.log('No service order ID found, skipping propagation');
+      // Unlinked dispatch — nothing to propagate to.
       return;
     }
-    
-    // 3. Log to service order
+
     const shortDescription = formatShortActivityDescription(details, dispatchNumber);
     const parentActivityType = mapToParentActivityType(details.type);
-    
+
+    // 3. Service order note
     try {
       await serviceOrdersApi.addNote(serviceOrderId, {
         content: shortDescription,
         type: parentActivityType,
       });
+      result.serviceOrder = { status: 'ok' };
       console.log(`Activity propagated to service order ${serviceOrderId}`);
     } catch (soError) {
       console.warn('Failed to propagate to service order:', soError);
+      result.serviceOrder = { status: 'failed', reason: errMsg(soError) };
     }
-    
-    // 4. Get service order to find sale and offer IDs
+
+    // 4. Fetch service order to find sale/offer links.
+    let serviceOrder: any = null;
     try {
-      const serviceOrder: any = await serviceOrdersApi.getById(serviceOrderId, true);
-      
-      // 5. Propagate to sale
-      if (serviceOrder.saleId) {
+      serviceOrder = await serviceOrdersApi.getById(serviceOrderId, true);
+    } catch (fetchError) {
+      console.warn('Failed to fetch service order for propagation:', fetchError);
+      result.sale = { status: 'failed', reason: `SO lookup: ${errMsg(fetchError)}` };
+      result.offer = { status: 'failed', reason: `SO lookup: ${errMsg(fetchError)}` };
+      return;
+    }
+
+    // 5. Sale activity + resolve offer via sale
+    if (serviceOrder?.saleId) {
+      try {
+        const { salesApi } = await import('./api/salesApi');
+        await salesApi.addActivity(serviceOrder.saleId, {
+          type: parentActivityType,
+          description: shortDescription,
+        });
+        result.sale = { status: 'ok' };
+        console.log(`Activity propagated to sale ${serviceOrder.saleId}`);
+
         try {
-          const { salesApi } = await import('./api/salesApi');
-          await salesApi.addActivity(serviceOrder.saleId, {
-            type: parentActivityType,
-            description: shortDescription,
-          });
-          console.log(`Activity propagated to sale ${serviceOrder.saleId}`);
-          
-          // 6. Get sale to find offer ID
           const sale = await salesApi.getById(serviceOrder.saleId);
-          if (sale.offerId) {
+          if (sale?.offerId) {
             try {
               const { offersApi } = await import('./api/offersApi');
               await offersApi.addActivity(sale.offerId, {
                 type: parentActivityType,
                 description: shortDescription,
               });
+              result.offer = { status: 'ok' };
               console.log(`Activity propagated to offer ${sale.offerId}`);
             } catch (offerError) {
               console.warn('Failed to propagate to offer:', offerError);
+              result.offer = { status: 'failed', reason: errMsg(offerError) };
             }
           }
-        } catch (saleError) {
-          console.warn('Failed to propagate to sale:', saleError);
+        } catch (saleFetchError) {
+          console.warn('Failed to fetch sale for offer lookup:', saleFetchError);
+          result.offer = { status: 'failed', reason: `sale lookup: ${errMsg(saleFetchError)}` };
         }
+      } catch (saleError) {
+        console.warn('Failed to propagate to sale:', saleError);
+        result.sale = { status: 'failed', reason: errMsg(saleError) };
       }
-      
-      // 7. Also check if service order has direct offer ID (in case no sale)
-      if (!serviceOrder.saleId && serviceOrder.offerId) {
-        try {
-          const { offersApi } = await import('./api/offersApi');
-          await offersApi.addActivity(serviceOrder.offerId, {
-            type: parentActivityType,
-            description: shortDescription,
-          });
-          console.log(`Activity propagated to offer ${serviceOrder.offerId}`);
-        } catch (offerError) {
-          console.warn('Failed to propagate to offer:', offerError);
-        }
+    } else if (serviceOrder?.offerId) {
+      // 6. Direct offer link on service order (no sale)
+      try {
+        const { offersApi } = await import('./api/offersApi');
+        await offersApi.addActivity(serviceOrder.offerId, {
+          type: parentActivityType,
+          description: shortDescription,
+        });
+        result.offer = { status: 'ok' };
+        console.log(`Activity propagated to offer ${serviceOrder.offerId}`);
+      } catch (offerError) {
+        console.warn('Failed to propagate to offer:', offerError);
+        result.offer = { status: 'failed', reason: errMsg(offerError) };
       }
-    } catch (fetchError) {
-      console.warn('Failed to fetch service order for propagation:', fetchError);
     }
-  } catch (error) {
-    console.warn('Failed to propagate dispatch activity:', error);
-    // Don't throw - activity logging should not break the main operation
+    // else: no sale/offer link → both stay 'skipped'
+  });
+
+  // Broadcast to any inline UI (e.g. PropagationChecklist in dispatch tabs).
+  try {
+    publishPropagation({ dispatchId, result, at: Date.now() });
+  } catch (e) {
+    console.warn('Failed to publish propagation event:', e);
   }
+
+  // Fall back to a toast when there is no inline subscriber, so users on
+  // screens without the checklist still get feedback. Skip when silent or
+  // when the inline UI will render the same info.
+  if (!options?.silent && !hasPropagationSubscribers()) {
+    try {
+      emitPropagationToast(result);
+    } catch (e) {
+      console.warn('Failed to emit propagation toast:', e);
+    }
+  }
+
+  return result;
 };
+
 
 /**
  * Format duration from minutes to human readable string

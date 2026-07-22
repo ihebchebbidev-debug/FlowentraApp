@@ -40,6 +40,7 @@ import { logDispatchActivityWithPropagation } from "@/services/activityLogger";
 import { API_URL } from '@/config/api';
 import { PlannedInlineList } from "@/shared/components/planning/PlannedInlineList";
 import { PlannedTotalsBadge } from "@/shared/components/planning/OverrunBadge";
+import { PropagationChecklist } from "./PropagationChecklist";
 
 // Service order material type (comes from SO API)
 interface ServiceOrderMaterial {
@@ -566,6 +567,7 @@ export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onData
 
   return (
     <>
+      <PropagationChecklist dispatchId={dispatchId} />
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">

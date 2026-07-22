@@ -17,7 +17,7 @@ import { evaluateFieldVisibility, getVisibleValues } from '../utils/conditionEva
 import { organizeFieldsIntoPages } from '../utils/pageUtils';
 import { evaluateThankYouPage, ThankYouResult } from '../utils/thankYouEvaluator';
 import { SignatureCanvas } from '../components/FormBuilder/SignatureCanvas';
-import { validateFormFields, validateSubmitterInfo } from '../utils/formValidation';
+import { validateFormFields, validateSubmitterInfo, sanitizeExternalUrl } from '../utils/formValidation';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
@@ -233,21 +233,23 @@ export default function PublicFormPage() {
       setThankYouResult(result);
       
       // Start redirect countdown if applicable
-      if (result.redirect_url) {
+      // Only follow admin-provided redirect URLs when they use a safe scheme.
+      // Anything using javascript:/data:/vbscript: is dropped entirely.
+      const safeRedirect = sanitizeExternalUrl(result.redirect_url);
+      if (safeRedirect) {
         const delay = result.redirect_delay || 3;
         setRedirectCountdown(delay);
-        
-        // Start countdown timer
+
         let remaining = delay;
         redirectTimerRef.current = setInterval(() => {
           remaining -= 1;
           setRedirectCountdown(remaining);
-          
+
           if (remaining <= 0) {
             if (redirectTimerRef.current) {
               clearInterval(redirectTimerRef.current);
             }
-            window.location.href = result.redirect_url!;
+            window.location.href = safeRedirect;
           }
         }, 1000);
       }
@@ -319,17 +321,19 @@ export default function PublicFormPage() {
 
     // Helper to render link/button
     const FieldLink = () => {
-      if (!field.link_url) return null;
-      
-      const linkText = previewLang === 'en' 
-        ? (field.link_text_en || field.link_url) 
-        : (field.link_text_fr || field.link_url);
+      // Reject javascript:/data: etc. — only http(s), mailto:, tel:, relative URLs pass.
+      const safeHref = sanitizeExternalUrl(field.link_url);
+      if (!safeHref) return null;
+
+      const linkText = previewLang === 'en'
+        ? (field.link_text_en || safeHref)
+        : (field.link_text_fr || safeHref);
       const isButton = field.link_style === 'button';
-      
+
       if (isButton) {
         return (
           <a
-            href={field.link_url}
+            href={safeHref}
             target={field.link_new_tab ? '_blank' : '_self'}
             rel={field.link_new_tab ? 'noopener noreferrer' : undefined}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors mt-1.5"
@@ -339,10 +343,10 @@ export default function PublicFormPage() {
           </a>
         );
       }
-      
+
       return (
         <a
-          href={field.link_url}
+          href={safeHref}
           target={field.link_new_tab ? '_blank' : '_self'}
           rel={field.link_new_tab ? 'noopener noreferrer' : undefined}
           className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1.5"
@@ -724,7 +728,10 @@ export default function PublicFormPage() {
                     variant="link"
                     size="sm"
                     className="mt-2"
-                    onClick={() => window.location.href = thankYouResult.redirect_url!}
+                    onClick={() => {
+                      const safe = sanitizeExternalUrl(thankYouResult?.redirect_url);
+                      if (safe) window.location.href = safe;
+                    }}
                   >
                     {t('public.redirect_now', 'Redirect now')}
                   </Button>

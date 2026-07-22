@@ -31,6 +31,7 @@ import { logDispatchActivityWithPropagation, formatDurationForLog, calculateDura
 import { useWorkTypes, useExpenseTypes } from "@/modules/lookups/hooks/useLookups";
 import { PlannedInlineList } from "@/shared/components/planning/PlannedInlineList";
 import { PlannedTotalsBadge } from "@/shared/components/planning/OverrunBadge";
+import { PropagationChecklist } from "./PropagationChecklist";
 
 interface DispatchTimeExpensesTabProps {
   dispatchId: number;
@@ -803,6 +804,7 @@ export function DispatchTimeExpensesTab({
   return (
     <Card>
       <CardContent className="p-6 space-y-6">
+        <PropagationChecklist dispatchId={dispatchId} />
         {dispatchJobs.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 empty:hidden">
             <PlannedInlineList
