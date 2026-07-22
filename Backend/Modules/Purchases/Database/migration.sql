@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS "ArticleSuppliers" (
     "Id"               SERIAL PRIMARY KEY,
     "TenantId"         INTEGER         NOT NULL,
     "ArticleId"        INTEGER         NOT NULL REFERENCES "Articles"("Id") ON DELETE CASCADE,
-    "SupplierId"       INTEGER         NOT NULL REFERENCES "Contacts"("Id") ON DELETE CASCADE,
+    "SupplierId"       INTEGER         NOT NULL REFERENCES "Contacts"("Id") ON DELETE RESTRICT,
     "SupplierRef"      VARCHAR(100),
     "PurchasePrice"    DECIMAL(18,2)   NOT NULL DEFAULT 0,
     "Currency"         VARCHAR(3)      NOT NULL DEFAULT 'TND',

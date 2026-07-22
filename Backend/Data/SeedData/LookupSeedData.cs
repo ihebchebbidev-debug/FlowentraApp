@@ -8,10 +8,11 @@ namespace MyApi.Data.SeedData
         public void Seed(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<LookupItem>().HasData(
-                // Contact Types
-                new LookupItem { Id = 1, LookupType = "ContactType", Name = "individual", Description = "Individual Contact", SortOrder = 1, IsActive = true, CreatedUser = "system" },
-                new LookupItem { Id = 2, LookupType = "ContactType", Name = "company", Description = "Company Contact", SortOrder = 2, IsActive = true, CreatedUser = "system" },
-                
+                // NOTE: ContactType is intentionally NOT seeded as a lookup — contact
+                // type is a fixed enum in the app ("individual" | "company" | "partner"
+                // | "supplier") enforced at the frontend and by the Contacts service.
+                // Do not re-add ContactType rows here; they would drift from the enum.
+
                 // Contact Status
                 new LookupItem { Id = 3, LookupType = "ContactStatus", Name = "active", Description = "Active Contact", SortOrder = 1, IsActive = true, CreatedUser = "system" },
                 new LookupItem { Id = 4, LookupType = "ContactStatus", Name = "inactive", Description = "Inactive Contact", SortOrder = 2, IsActive = true, CreatedUser = "system" },

@@ -94,7 +94,11 @@ namespace MyApi.Modules.Purchases.Services
             // vs. any caller that bypasses DTO model binding).
             ValidateOrderItems(dto.Items);
 
-            var supplier = await _context.Contacts.FindAsync(dto.SupplierId)
+            // Filter out soft-deleted contacts: Contact has no global IsDeleted query
+            // filter, and FindAsync would happily resurrect a tombstoned supplier onto
+            // a brand-new PO (copying its stale Name/Email/Phone/Address).
+            var supplier = await _context.Contacts
+                .FirstOrDefaultAsync(c => c.Id == dto.SupplierId && !c.IsDeleted)
                 ?? throw new KeyNotFoundException($"Supplier with ID {dto.SupplierId} not found");
 
             string orderNumber;
@@ -193,6 +197,16 @@ namespace MyApi.Modules.Purchases.Services
             "ordered", "partially_received", "received", "cancelled", "closed"
         };
 
+        // Financial header fields (Discount / DiscountType / FiscalStamp) drive
+        // GrandTotal via RecalculateTotals. Once a PO has been received or terminally
+        // closed, mutating these silently rewrites historical spend numbers and
+        // reconciliation baselines. Draft/validated/ordered are still open to price
+        // corrections; anything past that is frozen.
+        private static readonly HashSet<string> HeaderFinancialFrozenStatuses = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "partially_received", "received", "cancelled", "closed"
+        };
+
         private static void EnsureItemsMutable(PurchaseOrder order)
         {
             if (ItemFrozenStatuses.Contains(order.Status))
@@ -261,6 +275,17 @@ namespace MyApi.Modules.Purchases.Services
                     if (dto.Description != null) order.Description = dto.Description;
                     if (dto.Status != null) order.Status = dto.Status;
                     if (dto.ExpectedDelivery.HasValue) order.ExpectedDelivery = AsUtc(dto.ExpectedDelivery);
+
+                    // Freeze financial header fields once the PO has been (partially)
+                    // received / closed / cancelled. Recomputing GrandTotal after that
+                    // silently rewrites historical spend numbers, breaks reconciliation
+                    // against already-issued supplier invoices, and lets a "cancelled"
+                    // PO be edited long after the fact.
+                    var wantsFinancialChange = dto.Discount.HasValue || dto.DiscountType != null || dto.FiscalStamp.HasValue;
+                    if (wantsFinancialChange && HeaderFinancialFrozenStatuses.Contains(order.Status))
+                        throw new InvalidOperationException(
+                            $"Financial header fields (Discount, DiscountType, FiscalStamp) cannot be modified on a PO in status '{order.Status}'");
+
                     if (dto.Discount.HasValue) order.Discount = dto.Discount.Value;
                     if (dto.DiscountType != null) order.DiscountType = dto.DiscountType;
                     if (dto.FiscalStamp.HasValue) order.FiscalStamp = dto.FiscalStamp.Value;
@@ -275,7 +300,7 @@ namespace MyApi.Modules.Purchases.Services
                     order.ModifiedDate = DateTime.UtcNow;
                     order.ModifiedBy = userId;
 
-                    if (dto.Discount.HasValue || dto.DiscountType != null || dto.FiscalStamp.HasValue)
+                    if (wantsFinancialChange)
                     {
                         if (order.Items != null) RecalculateTotals(order, order.Items.ToList());
                     }
@@ -382,7 +407,13 @@ namespace MyApi.Modules.Purchases.Services
             var strategy = _context.Database.CreateExecutionStrategy();
             await strategy.ExecuteAsync(async () =>
             {
-                using var tx = await _context.Database.BeginTransactionAsync();
+                // Serializable: mirror UpdateItemAsync/DeleteItemAsync. Two concurrent
+                // POSTs would otherwise each load the same order.Items snapshot,
+                // insert their own row, and each recompute totals from a base that
+                // is missing the other request's insert — the second SaveChanges
+                // silently overwrites the first's totals (PurchaseOrder has no
+                // concurrency token). Serializable makes one of them retry / fail.
+                using var tx = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
                 try
                 {
                     var order = await _context.PurchaseOrders.Include(o => o.Items).FirstOrDefaultAsync(o => o.Id == orderId && !o.IsDeleted)

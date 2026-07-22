@@ -445,10 +445,9 @@ const routeContextMap: Record<string, Omit<PageContext, 'route' | 'relevantData'
   // ==================== SETTINGS - LOOKUPS ====================
   '/dashboard/settings/lookups': {
     pageName: 'Lookup Tables',
-    pageDescription: 'Manage dropdown values and categorizations used throughout the system. Configure contact types, service types, priorities, statuses, expense categories, work types, and more.',
+    pageDescription: 'Manage dropdown values and categorizations used throughout the system. Configure service types, priorities, statuses, expense categories, work types, and more. (Contact types are a fixed built-in enum and are not managed here.)',
     suggestions: [
       'contextSuggestions.lookups.existing',
-      'contextSuggestions.lookups.addContactType',
       'contextSuggestions.lookups.addExpenseCategory',
       'contextSuggestions.lookups.rename',
       'contextSuggestions.lookups.deactivate'

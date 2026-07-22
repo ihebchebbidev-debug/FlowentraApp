@@ -112,7 +112,11 @@ namespace MyApi.Modules.Purchases.Services
             // price / tax-rate into the totals recalculation.
             ValidateInvoiceItems(dto.Items);
 
-            var supplier = await _context.Contacts.FindAsync(dto.SupplierId)
+            // Filter out soft-deleted contacts: Contact has no global IsDeleted query
+            // filter, so FindAsync would let a tombstoned supplier be re-used on a new
+            // invoice (copying its stale Name / MatriculeFiscale onto the header).
+            var supplier = await _context.Contacts
+                .FirstOrDefaultAsync(c => c.Id == dto.SupplierId && !c.IsDeleted)
                 ?? throw new KeyNotFoundException($"Supplier {dto.SupplierId} not found");
 
             // Cross-entity integrity: linked PO and GR must belong to the same supplier
@@ -180,6 +184,12 @@ namespace MyApi.Modules.Purchases.Services
             // Validate PO-item linkage BEFORE inserting anything so a bad batch doesn't
             // leave an orphan invoice header. Was: header was saved, items validated,
             // throw → empty invoice persisted forever.
+            // Also memoize each linked PO item's LineTotal (post-line-discount,
+            // tax-exclusive) so invoice items copy the PO's discounted base instead
+            // of recomputing Quantity*UnitPrice — otherwise a PO with per-line
+            // discounts and the invoice generated from it would disagree on
+            // SubTotal / TaxAmount / GrandTotal, defeating reconciliation.
+            var linkedPoItemLineTotals = new Dictionary<int, decimal>();
             if (dto.Items?.Any() == true)
             {
                 var linkedPoItemIds = dto.Items.Where(i => i.PurchaseOrderItemId.HasValue)
@@ -189,12 +199,15 @@ namespace MyApi.Modules.Purchases.Services
                 {
                     if (!dto.PurchaseOrderId.HasValue)
                         throw new InvalidOperationException("Cannot link PO items to an invoice that has no PurchaseOrderId");
-                    var validIds = await _context.PurchaseOrderItems
+                    var poItems = await _context.PurchaseOrderItems
                         .Where(p => linkedPoItemIds.Contains(p.Id) && p.PurchaseOrderId == dto.PurchaseOrderId.Value)
-                        .Select(p => p.Id).ToListAsync();
+                        .Select(p => new { p.Id, p.LineTotal })
+                        .ToListAsync();
+                    var validIds = poItems.Select(p => p.Id).ToList();
                     var orphans = linkedPoItemIds.Except(validIds).ToList();
                     if (orphans.Count > 0)
                         throw new InvalidOperationException($"PurchaseOrderItem(s) [{string.Join(",", orphans)}] do not belong to PO {dto.PurchaseOrderId}");
+                    foreach (var p in poItems) linkedPoItemLineTotals[p.Id] = p.LineTotal;
                 }
             }
 
@@ -222,7 +235,13 @@ namespace MyApi.Modules.Purchases.Services
                             UnitPrice = item.UnitPrice,
                             TaxRate = item.TaxRate,
                             // LineTotal is tax-EXCLUSIVE so Sum(LineTotal) reconciles to SubTotal.
-                            LineTotal = item.Quantity * item.UnitPrice,
+                            // When the line is linked to a PurchaseOrderItem, copy the PO's
+                            // post-line-discount LineTotal verbatim so invoice totals reconcile
+                            // with the originating PO even when the PO used per-line discounts.
+                            LineTotal = item.PurchaseOrderItemId.HasValue
+                                        && linkedPoItemLineTotals.TryGetValue(item.PurchaseOrderItemId.Value, out var poLt)
+                                ? poLt
+                                : item.Quantity * item.UnitPrice,
                             DisplayOrder = idx
                         }).ToList();
                         _context.SupplierInvoiceItems.AddRange(items);
@@ -421,6 +440,21 @@ namespace MyApi.Modules.Purchases.Services
                 .FirstOrDefaultAsync(i => i.Id == id && !i.IsDeleted);
             if (invoice == null) return false;
 
+            // Financial-integrity guard: once cash has actually been recorded against
+            // an invoice, soft-deleting it would silently rewrite the payment ledger.
+            // SyncPurchaseOrderPaymentStatusAsync below excludes IsDeleted invoices,
+            // so the PO's PaymentStatus would flip back to "pending"/"partial" while
+            // the money movement stays in Payments (or the accounting export) — a
+            // classic reconciliation hole. Force the caller to "cancel" (status
+            // transition) instead, which keeps the row in ledger aggregations.
+            if (invoice.AmountPaid > 0
+                || string.Equals(invoice.Status, "paid", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(invoice.Status, "partially_paid", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    $"Cannot delete invoice {invoice.InvoiceNumber}: it has recorded payments (AmountPaid={invoice.AmountPaid}, Status={invoice.Status}). Cancel the invoice or reverse the payment first.");
+            }
+
             // Wrap soft-delete + activity-log + PO sync in a single transaction so a
             // failure in the cascading PO.PaymentStatus sync rolls back the soft-delete.
             // Without this, the invoice could disappear from the ledger while the PO
@@ -435,6 +469,17 @@ namespace MyApi.Modules.Purchases.Services
                     var tracked = await _context.SupplierInvoices
                         .FirstOrDefaultAsync(i => i.Id == id && !i.IsDeleted);
                     if (tracked == null) return; // raced with another delete
+
+                    // Re-assert the payment guard under the transaction — a concurrent
+                    // PATCH could have just recorded a payment between the pre-check
+                    // and here.
+                    if (tracked.AmountPaid > 0
+                        || string.Equals(tracked.Status, "paid", StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(tracked.Status, "partially_paid", StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new InvalidOperationException(
+                            $"Cannot delete invoice {tracked.InvoiceNumber}: a concurrent payment was recorded (AmountPaid={tracked.AmountPaid}, Status={tracked.Status}).");
+                    }
 
                     tracked.IsDeleted = true;
                     tracked.DeletedAt = DateTime.UtcNow;
@@ -518,24 +563,50 @@ namespace MyApi.Modules.Purchases.Services
             // slip a negative qty / price / tax-rate past the totals recalc.
             ValidateInvoiceItem(dto);
 
-            var item = new SupplierInvoiceItem
-            {
-                SupplierInvoiceId = invoiceId,
-                PurchaseOrderItemId = dto.PurchaseOrderItemId.HasValue ? dto.PurchaseOrderItemId.Value.ToString() : null,
-                ArticleId = dto.ArticleId.HasValue ? dto.ArticleId.Value.ToString() : null,
-                ArticleName = dto.ArticleName,
-                Description = dto.Description,
-                Quantity = dto.Quantity,
-                UnitPrice = dto.UnitPrice,
-                TaxRate = dto.TaxRate,
-                LineTotal = dto.Quantity * dto.UnitPrice,
-                DisplayOrder = invoice.Items?.Count ?? 0
-            };
-            _context.SupplierInvoiceItems.Add(item);
-            await _context.SaveChangesAsync();
+            var lineTotal = await ResolveLineTotalAsync(dto);
 
-            await RecalculateInvoiceTotalsAsync(invoiceId);
-            return MapItemToDto(item);
+            // Wrap insert + totals-recalc + PO-status-sync in a single transaction
+            // (via the execution strategy so Npgsql retries still work). Without it
+            // a crash between SaveChanges calls would commit the item row but leave
+            // SubTotal / TaxAmount / GrandTotal and the linked PO's PaymentStatus
+            // permanently inconsistent.
+            SupplierInvoiceItem? created = null;
+            var strategy = _context.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
+            {
+                using var tx = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    var item = new SupplierInvoiceItem
+                    {
+                        SupplierInvoiceId = invoiceId,
+                        PurchaseOrderItemId = dto.PurchaseOrderItemId.HasValue ? dto.PurchaseOrderItemId.Value.ToString() : null,
+                        ArticleId = dto.ArticleId.HasValue ? dto.ArticleId.Value.ToString() : null,
+                        ArticleName = dto.ArticleName,
+                        Description = dto.Description,
+                        Quantity = dto.Quantity,
+                        UnitPrice = dto.UnitPrice,
+                        TaxRate = dto.TaxRate,
+                        LineTotal = lineTotal,
+                        DisplayOrder = invoice.Items?.Count ?? 0
+                    };
+                    _context.SupplierInvoiceItems.Add(item);
+                    await _context.SaveChangesAsync();
+
+                    await RecalculateInvoiceTotalsAsync(invoiceId);
+
+                    // Draft invoices still count toward PO totalDue (Sync excludes only
+                    // cancelled/deleted), so an item add can flip PO.PaymentStatus from
+                    // "paid" to "partial". Mirror the header-mutation paths.
+                    if (invoice.PurchaseOrderId.HasValue)
+                        await SyncPurchaseOrderPaymentStatusAsync(invoice.PurchaseOrderId.Value);
+
+                    await tx.CommitAsync();
+                    created = item;
+                }
+                catch { await tx.RollbackAsync(); throw; }
+            });
+            return MapItemToDto(created!);
         }
 
         public async Task<SupplierInvoiceItemDto> UpdateItemAsync(int invoiceId, int itemId, CreateSupplierInvoiceItemDto dto)
@@ -548,19 +619,48 @@ namespace MyApi.Modules.Purchases.Services
             var item = invoice.Items?.FirstOrDefault(i => i.Id == itemId)
                 ?? throw new KeyNotFoundException($"Item {itemId} not found");
 
+            // Mirror AddItemAsync: a PO-linked line must reference a PO item that
+            // belongs to THIS invoice's PurchaseOrderId. Without this guard,
+            // ResolveLineTotalAsync would happily copy an unrelated PO line's
+            // LineTotal onto our invoice (breaking reconciliation and letting a
+            // caller inflate totals with another supplier's PO item).
+            if (dto.PurchaseOrderItemId.HasValue)
+            {
+                if (!invoice.PurchaseOrderId.HasValue)
+                    throw new InvalidOperationException("Cannot link a PO item to an invoice that has no PurchaseOrderId");
+                var poItemExists = await _context.PurchaseOrderItems.AnyAsync(p =>
+                    p.Id == dto.PurchaseOrderItemId.Value && p.PurchaseOrderId == invoice.PurchaseOrderId.Value);
+                if (!poItemExists)
+                    throw new InvalidOperationException($"PurchaseOrderItem {dto.PurchaseOrderItemId} does not belong to PO {invoice.PurchaseOrderId}");
+            }
+
             ValidateInvoiceItem(dto);
+            var lineTotal = await ResolveLineTotalAsync(dto);
 
-            item.ArticleId = dto.ArticleId.HasValue ? dto.ArticleId.Value.ToString() : null;
+            var strategy = _context.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
+            {
+                using var tx = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    item.ArticleId = dto.ArticleId.HasValue ? dto.ArticleId.Value.ToString() : null;
+                    item.ArticleName = dto.ArticleName;
+                    item.Description = dto.Description;
+                    item.Quantity = dto.Quantity;
+                    item.UnitPrice = dto.UnitPrice;
+                    item.TaxRate = dto.TaxRate;
+                    item.LineTotal = lineTotal;
+                    await _context.SaveChangesAsync();
 
-            item.ArticleName = dto.ArticleName;
-            item.Description = dto.Description;
-            item.Quantity = dto.Quantity;
-            item.UnitPrice = dto.UnitPrice;
-            item.TaxRate = dto.TaxRate;
-            item.LineTotal = dto.Quantity * dto.UnitPrice;
-            await _context.SaveChangesAsync();
+                    await RecalculateInvoiceTotalsAsync(invoiceId);
 
-            await RecalculateInvoiceTotalsAsync(invoiceId);
+                    if (invoice.PurchaseOrderId.HasValue)
+                        await SyncPurchaseOrderPaymentStatusAsync(invoice.PurchaseOrderId.Value);
+
+                    await tx.CommitAsync();
+                }
+                catch { await tx.RollbackAsync(); throw; }
+            });
             return MapItemToDto(item);
         }
 
@@ -573,11 +673,43 @@ namespace MyApi.Modules.Purchases.Services
 
             var item = invoice.Items?.FirstOrDefault(i => i.Id == itemId);
             if (item == null) return false;
-            _context.SupplierInvoiceItems.Remove(item);
-            await _context.SaveChangesAsync();
 
-            await RecalculateInvoiceTotalsAsync(invoiceId);
+            var strategy = _context.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
+            {
+                using var tx = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    _context.SupplierInvoiceItems.Remove(item);
+                    await _context.SaveChangesAsync();
+
+                    await RecalculateInvoiceTotalsAsync(invoiceId);
+
+                    if (invoice.PurchaseOrderId.HasValue)
+                        await SyncPurchaseOrderPaymentStatusAsync(invoice.PurchaseOrderId.Value);
+
+                    await tx.CommitAsync();
+                }
+                catch { await tx.RollbackAsync(); throw; }
+            });
             return true;
+        }
+
+        // When a SupplierInvoiceItem is linked to a PurchaseOrderItem, use the PO
+        // line's post-line-discount LineTotal (tax-exclusive) so the invoice reconciles
+        // with the originating PO — even when per-line discounts were applied on the PO.
+        // For standalone items (no PO link) fall back to Quantity * UnitPrice.
+        private async Task<decimal> ResolveLineTotalAsync(CreateSupplierInvoiceItemDto dto)
+        {
+            if (dto.PurchaseOrderItemId.HasValue)
+            {
+                var poLt = await _context.PurchaseOrderItems
+                    .Where(p => p.Id == dto.PurchaseOrderItemId.Value)
+                    .Select(p => (decimal?)p.LineTotal)
+                    .FirstOrDefaultAsync();
+                if (poLt.HasValue) return poLt.Value;
+            }
+            return dto.Quantity * dto.UnitPrice;
         }
 
         private async Task RecalculateInvoiceTotalsAsync(int invoiceId)
@@ -585,7 +717,10 @@ namespace MyApi.Modules.Purchases.Services
             var invoice = await _context.SupplierInvoices.Include(i => i.Items).FirstOrDefaultAsync(i => i.Id == invoiceId);
             if (invoice == null) return;
             var items = invoice.Items?.ToList() ?? new List<SupplierInvoiceItem>();
-            invoice.SubTotal = items.Sum(i => i.Quantity * i.UnitPrice);
+            // SubTotal sums LineTotal (post-line-discount, tax-exclusive) instead of
+            // raw Quantity*UnitPrice so PO-linked invoice lines reconcile with the
+            // originating PO's afterLineDiscount base.
+            invoice.SubTotal = items.Sum(i => i.LineTotal);
             var discAmt = invoice.DiscountType == "percentage" ? invoice.SubTotal * invoice.Discount / 100 : invoice.Discount;
             var afterDiscount = invoice.SubTotal - discAmt;
 
@@ -597,7 +732,7 @@ namespace MyApi.Modules.Purchases.Services
             invoice.TaxAmount = subTotal > 0
                 ? items.Sum(i =>
                 {
-                    var lineSub = i.Quantity * i.UnitPrice;
+                    var lineSub = i.LineTotal;
                     var lineShare = lineSub / subTotal;       // proportion of header discount that applies to this line
                     var lineAfterDisc = lineSub - (discAmt * lineShare);
                     return lineAfterDisc * i.TaxRate / 100;

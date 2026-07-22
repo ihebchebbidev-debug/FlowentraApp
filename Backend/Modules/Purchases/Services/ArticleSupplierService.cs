@@ -16,14 +16,26 @@ namespace MyApi.Modules.Purchases.Services
 
         public async Task<List<ArticleSupplierDto>> GetByArticleAsync(int articleId)
         {
+            // Exclude tombstoned suppliers. Contact has no global IsDeleted query
+            // filter, so a soft-deleted supplier would keep appearing in the
+            // "pick supplier for this article" dropdowns and fail loudly only at
+            // PO-creation time (where PurchaseOrderService now enforces the same
+            // filter). Consistent behavior across the module.
             return await _context.ArticleSuppliers.AsNoTracking()
-                .Where(a => a.ArticleId == articleId && a.IsActive && !a.IsDeleted)
+                .Where(a => a.ArticleId == articleId && a.IsActive && !a.IsDeleted
+                            && a.Supplier != null && !a.Supplier.IsDeleted)
                 .Include(a => a.Supplier).Include(a => a.Article).Include(a => a.PriceHistory)
                 .Select(a => MapToDto(a)).ToListAsync();
         }
 
         public async Task<List<ArticleSupplierDto>> GetBySupplierAsync(int supplierId)
         {
+            // If the supplier itself is soft-deleted, don't return any of their
+            // article links either.
+            var supplierLive = await _context.Contacts.AsNoTracking()
+                .AnyAsync(c => c.Id == supplierId && !c.IsDeleted);
+            if (!supplierLive) return new List<ArticleSupplierDto>();
+
             return await _context.ArticleSuppliers.AsNoTracking()
                 .Where(a => a.SupplierId == supplierId && a.IsActive && !a.IsDeleted)
                 .Include(a => a.Article).Include(a => a.PriceHistory)
@@ -34,20 +46,38 @@ namespace MyApi.Modules.Purchases.Services
         {
             var entity = await _context.ArticleSuppliers.AsNoTracking()
                 .Include(a => a.Article).Include(a => a.Supplier).Include(a => a.PriceHistory)
-                .FirstOrDefaultAsync(a => a.Id == id && !a.IsDeleted);
+                .FirstOrDefaultAsync(a => a.Id == id && !a.IsDeleted
+                                          && a.Supplier != null && !a.Supplier.IsDeleted);
             return entity == null ? null : MapToDto(entity);
         }
 
         public async Task<ArticleSupplierDto> CreateAsync(CreateArticleSupplierDto dto, string userId)
         {
+            // Validate the supplier contact exists AND isn't soft-deleted. Contact has
+            // no global IsDeleted query filter, and the raw FK check would only surface
+            // a missing supplier as a Postgres 23503 DbUpdateException (unfriendly) and
+            // would still accept a tombstoned contact (FK is satisfied regardless of
+            // IsDeleted). Matches the guard used in PurchaseOrder / SupplierInvoice.
+            var supplierExists = await _context.Contacts
+                .AnyAsync(c => c.Id == dto.SupplierId && !c.IsDeleted);
+            if (!supplierExists)
+                throw new KeyNotFoundException($"Supplier with ID {dto.SupplierId} not found");
+
             if (await _context.ArticleSuppliers.AnyAsync(a => a.ArticleId == dto.ArticleId && a.SupplierId == dto.SupplierId && !a.IsDeleted))
                 throw new InvalidOperationException("This supplier is already linked to the article");
 
-            // Wrap in execution strategy to be compatible with EnableRetryOnFailure
+            // Wrap in execution strategy to be compatible with EnableRetryOnFailure.
+            // Serializable: two concurrent CreateAsync calls each marking a different
+            // supplier as preferred would both read "no existing preferred rows",
+            // both commit IsPreferred=true, and produce a "two preferred suppliers
+            // for one article" state (which downstream PO auto-fill treats as
+            // non-deterministic). Serializable makes one retry / fail, and the
+            // partial unique index added in migration 20260722_ArticleSuppliers_OnePreferredPerArticle.sql
+            // catches any residual race.
             var strategy = _context.Database.CreateExecutionStrategy();
             return await strategy.ExecuteAsync(async () =>
             {
-                await using var tx = await _context.Database.BeginTransactionAsync();
+                await using var tx = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
                 try
                 {
                     if (dto.IsPreferred)
@@ -115,11 +145,13 @@ namespace MyApi.Modules.Purchases.Services
             {
                 if (dto.IsPreferred.Value)
                 {
-                    // Wrap in execution strategy to be compatible with EnableRetryOnFailure
+                    // Wrap in execution strategy to be compatible with EnableRetryOnFailure.
+                    // Serializable for the same reason as CreateAsync: prevents two
+                    // concurrent UpdateAsync calls from both winning "become preferred".
                     var strategy = _context.Database.CreateExecutionStrategy();
                     await strategy.ExecuteAsync(async () =>
                     {
-                        await using var tx = await _context.Database.BeginTransactionAsync();
+                        await using var tx = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
                         try
                         {
                             var others = await _context.ArticleSuppliers
