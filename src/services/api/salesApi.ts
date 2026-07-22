@@ -234,7 +234,14 @@ export const salesApi = {
     description: string;
     details?: string;
   }): Promise<SaleActivity> {
-    const result = await apiFetch<any>(`/api/sales/${saleId}/activities`, { method: 'POST', body: JSON.stringify(activity) });
+    // Best-effort audit write — callers already try/catch and warn-log failures.
+    // Suppress the global error toast so a failing propagation never surfaces
+    // alongside the caller's own success toast (e.g. dispatch status change).
+    const result = await apiFetch<any>(`/api/sales/${saleId}/activities`, {
+      method: 'POST',
+      body: JSON.stringify(activity),
+      headers: { 'X-Suppress-Error-Toast': 'true' },
+    });
     const data = unwrap(result, 'Failed to add activity');
     return data.data || data;
   },

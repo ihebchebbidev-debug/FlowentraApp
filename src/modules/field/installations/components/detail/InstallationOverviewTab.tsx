@@ -69,7 +69,7 @@ export function InstallationOverviewTab({
       {/* Left Column - Installation Details */}
       <div className="space-y-6">
         {/* Installation Information */}
-        <Card className="shadow-sm">
+        <Card className="shadow-sm bg-white dark:bg-card">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <Package className="h-5 w-5 text-primary" />
@@ -96,7 +96,7 @@ export function InstallationOverviewTab({
       {/* Right Column - Contact & Audit */}
       <div className="space-y-6">
         {/* Contact Information */}
-        <Card className="shadow-sm">
+        <Card className="shadow-sm bg-white dark:bg-card">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <User className="h-5 w-5 text-primary" />
@@ -151,7 +151,7 @@ export function InstallationOverviewTab({
         </Card>
 
         {/* Audit Trail */}
-        <Card className="shadow-sm">
+        <Card className="shadow-sm bg-white dark:bg-card">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <Calendar className="h-5 w-5 text-primary" />

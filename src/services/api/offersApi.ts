@@ -282,7 +282,12 @@ export const offersApi = {
     description: string;
     details?: string;
   }): Promise<OfferActivity> {
-    const result = await apiFetch<any>(`/api/offers/${offerId}/activities`, { method: 'POST', body: JSON.stringify(activity) });
+    // Best-effort audit write — see salesApi.addActivity for rationale.
+    const result = await apiFetch<any>(`/api/offers/${offerId}/activities`, {
+      method: 'POST',
+      body: JSON.stringify(activity),
+      headers: { 'X-Suppress-Error-Toast': 'true' },
+    });
     const data = unwrap(result, 'Failed to add activity');
     return data.data || data;
   },

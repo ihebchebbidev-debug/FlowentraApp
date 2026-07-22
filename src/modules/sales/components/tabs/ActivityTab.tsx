@@ -1,3 +1,4 @@
+import { UserInline } from "@/components/ui/user-inline";
 import { useState, useEffect } from "react";
 import { ListSkeleton } from "@/components/ui/page-skeleton";
 import { useTranslation } from "react-i18next";
@@ -370,8 +371,9 @@ export function ActivityTab({ sale, onDataChange }: ActivityTabProps) {
                             {format(new Date(activity.createdAt), 'MMM d, yyyy • HH:mm')}
                           </span>
                           {activity.createdBy && (
-                            <span className="text-sm text-muted-foreground">
-                              {t('activityTab.by')} {getUserName(activity.createdBy)}
+                            <span className="text-sm text-muted-foreground inline-flex items-center gap-1">
+                              {t('activityTab.by')}
+                              <UserInline userId={activity.createdBy} name={getUserName(activity.createdBy)} size="xs" />
                             </span>
                           )}
                         </div>

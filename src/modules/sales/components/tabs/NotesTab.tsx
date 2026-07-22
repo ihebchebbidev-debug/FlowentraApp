@@ -1,3 +1,4 @@
+import { UserInline } from "@/components/ui/user-inline";
 import { useState, useEffect } from "react";
 import { ListSkeleton } from "@/components/ui/page-skeleton";
 import { useTranslation } from "react-i18next";
@@ -349,8 +350,9 @@ export function NotesTab({ sale }: NotesTabProps) {
                             {format(new Date(activity.createdAt), 'MMM d, yyyy • HH:mm')}
                           </span>
                           {activity.createdBy && (
-                            <span className="text-xs text-muted-foreground">
-                              {t('notesTab.by')} {getUserName(activity.createdBy)}
+                            <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                              {t('notesTab.by')}
+                              <UserInline userId={activity.createdBy} name={getUserName(activity.createdBy)} size="xs" />
                             </span>
                           )}
                         </div>

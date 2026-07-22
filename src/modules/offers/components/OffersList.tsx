@@ -67,6 +67,7 @@ import { useFilteredByCompany } from '@/components/CompanyFilter';
 import { CreateActionButton } from '@/components/CreateActionButton';
 import { getInitialViewMode, useEnforceListOnMobile } from '../../../hooks/getInitialViewMode';
 import { OffersAutopilotDemo } from './onboarding/OffersAutopilotDemo';
+import { UserInline } from '@/components/ui/user-inline';
 
 // Helper to calculate total amount from items including taxes
 // Business rule: Subtotal → Discount → Tax (on afterDiscount) → Fiscal Stamp
@@ -869,10 +870,18 @@ export function OffersList() {
                               </span>
                             </div>
                             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <User className="h-3 w-3 flex-shrink-0" />
-                                <span className="truncate">{offer.assignedToName || t('unassigned')}</span>
-                              </div>
+                              {offer.assignedTo || offer.assignedToName ? (
+                                <UserInline
+                                  userId={offer.assignedTo}
+                                  name={offer.assignedToName}
+                                  size="xs"
+                                />
+                              ) : (
+                                <div className="flex items-center gap-1">
+                                  <User className="h-3 w-3 flex-shrink-0" />
+                                  <span className="truncate">{t('unassigned')}</span>
+                                </div>
+                              )}
 
                               <div className="hidden sm:flex items-center gap-1">
                                 <Calendar className="h-3 w-3 flex-shrink-0" />

@@ -72,6 +72,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { SalesKanbanView } from './SalesKanbanView';
 import { TableRowActions } from '@/shared/components/TableRowActions';
 import { getInitialViewMode } from '../../../hooks/getInitialViewMode';
+import { UserInline } from '@/components/ui/user-inline';
 
 // Helper to calculate total amount from items including taxes
 const calculateItemsTotal = (sale: Sale): number => {
@@ -713,11 +714,13 @@ export function SalesList() {
 
                       {/* Details */}
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pl-12 mb-3">
-                        {sale.assignedToName && (
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <User className="h-3 w-3 shrink-0" />
-                            <span className="truncate">{sale.assignedToName}</span>
-                          </div>
+                        {(sale.assignedTo || sale.assignedToName) && (
+                          <UserInline
+                            userId={sale.assignedTo}
+                            name={sale.assignedToName}
+                            size="xs"
+                            className="text-xs text-muted-foreground"
+                          />
                         )}
                         {sale.estimatedCloseDate && (
                           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">

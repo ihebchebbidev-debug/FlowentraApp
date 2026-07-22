@@ -296,7 +296,13 @@ export const dealsApi = {
   },
 
   async addActivity(dealId: number, activity: { type: string; description: string; details?: string }): Promise<DealActivity> {
-    const result = await apiFetch<any>(`/api/deals/${dealId}/activities`, { method: 'POST', body: JSON.stringify(activity) });
+    // Best-effort audit write — suppress the global error toast so a failing
+    // propagation never surfaces alongside the caller's own success toast.
+    const result = await apiFetch<any>(`/api/deals/${dealId}/activities`, {
+      method: 'POST',
+      body: JSON.stringify(activity),
+      headers: { 'X-Suppress-Error-Toast': 'true' },
+    });
     const data = unwrap(result, 'Failed to add activity');
     return data.data ?? data;
   },

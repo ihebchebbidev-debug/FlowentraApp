@@ -79,9 +79,17 @@ export function GlobalSearch() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Keyboard navigation
+  // Keyboard navigation + global ⌘K / Ctrl+K shortcut to focus the search
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Global focus shortcut: ⌘K / Ctrl+K
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        inputRef.current?.focus();
+        inputRef.current?.select();
+        return;
+      }
+
       if (!isOpen || results.length === 0) return;
 
       switch (event.key) {
@@ -112,6 +120,15 @@ export function GlobalSearch() {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, results, selectedIndex, handleSelectResult]);
+
+  // Detect Mac for correct shortcut hint
+  const [isMac, setIsMac] = useState(false);
+  useEffect(() => {
+    if (typeof navigator !== 'undefined') {
+      setIsMac(/Mac|iPhone|iPad|iPod/.test(navigator.platform));
+    }
+  }, []);
+
 
   // Dynamic search across all modules
   const performSearch = useCallback(async (searchQuery: string) => {
@@ -438,9 +455,9 @@ export function GlobalSearch() {
           value={query}
           onChange={handleInputChange}
           onFocus={() => query && setIsOpen(true)}
-          className="pl-10 pr-10 h-10 md:h-11 w-full bg-background border-border focus:border-primary transition-colors text-sm md:text-base"
+          className="pl-10 pr-16 h-10 md:h-11 w-full bg-background border-border focus:border-primary transition-colors text-sm md:text-base"
         />
-        {query && (
+        {query ? (
           <Button
             variant="ghost"
             size="sm"
@@ -453,7 +470,15 @@ export function GlobalSearch() {
               <X className="h-4 w-4" />
             )}
           </Button>
+        ) : (
+          <kbd
+            aria-hidden="true"
+            className="hidden md:inline-flex pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-6 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground"
+          >
+            <span className="text-xs">{isMac ? '⌘' : 'Ctrl'}</span>K
+          </kbd>
         )}
+
       </div>
 
       {/* Dropdown Results */}

@@ -207,22 +207,24 @@ export function DashboardHeader() {
               Delete on this page target it via the X-Target-Tenant header. */}
           <GlobalCompanyFilter />
 
-          {/* Offline switch near Ask AI */}
+          {/* Offline switch near Ask AI — label hidden on small screens to reduce crowding */}
           <Button
             variant={offlineEnabled ? "default" : "outline"}
             size="sm"
-            className="h-8 gap-1 relative"
+            className="h-8 gap-1 relative px-2 lg:px-3"
             onClick={() => setOfflineEnabled(!offlineEnabled)}
             title={offlineEnabled ? "Offline mode enabled" : "Offline mode disabled"}
+            aria-label={offlineEnabled ? "Offline mode enabled" : "Offline mode disabled"}
           >
             {offlineEnabled || !online ? <WifiOff className="h-3.5 w-3.5" /> : <Wifi className="h-3.5 w-3.5" />}
-            <span className="text-xs">{offlineEnabled ? "Offline" : "Online"}</span>
+            <span className="text-xs hidden lg:inline">{offlineEnabled ? "Offline" : "Online"}</span>
             {pendingCount > 0 && (
               <span className="absolute -top-2 -right-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] leading-none px-1">
                 {pendingCount > 99 ? "99+" : pendingCount}
               </span>
             )}
           </Button>
+
           {/* Ask AI Button - Only show if user has AI permission and network / not offline mode */}
           {canAccessAi && aiAssistantAvailable && (
             <Button
@@ -353,11 +355,16 @@ export function DashboardHeader() {
             </Button>
           )} */}
 
-          {/* User avatar last — only when sidebar is in topbar mode (sidebar version owns the profile otherwise) */}
-          {layoutMode === 'topbar' && (
+          {/* User avatar + dropdown — always visible in header, sits after Help */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild data-tour="user-menu">
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full p-0 overflow-hidden">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 rounded-full p-0 overflow-hidden ring-1 ring-border hover:ring-primary/40 transition-all ml-1"
+                aria-label={t('userMenu') || 'User menu'}
+                title={`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || t('userMenu') || 'User menu'}
+              >
                 <UserAvatar
                   src={user?.profilePictureUrl}
                   name={`${user?.firstName || ''} ${user?.lastName || ''}`}
@@ -366,27 +373,33 @@ export function DashboardHeader() {
                 />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52 p-1">
-              <div className="px-2.5 py-2">
-                <div className="flex items-center gap-2.5">
+            <DropdownMenuContent align="end" sideOffset={8} className="w-64 p-1.5">
+              <div className="px-2.5 py-2.5">
+                <div className="flex items-center gap-3">
                   <UserAvatar
                     src={user?.profilePictureUrl}
                     name={`${user?.firstName || ''} ${user?.lastName || ''}`}
                     seed={user?.id ?? 'admin'}
-                    size="md"
+                    size="lg"
                   />
-                  <div className="min-w-0">
-                    <p className="text-xs font-medium text-foreground leading-tight truncate">{user?.firstName} {user?.lastName}</p>
-                    <p className="text-[10px] text-muted-foreground truncate">{user?.email}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-foreground leading-tight truncate">
+                      {user?.firstName} {user?.lastName}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">{user?.email}</p>
                   </div>
                 </div>
               </div>
               <DropdownMenuSeparator className="my-1" />
-              <DropdownMenuItem onClick={() => navigate('/dashboard/settings')} className="text-xs gap-2 px-2.5 py-1.5 rounded-md">
+              <DropdownMenuItem onClick={() => navigate('/dashboard/profile')} className="text-xs gap-2 px-2.5 py-2 rounded-md cursor-pointer">
+                <User className="h-3.5 w-3.5 text-muted-foreground" />
+                {t('profile') || 'Profile'}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/dashboard/settings')} className="text-xs gap-2 px-2.5 py-2 rounded-md cursor-pointer">
                 <SettingsIcon className="h-3.5 w-3.5 text-muted-foreground" />
                 {t('settings')}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={startTour} className="text-xs gap-2 px-2.5 py-1.5 rounded-md">
+              <DropdownMenuItem onClick={startTour} className="text-xs gap-2 px-2.5 py-2 rounded-md cursor-pointer">
                 <PlayCircle className="h-3.5 w-3.5 text-muted-foreground" />
                 {tOnboarding('tour.replayTour')}
               </DropdownMenuItem>
@@ -394,13 +407,12 @@ export function DashboardHeader() {
               <DropdownMenuLabel className="px-2.5 pt-1 pb-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">{t('theme')}</DropdownMenuLabel>
               <ThemeOptions />
               <DropdownMenuSeparator className="my-1" />
-              <DropdownMenuItem onClick={handleSignOut} className="text-xs gap-2 px-2.5 py-1.5 rounded-md text-destructive focus:text-destructive">
+              <DropdownMenuItem onClick={handleSignOut} className="text-xs gap-2 px-2.5 py-2 rounded-md text-destructive focus:text-destructive cursor-pointer">
                 <LogOut className="h-3.5 w-3.5" />
                 {t('signOut')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          )}
         </div>
       </div>
       

@@ -730,7 +730,7 @@ export default function DispatchJobDetail() {
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6 mt-0">
             {/* Dispatch Details Card */}
-            <Card>
+            <Card className="bg-white dark:bg-card">
               <CardHeader className="pb-4">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
                   <Wrench className="h-4 w-4 text-primary" />

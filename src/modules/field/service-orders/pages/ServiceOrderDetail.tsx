@@ -1240,7 +1240,7 @@ export default function ServiceOrderDetail() {
           <TabsContent value="overview">
             <div className="space-y-6">
               {/* Service Order Details - Consolidated like Sales/Offers */}
-              <Card>
+              <Card className="bg-white dark:bg-card">
                 <CardHeader className="pb-4">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
                     <Wrench className="h-4 w-4 text-primary" />

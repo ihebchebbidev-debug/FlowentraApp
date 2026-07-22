@@ -313,15 +313,26 @@ export const workflowExecutionsApi = {
   // in try/catch and the backend also auto-triggers on status changes. Suppress the
   // global error toast so "Workflow N not found" (e.g. no default workflow configured)
   // never surfaces to the user.
-  triggerManual: async (workflowId: number | null | undefined, entityType: string, entityId: number): Promise<WorkflowExecution> => {
-    // Skip if no valid workflow ID — workflowId 0 or null means "no specific workflow configured"
-    if (!workflowId) throw new Error('No workflow configured for this entity');
+  triggerManual: async (workflowId: number | null | undefined, entityType: string, entityId: number): Promise<WorkflowExecution | null> => {
+    // No workflow configured for this entity is a valid, non-error state — resolve
+    // silently so callers never surface it as a failure to the user.
+    if (!workflowId) {
+      console.debug('[workflow] triggerManual skipped: no workflow configured for', entityType, entityId);
+      return null;
+    }
     const { data, error } = await apiFetch<WorkflowExecution>(`/api/workflow-executions/trigger-manual`, {
       method: 'POST',
       body: JSON.stringify({ workflowId, entityType, entityId }),
       headers: { 'X-Suppress-Error-Toast': 'true' },
     });
-    if (error) throw new Error(error);
+    if (error) {
+      // Treat "workflow not found / not configured" as a successful no-op.
+      if (/not found|no workflow|not configured/i.test(error)) {
+        console.debug('[workflow] triggerManual no-op:', error);
+        return null;
+      }
+      throw new Error(error);
+    }
     return data!;
   },
 };
