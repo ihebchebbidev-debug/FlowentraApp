@@ -1,4 +1,4 @@
-import { LucideIcon, RefreshCw, Download, SlidersHorizontal, Building2, AlertCircle } from 'lucide-react';
+import { LucideIcon, RefreshCw, Download, Building2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -25,6 +25,7 @@ interface ReportShellProps {
   subtitle?: string;
   onRefresh?: () => void;
   isRefreshing?: boolean;
+  onExport?: () => void;
   error?: unknown;
   actions?: React.ReactNode;
   children: React.ReactNode;
@@ -37,6 +38,7 @@ export const ReportShell = ({
   subtitle,
   onRefresh,
   isRefreshing,
+  onExport,
   error,
   actions,
   children,
@@ -71,14 +73,12 @@ export const ReportShell = ({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {actions}
-          <Button variant="outline" size="sm" className="h-8">
-            <SlidersHorizontal className="mr-1.5 h-3.5 w-3.5" />
-            <span className="hidden sm:inline">{tr('actions.filters', 'Filters')}</span>
-          </Button>
-          <Button variant="outline" size="sm" className="h-8">
-            <Download className="mr-1.5 h-3.5 w-3.5" />
-            <span className="hidden sm:inline">{tr('actions.export', 'Export')}</span>
-          </Button>
+          {onExport && (
+            <Button variant="outline" size="sm" className="h-8" onClick={onExport}>
+              <Download className="mr-1.5 h-3.5 w-3.5" />
+              <span className="hidden sm:inline">{tr('actions.export', 'Export')}</span>
+            </Button>
+          )}
           {onRefresh && (
             <Button size="sm" className="h-8" onClick={onRefresh} disabled={isRefreshing}>
               <RefreshCw className={cn('mr-1.5 h-3.5 w-3.5', isRefreshing && 'animate-spin')} />

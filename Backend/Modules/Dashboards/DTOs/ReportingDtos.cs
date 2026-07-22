@@ -48,6 +48,7 @@ namespace MyApi.Modules.Dashboards.DTOs
         public List<ChartDataPointDto> SalesByStatus { get; set; } = new();
         public List<ChartDataPointDto> ConversionTrend { get; set; } = new();
         public List<MultiSeriesChartPointDto> YoyComparison { get; set; } = new();
+        public List<ChartDataPointDto> OrdersByType { get; set; } = new();
         public List<RagTableItemDto> TopCustomers { get; set; } = new();
     }
 

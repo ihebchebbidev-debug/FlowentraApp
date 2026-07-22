@@ -10,12 +10,24 @@ const dotClass: Record<RagStatus, string> = {
   neutral: 'bg-[hsl(var(--rag-neutral))]',
 };
 
-export const RagDot = ({ status, className }: { status: RagStatus; className?: string }) => (
-  <span
-    aria-hidden
-    className={cn('inline-block h-2.5 w-2.5 rounded-full flex-shrink-0', dotClass[status], className)}
-  />
-);
+/** Coerce any incoming string to a valid RagStatus so a stray backend value
+ *  ("Green", "unknown", "") never renders an invisible dot / unstyled badge. */
+const asRag = (status: string | undefined | null): RagStatus => {
+  const s = String(status ?? '').toLowerCase();
+  return (s === 'green' || s === 'yellow' || s === 'red' || s === 'orange' || s === 'neutral')
+    ? (s as RagStatus)
+    : 'neutral';
+};
+
+export const RagDot = ({ status, className }: { status: RagStatus | string; className?: string }) => {
+  const s = asRag(status);
+  return (
+    <span
+      aria-hidden
+      className={cn('inline-block h-2.5 w-2.5 rounded-full flex-shrink-0', dotClass[s], className)}
+    />
+  );
+};
 
 const badgeClass: Record<RagStatus, string> = {
   green: 'bg-[hsl(var(--rag-green)/0.12)] text-[hsl(var(--rag-green))] border-[hsl(var(--rag-green)/0.3)]',
@@ -30,17 +42,20 @@ export const RagBadge = ({
   children,
   className,
 }: {
-  status: RagStatus;
+  status: RagStatus | string;
   children: React.ReactNode;
   className?: string;
-}) => (
-  <span
-    className={cn(
-      'inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium',
-      badgeClass[status],
-      className
-    )}
-  >
-    {children}
-  </span>
-);
+}) => {
+  const s = asRag(status);
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium',
+        badgeClass[s],
+        className
+      )}
+    >
+      {children}
+    </span>
+  );
+};

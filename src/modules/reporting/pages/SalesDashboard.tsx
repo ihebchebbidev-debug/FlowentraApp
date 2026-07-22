@@ -16,11 +16,14 @@ import { useReportingSales } from '../hooks/useReporting';
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { useReportFilters } from '../store/useReportFiltersStore';
 import { filterByStatusName, filterTableByStatus, sliceByPeriod } from '../utils/applyFilters';
+import { exportSingleReport } from '../utils/exportReport';
+import { useXlsxI18n } from '../hooks/useXlsxI18n';
 
 const SOURCE = 'Sales' as const;
 
 export const SalesDashboard = () => {
   const { t } = useTranslation('reporting');
+  const xlsxI18n = useXlsxI18n();
   const { current: currency } = useCurrency();
   const { values: appliedFilters, setValues: setAppliedFilters } = useReportFilters('sales');
   const { data, isLoading, refetch, isFetching, error } = useReportingSales(appliedFilters);
@@ -45,6 +48,8 @@ export const SalesDashboard = () => {
   const conversion = sliceByPeriod(data?.conversionTrend ?? [], period);
   const yoy = data?.yoyComparison ?? [];
   const topCustomers = filterTableByStatus(data?.topCustomers ?? [], status);
+  const ordersByType = (data?.ordersByType ?? []).slice(0, 5);
+  const maxOrdersByType = Math.max(1, ...ordersByType.map((r) => Number(r.value ?? 0)));
   const currentYear = new Date().getFullYear();
 
   return (
@@ -54,6 +59,7 @@ export const SalesDashboard = () => {
       title={t('sales.title', 'Sales Dashboard')}
       subtitle={t('sales.subtitle', 'Commercial pipeline: offers, orders, conversion, customers')}
       onRefresh={() => refetch()}
+      onExport={() => data && exportSingleReport('sales', data, 'xlsx', xlsxI18n)}
       isRefreshing={isFetching}
       error={error}
     >
@@ -122,12 +128,12 @@ export const SalesDashboard = () => {
                 </BarChart>
               </ResponsiveContainer>
             </ChartCard>
-            <ChartCard title={t('sales.ordersByType', 'Orders & Offers by Type')} favorite={{ id: 's-types', title: 'Orders by Type', source: SOURCE }}>
-              <ProgressRow label="Products" value={72} tone="primary" />
-              <ProgressRow label="Services" value={54} tone="accent" />
-              <ProgressRow label="Maintenance" value={38} tone="info" />
-              <ProgressRow label="Spare Parts" value={24} tone="warning" />
-              <ProgressRow label="Training" value={12} tone="purple" />
+            <ChartCard title={t('sales.ordersByType', 'Orders & Offers by Type')} favorite={{ id: 's-types', title: 'Orders by Type', source: SOURCE }} empty={!ordersByType.length}>
+              {(['primary', 'accent', 'info', 'warning', 'purple'] as const).map((tone, i) => {
+                const row = ordersByType[i];
+                if (!row) return null;
+                return <ProgressRow key={row.name} label={row.name} value={Math.round((Number(row.value ?? 0) / maxOrdersByType) * 100)} tone={tone} />;
+              })}
             </ChartCard>
           </div>
 

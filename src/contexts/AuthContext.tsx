@@ -291,6 +291,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsAuthenticated(false);
       setIsMainAdmin(false);
       import("@/services/offline/offlineHydrationPreferences").then((m) => m.clearHydrationPreferencesMemory());
+      import("@/modules/reporting/store/useReportFiltersStore").then((m) => m.clearAllReportFilters()).catch(() => {});
     }
   };
 

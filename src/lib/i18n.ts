@@ -526,6 +526,26 @@ const enTranslation = {
   back: 'Back',
 };
 
+// Ensure shared statusFlow.* UI keys (mobile stepper: back/advance/stepOf/done/updating)
+// aren't clobbered by module-level `statusFlow` blocks (sales/offers etc.) that only
+// define status IDs. Shallow spread would replace the whole object and drop the shared keys,
+// which is what caused literal `statusFlow.stepOf`/`statusFlow.back` to render on mobile.
+(enTranslation as any).statusFlow = {
+  ...((sharedEn as any).statusFlow ?? {}),
+  ...((enTranslation as any).statusFlow ?? {}),
+  // Shared UI keys always win — modules must not override these.
+  pipelineLabel: (sharedEn as any).statusFlow?.pipelineLabel ?? 'Status pipeline',
+  currentStatusLabel: (sharedEn as any).statusFlow?.currentStatusLabel ?? 'Current status',
+  stepOf: (sharedEn as any).statusFlow?.stepOf ?? 'Step {{current}} of {{total}}',
+  change: (sharedEn as any).statusFlow?.change ?? 'Change',
+  changeStatus: (sharedEn as any).statusFlow?.changeStatus ?? 'Change status',
+  back: (sharedEn as any).statusFlow?.back ?? 'Back',
+  advance: (sharedEn as any).statusFlow?.advance ?? 'Advance',
+  done: (sharedEn as any).statusFlow?.done ?? 'Done',
+  updating: (sharedEn as any).statusFlow?.updating ?? 'Updating...',
+  unknown: (sharedEn as any).statusFlow?.unknown ?? 'Unknown',
+};
+
 // French merge
 const frTranslation = {
   auth: {
@@ -868,6 +888,22 @@ const frTranslation = {
 (frTranslation as any).common = {
   ...((frTranslation as any).common ?? {}),
   back: 'Retour',
+};
+
+// Same guard as English: keep shared statusFlow UI keys after module spreads.
+(frTranslation as any).statusFlow = {
+  ...((sharedFr as any).statusFlow ?? {}),
+  ...((frTranslation as any).statusFlow ?? {}),
+  pipelineLabel: (sharedFr as any).statusFlow?.pipelineLabel ?? 'Pipeline de statut',
+  currentStatusLabel: (sharedFr as any).statusFlow?.currentStatusLabel ?? 'Statut actuel',
+  stepOf: (sharedFr as any).statusFlow?.stepOf ?? 'Étape {{current}} sur {{total}}',
+  change: (sharedFr as any).statusFlow?.change ?? 'Modifier',
+  changeStatus: (sharedFr as any).statusFlow?.changeStatus ?? 'Modifier le statut',
+  back: (sharedFr as any).statusFlow?.back ?? 'Retour',
+  advance: (sharedFr as any).statusFlow?.advance ?? 'Avancer',
+  done: (sharedFr as any).statusFlow?.done ?? 'Terminé',
+  updating: (sharedFr as any).statusFlow?.updating ?? 'Mise à jour...',
+  unknown: (sharedFr as any).statusFlow?.unknown ?? 'Inconnu',
 };
 
 // German translations - start with dispatcher module, fallback to English for others

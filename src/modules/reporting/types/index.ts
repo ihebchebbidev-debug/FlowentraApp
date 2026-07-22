@@ -35,6 +35,7 @@ export interface SalesReport {
   salesByStatus: ChartDataPoint[];
   conversionTrend: ChartDataPoint[];
   yoyComparison: MultiSeriesChartPoint[];
+  ordersByType: ChartDataPoint[];
   topCustomers: RagTableItem[];
 }
 

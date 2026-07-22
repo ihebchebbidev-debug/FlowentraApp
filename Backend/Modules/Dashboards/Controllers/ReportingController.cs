@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using MyApi.Data;
 using MyApi.Infrastructure;
 using MyApi.Modules.Dashboards.DTOs;
+using MyApi.Modules.Roles.Services;
 
 namespace MyApi.Modules.Dashboards.Controllers
 {
@@ -15,15 +16,35 @@ namespace MyApi.Modules.Dashboards.Controllers
     {
         private readonly ITenantDbContextFactory _dbFactory;
         private readonly ILogger<ReportingController> _logger;
+        private readonly IPermissionService _permissionService;
 
-        public ReportingController(ITenantDbContextFactory dbFactory, ILogger<ReportingController> logger)
+        public ReportingController(
+            ITenantDbContextFactory dbFactory,
+            ILogger<ReportingController> logger,
+            IPermissionService permissionService)
         {
             _dbFactory = dbFactory;
             _logger = logger;
+            _permissionService = permissionService;
         }
 
         private string GetTenant() =>
             Request.Headers.TryGetValue(TenantMiddleware.TenantHeaderName, out var t) ? t.ToString() : "";
+
+        // MainAdminUser bypasses granular permissions (matches UserType claim set in AuthService).
+        // Otherwise the user must have <module>:read granted through one of their active roles.
+        private async Task<bool> HasReportingReadAsync(string module)
+        {
+            var userType = User.FindFirst("UserType")?.Value;
+            if (string.Equals(userType, "MainAdminUser", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            var idClaim = User.FindFirst("UserId")?.Value
+                          ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(idClaim, out var userId)) return false;
+
+            return await _permissionService.UserHasPermissionAsync(userId, module, "read");
+        }
 
         // ─── GET /api/reporting/sales ──────────────────────────────────
         [HttpGet("sales")]
@@ -108,7 +129,29 @@ namespace MyApi.Modules.Dashboards.Controllers
                 });
             }
 
-            // 5. Top Customers
+            // 5. Orders & Offers by Type — group line items by Type across offers + sales
+            var saleItemTypes = await context.SaleItems
+                .AsNoTracking()
+                .GroupBy(i => i.Type)
+                .Select(g => new { Type = g.Key, Count = g.Count() })
+                .ToListAsync();
+            var offerItemTypes = await context.OfferItems
+                .AsNoTracking()
+                .GroupBy(i => i.Type)
+                .Select(g => new { Type = g.Key, Count = g.Count() })
+                .ToListAsync();
+            report.OrdersByType = saleItemTypes.Concat(offerItemTypes)
+                .GroupBy(x => string.IsNullOrWhiteSpace(x.Type) ? "article" : x.Type!)
+                .Select(g => new ChartDataPointDto
+                {
+                    Name = char.ToUpperInvariant(g.Key[0]) + g.Key.Substring(1),
+                    Value = g.Sum(x => x.Count)
+                })
+                .OrderByDescending(x => x.Value)
+                .Take(8)
+                .ToList();
+
+            // 6. Top Customers
             var topSales = await context.Sales
                 .Where(s => s.ContactId != 0)
                 .GroupBy(s => s.ContactId)
@@ -197,6 +240,29 @@ namespace MyApi.Modules.Dashboards.Controllers
                 });
             }
 
+            // 5. Consumed vs Planned Hours (current year ServiceOrderJobs by ScheduledDate/CompletedDate)
+            var jobHours = await context.ServiceOrderJobs
+                .AsNoTracking()
+                .Select(j => new { j.EstimatedHours, j.ActualHours, j.EstimatedDuration, j.ActualDuration, j.ScheduledDate, j.CompletedDate })
+                .ToListAsync();
+            var jobsThisYear = jobHours.Where(j =>
+                (j.ScheduledDate.HasValue && j.ScheduledDate.Value.Year == currentYear) ||
+                (j.CompletedDate.HasValue && j.CompletedDate.Value.Year == currentYear))
+                .ToList();
+            if (!jobsThisYear.Any()) jobsThisYear = jobHours; // fallback if no year-tagged jobs
+
+            decimal planned = jobsThisYear.Sum(j =>
+                j.EstimatedHours ?? (j.EstimatedDuration.HasValue ? (decimal)j.EstimatedDuration.Value / 60m : 0m));
+            decimal consumed = jobsThisYear.Sum(j =>
+                j.ActualHours ?? (j.ActualDuration.HasValue ? (decimal)j.ActualDuration.Value / 60m : 0m));
+            decimal saved = Math.Max(0m, planned - consumed);
+            decimal efficiency = consumed > 0m ? Math.Round(planned / consumed * 100m, 0) : 0m;
+
+            report.ConsumedVsPlanned.Add(new ChartDataPointDto { Name = "Efficiency", Value = efficiency });
+            report.ConsumedVsPlanned.Add(new ChartDataPointDto { Name = "Planned", Value = Math.Round(planned, 0) });
+            report.ConsumedVsPlanned.Add(new ChartDataPointDto { Name = "Consumed", Value = Math.Round(consumed, 0) });
+            report.ConsumedVsPlanned.Add(new ChartDataPointDto { Name = "HoursSaved", Value = Math.Round(saved, 0) });
+
             return Ok(report);
         }
 
@@ -204,6 +270,9 @@ namespace MyApi.Modules.Dashboards.Controllers
         [HttpGet("finance")]
         public async Task<IActionResult> GetFinanceReport()
         {
+            if (!await HasReportingReadAsync("reporting_finance"))
+                return StatusCode(403, new { success = false, message = "Missing reporting_finance:read permission" });
+
             var tenant = GetTenant();
             await using var context = _dbFactory.CreateDbContext(tenant);
             var report = new FinanceReportDto();
@@ -277,6 +346,9 @@ namespace MyApi.Modules.Dashboards.Controllers
         [HttpGet("hr")]
         public async Task<IActionResult> GetHrReport()
         {
+            if (!await HasReportingReadAsync("reporting_hr"))
+                return StatusCode(403, new { success = false, message = "Missing reporting_hr:read permission" });
+
             var tenant = GetTenant();
             await using var context = _dbFactory.CreateDbContext(tenant);
             var report = new HrReportDto();
@@ -331,12 +403,14 @@ namespace MyApi.Modules.Dashboards.Controllers
             for (int i = 0; i < 12; i++)
             {
                 var m = start.AddMonths(i);
+                var hires = hireDates.Count(d => d.Year == m.Year && d.Month == m.Month);
+                var leavers = leaveDates.Count(d => d.Year == m.Year && d.Month == m.Month);
                 report.HiringVsTurnover.Add(new MultiSeriesChartPointDto
                 {
                     Name = m.ToString("MMM"),
-                    Series1 = hireDates.Count(d => d.Year == m.Year && d.Month == m.Month),
-                    Series2 = leaveDates.Count(d => d.Year == m.Year && d.Month == m.Month),
-                    Series3 = 0
+                    Series1 = hires,
+                    Series2 = leavers,
+                    Series3 = hires - leavers // Net headcount change
                 });
             }
 

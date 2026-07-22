@@ -12,7 +12,6 @@ import { HRPageHeader } from '../HRPageHeader';
 import { useEmployees } from '../../hooks/useEmployees';
 import { useBonuses } from '../../hooks/useBonuses';
 import { useCnssRates } from '../../hooks/useCnss';
-import { formatTnd } from '../../utils/money';
 import { calculateTunisianNetSalary } from '../../utils/tunisianTaxEngine';
 import dayjs from 'dayjs';
 import { useQuery } from '@tanstack/react-query';
@@ -22,7 +21,7 @@ import { useCurrency } from '@/shared/hooks/useCurrency';
 
 export function ReportsPage() {
   const { t } = useTranslation('hr');
-  const { current: currency } = useCurrency();
+  const { current: currency, format: formatMoney } = useCurrency();
   const [year, setYear] = useState(dayjs().year());
   const [month, setMonth] = useState(dayjs().month() + 1);
 
@@ -201,22 +200,22 @@ export function ReportsPage() {
                     {employeeCostRows.map(r => (
                       <TableRow key={r.userId}>
                         <TableCell className="font-medium">{r.name}</TableCell>
-                        <TableCell>{formatTnd(r.gross)}</TableCell>
-                        <TableCell className="text-primary">{formatTnd(r.bonuses)}</TableCell>
-                        <TableCell className="text-destructive">{formatTnd(r.deductions)}</TableCell>
-                        <TableCell>{formatTnd(r.cnssEmployer)}</TableCell>
-                        <TableCell className="font-semibold">{formatTnd(r.totalCost)}</TableCell>
-                        <TableCell className="border-l font-semibold text-primary">{formatTnd(r.ytdTotalCost)}</TableCell>
+                        <TableCell>{formatMoney(r.gross)}</TableCell>
+                        <TableCell className="text-primary">{formatMoney(r.bonuses)}</TableCell>
+                        <TableCell className="text-destructive">{formatMoney(r.deductions)}</TableCell>
+                        <TableCell>{formatMoney(r.cnssEmployer)}</TableCell>
+                        <TableCell className="font-semibold">{formatMoney(r.totalCost)}</TableCell>
+                        <TableCell className="border-l font-semibold text-primary">{formatMoney(r.ytdTotalCost)}</TableCell>
                       </TableRow>
                     ))}
                     <TableRow className="bg-muted/30 font-semibold">
                       <TableCell>{t('reportsPage.total')}</TableCell>
-                      <TableCell>{formatTnd(totals.gross)}</TableCell>
-                      <TableCell>{formatTnd(totals.bonuses)}</TableCell>
-                      <TableCell>{formatTnd(totals.deductions)}</TableCell>
-                      <TableCell>{formatTnd(totals.cnssEmployer)}</TableCell>
-                      <TableCell>{formatTnd(totals.totalCost)}</TableCell>
-                      <TableCell className="border-l">{formatTnd(totals.ytdTotalCost)}</TableCell>
+                      <TableCell>{formatMoney(totals.gross)}</TableCell>
+                      <TableCell>{formatMoney(totals.bonuses)}</TableCell>
+                      <TableCell>{formatMoney(totals.deductions)}</TableCell>
+                      <TableCell>{formatMoney(totals.cnssEmployer)}</TableCell>
+                      <TableCell>{formatMoney(totals.totalCost)}</TableCell>
+                      <TableCell className="border-l">{formatMoney(totals.ytdTotalCost)}</TableCell>
                     </TableRow>
                   </TableBody>
                 </Table>
@@ -256,15 +255,15 @@ export function ReportsPage() {
                 <div className="grid gap-3 sm:grid-cols-3">
                   <div className="rounded-lg border bg-muted/30 p-3">
                     <div className="text-xs text-muted-foreground">{t('reportsPage.totalGross')}</div>
-                    <div className="text-xl font-semibold mt-1">{formatTnd(totals.gross)}</div>
+                    <div className="text-xl font-semibold mt-1">{formatMoney(totals.gross)}</div>
                   </div>
                   <div className="rounded-lg border bg-muted/30 p-3">
                     <div className="text-xs text-muted-foreground">{t('reportsPage.totalNet')}</div>
-                    <div className="text-xl font-semibold mt-1">{formatTnd(totals.net)}</div>
+                    <div className="text-xl font-semibold mt-1">{formatMoney(totals.net)}</div>
                   </div>
                   <div className="rounded-lg border bg-muted/30 p-3">
                     <div className="text-xs text-muted-foreground">{t('reportsPage.totalCost')}</div>
-                    <div className="text-xl font-semibold mt-1">{formatTnd(totals.totalCost)}</div>
+                    <div className="text-xl font-semibold mt-1">{formatMoney(totals.totalCost)}</div>
                   </div>
                 </div>
               </CardContent>
@@ -299,7 +298,7 @@ export function ReportsPage() {
                 <div className="grid gap-3 sm:grid-cols-3">
                   <div className="rounded-lg border bg-muted/30 p-3">
                     <div className="text-xs text-muted-foreground">{t('reportsPage.cnssEmployer')}</div>
-                    <div className="text-xl font-semibold mt-1">{formatTnd(totals.cnssEmployer)}</div>
+                    <div className="text-xl font-semibold mt-1">{formatMoney(totals.cnssEmployer)}</div>
                   </div>
                   <div className="rounded-lg border bg-muted/30 p-3">
                     <div className="text-xs text-muted-foreground">{t('reportsPage.employerRate')}</div>
@@ -352,14 +351,20 @@ function AbsenceStatsTab({ year, month, employeesQuery, t, exportCsv, exportXlsx
     queryKey: ['hr', 'reportAbsences', users.map((u: any) => u.id), year],
     enabled: users.length > 0,
     queryFn: async () => {
-      const all: (UserLeave & { userId: number })[] = [];
-      for (const u of users) {
-        const leaves = await schedulesApi.getLeaves(u.id);
-        for (const l of leaves) all.push({ ...l, userId: u.id } as any);
-      }
-      return all;
+      const results = await Promise.all(
+        users.map(async (u: any) => {
+          try {
+            const leaves = await schedulesApi.getLeaves(u.id);
+            return leaves.map((l) => ({ ...l, userId: u.id } as UserLeave & { userId: number }));
+          } catch {
+            return [] as (UserLeave & { userId: number })[];
+          }
+        })
+      );
+      return results.flat();
     },
   });
+
 
   const stats = useMemo(() => {
     const leaves = leavesQuery.data ?? [];

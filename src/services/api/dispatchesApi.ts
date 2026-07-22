@@ -26,8 +26,15 @@ const logActivity = async (
   newValue?: string
 ): Promise<void> => {
   try {
+    // Best-effort side-effect: never surface a "Request failed" toast to the
+    // user when the history/activity write fails — the primary mutation
+    // already succeeded and showed its own success toast.
     await apiFetch(`/api/dispatches/${dispatchId}/history`, {
       method: 'POST',
+      headers: {
+        'X-Suppress-Error-Toast': 'true',
+        'X-Skip-Logging': 'true',
+      },
       body: JSON.stringify({
         action,
         oldValue: oldValue || null,

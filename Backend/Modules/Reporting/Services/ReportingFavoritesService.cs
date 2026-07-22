@@ -26,16 +26,30 @@ public class ReportingFavoritesService : IReportingFavoritesService
             .OrderBy(x => x.Position).ThenBy(x => x.CreatedAt)
             .ToListAsync(ct);
 
-        return new ReportingFavoritesResponse
+        // Defence-in-depth against the "view-all" tenant filter bypass: when the
+        // ambient tenant is -1 the global TenantId query filter is disabled, so
+        // a user with the same (Scope, WidgetId) pinned across multiple tenants
+        // gets duplicate rows back — which produces duplicate React keys and
+        // ghost widgets on the client. Collapse duplicates here by WidgetId,
+        // keeping the earliest (Position, CreatedAt) copy.
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var items = new List<ReportingFavoriteDto>(rows.Count);
+        foreach (var r in rows)
         {
-            Scope = scope,
-            Items = rows.Select(r => new ReportingFavoriteDto
+            if (!seen.Add(r.WidgetId)) continue;
+            items.Add(new ReportingFavoriteDto
             {
                 WidgetId = r.WidgetId,
                 Title = r.Title,
                 Source = r.Source,
                 Position = r.Position,
-            }).ToList(),
+            });
+        }
+
+        return new ReportingFavoritesResponse
+        {
+            Scope = scope,
+            Items = items,
         };
     }
 

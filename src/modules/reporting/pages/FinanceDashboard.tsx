@@ -1,5 +1,7 @@
 import { useReportFilters } from '../store/useReportFiltersStore';
 import { filterByStatusName, filterTableByStatus } from '../utils/applyFilters';
+import { exportSingleReport } from '../utils/exportReport';
+import { useXlsxI18n } from '../hooks/useXlsxI18n';
 import { useTranslation } from 'react-i18next';
 import { Landmark, Receipt, Wallet, TrendingDown, TrendingUp } from 'lucide-react';
 import {
@@ -21,6 +23,7 @@ const iconByIdx = [Wallet, Receipt, TrendingUp, TrendingDown];
 
 export const FinanceDashboard = () => {
   const { t } = useTranslation('reporting');
+  const xlsxI18n = useXlsxI18n();
   const { current: currency } = useCurrency();
   const { values: appliedFilters, setValues: setAppliedFilters } = useReportFilters('finance');
   const { data, isLoading, refetch, isFetching, error } = useReportingFinance(appliedFilters);
@@ -51,6 +54,7 @@ export const FinanceDashboard = () => {
       title={t('finance.title', 'Finance Dashboard')}
       subtitle={t('finance.subtitle', 'Invoices, payments & expenses with RAG flags')}
       onRefresh={() => refetch()}
+      onExport={() => data && exportSingleReport('finance', data, 'xlsx', xlsxI18n)}
       isRefreshing={isFetching}
       error={error}
     >

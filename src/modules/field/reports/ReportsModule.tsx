@@ -19,12 +19,7 @@ export default function Reports() {
   const { t, i18n } = useTranslation('field');
   const dateLocale = i18n.language === 'fr' ? fr : enUS;
   const [displayedMonth, setDisplayedMonth] = useState(new Date());
-  const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState({
-    dispatches: true,
-    absences: false,
-    holidays: false
-  });
+  
   const currentDate = new Date();
   
   // Use the real data hooks

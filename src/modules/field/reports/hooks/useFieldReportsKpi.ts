@@ -53,10 +53,26 @@ export function useFieldReportsKpi(): FieldReportsKpiState {
           console.warn('Failed to fetch service orders:', err);
           return { data: { serviceOrders: [] } };
         }),
-        dispatchesApi.getAll({ pageSize: 500 }).catch((err) => {
-          console.warn('Failed to fetch dispatches:', err);
-          return { data: [] };
-        }),
+        (async () => {
+          const pageSize = 200;
+          let page = 1;
+          const all: any[] = [];
+          while (true) {
+            try {
+              const res: any = await dispatchesApi.getAll({ page, pageSize } as any);
+              const batch: any[] = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+              all.push(...batch);
+              const totalItems = res?.totalItems ?? all.length;
+              if (all.length >= totalItems || batch.length < pageSize) break;
+              page += 1;
+              if (page > 50) break; // safety cap
+            } catch (err) {
+              console.warn('Failed to fetch dispatches:', err);
+              break;
+            }
+          }
+          return { data: all };
+        })(),
         installationsApi.getAll().catch((err) => {
           console.warn('Failed to fetch installations:', err);
           return { installations: [] };

@@ -144,18 +144,20 @@ const SalesWidget = ({ fav }: { fav: FavoriteWidget }) => {
           </ResponsiveContainer>
         </ChartCard>
       );
-    case 's-types':
+    case 's-types': {
+      const rows = (data?.ordersByType ?? []).slice(0, 5);
+      const maxVal = Math.max(1, ...rows.map((r) => Number(r.value ?? 0)));
+      const tones = ['primary', 'accent', 'info', 'warning', 'purple'] as const;
       return (
-        <ChartCard title={t('sales.ordersByType', 'Orders & Offers by Type')} favorite={fav}>
-          <ProgressList rows={[
-            { label: 'Products', value: 72, tone: 'primary' },
-            { label: 'Services', value: 54, tone: 'accent' },
-            { label: 'Maintenance', value: 38, tone: 'info' },
-            { label: 'Spare Parts', value: 24, tone: 'warning' },
-            { label: 'Training', value: 12, tone: 'purple' },
-          ]} />
+        <ChartCard title={t('sales.ordersByType', 'Orders & Offers by Type')} favorite={fav} empty={!rows.length}>
+          <ProgressList rows={rows.map((r, i) => ({
+            label: r.name,
+            value: Math.round((Number(r.value ?? 0) / maxVal) * 100),
+            tone: tones[i % tones.length],
+          }))} />
         </ChartCard>
       );
+    }
     case 's-topcust':
       return (
         <ChartCard title={t('sales.topCustomers', 'Top Customers — Offers & Orders')} favorite={fav} bodyClassName="p-0" empty={!topCustomers.length}>
@@ -222,8 +224,10 @@ const ServiceWidget = ({ fav }: { fav: FavoriteWidget }) => {
       return <KpiCard favorite={fav} icon={ClipboardList} tone="info" tag="LIVE" value={byStatusAll.reduce((s, o) => s + Number(o.value ?? 0), 0)} label={t('service.kpi.openWos', 'Work Orders')} trendDirection="down" />;
     case 'sv-kpi-techs':
       return <KpiCard favorite={fav} icon={Truck} tone="warning" tag="LIVE" value={techs.length || '—'} label={t('service.kpi.dispatches', 'Active Technicians')} trendDirection="neutral" />;
-    case 'sv-kpi-eff':
-      return <KpiCard favorite={fav} icon={Timer} tone="success" tag="YTD" value="94%" label={t('service.kpi.efficiency', 'Time Efficiency')} trend={t('service.kpi.vsPriorYear', 'vs prior year')} trendDirection="up" />;
+    case 'sv-kpi-eff': {
+      const eff = Number(data?.consumedVsPlanned?.find((p) => p.name === 'Efficiency')?.value ?? 0);
+      return <KpiCard favorite={fav} icon={Timer} tone="success" tag="YTD" value={eff > 0 ? `${eff.toFixed(0)}%` : '—'} label={t('service.kpi.efficiency', 'Time Efficiency')} trend={t('service.kpi.vsPriorYear', 'vs prior year')} trendDirection={eff >= 100 ? 'up' : 'down'} rag={eff >= 100 ? 'green' : eff >= 85 ? 'yellow' : eff > 0 ? 'red' : 'neutral'} />;
+    }
     case 'sv-comp':
       return (
         <ChartCard title={t('service.completionTarget', 'Completion Rate vs Target — by Month')} favorite={fav} empty={!completion.length}>
@@ -282,15 +286,22 @@ const ServiceWidget = ({ fav }: { fav: FavoriteWidget }) => {
           </ResponsiveContainer>
         </ChartCard>
       );
-    case 'sv-hours':
+    case 'sv-hours': {
+      const cvp = data?.consumedVsPlanned ?? [];
+      const findVal = (n: string) => Number(cvp.find((p) => p.name === n)?.value ?? 0);
+      const eff = findVal('Efficiency');
+      const planned = findVal('Planned');
+      const consumed = findVal('Consumed');
+      const saved = findVal('HoursSaved');
+      const isEmpty = !planned && !consumed && !saved && !eff;
       return (
-        <ChartCard title={t('service.hours', 'Consumed vs Planned Hours')} favorite={fav}>
+        <ChartCard title={t('service.hours', 'Consumed vs Planned Hours')} favorite={fav} empty={isEmpty} emptyLabel={t('service.hoursEmpty', 'No planned/actual hours logged yet')}>
           <div className="grid grid-cols-2 gap-2">
             {[
-              { v: '94%', l: 'Avg Efficiency', tone: 'text-accent' },
-              { v: '1,455h', l: 'Planned', tone: 'text-foreground' },
-              { v: '1,368h', l: 'Consumed', tone: 'text-foreground' },
-              { v: '87h', l: 'Hours Saved', tone: 'text-success' },
+              { v: eff > 0 ? `${eff.toFixed(0)}%` : '—', l: t('service.avgEfficiency', 'Avg Efficiency'), tone: 'text-accent' },
+              { v: `${planned.toLocaleString()}h`, l: t('service.planned', 'Planned'), tone: 'text-foreground' },
+              { v: `${consumed.toLocaleString()}h`, l: t('service.consumed', 'Consumed'), tone: 'text-foreground' },
+              { v: `${saved.toLocaleString()}h`, l: t('service.hoursSaved', 'Hours Saved'), tone: 'text-success' },
             ].map((s) => (
               <div key={s.l} className="rounded-md bg-muted p-2 text-center">
                 <div className={`text-base font-bold ${s.tone}`}>{s.v}</div>
@@ -300,6 +311,7 @@ const ServiceWidget = ({ fav }: { fav: FavoriteWidget }) => {
           </div>
         </ChartCard>
       );
+    }
     case 'sv-techs':
       return (
         <ChartCard title={t('service.techTable', 'Technician Performance Detail')} favorite={fav} bodyClassName="p-0" empty={!techs.length} emptyLabel={t('service.techEmpty', 'Technician table not yet populated')}>

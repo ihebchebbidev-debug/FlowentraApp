@@ -1,5 +1,7 @@
 import { useReportFilters } from '../store/useReportFiltersStore';
 import { filterByStatusName, sliceByPeriod } from '../utils/applyFilters';
+import { exportSingleReport } from '../utils/exportReport';
+import { useXlsxI18n } from '../hooks/useXlsxI18n';
 import { useTranslation } from 'react-i18next';
 import { ShoppingCart, Package, Truck, DollarSign } from 'lucide-react';
 import {
@@ -20,6 +22,7 @@ const SOURCE = 'Purchase' as const;
 
 export const PurchaseDashboard = () => {
   const { t } = useTranslation('reporting');
+  const xlsxI18n = useXlsxI18n();
   const { current: currency } = useCurrency();
   const { values: appliedFilters, setValues: setAppliedFilters } = useReportFilters('purchase');
   const { data, isLoading, refetch, isFetching, error } = useReportingPurchase(appliedFilters);
@@ -51,6 +54,7 @@ export const PurchaseDashboard = () => {
       title={t('purchase.title', 'Purchase Dashboard')}
       subtitle={t('purchase.subtitle', 'Suppliers, spend, articles & receipts')}
       onRefresh={() => refetch()}
+      onExport={() => data && exportSingleReport('purchase', data, 'xlsx', xlsxI18n)}
       isRefreshing={isFetching}
       error={error}
     >

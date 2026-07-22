@@ -58,6 +58,7 @@ export const KpiCard = ({
           type="button"
           onClick={(e) => { e.stopPropagation(); toggle(favorite); }}
           aria-label={isFav ? 'Unpin from My Dashboard' : 'Pin to My Dashboard'}
+          aria-pressed={isFav}
           className={cn(
             'absolute right-1.5 top-1.5 z-10 flex h-6 w-6 items-center justify-center rounded transition',
             isFav ? 'text-warning' : 'text-muted-foreground/60 hover:text-warning'

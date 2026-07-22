@@ -41,7 +41,10 @@ namespace MyApi.Modules.Roles.Services
             { "dynamic_forms", new[] { "create", "read", "update", "delete" } },
             { "ai_assistant", new[] { "read" } },
             { "hr", new[] { "create", "read", "update", "delete" } },
-            { "external_endpoints", new[] { "create", "read", "update", "delete" } }
+            { "external_endpoints", new[] { "create", "read", "update", "delete" } },
+            // Reporting — gate sensitive dashboards behind explicit read permissions
+            { "reporting_finance", new[] { "read" } },
+            { "reporting_hr", new[] { "read" } }
         };
 
         public PermissionService(ApplicationDbContext context, ILogger<PermissionService> logger)

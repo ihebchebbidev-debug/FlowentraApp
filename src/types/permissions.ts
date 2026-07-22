@@ -23,7 +23,9 @@ export type PermissionModule =
   | 'ai_assistant'
   | 'hr'
   | 'purchases'
-  | 'external_endpoints';
+  | 'external_endpoints'
+  | 'reporting_finance'
+  | 'reporting_hr';
 
 // CRUD + special actions
 export type PermissionAction = 
@@ -267,6 +269,22 @@ export const PERMISSION_MODULES: {
     description: 'Create and manage custom API endpoints to receive external data',
     actions: ['create', 'read', 'update', 'delete'],
     category: 'Administration'
+  },
+
+  // === Reporting (sensitive dashboards) ===
+  {
+    module: 'reporting_finance',
+    label: 'Finance Reporting',
+    description: 'Access the Finance reporting dashboard (revenue, invoices, expenses)',
+    actions: ['read'],
+    category: 'Reporting'
+  },
+  {
+    module: 'reporting_hr',
+    label: 'HR Reporting',
+    description: 'Access the HR reporting dashboard (employees, salaries, performance)',
+    actions: ['read'],
+    category: 'Reporting'
   },
 ];
 

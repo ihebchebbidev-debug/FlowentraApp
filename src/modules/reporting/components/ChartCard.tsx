@@ -40,6 +40,7 @@ export const ChartCard = ({
               type="button"
               onClick={() => toggle(favorite)}
               aria-label={isFav ? 'Unpin from My Dashboard' : 'Pin to My Dashboard'}
+              aria-pressed={isFav}
               className={cn(
                 'flex h-7 w-7 items-center justify-center rounded transition',
                 isFav ? 'text-warning' : 'text-muted-foreground hover:bg-muted hover:text-warning'

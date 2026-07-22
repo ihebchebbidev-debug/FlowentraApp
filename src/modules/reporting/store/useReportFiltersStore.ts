@@ -6,26 +6,48 @@ import { getActiveCompanyId, isActiveCompanyViewAll } from '@/utils/targetTenant
 /**
  * Persisted applied filters keyed by (report page, active company scope) so
  * navigating away and back re-hydrates the FilterBar and query key.
+ *
+ * Scope cap: the store keeps at most MAX_SCOPES most-recently-used entries to
+ * bound localStorage growth as users switch between many companies.
  */
 export type ReportPageKey = 'sales' | 'service' | 'finance' | 'hr' | 'purchase';
 
 type FilterMap = Record<string, string>;
 
+/** Maximum (page × scope) combinations retained. LRU-trimmed on every write. */
+const MAX_SCOPES = 30;
+
 interface FiltersState {
   byKey: Record<string, FilterMap>;
+  /** Access order; last entry is most-recently used. */
+  order: string[];
   set: (key: string, values: FilterMap) => void;
   reset: (key: string) => void;
+  clearAll: () => void;
 }
 
 const useFiltersStore = create<FiltersState>()(
   persist(
     (set, get) => ({
       byKey: {},
-      set: (key, values) => set({ byKey: { ...get().byKey, [key]: values } }),
-      reset: (key) => {
-        const { [key]: _drop, ...rest } = get().byKey;
-        set({ byKey: rest });
+      order: [],
+      set: (key, values) => {
+        const { byKey, order } = get();
+        const nextOrder = [...order.filter((k) => k !== key), key];
+        const nextByKey = { ...byKey, [key]: values };
+        // Trim LRU entries beyond MAX_SCOPES
+        while (nextOrder.length > MAX_SCOPES) {
+          const evict = nextOrder.shift();
+          if (evict) delete nextByKey[evict];
+        }
+        set({ byKey: nextByKey, order: nextOrder });
       },
+      reset: (key) => {
+        const { byKey, order } = get();
+        const { [key]: _drop, ...rest } = byKey;
+        set({ byKey: rest, order: order.filter((k) => k !== key) });
+      },
+      clearAll: () => set({ byKey: {}, order: [] }),
     }),
     { name: 'reporting-filters-v1' }
   )
@@ -56,4 +78,17 @@ export const useReportFilters = (page: ReportPageKey) => {
   const clearValues = useCallback(() => resetRaw(key), [key, resetRaw]);
 
   return { values, setValues, clearValues };
+};
+
+/**
+ * Purge every persisted report filter (all pages, all company scopes).
+ * Call on logout to prevent cross-user leakage and bound localStorage growth.
+ */
+export const clearAllReportFilters = () => {
+  useFiltersStore.getState().clearAll();
+  try {
+    localStorage.removeItem('reporting-filters-v1');
+  } catch {
+    /* ignore */
+  }
 };

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useReportFilters } from '../store/useReportFiltersStore';
 import { filterByStatusName, sliceByPeriod } from '../utils/applyFilters';
+import { exportSingleReport } from '../utils/exportReport';
+import { useXlsxI18n } from '../hooks/useXlsxI18n';
 import { useTranslation } from 'react-i18next';
 import { Wrench, ClipboardList, Truck, Timer, List } from 'lucide-react';
 import {
@@ -27,6 +29,7 @@ const translateStatusName = (t: (k: string, opts?: any) => string, name: string)
 
 export const ServiceDashboard = () => {
   const { t } = useTranslation(['reporting', 'serviceOrders']);
+  const xlsxI18n = useXlsxI18n();
   const { values: appliedFilters, setValues: setAppliedFilters } = useReportFilters('service');
   const { data, isLoading, refetch, isFetching, error } = useReportingService(appliedFilters);
   const [typesOpen, setTypesOpen] = useState(false);
@@ -60,6 +63,12 @@ export const ServiceDashboard = () => {
   const byTypeTop5 = [...byTypeAll].sort((a, b) => Number(b.value) - Number(a.value)).slice(0, 5);
   const dispatches = data?.dispatchesPerTech ?? [];
   const techs = data?.technicianTable ?? [];
+  const cvp = data?.consumedVsPlanned ?? [];
+  const cvpVal = (n: string) => Number(cvp.find((p) => p.name === n)?.value ?? 0);
+  const effVal = cvpVal('Efficiency');
+  const plannedH = cvpVal('Planned');
+  const consumedH = cvpVal('Consumed');
+  const savedH = cvpVal('HoursSaved');
   const currentYear = new Date().getFullYear();
   const avgCompletion = completion.length ? completion.reduce((s, c) => s + Number(c.value ?? 0), 0) / completion.length : 0;
 
@@ -85,6 +94,7 @@ export const ServiceDashboard = () => {
       title={t('service.title', 'Service Dashboard')}
       subtitle={t('service.subtitle', 'Completion, planning & technician profitability')}
       onRefresh={() => refetch()}
+      onExport={() => data && exportSingleReport('service', data, 'xlsx', xlsxI18n)}
       isRefreshing={isFetching}
       error={error}
     >
@@ -97,7 +107,7 @@ export const ServiceDashboard = () => {
             <KpiCard favorite={{ id: 'sv-kpi-comp', title: 'Completion Rate vs Target', source: SOURCE }} icon={ClipboardList} tone="accent" tag="YTD" value={`${avgCompletion.toFixed(0)}%`} suffix="/ target 90%" label={t('service.kpi.completion', 'Completion Rate vs Target')} trend={avgCompletion >= 90 ? 'on target' : `${(90 - avgCompletion).toFixed(1)} pts below`} trendDirection={avgCompletion >= 90 ? 'up' : 'down'} rag={avgCompletion >= 90 ? 'green' : avgCompletion >= 75 ? 'yellow' : 'red'} />
             <KpiCard favorite={{ id: 'sv-kpi-wo', title: 'Work Orders', source: SOURCE }} icon={ClipboardList} tone="info" tag="LIVE" value={byStatusAll.reduce((s, o) => s + Number(o.value ?? 0), 0)} label={t('service.kpi.openWos', 'Work Orders')} trendDirection="down" />
             <KpiCard favorite={{ id: 'sv-kpi-techs', title: 'Active Technicians', source: SOURCE }} icon={Truck} tone="warning" tag="LIVE" value={techs.length || '—'} label={t('service.kpi.dispatches', 'Active Technicians')} trendDirection="neutral" />
-            <KpiCard favorite={{ id: 'sv-kpi-eff', title: 'Time Efficiency', source: SOURCE }} icon={Timer} tone="success" tag="YTD" value="94%" label={t('service.kpi.efficiency', 'Time Efficiency')} trend={t('service.kpi.vsPriorYear', 'vs prior year')} trendDirection="up" />
+            <KpiCard favorite={{ id: 'sv-kpi-eff', title: 'Time Efficiency', source: SOURCE }} icon={Timer} tone="success" tag="YTD" value={effVal > 0 ? `${effVal.toFixed(0)}%` : '—'} label={t('service.kpi.efficiency', 'Time Efficiency')} trend={t('service.kpi.vsPriorYear', 'vs prior year')} trendDirection={effVal >= 100 ? 'up' : 'down'} rag={effVal >= 100 ? 'green' : effVal >= 85 ? 'yellow' : effVal > 0 ? 'red' : 'neutral'} />
           </div>
 
           <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-3">
@@ -186,13 +196,13 @@ export const ServiceDashboard = () => {
                 </BarChart>
               </ResponsiveContainer>
             </ChartCard>
-            <ChartCard title={t('service.hours', 'Consumed vs Planned Hours')} favorite={{ id: 'sv-hours', title: 'Consumed vs Planned Hours', source: SOURCE }}>
+            <ChartCard title={t('service.hours', 'Consumed vs Planned Hours')} favorite={{ id: 'sv-hours', title: 'Consumed vs Planned Hours', source: SOURCE }} empty={!plannedH && !consumedH && !savedH && !effVal} emptyLabel={t('service.hoursEmpty', 'No planned/actual hours logged yet')}>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-2">
                 {[
-                  { v: '94%', l: 'Avg Efficiency', tone: 'text-accent' },
-                  { v: '1,455h', l: 'Planned', tone: 'text-foreground' },
-                  { v: '1,368h', l: 'Consumed', tone: 'text-foreground' },
-                  { v: '87h', l: 'Hours Saved', tone: 'text-success' },
+                  { v: effVal > 0 ? `${effVal.toFixed(0)}%` : '—', l: t('service.avgEfficiency', 'Avg Efficiency'), tone: 'text-accent' },
+                  { v: `${plannedH.toLocaleString()}h`, l: t('service.planned', 'Planned'), tone: 'text-foreground' },
+                  { v: `${consumedH.toLocaleString()}h`, l: t('service.consumed', 'Consumed'), tone: 'text-foreground' },
+                  { v: `${savedH.toLocaleString()}h`, l: t('service.hoursSaved', 'Hours Saved'), tone: 'text-success' },
                 ].map((s) => (
                   <div key={s.l} className="rounded-md bg-muted p-2 text-center">
                     <div className={`text-base font-bold ${s.tone}`}>{s.v}</div>

@@ -174,7 +174,10 @@ export const useFavoritesStore = () => {
       if (!isFavoriteSource(w.source)) return;
       const { added, prev } = toggleRaw(scope, w);
       if (added) {
-        const position = (useFavoritesStoreInternal.getState().byScope[scope] ?? []).length - 1;
+        // Read position from the same `prev` snapshot we used to compute the
+        // insert — reading global state here can race against concurrent
+        // toggle()/reorder() calls and assign duplicate positions.
+        const position = prev.length;
         upsertReportingFavorite({
           scope, widgetId: w.id, title: w.title, source: w.source, position,
         }).catch((e) => rollback(scope, prev, e?.message || 'Network error'));

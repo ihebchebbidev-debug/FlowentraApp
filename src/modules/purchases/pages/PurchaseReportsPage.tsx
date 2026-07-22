@@ -21,12 +21,29 @@ function PurchaseReportsContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = () => {
+  const fetchData = async () => {
     setError(null);
     setLoading(true);
-    purchaseOrderService.getAll({ limit: 100 }).then(result => {
-      setOrders(result.orders || []);
-    }).catch((e: any) => setError(e?.message || 'Failed to load')).finally(() => setLoading(false));
+    try {
+      const pageSize = 200;
+      let page = 1;
+      const all: PurchaseOrder[] = [];
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const result: any = await purchaseOrderService.getAll({ page, limit: pageSize });
+        const batch: PurchaseOrder[] = result?.orders || [];
+        all.push(...batch);
+        const totalPages = result?.pagination?.totalPages ?? 1;
+        if (page >= totalPages || batch.length === 0) break;
+        page += 1;
+        if (page > 50) break; // safety cap: 10k orders
+      }
+      setOrders(all);
+    } catch (e: any) {
+      setError(e?.message || 'Failed to load');
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchData(); }, []);

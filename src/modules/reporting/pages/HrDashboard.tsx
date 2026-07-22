@@ -1,5 +1,7 @@
 import { useReportFilters } from '../store/useReportFiltersStore';
 import { filterByStatusName, sliceByPeriod } from '../utils/applyFilters';
+import { exportSingleReport } from '../utils/exportReport';
+import { useXlsxI18n } from '../hooks/useXlsxI18n';
 import { useTranslation } from 'react-i18next';
 import { Users, Briefcase, Award, UserPlus } from 'lucide-react';
 import {
@@ -20,6 +22,7 @@ const SOURCE = 'HR' as const;
 
 export const HrDashboard = () => {
   const { t } = useTranslation('reporting');
+  const xlsxI18n = useXlsxI18n();
   const { current: currency } = useCurrency();
   const { values: appliedFilters, setValues: setAppliedFilters } = useReportFilters('hr');
   const { data, isLoading, refetch, isFetching, error } = useReportingHr(appliedFilters);
@@ -51,6 +54,7 @@ export const HrDashboard = () => {
       title={t('hr.title', 'HR Dashboard')}
       subtitle={t('hr.subtitle', 'Headcount, salaries, performance & hiring')}
       onRefresh={() => refetch()}
+      onExport={() => data && exportSingleReport('hr', data, 'xlsx', xlsxI18n)}
       isRefreshing={isFetching}
       error={error}
     >

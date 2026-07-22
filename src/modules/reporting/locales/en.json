@@ -152,5 +152,78 @@
     "queued": "Export queued",
     "queuedDesc": "Backend export generation is not yet implemented — the UI is ready for wiring.",
     "pickOne": "Select at least one report"
+  },
+  "xlsx": {
+    "cover": {
+      "title": "Reporting Export",
+      "generated": "Generated {{when}}",
+      "colScope": "Scope",
+      "colSections": "Sections",
+      "colTotalRows": "Total Rows",
+      "colNotes": "Notes",
+      "allPopulated": "All sections populated",
+      "emptySections_one": "{{count}} empty section",
+      "emptySections_other": "{{count}} empty sections",
+      "footerNote": "Each sheet contains its own title band, filterable header, banded rows, number formatting and a totals row where applicable.",
+      "sheetName": "Overview"
+    },
+    "section": {
+      "subtitle": "{{scope}} report  •  {{count}} rows  •  Generated {{when}}",
+      "subtitle_one": "{{scope}} report  •  {{count}} row  •  Generated {{when}}",
+      "total": "Total",
+      "noData": "No data available for this section."
+    },
+    "scopes": {
+      "sales": "Sales",
+      "service": "Service",
+      "finance": "Finance",
+      "hr": "HR",
+      "purchase": "Purchase"
+    },
+    "sections": {
+      "Offers by Status": "Offers by Status",
+      "Sales by Status": "Sales by Status",
+      "Conversion Trend": "Conversion Trend",
+      "YoY Comparison": "YoY Comparison",
+      "Top Customers": "Top Customers",
+      "Completion by Month": "Completion by Month",
+      "Orders by Status": "Orders by Status",
+      "Orders by Type": "Orders by Type",
+      "Dispatches per Tech": "Dispatches per Tech",
+      "Consumed vs Planned": "Consumed vs Planned",
+      "Technicians": "Technicians",
+      "KPIs": "KPIs",
+      "Invoice Status": "Invoice Status",
+      "Expenses by Category": "Expenses by Category",
+      "Invoices": "Invoices",
+      "Headcount by Dept": "Headcount by Dept",
+      "Salary by Dept": "Salary by Dept",
+      "Performance": "Performance",
+      "Hiring vs Turnover": "Hiring vs Turnover",
+      "Employees": "Employees",
+      "Spend by Supplier": "Spend by Supplier",
+      "Spend by Category": "Spend by Category",
+      "Receipt Status": "Receipt Status",
+      "PO Spend Trend": "PO Spend Trend",
+      "Purchase Orders": "Purchase Orders"
+    },
+    "headers": {
+      "KPI": "KPI",
+      "Value": "Value",
+      "Trend": "Trend",
+      "Status": "Status",
+      "Name": "Name",
+      "Target": "Target",
+      "Series1": "Series 1",
+      "Series2": "Series 2",
+      "Series3": "Series 3",
+      "ID": "ID",
+      "Title": "Title",
+      "Subtitle": "Subtitle",
+      "Amount": "Amount",
+      "Date": "Date",
+      "Info": "Info",
+      "Total": "Total"
+    }
   }
 }
