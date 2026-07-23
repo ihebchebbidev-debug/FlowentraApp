@@ -294,6 +294,8 @@ builder.Services.AddDataProtection();
 // Register custom services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IForgotEmailService, ForgotEmailService>();
+builder.Services.AddScoped<MyApi.Modules.Auth.Services.IEmailVerificationService, MyApi.Modules.Auth.Services.EmailVerificationService>();
+builder.Services.AddScoped<MyApi.Modules.Auth.Services.ITwoFactorService, MyApi.Modules.Auth.Services.TwoFactorService>();
 builder.Services.AddScoped<IPreferencesService, PreferencesService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
@@ -647,7 +649,67 @@ CREATE INDEX IF NOT EXISTS ix_activated_modules_tenant
     ON activated_modules (""TenantId"");";
             pluginActivationCmd.ExecuteNonQuery();
             migrationLogger.LogInformation("✅ Plugin activation schema verified");
+
+            // ── Email Verification columns (idempotent, mirrors Neon/35_email_verification.sql) ──
+            try
+            {
+                using var emailVerifyCmd = probe.CreateCommand();
+                emailVerifyCmd.CommandText = @"
+ALTER TABLE ""MainAdminUsers"" ADD COLUMN IF NOT EXISTS ""EmailVerified"" BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE ""MainAdminUsers"" ADD COLUMN IF NOT EXISTS ""EmailVerifiedAt"" TIMESTAMP WITH TIME ZONE NULL;
+ALTER TABLE ""MainAdminUsers"" ADD COLUMN IF NOT EXISTS ""EmailVerifyOtpHash"" VARCHAR(128) NULL;
+ALTER TABLE ""MainAdminUsers"" ADD COLUMN IF NOT EXISTS ""EmailVerifyOtpExpiresAt"" TIMESTAMP WITH TIME ZONE NULL;
+ALTER TABLE ""MainAdminUsers"" ADD COLUMN IF NOT EXISTS ""EmailVerifyOtpAttempts"" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE ""MainAdminUsers"" ADD COLUMN IF NOT EXISTS ""EmailVerifyOtpLastSentAt"" TIMESTAMP WITH TIME ZONE NULL;
+ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""EmailVerified"" BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""EmailVerifiedAt"" TIMESTAMP WITH TIME ZONE NULL;
+ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""EmailVerifyOtpHash"" VARCHAR(128) NULL;
+ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""EmailVerifyOtpExpiresAt"" TIMESTAMP WITH TIME ZONE NULL;
+ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""EmailVerifyOtpAttempts"" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""EmailVerifyOtpLastSentAt"" TIMESTAMP WITH TIME ZONE NULL;
+ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""FirstLoginAt"" TIMESTAMP WITH TIME ZONE NULL;
+CREATE INDEX IF NOT EXISTS ""idx_mainadminusers_emailverified"" ON ""MainAdminUsers""(""EmailVerified"");
+CREATE INDEX IF NOT EXISTS ""idx_users_emailverified"" ON ""Users""(""EmailVerified"");";
+                emailVerifyCmd.ExecuteNonQuery();
+                migrationLogger.LogInformation("✅ Email verification schema verified");
+            }
+            catch (Exception evEx)
+            {
+                migrationLogger.LogWarning("⚠️ Email verification schema check failed (non-fatal): {Error}", evEx.Message);
+            }
+
+            // ── Two-Factor Authentication columns (idempotent, migration 36) ──
+            try
+            {
+                using var twoFactorCmd = probe.CreateCommand();
+                twoFactorCmd.CommandText = @"
+ALTER TABLE ""MainAdminUsers"" ADD COLUMN IF NOT EXISTS ""TwoFactorEnabled"" BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE ""MainAdminUsers"" ADD COLUMN IF NOT EXISTS ""LoginOtpHash"" VARCHAR(128) NULL;
+ALTER TABLE ""MainAdminUsers"" ADD COLUMN IF NOT EXISTS ""LoginOtpExpiresAt"" TIMESTAMP WITH TIME ZONE NULL;
+ALTER TABLE ""MainAdminUsers"" ADD COLUMN IF NOT EXISTS ""LoginOtpAttempts"" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE ""MainAdminUsers"" ADD COLUMN IF NOT EXISTS ""LoginOtpLastSentAt"" TIMESTAMP WITH TIME ZONE NULL;
+ALTER TABLE ""MainAdminUsers"" ADD COLUMN IF NOT EXISTS ""LoginChallengeToken"" VARCHAR(128) NULL;
+ALTER TABLE ""MainAdminUsers"" ADD COLUMN IF NOT EXISTS ""LoginChallengeExpiresAt"" TIMESTAMP WITH TIME ZONE NULL;
+ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""TwoFactorEnabled"" BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""LoginOtpHash"" VARCHAR(128) NULL;
+ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""LoginOtpExpiresAt"" TIMESTAMP WITH TIME ZONE NULL;
+ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""LoginOtpAttempts"" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""LoginOtpLastSentAt"" TIMESTAMP WITH TIME ZONE NULL;
+ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""LoginChallengeToken"" VARCHAR(128) NULL;
+ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""LoginChallengeExpiresAt"" TIMESTAMP WITH TIME ZONE NULL;
+CREATE INDEX IF NOT EXISTS ""idx_mainadminusers_login_challenge"" ON ""MainAdminUsers""(""LoginChallengeToken"");
+CREATE INDEX IF NOT EXISTS ""idx_users_login_challenge"" ON ""Users""(""LoginChallengeToken"");
+CREATE INDEX IF NOT EXISTS ""idx_mainadminusers_twofactor"" ON ""MainAdminUsers""(""TwoFactorEnabled"");
+CREATE INDEX IF NOT EXISTS ""idx_users_twofactor"" ON ""Users""(""TwoFactorEnabled"");";
+                twoFactorCmd.ExecuteNonQuery();
+                migrationLogger.LogInformation("✅ Two-Factor Authentication schema verified");
+            }
+            catch (Exception tfEx)
+            {
+                migrationLogger.LogWarning("⚠️ Two-Factor schema check failed (non-fatal): {Error}", tfEx.Message);
+            }
         }
+
         catch (PostgresException pgEx)
         {
             migrationLogger.LogError(

@@ -61,9 +61,13 @@ const Index = () => {
                                          isStaffUser ||
                                          localStorage.getItem('onboarding-completed');
 
-          console.log('[Login] Navigation decision:', { isMainAdmin, isStaffUser, hasCompletedOnboarding, onboardingCompleted: user.onboardingCompleted, userType: user.userType });
-          
-          if (hasCompletedOnboarding) {
+          console.log('[Login] Navigation decision:', { isMainAdmin, isStaffUser, hasCompletedOnboarding, emailVerified: user.emailVerified, onboardingCompleted: user.onboardingCompleted, userType: user.userType });
+
+          // MainAdmin whose email is not verified must verify BEFORE onboarding/dashboard.
+          if (isMainAdmin && user.emailVerified === false) {
+            console.log('[Login] MainAdmin email not verified → /verify-email');
+            navigate('/verify-email', { replace: true });
+          } else if (hasCompletedOnboarding) {
             const from = (location.state as any)?.from?.pathname || '/dashboard';
             console.log('[Login] Navigating to:', from);
             navigate(from, { replace: true });
@@ -90,7 +94,12 @@ const Index = () => {
     
     try {
       const result = await login(email, password, rememberMe);
-      
+
+      if (result.requires2FA && result.challenge) {
+        navigate('/two-factor', { state: result.challenge, replace: true });
+        return;
+      }
+
       if (result.success) {
         // Get fresh user data to check onboarding status and user type
         const userData = localStorage.getItem('user_data');

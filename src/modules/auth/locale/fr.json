@@ -127,5 +127,59 @@
     "reason_dwell": "Veuillez patienter un instant et réessayer.",
     "reason_no_interaction": "Aucune interaction humaine détectée.",
     "reason_generic": "Échec de la vérification."
+  },
+  "verifyEmail": {
+    "title": "Vérifiez votre e-mail",
+    "description": "Saisissez le code à 6 chiffres envoyé à {{email}}.",
+    "codeLabel": "Code de vérification",
+    "submit": "Vérifier l'e-mail",
+    "resend": "Renvoyer le code",
+    "resendIn": "Renvoyer dans {{seconds}}s",
+    "resendLimitReached": "Limite de renvoi atteinte",
+    "resendAttempts": "Renvoi utilisé {{used}} sur {{max}}",
+    "expiresIn": "Ce code expire dans {{seconds}}s",
+    "codeSentTitle": "Code envoyé",
+    "codeSentDesc": "Vérifiez votre boîte de réception (et les spams).",
+    "successTitle": "E-mail vérifié",
+    "successDesc": "Votre e-mail a été vérifié avec succès.",
+    "signOut": "Se déconnecter",
+    "banner": {
+      "text": "Votre e-mail n'est pas vérifié.",
+      "cta": "Cliquez pour vérifier",
+      "dismiss": "Ignorer"
+    },
+    "errors": {
+      "invalid_code": "Code invalide. Veuillez réessayer.",
+      "expired": "Ce code a expiré. Veuillez en demander un nouveau.",
+      "too_many_attempts": "Trop de tentatives. Veuillez demander un nouveau code.",
+      "rate_limited": "Veuillez patienter avant de demander un nouveau code.",
+      "send_failed": "Impossible d'envoyer l'e-mail. Veuillez réessayer.",
+      "resend_limit": "Vous avez atteint la limite de renvois. Veuillez réessayer plus tard ou contacter le support.",
+      "network": "Erreur réseau. Veuillez réessayer.",
+      "generic": "Une erreur s'est produite. Veuillez réessayer."
+    }
+  },
+  "twoFactor": {
+    "title": "Vérification en deux étapes",
+    "description": "Nous avons envoyé un code à 6 chiffres à {{email}}. Saisissez-le pour terminer la connexion.",
+    "codeLabel": "Code de vérification",
+    "submit": "Vérifier et se connecter",
+    "resend": "Renvoyer le code",
+    "resendIn": "Renvoyer dans {{seconds}}s",
+    "resendLimitReached": "Limite de renvois atteinte",
+    "resendAttempts": "Envoyés {{used}}/{{max}}",
+    "cancel": "Annuler",
+    "codeSentTitle": "Code envoyé",
+    "codeSentDesc": "Consultez votre boîte de réception pour le nouveau code.",
+    "successTitle": "Vérifié",
+    "successDesc": "Vous êtes connecté.",
+    "errors": {
+      "invalid_code": "Code invalide ou expiré. Veuillez réessayer.",
+      "expired": "Ce code a expiré. Demandez-en un nouveau.",
+      "too_many_attempts": "Trop de tentatives. Veuillez demander un nouveau code.",
+      "cooldown": "Veuillez patienter avant de demander un nouveau code.",
+      "network": "Erreur réseau. Veuillez réessayer.",
+      "generic": "Une erreur s'est produite. Veuillez réessayer."
+    }
   }
 }

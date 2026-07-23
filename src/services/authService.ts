@@ -93,6 +93,11 @@ export interface AuthResponse {
   refreshToken?: string;
   expiresAt?: string;
   user?: UserData;
+  // ---- Two-Factor Authentication ----
+  requires2FA?: boolean;
+  challengeToken?: string;
+  challengeUserType?: 'admin' | 'user';
+  maskedEmail?: string;
 }
 
 export interface UserData {
@@ -114,6 +119,10 @@ export interface UserData {
   // Staff user fields
   role?: string;
   userType?: 'Admin' | 'RegularUser';
+  // Email verification (added in v35 migration)
+  emailVerified?: boolean;
+  // Two-factor authentication (added in v36 migration)
+  twoFactorEnabled?: boolean;
 }
 
 export interface RefreshTokenRequest {
@@ -132,6 +141,7 @@ export interface UpdateUserRequest {
   profilePictureUrl?: string;
   preferences?: string;
   onboardingCompleted?: boolean;
+  twoFactorEnabled?: boolean;
 }
 
 export interface ChangePasswordRequest {
@@ -566,6 +576,17 @@ class AuthService {
   }
 
   // Local storage management
+  /** Public wrapper for post-2FA session finalization. */
+  public saveSessionFromResponse(
+    authResponse: AuthResponse,
+    persistent: boolean = true,
+    loginType: 'admin' | 'user' = 'user',
+  ): void {
+    this.useLocalStorage = persistent;
+    this.saveStoragePreference(persistent);
+    this.saveUserSession(authResponse, persistent, loginType);
+  }
+
   private saveUserSession(authResponse: AuthResponse, persistent: boolean = true, loginType: 'admin' | 'user' = 'user'): void {
     this.useLocalStorage = persistent;
     const storage = this.getStorage();

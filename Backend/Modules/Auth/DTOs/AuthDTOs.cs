@@ -60,6 +60,23 @@ namespace MyApi.Modules.Auth.DTOs
         public string? RefreshToken { get; set; }
         public DateTime? ExpiresAt { get; set; }
         public UserDto? User { get; set; }
+
+        // ---- Two-Factor Authentication (migration 36) ----
+        /// <summary>When true, client must complete the 2FA challenge before receiving tokens.</summary>
+        [JsonPropertyName("requires2FA")]
+        public bool Requires2FA { get; set; } = false;
+
+        /// <summary>Short-lived opaque token identifying the pending 2FA challenge.</summary>
+        [JsonPropertyName("challengeToken")]
+        public string? ChallengeToken { get; set; }
+
+        /// <summary>"admin" or "user" — tells the client which login endpoint to resume after 2FA.</summary>
+        [JsonPropertyName("challengeUserType")]
+        public string? ChallengeUserType { get; set; }
+
+        /// <summary>Masked email the OTP was sent to (e.g. j***@example.com).</summary>
+        [JsonPropertyName("maskedEmail")]
+        public string? MaskedEmail { get; set; }
     }
 
     public class UserDto
@@ -81,7 +98,40 @@ namespace MyApi.Modules.Auth.DTOs
         public DateTime CreatedAt { get; set; }
         public DateTime? LastLoginAt { get; set; }
         public bool OnboardingCompleted { get; set; }
+        [JsonPropertyName("emailVerified")]
+        public bool EmailVerified { get; set; }
+        [JsonPropertyName("twoFactorEnabled")]
+        public bool TwoFactorEnabled { get; set; }
     }
+
+    // ---- Two-Factor Authentication DTOs (migration 36) ----
+    public class TwoFactorVerifyRequestDto
+    {
+        [Required]
+        public string ChallengeToken { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(6, MinimumLength = 6)]
+        public string OtpCode { get; set; } = string.Empty;
+
+        public bool RememberMe { get; set; } = true;
+    }
+
+    public class TwoFactorResendRequestDto
+    {
+        [Required]
+        public string ChallengeToken { get; set; } = string.Empty;
+
+        [MaxLength(2)]
+        public string Language { get; set; } = "en";
+    }
+
+    public class TwoFactorToggleRequestDto
+    {
+        [Required]
+        public bool Enabled { get; set; }
+    }
+
 
     public class RefreshTokenRequestDto
     {
@@ -123,6 +173,9 @@ namespace MyApi.Modules.Auth.DTOs
         public string? Preferences { get; set; }
         
         public bool? OnboardingCompleted { get; set; }
+
+        [JsonPropertyName("twoFactorEnabled")]
+        public bool? TwoFactorEnabled { get; set; }
     }
 
     public class OAuthLoginRequest

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { Switch } from "@/components/ui/switch";
 import { usersApi, CreateUserRequest } from "@/services/api/usersApi";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { useEmailValidation } from "../hooks/useEmailValidation";
@@ -30,6 +31,9 @@ export function CreateUserModal({ open, onOpenChange, onUserCreated }: CreateUse
   });
   const [isLoading, setIsLoading] = useState(false);
   const [profilePictureUrl, setProfilePictureUrl] = useState<string>('');
+  // If unchecked, the created user is auto-verified (skips the verification flow).
+  const [requireEmailVerification, setRequireEmailVerification] = useState(false);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const { toast } = useToast();
   
   // Use debounced email validation hook
@@ -94,7 +98,11 @@ export function CreateUserModal({ open, onOpenChange, onUserCreated }: CreateUse
 
     setIsLoading(true);
     try {
-      const created = await usersApi.create(formData);
+      const created = await usersApi.create({
+        ...formData,
+        emailVerified: !requireEmailVerification,
+        twoFactorEnabled,
+      });
 
       // If a profile picture was uploaded, update via dedicated endpoint
       if (profilePictureUrl && created?.id) {
@@ -239,6 +247,39 @@ export function CreateUserModal({ open, onOpenChange, onUserCreated }: CreateUse
                 placeholder={t('createUser.placeholders.country')}
                 required
                 maxLength={2}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-3 rounded-lg border border-border/60 bg-muted/30 p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <Label htmlFor="requireEmailVerification" className="font-medium">
+                  {t('createUser.requireEmailVerification', { defaultValue: 'Require email verification' })}
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  {t('createUser.requireEmailVerificationDesc', { defaultValue: 'If off, the user is created as already verified.' })}
+                </p>
+              </div>
+              <Switch
+                id="requireEmailVerification"
+                checked={requireEmailVerification}
+                onCheckedChange={setRequireEmailVerification}
+              />
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <Label htmlFor="twoFactorEnabled" className="font-medium">
+                  {t('createUser.twoFactorEnabled', { defaultValue: 'Two-factor authentication' })}
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  {t('createUser.twoFactorEnabledDesc', { defaultValue: 'Send an OTP code by email on every sign-in.' })}
+                </p>
+              </div>
+              <Switch
+                id="twoFactorEnabled"
+                checked={twoFactorEnabled}
+                onCheckedChange={setTwoFactorEnabled}
               />
             </div>
           </div>

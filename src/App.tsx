@@ -11,6 +11,8 @@ import ApiTestsPage from "./modules/testing/pages/ApiTestsPage";
 // Dashboard is gated to show a preloading screen and warm data/assets
 import DashboardGate from "./modules/dashboard/components/DashboardGate";
 import Onboarding from "./modules/onboarding/pages/Onboarding";
+import VerifyEmail from "./pages/VerifyEmail";
+import TwoFactorChallenge from "./pages/TwoFactorChallenge";
 import NotFound from "./pages/NotFound";
 import PublicFormPage from "./modules/dynamic-forms/pages/PublicFormPage";
 import { lazyWithRetry } from "./lib/lazyWithRetry";
@@ -32,6 +34,7 @@ import { OfflineProvider } from "./contexts/OfflineContext";
 import { TenantMapProvider } from "./contexts/TenantMapContext";
 import { PrefixRedirect } from "./components/PrefixRedirect";
 import { RequireCompany } from "./components/RequireCompany";
+import { RequireEmailVerified } from "./components/RequireEmailVerified";
 const SelectCompany = lazyWithRetry(() => import("./modules/auth/pages/SelectCompany"));
 import { useTenantDocumentTitle } from "./hooks/useTenantDocumentTitle";
 
@@ -334,7 +337,9 @@ const App = () => {
                     <Route path="/login" element={<Login />} />
                     <Route path="/user-login" element={<UserLogin />} />
                     {/* OAuth callback route for email/calendar */}
-                    <Route path="/onboarding" element={<Onboarding />} />
+                   <Route path="/verify-email" element={<VerifyEmail />} />
+                   <Route path="/two-factor" element={<TwoFactorChallenge />} />
+                    <Route path="/onboarding" element={<RequireEmailVerified><Onboarding /></RequireEmailVerified>} />
                     {/* API Testing System */}
                     <Route path="/tests" element={<ApiTestsPage />} />
 
@@ -352,7 +357,7 @@ const App = () => {
                    <Route path="/projects/*" element={<PrefixRedirect to="/dashboard/tasks/projects" />} />
 
                    <Route path="/select-company" element={<SelectCompany />} />
-                   <Route path="/dashboard/*" element={<RequireCompany><DashboardGate /></RequireCompany>} />
+                   <Route path="/dashboard/*" element={<RequireEmailVerified><RequireCompany><DashboardGate /></RequireCompany></RequireEmailVerified>} />
                     {/* Customer Support Module */}
                     <Route path="/support/*" element={<SupportModuleRoutes />} />
                     {/* Public Forms (no authentication required) */}

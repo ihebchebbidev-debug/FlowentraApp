@@ -39,7 +39,8 @@ export function EditUserModal({ open, onOpenChange, user, onUserUpdated }: EditU
   // ── Details tab ──────────────────────────────────────────────────────────
   const [formData, setFormData] = useState<UpdateUserRequest>({
     email: "", firstName: "", lastName: "",
-    phoneNumber: "", country: "", isActive: true, profilePictureUrl: ""
+    phoneNumber: "", country: "", isActive: true, profilePictureUrl: "",
+    emailVerified: false, twoFactorEnabled: false,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
@@ -69,7 +70,9 @@ export function EditUserModal({ open, onOpenChange, user, onUserUpdated }: EditU
       setFormData({
         email: user.email, firstName: user.firstName, lastName: user.lastName,
         phoneNumber: user.phoneNumber || "", country: user.country,
-        isActive: user.isActive, profilePictureUrl: user.profilePictureUrl || ""
+        isActive: user.isActive, profilePictureUrl: user.profilePictureUrl || "",
+        emailVerified: !!user.emailVerified,
+        twoFactorEnabled: !!user.twoFactorEnabled,
       });
       setNewPassword(""); setConfirmPassword("");
       setActiveTab("details");
@@ -331,6 +334,28 @@ export function EditUserModal({ open, onOpenChange, user, onUserUpdated }: EditU
                 <Switch
                   id="isActive" checked={formData.isActive}
                   onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                <div>
+                  <Label htmlFor="emailVerified" className="font-medium">{t('editUser.emailVerified', { defaultValue: 'Email verified' })}</Label>
+                  <p className="text-sm text-muted-foreground">{t('editUser.emailVerifiedDesc', { defaultValue: 'Mark the user as email-verified (skips verification flow).' })}</p>
+                </div>
+                <Switch
+                  id="emailVerified" checked={!!formData.emailVerified}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, emailVerified: checked }))}
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                <div>
+                  <Label htmlFor="twoFactorEnabled" className="font-medium">{t('editUser.twoFactorEnabled', { defaultValue: 'Two-factor authentication' })}</Label>
+                  <p className="text-sm text-muted-foreground">{t('editUser.twoFactorEnabledDesc', { defaultValue: 'Require an emailed OTP code on every sign-in.' })}</p>
+                </div>
+                <Switch
+                  id="twoFactorEnabled" checked={!!formData.twoFactorEnabled}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, twoFactorEnabled: checked }))}
                 />
               </div>
 

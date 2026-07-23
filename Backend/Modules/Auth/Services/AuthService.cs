@@ -47,14 +47,16 @@ namespace MyApi.Modules.Auth.Services
         private readonly IDefaultWorkflowSeeder _workflowSeeder;
         private readonly IForgotEmailService _forgotEmailService;
         private readonly TenantSeeder _tenantSeeder;
+        private readonly ITwoFactorService _twoFactorService;
 
         public AuthService(
-            ApplicationDbContext context, 
-            IConfiguration configuration, 
+            ApplicationDbContext context,
+            IConfiguration configuration,
             ILogger<AuthService> logger,
             IDefaultWorkflowSeeder workflowSeeder,
             IForgotEmailService forgotEmailService,
-            TenantSeeder tenantSeeder)
+            TenantSeeder tenantSeeder,
+            ITwoFactorService twoFactorService)
         {
             _context = context;
             _configuration = configuration;
@@ -62,7 +64,9 @@ namespace MyApi.Modules.Auth.Services
             _workflowSeeder = workflowSeeder;
             _forgotEmailService = forgotEmailService;
             _tenantSeeder = tenantSeeder;
+            _twoFactorService = twoFactorService;
         }
+
 
         public async Task<AuthResponseDto> LoginAsync(LoginRequestDto loginDto)
         {
@@ -74,6 +78,21 @@ namespace MyApi.Modules.Auth.Services
 
                 if (adminUser != null && VerifyPassword(loginDto.Password, adminUser.PasswordHash))
                 {
+                    // 2FA gate — do not issue tokens if 2FA is enabled; return challenge instead.
+                    if (adminUser.TwoFactorEnabled)
+                    {
+                        var (challengeToken, masked) = await _twoFactorService.IssueAdminChallengeAsync(adminUser);
+                        return new AuthResponseDto
+                        {
+                            Success = false,
+                            Requires2FA = true,
+                            ChallengeToken = challengeToken,
+                            ChallengeUserType = "admin",
+                            MaskedEmail = masked,
+                            Message = "Two-factor authentication required",
+                        };
+                    }
+
                     var (accessToken, refreshToken, expiresAt) = GenerateTokensAsync(adminUser);
 
                     // Update admin user login info
@@ -85,6 +104,7 @@ namespace MyApi.Modules.Auth.Services
                     adminUser.UpdatedAt = DateTime.UtcNow;
 
                     await _context.SaveChangesAsync();
+
 
                     return new AuthResponseDto
                     {
@@ -103,8 +123,24 @@ namespace MyApi.Modules.Auth.Services
 
                 if (user != null && VerifyPassword(loginDto.Password, user.PasswordHash))
                 {
+                    // 2FA gate — issue challenge instead of tokens if user opted in.
+                    if (user.TwoFactorEnabled)
+                    {
+                        var (challengeToken, masked) = await _twoFactorService.IssueUserChallengeAsync(user);
+                        return new AuthResponseDto
+                        {
+                            Success = false,
+                            Requires2FA = true,
+                            ChallengeToken = challengeToken,
+                            ChallengeUserType = "user",
+                            MaskedEmail = masked,
+                            Message = "Two-factor authentication required",
+                        };
+                    }
+
                     var canSwitchLoginAsync = await UserCanSwitchCompanyAsync(user.Id);
                     var (accessToken, refreshToken, expiresAt) = GenerateUserTokensAsync(user, canSwitchLoginAsync);
+
 
 
                     // Update regular user login info
@@ -187,6 +223,21 @@ namespace MyApi.Modules.Auth.Services
                 if (!string.IsNullOrEmpty(userRole))
                 {
                     user.Role = userRole;
+                }
+
+                // 2FA gate — issue challenge instead of tokens if user opted in.
+                if (user.TwoFactorEnabled)
+                {
+                    var (challengeToken2fa, masked2fa) = await _twoFactorService.IssueUserChallengeAsync(user);
+                    return new AuthResponseDto
+                    {
+                        Success = false,
+                        Requires2FA = true,
+                        ChallengeToken = challengeToken2fa,
+                        ChallengeUserType = "user",
+                        MaskedEmail = masked2fa,
+                        Message = "Two-factor authentication required",
+                    };
                 }
 
                 var canSwitchCompany = await UserCanSwitchCompanyAsync(user.Id);
@@ -712,6 +763,8 @@ namespace MyApi.Modules.Auth.Services
                     user.ProfilePictureUrl = string.IsNullOrEmpty(updateDto.ProfilePictureUrl) ? null : updateDto.ProfilePictureUrl;
                 if (!string.IsNullOrEmpty(updateDto.Preferences))
                     user.PreferencesJson = updateDto.Preferences;
+                if (updateDto.TwoFactorEnabled.HasValue)
+                    user.TwoFactorEnabled = updateDto.TwoFactorEnabled.Value;
                 if (updateDto.OnboardingCompleted.HasValue)
                 {
                     bool wasAlreadyCompleted = user.OnboardingCompleted;
@@ -1078,7 +1131,9 @@ namespace MyApi.Modules.Auth.Services
                 Preferences = user.PreferencesJson,
                 CreatedAt = user.CreatedAt,
                 LastLoginAt = user.LastLoginAt ?? user.LastLoginDate,
-                OnboardingCompleted = user.OnboardingCompleted
+                OnboardingCompleted = user.OnboardingCompleted,
+                EmailVerified = user.EmailVerified,
+                TwoFactorEnabled = user.TwoFactorEnabled
             };
         }
 
@@ -1103,7 +1158,9 @@ namespace MyApi.Modules.Auth.Services
                 Preferences = "",
                 CreatedAt = user.CreatedDate,
                 LastLoginAt = user.LastLoginAt,
-                OnboardingCompleted = true
+                OnboardingCompleted = true,
+                EmailVerified = user.EmailVerified,
+                TwoFactorEnabled = user.TwoFactorEnabled
             };
         }
 

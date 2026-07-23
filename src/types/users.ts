@@ -20,6 +20,8 @@ export interface User {
   createdDate: string;
   modifyDate?: string;
   lastLoginAt?: string;
+  emailVerified?: boolean;
+  twoFactorEnabled?: boolean;
 }
 
 export interface CreateUserRequest {
@@ -30,6 +32,8 @@ export interface CreateUserRequest {
   phoneNumber?: string;
   country: string;
   role?: string;
+  emailVerified?: boolean;
+  twoFactorEnabled?: boolean;
 }
 
 export interface UpdateUserRequest {
@@ -41,6 +45,8 @@ export interface UpdateUserRequest {
   role?: string;
   isActive?: boolean;
   profilePictureUrl?: string;
+  emailVerified?: boolean;
+  twoFactorEnabled?: boolean;
 }
 
 export interface UserListResponse {

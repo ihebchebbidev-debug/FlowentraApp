@@ -28,6 +28,7 @@ import { toast } from "@/hooks/use-toast";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
+import { EmailVerificationBanner } from "@/shared/components/EmailVerificationBanner";
 import { useProductTourContext } from "@/contexts/ProductTourContext";
 import { AiAssistantSidebar } from "@/components/ai-assistant/AiAssistantSidebar";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -166,7 +167,9 @@ export function DashboardHeader() {
   }
 
   return (
-    <header data-tour="dashboard-header" className="h-14 min-w-0 max-w-full border-b border-border bg-card sticky top-0 z-50">
+    <div className="sticky top-0 z-50">
+      <EmailVerificationBanner />
+      <header data-tour="dashboard-header" className="h-14 min-w-0 max-w-full border-b border-border bg-card">
       <div className="flex h-full min-w-0 items-center justify-between px-4 gap-3">
         <div className="flex items-center gap-4 flex-shrink-0">
           {/* App Logo — show in topbar mode always, or in sidebar mode when collapsed (desktop only),
@@ -407,6 +410,7 @@ export function DashboardHeader() {
       {canAccessAi && (
         <AiAssistantSidebar isOpen={aiSidebarOpen} onClose={() => setAiSidebarOpen(false)} />
       )}
-    </header>
+      </header>
+    </div>
   );
 }

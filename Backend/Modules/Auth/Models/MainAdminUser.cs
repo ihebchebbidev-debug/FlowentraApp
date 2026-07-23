@@ -84,5 +84,25 @@ namespace MyApi.Modules.Auth.Models
         public string? PasswordResetToken { get; set; }
 
         public DateTime? PasswordResetTokenExpiresAt { get; set; }
+
+        // ---- Email Verification (migration 35) ----
+        public bool EmailVerified { get; set; } = false;
+        public DateTime? EmailVerifiedAt { get; set; }
+        [MaxLength(128)]
+        public string? EmailVerifyOtpHash { get; set; }
+        public DateTime? EmailVerifyOtpExpiresAt { get; set; }
+        public int EmailVerifyOtpAttempts { get; set; } = 0;
+        public DateTime? EmailVerifyOtpLastSentAt { get; set; }
+
+        // ---- Two-Factor Authentication (migration 36) ----
+        public bool TwoFactorEnabled { get; set; } = false;
+        [MaxLength(128)]
+        public string? LoginOtpHash { get; set; }
+        public DateTime? LoginOtpExpiresAt { get; set; }
+        public int LoginOtpAttempts { get; set; } = 0;
+        public DateTime? LoginOtpLastSentAt { get; set; }
+        [MaxLength(128)]
+        public string? LoginChallengeToken { get; set; }
+        public DateTime? LoginChallengeExpiresAt { get; set; }
     }
 }

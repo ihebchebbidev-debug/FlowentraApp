@@ -47,7 +47,12 @@ const UserLogin: React.FC = () => {
 
     try {
       const result = await userLogin(email, password, rememberMe);
-      
+
+      if (result.requires2FA && result.challenge) {
+        navigate('/two-factor', { state: result.challenge, replace: true });
+        return;
+      }
+
       if (result.success) {
         // useEffect will handle navigation
       } else {

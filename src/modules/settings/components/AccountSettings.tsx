@@ -22,13 +22,15 @@ interface AccountSettingsProps {
 }
 
 export function AccountSettings({ section }: AccountSettingsProps = {}) {
-  const { user, updateUser, refreshUser } = useAuth();
+  const { user, updateUser, refreshUser, isMainAdmin } = useAuth();
   const { t } = useTranslation('settings');
   const { isChecking: isCheckingEmail, emailError, validateEmail, clearError: clearEmailError } = useEmailValidation(
     user?.id ? Number(user.id) : undefined
   );
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isUpdatingTwoFactor, setIsUpdatingTwoFactor] = useState(false);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState<boolean>(false);
   const [isUpdatingPreferences, setIsUpdatingPreferences] = useState(false);
   const [profileData, setProfileData] = useState({
     firstName: '',
@@ -72,11 +74,13 @@ export function AccountSettings({ section }: AccountSettingsProps = {}) {
         phoneNumber: user.phoneNumber || '',
         companyName: user.companyName || ''
       });
+      setTwoFactorEnabled(Boolean((user as any).twoFactorEnabled));
       
       // Fetch user preferences
       loadPreferences();
     }
   }, [user]);
+
 
   // Validate email uniqueness whenever it changes (skip if same as current)
   useEffect(() => {
@@ -222,6 +226,31 @@ export function AccountSettings({ section }: AccountSettingsProps = {}) {
       setIsChangingPassword(false);
     }
   };
+
+  const handleTwoFactorToggle = async (checked: boolean) => {
+    const previous = twoFactorEnabled;
+    setTwoFactorEnabled(checked);
+    setIsUpdatingTwoFactor(true);
+    try {
+      const result = await authService.updateUser({ twoFactorEnabled: checked });
+      if (!result?.success) {
+        throw new Error(result?.message || 'update failed');
+      }
+      await refreshUser();
+      toast({
+        title: checked ? t('account.twoFactorEnabled') : t('account.twoFactorDisabled'),
+      });
+    } catch (err) {
+      setTwoFactorEnabled(previous);
+      toast({
+        title: t('account.twoFactorUpdateFailed'),
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUpdatingTwoFactor(false);
+    }
+  };
+
 
   const handlePreferencesUpdate = async () => {
     setIsUpdatingPreferences(true);
@@ -414,6 +443,20 @@ export function AccountSettings({ section }: AccountSettingsProps = {}) {
           <CardDescription className="text-xs">{t('account.securityDesc')}</CardDescription>
         </CardHeader>
         <CardContent className="p-4 sm:p-6 space-y-4">
+          {isMainAdmin && (
+            <div className="flex items-center justify-between rounded-lg border border-border/60 p-3 sm:p-4">
+              <div className="space-y-0.5 pr-4">
+                <Label className="text-sm font-medium">{t('account.twoFactorTitle')}</Label>
+                <p className="text-xs text-muted-foreground">{t('account.twoFactorDesc')}</p>
+              </div>
+              <Switch
+                checked={twoFactorEnabled}
+                disabled={isUpdatingTwoFactor}
+                onCheckedChange={handleTwoFactorToggle}
+              />
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="currentPassword" className="text-sm font-medium">{t('account.currentPassword')}</Label>
             <div className="relative">

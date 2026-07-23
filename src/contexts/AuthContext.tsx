@@ -12,13 +12,20 @@ interface SignupUserData {
   preferences?: Record<string, unknown> | string;
 }
 
+interface TwoFactorChallengePayload {
+  challengeToken: string;
+  maskedEmail?: string;
+  userType: 'admin' | 'user';
+  rememberMe: boolean;
+}
+
 interface AuthContextType {
   user: UserData | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   isMainAdmin: boolean;
-  login: (email: string, password: string, rememberMe?: boolean) => Promise<{ success: boolean; message?: string }>;
-  userLogin: (email: string, password: string, rememberMe?: boolean) => Promise<{ success: boolean; message?: string }>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<{ success: boolean; message?: string; requires2FA?: boolean; challenge?: TwoFactorChallengePayload }>;
+  userLogin: (email: string, password: string, rememberMe?: boolean) => Promise<{ success: boolean; message?: string; requires2FA?: boolean; challenge?: TwoFactorChallengePayload }>;
   oAuthLogin: (email: string, oauthData?: { firstName?: string; lastName?: string; provider?: string; profilePictureUrl?: string }) => Promise<{ success: boolean; message?: string; user?: UserData }>;
   signup: (email: string, password: string, userData: SignupUserData) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
@@ -195,13 +202,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => clearInterval(interval);
   }, [isAuthenticated]);
 
-  const login = async (email: string, password: string, rememberMe: boolean = true): Promise<{ success: boolean; message?: string }> => {
+  const login = async (email: string, password: string, rememberMe: boolean = true) => {
     try {
       const response = await authService.login({ email, password, rememberMe });
+      if (response.requires2FA && response.challengeToken) {
+        return {
+          success: false,
+          requires2FA: true,
+          challenge: {
+            challengeToken: response.challengeToken,
+            maskedEmail: response.maskedEmail,
+            userType: response.challengeUserType || 'admin',
+            rememberMe,
+          },
+        };
+      }
       if (response.success && response.user) {
         const isMain = checkIsMainAdmin();
-        // Resolve tenant override BEFORE flipping auth flags so the first
-        // authenticated request from children carries the correct X-Tenant.
         await resolveDefaultTenant(isMain);
         setUser(response.user);
         setIsAuthenticated(true);
@@ -215,14 +232,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const userLogin = async (email: string, password: string, rememberMe: boolean = true): Promise<{ success: boolean; message?: string }> => {
+  const userLogin = async (email: string, password: string, rememberMe: boolean = true) => {
     try {
       const response = await authService.userLogin({ email, password, rememberMe });
+      if (response.requires2FA && response.challengeToken) {
+        return {
+          success: false,
+          requires2FA: true,
+          challenge: {
+            challengeToken: response.challengeToken,
+            maskedEmail: response.maskedEmail,
+            userType: response.challengeUserType || 'user',
+            rememberMe,
+          },
+        };
+      }
       if (response.success && response.user) {
         await resolveDefaultTenant(false);
         setUser(response.user);
         setIsAuthenticated(true);
-        setIsMainAdmin(false); // User login = Regular user with role-based permissions
+        setIsMainAdmin(false);
         return { success: true };
       }
       return { success: false, message: response.message };
@@ -231,6 +260,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return { success: false, message: 'Network error occurred during user login' };
     }
   };
+
 
   const oAuthLogin = async (email: string, oauthData?: { firstName?: string; lastName?: string; provider?: string; profilePictureUrl?: string }): Promise<{ success: boolean; message?: string; user?: UserData }> => {
     try {

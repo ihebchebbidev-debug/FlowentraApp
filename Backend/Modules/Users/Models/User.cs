@@ -103,6 +103,29 @@ namespace MyApi.Modules.Users.Models
 
         public DateTime? PasswordResetTokenExpiresAt { get; set; }
 
+        // ---- Email Verification (migration 35) ----
+        public bool EmailVerified { get; set; } = false;
+        public DateTime? EmailVerifiedAt { get; set; }
+        [MaxLength(128)]
+        public string? EmailVerifyOtpHash { get; set; }
+        public DateTime? EmailVerifyOtpExpiresAt { get; set; }
+        public int EmailVerifyOtpAttempts { get; set; } = 0;
+        public DateTime? EmailVerifyOtpLastSentAt { get; set; }
+        public DateTime? FirstLoginAt { get; set; }
+
+        // ---- Two-Factor Authentication (migration 36) ----
+        public bool TwoFactorEnabled { get; set; } = false;
+        [MaxLength(128)]
+        public string? LoginOtpHash { get; set; }
+        public DateTime? LoginOtpExpiresAt { get; set; }
+        public int LoginOtpAttempts { get; set; } = 0;
+        public DateTime? LoginOtpLastSentAt { get; set; }
+        [MaxLength(128)]
+        public string? LoginChallengeToken { get; set; }
+        public DateTime? LoginChallengeExpiresAt { get; set; }
+
+
+
         // Navigation properties
         public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
         public virtual ICollection<UserSkill> UserSkills { get; set; } = new List<UserSkill>();

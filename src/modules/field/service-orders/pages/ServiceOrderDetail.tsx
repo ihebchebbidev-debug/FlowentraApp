@@ -1032,20 +1032,6 @@ export default function ServiceOrderDetail() {
                 isUpdating={isStatusUpdating}
               />
             </div>
-            {(currentStatusFlow === 'technically_completed' || currentStatusFlow === 'ready_for_invoice') && (
-              <Button
-                size="sm"
-                variant={currentStatusFlow === 'ready_for_invoice' ? 'outline' : 'default'}
-                className="w-full gap-2"
-                onClick={() => setIsInvoiceModalOpen(true)}
-                disabled={!serviceOrder?.saleId}
-              >
-                <FileText className="h-4 w-4" />
-                {currentStatusFlow === 'ready_for_invoice'
-                  ? t('invoicePreparation.retry', { defaultValue: 'Edit invoice items' })
-                  : t('invoicePreparation.title')}
-              </Button>
-            )}
           </div>
         </div>
 

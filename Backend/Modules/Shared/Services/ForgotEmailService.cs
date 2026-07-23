@@ -11,6 +11,7 @@ namespace MyApi.Modules.Shared.Services
     {
         Task<bool> SendPasswordResetEmailAsync(string recipientEmail, string resetLink, string recipientName = "User", string language = "en");
         Task<bool> SendOtpEmailAsync(string recipientEmail, string otpCode, string recipientName = "User", string language = "en");
+        Task<bool> SendEmailVerificationAsync(string recipientEmail, string otpCode, string recipientName = "User", string language = "en", int expiryMinutes = 10);
     }
 
     /// <summary>
@@ -887,7 +888,130 @@ namespace MyApi.Modules.Shared.Services
     </div>
 </body>
 </html>";
+        }
+
+        // =====================================================
+        // Email Verification (dedicated template, not password reset)
+        // =====================================================
+        public async Task<bool> SendEmailVerificationAsync(string recipientEmail, string otpCode, string recipientName = "User", string language = "en", int expiryMinutes = 10)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(recipientEmail) || string.IsNullOrWhiteSpace(otpCode))
+                {
+                    _logger.LogWarning("Invalid email or code provided for email verification");
+                    return false;
+                }
+
+                var isFr = string.Equals(language, "fr", StringComparison.OrdinalIgnoreCase);
+
+                var email = new MimeMessage();
+                email.From.Add(new MailboxAddress("Flowentra", SMTP_USERNAME));
+                email.To.Add(new MailboxAddress(recipientName, recipientEmail));
+
+                email.Subject = isFr
+                    ? "Vérifiez votre adresse e-mail - Flowentra"
+                    : "Verify your email address - Flowentra";
+
+                // Anti-spam / deliverability headers
+                email.Headers.Add("X-Entity-Ref-ID", Guid.NewGuid().ToString());
+                email.Headers.Add("X-Auto-Response-Suppress", "All");
+                email.Headers.Add("Auto-Submitted", "auto-generated");
+                email.Headers.Add("List-Unsubscribe", $"<mailto:{SMTP_USERNAME}?subject=unsubscribe>");
+                email.Headers.Add("Precedence", "transactional");
+
+                var htmlBody = GenerateEmailVerificationHtml(recipientName, otpCode, isFr, expiryMinutes);
+
+                var textBody = isFr
+                    ? $"Bonjour {recipientName},\n\nVotre code de vérification Flowentra est : {otpCode}\nCe code expire dans {expiryMinutes} minutes.\n\nSi vous n'avez pas demandé ce code, ignorez cet e-mail.\n\n— L'équipe Flowentra"
+                    : $"Hello {recipientName},\n\nYour Flowentra verification code is: {otpCode}\nThis code expires in {expiryMinutes} minutes.\n\nIf you did not request this code, please ignore this email.\n\n— The Flowentra Team";
+
+                email.Body = new BodyBuilder { HtmlBody = htmlBody, TextBody = textBody }.ToMessageBody();
+
+                using (var client = new SmtpClient())
+                {
+                    await client.ConnectAsync(SMTP_HOST, SMTP_PORT, USE_SSL);
+                    await client.AuthenticateAsync(SMTP_USERNAME, SMTP_PASSWORD);
+                    await client.SendAsync(email);
+                    await client.DisconnectAsync(true);
+                }
+
+                _logger.LogInformation("Verification email sent to {Email} (lang={Lang})", recipientEmail, isFr ? "fr" : "en");
+                return true;
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send verification email to {Email}: {Msg}", recipientEmail, ex.Message);
+                return false;
+            }
+        }
+
+        private string GenerateEmailVerificationHtml(string recipientName, string otpCode, bool isFr, int expiryMinutes)
+        {
+            var title = isFr ? "Vérifiez votre e-mail" : "Verify your email";
+            var preheader = isFr
+                ? $"Votre code Flowentra : {otpCode}. Valide {expiryMinutes} minutes."
+                : $"Your Flowentra code: {otpCode}. Valid for {expiryMinutes} minutes.";
+            var greeting = isFr ? $"Bonjour {recipientName}," : $"Hello {recipientName},";
+            var intro = isFr
+                ? "Merci de rejoindre Flowentra. Pour confirmer votre adresse e-mail, saisissez le code ci-dessous dans l'application :"
+                : "Thanks for joining Flowentra. To confirm your email address, enter the code below in the app:";
+            var codeLabel = isFr ? "Votre code de vérification" : "Your verification code";
+            var expiryNote = isFr
+                ? $"Ce code expire dans {expiryMinutes} minutes."
+                : $"This code expires in {expiryMinutes} minutes.";
+            var securityHeading = isFr ? "Vous n'avez pas demandé ce code ?" : "Didn't request this code?";
+            var securityText = isFr
+                ? "Vous pouvez ignorer cet e-mail en toute sécurité. Personne d'autre ne peut accéder à votre compte sans ce code."
+                : "You can safely ignore this email. Nobody can access your account without this code.";
+            var footerLegal = isFr
+                ? $"Message automatique. © {DateTime.Now.Year} Flowentra. Tous droits réservés."
+                : $"Automated message. © {DateTime.Now.Year} Flowentra. All rights reserved.";
+            var footerNoReply = isFr
+                ? "Cet e-mail a été envoyé automatiquement, merci de ne pas y répondre."
+                : "This is an automated message, please do not reply.";
+
+            var lang = isFr ? "fr" : "en";
+            return $@"<!DOCTYPE html>
+<html lang='{lang}'>
+<head>
+  <meta charset='UTF-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+  <meta name='color-scheme' content='light'>
+  <meta name='supported-color-schemes' content='light'>
+  <title>{title}</title>
+</head>
+<body style='margin:0;padding:0;background:#f4f6fb;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1a1f2c;'>
+  <span style='display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0;overflow:hidden;mso-hide:all;'>{preheader}</span>
+  <table role='presentation' width='100%' cellspacing='0' cellpadding='0' border='0' style='background:#f4f6fb;padding:32px 12px;'>
+    <tr><td align='center'>
+      <table role='presentation' width='560' cellspacing='0' cellpadding='0' border='0' style='max-width:560px;width:100%;background:#ffffff;border-radius:14px;box-shadow:0 6px 24px rgba(20,30,60,0.08);overflow:hidden;'>
+        <tr><td style='background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%);padding:28px 32px;text-align:center;color:#fff;'>
+          <div style='font-size:22px;font-weight:700;letter-spacing:.3px;'>Flowentra</div>
+          <div style='font-size:14px;opacity:.9;margin-top:4px;'>{title}</div>
+        </td></tr>
+        <tr><td style='padding:32px;'>
+          <p style='margin:0 0 8px;font-size:16px;font-weight:600;'>{greeting}</p>
+          <p style='margin:0 0 20px;font-size:14px;line-height:1.6;color:#4a4f5c;'>{intro}</p>
+          <div style='margin:24px 0;text-align:center;background:#f7f8fc;border:1px solid #e6e9f2;border-radius:12px;padding:22px 12px;'>
+            <div style='font-size:12px;letter-spacing:2px;color:#6b7280;text-transform:uppercase;font-weight:600;'>{codeLabel}</div>
+            <div style='font-size:38px;font-weight:800;letter-spacing:10px;color:#4f46e5;margin-top:10px;font-family:Menlo,Consolas,monospace;'>{otpCode}</div>
+            <div style='font-size:12px;color:#6b7280;margin-top:8px;'>{expiryNote}</div>
+          </div>
+          <div style='margin-top:20px;padding:14px 16px;background:#fff7ed;border-left:3px solid #f59e0b;border-radius:8px;'>
+            <div style='font-size:13px;font-weight:600;color:#92400e;margin-bottom:4px;'>{securityHeading}</div>
+            <div style='font-size:13px;color:#78350f;line-height:1.5;'>{securityText}</div>
+          </div>
+        </td></tr>
+        <tr><td style='padding:20px 32px;background:#fafbff;border-top:1px solid #eef1f8;text-align:center;'>
+          <div style='font-size:12px;color:#6b7280;'>{footerNoReply}</div>
+          <div style='font-size:11px;color:#9ca3af;margin-top:6px;'>{footerLegal}</div>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>";
         }
     }
 }
