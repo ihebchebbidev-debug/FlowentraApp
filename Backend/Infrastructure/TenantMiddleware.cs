@@ -81,6 +81,7 @@ public class TenantMiddleware
     {
         if (string.IsNullOrEmpty(path)) return true;
         if (!path.StartsWith("/api/", StringComparison.OrdinalIgnoreCase)) return true;
+        if (path.Contains("/api/public", StringComparison.OrdinalIgnoreCase)) return true;
         return path.Contains("/api/auth", StringComparison.OrdinalIgnoreCase)
             || path.Contains("/api/tenants", StringComparison.OrdinalIgnoreCase)
             || path.Contains("/api/systemlogs", StringComparison.OrdinalIgnoreCase)
