@@ -133,6 +133,7 @@ export interface Dispatch {
   notes?: string;
   assignedTechnicianIds?: string[];
   assignedTechnicians?: any[];
+  requiredSkills?: string[];
   technicianName?: string;
   timeEntries?: TimeEntry[];
   expenses?: Expense[];
@@ -207,6 +208,7 @@ export interface UpdateDispatchRequest {
   siteAddress?: string;
   estimatedDuration?: number;
   status?: string;
+  requiredSkills?: string[];
 }
 
 export interface DispatchListResponse {

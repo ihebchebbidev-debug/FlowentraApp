@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,19 +18,22 @@ import {
 import { Plus, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { skillsApi } from "@/services/api/skillsApi";
-import { serviceOrdersApi } from "@/services/api/serviceOrdersApi";
+import { dispatchesApi } from "@/services/api/dispatchesApi";
 
-interface PreferredSkillsCardProps {
-  serviceOrderId: number;
+
+interface RequiredSkillsCardProps {
+  dispatchId: number;
   skills: string[];
   onChange: (skills: string[]) => void;
 }
 
-export function PreferredSkillsCard({
-  serviceOrderId,
+export function RequiredSkillsCard({
+  dispatchId,
   skills,
   onChange,
-}: PreferredSkillsCardProps) {
+}: RequiredSkillsCardProps) {
+  const { t } = useTranslation("job-detail");
+
   const [catalog, setCatalog] = useState<string[]>([]);
   const [customValue, setCustomValue] = useState("");
   const [selectValue, setSelectValue] = useState<string>("");
@@ -57,22 +61,22 @@ export function PreferredSkillsCard({
 
   const currentLower = useMemo(
     () => new Set(skills.map((s) => s.toLowerCase())),
-    [skills],
+    [skills]
   );
 
   const catalogOptions = useMemo(
     () => catalog.filter((s) => !currentLower.has(s.toLowerCase())),
-    [catalog, currentLower],
+    [catalog, currentLower]
   );
 
   const persist = async (next: string[]) => {
     setSaving(true);
     try {
-      await serviceOrdersApi.update(serviceOrderId, { preferredSkills: next });
+      await dispatchesApi.update(dispatchId, { requiredSkills: next });
       onChange(next);
     } catch (err) {
-      console.error("Failed to update preferred skills", err);
-      toast.error("Failed to update preferred skills");
+      console.error("Failed to update required skills", err);
+      toast.error(t("dispatch_detail.required_skills_update_failed"));
     } finally {
       setSaving(false);
     }
@@ -82,11 +86,12 @@ export function PreferredSkillsCard({
     const value = raw.trim();
     if (!value) return;
     if (currentLower.has(value.toLowerCase())) {
-      toast.info(`"${value}" is already added`);
+      toast.info(t("dispatch_detail.required_skills_already_added", { skill: value }));
       return;
     }
     await persist([...skills, value]);
   };
+
 
   const removeSkill = async (skill: string) => {
     await persist(skills.filter((s) => s.toLowerCase() !== skill.toLowerCase()));
@@ -108,7 +113,7 @@ export function PreferredSkillsCard({
     <div className="space-y-1">
       <div className="flex items-center gap-2">
         <span className="text-sm font-medium text-muted-foreground">
-          Preferred skills
+          {t("dispatch_detail.required_skills")}
         </span>
         {saving && (
           <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
@@ -116,7 +121,7 @@ export function PreferredSkillsCard({
       </div>
       <div className="flex flex-wrap items-center gap-1.5">
         {skills.length === 0 && (
-          <span className="text-sm text-muted-foreground">Not specified</span>
+          <span className="text-sm text-muted-foreground">{t("dispatch_detail.not_specified")}</span>
         )}
         {skills.map((skill) => (
           <Badge
@@ -129,7 +134,7 @@ export function PreferredSkillsCard({
               type="button"
               onClick={() => removeSkill(skill)}
               disabled={saving}
-              aria-label={`Remove ${skill}`}
+              aria-label={t("dispatch_detail.required_skills_remove", { skill })}
               className="rounded-sm p-0.5 hover:bg-background/60 disabled:opacity-50"
             >
               <X className="h-3 w-3" />
@@ -150,7 +155,7 @@ export function PreferredSkillsCard({
           </PopoverTrigger>
           <PopoverContent className="w-64 p-2 space-y-2" align="start">
             <div className="text-xs font-medium text-muted-foreground">
-              Add skill
+              {t("dispatch_detail.required_skills_add")}
             </div>
             <Select
               value={selectValue}
@@ -161,11 +166,12 @@ export function PreferredSkillsCard({
                 <SelectValue
                   placeholder={
                     catalogOptions.length === 0
-                      ? "No more skills in catalog"
-                      : "From skills catalog"
+                      ? t("dispatch_detail.required_skills_no_more_catalog")
+                      : t("dispatch_detail.required_skills_from_catalog")
                   }
                 />
               </SelectTrigger>
+
               <SelectContent>
                 {catalogOptions.map((s) => (
                   <SelectItem key={s} value={s} className="text-xs">
@@ -177,7 +183,7 @@ export function PreferredSkillsCard({
             <div className="flex items-center gap-1.5">
               <Input
                 className="h-8 text-xs"
-                placeholder="Or type custom..."
+                placeholder={t("dispatch_detail.required_skills_custom_placeholder")}
                 value={customValue}
                 onChange={(e) => setCustomValue(e.target.value)}
                 onKeyDown={(e) => {
@@ -206,4 +212,4 @@ export function PreferredSkillsCard({
   );
 }
 
-export default PreferredSkillsCard;
+export default RequiredSkillsCard;

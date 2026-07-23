@@ -210,7 +210,8 @@ export function ArticleDetails() {
   const TypeIcon = getTypeIcon(article.type);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-white">
+
       {/* Header */}
       <div className="bg-card border-b">
         <div className="p-4 sm:p-6 max-w-7xl mx-auto">
@@ -260,7 +261,8 @@ export function ArticleDetails() {
       </div>
 
       {/* Content with Tabs */}
-      <div className="p-3 sm:p-6 max-w-7xl mx-auto">
+      <div className="px-4 py-6 max-w-7xl mx-auto">
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           {/* Responsive Tabs */}
           <div className="mb-6">
@@ -276,7 +278,11 @@ export function ArticleDetails() {
                   </Badge>
                 )}
               </TabsTrigger>
+              <TabsTrigger value="activity">
+                {t('detail.tabs.activity', { defaultValue: 'Activity' })}
+              </TabsTrigger>
             </TabsList>
+
           </div>
 
 
@@ -427,29 +433,6 @@ export function ArticleDetails() {
 
               {/* Sidebar */}
               <div className="space-y-6">
-                {/* Audit Trail */}
-                <Card className="bg-white dark:bg-card">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-primary" />
-                      {t('detail.audit_info')}
-                    </CardTitle>
-                    <CardDescription>{t('detail.audit_info_description')}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="p-3 bg-muted/50 rounded-lg">
-                      <dt className="text-sm font-medium text-muted-foreground">{t('detail.created_date')}</dt>
-                      <dd className="text-sm font-medium">{article.createdAt.toLocaleDateString()}</dd>
-                      <dd className="text-xs text-muted-foreground">{t('detail.created_by')}: {createdByName}</dd>
-                    </div>
-                    <div className="p-3 bg-muted/50 rounded-lg">
-                      <dt className="text-sm font-medium text-muted-foreground">{t('detail.modified_date')}</dt>
-                      <dd className="text-sm font-medium">{article.updatedAt.toLocaleDateString()}</dd>
-                      <dd className="text-xs text-muted-foreground">{t('detail.modified_by')}: {modifiedByName}</dd>
-                    </div>
-                  </CardContent>
-                </Card>
-
               </div>
             </div>
           </TabsContent>
@@ -466,6 +449,32 @@ export function ArticleDetails() {
               onDeleteNote={handleDeleteNote}
             />
           </TabsContent>
+
+          {/* Activity Tab */}
+          <TabsContent value="activity" className="mt-0">
+            <Card className="bg-white dark:bg-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-primary" />
+                  {t('detail.audit_info')}
+                </CardTitle>
+                <CardDescription>{t('detail.audit_info_description')}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="p-3 bg-muted/50 rounded-lg">
+                  <dt className="text-sm font-medium text-muted-foreground">{t('detail.created_date')}</dt>
+                  <dd className="text-sm font-medium">{article.createdAt.toLocaleDateString()}</dd>
+                  <dd className="text-xs text-muted-foreground">{t('detail.created_by')}: {createdByName}</dd>
+                </div>
+                <div className="p-3 bg-muted/50 rounded-lg">
+                  <dt className="text-sm font-medium text-muted-foreground">{t('detail.modified_date')}</dt>
+                  <dd className="text-sm font-medium">{article.updatedAt.toLocaleDateString()}</dd>
+                  <dd className="text-xs text-muted-foreground">{t('detail.modified_by')}: {modifiedByName}</dd>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
         </Tabs>
       </div>
     </div>

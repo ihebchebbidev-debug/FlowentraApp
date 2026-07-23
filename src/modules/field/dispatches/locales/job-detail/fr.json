@@ -161,7 +161,15 @@
     "none_assigned": "Aucun assigné",
     "unknown": "Inconnu",
     "scheduled_date": "Date Planifiée",
-    "dispatched_by": "Dispatché par"
+    "dispatched_by": "Dispatché par",
+    "required_skills": "Compétences requises",
+    "required_skills_add": "Ajouter une compétence",
+    "required_skills_from_catalog": "Depuis le catalogue de compétences",
+    "required_skills_no_more_catalog": "Aucune autre compétence au catalogue",
+    "required_skills_custom_placeholder": "Ou saisir une compétence...",
+    "required_skills_remove": "Supprimer {{skill}}",
+    "required_skills_already_added": "« {{skill}} » est déjà ajoutée",
+    "required_skills_update_failed": "Échec de la mise à jour des compétences requises"
   },
   "detail": {
     "share": "Partager",

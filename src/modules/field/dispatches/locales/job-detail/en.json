@@ -161,7 +161,15 @@
     "none_assigned": "None assigned",
     "unknown": "Unknown",
     "scheduled_date": "Scheduled Date",
-    "dispatched_by": "Dispatched By"
+    "dispatched_by": "Dispatched By",
+    "required_skills": "Required skills",
+    "required_skills_add": "Add skill",
+    "required_skills_from_catalog": "From skills catalog",
+    "required_skills_no_more_catalog": "No more skills in catalog",
+    "required_skills_custom_placeholder": "Or type custom...",
+    "required_skills_remove": "Remove {{skill}}",
+    "required_skills_already_added": "\"{{skill}}\" is already added",
+    "required_skills_update_failed": "Failed to update required skills"
   },
   "detail": {
     "share": "Share",

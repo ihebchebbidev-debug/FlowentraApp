@@ -1165,10 +1165,10 @@ export default function ServiceOrderDetail() {
       </div>
 
       {/* Main Content */}
-      <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+      <div className="px-4 py-6 bg-white min-h-screen">
 
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6 bg-white p-4 rounded-md min-h-screen">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           {/* Mobile: Dropdown Select */}
           {isMobile ? (
             (() => {
@@ -1227,17 +1227,6 @@ export default function ServiceOrderDetail() {
           {/* Overview Tab */}
           <TabsContent value="overview">
             <div className="space-y-6">
-              {/* Preferred Skills */}
-              <PreferredSkillsCard
-                serviceOrderId={serviceOrder.id}
-                skills={serviceOrder.preferredSkills ?? []}
-                onChange={(next) =>
-                  setServiceOrder((prev) =>
-                    prev ? { ...prev, preferredSkills: next } : prev,
-                  )
-                }
-              />
-
               {/* Service Order Details - Consolidated like Sales/Offers */}
               <Card className="bg-white dark:bg-card">
                 <CardHeader className="pb-4">
@@ -1250,11 +1239,6 @@ export default function ServiceOrderDetail() {
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Left Column */}
                     <div className="space-y-4">
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">{t('detail.order_id')}</label>
-                        <p className="text-foreground font-medium mt-1">{serviceOrder.orderNumber}</p>
-                      </div>
-
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">{t('detail.description')}</label>
                         <p className="text-foreground font-medium mt-1">{serviceOrder.notes || t('detail.no_description')}</p>
@@ -1296,6 +1280,16 @@ export default function ServiceOrderDetail() {
                             : t('detail.not_specified')}
                         </p>
                       </div>
+
+                      <PreferredSkillsCard
+                        serviceOrderId={serviceOrder.id}
+                        skills={serviceOrder.preferredSkills ?? []}
+                        onChange={(next) =>
+                          setServiceOrder((prev) =>
+                            prev ? { ...prev, preferredSkills: next } : prev,
+                          )
+                        }
+                      />
 
                     </div>
 

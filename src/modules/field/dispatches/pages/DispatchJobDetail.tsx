@@ -31,6 +31,7 @@ import { DispatchMaterialsTab } from "../components/DispatchMaterialsTab";
 import { DispatchActivityTab } from "../components/DispatchActivityTab";
 import { DispatchJobsTab } from "../components/DispatchJobsTab";
 import { DocumentsTab } from "../components/DocumentsTab";
+import { RequiredSkillsCard } from "../components/RequiredSkillsCard";
 import { ChecklistsSection } from "@/modules/shared/components/documents";
 import type { ServiceOrderDispatch } from "../../service-orders/entities/dispatches/types";
 import { DispatchStatusFlow, type DispatchStatus } from "../components/DispatchStatusFlow";
@@ -152,7 +153,7 @@ export default function DispatchJobDetail() {
           if (id) return `__RESOLVE_ID__${id}`;
           return 'Unknown';
         }),
-        requiredSkills: [],
+        requiredSkills: dispatchData.requiredSkills || [],
         scheduledDate: dispatchData.scheduling?.scheduledDate ? new Date(dispatchData.scheduling.scheduledDate) : dispatchData.scheduledDate ? new Date(dispatchData.scheduledDate) : undefined,
         scheduledStartTime: dispatchData.scheduling?.scheduledStartTime || dispatchData.scheduledStartTime,
         scheduledEndTime: dispatchData.scheduling?.scheduledEndTime || dispatchData.scheduledEndTime,
@@ -788,10 +789,10 @@ export default function DispatchJobDetail() {
       </div>
 
       {/* Main Content */}
-      <div className="px-3 sm:px-4 py-4 sm:py-6 space-y-6">
+      <div className="px-4 py-6 bg-white min-h-screen">
 
         {/* Main Content Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6 bg-white p-4 rounded-md min-h-screen">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           {/* Mobile: select dropdown */}
           {(() => {
             const TABS = [
@@ -863,11 +864,6 @@ export default function DispatchJobDetail() {
                   {/* Left Column */}
                   <div className="space-y-4">
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">{t('dispatch_detail.dispatch_id')}</label>
-                      <p className="text-foreground font-medium mt-1">{dispatch.dispatchNumber}</p>
-                    </div>
-
-                    <div>
                       <label className="text-sm font-medium text-muted-foreground">{t('dispatch_detail.related_service_order')}</label>
                       <div className="mt-1">
                         <Button variant="link" className="p-0 h-auto text-left font-semibold text-primary hover:underline inline-flex items-center" onClick={() => navigate(`/dashboard/field/service-orders/${dispatch.serviceOrderId}`)}>
@@ -914,6 +910,14 @@ export default function DispatchJobDetail() {
                         </div>
                       </div>
                     )}
+
+                    <RequiredSkillsCard
+                      dispatchId={Number(dispatch.id)}
+                      skills={dispatch.requiredSkills || []}
+                      onChange={(next) =>
+                        setDispatch((prev) => (prev ? { ...prev, requiredSkills: next } : prev))
+                      }
+                    />
                   </div>
 
                   {/* Right Column */}
@@ -953,6 +957,9 @@ export default function DispatchJobDetail() {
                           : t('dispatch_detail.none_assigned')}
                       </p>
                     </div>
+
+
+
 
                     {dispatch.scheduledDate && (
                       <div>
