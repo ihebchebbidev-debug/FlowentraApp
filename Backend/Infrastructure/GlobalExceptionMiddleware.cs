@@ -70,6 +70,14 @@ public class GlobalExceptionMiddleware
     {
         if (context.Response.HasStarted) return;
 
+        var requestedHeaders = context.Request.Headers["Access-Control-Request-Headers"].FirstOrDefault();
+        context.Response.Headers["Access-Control-Allow-Origin"] = "*";
+        context.Response.Headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,PATCH,DELETE,OPTIONS";
+        context.Response.Headers["Access-Control-Allow-Headers"] = string.IsNullOrWhiteSpace(requestedHeaders)
+            ? "Authorization,Content-Type,Accept,Origin,X-Requested-With,X-Tenant,X-Target-Tenant,x-tenant,x-target-tenant,apikey"
+            : requestedHeaders;
+        context.Response.Headers["Access-Control-Expose-Headers"] = "X-Total-Count,X-Page-Number,X-Page-Size,Content-Disposition";
+
         context.Response.StatusCode = (int)statusCode;
         context.Response.ContentType = "application/json";
 

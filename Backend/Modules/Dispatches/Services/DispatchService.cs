@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -24,6 +25,7 @@ namespace MyApi.Modules.Dispatches.Services
         private readonly IStockTransactionService? _stockTransactionService;
         private readonly MyApi.Modules.Shared.Services.IActivityLogger? _activityLogger;
         private readonly MyApi.Modules.Contacts.Services.IContactActivityService? _contactActivity;
+        private readonly MyApi.Modules.Shared.Services.IUploadThingService? _uploadThing;
 
         public DispatchService(
             ApplicationDbContext db,
@@ -33,7 +35,8 @@ namespace MyApi.Modules.Dispatches.Services
             MyApi.Modules.Planning.Services.IPlannedLineEntryService? plannedEntries = null,
             IStockTransactionService? stockTransactionService = null,
             MyApi.Modules.Shared.Services.IActivityLogger? activityLogger = null,
-            MyApi.Modules.Contacts.Services.IContactActivityService? contactActivity = null)
+            MyApi.Modules.Contacts.Services.IContactActivityService? contactActivity = null,
+            MyApi.Modules.Shared.Services.IUploadThingService? uploadThing = null)
         {
             _db = db;
             _logger = logger;
@@ -43,6 +46,7 @@ namespace MyApi.Modules.Dispatches.Services
             _stockTransactionService = stockTransactionService;
             _activityLogger = activityLogger;
             _contactActivity = contactActivity;
+            _uploadThing = uploadThing;
         }
 
         // Reject obviously invalid schedule windows before any DB work.
@@ -1302,7 +1306,7 @@ namespace MyApi.Modules.Dispatches.Services
         /// <summary>
         /// Recalculate the parent Service Order status based on remaining active dispatches.
         /// - No dispatches left → 'ready_for_planning'
-        /// - All completed → 'technically_completed'
+        /// - All completed → 'ready_for_invoice' (SO is billable as soon as every dispatch is done)
         /// - Any in_progress → 'in_progress'
         /// - Otherwise → 'scheduled'
         /// </summary>
@@ -1311,8 +1315,10 @@ namespace MyApi.Modules.Dispatches.Services
             var serviceOrder = await _db.ServiceOrders.FindAsync(serviceOrderId);
             if (serviceOrder == null) return;
 
-            // Don't recalculate if SO is in a final state
-            var finalStatuses = new[] { "closed", "invoiced", "cancelled", "completed" };
+            // Don't recalculate if SO is in a final state (or already past-completion states
+            // that a human explicitly set — we must not walk the SO back from invoiced/closed
+            // just because someone re-opened a dispatch).
+            var finalStatuses = new[] { "closed", "invoiced", "cancelled", "completed", "ready_for_invoice" };
             if (finalStatuses.Contains(serviceOrder.Status))
             {
                 _logger.LogInformation(
@@ -1342,7 +1348,9 @@ namespace MyApi.Modules.Dispatches.Services
 
                 if (allCompleted)
                 {
-                    newStatus = "technically_completed";
+                    // Auto-advance straight to ready_for_invoice — every dispatch (or the only
+                    // dispatch) is done, so the SO is ready to bill without a manual step.
+                    newStatus = "ready_for_invoice";
                 }
                 else if (anyInProgress)
                 {
@@ -2155,21 +2163,73 @@ namespace MyApi.Modules.Dispatches.Services
             }
         }
 
+        // Max size and allow-list for dispatch attachments. Anything larger or of a
+        // non-listed content type is rejected before we touch storage or the DB —
+        // previously there were no limits and the file bytes were silently discarded.
+        private const long MaxAttachmentBytes = 25L * 1024 * 1024; // 25 MB
+        private static readonly HashSet<string> AllowedAttachmentTypes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "image/jpeg", "image/png", "image/gif", "image/webp", "image/heic", "image/heif",
+            "application/pdf",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.ms-excel",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "text/plain", "text/csv",
+            "video/mp4", "video/quicktime",
+        };
+
         public async Task<AttachmentUploadResponseDto> UploadAttachmentAsync(int dispatchId, Microsoft.AspNetCore.Http.IFormFile file, string category, string? description, double? latitude, double? longitude, string userId)
         {
+            if (file == null || file.Length <= 0)
+                throw new ArgumentException("File is required and must be non-empty", nameof(file));
+            if (file.Length > MaxAttachmentBytes)
+                throw new InvalidOperationException($"File exceeds maximum size of {MaxAttachmentBytes / (1024 * 1024)} MB");
+            var contentType = string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType;
+            if (!AllowedAttachmentTypes.Contains(contentType))
+                throw new InvalidOperationException($"Content type '{contentType}' is not allowed for dispatch attachments");
+
             var d = await _db.Dispatches.FirstOrDefaultAsync(x => x.Id == dispatchId && !x.IsDeleted);
             if (d == null) throw new KeyNotFoundException($"Dispatch {dispatchId} not found");
+
+            // Persist the bytes. Prefer UploadThing (used by the rest of the app) so
+            // attachments are reachable from mobile/web without exposing the API host's
+            // filesystem. Fall back to a per-dispatch folder under wwwroot only when
+            // UploadThing is not configured.
+            string storedPath;
+            if (_uploadThing != null && _uploadThing.IsConfigured)
+            {
+                var up = await _uploadThing.UploadFileAsync(file);
+                if (!up.Success || string.IsNullOrEmpty(up.FileUrl))
+                    throw new InvalidOperationException(up.Error ?? "Upload failed");
+                storedPath = up.FileUrl!;
+            }
+            else
+            {
+                var safeName = Path.GetFileName(file.FileName);
+                var uploadsRoot = Path.Combine(AppContext.BaseDirectory, "wwwroot", "uploads", "dispatches", dispatchId.ToString());
+                Directory.CreateDirectory(uploadsRoot);
+                var uniqueName = $"{Guid.NewGuid():N}_{safeName}";
+                var fullPath = Path.Combine(uploadsRoot, uniqueName);
+                using (var fs = new FileStream(fullPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                {
+                    await file.CopyToAsync(fs);
+                }
+                storedPath = $"/uploads/dispatches/{dispatchId}/{uniqueName}";
+            }
 
             var att = new Attachment
             {
                 DispatchId = dispatchId,
                 FileName = file.FileName,
-                FilePath = $"/uploads/{dispatchId}/{file.FileName}",
+                FilePath = storedPath,
                 FileSize = file.Length,
-                ContentType = file.ContentType,
-                Category = category,
+                ContentType = contentType,
+                Category = category ?? string.Empty,
                 UploadedBy = userId,
-                UploadedDate = DateTime.UtcNow
+                UploadedDate = DateTime.UtcNow,
+                Latitude = latitude,
+                Longitude = longitude,
             };
             _db.DispatchAttachments.Add(att);
             await _db.SaveChangesAsync();
@@ -2190,7 +2250,15 @@ namespace MyApi.Modules.Dispatches.Services
                 });
             }
 
-            return new AttachmentUploadResponseDto { Id = att.Id, FileName = att.FileName, Category = att.Category };
+            return new AttachmentUploadResponseDto
+            {
+                Id = att.Id,
+                FileName = att.FileName,
+                FileType = att.ContentType,
+                FileSizeBytes = att.FileSize,
+                Category = att.Category,
+                UploadedAt = att.UploadedDate,
+            };
         }
 
         public async Task<NoteDto> AddNoteAsync(int dispatchId, CreateNoteDto dto, string userId)

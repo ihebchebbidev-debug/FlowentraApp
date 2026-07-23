@@ -457,7 +457,7 @@ namespace MyApi.Modules.Offers.Services
                         }
                         if (offerItems.Any())
                         {
-                            var newSaleItems = offerItems.Select((oi, index) => new MyApi.Modules.Sales.Models.SaleItem
+                            var newSaleItems = offerItems.Select(oi => new MyApi.Modules.Sales.Models.SaleItem
                             {
                                 SaleId = sale.Id,
                                 Type = oi.Type,
@@ -474,7 +474,11 @@ namespace MyApi.Modules.Offers.Services
                                 RequiresServiceOrder = oi.Type == "service",
                                 FulfillmentStatus = "pending",
                                 TaxRate = 0,
-                                DisplayOrder = oi.DisplayOrder
+                                DisplayOrder = oi.DisplayOrder,
+                                // Phase A (A2): stable lineage back to the source offer item so
+                                // downstream copy paths (planned entries, checklists) can pair
+                                // by explicit FK instead of positional index.
+                                OriginOfferItemId = oi.Id
                             }).ToList();
                             _context.SaleItems.AddRange(newSaleItems);
                         }
@@ -496,17 +500,21 @@ namespace MyApi.Modules.Offers.Services
                         {
                             try
                             {
+                                // Phase A (A2): pair by OriginOfferItemId FK, not array index.
+                                // Positional pairing silently mis-attributed planned entries
+                                // whenever the DB insert order diverged from offerItems order
+                                // (reorders, inserts, filtered lines, concurrent writers).
                                 var newSaleItemsList = await _context.SaleItems
-                                    .Where(si => si.SaleId == sale.Id)
-                                    .OrderBy(si => si.Id)
+                                    .Where(si => si.SaleId == sale.Id && si.OriginOfferItemId != null)
                                     .ToListAsync();
-                                // Pair by index — both lists were built in the same order from offerItems.
-                                for (int i = 0; i < offerItems.Count && i < newSaleItemsList.Count; i++)
+                                var byOffer = newSaleItemsList.ToDictionary(si => si.OriginOfferItemId!.Value);
+                                foreach (var oi in offerItems)
                                 {
+                                    if (!byOffer.TryGetValue(oi.Id, out var newSi)) continue;
                                     if (_plannedEntries != null)
-                                        await _plannedEntries.CopyAsync("offer_item", offerItems[i].Id, "sale_item", newSaleItemsList[i].Id, userId);
+                                        await _plannedEntries.CopyAsync("offer_item", oi.Id, "sale_item", newSi.Id, userId);
                                     if (_formDocumentService != null)
-                                        await _formDocumentService.CopyItemDocumentsAsync("offer_item", offerItems[i].Id, "sale_item", newSaleItemsList[i].Id, userId);
+                                        await _formDocumentService.CopyItemDocumentsAsync("offer_item", oi.Id, "sale_item", newSi.Id, userId);
                                 }
                             }
                             catch (Exception planEx)

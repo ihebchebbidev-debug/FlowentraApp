@@ -836,9 +836,12 @@ namespace MyApi.Modules.WorkflowEngine.Services
 
                 if (completedCount == totalCount)
                 {
-                    // All dispatches completed
-                    newStatus = "technically_completed";
-                    _logger.LogInformation("HandleDispatchTechnicallyCompleted: All {Total} dispatches completed, service order technically completed", 
+                    // All dispatches completed → SO is ready to be invoiced.
+                    // We previously stopped at 'technically_completed' which required a manual
+                    // click to advance; that step is redundant because every downstream check
+                    // (billing eligibility, sale rollup) treats "all dispatches done" as billable.
+                    newStatus = "ready_for_invoice";
+                    _logger.LogInformation("HandleDispatchTechnicallyCompleted: All {Total} dispatches completed, service order ready for invoice",
                         totalCount);
                 }
                 else
@@ -856,7 +859,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
                     serviceOrder.ModifiedDate = DateTime.UtcNow;
                     serviceOrder.CompletedDispatchCount = completedCount;
 
-                    if (newStatus == "technically_completed")
+                    if (newStatus == "ready_for_invoice")
                     {
                         serviceOrder.ActualCompletionDate = DateTime.UtcNow;
                         serviceOrder.TechnicallyCompletedAt = DateTime.UtcNow;
@@ -868,14 +871,15 @@ namespace MyApi.Modules.WorkflowEngine.Services
                     if (!string.IsNullOrEmpty(serviceOrder.SaleId) && int.TryParse(serviceOrder.SaleId, out int saleId))
                     {
                         var sale = await _db.Sales.FindAsync(saleId);
-                        var statusText = newStatus == "technically_completed" 
-                            ? "All dispatches completed - service order technically complete"
+                        var isFullyCompleted = newStatus == "ready_for_invoice" || newStatus == "technically_completed";
+                        var statusText = isFullyCompleted
+                            ? "All dispatches completed - service order ready for invoice"
                             : $"Dispatch #{dispatch.DispatchNumber} completed ({completedCount}/{totalCount})";
                         
                         var saleActivity = new SaleActivity
                         {
                             SaleId = saleId,
-                            Type = newStatus == "technically_completed" ? "service_order_completed" : "dispatch_completed",
+                            Type = isFullyCompleted ? "service_order_completed" : "dispatch_completed",
                             Description = statusText,
                             CreatedAt = DateTime.UtcNow,
                             CreatedByName = sale?.AssignedToName ?? "System"
@@ -888,7 +892,7 @@ namespace MyApi.Modules.WorkflowEngine.Services
                             var offerActivity = new OfferActivity
                             {
                                 OfferId = offerId,
-                                Type = newStatus == "technically_completed" ? "service_order_completed" : "dispatch_completed",
+                                Type = isFullyCompleted ? "service_order_completed" : "dispatch_completed",
                                 Description = statusText,
                                 CreatedAt = DateTime.UtcNow,
                                 CreatedByName = sale.AssignedToName ?? "System"

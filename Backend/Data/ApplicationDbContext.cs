@@ -96,6 +96,7 @@ namespace MyApi.Data
         // Articles Module (Materials & Services)
         public DbSet<Article> Articles { get; set; }
         public DbSet<ArticleCategory> ArticleCategories { get; set; }
+        public DbSet<ArticleNote> ArticleNotes { get; set; }
         // NOTE: ArticleGroups is now replaced by generic Lookups system with LookupType='article-groups'
         // Table has been dropped. Keep this commented for reference but don't use it.
         // public DbSet<ArticleGroup> ArticleGroups { get; set; }
@@ -587,6 +588,9 @@ namespace MyApi.Data
             new MyApi.Modules.Contacts.Data.Configurations.ContactConfiguration().Configure(modelBuilder);
             new MyApi.Modules.Contacts.Data.Configurations.ContactNoteConfiguration().Configure(modelBuilder);
             new MyApi.Modules.Contacts.Data.Configurations.ContactTagConfiguration().Configure(modelBuilder);
+
+            // Articles domain configurations
+            new MyApi.Modules.Articles.Data.Configurations.ArticleNoteConfiguration().Configure(modelBuilder);
             
             // Offers domain configurations
             new MyApi.Modules.Offers.Data.OfferConfiguration().Configure(modelBuilder);

@@ -611,9 +611,35 @@ namespace MyApi.Modules.ServiceOrders.Services
                                 {
                                     await _formDocuments.CopyItemDocumentsAsync("sale_item", saleItemId, "service_order_job", j.Id, userId);
                                 }
-                            }
                         }
                     }
+
+                    // Phase A: derive per-job EstimatedDuration from planned time budget
+                    // (PlannedLineEntry.PlannedMinutes × TechnicianCount) instead of the
+                    // start/end span ÷ job count. Fall back to AverageDurationPerJob only
+                    // when the job has no planned time entries at all.
+                    if (_plannedEntries != null && jobs.Count > 0)
+                    {
+                        var jobIds = jobs.Select(j => j.Id).ToList();
+                        var plannedByJob = await _context.Set<MyApi.Modules.Planning.Models.PlannedLineEntry>()
+                            .Where(p => p.ParentType == "service_order_job"
+                                     && jobIds.Contains(p.ParentId)
+                                     && p.Kind == "time")
+                            .GroupBy(p => p.ParentId)
+                            .Select(g => new { JobId = g.Key, Minutes = g.Sum(x => (x.PlannedMinutes ?? 0) * (x.TechnicianCount ?? 1)) })
+                            .ToListAsync();
+                        var minutesByJob = plannedByJob.ToDictionary(x => x.JobId, x => x.Minutes);
+                        foreach (var j in jobs)
+                        {
+                            if (minutesByJob.TryGetValue(j.Id, out var m) && m > 0)
+                            {
+                                // EstimatedDuration is stored in hours (see AverageDurationPerJob).
+                                j.EstimatedDuration = Math.Max(1, m / 60);
+                            }
+                        }
+                        await _context.SaveChangesAsync();
+                    }
+
 
 
 

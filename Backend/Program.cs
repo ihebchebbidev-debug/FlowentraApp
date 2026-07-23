@@ -33,6 +33,7 @@ using MyApi.Modules.Sync.Services;
 using MyApi.Modules.Plugins.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -98,6 +99,17 @@ builder.Services.AddSingleton<CacheInvalidationHelper>();
 
 // Required for tenant resolution in scoped DbContext factory
 builder.Services.AddHttpContextAccessor();
+
+// File uploads are accepted by several modules (Documents, Dispatch attachments,
+// Website Builder, tenant logos). Keep the multipart parser aligned with the
+// largest controller-level upload limit so ASP.NET doesn't reject the request
+// before MVC/CORS can produce a readable response.
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 50 * 1024 * 1024;
+    options.ValueLengthLimit = 1024 * 1024;
+    options.MultipartHeadersLengthLimit = 64 * 1024;
+});
 
 // Read DATABASE_URL from environment or fallback
 var rawConnection = Environment.GetEnvironmentVariable("DATABASE_URL") ??
@@ -297,6 +309,7 @@ builder.Services.AddScoped<IContactTagService, ContactTagService>();
 // Articles Module Services
 builder.Services.AddScoped<IArticleService, ArticleService>();
 builder.Services.AddScoped<IStockTransactionService, StockTransactionService>();
+builder.Services.AddScoped<IArticleNoteService, ArticleNoteService>();
 
 // Calendar Module Services
 builder.Services.AddScoped<ICalendarService, CalendarService>();
@@ -687,6 +700,7 @@ CREATE INDEX IF NOT EXISTS ix_activated_modules_tenant
             // Articles & inventory
             "Articles",
             "ArticleCategories",
+            "ArticleNotes",
             "Locations",
             "InventoryTransactions",
             // Calendar
@@ -890,17 +904,45 @@ CREATE INDEX IF NOT EXISTS ix_activated_modules_tenant
 
 // Middleware pipeline
 
+// CORS safety net for every API/upload response, including failures that happen
+// before endpoint routing or outside the normal CORS middleware path. This is
+// intentionally origin-agnostic for the public API host and avoids credentials.
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path;
+    if (path.StartsWithSegments("/api") || path.StartsWithSegments("/uploads"))
+    {
+        var requestedHeaders = context.Request.Headers["Access-Control-Request-Headers"].FirstOrDefault();
+        context.Response.Headers["Access-Control-Allow-Origin"] = "*";
+        context.Response.Headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,PATCH,DELETE,OPTIONS";
+        context.Response.Headers["Access-Control-Allow-Headers"] = string.IsNullOrWhiteSpace(requestedHeaders)
+            ? "Authorization,Content-Type,Accept,Origin,X-Requested-With,X-Tenant,X-Target-Tenant,x-tenant,x-target-tenant,apikey"
+            : requestedHeaders;
+        context.Response.Headers["Access-Control-Expose-Headers"] = "X-Total-Count,X-Page-Number,X-Page-Size,Content-Disposition";
+        context.Response.Headers["Access-Control-Max-Age"] = "86400";
+
+        if (HttpMethods.IsOptions(context.Request.Method))
+        {
+            context.Response.StatusCode = StatusCodes.Status204NoContent;
+            return;
+        }
+    }
+
+    await next();
+});
+
 // ✅ RESILIENCE: Global exception handler — catches ALL unhandled exceptions
 // Must be FIRST so it wraps everything (compression, auth, controllers, etc.)
 app.UseMiddleware<GlobalExceptionMiddleware>();
+
+// ✅ CORS must run before compression, swagger, static files, auth, and endpoints.
+// The safety-net middleware above also short-circuits OPTIONS for /api and /uploads.
+app.UseCors("AllowFrontend");
 
 // ✅ PERFORMANCE: Response compression MUST be early in pipeline
 app.UseResponseCompression();
 
 app.UseSwaggerDocumentation(builder.Configuration);
-
-// ✅ CORS MUST be BEFORE static files so uploads get Access-Control-Allow-Origin headers
-app.UseCors("AllowFrontend");
 
 // Serve static files for Swagger UI customizations
 app.UseStaticFiles();
@@ -918,9 +960,9 @@ app.UseStaticFiles(new StaticFileOptions
     OnPrepareResponse = ctx =>
     {
         // Static files bypass CORS middleware, so we must add headers manually
-        ctx.Context.Response.Headers.Append("Access-Control-Allow-Origin", "*");
-        ctx.Context.Response.Headers.Append("Access-Control-Allow-Headers", "*");
-        ctx.Context.Response.Headers.Append("Access-Control-Allow-Methods", "GET, OPTIONS");
+        ctx.Context.Response.Headers["Access-Control-Allow-Origin"] = "*";
+        ctx.Context.Response.Headers["Access-Control-Allow-Headers"] = "Authorization,Content-Type,Accept,Origin,X-Requested-With,X-Tenant,X-Target-Tenant,x-tenant,x-target-tenant,apikey";
+        ctx.Context.Response.Headers["Access-Control-Allow-Methods"] = "GET, OPTIONS";
     }
 });
 

@@ -51,5 +51,13 @@ namespace MyApi.Modules.Dispatches.Models
         [Column("UploadedBy")]
         [MaxLength(100)]
         public string UploadedBy { get; set; } = string.Empty;
+
+        // Optional geotag captured at upload time (mobile field techs).
+        // Nullable — desktop uploads have no location.
+        [Column("Latitude")]
+        public double? Latitude { get; set; }
+
+        [Column("Longitude")]
+        public double? Longitude { get; set; }
     }
 }
