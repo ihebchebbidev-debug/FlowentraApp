@@ -60,8 +60,7 @@ export const supportTicketsApi = {
 
     const response = await axiosInstance.post<SupportTicketResponse>(
       '/api/SupportTickets',
-      formData,
-      { headers: { 'Content-Type': 'multipart/form-data' } }
+      formData
     );
     return response.data;
   },
@@ -96,9 +95,7 @@ export const supportTicketsApi = {
     if (payload.attachments && payload.attachments.length) {
       payload.attachments.forEach((f) => form.append('Attachments', f, f.name));
     }
-    const res = await axiosInstance.post<SupportTicketCommentDto>(`/api/SupportTickets/${ticketId}/comments`, form, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    const res = await axiosInstance.post<SupportTicketCommentDto>(`/api/SupportTickets/${ticketId}/comments`, form);
     return res.data;
   },
 

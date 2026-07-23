@@ -1,56 +1,44 @@
 import { useState, useCallback } from 'react';
+import type { ReactElement } from 'react';
 import { toast } from 'sonner';
-import { PdfSettings } from '../utils/pdfSettings.utils';
+import { openPdfForPrint, sharePdfDocument } from '@/shared/pdf/browserActions';
 
 interface UsePDFActionsProps {
   offer: any;
-  formatCurrency: (amount: number) => string;
-  pdfSettings: PdfSettings;
-  printLinkRef?: React.RefObject<HTMLAnchorElement>;
+  pdfDocument: ReactElement;
+  fileName: string;
+  shareTitle: string;
+  shareText: string;
 }
 
-export const usePDFActions = ({ offer, formatCurrency, pdfSettings, printLinkRef }: UsePDFActionsProps) => {
+export const usePDFActions = ({ offer, pdfDocument, fileName, shareTitle, shareText }: UsePDFActionsProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
 
   const handlePrint = useCallback(async () => {
     try {
       setIsGenerating(true);
-      
-      // Trigger the hidden print link to generate and open PDF
-      if (printLinkRef?.current) {
-        printLinkRef.current.click();
-        toast.success('Opening PDF for printing...');
-      } else {
-        toast.error('Print functionality not ready. Please try again.');
-        console.warn('Print link ref not available');
-      }
+      await openPdfForPrint(pdfDocument, fileName);
+      toast.success('Opening PDF for printing...');
     } catch (error) {
       toast.error('Failed to print offer');
       console.error('Print error:', error);
     } finally {
       setIsGenerating(false);
     }
-  }, [printLinkRef]);
+  }, [pdfDocument, fileName]);
 
   const handleShare = useCallback(async (platform?: string) => {
     try {
-      if (navigator.share) {
-        await navigator.share({
-          title: `Quote ${offer.id}`,
-          text: `Quote for ${offer.title} - ${formatCurrency(offer.totalAmount || offer.amount)}`,
-          url: window.location.href,
-        });
-        toast.success('Quote shared successfully');
-      } else {
-        // Fallback to copying URL to clipboard
-        await navigator.clipboard.writeText(window.location.href);
-        toast.success('Quote URL copied to clipboard');
-      }
+      setIsGenerating(true);
+      await sharePdfDocument({ document: pdfDocument, fileName, title: shareTitle, text: shareText });
+      toast.success('Quote shared successfully');
     } catch (error) {
       toast.error('Failed to share quote');
       console.error('Share error:', error);
+    } finally {
+      setIsGenerating(false);
     }
-  }, [offer, formatCurrency]);
+  }, [pdfDocument, fileName, shareTitle, shareText]);
 
   const handleDownloadSuccess = useCallback(() => {
     toast.success('Quote PDF downloaded successfully');

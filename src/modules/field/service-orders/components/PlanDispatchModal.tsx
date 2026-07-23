@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, Loader2, AlertTriangle, Building2, ArrowLeft, Users, Clock as ClockIcon } from "lucide-react";
+import { CalendarIcon, Loader2, AlertTriangle, Building2, ArrowLeft, Users, Clock as ClockIcon, Search, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { usersApi } from "@/services/api/usersApi";
 import { dispatchesApi, type Dispatch } from "@/services/api/dispatchesApi";
+import { skillsApi, type Skill, type UserSkill } from "@/services/api/skillsApi";
 import type { User } from "@/types/users";
 
 interface JobOption {
@@ -96,6 +97,11 @@ export function PlanDispatchModal({
   const [siteAddress, setSiteAddress] = useState<string>(serviceOrder.siteAddress || '');
   const [users, setUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [techSearch, setTechSearch] = useState<string>('');
+  const [allSkills, setAllSkills] = useState<Skill[]>([]);
+  const [skillFilterIds, setSkillFilterIds] = useState<number[]>([]);
+  const [userSkillsMap, setUserSkillsMap] = useState<Record<string, number[]>>({});
+  const [loadingSkills, setLoadingSkills] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [checkingConflicts, setCheckingConflicts] = useState(false);
   const [conflictsByTech, setConflictsByTech] = useState<Record<string, Dispatch[]>>({});
@@ -136,6 +142,49 @@ export function PlanDispatchModal({
       .catch(() => setUsers([]))
       .finally(() => setLoadingUsers(false));
   }, [open]);
+
+  // Reset skill filter + search each time the modal opens
+  useEffect(() => {
+    if (open) {
+      setTechSearch('');
+      setSkillFilterIds([]);
+    }
+  }, [open]);
+
+  // Load all skills (for filter chips) when the modal opens
+  useEffect(() => {
+    if (!open) return;
+    skillsApi.getAll()
+      .then(list => setAllSkills(Array.isArray(list) ? list : []))
+      .catch(() => setAllSkills([]));
+  }, [open]);
+
+  // Load per-user skill assignments in parallel once users are known
+  useEffect(() => {
+    if (!open || users.length === 0) {
+      setUserSkillsMap({});
+      return;
+    }
+    let cancelled = false;
+    setLoadingSkills(true);
+    const active = users.filter(u => u.isActive !== false);
+    Promise.all(
+      active.map(u =>
+        skillsApi.getUserSkills(u.id)
+          .then((list: UserSkill[]) => [String(u.id), (list || []).map(s => s.skillId)] as const)
+          .catch(() => [String(u.id), [] as number[]] as const)
+      )
+    ).then(entries => {
+      if (cancelled) return;
+      const map: Record<string, number[]> = {};
+      for (const [id, ids] of entries) map[id] = ids;
+      setUserSkillsMap(map);
+    }).finally(() => {
+      if (!cancelled) setLoadingSkills(false);
+    });
+    return () => { cancelled = true; };
+  }, [open, users]);
+
 
   const selectedJobs = useMemo(
     () => eligibleJobs.filter(j => selectedJobIds.includes(j.id)),
@@ -830,7 +879,15 @@ export function PlanDispatchModal({
 
             {/* 3. Technicians */}
             <section className="space-y-2">
-              <Label className="text-sm font-semibold">{t('plan_dispatch.technicians')}</Label>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <Label className="text-sm font-semibold">{t('plan_dispatch.technicians')}</Label>
+                {technicianIds.length > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    {t('plan_dispatch.selected_count', { count: technicianIds.length, defaultValue: '{{count}} selected' })}
+                  </span>
+                )}
+              </div>
+
               {loadingUsers ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" /> {t('plan_dispatch.loading_technicians')}
@@ -838,31 +895,140 @@ export function PlanDispatchModal({
               ) : users.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t('plan_dispatch.no_users')}</p>
               ) : (
-                <div className="rounded-md border p-2 max-h-48 overflow-y-auto space-y-1">
-                  {users
-                    .filter(u => u.isActive !== false)
-                    .map(u => {
-                      const id = String(u.id);
-                      const name = `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email || `User ${id}`;
-                      return (
-                        <label
-                          key={id}
-                          className="flex items-center gap-2 rounded-sm px-2 py-1.5 hover:bg-muted cursor-pointer"
+                <>
+                  {/* Search + skills filter toolbar */}
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        value={techSearch}
+                        onChange={(e) => setTechSearch(e.target.value)}
+                        placeholder={t('plan_dispatch.tech_search_placeholder', { defaultValue: 'Search by name or email' })}
+                        className="pl-8 h-9"
+                      />
+                      {techSearch && (
+                        <button
+                          type="button"
+                          onClick={() => setTechSearch('')}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          aria-label="Clear search"
                         >
-                          <Checkbox
-                            checked={technicianIds.includes(id)}
-                            onCheckedChange={() => toggleTech(id)}
-                          />
-                          <span className="text-sm">{name}</span>
-                          {u.email && (
-                            <span className="text-xs text-muted-foreground ml-auto">{u.email}</span>
-                          )}
-                        </label>
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+
+                    {allSkills.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-xs text-muted-foreground mr-1">
+                          {t('plan_dispatch.filter_by_skill', { defaultValue: 'Skills:' })}
+                        </span>
+                        {allSkills.map(skill => {
+                          const active = skillFilterIds.includes(skill.id);
+                          return (
+                            <button
+                              key={skill.id}
+                              type="button"
+                              onClick={() =>
+                                setSkillFilterIds(prev =>
+                                  prev.includes(skill.id) ? prev.filter(x => x !== skill.id) : [...prev, skill.id]
+                                )
+                              }
+                              className={cn(
+                                "text-xs rounded-full border px-2 py-0.5 transition-colors",
+                                active
+                                  ? "bg-primary text-primary-foreground border-primary"
+                                  : "bg-background hover:bg-muted border-border text-muted-foreground"
+                              )}
+                            >
+                              {skill.name}
+                            </button>
+                          );
+                        })}
+                        {skillFilterIds.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setSkillFilterIds([])}
+                            className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground ml-1"
+                          >
+                            {t('common.clear', { defaultValue: 'Clear' })}
+                          </button>
+                        )}
+                        {loadingSkills && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+                      </div>
+                    )}
+                  </div>
+
+                  {(() => {
+                    const search = techSearch.trim().toLowerCase();
+                    const filtered = users
+                      .filter(u => u.isActive !== false)
+                      .filter(u => {
+                        if (!search) return true;
+                        const name = `${u.firstName || ''} ${u.lastName || ''}`.trim().toLowerCase();
+                        return name.includes(search) || (u.email || '').toLowerCase().includes(search);
+                      })
+                      .filter(u => {
+                        if (skillFilterIds.length === 0) return true;
+                        const owned = userSkillsMap[String(u.id)] || [];
+                        // Must have every selected skill (AND semantics)
+                        return skillFilterIds.every(sid => owned.includes(sid));
+                      });
+
+                    if (filtered.length === 0) {
+                      return (
+                        <div className="rounded-md border p-4 text-center text-sm text-muted-foreground">
+                          {t('plan_dispatch.no_tech_match', { defaultValue: 'No technicians match the filters.' })}
+                        </div>
                       );
-                    })}
-                </div>
+                    }
+
+                    return (
+                      <div className="rounded-md border p-2 max-h-56 overflow-y-auto space-y-1">
+                        {filtered.map(u => {
+                          const id = String(u.id);
+                          const name = `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email || `User ${id}`;
+                          const owned = userSkillsMap[id] || [];
+                          const ownedSkills = allSkills.filter(s => owned.includes(s.id));
+                          return (
+                            <label
+                              key={id}
+                              className="flex flex-wrap items-center gap-2 rounded-sm px-2 py-1.5 hover:bg-muted cursor-pointer"
+                            >
+                              <Checkbox
+                                checked={technicianIds.includes(id)}
+                                onCheckedChange={() => toggleTech(id)}
+                              />
+                              <span className="text-sm">{name}</span>
+                              {ownedSkills.length > 0 && (
+                                <span className="flex flex-wrap gap-1">
+                                  {ownedSkills.slice(0, 3).map(s => (
+                                    <Badge
+                                      key={s.id}
+                                      variant={skillFilterIds.includes(s.id) ? 'default' : 'secondary'}
+                                      className="text-[10px] px-1.5 py-0 h-4"
+                                    >
+                                      {s.name}
+                                    </Badge>
+                                  ))}
+                                  {ownedSkills.length > 3 && (
+                                    <span className="text-[10px] text-muted-foreground">+{ownedSkills.length - 3}</span>
+                                  )}
+                                </span>
+                              )}
+                              {u.email && (
+                                <span className="text-xs text-muted-foreground ml-auto">{u.email}</span>
+                              )}
+                            </label>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+                </>
               )}
             </section>
+
 
             {/* 4. Details */}
             <section className="grid grid-cols-1 sm:grid-cols-2 gap-3">

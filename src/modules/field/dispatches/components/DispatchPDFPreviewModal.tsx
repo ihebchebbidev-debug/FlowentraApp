@@ -93,22 +93,6 @@ export function DispatchPDFPreviewModal({
     thankYouMessage: t('pdf.thankYouMessage', 'Thank you for choosing our services.'),
   }), [t]);
 
-  const {
-    isGenerating,
-    handlePrint,
-    handleShare,
-    handleDownloadSuccess,
-    handleDownloadError
-  } = usePDFActions({ dispatch, formatCurrency, pdfSettings });
-
-  const wrappedHandleShare = useCallback((platform?: string) => {
-    if (platform === 'whatsapp' || platform === 'facebook') {
-      setSharePlatform(platform);
-    } else {
-      handleShare(platform);
-    }
-  }, [handleShare]);
-
   // Memoize the PDF document element
   const pdfDocElement = useMemo(() => (
     <DispatchPDFDocument 
@@ -121,6 +105,35 @@ export function DispatchPDFPreviewModal({
       translations={pdfTranslations}
     />
   ), [dispatch, customer, installation, timeData, formatCurrency, pdfSettings, pdfTranslations]);
+
+  const pdfFileName = useMemo(
+    () => buildPdfFilename({ prefix: 'dispatch-report', preferredId: dispatch.dispatchNumber, fallbackId: dispatch.id }),
+    [dispatch.dispatchNumber, dispatch.id]
+  );
+
+  const shareText = `Dispatch Report #${dispatch.dispatchNumber}`;
+
+  const {
+    isGenerating,
+    handlePrint,
+    handleShare,
+    handleDownloadSuccess,
+    handleDownloadError
+  } = usePDFActions({
+    dispatch,
+    pdfDocument: pdfDocElement,
+    fileName: pdfFileName,
+    shareTitle: `Dispatch Report ${dispatch.dispatchNumber || dispatch.id}`,
+    shareText,
+  });
+
+  const wrappedHandleShare = useCallback((platform?: string) => {
+    if (platform === 'whatsapp' || platform === 'facebook') {
+      setSharePlatform(platform);
+    } else {
+      handleShare(platform);
+    }
+  }, [handleShare]);
 
   // Load settings from backend dynamically on mount
   useEffect(() => {
@@ -266,7 +279,7 @@ export function DispatchPDFPreviewModal({
           open={isSendEmailOpen}
           onOpenChange={setIsSendEmailOpen}
           pdfDocument={pdfDocElement}
-          fileName={buildPdfFilename({ prefix: 'dispatch-report', preferredId: dispatch.dispatchNumber, fallbackId: dispatch.id })}
+          fileName={pdfFileName}
           reportType="offer"
           reportNumber={dispatch.dispatchNumber || dispatch.id}
           reportTitle={`Dispatch ${dispatch.dispatchNumber}`}
@@ -280,8 +293,8 @@ export function DispatchPDFPreviewModal({
           onClose={() => setSharePlatform(null)}
           platform={sharePlatform}
           pdfDocument={pdfDocElement}
-          fileName={buildPdfFilename({ prefix: 'dispatch-report', preferredId: dispatch.dispatchNumber, fallbackId: dispatch.id })}
-          shareText={`Dispatch Report #${dispatch.dispatchNumber}`}
+          fileName={pdfFileName}
+          shareText={shareText}
         />
       </DialogContent>
     </Dialog>

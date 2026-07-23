@@ -26,6 +26,11 @@ export const wbApi: AxiosInstance = axios.create({
 
 // Auth interceptor — attach JWT and tenant header from localStorage
 wbApi.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  if (typeof FormData !== 'undefined' && config.data instanceof FormData && config.headers) {
+    delete config.headers['Content-Type'];
+    delete config.headers['content-type'];
+  }
+
   const token = localStorage.getItem('access_token');
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;

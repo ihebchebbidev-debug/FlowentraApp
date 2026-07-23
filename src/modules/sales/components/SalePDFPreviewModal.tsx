@@ -18,6 +18,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useTranslation } from 'react-i18next';
 import { PDFAnnotationViewer, AnnotationsMap } from '@/components/shared/PDFAnnotationViewer';
 import { useCompanyLogo } from '@/hooks/useCompanyLogo';
+import { buildPdfFilename } from '@/shared/pdf/filename';
 
 interface SalePDFPreviewModalProps {
   isOpen: boolean;
@@ -91,23 +92,6 @@ export function SalePDFPreviewModal({
     amountInWords: t('pdf.amountInWords', 'Amount in Words'),
     statusValue: t(sale?.status || 'created', { defaultValue: (sale?.status || 'created') }),
   }), [t, sale?.status]);
-
-  const {
-    isGenerating,
-    handlePrint,
-    handleShare,
-    handleDownloadSuccess,
-    handleDownloadError
-  } = usePDFActions({ sale, formatCurrency, pdfSettings });
-
-  // Intercept share for whatsapp/facebook to show dialog
-  const wrappedHandleShare = useCallback((platform?: string) => {
-    if (platform === 'whatsapp' || platform === 'facebook') {
-      setSharePlatform(platform);
-    } else {
-      handleShare(platform);
-    }
-  }, [handleShare]);
 
   // Load settings from backend dynamically on mount
   useEffect(() => {
@@ -225,6 +209,35 @@ export function SalePDFPreviewModal({
     />
   ), [sale, formatCurrency, pdfSettings, pdfTranslations, installationsData, i18n.language]);
 
+  const pdfFileName = useMemo(
+    () => buildPdfFilename({ prefix: 'sale-order', preferredId: sale.saleNumber, fallbackId: sale.id }),
+    [sale.saleNumber, sale.id]
+  );
+  const shareText = `${sale.title || t('pdf.saleOrder')} - ${sale.saleNumber || sale.id} - ${formatCurrency(sale.total ?? sale.totalAmount ?? sale.amount ?? 0)}`;
+
+  const {
+    isGenerating,
+    handlePrint,
+    handleShare,
+    handleDownloadSuccess,
+    handleDownloadError
+  } = usePDFActions({
+    sale,
+    pdfDocument: pdfDocElement,
+    fileName: pdfFileName,
+    shareTitle: `Sale Order ${sale.saleNumber || sale.id}`,
+    shareText,
+  });
+
+  // Intercept share for whatsapp/facebook to show dialog
+  const wrappedHandleShare = useCallback((platform?: string) => {
+    if (platform === 'whatsapp' || platform === 'facebook') {
+      setSharePlatform(platform);
+    } else {
+      handleShare(platform);
+    }
+  }, [handleShare]);
+
   const handleSign = useCallback(() => setIsSigningMode(true), []);
 
   // Use annotation viewer whenever user has signed OR is signing
@@ -323,13 +336,7 @@ export function SalePDFPreviewModal({
               annotations={annotations}
               onAnnotationsUpdate={setAnnotations}
             />
-          ) : (
-            <iframe
-              key={pdfKey}
-              src=""
-              style={{ display: 'none' }}
-            />
-          )}
+          ) : null}
           {/* Standard PDF viewer when no annotations */}
           {!isLoading && !useAnnotationViewer && (
             <PDFAnnotationViewer
@@ -372,7 +379,7 @@ export function SalePDFPreviewModal({
           open={isSendEmailOpen}
           onOpenChange={setIsSendEmailOpen}
           pdfDocument={pdfDocElement}
-          fileName={`sale-order-${sale.saleNumber || sale.id}.pdf`}
+          fileName={pdfFileName}
           reportType="sale"
           reportNumber={sale.saleNumber || sale.id}
           reportTitle={sale.title || ''}
@@ -387,8 +394,8 @@ export function SalePDFPreviewModal({
           onClose={() => setSharePlatform(null)}
           platform={sharePlatform}
           pdfDocument={pdfDocElement}
-          fileName={`sale-order-${sale.saleNumber || sale.id}.pdf`}
-          shareText={`${sale.title || t('pdf.saleOrder')} - ${sale.saleNumber || sale.id} - ${formatCurrency(sale.total ?? sale.totalAmount ?? sale.amount ?? 0)}`}
+          fileName={pdfFileName}
+          shareText={shareText}
         />
       </DialogContent>
     </Dialog>

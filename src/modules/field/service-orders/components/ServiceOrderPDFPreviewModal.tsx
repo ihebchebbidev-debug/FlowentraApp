@@ -91,22 +91,6 @@ export function ServiceOrderPDFPreviewModal({
     installationName: t('pdf.installationName', 'Installation Name'),
   }), [t]);
 
-  const {
-    isGenerating,
-    handlePrint,
-    handleShare,
-    handleDownloadSuccess,
-    handleDownloadError
-  } = usePDFActions({ serviceOrder, formatCurrency, pdfSettings });
-
-  const wrappedHandleShare = useCallback((platform?: string) => {
-    if (platform === 'whatsapp' || platform === 'facebook') {
-      setSharePlatform(platform);
-    } else {
-      handleShare(platform);
-    }
-  }, [handleShare]);
-
   // Fetch installation details for jobs grouped by installation
   const [installationsData, setInstallationsData] = useState<Record<string, InstallationDetails>>({});
   useEffect(() => {
@@ -150,6 +134,35 @@ export function ServiceOrderPDFPreviewModal({
   const pdfDocElement = useMemo(() => (
     <ServiceOrderPDFDocument serviceOrder={serviceOrder} formatCurrency={formatCurrency} settings={pdfSettings} translations={pdfTranslations} installationsData={installationsData} />
   ), [serviceOrder, formatCurrency, pdfSettings, pdfTranslations, installationsData]);
+
+  const pdfFileName = useMemo(
+    () => buildPdfFilename({ prefix: 'service-report', preferredId: serviceOrder.orderNumber, fallbackId: serviceOrder.id }),
+    [serviceOrder.orderNumber, serviceOrder.id]
+  );
+
+  const shareText = `Service Report #${serviceOrder.orderNumber} - ${serviceOrder.customer?.company || 'Service Order'}`;
+
+  const {
+    isGenerating,
+    handlePrint,
+    handleShare,
+    handleDownloadSuccess,
+    handleDownloadError
+  } = usePDFActions({
+    serviceOrder,
+    pdfDocument: pdfDocElement,
+    fileName: pdfFileName,
+    shareTitle: `Service Report ${serviceOrder.orderNumber || serviceOrder.id}`,
+    shareText,
+  });
+
+  const wrappedHandleShare = useCallback((platform?: string) => {
+    if (platform === 'whatsapp' || platform === 'facebook') {
+      setSharePlatform(platform);
+    } else {
+      handleShare(platform);
+    }
+  }, [handleShare]);
 
   // Load settings from backend dynamically on mount
   useEffect(() => {
@@ -318,7 +331,7 @@ export function ServiceOrderPDFPreviewModal({
           open={isSendEmailOpen}
           onOpenChange={setIsSendEmailOpen}
           pdfDocument={pdfDocElement}
-          fileName={buildPdfFilename({ prefix: 'service-report', preferredId: serviceOrder.orderNumber, fallbackId: serviceOrder.id })}
+          fileName={pdfFileName}
           reportType="offer"
           reportNumber={serviceOrder.orderNumber || serviceOrder.id}
           reportTitle={serviceOrder.customer?.company || 'Service Order'}
@@ -332,8 +345,8 @@ export function ServiceOrderPDFPreviewModal({
           onClose={() => setSharePlatform(null)}
           platform={sharePlatform}
           pdfDocument={pdfDocElement}
-          fileName={buildPdfFilename({ prefix: 'service-report', preferredId: serviceOrder.orderNumber, fallbackId: serviceOrder.id })}
-          shareText={`Service Report #${serviceOrder.orderNumber} - ${serviceOrder.customer?.company || 'Service Order'}`}
+          fileName={pdfFileName}
+          shareText={shareText}
         />
       </DialogContent>
     </Dialog>

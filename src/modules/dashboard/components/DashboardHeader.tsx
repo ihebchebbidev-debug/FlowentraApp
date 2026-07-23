@@ -32,7 +32,6 @@ import { useProductTourContext } from "@/contexts/ProductTourContext";
 import { AiAssistantSidebar } from "@/components/ai-assistant/AiAssistantSidebar";
 import { usePermissions } from "@/hooks/usePermissions";
 import ReportIssueModal from "@/components/ReportIssueModal";
-import SupportChoiceModal from "@/components/SupportChoiceModal";
 import { useOffline } from "@/contexts/OfflineContext";
 import { useAiAssistantAvailable } from "@/hooks/useAiAssistantAvailable";
 import { GlobalCompanyFilter } from "@/components/CompanyFilter";
@@ -53,7 +52,6 @@ export function DashboardHeader() {
   const [aiSidebarOpen, setAiSidebarOpen] = useState(false);
   const [reportIssueOpen, setReportIssueOpen] = useState(false);
   const [reportIssuePrefill, setReportIssuePrefill] = useState<ReportIssuePrefill | undefined>();
-  const [supportChoiceOpen, setSupportChoiceOpen] = useState(false);
   const companyLogo = useCompanyLogo();
   const sidebarState = useSidebarState();
   const { t } = useTranslation('dashboard');
@@ -328,17 +326,6 @@ export function DashboardHeader() {
             </PopoverContent>
           </Popover>
 
-          {/* Help / Support button */}
-          {!isMobile && (
-            <Button data-tour="help-button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSupportChoiceOpen(true)} title={t('help') || 'Support'}>
-              <HelpCircle className="h-4 w-4" />
-            </Button>
-          )}
-          <SupportChoiceModal
-            open={supportChoiceOpen}
-            onOpenChange={setSupportChoiceOpen}
-            onCreateTicket={() => setReportIssueOpen(true)}
-          />
           <ReportIssueModal
             open={reportIssueOpen}
             onOpenChange={(open) => {

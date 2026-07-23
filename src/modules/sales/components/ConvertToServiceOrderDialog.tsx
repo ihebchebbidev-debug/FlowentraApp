@@ -256,7 +256,7 @@ export function ConvertToServiceOrderDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg bg-background border border-border max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[calc(100%-1rem)] sm:w-[calc(100%-2rem)] max-w-none sm:max-w-2xl lg:max-w-3xl bg-background border border-border max-h-[90dvh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div className={`flex h-10 w-10 items-center justify-center rounded-full ${isAlreadyConverted ? 'bg-primary/10' : 'bg-primary/10'}`}>
@@ -284,7 +284,7 @@ export function ConvertToServiceOrderDialog({
           {/* Already Converted Banner */}
           {isAlreadyConverted && (
             <div className="rounded-lg bg-primary/10 border border-primary/20 p-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                   <p className="text-sm font-medium text-primary">
                     Service Order #{sale.convertedToServiceOrderId}
@@ -444,7 +444,7 @@ export function ConvertToServiceOrderDialog({
               </div>
 
               {/* Dates */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">{t('convertDialog.startDate')}</Label>
                   <Popover>

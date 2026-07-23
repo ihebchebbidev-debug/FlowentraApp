@@ -152,6 +152,18 @@ export const WORKSPACES: Workspace[] = [
     ],
   },
   {
+    id: "service-desk",
+    label: "Service Desk",
+    icon: "HelpCircle",
+    landingUrl: "/support",
+    modules: [
+      { key: "support-home", label: "Service Desk", url: "/support", icon: "HelpCircle" },
+      { key: "support-tickets", label: "My tickets", url: "/support/tickets", icon: "Ticket" },
+      { key: "support-new-ticket", label: "Report an issue", url: "/support/tickets/new", icon: "AlertCircle" },
+      { key: "support-faq", label: "FAQ", url: "/support/faq", icon: "BookOpen" },
+    ],
+  },
+  {
     id: "settings",
     label: "Settings",
     icon: "Settings",

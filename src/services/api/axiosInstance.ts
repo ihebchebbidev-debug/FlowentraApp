@@ -39,6 +39,11 @@ const axiosInstance = axios.create({
 
 // Interceptor: attach JWT + TENANT_HEADER on every request
 axiosInstance.interceptors.request.use((config) => {
+  if (typeof FormData !== "undefined" && config.data instanceof FormData) {
+    delete config.headers["Content-Type"];
+    delete config.headers["content-type"];
+  }
+
   const token = localStorage.getItem("access_token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;

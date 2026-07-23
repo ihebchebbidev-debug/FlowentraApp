@@ -83,9 +83,7 @@ export const tenantsApi = {
   uploadLogo: async (id: number, file: File): Promise<Tenant> => {
     const formData = new FormData();
     formData.append('file', file);
-    const res = await axiosInstance.post<Tenant>(`/api/Tenants/${id}/logo`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    const res = await axiosInstance.post<Tenant>(`/api/Tenants/${id}/logo`, formData);
     return res.data;
   },
 };

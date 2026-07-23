@@ -108,23 +108,6 @@ export function OfferPDFPreviewModal({
     statusValue: t(`status.${offer?.status || 'draft'}`, { defaultValue: (offer?.status || 'draft') }),
   }, labelOverrides), [t, offer?.status, labelOverrides]);
 
-  const {
-    isGenerating,
-    handlePrint,
-    handleShare,
-    handleDownloadSuccess,
-    handleDownloadError
-  } = usePDFActions({ offer, formatCurrency, pdfSettings, printLinkRef });
-
-  // Intercept share for whatsapp/facebook to show dialog
-  const wrappedHandleShare = useCallback((platform?: string) => {
-    if (platform === 'whatsapp' || platform === 'facebook') {
-      setSharePlatform(platform);
-    } else {
-      handleShare(platform);
-    }
-  }, [handleShare]);
-
   // Load settings from backend dynamically on mount
   useEffect(() => {
     let isMounted = true;
@@ -250,6 +233,39 @@ export function OfferPDFPreviewModal({
     />
   ), [offer, formatCurrency, pdfSettings, pdfTranslations, installationsData, i18n.language]);
 
+  const pdfFileName = useMemo(
+    () => buildPdfFilename({ prefix: filePrefix, preferredId: offer.offerNumber, fallbackId: offer.id }),
+    [filePrefix, offer.offerNumber, offer.id]
+  );
+
+  const shareText = useMemo(
+    () => `${offer.title || pdfTranslations.offer} - ${offer.offerNumber || offer.id} - ${formatCurrency(offer.total ?? offer.totalAmount ?? offer.amount ?? 0)}`,
+    [offer, pdfTranslations.offer, formatCurrency]
+  );
+
+  const {
+    isGenerating,
+    handlePrint,
+    handleShare,
+    handleDownloadSuccess,
+    handleDownloadError
+  } = usePDFActions({
+    offer,
+    pdfDocument: pdfDocElement,
+    fileName: pdfFileName,
+    shareTitle: `${pdfTranslations.offer} ${offer.offerNumber || offer.id}`,
+    shareText,
+  });
+
+  // Intercept share for whatsapp/facebook to show dialog
+  const wrappedHandleShare = useCallback((platform?: string) => {
+    if (platform === 'whatsapp' || platform === 'facebook') {
+      setSharePlatform(platform);
+    } else {
+      handleShare(platform);
+    }
+  }, [handleShare]);
+
   const handleSign = useCallback(() => setIsSigningMode(true), []);
 
   // Use annotation viewer whenever user has signed OR is signing
@@ -359,7 +375,7 @@ export function OfferPDFPreviewModal({
             <PDFAnnotationViewer
               key={`view-${pdfKey}`}
               document={pdfDocElement}
-              fileName={buildPdfFilename({ prefix: filePrefix, preferredId: offer.offerNumber, fallbackId: offer.id })}
+              fileName={pdfFileName}
               isSigningMode={false}
               onSigningModeChange={setIsSigningMode}
               onAnnotationsChange={setHasAnnotations}
@@ -396,7 +412,7 @@ export function OfferPDFPreviewModal({
           open={isSendEmailOpen}
           onOpenChange={setIsSendEmailOpen}
           pdfDocument={pdfDocElement}
-          fileName={buildPdfFilename({ prefix: filePrefix, preferredId: offer.offerNumber, fallbackId: offer.id })}
+          fileName={pdfFileName}
           reportType={reportType}
           reportNumber={offer.offerNumber || offer.id}
           reportTitle={offer.title || ''}
@@ -412,7 +428,7 @@ export function OfferPDFPreviewModal({
           platform={sharePlatform}
           pdfDocument={pdfDocElement}
           fileName={buildPdfFilename({ prefix: filePrefix, preferredId: offer.offerNumber, fallbackId: offer.id })}
-          shareText={`${offer.title || pdfTranslations.offer} - ${offer.offerNumber || offer.id} - ${formatCurrency(offer.total ?? offer.totalAmount ?? offer.amount ?? 0)}`}
+          shareText={shareText}
         />
       </DialogContent>
     </Dialog>

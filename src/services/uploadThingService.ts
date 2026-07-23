@@ -1,9 +1,7 @@
 // UploadThing Service - Uploads files via backend to UploadThing
-import { getAuthHeadersNoContentType , getMutationHeaders, getMutationHeadersNoContentType} from '@/utils/apiHeaders';
+import { getMutationHeadersNoContentType } from '@/utils/apiHeaders';
 
 import { API_URL } from '@/config/api';
-
-const getAuthHeaders = getAuthHeadersNoContentType;
 
 export interface UploadResponse {
   success: boolean;
@@ -25,7 +23,7 @@ export const uploadThingService = {
 
     const response = await fetch(`${API_URL}/api/Upload/file`, {
       method: 'POST',
-      headers: getMutationHeaders(),
+      headers: getMutationHeadersNoContentType(),
       body: formData,
     });
 
@@ -48,7 +46,7 @@ export const uploadThingService = {
 
     const response = await fetch(`${API_URL}/api/Upload/files`, {
       method: 'POST',
-      headers: getMutationHeaders(),
+      headers: getMutationHeadersNoContentType(),
       body: formData,
     });
 

@@ -122,8 +122,10 @@ export class DocumentsService {
       const xhr = new XMLHttpRequest();
       xhr.open('POST', `${API_URL}/api/Documents/upload`);
 
-      // Auth + tenant headers
-      const headers = getAuthHeadersNoContentType();
+      // Auth + tenant headers. Never set Content-Type for FormData; the browser
+      // must add the multipart boundary. Include mutation target-tenant headers
+      // so uploads behave the same as the rest of the app.
+      const headers = getMutationHeadersNoContentType();
       Object.entries(headers).forEach(([k, v]) => {
         if (v) xhr.setRequestHeader(k, String(v));
       });

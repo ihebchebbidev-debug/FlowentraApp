@@ -30,7 +30,6 @@ export class ApiImageProvider implements IImageProvider {
       if (options?.folder) params.folder = options.folder;
 
       const { data } = await wbApi.post<WBUploadResponseDto>('/api/WBUpload/file', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
         params,
         timeout: 60000, // 60s for large uploads
       });
