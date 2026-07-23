@@ -47,20 +47,6 @@ export const WORKSPACES: Workspace[] = [
     ],
   },
   {
-    id: "reporting",
-    label: "Reporting",
-    icon: "BarChart3",
-    landingUrl: "/dashboard/reporting/sales",
-    modules: [
-      { key: "sales-report", label: "Sales", url: "/dashboard/reporting/sales", icon: "TrendingUp" },
-      { key: "service-report", label: "Service", url: "/dashboard/reporting/service", icon: "Wrench" },
-      { key: "purchase-report", label: "Purchases", url: "/dashboard/reporting/purchase", icon: "ShoppingCart" },
-      { key: "finance-report", label: "Finance", url: "/dashboard/reporting/finance", icon: "DollarSign" },
-      { key: "hr-report", label: "HR", url: "/dashboard/reporting/hr", icon: "UserCog" },
-      { key: "export-report", label: "Export reports", url: "/dashboard/reporting/export", icon: "Download" },
-    ],
-  },
-  {
     id: "sales",
     label: "Sales",
     icon: "TrendingUp",
@@ -128,6 +114,20 @@ export const WORKSPACES: Workspace[] = [
       { key: "recruitment", label: "Recruitment", url: "/dashboard/hr/recruitment", icon: "UserPlus", pluginCode: "PL0013HR" },
       { key: "performance", label: "Performance", url: "/dashboard/hr/performance", icon: "Target", pluginCode: "PL0013HR" },
       { key: "skills", label: "Skills", url: "/dashboard/hr/employees?tab=skills", icon: "Award", pluginCode: "PL0014SKILLS" },
+    ],
+  },
+  {
+    id: "reporting",
+    label: "Reporting",
+    icon: "BarChart3",
+    landingUrl: "/dashboard/reporting/sales",
+    modules: [
+      { key: "sales-report", label: "Sales", url: "/dashboard/reporting/sales", icon: "TrendingUp" },
+      { key: "service-report", label: "Service", url: "/dashboard/reporting/service", icon: "Wrench" },
+      { key: "purchase-report", label: "Purchases", url: "/dashboard/reporting/purchase", icon: "ShoppingCart" },
+      { key: "finance-report", label: "Finance", url: "/dashboard/reporting/finance", icon: "DollarSign" },
+      { key: "hr-report", label: "HR", url: "/dashboard/reporting/hr", icon: "UserCog" },
+      { key: "export-report", label: "Export reports", url: "/dashboard/reporting/export", icon: "Download" },
     ],
   },
   {
