@@ -13,6 +13,16 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { ArrowLeft, Clock, MapPin, CheckCircle, AlertCircle, User, MoreVertical, Edit, Trash2, Camera, Building, ExternalLink, Play, ClipboardList, Share2, Phone, Mail, Wrench, Calendar, FileText, LayoutDashboard, Briefcase, Timer, Package, Paperclip, ListChecks, Activity } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ProfessionalShareModal } from "@/components/shared/ProfessionalShareModal";
 import { SendDispatchModal } from "../components/SendDispatchModal";
 import { DispatchPDFPreviewModal } from "../components/DispatchPDFPreviewModal";
@@ -94,6 +104,7 @@ export default function DispatchJobDetail() {
   const [serviceOrderMaterials, setServiceOrderMaterials] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isStatusUpdating, setIsStatusUpdating] = useState(false);
+  const [pendingCancelStatus, setPendingCancelStatus] = useState<DispatchStatus | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
   // The job the technician is currently working on — preselected when logging
   // time / expenses / materials on a multi-job dispatch (still changeable there).
@@ -369,7 +380,35 @@ export default function DispatchJobDetail() {
   const handleStatusChange = async (newStatus: DispatchStatus) => {
     if (!dispatch || !id) return;
     const oldStatus = dispatch.status;
+
+    // Confirm destructive cancellation via modal
+    if (newStatus === 'cancelled' && oldStatus !== 'cancelled') {
+      setPendingCancelStatus(newStatus);
+      return;
+    }
+
+    await performStatusChange(newStatus);
+  };
+
+  const performStatusChange = async (newStatus: DispatchStatus) => {
+    if (!dispatch || !id) return;
+    const oldStatus = dispatch.status;
     setIsStatusUpdating(true);
+
+    // Resolve actor for audit trail (used when cancelling)
+    const currentUserRaw = (() => {
+      try { return JSON.parse(localStorage.getItem('user_data') || 'null'); } catch { return null; }
+    })();
+    const actorName = currentUserRaw?.name
+      || [currentUserRaw?.firstName, currentUserRaw?.lastName].filter(Boolean).join(' ').trim()
+      || currentUserRaw?.email
+      || currentUserRaw?.userName
+      || 'Unknown user';
+    const cancelledAtIso = new Date().toISOString();
+    const isCancel = newStatus === 'cancelled' && oldStatus !== 'cancelled';
+    const dispatchAuditMsg = `[AUDIT] Dispatch #${dispatch.dispatchNumber} cancelled by ${actorName} on ${cancelledAtIso}`;
+    const relatedAuditMsg = `[AUDIT] Dispatch #${dispatch.dispatchNumber} cancelled by ${actorName} on ${cancelledAtIso}`;
+
     try {
       await dispatchesApi.updateStatus(parseInt(id), newStatus, oldStatus);
       setDispatch({
@@ -381,8 +420,31 @@ export default function DispatchJobDetail() {
       // Recalculate parent service order status based on all dispatches
       if (dispatch.serviceOrderId) {
         try {
-          await serviceOrdersApi.recalculateStatus(parseInt(String(dispatch.serviceOrderId)));
+          const soIdNum = parseInt(String(dispatch.serviceOrderId));
+          const updatedSo = await serviceOrdersApi.recalculateStatus(soIdNum);
           console.log('[DISPATCH] Service order status recalculated after dispatch:', oldStatus, '->', newStatus);
+
+          // Client-side cascade fallback: if this cancellation left the SO with no
+          // active dispatches and the server didn't cancel it, cancel it here.
+          if (newStatus === 'cancelled' && updatedSo && (updatedSo as any).status !== 'cancelled') {
+            try {
+              const siblings = await dispatchesApi.getHistory({ serviceOrderId: soIdNum });
+              const anyActive = Array.isArray(siblings) && siblings.some(
+                (s: any) => s && s.status !== 'cancelled'
+              );
+              if (Array.isArray(siblings) && siblings.length > 0 && !anyActive) {
+                await serviceOrdersApi.updateStatus(soIdNum, 'cancelled');
+                try {
+                  await serviceOrdersApi.addNote(soIdNum, {
+                    content: t('dispatches.cancel.so_auto_cancelled', { ns: 'dispatches' }),
+                    type: 'status_changed',
+                  });
+                } catch { /* best-effort */ }
+              }
+            } catch (cascadeError) {
+              console.warn('[DISPATCH] Client-side SO cancel cascade failed:', cascadeError);
+            }
+          }
         } catch (recalcError) {
           console.warn('[DISPATCH] Failed to recalculate service order status:', recalcError);
         }
@@ -396,9 +458,13 @@ export default function DispatchJobDetail() {
         console.warn('[DISPATCH] Failed to trigger workflow (backend may handle it automatically):', workflowError);
       }
 
-      // Log activity to dispatch notes
+      // Log activity to dispatch notes (audit entry when cancelled)
       try {
-        await dispatchesApi.addNote(parseInt(id), `Status changed from "${oldStatus}" to "${newStatus}"`, 'status_changed');
+        const noteContent = isCancel
+          ? dispatchAuditMsg
+          : `Status changed from "${oldStatus}" to "${newStatus}"`;
+        const noteType = isCancel ? 'audit_cancelled' : 'status_changed';
+        await dispatchesApi.addNote(parseInt(id), noteContent, noteType);
       } catch (noteError) {
         console.warn('Failed to log dispatch note:', noteError);
       }
@@ -434,12 +500,14 @@ export default function DispatchJobDetail() {
         console.warn('Failed to create notification for dispatcher:', notifError);
       }
 
-      // Propagate to service order notes
+      // Propagate to service order notes (audit entry when cancelled)
       if (serviceOrder?.id) {
         try {
           await serviceOrdersApi.addNote(serviceOrder.id, {
-            content: `[From ${dispatch.dispatchNumber}] Dispatch status changed from "${oldStatus}" to "${newStatus}"`,
-            type: 'dispatch_status_changed',
+            content: isCancel
+              ? relatedAuditMsg
+              : `[From ${dispatch.dispatchNumber}] Dispatch status changed from "${oldStatus}" to "${newStatus}"`,
+            type: isCancel ? 'audit_cancelled' : 'dispatch_status_changed',
           });
         } catch (soError) {
           console.warn('Failed to log service order activity:', soError);
@@ -454,8 +522,10 @@ export default function DispatchJobDetail() {
             try {
               const { salesApi } = await import('@/services/api/salesApi');
               await salesApi.addActivity(soData.saleId, {
-                type: 'dispatch_status_changed',
-                description: `[From ${dispatch.dispatchNumber}] Dispatch status changed to "${newStatus}"`,
+                type: isCancel ? 'audit_cancelled' : 'dispatch_status_changed',
+                description: isCancel
+                  ? relatedAuditMsg
+                  : `[From ${dispatch.dispatchNumber}] Dispatch status changed to "${newStatus}"`,
               });
 
               // Get sale to find offer ID
@@ -464,8 +534,10 @@ export default function DispatchJobDetail() {
                 try {
                   const { offersApi } = await import('@/services/api/offersApi');
                   await offersApi.addActivity(saleData.offerId, {
-                    type: 'dispatch_status_changed',
-                    description: `[From ${dispatch.dispatchNumber}] Dispatch status changed to "${newStatus}"`,
+                    type: isCancel ? 'audit_cancelled' : 'dispatch_status_changed',
+                    description: isCancel
+                      ? relatedAuditMsg
+                      : `[From ${dispatch.dispatchNumber}] Dispatch status changed to "${newStatus}"`,
                   });
                 } catch (offerError) {
                   console.warn('Failed to log offer activity:', offerError);
@@ -481,8 +553,10 @@ export default function DispatchJobDetail() {
             try {
               const { offersApi } = await import('@/services/api/offersApi');
               await offersApi.addActivity(soData.offerId, {
-                type: 'dispatch_status_changed',
-                description: `[From ${dispatch.dispatchNumber}] Dispatch status changed to "${newStatus}"`,
+                type: isCancel ? 'audit_cancelled' : 'dispatch_status_changed',
+                description: isCancel
+                  ? relatedAuditMsg
+                  : `[From ${dispatch.dispatchNumber}] Dispatch status changed to "${newStatus}"`,
               });
             } catch (offerError) {
               console.warn('Failed to log offer activity:', offerError);
@@ -951,6 +1025,39 @@ export default function DispatchJobDetail() {
           onOpenChange={setIsSendModalOpen} 
           dispatch={dispatch} 
         />
+
+        <AlertDialog
+          open={pendingCancelStatus !== null}
+          onOpenChange={(open) => { if (!open) setPendingCancelStatus(null); }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {t('dispatches.cancel.confirm_title', { ns: 'dispatches' })}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {t('dispatches.cancel.confirm_body', { ns: 'dispatches' })}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isStatusUpdating}>
+                {t('dispatches.cancel.keep', { ns: 'dispatches' })}
+              </AlertDialogCancel>
+              <AlertDialogAction
+                disabled={isStatusUpdating}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={async (e) => {
+                  e.preventDefault();
+                  const target = pendingCancelStatus;
+                  setPendingCancelStatus(null);
+                  if (target) await performStatusChange(target);
+                }}
+              >
+                {t('dispatches.cancel.confirm_action', { ns: 'dispatches' })}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
       </div>
     </div>;

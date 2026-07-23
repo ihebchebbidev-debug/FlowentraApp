@@ -125,6 +125,14 @@
       "cancelled": "Annulé"
     },
 
+    "cancel": {
+      "confirm_title": "Annuler cette intervention ?",
+      "confirm_body": "Cette action met fin à l'intervention et est irréversible.",
+      "confirm_action": "Annuler l'intervention",
+      "keep": "Conserver l'intervention",
+      "so_auto_cancelled": "Ordre de service annulé car toutes les interventions ont été annulées."
+    },
+
     "priorities": {
       "low": "Faible",
       "medium": "Moyenne",
@@ -409,6 +417,8 @@
     "delete_action": "Supprimer le matériau",
     "approved": "Approuvé",
     "pending": "En attente",
-    "manual": "Manuel"
+    "manual": "Manuel",
+    "pre_planned": "Pré-planifié",
+    "from_service_order_short": "Depuis l'ordre de service"
   }
 }

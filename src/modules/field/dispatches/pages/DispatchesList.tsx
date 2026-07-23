@@ -316,6 +316,7 @@ export default function DispatchesList() {
               <option value="rejected">{t("dispatches.statuses.rejected")}</option>
               <option value="in_progress">{t("dispatches.statuses.in_progress")}</option>
               <option value="completed">{t("dispatches.statuses.completed")}</option>
+              <option value="cancelled">{t("dispatches.statuses.cancelled")}</option>
             </select>
             <Button variant="outline" size="sm" className="h-9 gap-1.5" onClick={() => setShowExportModal(true)}>
               <Download className="h-4 w-4" />
@@ -356,6 +357,7 @@ export default function DispatchesList() {
             <option value="rejected">{t("dispatches.statuses.rejected")}</option>
             <option value="in_progress">{t("dispatches.statuses.in_progress")}</option>
             <option value="completed">{t("dispatches.statuses.completed")}</option>
+            <option value="cancelled">{t("dispatches.statuses.cancelled")}</option>
           </select>
 
           <div className="flex flex-wrap items-center gap-2">

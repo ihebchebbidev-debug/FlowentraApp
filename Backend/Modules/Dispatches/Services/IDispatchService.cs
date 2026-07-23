@@ -18,6 +18,7 @@ namespace MyApi.Modules.Dispatches.Services
         Task<DispatchDto> GetByIdAsync(int dispatchId);
         Task<DispatchDto> UpdateAsync(int dispatchId, UpdateDispatchDto dto, string userId);
         Task<DispatchDto> UpdateStatusAsync(int dispatchId, UpdateDispatchStatusDto dto, string userId);
+        Task<System.Collections.Generic.List<MyApi.Modules.Dispatches.Models.DispatchAuditLog>> GetAuditLogsAsync(int dispatchId);
         Task<DispatchDto> StartDispatchAsync(int dispatchId, StartDispatchDto dto, string userId);
         Task<DispatchDto> CompleteDispatchAsync(int dispatchId, CompleteDispatchDto dto, string userId);
         Task DeleteAsync(int dispatchId, string userId);

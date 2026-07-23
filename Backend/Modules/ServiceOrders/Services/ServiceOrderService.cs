@@ -1039,13 +1039,20 @@ namespace MyApi.Modules.ServiceOrders.Services
             var finalStatuses = new[] { "closed", "invoiced", "cancelled" };
             if (!finalStatuses.Contains(serviceOrder.Status))
             {
-                var activeDispatchStatuses = await _context.Dispatches
-                    .Where(d => d.ServiceOrderId == id && !d.IsDeleted && d.Status != "cancelled")
+                var allDispatchStatuses = await _context.Dispatches
+                    .Where(d => d.ServiceOrderId == id && !d.IsDeleted)
                     .Select(d => d.Status)
                     .ToListAsync();
+                var activeDispatchStatuses = allDispatchStatuses
+                    .Where(s => s != "cancelled")
+                    .ToList();
 
                 string newStatus;
-                if (activeDispatchStatuses.Count == 0)
+                // If the SO has dispatches and every single one is cancelled, cascade
+                // the cancellation up to the service order itself.
+                if (allDispatchStatuses.Count > 0 && activeDispatchStatuses.Count == 0)
+                    newStatus = "cancelled";
+                else if (activeDispatchStatuses.Count == 0)
                     newStatus = "ready_for_planning";
                 else if (activeDispatchStatuses.All(s => s == "completed"))
                     newStatus = "technically_completed";

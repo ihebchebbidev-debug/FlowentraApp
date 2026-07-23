@@ -167,6 +167,7 @@ namespace MyApi.Data
     public DbSet<MaterialUsage> DispatchMaterials { get; set; }
     public DbSet<Attachment> DispatchAttachments { get; set; }
     public DbSet<Note> DispatchNotes { get; set; }
+    public DbSet<MyApi.Modules.Dispatches.Models.DispatchAuditLog> DispatchAuditLogs { get; set; }
 
         public DbSet<ServiceOrder> ServiceOrders { get; set; }
         public DbSet<ServiceOrderJob> ServiceOrderJobs { get; set; }
@@ -617,6 +618,7 @@ namespace MyApi.Data
             modelBuilder.ApplyConfiguration(new MyApi.Modules.Dispatches.Data.MaterialUsageConfiguration());
             modelBuilder.ApplyConfiguration(new MyApi.Modules.Dispatches.Data.AttachmentConfiguration());
             modelBuilder.ApplyConfiguration(new MyApi.Modules.Dispatches.Data.NoteConfiguration());
+            modelBuilder.ApplyConfiguration(new MyApi.Modules.Dispatches.Data.DispatchAuditLogConfiguration());
             
             modelBuilder.ApplyConfiguration(new ServiceOrderConfiguration());
             modelBuilder.ApplyConfiguration(new ServiceOrderJobConfiguration());

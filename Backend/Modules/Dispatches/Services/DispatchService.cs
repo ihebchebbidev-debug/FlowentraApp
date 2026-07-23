@@ -825,6 +825,56 @@ namespace MyApi.Modules.Dispatches.Services
 
             await _db.SaveChangesAsync();
 
+            // Dedicated audit record for cancellations (persisted separately from notes)
+            if (dto.Status == "cancelled" && oldStatus != "cancelled")
+            {
+                try
+                {
+                    string? saleId = null;
+                    string? offerId = null;
+                    if (d.ServiceOrderId.HasValue)
+                    {
+                        var soIds = await _db.ServiceOrders
+                            .Where(so => so.Id == d.ServiceOrderId.Value)
+                            .Select(so => new { so.SaleId, so.OfferId })
+                            .FirstOrDefaultAsync();
+                        if (soIds != null)
+                        {
+                            saleId = soIds.SaleId;
+                            offerId = soIds.OfferId;
+                        }
+                        if (string.IsNullOrEmpty(offerId) && !string.IsNullOrEmpty(saleId) && int.TryParse(saleId, out var saleIdInt))
+                        {
+                            offerId = await _db.Sales
+                                .Where(s => s.Id == saleIdInt)
+                                .Select(s => s.OfferId)
+                                .FirstOrDefaultAsync();
+                        }
+                    }
+
+                    _db.DispatchAuditLogs.Add(new MyApi.Modules.Dispatches.Models.DispatchAuditLog
+                    {
+                        DispatchId = d.Id,
+                        DispatchNumber = d.DispatchNumber,
+                        EventType = "cancelled",
+                        OldStatus = oldStatus,
+                        NewStatus = dto.Status,
+                        Reason = dto.Notes,
+                        ServiceOrderId = d.ServiceOrderId,
+                        SaleId = saleId,
+                        OfferId = offerId,
+                        ActorUserId = userId,
+                        ActorName = userId,
+                        CreatedAt = DateTime.UtcNow,
+                    });
+                    await _db.SaveChangesAsync();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "[DISPATCH-AUDIT] Failed to persist cancellation audit for dispatch {DispatchId}", dispatchId);
+                }
+            }
+
             // Log status change to the contact activity feed
             if (_contactActivity != null && oldStatus != dto.Status)
             {
@@ -2320,6 +2370,14 @@ namespace MyApi.Modules.Dispatches.Services
                 ByPriority = dispatches.GroupBy(d => d.Priority).ToDictionary(g => g.Key, g => g.Count()),
                 GeneratedAt = DateTime.UtcNow
             };
+        }
+
+        public async Task<List<MyApi.Modules.Dispatches.Models.DispatchAuditLog>> GetAuditLogsAsync(int dispatchId)
+        {
+            return await _db.DispatchAuditLogs
+                .Where(a => a.DispatchId == dispatchId)
+                .OrderByDescending(a => a.CreatedAt)
+                .ToListAsync();
         }
     }
 }

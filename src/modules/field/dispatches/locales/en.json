@@ -125,6 +125,14 @@
       "cancelled": "Cancelled"
     },
 
+    "cancel": {
+      "confirm_title": "Cancel this dispatch?",
+      "confirm_body": "This will end the dispatch. This can't be undone.",
+      "confirm_action": "Cancel dispatch",
+      "keep": "Keep dispatch",
+      "so_auto_cancelled": "Service order cancelled because all dispatches were cancelled."
+    },
+
     "priorities": {
       "low": "Low",
       "medium": "Medium",
@@ -409,6 +417,8 @@
     "delete_action": "Delete material",
     "approved": "Approved",
     "pending": "Pending",
-    "manual": "Manual"
+    "manual": "Manual",
+    "pre_planned": "Pre-planned",
+    "from_service_order_short": "From service order"
   }
 }

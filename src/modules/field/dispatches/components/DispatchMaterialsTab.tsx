@@ -565,6 +565,53 @@ export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onData
     return serviceOrderMaterials.filter(m => m.installationId === installationId);
   }, [installationId, serviceOrderMaterials]);
 
+  // Unified rows: actual materials used + pre-planned materials from the service order.
+  // Planned rows are read-only and rendered with a [PRE PLANNED] tag — same table, one difference.
+  type UnifiedRow = {
+    key: string;
+    isPlanned: boolean;
+    name: string;
+    jobId?: number | null;
+    quantity: number;
+    unit?: string;
+    unitCost: number;
+    totalCost: number;
+    addedBy: string;
+    material?: MaterialWithResolvedNames; // present when isPlanned = false
+  };
+
+  const unifiedRows = useMemo<UnifiedRow[]>(() => {
+    const used: UnifiedRow[] = materialsWithDetails.map((m) => {
+      const unitCost = m.resolvedUnitCost || 0;
+      return {
+        key: `used-${m.id}`,
+        isPlanned: false,
+        name: m.resolvedArticleName || '',
+        jobId: m.serviceOrderJobId,
+        quantity: m.quantity,
+        unit: (m as any).unit || 'piece',
+        unitCost,
+        totalCost: unitCost * m.quantity,
+        addedBy: m.resolvedUserName || '',
+        material: m,
+      };
+    });
+    const planned: UnifiedRow[] = installationMaterials.map((m) => ({
+      key: `planned-${m.id}`,
+      isPlanned: true,
+      name: m.name,
+      quantity: m.quantity,
+      unit: (m as any).unit || 'piece',
+      unitCost: m.unitPrice,
+      totalCost: m.totalPrice,
+      addedBy: m.createdBy || t('materials_tab.from_service_order_short'),
+    }));
+    return [...planned, ...used];
+  }, [materialsWithDetails, installationMaterials, t]);
+
+  const unifiedTotalCost = unifiedRows.reduce((s, r) => s + r.totalCost, 0);
+  const unifiedCount = unifiedRows.length;
+
   return (
     <>
       <PropagationChecklist dispatchId={dispatchId} />
@@ -573,7 +620,7 @@ export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onData
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Wrench className="h-4 w-4 text-primary" />
-              {t('materials_tab.materials_used')} ({materials.length})
+              {t('materials_tab.materials_used')} ({unifiedCount})
               {dispatchJobs.length > 0 && (
                 <PlannedTotalsBadge
                   parentType="service_order_job"
@@ -601,7 +648,7 @@ export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onData
                   </SelectContent>
                 </Select>
               )}
-              {materials.length > 0 && (
+              {unifiedCount > 0 && (
                 <Button
                   size="sm"
                   variant="outline"
@@ -633,7 +680,7 @@ export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onData
               />
             </div>
           )}
-          {materialsWithDetails.length > 0 ? (
+          {unifiedRows.length > 0 ? (
             <>
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -649,58 +696,66 @@ export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onData
                     </tr>
                   </thead>
                   <tbody>
-                    {materialsWithDetails.map((material) => {
-                      const unitCost = material.resolvedUnitCost || 0;
-                      const materialTotalCost = unitCost * material.quantity;
-                      
-                      return (
-                        <tr key={material.id} className="border-b hover:bg-muted/50 transition-colors">
-                          <td className="px-4 py-3 text-sm font-medium">{material.resolvedArticleName}</td>
-                          {isMultiJob && (
-                            <td className="px-4 py-3 text-sm">
-                              {material.serviceOrderJobId != null
-                                ? <Badge variant="outline" className="text-[10px]">📋 {jobLabel(material.serviceOrderJobId)}</Badge>
-                                : <span className="text-muted-foreground">—</span>}
-                            </td>
-                          )}
-                          <td className="px-4 py-3 text-sm">{material.quantity} {getUnitLabel((material as any).unit || 'piece', t)}</td>
-                          <td className="px-4 py-3 text-sm">{formatCurrency(unitCost)}</td>
-                          <td className="px-4 py-3 text-sm font-medium">{formatCurrency(materialTotalCost)}</td>
-                          <td className="px-4 py-3 text-sm text-muted-foreground">{material.resolvedUserName}</td>
-                          <td className="px-4 py-3 text-right">
+                    {unifiedRows.map((row) => (
+                      <tr key={row.key} className="border-b hover:bg-muted/50 transition-colors">
+                        <td className="px-4 py-3 text-sm font-medium">
+                          <div className="flex items-center gap-2">
+                            <span>{row.name}</span>
+                            {row.isPlanned && (
+                              <Badge variant="outline" className="text-[10px] uppercase tracking-wide border-primary/40 text-primary">
+                                {t('materials_tab.pre_planned')}
+                              </Badge>
+                            )}
+                          </div>
+                        </td>
+                        {isMultiJob && (
+                          <td className="px-4 py-3 text-sm">
+                            {row.jobId != null
+                              ? <Badge variant="outline" className="text-[10px]">📋 {jobLabel(row.jobId)}</Badge>
+                              : <span className="text-muted-foreground">—</span>}
+                          </td>
+                        )}
+                        <td className="px-4 py-3 text-sm">{row.quantity} {getUnitLabel(row.unit || 'piece', t)}</td>
+                        <td className="px-4 py-3 text-sm">{formatCurrency(row.unitCost)}</td>
+                        <td className="px-4 py-3 text-sm font-medium">{formatCurrency(row.totalCost)}</td>
+                        <td className="px-4 py-3 text-sm text-muted-foreground">{row.addedBy}</td>
+                        <td className="px-4 py-3 text-right">
+                          {row.isPlanned || !row.material ? (
+                            <span className="text-muted-foreground text-xs">—</span>
+                          ) : (
                             <div className="flex items-center justify-end gap-1">
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 className="h-8 w-8 p-0"
-                                onClick={() => handleViewClick(material)}
+                                onClick={() => handleViewClick(row.material!)}
                                 title={t('materials_tab.view_details')}
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 className="h-8 w-8 p-0"
-                                onClick={() => handleEditClick(material)}
+                                onClick={() => handleEditClick(row.material!)}
                                 title={t('materials_tab.edit')}
                               >
                                 <Pencil className="h-4 w-4" />
                               </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                                onClick={() => handleDeleteClick(material)}
+                                onClick={() => handleDeleteClick(row.material!)}
                                 title={t('materials_tab.delete_action')}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                          )}
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -709,11 +764,11 @@ export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onData
               <div className="mt-4 pt-4 border-t">
                 <div className="flex justify-between items-center">
                   <div className="text-sm text-muted-foreground">
-                    {t('materials_tab.total_materials')}: <span className="font-medium text-foreground">{materials.length} {t('materials_tab.items')}</span>
+                    {t('materials_tab.total_materials')}: <span className="font-medium text-foreground">{unifiedCount} {t('materials_tab.items')}</span>
                   </div>
                   <div className="text-right">
                     <p className="text-sm text-muted-foreground">{t('materials_tab.total_cost')}</p>
-                    <p className="text-sm font-medium text-foreground">{formatCurrency(totalCost)}</p>
+                    <p className="text-sm font-medium text-foreground">{formatCurrency(unifiedTotalCost)}</p>
                   </div>
                 </div>
               </div>
@@ -736,73 +791,6 @@ export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onData
           )}
         </CardContent>
       </Card>
-
-      {/* Installation-Related Materials from Service Order */}
-      {installationMaterials.length > 0 && (
-        <Card className="mt-6">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Building className="h-4 w-4 text-primary" />
-              {t('materials_tab.installation_materials')} ({installationMaterials.length})
-              <Badge variant="secondary" className="ml-2 text-xs">{t('materials_tab.from_service_order')}</Badge>
-            </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              {t('materials_tab.installation_materials_linked')}
-            </p>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                     <th className="text-left p-4 text-sm font-medium text-muted-foreground">{t('materials_tab.material_name')}</th>
-                     <th className="text-left p-4 text-sm font-medium text-muted-foreground">{t('materials_tab.sku')}</th>
-                     <th className="text-left p-4 text-sm font-medium text-muted-foreground">{t('materials_tab.quantity')}</th>
-                     <th className="text-left p-4 text-sm font-medium text-muted-foreground">{t('materials_tab.unit_price')}</th>
-                     <th className="text-left p-4 text-sm font-medium text-muted-foreground">{t('materials_tab.total')}</th>
-                     <th className="text-left p-4 text-sm font-medium text-muted-foreground">{t('materials_tab.status')}</th>
-                     <th className="text-left p-4 text-sm font-medium text-muted-foreground">{t('materials_tab.source')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {installationMaterials.map((material) => (
-                    <tr key={material.id} className="border-b hover:bg-muted/50 transition-colors">
-                      <td className="px-4 py-3 text-sm font-medium">{material.name}</td>
-                      <td className="px-4 py-3 text-sm text-muted-foreground">{material.sku || '-'}</td>
-                      <td className="px-4 py-3 text-sm">{material.quantity} {getUnitLabel((material as any).unit || 'piece', t)}</td>
-                      <td className="px-4 py-3 text-sm">{formatCurrency(material.unitPrice)}</td>
-                      <td className="px-4 py-3 text-sm font-medium">{formatCurrency(material.totalPrice)}</td>
-                      <td className="px-4 py-3 text-sm">
-                        <Badge variant="secondary" className="capitalize">
-                          {material.status}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-muted-foreground capitalize">
-                        {material.source?.replace('_', ' ') || t('materials_tab.manual')}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Installation Materials Cost Summary */}
-            <div className="mt-4 pt-4 border-t">
-              <div className="flex justify-between items-center">
-                <div className="text-sm text-muted-foreground">
-                  {t('materials_tab.total_installation_materials')}: <span className="font-medium text-foreground">{installationMaterials.length} {t('materials_tab.items')}</span>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-muted-foreground">{t('materials_tab.total_value')}</p>
-                  <p className="text-sm font-medium text-foreground">
-                    {formatCurrency(installationMaterials.reduce((sum, m) => sum + m.totalPrice, 0))}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       <AddMaterialModal
         isOpen={isMaterialModalOpen}

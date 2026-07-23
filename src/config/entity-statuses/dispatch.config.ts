@@ -34,8 +34,10 @@ export const dispatchStatusConfig: EntityStatusConfig = {
     steps: ['planned', 'assigned', 'confirmed', 'in_progress', 'completed'],
     terminalStatuses: ['completed', 'cancelled', 'rejected'],
     branchStatuses: {
-      planned: ['rejected'],  // Rejection can branch from planned…
-      assigned: ['rejected'], // …or after a technician was assigned
+      planned: ['rejected', 'cancelled'],   // Rejection or cancellation from planning
+      assigned: ['rejected', 'cancelled'],  // …or after a technician was assigned
+      confirmed: ['cancelled'],             // "Released" in the UI — can still be cancelled
+      in_progress: ['cancelled'],           // Active work can be cancelled too
     },
   },
 };

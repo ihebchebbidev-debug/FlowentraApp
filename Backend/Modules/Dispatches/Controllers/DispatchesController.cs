@@ -140,6 +140,13 @@ namespace MyApi.Modules.Dispatches.Controllers
             return Ok(result);
         }
 
+        [HttpGet("{dispatchId:int}/audit-logs")]
+        public async Task<IActionResult> GetAuditLogs(int dispatchId)
+        {
+            var logs = await _service.GetAuditLogsAsync(dispatchId);
+            return Ok(logs);
+        }
+
         [HttpPost("{dispatchId:int}/start")]
         public async Task<IActionResult> Start(int dispatchId, [FromBody] StartDispatchDto dto)
         {
