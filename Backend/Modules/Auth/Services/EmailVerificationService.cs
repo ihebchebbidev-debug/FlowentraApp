@@ -259,10 +259,15 @@ namespace MyApi.Modules.Auth.Services
             var count = _cache.GetOrCreate(key, entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = window;
+                entry.Size = 1; // required: shared MemoryCache has SizeLimit configured
                 return 0;
             });
             if (count >= max) return false;
-            _cache.Set(key, count + 1, window);
+            _cache.Set(key, count + 1, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = window,
+                Size = 1
+            });
             return true;
         }
 
