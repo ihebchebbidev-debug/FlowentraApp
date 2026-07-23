@@ -520,6 +520,7 @@ export function AddOffer() {
                   <div className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm text-muted-foreground">
                     {t('currencies.TND')}
                   </div>
+                  <p className="text-xs text-muted-foreground">{t('currencyFromSettings')}</p>
                 </div>
 
                 <div className="space-y-2">

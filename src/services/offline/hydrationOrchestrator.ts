@@ -173,7 +173,10 @@ async function fetchAndCache(url: string, signal: AbortSignal): Promise<Response
     headers: { ...(getAuthHeaders() as Record<string, string>), "X-Bypass-Hydration-Cache": "true" },
     signal,
   });
-  if (res.ok) {
+  // Guard against a race: if the run was aborted (e.g. a second hydration
+  // started) between `fetch` resolving and the cache write, don't clobber
+  // the newer run's fresher cache entry with our stale response.
+  if (res.ok && !signal.aborted) {
     try {
       await putCachedResponse("GET", url, res.clone());
     } catch {
@@ -182,6 +185,12 @@ async function fetchAndCache(url: string, signal: AbortSignal): Promise<Response
   }
   return res;
 }
+
+/**
+ * Await in-flight run before starting a new hydration. Prevents interleaved
+ * cache writes between two overlapping runs (B2 in the offline audit).
+ */
+let inFlightHydration: Promise<{ ok: boolean; modulesFailed: number }> | null = null;
 
 function parseJsonSafe(text: string): unknown {
   try {
@@ -195,11 +204,12 @@ export function abortOfflineHydration(): void {
   abortCtl?.abort();
 }
 
-export async function runOfflineHydration(): Promise<{ ok: boolean; modulesFailed: number }> {
+async function _runOfflineHydrationImpl(): Promise<{ ok: boolean; modulesFailed: number }> {
   abortCtl?.abort();
   abortCtl = new AbortController();
   const signal = abortCtl.signal;
   const wallStart = performance.now();
+
 
   const scopeKey = getOfflineScopeKey();
   const modules: HydrationModuleSnapshot[] = HYDRATION_MODULES.map((m) => mod(m.id, m.labelKey));
@@ -956,7 +966,9 @@ export async function runOfflineHydration(): Promise<{ ok: boolean; modulesFaile
         () => fetchAndCache(`${API_URL}/api/Skills`, signal),
         () => fetchAndCache(`${API_URL}/api/Roles`, signal)
       );
-      if (uid != null && uid >= 2) {
+      // Permissions must hydrate for every authenticated user — MainAdmin (uid=1)
+      // included — otherwise offline permission gates fail closed for the admin.
+      if (uid != null) {
         steps.push(() => fetchAndCache(`${API_URL}/api/Permissions/user/${uid}`, signal));
       }
       const totalSteps = steps.length;
@@ -1131,4 +1143,23 @@ export async function runOfflineHydration(): Promise<{ ok: boolean; modulesFaile
   }
 
   return { ok: modulesFailed === 0 && !snapshot.fatalError, modulesFailed };
+}
+
+/**
+ * Public entry point. Serializes overlapping runs by awaiting any prior
+ * in-flight hydration before starting a new one, so late cache writes from
+ * a stale run can't clobber fresher data written by the new run.
+ */
+export async function runOfflineHydration(): Promise<{ ok: boolean; modulesFailed: number }> {
+  if (inFlightHydration) {
+    abortCtl?.abort();
+    try { await inFlightHydration; } catch { /* prior run's error already handled */ }
+  }
+  const p = _runOfflineHydrationImpl();
+  inFlightHydration = p;
+  try {
+    return await p;
+  } finally {
+    if (inFlightHydration === p) inFlightHydration = null;
+  }
 }

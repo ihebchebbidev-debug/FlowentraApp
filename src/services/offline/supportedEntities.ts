@@ -22,8 +22,11 @@ export const OFFLINE_REPLAYABLE_ENTITY_TYPES = [
   "dynamic_form",
   "dynamic_form_response",
   "calendar_event",
-  "email_account",
-  "synced_email",
+  // NOTE: "email_account" and "synced_email" intentionally omitted — inbox is
+  // not hydrated into IndexedDB, so queuing offline mutations against email ids
+  // the user never had cached is unsafe. Add these back only after an
+  // email-accounts hydration module lands. Until then, `shouldSkipOfflineQueueForEndpoint`
+  // silently no-ops these calls offline.
   "project",
   "daily_task",
   "task",

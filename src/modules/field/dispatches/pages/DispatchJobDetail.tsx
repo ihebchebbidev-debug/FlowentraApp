@@ -621,14 +621,23 @@ export default function DispatchJobDetail() {
                       {t('detail.send_email', 'Send via Email')}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
+                    {(dispatch.status === 'pending' || dispatch.status === 'planned' || dispatch.status === 'assigned') && (
+                      <DropdownMenuItem onClick={() => handleStatusChange('confirmed')}>
+                        <CheckCircle className="h-4 w-4 mr-2 text-success" />
+                        {t('dispatches.statuses.confirmed', { ns: 'dispatches', defaultValue: 'Release' })}
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem onClick={() => handleStatusChange('completed')}>
                       <CheckCircle className="h-4 w-4 mr-2 text-success" />
                       {t('dispatch_detail.mark_complete', 'Mark Complete')}
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleStatusChange('cancelled')} className="text-destructive focus:text-destructive">
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      {t('dispatch_detail.cancel_dispatch', 'Cancel Dispatch')}
-                    </DropdownMenuItem>
+                    {(dispatch.status as string) !== 'completed' && (dispatch.status as string) !== 'cancelled' && (dispatch.status as string) !== 'rejected' && (
+                      <DropdownMenuItem onClick={() => handleStatusChange('cancelled')} className="text-destructive focus:text-destructive">
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        {t('dispatch_detail.cancel_dispatch', 'Cancel Dispatch')}
+                      </DropdownMenuItem>
+                    )}
+
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -691,6 +700,43 @@ export default function DispatchJobDetail() {
 
                   {/* Right: Actions only – status pipeline moved below */}
                   <div className="flex items-center gap-4 shrink-0">
+
+                    {/* Quick actions: Release / Cancel (no need to walk step-by-step) */}
+                    {(() => {
+                      const s = dispatch.status as DispatchStatus;
+                      const canRelease = s === 'pending' || s === 'planned' || s === 'assigned';
+                      const canCancel = s !== 'completed' && s !== 'cancelled' && s !== 'rejected';
+                      if (!canRelease && !canCancel) return null;
+                      return (
+                        <div className="flex items-center gap-2">
+                          {canRelease && (
+                            <Button
+                              size="sm"
+                              onClick={() => handleStatusChange('confirmed')}
+                              disabled={isStatusUpdating}
+                              className="bg-success text-success-foreground hover:bg-success/90 gap-1.5"
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                              {t('dispatches.statuses.confirmed', { ns: 'dispatches', defaultValue: 'Release' })}
+                            </Button>
+                          )}
+                          {canCancel && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleStatusChange('cancelled')}
+                              disabled={isStatusUpdating}
+                              className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive gap-1.5"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              {t('dispatches.statuses.cancelled', { ns: 'dispatches', defaultValue: 'Cancel' })}
+                            </Button>
+                          )}
+                        </div>
+                      );
+                    })()}
+
+
 
                     
                     <TooltipProvider delayDuration={300}>

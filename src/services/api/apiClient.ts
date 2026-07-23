@@ -2,6 +2,7 @@
 import { authService } from '@/services/authService';
 import { logger } from '@/hooks/useLogger';
 import { getCurrentTenant, TENANT_HEADER } from '@/utils/tenant';
+import { getAuthHeaders, getAuthToken } from '@/utils/apiHeaders';
 import { API_URL } from '@/config/api';
 import { dedupFetch } from '@/utils/requestDedup';
 import { getCachedResponse } from '@/services/offline/hydrationStore';
@@ -39,31 +40,11 @@ export async function runWithSuppressedApiErrorToasts<T>(fn: () => Promise<T>): 
   }
 }
 
-// Helper to get auth token
-const getAuthToken = (): string | null => {
-  return localStorage.getItem('access_token');
-};
+// getAuthToken and getAuthHeaders are imported from '@/utils/apiHeaders' — the
+// single source of truth for tenant/target-tenant headers across the app.
+// The previous local copies duplicated logic and warned about missing tenant
+// on every request, spamming the console on `/dashboard` and similar routes.
 
-// Helper to create auth headers (includes TENANT_HEADER when applicable)
-const getAuthHeaders = (): HeadersInit => {
-  const token = getAuthToken();
-  const tenant = getCurrentTenant();
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json; charset=utf-8',
-  };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  if (tenant) {
-    headers[TENANT_HEADER] = tenant;
-    if (import.meta.env.DEV) {
-      console.info(`🏢 [API] ${TENANT_HEADER}: "${tenant}"`);
-    }
-  } else if (token && import.meta.env.DEV) {
-    // Authenticated but no tenant resolved → backend will default to TenantId=0
-    // and any FK-bound insert (CreateExternalEndpoint etc.) will 500.
-    console.warn(`⚠️ [API] No ${TENANT_HEADER} header — request will hit the default tenant. Set a tenant override or wait for AuthContext.resolveDefaultTenant.`);
-  }
-  return headers;
-};
 
 // Track if we're currently refreshing to prevent multiple refresh calls
 let isRefreshing = false;

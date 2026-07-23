@@ -89,7 +89,7 @@ export function SaleItemsSelectorAdvanced({ items, onUpdateItems, currency = 'TN
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Select items to sell</h3>
         {!readonly && (
-          <Button variant="outline" onClick={() => setShowItemSelector(true)} className="gap-2">
+          <Button type="button" variant="outline" onClick={() => setShowItemSelector(true)} className="gap-2">
             <Plus className="h-4 w-4" />
             Add Items
           </Button>
@@ -154,6 +154,7 @@ export function SaleItemsSelectorAdvanced({ items, onUpdateItems, currency = 'TN
                     {!readonly && (
                       <div className="flex gap-1">
                         <Button
+                          type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDeleteItem(item.id)}
@@ -290,6 +291,7 @@ export function SaleItemsSelectorAdvanced({ items, onUpdateItems, currency = 'TN
 
             <div className="flex justify-end gap-2">
               <Button 
+                type="button"
                 variant="outline" 
                 onClick={() => {
                   setShowItemSelector(false);

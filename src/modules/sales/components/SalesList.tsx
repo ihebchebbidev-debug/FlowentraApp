@@ -429,9 +429,17 @@ export function SalesList() {
             <p className="text-[11px] text-muted-foreground">{t("manageSalesAndOffers")}</p>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="hidden sm:inline-flex gap-1.5">
-          <Play className="h-3.5 w-3.5" /> {t('watchDemo', 'Watch Demo')}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="hidden sm:inline-flex gap-1.5">
+            <Play className="h-3.5 w-3.5" /> {t('watchDemo', 'Watch Demo')}
+          </Button>
+          {hasCreateAccess && (
+            <CreateActionButton className="bg-primary text-white hover:bg-primary/90 shadow-medium hover-lift" onClick={handleAddSale}>
+              <Plus className="h-4 w-4 text-white mr-2" />
+              {t('addSaleButton')}
+            </CreateActionButton>
+          )}
+        </div>
       </div>
 
       {/* Autopilot product demo */}

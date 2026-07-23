@@ -1,165 +1,78 @@
-# Cross-Tenant Public Tickets API — Simple & Open
 
-A single set of public endpoints that fan out across every tenant database (demo, dev, krossier, …) and let you **list tickets, read one, change status, and add comments** — exactly like inside the main app. No API key. No headers. Just call the URL.
+## Goal
 
----
+Today `POST /dashboard/sales/add` exists, but it's a stripped-down form vs. `Add Offer`. The user wants a **direct-sale** entry point that mirrors the offer form 1:1, then flows through the full sale lifecycle (status transitions, close, or convert-to-service-order) without ever needing a parent offer.
 
-## 1. Endpoints
+Backend already supports it:
+- `Sales` table has `TaxType`, `FiscalStamp`, `discount`, offer_id is nullable.
+- `ServiceOrders.Origin` supports `'from_sale' | 'direct'`; direct sales convert to service orders via existing convert flow.
+- `sales.service.ts` already reads/writes `fiscalStamp` and `discountType`.
 
-Base: `https://api.flowentra.app/api/public/tickets`
+So the work is almost entirely **frontend parity + translations** plus small backend-payload/type additions.
 
-| Method | Path | Purpose |
-|---|---|---|
-| `GET` | `/` | List tickets across **all tenants** (filters + pagination) |
-| `GET` | `/{tenant}/{ticketId}` | Get one ticket (with comments + history) |
-| `PATCH` | `/{tenant}/{ticketId}/status` | Change status |
-| `POST` | `/{tenant}/{ticketId}/comments` | Add a comment |
-| `GET` | `/tenants` | List available tenants (slugs) |
+## Frontend changes
 
-`{tenant}` is the subdomain slug: `demo`, `dev`, `krossier`, …
+### 1. `src/modules/sales/types.ts` — extend `CreateSaleData`
+Add missing fields that Add Offer has:
+- `category: string`
+- `source: string`
+- `fiscalStamp: number`
+- `discountType: 'percentage' | 'fixed'`
+- `linkedInstallations?: { id: string; name: string; ... }[]` (mirrors offer)
 
----
+### 2. `src/modules/sales/pages/AddSale.tsx` — rebuild to match `AddOffer.tsx`
+Bring in every section AddOffer has:
+- Header identical style (ShoppingCart icon kept).
+- Card 1 — Sale Information: `title`, `category` + `source` (lookup-driven with Manage link, defaults auto-select), `description`. Keep `status` and `priority` as sales-specific extras.
+- Card 2 — Contact selector (already present, keep `ContactSelectorWithType`-equivalent behavior; reset installations on contact change).
+- Card 3 — Installation selection (`InstallationSelector` + `CreateInstallationModal`, list of chips, remove behavior identical to offer).
+- Card 4 — Items (`SaleItemsSelectorAdvanced`) — gate on `customerId` selected, pass `installations` prop.
+- Sidebar Settings: currency + valid-until + delivery date + optional recurring block.
+- Sidebar Financial Summary: discount (+ type selector), TVA (+ type selector), fiscal stamp, breakdown lines mirroring offer (subtotal, discount, TVA, stamp, total).
+- Sidebar Notes card.
+- Actions: Cancel, Save as Draft (status `created`), Create (status `in_progress`) — both go through validation.
 
-## 2. Ticket response shape (fully typed)
+Wiring:
+- Use `useLookups()` for `offerCategories`, `offerSources`, `priorities` with defaults auto-selection.
+- Use `useFormPersistence('add-sale', …)` with the extended defaults (`taxType`, `discountType`, `fiscalStamp: 1`).
+- Reuse `calculateDocumentTotal` for all math.
 
-Every ticket returned by the API carries **who / where / how it was created**:
+### 3. `src/modules/sales/services/sales.service.ts`
+Ensure `createSale` payload forwards `category`, `source`, `fiscalStamp`, `discountType`, `taxType`, `linkedInstallations` (already forwards fiscalStamp / discountType — extend for the new fields).
 
-```json
-{
-  "id": "f2c1...",
-  "tenant": "krossier",                    // which tenant DB it lives in
-  "tenantUrl": "https://krossier.flowentra.app",
-  "title": "Checkout fails on Safari",
-  "description": "…",
-  "status": "open",                        // open | in_progress | resolved | closed
-  "priority": "high",
-  "category": "bug",
-  "createdAt": "2026-07-20T10:32:11Z",
-  "updatedAt": "2026-07-22T08:15:00Z",
+### 4. Translations — `src/modules/sales/locale/en.json` + `fr.json`
+Add missing keys under `addSale.*`:
+- `categoryLabel`, `categoryPlaceholder`, `sourceLabel`, `sourcePlaceholder`
+- `fiscalStampLabel`, `fiscalStampHint`
+- `installationSelectionTitle`, `addInstallation`
+- `itemsSubtotal`, `taxAfterDiscount`
+- `discountTypePercent`, `discountTypeFixed`
+- `createSale` (primary submit label), `pageSubtitle`
 
-  "origin": {
-    "type": "manual",                      // "manual" | "auto"
-    "source": "user_form",                 // user_form | incident_monitor | email | api
-    "errorFingerprint": null,              // set when type = "auto"
-    "occurrenceCount": null,
-    "firstSeenAt": null
-  },
+All existing strings switched to `useTranslation('sales')` namespace consistently.
 
-  "reporter": {
-    "userId": "u_123",
-    "email": "sara@krossier.com",
-    "name": "Sara D.",
-    "isAnonymous": false,
-    "isSystem": false                      // true for auto-created tickets
-  },
+### 5. Entry points
+`SalesList` header already routes to `/dashboard/sales/add` — no change. The "Add Sale" button is already the direct-sale entry; after this refactor it behaves exactly like the offer-add flow but writes a Sale directly.
 
-  "assignee": { "userId": "u_9", "email": "ops@flowentra.app", "name": "Ops" },
-  "commentsCount": 4,
-  "tags": ["safari", "payments"]
-}
+## Backend changes
+
+None to schema. Confirm `SalesController.CreateSale` accepts `Category`, `Source`, `FiscalStamp`, `DiscountType`, `TaxType`. If any field is missing on the DTO, extend the DTO + entity mapping (`Sales` table already has the columns needed via `08_fiscal_stamp.sql` + `16_add_tax_type_to_sales.sql`; add `Category`/`Source` columns only if not present — will confirm during implementation and add a small idempotent migration if needed).
+
+## Flow parity after change
+
+```
+Direct Sale
+   │ create (status = created / in_progress)
+   ▼
+Sale Detail  ──► status transitions (created → in_progress → invoiced/partial → closed)
+   │
+   ├─► Convert to Service Order (existing ConvertToServiceOrderDialog)
+   └─► Close (terminal)
 ```
 
-An **auto-created** ticket looks like:
+No offer needed at any step. Existing SaleDetail, status flow, convert dialog, and PDF already support sales that have no `offerId`.
 
-```json
-"origin": {
-  "type": "auto",
-  "source": "incident_monitor",
-  "errorFingerprint": "TypeError:cart.total",
-  "occurrenceCount": 27,
-  "firstSeenAt": "2026-07-19T02:11:00Z"
-},
-"reporter": { "isSystem": true, "email": "system@flowentra.app", "name": "System" }
-```
-
-List responses wrap this:
-
-```json
-{
-  "items": [ /* tickets */ ],
-  "total": 142,
-  "page": 1,
-  "pageSize": 50,
-  "tenantsQueried": ["demo","dev","krossier"],
-  "tenantErrors": []                       // any tenant DB that failed is reported here, others still return
-}
-```
-
----
-
-## 3. How to use it
-
-### List all tickets everywhere
-```bash
-curl "https://api.flowentra.app/api/public/tickets"
-```
-
-### Filter
-```bash
-curl "https://api.flowentra.app/api/public/tickets?status=open&priority=high&origin=auto&tenant=krossier,demo&page=1&pageSize=50&search=checkout"
-```
-Supported query params: `status`, `priority`, `category`, `origin` (`manual`|`auto`), `tenant` (csv), `reporterEmail`, `assigneeEmail`, `from`, `to` (ISO dates), `search`, `page`, `pageSize`, `sort` (`createdAt:desc` default).
-
-### Get one ticket (with comments + history)
-```bash
-curl "https://api.flowentra.app/api/public/tickets/krossier/f2c1abcd"
-```
-
-### Change status
-```bash
-curl -X PATCH "https://api.flowentra.app/api/public/tickets/krossier/f2c1abcd/status" \
-  -H "Content-Type: application/json" \
-  -d '{ "status": "in_progress", "note": "Investigating" }'
-```
-
-### Add a comment
-```bash
-curl -X POST "https://api.flowentra.app/api/public/tickets/krossier/f2c1abcd/comments" \
-  -H "Content-Type: application/json" \
-  -d '{ "body": "Reproduced on Safari 17", "authorEmail": "you@flowentra.app", "authorName": "You" }'
-```
-
-### List tenants
-```bash
-curl "https://api.flowentra.app/api/public/tickets/tenants"
-# → { "tenants": [{ "slug":"demo","url":"https://demo.flowentra.app"}, ...] }
-```
-
----
-
-## 4. Implementation (technical)
-
-**Route group:** `Backend/Modules/SupportTickets/Controllers/PublicTicketsController.cs`, mounted at `/api/public/tickets`, marked `[AllowAnonymous]`, excluded from `TenantMiddleware` in `Program.cs` (path prefix skip) so it does NOT require a tenant subdomain.
-
-**Fan-out list flow:**
-1. `TenantConnectionResolver.GetAll()` → all tenant slugs + connection strings from env.
-2. For each tenant, in parallel (`Task.WhenAll` + `SemaphoreSlim(8)`), open a scoped `TenantDbContext`, apply filters, project to `PublicTicketDto`, stamp `tenant` + `tenantUrl`, derive `origin` from existing `Source`/`ErrorFingerprint` columns and `reporter.isSystem` from `CreatedByUserId is null || CreatedBySystem == true`.
-3. Merge, sort, paginate in memory. Any tenant that throws is caught and added to `tenantErrors` — other tenants still return.
-
-**Single-tenant flows** (`GET /{tenant}/{id}`, `PATCH .../status`, `POST .../comments`):
-- Resolve the tenant's connection string by slug via `TenantConnectionResolver.Resolve(slug)`; 404 if unknown.
-- Reuse the **existing** app services (`TicketService.UpdateStatusAsync`, `CommentService.AddAsync`) so validation, status transitions, timeline entries, notifications, and audit logs behave **identically to the in-app flow**.
-- For comments where no logged-in user exists, persist `authorEmail`/`authorName` and flag `viaPublicApi = true` on the comment record.
-
-**DTO files:**
-- `DTOs/PublicTicketDto.cs`, `PublicTicketOrigin.cs`, `PublicTicketReporter.cs`, `PublicTicketListResponse.cs`, `TenantErrorDto.cs`, `UpdateStatusRequest.cs`, `AddCommentRequest.cs`.
-
-**Removed from previous plan:** `ApiKeyAuthAttribute`, `PUBLIC_TICKETS_API_KEY` secret, all `X-Api-Key` handling. Endpoints are fully open.
-
-**Safety rails kept minimal (not auth):**
-- Basic per-IP rate limit (e.g. 60 req/min) via existing rate-limit middleware.
-- Response cap: `pageSize ≤ 200`.
-- Status transitions still validated by `TicketService` (can't jump to invalid states).
-
----
-
-## 5. Files to add / modify
-
-- **Add** `Backend/Modules/SupportTickets/Controllers/PublicTicketsController.cs`
-- **Add** `Backend/Modules/SupportTickets/DTOs/PublicTicket*.cs` (5 files above)
-- **Add** `Backend/Modules/SupportTickets/Services/CrossTenantTicketQuery.cs` (fan-out logic)
-- **Modify** `Backend/Program.cs` → skip `TenantMiddleware` for paths starting with `/api/public/`
-- **Modify** `Backend/Infrastructure/Tenancy/TenantConnectionResolver.cs` → add `GetAll()` + `Resolve(slug)` if not already present
-- **Delete** (from earlier plan) `Backend/Infrastructure/ApiKeyAuthAttribute.cs`
-
-No DB migrations required — reuses existing tickets/comments tables in every tenant DB.
+## Out of scope
+- Redesigning SaleDetail or the convert-to-service-order dialog.
+- Changing backend service-order origin logic (already supports direct sales).
+- Kanban/list layout changes.

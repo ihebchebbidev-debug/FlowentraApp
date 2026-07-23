@@ -79,12 +79,16 @@ export interface CreateSaleRequest {
   status?: string;
   stage?: string;
   priority?: string;
+  category?: string;
+  source?: string;
   currency?: string;
   taxes?: number;
   taxType?: 'percentage' | 'fixed';
   discount?: number;
   discountType?: 'percentage' | 'fixed';
+  fiscalStamp?: number;
   estimatedCloseDate?: string;
+  notes?: string;
   items?: Omit<SaleItem, 'id'>[];
 }
 

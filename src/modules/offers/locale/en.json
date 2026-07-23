@@ -244,6 +244,7 @@
   "selectDate": "Select date",
   "enterNotes": "Enter internal notes",
   "currency": "Currency",
+  "currencyFromSettings": "Default currency set in Preferences",
   "tunisian_dinar": "Tunisian Dinar",
   "taxes": "Taxes",
   "tva": "VAT",

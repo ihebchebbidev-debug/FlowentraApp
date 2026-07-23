@@ -25,6 +25,14 @@ export interface OfflineOperation {
   transactionGroupId?: string;
   conflictStrategy?: OfflineConflictStrategy;
   blobRefs?: OfflineBlobRef[];
+  /**
+   * Tenant slug captured at write time (X-Tenant). Ensures the sync push uses
+   * the ORIGINAL tenant the mutation was made under, even if the user switches
+   * tenant/company between queuing and syncing (prevents cross-tenant leaks).
+   */
+  capturedTenant?: string | null;
+  /** Row-level active company id captured at write time (X-Target-Tenant). */
+  capturedTargetTenant?: number | null;
 }
 
 export interface SyncPushRequest {

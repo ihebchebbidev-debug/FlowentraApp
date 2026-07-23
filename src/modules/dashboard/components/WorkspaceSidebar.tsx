@@ -102,7 +102,7 @@ function ThemePicker() {
                 "flex flex-col items-center gap-0.5 rounded px-1 py-1.5 text-[10px] font-medium transition-colors",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 active
-                  ? "bg-background text-foreground shadow-sm"
+                  ? "bg-white dark:bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               )}
               aria-pressed={active}
@@ -336,7 +336,7 @@ export function WorkspaceSidebar() {
   // Users can toggle back manually via the expand button.
   if (!sidebarOpen) {
     return (
-      <aside data-tour="sidebar" className="sticky top-0 self-start z-40 flex h-screen w-14 shrink-0 flex-col border-r border-border bg-background">
+      <aside data-tour="sidebar" className="sticky top-0 self-start z-40 flex h-screen w-14 shrink-0 flex-col border-r border-border bg-white dark:bg-background">
         {/* Logo */}
         <button
           type="button"
@@ -440,7 +440,7 @@ export function WorkspaceSidebar() {
 
   if (activeWs) {
     return (
-      <aside data-tour="sidebar" className="sticky top-0 self-start z-40 flex h-screen w-[240px] shrink-0 border-r border-border bg-background">
+      <aside data-tour="sidebar" className="sticky top-0 self-start z-40 flex h-screen w-[240px] shrink-0 border-r border-border bg-white dark:bg-background">
         <nav
           data-tour="module-panel"
           key={activeWs.id}
@@ -449,7 +449,7 @@ export function WorkspaceSidebar() {
           role="region"
           aria-label={`${activeWs.label} modules`}
           tabIndex={-1}
-          className="flex h-screen w-[240px] flex-col bg-background animate-in fade-in slide-in-from-right-2 duration-150"
+          className="flex h-screen w-[240px] flex-col bg-white dark:bg-background animate-in fade-in slide-in-from-right-2 duration-150"
         >
           {/* Logo pinned at top */}
           <button
@@ -579,9 +579,9 @@ export function WorkspaceSidebar() {
 
   return (
     <>
-    <aside data-tour="sidebar" className="sticky top-0 self-start z-40 flex h-screen shrink-0 border-r border-border bg-background">
+    <aside data-tour="sidebar" className="sticky top-0 self-start z-40 flex h-screen shrink-0 border-r border-border bg-white dark:bg-background">
       {/* Primary sidebar — list of workspaces */}
-      <nav className="flex h-screen w-[240px] flex-col bg-background" aria-label="Workspaces">
+      <nav className="flex h-screen w-[240px] flex-col bg-white dark:bg-background" aria-label="Workspaces">
         {/* Logo on top — larger */}
         <button
           type="button"
@@ -646,10 +646,8 @@ export function WorkspaceSidebar() {
                   className={cn(
                     "flex items-center gap-3 rounded-md px-3 py-2 text-base transition-colors",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                    isOpen
+                    isOpen || isCurrent
                       ? "bg-accent text-accent-foreground font-medium"
-                      : isCurrent
-                      ? "text-primary hover:bg-accent/50"
                       : "text-foreground/80 hover:bg-accent/50 hover:text-foreground"
                   )}
                 >

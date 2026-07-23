@@ -1,6 +1,7 @@
 import { API_URL } from "@/config/api";
 import { getAuthHeaders } from "@/utils/apiHeaders";
-import { getCurrentTenant } from "@/utils/tenant";
+import { getCurrentTenant, TENANT_HEADER, TARGET_TENANT_HEADER } from "@/utils/tenant";
+import { getSelectedTargetTenantId } from "@/utils/targetTenant";
 import { authService } from "@/services/authService";
 import { enqueueOperation, listOperationBlobs, listOperations, putOperationBlob, removeOperations } from "./offlineStore";
 import type {
@@ -10,6 +11,7 @@ import type {
   OfflineSyncFailureItem,
   OfflineSyncLastDetail,
   SyncPushResponse,
+  SyncPushResultItem,
 } from "./types";
 import { isHiddenFromSyncUi, sanitizeOfflineSyncLastDetailForUi } from "./syncUiVisibility";
 import { OFFLINE_SYNC_BINARY_CONCURRENCY } from "./hydrationLimits";
@@ -40,6 +42,11 @@ export function shouldSkipOfflineQueueForEndpoint(endpoint: string): boolean {
   if (path.includes("/auth/")) return true;
   // Notification read/unread status — idempotent, low-priority, skip silently.
   if (path.includes("/notifications")) return true;
+  // Email accounts / inbox are not hydrated into IndexedDB — queuing mutations
+  // against emails the user never had cached would replay against non-existent
+  // ids on sync. Skip silently until an email hydration module exists.
+  if (path.includes("/email-accounts") || path.includes("/customemail") || path.includes("/custom-email-accounts")) return true;
+  if (path.includes("/emails/") || path.endsWith("/emails")) return true;
   return false;
 }
 
@@ -325,6 +332,18 @@ function inferEntityType(endpoint: string): string {
   // Tightened email-account match — prevents payment reminder/send URLs that
   // contain the word "email" from mis-classifying as email_account.
   if (normalized.includes("/email-accounts") || normalized.includes("/customemail") || normalized.includes("/custom-email-accounts")) return "email_account";
+  // Payments — MUST come before generic /offers, /sales, /purchase-orders matches
+  // so payment CRUD isn't mis-classified as an update to the parent offer/sale.
+  // Not currently in OFFLINE_REPLAYABLE_ENTITY_TYPES → blocks offline queuing
+  // with a clear "not available offline" toast instead of silently corrupting
+  // the parent entity's row when replayed as `entityType=offer|sale`.
+  if (
+    normalized.includes("/payments") ||
+    normalized.includes("/payment-plans") ||
+    normalized.includes("/paymentplans")
+  ) {
+    return "payment";
+  }
   if (normalized.includes("project-task") || normalized.includes("/tasks")) return "task";
   if (normalized.includes("/projects")) return "project";
   if (normalized.includes("/offers")) return "offer";
@@ -479,6 +498,11 @@ export async function queueHttpOperation(input: {
   const txGroup = transactionGroupFromHeaders || payloadTxGroup;
   const chosenConflict = (conflictFromHeaders as OfflineConflictStrategy | undefined) || inferConflictStrategy(entityType);
 
+  // Capture tenant + target tenant AT WRITE TIME so a later company/tenant
+  // switch doesn't cause queued ops to sync under the wrong tenant.
+  const capturedTenant = getCurrentTenant();
+  const capturedTargetTenant = getSelectedTargetTenantId();
+
   const op: OfflineOperation = {
     opId,
     entityType,
@@ -494,9 +518,35 @@ export async function queueHttpOperation(input: {
     transactionGroupId: txGroup && txGroup.trim().length ? txGroup : undefined,
     conflictStrategy: chosenConflict,
     blobRefs,
+    capturedTenant,
+    capturedTargetTenant: capturedTargetTenant ?? null,
   };
   await enqueueOperation(op);
   return op;
+}
+
+/**
+ * Build tenant-scoped auth headers from a captured operation instead of the
+ * CURRENT session tenant. Prevents cross-tenant leaks when a user switches
+ * company/tenant between queuing a mutation and going back online to sync.
+ */
+function buildAuthHeadersForOperation(op: OfflineOperation): Record<string, string> {
+  const base = { ...(getAuthHeaders() as Record<string, string>) };
+  // Force the tenant slug that was active when the op was queued.
+  if (op.capturedTenant) {
+    base[TENANT_HEADER] = op.capturedTenant;
+  }
+  // Force the row-level target tenant that was active when the op was queued.
+  // capturedTargetTenant === null means "no active company at write time" →
+  // strip any target-tenant header carried over from the current session.
+  if (op.capturedTargetTenant != null) {
+    base[TARGET_TENANT_HEADER] = String(op.capturedTargetTenant);
+  } else {
+    for (const k of Object.keys(base)) {
+      if (k.toLowerCase() === TARGET_TENANT_HEADER.toLowerCase()) delete base[k];
+    }
+  }
+  return base;
 }
 
 async function replayBinaryOperation(op: OfflineOperation): Promise<boolean> {
@@ -518,7 +568,7 @@ async function replayBinaryOperation(op: OfflineOperation): Promise<boolean> {
     formData.append(ref.fieldName, file, ref.fileName);
   }
   const endpoint = op.endpoint.startsWith("http") ? op.endpoint : `${API_URL}${op.endpoint.startsWith("/") ? "" : "/"}${op.endpoint}`;
-  const headers = getAuthHeaders() as Record<string, string>;
+  const headers = buildAuthHeadersForOperation(op);
   const originalHeaders = op.headers ?? {};
   for (const [k, v] of Object.entries(originalHeaders)) {
     if (!v) continue;
@@ -702,7 +752,7 @@ function isTransientSyncPushHttpStatus(status: number): boolean {
  * POST /api/sync/push with retries (network failures, 5xx, 429). Does not retry 4xx validation/auth errors.
  * ✅ NEW: Includes automatic token refresh for expired tokens
  */
-async function fetchSyncPushWithRetry(bodyJson: string): Promise<Response> {
+async function fetchSyncPushWithRetry(bodyJson: string, tenantHeaders?: Record<string, string>): Promise<Response> {
   // ✅ SOLUTION 1: Check and refresh token if expiring soon
   try {
     if (typeof authService !== 'undefined' && authService.isTokenExpiringSoon?.()) {
@@ -732,7 +782,11 @@ async function fetchSyncPushWithRetry(bodyJson: string): Promise<Response> {
     try {
       const response = await fetch(`${API_URL}/api/sync/push`, {
         method: "POST",
-        headers: { ...(getAuthHeaders() as Record<string, string>), "X-Bypass-Offline-Queue": "true" },
+        headers: {
+          ...(getAuthHeaders() as Record<string, string>),
+          ...(tenantHeaders ?? {}),
+          "X-Bypass-Offline-Queue": "true",
+        },
         body: bodyJson,
       });
 
@@ -866,132 +920,138 @@ export async function syncNow(): Promise<{ synced: number; failed: number }> {
   }
 
   const opLookup = buildOpLookup(queued);
-  const pushBody = JSON.stringify({
-    deviceId: getDeviceId(),
-    operations: queued,
-  });
-  let response: Response;
-  try {
-    response = await fetchSyncPushWithRetry(pushBody);
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    
-    // ✅ SOLUTION 4: Detect and flag auth-related errors
-    const isAuthError = msg.includes("401") || msg.includes("403") || msg.includes("token") || msg.includes("expired");
-    
-    const summary = isAuthError 
-      ? `⚠️ Auth error during sync: ${msg}. Your session may have expired.`
-      : `Sync request failed: ${msg}`;
-      
-    const detail = mkDetail({
-      summary,
-      fatalError: msg,
-      failedOperations: [],
-      binaryFailures: binaryFailures.length ? binaryFailures : undefined,
+
+  // Group queued ops by the tenant captured at write time so each batch is
+  // pushed under the ORIGINAL tenant the mutation was made under. This
+  // prevents cross-tenant leaks if the user switched company/tenant between
+  // queuing and syncing.
+  const groups = new Map<string, { headers: Record<string, string>; ops: OfflineOperation[] }>();
+  const currentTenant = getCurrentTenant();
+  const currentTarget = getSelectedTargetTenantId();
+  for (const op of queued) {
+    const tenant = op.capturedTenant ?? currentTenant ?? "";
+    const target = op.capturedTargetTenant ?? currentTarget ?? null;
+    const key = `${tenant}::${target ?? ""}`;
+    const headers: Record<string, string> = {};
+    if (tenant) headers[TENANT_HEADER] = tenant;
+    if (target != null) headers[TARGET_TENANT_HEADER] = String(target);
+    const existing = groups.get(key);
+    if (existing) existing.ops.push(op);
+    else groups.set(key, { headers, ops: [op] });
+  }
+
+  const aggregatedResults: SyncPushResultItem[] = [];
+  for (const [, group] of groups) {
+    const pushBody = JSON.stringify({
+      deviceId: getDeviceId(),
+      operations: group.ops,
     });
-    persistLastSyncDetail(detail);
-    localStorage.setItem(scopedKey(LAST_SYNC_ERROR_KEY), truncateStr(summary, 900));
-    
-    // Dispatch event for UI to show auth requirement
-    if (isAuthError) {
+    let response: Response;
+    try {
+      response = await fetchSyncPushWithRetry(pushBody, group.headers);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      const isAuthError = msg.includes("401") || msg.includes("403") || msg.includes("token") || msg.includes("expired");
+      const summary = isAuthError
+        ? `⚠️ Auth error during sync: ${msg}. Your session may have expired.`
+        : `Sync request failed: ${msg}`;
+      const detail = mkDetail({
+        summary,
+        fatalError: msg,
+        failedOperations: [],
+        binaryFailures: binaryFailures.length ? binaryFailures : undefined,
+      });
+      persistLastSyncDetail(detail);
+      localStorage.setItem(scopedKey(LAST_SYNC_ERROR_KEY), truncateStr(summary, 900));
+      if (isAuthError) {
+        try {
+          window.dispatchEvent(new CustomEvent("offline:auth-required", {
+            detail: { message: "Your session has expired. Please log in to continue syncing.", error: msg },
+          }));
+        } catch {
+          console.warn("[OFFLINE SYNC] Failed to dispatch offline:auth-required event");
+        }
+      }
+      throw new Error(summary);
+    }
+
+    if (response.status === 401 || response.status === 403) {
+      let bodyText = "";
+      try { bodyText = await response.text(); } catch { /* ignore */ }
+      const summary = `🔐 Sync blocked by server (HTTP ${response.status}). Your session may have expired. Please log in again.`;
+      const detail = mkDetail({
+        summary,
+        httpStatus: response.status,
+        httpBody: bodyText ? truncateStr(bodyText, 8000) : undefined,
+        failedOperations: queued.map(op => ({
+          opId: op.opId,
+          status: "blocked",
+          error: `Server authentication failure (${response.status})`,
+          endpoint: op.endpoint,
+          method: op.method,
+          entityType: op.entityType,
+        })),
+        binaryFailures: binaryFailures.length ? binaryFailures : undefined,
+      });
+      persistLastSyncDetail(detail);
+      localStorage.setItem(scopedKey(LAST_SYNC_ERROR_KEY), truncateStr(summary, 900));
       try {
         window.dispatchEvent(new CustomEvent("offline:auth-required", {
-          detail: { message: "Your session has expired. Please log in to continue syncing.", error: msg }
+          detail: {
+            message: "Your session has expired. Please log in to sync your changes.",
+            httpStatus: response.status,
+            timestamp: new Date().toISOString(),
+          },
         }));
       } catch {
         console.warn("[OFFLINE SYNC] Failed to dispatch offline:auth-required event");
       }
+      return { synced: binarySucceeded.length, failed: queued.length + binaryFailedCount };
     }
-    
-    throw new Error(summary);
+
+    if (!response.ok) {
+      let bodyText = "";
+      try { bodyText = await response.text(); } catch { /* ignore */ }
+      let parsedMsg = bodyText;
+      try {
+        const j = JSON.parse(bodyText) as { message?: string; title?: string; error?: string; errors?: string };
+        parsedMsg = j.message || j.error || j.title || (typeof j.errors === "string" ? j.errors : bodyText);
+      } catch { /* raw */ }
+      const summary = `HTTP ${response.status}: ${truncateStr(parsedMsg || response.statusText || "Request failed", 400)}`;
+      const detail = mkDetail({
+        summary,
+        httpStatus: response.status,
+        httpBody: bodyText ? truncateStr(bodyText, 8000) : undefined,
+        failedOperations: [],
+        binaryFailures: binaryFailures.length ? binaryFailures : undefined,
+      });
+      persistLastSyncDetail(detail);
+      localStorage.setItem(scopedKey(LAST_SYNC_ERROR_KEY), truncateStr(summary, 900));
+      throw new Error(summary);
+    }
+
+    let data: SyncPushResponse;
+    try {
+      data = (await response.json()) as SyncPushResponse;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      const summary = `Invalid sync response: ${msg}`;
+      const detail = mkDetail({
+        summary,
+        fatalError: summary,
+        failedOperations: [],
+        binaryFailures: binaryFailures.length ? binaryFailures : undefined,
+      });
+      persistLastSyncDetail(detail);
+      localStorage.setItem(scopedKey(LAST_SYNC_ERROR_KEY), truncateStr(summary, 900));
+      throw new Error(summary);
+    }
+    if (Array.isArray(data.results)) aggregatedResults.push(...data.results);
   }
 
-  // ✅ SOLUTION 4: Special handling for 401/403 status codes
-  if (response.status === 401 || response.status === 403) {
-    let bodyText = "";
-    try {
-      bodyText = await response.text();
-    } catch {
-      /* ignore */
-    }
-    
-    const summary = `🔐 Sync blocked by server (HTTP ${response.status}). Your session may have expired. Please log in again.`;
-    const detail = mkDetail({
-      summary,
-      httpStatus: response.status,
-      httpBody: bodyText ? truncateStr(bodyText, 8000) : undefined,
-      failedOperations: queued.map(op => ({
-        opId: op.opId,
-        status: "blocked",
-        error: `Server authentication failure (${response.status})`,
-        endpoint: op.endpoint,
-        method: op.method,
-        entityType: op.entityType,
-      })),
-      binaryFailures: binaryFailures.length ? binaryFailures : undefined,
-    });
-    persistLastSyncDetail(detail);
-    localStorage.setItem(scopedKey(LAST_SYNC_ERROR_KEY), truncateStr(summary, 900));
-    
-    // Dispatch auth event
-    try {
-      window.dispatchEvent(new CustomEvent("offline:auth-required", {
-        detail: { 
-          message: "Your session has expired. Please log in to sync your changes.",
-          httpStatus: response.status,
-          timestamp: new Date().toISOString()
-        }
-      }));
-    } catch {
-      console.warn("[OFFLINE SYNC] Failed to dispatch offline:auth-required event");
-    }
-    
-    return { synced: binarySucceeded.length, failed: queued.length + binaryFailedCount };
-  }
+  // Fake a unified `data`/`results` shape for the downstream aggregation logic.
+  const data: SyncPushResponse = { results: aggregatedResults };
 
-  if (!response.ok) {
-    let bodyText = "";
-    try {
-      bodyText = await response.text();
-    } catch {
-      /* ignore */
-    }
-    let parsedMsg = bodyText;
-    try {
-      const j = JSON.parse(bodyText) as { message?: string; title?: string; error?: string; errors?: string };
-      parsedMsg = j.message || j.error || j.title || (typeof j.errors === "string" ? j.errors : bodyText);
-    } catch {
-      /* raw */
-    }
-    const summary = `HTTP ${response.status}: ${truncateStr(parsedMsg || response.statusText || "Request failed", 400)}`;
-    const detail = mkDetail({
-      summary,
-      httpStatus: response.status,
-      httpBody: bodyText ? truncateStr(bodyText, 8000) : undefined,
-      failedOperations: [],
-      binaryFailures: binaryFailures.length ? binaryFailures : undefined,
-    });
-    persistLastSyncDetail(detail);
-    localStorage.setItem(scopedKey(LAST_SYNC_ERROR_KEY), truncateStr(summary, 900));
-    throw new Error(summary);
-  }
-
-  let data: SyncPushResponse;
-  try {
-    data = (await response.json()) as SyncPushResponse;
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    const summary = `Invalid sync response: ${msg}`;
-    const detail = mkDetail({
-      summary,
-      fatalError: summary,
-      failedOperations: [],
-      binaryFailures: binaryFailures.length ? binaryFailures : undefined,
-    });
-    persistLastSyncDetail(detail);
-    localStorage.setItem(scopedKey(LAST_SYNC_ERROR_KEY), truncateStr(summary, 900));
-    throw new Error(summary);
-  }
 
   const results = Array.isArray(data.results) ? data.results : [];
   if (import.meta.env.DEV && results.length !== queued.length) {

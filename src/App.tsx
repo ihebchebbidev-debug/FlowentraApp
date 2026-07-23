@@ -49,7 +49,7 @@ import { installIncidentMonitor } from "./services/incident/installIncidentMonit
 import { DeploymentNotificationSystem } from "./components/DeploymentNotificationSystem";
 import { OfflineSyncRedirector } from "./components/offline/OfflineSyncRedirector";
 import { OfflineSyncLoadingOverlay } from "./components/offline/OfflineSyncLoadingOverlay";
-import { OfflineSyncCenter } from "./components/offline/OfflineSyncCenter";
+// OfflineSyncCenter removed — was mounted but hidden; use OfflineStatusBar instead.
 import { installOfflineFetchGuard } from "./services/offline/offlineFetchGuard";
 import { getCurrentTenant } from "./utils/tenant";
 
@@ -325,7 +325,7 @@ const App = () => {
               <BrowserRouter>
                 <OfflineSyncRedirector />
                 <OfflineSyncLoadingOverlay />
-                {/* <OfflineSyncCenter /> — hidden per product decision */}
+                
                 <ScrollToTop />
                 <AppErrorBoundary>
                   <Suspense fallback={<AppLoader />}>

@@ -97,6 +97,8 @@ export interface CreateSaleData {
   customerAddress: string;
   status: 'created' | 'in_progress' | 'invoiced' | 'partially_invoiced' | 'closed' | 'cancelled';
   priority: 'low' | 'medium' | 'high' | 'urgent';
+  category?: string;
+  source?: string;
   amount: number;
   currency: string;
   deliveryDate: Date | undefined;
@@ -106,6 +108,7 @@ export interface CreateSaleData {
   taxType?: 'percentage' | 'fixed';
   discount: number;
   discountType?: 'percentage' | 'fixed';
+  fiscalStamp?: number;
   shippingCost: number;
   isRecurring: boolean;
   recurringInterval: string;

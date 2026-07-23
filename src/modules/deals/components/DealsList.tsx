@@ -168,56 +168,6 @@ export function DealsList() {
         </div>
       </div>
 
-      {/* Pipeline forecast & health — computed from the open pipeline */}
-      {!loading && forecast.openCount > 0 && (
-        <div className="px-3 sm:px-4 pb-3 sm:pb-4 border-b border-border">
-          <div className="rounded-xl border border-border/60 bg-card p-3 sm:p-4">
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-3 mb-3">
-              <div>
-                <p className="text-[11px] text-muted-foreground font-medium">{t("forecast.weighted", { defaultValue: "Weighted pipeline" })}</p>
-                <p className="text-lg font-bold tabular-nums">{formatCurrencyValue(forecast.weightedValue)}</p>
-              </div>
-              <div className="h-8 w-px bg-border hidden sm:block" />
-              <div>
-                <p className="text-[11px] text-muted-foreground font-medium">{t("forecast.openValue", { defaultValue: "Open value" })}</p>
-                <p className="text-lg font-bold tabular-nums">{formatCurrencyValue(forecast.openValue)}</p>
-              </div>
-              <div className="h-8 w-px bg-border hidden sm:block" />
-              <button
-                type="button"
-                onClick={() => { setSelectedStat("open"); setShowAtRiskOnly(s => !s); }}
-                className={`text-left rounded-lg px-2 -mx-2 py-0.5 transition-colors ${forecast.atRisk > 0 ? "hover:bg-amber-500/10" : ""} ${showAtRiskOnly ? "bg-amber-500/10" : ""}`}
-              >
-                <p className="text-[11px] text-muted-foreground font-medium">{t("forecast.atRisk", { defaultValue: "At risk" })}</p>
-                <p className={`text-lg font-bold tabular-nums ${forecast.atRisk > 0 ? "text-amber-600" : ""}`}>{forecast.atRisk}</p>
-              </button>
-              <div className="h-8 w-px bg-border hidden sm:block" />
-              <div>
-                <p className="text-[11px] text-muted-foreground font-medium">{t("forecast.avgAge", { defaultValue: "Avg. age" })}</p>
-                <p className="text-lg font-bold tabular-nums">{forecast.avgAgeDays}{t("forecast.daysShort", { defaultValue: "d" })}</p>
-              </div>
-            </div>
-            {/* Funnel by stage */}
-            <div className="space-y-1.5">
-              {forecast.funnel.map(f => (
-                <button
-                  key={f.stage}
-                  type="button"
-                  onClick={() => { setSelectedStat("all"); setFilterStage(f.stage); setShowAtRiskOnly(false); }}
-                  className="w-full flex items-center gap-3 group"
-                >
-                  <span className="text-xs text-muted-foreground w-24 shrink-0 text-left capitalize">{t(`stages.${f.stage}`)}</span>
-                  <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full rounded-full transition-all group-hover:opacity-80" style={{ width: `${(f.value / maxFunnelValue) * 100}%`, background: stageColor(f.stage) }} />
-                  </div>
-                  <span className="text-xs tabular-nums w-10 text-right shrink-0">{f.count}</span>
-                  <span className="text-xs tabular-nums w-24 text-right shrink-0 text-muted-foreground">{formatCurrencyValue(f.value)}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Search and Controls */}
       <div className="p-3 sm:p-4 border-b border-border bg-card">
