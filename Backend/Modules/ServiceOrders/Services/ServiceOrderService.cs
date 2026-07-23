@@ -611,6 +611,7 @@ namespace MyApi.Modules.ServiceOrders.Services
                                 {
                                     await _formDocuments.CopyItemDocumentsAsync("sale_item", saleItemId, "service_order_job", j.Id, userId);
                                 }
+                            }
                         }
                     }
 
