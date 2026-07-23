@@ -496,7 +496,7 @@ export function PlanDispatchModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="w-[calc(100vw-1rem)] sm:w-[95vw] max-w-[calc(100vw-1rem)] sm:max-w-3xl md:max-w-4xl lg:max-w-5xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col p-4 sm:p-6 gap-3 sm:gap-4">
         <DialogHeader>
           <DialogTitle>
             {showPreview
@@ -919,42 +919,71 @@ export function PlanDispatchModal({
                     </div>
 
                     {allSkills.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="text-xs text-muted-foreground mr-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground shrink-0">
                           {t('plan_dispatch.filter_by_skill', { defaultValue: 'Skills:' })}
                         </span>
-                        {allSkills.map(skill => {
-                          const active = skillFilterIds.includes(skill.id);
-                          return (
-                            <button
-                              key={skill.id}
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
                               type="button"
-                              onClick={() =>
-                                setSkillFilterIds(prev =>
-                                  prev.includes(skill.id) ? prev.filter(x => x !== skill.id) : [...prev, skill.id]
-                                )
-                              }
-                              className={cn(
-                                "text-xs rounded-full border px-2 py-0.5 transition-colors",
-                                active
-                                  ? "bg-primary text-primary-foreground border-primary"
-                                  : "bg-background hover:bg-muted border-border text-muted-foreground"
-                              )}
+                              variant="outline"
+                              size="sm"
+                              className="h-9 flex-1 justify-between font-normal min-w-0"
                             >
-                              {skill.name}
-                            </button>
-                          );
-                        })}
-                        {skillFilterIds.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => setSkillFilterIds([])}
-                            className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground ml-1"
-                          >
-                            {t('common.clear', { defaultValue: 'Clear' })}
-                          </button>
-                        )}
-                        {loadingSkills && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+                              <span className="truncate text-left">
+                                {skillFilterIds.length === 0
+                                  ? t('plan_dispatch.select_skills', { defaultValue: 'Select skills…' })
+                                  : allSkills
+                                      .filter(s => skillFilterIds.includes(s.id))
+                                      .map(s => s.name)
+                                      .join(', ')}
+                              </span>
+                              <span className="ml-2 text-xs text-muted-foreground shrink-0">
+                                {skillFilterIds.length > 0 ? `${skillFilterIds.length}` : ''}
+                              </span>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent align="start" className="w-[min(20rem,calc(100vw-2rem))] p-0">
+                            <div className="max-h-64 overflow-y-auto p-1">
+                              {allSkills.map(skill => {
+                                const active = skillFilterIds.includes(skill.id);
+                                return (
+                                  <label
+                                    key={skill.id}
+                                    className="flex items-center gap-2 rounded-sm px-2 py-1.5 hover:bg-muted cursor-pointer text-sm"
+                                  >
+                                    <Checkbox
+                                      checked={active}
+                                      onCheckedChange={() =>
+                                        setSkillFilterIds(prev =>
+                                          prev.includes(skill.id)
+                                            ? prev.filter(x => x !== skill.id)
+                                            : [...prev, skill.id]
+                                        )
+                                      }
+                                    />
+                                    <span className="truncate">{skill.name}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                            {skillFilterIds.length > 0 && (
+                              <div className="border-t p-1">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="w-full h-8 text-xs"
+                                  onClick={() => setSkillFilterIds([])}
+                                >
+                                  {t('common.clear', { defaultValue: 'Clear' })}
+                                </Button>
+                              </div>
+                            )}
+                          </PopoverContent>
+                        </Popover>
+                        {loadingSkills && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground shrink-0" />}
                       </div>
                     )}
                   </div>
