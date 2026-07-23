@@ -1,4 +1,5 @@
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface DonutChartProps {
   data: Array<{ name: string; value: number; color: string }>;
@@ -61,6 +62,12 @@ export function DonutChartComponent({
   centerLabel,
   centerValue,
 }: DonutChartProps) {
+  const isMobile = useIsMobile();
+  // Scale the chart down on mobile so the card no longer feels zoomed-in
+  const scale = isMobile ? 0.75 : 1;
+  const chartHeight = Math.round(height * (isMobile ? 0.85 : 1));
+  const innerR = Math.round(innerRadius * scale);
+  const outerR = Math.round(outerRadius * scale);
   const total = data.reduce((sum, item) => sum + item.value, 0);
   
   // Filter out zero values for cleaner display
@@ -75,7 +82,7 @@ export function DonutChartComponent({
   }
 
   return (
-    <div className="w-full relative" style={{ height }}>
+    <div className="w-full relative" style={{ height: chartHeight }}>
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <defs>
@@ -92,8 +99,8 @@ export function DonutChartComponent({
             cy="50%"
             labelLine={false}
             label={renderCustomizedLabel}
-            innerRadius={innerRadius}
-            outerRadius={outerRadius}
+            innerRadius={innerR}
+            outerRadius={outerR}
             paddingAngle={2}
             dataKey="value"
             strokeWidth={0}

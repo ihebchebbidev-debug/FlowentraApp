@@ -1,22 +1,32 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import * as Icons from "lucide-react";
-import { Menu, ChevronLeft, PackageOpen, Sun, Moon, Monitor, LogOut, Settings as SettingsIcon } from "lucide-react";
+import { Menu, ChevronRight, Sun, Moon, Monitor, LogOut, Settings as SettingsIcon, User as UserIcon, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useCompanyLogo } from "@/hooks/useCompanyLogo";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNotifications } from "@/hooks/useNotifications";
+import { useAiAssistantAvailable } from "@/hooks/useAiAssistantAvailable";
+import { AiLogoIcon } from "@/components/ai-assistant/AiLogoIcon";
+import { AiAssistantSidebar } from "@/components/ai-assistant/AiAssistantSidebar";
 import { useTheme, type Theme } from "@/hooks/useTheme";
 import { UserAvatar } from "@/components/ui/user-avatar";
+import { GlobalSearch } from "@/components/ui/global-search";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { LogoDots } from "./LogoDots";
 import {
   WORKSPACES,
   findWorkspaceForPath,
   type Workspace,
-  type WorkspaceModule,
 } from "./workspaces.config";
-import { usePlugins } from "@/modules/shared/plugins";
 
 function Icon({ name, className }: { name: string; className?: string }) {
   const Comp = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[name] ?? Icons.Circle;
@@ -55,24 +65,15 @@ function ThemePickerMobile() {
   );
 }
 
-type MobileView =
-  | { level: "workspaces" }
-  | { level: "modules"; workspace: Workspace };
-
-function visibleModules(
-  modules: WorkspaceModule[],
-  isEnabled: (code: string | undefined | null) => boolean
-) {
-  return modules.filter((m) => !m.pluginCode || isEnabled(m.pluginCode));
-}
-
 export function MobileWorkspaceNav() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isEnabled } = usePlugins();
   const { user, logout } = useAuth();
   const companyLogo = useCompanyLogo();
   const [open, setOpen] = useState(false);
+  const { unreadCount } = useNotifications();
+  const aiAssistantAvailable = useAiAssistantAvailable();
+  const [aiSidebarOpen, setAiSidebarOpen] = useState(false);
 
   const handleSignOut = async () => {
     try {
@@ -83,63 +84,31 @@ export function MobileWorkspaceNav() {
     }
   };
 
-
   const currentWs = useMemo(
     () => findWorkspaceForPath(location.pathname),
     [location.pathname]
   );
 
-  // View stack — start on the workspace grid every time the drawer opens.
-  const [view, setView] = useState<MobileView>({ level: "workspaces" });
-
-  useEffect(() => {
-    if (open) {
-      // When opening, if we're already inside a workspace, jump straight to its modules.
-      setView(currentWs ? { level: "modules", workspace: currentWs } : { level: "workspaces" });
-    }
-  }, [open, currentWs]);
-
-  const goBack = useCallback(() => {
-    setView((v) => (v.level === "modules" ? { level: "workspaces" } : v));
-  }, []);
-
   // Intercept the browser/Android back button while the drawer is open so
-  // "back" collapses one level (module list → workspace list → close drawer)
-  // instead of navigating the underlying page.
+  // "back" closes the drawer instead of navigating the underlying page.
   useEffect(() => {
     if (!open) return;
     window.history.pushState({ __wsNav: true }, "");
     const onPop = (e: PopStateEvent) => {
       e.preventDefault?.();
-      if (view.level === "modules") {
-        setView({ level: "workspaces" });
-        window.history.pushState({ __wsNav: true }, "");
-      } else {
-        setOpen(false);
-      }
+      setOpen(false);
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
-  }, [open, view.level]);
+  }, [open]);
 
   const openWorkspace = (ws: Workspace) => {
-    setView({ level: "modules", workspace: ws });
-  };
-
-  const openModule = (m: WorkspaceModule) => {
     setOpen(false);
-    setView({ level: "workspaces" });
-    navigate(m.url);
+    navigate(ws.landingUrl);
   };
-
-  const headerLabel = view.level === "workspaces" ? "Workspaces" : view.workspace.label;
-  const headerIcon = view.level === "workspaces" ? null : view.workspace.icon;
-
-  const modulesForView =
-    view.level === "modules" ? visibleModules(view.workspace.modules, isEnabled) : [];
 
   return (
-    <header className="sticky top-0 z-40 flex h-14 items-center gap-2 border-b border-border bg-background px-3">
+    <header className="sticky top-0 z-40 flex h-14 items-center gap-2 border-b border-border bg-background px-2">
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
           <Button data-tour="mobile-menu" variant="ghost" size="icon" aria-label="Open navigation">
@@ -159,113 +128,32 @@ export function MobileWorkspaceNav() {
             </div>
 
             {/* Header */}
-            <div className="flex items-center gap-2 border-b border-border px-2 py-3">
-              {view.level === "modules" ? (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={goBack}
-                  aria-label="Back to workspaces"
-                >
-                  <ChevronLeft className="h-5 w-5" />
-                </Button>
-              ) : (
-                <div className="w-10" aria-hidden />
-              )}
-              <div className="flex min-w-0 flex-1 items-center gap-2">
-                {headerIcon && <Icon name={headerIcon} className="h-5 w-5 text-primary" />}
-                <h2 className="truncate text-base font-semibold">{headerLabel}</h2>
-              </div>
+            <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+              <h2 className="truncate text-base font-semibold">Workspaces</h2>
             </div>
 
-
-            {/* Breadcrumb */}
-            {view.level === "modules" && (
-              <div className="flex items-center gap-1 border-b border-border/60 bg-muted/30 px-4 py-2 text-[11px] text-muted-foreground">
-                <button
-                  type="button"
-                  onClick={goBack}
-                  className="hover:text-foreground hover:underline"
-                >
-                  Workspaces
-                </button>
-                <span>/</span>
-                <span className="text-foreground">{view.workspace.label}</span>
-              </div>
-            )}
-
             {/* Body */}
-            <div className="flex-1 overflow-y-auto p-3">
-              {view.level === "workspaces" ? (
-                <div className="grid grid-cols-2 gap-2">
-                  {WORKSPACES.map((ws) => (
+            <div className="flex-1 overflow-y-auto p-2">
+              <div className="flex flex-col gap-1">
+                {WORKSPACES.map((ws) => {
+                  const active = currentWs?.id === ws.id;
+                  return (
                     <button
                       key={ws.id}
                       type="button"
                       onClick={() => openWorkspace(ws)}
                       className={cn(
-                        "flex flex-col items-center justify-center gap-2 rounded-xl border border-border bg-card p-4 text-center transition-colors hover:bg-accent",
-                        currentWs?.id === ws.id && "border-primary/40 bg-primary/5"
+                        "flex items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent",
+                        active && "border-primary/40 bg-primary/5"
                       )}
                     >
-                      <Icon name={ws.icon} className="h-6 w-6 text-primary" />
-                      <span className="text-xs font-medium">{ws.label}</span>
+                      <Icon name={ws.icon} className="h-5 w-5 text-primary" />
+                      <span className="flex-1 font-medium">{ws.label}</span>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
                     </button>
-                  ))}
-                </div>
-              ) : modulesForView.length > 0 ? (
-                <div className="flex flex-col gap-2">
-                  {modulesForView.map((m) => {
-                    const base = m.url.split("?")[0];
-                    const matches =
-                      location.pathname === base || location.pathname.startsWith(base + "/");
-                    // Only the most specific sibling should highlight.
-                    const overriddenBySibling = matches && modulesForView.some((s) => {
-                      const sBase = s.url.split("?")[0];
-                      return sBase !== base && sBase.length > base.length && sBase.startsWith(base) &&
-                        (location.pathname === sBase || location.pathname.startsWith(sBase + "/"));
-                    });
-                    const active = matches && !overriddenBySibling;
-                    return (
-                      <button
-                        key={m.key}
-                        type="button"
-                        onClick={() => openModule(m)}
-                        className={cn(
-                          "flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 text-left text-sm transition-colors hover:bg-accent",
-                          active && "border-primary/40 bg-primary/5"
-                        )}
-                      >
-                        <Icon name={m.icon} className="h-5 w-5 text-primary" />
-                        <span className="font-medium">{m.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center gap-3 px-6 py-12 text-center">
-                  <PackageOpen className="h-10 w-10 text-muted-foreground/60" />
-                  <p className="text-sm font-medium">No modules available</p>
-                  <p className="text-xs text-muted-foreground">
-                    All modules in this workspace are currently disabled.
-                  </p>
-                  <NavLink
-                    to="/dashboard/settings?tab=plugins"
-                    onClick={() => setOpen(false)}
-                    className="mt-1 text-xs font-medium text-primary hover:underline"
-                  >
-                    Manage plugins
-                  </NavLink>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-2"
-                    onClick={goBack}
-                  >
-                    <ChevronLeft className="mr-1 h-4 w-4" /> Back to workspaces
-                  </Button>
-                </div>
-              )}
+                  );
+                })}
+              </div>
             </div>
 
             {/* Footer — user + theme */}
@@ -310,14 +198,97 @@ export function MobileWorkspaceNav() {
         </SheetContent>
       </Sheet>
 
-      <div className="flex min-w-0 items-center gap-2">
-        {currentWs && (
-          <>
-            <Icon name={currentWs.icon} className="h-4 w-4 shrink-0 text-primary" />
-            <span className="truncate text-sm font-semibold">{currentWs.label}</span>
-          </>
-        )}
+      {/* Global search — always visible in mobile header */}
+      <div className="min-w-0 flex-1">
+        <GlobalSearch />
       </div>
+
+      {/* Right-side controls — pinned to the right corner */}
+      <div className="ml-auto flex shrink-0 items-center gap-1">
+        {/* Ask AI */}
+        {aiAssistantAvailable && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9"
+            aria-label="Ask AI"
+            onClick={() => setAiSidebarOpen(true)}
+          >
+            <AiLogoIcon size={18} variant="auto" />
+          </Button>
+        )}
+
+        {/* Notifications — mirrors desktop header */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 relative"
+          aria-label="Notifications"
+          onClick={() => navigate("/dashboard/notifications")}
+        >
+          <Bell className="h-5 w-5" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] leading-none px-1">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
+        </Button>
+
+        {/* User avatar dropdown */}
+        <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 rounded-full p-0 overflow-hidden ring-1 ring-border"
+            aria-label="User menu"
+          >
+            <UserAvatar
+              src={user?.profilePictureUrl}
+              name={`${user?.firstName || ""} ${user?.lastName || ""}`}
+              seed={user?.id ?? "user"}
+              size="md"
+            />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" sideOffset={8} className="w-60 p-1.5">
+          <div className="px-2.5 py-2.5">
+            <div className="flex items-center gap-3">
+              <UserAvatar
+                src={user?.profilePictureUrl}
+                name={`${user?.firstName || ""} ${user?.lastName || ""}`}
+                seed={user?.id ?? "user"}
+                size="lg"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold leading-tight">
+                  {user?.firstName} {user?.lastName}
+                </p>
+                <p className="truncate text-xs text-muted-foreground mt-0.5">{user?.email}</p>
+              </div>
+            </div>
+          </div>
+          <DropdownMenuSeparator className="my-1" />
+          <DropdownMenuItem onClick={() => navigate("/dashboard/profile")} className="text-xs gap-2 px-2.5 py-2 rounded-md cursor-pointer">
+            <UserIcon className="h-3.5 w-3.5 text-muted-foreground" />
+            Profile
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => navigate("/dashboard/settings")} className="text-xs gap-2 px-2.5 py-2 rounded-md cursor-pointer">
+            <SettingsIcon className="h-3.5 w-3.5 text-muted-foreground" />
+            Settings
+          </DropdownMenuItem>
+          <DropdownMenuSeparator className="my-1" />
+          <DropdownMenuItem onClick={handleSignOut} className="text-xs gap-2 px-2.5 py-2 rounded-md cursor-pointer text-destructive focus:text-destructive">
+            <LogOut className="h-3.5 w-3.5" />
+            Sign out
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {aiAssistantAvailable && (
+        <AiAssistantSidebar isOpen={aiSidebarOpen} onClose={() => setAiSidebarOpen(false)} />
+      )}
     </header>
   );
 }

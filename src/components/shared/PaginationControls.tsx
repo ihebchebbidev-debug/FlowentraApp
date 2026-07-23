@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Pagination,
   PaginationContent,
@@ -21,6 +22,10 @@ interface PaginationControlsProps {
   onPreviousPage: () => void;
   showPageNumbers?: boolean;
   maxVisiblePages?: number;
+  totalItems?: number;
+  startIndex?: number;
+  endIndex?: number;
+  className?: string;
 }
 
 export function PaginationControls({
@@ -33,7 +38,12 @@ export function PaginationControls({
   onPreviousPage,
   showPageNumbers = true,
   maxVisiblePages = 5,
+  totalItems,
+  startIndex,
+  endIndex,
+  className = '',
 }: PaginationControlsProps) {
+  const { t } = useTranslation();
   // Generate visible page numbers
   const getVisiblePages = () => {
     if (totalPages <= maxVisiblePages) {
@@ -58,8 +68,15 @@ export function PaginationControls({
   if (totalPages <= 1) return null;
 
   return (
-    <div className="flex items-center justify-center py-3">
-      <Pagination>
+    <div className={`p-3 border-b border-border bg-muted/20 flex items-center justify-between gap-3 flex-wrap ${className}`}>
+      {typeof totalItems === 'number' && typeof startIndex === 'number' && typeof endIndex === 'number' ? (
+        <p className="text-sm text-muted-foreground">
+          {t('pagination.showing_results', { start: startIndex + 1, end: endIndex, total: totalItems })}
+        </p>
+      ) : (
+        <span />
+      )}
+      <Pagination className="mx-0 w-auto justify-end">
         <PaginationContent className="gap-0.5">
           {/* Previous button */}
           <PaginationItem>
@@ -71,7 +88,7 @@ export function PaginationControls({
               className="gap-1 pl-2.5"
             >
               <ChevronLeft className="h-4 w-4" />
-              <span>Previous</span>
+              <span>{t('pagination.previous')}</span>
             </Button>
           </PaginationItem>
 
@@ -134,7 +151,7 @@ export function PaginationControls({
               disabled={!hasNextPage}
               className="gap-1 pr-2.5"
             >
-              <span>Next</span>
+              <span>{t('pagination.next')}</span>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </PaginationItem>

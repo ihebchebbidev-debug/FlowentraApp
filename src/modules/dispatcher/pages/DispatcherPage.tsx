@@ -47,6 +47,8 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useActionLogger } from "@/hooks/useActionLogger";
 import { isViewAllMode } from '@/utils/tenant';
 import { TableLayout } from "@/components/shared/TableLayout";
+import { SimplePaginationBar } from "@/components/shared/SimplePaginationBar";
+import { usePaginatedData } from "@/shared/hooks/usePagination";
 import { DispatcherHeader } from "../components/DispatcherHeader";
 import { DispatcherSearchControls, type DispatcherFilters } from "../components/DispatcherSearchControls";
 import { CollapsibleSearch } from "@/components/ui/collapsible-search";
@@ -303,6 +305,10 @@ useEffect(() => {
       return matchesSearch && matchesStatus && matchesPriority;
     });
   }, [dispatches, filters, selectedStat]);
+
+  // Paginate dispatches — mirrors the Service Orders list (20 per page,
+  // pagination bar shown at top and bottom of the list/table).
+  const pagination = usePaginatedData(filteredDispatches, 20);
 
   // Selection helpers (must be after filteredDispatches)
   const toggleSelect = useCallback((id: string, e?: React.MouseEvent) => {
@@ -768,23 +774,48 @@ useEffect(() => {
                     }}
                   />
                 ) : viewMode === 'table' ? (
-                  <div className="overflow-x-auto w-full scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
-                       style={{ WebkitOverflowScrolling: 'touch' }}>
-                    <TableLayout
-                      items={filteredDispatches}
-                      columns={dispatchColumns}
-                      rowKey={(d: any) => d.id}
-                      tableClassName="min-w-full"
-                      onRowClick={(dispatch: DisplayDispatch) => handleDispatchClick(dispatch.id)}
-                      emptyState={
-                        <div className="text-center py-12 text-muted-foreground">
-                          <CalendarRange className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                          <h3 className="font-medium mb-2">{t('dispatcher.no_dispatches')}</h3>
-                          <p>{t('dispatcher.no_dispatches_description')}</p>
-                        </div>
-                      }
+                  <>
+                    <SimplePaginationBar
+                      startIndex={pagination.info.startIndex}
+                      endIndex={pagination.info.endIndex}
+                      totalItems={filteredDispatches.length}
+                      currentPage={pagination.state.currentPage}
+                      totalPages={pagination.info.totalPages}
+                      hasPreviousPage={pagination.info.hasPreviousPage}
+                      hasNextPage={pagination.info.hasNextPage}
+                      onPreviousPage={pagination.actions.previousPage}
+                      onNextPage={pagination.actions.nextPage}
                     />
-                  </div>
+                    <div className="overflow-x-auto w-full scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
+                         style={{ WebkitOverflowScrolling: 'touch' }}>
+                      <TableLayout
+                        items={pagination.data}
+                        columns={dispatchColumns}
+                        rowKey={(d: any) => d.id}
+                        tableClassName="min-w-full"
+                        onRowClick={(dispatch: DisplayDispatch) => handleDispatchClick(dispatch.id)}
+                        emptyState={
+                          <div className="text-center py-12 text-muted-foreground">
+                            <CalendarRange className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                            <h3 className="font-medium mb-2">{t('dispatcher.no_dispatches')}</h3>
+                            <p>{t('dispatcher.no_dispatches_description')}</p>
+                          </div>
+                        }
+                      />
+                    </div>
+                    <SimplePaginationBar
+                      startIndex={pagination.info.startIndex}
+                      endIndex={pagination.info.endIndex}
+                      totalItems={filteredDispatches.length}
+                      currentPage={pagination.state.currentPage}
+                      totalPages={pagination.info.totalPages}
+                      hasPreviousPage={pagination.info.hasPreviousPage}
+                      hasNextPage={pagination.info.hasNextPage}
+                      onPreviousPage={pagination.actions.previousPage}
+                      onNextPage={pagination.actions.nextPage}
+                      className="border-b-0 border-t"
+                    />
+                  </>
                 ) : (
                   <div className="p-3 sm:p-4">
                     {filteredDispatches.length === 0 ? (
@@ -794,8 +825,20 @@ useEffect(() => {
                         <p>{t('dispatcher.no_dispatches_description')}</p>
                       </div>
                     ) : (
+                      <>
+                      <SimplePaginationBar
+                        startIndex={pagination.info.startIndex}
+                        endIndex={pagination.info.endIndex}
+                        totalItems={filteredDispatches.length}
+                        currentPage={pagination.state.currentPage}
+                        totalPages={pagination.info.totalPages}
+                        hasPreviousPage={pagination.info.hasPreviousPage}
+                        hasNextPage={pagination.info.hasNextPage}
+                        onPreviousPage={pagination.actions.previousPage}
+                        onNextPage={pagination.actions.nextPage}
+                      />
                       <div className="divide-y divide-border">
-                        {filteredDispatches.map((dispatch) => (
+                        {pagination.data.map((dispatch) => (
                           <div
                             key={dispatch.id} 
                             className={`p-4 hover:bg-muted/50 transition-colors group cursor-pointer ${selectedIds.has(dispatch.id) ? 'bg-primary/5' : ''}`}
@@ -864,6 +907,19 @@ useEffect(() => {
                           </div>
                         ))}
                       </div>
+                      <SimplePaginationBar
+                        startIndex={pagination.info.startIndex}
+                        endIndex={pagination.info.endIndex}
+                        totalItems={filteredDispatches.length}
+                        currentPage={pagination.state.currentPage}
+                        totalPages={pagination.info.totalPages}
+                        hasPreviousPage={pagination.info.hasPreviousPage}
+                        hasNextPage={pagination.info.hasNextPage}
+                        onPreviousPage={pagination.actions.previousPage}
+                        onNextPage={pagination.actions.nextPage}
+                        className="border-b-0 border-t"
+                      />
+                      </>
                     )}
                   </div>
                 )}

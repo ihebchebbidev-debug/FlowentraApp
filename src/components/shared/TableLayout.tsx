@@ -337,6 +337,9 @@ export function TableLayout<T = any>({
       onNextPage={() => hasNextPage && onPageChange?.(currentPage + 1)}
       onPreviousPage={() => hasPreviousPage && onPageChange?.(currentPage - 1)}
       showPageNumbers={true}
+      totalItems={totalItems}
+      startIndex={(currentPage - 1) * itemsPerPage}
+      endIndex={Math.min(currentPage * itemsPerPage, totalItems)}
     />
   ) : null;
 
