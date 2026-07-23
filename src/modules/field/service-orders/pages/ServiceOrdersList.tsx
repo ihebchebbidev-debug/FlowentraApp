@@ -83,6 +83,7 @@ export default function ServiceOrdersList() {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [filterAssigned, setFilterAssigned] = useState<'all' | string>('all');
   const [filterDateRange, setFilterDateRange] = useState<'any' | '7' | '30' | '365'>('any');
+  const [filterSkill, setFilterSkill] = useState<'all' | string>('all');
   const [showExportModal, setShowExportModal] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<ServiceOrder | null>(null);
@@ -200,7 +201,8 @@ export default function ServiceOrdersList() {
             maintenanceNotes: ''
           },
           changeLog: [],
-          communications: []
+          communications: [],
+          preferredSkills: Array.isArray(so.preferredSkills) ? so.preferredSkills : (Array.isArray(so.PreferredSkills) ? so.PreferredSkills : [])
         };
       });
 
@@ -275,6 +277,7 @@ export default function ServiceOrdersList() {
       const matchesStatus = filterStatus === 'all' || order.status === filterStatus;
       const matchesPriority = filterPriority === 'all' || order.priority === filterPriority;
       const matchesAssigned = filterAssigned === 'all' || (order.assignedTechnicians || []).some(a => a === filterAssigned);
+      const matchesSkill = filterSkill === 'all' || (order.preferredSkills || []).some(s => s.toLowerCase() === filterSkill.toLowerCase());
       const matchesDate = (() => {
         if (filterDateRange === 'any') return true;
         const days = Number(filterDateRange);
@@ -289,11 +292,18 @@ export default function ServiceOrdersList() {
       if (selectedStat === 'closed') return matchesSearch && order.status === 'closed';
       if (selectedStat === 'urgent') return matchesSearch && order.priority === 'urgent';
 
-      return matchesSearch && matchesStatus && matchesPriority && matchesAssigned && matchesDate;
+      return matchesSearch && matchesStatus && matchesPriority && matchesAssigned && matchesSkill && matchesDate;
     });
-  }, [serviceOrders, searchTerm, filterStatus, filterPriority, selectedStat, filterAssigned, filterDateRange]);
+  }, [serviceOrders, searchTerm, filterStatus, filterPriority, selectedStat, filterAssigned, filterSkill, filterDateRange]);
 
   const companyScopedServiceOrders = useFilteredByCompany(filteredServiceOrders);
+
+  // Union of preferred skills across all loaded service orders, for the filter dropdown.
+  const skillOptions = useMemo(() => {
+    const set = new Set<string>();
+    serviceOrders.forEach(o => (o.preferredSkills || []).forEach(s => { if (s) set.add(s); }));
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [serviceOrders]);
   const pagination = usePaginatedData(companyScopedServiceOrders, 20);
 
   // Check if all items are selected
@@ -588,10 +598,19 @@ export default function ServiceOrdersList() {
               </select>
               <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             </div>
-            {(filterStatus !== 'all' || filterPriority !== 'all' || filterAssigned !== 'all' || filterDateRange !== 'any') && (
+            {skillOptions.length > 0 && (
+              <div className="relative">
+                <select className="border rounded px-3 py-2 pr-10 appearance-none bg-background text-foreground w-full text-sm h-9" value={filterSkill} onChange={e => setFilterSkill(e.target.value)}>
+                  <option value="all">All preferred skills</option>
+                  {skillOptions.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              </div>
+            )}
+            {(filterStatus !== 'all' || filterPriority !== 'all' || filterAssigned !== 'all' || filterSkill !== 'all' || filterDateRange !== 'any') && (
               <button
                 className="col-span-2 px-3 py-1.5 rounded border border-border text-sm text-muted-foreground hover:text-foreground"
-                onClick={() => { setFilterStatus('all'); setFilterPriority('all'); setFilterAssigned('all'); setFilterDateRange('any'); }}
+                onClick={() => { setFilterStatus('all'); setFilterPriority('all'); setFilterAssigned('all'); setFilterSkill('all'); setFilterDateRange('any'); }}
               >
                 {t('clear')}
               </button>
@@ -712,9 +731,18 @@ export default function ServiceOrdersList() {
                 </select>
                 <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               </div>
+              {skillOptions.length > 0 && (
+                <div className="relative">
+                  <select className="border rounded px-3 py-2 pr-10 appearance-none bg-background text-foreground w-full text-sm" value={filterSkill} onChange={e => setFilterSkill(e.target.value)}>
+                    <option value="all">All preferred skills</option>
+                    {skillOptions.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-2">
-              <button className="px-3 py-1 rounded-full border border-border text-sm" onClick={() => { setFilterStatus('all'); setFilterPriority('all'); setFilterAssigned('all'); setFilterDateRange('any'); setShowFilterBar(false); }}>{t('clear')}</button>
+              <button className="px-3 py-1 rounded-full border border-border text-sm" onClick={() => { setFilterStatus('all'); setFilterPriority('all'); setFilterAssigned('all'); setFilterSkill('all'); setFilterDateRange('any'); setShowFilterBar(false); }}>{t('clear')}</button>
             </div>
           </div>
         </div>

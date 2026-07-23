@@ -1,7 +1,7 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { NumberingSettings } from "@/modules/settings/components/NumberingSettings";
 import { JobConversionModeSettings } from "@/modules/settings/components/JobConversionModeSettings";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -55,7 +55,23 @@ export default function SettingsPage() {
   const { t } = useTranslation('settings');
   const { isMainAdmin, hasPermission } = usePermissions();
   const { isMobile } = useLayoutModeContext();
-  const [activeSection, setActiveSection] = useState("profile");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeSection, setActiveSectionState] = useState(
+    () => searchParams.get('section') || 'profile'
+  );
+  const setActiveSection = useCallback(
+    (id: string) => {
+      setActiveSectionState(id);
+      const next = new URLSearchParams(searchParams);
+      next.set('section', id);
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams]
+  );
+  useEffect(() => {
+    const q = searchParams.get('section');
+    if (q && q !== activeSection) setActiveSectionState(q);
+  }, [searchParams, activeSection]);
   const [demoOpen, setDemoOpen] = useState(false);
   
   // Permission-based tab visibility

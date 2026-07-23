@@ -181,5 +181,15 @@
       "network": "Network error. Please try again.",
       "generic": "Something went wrong. Please try again."
     }
+  },
+  "twoFactorBanner": {
+    "admin": {
+      "text": "Secure your account with two-factor authentication. Protect your projects and data with an extra layer of security.",
+      "cta": "Enable it now"
+    },
+    "user": {
+      "text": "Ask your administrator to activate two-factor authentication for better security of your data."
+    },
+    "dismiss": "Dismiss"
   }
 }

@@ -42,6 +42,7 @@ namespace MyApi.Modules.ServiceOrders.DTOs
         public DateTime CreatedAt { get; set; }
         public string? UpdatedBy { get; set; }
         public DateTime UpdatedAt { get; set; }
+        public string[]? PreferredSkills { get; set; }
         public List<ServiceOrderJobDto>? Jobs { get; set; }
         public List<ServiceOrderMaterialDto>? Materials { get; set; }
         public ContactSummaryDto? Contact { get; set; }
@@ -246,6 +247,7 @@ namespace MyApi.Modules.ServiceOrders.DTOs
         public string? Notes { get; set; }
         public bool RequiresApproval { get; set; }
         public string[]? Tags { get; set; }
+        public string[]? PreferredSkills { get; set; }
         public object? CustomFields { get; set; }
 
         /// <summary>
@@ -270,6 +272,7 @@ namespace MyApi.Modules.ServiceOrders.DTOs
         public string? PaymentTerms { get; set; }
         public bool? RequiresApproval { get; set; }
         public string[]? Tags { get; set; }
+        public string[]? PreferredSkills { get; set; }
         public object? CustomFields { get; set; }
     }
 
@@ -325,6 +328,7 @@ namespace MyApi.Modules.ServiceOrders.DTOs
 
         public bool RequiresApproval { get; set; }
         public string[]? Tags { get; set; }
+        public string[]? PreferredSkills { get; set; }
         public object? CustomFields { get; set; }
 
         /// <summary>Optional pre-assigned technicians for the auto-created default job.</summary>

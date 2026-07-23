@@ -183,6 +183,7 @@ namespace MyApi.Modules.Sales.Services
                 TotalAmount = 0,
                 OfferId = createDto.OfferId,
                 CreatedBy = userId,
+                CreatedByName = await ResolveUserNameAsync(userId),
                 CreatedDate = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
                 Tags = new string[] { },

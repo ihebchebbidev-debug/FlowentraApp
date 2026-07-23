@@ -92,6 +92,19 @@ namespace MyApi.Modules.Dispatches.Services
             return map;
         }
 
+        // Union two skill arrays case-insensitively; returns null when the result is empty
+        // so the DB column stays NULL instead of an empty array.
+        private static string[]? MergeSkills(params IEnumerable<string>?[] sources)
+        {
+            var merged = sources
+                .Where(s => s != null)
+                .SelectMany(s => s!)
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            return merged.Length > 0 ? merged : null;
+        }
+
         public async Task<DispatchDto> CreateFromJobAsync(int jobId, CreateDispatchFromJobDto dto, string userId)
         {
             _logger.LogInformation("CreateFromJobAsync called by {UserId} for Job {JobId} (AutoCreate technicians: {HasTech})", userId, jobId, dto.AssignedTechnicianIds?.Count ?? 0);
@@ -160,6 +173,9 @@ namespace MyApi.Modules.Dispatches.Services
                 ScheduledEndTime = dto.ScheduledEndTime,
                 SiteAddress = dto.SiteAddress ?? string.Empty,
                 Description = job.JobDescription ?? job.Description,
+                // Union of skills required on the specific job and the parent service
+                // order's preferred skills, so the dispatcher can match technicians.
+                RequiredSkills = MergeSkills(job.RequiredSkills, job.ServiceOrder?.PreferredSkills),
                 CreatedDate = DateTime.UtcNow,
                 CreatedBy = userId,
                 DispatchedBy = userId,
@@ -342,6 +358,11 @@ namespace MyApi.Modules.Dispatches.Services
                 Description = dto.Notes ?? (dto.InstallationId > 0
                     ? $"Installation: {dto.InstallationName} ({dto.JobIds.Count} jobs)"
                     : $"Service order dispatch ({dto.JobIds.Count} jobs)"),
+                // Union of RequiredSkills across the grouped jobs plus the parent
+                // service order's preferred skills. Used for technician matching.
+                RequiredSkills = MergeSkills(
+                    jobs.SelectMany(j => j.RequiredSkills ?? Array.Empty<string>()).ToArray(),
+                    jobs.FirstOrDefault()?.ServiceOrder?.PreferredSkills),
                 CreatedDate = DateTime.UtcNow,
                 CreatedBy = userId,
                 DispatchedBy = userId,

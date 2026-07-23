@@ -38,6 +38,7 @@ export interface ServiceOrder {
   serviceType?: string;
   notes?: string;
   tags?: string[];
+  preferredSkills?: string[];
   startDate?: string;
   targetCompletionDate?: string;
   actualCompletionDate?: string;
@@ -92,6 +93,7 @@ export interface UpdateServiceOrderRequest {
   priority?: string;
   notes?: string;
   tags?: string[];
+  preferredSkills?: string[];
   targetCompletionDate?: string;
 }
 

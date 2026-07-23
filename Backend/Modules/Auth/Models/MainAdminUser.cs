@@ -96,6 +96,7 @@ namespace MyApi.Modules.Auth.Models
 
         // ---- Two-Factor Authentication (migration 36) ----
         public bool TwoFactorEnabled { get; set; } = false;
+        public DateTime? TwoFactorEnabledAt { get; set; }
         [MaxLength(128)]
         public string? LoginOtpHash { get; set; }
         public DateTime? LoginOtpExpiresAt { get; set; }

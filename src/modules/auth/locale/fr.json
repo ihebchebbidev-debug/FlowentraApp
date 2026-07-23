@@ -181,5 +181,15 @@
       "network": "Erreur réseau. Veuillez réessayer.",
       "generic": "Une erreur s'est produite. Veuillez réessayer."
     }
+  },
+  "twoFactorBanner": {
+    "admin": {
+      "text": "Sécurisez votre compte avec l'authentification à deux facteurs. Protégez vos projets et vos données avec une couche de sécurité supplémentaire.",
+      "cta": "Activez-la maintenant"
+    },
+    "user": {
+      "text": "Demandez à votre administrateur d'activer l'authentification à deux facteurs pour mieux protéger vos données."
+    },
+    "dismiss": "Ignorer"
   }
 }

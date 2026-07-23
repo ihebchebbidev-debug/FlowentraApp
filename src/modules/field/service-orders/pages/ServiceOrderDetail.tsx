@@ -40,6 +40,7 @@ import { ServiceOrderPDFDocument } from "../components/ServiceOrderPDFDocument";
 import { defaultSettings } from "../utils/pdfSettings.utils";
 import { AddMaterialModal } from "../../components/AddMaterialModal";
 import { InvoicePreparationModal } from "../components/InvoicePreparationModal";
+import { PreferredSkillsCard } from "../components/PreferredSkillsCard";
 import type { Article } from "@/modules/inventory-services/types";
 import { serviceOrdersApi } from "@/services/api/serviceOrdersApi";
 import { appSettingsApi } from "@/services/api/appSettingsApi";
@@ -102,6 +103,7 @@ interface ApiServiceOrder {
   serviceType?: string;
   notes?: string;
   tags?: string[];
+  preferredSkills?: string[];
   startDate?: string;
   targetCompletionDate?: string;
   actualCompletionDate?: string;
@@ -1225,6 +1227,17 @@ export default function ServiceOrderDetail() {
           {/* Overview Tab */}
           <TabsContent value="overview">
             <div className="space-y-6">
+              {/* Preferred Skills */}
+              <PreferredSkillsCard
+                serviceOrderId={serviceOrder.id}
+                skills={serviceOrder.preferredSkills ?? []}
+                onChange={(next) =>
+                  setServiceOrder((prev) =>
+                    prev ? { ...prev, preferredSkills: next } : prev,
+                  )
+                }
+              />
+
               {/* Service Order Details - Consolidated like Sales/Offers */}
               <Card className="bg-white dark:bg-card">
                 <CardHeader className="pb-4">

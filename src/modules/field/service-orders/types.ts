@@ -82,6 +82,10 @@ export interface ServiceOrder {
   // Audit & Communication
   changeLog: ChangeLogEntry[];
   communications: ServiceOrderCommunication[];
+
+  // Preferred/required skills a technician should have for this service order.
+  // Auto-seeded from line-item article SkillsRequired at creation.
+  preferredSkills?: string[];
 }
 
 // Legacy type aliases for backward compatibility - prefer using specific entity types

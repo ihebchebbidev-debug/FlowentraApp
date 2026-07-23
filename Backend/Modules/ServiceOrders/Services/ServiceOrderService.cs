@@ -131,6 +131,12 @@ namespace MyApi.Modules.ServiceOrders.Services
                 CompletionPercentage = 0,
                 RequiresApproval = createDto.RequiresApproval,
                 Tags = createDto.Tags,
+                PreferredSkills = createDto.PreferredSkills != null && createDto.PreferredSkills.Length > 0
+                    ? createDto.PreferredSkills
+                        .Where(s => !string.IsNullOrWhiteSpace(s))
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToArray()
+                    : null,
                 CustomFields = createDto.CustomFields != null
                     ? System.Text.Json.JsonSerializer.Serialize(createDto.CustomFields) : null,
                 CreatedBy = userId,
@@ -466,6 +472,24 @@ namespace MyApi.Modules.ServiceOrders.Services
                             }
                             catch { /* skip malformed JSON */ }
                         }
+                    }
+
+                    // Seed PreferredSkills on the ServiceOrder from the union of every
+                    // service-article's SkillsRequired. Explicit DTO value wins if provided.
+                    var seededSkills = articleSkillsById.Values
+                        .SelectMany(s => s)
+                        .Where(s => !string.IsNullOrWhiteSpace(s))
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToArray();
+                    var explicitSkills = createDto.PreferredSkills?
+                        .Where(s => !string.IsNullOrWhiteSpace(s))
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToArray();
+                    var finalSkills = (explicitSkills?.Length > 0 ? explicitSkills : seededSkills);
+                    if (finalSkills.Length > 0)
+                    {
+                        serviceOrder.PreferredSkills = finalSkills;
+                        await _context.SaveChangesAsync();
                     }
 
                     if (jobConversionMode == "installation")
@@ -1008,6 +1032,7 @@ namespace MyApi.Modules.ServiceOrders.Services
             if (updateDto.PaymentTerms != null) serviceOrder.PaymentTerms = updateDto.PaymentTerms;
             if (updateDto.RequiresApproval.HasValue) serviceOrder.RequiresApproval = updateDto.RequiresApproval.Value;
             if (updateDto.Tags != null) serviceOrder.Tags = updateDto.Tags;
+            if (updateDto.PreferredSkills != null) serviceOrder.PreferredSkills = updateDto.PreferredSkills;
             if (updateDto.CustomFields != null) serviceOrder.CustomFields = System.Text.Json.JsonSerializer.Serialize(updateDto.CustomFields);
 
             serviceOrder.ModifiedBy = userId;
@@ -1444,6 +1469,7 @@ namespace MyApi.Modules.ServiceOrders.Services
                 ApprovedBy = serviceOrder.ApprovedBy,
                 ApprovalDate = serviceOrder.ApprovalDate,
                 Tags = serviceOrder.Tags,
+                PreferredSkills = serviceOrder.PreferredSkills,
                 CustomFields = serviceOrder.CustomFields != null
                     ? System.Text.Json.JsonSerializer.Deserialize<object>(serviceOrder.CustomFields)
                     : null,

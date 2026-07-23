@@ -160,6 +160,9 @@ namespace MyApi.Modules.ServiceOrders.Models
         [Column("Tags")]
         public string[]? Tags { get; set; }
 
+        [Column("PreferredSkills")]
+        public string[]? PreferredSkills { get; set; }
+
         [Column("CustomFields", TypeName = "jsonb")]
         public string? CustomFields { get; set; }
 
