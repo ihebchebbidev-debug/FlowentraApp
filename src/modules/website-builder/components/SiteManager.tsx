@@ -305,7 +305,7 @@ export function SiteManager({ onEditSite }: SiteManagerProps) {
             <Button
               variant={viewMode === 'grid' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setViewMode('grid')}
+              onClick={() => setViewMode('grid')} data-non-list-view="true"
               className={`flex-1 sm:flex-none ${viewMode === 'grid' ? 'bg-primary text-primary-foreground hover:bg-primary/90' : ''}`}
             >
               <LayoutGrid className={`h-4 w-4 ${viewMode === 'grid' ? 'text-primary-foreground' : ''}`} />
@@ -321,7 +321,7 @@ export function SiteManager({ onEditSite }: SiteManagerProps) {
             <Button
               variant={viewMode === 'table' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setViewMode('table')}
+              onClick={() => setViewMode('table')} data-non-list-view="true"
               className={`flex-1 sm:flex-none ${viewMode === 'table' ? 'bg-primary text-primary-foreground hover:bg-primary/90' : ''}`}
             >
               <Table className={`h-4 w-4 ${viewMode === 'table' ? 'text-primary-foreground' : ''}`} />

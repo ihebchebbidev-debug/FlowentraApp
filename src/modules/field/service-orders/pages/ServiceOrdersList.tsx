@@ -51,13 +51,14 @@ import { MapOverlay } from "@/components/shared/MapOverlay";
 import { mapServiceOrdersToMapItems } from "@/components/shared/mappers";
 import { ExportModal } from "../components/ExportModal";
 import TableLayout, { Column } from "@/components/shared/TableLayout";
+import { SimplePaginationBar } from "@/components/shared/SimplePaginationBar";
 import { serviceOrdersApi } from "@/services/api/serviceOrdersApi";
 import { toast } from "sonner";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useActionLogger } from "@/hooks/useActionLogger";
 import { ServiceOrdersKanbanView } from "../components/ServiceOrdersKanbanView";
 import { DropdownMenuLabel } from "@radix-ui/react-dropdown-menu";
-import { getInitialViewMode, useEnforceListOnMobile } from '../../../../hooks/getInitialViewMode';
+import { getInitialViewMode, useEnforceListOnMobile, useIsListForcedMobile } from '../../../../hooks/getInitialViewMode';
 
 export default function ServiceOrdersList() {
   console.log("ServiceOrdersList rendering");
@@ -70,7 +71,9 @@ export default function ServiceOrdersList() {
   const [filters, setFilters] = useState<ServiceOrderFilters>({});
   const [viewMode, setViewMode] = useState<'list' | 'table' | 'kanban'>(() => getInitialViewMode(['list','table','kanban'] as const, 'table'));
   useEnforceListOnMobile(viewMode, setViewMode, ['list','table','kanban'] as const);
+  const listOnly = useIsListForcedMobile();
   const [showMap, setShowMap] = useState(false);
+  useEffect(() => { if (listOnly && showMap) setShowMap(false); }, [listOnly, showMap]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | string>('all');
   const [filterPriority, setFilterPriority] = useState<'all' | string>('all');
@@ -281,8 +284,9 @@ export default function ServiceOrdersList() {
       })();
 
       // Handle stat filters
-      if (selectedStat === 'active') return matchesSearch && ['scheduled', 'in_progress', 'partially_completed'].includes(order.status);
-      if (selectedStat === 'completed') return matchesSearch && ['completed', 'partially_completed'].includes(order.status);
+      if (selectedStat === 'in_progress') return matchesSearch && order.status === 'in_progress';
+      if (selectedStat === 'ready_for_invoice') return matchesSearch && order.status === 'ready_for_invoice';
+      if (selectedStat === 'closed') return matchesSearch && order.status === 'closed';
       if (selectedStat === 'urgent') return matchesSearch && order.priority === 'urgent';
 
       return matchesSearch && matchesStatus && matchesPriority && matchesAssigned && matchesDate;
@@ -290,7 +294,7 @@ export default function ServiceOrdersList() {
   }, [serviceOrders, searchTerm, filterStatus, filterPriority, selectedStat, filterAssigned, filterDateRange]);
 
   const companyScopedServiceOrders = useFilteredByCompany(filteredServiceOrders);
-  const pagination = usePaginatedData(companyScopedServiceOrders, 5);
+  const pagination = usePaginatedData(companyScopedServiceOrders, 20);
 
   // Check if all items are selected
   const allSelected = useMemo(() => {
@@ -345,8 +349,6 @@ export default function ServiceOrdersList() {
     return Array.from(new Set(serviceOrders.flatMap(o => o.assignedTechnicians || [])));
   }, [serviceOrders]);
 
-  const totalValue = useMemo(() => serviceOrders.reduce((sum, order) => sum + order.financials.estimatedCost, 0), [serviceOrders]);
-
   const statsData = [
     {
       label: t('list.total_orders'),
@@ -356,25 +358,25 @@ export default function ServiceOrdersList() {
       filter: 'all'
     },
     {
-      label: t('list.active_orders'),
-      value: formatStatValue(serviceOrders.filter(o => ['scheduled', 'in_progress', 'partially_completed'].includes(o.status)).length),
+      label: t('statuses.in_progress'),
+      value: formatStatValue(serviceOrders.filter(o => o.status === 'in_progress').length),
       icon: Target,
       color: "chart-2",
-      filter: 'active'
+      filter: 'in_progress'
     },
     {
-      label: t('list.completed'),
-      value: formatStatValue(serviceOrders.filter(o => ['completed', 'partially_completed'].includes(o.status)).length),
-      icon: CheckCircle,
-      color: "chart-3",
-      filter: 'completed'
-    },
-    {
-      label: t('list.total_value'),
-      value: formatCurrencyValue(totalValue),
+      label: t('statuses.ready_for_invoice'),
+      value: formatStatValue(serviceOrders.filter(o => o.status === 'ready_for_invoice').length),
       icon: DollarSign,
+      color: "chart-3",
+      filter: 'ready_for_invoice'
+    },
+    {
+      label: t('statuses.closed'),
+      value: formatStatValue(serviceOrders.filter(o => o.status === 'closed').length),
+      icon: CheckCircle,
       color: "chart-4",
-      filter: 'value'
+      filter: 'closed'
     }
   ];
 
@@ -534,20 +536,21 @@ export default function ServiceOrdersList() {
           <Button
             variant={viewMode === 'table' ? 'default' : 'outline'}
             size="sm"
-            className={`h-9 w-9 p-0 shrink-0 ${viewMode === 'table' ? 'bg-primary text-white hover:bg-primary/90' : ''}`}
-            onClick={() => setViewMode('table')}
+            className={`h-9 w-9 p-0 shrink-0 ${viewMode === 'table' ? 'bg-primary text-white hover:bg-primary/90' : ''} ${listOnly ? 'hidden' : ''}`}
+            onClick={() => setViewMode('table')} data-non-list-view="true"
           >
             <TableIcon className={`h-4 w-4 ${viewMode === 'table' ? 'text-white' : ''}`} />
           </Button>
           <Button
             variant={showMap ? 'default' : 'outline'}
             size="sm"
-            className={`h-9 w-9 p-0 shrink-0 ${showMap ? 'bg-primary text-white hover:bg-primary/90' : ''}`}
+            className={`h-9 w-9 p-0 shrink-0 ${showMap ? 'bg-primary text-white hover:bg-primary/90' : ''} ${listOnly ? 'hidden' : ''}`}
             onClick={() => setShowMap(!showMap)}
           >
             <Map className={`h-4 w-4 ${showMap ? 'text-white' : ''}`} />
           </Button>
         </div>
+
 
         {/* Mobile collapsible filter panel */}
         {showMobileFilters && (
@@ -644,8 +647,8 @@ export default function ServiceOrdersList() {
             <Button
               variant={viewMode === 'table' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setViewMode('table')}
-              className={`flex-1 sm:flex-none ${viewMode === 'table' ? 'bg-primary text-white hover:bg-primary/90' : ''}`}
+              onClick={() => setViewMode('table')} data-non-list-view="true"
+              className={`flex-1 sm:flex-none ${viewMode === 'table' ? 'bg-primary text-white hover:bg-primary/90' : ''} ${listOnly ? 'hidden' : ''}`}
             >
               <TableIcon className={`h-4 w-4 ${viewMode === 'table' ? 'text-white' : ''}`} />
             </Button>
@@ -653,7 +656,7 @@ export default function ServiceOrdersList() {
             <Button
               variant={viewMode === 'kanban' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setViewMode('kanban')}
+              onClick={() => setViewMode('kanban')} data-non-list-view="true"
               className={`flex-1 sm:flex-none ${viewMode === 'kanban' ? 'bg-primary text-white hover:bg-primary/90' : ''}`}
             >
               <LayoutGrid className={`h-4 w-4 ${viewMode === 'kanban' ? 'text-white' : ''}`} />
@@ -663,10 +666,11 @@ export default function ServiceOrdersList() {
               variant={showMap ? 'default' : 'outline'}
               size="sm"
               onClick={() => setShowMap(!showMap)}
-              className={`flex-1 sm:flex-none ${showMap ? 'bg-primary text-white hover:bg-primary/90' : ''}`}
+              className={`flex-1 sm:flex-none ${showMap ? 'bg-primary text-white hover:bg-primary/90' : ''} ${listOnly ? 'hidden' : ''}`}
             >
               <Map className={`h-4 w-4 ${showMap ? 'text-white' : ''}`} />
             </Button>
+
           </div>
         </div>
       </section>
@@ -792,6 +796,18 @@ export default function ServiceOrdersList() {
                   </p>
                 </div>
               ) : (
+                <>
+                <SimplePaginationBar
+                  startIndex={pagination.info.startIndex}
+                  endIndex={pagination.info.endIndex}
+                  totalItems={filteredServiceOrders.length}
+                  currentPage={pagination.state.currentPage}
+                  totalPages={pagination.info.totalPages}
+                  hasPreviousPage={pagination.info.hasPreviousPage}
+                  hasNextPage={pagination.info.hasNextPage}
+                  onPreviousPage={pagination.actions.previousPage}
+                  onNextPage={pagination.actions.nextPage}
+                />
                 <div className="divide-y divide-border">
                   {pagination.data.map((order) => (
                     <div
@@ -863,6 +879,7 @@ export default function ServiceOrdersList() {
                     </div>
                   ))}
                 </div>
+                </>
               )}
               {filteredServiceOrders.length > 5 && (
                 <div className="border-t border-border p-4">
@@ -933,7 +950,7 @@ export default function ServiceOrdersList() {
                     selectedIds={selectedIds}
                     onSelectionChange={(ids) => setSelectedIds(ids as Set<string>)}
                     enablePagination
-                    itemsPerPage={5}
+                    itemsPerPage={20}
                     currentPage={pagination.state.currentPage}
                     onPageChange={pagination.actions.goToPage}
                     totalItems={filteredServiceOrders.length}
@@ -1080,6 +1097,18 @@ export default function ServiceOrdersList() {
                   )}
                 </div>
               ) : (
+                <>
+                <SimplePaginationBar
+                  startIndex={pagination.info.startIndex}
+                  endIndex={pagination.info.endIndex}
+                  totalItems={filteredServiceOrders.length}
+                  currentPage={pagination.state.currentPage}
+                  totalPages={pagination.info.totalPages}
+                  hasPreviousPage={pagination.info.hasPreviousPage}
+                  hasNextPage={pagination.info.hasNextPage}
+                  onPreviousPage={pagination.actions.previousPage}
+                  onNextPage={pagination.actions.nextPage}
+                />
                 <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
                   style={{ WebkitOverflowScrolling: 'touch' }}>
                   <TableLayout
@@ -1186,6 +1215,7 @@ export default function ServiceOrdersList() {
                     ]}
                   />
                 </div>
+                </>
               )}
 
               {filteredServiceOrders.length > 0 && (

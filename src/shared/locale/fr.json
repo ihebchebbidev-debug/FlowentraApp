@@ -220,5 +220,11 @@
     "done": "Terminé",
     "updating": "Mise à jour...",
     "unknown": "Inconnu"
+  },
+  "pagination": {
+    "showing_results": "Affichage de {{start}} à {{end}} sur {{total}} résultats",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "page_of": "{{current}} sur {{total}}"
   }
 }

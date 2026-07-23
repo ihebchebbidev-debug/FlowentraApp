@@ -44,6 +44,29 @@
   }
 }
 
+/* Force list-only UI on tablets and phones (< 1280px):
+   any toggle button switching to a non-list view (table/kanban/grid/map)
+   is hidden so customers on tablets stay in the list view. */
+@media (max-width: 1279px) {
+  .non-list-view-toggle,
+  [data-non-list-view="true"] {
+    display: none !important;
+  }
+}
+
+/* List UX polish shared across every module list */
+.list-row {
+  transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+.list-row:hover {
+  background-color: hsl(var(--muted) / 0.4);
+}
+.list-row:active {
+  transform: scale(0.998);
+}
+
+
+
 /* FlowSolution Design System - Professional SaaS Theme */
 /* Import statement removed - fonts loaded via HTML link tags */
 

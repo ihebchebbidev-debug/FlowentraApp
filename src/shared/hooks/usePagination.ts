@@ -21,7 +21,7 @@ export interface PaginationInfo {
   endIndex: number;
 }
 
-export function usePagination(totalItems: number, defaultItemsPerPage: number = 5) {
+export function usePagination(totalItems: number, defaultItemsPerPage: number = 20) {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(defaultItemsPerPage);
 
@@ -76,7 +76,7 @@ export function usePagination(totalItems: number, defaultItemsPerPage: number = 
 }
 
 // Hook for paginating data arrays
-export function usePaginatedData<T>(data: T[], itemsPerPage: number = 5) {
+export function usePaginatedData<T>(data: T[], itemsPerPage: number = 20) {
   const pagination = usePagination(data.length, itemsPerPage);
   
   const paginatedData = useMemo(() => {

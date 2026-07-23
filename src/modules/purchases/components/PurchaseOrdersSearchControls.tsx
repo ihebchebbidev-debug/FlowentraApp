@@ -81,7 +81,7 @@ export function PurchaseOrdersSearchControls(props: Props) {
               variant={props.viewMode === "table" ? "secondary" : "ghost"}
               size="sm"
               className="h-7 w-7 p-0"
-              onClick={() => props.onViewModeChange("table")}
+              onClick={() => props.onViewModeChange("table")} data-non-list-view="true"
             >
               <TableIcon className="h-3.5 w-3.5" />
             </Button>

@@ -52,6 +52,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import TableLayout from '@/components/shared/TableLayout';
+import { SimplePaginationBar } from '@/components/shared/SimplePaginationBar';
 import { isViewAllMode } from '@/utils/tenant';
 import { CompanyBadge } from '@/components/CompanyBadge';
 import { useFilteredByCompany } from '@/components/CompanyFilter';
@@ -531,7 +532,7 @@ export function SalesList() {
             <Button 
               variant={viewMode === 'table' ? 'default' : 'outline'} 
               size="sm" 
-              onClick={() => setViewMode('table')} 
+              onClick={() => setViewMode('table')} data-non-list-view="true" 
               className={`flex-1 sm:flex-none ${viewMode === 'table' ? 'bg-primary text-white hover:bg-primary/90' : ''}`}
             >
               <TableIcon className={`h-4 w-4 ${viewMode === 'table' ? 'text-white' : ''}`} />
@@ -540,7 +541,7 @@ export function SalesList() {
             <Button 
               variant={viewMode === 'kanban' ? 'default' : 'outline'} 
               size="sm" 
-              onClick={() => setViewMode('kanban')} 
+              onClick={() => setViewMode('kanban')} data-non-list-view="true" 
               className={`flex-1 sm:flex-none ${viewMode === 'kanban' ? 'bg-primary text-white hover:bg-primary/90' : ''}`}
             >
               <LayoutGrid className={`h-4 w-4 ${viewMode === 'kanban' ? 'text-white' : ''}`} />
@@ -687,8 +688,20 @@ export function SalesList() {
                   </p>
                 </div>
               ) : (
+                <>
+                <SimplePaginationBar
+                  startIndex={pagination.info.startIndex}
+                  endIndex={pagination.info.endIndex}
+                  totalItems={companyScopedSales.length}
+                  currentPage={pagination.state.currentPage}
+                  totalPages={pagination.info.totalPages}
+                  hasPreviousPage={pagination.info.hasPreviousPage}
+                  hasNextPage={pagination.info.hasNextPage}
+                  onPreviousPage={pagination.actions.previousPage}
+                  onNextPage={pagination.actions.nextPage}
+                />
                 <div className="divide-y divide-border">
-                  {filteredSales.map((sale) => (
+                  {pagination.data.map((sale) => (
                     <div
                       key={sale.id}
                       className="p-4 hover:bg-muted/30 transition-colors cursor-pointer active:bg-muted/50"
@@ -760,6 +773,18 @@ export function SalesList() {
                     </div>
                   ))}
                 </div>
+                <SimplePaginationBar
+                  startIndex={pagination.info.startIndex}
+                  endIndex={pagination.info.endIndex}
+                  totalItems={companyScopedSales.length}
+                  currentPage={pagination.state.currentPage}
+                  totalPages={pagination.info.totalPages}
+                  hasPreviousPage={pagination.info.hasPreviousPage}
+                  hasNextPage={pagination.info.hasNextPage}
+                  onPreviousPage={pagination.actions.previousPage}
+                  onNextPage={pagination.actions.nextPage}
+                />
+                </>
               )}
             </CardContent>
           </Card>
@@ -785,7 +810,17 @@ export function SalesList() {
                 </div>
               ) : (
                 <>
-
+                  <SimplePaginationBar
+                    startIndex={pagination.info.startIndex}
+                    endIndex={pagination.info.endIndex}
+                    totalItems={companyScopedSales.length}
+                    currentPage={pagination.state.currentPage}
+                    totalPages={pagination.info.totalPages}
+                    hasPreviousPage={pagination.info.hasPreviousPage}
+                    hasNextPage={pagination.info.hasNextPage}
+                    onPreviousPage={pagination.actions.previousPage}
+                    onNextPage={pagination.actions.nextPage}
+                  />
                   <div className="overflow-x-auto w-full scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
                        style={{ WebkitOverflowScrolling: 'touch' }}>
                     <Table className="min-w-[640px]">
@@ -809,7 +844,7 @@ export function SalesList() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredSales.map((sale) => {
+                        {pagination.data.map((sale) => {
                           const isSelected = selectedIds.has(sale.id);
                           return (
                             <TableRow 
@@ -884,6 +919,17 @@ export function SalesList() {
                       </TableBody>
                     </Table>
                   </div>
+                  <SimplePaginationBar
+                    startIndex={pagination.info.startIndex}
+                    endIndex={pagination.info.endIndex}
+                    totalItems={companyScopedSales.length}
+                    currentPage={pagination.state.currentPage}
+                    totalPages={pagination.info.totalPages}
+                    hasPreviousPage={pagination.info.hasPreviousPage}
+                    hasNextPage={pagination.info.hasNextPage}
+                    onPreviousPage={pagination.actions.previousPage}
+                    onNextPage={pagination.actions.nextPage}
+                  />
                 </>
               )}
             </CardContent>

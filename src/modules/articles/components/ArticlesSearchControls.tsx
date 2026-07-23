@@ -114,7 +114,7 @@ export function ArticlesSearchControls({
           <Button
             variant={viewMode === 'grid' ? 'default' : 'outline'}
             size="sm"
-            onClick={() => setViewMode('grid')}
+            onClick={() => setViewMode('grid')} data-non-list-view="true"
             className="gap-1 sm:gap-2 flex-1 sm:flex-none"
           >
             <Grid className="h-4 w-4" />

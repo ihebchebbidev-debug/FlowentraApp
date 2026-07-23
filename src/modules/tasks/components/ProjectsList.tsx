@@ -15,6 +15,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Project, ProjectStats, Technician } from "../types";
 import { format } from "date-fns";
 import { useTranslation } from "react-i18next";
+import { usePaginatedData } from "@/shared/hooks/usePagination";
+import { SimplePaginationBar } from "@/components/shared/SimplePaginationBar";
 
 interface ProjectsListProps {
   projects: Project[];
@@ -57,10 +59,26 @@ export function ProjectsList({
   onToggleStatus
 }: ProjectsListProps) {
   const { t } = useTranslation('tasks');
-  
+  const pagination = usePaginatedData(projects, 20);
+  const bar = projects.length > 0 ? (
+    <SimplePaginationBar
+      startIndex={pagination.info.startIndex}
+      endIndex={pagination.info.endIndex}
+      totalItems={projects.length}
+      currentPage={pagination.state.currentPage}
+      totalPages={pagination.info.totalPages}
+      hasPreviousPage={pagination.info.hasPreviousPage}
+      hasNextPage={pagination.info.hasNextPage}
+      onPreviousPage={pagination.actions.previousPage}
+      onNextPage={pagination.actions.nextPage}
+    />
+  ) : null;
+
   return (
-    <div className="divide-y divide-border">
-      {projects.map((project) => {
+    <div>
+      {bar}
+      <div className="divide-y divide-border">
+      {pagination.data.map((project) => {
         const stats = projectStats[project.id] || {
           totalTasks: 0,
           completedTasks: 0,
@@ -199,6 +217,8 @@ export function ProjectsList({
           </div>
         );
       })}
+      </div>
+      {bar}
     </div>
   );
 }

@@ -16,6 +16,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import TableLayout from '@/components/shared/TableLayout';
+import { SimplePaginationBar } from '@/components/shared/SimplePaginationBar';
 import { useContactsData } from '../hooks/useContactsData';
 import { contactsApi } from '@/services/contactsApi';
 import { useToast } from '@/hooks/use-toast';
@@ -159,7 +160,7 @@ export function ContactsList() {
     .filter((c: any) => selectedIds.has(c.id) && c.email)
     .map((c: any) => ({ id: c.id, name: c.name, email: c.email }));
 
-  const pagination = usePaginatedData(filteredContacts, 10);
+  const pagination = usePaginatedData(filteredContacts, 20);
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
@@ -371,7 +372,7 @@ export function ContactsList() {
             <Button 
               variant={viewMode === 'table' ? 'default' : 'outline'} 
               size="sm" 
-              onClick={() => setViewMode('table')} 
+              onClick={() => setViewMode('table')} data-non-list-view="true" 
               className={`flex-1 sm:flex-none ${viewMode === 'table' ? 'bg-primary text-white hover:bg-primary/90' : ''}`}
             >
               <TableIcon className={`h-4 w-4 ${viewMode === 'table' ? 'text-white' : ''}`} />
@@ -500,6 +501,17 @@ export function ContactsList() {
         <Card className="shadow-card border-0 bg-card text-[0.85rem]">
           
           <CardContent className="p-0">
+            <SimplePaginationBar
+              startIndex={pagination.info.startIndex}
+              endIndex={pagination.info.endIndex}
+              totalItems={filteredContacts.length}
+              currentPage={pagination.state.currentPage}
+              totalPages={pagination.info.totalPages}
+              hasPreviousPage={pagination.info.hasPreviousPage}
+              hasNextPage={pagination.info.hasNextPage}
+              onPreviousPage={pagination.actions.previousPage}
+              onNextPage={pagination.actions.nextPage}
+            />
             <div className="divide-y divide-border">
               {pagination.data.map(contact => <div key={contact.id} className="p-3 sm:p-4 lg:p-6 hover:bg-muted/50 transition-colors group cursor-pointer flex items-start gap-3" onClick={() => handleContactClick(contact)}>
                   <div className="pt-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
@@ -639,7 +651,7 @@ export function ContactsList() {
                   rowKey={(c: any) => c.id}
                   onRowClick={handleContactClick}
                   enablePagination={true}
-                  itemsPerPage={5}
+                  itemsPerPage={20}
                   currentPage={pagination.state.currentPage}
                   onPageChange={pagination.actions.goToPage}
                   totalItems={filteredContacts.length}

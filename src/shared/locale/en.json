@@ -220,5 +220,11 @@
     "done": "Done",
     "updating": "Updating...",
     "unknown": "Unknown"
+  },
+  "pagination": {
+    "showing_results": "Showing {{start}} to {{end}} of {{total}} results",
+    "previous": "Previous",
+    "next": "Next",
+    "page_of": "{{current}} of {{total}}"
   }
 }

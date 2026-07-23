@@ -238,7 +238,7 @@ export function TableLayout<T = any>({
   wrapperClassName,
   tableClassName = 'w-full table-fixed min-w-[800px]',
   enablePagination = false,
-  itemsPerPage = 5,
+  itemsPerPage = 20,
   currentPage = 1,
   onPageChange,
   totalItems,
@@ -327,8 +327,24 @@ export function TableLayout<T = any>({
   const hasNextPage = enablePagination ? currentPage < totalPages : false;
   const hasPreviousPage = enablePagination ? currentPage > 1 : false;
 
+  const paginationBar = enablePagination && totalItems && totalItems > itemsPerPage ? (
+    <PaginationControls
+      currentPage={currentPage}
+      totalPages={totalPages}
+      hasNextPage={hasNextPage}
+      hasPreviousPage={hasPreviousPage}
+      onPageChange={(page) => onPageChange?.(page)}
+      onNextPage={() => hasNextPage && onPageChange?.(currentPage + 1)}
+      onPreviousPage={() => hasPreviousPage && onPageChange?.(currentPage - 1)}
+      showPageNumbers={true}
+    />
+  ) : null;
+
   return (
     <div className={wrapperClassName}>
+      {/* Top pagination */}
+      {paginationBar}
+
       {/* Bulk action bar */}
       {enableSelection && selectedIds && selectedIds.size > 0 && bulkActions && (
         <div className="sticky top-0 z-30 bg-primary/5 border-b border-primary/15 px-4 py-2.5 flex items-center gap-3 animate-in slide-in-from-top-1 duration-200">
@@ -440,18 +456,8 @@ export function TableLayout<T = any>({
         </TableBody>
       </Table>
 
-      {enablePagination && totalItems && totalItems > itemsPerPage && (
-        <PaginationControls
-          currentPage={currentPage}
-          totalPages={totalPages}
-          hasNextPage={hasNextPage}
-          hasPreviousPage={hasPreviousPage}
-          onPageChange={(page) => onPageChange?.(page)}
-          onNextPage={() => hasNextPage && onPageChange?.(currentPage + 1)}
-          onPreviousPage={() => hasPreviousPage && onPageChange?.(currentPage - 1)}
-          showPageNumbers={true}
-        />
-      )}
+      {/* Bottom pagination */}
+      {paginationBar}
     </div>
   );
 }

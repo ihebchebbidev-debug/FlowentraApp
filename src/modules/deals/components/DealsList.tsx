@@ -27,6 +27,8 @@ import { DealsAutopilotDemo } from "./onboarding/DealsAutopilotDemo";
 import type { Deal } from "@/services/api/dealsApi";
 import { getInitialViewMode, useEnforceListOnMobile } from "../../../hooks/getInitialViewMode";
 import { usePermissions } from "@/hooks/usePermissions";
+import { usePaginatedData } from "@/shared/hooks/usePagination";
+import { SimplePaginationBar } from "@/components/shared/SimplePaginationBar";
 
 type StatFilter = "all" | "open" | "won" | "lost";
 
@@ -74,6 +76,21 @@ export function DealsList() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deals, searchTerm, selectedStat, filterStage, showAtRiskOnly]);
+
+  const pagination = usePaginatedData(filtered, 20);
+  const paginationBar = (
+    <SimplePaginationBar
+      startIndex={pagination.info.startIndex}
+      endIndex={pagination.info.endIndex}
+      totalItems={filtered.length}
+      currentPage={pagination.state.currentPage}
+      totalPages={pagination.info.totalPages}
+      hasPreviousPage={pagination.info.hasPreviousPage}
+      hasNextPage={pagination.info.hasNextPage}
+      onPreviousPage={pagination.actions.previousPage}
+      onNextPage={pagination.actions.nextPage}
+    />
+  );
 
   const forecast = useMemo(() => computeForecast(deals), [deals]);
   const maxFunnelValue = Math.max(1, ...forecast.funnel.map(f => f.value));
@@ -233,7 +250,7 @@ export function DealsList() {
             <Button
               variant={viewMode === "table" ? "default" : "outline"}
               size="sm"
-              onClick={() => setViewMode("table")}
+              onClick={() => setViewMode("table")} data-non-list-view="true"
               className={`flex-1 sm:flex-none min-w-[36px] ${viewMode === "table" ? "bg-primary text-white hover:bg-primary/90" : ""}`}
             >
               <TableIcon className={`h-4 w-4 ${viewMode === "table" ? "text-white" : ""}`} />
@@ -241,7 +258,7 @@ export function DealsList() {
             <Button
               variant={viewMode === "kanban" ? "default" : "outline"}
               size="sm"
-              onClick={() => setViewMode("kanban")}
+              onClick={() => setViewMode("kanban")} data-non-list-view="true"
               className={`flex-1 sm:flex-none min-w-[36px] ${viewMode === "kanban" ? "bg-primary text-white hover:bg-primary/90" : ""}`}
             >
               <LayoutGrid className={`h-4 w-4 ${viewMode === "kanban" ? "text-white" : ""}`} />
@@ -296,8 +313,9 @@ export function DealsList() {
         ) : viewMode === "list" ? (
           <Card className="shadow-card border-0 bg-card">
             <CardContent className="p-0">
+              {paginationBar}
               <div className="divide-y divide-border">
-                {filtered.map(d => (
+                {pagination.data.map(d => (
                   <div
                     key={d.id}
                     className="p-4 hover:bg-muted/30 transition-colors cursor-pointer active:bg-muted/50"
@@ -379,11 +397,13 @@ export function DealsList() {
                   </div>
                 ))}
               </div>
+              {paginationBar}
             </CardContent>
           </Card>
         ) : (
           <Card className="shadow-card border-0 bg-card">
             <CardContent className="p-0 overflow-x-auto">
+              {paginationBar}
               <Table className="min-w-[640px]">
                 <TableHeader>
                   <TableRow>
@@ -397,7 +417,7 @@ export function DealsList() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map(d => (
+                  {pagination.data.map(d => (
                     <TableRow key={d.id} className="cursor-pointer" onClick={() => navigate(`/dashboard/deals/${d.id}`)}>
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
@@ -448,6 +468,7 @@ export function DealsList() {
                   ))}
                 </TableBody>
               </Table>
+              {paginationBar}
             </CardContent>
           </Card>
         )}

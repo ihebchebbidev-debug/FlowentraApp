@@ -397,7 +397,7 @@ export function DispatchingInterface() {
             <Button
               variant={viewMode === 'map' ? 'secondary' : 'ghost'}
               size="sm"
-              onClick={() => setViewMode('map')}
+              onClick={() => setViewMode('map')} data-non-list-view="true"
               className="gap-2"
             >
               <Map className="h-4 w-4" />

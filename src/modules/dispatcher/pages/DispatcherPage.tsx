@@ -651,7 +651,7 @@ useEffect(() => {
             <Button 
               variant={viewMode === 'table' ? 'default' : 'outline'} 
               size="sm" 
-              onClick={() => setViewMode('table')} 
+              onClick={() => setViewMode('table')} data-non-list-view="true" 
               className={`flex-1 sm:flex-none ${viewMode === 'table' ? 'bg-primary text-white hover:bg-primary/90' : ''}`}
             >
               <TableIcon className={`h-4 w-4 ${viewMode === 'table' ? 'text-white' : ''}`} />
@@ -660,7 +660,7 @@ useEffect(() => {
             <Button 
               variant={viewMode === 'kanban' ? 'default' : 'outline'} 
               size="sm" 
-              onClick={() => setViewMode('kanban')} 
+              onClick={() => setViewMode('kanban')} data-non-list-view="true" 
               className={`flex-1 sm:flex-none ${viewMode === 'kanban' ? 'bg-primary text-white hover:bg-primary/90' : ''}`}
             >
               <LayoutGrid className={`h-4 w-4 ${viewMode === 'kanban' ? 'text-white' : ''}`} />

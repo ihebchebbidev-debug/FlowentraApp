@@ -16,9 +16,14 @@ export type AnyViewMode = 'list' | 'table' | 'grid' | 'kanban';
 // list view (table/grid/kanban are hidden).
 export const MOBILE_BREAKPOINT = 1024;
 
+// Screens below this width are forced to the "list" view — tables, grids,
+// kanban and map views are hidden. Covers phones AND tablets (including
+// landscape iPads up to ~1280px), which is what customers use in the field.
+export const LIST_ONLY_BREAKPOINT = 1280;
+
 export function isMobileViewport(): boolean {
   if (typeof window === 'undefined') return false;
-  return window.innerWidth < MOBILE_BREAKPOINT;
+  return window.innerWidth < LIST_ONLY_BREAKPOINT;
 }
 
 export function getInitialViewMode<T extends AnyViewMode>(
@@ -69,7 +74,7 @@ export function useEnforceListOnMobile<T extends AnyViewMode>(
 ): void {
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
+    const mql = window.matchMedia(`(max-width: ${LIST_ONLY_BREAKPOINT - 1}px)`);
     const allowedStr = allowed as readonly string[];
     const enforce = () => {
       if (mql.matches && viewMode !== 'list' && allowedStr.includes('list')) {
@@ -91,7 +96,7 @@ export function useIsListForcedMobile(): boolean {
   const [isMobile, setIsMobile] = useState<boolean>(() => isMobileViewport());
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
+    const mql = window.matchMedia(`(max-width: ${LIST_ONLY_BREAKPOINT - 1}px)`);
     const onChange = () => setIsMobile(mql.matches);
     onChange();
     mql.addEventListener('change', onChange);

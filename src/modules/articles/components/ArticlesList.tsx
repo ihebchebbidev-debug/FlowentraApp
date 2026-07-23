@@ -16,6 +16,8 @@ import { GenericImportModal, type ImportConfig } from "@/shared/import";
 import { articlesBulkImportApi } from "@/services/api/articlesApi";
 
 import { useArticlesList } from "../hooks/useArticlesList";
+import { usePaginatedData } from "@/shared/hooks/usePagination";
+import { SimplePaginationBar } from "@/components/shared/SimplePaginationBar";
 
 // presentational helpers are moved to components/utils.ts
 
@@ -181,37 +183,27 @@ export function ArticlesList() {
       />
 
       {/* Articles List */}
-      <div>
-        {viewMode === 'list' ? (
-          <ArticlesListView
-            items={filteredArticles}
-            onView={handleArticleClick}
-            onEdit={handleEditArticle}
-            onTransfer={handleTransferArticle}
-          />
-        ) : (
-          <ArticlesGridView
-            items={filteredArticles}
-            onView={handleArticleClick}
-            onEdit={handleEditArticle}
-            onTransfer={handleTransferArticle}
-          />
-        )}
+      <ArticlesListSection
+        filteredArticles={filteredArticles}
+        viewMode={viewMode}
+        onView={handleArticleClick}
+        onEdit={handleEditArticle}
+        onTransfer={handleTransferArticle}
+      />
 
-  {filteredArticles.length === 0 && (
-          <div className="text-center py-12">
-            <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-foreground mb-2">{t("no_articles_found")}</h3>
-            <p className="text-muted-foreground mb-4">
-              {searchTerm ? t("no_articles_description") : t("no_articles_description_empty")}
-            </p>
-            <CreateActionButton onClick={handleAddArticle}>
-              <Plus className="h-4 w-4 mr-2" />
-              {t("add_article")}
-            </CreateActionButton>
-          </div>
-        )}
-      </div>
+      {filteredArticles.length === 0 && (
+        <div className="text-center py-12">
+          <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-foreground mb-2">{t("no_articles_found")}</h3>
+          <p className="text-muted-foreground mb-4">
+            {searchTerm ? t("no_articles_description") : t("no_articles_description_empty")}
+          </p>
+          <CreateActionButton onClick={handleAddArticle}>
+            <Plus className="h-4 w-4 mr-2" />
+            {t("add_article")}
+          </CreateActionButton>
+        </div>
+      )}
 
       {/* Transfer Modal */}
   <TransferModal
@@ -237,6 +229,46 @@ export function ArticlesList() {
         translationNamespace="articles"
         onImport={handleImportData}
       />
+    </div>
+  );
+}
+
+function ArticlesListSection({
+  filteredArticles,
+  viewMode,
+  onView,
+  onEdit,
+  onTransfer,
+}: {
+  filteredArticles: any[];
+  viewMode: 'list' | 'grid' | string;
+  onView: (a: any) => void;
+  onEdit: (a: any) => void;
+  onTransfer: (a: any) => void;
+}) {
+  const pagination = usePaginatedData(filteredArticles, 20);
+  const bar = filteredArticles.length > 0 ? (
+    <SimplePaginationBar
+      startIndex={pagination.info.startIndex}
+      endIndex={pagination.info.endIndex}
+      totalItems={filteredArticles.length}
+      currentPage={pagination.state.currentPage}
+      totalPages={pagination.info.totalPages}
+      hasPreviousPage={pagination.info.hasPreviousPage}
+      hasNextPage={pagination.info.hasNextPage}
+      onPreviousPage={pagination.actions.previousPage}
+      onNextPage={pagination.actions.nextPage}
+    />
+  ) : null;
+  return (
+    <div>
+      {bar}
+      {viewMode === 'list' ? (
+        <ArticlesListView items={pagination.data} onView={onView} onEdit={onEdit} onTransfer={onTransfer} />
+      ) : (
+        <ArticlesGridView items={pagination.data} onView={onView} onEdit={onEdit} onTransfer={onTransfer} />
+      )}
+      {bar}
     </div>
   );
 }

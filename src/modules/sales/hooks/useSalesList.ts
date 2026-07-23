@@ -30,7 +30,7 @@ export function useSalesList(sales: any[]) {
     });
   }, [sales, searchTerm, filterStatus, filterStage, filterPriority, filterAssigned]);
 
-  const pagination = usePaginatedData(filteredSales, 5);
+  const pagination = usePaginatedData(filteredSales, 20);
 
   const handleStatClick = (stat: any) => {
     setSelectedStat(stat.filter);

@@ -172,7 +172,7 @@ export default function ClientsList() {
             <Button
               variant={viewMode === 'table' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setViewMode('table')}
+              onClick={() => setViewMode('table')} data-non-list-view="true"
               className="gap-1 sm:gap-2 flex-1 sm:flex-none"
             >
               <TableIcon className="h-4 w-4" />

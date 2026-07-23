@@ -243,7 +243,7 @@ export function ProjectManager({ onSwitchToTasks: _onSwitchToTasks }: ProjectMan
     return matchesSearch && matchesStatus && matchesType && matchesOwner && matchesTimeframe;
   });
 
-  const pagination = usePaginatedData(filteredProjects, 5);
+  const pagination = usePaginatedData(filteredProjects, 20);
 
   // Get current user info from localStorage
   const getCurrentUser = () => {
@@ -601,7 +601,7 @@ export function ProjectManager({ onSwitchToTasks: _onSwitchToTasks }: ProjectMan
             <Button
               variant={viewMode === 'kanban' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setViewMode('kanban')}
+              onClick={() => setViewMode('kanban')} data-non-list-view="true"
               title={t('projects.view.kanban', { defaultValue: 'Board' })}
               className={`flex-1 sm:flex-none ${viewMode === 'kanban' ? 'bg-primary text-white hover:bg-primary/90' : ''}`}
             >
@@ -619,7 +619,7 @@ export function ProjectManager({ onSwitchToTasks: _onSwitchToTasks }: ProjectMan
             <Button
               variant={viewMode === 'grid' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setViewMode('grid')}
+              onClick={() => setViewMode('grid')} data-non-list-view="true"
               title={t('projects.view.table', { defaultValue: 'Table' })}
               className={`flex-1 sm:flex-none ${viewMode === 'grid' ? 'bg-primary text-white hover:bg-primary/90' : ''}`}
             >
@@ -735,7 +735,7 @@ export function ProjectManager({ onSwitchToTasks: _onSwitchToTasks }: ProjectMan
                     onDeleteProject={handleRequestDeleteProject}
                     onToggleStatus={handleToggleStatus}
                     enablePagination={true}
-                    itemsPerPage={5}
+                    itemsPerPage={20}
                     currentPage={pagination.state.currentPage}
                     onPageChange={pagination.actions.goToPage}
                     totalItems={filteredProjects.length}
