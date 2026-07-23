@@ -791,7 +791,7 @@ export default function DispatchJobDetail() {
       <div className="px-3 sm:px-4 py-4 sm:py-6 space-y-6">
 
         {/* Main Content Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6 bg-white p-4 rounded-md">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6 bg-white p-4 rounded-md min-h-screen">
           {/* Mobile: select dropdown */}
           {(() => {
             const TABS = [

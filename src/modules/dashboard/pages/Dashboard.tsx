@@ -1,4 +1,4 @@
-import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { WorkspaceSidebar } from "@/modules/dashboard/components/WorkspaceSidebar";
 import { MobileWorkspaceNav } from "@/modules/dashboard/components/MobileWorkspaceNav";
 import { DashboardHeader } from "@/modules/dashboard/components/DashboardHeader";
@@ -7,7 +7,6 @@ import { TopNavigation } from "@/components/navigation/TopNavigation";
 import { LayoutModeProvider } from "@/components/providers/LayoutModeProvider";
 import { useLayoutModeContext } from "@/hooks/useLayoutMode";
 import { useLocation, Navigate } from "react-router-dom";
-import { useEffect } from "react";
 import { authService } from "@/services/authService";
 import { ProductTourProvider } from "@/contexts/ProductTourContext";
 import { ProductTour } from "@/components/onboarding/ProductTour";
@@ -58,32 +57,7 @@ function DashboardLayout() {
     );
   }
 
-  // Auto-collapse sidebar on specific routes
   function SidebarWrapper() {
-    const location = useLocation();
-    const { state, setOpen, open } = useSidebar();
-
-    const isDispatcher = location.pathname === '/dashboard/field/dispatcher/interface';
-    const shouldAutoCollapse = isDispatcher;
-    
-    useEffect(() => {
-      const key = 'sidebar:auto-collapsed-prev-open';
-      if (shouldAutoCollapse) {
-        // Store current state before collapsing
-        try { sessionStorage.setItem(key, JSON.stringify(open)); } catch (e) { /* ignore */ }
-        setOpen(false);
-      } else {
-        // Leaving: restore sidebar to previous state
-        try {
-          const prev = sessionStorage.getItem(key);
-          if (prev !== null) {
-            setOpen(true);
-            sessionStorage.removeItem(key);
-          }
-        } catch (e) { /* ignore */ }
-      }
-    }, [location.pathname, setOpen, open, shouldAutoCollapse]);
-
     return (
       <>
         <WorkspaceSidebar />

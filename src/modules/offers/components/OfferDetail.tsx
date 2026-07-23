@@ -526,7 +526,7 @@ export function OfferDetail() {
 
       <div className="px-4 py-6 space-y-6 bg-white">
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="bg-white p-4 rounded-md min-h-screen">
           <div className="w-full mb-6">
             {/* Mobile: Dropdown Select */}
             {isMobile ? (

@@ -39,6 +39,7 @@ import { startOfWeek, endOfWeek, addDays } from "date-fns";
 import { autoFillDay, autoFillDays, rankTechniciansForJob, type PlacementRecord } from "../utils/planningAssist";
 import { PlanningTimelineDialog } from "./PlanningTimelineDialog";
 import { PlanningDisplayProvider, type PlanningDisplay } from "../context/PlanningDisplayContext";
+import { PlanningSidebarAutoCollapse } from "./PlanningSidebarAutoCollapse";
 
 
 export function DispatchingInterface() {
@@ -369,6 +370,7 @@ export function DispatchingInterface() {
 
   return (
     <PlanningDisplayProvider value={planningDisplay}>
+    <PlanningSidebarAutoCollapse />
     <div className="flex flex-col h-[calc(100vh-3.5rem)] min-h-0 w-full bg-background overflow-hidden relative">
       {/* Header (consistent with Articles/Contacts pattern) */}
       <header className="flex items-center justify-between gap-2 p-3 sm:p-4 border-b border-border bg-card/50 backdrop-blur">

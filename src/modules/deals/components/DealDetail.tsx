@@ -229,7 +229,7 @@ export function DealDetail() {
           <Metric icon={Send} label={t("detail.source")} value={deal.source || "—"} />
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="bg-white p-4 rounded-md min-h-screen">
           {/* Mobile: Select dropdown */}
           {(() => {
             const TABS = [

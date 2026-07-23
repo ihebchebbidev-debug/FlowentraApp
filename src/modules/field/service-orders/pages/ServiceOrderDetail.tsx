@@ -1166,7 +1166,7 @@ export default function ServiceOrderDetail() {
       <div className="p-4 sm:p-6 lg:p-8 space-y-6">
 
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6 bg-white p-4 rounded-md">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6 bg-white p-4 rounded-md min-h-screen">
           {/* Mobile: Dropdown Select */}
           {isMobile ? (
             (() => {

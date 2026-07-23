@@ -133,7 +133,7 @@ export default function ContactDetail() {
 
       {/* Content */}
       <div className="p-3 sm:p-6 max-w-7xl mx-auto">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full bg-white p-4 rounded-md">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full bg-white p-4 rounded-md min-h-screen">
           {/* Tabs navigation */}
           {(() => {
             const TABS = [

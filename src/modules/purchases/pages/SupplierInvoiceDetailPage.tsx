@@ -404,7 +404,7 @@ function SupplierInvoiceDetailContent() {
           </CardContent>
         </Card>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="bg-white p-4 rounded-md min-h-screen">
           <TabsList variant="underline">
             <TabsTrigger value="overview">{t('tabs.overview')}</TabsTrigger>
             <TabsTrigger value="items">{t('tabs.items')}</TabsTrigger>
