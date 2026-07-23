@@ -421,7 +421,7 @@ export function AddMaterialModal({
 
           {/* Form Actions */}
           <div className="flex gap-3 pt-4">
-            <Button type="submit" className="flex-1" disabled={isSubmitting}>
+            <Button type="submit" className="flex-1" disabled={isSubmitting || !formData.articleId}>
               {isSubmitting ? (
                 <>{tCommon("saving") || "Saving..."}</>
               ) : (

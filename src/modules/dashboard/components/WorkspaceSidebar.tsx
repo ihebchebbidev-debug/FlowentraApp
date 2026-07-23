@@ -15,6 +15,9 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Ticket, AlertCircle } from "lucide-react";
+import SupportChoiceModal from "@/components/SupportChoiceModal";
 import {
   WORKSPACES,
   findWorkspaceForPath,
@@ -155,6 +158,7 @@ export function WorkspaceSidebar() {
     return detected && !NO_SECONDARY.has(detected.id) ? detected.id : null;
   };
   const [openId, setOpenIdState] = useState<string | null>(seedOpenId);
+  const [serviceDeskModalOpen, setServiceDeskModalOpen] = useState(false);
 
   const setOpenId = (id: string | null) => {
     setOpenIdState(id);
@@ -260,6 +264,11 @@ export function WorkspaceSidebar() {
   };
 
   const handleWorkspaceClick = (ws: Workspace, viaKeyboard = false) => {
+    if (ws.id === "service-desk") {
+      closePanel({ restoreFocus: false });
+      setServiceDeskModalOpen(true);
+      return;
+    }
     if (NO_SECONDARY.has(ws.id)) {
       closePanel({ restoreFocus: false });
       navigate(ws.landingUrl);
@@ -569,6 +578,7 @@ export function WorkspaceSidebar() {
   }
 
   return (
+    <>
     <aside data-tour="sidebar" className="sticky top-0 self-start z-40 flex h-screen shrink-0 border-r border-border bg-background">
       {/* Primary sidebar — list of workspaces */}
       <nav className="flex h-screen w-[240px] flex-col bg-background" aria-label="Workspaces">
@@ -706,6 +716,12 @@ export function WorkspaceSidebar() {
       </nav>
 
     </aside>
+    <SupportChoiceModal
+      open={serviceDeskModalOpen}
+      onOpenChange={setServiceDeskModalOpen}
+      onCreateTicket={() => navigate("/support/tickets/new")}
+    />
+    </>
   );
 }
 

@@ -297,7 +297,7 @@ useEffect(() => {
       if (selectedStat === 'all') return matchesSearch && matchesStatus && matchesPriority;
       if (selectedStat === 'urgent') return matchesSearch && dispatch.priority === 'urgent';
       if (selectedStat === 'in_progress') return matchesSearch && dispatch.status === 'in_progress';
-      if (selectedStat === 'pending') return matchesSearch && dispatch.status === 'pending';
+      if (selectedStat === 'completed') return matchesSearch && dispatch.status === 'completed';
       if (selectedStat === 'assigned') return matchesSearch && dispatch.status === 'assigned';
       
       return matchesSearch && matchesStatus && matchesPriority;
@@ -385,32 +385,32 @@ useEffect(() => {
   // Stats calculation for dispatches
   const statsData = [
     {
-      label: t('dispatcher.total'),
+      label: t('dispatcher.total', 'Total'),
       value: dispatches.length,
       icon: Circle,
       color: "chart-1",
       filter: 'all'
     },
     {
-      label: t('dispatcher.assigned'),
+      label: t('dispatcher.statuses.assigned', 'Assigned'),
       value: dispatches.filter(d => d.status === 'assigned').length,
       icon: CheckCircle,
       color: "chart-5", 
       filter: 'assigned'
     },
     {
-      label: t('dispatcher.in_progress'),
+      label: t('dispatcher.statuses.in_progress', 'In Progress'),
       value: dispatches.filter(d => d.status === 'in_progress').length,
       icon: Clock,
       color: "chart-3",
       filter: 'in_progress'
     },
     {
-      label: t('dispatcher.pending'),
-      value: dispatches.filter(d => d.status === 'pending').length,
-      icon: UserMinus,
-      color: "chart-4",
-      filter: 'pending'
+      label: t('dispatcher.statuses.completed', 'Completed'),
+      value: dispatches.filter(d => d.status === 'completed').length,
+      icon: CheckCircle,
+      color: "chart-2",
+      filter: 'completed'
     }
   ];
 

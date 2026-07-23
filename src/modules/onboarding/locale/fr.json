@@ -103,6 +103,10 @@
       "title": "Fonctionnalités Avancées ✨",
       "content": "Fonctionnalités puissantes: Formulaires multi-pages (sauts de page pour longues listes), Logique Conditionnelle (afficher/masquer selon les réponses), Signatures Numériques (capture à l'écran), Évaluations Étoiles, et Export PDF. Les formulaires suivent un cycle: Brouillon → Publié → Archivé."
     },
+    "serviceDesk": {
+      "title": "Service Desk 🛠️",
+      "content": "Votre Service Desk centralisé. Ouvrez des tickets de support, signalez des incidents, suivez leur statut (ouvert, en cours, résolu), ajoutez des commentaires et consultez les tickets créés automatiquement à partir des erreurs système — tout au même endroit."
+    },
     "helpButton": {
       "title": "Aide et support ❓",
       "content": "Obtenez de l'aide à tout moment! Accédez: FAQ (questions fréquentes), Assistant IA (réponses instantanées), Tickets support (contacter l'équipe), et Documentation. Vous pouvez aussi relancer cette visite ici."

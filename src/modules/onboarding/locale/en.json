@@ -103,6 +103,10 @@
       "title": "Advanced Form Features ✨",
       "content": "Power features include: Multi-page forms (page breaks for long checklists), Conditional Logic (show/hide fields based on answers), Digital Signatures (capture on-screen), Star Ratings, and PDF Export. Forms follow a lifecycle: Created → Released → Archived."
     },
+    "serviceDesk": {
+      "title": "Service Desk 🛠️",
+      "content": "Your one-stop Service Desk. Open support tickets, report incidents, track their status (open, in progress, resolved), add comments, and see auto-created tickets from system errors — all in one place."
+    },
     "helpButton": {
       "title": "Help & Support ❓",
       "content": "Get assistance anytime! Access: FAQ (common questions), AI Assistant (instant answers), Support Tickets (contact team), and Documentation. You can also restart this tour from here."
