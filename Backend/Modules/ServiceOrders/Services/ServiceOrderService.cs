@@ -621,7 +621,7 @@ namespace MyApi.Modules.ServiceOrders.Services
                                 .Select(p => p.Trim())
                                 .Select(p => int.TryParse(p, out var n) ? (int?)n : null)
                                 .Where(n => n.HasValue)
-                                .Select(n => n!.Value)
+                                .Select(n => n.Value)
                                 .ToList();
                             if (saleItemIds.Count == 0) continue;
 

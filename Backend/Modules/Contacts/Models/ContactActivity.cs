@@ -83,6 +83,11 @@ namespace MyApi.Modules.Contacts.Models
         public const string InstallationCompleted = "installation_completed";
 
         public const string ContactUpdated = "contact_updated";
+
+        // Planned time / expense / material logged against an offer item, sale item, or service order job.
+        public const string PlannedEntryAdded = "planned_entry_added";
+        public const string PlannedEntryUpdated = "planned_entry_updated";
+        public const string PlannedEntryDeleted = "planned_entry_deleted";
     }
 
     public static class ContactActivityEntityTypes
@@ -93,5 +98,6 @@ namespace MyApi.Modules.Contacts.Models
         public const string Dispatch = "Dispatch";
         public const string Installation = "Installation";
         public const string Note = "Note";
+        public const string PlannedEntry = "PlannedEntry";
     }
 }

@@ -360,10 +360,14 @@ namespace MyApi.Modules.Sales.Services
                             InstallationName = offerItem.InstallationName,
                             RequiresServiceOrder = offerItem.Type == "service",
                             FulfillmentStatus = "pending",
-                            TaxRate = 0,
+                            TaxRate = offerItem.TaxRate,
                             // Inherit the parent sale's currency so offer→sale copy is currency-safe.
                             Currency = sale.Currency,
-                            DisplayOrder = offerItem.DisplayOrder
+                            DisplayOrder = offerItem.DisplayOrder,
+                            // Stable lineage anchor used by planned-entry propagation.
+                            // Without this, plans added on an offer after conversion cannot
+                            // find the related sale item or downstream service-order jobs.
+                            OriginOfferItemId = offerItem.Id
                         };
                         _context.SaleItems.Add(saleItem);
                         itemPairs.Add((offerItem, saleItem));
@@ -662,15 +666,28 @@ namespace MyApi.Modules.Sales.Services
                     // Get sale item IDs before deletion
                     var saleItemIds = sale.Items?.Select(i => i.Id).ToList() ?? new List<int>();
 
-                    // Nullify SaleItemId references in ServiceOrderJobs
+                    // Remove deleted sale item IDs from ServiceOrderJobs. Jobs can store either a
+                    // single ID ("12") or an installation-grouped comma list ("12,13,14").
                     if (saleItemIds.Any())
                     {
-                        // Parameterized update for each sale item ID to prevent SQL injection
-                        foreach (var saleItemId in saleItemIds)
+                        var saleItemTokens = saleItemIds.Select(x => x.ToString()).ToHashSet();
+                        var linkedJobs = await _context.ServiceOrderJobs
+                            .Where(j => j.SaleItemId != null)
+                            .ToListAsync();
+                        foreach (var job in linkedJobs)
                         {
-                            await _context.Database.ExecuteSqlAsync(
-                                $@"UPDATE ""ServiceOrderJobs"" SET ""SaleItemId"" = NULL WHERE ""SaleItemId"" = {saleItemId.ToString()}");
+                            var remaining = job.SaleItemId!
+                                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                .Select(p => p.Trim())
+                                .Where(p => !saleItemTokens.Contains(p))
+                                .Distinct()
+                                .ToList();
+                            if (remaining.Count == 0)
+                                job.SaleItemId = null;
+                            else
+                                job.SaleItemId = string.Join(",", remaining);
                         }
+                        await _context.SaveChangesAsync();
                     }
 
                     // Nullify SaleId reference in ServiceOrders (cast int to string for VARCHAR column)

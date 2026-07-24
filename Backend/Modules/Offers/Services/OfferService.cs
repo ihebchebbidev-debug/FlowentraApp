@@ -448,39 +448,72 @@ namespace MyApi.Modules.Offers.Services
                         sale.UpdatedAt = DateTime.UtcNow;
                         sale.ModifiedBy = userId;
 
-                        // Sync items: remove old sale items and re-create from offer
+                        // Sync items while preserving existing SaleItem.Id values.
+                        // ServiceOrderJobs store SaleItemId as strings (or comma lists), so deleting
+                        // and recreating sale lines breaks planned-entry propagation to service orders.
                         var offerItems = await _context.OfferItems.Where(oi => oi.OfferId == id)
                             .OrderBy(oi => oi.DisplayOrder).ThenBy(oi => oi.Id).ToListAsync();
-                        if (sale.Items != null && sale.Items.Any())
+                        var existingSaleItems = sale.Items?.ToList() ?? new List<MyApi.Modules.Sales.Models.SaleItem>();
+                        var existingByOrigin = existingSaleItems
+                            .Where(si => si.OriginOfferItemId.HasValue)
+                            .GroupBy(si => si.OriginOfferItemId.Value)
+                            .ToDictionary(g => g.Key, g => g.OrderBy(si => si.DisplayOrder).ThenBy(si => si.Id).First());
+
+                        foreach (var oi in offerItems)
                         {
-                            _context.SaleItems.RemoveRange(sale.Items);
-                        }
-                        if (offerItems.Any())
-                        {
-                            var newSaleItems = offerItems.Select(oi => new MyApi.Modules.Sales.Models.SaleItem
+                            if (!existingByOrigin.TryGetValue(oi.Id, out var saleItem))
                             {
-                                SaleId = sale.Id,
-                                Type = oi.Type,
-                                ArticleId = oi.ArticleId,
-                                ItemName = oi.ItemName,
-                                ItemCode = oi.ItemCode,
-                                Description = oi.Description ?? oi.ItemName ?? "Item",
-                                Quantity = oi.Quantity,
-                                UnitPrice = oi.UnitPrice,
-                                Discount = oi.Discount,
-                                DiscountType = oi.DiscountType ?? "percentage",
-                                InstallationId = oi.InstallationId,
-                                InstallationName = oi.InstallationName,
-                                RequiresServiceOrder = oi.Type == "service",
-                                FulfillmentStatus = "pending",
-                                TaxRate = 0,
-                                DisplayOrder = oi.DisplayOrder,
-                                // Phase A (A2): stable lineage back to the source offer item so
-                                // downstream copy paths (planned entries, checklists) can pair
-                                // by explicit FK instead of positional index.
-                                OriginOfferItemId = oi.Id
-                            }).ToList();
-                            _context.SaleItems.AddRange(newSaleItems);
+                                saleItem = new MyApi.Modules.Sales.Models.SaleItem
+                                {
+                                    SaleId = sale.Id,
+                                    FulfillmentStatus = "pending",
+                                    TaxRate = oi.TaxRate,
+                                    Currency = sale.Currency,
+                                    OriginOfferItemId = oi.Id
+                                };
+                                _context.SaleItems.Add(saleItem);
+                            }
+
+                            saleItem.Type = oi.Type;
+                            saleItem.ArticleId = oi.ArticleId;
+                            saleItem.ItemName = oi.ItemName;
+                            saleItem.ItemCode = oi.ItemCode;
+                            saleItem.Description = oi.Description ?? oi.ItemName ?? "Item";
+                            saleItem.Quantity = oi.Quantity;
+                            saleItem.UnitPrice = oi.UnitPrice;
+                            saleItem.Discount = oi.Discount;
+                            saleItem.DiscountType = oi.DiscountType ?? "percentage";
+                            saleItem.InstallationId = oi.InstallationId;
+                            saleItem.InstallationName = oi.InstallationName;
+                            saleItem.RequiresServiceOrder = oi.Type == "service";
+                            saleItem.TaxRate = oi.TaxRate;
+                            saleItem.DisplayOrder = oi.DisplayOrder;
+                            saleItem.Currency = sale.Currency;
+                            saleItem.OriginOfferItemId = oi.Id;
+                        }
+
+                        var currentOfferItemIds = offerItems.Select(oi => oi.Id).ToHashSet();
+                        var removedSaleItems = existingSaleItems
+                            .Where(si => si.OriginOfferItemId.HasValue && !currentOfferItemIds.Contains(si.OriginOfferItemId.Value))
+                            .ToList();
+                        if (removedSaleItems.Count > 0)
+                        {
+                            var removedSaleItemTokens = removedSaleItems.Select(si => si.Id.ToString()).ToHashSet();
+                            var linkedJobs = await _context.ServiceOrderJobs
+                                .Where(j => j.SaleItemId != null)
+                                .ToListAsync();
+                            foreach (var job in linkedJobs)
+                            {
+                                var remaining = job.SaleItemId!
+                                    .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                    .Select(p => p.Trim())
+                                    .Where(p => !removedSaleItemTokens.Contains(p))
+                                    .Distinct()
+                                    .ToList();
+                                job.SaleItemId = remaining.Count == 0 ? null : string.Join(",", remaining);
+                            }
+
+                            _context.SaleItems.RemoveRange(removedSaleItems);
                         }
 
                         // Log sync activity on the sale
@@ -507,7 +540,10 @@ namespace MyApi.Modules.Offers.Services
                                 var newSaleItemsList = await _context.SaleItems
                                     .Where(si => si.SaleId == sale.Id && si.OriginOfferItemId != null)
                                     .ToListAsync();
-                                var byOffer = newSaleItemsList.ToDictionary(si => si.OriginOfferItemId!.Value);
+                                var byOffer = newSaleItemsList
+                                    .Where(si => si.OriginOfferItemId.HasValue)
+                                    .GroupBy(si => si.OriginOfferItemId.Value)
+                                    .ToDictionary(g => g.Key, g => g.OrderBy(si => si.DisplayOrder).ThenBy(si => si.Id).First());
                                 foreach (var oi in offerItems)
                                 {
                                     if (!byOffer.TryGetValue(oi.Id, out var newSi)) continue;
@@ -805,7 +841,8 @@ namespace MyApi.Modules.Offers.Services
                             FulfillmentStatus = "pending",
                             // Phase A: preserve per-line tax rate; sale-level Taxes is stored separately.
                             TaxRate = oi.TaxRate,
-                            DisplayOrder = oi.DisplayOrder
+                            DisplayOrder = oi.DisplayOrder,
+                            Currency = sale.Currency
                         }).ToList();
                         _context.SaleItems.AddRange(saleItems);
                     }
@@ -834,7 +871,10 @@ namespace MyApi.Modules.Offers.Services
                         var newSaleItems = await _context.SaleItems
                             .Where(si => si.SaleId == sale.Id && si.OriginOfferItemId != null)
                             .ToListAsync();
-                        var byOffer = newSaleItems.ToDictionary(si => si.OriginOfferItemId!.Value);
+                        var byOffer = newSaleItems
+                            .Where(si => si.OriginOfferItemId.HasValue)
+                            .GroupBy(si => si.OriginOfferItemId.Value)
+                            .ToDictionary(g => g.Key, g => g.OrderBy(si => si.DisplayOrder).ThenBy(si => si.Id).First());
                         foreach (var oi in offer.Items)
                         {
                             if (!byOffer.TryGetValue(oi.Id, out var newSi)) continue;
