@@ -785,7 +785,7 @@ export function AppSidebar() {
         className="flex items-center justify-between w-full px-2 py-1.5 mb-1 text-muted-foreground/35 hover:text-muted-foreground/55 transition-all duration-150 ease-out group rounded-md hover:bg-sidebar-foreground/[0.03]"
         data-tour={dataTour}
       >
-        <span className="text-[11px] font-bold uppercase tracking-[0.1em] select-none">{label}</span>
+        <span className="text-px-11 font-bold uppercase tracking-[0.1em] select-none">{label}</span>
         <ChevronDown className={`h-3 w-3 opacity-0 group-hover:opacity-100 transition-all duration-200 ${isOpen ? '' : '-rotate-90'}`} />
       </CollapsibleTrigger>
     );
@@ -824,7 +824,7 @@ export function AppSidebar() {
               {!collapsed && (
                 <div className="flex items-center gap-1.5 px-2 py-1.5 mb-1">
                   <Star className="h-3 w-3 text-warning/60 fill-warning/60" />
-                  <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground/35 select-none">
+                  <span className="text-px-11 font-bold uppercase tracking-[0.1em] text-muted-foreground/35 select-none">
                     {t('sidebar.favorites', 'Favorites')}
                   </span>
                 </div>
@@ -953,7 +953,7 @@ function ProfileBrandHeader({ companyLogo }: { companyLogo: string | null | unde
               </span>
               <div className="min-w-0 text-left flex items-center gap-1">
                 <div className="min-w-1">
-                  <p className="text-[13px] font-semibold text-white leading-tight truncate drop-shadow">
+                  <p className="text-px-13 font-semibold text-white leading-tight truncate drop-shadow">
                     {fullName}
                   </p>
                 </div>

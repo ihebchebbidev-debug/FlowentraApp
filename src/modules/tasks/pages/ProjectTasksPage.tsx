@@ -539,8 +539,8 @@ export default function ProjectTasksPage() {
             <div className="flex-1 min-w-0">
               <h1 className="text-base font-semibold text-foreground break-words line-clamp-2">{project.name}</h1>
               <div className="flex items-center gap-2 mt-1">
-                <Badge className={`${getStatusColor(project.status)} text-[10px] px-1.5 py-0`}>{project.status}</Badge>
-                <Badge className={`${getTypeColor(project.type)} text-[10px] px-1.5 py-0`} variant="outline">{project.type}</Badge>
+                <Badge className={`${getStatusColor(project.status)} text-px-10 px-1.5 py-0`}>{project.status}</Badge>
+                <Badge className={`${getTypeColor(project.type)} text-px-10 px-1.5 py-0`} variant="outline">{project.type}</Badge>
               </div>
             </div>
           </div>

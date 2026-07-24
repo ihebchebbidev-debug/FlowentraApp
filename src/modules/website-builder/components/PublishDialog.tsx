@@ -112,7 +112,7 @@ export function PublishDialog({ site, open, onOpenChange, onSiteUpdate }: Publis
                   </Button>
                 )}
               </div>
-              {!site.published && <p className="text-[10px] text-muted-foreground/80">{t('wb:publish.publishFirst')}</p>}
+              {!site.published && <p className="text-px-10 text-muted-foreground/80">{t('wb:publish.publishFirst')}</p>}
             </div>
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">{t('wb:common.pages')} ({site.pages.length})</Label>
@@ -130,7 +130,7 @@ export function PublishDialog({ site, open, onOpenChange, onSiteUpdate }: Publis
               <Button onClick={() => openExportOptions('react')} variant="outline" className="w-full text-xs" size="sm">
                 <FileCode className="h-3.5 w-3.5 mr-1.5" />{t('wb:publish.exportReactProject')}
               </Button>
-              <p className="text-[10px] text-muted-foreground text-center">{t('wb:publish.exportDesc')}</p>
+              <p className="text-px-10 text-muted-foreground text-center">{t('wb:publish.exportDesc')}</p>
             </div>
             {isProcessing && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">

@@ -136,7 +136,7 @@ export function BatchAssignmentModal({
                 <h3 className="font-semibold text-base">{serviceOrder.title}</h3>
                 <p className="text-sm text-muted-foreground">{serviceOrder.customerName}</p>
               </div>
-              <Badge variant={getPriorityColor(serviceOrder.priority)} className="text-[10px]">
+              <Badge variant={getPriorityColor(serviceOrder.priority)} className="text-px-10">
                 {getPriorityLabel(serviceOrder.priority).toUpperCase()}
               </Badge>
             </div>
@@ -188,16 +188,16 @@ export function BatchAssignmentModal({
                           </SelectTrigger>
                           <SelectContent className="bg-background z-50">
                             <SelectItem value="low">
-                              <Badge variant="outline" className="text-[10px] px-1.5">{t('dispatcher.priority_low')}</Badge>
+                              <Badge variant="outline" className="text-px-10 px-1.5">{t('dispatcher.priority_low')}</Badge>
                             </SelectItem>
                             <SelectItem value="medium">
-                              <Badge variant="secondary" className="text-[10px] px-1.5">{t('dispatcher.priority_medium')}</Badge>
+                              <Badge variant="secondary" className="text-px-10 px-1.5">{t('dispatcher.priority_medium')}</Badge>
                             </SelectItem>
                             <SelectItem value="high">
-                              <Badge variant="default" className="text-[10px] px-1.5">{t('dispatcher.priority_high')}</Badge>
+                              <Badge variant="default" className="text-px-10 px-1.5">{t('dispatcher.priority_high')}</Badge>
                             </SelectItem>
                             <SelectItem value="urgent">
-                              <Badge variant="destructive" className="text-[10px] px-1.5">{t('dispatcher.priority_urgent')}</Badge>
+                              <Badge variant="destructive" className="text-px-10 px-1.5">{t('dispatcher.priority_urgent')}</Badge>
                             </SelectItem>
                           </SelectContent>
                         </Select>

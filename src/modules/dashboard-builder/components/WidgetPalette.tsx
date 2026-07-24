@@ -253,7 +253,7 @@ export function WidgetPalette({ onAdd }: Props) {
                     if (!entries?.length) return null;
                     return (
                       <div key={key}>
-                        <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                        <p className="text-px-11 font-medium text-muted-foreground uppercase tracking-wider mb-2">
                           {t(`dashboardBuilder.categories.${label}`)}
                         </p>
                         <div className="grid grid-cols-2 gap-1.5">
@@ -289,7 +289,7 @@ export function WidgetPalette({ onAdd }: Props) {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium text-foreground truncate">{t(tpl.labelKey)}</p>
-                        <p className="text-[10px] text-muted-foreground truncate">
+                        <p className="text-px-10 text-muted-foreground truncate">
                           {t(`dashboardBuilder.widgets.${tpl.widget.type}`)} · {t(`dashboardBuilder.dataSources.${tpl.widget.dataSource}`)}
                         </p>
                       </div>

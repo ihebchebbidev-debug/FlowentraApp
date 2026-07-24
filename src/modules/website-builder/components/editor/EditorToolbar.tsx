@@ -61,7 +61,7 @@ function SaveStatusIndicator({ status, compact }: { status: SaveStatus; compact?
   const { icon: Icon, label, cls, spin } = map[status];
 
   return (
-    <span className={`inline-flex items-center gap-1 text-[11px] font-medium ${cls}`} aria-live="polite">
+    <span className={`inline-flex items-center gap-1 text-px-11 font-medium ${cls}`} aria-live="polite">
       <Icon className={`h-3.5 w-3.5 ${spin ? 'animate-spin' : ''}`} />
       {!compact && <span className="hidden sm:inline">{label}</span>}
     </span>

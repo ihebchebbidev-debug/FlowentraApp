@@ -249,7 +249,7 @@ export function IntegrationAutopilotDemo({ open, onClose }: Props) {
                   <Plug className="h-3.5 w-3.5" />
                   Connections
                   {state.connectorGroups.length > 0 && (
-                    <span className="ml-1 text-[10px] bg-primary text-primary-foreground rounded-full px-1.5 py-0.5">{state.connectorGroups.length}</span>
+                    <span className="ml-1 text-px-10 bg-primary text-primary-foreground rounded-full px-1.5 py-0.5">{state.connectorGroups.length}</span>
                   )}
                 </button>
                 <button
@@ -282,7 +282,7 @@ export function IntegrationAutopilotDemo({ open, onClose }: Props) {
                               <div className="flex items-center gap-2 flex-wrap">
                                 <p className="font-semibold text-sm">{group.connectorName}</p>
                                 <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                                <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-full px-1.5 py-0.5">
+                                <span className="inline-flex items-center gap-0.5 text-px-10 font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-full px-1.5 py-0.5">
                                   <ArrowDownLeft className="h-2.5 w-2.5" /> Inbound
                                 </span>
                               </div>
@@ -294,7 +294,7 @@ export function IntegrationAutopilotDemo({ open, onClose }: Props) {
                               </p>
                               <div className="flex gap-1 mt-1.5">
                                 {['Sales Orders', 'Partners', 'Purchases'].slice(0, group.endpointCount).map(n => (
-                                  <span key={n} className="inline-flex items-center text-[10px] bg-muted px-1.5 py-0.5 rounded-sm text-muted-foreground">
+                                  <span key={n} className="inline-flex items-center text-px-10 bg-muted px-1.5 py-0.5 rounded-sm text-muted-foreground">
                                     {n} <ChevronRight className="inline h-2.5 w-2.5 ml-0.5" />
                                   </span>
                                 ))}
@@ -344,32 +344,32 @@ export function IntegrationAutopilotDemo({ open, onClose }: Props) {
                           <div className="flex items-start justify-between gap-2">
                             <span className="text-2xl leading-none">{connector.logo}</span>
                             <div className="flex flex-col items-end gap-1">
-                              <span className="text-[10px] border border-border rounded px-1.5 py-0.5 capitalize">{connector.category}</span>
-                              {connector.isPopular && <span className="text-[10px] bg-amber-500/10 text-amber-700 border border-amber-500/30 rounded px-1.5 py-0.5">Popular</span>}
+                              <span className="text-px-10 border border-border rounded px-1.5 py-0.5 capitalize">{connector.category}</span>
+                              {connector.isPopular && <span className="text-px-10 bg-amber-500/10 text-amber-700 border border-amber-500/30 rounded px-1.5 py-0.5">Popular</span>}
                             </div>
                           </div>
                           <div>
                             <p className="font-semibold text-xs text-foreground leading-tight">{connector.name}</p>
-                            <p className="text-[10px] text-muted-foreground mt-0.5">{connector.vendor}</p>
+                            <p className="text-px-10 text-muted-foreground mt-0.5">{connector.vendor}</p>
                           </div>
-                          <p className="text-[10px] text-muted-foreground line-clamp-2 flex-1">{connector.description}</p>
+                          <p className="text-px-10 text-muted-foreground line-clamp-2 flex-1">{connector.description}</p>
                           <div className="flex flex-wrap gap-1">
                             {connector.entities.slice(0, 2).map(e => (
-                              <span key={e.type} className="text-[9px] bg-muted px-1 py-0.5 rounded-sm text-muted-foreground">{e.label}</span>
+                              <span key={e.type} className="text-px-9 bg-muted px-1 py-0.5 rounded-sm text-muted-foreground">{e.label}</span>
                             ))}
-                            {connector.entities.length > 2 && <span className="text-[9px] bg-muted px-1 py-0.5 rounded-sm text-muted-foreground">+{connector.entities.length - 2}</span>}
+                            {connector.entities.length > 2 && <span className="text-px-9 bg-muted px-1 py-0.5 rounded-sm text-muted-foreground">+{connector.entities.length - 2}</span>}
                           </div>
-                          <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
+                          <div className="flex items-center gap-1 text-px-9 text-muted-foreground">
                             <span>{connector.vendor}</span>
                             <ArrowRight className="h-2.5 w-2.5 shrink-0" />
                             <span className="font-medium text-primary">Flowentra</span>
                           </div>
                           {connector.availability === 'full' ? (
-                            <div className="inline-flex items-center justify-center gap-1.5 w-full h-7 rounded-md bg-primary text-primary-foreground text-[11px] font-medium mt-auto">
+                            <div className="inline-flex items-center justify-center gap-1.5 w-full h-7 rounded-md bg-primary text-primary-foreground text-px-11 font-medium mt-auto">
                               <Plug className="h-3 w-3" /> Connect
                             </div>
                           ) : (
-                            <div className="inline-flex items-center justify-center gap-1.5 w-full h-7 rounded-md border border-border text-muted-foreground text-[11px] mt-auto opacity-60">
+                            <div className="inline-flex items-center justify-center gap-1.5 w-full h-7 rounded-md border border-border text-muted-foreground text-px-11 mt-auto opacity-60">
                               <Clock className="h-3 w-3" /> Coming Soon
                             </div>
                           )}
@@ -427,10 +427,10 @@ export function IntegrationAutopilotDemo({ open, onClose }: Props) {
                                   <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{g.connectorId}-{label.toLowerCase().replace(' ', '-')}</code>
                                 </td>
                                 <td className="px-4 py-3">
-                                  <span className="inline-flex items-center h-5 px-2 rounded-full text-[10px] font-medium bg-primary text-primary-foreground">Active</span>
+                                  <span className="inline-flex items-center h-5 px-2 rounded-full text-px-10 font-medium bg-primary text-primary-foreground">Active</span>
                                 </td>
                                 <td className="px-4 py-3 hidden md:table-cell">
-                                  <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full px-1.5 py-0.5">
+                                  <span className="inline-flex items-center gap-1 text-px-10 font-medium text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full px-1.5 py-0.5">
                                     <ArrowDownLeft className="h-2.5 w-2.5" /> Inbound
                                   </span>
                                 </td>
@@ -459,7 +459,7 @@ export function IntegrationAutopilotDemo({ open, onClose }: Props) {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center h-5 px-2 rounded-full text-[10px] font-medium bg-primary text-primary-foreground">Active</span>
+                        <span className="inline-flex items-center h-5 px-2 rounded-full text-px-10 font-medium bg-primary text-primary-foreground">Active</span>
                         <code className="text-xs bg-muted px-1.5 py-0.5 rounded">sap-b1-sales-orders</code>
                       </div>
                     </div>
@@ -510,10 +510,10 @@ export function IntegrationAutopilotDemo({ open, onClose }: Props) {
                                 className={`border-t border-border/60 transition-colors ${isHighlighted ? 'bg-primary/5' : ''}`}
                               >
                                 <td className="px-3 py-2.5">
-                                  <Badge variant="outline" className="text-[10px]">{log.method}</Badge>
+                                  <Badge variant="outline" className="text-px-10">{log.method}</Badge>
                                 </td>
                                 <td className="px-3 py-2.5">
-                                  <span className={`inline-flex items-center gap-1 text-[10px] font-medium border rounded px-1.5 py-0.5 ${fmt.cls}`}>
+                                  <span className={`inline-flex items-center gap-1 text-px-10 font-medium border rounded px-1.5 py-0.5 ${fmt.cls}`}>
                                     <Code2 className="h-2.5 w-2.5" />
                                     {fmt.label}
                                   </span>
@@ -525,7 +525,7 @@ export function IntegrationAutopilotDemo({ open, onClose }: Props) {
                                   </span>
                                 </td>
                                 <td className="px-3 py-2.5">
-                                  <Badge variant={log.statusCode === 200 ? 'default' : 'destructive'} className="text-[10px]">
+                                  <Badge variant={log.statusCode === 200 ? 'default' : 'destructive'} className="text-px-10">
                                     {log.statusCode}
                                   </Badge>
                                 </td>
@@ -620,7 +620,7 @@ export function IntegrationAutopilotDemo({ open, onClose }: Props) {
                         <div key={type} className="flex items-center gap-2 text-sm">
                           <Globe className="h-3.5 w-3.5 text-primary shrink-0" />
                           <span className="font-medium">{sapB1.name} — {entity.label}</span>
-                          <Badge variant="outline" className="text-[9px] ml-auto">{entity.targetModule}</Badge>
+                          <Badge variant="outline" className="text-px-9 ml-auto">{entity.targetModule}</Badge>
                         </div>
                       ) : null;
                     })}
@@ -682,7 +682,7 @@ export function IntegrationAutopilotDemo({ open, onClose }: Props) {
 
                 <div id="demo-success-api-hint" className="flex gap-3 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg text-sm text-amber-800 dark:text-amber-200">
                   <Info className="h-4 w-4 shrink-0 mt-0.5" />
-                  <span>Reveal and copy the API key from each endpoint detail page, then add it as the <code className="font-mono text-[11px] bg-amber-100 dark:bg-amber-900 px-1 rounded">X-API-Key</code> header in {sapB1.name}.</span>
+                  <span>Reveal and copy the API key from each endpoint detail page, then add it as the <code className="font-mono text-px-11 bg-amber-100 dark:bg-amber-900 px-1 rounded">X-API-Key</code> header in {sapB1.name}.</span>
                 </div>
 
                 <button id="demo-back-hub" className="inline-flex items-center gap-2 text-sm text-primary hover:underline">
@@ -776,12 +776,12 @@ export function IntegrationAutopilotDemo({ open, onClose }: Props) {
             <button
               key={ch.id}
               onClick={() => jumpChapter(ch.start)}
-              className={`text-[10px] font-medium px-2 py-0.5 rounded-full transition-colors ${activeChapter.id === ch.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/70'}`}
+              className={`text-px-10 font-medium px-2 py-0.5 rounded-full transition-colors ${activeChapter.id === ch.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/70'}`}
             >
               {ch.title}
             </button>
           ))}
-          <span className="ml-auto text-[10px] text-muted-foreground">{Math.min(stepIndex + 1, INT_STEPS.length)} / {INT_STEPS.length}</span>
+          <span className="ml-auto text-px-10 text-muted-foreground">{Math.min(stepIndex + 1, INT_STEPS.length)} / {INT_STEPS.length}</span>
         </div>
         <div className="h-1 rounded-full bg-muted overflow-hidden mb-2">
           <div className="h-full bg-primary transition-all duration-300" style={{ width: `${(Math.min(stepIndex + 1, INT_STEPS.length) / INT_STEPS.length) * 100}%` }} />

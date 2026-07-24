@@ -189,10 +189,10 @@ export function TenantSwitcher() {
                 {tenant.companyName}
               </span>
               {tenant.isDefault && (
-                <Badge variant="secondary" className="text-[10px] h-4 px-1">Default</Badge>
+                <Badge variant="secondary" className="text-px-10 h-4 px-1">Default</Badge>
               )}
               {!tenant.isActive && (
-                <Badge variant="outline" className="text-[10px] h-4 px-1">Inactive</Badge>
+                <Badge variant="outline" className="text-px-10 h-4 px-1">Inactive</Badge>
               )}
               {!viewAll && tenant.id === activeId && (
                 <Check className="h-4 w-4 text-primary shrink-0" />

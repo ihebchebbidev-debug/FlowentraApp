@@ -523,7 +523,7 @@ export function ShareSiteDialog({ site, open, onOpenChange }: ShareSiteDialogPro
                 <Download className="h-5 w-5 text-muted-foreground shrink-0" />
                 <div className="flex-1">
                   <h4 className="font-medium text-xs">{t('wb:share.jsonBackup')}</h4>
-                  <p className="text-[11px] text-muted-foreground">{t('wb:share.jsonBackupDesc')}</p>
+                  <p className="text-px-11 text-muted-foreground">{t('wb:share.jsonBackupDesc')}</p>
                 </div>
                 <Button variant="ghost" size="sm" onClick={handleExport}>
                   <Download className="h-3.5 w-3.5" />

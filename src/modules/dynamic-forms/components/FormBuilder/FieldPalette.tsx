@@ -73,7 +73,7 @@ function DraggableField({ type, label, icon, description }: DraggableFieldProps)
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-foreground truncate">{label}</p>
-        <p className="text-[10px] text-muted-foreground truncate">{description}</p>
+        <p className="text-px-10 text-muted-foreground truncate">{description}</p>
       </div>
       <GripVertical className="h-4 w-4 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors" />
     </div>
@@ -96,14 +96,14 @@ export function FieldPalette() {
         <h3 className="text-sm font-semibold text-foreground mb-1">
           {t('builder.field_palette')}
         </h3>
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-px-11 text-muted-foreground">
           {t('builder.drag_hint')}
         </p>
       </div>
       
       {/* Basic Fields */}
       <div className="mb-4">
-        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+        <p className="text-px-10 font-semibold text-muted-foreground uppercase tracking-wider mb-2">
           {t('builder.basic_fields')}
         </p>
         <div className="space-y-1.5">
@@ -121,7 +121,7 @@ export function FieldPalette() {
       
       {/* Choice Fields */}
       <div className="mb-4">
-        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+        <p className="text-px-10 font-semibold text-muted-foreground uppercase tracking-wider mb-2">
           {t('builder.choice_fields')}
         </p>
         <div className="space-y-1.5">
@@ -139,7 +139,7 @@ export function FieldPalette() {
       
       {/* Advanced Fields */}
       <div className="mb-4">
-        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+        <p className="text-px-10 font-semibold text-muted-foreground uppercase tracking-wider mb-2">
           {t('builder.advanced_fields')}
         </p>
         <div className="space-y-1.5">
@@ -157,7 +157,7 @@ export function FieldPalette() {
       
       {/* Layout Fields */}
       <div>
-        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+        <p className="text-px-10 font-semibold text-muted-foreground uppercase tracking-wider mb-2">
           {t('builder.layout_fields')}
         </p>
         <div className="space-y-1.5">

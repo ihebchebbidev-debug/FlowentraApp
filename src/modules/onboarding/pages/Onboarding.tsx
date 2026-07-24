@@ -297,7 +297,7 @@ const Onboarding = () => {
           {/* Bottom section */}
           <div className="space-y-4 pt-6 border-t border-border/30">
             <LanguageSwitcher variant="minimal" />
-            <p className="text-[11px] text-muted-foreground/50">
+            <p className="text-px-11 text-muted-foreground/50">
               {t('onboarding.step', { current: displayIndex + 1, total: displaySteps.length })}
             </p>
           </div>

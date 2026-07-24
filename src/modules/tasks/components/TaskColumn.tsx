@@ -46,11 +46,11 @@ const TaskColumn = memo(({ data }: TaskColumnProps) => {
           <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
             <Badge
               variant="outline"
-              className={`text-[11px] font-medium px-2 py-0.5 rounded-sm shrink-0 ${getTagClasses(data.color)}`}
+              className={`text-px-11 font-medium px-2 py-0.5 rounded-sm shrink-0 ${getTagClasses(data.color)}`}
             >
               {data.title}
             </Badge>
-            <span className="text-[11px] text-muted-foreground font-normal">
+            <span className="text-px-11 text-muted-foreground font-normal">
               {data.count}
             </span>
           </div>

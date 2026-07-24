@@ -152,15 +152,15 @@ export function WhatsAppButtonBlock({
                 <WhatsAppIcon style={{ width: whatsAppIconSize, height: whatsAppIconSize }} color={iconColor} />
               </button>
               <div className="text-left">
-                <p className="text-[10px] font-medium" style={{ color: theme.textColor }}>
+                <p className="text-px-10 font-medium" style={{ color: theme.textColor }}>
                   {agentName} • {online ? '🟢 Online' : '⚫ Offline'}
                 </p>
-                <p className="text-[9px] opacity-50" style={{ color: theme.textColor }}>{phoneNumber}</p>
+                <p className="text-px-9 opacity-50" style={{ color: theme.textColor }}>{phoneNumber}</p>
               </div>
             </div>
           )}
 
-          <p className="text-[9px] mt-2 opacity-40" style={{ color: theme.textColor }}>
+          <p className="text-px-9 mt-2 opacity-40" style={{ color: theme.textColor }}>
             Mode: {modeLabel} • Position: {displayMode === 'sticky-bar' ? stickyPosition : position} • Greeting: {showGreeting ? 'On' : 'Off'}
           </p>
         </div>
@@ -228,7 +228,7 @@ export function WhatsAppButtonBlock({
                 <p className="text-sm font-semibold" style={{ color: theme.textColor }}>{agentName}</p>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <span className={`w-2 h-2 rounded-full ${online ? 'bg-green-500' : 'bg-gray-400'}`} />
-                  <span className="text-[10px]" style={{ color: theme.secondaryColor }}>{online ? 'Online' : 'Offline'}</span>
+                  <span className="text-px-10" style={{ color: theme.secondaryColor }}>{online ? 'Online' : 'Offline'}</span>
                 </div>
                 <p className="text-xs mt-2 leading-relaxed" style={{ color: theme.textColor + 'cc' }}>
                   {online ? greetingText : offlineMessage}
@@ -255,7 +255,7 @@ export function WhatsAppButtonBlock({
       )}
 
       <div style={getPositionStyle()}>
-        <div className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black/80 text-white text-[10px] px-2 py-1 rounded-md opacity-0 hover:opacity-100 pointer-events-none transition-opacity">
+        <div className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black/80 text-white text-px-10 px-2 py-1 rounded-md opacity-0 hover:opacity-100 pointer-events-none transition-opacity">
           {tooltipText}
         </div>
         <button

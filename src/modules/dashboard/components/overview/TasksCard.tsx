@@ -82,7 +82,7 @@ export default function TasksCard({ tasks = [], onTaskComplete }: { tasks?: Task
                   <Text 
                     as="div" 
                     className={cn(
-                      "font-medium truncate transition-all duration-300 text-[13px]",
+                      "font-medium truncate transition-all duration-300 text-px-13",
                       state?.isStrikethrough && "line-through text-muted-foreground"
                     )}
                   >
@@ -93,7 +93,7 @@ export default function TasksCard({ tasks = [], onTaskComplete }: { tasks?: Task
                       as="div" 
                       variant="muted-xs"
                       className={cn(
-                        "transition-all duration-300 text-[11px]",
+                        "transition-all duration-300 text-px-11",
                         state?.isStrikethrough && "line-through opacity-50"
                       )}
                     >

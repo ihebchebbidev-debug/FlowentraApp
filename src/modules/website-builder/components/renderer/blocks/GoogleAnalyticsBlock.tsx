@@ -93,7 +93,7 @@ export function GoogleAnalyticsBlock({
             <p className="text-sm font-semibold" style={{ color: theme.textColor }}>
               {isAds ? 'Google Ads' : 'Google Analytics 4'}
             </p>
-            <p className="text-[10px]" style={{ color: theme.secondaryColor }}>
+            <p className="text-px-10" style={{ color: theme.secondaryColor }}>
               {measurementId ? `ID: ${measurementId}` : 'No ID configured'}
             </p>
           </div>
@@ -103,7 +103,7 @@ export function GoogleAnalyticsBlock({
             {features.map((feat, i) => (
               <span
                 key={i}
-                className="text-[9px] px-2 py-0.5 rounded-full font-medium"
+                className="text-px-9 px-2 py-0.5 rounded-full font-medium"
                 style={{ backgroundColor: '#4285F4' + '15', color: '#4285F4' }}
               >
                 {feat}
@@ -111,7 +111,7 @@ export function GoogleAnalyticsBlock({
             ))}
           </div>
         )}
-        <p className="text-[9px] mt-2 opacity-50" style={{ color: theme.textColor }}>
+        <p className="text-px-9 mt-2 opacity-50" style={{ color: theme.textColor }}>
           ⚡ Script injected in published site only
         </p>
       </div>

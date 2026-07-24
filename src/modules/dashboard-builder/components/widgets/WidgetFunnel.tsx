@@ -32,7 +32,7 @@ export function WidgetFunnel({ widget }: Props) {
           const color = cfg.color || item.color || COLORS[index % COLORS.length];
           return (
             <div key={item.name} className="flex items-center gap-3">
-              <span className="text-[11px] text-muted-foreground w-20 truncate text-right flex-shrink-0">{item.name}</span>
+              <span className="text-px-11 text-muted-foreground w-20 truncate text-right flex-shrink-0">{item.name}</span>
               <div className="flex-1 flex justify-start">
                 <div className="h-8 rounded-md flex items-center justify-center text-xs font-semibold transition-all duration-300"
                   style={{ width: `${width}%`, backgroundColor: color, color: 'white', textShadow: '0 1px 2px rgba(0,0,0,0.2)' }}>

@@ -37,8 +37,8 @@ export function ArrayItemEditor({ label, items, fields, onChange, defaultItem, m
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <Label className="text-[11px] font-medium text-foreground/70">{label}</Label>
-        <span className="text-[10px] text-muted-foreground/40 tabular-nums">{items.length} items</span>
+        <Label className="text-px-11 font-medium text-foreground/70">{label}</Label>
+        <span className="text-px-10 text-muted-foreground/40 tabular-nums">{items.length} items</span>
       </div>
       {items.map((item, i) => (
         <div key={i} className="rounded-lg border border-border/30 bg-muted/10 overflow-hidden">
@@ -48,7 +48,7 @@ export function ArrayItemEditor({ label, items, fields, onChange, defaultItem, m
           >
             <div className="flex items-center gap-1.5 min-w-0">
               {collapsed[i] ? <ChevronRight className="h-3 w-3 text-muted-foreground/40 shrink-0" /> : <ChevronDown className="h-3 w-3 text-muted-foreground/40 shrink-0" />}
-              <span className="text-[10px] font-medium truncate max-w-[140px] text-foreground/60">
+              <span className="text-px-10 font-medium truncate max-w-[140px] text-foreground/60">
                 {item[fields[0]?.key] || `Item ${i + 1}`}
               </span>
             </div>
@@ -60,7 +60,7 @@ export function ArrayItemEditor({ label, items, fields, onChange, defaultItem, m
             <div className="px-2.5 pb-2.5 space-y-1.5 border-t border-border/20">
               {fields.map(field => (
                 <div key={field.key} className="space-y-0.5 pt-1.5">
-                  <Label className="text-[10px] text-muted-foreground/60">{field.label}</Label>
+                  <Label className="text-px-10 text-muted-foreground/60">{field.label}</Label>
                   {field.type === 'textarea' ? (
                     <RichTextInput
                       value={item[field.key] || ''}
@@ -79,7 +79,7 @@ export function ArrayItemEditor({ label, items, fields, onChange, defaultItem, m
                       <Input
                         value={item[field.key] || ''}
                         onChange={(e) => updateItem(i, field.key, e.target.value)}
-                        className="h-6 text-[10px] font-mono flex-1 border-border/30 bg-background"
+                        className="h-6 text-px-10 font-mono flex-1 border-border/30 bg-background"
                       />
                     </div>
                   ) : field.type === 'number' ? (

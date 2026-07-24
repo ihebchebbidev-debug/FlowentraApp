@@ -476,11 +476,11 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1 sm:gap-2 mb-1 flex-wrap">
                             <h4 className="font-semibold text-sm sm:text-base text-foreground truncate">{result.title}</h4>
-                            <Badge variant="outline" className="text-[10px] sm:text-xs shrink-0">
+                            <Badge variant="outline" className="text-px-10 sm:text-xs shrink-0">
                               {getTypeLabel(result.type)}
                             </Badge>
                             {result.status && (
-                              <Badge className={`text-[10px] sm:text-xs shrink-0 ${getStatusColor(result.status)}`}>
+                              <Badge className={`text-px-10 sm:text-xs shrink-0 ${getStatusColor(result.status)}`}>
                                 {result.status}
                               </Badge>
                             )}
@@ -491,12 +491,12 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
                           )}
                           
                           {result.description && (
-                            <p className="text-[11px] sm:text-xs text-muted-foreground/80 line-clamp-2 mb-1 sm:mb-2 hidden sm:block">
+                            <p className="text-px-11 sm:text-xs text-muted-foreground/80 line-clamp-2 mb-1 sm:mb-2 hidden sm:block">
                               {result.description}
                             </p>
                           )}
                           
-                          <div className="flex items-center gap-2 sm:gap-4 text-[10px] sm:text-xs text-muted-foreground flex-wrap">
+                          <div className="flex items-center gap-2 sm:gap-4 text-px-10 sm:text-xs text-muted-foreground flex-wrap">
                             {result.location && (
                               <div className="flex items-center gap-0.5 sm:gap-1">
                                 <MapPin className="h-2.5 w-2.5 sm:h-3 sm:w-3 shrink-0" />

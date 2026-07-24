@@ -91,7 +91,7 @@ export function WorkAreaStep({ data, onNext, onBack, isFirst }: WorkAreaStepProp
                 <span className={`font-semibold text-sm block leading-tight ${isSelected ? 'text-primary' : 'text-foreground'}`}>
                   {t(`onboarding.industries.${industry.id}`, info.name)}
                 </span>
-                <span className="text-[11px] text-muted-foreground leading-tight block">
+                <span className="text-px-11 text-muted-foreground leading-tight block">
                   {info.description}
                 </span>
               </div>

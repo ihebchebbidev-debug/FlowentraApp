@@ -148,7 +148,7 @@ export function LanguageManager({
 
         {/* Default language */}
         <div className="space-y-2">
-          <Label className="text-[10px] uppercase tracking-wider text-muted-foreground/60">
+          <Label className="text-px-10 uppercase tracking-wider text-muted-foreground/60">
             Default Language
           </Label>
           <div
@@ -162,7 +162,7 @@ export function LanguageManager({
             <Globe className="h-4 w-4 text-primary shrink-0" />
             <div className="flex-1">
               <p className="text-xs font-semibold">{defaultLangDef.label}</p>
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-px-10 text-muted-foreground">
                 {defaultLangDef.code.toUpperCase()} · {defaultLangDef.direction.toUpperCase()}
               </p>
             </div>
@@ -188,7 +188,7 @@ export function LanguageManager({
 
         {/* Translations */}
         <div className="space-y-2">
-          <Label className="text-[10px] uppercase tracking-wider text-muted-foreground/60">
+          <Label className="text-px-10 uppercase tracking-wider text-muted-foreground/60">
             Translations ({siteLanguages.length})
           </Label>
           {siteLanguages.map((lang) => {
@@ -212,7 +212,7 @@ export function LanguageManager({
                 <Globe className="h-4 w-4 shrink-0 opacity-60" />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-semibold">{lang.label}</p>
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="text-px-10 text-muted-foreground">
                     {lang.code.toUpperCase()} · {lang.direction.toUpperCase()}
                     {hasTranslation ? ' · ✓ Translated' : ' · Not translated'}
                   </p>
@@ -304,7 +304,7 @@ export function LanguageManager({
             <p className="text-xs font-semibold text-primary mb-1">
               Editing: {siteLanguages.find((l) => l.code === activeLanguage)?.label || activeLanguage}
             </p>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-px-10 text-muted-foreground">
               Changes will be saved to this language's translation. Switch back to the default language to edit the original content.
             </p>
           </div>
@@ -312,7 +312,7 @@ export function LanguageManager({
 
         {/* Info */}
         <div className="p-3 rounded-lg bg-muted/30 border border-border/30">
-          <p className="text-[10px] text-muted-foreground leading-relaxed">
+          <p className="text-px-10 text-muted-foreground leading-relaxed">
             <strong>How it works:</strong> Add languages, then click the copy icon (📋) to duplicate the default page content into a translation.
             Switch between languages to edit each version independently.
             A Language Switcher component will let visitors choose their language.

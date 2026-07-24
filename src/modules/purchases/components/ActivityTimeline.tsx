@@ -115,21 +115,21 @@ export function ActivityTimeline({
             <div className="flex-1 min-w-0 pb-2">
               <p className="text-xs font-medium leading-snug">{ev.description}</p>
               {(ev.oldValue || ev.newValue) && (
-                <div className="flex items-center gap-1 mt-0.5 text-[10px] text-muted-foreground">
+                <div className="flex items-center gap-1 mt-0.5 text-px-10 text-muted-foreground">
                   {ev.oldValue && (
-                    <Badge variant="outline" className="text-[9px] px-1 py-0 font-mono">
+                    <Badge variant="outline" className="text-px-9 px-1 py-0 font-mono">
                       {ev.oldValue}
                     </Badge>
                   )}
                   {ev.oldValue && ev.newValue && <span>→</span>}
                   {ev.newValue && (
-                    <Badge variant="secondary" className="text-[9px] px-1 py-0 font-mono">
+                    <Badge variant="secondary" className="text-px-9 px-1 py-0 font-mono">
                       {ev.newValue}
                     </Badge>
                   )}
                 </div>
               )}
-              <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1.5">
+              <p className="text-px-10 text-muted-foreground mt-0.5 flex items-center gap-1.5">
                 <Clock className="h-2.5 w-2.5" />
                 <span title={new Date(ev.at).toLocaleString()}>
                   {formatRelative(ev.at, t)}
@@ -176,7 +176,7 @@ export function ActivityTimeline({
           {title || t("timeline.title", "Activity")}
         </CardTitle>
         {sorted.length > 0 && (
-          <Badge variant="outline" className="text-[10px]">
+          <Badge variant="outline" className="text-px-10">
             {sorted.length}
           </Badge>
         )}

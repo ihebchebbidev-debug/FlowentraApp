@@ -166,7 +166,7 @@ const ShippingSection = React.memo(function ShippingSection({
               />
               <div className="flex-1">
                 <span className="text-xs font-medium" style={{ color: theme.textColor }}>{sm.label}</span>
-                <span className="text-[10px] opacity-50 block" style={{ color: theme.secondaryColor }}>{sm.estimate}</span>
+                <span className="text-px-10 opacity-50 block" style={{ color: theme.secondaryColor }}>{sm.estimate}</span>
               </div>
               <span className="text-xs font-semibold" style={{ color: theme.primaryColor }}>{sm.price}</span>
             </label>
@@ -277,7 +277,7 @@ const PaymentSection = React.memo(function PaymentSection({
               />
             </div>
           </div>
-          <p className="text-[10px] opacity-50 flex items-center gap-1" style={{ color: theme.secondaryColor }}>
+          <p className="text-px-10 opacity-50 flex items-center gap-1" style={{ color: theme.secondaryColor }}>
             <Lock className="h-3 w-3" /> Card data is masked on submit — only the last 4 digits are retained.
           </p>
         </div>
@@ -574,8 +574,8 @@ export function CheckoutBlock({
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium truncate" style={{ color: theme.textColor }}>{item.name}</p>
-              {item.variant && <p className="text-[10px] opacity-50" style={{ color: theme.secondaryColor }}>{item.variant}</p>}
-              <p className="text-[10px] opacity-40" style={{ color: theme.secondaryColor }}>Qty: {item.quantity}</p>
+              {item.variant && <p className="text-px-10 opacity-50" style={{ color: theme.secondaryColor }}>{item.variant}</p>}
+              <p className="text-px-10 opacity-40" style={{ color: theme.secondaryColor }}>Qty: {item.quantity}</p>
             </div>
             <span className="text-xs font-semibold shrink-0" style={{ color: theme.textColor }}>{item.price}</span>
           </div>
@@ -596,7 +596,7 @@ export function CheckoutBlock({
                 type="button"
                 onClick={handleRemoveCoupon}
                 disabled={isEditing}
-                className="text-[10px] px-2 py-1 rounded hover:bg-muted/40"
+                className="text-px-10 px-2 py-1 rounded hover:bg-muted/40"
                 style={{ color: theme.secondaryColor }}
               >Remove</button>
             </div>
@@ -629,7 +629,7 @@ export function CheckoutBlock({
       {totals && totals.notes.length > 0 && (
         <div className="space-y-1 mb-3">
           {totals.notes.map((note, i) => (
-            <div key={i} className="flex items-center gap-1.5 text-[10px] px-2 py-1 rounded" style={{ backgroundColor: theme.primaryColor + '0D', color: theme.primaryColor }}>
+            <div key={i} className="flex items-center gap-1.5 text-px-10 px-2 py-1 rounded" style={{ backgroundColor: theme.primaryColor + '0D', color: theme.primaryColor }}>
               <CheckCircle2 className="h-3 w-3" />
               <span>{note}</span>
             </div>
@@ -639,7 +639,7 @@ export function CheckoutBlock({
       {totals && totals.errors.length > 0 && (
         <div className="space-y-1 mb-3">
           {totals.errors.map((err, i) => (
-            <div key={i} className="flex items-center gap-1.5 text-[10px] px-2 py-1 rounded bg-red-50 text-red-700">
+            <div key={i} className="flex items-center gap-1.5 text-px-10 px-2 py-1 rounded bg-red-50 text-red-700">
               <AlertCircle className="h-3 w-3" />
               <span>{err}</span>
             </div>
@@ -697,7 +697,7 @@ export function CheckoutBlock({
             className="mt-0.5"
             style={{ accentColor: theme.primaryColor }}
           />
-          <span className="text-[10px] opacity-60" style={{ color: theme.secondaryColor }}>
+          <span className="text-px-10 opacity-60" style={{ color: theme.secondaryColor }}>
             {termsText}
             {termsUrl && (
               <a href={termsUrl} target="_blank" rel="noopener noreferrer" className="underline ml-1" style={{ color: theme.primaryColor }}>Read more</a>
@@ -733,10 +733,10 @@ export function CheckoutBlock({
       {/* Trust badges */}
       {showTrustBadges && (
         <div className="flex items-center justify-center gap-4 mt-4 opacity-40">
-          <div className="flex items-center gap-1 text-[10px]" style={{ color: theme.secondaryColor }}>
+          <div className="flex items-center gap-1 text-px-10" style={{ color: theme.secondaryColor }}>
             <Shield className="h-3 w-3" /> Secure Checkout
           </div>
-          <div className="flex items-center gap-1 text-[10px]" style={{ color: theme.secondaryColor }}>
+          <div className="flex items-center gap-1 text-px-10" style={{ color: theme.secondaryColor }}>
             <Lock className="h-3 w-3" /> SSL Encrypted
           </div>
         </div>
@@ -763,7 +763,7 @@ export function CheckoutBlock({
 
   /* ---- Edit hint ---- */
   const editHint = isEditing ? (
-    <p className="text-[10px] text-center text-muted-foreground mt-3 opacity-60">
+    <p className="text-px-10 text-center text-muted-foreground mt-3 opacity-60">
       💡 Configure webhook, actions & error handling in Properties → Checkout Settings
     </p>
   ) : null;

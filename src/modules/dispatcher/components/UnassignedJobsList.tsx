@@ -541,11 +541,11 @@ export function UnassignedJobsList({
             />
           </div>
           <div className="flex items-center gap-1.5 mt-1 pl-5">
-            <Badge variant="outline" className={`text-[0.65rem] px-1.5 py-0 h-[18px] ${colorClass}`}>
+            <Badge variant="outline" className={`text-rem-65 px-1.5 py-0 h-[18px] ${colorClass}`}>
               {t(`serviceOrders.status.${so.status}`, so.status.replace(/_/g, ' '))}
             </Badge>
           </div>
-          <div className="flex items-center gap-1.5 text-[0.65rem] text-muted-foreground mt-1 pl-5">
+          <div className="flex items-center gap-1.5 text-rem-65 text-muted-foreground mt-1 pl-5">
             <User className="h-2.5 w-2.5 flex-shrink-0" />
             <span className="truncate">{so.customerName}</span>
             <span className="ml-auto flex-shrink-0">{so.jobs.length} {t('dispatcher.jobs', 'jobs')}</span>
@@ -555,7 +555,7 @@ export function UnassignedJobsList({
         {isExpanded && (
           <div className="bg-background/30 space-y-1 p-2">
             {so.jobs.length === 0 ? (
-              <p className="text-[0.65rem] text-muted-foreground text-center py-1">
+              <p className="text-rem-65 text-muted-foreground text-center py-1">
                 {t('dispatcher.no_jobs', 'No jobs')}
               </p>
             ) : (
@@ -566,7 +566,7 @@ export function UnassignedJobsList({
                 >
                   <Wrench className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                   <span className="text-xs text-muted-foreground truncate flex-1">{job.title}</span>
-                  <Badge variant="outline" className={`text-[0.6rem] px-1 py-0 h-[15px] flex-shrink-0 ${getStatusColor(job.status)}`}>
+                  <Badge variant="outline" className={`text-rem-60 px-1 py-0 h-[15px] flex-shrink-0 ${getStatusColor(job.status)}`}>
                     {job.status}
                   </Badge>
                 </div>
@@ -632,7 +632,7 @@ export function UnassignedJobsList({
           <div className="space-y-2">
             <div className="flex items-start justify-between gap-2">
               <h4 className="font-semibold text-sm leading-tight">{job.title}</h4>
-              <Badge variant={getPriorityColor(job.priority)} className="text-[0.65rem] px-1.5 py-0 h-[18px] flex-shrink-0">
+              <Badge variant={getPriorityColor(job.priority)} className="text-rem-65 px-1.5 py-0 h-[18px] flex-shrink-0">
                 {t(`dispatcher.priority_${job.priority}`)}
               </Badge>
             </div>
@@ -673,12 +673,12 @@ export function UnassignedJobsList({
 
             {job.requiredSkills && job.requiredSkills.length > 0 && (
               <div className="pt-1 border-t border-border/60">
-                <p className="text-[0.65rem] uppercase tracking-wide text-muted-foreground mb-1">
+                <p className="text-rem-65 uppercase tracking-wide text-muted-foreground mb-1">
                   {t('dispatcher.required_skills', 'Required skills')}
                 </p>
                 <div className="flex flex-wrap gap-1">
                   {job.requiredSkills.map((skill) => (
-                    <Badge key={skill} variant="outline" className="text-[0.65rem] px-1 py-0 h-[16px]">
+                    <Badge key={skill} variant="outline" className="text-rem-65 px-1 py-0 h-[16px]">
                       {skill}
                     </Badge>
                   ))}
@@ -722,7 +722,7 @@ export function UnassignedJobsList({
             >
               <SlidersHorizontal className="h-3.5 w-3.5" />
               {activeFilterCount > 0 && (
-                <Badge variant="secondary" className="h-4 px-1 text-[0.6rem]">{activeFilterCount}</Badge>
+                <Badge variant="secondary" className="h-4 px-1 text-rem-60">{activeFilterCount}</Badge>
               )}
             </Button>
           </div>
@@ -773,7 +773,7 @@ export function UnassignedJobsList({
               </Select>
               {activeFilterCount > 0 && (
                 <button
-                  className="text-[0.7rem] text-muted-foreground hover:text-foreground underline self-end"
+                  className="text-rem-70 text-muted-foreground hover:text-foreground underline self-end"
                   onClick={() => { setPriorityFilter('all'); setStatusFilter('all'); setSortBy('so'); setGroupBy('none'); }}
                 >
                   {t('dispatcher.clear_filters', 'Clear all')}
@@ -788,7 +788,7 @@ export function UnassignedJobsList({
           variant={showPlanned ? "default" : "outline"}
           size="sm"
           onClick={() => setShowPlanned(prev => !prev)}
-          className="mt-1.5 h-7 w-full text-[0.7rem] gap-1"
+          className="mt-1.5 h-7 w-full text-rem-70 gap-1"
           disabled={isLoadingPlanned}
         >
           {showPlanned ? <EyeOff className="h-3 w-3 shrink-0" /> : <Eye className="h-3 w-3 shrink-0" />}
@@ -845,8 +845,8 @@ export function UnassignedJobsList({
                     onClick={() => toggleSection(sec.key)}
                   >
                     <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${sectionCollapsed ? '-rotate-90' : ''}`} />
-                    <span className="text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground truncate">{sec.label}</span>
-                    <Badge variant="secondary" className="h-4 px-1.5 text-[0.6rem]">{sectionCounts.get(sec.key)}</Badge>
+                    <span className="text-rem-70 font-semibold uppercase tracking-wide text-muted-foreground truncate">{sec.label}</span>
+                    <Badge variant="secondary" className="h-4 px-1.5 text-rem-60">{sectionCounts.get(sec.key)}</Badge>
                     <div className="h-px flex-1 bg-border ml-1" />
                   </div>
                 )}
@@ -919,11 +919,11 @@ export function UnassignedJobsList({
                               <h4 className="font-semibold text-sm leading-tight">
                                 {serviceOrderData.title || `SO-${serviceOrderData.id}`}
                               </h4>
-                              <p className="text-[0.7rem] text-muted-foreground mt-0.5">
+                              <p className="text-rem-70 text-muted-foreground mt-0.5">
                                 {t(`serviceOrders.status.${serviceOrderData.status}`, serviceOrderData.status)}
                               </p>
                             </div>
-                            <Badge variant={getPriorityColor(serviceOrderData.priority)} className="text-[0.65rem] px-1.5 py-0 h-[18px] flex-shrink-0">
+                            <Badge variant={getPriorityColor(serviceOrderData.priority)} className="text-rem-65 px-1.5 py-0 h-[18px] flex-shrink-0">
                               {t(`dispatcher.priority_${serviceOrderData.priority}`)}
                             </Badge>
                           </div>
@@ -980,7 +980,7 @@ export function UnassignedJobsList({
                           {/* Optionally list the service order's jobs on hover. */}
                           {display.showJobsOnHover && serviceOrderData.unassignedJobs.length > 0 && (
                             <div className="space-y-0.5 pt-1.5 mt-1.5 border-t">
-                              <p className="text-[0.65rem] font-medium uppercase tracking-wide text-muted-foreground">
+                              <p className="text-rem-65 font-medium uppercase tracking-wide text-muted-foreground">
                                 {serviceOrderData.unassignedJobs.length} {t('dispatcher.jobs')}
                               </p>
                               {serviceOrderData.unassignedJobs.slice(0, 8).map(j => (
@@ -990,7 +990,7 @@ export function UnassignedJobsList({
                                 </div>
                               ))}
                               {serviceOrderData.unassignedJobs.length > 8 && (
-                                <p className="text-[0.7rem] text-muted-foreground pl-3">
+                                <p className="text-rem-70 text-muted-foreground pl-3">
                                   +{serviceOrderData.unassignedJobs.length - 8}
                                 </p>
                               )}
@@ -1037,12 +1037,12 @@ export function UnassignedJobsList({
                                           )}
                                           <ChevronRight className={cn("h-3 w-3 text-muted-foreground transition-transform flex-shrink-0", isOpen && "rotate-90")} />
                                           <Building2 className="h-3 w-3 text-primary flex-shrink-0" />
-                                          <span className="font-medium flex-1 break-words leading-snug text-[0.75rem]">
+                                          <span className="font-medium flex-1 break-words leading-snug text-rem-75">
                                             {group.name}
                                           </span>
                                         </div>
                                         <div className="flex items-center gap-1 pl-6">
-                                          <span className="text-muted-foreground text-[0.65rem]">
+                                          <span className="text-muted-foreground text-rem-65">
                                             {group.jobs.length} {t('dispatcher.jobs')} • {totalHours}{t('dispatcher.hours_short')}
                                           </span>
                                         </div>
@@ -1091,7 +1091,7 @@ export function UnassignedJobsList({
               <div className="mt-3">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="h-px flex-1 bg-border" />
-                  <span className="text-[0.6rem] uppercase tracking-wide text-muted-foreground font-medium flex items-center gap-1 whitespace-nowrap">
+                  <span className="text-rem-60 uppercase tracking-wide text-muted-foreground font-medium flex items-center gap-1 whitespace-nowrap">
                     <CheckCircle2 className="h-2.5 w-2.5 text-success" />
                     {t('dispatcher.planned_orders', 'Planned Orders')}
                   </span>

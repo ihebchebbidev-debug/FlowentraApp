@@ -334,12 +334,12 @@ export function NodeConfigurationModal({ isOpen, onClose, nodeData, onSave }: No
           rows={4}
         />
         <div className="space-y-1">
-          <p className="text-[11px] font-medium text-muted-foreground">{t('config.insertVariable', 'Insert Variable')}:</p>
+          <p className="text-px-11 font-medium text-muted-foreground">{t('config.insertVariable', 'Insert Variable')}:</p>
           <div className="flex flex-wrap gap-1 max-h-[60px] overflow-y-auto">
             {getVariableSnippets().slice(0, 12).map((v, i) => (
               <button key={i} type="button"
                 onClick={() => setConfig({ ...config, notificationMessage: (config.notificationMessage || '') + ' ' + v.variable })}
-                className="px-1.5 py-0.5 text-[10px] bg-muted/50 hover:bg-muted rounded border border-border/30 text-muted-foreground hover:text-foreground transition-colors font-mono"
+                className="px-1.5 py-0.5 text-px-10 bg-muted/50 hover:bg-muted rounded border border-border/30 text-muted-foreground hover:text-foreground transition-colors font-mono"
                 title={v.variable}>
                 {v.label}
               </button>
@@ -431,7 +431,7 @@ export function NodeConfigurationModal({ isOpen, onClose, nodeData, onSave }: No
               <SelectItem key={user.id} value={String(user.id)}>
                 <div className="flex items-center gap-2">
                   <span>{user.firstName} {user.lastName}</span>
-                  <span className="text-muted-foreground text-[10px]">{user.role || user.roles?.[0]?.name || ''}</span>
+                  <span className="text-muted-foreground text-px-10">{user.role || user.roles?.[0]?.name || ''}</span>
                 </div>
               </SelectItem>
             ))}
@@ -577,13 +577,13 @@ export function NodeConfigurationModal({ isOpen, onClose, nodeData, onSave }: No
                 <SelectItem key={account.id} value={account.id}>
                   <div className="flex items-center gap-2">
                     <span>{account.handle}</span>
-                    <span className="text-muted-foreground text-[10px] capitalize">{account.provider}</span>
+                    <span className="text-muted-foreground text-px-10 capitalize">{account.provider}</span>
                   </div>
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <p className="text-[11px] text-muted-foreground">{t('config.sendFromHint', 'Emails will be sent using this connected account')}</p>
+          <p className="text-px-11 text-muted-foreground">{t('config.sendFromHint', 'Emails will be sent using this connected account')}</p>
         </div>
       </TabsContent>
 
@@ -604,7 +604,7 @@ export function NodeConfigurationModal({ isOpen, onClose, nodeData, onSave }: No
               { var: '{{contact.name}}', lbl: 'Contact Name' },
             ].map((v, i) => (
               <button key={i} type="button" onClick={() => setConfig({ ...config, subject: (config.subject || '') + ' ' + v.var })}
-                className="px-1.5 py-0.5 text-[9px] bg-muted/40 hover:bg-muted rounded border border-border/30 text-muted-foreground hover:text-foreground transition-colors font-mono">
+                className="px-1.5 py-0.5 text-px-9 bg-muted/40 hover:bg-muted rounded border border-border/30 text-muted-foreground hover:text-foreground transition-colors font-mono">
                 {v.lbl}
               </button>
             ))}
@@ -636,14 +636,14 @@ export function NodeConfigurationModal({ isOpen, onClose, nodeData, onSave }: No
           />
           {/* Variable insertion helper */}
           <div className="space-y-1">
-            <p className="text-[11px] font-medium text-muted-foreground">{t('config.insertVariable', 'Insert Variable')}:</p>
+            <p className="text-px-11 font-medium text-muted-foreground">{t('config.insertVariable', 'Insert Variable')}:</p>
             <div className="flex flex-wrap gap-1 max-h-[80px] overflow-y-auto">
               {getVariableSnippets().map((v, i) => (
                 <button
                   key={i}
                   type="button"
                   onClick={() => setConfig({ ...config, content: (config.content || '') + ' ' + v.variable })}
-                  className="px-1.5 py-0.5 text-[10px] bg-muted/50 hover:bg-muted rounded border border-border/30 text-muted-foreground hover:text-foreground transition-colors font-mono"
+                  className="px-1.5 py-0.5 text-px-10 bg-muted/50 hover:bg-muted rounded border border-border/30 text-muted-foreground hover:text-foreground transition-colors font-mono"
                   title={v.variable}
                 >
                   {v.label}
@@ -674,7 +674,7 @@ export function NodeConfigurationModal({ isOpen, onClose, nodeData, onSave }: No
                 <SelectItem key={`user-${user.id}`} value={`user:${user.id}`}>
                   <div className="flex items-center gap-2">
                     <span>{user.firstName} {user.lastName}</span>
-                    <span className="text-muted-foreground text-[10px]">{user.role || user.roles?.[0]?.name || ''}</span>
+                    <span className="text-muted-foreground text-px-10">{user.role || user.roles?.[0]?.name || ''}</span>
                   </div>
                 </SelectItem>
               ))}
@@ -732,7 +732,7 @@ export function NodeConfigurationModal({ isOpen, onClose, nodeData, onSave }: No
               <button
                 key={tier}
                 onClick={() => setModelFilter(tier)}
-                className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                className={`px-2.5 py-1 rounded-md text-px-11 font-medium transition-colors ${
                   modelFilter === tier
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -773,15 +773,15 @@ export function NodeConfigurationModal({ isOpen, onClose, nodeData, onSave }: No
                   <SelectItem key={m.id} value={m.id}>
                     <div className="flex items-center gap-2">
                       <span className="truncate">{m.name}</span>
-                      {m.isFree && <span className="text-[9px] bg-success/10 text-success px-1 rounded shrink-0">{t('config.free').toUpperCase()}</span>}
-                      {!m.isFree && <span className="text-[9px] text-muted-foreground shrink-0">${(parseFloat(m.pricing.prompt) * 1_000_000).toFixed(2)}/M</span>}
+                      {m.isFree && <span className="text-px-9 bg-success/10 text-success px-1 rounded shrink-0">{t('config.free').toUpperCase()}</span>}
+                      {!m.isFree && <span className="text-px-9 text-muted-foreground shrink-0">${(parseFloat(m.pricing.prompt) * 1_000_000).toFixed(2)}/M</span>}
                     </div>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             {config.model && (
-              <p className="text-[11px] text-muted-foreground font-mono">{config.model}</p>
+              <p className="text-px-11 text-muted-foreground font-mono">{config.model}</p>
             )}
           </div>
 
@@ -811,18 +811,18 @@ export function NodeConfigurationModal({ isOpen, onClose, nodeData, onSave }: No
             <div className="space-y-2">
               {userKeys.map((k, i) => (
                 <div key={k.id} className="flex items-center gap-2 p-2 rounded border border-border/40 bg-muted/10">
-                  <span className="text-[10px] font-medium text-primary bg-primary/5 px-1.5 py-0.5 rounded">
+                  <span className="text-px-10 font-medium text-primary bg-primary/5 px-1.5 py-0.5 rounded">
                     {i === 0 ? t('config.primary') : t('config.fallback', { index: i })}
                   </span>
                   <span className="text-xs text-foreground truncate flex-1">{k.label}</span>
-                  <span className="text-[10px] text-muted-foreground font-mono">{k.apiKey.slice(0, 8)}...{k.apiKey.slice(-4)}</span>
+                  <span className="text-px-10 text-muted-foreground font-mono">{k.apiKey.slice(0, 8)}...{k.apiKey.slice(-4)}</span>
                 </div>
               ))}
             </div>
           ) : (
             <div className="p-4 border border-dashed border-border rounded-lg text-center">
               <p className="text-xs text-muted-foreground">{t('config.noApiKeys', 'No API keys configured.')}</p>
-              <p className="text-[11px] text-muted-foreground mt-1">
+              <p className="text-px-11 text-muted-foreground mt-1">
                 {t('config.goToSettings', 'Go to Settings → Integrations → OpenRouter to add keys.')}
               </p>
             </div>
@@ -842,13 +842,13 @@ export function NodeConfigurationModal({ isOpen, onClose, nodeData, onSave }: No
                   <SelectItem key={m.id} value={m.id}>
                     <div className="flex items-center gap-2">
                       <span className="truncate">{m.name}</span>
-                      <span className="text-[9px] bg-success/10 text-success px-1 rounded shrink-0">{t('config.free').toUpperCase()}</span>
+                      <span className="text-px-9 bg-success/10 text-success px-1 rounded shrink-0">{t('config.free').toUpperCase()}</span>
                     </div>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-[11px] text-muted-foreground">{t('config.fallbackHint', 'Used when the primary model fails or is rate-limited')}</p>
+            <p className="text-px-11 text-muted-foreground">{t('config.fallbackHint', 'Used when the primary model fails or is rate-limited')}</p>
           </div>
         </TabsContent>
 
@@ -926,7 +926,7 @@ export function NodeConfigurationModal({ isOpen, onClose, nodeData, onSave }: No
             ))}
           </SelectContent>
         </Select>
-        <p className="text-[11px] text-muted-foreground">{t('config.formIdHint', 'Select a form from Dynamic Forms module')}</p>
+        <p className="text-px-11 text-muted-foreground">{t('config.formIdHint', 'Select a form from Dynamic Forms module')}</p>
       </div>
       <div className="space-y-2">
         <Label>{t('config.formAction', 'Action')}</Label>
@@ -950,7 +950,7 @@ export function NodeConfigurationModal({ isOpen, onClose, nodeData, onSave }: No
             placeholder={'field_id: {{trigger.contactName}}\nemail: {{trigger.email}}'}
             rows={4}
           />
-          <p className="text-[11px] text-muted-foreground">{t('config.prefillHint', 'Map form fields to workflow variables')}</p>
+          <p className="text-px-11 text-muted-foreground">{t('config.prefillHint', 'Map form fields to workflow variables')}</p>
         </div>
       )}
       <div className="space-y-2">
@@ -969,13 +969,13 @@ export function NodeConfigurationModal({ isOpen, onClose, nodeData, onSave }: No
               <SelectItem key={user.id} value={String(user.id)}>
                 <div className="flex items-center gap-2">
                   <span>{user.firstName} {user.lastName}</span>
-                  <span className="text-muted-foreground text-[10px]">{user.role || user.roles?.[0]?.name || ''}</span>
+                  <span className="text-muted-foreground text-px-10">{user.role || user.roles?.[0]?.name || ''}</span>
                 </div>
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <p className="text-[11px] text-muted-foreground">{t('config.assignToHint', 'Select a user to assign this form to')}</p>
+        <p className="text-px-11 text-muted-foreground">{t('config.assignToHint', 'Select a user to assign this form to')}</p>
       </div>
     </div>
   );
@@ -1032,7 +1032,7 @@ export function NodeConfigurationModal({ isOpen, onClose, nodeData, onSave }: No
           placeholder={'name: {{step1.contactName}}\nemail: {{step1.email}}'}
           rows={4}
         />
-        <p className="text-[11px] text-muted-foreground">{t('config.dataMappingHint', 'Map fields for create/update. Use {{variable}} syntax.')}</p>
+        <p className="text-px-11 text-muted-foreground">{t('config.dataMappingHint', 'Map fields for create/update. Use {{variable}} syntax.')}</p>
       </div>
     </div>
   );
@@ -1081,7 +1081,7 @@ export function NodeConfigurationModal({ isOpen, onClose, nodeData, onSave }: No
             placeholder={'page: 1\nlimit: 50\nfilter: {{trigger.status}}'}
             rows={3}
           />
-          <p className="text-[11px] text-muted-foreground">{t('config.queryParamsHint', 'key: value format, one per line. Supports {{variable}} syntax.')}</p>
+          <p className="text-px-11 text-muted-foreground">{t('config.queryParamsHint', 'key: value format, one per line. Supports {{variable}} syntax.')}</p>
         </div>
         {config.httpMethod !== 'GET' && (
           <div className="space-y-2">
@@ -1160,7 +1160,7 @@ export function NodeConfigurationModal({ isOpen, onClose, nodeData, onSave }: No
             rows={6}
             className="font-mono text-xs"
           />
-          <p className="text-[11px] text-muted-foreground">{t('config.headersHint', 'Header: Value format, one per line. Supports {{variable}} syntax.')}</p>
+          <p className="text-px-11 text-muted-foreground">{t('config.headersHint', 'Header: Value format, one per line. Supports {{variable}} syntax.')}</p>
         </div>
       </TabsContent>
 
@@ -1250,7 +1250,7 @@ export function NodeConfigurationModal({ isOpen, onClose, nodeData, onSave }: No
             rows={5}
             className="font-mono text-xs"
           />
-          <p className="text-[11px] text-muted-foreground">{t('config.responseMappingHint', 'variable_name: $.json.path — Use JSONPath to extract values from the response.')}</p>
+          <p className="text-px-11 text-muted-foreground">{t('config.responseMappingHint', 'variable_name: $.json.path — Use JSONPath to extract values from the response.')}</p>
         </div>
         <div className="space-y-2">
           <Label>{t('config.successCondition', 'Success Condition')}</Label>
@@ -1358,14 +1358,14 @@ return result;`;
           <div className="p-3 bg-muted/30 rounded-md text-xs text-muted-foreground space-y-3">
             <p className="font-semibold text-foreground">{t('config.codeHelpTitle', 'Available Variables')}</p>
             <div className="space-y-1.5">
-              <p><code className="bg-muted px-1 py-0.5 rounded text-[11px]">input.trigger</code> — Trigger data (entityType, entityId, fromStatus, toStatus)</p>
-              <p><code className="bg-muted px-1 py-0.5 rounded text-[11px]">{'input.<nodeId>'}</code> — Output from any previous node</p>
-              <p><code className="bg-muted px-1 py-0.5 rounded text-[11px]">context.executionId</code> — Current execution ID</p>
-              <p><code className="bg-muted px-1 py-0.5 rounded text-[11px]">context.userId</code> — User who triggered the workflow</p>
+              <p><code className="bg-muted px-1 py-0.5 rounded text-px-11">input.trigger</code> — Trigger data (entityType, entityId, fromStatus, toStatus)</p>
+              <p><code className="bg-muted px-1 py-0.5 rounded text-px-11">{'input.<nodeId>'}</code> — Output from any previous node</p>
+              <p><code className="bg-muted px-1 py-0.5 rounded text-px-11">context.executionId</code> — Current execution ID</p>
+              <p><code className="bg-muted px-1 py-0.5 rounded text-px-11">context.userId</code> — User who triggered the workflow</p>
             </div>
             <Separator />
             <p className="font-semibold text-foreground">Entity Data Fields</p>
-            <div className="space-y-1 text-[10px]">
+            <div className="space-y-1 text-px-10">
               <p><strong>Dispatch:</strong> dispatchNumber, status, priority, scheduledDate, siteAddress, contact.name, contact.email, assignedTechnicians[0].email, completionPercentage</p>
               <p><strong>Sale:</strong> saleNumber, status, totalAmount, paidAmount, contact.email, items[].type, items[].requiresServiceOrder</p>
               <p><strong>Offer:</strong> offerNumber, status, totalAmount, validUntil, contact.email, items[].type</p>
@@ -1377,7 +1377,7 @@ return result;`;
             <p>{t('config.codeHelpReturn', 'Return a value to pass it as output to the next node. Available as {{nodeId.result}}.')}</p>
             <Separator />
             <p className="font-semibold text-foreground">{t('config.codeHelpExamples', 'Examples')}</p>
-            <pre className="bg-muted p-2 rounded text-[10px] overflow-x-auto whitespace-pre-wrap">{`// Query dispatches not in progress
+            <pre className="bg-muted p-2 rounded text-px-10 overflow-x-auto whitespace-pre-wrap">{`// Query dispatches not in progress
 const dispatches = await getEntities('dispatch', { status: 'planned' });
 return { items: dispatches, count: dispatches.length };
 
@@ -1432,7 +1432,7 @@ return { action: 'skip' };`}</pre>
             ))}
           </SelectContent>
         </Select>
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-px-11 text-muted-foreground">
           {t('config.subworkflowTargetHint', 'Only active workflows are recommended. Max nesting depth: 5.')}
         </p>
       </div>
@@ -1446,7 +1446,7 @@ return { action: 'skip' };`}</pre>
           placeholder={`childVar=parentVar\nchildEmail={{entityEmail}}\ncustomerName=\${contactName}`}
           className="font-mono text-xs"
         />
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-px-11 text-muted-foreground">
           {t('config.subworkflowMappingHint', 'One mapping per line: childKey=value or childKey={{parentVar}}. All current variables are passed by default.')}
         </p>
       </div>
@@ -1720,12 +1720,12 @@ return { action: 'skip' };`}</pre>
             <SelectContent className="max-h-[300px]">
               {Object.entries(fieldsByCategory).map(([cat, fields]) => (
                 <div key={cat}>
-                  <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{categoryLabels[cat] || cat}</div>
+                  <div className="px-2 py-1 text-px-10 font-semibold text-muted-foreground uppercase tracking-wider">{categoryLabels[cat] || cat}</div>
                   {fields.map(f => (
                     <SelectItem key={f.path} value={f.path}>
                       <div className="flex items-center gap-2">
                         <span>{f.label}</span>
-                        <span className="text-[10px] text-muted-foreground font-mono">{f.type}</span>
+                        <span className="text-px-10 text-muted-foreground font-mono">{f.type}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -1734,7 +1734,7 @@ return { action: 'skip' };`}</pre>
             </SelectContent>
           </Select>
           {selectedField?.description && (
-            <p className="text-[11px] text-muted-foreground">{selectedField.description}</p>
+            <p className="text-px-11 text-muted-foreground">{selectedField.description}</p>
           )}
         </div>
 
@@ -1789,7 +1789,7 @@ return { action: 'skip' };`}</pre>
         {/* Preview */}
         {config.field && config.operator && (
           <div className="p-2.5 bg-muted/30 rounded-lg border border-border/30">
-            <p className="text-[11px] font-medium text-muted-foreground mb-1">{t('config.conditionPreview', 'Condition Preview')}:</p>
+            <p className="text-px-11 font-medium text-muted-foreground mb-1">{t('config.conditionPreview', 'Condition Preview')}:</p>
             <code className="text-xs font-mono text-primary">
               {selectedEntityType}.{config.field} <span className="text-muted-foreground">{config.operator}</span> <span className="text-foreground font-semibold">{config.value || '?'}</span>
             </code>
@@ -1906,7 +1906,7 @@ return { action: 'skip' };`}</pre>
           </DialogTitle>
           {/* Short configure hint (if available) */}
           {nodeData && getHelpString('configureDescription') && (
-            <p className="text-[12px] text-muted-foreground mt-1">{getHelpString('configureDescription')}</p>
+            <p className="text-px-12 text-muted-foreground mt-1">{getHelpString('configureDescription')}</p>
           )}
         </DialogHeader>
 
@@ -1916,12 +1916,12 @@ return { action: 'skip' };`}</pre>
           <div className="py-4">
             {/* Prominent full description */}
             <div className="mb-4">
-              <p className="text-[13px] text-muted-foreground mb-2">{getHelpString('fullDescription') || nodeData.description || ''}</p>
+              <p className="text-px-13 text-muted-foreground mb-2">{getHelpString('fullDescription') || nodeData.description || ''}</p>
 
               {/* How it works / Examples */}
               <details className="bg-muted/5 p-3 rounded">
                 <summary className="cursor-pointer font-medium">{t('howItWorks')}</summary>
-                <div className="mt-2 text-[11px] text-muted-foreground">
+                <div className="mt-2 text-px-11 text-muted-foreground">
                   <p>{getHelpString('how') || ''}</p>
                   {(() => {
                     const examples = getHelpExamples();
@@ -1974,7 +1974,7 @@ return { action: 'skip' };`}</pre>
                   className="h-7 text-xs bg-background"
                 />
               </div>
-              <p className="col-span-2 text-[10px] text-muted-foreground">
+              <p className="col-span-2 text-px-10 text-muted-foreground">
                 Retries use exponential backoff (1×, 2×, 4×, … the base delay). Pause/wait nodes are never retried.
               </p>
             </div>

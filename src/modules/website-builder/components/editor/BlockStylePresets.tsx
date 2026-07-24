@@ -43,7 +43,7 @@ export function BlockStylePresets({
   return (
     <div className="space-y-3">
       {/* Style presets */}
-      <Label className="text-[10px] uppercase tracking-wider text-muted-foreground/60">
+      <Label className="text-px-10 uppercase tracking-wider text-muted-foreground/60">
         {label}
       </Label>
       <div className="grid grid-cols-2 gap-1.5">
@@ -65,7 +65,7 @@ export function BlockStylePresets({
                 </div>
               )}
               {preset.preview}
-              <span className="text-[9px] font-medium truncate w-full">{preset.name}</span>
+              <span className="text-px-9 font-medium truncate w-full">{preset.name}</span>
             </button>
           );
         })}
@@ -74,7 +74,7 @@ export function BlockStylePresets({
       {/* Variant selector */}
       {variants && variants.length > 0 && onVariantChange && (
         <div className="space-y-1.5 pt-1">
-          <Label className="text-[10px] uppercase tracking-wider text-muted-foreground/60">
+          <Label className="text-px-10 uppercase tracking-wider text-muted-foreground/60">
             Layout Variant
           </Label>
           <div className="grid grid-cols-3 gap-1">
@@ -82,7 +82,7 @@ export function BlockStylePresets({
               <button
                 key={v.value}
                 onClick={() => onVariantChange(v.value)}
-                className={`px-1.5 py-1.5 rounded-md text-[9px] font-medium transition-all capitalize ${
+                className={`px-1.5 py-1.5 rounded-md text-px-9 font-medium transition-all capitalize ${
                   currentVariant === v.value
                     ? 'bg-primary text-primary-foreground shadow-sm'
                     : 'bg-muted/50 hover:bg-muted text-muted-foreground'

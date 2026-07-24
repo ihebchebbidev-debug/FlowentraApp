@@ -116,7 +116,7 @@ const sizeClasses = {
 };
 
 const textSizes = {
-  xs: 'text-[10px]',
+  xs: 'text-px-10',
   sm: 'text-xs',
   md: 'text-sm',
   lg: 'text-base',

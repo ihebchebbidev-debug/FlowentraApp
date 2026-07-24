@@ -17,7 +17,7 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex h-8 w-full items-center justify-between rounded-md border border-border/50 bg-background px-3 py-1.5 text-[13px] shadow-sm ring-offset-background placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-ring/70 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 transition-all duration-150 ease-out",
+      "flex h-8 w-full items-center justify-between rounded-md border border-border/50 bg-background px-3 py-1.5 text-px-13 shadow-sm ring-offset-background placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-ring/70 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 transition-all duration-150 ease-out",
       className
     )}
     {...props}
@@ -116,7 +116,7 @@ const SelectItem = React.forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-[13px] outline-none text-popover-foreground hover:bg-foreground/[0.04] focus:bg-foreground/[0.04] data-[state=checked]:bg-primary/[0.06] data-[state=checked]:text-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 transition-all duration-100 ease-out",
+      "relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-px-13 outline-none text-popover-foreground hover:bg-foreground/[0.04] focus:bg-foreground/[0.04] data-[state=checked]:bg-primary/[0.06] data-[state=checked]:text-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 transition-all duration-100 ease-out",
       className
     )}
     {...props}

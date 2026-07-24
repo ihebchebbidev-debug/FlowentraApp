@@ -135,7 +135,7 @@ export function ReviewsBlock({
           </div>
         </div>
         {showSource && r.source && !isEditing && (
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted font-medium" style={{ color: theme.secondaryColor }}>{r.source}</span>
+          <span className="text-px-10 px-2 py-0.5 rounded-full bg-muted font-medium" style={{ color: theme.secondaryColor }}>{r.source}</span>
         )}
       </div>
       {/* Title */}

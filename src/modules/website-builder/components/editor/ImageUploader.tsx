@@ -82,7 +82,7 @@ export function ImageUploader({ label, value, onChange }: ImageUploaderProps) {
 
   return (
     <div className="space-y-1.5">
-      <Label className="text-[11px] font-medium text-foreground/70">{label}</Label>
+      <Label className="text-px-11 font-medium text-foreground/70">{label}</Label>
 
       {hasImage ? (
         <div className="relative group">
@@ -96,12 +96,12 @@ export function ImageUploader({ label, value, onChange }: ImageUploaderProps) {
               }}
             />
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] text-foreground/60 truncate">
+              <p className="text-px-10 text-foreground/60 truncate">
                 {getImageLabel(value)}
               </p>
               <button
                 onClick={() => inputRef.current?.click()}
-                className="text-[10px] text-primary hover:underline font-medium mt-0.5"
+                className="text-px-10 text-primary hover:underline font-medium mt-0.5"
                 disabled={uploading}
               >
                 {uploading ? 'Uploading…' : 'Change image'}
@@ -128,12 +128,12 @@ export function ImageUploader({ label, value, onChange }: ImageUploaderProps) {
             {uploading ? (
               <>
                 <Loader2 className="h-5 w-5 text-primary animate-spin" />
-                <span className="text-[10px] text-muted-foreground font-medium">Uploading…</span>
+                <span className="text-px-10 text-muted-foreground font-medium">Uploading…</span>
               </>
             ) : (
               <>
                 <ImageIcon className="h-5 w-5 text-muted-foreground/30" />
-                <span className="text-[10px] text-muted-foreground/50 font-medium">
+                <span className="text-px-10 text-muted-foreground/50 font-medium">
                   Click to upload image
                 </span>
               </>
@@ -141,7 +141,7 @@ export function ImageUploader({ label, value, onChange }: ImageUploaderProps) {
           </button>
           <Input
             placeholder="Or paste image URL..."
-            className="h-7 text-[10px] border-border/30 bg-background"
+            className="h-7 text-px-10 border-border/30 bg-background"
             disabled={uploading}
             onBlur={(e) => {
               const url = e.target.value.trim();

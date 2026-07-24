@@ -90,7 +90,7 @@ export function PageVersionsPanel({ pageId, pageTitle, onRestore }: PageVersions
             <Save className="h-3 w-3" />{t('wb:versions.saveSnapshot')}
           </Button>
         </div>
-        <p className="text-[10px] text-muted-foreground/60">
+        <p className="text-px-10 text-muted-foreground/60">
           {t('wb:versions.versionCount', { title: pageTitle, count: versions.length })}
         </p>
       </div>
@@ -105,7 +105,7 @@ export function PageVersionsPanel({ pageId, pageTitle, onRestore }: PageVersions
           <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
             <History className="h-8 w-8 mb-3 opacity-30" />
             <p className="text-xs">{t('wb:versions.noVersions')}</p>
-            <p className="text-[10px] opacity-60 mt-1">{t('wb:versions.noVersionsHint')}</p>
+            <p className="text-px-10 opacity-60 mt-1">{t('wb:versions.noVersionsHint')}</p>
           </div>
         ) : (
           <div className="p-2 space-y-1">
@@ -118,37 +118,37 @@ export function PageVersionsPanel({ pageId, pageTitle, onRestore }: PageVersions
                     {isExpanded ? <ChevronDown className="h-3 w-3 mt-0.5 shrink-0 text-muted-foreground" /> : <ChevronRight className="h-3 w-3 mt-0.5 shrink-0 text-muted-foreground" />}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-semibold text-foreground">v{version.versionNumber}</span>
-                        {isLatest && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">{t('wb:versions.latest')}</span>}
+                        <span className="text-px-10 font-semibold text-foreground">v{version.versionNumber}</span>
+                        {isLatest && <span className="text-px-9 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">{t('wb:versions.latest')}</span>}
                       </div>
-                      {version.changeMessage && <p className="text-[10px] text-muted-foreground truncate mt-0.5">{version.changeMessage}</p>}
+                      {version.changeMessage && <p className="text-px-10 text-muted-foreground truncate mt-0.5">{version.changeMessage}</p>}
                       <div className="flex items-center gap-2 mt-0.5">
                         <Clock className="h-2.5 w-2.5 text-muted-foreground/50" />
-                        <span className="text-[9px] text-muted-foreground/50">{formatDate(version.createdAt)}</span>
-                        {version.createdBy && (<><span className="text-[9px] text-muted-foreground/30">·</span><span className="text-[9px] text-muted-foreground/50">{version.createdBy}</span></>)}
+                        <span className="text-px-9 text-muted-foreground/50">{formatDate(version.createdAt)}</span>
+                        {version.createdBy && (<><span className="text-px-9 text-muted-foreground/30">·</span><span className="text-px-9 text-muted-foreground/50">{version.createdBy}</span></>)}
                       </div>
                     </div>
                   </button>
                   {isExpanded && (
                     <div className="px-3 pb-3 pt-0 border-t bg-muted/10">
                       <div className="flex items-center justify-between mt-2">
-                        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                        <div className="flex items-center gap-1.5 text-px-10 text-muted-foreground">
                           <FileText className="h-3 w-3" />{t('wb:versions.componentCount', { count: version.components.length })}
                         </div>
                         {!isLatest && (
-                          <Button variant="outline" size="sm" className="h-6 text-[10px] gap-1" onClick={(e) => { e.stopPropagation(); setShowRestoreDialog(version); }}>
+                          <Button variant="outline" size="sm" className="h-6 text-px-10 gap-1" onClick={(e) => { e.stopPropagation(); setShowRestoreDialog(version); }}>
                             <RotateCcw className="h-3 w-3" />{t('wb:versions.restore')}
                           </Button>
                         )}
                       </div>
                       <div className="mt-2 space-y-0.5">
                         {version.components.slice(0, 5).map((comp, i) => (
-                          <div key={i} className="text-[9px] text-muted-foreground/60 flex items-center gap-1.5">
+                          <div key={i} className="text-px-9 text-muted-foreground/60 flex items-center gap-1.5">
                             <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
                             <span className="truncate">{comp.label || comp.type}</span>
                           </div>
                         ))}
-                        {version.components.length > 5 && <p className="text-[9px] text-muted-foreground/40 pl-2.5">{t('wb:versions.moreComponents', { count: version.components.length - 5 })}</p>}
+                        {version.components.length > 5 && <p className="text-px-9 text-muted-foreground/40 pl-2.5">{t('wb:versions.moreComponents', { count: version.components.length - 5 })}</p>}
                       </div>
                     </div>
                   )}
@@ -167,7 +167,7 @@ export function PageVersionsPanel({ pageId, pageTitle, onRestore }: PageVersions
           </DialogHeader>
           <div className="space-y-3">
             <Input placeholder={t('wb:versions.whatChanged')} value={changeMessage} onChange={(e) => setChangeMessage(e.target.value)} autoFocus />
-            <p className="text-[10px] text-muted-foreground">{t('wb:versions.saveStateDesc', { title: pageTitle })}</p>
+            <p className="text-px-10 text-muted-foreground">{t('wb:versions.saveStateDesc', { title: pageTitle })}</p>
           </div>
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setShowSaveDialog(false)}>{t('wb:common.cancel')}</Button>
@@ -186,7 +186,7 @@ export function PageVersionsPanel({ pageId, pageTitle, onRestore }: PageVersions
           </DialogHeader>
           <div className="space-y-2">
             {showRestoreDialog?.changeMessage && <div className="p-2 rounded-lg bg-muted/30 text-xs text-muted-foreground">"{showRestoreDialog.changeMessage}"</div>}
-            <p className="text-[10px] text-muted-foreground">{t('wb:versions.restoreTip')}</p>
+            <p className="text-px-10 text-muted-foreground">{t('wb:versions.restoreTip')}</p>
           </div>
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setShowRestoreDialog(null)}>{t('wb:common.cancel')}</Button>

@@ -35,7 +35,7 @@ export function LogoUploader({ label, value, onChange }: LogoUploaderProps) {
 
   return (
     <div className="space-y-1.5">
-      <Label className="text-[11px] font-medium text-foreground/70">{label}</Label>
+      <Label className="text-px-11 font-medium text-foreground/70">{label}</Label>
 
       {hasValidImage ? (
         <div className="relative group">
@@ -47,12 +47,12 @@ export function LogoUploader({ label, value, onChange }: LogoUploaderProps) {
               onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
             />
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] text-foreground/60 truncate">
+              <p className="text-px-10 text-foreground/60 truncate">
                 {getImageLabel(value)}
               </p>
               <button
                 onClick={() => inputRef.current?.click()}
-                className="text-[10px] text-primary hover:underline font-medium mt-0.5"
+                className="text-px-10 text-primary hover:underline font-medium mt-0.5"
               >
                 Change logo
               </button>
@@ -74,11 +74,11 @@ export function LogoUploader({ label, value, onChange }: LogoUploaderProps) {
             className="w-full h-16 flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border/40 bg-muted/10 hover:bg-muted/20 hover:border-primary/30 transition-all cursor-pointer"
           >
             <Upload className="h-4 w-4 text-muted-foreground/40" />
-            <span className="text-[10px] text-muted-foreground/50 font-medium">Upload logo</span>
+            <span className="text-px-10 text-muted-foreground/50 font-medium">Upload logo</span>
           </button>
           <Input
             placeholder="Or paste image URL..."
-            className="h-7 text-[10px] border-border/30 bg-background"
+            className="h-7 text-px-10 border-border/30 bg-background"
             onBlur={(e) => {
               const url = e.target.value.trim();
               if (url && isImageSrc(url)) {

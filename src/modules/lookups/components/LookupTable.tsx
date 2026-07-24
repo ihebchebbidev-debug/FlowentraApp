@@ -298,7 +298,7 @@ export function LookupTable({
                       </p>
                       <Badge
                         variant={item.isActive ? 'default' : 'secondary'}
-                        className="text-[10px] px-2 py-0.5 shrink-0"
+                        className="text-px-10 px-2 py-0.5 shrink-0"
                       >
                         {item.isActive ? t('active') : t('inactive')}
                       </Badge>
@@ -320,12 +320,12 @@ export function LookupTable({
                           </div>
                         )}
                         {showTypeFields.isCompleted && item.isCompleted !== undefined && (
-                          <Badge variant={item.isCompleted ? 'default' : 'secondary'} className="text-[10px] px-2 py-0.5">
+                          <Badge variant={item.isCompleted ? 'default' : 'secondary'} className="text-px-10 px-2 py-0.5">
                             {item.isCompleted ? t('completed') : t('inProgress')}
                           </Badge>
                         )}
                         {showTypeFields.isPaid && (
-                          <Badge variant={item.isPaid ? 'default' : 'outline'} className="text-[10px] px-2 py-0.5">
+                          <Badge variant={item.isPaid ? 'default' : 'outline'} className="text-px-10 px-2 py-0.5">
                             {item.isPaid ? t('paid') : t('unpaid')}
                           </Badge>
                         )}

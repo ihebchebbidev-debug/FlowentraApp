@@ -233,15 +233,15 @@ export function NumberingSettings() {
               <Info className="h-3.5 w-3.5 text-muted-foreground" />
               Référence des jetons
             </p>
-            <p className="text-[10px] text-muted-foreground">Cliquez sur un jeton pour le copier</p>
+            <p className="text-px-10 text-muted-foreground">Cliquez sur un jeton pour le copier</p>
           </div>
 
           <div className="divide-y divide-border/30">
             {/* Table header */}
             <div className="grid grid-cols-[140px_1fr_120px] sm:grid-cols-[160px_1fr_140px] px-4 py-1.5 bg-muted/20">
-              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Jeton</span>
-              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Description</span>
-              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Exemple</span>
+              <span className="text-px-10 font-medium text-muted-foreground uppercase tracking-wider">Jeton</span>
+              <span className="text-px-10 font-medium text-muted-foreground uppercase tracking-wider">Description</span>
+              <span className="text-px-10 font-medium text-muted-foreground uppercase tracking-wider">Exemple</span>
             </div>
 
             {TOKEN_HELP.map((t, idx) => {
@@ -250,7 +250,7 @@ export function NumberingSettings() {
                 <div key={t.token}>
                   {isFirstInCategory && (
                     <div className="px-4 py-1.5 bg-muted/15">
-                      <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      <span className="text-px-10 font-semibold text-muted-foreground uppercase tracking-wider">
                         {CATEGORY_LABELS[t.category]?.label}
                       </span>
                     </div>
@@ -263,17 +263,17 @@ export function NumberingSettings() {
                     }}
                     className="w-full grid grid-cols-[140px_1fr_120px] sm:grid-cols-[160px_1fr_140px] px-4 py-2 hover:bg-primary/5 transition-colors text-left group"
                   >
-                    <code className="text-[11px] font-mono text-primary flex items-center gap-1.5">
+                    <code className="text-px-11 font-mono text-primary flex items-center gap-1.5">
                       {t.token}
                       <Copy className="h-2.5 w-2.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                     </code>
-                    <span className="text-[11px] text-foreground/80">
+                    <span className="text-px-11 text-foreground/80">
                       {t.desc}
                       {t.hint && (
                         <span className="text-muted-foreground ml-1 hidden sm:inline">— {t.hint}</span>
                       )}
                     </span>
-                    <span className="text-[11px] font-mono text-muted-foreground">{t.example}</span>
+                    <span className="text-px-11 font-mono text-muted-foreground">{t.example}</span>
                   </button>
                 </div>
               );
@@ -306,12 +306,12 @@ export function NumberingSettings() {
                   </div>
                   <div className="text-left">
                     <p className="text-sm font-medium text-foreground">{entity.label}</p>
-                    <p className="text-[11px] text-muted-foreground font-mono">{state.template || entity.defaultExample}</p>
+                    <p className="text-px-11 text-muted-foreground font-mono">{state.template || entity.defaultExample}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {state.isDirty && <Badge variant="outline" className="text-[10px] border-amber-500/50 text-amber-600">Non sauvegardé</Badge>}
-                  <Badge variant={state.isEnabled ? 'default' : 'secondary'} className="text-[10px]">
+                  {state.isDirty && <Badge variant="outline" className="text-px-10 border-amber-500/50 text-amber-600">Non sauvegardé</Badge>}
+                  <Badge variant={state.isEnabled ? 'default' : 'secondary'} className="text-px-10">
                     {state.isEnabled ? 'Personnalisé' : 'Par défaut'}
                   </Badge>
                 </div>
@@ -324,7 +324,7 @@ export function NumberingSettings() {
                   <div className="flex items-center justify-between">
                     <div>
                       <Label className="text-sm">Activer la numérotation personnalisée</Label>
-                      <p className="text-[11px] text-muted-foreground">Remplace la génération par défaut du système</p>
+                      <p className="text-px-11 text-muted-foreground">Remplace la génération par défaut du système</p>
                     </div>
                     <Switch
                       checked={state.isEnabled}
@@ -433,7 +433,7 @@ export function NumberingSettings() {
                           Warnings
                         </p>
                         {state.warnings.map((w, i) => (
-                          <p key={i} className="text-[11px] text-amber-600 dark:text-amber-500 mt-1">{w}</p>
+                          <p key={i} className="text-px-11 text-amber-600 dark:text-amber-500 mt-1">{w}</p>
                         ))}
                       </div>
                     )}

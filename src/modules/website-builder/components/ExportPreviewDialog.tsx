@@ -298,7 +298,7 @@ export function ExportPreviewDialog({ site, settings, open, onOpenChange }: Expo
           <DialogTitle className="flex items-center gap-2">
             <Eye className="h-5 w-5 text-primary" />
             {t('wb:publish.exportPreview', { defaultValue: 'Export preview' })}
-            <Badge variant="secondary" className="text-[10px] ml-1">
+            <Badge variant="secondary" className="text-px-10 ml-1">
               {isReact ? 'React' : 'HTML'}
             </Badge>
           </DialogTitle>
@@ -405,7 +405,7 @@ export function ExportPreviewDialog({ site, settings, open, onOpenChange }: Expo
                   <div className="p-2 space-y-3">
                     {fileTree.map(([folder, items]) => (
                       <div key={folder || 'root'}>
-                        <div className="flex items-center gap-1.5 px-2 py-1 text-[11px] uppercase tracking-wide text-muted-foreground font-medium">
+                        <div className="flex items-center gap-1.5 px-2 py-1 text-px-11 uppercase tracking-wide text-muted-foreground font-medium">
                           <Folder className="h-3 w-3" />
                           {folder || 'root'}
                         </div>
@@ -429,7 +429,7 @@ export function ExportPreviewDialog({ site, settings, open, onOpenChange }: Expo
                                 >
                                   {fileIcon(f.path)}
                                   <span className="truncate flex-1">{name}</span>
-                                  <span className="text-[10px] text-muted-foreground tabular-nums">
+                                  <span className="text-px-10 text-muted-foreground tabular-nums">
                                     {formatBytes(fileSize(f))}
                                   </span>
                                 </button>
@@ -450,7 +450,7 @@ export function ExportPreviewDialog({ site, settings, open, onOpenChange }: Expo
                         {selectedFile?.path || 'Select a file'}
                       </span>
                       {selectedFile && (
-                        <Badge variant="outline" className="text-[10px] shrink-0">
+                        <Badge variant="outline" className="text-px-10 shrink-0">
                           {formatBytes(fileSize(selectedFile))}
                         </Badge>
                       )}
@@ -471,7 +471,7 @@ export function ExportPreviewDialog({ site, settings, open, onOpenChange }: Expo
                           <p className="font-mono">{formatBytes(fileSize(selectedFile))}</p>
                         </div>
                       ) : (
-                        <pre className="text-[11px] font-mono p-4 whitespace-pre-wrap break-words leading-relaxed">
+                        <pre className="text-px-11 font-mono p-4 whitespace-pre-wrap break-words leading-relaxed">
                           {typeof selectedFile.content === 'string'
                             ? selectedFile.content.slice(0, 100_000)
                             : ''}
@@ -495,7 +495,7 @@ export function ExportPreviewDialog({ site, settings, open, onOpenChange }: Expo
         )}
 
         <DialogFooter className="px-6 py-4 border-t gap-2">
-          <div className="mr-auto hidden sm:flex items-center gap-2 text-[11px] text-muted-foreground">
+          <div className="mr-auto hidden sm:flex items-center gap-2 text-px-11 text-muted-foreground">
             <Rocket className="h-3.5 w-3.5 text-primary" />
             <span>Free deploy:</span>
             <a

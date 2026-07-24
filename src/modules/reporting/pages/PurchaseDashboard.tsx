@@ -124,7 +124,7 @@ export const PurchaseDashboard = () => {
             <ChartCard title={t('purchase.poTable', 'Purchase Order Detail')} favorite={{ id: 'p-po', title: 'Purchase Orders', source: SOURCE }} bodyClassName="p-0" empty={!pos.length} emptyLabel={t('purchase.empty', 'PO detail table not yet populated')}>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
-                  <thead className="bg-muted/50 text-[11px] uppercase tracking-wide text-muted-foreground">
+                  <thead className="bg-muted/50 text-px-11 uppercase tracking-wide text-muted-foreground">
                     <tr>
                       <th className="whitespace-nowrap px-3 py-2 text-left">{t('purchase.poNumber', 'PO')}</th>
                       <th className="whitespace-nowrap px-3 py-2 text-left">{t('purchase.supplier', 'Supplier')}</th>

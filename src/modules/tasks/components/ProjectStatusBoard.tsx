@@ -56,7 +56,7 @@ export function ProjectStatusBoard({
               <span className="inline-flex items-center gap-2 text-sm font-semibold">
                 <span className="h-2.5 w-2.5 rounded-full" style={{ background: col.color }} />
                 {t(col.labelKey, { defaultValue: col.fallback })}
-                <span className="ml-1 text-[11px] rounded-full bg-muted px-2 py-0.5 text-muted-foreground">{items.length}</span>
+                <span className="ml-1 text-px-11 rounded-full bg-muted px-2 py-0.5 text-muted-foreground">{items.length}</span>
               </span>
             </div>
             <div className="space-y-2 px-1 min-h-[60px]">
@@ -78,7 +78,7 @@ export function ProjectStatusBoard({
                 </div>
               ))}
               {items.length === 0 && (
-                <div className="text-[11px] text-muted-foreground/60 text-center py-6 border border-dashed border-border/60 rounded-lg">
+                <div className="text-px-11 text-muted-foreground/60 text-center py-6 border border-dashed border-border/60 rounded-lg">
                   {t("projects.board.empty", { defaultValue: "No projects" })}
                 </div>
               )}

@@ -442,7 +442,7 @@ function PurchaseOrderDetailPage() {
                         <TableRow key={item.id}>
                           <TableCell>
                             <div className="text-xs font-medium">{item.articleName || item.description}</div>
-                            <div className="text-[10px] text-muted-foreground">{item.articleNumber}</div>
+                            <div className="text-px-10 text-muted-foreground">{item.articleNumber}</div>
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground">{item.supplierRef || '-'}</TableCell>
                           <TableCell className="text-xs text-center">{Number(item.quantity || 0).toFixed(2)} {getUnitLabel(item.unit, t)}</TableCell>
@@ -482,7 +482,7 @@ function PurchaseOrderDetailPage() {
                         <TableRow key={String(item.id) || idx}>
                           <TableCell>
                             <Input className="h-7 text-xs" placeholder={t('create.articleDescription')} value={item.description || ''} onChange={e => updateDraftItem(idx, 'description', e.target.value)} />
-                            {item.articleName && <div className="text-[10px] text-muted-foreground mt-0.5">{item.articleName}</div>}
+                            {item.articleName && <div className="text-px-10 text-muted-foreground mt-0.5">{item.articleName}</div>}
                           </TableCell>
                           <TableCell><Input type="number" min="0" step="0.01" className="h-7 text-xs w-16" value={item.quantity ?? ''} onChange={e => updateDraftItem(idx, 'quantity', Number(e.target.value))} /></TableCell>
                           <TableCell>

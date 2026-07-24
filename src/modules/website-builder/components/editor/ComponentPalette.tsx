@@ -692,9 +692,9 @@ export function ComponentPalette({ onAdd }: ComponentPaletteProps) {
           </div>
         )}
         <div className="flex-1 min-w-0 pointer-events-none">
-          <span className="text-[11px] text-foreground/70 group-hover:text-foreground font-medium block truncate">{item.label}</span>
+          <span className="text-px-11 text-foreground/70 group-hover:text-foreground font-medium block truncate">{item.label}</span>
           {item.description && (
-            <span className="text-[9px] text-muted-foreground/50 group-hover:text-muted-foreground/70 block truncate leading-tight mt-[1px]">{item.description}</span>
+            <span className="text-px-9 text-muted-foreground/50 group-hover:text-muted-foreground/70 block truncate leading-tight mt-[1px]">{item.description}</span>
           )}
         </div>
         <div className="flex items-center gap-0.5 shrink-0 mt-1 pointer-events-none">
@@ -724,20 +724,20 @@ export function ComponentPalette({ onAdd }: ComponentPaletteProps) {
             <button
               type="button"
               onClick={() => { setSearchTerm(''); inputRef.current?.focus(); }}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground/50 hover:text-foreground px-1 py-0.5 rounded"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-px-10 text-muted-foreground/50 hover:text-foreground px-1 py-0.5 rounded"
               aria-label="Clear search"
             >
               esc
             </button>
           ) : (
-            <kbd className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-mono text-muted-foreground/40 px-1.5 py-0.5 border border-border/30 rounded bg-background/60 pointer-events-none">
+            <kbd className="absolute right-2 top-1/2 -translate-y-1/2 text-px-9 font-mono text-muted-foreground/40 px-1.5 py-0.5 border border-border/30 rounded bg-background/60 pointer-events-none">
               ⌘K
             </kbd>
           )}
         </div>
 
         {/* Drag hint */}
-        <p className="text-[9px] text-muted-foreground/40 px-0.5 flex items-center gap-1">
+        <p className="text-px-9 text-muted-foreground/40 px-0.5 flex items-center gap-1">
           <GripVertical className="h-2.5 w-2.5" />
           {searchTerm
             ? <>Press <span className="font-mono">Enter</span> to add the first match</>
@@ -746,7 +746,7 @@ export function ComponentPalette({ onAdd }: ComponentPaletteProps) {
 
         {searchTerm ? (
           <>
-            <p className="text-[10px] text-muted-foreground/60 px-0.5">
+            <p className="text-px-10 text-muted-foreground/60 px-0.5">
               {t('palette.results', { count: filtered.length })}
             </p>
             <div className="space-y-1">
@@ -756,7 +756,7 @@ export function ComponentPalette({ onAdd }: ComponentPaletteProps) {
                 if (catItems.length === 0) return null;
                 return (
                   <div key={cat.key} className="space-y-0.5">
-                    <div className="flex items-center gap-1.5 px-1 pt-1 text-[9px] uppercase tracking-wide text-muted-foreground/50 font-semibold">
+                    <div className="flex items-center gap-1.5 px-1 pt-1 text-px-9 uppercase tracking-wide text-muted-foreground/50 font-semibold">
                       <span>{cat.emoji}</span>
                       <span>{t(`palette.${cat.i18nKey}`)}</span>
                       <span className="tabular-nums opacity-60">({catItems.length})</span>
@@ -769,7 +769,7 @@ export function ComponentPalette({ onAdd }: ComponentPaletteProps) {
                 <div className="text-center py-8">
                   <Search className="h-6 w-6 mx-auto text-muted-foreground/20 mb-2" />
                   <p className="text-xs text-muted-foreground/50">{t('palette.noBlocksMatch', { term: searchTerm })}</p>
-                  <p className="text-[10px] text-muted-foreground/40 mt-1">Try “hero”, “form”, “pricing”, “video”…</p>
+                  <p className="text-px-10 text-muted-foreground/40 mt-1">Try “hero”, “form”, “pricing”, “video”…</p>
                 </div>
               )}
             </div>
@@ -786,10 +786,10 @@ export function ComponentPalette({ onAdd }: ComponentPaletteProps) {
                   className="w-full flex items-center gap-2 px-1.5 py-1.5 text-left rounded-md hover:bg-muted/30 transition-colors"
                 >
                   <ChevronDown className={`h-3 w-3 text-muted-foreground/40 transition-transform duration-200 shrink-0 ${isExpanded ? '' : '-rotate-90'}`} />
-                  <span className="text-[11px] font-semibold text-foreground/70 flex-1">
+                  <span className="text-px-11 font-semibold text-foreground/70 flex-1">
                     {t(`palette.${cat.i18nKey}`)}
                   </span>
-                  <span className="text-[9px] text-muted-foreground/40 tabular-nums">{items.length}</span>
+                  <span className="text-px-9 text-muted-foreground/40 tabular-nums">{items.length}</span>
                 </button>
                 {isExpanded && (
                   <div className="mt-0.5 ml-1 space-y-0.5">

@@ -22,7 +22,7 @@ const Table = React.forwardRef<HTMLTableElement, TableProps>(
     >
       <table
         ref={ref}
-        className={cn("w-full caption-bottom text-[13px]", className)}
+        className={cn("w-full caption-bottom text-table-cell", className)}
         {...props}
       />
     </div>
@@ -126,7 +126,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      "h-9 px-3 text-left align-middle text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 select-none [&:has([role=checkbox])]:pr-0",
+      "h-9 px-3 text-left align-middle text-table-header uppercase text-muted-foreground/60 select-none [&:has([role=checkbox])]:pr-0",
       "bg-muted/30 first:rounded-tl-lg last:rounded-tr-lg",
       className
     )}
@@ -142,7 +142,7 @@ const TableCell = React.forwardRef<
   <td
     ref={ref}
     className={cn(
-      "px-3 py-2 align-middle text-[13px] [&:has([role=checkbox])]:pr-0",
+      "px-3 py-2 align-middle text-table-cell [&:has([role=checkbox])]:pr-0",
       "group-hover/row:text-foreground transition-colors duration-150",
       className
     )}
@@ -157,7 +157,7 @@ const TableCaption = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <caption
     ref={ref}
-    className={cn("mt-4 text-[13px] text-muted-foreground", className)}
+    className={cn("mt-4 text-body-sm text-muted-foreground", className)}
     {...props}
   />
 ))

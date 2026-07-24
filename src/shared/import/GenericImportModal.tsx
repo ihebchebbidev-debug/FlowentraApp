@@ -689,7 +689,7 @@ function MappingStep<T>({
                       {row.errors.length > 0 && (
                         <div className="flex flex-col gap-0.5 sm:gap-1">
                           {row.errors.map((error, idx) => (
-                            <span key={idx} className="text-[10px] sm:text-xs text-destructive bg-destructive/10 dark:bg-destructive/20 px-1.5 sm:px-2 py-0.5 rounded truncate max-w-[100px] sm:max-w-none" title={error}>
+                            <span key={idx} className="text-px-10 sm:text-xs text-destructive bg-destructive/10 dark:bg-destructive/20 px-1.5 sm:px-2 py-0.5 rounded truncate max-w-[100px] sm:max-w-none" title={error}>
                               {error}
                             </span>
                           ))}
@@ -698,14 +698,14 @@ function MappingStep<T>({
                       {row.warnings.length > 0 && (
                         <div className="flex flex-col gap-0.5 sm:gap-1 mt-0.5 sm:mt-1">
                           {row.warnings.map((warning, idx) => (
-                            <span key={idx} className="text-[10px] sm:text-xs text-warning bg-warning/10 px-1.5 sm:px-2 py-0.5 rounded truncate max-w-[100px] sm:max-w-none" title={warning}>
+                            <span key={idx} className="text-px-10 sm:text-xs text-warning bg-warning/10 px-1.5 sm:px-2 py-0.5 rounded truncate max-w-[100px] sm:max-w-none" title={warning}>
                               {warning}
                             </span>
                           ))}
                         </div>
                       )}
                       {row.errors.length === 0 && row.warnings.length === 0 && (
-                        <span className="text-[10px] sm:text-xs text-muted-foreground">—</span>
+                        <span className="text-px-10 sm:text-xs text-muted-foreground">—</span>
                       )}
                     </td>
                   </tr>

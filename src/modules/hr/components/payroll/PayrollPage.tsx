@@ -266,16 +266,16 @@ export function PayrollPage() {
                 <div className="text-xs text-muted-foreground">{t('payrollPage.overviewHint')}</div>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Badge variant="secondary" className="text-[11px]">
+                <Badge variant="secondary" className="text-px-11">
                   {t('payrollDraft.kpis.totalNet')}: {formatTnd(activeRun?.totalNet ?? 0)}
                 </Badge>
-                <Badge variant="secondary" className="text-[11px]">
+                <Badge variant="secondary" className="text-px-11">
                   {t('payrollDraft.kpis.totalCnss')}: {formatTnd(totalCnss)}
                 </Badge>
-                <Badge variant="secondary" className="text-[11px]">
+                <Badge variant="secondary" className="text-px-11">
                   {t('payrollDraft.kpis.totalIrpp')}: {formatTnd(totalIrpp)}
                 </Badge>
-                <Badge variant="secondary" className="text-[11px]">
+                <Badge variant="secondary" className="text-px-11">
                   {t('payrollDraft.kpis.period')}: {String(periodMonth).padStart(2, '0')}/{periodYear}
                 </Badge>
               </div>
@@ -288,7 +288,7 @@ export function PayrollPage() {
             <CardHeader>
               <div className="flex items-center justify-between gap-2">
                 <CardTitle className="text-base">{t('payrollPage.runsTitle')}</CardTitle>
-                <Badge variant="secondary" className="text-[11px]">{runs.length}</Badge>
+                <Badge variant="secondary" className="text-px-11">{runs.length}</Badge>
               </div>
             </CardHeader>
             <CardContent className="overflow-x-auto">
@@ -344,7 +344,7 @@ export function PayrollPage() {
               <div className="flex items-center justify-between gap-2">
                 <CardTitle className="text-base">{t('payrollDraft.entriesTitle')}</CardTitle>
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="secondary" className="text-[11px]">{activeRun?.entries?.length ?? 0}</Badge>
+                  <Badge variant="secondary" className="text-px-11">{activeRun?.entries?.length ?? 0}</Badge>
                   <Button
                     size="sm" variant="outline" className="gap-2"
                     disabled={!activeRun || selectedUserIds.size === 0 || isExporting}

@@ -133,7 +133,7 @@ export function ExportProgressDialog({
                   <p className="text-lg font-semibold text-foreground">
                     {progress.current}
                   </p>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                  <p className="text-px-10 text-muted-foreground uppercase tracking-wide">
                     Processed
                   </p>
                 </div>
@@ -141,7 +141,7 @@ export function ExportProgressDialog({
                   <p className="text-lg font-semibold text-foreground">
                     {progress.total}
                   </p>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                  <p className="text-px-10 text-muted-foreground uppercase tracking-wide">
                     Total
                   </p>
                 </div>
@@ -149,7 +149,7 @@ export function ExportProgressDialog({
                   <p className="text-lg font-semibold text-foreground">
                     {imageCount > 0 ? imageCount : (totalFiles || '-')}
                   </p>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                  <p className="text-px-10 text-muted-foreground uppercase tracking-wide">
                     {imageCount > 0 ? 'Images' : 'Files'}
                   </p>
                 </div>

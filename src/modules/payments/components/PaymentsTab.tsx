@@ -409,7 +409,7 @@ export function PaymentsTab({ entityType, entityId, entityNumber, totalAmount, c
                       {formatAmount(payment.amount)}
                     </TableCell>
                     <TableCell className="py-1.5">
-                      <Badge className={`${statusColor(payment.status)} border text-[10px] px-1.5 py-0`}>
+                      <Badge className={`${statusColor(payment.status)} border text-px-10 px-1.5 py-0`}>
                         {t(payment.status)}
                       </Badge>
                     </TableCell>

@@ -30,7 +30,7 @@ export function PayrollSettings() {
                 <Percent className="h-4 w-4 text-primary" />
                 {t('payrollSettings.ratesTitle')}
               </div>
-              <Badge variant="secondary" className="text-[11px]">{t('payrollSettings.defaultsBadge')}</Badge>
+              <Badge variant="secondary" className="text-px-11">{t('payrollSettings.defaultsBadge')}</Badge>
             </div>
             <div className="mt-2 space-y-1 text-sm">
               <div className="flex justify-between">

@@ -83,7 +83,7 @@ export function FloatingHeaderBlock({
                   {item.value}{item.suffix || ''}
                 </div>
                 <div
-                  className="text-[9px] sm:text-xs font-medium uppercase tracking-widest opacity-60"
+                  className="text-px-9 sm:text-xs font-medium uppercase tracking-widest opacity-60"
                   style={{ color: theme.textColor, fontFamily: theme.bodyFont }}
                 >
                   {item.label}
@@ -125,7 +125,7 @@ export function FloatingHeaderBlock({
                 <span className="text-sm sm:text-lg font-bold" style={{ color: theme.primaryColor, fontFamily: theme.headingFont }}>
                   {item.value}{item.suffix || ''}
                 </span>
-                <span className="text-[10px] sm:text-xs font-medium opacity-60 hidden sm:inline" style={{ color: theme.textColor }}>
+                <span className="text-px-10 sm:text-xs font-medium opacity-60 hidden sm:inline" style={{ color: theme.textColor }}>
                   {item.label}
                 </span>
               </div>
@@ -170,7 +170,7 @@ export function FloatingHeaderBlock({
               >
                 {item.value}{item.suffix || ''}
               </div>
-              <div className="text-[9px] sm:text-xs opacity-50 uppercase tracking-wider font-medium" style={{ color: theme.textColor, fontFamily: theme.bodyFont }}>
+              <div className="text-px-9 sm:text-xs opacity-50 uppercase tracking-wider font-medium" style={{ color: theme.textColor, fontFamily: theme.bodyFont }}>
                 {item.label}
               </div>
             </div>

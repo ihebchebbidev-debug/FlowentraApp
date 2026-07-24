@@ -195,7 +195,7 @@ export default function CreateGoodsReceiptPage() {
                   <TableRow key={item.poItemId}>
                     <TableCell>
                       <div className="text-xs font-medium">{item.articleName}</div>
-                      <div className="text-[10px] text-muted-foreground">{item.articleNumber}</div>
+                      <div className="text-px-10 text-muted-foreground">{item.articleNumber}</div>
                     </TableCell>
                     <TableCell className="text-xs text-center">{item.orderedQty}</TableCell>
                     <TableCell className="text-xs text-center text-muted-foreground">{item.alreadyReceived}</TableCell>

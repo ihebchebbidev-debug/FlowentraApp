@@ -44,7 +44,7 @@ function InfoRow({ icon: Icon, label, value, className }: { icon: React.ElementT
     <div className={cn("flex items-start gap-3", className)}>
       <Icon className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
       <div className="flex-1 min-w-0">
-        <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{label}</p>
+        <p className="text-px-11 font-medium text-muted-foreground uppercase tracking-wider">{label}</p>
         <div className="mt-0.5 text-sm text-foreground">{value}</div>
       </div>
     </div>
@@ -93,10 +93,10 @@ export function EventViewDialog({ open, onOpenChange, event, onEdit, onDelete }:
               <div className="flex-1 min-w-0">
                 <DialogTitle className="text-lg font-semibold text-left leading-tight">{event.title}</DialogTitle>
                 <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                  <Badge className={`text-[11px] ${getSourceBadgeClass(event.type)}`}>{sourceLabel}</Badge>
-                  <Badge variant="secondary" className="text-[11px] capitalize">{statusLabel}</Badge>
-                  <Badge className={`text-[11px] capitalize ${PRIORITY_COLORS[event.priority] || PRIORITY_COLORS.medium}`}>{priorityLabel}</Badge>
-                  {!isEditable && <Badge variant="outline" className="text-[10px]">{String(t('auto_generated'))}</Badge>}
+                  <Badge className={`text-px-11 ${getSourceBadgeClass(event.type)}`}>{sourceLabel}</Badge>
+                  <Badge variant="secondary" className="text-px-11 capitalize">{statusLabel}</Badge>
+                  <Badge className={`text-px-11 capitalize ${PRIORITY_COLORS[event.priority] || PRIORITY_COLORS.medium}`}>{priorityLabel}</Badge>
+                  {!isEditable && <Badge variant="outline" className="text-px-10">{String(t('auto_generated'))}</Badge>}
                 </div>
               </div>
             </div>
@@ -187,7 +187,7 @@ export function EventViewDialog({ open, onOpenChange, event, onEdit, onDelete }:
             <div className="rounded-lg bg-muted/40 p-3 border border-border/40">
               <div className="flex items-center gap-2 mb-1.5">
                 <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{String(t('event_description'))}</span>
+                <span className="text-px-11 font-medium text-muted-foreground uppercase tracking-wider">{String(t('event_description'))}</span>
               </div>
               <p className="text-sm leading-relaxed whitespace-pre-line text-foreground">{event.description}</p>
             </div>
@@ -198,7 +198,7 @@ export function EventViewDialog({ open, onOpenChange, event, onEdit, onDelete }:
           <Separator />
 
           {/* Footer meta */}
-          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+          <div className="flex items-center justify-between text-px-11 text-muted-foreground">
             <span>{String(t('tooltip.source'))}: {sourceLabel}</span>
             <span>{String(t('detail.updated'))}: {dayjs(event.updatedAt).format("MMM D, YYYY")}</span>
           </div>

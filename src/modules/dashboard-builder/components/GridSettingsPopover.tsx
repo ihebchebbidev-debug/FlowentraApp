@@ -74,7 +74,7 @@ export function GridSettingsPopover({ settings, onChange }: Props) {
         <div className="space-y-4">
           <div>
             <h4 className="text-xs font-semibold text-foreground mb-0.5">{gs('title')}</h4>
-            <p className="text-[10px] text-muted-foreground">{gs('subtitle')}</p>
+            <p className="text-px-10 text-muted-foreground">{gs('subtitle')}</p>
           </div>
 
           {/* Presets */}
@@ -87,7 +87,7 @@ export function GridSettingsPopover({ settings, onChange }: Props) {
                   <button
                     key={tKey}
                     onClick={() => onChange({ ...settings, gap, rowHeight, radius })}
-                    className={`flex flex-col items-center gap-1 px-2 py-2 rounded-md text-[10px] font-medium transition-all duration-150 ${
+                    className={`flex flex-col items-center gap-1 px-2 py-2 rounded-md text-px-10 font-medium transition-all duration-150 ${
                       isActive
                         ? 'bg-primary/10 text-primary ring-1 ring-primary/30'
                         : 'hover:bg-muted text-muted-foreground hover:text-foreground'
@@ -107,7 +107,7 @@ export function GridSettingsPopover({ settings, onChange }: Props) {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label className="text-xs font-medium">{gs('spacing')}</Label>
-              <span className="text-[10px] text-muted-foreground tabular-nums">{settings.gap}px</span>
+              <span className="text-px-10 text-muted-foreground tabular-nums">{settings.gap}px</span>
             </div>
             <Slider
               value={[settings.gap]}
@@ -123,7 +123,7 @@ export function GridSettingsPopover({ settings, onChange }: Props) {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label className="text-xs font-medium">{gs('rowHeight')}</Label>
-              <span className="text-[10px] text-muted-foreground tabular-nums">{settings.rowHeight}px</span>
+              <span className="text-px-10 text-muted-foreground tabular-nums">{settings.rowHeight}px</span>
             </div>
             <Slider
               value={[settings.rowHeight]}
@@ -139,7 +139,7 @@ export function GridSettingsPopover({ settings, onChange }: Props) {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label className="text-xs font-medium">{gs('cornerRadius')}</Label>
-              <span className="text-[10px] text-muted-foreground tabular-nums">{settings.radius}px</span>
+              <span className="text-px-10 text-muted-foreground tabular-nums">{settings.radius}px</span>
             </div>
             <Slider
               value={[settings.radius]}
@@ -161,7 +161,7 @@ export function GridSettingsPopover({ settings, onChange }: Props) {
                 <button
                   key={value}
                   onClick={() => update('cardStyle', value)}
-                  className={`flex flex-col items-center gap-1 px-2 py-2 rounded-md text-[10px] font-medium transition-all duration-150 ${
+                  className={`flex flex-col items-center gap-1 px-2 py-2 rounded-md text-px-10 font-medium transition-all duration-150 ${
                     settings.cardStyle === value
                       ? 'bg-primary/10 text-primary ring-1 ring-primary/30'
                       : 'hover:bg-muted text-muted-foreground hover:text-foreground'
@@ -184,7 +184,7 @@ export function GridSettingsPopover({ settings, onChange }: Props) {
                 <button
                   key={value}
                   onClick={() => update('widgetAnimation', value)}
-                  className={`flex flex-col items-center gap-1 px-1.5 py-2 rounded-md text-[10px] font-medium transition-all duration-150 ${
+                  className={`flex flex-col items-center gap-1 px-1.5 py-2 rounded-md text-px-10 font-medium transition-all duration-150 ${
                     settings.widgetAnimation === value
                       ? 'bg-primary/10 text-primary ring-1 ring-primary/30'
                       : 'hover:bg-muted text-muted-foreground hover:text-foreground'

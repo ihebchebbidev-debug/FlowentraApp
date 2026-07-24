@@ -108,7 +108,7 @@ export function WorkflowVersionBadge({
             >
               <EffectiveIcon className="h-3 w-3" />
               {t(effectiveConfig.label, effectiveStatus.charAt(0).toUpperCase() + effectiveStatus.slice(1))}
-              <span className="text-[10px] opacity-70">v{currentVersion}</span>
+              <span className="text-px-10 opacity-70">v{currentVersion}</span>
             </Badge>
           </TooltipTrigger>
           <TooltipContent>
@@ -130,7 +130,7 @@ export function WorkflowVersionBadge({
         <DropdownMenuContent align="end" className="w-56">
           <div className="px-2 py-1.5">
             <p className="text-xs font-medium">{t('version.title', 'Version History')}</p>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-px-10 text-muted-foreground">
               {workflowName || t('version.currentWorkflow', 'Current Workflow')}
             </p>
           </div>
@@ -170,7 +170,7 @@ export function WorkflowVersionBadge({
             <>
               <DropdownMenuSeparator />
               <div className="px-2 py-1">
-                <p className="text-[10px] text-muted-foreground font-medium mb-1">
+                <p className="text-px-10 text-muted-foreground font-medium mb-1">
                   {t('version.previousVersions', 'Previous Versions')}
                 </p>
               </div>
@@ -187,7 +187,7 @@ export function WorkflowVersionBadge({
                     >
                       <RotateCcw className="h-3.5 w-3.5 mr-2" />
                       <span className="flex-1">v{v.version}</span>
-                      <Badge variant="outline" className={cn('text-[9px] h-4 px-1', vConfig.className)}>
+                      <Badge variant="outline" className={cn('text-px-9 h-4 px-1', vConfig.className)}>
                         <VIcon className="h-2 w-2 mr-0.5" />
                         {t(vConfig.label)}
                       </Badge>

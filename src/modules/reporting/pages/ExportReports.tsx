@@ -244,7 +244,7 @@ export const ExportReports = () => {
 
             <div className="space-y-4">
               <div>
-                <Label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t('export.dateRange', 'Date Range')}</Label>
+                <Label className="text-px-11 font-semibold uppercase tracking-wide text-muted-foreground">{t('export.dateRange', 'Date Range')}</Label>
                 <div className="mt-2 flex gap-2">
                   <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-9" />
                   <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-9" />
@@ -252,7 +252,7 @@ export const ExportReports = () => {
               </div>
 
               <div>
-                <Label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t('export.format', 'Format')}</Label>
+                <Label className="text-px-11 font-semibold uppercase tracking-wide text-muted-foreground">{t('export.format', 'Format')}</Label>
                 <RadioGroup value={format} onValueChange={(v) => setFormat(v as ExportFormat)} className="mt-2 flex gap-4">
                   {[
                     { v: 'xlsx' as const, Icon: FileSpreadsheet, label: 'Excel', cls: 'text-[hsl(142_64%_38%)]' },
@@ -268,7 +268,7 @@ export const ExportReports = () => {
               </div>
 
               <div>
-                <Label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t('export.layout', 'File Layout')}</Label>
+                <Label className="text-px-11 font-semibold uppercase tracking-wide text-muted-foreground">{t('export.layout', 'File Layout')}</Label>
                 <RadioGroup value={combine} onValueChange={(v) => setCombine(v as Combine)} className="mt-2 grid gap-2">
                   <label className="flex cursor-pointer items-start gap-2 rounded-md border p-2 text-xs hover:bg-muted">
                     <RadioGroupItem value="single" className="mt-0.5" />
@@ -290,7 +290,7 @@ export const ExportReports = () => {
               </div>
 
               <div>
-                <Label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t('export.reports', 'Reports to Include')}</Label>
+                <Label className="text-px-11 font-semibold uppercase tracking-wide text-muted-foreground">{t('export.reports', 'Reports to Include')}</Label>
                 <div className="mt-2 space-y-2">
                   {scopes.map((s) => (
                     <label key={s} className="flex cursor-pointer items-center gap-2 rounded-md p-1 hover:bg-muted">

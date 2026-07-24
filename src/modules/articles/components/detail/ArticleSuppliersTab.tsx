@@ -170,7 +170,7 @@ export function ArticleSuppliersTab({ articleId }: ArticleSuppliersTabProps) {
                     <TableCell className="text-xs text-center">{as.minOrderQty}</TableCell>
                     <TableCell className="text-xs text-center">
                       {as.isPreferred ? (
-                        <Badge className="text-[10px] bg-primary/10 text-primary border-primary/20">★ {t('detail.suppliers.preferredLabel')}</Badge>
+                        <Badge className="text-px-10 bg-primary/10 text-primary border-primary/20">★ {t('detail.suppliers.preferredLabel')}</Badge>
                       ) : (
                         <span className="text-muted-foreground">-</span>
                       )}
@@ -222,11 +222,11 @@ export function ArticleSuppliersTab({ articleId }: ArticleSuppliersTabProps) {
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-medium">{fmt(ph.oldPrice)} → {fmt(ph.newPrice)} {ph.currency || 'TND'}</span>
-                          <Badge variant="outline" className={`text-[10px] ${isUp ? 'text-destructive border-destructive/30' : 'text-green-600 border-green-600/30'}`}>
+                          <Badge variant="outline" className={`text-px-10 ${isUp ? 'text-destructive border-destructive/30' : 'text-green-600 border-green-600/30'}`}>
                             {isUp ? '+' : ''}{pctChange}%
                           </Badge>
                         </div>
-                        <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5">
+                        <div className="flex items-center gap-1 text-px-10 text-muted-foreground mt-0.5">
                           <Calendar className="h-3 w-3" />
                           {ph.changedAt ? new Date(ph.changedAt).toLocaleDateString('fr-TN') : '-'}
                           {ph.changedBy && <span className="ml-1">• {ph.changedBy}</span>}

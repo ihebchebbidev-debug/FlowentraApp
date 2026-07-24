@@ -530,7 +530,7 @@ function SupplierInvoiceDetailContent() {
               <Card>
                 <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Shield className="h-4 w-4" /> {t('compliance.rs')}</CardTitle></CardHeader>
                 <CardContent className="space-y-2 text-xs">
-                  <div className="flex justify-between"><span className="text-muted-foreground">{t('compliance.applicable')}</span><Badge variant={inv.rsApplicable ? 'default' : 'outline'} className="text-[10px]">{inv.rsApplicable ? t('compliance.yes') : t('compliance.no')}</Badge></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">{t('compliance.applicable')}</span><Badge variant={inv.rsApplicable ? 'default' : 'outline'} className="text-px-10">{inv.rsApplicable ? t('compliance.yes') : t('compliance.no')}</Badge></div>
                   {inv.rsApplicable && <>
                     <div className="flex justify-between"><span className="text-muted-foreground">{t('compliance.rsType')}</span><span>{rsType?.labelFr || inv.rsTypeCode}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">{t('compliance.rate')}</span><span>{rsType?.rate}%</span></div>
@@ -542,7 +542,7 @@ function SupplierInvoiceDetailContent() {
                 <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><FileText className="h-4 w-4" /> {t('compliance.factureEnLigne')}</CardTitle></CardHeader>
                 <CardContent className="space-y-2 text-xs">
                   <div className="flex justify-between"><span className="text-muted-foreground">{t('fields.status')}</span>
-                    <Badge variant="outline" className="text-[10px]">
+                    <Badge variant="outline" className="text-px-10">
                       {inv.factureEnLigneStatus === 'validated' && <CheckCircle className="h-3 w-3 mr-1 text-green-500" />}
                       {inv.factureEnLigneStatus === 'rejected' && <XCircle className="h-3 w-3 mr-1 text-destructive" />}
                       {inv.factureEnLigneStatus === 'pending' && <AlertTriangle className="h-3 w-3 mr-1 text-amber-500" />}
@@ -557,13 +557,13 @@ function SupplierInvoiceDetailContent() {
                 <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Shield className="h-4 w-4" /> {t('compliance.tej')}</CardTitle></CardHeader>
                 <CardContent className="space-y-2 text-xs">
                   <div className="flex justify-between"><span className="text-muted-foreground">{t('compliance.synced')}</span>
-                    <Badge variant={inv.tejSynced ? 'default' : 'outline'} className="text-[10px]">
+                    <Badge variant={inv.tejSynced ? 'default' : 'outline'} className="text-px-10">
                       {inv.tejSynced ? <CheckCircle className="h-3 w-3 mr-1" /> : <AlertTriangle className="h-3 w-3 mr-1" />}
                       {t(`tejStatus.${inv.tejSyncStatus || 'pending'}`)}
                     </Badge>
                   </div>
                   {inv.tejSyncDate && <div className="flex justify-between"><span className="text-muted-foreground">{t('compliance.syncDate')}</span><span>{inv.tejSyncDate}</span></div>}
-                  {inv.tejErrorMessage && <div className="text-destructive text-[10px]">{inv.tejErrorMessage}</div>}
+                  {inv.tejErrorMessage && <div className="text-destructive text-px-10">{inv.tejErrorMessage}</div>}
                 </CardContent>
               </Card>
             </div>

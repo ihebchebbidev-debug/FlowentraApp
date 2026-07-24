@@ -252,7 +252,7 @@ export function HRDashboard() {
             <CardHeader>
               <div className="flex items-center justify-between gap-2">
                 <CardTitle className="text-base">{t('dashboardPage.upcomingTitle')}</CardTitle>
-                <Badge variant="secondary" className="text-[11px]">{upcomingLeaves.length}</Badge>
+                <Badge variant="secondary" className="text-px-11">{upcomingLeaves.length}</Badge>
               </div>
             </CardHeader>
             <CardContent>
@@ -320,7 +320,7 @@ export function HRDashboard() {
                           <Link to={`/dashboard/hr/employees/${c.userId}`} className="truncate hover:underline">
                             {c.userName} {c.contractType ? `· ${c.contractType}` : ''}
                           </Link>
-                          <Badge variant={c.daysUntilExpiry <= 14 ? 'destructive' : 'secondary'} className="text-[10px]">
+                          <Badge variant={c.daysUntilExpiry <= 14 ? 'destructive' : 'secondary'} className="text-px-10">
                             {t('dashboardPage.daysLeft', { count: c.daysUntilExpiry, defaultValue: '{{count}} days' })}
                           </Badge>
                         </li>

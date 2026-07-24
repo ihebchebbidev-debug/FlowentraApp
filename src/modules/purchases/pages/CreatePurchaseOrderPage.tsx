@@ -369,7 +369,7 @@ export default function CreatePurchaseOrderPage() {
           <CardHeader className="pb-2 flex flex-row items-center justify-between">
             <CardTitle className="text-sm">{t('create.items')}</CardTitle>
             <div className="flex items-center gap-2">
-              <span className="hidden sm:inline text-[10px] text-muted-foreground">
+              <span className="hidden sm:inline text-px-10 text-muted-foreground">
                 {t('create.shortcutsHint', 'Alt+N add line · Enter next · Ctrl+S save')}
               </span>
               <Button size="sm" variant="outline" onClick={addItem}><Plus className="h-3.5 w-3.5 mr-1" /> {t('create.addItem')}</Button>
@@ -430,7 +430,7 @@ export default function CreatePurchaseOrderPage() {
                             type="button"
                             onClick={() => updateItem(idx, 'unitPrice', sa.purchasePrice)}
                             title={t('create.useLastPrice', 'Use last price')}
-                            className={`block text-[10px] mt-0.5 hover:underline ${differs ? 'text-amber-600' : 'text-muted-foreground'}`}
+                            className={`block text-px-10 mt-0.5 hover:underline ${differs ? 'text-amber-600' : 'text-muted-foreground'}`}
                           >
                             {t('create.lastPrice', 'Last: {{price}} {{currency}}', { price: fmt(sa.purchasePrice), currency: sa.currency || currency.code })}
                           </button>

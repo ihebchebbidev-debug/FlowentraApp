@@ -124,7 +124,7 @@ export function JobConversionModeSettings() {
                           {t(mode.titleKey, mode.titleFallback)}
                         </h3>
                         {mode.value === 'installation' && (
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary border-primary/20">
+                          <Badge variant="outline" className="text-px-10 px-1.5 py-0 bg-primary/10 text-primary border-primary/20">
                             Default
                           </Badge>
                         )}

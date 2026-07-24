@@ -229,7 +229,7 @@ export function EditUserModal({ open, onOpenChange, user, onUserUpdated }: EditU
               <GraduationCap className="h-4 w-4" />
               {t('editUser.tabs.skills')}
               {userSkills.length > 0 && (
-                <Badge variant="secondary" className="h-4 px-1 text-[10px] ml-0.5">{userSkills.length}</Badge>
+                <Badge variant="secondary" className="h-4 px-1 text-px-10 ml-0.5">{userSkills.length}</Badge>
               )}
             </TabsTrigger>
             <TabsTrigger value="password" className="flex items-center gap-2">
@@ -404,16 +404,16 @@ export function EditUserModal({ open, onOpenChange, user, onUserUpdated }: EditU
                           <div className="min-w-0">
                             <p className="text-sm font-medium truncate">{us.skillName}</p>
                             {us.skillCategory && (
-                              <p className="text-[11px] text-muted-foreground">{us.skillCategory}</p>
+                              <p className="text-px-11 text-muted-foreground">{us.skillCategory}</p>
                             )}
                           </div>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border ${proficiencyBadgeClass[profLevel] ?? proficiencyBadgeClass.beginner}`}>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-px-11 font-medium border ${proficiencyBadgeClass[profLevel] ?? proficiencyBadgeClass.beginner}`}>
                             {t(`editUser.skills.proficiencyLabels.${profLevel}`, us.proficiencyLevel ?? 'beginner')}
                           </span>
                           {us.yearsOfExperience && (
-                            <span className="text-[11px] text-muted-foreground">{us.yearsOfExperience} {t('editUser.skills.yearsExpSuffix')}</span>
+                            <span className="text-px-11 text-muted-foreground">{us.yearsOfExperience} {t('editUser.skills.yearsExpSuffix')}</span>
                           )}
                           <Button
                             variant="ghost"
@@ -460,7 +460,7 @@ export function EditUserModal({ open, onOpenChange, user, onUserUpdated }: EditU
                             <div className="flex items-center gap-2">
                               <span>{skill.name}</span>
                               {skill.category && (
-                                <span className="text-[10px] text-muted-foreground">· {skill.category}</span>
+                                <span className="text-px-10 text-muted-foreground">· {skill.category}</span>
                               )}
                             </div>
                           </SelectItem>
@@ -480,7 +480,7 @@ export function EditUserModal({ open, onOpenChange, user, onUserUpdated }: EditU
                     <SelectContent className="bg-popover border shadow-md z-50">
                       {PROFICIENCY_LEVELS.map(level => (
                         <SelectItem key={level} value={level}>
-                          <span className={`capitalize px-1.5 py-0.5 rounded text-[11px] font-medium ${proficiencyBadgeClass[level]}`}>
+                          <span className={`capitalize px-1.5 py-0.5 rounded text-px-11 font-medium ${proficiencyBadgeClass[level]}`}>
                             {t(`editUser.skills.proficiencyLabels.${level}`, level)}
                           </span>
                         </SelectItem>

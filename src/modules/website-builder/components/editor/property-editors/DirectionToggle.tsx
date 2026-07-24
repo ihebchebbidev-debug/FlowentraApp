@@ -13,7 +13,7 @@ interface DirectionToggleProps {
 export function DirectionToggle({ value, onChange }: DirectionToggleProps) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-[11px] font-medium text-foreground/70">Text Direction</Label>
+      <Label className="text-px-11 font-medium text-foreground/70">Text Direction</Label>
       <div className="flex gap-1">
         <Button
           variant={value === 'ltr' ? 'default' : 'outline'}

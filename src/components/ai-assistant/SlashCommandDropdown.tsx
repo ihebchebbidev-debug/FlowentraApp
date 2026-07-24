@@ -342,15 +342,15 @@ export function SlashCommandDropdown({
       <div className="px-3 py-2 border-t border-border bg-muted/30 flex items-center justify-between text-xs text-muted-foreground">
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">↑↓</kbd>
+            <kbd className="px-1.5 py-0.5 bg-muted rounded text-px-10 font-mono">↑↓</kbd>
             {t('navigate')}
           </span>
           <span className="flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">↵</kbd>
+            <kbd className="px-1.5 py-0.5 bg-muted rounded text-px-10 font-mono">↵</kbd>
             {t('select')}
           </span>
           <span className="flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">esc</kbd>
+            <kbd className="px-1.5 py-0.5 bg-muted rounded text-px-10 font-mono">esc</kbd>
             {t('close')}
           </span>
         </div>

@@ -380,7 +380,7 @@ export function DispatchingInterface() {
           </div>
           <div className="min-w-0">
             <h1 className="text-base sm:text-xl font-semibold text-foreground truncate">{t('dispatcher.title')}</h1>
-            <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">{t('dispatcher.description')}</p>
+            <p className="text-px-10 sm:text-px-11 text-muted-foreground truncate">{t('dispatcher.description')}</p>
           </div>
         </div>
 
@@ -420,7 +420,7 @@ export function DispatchingInterface() {
 
           {/* Smart Planning group — always visible, clearly labeled */}
           <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-primary/30 bg-primary/5">
-            <span className="hidden md:inline text-[11px] font-medium text-primary uppercase tracking-wide pr-1">
+            <span className="hidden md:inline text-px-11 font-medium text-primary uppercase tracking-wide pr-1">
               {t('dispatcher.smart_planning', { defaultValue: 'Smart Planning' })}
             </span>
 
@@ -430,7 +430,7 @@ export function DispatchingInterface() {
                   <Sparkles className="h-4 w-4" />
                   <span>{t('dispatcher.suggest.button', { defaultValue: 'Suggest' })}</span>
                   {jobs.length > 0 && (
-                    <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">{jobs.length}</Badge>
+                    <Badge variant="secondary" className="h-5 px-1.5 text-px-10">{jobs.length}</Badge>
                   )}
                 </Button>
               </PopoverTrigger>
@@ -446,7 +446,7 @@ export function DispatchingInterface() {
                   {suggestions.map(({ job, ranked }) => (
                     <div key={job.id} className="p-3">
                       <div className="text-sm font-medium truncate">{job.title}</div>
-                      <div className="text-[11px] text-muted-foreground mb-2 truncate">{job.customerName}</div>
+                      <div className="text-px-11 text-muted-foreground mb-2 truncate">{job.customerName}</div>
                       {ranked.length === 0 ? (
                         <div className="text-xs text-muted-foreground">{t('dispatcher.suggest.no_tech', { defaultValue: 'No technicians available' })}</div>
                       ) : (
@@ -679,7 +679,7 @@ export function DispatchingInterface() {
             <ClipboardList className="h-4 w-4 flex-shrink-0" />
             <span>{t('dispatcher.jobs', { defaultValue: 'Jobs' })}</span>
             {jobs.length > 0 && (
-              <span className="flex items-center justify-center rounded-full bg-primary-foreground text-primary text-[11px] font-bold h-5 min-w-[20px] px-1 -mr-1">
+              <span className="flex items-center justify-center rounded-full bg-primary-foreground text-primary text-px-11 font-bold h-5 min-w-[20px] px-1 -mr-1">
                 {jobs.length}
               </span>
             )}

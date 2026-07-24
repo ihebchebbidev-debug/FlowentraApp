@@ -117,7 +117,7 @@ function SortableRow({
       </button>
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm font-medium">{label}</div>
-        {caption && <div className="truncate text-[11px] text-muted-foreground">{caption}</div>}
+        {caption && <div className="truncate text-px-11 text-muted-foreground">{caption}</div>}
       </div>
       <Button
         type="button"
@@ -219,7 +219,7 @@ export function DashboardCustomizeSheet(props: Props) {
                   {t('customize.pinned', { defaultValue: 'Pinned reporting widgets' })}
                 </h3>
               </div>
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-px-10 text-muted-foreground">
                 {visiblePinned}/{pinnedOrder.length}
               </span>
             </div>
@@ -285,7 +285,7 @@ export function DashboardCustomizeSheet(props: Props) {
                   {t('customize.defaults', { defaultValue: 'Default cards' })}
                 </h3>
               </div>
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-px-10 text-muted-foreground">
                 {visibleDefault}/{defaultOrder.length}
               </span>
             </div>

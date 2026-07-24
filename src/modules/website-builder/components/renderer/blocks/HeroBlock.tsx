@@ -321,7 +321,7 @@ function CarouselHero({
 
       {/* Editor info */}
       {isEditing && (
-        <div className="absolute top-3 left-3 z-20 bg-black/60 text-white text-[10px] px-3 py-1.5 rounded-lg">
+        <div className="absolute top-3 left-3 z-20 bg-black/60 text-white text-px-10 px-3 py-1.5 rounded-lg">
           Carousel: {total} slides • {transition} • {autoPlay ? `${autoPlayInterval}s auto` : 'manual'}
         </div>
       )}
@@ -412,7 +412,7 @@ function SplitHero({
         <>{contentSection}{imageSection}</>
       )}
       {isEditing && (
-        <div className="absolute top-3 left-3 z-20 bg-black/60 text-white text-[10px] px-3 py-1.5 rounded-lg">
+        <div className="absolute top-3 left-3 z-20 bg-black/60 text-white text-px-10 px-3 py-1.5 rounded-lg">
           Split Hero • Image {splitPosition}
         </div>
       )}
@@ -457,7 +457,7 @@ function GradientHero({
         buttonList={buttonList}
       />
       {isEditing && (
-        <div className="absolute top-3 left-3 z-20 bg-black/60 text-white text-[10px] px-3 py-1.5 rounded-lg">
+        <div className="absolute top-3 left-3 z-20 bg-black/60 text-white text-px-10 px-3 py-1.5 rounded-lg">
           Gradient Hero • {gradientAngle}°
         </div>
       )}
@@ -506,7 +506,7 @@ function VideoHero({
       />
 
       {isEditing && (
-        <div className="absolute top-3 left-3 z-20 bg-black/60 text-white text-[10px] px-3 py-1.5 rounded-lg">
+        <div className="absolute top-3 left-3 z-20 bg-black/60 text-white text-px-10 px-3 py-1.5 rounded-lg">
           Video Hero • {videoUrl ? 'Video set' : 'No video URL'}
         </div>
       )}
@@ -703,7 +703,7 @@ function EditorialHero({
         style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
       >
         <span
-          className="text-[10px] tracking-[0.4em] uppercase opacity-50 font-medium"
+          className="text-px-10 tracking-[0.4em] uppercase opacity-50 font-medium"
           style={{ color: theme.secondaryColor, fontFamily: theme.bodyFont }}
         >
           Est. {year} — Editorial Series
@@ -715,7 +715,7 @@ function EditorialHero({
         <div className="flex items-center gap-3">
           <span className="h-px w-10" style={{ backgroundColor: theme.primaryColor }} />
           <span
-            className="text-[11px] tracking-[0.3em] uppercase font-semibold"
+            className="text-px-11 tracking-[0.3em] uppercase font-semibold"
             style={{ color: theme.primaryColor, fontFamily: theme.bodyFont }}
           >
             {(subheading || '').split(' ').slice(0, 3).join(' ') || 'Featured Story'}
@@ -803,7 +803,7 @@ function EditorialHero({
         )}
 
         {/* Bottom meta line */}
-        <div className="flex items-center gap-4 pt-6 text-[11px] tracking-widest uppercase opacity-50" style={{ color: theme.secondaryColor, fontFamily: theme.bodyFont }}>
+        <div className="flex items-center gap-4 pt-6 text-px-11 tracking-widest uppercase opacity-50" style={{ color: theme.secondaryColor, fontFamily: theme.bodyFont }}>
           <span>01 / Chapter</span>
           <span className="h-px flex-1 max-w-[60px]" style={{ backgroundColor: theme.secondaryColor, opacity: 0.4 }} />
           <span>Scroll ↓</span>
@@ -832,7 +832,7 @@ function EditorialHero({
       >
         <div className="text-2xl font-bold leading-none" style={{ color: theme.primaryColor, fontFamily: theme.headingFont }}>№</div>
         <div className="flex-1 min-w-0">
-          <div className="text-[10px] tracking-[0.25em] uppercase opacity-60" style={{ color: theme.secondaryColor, fontFamily: theme.bodyFont }}>Volume {year - 2017}</div>
+          <div className="text-px-10 tracking-[0.25em] uppercase opacity-60" style={{ color: theme.secondaryColor, fontFamily: theme.bodyFont }}>Volume {year - 2017}</div>
           <div className="text-xs font-semibold truncate" style={{ color: theme.textColor, fontFamily: theme.bodyFont }}>{(heading || '').slice(0, 36)}</div>
         </div>
       </div>
@@ -847,7 +847,7 @@ function EditorialHero({
     >
       {splitPosition === 'left' ? <>{imagePane}{content}</> : <>{content}{imagePane}</>}
       {isEditing && (
-        <div className="absolute top-3 left-3 z-20 bg-black/60 text-white text-[10px] px-3 py-1.5 rounded-lg">
+        <div className="absolute top-3 left-3 z-20 bg-black/60 text-white text-px-10 px-3 py-1.5 rounded-lg">
           Editorial Hero • Image {splitPosition}
         </div>
       )}

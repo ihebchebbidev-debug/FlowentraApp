@@ -188,12 +188,12 @@ export const ConditionNode = memo(forwardRef<HTMLDivElement, ConditionNodeProps>
           </div>
 
           <div className="flex-1 min-w-0">
-            <div className="font-semibold text-[13px] text-foreground truncate leading-tight">
+            <div className="font-semibold text-px-13 text-foreground truncate leading-tight">
               {displayLabel}
             </div>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className={cn(
-                'inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wider',
+                'inline-flex items-center px-1.5 py-0.5 rounded-full text-px-9 font-semibold uppercase tracking-wider',
                 badgeBg
               )}>
                 {isSwitch ? t('switch') : t('conditionLabel')}
@@ -205,7 +205,7 @@ export const ConditionNode = memo(forwardRef<HTMLDivElement, ConditionNodeProps>
         {/* IF/ELSE: Condition expression */}
         {!isSwitch && conditionField && (
           <div className="px-3.5 pb-3">
-            <div className="text-[11px] text-muted-foreground bg-muted/50 rounded-lg px-2.5 py-1.5 font-mono">
+            <div className="text-px-11 text-muted-foreground bg-muted/50 rounded-lg px-2.5 py-1.5 font-mono">
               <span className="text-warning">{translateField(conditionField)}</span>
               {' '}
               <span className="text-muted-foreground">{translateOperator(conditionOperator)}</span>
@@ -219,11 +219,11 @@ export const ConditionNode = memo(forwardRef<HTMLDivElement, ConditionNodeProps>
         {isSwitch && (
           <div className="px-3.5 pb-2">
             {switchField ? (
-              <div className="text-[11px] text-muted-foreground bg-muted/50 rounded-lg px-2.5 py-1.5 font-mono mb-2">
+              <div className="text-px-11 text-muted-foreground bg-muted/50 rounded-lg px-2.5 py-1.5 font-mono mb-2">
                 <span className="text-violet-600 dark:text-violet-400">{translateField(switchField)}</span>
               </div>
             ) : (
-              <div className="text-[11px] text-muted-foreground/60 bg-muted/30 rounded-lg px-2.5 py-1.5 mb-2 text-center">
+              <div className="text-px-11 text-muted-foreground/60 bg-muted/30 rounded-lg px-2.5 py-1.5 mb-2 text-center">
                 {t('nodeUi.clickToConfigure', 'Click to configure')}
               </div>
             )}
@@ -231,7 +231,7 @@ export const ConditionNode = memo(forwardRef<HTMLDivElement, ConditionNodeProps>
             {/* Cases list */}
             <div className="space-y-1">
               {switchCases.slice(0, 4).map((caseItem, index) => (
-                <div key={index} className="flex items-center justify-between text-[10px]">
+                <div key={index} className="flex items-center justify-between text-px-10">
                   <span className="bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300 px-2 py-0.5 rounded font-medium truncate max-w-[150px]">
                     {caseItem.label || caseItem.value}
                   </span>
@@ -239,18 +239,18 @@ export const ConditionNode = memo(forwardRef<HTMLDivElement, ConditionNodeProps>
                 </div>
               ))}
               {switchCases.length > 4 && (
-                <div className="text-[10px] text-muted-foreground/50 text-center">
+                <div className="text-px-10 text-muted-foreground/50 text-center">
                   +{switchCases.length - 4} {t('nodeUi.moreCases', 'more')}
                 </div>
               )}
               {switchCases.length === 0 && (
-                <div className="flex items-center gap-1 text-[10px] text-muted-foreground/40 justify-center py-1">
+                <div className="flex items-center gap-1 text-px-10 text-muted-foreground/40 justify-center py-1">
                   <Plus className="h-3 w-3" />
                   {t('nodeUi.addCases', 'Add cases')}
                 </div>
               )}
               {/* Default case indicator */}
-              <div className="flex items-center justify-between text-[10px] border-t border-border/30 pt-1 mt-1">
+              <div className="flex items-center justify-between text-px-10 border-t border-border/30 pt-1 mt-1">
                 <span className="text-muted-foreground italic">{t('nodeUi.default', 'Default')}</span>
                 <span className="text-muted-foreground/50">→</span>
               </div>
@@ -262,13 +262,13 @@ export const ConditionNode = memo(forwardRef<HTMLDivElement, ConditionNodeProps>
         {!isSwitch && (
           <div className="flex border-t border-border/30">
             <div className={cn(
-              'flex-1 py-1.5 text-center text-[10px] font-semibold border-r border-border/30',
+              'flex-1 py-1.5 text-center text-px-10 font-semibold border-r border-border/30',
               data.activeBranch === 'yes' ? 'bg-success text-white' : 'text-success'
             )}>
               ✓ {t('yes')}
             </div>
             <div className={cn(
-              'flex-1 py-1.5 text-center text-[10px] font-semibold',
+              'flex-1 py-1.5 text-center text-px-10 font-semibold',
               data.activeBranch === 'no' ? 'bg-destructive text-white' : 'text-destructive'
             )}>
               ✗ {t('no')}

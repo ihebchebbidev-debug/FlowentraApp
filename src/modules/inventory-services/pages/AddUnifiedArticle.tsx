@@ -669,7 +669,7 @@ const AddUnifiedArticle = () => {
                             <SelectItem key={String(s.id)} value={s.name!}>
                               <span className="flex items-center gap-2">
                                 {s.name}
-                                {s.category && <span className="text-[10px] text-muted-foreground">· {s.category}</span>}
+                                {s.category && <span className="text-px-10 text-muted-foreground">· {s.category}</span>}
                               </span>
                             </SelectItem>
                           ))

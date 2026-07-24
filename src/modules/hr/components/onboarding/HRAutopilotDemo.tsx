@@ -146,7 +146,7 @@ function StatusBadge({ status }: { status: string }) {
     status === 'at-risk'  ? 'At Risk'  :
     status.charAt(0).toUpperCase() + status.slice(1);
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${HR_STATUS_CLS[status] ?? 'bg-muted text-muted-foreground'}`}>
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-px-10 font-medium ${HR_STATUS_CLS[status] ?? 'bg-muted text-muted-foreground'}`}>
       {label}
     </span>
   );
@@ -194,7 +194,7 @@ function DemoSubNav({ current }: { current: string }) {
             <div
               key={item.page}
               id={item.navId}
-              className={`inline-flex items-center gap-1 px-2.5 py-2 text-[11px] font-medium border-b-2 transition-colors whitespace-nowrap cursor-default
+              className={`inline-flex items-center gap-1 px-2.5 py-2 text-px-11 font-medium border-b-2 transition-colors whitespace-nowrap cursor-default
                 ${active ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground'}`}
             >
               <item.icon className="h-3 w-3" />
@@ -248,7 +248,7 @@ function PageDashboard() {
               <div key={l.id} className="flex items-center justify-between px-4 py-2.5">
                 <div>
                   <p className="text-xs font-medium">{l.employee}</p>
-                  <p className="text-[10px] text-muted-foreground">{l.type} · {l.start} → {l.end}</p>
+                  <p className="text-px-10 text-muted-foreground">{l.type} · {l.start} → {l.end}</p>
                 </div>
                 <StatusBadge status={l.status} />
               </div>
@@ -261,17 +261,17 @@ function PageDashboard() {
           <div className="flex items-center gap-2 px-4 py-3 border-b border-border/60">
             <FileText className="h-4 w-4 text-amber-500" />
             <span className="text-sm font-medium">Contract Expiry Alerts</span>
-            <span className="ml-auto text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">1 expiring in 60d</span>
+            <span className="ml-auto text-px-10 bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">1 expiring in 60d</span>
           </div>
           <div className="px-4 py-3 space-y-3">
             <div className="flex items-center justify-between p-2 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
               <div>
                 <p className="text-xs font-medium">Sonia Trabelsi</p>
-                <p className="text-[10px] text-muted-foreground">CDD · Expires 2025-08-01</p>
+                <p className="text-px-10 text-muted-foreground">CDD · Expires 2025-08-01</p>
               </div>
-              <div className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">56 days</div>
+              <div className="text-px-10 bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">56 days</div>
             </div>
-            <p className="text-[10px] text-muted-foreground">No other contracts expiring within 60 days.</p>
+            <p className="text-px-10 text-muted-foreground">No other contracts expiring within 60 days.</p>
           </div>
         </div>
       </div>
@@ -328,7 +328,7 @@ function PageEmployees({ state }: { state: HRDemoState }) {
             id={s.key === 'ready' ? 'hr-demo-emp-stat-ready' : undefined}
             className={`bg-card border rounded-lg p-2.5 cursor-default transition-all ${state.highlightedStat === s.key ? 'border-primary ring-1 ring-primary/30 shadow-md' : 'border-border'}`}
           >
-            <div className="flex items-center gap-1.5 text-muted-foreground text-[10px] font-medium">{s.icon}{s.label}</div>
+            <div className="flex items-center gap-1.5 text-muted-foreground text-px-10 font-medium">{s.icon}{s.label}</div>
             <p className="text-sm font-bold text-foreground mt-0.5">{s.value}</p>
           </div>
         ))}
@@ -365,20 +365,20 @@ function PageEmployees({ state }: { state: HRDemoState }) {
                 >
                   <td className="px-4 py-2.5">
                     <div className="flex items-center gap-2">
-                      <div className={`h-7 w-7 rounded-full ${emp.color} flex items-center justify-center text-white text-[9px] font-bold shrink-0`}>{emp.init}</div>
+                      <div className={`h-7 w-7 rounded-full ${emp.color} flex items-center justify-center text-white text-px-9 font-bold shrink-0`}>{emp.init}</div>
                       <div>
                         <p className="font-medium text-foreground">{emp.name}</p>
-                        <p className="text-[10px] text-muted-foreground">{emp.email}</p>
+                        <p className="text-px-10 text-muted-foreground">{emp.email}</p>
                       </div>
                     </div>
                   </td>
                   <td className="px-4 py-2.5 text-muted-foreground">{emp.dept}</td>
                   <td className="px-4 py-2.5">
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${HR_STATUS_CLS[emp.contract] ?? 'bg-muted text-muted-foreground'}`}>{emp.contract}</span>
+                    <span className={`text-px-10 px-1.5 py-0.5 rounded-full font-medium ${HR_STATUS_CLS[emp.contract] ?? 'bg-muted text-muted-foreground'}`}>{emp.contract}</span>
                   </td>
                   <td className="px-4 py-2.5 text-right font-medium">{fmtTnd(emp.gross)} TND</td>
                   <td className="px-4 py-2.5 text-center">
-                    <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">Ready</span>
+                    <span className="text-px-10 bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">Ready</span>
                   </td>
                   <td className="px-4 py-2.5 text-right">
                     <Eye className="h-3.5 w-3.5 text-muted-foreground inline-block cursor-default" />
@@ -407,8 +407,8 @@ function PageEmployeeDetail({ state }: { state: HRDemoState }) {
           <p className="text-sm text-muted-foreground">{emp.title} · {emp.dept}</p>
           <div className="flex items-center gap-2 mt-1.5">
             <StatusBadge status="active" />
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${HR_STATUS_CLS[emp.contract]}`}>{emp.contract}</span>
-            <span className="text-[10px] text-muted-foreground">Hired {emp.hireDate}</span>
+            <span className={`text-px-10 px-1.5 py-0.5 rounded-full font-medium ${HR_STATUS_CLS[emp.contract]}`}>{emp.contract}</span>
+            <span className="text-px-10 text-muted-foreground">Hired {emp.hireDate}</span>
           </div>
         </div>
         <div className="flex gap-2 shrink-0">
@@ -502,7 +502,7 @@ function PageEmployeeDetail({ state }: { state: HRDemoState }) {
         <div className="bg-card border border-border rounded-lg overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
             <span className="text-sm font-medium">Documents</span>
-            <div className="h-7 px-3 rounded-md bg-primary text-primary-foreground text-[11px] flex items-center gap-1 cursor-default">
+            <div className="h-7 px-3 rounded-md bg-primary text-primary-foreground text-px-11 flex items-center gap-1 cursor-default">
               <Plus className="h-3 w-3" /> Upload
             </div>
           </div>
@@ -516,7 +516,7 @@ function PageEmployeeDetail({ state }: { state: HRDemoState }) {
                 <FileText className="h-4 w-4 text-blue-500 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium">{d.name}</p>
-                  <p className="text-[10px] text-muted-foreground">{d.cat} · {d.date} · {d.by}</p>
+                  <p className="text-px-10 text-muted-foreground">{d.cat} · {d.date} · {d.by}</p>
                 </div>
                 <Download className="h-3.5 w-3.5 text-muted-foreground cursor-default" />
               </div>
@@ -594,7 +594,7 @@ function PageEmployeeDetail({ state }: { state: HRDemoState }) {
                 <div key={l.id} className="flex items-center justify-between px-4 py-2.5 text-xs">
                   <div>
                     <p className="font-medium">{l.type}</p>
-                    <p className="text-[10px] text-muted-foreground">{l.start} → {l.end} · {l.days}d</p>
+                    <p className="text-px-10 text-muted-foreground">{l.start} → {l.end} · {l.days}d</p>
                   </div>
                   <StatusBadge status={l.status} />
                 </div>
@@ -621,9 +621,9 @@ function PageEmployeeDetail({ state }: { state: HRDemoState }) {
                 <span className="text-muted-foreground">{h.date}</span>
                 <div>
                   <p className="font-medium">{h.change}</p>
-                  <p className="text-[10px] text-muted-foreground">{h.from} → {h.to}</p>
+                  <p className="text-px-10 text-muted-foreground">{h.from} → {h.to}</p>
                 </div>
-                <span className="text-[10px] text-muted-foreground">{h.who}</span>
+                <span className="text-px-10 text-muted-foreground">{h.who}</span>
               </div>
             ))}
           </div>
@@ -664,17 +664,17 @@ function PageAttendance() {
         ].map(s => (
           <div key={s.label} className="bg-card border border-border rounded-lg p-3 text-center">
             <p className={`text-lg font-bold ${s.color}`}>{s.value}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">{s.label}</p>
+            <p className="text-px-10 text-muted-foreground mt-0.5">{s.label}</p>
           </div>
         ))}
       </div>
 
       {/* Grid */}
       <div id="hr-demo-att-grid" className="bg-card border border-border rounded-lg overflow-hidden">
-        <div className="px-4 py-2 border-b border-border/60 flex items-center gap-4 text-[10px] text-muted-foreground">
+        <div className="px-4 py-2 border-b border-border/60 flex items-center gap-4 text-px-10 text-muted-foreground">
           <span>Legend:</span>
           {[['P','Present','bg-green-100 text-green-700'],['L','Late','bg-amber-100 text-amber-700'],['A','Absent','bg-red-100 text-red-700'],['LV','Leave','bg-blue-100 text-blue-700']].map(([k,label,cls]) => (
-            <span key={k} className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${cls}`}>{k} = {label}</span>
+            <span key={k} className={`px-1.5 py-0.5 rounded text-px-10 font-medium ${cls}`}>{k} = {label}</span>
           ))}
         </div>
         <div className="overflow-x-auto">
@@ -682,7 +682,7 @@ function PageAttendance() {
             <thead><tr className="border-b border-border/60 bg-muted/30">
               <th className="text-left px-4 py-2 text-muted-foreground font-medium w-32">Employee</th>
               {ATT_DAYS.map(d => (
-                <th key={d} className="text-center px-2 py-2 text-muted-foreground font-medium text-[10px]">Jun {d}</th>
+                <th key={d} className="text-center px-2 py-2 text-muted-foreground font-medium text-px-10">Jun {d}</th>
               ))}
             </tr></thead>
             <tbody>
@@ -691,7 +691,7 @@ function PageAttendance() {
                   <td className="px-4 py-2.5 font-medium text-foreground">{row.name}</td>
                   {row.days.map((d, i) => (
                     <td key={i} className="px-1 py-2 text-center">
-                      <span className={`inline-flex items-center justify-center h-6 w-7 rounded text-[10px] font-medium ${attCls[d]}`}>{attLabel[d]}</span>
+                      <span className={`inline-flex items-center justify-center h-6 w-7 rounded text-px-10 font-medium ${attCls[d]}`}>{attLabel[d]}</span>
                     </td>
                   ))}
                 </tr>
@@ -735,7 +735,7 @@ function PageLeaves({ state }: { state: HRDemoState }) {
           >
             {t.label}
             {t.key === 'approval' && (
-              <span className="ml-1.5 h-4 w-4 rounded-full bg-amber-500 text-white text-[9px] inline-flex items-center justify-center">1</span>
+              <span className="ml-1.5 h-4 w-4 rounded-full bg-amber-500 text-white text-px-9 inline-flex items-center justify-center">1</span>
             )}
           </div>
         ))}
@@ -777,7 +777,7 @@ function PageLeaves({ state }: { state: HRDemoState }) {
               </div>
             </div>
             <div className="p-4">
-              <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-muted-foreground mb-1">
+              <div className="grid grid-cols-7 gap-1 text-center text-px-10 text-muted-foreground mb-1">
                 {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => <div key={d}>{d}</div>)}
               </div>
               <div className="grid grid-cols-7 gap-1">
@@ -786,7 +786,7 @@ function PageLeaves({ state }: { state: HRDemoState }) {
                   const isAmiraLeave = d >= 10 && d <= 20;
                   const isKhalilSick = d === 6 || d === 7;
                   return (
-                    <div key={d} className={`h-7 rounded text-[10px] flex items-center justify-center font-medium
+                    <div key={d} className={`h-7 rounded text-px-10 flex items-center justify-center font-medium
                       ${isAmiraLeave ? 'bg-green-100 text-green-700' : isKhalilSick ? 'bg-amber-100 text-amber-700' : 'text-foreground'}`}>
                       {d}
                     </div>
@@ -811,7 +811,7 @@ function PageLeaves({ state }: { state: HRDemoState }) {
                   <tr key={emp.id} className="border-b border-border/40 last:border-0 hover:bg-muted/20">
                     <td className="px-4 py-2.5">
                       <div className="flex items-center gap-2">
-                        <div className={`h-6 w-6 rounded-full ${emp.color} flex items-center justify-center text-white text-[9px] font-bold shrink-0`}>{emp.init}</div>
+                        <div className={`h-6 w-6 rounded-full ${emp.color} flex items-center justify-center text-white text-px-9 font-bold shrink-0`}>{emp.init}</div>
                         <span className="font-medium">{emp.name}</span>
                       </div>
                     </td>
@@ -907,10 +907,10 @@ function PagePayroll({ state }: { state: HRDemoState }) {
                   <div className={`h-4 w-4 rounded border-2 flex items-center justify-center shrink-0 ${payrollStep >= 2 ? 'bg-primary border-primary' : 'border-border'}`}>
                     {payrollStep >= 2 && <div className="h-2 w-2 rounded-sm bg-white" />}
                   </div>
-                  <div className={`h-6 w-6 rounded-full ${emp.color} flex items-center justify-center text-white text-[9px] font-bold shrink-0`}>{emp.init}</div>
+                  <div className={`h-6 w-6 rounded-full ${emp.color} flex items-center justify-center text-white text-px-9 font-bold shrink-0`}>{emp.init}</div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium">{emp.name}</p>
-                    <p className="text-[10px] text-muted-foreground">{emp.dept}</p>
+                    <p className="text-px-10 text-muted-foreground">{emp.dept}</p>
                   </div>
                   <span className="text-xs font-medium">{fmtTnd(emp.gross)} TND</span>
                 </div>
@@ -1042,7 +1042,7 @@ function PagePayroll({ state }: { state: HRDemoState }) {
                   <tr key={p.name} className="border-b border-border/40 last:border-0 hover:bg-muted/20 cursor-default">
                     <td className="px-4 py-2.5">
                       <div className="flex items-center gap-2">
-                        <div className={`h-6 w-6 rounded-full ${emp.color} flex items-center justify-center text-white text-[9px] font-bold shrink-0`}>{emp.init}</div>
+                        <div className={`h-6 w-6 rounded-full ${emp.color} flex items-center justify-center text-white text-px-9 font-bold shrink-0`}>{emp.init}</div>
                         <span className="font-medium">{p.name}</span>
                       </div>
                     </td>
@@ -1051,7 +1051,7 @@ function PagePayroll({ state }: { state: HRDemoState }) {
                     <td className="px-4 py-2.5 text-right text-red-600">−{fmtTnd(p.irpp)}</td>
                     <td className="px-4 py-2.5 text-right font-semibold text-green-700">{fmtTnd(p.net)}</td>
                     <td className="px-4 py-2.5 text-center">
-                      <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">Ready</span>
+                      <span className="text-px-10 bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">Ready</span>
                     </td>
                   </tr>
                 );
@@ -1111,8 +1111,8 @@ function PageBonuses() {
                 <td className="px-4 py-2.5 text-muted-foreground">{b.month}</td>
                 <td className="px-4 py-2.5 text-center">
                   {b.included
-                    ? <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">Included</span>
-                    : <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-medium">Pending</span>
+                    ? <span className="text-px-10 bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">Included</span>
+                    : <span className="text-px-10 bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-medium">Pending</span>
                   }
                 </td>
               </tr>
@@ -1216,7 +1216,7 @@ function PageDepartments() {
                 </td>
                 <td className="px-4 py-2.5 text-muted-foreground">{d.head}</td>
                 <td className="px-4 py-2.5 text-right">
-                  <span className="inline-flex items-center justify-center h-5 w-8 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold">{d.count}</span>
+                  <span className="inline-flex items-center justify-center h-5 w-8 rounded-full bg-blue-100 text-blue-700 text-px-10 font-bold">{d.count}</span>
                 </td>
                 <td className="px-4 py-2.5 text-right font-medium">{fmtTnd(d.totalGross)} TND</td>
                 <td className="px-4 py-2.5 text-right">
@@ -1325,7 +1325,7 @@ function PagePerformance({ state }: { state: HRDemoState }) {
                             {[1,2,3,4,5].map(n => (
                               <Star key={n} className={`h-3.5 w-3.5 ${n <= Math.round(r.score!) ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground'}`} />
                             ))}
-                            <span className="ml-1 text-[10px] font-bold text-foreground">{r.score}</span>
+                            <span className="ml-1 text-px-10 font-bold text-foreground">{r.score}</span>
                           </div>
                         )
                         : <span className="text-muted-foreground">—</span>
@@ -1383,7 +1383,7 @@ function PageRecruitment({ state }: { state: HRDemoState }) {
               ].map(s => (
                 <div key={s.label} className="bg-card border border-border rounded-lg p-3 text-center">
                   <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">{s.label}</p>
+                  <p className="text-px-10 text-muted-foreground mt-0.5">{s.label}</p>
                 </div>
               ))}
             </div>
@@ -1446,17 +1446,17 @@ function PageRecruitment({ state }: { state: HRDemoState }) {
                   <tr key={ap.id} className="border-b border-border/40 last:border-0 hover:bg-muted/20 cursor-default">
                     <td className="px-4 py-2.5">
                       <div className="flex items-center gap-2">
-                        <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center text-[9px] font-bold text-muted-foreground shrink-0">{ap.init}</div>
+                        <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center text-px-9 font-bold text-muted-foreground shrink-0">{ap.init}</div>
                         <span className="font-medium">{ap.name}</span>
                       </div>
                     </td>
                     <td className="px-4 py-2.5 text-muted-foreground">{ap.position}</td>
                     <td className="px-4 py-2.5">
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${STAGE_CLS[ap.stage] ?? 'bg-muted text-muted-foreground'}`}>{ap.stage}</span>
+                      <span className={`text-px-10 px-1.5 py-0.5 rounded-full font-medium ${STAGE_CLS[ap.stage] ?? 'bg-muted text-muted-foreground'}`}>{ap.stage}</span>
                     </td>
                     <td className="px-4 py-2.5 text-right">
                       {ap.stage === 'Offer' && (
-                        <div className="h-6 px-2 rounded bg-green-600 text-white text-[10px] font-medium flex items-center gap-1 cursor-default w-fit ml-auto">
+                        <div className="h-6 px-2 rounded bg-green-600 text-white text-px-10 font-medium flex items-center gap-1 cursor-default w-fit ml-auto">
                           <CheckCircle className="h-3 w-3" /> Mark Hired
                         </div>
                       )}
@@ -1478,7 +1478,7 @@ function PageRecruitment({ state }: { state: HRDemoState }) {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium">{iv.candidate}</p>
                   <p className="text-xs text-muted-foreground">{iv.position}</p>
-                  <p className="text-[11px] text-muted-foreground mt-1">{iv.date} at {iv.time} · {iv.interviewer}</p>
+                  <p className="text-px-11 text-muted-foreground mt-1">{iv.date} at {iv.time} · {iv.interviewer}</p>
                 </div>
                 <div className="h-7 px-3 rounded-md border border-border text-xs text-muted-foreground flex items-center cursor-default">View</div>
               </div>
@@ -1540,7 +1540,7 @@ function PageReports() {
                 <span className="w-24 truncate text-right text-muted-foreground shrink-0">{b.name}</span>
                 <div className="flex-1 h-5 bg-muted rounded overflow-hidden">
                   <div className="h-full bg-primary/70 rounded transition-all flex items-center justify-end pr-1.5" style={{ width: `${b.pct}%` }}>
-                    <span className="text-[10px] text-primary-foreground font-medium">{b.value}</span>
+                    <span className="text-px-10 text-primary-foreground font-medium">{b.value}</span>
                   </div>
                 </div>
               </div>
@@ -1553,9 +1553,9 @@ function PageReports() {
           <div className="flex items-end gap-2 h-32">
             {monthlyBars.map(b => (
               <div key={b.month} className="flex-1 flex flex-col items-center gap-1">
-                <span className="text-[9px] text-muted-foreground font-medium">{fmtTnd(b.value)}</span>
+                <span className="text-px-9 text-muted-foreground font-medium">{fmtTnd(b.value)}</span>
                 <div className="w-full rounded-t bg-primary/70 transition-all" style={{ height: `${Math.max(b.pct * 0.7, 4)}%` }} />
-                <span className="text-[9px] text-muted-foreground">{b.month}</span>
+                <span className="text-px-9 text-muted-foreground">{b.month}</span>
               </div>
             ))}
           </div>
@@ -1572,7 +1572,7 @@ function PageReports() {
             <div className="p-1.5 rounded bg-primary/10 shrink-0"><c.icon className="h-3.5 w-3.5 text-primary" /></div>
             <div>
               <p className="text-xs font-semibold">{c.title}</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">{c.sub}</p>
+              <p className="text-px-10 text-muted-foreground mt-0.5">{c.sub}</p>
             </div>
             <ArrowRight className="h-3.5 w-3.5 text-muted-foreground ml-auto mt-0.5 shrink-0" />
           </div>
@@ -1606,7 +1606,7 @@ function PageSettings() {
         <div className="bg-card border border-border rounded-lg overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
             <span className="text-sm font-medium">Leave Types</span>
-            <div className="h-7 px-3 rounded-md bg-primary text-primary-foreground text-[11px] flex items-center gap-1 cursor-default">
+            <div className="h-7 px-3 rounded-md bg-primary text-primary-foreground text-px-11 flex items-center gap-1 cursor-default">
               <Plus className="h-3 w-3" /> Add
             </div>
           </div>
@@ -1622,7 +1622,7 @@ function PageSettings() {
                 <span className="font-medium">{l.name}</span>
                 <div className="flex items-center gap-2">
                   {l.days > 0 && <span className="text-muted-foreground">{l.days} days/year</span>}
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${l.paid ? 'bg-green-100 text-green-700' : 'bg-muted text-muted-foreground'}`}>
+                  <span className={`text-px-10 px-1.5 py-0.5 rounded-full font-medium ${l.paid ? 'bg-green-100 text-green-700' : 'bg-muted text-muted-foreground'}`}>
                     {l.paid ? 'Paid' : 'Unpaid'}
                   </span>
                 </div>
@@ -1829,13 +1829,13 @@ export function HRAutopilotDemo({ open, onClose }: Props) {
             <button
               key={ch.id}
               onClick={() => jumpChapter(ch.start)}
-              className={`text-[10px] font-medium px-2 py-0.5 rounded-full transition-colors cursor-pointer
+              className={`text-px-10 font-medium px-2 py-0.5 rounded-full transition-colors cursor-pointer
                 ${activeChapter.id === ch.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/70'}`}
             >
               {getChapterTitle(demoLang, ch.id, ch.title)}
             </button>
           ))}
-          <span className="ml-auto text-[10px] text-muted-foreground">{Math.min(stepIndex + 1, HR_STEPS.length)} / {HR_STEPS.length}</span>
+          <span className="ml-auto text-px-10 text-muted-foreground">{Math.min(stepIndex + 1, HR_STEPS.length)} / {HR_STEPS.length}</span>
         </div>
         <div className="h-1 rounded-full bg-muted overflow-hidden mb-2">
           <div

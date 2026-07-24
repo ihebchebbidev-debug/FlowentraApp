@@ -71,7 +71,7 @@ export function EmployeeList() {
         <CardHeader className="space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <CardTitle className="text-base">{t('employees')}</CardTitle>
-            <Badge variant="secondary" className="text-[11px]">
+            <Badge variant="secondary" className="text-px-11">
               {filteredBySalary.length} / {rows.length}
             </Badge>
           </div>
@@ -129,7 +129,7 @@ export function EmployeeList() {
                             <p className="font-semibold text-sm text-foreground leading-snug line-clamp-1 flex-1">{name}</p>
                             <span
                               className={cn(
-                                'inline-flex items-center rounded px-2 py-0.5 text-[10px] font-medium capitalize shrink-0',
+                                'inline-flex items-center rounded px-2 py-0.5 text-px-10 font-medium capitalize shrink-0',
                                 salaryReady
                                   ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-200'
                                   : 'bg-amber-500/15 text-amber-800 dark:text-amber-200'

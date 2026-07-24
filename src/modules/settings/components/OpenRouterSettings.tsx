@@ -88,13 +88,13 @@ export function OpenRouterSettings() {
             {keys.map((k, i) => (
               <div key={k.id} className="flex items-center gap-2 p-2.5 rounded-lg border border-border/40 bg-muted/10">
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <Badge variant="outline" className="text-[10px] h-5 px-1.5 bg-primary/5 text-primary border-primary/20">
+                  <Badge variant="outline" className="text-px-10 h-5 px-1.5 bg-primary/5 text-primary border-primary/20">
                     {i === 0 ? t('openRouter.primary') : t('openRouter.fallback', { index: i })}
                   </Badge>
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium text-foreground truncate">{k.label}</p>
-                  <p className="text-[11px] text-muted-foreground font-mono truncate">
+                  <p className="text-px-11 text-muted-foreground font-mono truncate">
                     {visibleKeys.has(k.id) ? k.apiKey : maskKey(k.apiKey)}
                   </p>
                 </div>
@@ -143,7 +143,7 @@ export function OpenRouterSettings() {
             <ChevronDown className="h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 [[data-state=open]_&]:rotate-180" />
           </CollapsibleTrigger>
           <CollapsibleContent className="pt-2">
-            <ul className="text-[11px] text-muted-foreground space-y-0.5 list-disc pl-4">
+            <ul className="text-px-11 text-muted-foreground space-y-0.5 list-disc pl-4">
               <li>{t('openRouter.hint1')}</li>
               <li>{t('openRouter.hint2')}</li>
               <li>{t('openRouter.hint3')}</li>
@@ -153,7 +153,7 @@ export function OpenRouterSettings() {
         </Collapsible>
 
         {keys.length > 0 && (
-          <div className="flex items-center gap-1.5 text-[11px] text-success">
+          <div className="flex items-center gap-1.5 text-px-11 text-success">
             <CheckCircle2 className="h-3.5 w-3.5" />
             {t('openRouter.configured', { count: keys.length })}
           </div>

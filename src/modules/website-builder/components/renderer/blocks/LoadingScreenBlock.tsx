@@ -189,7 +189,7 @@ export function LoadingScreenBlock({
       )}
 
       {isEditing && (
-        <p className="text-[9px] mt-2 opacity-40" style={{ color: textColor }}>
+        <p className="text-px-9 mt-2 opacity-40" style={{ color: textColor }}>
           Variant: {variant} • Duration: {duration}s
         </p>
       )}

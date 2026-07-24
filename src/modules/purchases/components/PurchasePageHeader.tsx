@@ -24,7 +24,7 @@ export function PurchasePageHeader(props: {
           )}
           <div className="min-w-0">
             <h1 className="text-base font-semibold text-foreground truncate">{props.title}</h1>
-            {props.subtitle && <p className="text-[10px] text-muted-foreground truncate">{props.subtitle}</p>}
+            {props.subtitle && <p className="text-px-10 text-muted-foreground truncate">{props.subtitle}</p>}
           </div>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -47,7 +47,7 @@ export function PurchasePageHeader(props: {
           )}
           <div className="min-w-0">
             <h1 className="text-xl font-semibold text-foreground truncate">{props.title}</h1>
-            {props.subtitle && <p className="text-[11px] text-muted-foreground truncate">{props.subtitle}</p>}
+            {props.subtitle && <p className="text-px-11 text-muted-foreground truncate">{props.subtitle}</p>}
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">

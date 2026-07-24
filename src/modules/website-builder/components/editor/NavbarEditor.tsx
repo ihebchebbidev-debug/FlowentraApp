@@ -220,7 +220,7 @@ function LogoSection({ config, onUpdate }: { config: Partial<NavbarConfig>; onUp
     <EditorSection title="Logo & Branding" icon={<Image className="h-3.5 w-3.5" />} defaultOpen>
       <div className="space-y-3">
         <div className="space-y-1.5">
-          <Label className="text-[11px] font-medium text-foreground/70">Logo Text</Label>
+          <Label className="text-px-11 font-medium text-foreground/70">Logo Text</Label>
           <Input
             value={config.logo || ''}
             onChange={(e) => onUpdate({ logo: e.target.value })}
@@ -237,7 +237,7 @@ function LogoSection({ config, onUpdate }: { config: Partial<NavbarConfig>; onUp
         
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-muted-foreground">Logo Height</Label>
+            <Label className="text-px-10 text-muted-foreground">Logo Height</Label>
             <div className="flex items-center gap-2">
               <Slider
                 value={[config.logoHeight || 32]}
@@ -247,11 +247,11 @@ function LogoSection({ config, onUpdate }: { config: Partial<NavbarConfig>; onUp
                 step={4}
                 className="flex-1"
               />
-              <span className="text-[10px] text-muted-foreground w-8">{config.logoHeight || 32}px</span>
+              <span className="text-px-10 text-muted-foreground w-8">{config.logoHeight || 32}px</span>
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-muted-foreground">Position</Label>
+            <Label className="text-px-10 text-muted-foreground">Position</Label>
             <Select value={config.logoPosition || 'left'} onValueChange={(v) => onUpdate({ logoPosition: v as any })}>
               <SelectTrigger className="h-7 text-xs">
                 <SelectValue />
@@ -273,12 +273,12 @@ function LayoutSection({ config, onUpdate }: { config: Partial<NavbarConfig>; on
     <EditorSection title="Layout & Style" icon={<Layout className="h-3.5 w-3.5" />} defaultOpen>
       <div className="space-y-3">
         <div className="space-y-1.5">
-          <Label className="text-[11px] font-medium text-foreground/70">Variant</Label>
+          <Label className="text-px-11 font-medium text-foreground/70">Variant</Label>
           <div className="grid grid-cols-4 gap-1">
             {['default', 'centered', 'minimal', 'split', 'stacked', 'floating', 'transparent', 'bordered'].map((v) => (
               <button
                 key={v}
-                className={`px-2 py-1.5 text-[9px] rounded-lg border transition-all capitalize ${
+                className={`px-2 py-1.5 text-px-9 rounded-lg border transition-all capitalize ${
                   config.variant === v
                     ? 'border-primary bg-primary/10 text-primary'
                     : 'border-border/40 hover:border-border hover:bg-muted/30'
@@ -293,7 +293,7 @@ function LayoutSection({ config, onUpdate }: { config: Partial<NavbarConfig>; on
         
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-muted-foreground">Height</Label>
+            <Label className="text-px-10 text-muted-foreground">Height</Label>
             <Select value={config.height || 'normal'} onValueChange={(v) => onUpdate({ height: v as any })}>
               <SelectTrigger className="h-7 text-xs">
                 <SelectValue />
@@ -306,7 +306,7 @@ function LayoutSection({ config, onUpdate }: { config: Partial<NavbarConfig>; on
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-muted-foreground">Shadow</Label>
+            <Label className="text-px-10 text-muted-foreground">Shadow</Label>
             <Select value={config.shadowStyle || 'none'} onValueChange={(v) => onUpdate({ shadowStyle: v as any })}>
               <SelectTrigger className="h-7 text-xs">
                 <SelectValue />
@@ -322,7 +322,7 @@ function LayoutSection({ config, onUpdate }: { config: Partial<NavbarConfig>; on
         </div>
         
         <div className="flex flex-wrap gap-2">
-          <label className="flex items-center gap-2 text-[10px]">
+          <label className="flex items-center gap-2 text-px-10">
             <Switch
               checked={config.sticky}
               onCheckedChange={(v) => onUpdate({ sticky: v })}
@@ -330,7 +330,7 @@ function LayoutSection({ config, onUpdate }: { config: Partial<NavbarConfig>; on
             />
             Sticky
           </label>
-          <label className="flex items-center gap-2 text-[10px]">
+          <label className="flex items-center gap-2 text-px-10">
             <Switch
               checked={config.transparent}
               onCheckedChange={(v) => onUpdate({ transparent: v })}
@@ -338,7 +338,7 @@ function LayoutSection({ config, onUpdate }: { config: Partial<NavbarConfig>; on
             />
             Transparent
           </label>
-          <label className="flex items-center gap-2 text-[10px]">
+          <label className="flex items-center gap-2 text-px-10">
             <Switch
               checked={config.blurBackground}
               onCheckedChange={(v) => onUpdate({ blurBackground: v })}
@@ -387,7 +387,7 @@ function LinksSection({ config, onUpdate }: { config: Partial<NavbarConfig>; onU
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-muted-foreground">Link Style</Label>
+            <Label className="text-px-10 text-muted-foreground">Link Style</Label>
             <Select value={config.linkStyle || 'default'} onValueChange={(v) => onUpdate({ linkStyle: v as any })}>
               <SelectTrigger className="h-7 text-xs">
                 <SelectValue />
@@ -401,7 +401,7 @@ function LinksSection({ config, onUpdate }: { config: Partial<NavbarConfig>; onU
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-muted-foreground">Spacing</Label>
+            <Label className="text-px-10 text-muted-foreground">Spacing</Label>
             <Select value={config.linkSpacing || 'normal'} onValueChange={(v) => onUpdate({ linkSpacing: v as any })}>
               <SelectTrigger className="h-7 text-xs">
                 <SelectValue />
@@ -431,7 +431,7 @@ function LinksSection({ config, onUpdate }: { config: Partial<NavbarConfig>; onU
           </SortableContext>
         </DndContext>
 
-        <Button variant="outline" size="sm" className="w-full h-7 text-[10px]" onClick={handleAddLink}>
+        <Button variant="outline" size="sm" className="w-full h-7 text-px-10" onClick={handleAddLink}>
           <Plus className="h-3 w-3 mr-1" /> Add Link
         </Button>
       </div>
@@ -445,7 +445,7 @@ function CtaSection({ config, onUpdate }: { config: Partial<NavbarConfig>; onUpd
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-muted-foreground">Button Text</Label>
+            <Label className="text-px-10 text-muted-foreground">Button Text</Label>
             <Input
               value={config.ctaText || ''}
               onChange={(e) => onUpdate({ ctaText: e.target.value })}
@@ -454,7 +454,7 @@ function CtaSection({ config, onUpdate }: { config: Partial<NavbarConfig>; onUpd
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-muted-foreground">Link URL</Label>
+            <Label className="text-px-10 text-muted-foreground">Link URL</Label>
             <Input
               value={config.ctaLink || ''}
               onChange={(e) => onUpdate({ ctaLink: e.target.value })}
@@ -465,12 +465,12 @@ function CtaSection({ config, onUpdate }: { config: Partial<NavbarConfig>; onUpd
         </div>
         
         <div className="space-y-1.5">
-          <Label className="text-[10px] text-muted-foreground">Button Style</Label>
+          <Label className="text-px-10 text-muted-foreground">Button Style</Label>
           <div className="grid grid-cols-3 gap-1">
             {['solid', 'outline', 'ghost'].map((s) => (
               <button
                 key={s}
-                className={`px-2 py-1.5 text-[9px] rounded-lg border transition-all capitalize ${
+                className={`px-2 py-1.5 text-px-9 rounded-lg border transition-all capitalize ${
                   config.ctaStyle === s
                     ? 'border-primary bg-primary/10 text-primary'
                     : 'border-border/40 hover:border-border hover:bg-muted/30'
@@ -488,13 +488,13 @@ function CtaSection({ config, onUpdate }: { config: Partial<NavbarConfig>; onUpd
             checked={config.secondaryCta}
             onCheckedChange={(v) => onUpdate({ secondaryCta: v })}
           />
-          <Label className="text-[10px]">Show Secondary CTA</Label>
+          <Label className="text-px-10">Show Secondary CTA</Label>
         </div>
         
         {config.secondaryCta && (
           <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/30">
             <div className="space-y-1.5">
-              <Label className="text-[10px] text-muted-foreground">Secondary Text</Label>
+              <Label className="text-px-10 text-muted-foreground">Secondary Text</Label>
               <Input
                 value={config.secondaryCtaText || ''}
                 onChange={(e) => onUpdate({ secondaryCtaText: e.target.value })}
@@ -503,7 +503,7 @@ function CtaSection({ config, onUpdate }: { config: Partial<NavbarConfig>; onUpd
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[10px] text-muted-foreground">Secondary Link</Label>
+              <Label className="text-px-10 text-muted-foreground">Secondary Link</Label>
               <Input
                 value={config.secondaryCtaLink || ''}
                 onChange={(e) => onUpdate({ secondaryCtaLink: e.target.value })}
@@ -523,7 +523,7 @@ function TopBarSection({ config, onUpdate }: { config: Partial<NavbarConfig>; on
     <EditorSection title="Top Bar / Announcement" icon={<Megaphone className="h-3.5 w-3.5" />}>
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <Label className="text-[11px] font-medium">Show Top Bar</Label>
+          <Label className="text-px-11 font-medium">Show Top Bar</Label>
           <Switch
             checked={config.showTopBar}
             onCheckedChange={(v) => onUpdate({ showTopBar: v })}
@@ -533,7 +533,7 @@ function TopBarSection({ config, onUpdate }: { config: Partial<NavbarConfig>; on
         {config.showTopBar && (
           <>
             <div className="space-y-1.5">
-              <Label className="text-[10px] text-muted-foreground">Announcement Text</Label>
+              <Label className="text-px-10 text-muted-foreground">Announcement Text</Label>
               <Input
                 value={config.topBarText || ''}
                 onChange={(e) => onUpdate({ topBarText: e.target.value })}
@@ -547,11 +547,11 @@ function TopBarSection({ config, onUpdate }: { config: Partial<NavbarConfig>; on
                 checked={config.showTopBarClose}
                 onCheckedChange={(v) => onUpdate({ showTopBarClose: v })}
               />
-              <Label className="text-[10px]">Dismissable</Label>
+              <Label className="text-px-10">Dismissable</Label>
             </div>
             
             <div className="flex items-center justify-between">
-              <Label className="text-[11px] font-medium">Show Contact Info</Label>
+              <Label className="text-px-11 font-medium">Show Contact Info</Label>
               <Switch
                 checked={config.showContactInfo}
                 onCheckedChange={(v) => onUpdate({ showContactInfo: v })}
@@ -566,7 +566,7 @@ function TopBarSection({ config, onUpdate }: { config: Partial<NavbarConfig>; on
                     value={config.contactInfo?.phone || ''}
                     onChange={(e) => onUpdate({ contactInfo: { ...config.contactInfo, phone: e.target.value } })}
                     placeholder="+1 (555) 123-4567"
-                    className="h-6 text-[10px]"
+                    className="h-6 text-px-10"
                   />
                 </div>
                 <div className="flex items-center gap-2">
@@ -575,7 +575,7 @@ function TopBarSection({ config, onUpdate }: { config: Partial<NavbarConfig>; on
                     value={config.contactInfo?.email || ''}
                     onChange={(e) => onUpdate({ contactInfo: { ...config.contactInfo, email: e.target.value } })}
                     placeholder="hello@example.com"
-                    className="h-6 text-[10px]"
+                    className="h-6 text-px-10"
                   />
                 </div>
                 <div className="flex items-center gap-2">
@@ -584,7 +584,7 @@ function TopBarSection({ config, onUpdate }: { config: Partial<NavbarConfig>; on
                     value={config.contactInfo?.hours || ''}
                     onChange={(e) => onUpdate({ contactInfo: { ...config.contactInfo, hours: e.target.value } })}
                     placeholder="Mon-Fri 9am-5pm"
-                    className="h-6 text-[10px]"
+                    className="h-6 text-px-10"
                   />
                 </div>
               </div>
@@ -603,7 +603,7 @@ function FeaturesSection({ config, onUpdate }: { config: Partial<NavbarConfig>; 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Search className="h-3.5 w-3.5 text-muted-foreground" />
-            <Label className="text-[10px]">Search</Label>
+            <Label className="text-px-10">Search</Label>
           </div>
           <Switch
             checked={config.showSearch}
@@ -613,7 +613,7 @@ function FeaturesSection({ config, onUpdate }: { config: Partial<NavbarConfig>; 
         
         {config.showSearch && (
           <div className="ml-5 space-y-1.5">
-            <Label className="text-[10px] text-muted-foreground">Search Style</Label>
+            <Label className="text-px-10 text-muted-foreground">Search Style</Label>
             <Select value={config.searchStyle || 'icon'} onValueChange={(v) => onUpdate({ searchStyle: v as any })}>
               <SelectTrigger className="h-7 text-xs">
                 <SelectValue />
@@ -630,7 +630,7 @@ function FeaturesSection({ config, onUpdate }: { config: Partial<NavbarConfig>; 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Bell className="h-3.5 w-3.5 text-muted-foreground" />
-            <Label className="text-[10px]">Notifications</Label>
+            <Label className="text-px-10">Notifications</Label>
           </div>
           <Switch
             checked={config.showNotifications}
@@ -641,7 +641,7 @@ function FeaturesSection({ config, onUpdate }: { config: Partial<NavbarConfig>; 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Menu className="h-3.5 w-3.5 text-muted-foreground" />
-            <Label className="text-[10px]">User Menu</Label>
+            <Label className="text-px-10">User Menu</Label>
           </div>
           <Switch
             checked={config.showUserMenu}
@@ -684,7 +684,7 @@ function SocialSection({ config, onUpdate }: { config: Partial<NavbarConfig>; on
     <EditorSection title="Social Links" icon={<Instagram className="h-3.5 w-3.5" />}>
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <Label className="text-[11px] font-medium">Show Social Links</Label>
+          <Label className="text-px-11 font-medium">Show Social Links</Label>
           <Switch
             checked={config.showSocialLinks}
             onCheckedChange={(v) => onUpdate({ showSocialLinks: v })}
@@ -694,7 +694,7 @@ function SocialSection({ config, onUpdate }: { config: Partial<NavbarConfig>; on
         {config.showSocialLinks && (
           <>
             <div className="space-y-1.5">
-              <Label className="text-[10px] text-muted-foreground">Position</Label>
+              <Label className="text-px-10 text-muted-foreground">Position</Label>
               <Select value={config.socialPosition || 'right'} onValueChange={(v) => onUpdate({ socialPosition: v as any })}>
                 <SelectTrigger className="h-7 text-xs">
                   <SelectValue />
@@ -721,14 +721,14 @@ function SocialSection({ config, onUpdate }: { config: Partial<NavbarConfig>; on
                         className="scale-75"
                       />
                       <Icon className="h-3.5 w-3.5" />
-                      <span className="text-[10px]">{label}</span>
+                      <span className="text-px-10">{label}</span>
                     </div>
                     {isActive && (
                       <Input
                         value={link?.url || ''}
                         onChange={(e) => updateUrl(id, e.target.value)}
                         placeholder={`https://${id}.com/...`}
-                        className="h-6 text-[10px] ml-5"
+                        className="h-6 text-px-10 ml-5"
                       />
                     )}
                   </div>
@@ -748,7 +748,7 @@ function MobileSection({ config, onUpdate }: { config: Partial<NavbarConfig>; on
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-muted-foreground">Breakpoint</Label>
+            <Label className="text-px-10 text-muted-foreground">Breakpoint</Label>
             <Select value={config.mobileBreakpoint || 'md'} onValueChange={(v) => onUpdate({ mobileBreakpoint: v as any })}>
               <SelectTrigger className="h-7 text-xs">
                 <SelectValue />
@@ -761,7 +761,7 @@ function MobileSection({ config, onUpdate }: { config: Partial<NavbarConfig>; on
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-muted-foreground">Menu Style</Label>
+            <Label className="text-px-10 text-muted-foreground">Menu Style</Label>
             <Select value={config.mobileMenuStyle || 'drawer'} onValueChange={(v) => onUpdate({ mobileMenuStyle: v as any })}>
               <SelectTrigger className="h-7 text-xs">
                 <SelectValue />
@@ -776,12 +776,12 @@ function MobileSection({ config, onUpdate }: { config: Partial<NavbarConfig>; on
         </div>
         
         <div className="space-y-1.5">
-          <Label className="text-[10px] text-muted-foreground">Menu Position</Label>
+          <Label className="text-px-10 text-muted-foreground">Menu Position</Label>
           <div className="grid grid-cols-2 gap-1">
             {['left', 'right'].map((pos) => (
               <button
                 key={pos}
-                className={`px-2 py-1.5 text-[9px] rounded-lg border transition-all capitalize ${
+                className={`px-2 py-1.5 text-px-9 rounded-lg border transition-all capitalize ${
                   config.mobileMenuPosition === pos
                     ? 'border-primary bg-primary/10 text-primary'
                     : 'border-border/40 hover:border-border hover:bg-muted/30'
@@ -795,7 +795,7 @@ function MobileSection({ config, onUpdate }: { config: Partial<NavbarConfig>; on
         </div>
         
         <div className="flex flex-wrap gap-3">
-          <label className="flex items-center gap-2 text-[10px]">
+          <label className="flex items-center gap-2 text-px-10">
             <Switch
               checked={config.showMobileLogo !== false}
               onCheckedChange={(v) => onUpdate({ showMobileLogo: v })}
@@ -803,7 +803,7 @@ function MobileSection({ config, onUpdate }: { config: Partial<NavbarConfig>; on
             />
             Show Logo
           </label>
-          <label className="flex items-center gap-2 text-[10px]">
+          <label className="flex items-center gap-2 text-px-10">
             <Switch
               checked={config.showMobileCta !== false}
               onCheckedChange={(v) => onUpdate({ showMobileCta: v })}

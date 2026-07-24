@@ -56,7 +56,7 @@ export function PlannedEntryCard({
             </Badge>
           )}
           {jobLabel && (
-            <Badge variant="outline" className="text-[10px]">📋 {jobLabel}</Badge>
+            <Badge variant="outline" className="text-px-10">📋 {jobLabel}</Badge>
           )}
         </div>
         {!readOnly && (

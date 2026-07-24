@@ -300,7 +300,7 @@ export function TEJExportModal({ open, onOpenChange, entityType, entityId, onExp
               <div className="px-4 py-4 text-center">
                 <div className="flex items-center justify-center gap-1.5 mb-1">
                   <Receipt className="h-3.5 w-3.5 text-muted-foreground" />
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Certificats</p>
+                  <p className="text-px-10 uppercase tracking-wider text-muted-foreground">Certificats</p>
                 </div>
                 {loadingStats ? (
                   <div className="h-7 flex items-center justify-center">
@@ -310,12 +310,12 @@ export function TEJExportModal({ open, onOpenChange, entityType, entityId, onExp
                   <p className="text-2xl font-bold text-foreground tabular-nums">{recordCount ?? '—'}</p>
                 )}
                 {recordCount === 0 && !loadingStats && (
-                  <p className="text-[10px] text-muted-foreground mt-1">Aucun en attente</p>
+                  <p className="text-px-10 text-muted-foreground mt-1">Aucun en attente</p>
                 )}
               </div>
               <div className="px-4 py-4 text-center">
                 <div className="flex items-center justify-center gap-1.5 mb-1">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">MontantRetenue total</p>
+                  <p className="text-px-10 uppercase tracking-wider text-muted-foreground">MontantRetenue total</p>
                 </div>
                 {loadingStats ? (
                   <div className="h-7 flex items-center justify-center">
@@ -326,7 +326,7 @@ export function TEJExportModal({ open, onOpenChange, entityType, entityId, onExp
                     {totalRS.toLocaleString('fr-TN', { minimumFractionDigits: 3 })}
                   </p>
                 )}
-                <p className="text-[10px] text-muted-foreground mt-0.5">TND</p>
+                <p className="text-px-10 text-muted-foreground mt-0.5">TND</p>
               </div>
             </div>
           </div>
@@ -347,7 +347,7 @@ export function TEJExportModal({ open, onOpenChange, entityType, entityId, onExp
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">
                   Type d&apos;acte{' '}
-                  <code className="text-[10px] bg-muted px-1 rounded">&lt;TypeActe&gt;</code>
+                  <code className="text-px-10 bg-muted px-1 rounded">&lt;TypeActe&gt;</code>
                 </Label>
                 <Select value={typeActe} onValueChange={v => setTypeActe(v as '0' | '1' | '2')}>
                   <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
@@ -361,7 +361,7 @@ export function TEJExportModal({ open, onOpenChange, entityType, entityId, onExp
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">
                   Nature opération{' '}
-                  <code className="text-[10px] bg-muted px-1 rounded">&lt;CodeNatureOperation&gt;</code>
+                  <code className="text-px-10 bg-muted px-1 rounded">&lt;CodeNatureOperation&gt;</code>
                 </Label>
                 <Select value={codeNature} onValueChange={setCodeNature}>
                   <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
@@ -419,7 +419,7 @@ export function TEJExportModal({ open, onOpenChange, entityType, entityId, onExp
             {/* XML filename preview */}
             {previewFileName && (
               <div className="rounded-lg bg-muted/50 border border-border/50 px-3 py-2">
-                <p className="text-[10px] text-muted-foreground mb-0.5">Nom du fichier XML généré :</p>
+                <p className="text-px-10 text-muted-foreground mb-0.5">Nom du fichier XML généré :</p>
                 <code className="text-xs font-mono text-foreground break-all">{previewFileName}</code>
               </div>
             )}

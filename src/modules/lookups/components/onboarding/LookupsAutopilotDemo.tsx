@@ -92,8 +92,8 @@ const FALLBACK: { typeCol?: string; rows: Row[] } = { rows: [{ name: 'Value A', 
 
 function TypeBadge({ kind, value }: { kind?: string; value?: string }) {
   if (!value) return <span className="text-muted-foreground">-</span>;
-  if (kind === 'completed') return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${value === 'Completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-muted text-muted-foreground'}`}>{value}</span>;
-  if (kind === 'paid') return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${value === 'Paid' ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'}`}>{value}</span>;
+  if (kind === 'completed') return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-px-10 font-medium ${value === 'Completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-muted text-muted-foreground'}`}>{value}</span>;
+  if (kind === 'paid') return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-px-10 font-medium ${value === 'Paid' ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'}`}>{value}</span>;
   return <span className="text-xs text-muted-foreground">{value}</span>;
 }
 
@@ -111,7 +111,7 @@ function PageLookups({ state }: { state: LookupsDemoState }) {
       {/* Header */}
       <div className="flex items-center gap-3 mb-5">
         <div className="p-2 rounded-lg bg-primary/10"><ListChecks className="h-6 w-6 text-primary" /></div>
-        <div><h1 id="lk-demo-title" className="text-xl font-semibold">Lookups</h1><p className="text-[11px] text-muted-foreground">One place for every dropdown value</p></div>
+        <div><h1 id="lk-demo-title" className="text-xl font-semibold">Lookups</h1><p className="text-px-11 text-muted-foreground">One place for every dropdown value</p></div>
       </div>
 
       <div className="grid grid-cols-12 gap-5">
@@ -129,7 +129,7 @@ function PageLookups({ state }: { state: LookupsDemoState }) {
                     <CIcon className={`h-4 w-4 shrink-0 ${sel ? 'text-primary' : 'text-muted-foreground'}`} />
                     <div className="flex-1 min-w-0">
                       <p className={`text-xs font-medium truncate ${sel ? 'text-primary' : ''}`}>{c.label}</p>
-                      <p id={i === 0 ? 'lk-demo-counts' : undefined} className="text-[10px] text-muted-foreground">{c.count} items</p>
+                      <p id={i === 0 ? 'lk-demo-counts' : undefined} className="text-px-10 text-muted-foreground">{c.count} items</p>
                     </div>
                     <ChevronRight className={`h-3.5 w-3.5 text-muted-foreground ${sel ? 'text-primary rotate-90' : ''}`} />
                   </div>
@@ -143,7 +143,7 @@ function PageLookups({ state }: { state: LookupsDemoState }) {
         <div className="col-span-7 lg:col-span-8">
           <div className="border border-border rounded-lg bg-card">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-              <div className="flex items-center gap-2"><Icon className="h-5 w-5 text-primary" /><span className="text-sm font-semibold">{cat.label}</span><span className="ml-1 inline-flex items-center rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-medium">{rows.length} items</span></div>
+              <div className="flex items-center gap-2"><Icon className="h-5 w-5 text-primary" /><span className="text-sm font-semibold">{cat.label}</span><span className="ml-1 inline-flex items-center rounded-full bg-primary/10 text-primary px-2 py-0.5 text-px-10 font-medium">{rows.length} items</span></div>
               <div id="lk-demo-add-btn" className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium inline-flex items-center gap-1.5 cursor-default"><Plus className="h-3.5 w-3.5" /> Add Item</div>
             </div>
             <div id="lk-demo-table" className="overflow-hidden">
@@ -167,7 +167,7 @@ function PageLookups({ state }: { state: LookupsDemoState }) {
                       <td id={i === 0 ? 'lk-demo-name' : undefined} className="px-3 py-2.5 font-medium">{r.name}</td>
                       {data.typeCol && <td className="px-3 py-2.5"><span id={i === 0 && data.typeCol === 'Paid' ? 'lk-demo-paid' : undefined}><TypeBadge kind={r.typedKind} value={r.typed} /></span></td>}
                       <td className="px-3 py-2.5">
-                        <span id={i === 0 ? 'lk-demo-status' : undefined} className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${r.active ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-muted text-muted-foreground'}`}>{r.active ? 'Active' : 'Inactive'}</span>
+                        <span id={i === 0 ? 'lk-demo-status' : undefined} className={`inline-flex items-center rounded-full px-2 py-0.5 text-px-10 font-medium ${r.active ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-muted text-muted-foreground'}`}>{r.active ? 'Active' : 'Inactive'}</span>
                       </td>
                       <td className="px-3 py-2.5 text-right">
                         <div className="inline-flex items-center gap-1">
@@ -191,9 +191,9 @@ function PageLookups({ state }: { state: LookupsDemoState }) {
             <p className="text-sm font-semibold mb-3 inline-flex items-center gap-2"><Plus className="h-4 w-4 text-primary" /> New Task Status</p>
             <div className="space-y-3 text-xs">
               <div id="lk-demo-create-name">
-                <label className="block text-[11px] text-muted-foreground mb-1">Name</label>
+                <label className="block text-px-11 text-muted-foreground mb-1">Name</label>
                 <div className={`h-9 px-3 rounded-md border text-sm flex items-center ${state.addStep >= 1 ? 'border-primary text-foreground' : 'border-border text-muted-foreground'}`}>{state.addStep >= 1 ? 'Awaiting Review' : 'Enter name…'}</div>
-                <div className="mt-2"><label className="block text-[11px] text-muted-foreground mb-1">Sort order</label><div className="h-9 w-24 px-3 rounded-md border border-border text-sm flex items-center">{state.addStep >= 1 ? '35' : '0'}</div></div>
+                <div className="mt-2"><label className="block text-px-11 text-muted-foreground mb-1">Sort order</label><div className="h-9 w-24 px-3 rounded-md border border-border text-sm flex items-center">{state.addStep >= 1 ? '35' : '0'}</div></div>
               </div>
               <div id="lk-demo-create-type" className={`space-y-2 transition-opacity ${state.addStep >= 2 ? '' : 'opacity-40'}`}>
                 <div className="flex items-center justify-between"><span>Completed state</span><span className={`h-4 w-7 rounded-full relative ${state.addStep >= 2 ? 'bg-muted-foreground/30' : 'bg-muted-foreground/30'}`}><span className="absolute top-0.5 left-0.5 h-3 w-3 rounded-full bg-white" /></span></div>
@@ -212,7 +212,7 @@ function PageLookups({ state }: { state: LookupsDemoState }) {
           <div className="w-[420px] bg-card border border-border rounded-xl shadow-2xl p-4">
             <p className="text-sm font-semibold mb-3 inline-flex items-center gap-2"><Edit2 className="h-4 w-4 text-primary" /> Edit “Open”</p>
             <div className="space-y-3 text-xs">
-              <div><label className="block text-[11px] text-muted-foreground mb-1">Name</label><div className="h-9 px-3 rounded-md border border-border text-sm flex items-center">Open</div></div>
+              <div><label className="block text-px-11 text-muted-foreground mb-1">Name</label><div className="h-9 px-3 rounded-md border border-border text-sm flex items-center">Open</div></div>
               <div className="flex items-center justify-between"><span>Active</span><span className="h-4 w-7 rounded-full bg-primary relative"><span className="absolute top-0.5 left-3.5 h-3 w-3 rounded-full bg-white" /></span></div>
               <div className="flex items-center justify-between"><span>Colour</span><div className="flex gap-1">{['bg-blue-500', 'bg-primary', 'bg-amber-500', 'bg-rose-500'].map((c, i) => <span key={c} className={`h-5 w-5 rounded ${c} ${i === 0 ? 'ring-2 ring-offset-1 ring-foreground' : ''}`} />)}</div></div>
               <div className="h-9 rounded-md bg-primary text-primary-foreground text-sm font-medium flex items-center justify-center cursor-default">Update</div>
@@ -241,12 +241,12 @@ function PageLookups({ state }: { state: LookupsDemoState }) {
             <div className="grid grid-cols-3 gap-2 mb-3">
               {[['Offer form', Tag], ['Sale form', DollarSign], ['Reports', FolderKanban]].map(([l, Ic]: any) => (
                 <div key={l} className="rounded-lg border border-border p-2.5">
-                  <div className="flex items-center gap-1.5 text-[11px] font-medium mb-1.5"><Ic className="h-3.5 w-3.5 text-primary" /> {l}</div>
-                  <div className="h-7 rounded border border-border bg-background text-[10px] text-muted-foreground flex items-center justify-between px-2">Referral <ChevronRight className="h-3 w-3 rotate-90" /></div>
+                  <div className="flex items-center gap-1.5 text-px-11 font-medium mb-1.5"><Ic className="h-3.5 w-3.5 text-primary" /> {l}</div>
+                  <div className="h-7 rounded border border-border bg-background text-px-10 text-muted-foreground flex items-center justify-between px-2">Referral <ChevronRight className="h-3 w-3 rotate-90" /></div>
                 </div>
               ))}
             </div>
-            <div id="lk-demo-consistency" className="rounded-lg border border-primary/30 bg-primary/5 p-2.5 text-[11px] text-foreground inline-flex items-center gap-2">
+            <div id="lk-demo-consistency" className="rounded-lg border border-primary/30 bg-primary/5 p-2.5 text-px-11 text-foreground inline-flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-primary shrink-0" /> Rename it once here → every form, badge, filter and report updates together. One source of truth.
             </div>
           </div>
@@ -324,8 +324,8 @@ export function LookupsAutopilotDemo({ open, onClose }: Props) {
 
       <div className="shrink-0 border-t border-border/60 bg-card px-4 py-3">
         <div className="flex items-center gap-2 mb-2 flex-wrap">
-          {LK_CHAPTERS.map(ch => (<button key={ch.id} onClick={() => jumpChapter(ch.start)} className={`text-[10px] font-medium px-2 py-0.5 rounded-full transition-colors cursor-pointer ${activeChapter.id === ch.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/70'}`}>{getChapterTitle(demoLang, ch.id, ch.title)}</button>))}
-          <span className="ml-auto text-[10px] text-muted-foreground">{Math.min(stepIndex + 1, LK_STEPS.length)} / {LK_STEPS.length}</span>
+          {LK_CHAPTERS.map(ch => (<button key={ch.id} onClick={() => jumpChapter(ch.start)} className={`text-px-10 font-medium px-2 py-0.5 rounded-full transition-colors cursor-pointer ${activeChapter.id === ch.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/70'}`}>{getChapterTitle(demoLang, ch.id, ch.title)}</button>))}
+          <span className="ml-auto text-px-10 text-muted-foreground">{Math.min(stepIndex + 1, LK_STEPS.length)} / {LK_STEPS.length}</span>
         </div>
         <div className="h-1 rounded-full bg-muted overflow-hidden mb-2"><div className="h-full bg-primary transition-all duration-300" style={{ width: `${(Math.min(stepIndex + 1, LK_STEPS.length) / LK_STEPS.length) * 100}%` }} /></div>
         <p className="text-sm text-foreground/90 min-h-[20px] flex items-center gap-2"><Languages className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />{finished ? finishedMsg : captionText}</p>

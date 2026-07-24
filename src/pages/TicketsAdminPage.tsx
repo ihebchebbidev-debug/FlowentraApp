@@ -281,7 +281,7 @@ export default function TicketsAdminPage() {
             <h1 className="text-xl font-semibold text-foreground">
               {t('admin.title', 'Support Tickets')}
             </h1>
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-px-11 text-muted-foreground">
               {t('admin.subtitle', 'Manage and respond to reported issues')}
             </p>
           </div>
@@ -504,23 +504,23 @@ export default function TicketsAdminPage() {
                           </p>
                           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                             {(tk.source || 'manual') === 'auto' && (
-                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 bg-violet-500/10 text-violet-600 border-violet-500/20">
+                              <Badge variant="outline" className="text-px-10 px-1.5 py-0 h-5 bg-violet-500/10 text-violet-600 border-violet-500/20">
                                 {t('admin.autoDetected', 'Auto')}
                                 {(tk.occurrenceCount ?? 1) > 1 ? ` ×${tk.occurrenceCount}` : ''}
                               </Badge>
                             )}
-                            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                            <span className="text-px-11 text-muted-foreground flex items-center gap-1">
                               <CalendarDays className="h-3 w-3" />
                               {formatDate(tk.createdAt)}
                             </span>
                             {tk.tenant && tk.tenant !== 'unknown' && (
-                              <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                              <span className="text-px-11 text-muted-foreground flex items-center gap-1">
                                 <Globe className="h-3 w-3" />
                                 {tk.tenant}
                               </span>
                             )}
                             {tk.attachments?.length > 0 && (
-                              <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                              <span className="text-px-11 text-muted-foreground flex items-center gap-1">
                                 <Paperclip className="h-3 w-3" />
                                 {tk.attachments.length}
                               </span>
@@ -544,7 +544,7 @@ export default function TicketsAdminPage() {
                       </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         {tk.urgency ? (
-                          <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-5 capitalize font-medium ${urgencyCfg.color}`}>
+                          <Badge variant="outline" className={`text-px-10 px-1.5 py-0 h-5 capitalize font-medium ${urgencyCfg.color}`}>
                             {t(`priorities.${tk.urgency}`, urgencyCfg.label)}
                           </Badge>
                         ) : (
@@ -557,7 +557,7 @@ export default function TicketsAdminPage() {
                           onValueChange={(val) => handleStatusChange(tk.id, val)}
                           disabled={updatingStatus === tk.id}
                         >
-                          <SelectTrigger className={`h-6 w-[110px] text-[10px] font-medium border-0 px-2 gap-1 ${statusCfg.color} hover:opacity-80`}>
+                          <SelectTrigger className={`h-6 w-[110px] text-px-10 font-medium border-0 px-2 gap-1 ${statusCfg.color} hover:opacity-80`}>
                             {updatingStatus === tk.id ? (
                               <Loader2 className="h-3 w-3 animate-spin" />
                             ) : (
@@ -616,20 +616,20 @@ export default function TicketsAdminPage() {
                 {/* Modal Header */}
                 <DialogHeader className="px-6 pt-5 pb-4 bg-muted/30">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-[11px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                    <span className="text-px-11 font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                       #{selectedTicket.id}
                     </span>
                     {selectedTicket.urgency && (
-                      <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-5 capitalize font-medium ${urgencyCfg.color}`}>
+                      <Badge variant="outline" className={`text-px-10 px-1.5 py-0 h-5 capitalize font-medium ${urgencyCfg.color}`}>
                         {t(`priorities.${selectedTicket.urgency}`, urgencyCfg.label)}
                       </Badge>
                     )}
-                    <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-5 gap-1 font-medium ${statusCfg.color}`}>
+                    <Badge variant="outline" className={`text-px-10 px-1.5 py-0 h-5 gap-1 font-medium ${statusCfg.color}`}>
                       <div className={`h-1.5 w-1.5 rounded-full ${statusCfg.dotColor}`} />
                       {t(`admin.status_${selectedTicket.status}`, statusCfg.label)}
                     </Badge>
                     {(selectedTicket.source || 'manual') === 'auto' && (
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 bg-violet-500/10 text-violet-600 border-violet-500/20">
+                      <Badge variant="outline" className="text-px-10 px-1.5 py-0 h-5 bg-violet-500/10 text-violet-600 border-violet-500/20">
                         {t('admin.autoDetected', 'Auto-detected')}
                         {(selectedTicket.occurrenceCount ?? 1) > 1 ? ` ×${selectedTicket.occurrenceCount}` : ''}
                       </Badge>
@@ -661,7 +661,7 @@ export default function TicketsAdminPage() {
                   <div className="px-6 py-5 space-y-5">
                     {/* Description */}
                     <section>
-                      <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                      <h4 className="text-px-11 font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                         {t('reportIssue.description', 'Description')}
                       </h4>
                       <div className="text-sm text-foreground whitespace-pre-wrap leading-relaxed bg-muted/20 rounded-lg p-4 border border-border/30">
@@ -672,7 +672,7 @@ export default function TicketsAdminPage() {
                     {/* Meta */}
                     {(selectedTicket.category || selectedTicket.currentPage || selectedTicket.relatedUrl || selectedTicket.module || selectedTicket.incidentType || selectedTicket.lastOccurredAt) && (
                       <section>
-                        <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                        <h4 className="text-px-11 font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                           {t('admin.details', 'Details')}
                         </h4>
                         <div className="space-y-2">
@@ -732,7 +732,7 @@ export default function TicketsAdminPage() {
                     {/* Attachments */}
                     {selectedTicket.attachments?.length > 0 && (
                       <section>
-                        <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <h4 className="text-px-11 font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
                           <Paperclip className="h-3 w-3" />
                           {t('reportIssue.attachments', 'Attachments')} ({selectedTicket.attachments.length})
                         </h4>
@@ -755,7 +755,7 @@ export default function TicketsAdminPage() {
                                   {img ? <ImageIcon className="h-3.5 w-3.5 text-muted-foreground shrink-0" /> : <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
                                   <div className="min-w-0 flex-1">
                                     <p className="text-xs truncate font-medium">{att.fileName}</p>
-                                    <p className="text-[10px] text-muted-foreground">
+                                    <p className="text-px-10 text-muted-foreground">
                                       {att.fileSize < 1024 * 1024
                                         ? `${(att.fileSize / 1024).toFixed(0)} KB`
                                         : `${(att.fileSize / (1024 * 1024)).toFixed(1)} MB`
@@ -787,7 +787,7 @@ export default function TicketsAdminPage() {
                   {/* Linked Tickets */}
                   <section>
                     <div className="flex items-center justify-between">
-                      <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">{t('admin.linkedTickets', 'Linked Tickets')} <span className="text-xs ml-2 text-muted-foreground">{linkedTicketsList.length}</span></h4>
+                      <h4 className="text-px-11 font-semibold text-muted-foreground uppercase tracking-wider mb-2">{t('admin.linkedTickets', 'Linked Tickets')} <span className="text-xs ml-2 text-muted-foreground">{linkedTicketsList.length}</span></h4>
                       <div>
                         <Button size="sm" variant="outline" onClick={() => { setShowLinkSelector((s) => !s); if (selectedTicket) fetchLinksFor(selectedTicket.id); }}>
                           {t('admin.addLink', 'Add Link')}
@@ -827,7 +827,7 @@ export default function TicketsAdminPage() {
 
                 {/* Conversation / Comments */}
                 <section>
-                  <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">{t('admin.conversation', 'Conversation')}</h4>
+                  <h4 className="text-px-11 font-semibold text-muted-foreground uppercase tracking-wider mb-2">{t('admin.conversation', 'Conversation')}</h4>
                   {selectedTicket && <CommentThread ticketId={selectedTicket.id} />}
                 </section>
                   </div>
@@ -836,7 +836,7 @@ export default function TicketsAdminPage() {
                 {/* Footer - Status Controls */}
                 <Separator />
                 <div className="px-6 py-3.5 bg-muted/20">
-                  <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                  <h4 className="text-px-11 font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                     {t('admin.changeStatus', 'Update Status')}
                   </h4>
                   <div className="flex gap-2 flex-wrap">

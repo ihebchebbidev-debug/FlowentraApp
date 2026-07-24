@@ -71,7 +71,7 @@ export function PurchaseOrdersSearchControls(props: Props) {
               {t("filters.title", "Filters")}
             </span>
             {props.hasActiveFilter && (
-              <Badge variant="secondary" className="ml-1.5 h-4 px-1 text-[10px]">
+              <Badge variant="secondary" className="ml-1.5 h-4 px-1 text-px-10">
                 •
               </Badge>
             )}

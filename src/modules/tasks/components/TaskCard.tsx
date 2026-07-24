@@ -39,24 +39,24 @@ const TaskCard = memo(({ data }: TaskCardProps) => {
       <div className="bg-card border border-border rounded-md shadow-sm hover:shadow-md transition-shadow cursor-pointer p-3 space-y-2.5">
         {/* Priority + labels row */}
         <div className="flex items-center gap-1.5 flex-wrap">
-          <Badge variant="outline" className={`text-[10px] px-1.5 py-0 rounded-sm ${getPriorityColor(data.priority)}`}>
+          <Badge variant="outline" className={`text-px-10 px-1.5 py-0 rounded-sm ${getPriorityColor(data.priority)}`}>
             {data.priority}
           </Badge>
           {data.labels?.slice(0, 1).map((label, index) => (
-            <Badge key={index} variant="secondary" className="text-[10px] px-1.5 py-0 rounded-sm">
+            <Badge key={index} variant="secondary" className="text-px-10 px-1.5 py-0 rounded-sm">
               {label}
             </Badge>
           ))}
         </div>
 
         {/* Title */}
-        <h3 className="font-medium text-[13px] text-foreground leading-snug line-clamp-2">
+        <h3 className="font-medium text-px-13 text-foreground leading-snug line-clamp-2">
           {data.title}
         </h3>
 
         {/* Description — compact */}
         {data.description && (
-          <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">
+          <p className="text-px-11 text-muted-foreground leading-relaxed line-clamp-2">
             {data.description}
           </p>
         )}
@@ -64,19 +64,19 @@ const TaskCard = memo(({ data }: TaskCardProps) => {
         {/* Footer: date + assignee */}
         <div className="flex items-center justify-between pt-1">
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+            <div className="flex items-center gap-1 text-px-11 text-muted-foreground">
               <Calendar className="h-3 w-3" />
               <span>{typeof data.dueDate === 'object' && data.dueDate ? (data.dueDate as any).toLocaleDateString() : (data.dueDate || '')}</span>
             </div>
             {data.estimatedHours && (
-              <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+              <div className="flex items-center gap-1 text-px-11 text-muted-foreground">
                 <AlertCircle className="h-3 w-3" />
                 <span>{data.estimatedHours}h</span>
               </div>
             )}
           </div>
           <Avatar className="h-5 w-5">
-            <AvatarFallback className="text-[9px] bg-primary/10 text-primary">
+            <AvatarFallback className="text-px-9 bg-primary/10 text-primary">
               {getInitials(data.assignee)}
             </AvatarFallback>
           </Avatar>

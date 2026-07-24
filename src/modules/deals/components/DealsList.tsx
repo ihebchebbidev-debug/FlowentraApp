@@ -110,7 +110,7 @@ export function DealsList() {
         </div>
         <div className="min-w-0">
           <h1 className="text-base sm:text-xl font-semibold text-foreground truncate">{t("header.title")}</h1>
-          <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">{t("header.subtitle")}</p>
+          <p className="text-px-10 sm:text-px-11 text-muted-foreground truncate">{t("header.subtitle")}</p>
         </div>
       </div>
       <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
@@ -282,7 +282,7 @@ export function DealsList() {
                             {d.title}
                             {isAtRisk(d) && <AlertTriangle className="inline h-3.5 w-3.5 text-amber-500 ml-1 shrink-0" aria-label={t("forecast.atRisk", { defaultValue: "At risk" })} />}
                           </p>
-                          <Badge variant="secondary" className={`${stageBadgeClass(d.stage)} text-[10px] px-2 py-0.5 shrink-0`}>
+                          <Badge variant="secondary" className={`${stageBadgeClass(d.stage)} text-px-10 px-2 py-0.5 shrink-0`}>
                             {t(`stages.${d.stage}`)}
                           </Badge>
                         </div>

@@ -125,15 +125,15 @@ export const EntityTriggerNode = memo(forwardRef<HTMLDivElement, EntityTriggerNo
 
           {/* Labels */}
           <div className="flex-1 min-w-0">
-            <div className="font-semibold text-[13px] text-foreground truncate leading-tight">
+            <div className="font-semibold text-px-13 text-foreground truncate leading-tight">
               {displayLabel}
             </div>
             <div className="flex items-center gap-1 mt-0.5">
               <Zap className="h-3 w-3" style={{ color: style.color }} />
-              <span className="text-[11px] font-medium" style={{ color: style.color }}>
+              <span className="text-px-11 font-medium" style={{ color: style.color }}>
                 {t('trigger', 'Trigger')}
               </span>
-              <span className="text-[10px] text-muted-foreground ml-1">
+              <span className="text-px-10 text-muted-foreground ml-1">
                 • {t(`entity.${data.entityType}`, data.entityType)}
               </span>
             </div>
@@ -146,7 +146,7 @@ export const EntityTriggerNode = memo(forwardRef<HTMLDivElement, EntityTriggerNo
         <div className="px-3.5 pb-3">
           <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/40">
             <div className="flex-1 text-center">
-              <div className="text-[9px] text-muted-foreground uppercase font-semibold tracking-wider mb-1">
+              <div className="text-px-9 text-muted-foreground uppercase font-semibold tracking-wider mb-1">
                 {t('config.from', 'From')}
               </div>
               <div className="px-2 py-1 rounded-md bg-background text-xs font-medium text-muted-foreground border border-border/50">
@@ -157,7 +157,7 @@ export const EntityTriggerNode = memo(forwardRef<HTMLDivElement, EntityTriggerNo
             <div className="text-muted-foreground/40 text-sm font-light">→</div>
             
             <div className="flex-1 text-center">
-              <div className="text-[9px] text-muted-foreground uppercase font-semibold tracking-wider mb-1">
+              <div className="text-px-9 text-muted-foreground uppercase font-semibold tracking-wider mb-1">
                 {t('config.to', 'To')}
               </div>
               <div className="px-2 py-1 rounded-md text-xs font-semibold text-white shadow-sm"
@@ -172,7 +172,7 @@ export const EntityTriggerNode = memo(forwardRef<HTMLDivElement, EntityTriggerNo
         {/* Description */}
         {data.description && (
           <div className="px-3.5 pb-2.5 border-t border-border/30 pt-2">
-            <div className="text-[11px] text-muted-foreground/70 truncate">
+            <div className="text-px-11 text-muted-foreground/70 truncate">
               {data.description}
             </div>
           </div>

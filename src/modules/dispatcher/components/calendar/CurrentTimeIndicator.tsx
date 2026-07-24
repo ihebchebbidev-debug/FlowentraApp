@@ -54,7 +54,7 @@ export function CurrentTimeIndicator({ dates, workingHours, dateWidth, hourWidth
       style={{ left: `${leftPosition}px` }}
     >
       {/* Time label */}
-      <div className="bg-primary text-primary-foreground text-[10px] font-semibold px-1.5 py-0.5 rounded-b shadow-md whitespace-nowrap">
+      <div className="bg-primary text-primary-foreground text-px-10 font-semibold px-1.5 py-0.5 rounded-b shadow-md whitespace-nowrap">
         {format(now, 'HH:mm')}
       </div>
       {/* Vertical line */}

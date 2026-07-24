@@ -73,10 +73,10 @@ export function LeftPanel({
         <div className="mx-2 mb-1 px-3 py-2 rounded-lg bg-primary/10 border border-primary/20 flex items-center gap-2">
           <ArrowDown className="h-3.5 w-3.5 text-primary shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-medium text-primary">
+            <p className="text-px-11 font-medium text-primary">
               {t('wb:editor.insertAtPosition', { position: insertAtIndex! + 1 })}
             </p>
-            <p className="text-[9px] text-primary/70">{t('wb:editor.clickBlockToInsert')}</p>
+            <p className="text-px-9 text-primary/70">{t('wb:editor.clickBlockToInsert')}</p>
           </div>
           <button
             onClick={onCancelInsert}
@@ -91,11 +91,11 @@ export function LeftPanel({
       <Tabs value={leftTab} onValueChange={(v) => setLeftTab(v as 'pages' | 'components')} className="flex-1 flex flex-col min-h-0">
         <div className="px-2">
           <TabsList className="w-full h-8 bg-muted/40 p-0.5">
-            <TabsTrigger value="components" className="flex-1 h-7 text-[11px] font-medium gap-1 data-[state=active]:shadow-sm">
+            <TabsTrigger value="components" className="flex-1 h-7 text-px-11 font-medium gap-1 data-[state=active]:shadow-sm">
               <Layers className="h-3 w-3" />
               {t('wb:common.blocks')}
             </TabsTrigger>
-            <TabsTrigger value="pages" className="flex-1 h-7 text-[11px] font-medium gap-1 data-[state=active]:shadow-sm">
+            <TabsTrigger value="pages" className="flex-1 h-7 text-px-11 font-medium gap-1 data-[state=active]:shadow-sm">
               <FileText className="h-3 w-3" />
               {t('wb:common.pages')}
             </TabsTrigger>

@@ -873,7 +873,7 @@ useEffect(() => {
                                         </Badge>
                                       </div>
                                     </div>
-                                    <Badge className={`${getStatusColorClass('dispatch', dispatch.status)} text-[10px] px-2 py-0.5 shrink-0 capitalize`}>
+                                    <Badge className={`${getStatusColorClass('dispatch', dispatch.status)} text-px-10 px-2 py-0.5 shrink-0 capitalize`}>
                                       {t(`dispatcher.statuses.${dispatch.status}`, dispatch.status.replace('_', ' '))}
                                     </Badge>
                                   </div>

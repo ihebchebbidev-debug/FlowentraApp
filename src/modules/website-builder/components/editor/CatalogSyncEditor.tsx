@@ -86,13 +86,13 @@ export function CatalogSyncEditor({ componentType, onApply, currency, currencyPo
 
   return (
     <EditorSection title="Catalog">
-      <p className="text-[10px] text-muted-foreground/70 leading-relaxed">
+      <p className="text-px-10 text-muted-foreground/70 leading-relaxed">
         Pull real {isService ? 'services' : 'products'} from your inventory. Items are saved as an
         editable snapshot — re-sync any time to refresh prices.
       </p>
       <div className="space-y-2 mt-1">
         <div className="space-y-1">
-          <Label className="text-[11px] font-medium text-foreground/70">Search / category (optional)</Label>
+          <Label className="text-px-11 font-medium text-foreground/70">Search / category (optional)</Label>
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -102,7 +102,7 @@ export function CatalogSyncEditor({ componentType, onApply, currency, currencyPo
           />
         </div>
         <div className="space-y-1">
-          <Label className="text-[11px] font-medium text-foreground/70">Max items</Label>
+          <Label className="text-px-11 font-medium text-foreground/70">Max items</Label>
           <Input
             type="number"
             min={1}
@@ -117,7 +117,7 @@ export function CatalogSyncEditor({ componentType, onApply, currency, currencyPo
           {loading ? 'Syncing…' : 'Sync from catalog'}
         </Button>
         {syncedCount != null && syncedCount > 0 && (
-          <p className="text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+          <p className="text-px-10 text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
             <PackageCheck className="h-3 w-3" /> {syncedCount} item(s) synced — edit them below.
           </p>
         )}

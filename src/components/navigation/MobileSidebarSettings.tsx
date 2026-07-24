@@ -64,7 +64,7 @@ function ColorSwatch({ color, active, onClick, label }: { color: string; active:
       )}
       style={bg ? { backgroundColor: bg } : undefined}
     >
-      {!color && <span className="text-[10px] text-muted-foreground font-medium">—</span>}
+      {!color && <span className="text-px-10 text-muted-foreground font-medium">—</span>}
     </button>
   );
 }
@@ -113,12 +113,12 @@ function CustomColorInput({ value, onChange, label }: { value: string; onChange:
         value={text}
         onChange={(e) => handleTextChange(e.target.value)}
         placeholder="#ff0000 or 217 91% 60%"
-        className="flex-1 h-7 px-2 text-[11px] border rounded-md bg-background text-foreground placeholder:text-muted-foreground/50"
+        className="flex-1 h-7 px-2 text-px-11 border rounded-md bg-background text-foreground placeholder:text-muted-foreground/50"
       />
       {value && (
         <button
           onClick={() => { setText(''); onChange(''); }}
-          className="text-[10px] text-muted-foreground hover:text-destructive"
+          className="text-px-10 text-muted-foreground hover:text-destructive"
           title="Clear custom color"
         >✕</button>
       )}
@@ -146,7 +146,7 @@ function HslColorInput({ label, value, onChange }: { label: string; value: strin
       >
         {!value && <Pipette className="h-3 w-3 mx-auto text-muted-foreground/50" />}
       </button>
-      <span className="text-[11px] text-muted-foreground flex-1 min-w-0">{label}</span>
+      <span className="text-px-11 text-muted-foreground flex-1 min-w-0">{label}</span>
       {editing && (
         <input
           type="text"
@@ -154,7 +154,7 @@ function HslColorInput({ label, value, onChange }: { label: string; value: strin
           onChange={(e) => { setText(e.target.value); onChange(e.target.value); }}
           onBlur={() => setEditing(false)}
           placeholder="210 20% 98%"
-          className="w-28 h-6 px-1.5 text-[10px] border rounded bg-background text-foreground"
+          className="w-28 h-6 px-1.5 text-px-10 border rounded bg-background text-foreground"
           autoFocus
         />
       )}
@@ -201,7 +201,7 @@ function SidebarThemeSection({ config, onUpdate }: { config: MobileSidebarConfig
               key={preset.label}
               onClick={() => applyTheme(preset)}
               className={cn(
-                'flex flex-col items-center gap-1.5 p-2 rounded-lg border transition-all text-[10px] font-medium',
+                'flex flex-col items-center gap-1.5 p-2 rounded-lg border transition-all text-px-10 font-medium',
                 isActive
                   ? 'border-primary bg-primary/5 text-primary shadow-sm'
                   : 'border-border/40 hover:border-border text-muted-foreground hover:text-foreground'
@@ -228,7 +228,7 @@ function SidebarThemeSection({ config, onUpdate }: { config: MobileSidebarConfig
       {/* Custom colors toggle */}
       <button
         onClick={() => setShowCustom(!showCustom)}
-        className="text-[11px] text-primary hover:underline flex items-center gap-1"
+        className="text-px-11 text-primary hover:underline flex items-center gap-1"
       >
         <Pipette className="h-3 w-3" />
         {showCustom ? 'Hide custom colors' : 'Customize individual colors'}
@@ -241,7 +241,7 @@ function SidebarThemeSection({ config, onUpdate }: { config: MobileSidebarConfig
           <HslColorInput label="Accent / Hover" value={config.sidebarAccent} onChange={(v) => onUpdate({ sidebarAccent: v })} />
           <HslColorInput label="Border" value={config.sidebarBorder} onChange={(v) => onUpdate({ sidebarBorder: v })} />
           <HslColorInput label="Primary / Active" value={config.sidebarPrimary} onChange={(v) => onUpdate({ sidebarPrimary: v })} />
-          <p className="text-[9px] text-muted-foreground/50">Use HSL format: e.g. "217 33% 17%"</p>
+          <p className="text-px-9 text-muted-foreground/50">Use HSL format: e.g. "217 33% 17%"</p>
         </div>
       )}
     </div>
@@ -333,7 +333,7 @@ export function MobileSidebarSettings({ config, onUpdate, onReset, onClose }: Mo
               onChange={(v) => onUpdate({ iconColor: v })}
               label="Custom icon color"
             />
-            <p className="text-[9px] text-muted-foreground/50">
+            <p className="text-px-9 text-muted-foreground/50">
               Override per item in sidebar item settings. Supports hex (#ff0000) or HSL (217 91% 60%).
             </p>
           </div>

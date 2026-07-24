@@ -116,7 +116,7 @@ export function CalendarMonthView({ events, onEventClick }: CalendarMonthViewPro
                   <button
                     key={event.id}
                     className={cn(
-                      "w-full text-left text-[10px] leading-tight px-1 py-0.5 rounded truncate transition-colors",
+                      "w-full text-left text-px-10 leading-tight px-1 py-0.5 rounded truncate transition-colors",
                       event.status === 'cancelled'
                         ? "bg-destructive/10 text-destructive line-through"
                         : "bg-primary/10 text-primary hover:bg-primary/20"
@@ -131,7 +131,7 @@ export function CalendarMonthView({ events, onEventClick }: CalendarMonthViewPro
                   </button>
                 ))}
                 {dayEvents.length > 3 && (
-                  <span className="text-[10px] text-muted-foreground px-1">
+                  <span className="text-px-10 text-muted-foreground px-1">
                     +{dayEvents.length - 3} {t('calendarView.more')}
                   </span>
                 )}

@@ -352,7 +352,7 @@ export default function DbConsolePage() {
             </div>
             <div>
               <h1 className="text-base font-semibold tracking-tight text-foreground">DB Console</h1>
-              <p className="text-[11px] text-muted-foreground">Restricted access</p>
+              <p className="text-px-11 text-muted-foreground">Restricted access</p>
             </div>
           </div>
           <p className="text-sm text-muted-foreground">Enter access password to continue.</p>
@@ -380,18 +380,18 @@ export default function DbConsolePage() {
           </div>
           <div className="leading-tight">
             <h1 className="text-sm font-semibold tracking-tight text-foreground">DB Console</h1>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">postgres · live</p>
+            <p className="text-px-10 text-muted-foreground uppercase tracking-wider">postgres · live</p>
           </div>
-          <span className="hidden sm:inline-flex items-center gap-1.5 rounded-md border border-border bg-muted px-2 py-1 text-[10px] font-mono text-foreground">
+          <span className="hidden sm:inline-flex items-center gap-1.5 rounded-md border border-border bg-muted px-2 py-1 text-px-10 font-mono text-foreground">
             <span className={`h-1.5 w-1.5 rounded-full ${tenant ? "bg-success" : "bg-warning"}`} />
             {tenant || "no tenant"}
           </span>
-          <span className="hidden md:inline-flex items-center rounded-md border border-border bg-muted px-2 py-1 text-[10px] font-mono text-muted-foreground">
+          <span className="hidden md:inline-flex items-center rounded-md border border-border bg-muted px-2 py-1 text-px-10 font-mono text-muted-foreground">
             {TABLE_NAMES.length} tables
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="inline-flex rounded-md border border-border overflow-hidden text-[11px] font-medium bg-muted">
+          <div className="inline-flex rounded-md border border-border overflow-hidden text-px-11 font-medium bg-muted">
             <button
               className={`px-3 py-1.5 transition ${mode === "read"
                 ? "bg-primary text-primary-foreground"
@@ -419,15 +419,15 @@ export default function DbConsolePage() {
 
       {showSettings && (
         <div className={`${panelClass} p-4 space-y-3`}>
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Connection</div>
+          <div className="text-px-11 font-semibold uppercase tracking-wider text-muted-foreground">Connection</div>
           <div className="grid md:grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-[11px] text-muted-foreground">API URL</label>
+              <label className="text-px-11 text-muted-foreground">API URL</label>
               <Input value={apiUrl} onChange={e => setApiUrl(e.target.value)} placeholder="https://api.flowentra.app"
                 className="font-mono text-xs" />
             </div>
             <div className="space-y-1">
-              <label className="text-[11px] text-muted-foreground">
+              <label className="text-px-11 text-muted-foreground">
                 Tenant{tenantsLoading ? " (loading…)" : ""}
               </label>
               {tenantList.length > 0 ? (
@@ -439,7 +439,7 @@ export default function DbConsolePage() {
                     {tenantList.map((t) => (
                       <SelectItem key={t.id} value={t.slug}>
                         {t.companyName}
-                        <span className="text-muted-foreground ml-2 text-[11px]">
+                        <span className="text-muted-foreground ml-2 text-px-11">
                           {t.slug}{t.isDefault ? " · default" : ""}
                         </span>
                       </SelectItem>
@@ -455,13 +455,13 @@ export default function DbConsolePage() {
                 />
               )}
               {tenantsError && (
-                <p className="text-[11px] text-destructive">
+                <p className="text-px-11 text-destructive">
                   Couldn't load tenants ({tenantsError}). Type the slug manually.
                 </p>
               )}
             </div>
           </div>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-px-11 text-muted-foreground">
             Values are stored locally in your browser and sent only to the API URL above.
           </p>
         </div>
@@ -470,7 +470,7 @@ export default function DbConsolePage() {
       <div className={`grid gap-4 ${showSchema ? "md:grid-cols-[240px_1fr]" : "grid-cols-1"}`}>
         {showSchema && (
           <div className={`${panelClass} p-2 space-y-2 max-h-[70vh] flex flex-col`}>
-            <div className="px-2 pt-1 pb-0.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <div className="px-2 pt-1 pb-0.5 text-px-11 font-semibold uppercase tracking-wider text-muted-foreground">
               Schema
             </div>
             <Input
@@ -483,16 +483,16 @@ export default function DbConsolePage() {
                 <button
                   key={t} onClick={() => insertTable(t)}
                   title={`${SCHEMA_MAP[t].length} columns — click to query`}
-                  className="group flex w-full items-center justify-between gap-2 text-left px-2 py-1 text-[12px] font-mono rounded hover:bg-muted text-foreground/80 hover:text-foreground transition"
+                  className="group flex w-full items-center justify-between gap-2 text-left px-2 py-1 text-px-12 font-mono rounded hover:bg-muted text-foreground/80 hover:text-foreground transition"
                 >
                   <span className="truncate">
                     <span className="text-muted-foreground group-hover:text-primary">▸ </span>{t}
                   </span>
-                  <span className="text-[10px] text-muted-foreground tabular-nums">{SCHEMA_MAP[t].length}</span>
+                  <span className="text-px-10 text-muted-foreground tabular-nums">{SCHEMA_MAP[t].length}</span>
                 </button>
               ))}
               {filteredTables.length === 0 && (
-                <p className="text-[11px] text-muted-foreground p-2">No tables match.</p>
+                <p className="text-px-11 text-muted-foreground p-2">No tables match.</p>
               )}
             </div>
           </div>
@@ -521,7 +521,7 @@ export default function DbConsolePage() {
             />
           </div>
           <div className="flex items-center justify-between mt-2 gap-2 flex-wrap">
-            <span className="text-[11px] text-muted-foreground">
+            <span className="text-px-11 text-muted-foreground">
               <kbd className="px-1.5 py-0.5 rounded bg-muted border border-border text-foreground">⌘/Ctrl</kbd>
               <span className="mx-1">+</span>
               <kbd className="px-1.5 py-0.5 rounded bg-muted border border-border text-foreground">Enter</kbd>
@@ -585,10 +585,10 @@ export default function DbConsolePage() {
 
           {result.rows && result.rows.length > 0 && (
             <div className="overflow-auto border border-border rounded-md max-h-[55vh] bg-background">
-              <table className="w-full text-[12px] font-mono border-separate border-spacing-0">
+              <table className="w-full text-px-12 font-mono border-separate border-spacing-0">
                 <thead className="sticky top-0 z-10">
                   <tr>{cols.map(c => (
-                    <th key={c} className="text-left px-2.5 py-2 bg-muted border-b border-border text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{c}</th>
+                    <th key={c} className="text-left px-2.5 py-2 bg-muted border-b border-border text-px-10 uppercase tracking-wider text-muted-foreground font-semibold">{c}</th>
                   ))}</tr>
                 </thead>
                 <tbody>
@@ -612,11 +612,11 @@ export default function DbConsolePage() {
 
       {history.length > 0 && (
         <div className={`${panelClass} p-3`}>
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">History</div>
+          <div className="text-px-11 font-semibold uppercase tracking-wider text-muted-foreground mb-2">History</div>
           <div className="space-y-1 max-h-48 overflow-auto">
             {history.map((h, i) => (
               <button key={i} onClick={() => setSqlText(h)}
-                className="group flex items-center gap-2 w-full text-left text-[12px] font-mono px-2 py-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground truncate transition">
+                className="group flex items-center gap-2 w-full text-left text-px-12 font-mono px-2 py-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground truncate transition">
                 <span className="text-muted-foreground group-hover:text-primary">$</span>
                 <span className="truncate">{h}</span>
               </button>

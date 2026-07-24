@@ -172,7 +172,7 @@ export function FeaturesBlock({
           <div className="mb-16 md:mb-24 max-w-3xl">
             <div className="flex items-center gap-3 mb-6">
               <span className="h-px w-12" style={{ backgroundColor: accent }} />
-              <span className="text-[11px] tracking-[0.35em] uppercase font-semibold" style={{ color: accent, fontFamily: theme.bodyFont }}>
+              <span className="text-px-11 tracking-[0.35em] uppercase font-semibold" style={{ color: accent, fontFamily: theme.bodyFont }}>
                 {String(features.length).padStart(2, '0')} Chapters
               </span>
             </div>

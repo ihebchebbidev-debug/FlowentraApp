@@ -154,7 +154,7 @@ export function SavedViewsBar({
 
   return (
     <div className="flex flex-wrap items-center gap-1.5 px-3 sm:px-4 py-2 border-y border-border/60 bg-muted/20">
-      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium pr-1">
+      <div className="flex items-center gap-1.5 text-px-11 text-muted-foreground font-medium pr-1">
         <Zap className="h-3 w-3" />
         {t("savedViews.smartFilters", "Smart filters")}
       </div>
@@ -164,7 +164,7 @@ export function SavedViewsBar({
           <button
             key={sf.id}
             onClick={() => onApply(sf.filters)}
-            className={`h-6 px-2 rounded-full text-[11px] font-medium transition-colors border ${
+            className={`h-6 px-2 rounded-full text-px-11 font-medium transition-colors border ${
               active
                 ? "bg-primary text-primary-foreground border-primary shadow-sm"
                 : "bg-card border-border text-foreground hover:bg-muted"
@@ -179,12 +179,12 @@ export function SavedViewsBar({
         <div className="h-4 w-px bg-border mx-1" aria-hidden />
       )}
 
-      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium pr-1">
+      <div className="flex items-center gap-1.5 text-px-11 text-muted-foreground font-medium pr-1">
         <Bookmark className="h-3 w-3" />
         {t("savedViews.title", "Saved views")}
       </div>
       {views.length === 0 && (
-        <span className="text-[11px] text-muted-foreground italic">
+        <span className="text-px-11 text-muted-foreground italic">
           {t("savedViews.empty", "None yet — save your current filters")}
         </span>
       )}
@@ -193,7 +193,7 @@ export function SavedViewsBar({
         return (
           <span
             key={v.id}
-            className={`group inline-flex items-center gap-1 h-6 pl-2 pr-1 rounded-full text-[11px] font-medium border transition-colors ${
+            className={`group inline-flex items-center gap-1 h-6 pl-2 pr-1 rounded-full text-px-11 font-medium border transition-colors ${
               active
                 ? "bg-primary text-primary-foreground border-primary"
                 : "bg-card border-border text-foreground hover:bg-muted"
@@ -222,7 +222,7 @@ export function SavedViewsBar({
           <Button
             variant="outline"
             size="sm"
-            className="h-6 px-2 text-[11px] gap-1 ml-auto"
+            className="h-6 px-2 text-px-11 gap-1 ml-auto"
           >
             <Plus className="h-3 w-3" />
             {t("savedViews.save", "Save view")}
@@ -247,10 +247,10 @@ export function SavedViewsBar({
               }}
             />
             <div className="flex items-center justify-between gap-1">
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-px-10 text-muted-foreground">
                 {t("savedViews.savesCurrentFilters", "Saves the current filters")}
               </span>
-              <Button size="sm" className="h-6 text-[11px]" onClick={handleSave}>
+              <Button size="sm" className="h-6 text-px-11" onClick={handleSave}>
                 {t("savedViews.save", "Save")}
               </Button>
             </div>

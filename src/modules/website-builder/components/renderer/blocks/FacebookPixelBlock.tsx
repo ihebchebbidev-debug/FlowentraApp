@@ -86,7 +86,7 @@ export function FacebookPixelBlock({
           </div>
           <div>
             <p className="text-sm font-semibold" style={{ color: theme.textColor }}>Meta Pixel</p>
-            <p className="text-[10px]" style={{ color: theme.secondaryColor }}>
+            <p className="text-px-10" style={{ color: theme.secondaryColor }}>
               {pixelId ? `ID: ${pixelId}` : 'No Pixel ID configured'}
             </p>
           </div>
@@ -96,7 +96,7 @@ export function FacebookPixelBlock({
             {events.map((evt, i) => (
               <span
                 key={i}
-                className="text-[9px] px-2 py-0.5 rounded-full font-medium"
+                className="text-px-9 px-2 py-0.5 rounded-full font-medium"
                 style={{ backgroundColor: '#1877F2' + '15', color: '#1877F2' }}
               >
                 {evt}
@@ -104,7 +104,7 @@ export function FacebookPixelBlock({
             ))}
           </div>
         )}
-        <p className="text-[9px] mt-2 opacity-50" style={{ color: theme.textColor }}>
+        <p className="text-px-9 mt-2 opacity-50" style={{ color: theme.textColor }}>
           ⚡ Script injected in published site only
         </p>
       </div>

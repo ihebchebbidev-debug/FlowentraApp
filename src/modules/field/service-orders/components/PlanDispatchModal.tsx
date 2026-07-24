@@ -554,7 +554,7 @@ export function PlanDispatchModal({
                 </div>
                 {focusedConflict && (
                   <div className="col-span-2 mt-1 rounded-sm border border-destructive/40 bg-destructive/10 px-2 py-1.5 flex items-center justify-between gap-2">
-                    <span className="text-[11px] text-destructive font-medium truncate">
+                    <span className="text-px-11 text-destructive font-medium truncate">
                       {t('plan_dispatch.preview_focused_overlap', {
                         number: focusedConflict.dispatchNumber || focusedConflict.dispatchId,
                         start: focusedConflict.startStr,
@@ -567,7 +567,7 @@ export function PlanDispatchModal({
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="h-6 px-2 text-[11px] text-destructive hover:text-destructive"
+                      className="h-6 px-2 text-px-11 text-destructive hover:text-destructive"
                       onClick={() => setFocusedConflict(null)}
                     >
                       {t('plan_dispatch.preview_clear_focus', 'Clear')}
@@ -595,7 +595,7 @@ export function PlanDispatchModal({
                       const name = techNamesById.get(String(techId)) || `#${techId}`;
                       return (
                         <div key={techId} className="space-y-1">
-                          <div className="text-[11px] font-semibold">
+                          <div className="text-px-11 font-semibold">
                             {t('plan_dispatch.conflict_tech_line', { name, count: list.length })}
                           </div>
                           <div className="flex flex-wrap gap-1.5">
@@ -622,7 +622,7 @@ export function PlanDispatchModal({
                                     });
                                   }}
                                   className={cn(
-                                    "inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-medium transition-colors",
+                                    "inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-px-11 font-medium transition-colors",
                                     active
                                       ? "border-destructive bg-destructive text-destructive-foreground"
                                       : "border-destructive/40 bg-background hover:bg-destructive/10"
@@ -640,7 +640,7 @@ export function PlanDispatchModal({
                     })}
                   </div>
                   {focusedConflict && (
-                    <p className="text-[11px] pl-6 italic opacity-90">
+                    <p className="text-px-11 pl-6 italic opacity-90">
                       {t('plan_dispatch.preview_affected_note', {
                         count: previewGroups.length,
                         defaultValue: 'All {{count}} installation group(s) below share this technician and time window.',
@@ -698,27 +698,27 @@ export function PlanDispatchModal({
                   >
                     <div className="flex items-center justify-between gap-2 px-3 py-2 bg-primary/5 border-b border-primary/20">
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-[11px] font-semibold text-primary">
+                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-px-11 font-semibold text-primary">
                           {idx + 1}
                         </span>
                         <Building2 className="h-4 w-4 text-primary flex-shrink-0" />
                         <span className="text-sm font-semibold truncate">{g.label}</span>
                         {g.viaServiceOrder && (
-                          <Badge variant="outline" className="text-[10px]">
+                          <Badge variant="outline" className="text-px-10">
                             {t('plan_dispatch.preview_via_so', 'via service order')}
                           </Badge>
                         )}
                       </div>
                       <div className="flex items-center gap-1.5 flex-shrink-0">
-                        <Badge variant="secondary" className="text-[11px] gap-1">
+                        <Badge variant="secondary" className="text-px-11 gap-1">
                           <ClockIcon className="h-3 w-3" />
                           {g.start}–{g.end}
                         </Badge>
-                        <Badge variant="secondary" className="text-[11px]">
+                        <Badge variant="secondary" className="text-px-11">
                           {t('plan_dispatch.preview_jobs_count', { count: g.jobs.length, defaultValue: '{{count}} jobs' })}
                         </Badge>
                         {g.duration > 0 && (
-                          <Badge variant="outline" className="text-[11px]">
+                          <Badge variant="outline" className="text-px-11">
                             {Math.floor(g.duration / 60) > 0 ? `${Math.floor(g.duration / 60)}h ` : ''}{g.duration % 60}m
                           </Badge>
                         )}
@@ -729,10 +729,10 @@ export function PlanDispatchModal({
                         <li key={j.id} className="flex items-center justify-between gap-2 px-3 py-2">
                           <div className="min-w-0">
                             <div className="text-sm font-medium truncate">{j.title || `Job #${j.id}`}</div>
-                            <div className="text-[11px] text-muted-foreground truncate">#{j.id}</div>
+                            <div className="text-px-11 text-muted-foreground truncate">#{j.id}</div>
                           </div>
                           {j.estimatedDuration ? (
-                            <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                            <span className="text-px-11 text-muted-foreground whitespace-nowrap">
                               {Math.floor(j.estimatedDuration / 60) > 0 ? `${Math.floor(j.estimatedDuration / 60)}h ` : ''}{j.estimatedDuration % 60}m
                             </span>
                           ) : null}
@@ -743,7 +743,7 @@ export function PlanDispatchModal({
                 ))}
               </div>
 
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-px-11 text-muted-foreground">
                 {t('plan_dispatch.preview_footnote', {
                   count: previewGroups.length,
                   jobs: selectedJobs.length,
@@ -778,16 +778,16 @@ export function PlanDispatchModal({
                         <div className="text-sm font-medium truncate">{j.title}</div>
                         <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
                           {j.installationName && (
-                            <Badge variant="outline" className="text-[10px] py-0 h-4">
+                            <Badge variant="outline" className="text-px-10 py-0 h-4">
                               {j.installationName}
                             </Badge>
                           )}
                           {j.estimatedDuration ? (
-                            <span className="text-[11px] text-muted-foreground">
+                            <span className="text-px-11 text-muted-foreground">
                               {t('plan_dispatch.duration_minutes', { minutes: j.estimatedDuration })}
                             </span>
                           ) : null}
-                          <span className="text-[11px] text-muted-foreground capitalize">
+                          <span className="text-px-11 text-muted-foreground capitalize">
                             {j.status}
                           </span>
                         </div>
@@ -1035,13 +1035,13 @@ export function PlanDispatchModal({
                                     <Badge
                                       key={s.id}
                                       variant={skillFilterIds.includes(s.id) ? 'default' : 'secondary'}
-                                      className="text-[10px] px-1.5 py-0 h-4"
+                                      className="text-px-10 px-1.5 py-0 h-4"
                                     >
                                       {s.name}
                                     </Badge>
                                   ))}
                                   {ownedSkills.length > 3 && (
-                                    <span className="text-[10px] text-muted-foreground">+{ownedSkills.length - 3}</span>
+                                    <span className="text-px-10 text-muted-foreground">+{ownedSkills.length - 3}</span>
                                   )}
                                 </span>
                               )}

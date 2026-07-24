@@ -161,11 +161,11 @@ function AggregateBanner({ status, host }: { status: AggregateStatus; host: stri
 function RecordRow({ record, verdict }: { record: DnsRecord; verdict?: RecordVerdict }) {
   return (
     <tr className="border-t hover:bg-muted/30">
-      <td className="px-2 py-1.5"><Badge variant="outline" className="text-[10px] font-mono">{record.type}</Badge></td>
+      <td className="px-2 py-1.5"><Badge variant="outline" className="text-px-10 font-mono">{record.type}</Badge></td>
       <td className="px-2 py-1.5"><CopyCell value={record.name} mono /></td>
       <td className="px-2 py-1.5">
         <CopyCell value={record.value} mono />
-        {record.note && <p className="text-[10px] text-muted-foreground mt-0.5">{record.note}</p>}
+        {record.note && <p className="text-px-10 text-muted-foreground mt-0.5">{record.note}</p>}
       </td>
       <td className="px-2 py-1.5 text-right">
         <StatusPill verdict={verdict} />
@@ -192,7 +192,7 @@ function CopyCell({ value, mono }: { value: string; mono?: boolean }) {
       className="group inline-flex items-center gap-1.5 max-w-full text-left hover:text-primary"
       title="Click to copy"
     >
-      <span className={`truncate ${mono ? 'font-mono text-[11px]' : ''}`}>{value}</span>
+      <span className={`truncate ${mono ? 'font-mono text-px-11' : ''}`}>{value}</span>
       {copied
         ? <Check className="h-3 w-3 text-emerald-500 shrink-0" />
         : <Copy className="h-3 w-3 opacity-0 group-hover:opacity-60 shrink-0" />}
@@ -201,7 +201,7 @@ function CopyCell({ value, mono }: { value: string; mono?: boolean }) {
 }
 
 function StatusPill({ verdict }: { verdict?: RecordVerdict }) {
-  if (!verdict) return <span className="text-[10px] text-muted-foreground">—</span>;
+  if (!verdict) return <span className="text-px-10 text-muted-foreground">—</span>;
   const map: Record<RecordVerdict['status'], { label: string; cls: string }> = {
     match:    { label: 'Live',        cls: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-500' },
     partial:  { label: 'Partial',     cls: 'bg-amber-500/15 text-amber-700 dark:text-amber-500' },
@@ -212,7 +212,7 @@ function StatusPill({ verdict }: { verdict?: RecordVerdict }) {
   };
   const s = map[verdict.status];
   return (
-    <span title={verdict.message} className={`inline-block text-[10px] px-1.5 py-0.5 rounded font-medium ${s.cls}`}>
+    <span title={verdict.message} className={`inline-block text-px-10 px-1.5 py-0.5 rounded font-medium ${s.cls}`}>
       {s.label}
     </span>
   );
@@ -224,7 +224,7 @@ function RegistrarLink({ label, href }: { label: string; href: string }) {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded border hover:border-primary hover:text-primary text-muted-foreground"
+      className="inline-flex items-center gap-1 text-px-10 px-2 py-1 rounded border hover:border-primary hover:text-primary text-muted-foreground"
     >
       {label} <ExternalLink className="h-3 w-3" />
     </a>

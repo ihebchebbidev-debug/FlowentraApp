@@ -144,7 +144,7 @@ function renderNumberProp(key: string, value: number, onChange: (v: number) => v
   }
   return (
     <div key={key} className="space-y-1.5">
-      <Label className="text-[11px] font-medium text-foreground/70">{formatLabel(key)}</Label>
+      <Label className="text-px-11 font-medium text-foreground/70">{formatLabel(key)}</Label>
       <Input
         type="number"
         value={value}
@@ -187,7 +187,7 @@ export function PropertiesPanel({ component, onUpdate, onUpdateStyles, onUpdateV
     const isRichText = TEXTAREA_KEYS.has(key) || value.length > 60;
     return (
       <div key={key} className="space-y-1.5">
-        <Label className="text-[11px] font-medium text-foreground/70">{formatLabel(key)}</Label>
+        <Label className="text-px-11 font-medium text-foreground/70">{formatLabel(key)}</Label>
         {isRichText ? (
           <RichTextInput
             value={value}
@@ -218,7 +218,7 @@ export function PropertiesPanel({ component, onUpdate, onUpdateStyles, onUpdateV
             </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold truncate">{component.label}</p>
-              <p className="text-[10px] text-muted-foreground/50">{component.type}</p>
+              <p className="text-px-10 text-muted-foreground/50">{component.type}</p>
             </div>
           </div>
           <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-muted-foreground" onClick={onDeselect}>
@@ -228,21 +228,21 @@ export function PropertiesPanel({ component, onUpdate, onUpdateStyles, onUpdateV
 
         {/* Quick Actions */}
         <div className="flex gap-1">
-          <Button variant="outline" size="sm" className="h-7 text-[10px] flex-1 gap-1 border-border/40" onClick={() => onMove(component.id, 'up')}>
+          <Button variant="outline" size="sm" className="h-7 text-px-10 flex-1 gap-1 border-border/40" onClick={() => onMove(component.id, 'up')}>
             <ChevronUp className="h-3 w-3" /> {t('wb:properties.up')}
           </Button>
-          <Button variant="outline" size="sm" className="h-7 text-[10px] flex-1 gap-1 border-border/40" onClick={() => onMove(component.id, 'down')}>
+          <Button variant="outline" size="sm" className="h-7 text-px-10 flex-1 gap-1 border-border/40" onClick={() => onMove(component.id, 'down')}>
             <ChevronDown className="h-3 w-3" /> {t('wb:properties.down')}
           </Button>
           {onCopy && (
-            <Button variant="outline" size="sm" className="h-7 text-[10px] px-2 border-border/40" onClick={() => onCopy(component.id)} title={t('wb:common.copiedToClipboard')}>
+            <Button variant="outline" size="sm" className="h-7 text-px-10 px-2 border-border/40" onClick={() => onCopy(component.id)} title={t('wb:common.copiedToClipboard')}>
               <ClipboardCopy className="h-3 w-3" />
             </Button>
           )}
-          <Button variant="outline" size="sm" className="h-7 text-[10px] px-2 border-border/40" onClick={() => onDuplicate(component.id)} title={t('wb:editor.duplicatePage')}>
+          <Button variant="outline" size="sm" className="h-7 text-px-10 px-2 border-border/40" onClick={() => onDuplicate(component.id)} title={t('wb:editor.duplicatePage')}>
             <Copy className="h-3 w-3" />
           </Button>
-          <Button variant="outline" size="sm" className="h-7 text-[10px] px-2 border-destructive/30 text-destructive hover:bg-destructive/5" onClick={() => onRemove(component.id)} title={t('wb:common.delete')}>
+          <Button variant="outline" size="sm" className="h-7 text-px-10 px-2 border-destructive/30 text-destructive hover:bg-destructive/5" onClick={() => onRemove(component.id)} title={t('wb:common.delete')}>
             <Trash2 className="h-3 w-3" />
           </Button>
         </div>
@@ -412,7 +412,7 @@ export function PropertiesPanel({ component, onUpdate, onUpdateStyles, onUpdateV
 
         {/* Responsive visibility — hide this block per device (like WordPress) */}
         <EditorSection title={t('wb:properties.visibility', 'Visibility')} defaultOpen={false}>
-          <p className="text-[10px] text-muted-foreground/60 leading-snug mb-1">
+          <p className="text-px-10 text-muted-foreground/60 leading-snug mb-1">
             {t('wb:properties.visibilityHint', 'Hide this block on specific screen sizes. It stays in the layout on the others.')}
           </p>
           {([
@@ -423,10 +423,10 @@ export function PropertiesPanel({ component, onUpdate, onUpdateStyles, onUpdateV
             const isHidden = !!component.hidden?.[device];
             return (
               <div key={device} className="flex items-center justify-between py-1">
-                <Label className="text-[11px] font-medium text-foreground/70 flex items-center gap-1.5">
+                <Label className="text-px-11 font-medium text-foreground/70 flex items-center gap-1.5">
                   <Icon className="h-3.5 w-3.5 text-muted-foreground" />
                   {label}
-                  <span className={`flex items-center gap-1 text-[10px] ${isHidden ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                  <span className={`flex items-center gap-1 text-px-10 ${isHidden ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-400'}`}>
                     {isHidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                     {isHidden ? t('wb:properties.hidden', 'Hidden') : t('wb:properties.shown', 'Shown')}
                   </span>
@@ -482,7 +482,7 @@ export function PropertiesPanel({ component, onUpdate, onUpdateStyles, onUpdateV
           <EditorSection title={t('wb:properties.mediaLinks')}>
             {mediaProps.map(([key, value]) => (
               <div key={key} className="space-y-1.5">
-                <Label className="text-[11px] font-medium text-foreground/70">{formatLabel(key)}</Label>
+                <Label className="text-px-11 font-medium text-foreground/70">{formatLabel(key)}</Label>
                 <Input
                   value={(value as string) || ''}
                   onChange={(e) => handlePropChange(key, e.target.value)}
@@ -506,7 +506,7 @@ export function PropertiesPanel({ component, onUpdate, onUpdateStyles, onUpdateV
           <EditorSection title={t('wb:properties.options')}>
             {boolProps.map(([key, value]) => (
               <div key={key} className="flex items-center justify-between py-1">
-                <Label className="text-[11px] font-medium text-foreground/70">{formatLabel(key)}</Label>
+                <Label className="text-px-11 font-medium text-foreground/70">{formatLabel(key)}</Label>
                 <Switch checked={value as boolean} onCheckedChange={(checked) => handlePropChange(key, checked)} />
               </div>
             ))}
@@ -532,8 +532,8 @@ export function PropertiesPanel({ component, onUpdate, onUpdateStyles, onUpdateV
               }
               return (
                 <div key={key} className="space-y-1">
-                  <Label className="text-[11px] font-medium text-foreground/70">{formatLabel(key)}</Label>
-                  <p className="text-[10px] text-muted-foreground/50">{Array.isArray(value) ? t('wb:properties.items_count', { count: (value as any[]).length }) : t('wb:properties.complexData')}</p>
+                  <Label className="text-px-11 font-medium text-foreground/70">{formatLabel(key)}</Label>
+                  <p className="text-px-10 text-muted-foreground/50">{Array.isArray(value) ? t('wb:properties.items_count', { count: (value as any[]).length }) : t('wb:properties.complexData')}</p>
                 </div>
               );
             })}
@@ -545,8 +545,8 @@ export function PropertiesPanel({ component, onUpdate, onUpdateStyles, onUpdateV
           <EditorSection title={t('wb:properties.other')} defaultOpen={false}>
             {otherProps.map(([key, value]) => (
               <div key={key} className="space-y-1">
-                <Label className="text-[11px] font-medium text-foreground/70">{formatLabel(key)}</Label>
-                <p className="text-[10px] text-muted-foreground/50">{typeof value === 'object' ? JSON.stringify(value).slice(0, 60) : String(value)}</p>
+                <Label className="text-px-11 font-medium text-foreground/70">{formatLabel(key)}</Label>
+                <p className="text-px-10 text-muted-foreground/50">{typeof value === 'object' ? JSON.stringify(value).slice(0, 60) : String(value)}</p>
               </div>
             ))}
           </EditorSection>

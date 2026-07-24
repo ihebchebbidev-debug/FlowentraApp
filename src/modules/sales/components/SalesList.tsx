@@ -404,7 +404,7 @@ export function SalesList() {
           </div>
           <div className="min-w-0">
             <h1 className="text-base font-semibold text-foreground truncate">{t("salesManagement")}</h1>
-            <p className="text-[10px] text-muted-foreground truncate">{t("manageSalesAndOffers")}</p>
+            <p className="text-px-10 text-muted-foreground truncate">{t("manageSalesAndOffers")}</p>
           </div>
         </div>
         {hasCreateAccess && (
@@ -426,7 +426,7 @@ export function SalesList() {
           </div>
           <div>
             <h1 className="text-xl font-semibold text-foreground">{t("salesManagement")}</h1>
-            <p className="text-[11px] text-muted-foreground">{t("manageSalesAndOffers")}</p>
+            <p className="text-px-11 text-muted-foreground">{t("manageSalesAndOffers")}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -678,7 +678,7 @@ export function SalesList() {
         />
       ) : viewMode === 'list' ? (
         <div className="p-3 sm:p-4 lg:p-6">
-          <Card className="shadow-card border-0 bg-card text-[0.85rem]">
+          <Card className="shadow-card border-0 bg-card text-rem-85">
             <MapOverlay 
               items={mapSalesToMapItems(filteredSales as any)}
               onViewItem={handleViewSale}
@@ -723,7 +723,7 @@ export function SalesList() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
                             <p className="list-row-title flex-1">{sale.title}</p>
-                            <Badge className={`${getStatusColor(sale.status)} text-[10px] px-2 py-0.5 shrink-0`}>
+                            <Badge className={`${getStatusColor(sale.status)} text-px-10 px-2 py-0.5 shrink-0`}>
                               {t(sale.status)}
                             </Badge>
                           </div>
@@ -740,7 +740,7 @@ export function SalesList() {
                             userId={sale.assignedTo}
                             name={sale.assignedToName}
                             size="xs"
-                            className="text-[12px] text-muted-foreground/90"
+                            className="text-px-12 text-muted-foreground/90"
                           />
                         )}
                         {sale.estimatedCloseDate && (
@@ -752,12 +752,12 @@ export function SalesList() {
                         {sale.tags.length > 0 && (
                           <div className="flex gap-1 flex-wrap">
                             {sale.tags.slice(0, 2).map((tag, index) => (
-                              <Badge key={index} variant="outline" className="text-[10px] px-1.5 py-0">
+                              <Badge key={index} variant="outline" className="text-px-10 px-1.5 py-0">
                                 {tag}
                               </Badge>
                             ))}
                             {sale.tags.length > 2 && (
-                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                              <Badge variant="outline" className="text-px-10 px-1.5 py-0">
                                 +{sale.tags.length - 2}
                               </Badge>
                             )}

@@ -153,7 +153,7 @@ export function DynamicDataConfig({
             <Label htmlFor="use_dynamic" className="text-sm font-medium">
               {t('dynamic_data.use_dynamic', 'Dynamic Data Source')}
             </Label>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-px-10 text-muted-foreground">
               {t('dynamic_data.use_dynamic_hint', 'Load options from database entities')}
             </p>
           </div>
@@ -238,7 +238,7 @@ export function DynamicDataConfig({
                   placeholder="{name} - {email}"
                   className="h-9 font-mono text-xs"
                 />
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-px-10 text-muted-foreground">
                   {t('dynamic_data.template_hint', 'Use {fieldName} to combine multiple fields')}
                 </p>
               </div>
@@ -301,7 +301,7 @@ export function DynamicDataConfig({
                       <Settings2 className="h-3 w-3" />
                       {t('dynamic_data.filters', 'Filters')}
                       {dataSource.filters && dataSource.filters.length > 0 && (
-                        <Badge variant="secondary" className="h-4 px-1 text-[10px]">
+                        <Badge variant="secondary" className="h-4 px-1 text-px-10">
                           {dataSource.filters.length}
                         </Badge>
                       )}
@@ -310,7 +310,7 @@ export function DynamicDataConfig({
                 </CollapsibleTrigger>
                 <CollapsibleContent className="space-y-2 pt-2">
                   {(!dataSource.filters || dataSource.filters.length === 0) && (
-                    <p className="text-[10px] text-muted-foreground text-center py-2">
+                    <p className="text-px-10 text-muted-foreground text-center py-2">
                       {t('dynamic_data.no_filters', 'No filters configured')}
                     </p>
                   )}
@@ -391,7 +391,7 @@ export function DynamicDataConfig({
                         <Link2 className="h-3 w-3" />
                         {t('dynamic_data.cascading')}
                         {dependency && (
-                          <Badge variant="secondary" className="h-4 px-1 text-[10px]">
+                          <Badge variant="secondary" className="h-4 px-1 text-px-10">
                             {t('common.enabled', 'On')}
                           </Badge>
                         )}
@@ -405,7 +405,7 @@ export function DynamicDataConfig({
                         <Label htmlFor="enable_cascading" className="text-xs font-medium">
                           {t('dynamic_data.enable_cascading')}
                         </Label>
-                        <p className="text-[10px] text-muted-foreground">
+                        <p className="text-px-10 text-muted-foreground">
                           {t('dynamic_data.enable_cascading_hint')}
                         </p>
                       </div>
@@ -478,7 +478,7 @@ export function DynamicDataConfig({
                               ))}
                             </SelectContent>
                           </Select>
-                          <p className="text-[10px] text-muted-foreground">
+                          <p className="text-px-10 text-muted-foreground">
                             {t('dynamic_data.filter_by_hint')}
                           </p>
                         </div>
@@ -489,7 +489,7 @@ export function DynamicDataConfig({
                             <Label htmlFor="clear_on_change" className="text-xs font-medium">
                               {t('dynamic_data.clear_on_change')}
                             </Label>
-                            <p className="text-[10px] text-muted-foreground">
+                            <p className="text-px-10 text-muted-foreground">
                               {t('dynamic_data.clear_on_change_hint')}
                             </p>
                           </div>
@@ -549,7 +549,7 @@ export function DynamicDataConfig({
                       </div>
                     ))}
                     {preview.length === 5 && (
-                      <p className="text-[10px] text-muted-foreground text-center">
+                      <p className="text-px-10 text-muted-foreground text-center">
                         {t('dynamic_data.preview_limit', 'Showing first 5 results')}
                       </p>
                     )}

@@ -219,11 +219,11 @@ export function WidgetMap({ widget }: Props) {
         {/* Overlay badge */}
         <div className="absolute top-2 left-2 z-[1000] bg-background/80 backdrop-blur-sm rounded-md px-2 py-1 border border-border/40 shadow-sm flex items-center gap-1.5">
           <div className="w-2 h-2 rounded-full" style={{ backgroundColor: accentColor }} />
-          <span className="text-[10px] font-medium text-foreground">
+          <span className="text-px-10 font-medium text-foreground">
             {locations.length} {t('dashboardBuilder.mapLocations', 'locations')}
           </span>
           {!isRealData && (
-            <span className="text-[9px] text-muted-foreground ml-1">
+            <span className="text-px-9 text-muted-foreground ml-1">
               ({t('dashboardBuilder.mapSampleData', 'sample')})
             </span>
           )}

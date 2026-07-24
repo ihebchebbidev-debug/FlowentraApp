@@ -125,8 +125,8 @@ const TableNode = ({ data }: { data: any }) => {
             </div>
             <div className="flex items-center gap-1 flex-shrink-0">
               <span className="text-muted-foreground">{field.type}</span>
-              {field.required && <span className="text-red-500 text-[10px]">*</span>}
-              {field.unique && <span className="text-purple-500 text-[10px]">U</span>}
+              {field.required && <span className="text-red-500 text-px-10">*</span>}
+              {field.unique && <span className="text-purple-500 text-px-10">U</span>}
             </div>
           </div>
         ))}

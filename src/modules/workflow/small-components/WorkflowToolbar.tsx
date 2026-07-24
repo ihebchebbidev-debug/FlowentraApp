@@ -135,7 +135,7 @@ export function WorkflowToolbar({ onAddNode }: WorkflowToolbarProps) {
   return (
     <Card className="h-full rounded-none border-0 border-r border-border/60 bg-background">
       <CardHeader className="p-3 pb-2">
-        <CardTitle className="text-[13px] font-semibold text-foreground">{t('componentsTitle')}</CardTitle>
+        <CardTitle className="text-px-13 font-semibold text-foreground">{t('componentsTitle')}</CardTitle>
       </CardHeader>
       
       <CardContent className="p-0">
@@ -143,7 +143,7 @@ export function WorkflowToolbar({ onAddNode }: WorkflowToolbarProps) {
           <div className="p-4 space-y-4">
             {nodeCategories.map((category, categoryIndex) => (
               <div key={categoryIndex}>
-                <h4 className="text-[10px] font-semibold text-muted-foreground/60 mb-1.5 px-2 uppercase tracking-[0.1em]">
+                <h4 className="text-px-10 font-semibold text-muted-foreground/60 mb-1.5 px-2 uppercase tracking-[0.1em]">
                   {t(category.titleKey)}
                 </h4>
                 
@@ -162,10 +162,10 @@ export function WorkflowToolbar({ onAddNode }: WorkflowToolbarProps) {
                         </div>
                         
                         <div className="flex-1 text-left min-w-0">
-                          <div className="text-[12px] font-medium text-foreground">
+                          <div className="text-px-12 font-medium text-foreground">
                             {item.labelKey ? t(item.labelKey) : ''}
                           </div>
-                          <div className="text-[10px] text-muted-foreground/70 line-clamp-1 mt-0.5">
+                          <div className="text-px-10 text-muted-foreground/70 line-clamp-1 mt-0.5">
                             {item.descKey ? t(item.descKey) : ''}
                           </div>
                         </div>

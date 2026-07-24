@@ -88,7 +88,7 @@ export function ContactDraggableTaskCard({
       <div className="p-3 space-y-2">
         {/* Title + menu */}
         <div className="flex items-start justify-between gap-1">
-          <h4 className="font-medium text-[13px] line-clamp-2 flex-1 leading-snug">
+          <h4 className="font-medium text-px-13 line-clamp-2 flex-1 leading-snug">
             {task.title}
           </h4>
           <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
@@ -123,34 +123,34 @@ export function ContactDraggableTaskCard({
 
         {/* Description */}
         {task.description && (
-          <p className="text-[11px] text-muted-foreground line-clamp-2">
+          <p className="text-px-11 text-muted-foreground line-clamp-2">
             {task.description}
           </p>
         )}
 
         {/* Tags row */}
         <div className="flex items-center gap-1 flex-wrap">
-          <Badge variant="outline" className={`text-[10px] px-1.5 py-0 rounded-sm ${getPriorityColor(task.priority)}`}>
+          <Badge variant="outline" className={`text-px-10 px-1.5 py-0 rounded-sm ${getPriorityColor(task.priority)}`}>
             {task.priority}
           </Badge>
           {isOverdue && (
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0 rounded-sm bg-destructive/10 text-destructive border-destructive/20">
+            <Badge variant="outline" className="text-px-10 px-1.5 py-0 rounded-sm bg-destructive/10 text-destructive border-destructive/20">
               <AlertTriangle className="h-2.5 w-2.5 mr-0.5" />
               Overdue
             </Badge>
           )}
           {task.tags.slice(0, 2).map((tag, index) => (
-            <Badge key={index} variant="secondary" className="text-[10px] px-1.5 py-0 rounded-sm">
+            <Badge key={index} variant="secondary" className="text-px-10 px-1.5 py-0 rounded-sm">
               {tag}
             </Badge>
           ))}
           {task.tags.length > 2 && (
-            <span className="text-[10px] text-muted-foreground">+{task.tags.length - 2}</span>
+            <span className="text-px-10 text-muted-foreground">+{task.tags.length - 2}</span>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-0.5">
+        <div className="flex items-center justify-between text-px-11 text-muted-foreground pt-0.5">
           <div className="flex items-center gap-1">
             <User className="h-3 w-3" />
             <span className="truncate max-w-[80px]">{getAssigneeName(task.assigneeId)}</span>
@@ -164,7 +164,7 @@ export function ContactDraggableTaskCard({
         </div>
 
         {task.estimatedHours && (
-          <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+          <div className="flex items-center gap-1 text-px-11 text-muted-foreground">
             <Clock className="h-3 w-3" />
             <span>{task.estimatedHours}h est.</span>
             {task.actualHours && <span>/ {task.actualHours}h</span>}

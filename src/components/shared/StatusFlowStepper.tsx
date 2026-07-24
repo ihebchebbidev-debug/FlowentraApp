@@ -203,7 +203,7 @@ export function StatusFlowStepper({
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[10px] font-medium uppercase tracking-wider opacity-80">
+            <div className="text-px-10 font-medium uppercase tracking-wider opacity-80">
               {t("statusFlow.stepOf", { current: validCurrentIndex + 1, total: effectiveSteps.length })}
             </div>
             <div className="text-base font-bold capitalize truncate leading-tight">
@@ -281,7 +281,7 @@ export function StatusFlowStepper({
           >
             <ChevronLeft className="h-4 w-4 shrink-0" />
             <div className="flex flex-col items-start min-w-0">
-              <span className="text-[9px] uppercase tracking-wide opacity-70 leading-none">
+              <span className="text-px-9 uppercase tracking-wide opacity-70 leading-none">
                 {t("statusFlow.back")}
               </span>
               <span className="capitalize truncate leading-tight">
@@ -303,7 +303,7 @@ export function StatusFlowStepper({
             )}
           >
             <div className="flex flex-col items-end min-w-0">
-              <span className="text-[9px] uppercase tracking-wide opacity-90 leading-none">
+              <span className="text-px-9 uppercase tracking-wide opacity-90 leading-none">
                 {t("statusFlow.advance")}
               </span>
               <span className="capitalize truncate leading-tight">
@@ -390,7 +390,7 @@ export function StatusFlowStepper({
                       style={clipFor(isFirstR, isLastR)}
                       className={cn(
                         "relative flex w-full items-center justify-center gap-1 h-9 sm:h-10",
-                        "text-[11px] font-semibold whitespace-nowrap transition-colors cursor-pointer",
+                        "text-px-11 font-semibold whitespace-nowrap transition-colors cursor-pointer",
                         paddingLeft,
                         paddingRight,
                         toneClass

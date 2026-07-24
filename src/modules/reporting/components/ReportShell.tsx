@@ -63,7 +63,7 @@ export const ReportShell = ({
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-base font-bold leading-tight text-foreground md:text-lg">{title}</h1>
-              <Badge variant="secondary" className="gap-1 text-[10px] font-medium">
+              <Badge variant="secondary" className="gap-1 text-px-10 font-medium">
                 <Building2 className="h-3 w-3" />
                 <span className="max-w-[160px] truncate">{scopeLabel}</span>
               </Badge>

@@ -152,7 +152,7 @@ export default function CreateFormPage() {
           </div>
           <div className="min-w-0">
             <h1 className="text-base sm:text-xl font-semibold text-foreground truncate">{t('create.title')}</h1>
-            <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">{t('create.subtitle')}</p>
+            <p className="text-px-10 sm:text-px-11 text-muted-foreground truncate">{t('create.subtitle')}</p>
           </div>
         </div>
         <Button

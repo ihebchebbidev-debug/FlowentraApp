@@ -264,7 +264,7 @@ export function MobileNavigation() {
             >
               <Bell className={`h-4 w-4 ${hasNewNotifications ? 'text-primary' : ''}`} />
               {unreadCount > 0 && (
-                <span className={`absolute -top-1 -right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] leading-none px-1 ${hasNewNotifications ? 'animate-bounce' : ''}`}>
+                <span className={`absolute -top-1 -right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary text-primary-foreground text-px-10 leading-none px-1 ${hasNewNotifications ? 'animate-bounce' : ''}`}>
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               )}
@@ -317,7 +317,7 @@ export function MobileNavigation() {
                           <div className={`mt-1.5 h-2 w-2 rounded-full flex-shrink-0 ${n.read ? 'bg-muted-foreground/40' : getTypeColor(n.type)}`} />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-0.5">
-                              <Badge variant={badge.variant} className="text-[10px] px-1.5 py-0">
+                              <Badge variant={badge.variant} className="text-px-10 px-1.5 py-0">
                                 {badge.label}
                               </Badge>
                               <span className="text-xs text-muted-foreground">{n.time}</span>

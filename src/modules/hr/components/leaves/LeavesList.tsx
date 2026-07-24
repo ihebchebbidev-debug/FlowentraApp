@@ -170,11 +170,11 @@ export function LeavesList() {
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="text-base">{t('leavesPage.listTitle')}</CardTitle>
           <div className="flex flex-wrap gap-2">
-            <Badge variant="secondary" className="text-[11px]">
+            <Badge variant="secondary" className="text-px-11">
               {filtered.length}
             </Badge>
             {(['pending', 'approved', 'rejected'] as const).map((k) => (
-              <Badge key={k} variant="outline" className="text-[11px] capitalize">
+              <Badge key={k} variant="outline" className="text-px-11 capitalize">
                 {t(`leaveStatus.${k}`)}: {statusSummary[k] || 0}
               </Badge>
             ))}

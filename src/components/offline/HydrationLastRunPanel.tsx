@@ -80,7 +80,7 @@ export function HydrationLastRunPanel({ variant = "default", className }: Props)
       >
         <div className="flex flex-wrap items-center gap-2 justify-between">
           <span className="font-medium text-foreground">{t("syncDashboard.hydrationLastRun.compactTitle")}</span>
-          <Badge variant={hasIssues ? "destructive" : "secondary"} className="text-[10px]">
+          <Badge variant={hasIssues ? "destructive" : "secondary"} className="text-px-10">
             {formatElapsed(run.totalDurationMs)}
           </Badge>
         </div>
@@ -93,7 +93,7 @@ export function HydrationLastRunPanel({ variant = "default", className }: Props)
         {errorModules.length > 0 ? (
           <ul className="space-y-1 text-destructive">
             {errorModules.slice(0, 4).map((m) => (
-              <li key={m.id} className="truncate font-mono text-[10px]" title={m.error}>
+              <li key={m.id} className="truncate font-mono text-px-10" title={m.error}>
                 {t(m.labelKey)}: {m.error || "—"}
               </li>
             ))}
@@ -120,7 +120,7 @@ export function HydrationLastRunPanel({ variant = "default", className }: Props)
           <p className="text-sm text-muted-foreground py-4 text-center">{t("syncDashboard.hydrationLastRun.noRun")}</p>
         ) : (
           <>
-            <div className="flex flex-wrap gap-2 text-[11px]">
+            <div className="flex flex-wrap gap-2 text-px-11">
               <Badge variant="outline" className="font-normal gap-1">
                 <Clock3 className="h-3 w-3" />
                 {t("syncDashboard.hydrationLastRun.finishedAt")}: {new Date(run.finishedAt).toLocaleString()}
@@ -145,7 +145,7 @@ export function HydrationLastRunPanel({ variant = "default", className }: Props)
               </div>
             ) : null}
             <div>
-              <h4 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+              <h4 className="text-px-11 font-semibold uppercase tracking-wide text-muted-foreground mb-2">
                 {t("syncDashboard.hydrationLastRun.moduleTableTitle")}
               </h4>
               <ScrollArea className="h-[min(45vh,320px)] pr-3">
@@ -172,14 +172,14 @@ export function HydrationLastRunPanel({ variant = "default", className }: Props)
                             <span className="font-medium leading-snug">{t(m.labelKey)}</span>
                           </div>
                           {m.error ? (
-                            <p className="mt-1 ml-5 font-mono text-[10px] text-destructive break-words">{m.error}</p>
+                            <p className="mt-1 ml-5 font-mono text-px-10 text-destructive break-words">{m.error}</p>
                           ) : null}
                         </td>
                         <td className="py-2 pr-2 tabular-nums text-muted-foreground whitespace-nowrap">
                           {formatModuleDuration(m.durationMs)}
                         </td>
                         <td className="py-2">
-                          <Badge variant={m.status === "error" ? "destructive" : "outline"} className="text-[10px] h-5">
+                          <Badge variant={m.status === "error" ? "destructive" : "outline"} className="text-px-10 h-5">
                             {m.status}
                           </Badge>
                         </td>

@@ -68,7 +68,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 function StatusBadge({ status }: { status: string }) {
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUS_CLS[status] ?? 'bg-muted text-muted-foreground'}`}>
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-px-10 font-medium ${STATUS_CLS[status] ?? 'bg-muted text-muted-foreground'}`}>
       {STATUS_LABEL[status] ?? status}
     </span>
   );
@@ -182,14 +182,14 @@ function PageList({ state }: { state: ArticlesDemoState }) {
                   <td className="px-3 py-2.5 text-right">
                     <div className="flex items-center justify-end gap-1">
                       {showPo && (
-                        <span id={a.id === 'a2' ? 'art-demo-create-po' : undefined} className="h-6 px-2 rounded bg-primary text-primary-foreground text-[10px] inline-flex items-center gap-1 cursor-default">
+                        <span id={a.id === 'a2' ? 'art-demo-create-po' : undefined} className="h-6 px-2 rounded bg-primary text-primary-foreground text-px-10 inline-flex items-center gap-1 cursor-default">
                           <ShoppingCart className="h-3 w-3" /> Create PO
                         </span>
                       )}
                       {a.type === 'material' && (
-                        <span className="h-6 px-2 rounded border border-border text-[10px] text-muted-foreground inline-flex items-center cursor-default">Transfer</span>
+                        <span className="h-6 px-2 rounded border border-border text-px-10 text-muted-foreground inline-flex items-center cursor-default">Transfer</span>
                       )}
-                      <span className="h-6 px-2 rounded border border-border text-[10px] text-muted-foreground inline-flex items-center cursor-default">Edit</span>
+                      <span className="h-6 px-2 rounded border border-border text-px-10 text-muted-foreground inline-flex items-center cursor-default">Edit</span>
                     </div>
                   </td>
                 </tr>
@@ -280,7 +280,7 @@ function PageCreate({ state }: { state: ArticlesDemoState }) {
             <FieldShell label="Required Skills">
               <div className="flex gap-1.5">
                 {step >= 2 ? ['Hydraulics', 'Certified Installer'].map(s => (
-                  <span key={s} className="h-6 px-2 rounded-full bg-primary/10 text-primary text-[10px] inline-flex items-center">{s}</span>
+                  <span key={s} className="h-6 px-2 rounded-full bg-primary/10 text-primary text-px-10 inline-flex items-center">{s}</span>
                 )) : <Box muted>—</Box>}
               </div>
             </FieldShell>
@@ -310,7 +310,7 @@ function PageImport({ state }: { state: ArticlesDemoState }) {
       </div>
 
       {/* Stepper */}
-      <div className="flex items-center gap-0 text-[11px]">
+      <div className="flex items-center gap-0 text-px-11">
         {['Upload', 'Mapping', 'Validation', 'Confirm'].map((s, i) => (
           <div key={s} className="flex items-center gap-0">
             <span className={`px-2.5 py-1 rounded-full font-medium ${i <= step ? 'bg-primary/10 text-primary' : 'text-muted-foreground'}`}>{s}</span>
@@ -325,9 +325,9 @@ function PageImport({ state }: { state: ArticlesDemoState }) {
           <FileSpreadsheet className="h-8 w-8 text-green-600 shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium">articles-import.xlsx</p>
-            <p className="text-[11px] text-muted-foreground">128 rows · columns: name, sku, type, category, stock, minStock, costPrice, sellPrice, supplier, location</p>
+            <p className="text-px-11 text-muted-foreground">128 rows · columns: name, sku, type, category, stock, minStock, costPrice, sellPrice, supplier, location</p>
           </div>
-          <span className="h-7 px-2.5 rounded-md border border-border text-[11px] text-muted-foreground inline-flex items-center gap-1 cursor-default">
+          <span className="h-7 px-2.5 rounded-md border border-border text-px-11 text-muted-foreground inline-flex items-center gap-1 cursor-default">
             <Upload className="h-3 w-3" /> Template
           </span>
         </div>
@@ -363,15 +363,15 @@ function PageImport({ state }: { state: ArticlesDemoState }) {
         <div id="art-demo-import-validation" className={`grid grid-cols-3 gap-3 transition-opacity ${step >= 2 ? '' : 'opacity-40'}`}>
           <div className="rounded-lg border border-green-500/30 bg-green-500/5 p-3 text-center">
             <p className="text-lg font-bold text-green-600">{step >= 2 ? '124' : '—'}</p>
-            <p className="text-[11px] text-muted-foreground">Valid rows</p>
+            <p className="text-px-11 text-muted-foreground">Valid rows</p>
           </div>
           <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-center">
             <p className="text-lg font-bold text-amber-600">{step >= 2 ? '3' : '—'}</p>
-            <p className="text-[11px] text-muted-foreground">Warnings</p>
+            <p className="text-px-11 text-muted-foreground">Warnings</p>
           </div>
           <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-3 text-center">
             <p className="text-lg font-bold text-red-600">{step >= 2 ? '1' : '—'}</p>
-            <p className="text-[11px] text-muted-foreground">Errors (skipped)</p>
+            <p className="text-px-11 text-muted-foreground">Errors (skipped)</p>
           </div>
         </div>
       </div>
@@ -432,7 +432,7 @@ function PageDetail({ state }: { state: ArticlesDemoState }) {
           { label: 'Status',        value: 'Available', icon: <CheckCircle2 className="h-3.5 w-3.5 text-green-600" /> },
         ].map(c => (
           <div key={c.label} className="bg-card border border-border rounded-lg p-2.5">
-            <div className="flex items-center gap-1.5 text-muted-foreground text-[10px] font-medium">{c.icon}{c.label}</div>
+            <div className="flex items-center gap-1.5 text-muted-foreground text-px-10 font-medium">{c.icon}{c.label}</div>
             <p className="text-sm font-bold text-foreground mt-0.5">{c.value}</p>
           </div>
         ))}
@@ -477,13 +477,13 @@ function PageDetail({ state }: { state: ArticlesDemoState }) {
               <p className="text-sm font-medium mb-3">Stock Levels</p>
               <div className="flex justify-between text-xs mb-1"><span>Current</span><span className="font-semibold">{A.stock}/{maxStock}</span></div>
               <div className="w-full bg-muted rounded-full h-2"><div className="h-2 rounded-full bg-green-500" style={{ width: `${pct}%` }} /></div>
-              <div className="flex justify-between text-[10px] text-muted-foreground mt-1"><span>Min: {A.minStock}</span><span>Max: {maxStock}</span></div>
+              <div className="flex justify-between text-px-10 text-muted-foreground mt-1"><span>Min: {A.minStock}</span><span>Max: {maxStock}</span></div>
             </div>
             <div id="art-demo-reorder" className="bg-card border border-border rounded-lg p-4 space-y-2 text-xs">
               <p className="text-sm font-medium mb-2">Reorder Information</p>
               <div className="flex justify-between"><span className="text-muted-foreground">Reorder point</span><span className="font-semibold">10 units</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Suggested order</span><span className="font-semibold">{maxStock - A.stock!} units</span></div>
-              <div className="h-8 mt-2 rounded-md border border-border text-[11px] flex items-center justify-center text-muted-foreground cursor-default">Create Purchase Order</div>
+              <div className="h-8 mt-2 rounded-md border border-border text-px-11 flex items-center justify-center text-muted-foreground cursor-default">Create Purchase Order</div>
             </div>
             <div id="art-demo-quick-actions" className="bg-card border border-border rounded-lg p-4 space-y-2">
               <p className="text-sm font-medium mb-1">Quick Actions</p>
@@ -499,7 +499,7 @@ function PageDetail({ state }: { state: ArticlesDemoState }) {
             <div id="art-demo-suppliers-table" className="bg-card border border-border rounded-lg overflow-hidden">
               <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/60">
                 <span className="text-sm font-medium inline-flex items-center gap-2"><Users className="h-4 w-4 text-primary" /> Linked Suppliers</span>
-                <span id="art-demo-add-supplier" className="h-7 px-2.5 rounded-md border border-border text-[11px] text-muted-foreground inline-flex items-center gap-1 cursor-default"><Plus className="h-3 w-3" /> Add Supplier</span>
+                <span id="art-demo-add-supplier" className="h-7 px-2.5 rounded-md border border-border text-px-11 text-muted-foreground inline-flex items-center gap-1 cursor-default"><Plus className="h-3 w-3" /> Add Supplier</span>
               </div>
               <table className="w-full text-xs">
                 <thead><tr className="bg-muted/30 border-b border-border/60">
@@ -520,7 +520,7 @@ function PageDetail({ state }: { state: ArticlesDemoState }) {
                       <td className="px-3 py-2.5 text-center">{s.lead}d</td>
                       <td className="px-3 py-2.5 text-center">{s.moq}</td>
                       <td className="px-3 py-2.5 text-center">
-                        {s.preferred ? <span className="inline-flex items-center gap-1 text-primary text-[10px] font-medium"><Star className="h-3 w-3 fill-current" /> Preferred</span> : <span className="text-muted-foreground">—</span>}
+                        {s.preferred ? <span className="inline-flex items-center gap-1 text-primary text-px-10 font-medium"><Star className="h-3 w-3 fill-current" /> Preferred</span> : <span className="text-muted-foreground">—</span>}
                       </td>
                       <td className="px-3 py-2.5 text-muted-foreground">{s.last}</td>
                     </tr>
@@ -544,8 +544,8 @@ function PageDetail({ state }: { state: ArticlesDemoState }) {
                         </span>
                         <div>
                           <span className="text-xs font-medium">{fmt(p.old)} → {fmt(p.neu)} TND</span>
-                          <span className={`ml-2 text-[10px] ${up ? 'text-destructive' : 'text-green-600'}`}>{up ? '+' : ''}{pctc}%</span>
-                          <div className="text-[10px] text-muted-foreground inline-flex items-center gap-1 ml-0 mt-0.5"><Calendar className="h-2.5 w-2.5" /> {p.date} · {p.by}</div>
+                          <span className={`ml-2 text-px-10 ${up ? 'text-destructive' : 'text-green-600'}`}>{up ? '+' : ''}{pctc}%</span>
+                          <div className="text-px-10 text-muted-foreground inline-flex items-center gap-1 ml-0 mt-0.5"><Calendar className="h-2.5 w-2.5" /> {p.date} · {p.by}</div>
                         </div>
                       </div>
                     </div>
@@ -560,11 +560,11 @@ function PageDetail({ state }: { state: ArticlesDemoState }) {
           <div id="art-demo-activity-log" className="space-y-2">
             {DEMO_ACTIVITY.map(a => (
               <div key={a.id} className="flex items-start gap-3 p-3 bg-card border border-border rounded-lg">
-                <span className={`h-7 w-7 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold ${a.cls}`}>{a.action.slice(0, 1)}</span>
+                <span className={`h-7 w-7 rounded-full flex items-center justify-center shrink-0 text-px-10 font-bold ${a.cls}`}>{a.action.slice(0, 1)}</span>
                 <div className="min-w-0">
                   <p className="text-xs font-medium text-foreground">{a.action} <span className="font-normal text-muted-foreground">· {a.user}</span></p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">{a.detail}</p>
-                  <p className="text-[10px] text-muted-foreground/60 mt-0.5">{a.date} at {a.time}</p>
+                  <p className="text-px-11 text-muted-foreground mt-0.5">{a.detail}</p>
+                  <p className="text-px-10 text-muted-foreground/60 mt-0.5">{a.date} at {a.time}</p>
                 </div>
               </div>
             ))}
@@ -780,13 +780,13 @@ export function ArticlesAutopilotDemo({ open, onClose }: Props) {
             <button
               key={ch.id}
               onClick={() => jumpChapter(ch.start)}
-              className={`text-[10px] font-medium px-2 py-0.5 rounded-full transition-colors cursor-pointer
+              className={`text-px-10 font-medium px-2 py-0.5 rounded-full transition-colors cursor-pointer
                 ${activeChapter.id === ch.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/70'}`}
             >
               {getChapterTitle(demoLang, ch.id, ch.title)}
             </button>
           ))}
-          <span className="ml-auto text-[10px] text-muted-foreground">{Math.min(stepIndex + 1, ART_STEPS.length)} / {ART_STEPS.length}</span>
+          <span className="ml-auto text-px-10 text-muted-foreground">{Math.min(stepIndex + 1, ART_STEPS.length)} / {ART_STEPS.length}</span>
         </div>
         <div className="h-1 rounded-full bg-muted overflow-hidden mb-2">
           <div className="h-full bg-primary transition-all duration-300" style={{ width: `${(Math.min(stepIndex + 1, ART_STEPS.length) / ART_STEPS.length) * 100}%` }} />

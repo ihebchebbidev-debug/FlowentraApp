@@ -265,21 +265,21 @@ export function RSRecordModal({
                 <div className="flex items-center gap-2 flex-wrap">
                   {/* Brut */}
                   <div className="flex-1 min-w-[120px] rounded-lg border border-border bg-muted/30 px-4 py-3 text-center">
-                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Montant brut</p>
+                    <p className="text-px-10 uppercase tracking-widest text-muted-foreground mb-1">Montant brut</p>
                     <p className="text-xl font-bold text-foreground tabular-nums">{amountPaid.toLocaleString('fr-TN', { minimumFractionDigits: 3 })}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">TND</p>
+                    <p className="text-px-10 text-muted-foreground mt-0.5">TND</p>
                   </div>
 
                   <div className="flex flex-col items-center gap-0.5 text-muted-foreground shrink-0">
                     <Minus className="h-4 w-4" />
-                    <span className="text-[10px]">RS {rsRate}%</span>
+                    <span className="text-px-10">RS {rsRate}%</span>
                   </div>
 
                   {/* RS retenu */}
                   <div className="flex-1 min-w-[120px] rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-center">
-                    <p className="text-[10px] uppercase tracking-widest text-destructive/70 mb-1">Retenue ({rsRate}%)</p>
+                    <p className="text-px-10 uppercase tracking-widest text-destructive/70 mb-1">Retenue ({rsRate}%)</p>
                     <p className="text-xl font-bold text-destructive tabular-nums">{rsAmount.toLocaleString('fr-TN', { minimumFractionDigits: 3 })}</p>
-                    <p className="text-[10px] text-destructive/60 mt-0.5">TND</p>
+                    <p className="text-px-10 text-destructive/60 mt-0.5">TND</p>
                   </div>
 
                   <div className="flex flex-col items-center gap-0.5 text-muted-foreground shrink-0">
@@ -288,9 +288,9 @@ export function RSRecordModal({
 
                   {/* Net */}
                   <div className="flex-1 min-w-[120px] rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 text-center">
-                    <p className="text-[10px] uppercase tracking-widest text-primary/70 mb-1">Net à verser</p>
+                    <p className="text-px-10 uppercase tracking-widest text-primary/70 mb-1">Net à verser</p>
                     <p className="text-xl font-bold text-primary tabular-nums">{netPayment.toLocaleString('fr-TN', { minimumFractionDigits: 3 })}</p>
-                    <p className="text-[10px] text-primary/60 mt-0.5">TND</p>
+                    <p className="text-px-10 text-primary/60 mt-0.5">TND</p>
                   </div>
                 </div>
               </div>
@@ -333,7 +333,7 @@ export function RSRecordModal({
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-foreground">Bénéficiaire</p>
-                  <p className="text-[10px] text-muted-foreground">Fournisseur / Prestataire</p>
+                  <p className="text-px-10 text-muted-foreground">Fournisseur / Prestataire</p>
                 </div>
               </div>
               <div className="space-y-2.5">
@@ -378,7 +378,7 @@ export function RSRecordModal({
                       <p className="text-xs font-medium text-foreground flex items-center gap-1">
                         <Globe className="h-3.5 w-3.5" /> Exempté par traité
                       </p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">Situation spéciale applicables aux résidents étrangers</p>
+                      <p className="text-px-10 text-muted-foreground mt-0.5">Situation spéciale applicables aux résidents étrangers</p>
                     </label>
                   </div>
                   {isExemptByTreaty && (
@@ -405,7 +405,7 @@ export function RSRecordModal({
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-foreground">Déclarant</p>
-                  <p className="text-[10px] text-muted-foreground">Retenant / Payeur</p>
+                  <p className="text-px-10 text-muted-foreground">Retenant / Payeur</p>
                 </div>
               </div>
               <div className="space-y-2.5">

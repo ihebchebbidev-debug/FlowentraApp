@@ -40,11 +40,11 @@ export function ButtonListEditor({ label, buttons, onChange, maxButtons = 4 }: B
 
   return (
     <div className="space-y-2">
-      <Label className="text-[11px] font-medium text-foreground/70">{label}</Label>
+      <Label className="text-px-11 font-medium text-foreground/70">{label}</Label>
       {buttons.map((btn, i) => (
         <div key={i} className="p-2.5 rounded-lg border border-border/30 bg-muted/10 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-semibold text-muted-foreground/60">Button {i + 1}</span>
+            <span className="text-px-10 font-semibold text-muted-foreground/60">Button {i + 1}</span>
             <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive/60 hover:text-destructive" onClick={() => removeButton(i)}>
               <Trash2 className="h-3 w-3" />
             </Button>
@@ -63,7 +63,7 @@ export function ButtonListEditor({ label, buttons, onChange, maxButtons = 4 }: B
           />
           <div className="grid grid-cols-2 gap-1.5">
             <Select value={btn.variant || 'primary'} onValueChange={(v) => updateButton(i, 'variant', v)}>
-              <SelectTrigger className="h-7 text-[10px] border-border/30 bg-background">
+              <SelectTrigger className="h-7 text-px-10 border-border/30 bg-background">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

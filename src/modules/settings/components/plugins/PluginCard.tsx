@@ -37,16 +37,16 @@ export function PluginCard({ state }: Props) {
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="font-semibold text-base truncate">{name}</h3>
               {manifest.isCore && (
-                <Badge variant="secondary" className="text-[10px] gap-1">
+                <Badge variant="secondary" className="text-px-10 gap-1">
                   <Lock className="h-3 w-3" /> {t('plugins.coreLocked')}
                 </Badge>
               )}
             </div>
             <div className="flex items-center gap-2 mt-1">
-              <Badge variant="outline" className="text-[10px] font-mono">
+              <Badge variant="outline" className="text-px-10 font-mono">
                 {manifest.code}
               </Badge>
-              <Badge variant="secondary" className="text-[10px]">
+              <Badge variant="secondary" className="text-px-10">
                 {categoryLabel}
               </Badge>
             </div>

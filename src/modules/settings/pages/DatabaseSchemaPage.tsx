@@ -244,21 +244,21 @@ export default function DatabaseSchemaPage() {
                       <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary shrink-0" />
                     </div>
                     <div className="flex flex-wrap gap-1 mt-2">
-                      <Badge variant="secondary" className="text-[10px]">
+                      <Badge variant="secondary" className="text-px-10">
                         {t.columns.length} cols
                       </Badge>
                       {t.foreignKeys.length > 0 && (
-                        <Badge variant="outline" className="text-[10px]">
+                        <Badge variant="outline" className="text-px-10">
                           → {t.foreignKeys.length} FK
                         </Badge>
                       )}
                       {incoming > 0 && (
-                        <Badge variant="outline" className="text-[10px]">
+                        <Badge variant="outline" className="text-px-10">
                           ← {incoming} ref
                         </Badge>
                       )}
                       {t.indexes.length > 0 && (
-                        <Badge variant="outline" className="text-[10px]">
+                        <Badge variant="outline" className="text-px-10">
                           {t.indexes.length} idx
                         </Badge>
                       )}
@@ -388,22 +388,22 @@ function TableDetailDialog({
                           <td className="px-2 py-1.5">
                             <div className="flex flex-wrap gap-1">
                               {isPk && (
-                                <Badge variant="outline" className="text-[9px] py-0">
+                                <Badge variant="outline" className="text-px-9 py-0">
                                   PK
                                 </Badge>
                               )}
                               {a.notNull && (
-                                <Badge variant="outline" className="text-[9px] py-0">
+                                <Badge variant="outline" className="text-px-9 py-0">
                                   NOT NULL
                                 </Badge>
                               )}
                               {a.isUnique && (
-                                <Badge variant="outline" className="text-[9px] py-0">
+                                <Badge variant="outline" className="text-px-9 py-0">
                                   UNIQUE
                                 </Badge>
                               )}
                               {fk && (
-                                <Badge variant="outline" className="text-[9px] py-0">
+                                <Badge variant="outline" className="text-px-9 py-0">
                                   FK
                                 </Badge>
                               )}
@@ -501,7 +501,7 @@ function TableDetailDialog({
                       <li key={idx.name} className="font-mono">
                         <span className="text-muted-foreground">{idx.name}</span>
                         {idx.unique && (
-                          <Badge variant="outline" className="ml-1 text-[9px] py-0">
+                          <Badge variant="outline" className="ml-1 text-px-9 py-0">
                             UNIQUE
                           </Badge>
                         )}{" "}
@@ -519,7 +519,7 @@ function TableDetailDialog({
                 <ul className="text-xs space-y-1 font-mono">
                   {table.primaryKey && (
                     <li>
-                      <Badge variant="outline" className="text-[9px] py-0 mr-1">
+                      <Badge variant="outline" className="text-px-9 py-0 mr-1">
                         PK
                       </Badge>
                       ({table.primaryKey.join(", ")})
@@ -527,7 +527,7 @@ function TableDetailDialog({
                   )}
                   {table.uniques.map((u, i) => (
                     <li key={i}>
-                      <Badge variant="outline" className="text-[9px] py-0 mr-1">
+                      <Badge variant="outline" className="text-px-9 py-0 mr-1">
                         UNIQUE
                       </Badge>
                       ({u.join(", ")})
@@ -547,7 +547,7 @@ function TableDetailDialog({
               <h3 className="text-xs font-semibold uppercase text-muted-foreground mb-2">
                 Source files
               </h3>
-              <ul className="text-[11px] text-muted-foreground space-y-0.5">
+              <ul className="text-px-11 text-muted-foreground space-y-0.5">
                 {table.sources.map((s) => (
                   <li key={s} className="font-mono break-all">
                     Backend/{s}

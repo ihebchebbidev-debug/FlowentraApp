@@ -221,7 +221,7 @@ export function WidgetConfigPanel({ widget, open, onClose, onSave }: Props) {
         <div className="flex flex-col sm:flex-row gap-4 max-h-[70vh] overflow-y-auto sm:overflow-y-hidden">
           {/* ── Preview: above on mobile, left on desktop ── */}
           <div className="w-full sm:w-[240px] flex-shrink-0 flex flex-col gap-2">
-            <Label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <Label className="text-px-10 font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
               <Eye className="h-3 w-3" />
               {t('dashboardBuilder.configPanel.livePreview')}
             </Label>
@@ -237,10 +237,10 @@ export function WidgetConfigPanel({ widget, open, onClose, onSave }: Props) {
                 {WIDGET_ICONS[widget.type]}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-medium text-foreground truncate">
+                <p className="text-px-11 font-medium text-foreground truncate">
                   {t(`dashboardBuilder.widgets.${widget.type}`)}
                 </p>
-                <p className="text-[10px] text-muted-foreground truncate">
+                <p className="text-px-10 text-muted-foreground truncate">
                   {DATA_SOURCE_LABELS[selectedDataSource]} · {METRIC_LABELS[selectedMetric]}
                 </p>
               </div>
@@ -276,7 +276,7 @@ export function WidgetConfigPanel({ widget, open, onClose, onSave }: Props) {
               placeholder={widget.descriptionKey ? t(widget.descriptionKey) : t('dashboardBuilder.configPanel.subtitlePlaceholder')}
               className="h-9"
             />
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-px-10 text-muted-foreground">
               {t('dashboardBuilder.configPanel.subtitleHint')}
             </p>
           </div>
@@ -324,7 +324,7 @@ export function WidgetConfigPanel({ widget, open, onClose, onSave }: Props) {
               </Label>
 
               <div className="space-y-1.5">
-                <Label className="text-[11px] font-medium">{t('dashboardBuilder.externalApi.url', 'API URL')}</Label>
+                <Label className="text-px-11 font-medium">{t('dashboardBuilder.externalApi.url', 'API URL')}</Label>
                 <Input
                   value={config.externalApi?.url || ''}
                   onChange={e => updateConfig('externalApi', { ...config.externalApi, url: e.target.value } as ExternalApiConfig)}
@@ -335,7 +335,7 @@ export function WidgetConfigPanel({ widget, open, onClose, onSave }: Props) {
 
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1.5">
-                  <Label className="text-[11px] font-medium">{t('dashboardBuilder.externalApi.method', 'Method')}</Label>
+                  <Label className="text-px-11 font-medium">{t('dashboardBuilder.externalApi.method', 'Method')}</Label>
                   <Select
                     value={config.externalApi?.method || 'GET'}
                     onValueChange={v => updateConfig('externalApi', { ...config.externalApi, method: v } as ExternalApiConfig)}
@@ -348,7 +348,7 @@ export function WidgetConfigPanel({ widget, open, onClose, onSave }: Props) {
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-[11px] font-medium">{t('dashboardBuilder.externalApi.refreshInterval', 'Refresh (sec)')}</Label>
+                  <Label className="text-px-11 font-medium">{t('dashboardBuilder.externalApi.refreshInterval', 'Refresh (sec)')}</Label>
                   <Input
                     type="number"
                     value={config.externalApi?.refreshInterval || 0}
@@ -361,19 +361,19 @@ export function WidgetConfigPanel({ widget, open, onClose, onSave }: Props) {
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-[11px] font-medium">{t('dashboardBuilder.externalApi.dataPath', 'Data Array Path')}</Label>
+                <Label className="text-px-11 font-medium">{t('dashboardBuilder.externalApi.dataPath', 'Data Array Path')}</Label>
                 <Input
                   value={config.externalApi?.dataPath || ''}
                   onChange={e => updateConfig('externalApi', { ...config.externalApi, dataPath: e.target.value } as ExternalApiConfig)}
                   placeholder="data.items"
                   className="h-8 text-xs font-mono"
                 />
-                <p className="text-[10px] text-muted-foreground">{t('dashboardBuilder.externalApi.dataPathHint', 'Dot path to the array in the JSON response')}</p>
+                <p className="text-px-10 text-muted-foreground">{t('dashboardBuilder.externalApi.dataPathHint', 'Dot path to the array in the JSON response')}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1.5">
-                  <Label className="text-[11px] font-medium">{t('dashboardBuilder.externalApi.valuePath', 'Value Path')}</Label>
+                  <Label className="text-px-11 font-medium">{t('dashboardBuilder.externalApi.valuePath', 'Value Path')}</Label>
                   <Input
                     value={config.externalApi?.valuePath || ''}
                     onChange={e => updateConfig('externalApi', { ...config.externalApi, valuePath: e.target.value } as ExternalApiConfig)}
@@ -382,7 +382,7 @@ export function WidgetConfigPanel({ widget, open, onClose, onSave }: Props) {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-[11px] font-medium">{t('dashboardBuilder.externalApi.labelPath', 'Label Path')}</Label>
+                  <Label className="text-px-11 font-medium">{t('dashboardBuilder.externalApi.labelPath', 'Label Path')}</Label>
                   <Input
                     value={config.externalApi?.labelPath || ''}
                     onChange={e => updateConfig('externalApi', { ...config.externalApi, labelPath: e.target.value } as ExternalApiConfig)}
@@ -394,7 +394,7 @@ export function WidgetConfigPanel({ widget, open, onClose, onSave }: Props) {
 
               {config.externalApi?.method === 'POST' && (
                 <div className="space-y-1.5">
-                  <Label className="text-[11px] font-medium">{t('dashboardBuilder.externalApi.body', 'Request Body (JSON)')}</Label>
+                  <Label className="text-px-11 font-medium">{t('dashboardBuilder.externalApi.body', 'Request Body (JSON)')}</Label>
                   <Input
                     value={config.externalApi?.body || ''}
                     onChange={e => updateConfig('externalApi', { ...config.externalApi, body: e.target.value } as ExternalApiConfig)}
@@ -514,12 +514,12 @@ export function WidgetConfigPanel({ widget, open, onClose, onSave }: Props) {
 
                 {/* Background style */}
                 <div className="space-y-1.5">
-                  <Label className="text-[11px] font-medium">{t('dashboardBuilder.bgConfig.style')}</Label>
+                  <Label className="text-px-11 font-medium">{t('dashboardBuilder.bgConfig.style')}</Label>
                   <div className="grid grid-cols-4 gap-1.5">
                     {(['subtle', 'solid', 'gradient', 'glass'] as const).map((key) => (
                       <button key={key} type="button"
                         onClick={() => updateConfig('kpiBg', { ...config.kpiBg, style: key } as KpiBgConfig)}
-                        className={`px-2 py-1.5 rounded-md text-[10px] font-medium capitalize transition-all border ${
+                        className={`px-2 py-1.5 rounded-md text-px-10 font-medium capitalize transition-all border ${
                           (config.kpiBg?.style || 'subtle') === key
                             ? 'border-primary bg-primary/10 text-primary'
                             : 'border-border/40 text-muted-foreground hover:border-border hover:text-foreground'
@@ -531,26 +531,26 @@ export function WidgetConfigPanel({ widget, open, onClose, onSave }: Props) {
                 {/* Colors row */}
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
-                    <Label className="text-[10px] font-medium">{t('dashboardBuilder.bgConfig.color1')}</Label>
+                    <Label className="text-px-10 font-medium">{t('dashboardBuilder.bgConfig.color1')}</Label>
                     <div className="flex items-center gap-1.5">
                       <input type="color" value={config.kpiBg?.color1 || config.color || '#6366f1'}
                         onChange={(e) => updateConfig('kpiBg', { ...config.kpiBg, color1: e.target.value } as KpiBgConfig)}
                         className="w-8 h-8 rounded-md border border-border/50 cursor-pointer bg-background p-0.5" />
                       <Input value={config.kpiBg?.color1 || ''} placeholder={t('dashboardBuilder.bgConfig.auto')}
                         onChange={(e) => updateConfig('kpiBg', { ...config.kpiBg, color1: e.target.value } as KpiBgConfig)}
-                        className="h-8 text-[10px] font-mono flex-1" />
+                        className="h-8 text-px-10 font-mono flex-1" />
                     </div>
                   </div>
                   {(config.kpiBg?.style === 'gradient' || config.kpiBg?.style === 'glass') && (
                     <div className="space-y-1">
-                      <Label className="text-[10px] font-medium">{t('dashboardBuilder.bgConfig.color2')}</Label>
+                      <Label className="text-px-10 font-medium">{t('dashboardBuilder.bgConfig.color2')}</Label>
                       <div className="flex items-center gap-1.5">
                         <input type="color" value={config.kpiBg?.color2 || '#3b82f6'}
                           onChange={(e) => updateConfig('kpiBg', { ...config.kpiBg, color2: e.target.value } as KpiBgConfig)}
                           className="w-8 h-8 rounded-md border border-border/50 cursor-pointer bg-background p-0.5" />
                         <Input value={config.kpiBg?.color2 || ''} placeholder="#3b82f6"
                           onChange={(e) => updateConfig('kpiBg', { ...config.kpiBg, color2: e.target.value } as KpiBgConfig)}
-                          className="h-8 text-[10px] font-mono flex-1" />
+                          className="h-8 text-px-10 font-mono flex-1" />
                       </div>
                     </div>
                   )}
@@ -559,7 +559,7 @@ export function WidgetConfigPanel({ widget, open, onClose, onSave }: Props) {
                 {/* Gradient angle */}
                 {(config.kpiBg?.style === 'gradient' || config.kpiBg?.style === 'glass') && (
                   <div className="space-y-1">
-                    <Label className="text-[10px] font-medium">{t('dashboardBuilder.bgConfig.angle')}: {config.kpiBg?.gradientAngle ?? 135}°</Label>
+                    <Label className="text-px-10 font-medium">{t('dashboardBuilder.bgConfig.angle')}: {config.kpiBg?.gradientAngle ?? 135}°</Label>
                     <input type="range" min={0} max={360} value={config.kpiBg?.gradientAngle ?? 135}
                       onChange={(e) => updateConfig('kpiBg', { ...config.kpiBg, gradientAngle: parseInt(e.target.value) } as KpiBgConfig)}
                       className="w-full h-1.5 accent-primary" />
@@ -569,7 +569,7 @@ export function WidgetConfigPanel({ widget, open, onClose, onSave }: Props) {
                 {/* Opacity */}
                 {config.kpiBg?.style && config.kpiBg.style !== 'subtle' && (
                   <div className="space-y-1">
-                    <Label className="text-[10px] font-medium">{t('dashboardBuilder.bgConfig.opacity')}: {config.kpiBg?.opacity ?? 8}%</Label>
+                    <Label className="text-px-10 font-medium">{t('dashboardBuilder.bgConfig.opacity')}: {config.kpiBg?.opacity ?? 8}%</Label>
                     <input type="range" min={5} max={100} value={config.kpiBg?.opacity ?? 8}
                       onChange={(e) => updateConfig('kpiBg', { ...config.kpiBg, opacity: parseInt(e.target.value) } as KpiBgConfig)}
                       className="w-full h-1.5 accent-primary" />
@@ -578,12 +578,12 @@ export function WidgetConfigPanel({ widget, open, onClose, onSave }: Props) {
 
                 {/* Effect — now with 11 options */}
                 <div className="space-y-1.5">
-                  <Label className="text-[10px] font-medium">{t('dashboardBuilder.bgConfig.effect')}</Label>
+                  <Label className="text-px-10 font-medium">{t('dashboardBuilder.bgConfig.effect')}</Label>
                   <div className="grid grid-cols-4 gap-1">
                     {BG_EFFECTS.map(({ key, label }) => (
                       <button key={key} type="button"
                         onClick={() => updateConfig('kpiBg', { ...config.kpiBg, effect: key } as KpiBgConfig)}
-                        className={`px-1.5 py-1 rounded-md text-[9px] font-medium transition-all border ${
+                        className={`px-1.5 py-1 rounded-md text-px-9 font-medium transition-all border ${
                           (config.kpiBg?.effect || 'none') === key
                             ? 'border-primary bg-primary/10 text-primary'
                             : 'border-border/40 text-muted-foreground hover:border-border hover:text-foreground'
@@ -595,7 +595,7 @@ export function WidgetConfigPanel({ widget, open, onClose, onSave }: Props) {
                 {/* Light text toggle */}
                 {widget.type === 'kpi' && config.kpiBg?.style && config.kpiBg.style !== 'subtle' && (
                   <div className="flex items-center justify-between">
-                    <Label className="text-[10px] font-medium">{t('dashboardBuilder.bgConfig.lightText')}</Label>
+                    <Label className="text-px-10 font-medium">{t('dashboardBuilder.bgConfig.lightText')}</Label>
                     <Switch checked={config.kpiBg?.textLight ?? false}
                       onCheckedChange={(v) => updateConfig('kpiBg', { ...config.kpiBg, textLight: v } as KpiBgConfig)} />
                   </div>
@@ -603,7 +603,7 @@ export function WidgetConfigPanel({ widget, open, onClose, onSave }: Props) {
 
                 {/* Preset gradient combos — 12 options */}
                 <div className="space-y-1.5">
-                  <Label className="text-[10px] font-medium">{t('dashboardBuilder.bgConfig.quickPresets')}</Label>
+                  <Label className="text-px-10 font-medium">{t('dashboardBuilder.bgConfig.quickPresets')}</Label>
                   <div className="grid grid-cols-6 gap-1.5">
                     {BG_PRESETS.map((preset, i) => (
                       <button key={i} type="button"
@@ -819,7 +819,7 @@ export function WidgetConfigPanel({ widget, open, onClose, onSave }: Props) {
                       <Activity className="h-3.5 w-3.5 text-muted-foreground" />
                       {t('dashboardBuilder.configPanel.animated')}
                     </Label>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                    <p className="text-px-10 text-muted-foreground mt-0.5">
                       {t('dashboardBuilder.configPanel.animatedDesc')}
                     </p>
                   </div>
@@ -835,7 +835,7 @@ export function WidgetConfigPanel({ widget, open, onClose, onSave }: Props) {
               <div className="flex items-center justify-between py-1">
                 <div>
                   <Label className="text-xs font-medium">{t('dashboardBuilder.configPanel.resetAll')}</Label>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                  <p className="text-px-10 text-muted-foreground mt-0.5">
                     {t('dashboardBuilder.configPanel.resetAllDesc')}
                   </p>
                 </div>

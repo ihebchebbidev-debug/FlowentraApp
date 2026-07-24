@@ -415,14 +415,14 @@ ${JSON.stringify(ctx, null, 2)}
                             <Hash className="h-3 w-3 text-muted-foreground" />
                             {exec.id}
                           </span>
-                          <Badge variant="outline" className="h-5 text-[10px]">
+                          <Badge variant="outline" className="h-5 text-px-10">
                             {exec.entityType} #{exec.entityId}
                           </Badge>
                           <span className="text-xs text-muted-foreground">
                             {ctx.oldStatus || ctx.triggerSource || 'NULL'} → {ctx.newStatus || 'unknown'}
                           </span>
                           {isStuck && (
-                            <Badge variant="destructive" className="h-5 text-[10px]">
+                            <Badge variant="destructive" className="h-5 text-px-10">
                               STUCK {runningTime}s
                             </Badge>
                           )}
@@ -468,7 +468,7 @@ ${JSON.stringify(ctx, null, 2)}
                             <summary className="cursor-pointer font-medium text-muted-foreground hover:text-foreground">
                               Trigger Context (click to expand)
                             </summary>
-                            <pre className="mt-2 p-2 rounded bg-muted overflow-x-auto text-[11px] max-h-48 overflow-y-auto">
+                            <pre className="mt-2 p-2 rounded bg-muted overflow-x-auto text-px-11 max-h-48 overflow-y-auto">
                               {JSON.stringify(ctx, null, 2)}
                             </pre>
                           </details>
@@ -504,7 +504,7 @@ ${JSON.stringify(ctx, null, 2)}
                                   
                                   {getStatusIcon(step.status)}
                                   
-                                  <Badge variant="outline" className="h-5 text-[10px] font-mono">
+                                  <Badge variant="outline" className="h-5 text-px-10 font-mono">
                                     {step.nodeType}
                                   </Badge>
                                   
@@ -513,13 +513,13 @@ ${JSON.stringify(ctx, null, 2)}
                                   </span>
                                   
                                   {step.branch && (
-                                    <Badge className="h-5 text-[10px] bg-primary/20 text-primary border-primary/30">
+                                    <Badge className="h-5 text-px-10 bg-primary/20 text-primary border-primary/30">
                                       {step.branch}
                                     </Badge>
                                   )}
                                   
                                   {step.duration && (
-                                    <span className="text-[10px] text-muted-foreground">
+                                    <span className="text-px-10 text-muted-foreground">
                                       {step.duration}ms
                                     </span>
                                   )}
@@ -543,7 +543,7 @@ ${JSON.stringify(ctx, null, 2)}
                                       <div>
                                         <div className="font-medium text-muted-foreground mb-1">Input:</div>
                                         <pre className={cn(
-                                          "p-2 rounded bg-muted overflow-x-auto text-[11px]",
+                                          "p-2 rounded bg-muted overflow-x-auto text-px-11",
                                           "max-h-48 overflow-y-auto"
                                         )}>
                                           {JSON.stringify(step.input, null, 2)}
@@ -555,7 +555,7 @@ ${JSON.stringify(ctx, null, 2)}
                                       <div>
                                         <div className="font-medium text-muted-foreground mb-1">Output:</div>
                                         <pre className={cn(
-                                          "p-2 rounded bg-muted overflow-x-auto text-[11px]",
+                                          "p-2 rounded bg-muted overflow-x-auto text-px-11",
                                           "max-h-48 overflow-y-auto",
                                           step.status === 'failed' && "bg-destructive/10 border border-destructive/20"
                                         )}>

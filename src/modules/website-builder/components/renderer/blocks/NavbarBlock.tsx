@@ -298,9 +298,9 @@ function MobileSidebar({
                       >
                         {child.icon && <DynamicIcon name={child.icon} className="h-3.5 w-3.5 opacity-50" />}
                         <div className="min-w-0">
-                          <span className="block text-[13px]">{child.label}</span>
+                          <span className="block text-px-13">{child.label}</span>
                           {child.description && (
-                            <span className="block text-[11px] opacity-40 truncate">{child.description}</span>
+                            <span className="block text-px-11 opacity-40 truncate">{child.description}</span>
                           )}
                         </div>
                       </a>

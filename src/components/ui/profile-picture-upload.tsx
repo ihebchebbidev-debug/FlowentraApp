@@ -182,7 +182,7 @@ export function ProfilePictureUpload({
             )}
             {isUploading ? 'Uploading...' : resolvedUrl ? 'Change Photo' : 'Upload Photo'}
           </Button>
-          <p className="text-[10px] text-muted-foreground">PNG, JPG — max 5MB</p>
+          <p className="text-px-10 text-muted-foreground">PNG, JPG — max 5MB</p>
         </div>
       </div>
     </div>

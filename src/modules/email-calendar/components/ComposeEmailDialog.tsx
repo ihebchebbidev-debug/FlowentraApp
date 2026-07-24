@@ -295,7 +295,7 @@ export function ComposeEmailDialog({
                 <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 rounded-md border border-border/60 bg-muted/20">
                   <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                   <span className="text-xs text-foreground truncate flex-1">{att.file.name}</span>
-                  <span className="text-[10px] text-muted-foreground shrink-0">{formatFileSize(att.file.size)}</span>
+                  <span className="text-px-10 text-muted-foreground shrink-0">{formatFileSize(att.file.size)}</span>
                   <button onClick={() => removeAttachment(i)} className="text-muted-foreground hover:text-destructive transition-colors">
                     <X className="h-3 w-3" />
                   </button>
@@ -330,7 +330,7 @@ export function ComposeEmailDialog({
               <Paperclip className="h-3.5 w-3.5" />
               {t('compose.attach', 'Attach')}
               {attachments.length > 0 && (
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 ml-0.5">{attachments.length}</Badge>
+                <Badge variant="secondary" className="text-px-10 px-1.5 py-0 ml-0.5">{attachments.length}</Badge>
               )}
             </Button>
           </div>

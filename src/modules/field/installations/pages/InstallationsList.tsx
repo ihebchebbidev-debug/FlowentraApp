@@ -631,7 +631,7 @@ export default function InstallationsList() {
           </div>
           <div>
             <h1 className="text-xl font-semibold text-foreground">{t('list.title')}</h1>
-            <p className="text-[11px] text-muted-foreground">{t('list.subtitle')}</p>
+            <p className="text-px-11 text-muted-foreground">{t('list.subtitle')}</p>
           </div>
         </div>
         <div>
@@ -658,7 +658,7 @@ export default function InstallationsList() {
           </div>
           <div>
             <h1 className="text-lg font-semibold text-foreground">{t('list.title')}</h1>
-            <p className="text-[10px] text-muted-foreground">{t('list.subtitle')}</p>
+            <p className="text-px-10 text-muted-foreground">{t('list.subtitle')}</p>
           </div>
         </div>
         {hasCreateAccess && (
@@ -737,7 +737,7 @@ export default function InstallationsList() {
           >
             <SlidersHorizontal className="h-4 w-4" />
             {(filterType !== 'all' || filterManufacturer !== 'all' || filterWarranty !== 'all') && (
-              <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-primary text-[9px] text-white flex items-center justify-center font-bold">
+              <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-primary text-px-9 text-white flex items-center justify-center font-bold">
                 {[filterType !== 'all' ? 1 : 0, filterManufacturer !== 'all' ? 1 : 0, filterWarranty !== 'all' ? 1 : 0].reduce((a, b) => a + b, 0)}
               </span>
             )}
@@ -1109,7 +1109,7 @@ export default function InstallationsList() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
                             <p className="list-row-title flex-1">{installation.name}</p>
-                            <Badge className={`${warrantyStatus.color} text-[10px] px-2 py-0.5 shrink-0`}>{warrantyStatus.text}</Badge>
+                            <Badge className={`${warrantyStatus.color} text-px-10 px-2 py-0.5 shrink-0`}>{warrantyStatus.text}</Badge>
                           </div>
                           <p className="list-row-subtitle">
                             {[installation.manufacturer, installation.model].filter(Boolean).join(' · ') || '—'}
@@ -1146,7 +1146,7 @@ export default function InstallationsList() {
 
                       {/* Footer: type badge + actions */}
                       <div className="flex items-center justify-between pl-[52px]" onClick={(e) => e.stopPropagation()}>
-                        <Badge className={`${getTypeColor(!customer ? 'internal' : installation.type)} text-[10px] px-2 py-0.5`}>
+                        <Badge className={`${getTypeColor(!customer ? 'internal' : installation.type)} text-px-10 px-2 py-0.5`}>
                           {!customer ? t('internal') : (installation.type === 'internal' ? t('internal') : t('external'))}
                         </Badge>
                         <div className="ml-auto">

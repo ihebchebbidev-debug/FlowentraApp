@@ -765,7 +765,7 @@ export function MaterialsTab({ serviceOrder, onUpdate, jobIds = [], jobLabels }:
                                   >
                                     {material.quantity} {unitLabel}
                                     {isOverrun && (
-                                      <span className="ml-1 rounded-full bg-destructive/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-destructive">
+                                      <span className="ml-1 rounded-full bg-destructive/10 px-1.5 py-0.5 text-px-10 font-medium uppercase tracking-wide text-destructive">
                                         Overrun
                                       </span>
                                     )}
@@ -927,7 +927,7 @@ export function MaterialsTab({ serviceOrder, onUpdate, jobIds = [], jobLabels }:
                       <p className={`font-medium ${isOverrun ? 'text-destructive' : ''}`}>
                         {materialToView.quantity}
                         {isOverrun && (
-                          <span className="ml-2 rounded-full bg-destructive/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-destructive">
+                          <span className="ml-2 rounded-full bg-destructive/10 px-1.5 py-0.5 text-px-10 font-medium uppercase tracking-wide text-destructive">
                             Overrun
                           </span>
                         )}

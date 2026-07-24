@@ -116,7 +116,7 @@ export function PricingBlock({ title, subtitle, plans, bgColor, variant = 'class
   // Editor controls for each plan
   const renderEditorControls = (i: number, plan: Plan) => isEditing ? (
     <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover/plan:opacity-100 transition-opacity z-10">
-      <button onClick={() => toggleHighlight(i)} className="p-1 rounded-md bg-primary/10 text-primary text-[10px] hover:bg-primary/20">
+      <button onClick={() => toggleHighlight(i)} className="p-1 rounded-md bg-primary/10 text-primary text-px-10 hover:bg-primary/20">
         {plan.highlighted ? '★' : '☆'}
       </button>
       <button onClick={() => removePlan(i)} className="p-1 rounded-md bg-destructive/10 text-destructive hover:bg-destructive/20">
@@ -211,11 +211,11 @@ export function PricingBlock({ title, subtitle, plans, bgColor, variant = 'class
                       : `linear-gradient(135deg, ${theme.primaryColor}90, ${theme.primaryColor}60)` }}>
                     {renderPlanName(plan, i, '#ffffff')}
                     {renderPlanPrice(plan, i, '#ffffff')}
-                    {isHighlighted && <span className="inline-block px-3 py-0.5 bg-white/20 rounded-full text-[10px] font-semibold -mt-3 mb-2">Most Popular</span>}
+                    {isHighlighted && <span className="inline-block px-3 py-0.5 bg-white/20 rounded-full text-px-10 font-semibold -mt-3 mb-2">Most Popular</span>}
                   </div>
                   <div className="p-6 bg-card text-center">
                     {renderFeatures(plan, i, theme.textColor)}
-                    {isEditing && <button onClick={() => addFeature(i)} className="text-[10px] text-primary hover:underline mb-4 block mx-auto">+ Add Feature</button>}
+                    {isEditing && <button onClick={() => addFeature(i)} className="text-px-10 text-primary hover:underline mb-4 block mx-auto">+ Add Feature</button>}
                     <ActionButton
                       action={plan.ctaAction}
                       href={plan.ctaLink}
@@ -271,7 +271,7 @@ export function PricingBlock({ title, subtitle, plans, bgColor, variant = 'class
                         ) : f}
                       </span>
                     ))}
-                    {isEditing && <button onClick={() => addFeature(i)} className="text-[10px] text-primary hover:underline">+ Add</button>}
+                    {isEditing && <button onClick={() => addFeature(i)} className="text-px-10 text-primary hover:underline">+ Add</button>}
                   </div>
                 </div>
                 <ActionButton
@@ -309,7 +309,7 @@ export function PricingBlock({ title, subtitle, plans, bgColor, variant = 'class
                 {renderPlanName(plan, i, isDark ? '#f1f5f9' : theme.textColor)}
                 {renderPlanPrice(plan, i, theme.primaryColor)}
                 {renderFeatures(plan, i, isDark ? '#cbd5e1' : theme.textColor)}
-                {isEditing && <button onClick={() => addFeature(i)} className="text-[10px] text-primary hover:underline mb-4 block mx-auto">+ Add Feature</button>}
+                {isEditing && <button onClick={() => addFeature(i)} className="text-px-10 text-primary hover:underline mb-4 block mx-auto">+ Add Feature</button>}
                 <ActionButton
                   action={plan.ctaAction}
                   href={plan.ctaLink}
@@ -348,7 +348,7 @@ export function PricingBlock({ title, subtitle, plans, bgColor, variant = 'class
               {renderPlanName(plan, i, isDark ? '#f1f5f9' : theme.textColor)}
               {renderPlanPrice(plan, i, theme.primaryColor)}
               {renderFeatures(plan, i, isDark ? '#cbd5e1' : theme.textColor)}
-              {isEditing && <button onClick={() => addFeature(i)} className="text-[10px] text-primary hover:underline mb-4 block mx-auto">+ Add Feature</button>}
+              {isEditing && <button onClick={() => addFeature(i)} className="text-px-10 text-primary hover:underline mb-4 block mx-auto">+ Add Feature</button>}
               <ActionButton
                 action={plan.ctaAction}
                 href={plan.ctaLink}

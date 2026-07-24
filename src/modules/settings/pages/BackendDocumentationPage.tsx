@@ -695,7 +695,7 @@ export default function BackendDocumentationPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2 flex-wrap">
                           <CardTitle className="text-base">{m.name}</CardTitle>
-                          <Badge variant="secondary" className="text-[10px]">{m.category}</Badge>
+                          <Badge variant="secondary" className="text-px-10">{m.category}</Badge>
                         </div>
                         <CardDescription className="mt-1">{m.description}</CardDescription>
                       </div>
@@ -708,7 +708,7 @@ export default function BackendDocumentationPage() {
                     <Section title="Services" items={m.services} mono />
                     {m.notes && m.notes.length > 0 && (
                       <div>
-                        <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Notes</div>
+                        <div className="text-px-11 font-semibold uppercase tracking-wider text-muted-foreground mb-1">Notes</div>
                         <ul className="text-xs text-muted-foreground list-disc pl-4 space-y-0.5">
                           {m.notes.map((n, i) => <li key={i}>{n}</li>)}
                         </ul>
@@ -824,7 +824,7 @@ function Section({ title, items, mono }: { title: string; items: string[]; mono?
   if (!items || items.length === 0) return null;
   return (
     <div>
-      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+      <div className="text-px-11 font-semibold uppercase tracking-wider text-muted-foreground mb-1">
         {title} <span className="text-muted-foreground/60">({items.length})</span>
       </div>
       <ul className={`text-xs space-y-0.5 ${mono ? "font-mono" : ""}`}>
@@ -869,7 +869,7 @@ function DatabaseTab() {
             PostgreSQL schema reference
           </CardTitle>
           <CardDescription>
-            {DB_TABLES.length} tables · {totalCols} columns. Each table lists every column with its full SQL type, defaults and constraints. Sourced from <code className="font-mono text-[11px]">Backend/Neon/FULL_DATABASE_SCHEMA.sql</code> and <code className="font-mono text-[11px]">Backend/**/Database/Migrations/*.sql</code>.
+            {DB_TABLES.length} tables · {totalCols} columns. Each table lists every column with its full SQL type, defaults and constraints. Sourced from <code className="font-mono text-px-11">Backend/Neon/FULL_DATABASE_SCHEMA.sql</code> and <code className="font-mono text-px-11">Backend/**/Database/Migrations/*.sql</code>.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -952,11 +952,11 @@ function TableCard({ table, open, onToggle }: { table: DbTable; open: boolean; o
               <div className="flex items-center gap-3 flex-wrap">
                 <TableIcon className="h-4 w-4 text-primary shrink-0" />
                 <CardTitle className="text-sm font-mono">{table.name}</CardTitle>
-                <Badge variant="secondary" className="text-[10px]">{table.category}</Badge>
-                <Badge variant="outline" className="text-[10px]">{table.cols.length} cols</Badge>
-                {pkCount > 0 && <Badge variant="outline" className="text-[10px]"><KeyRound className="h-3 w-3 mr-0.5" />{pkCount} PK</Badge>}
-                {fkCount > 0 && <Badge variant="outline" className="text-[10px]">{fkCount} FK</Badge>}
-                <span className="ml-auto text-[10px] text-muted-foreground font-mono truncate max-w-[40%]">{table.src}</span>
+                <Badge variant="secondary" className="text-px-10">{table.category}</Badge>
+                <Badge variant="outline" className="text-px-10">{table.cols.length} cols</Badge>
+                {pkCount > 0 && <Badge variant="outline" className="text-px-10"><KeyRound className="h-3 w-3 mr-0.5" />{pkCount} PK</Badge>}
+                {fkCount > 0 && <Badge variant="outline" className="text-px-10">{fkCount} FK</Badge>}
+                <span className="ml-auto text-px-10 text-muted-foreground font-mono truncate max-w-[40%]">{table.src}</span>
                 <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
               </div>
             </CardHeader>
@@ -982,9 +982,9 @@ function TableCard({ table, open, onToggle }: { table: DbTable; open: boolean; o
                         <td className="px-3 py-1.5 font-mono align-top">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="text-foreground">{c.name}</span>
-                            {isPk && <Badge variant="outline" className="text-[9px] py-0 px-1">PK</Badge>}
-                            {isFk && <Badge variant="outline" className="text-[9px] py-0 px-1">FK</Badge>}
-                            {isNotNull && !isPk && <Badge variant="outline" className="text-[9px] py-0 px-1">NN</Badge>}
+                            {isPk && <Badge variant="outline" className="text-px-9 py-0 px-1">PK</Badge>}
+                            {isFk && <Badge variant="outline" className="text-px-9 py-0 px-1">FK</Badge>}
+                            {isNotNull && !isPk && <Badge variant="outline" className="text-px-9 py-0 px-1">NN</Badge>}
                           </div>
                         </td>
                         <td className="px-3 py-1.5 font-mono text-muted-foreground break-words">{c.def}</td>
@@ -996,7 +996,7 @@ function TableCard({ table, open, onToggle }: { table: DbTable; open: boolean; o
             </div>
             {table.constraints.length > 0 && (
               <div className="mt-3">
-                <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                <div className="text-px-11 font-semibold uppercase tracking-wider text-muted-foreground mb-1">
                   Table-level constraints ({table.constraints.length})
                 </div>
                 <ul className="text-xs font-mono space-y-0.5">

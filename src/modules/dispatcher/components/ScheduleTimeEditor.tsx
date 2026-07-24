@@ -64,7 +64,7 @@ export function ScheduleTimeEditor({
     onChange: (v: string) => void,
   ) => (
     <div>
-      <Label className="text-[10px] text-muted-foreground mb-1 block">{label}</Label>
+      <Label className="text-px-10 text-muted-foreground mb-1 block">{label}</Label>
       <div className="flex items-center gap-1">
         <div className="flex flex-col">
           <Button
@@ -120,7 +120,7 @@ export function ScheduleTimeEditor({
     <div className="bg-muted/40 rounded-lg p-3 space-y-3">
       {/* Date picker */}
       <div>
-        <Label className="text-[10px] text-muted-foreground mb-1 block">
+        <Label className="text-px-10 text-muted-foreground mb-1 block">
           {t("dispatcher.editing_date")}
         </Label>
         <Popover>

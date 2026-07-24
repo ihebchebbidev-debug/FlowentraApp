@@ -297,7 +297,7 @@ export function JobsTable({ jobs, onJobUpdate, viewMode = 'service' }: JobsTable
           >
             {group.name}
           </span>
-          <Badge variant={statusSummary.color} className="text-[10px]">
+          <Badge variant={statusSummary.color} className="text-px-10">
             {statusSummary.label}
           </Badge>
           <span className="text-xs text-muted-foreground">

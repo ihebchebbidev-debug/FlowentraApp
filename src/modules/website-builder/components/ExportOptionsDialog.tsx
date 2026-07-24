@@ -175,7 +175,7 @@ export function ExportOptionsDialog({
             <FileCode className="h-4 w-4 text-primary shrink-0" />
             <div>
               <p className="text-sm font-medium">{t('exportOptions.reactProject')}</p>
-              <p className="text-[10px] text-muted-foreground">{t('exportOptions.reactProjectDesc')}</p>
+              <p className="text-px-10 text-muted-foreground">{t('exportOptions.reactProjectDesc')}</p>
             </div>
           </div>
         </div>
@@ -219,12 +219,12 @@ export function ExportOptionsDialog({
                     <div className="flex items-center gap-2">
                       <h4 className="font-medium text-sm">{preset.name}</h4>
                       {selectedPlatform === preset.id && (
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{t('exportOptions.selected')}</Badge>
+                        <Badge variant="secondary" className="text-px-10 px-1.5 py-0">{t('exportOptions.selected')}</Badge>
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">{preset.description}</p>
                     {selectedFormat === 'html' && preset.configFiles.length > 0 && (
-                      <p className="text-[10px] text-primary mt-1">
+                      <p className="text-px-10 text-primary mt-1">
                         {t('exportOptions.configFilesIncluded', { count: preset.configFiles.length })}
                       </p>
                     )}
@@ -268,11 +268,11 @@ export function ExportOptionsDialog({
                 onChange={(e) => setCustomDomain(e.target.value)}
                 className="font-mono text-sm"
               />
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-px-10 text-muted-foreground">
                 Bare domain, no <code>https://</code> or path. Leave blank to use a placeholder URL.
               </p>
               {customDomain && !normalizeDomain(customDomain) && (
-                <p className="text-[10px] text-destructive">Doesn't look like a valid domain.</p>
+                <p className="text-px-10 text-destructive">Doesn't look like a valid domain.</p>
               )}
             </div>
 
@@ -292,7 +292,7 @@ export function ExportOptionsDialog({
                   <span className="font-mono text-xs">www.{normalizeDomain(customDomain) || 'mywebsite.com'}</span>
                 </label>
               </RadioGroup>
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-px-10 text-muted-foreground">
                 The other host will be 301-redirected to your primary.
               </p>
             </div>
@@ -333,7 +333,7 @@ export function ExportOptionsDialog({
                 disabled={handleDisabled}
                 className="font-mono text-sm"
               />
-              <p className="text-[10px] text-muted-foreground">{handleHint}</p>
+              <p className="text-px-10 text-muted-foreground">{handleHint}</p>
             </div>
 
             {/* Live DNS records + Verify button */}
@@ -386,7 +386,7 @@ export function ExportOptionsDialog({
                     <span className="text-sm font-mono text-muted-foreground">{quality}%</span>
                   </div>
                   <Slider value={[quality]} onValueChange={([v]) => setQuality(v)} min={50} max={100} step={5} className="w-full" />
-                  <div className="flex justify-between text-[10px] text-muted-foreground">
+                  <div className="flex justify-between text-px-10 text-muted-foreground">
                     <span>{t('exportOptions.smallerFiles')}</span>
                     <span>{t('exportOptions.higherQuality')}</span>
                   </div>
@@ -398,7 +398,7 @@ export function ExportOptionsDialog({
                     <span className="text-sm font-mono text-muted-foreground">{maxWidth}px</span>
                   </div>
                   <Slider value={[maxWidth]} onValueChange={([v]) => setMaxWidth(v)} min={640} max={2560} step={320} className="w-full" />
-                  <div className="flex justify-between text-[10px] text-muted-foreground">
+                  <div className="flex justify-between text-px-10 text-muted-foreground">
                     <span>640px ({t('exportOptions.mobile')})</span>
                     <span>2560px ({t('exportOptions.fourK')})</span>
                   </div>

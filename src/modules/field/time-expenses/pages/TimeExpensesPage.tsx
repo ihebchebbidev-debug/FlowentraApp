@@ -128,7 +128,7 @@ export default function TimeExpensesPage() {
             </div>
             <div>
               <h1 className="text-xl font-semibold text-foreground">{t('time-expenses:title')}</h1>
-              <p className="text-[11px] text-muted-foreground">{t('time-expenses:subtitle')}</p>
+              <p className="text-px-11 text-muted-foreground">{t('time-expenses:subtitle')}</p>
             </div>
           </div>
           {hasCreateAccess && (

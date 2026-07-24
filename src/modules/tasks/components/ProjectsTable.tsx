@@ -105,12 +105,12 @@ export function ProjectsTable({
                     <p className="font-semibold text-sm text-foreground leading-snug line-clamp-1 flex-1">
                       {project.name}
                     </p>
-                    <Badge className={`text-[10px] px-2 py-0.5 shrink-0 ${getStatusColor(project.status)}`} variant="secondary">
+                    <Badge className={`text-px-10 px-2 py-0.5 shrink-0 ${getStatusColor(project.status)}`} variant="secondary">
                       {t(`projects.list.status.${project.status}`, { defaultValue: project.status })}
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    <Badge className={`text-[10px] px-1.5 py-0 ${getTypeColor(project.type)}`} variant="outline">
+                    <Badge className={`text-px-10 px-1.5 py-0 ${getTypeColor(project.type)}`} variant="outline">
                       {t(`projects.list.type.${project.type}`, { defaultValue: project.type })}
                     </Badge>
                     {project.description && (
@@ -130,11 +130,11 @@ export function ProjectsTable({
                         style={{ width: `${stats.completionPercentage}%` }}
                       />
                     </div>
-                    <span className="text-[10px] text-muted-foreground shrink-0">
+                    <span className="text-px-10 text-muted-foreground shrink-0">
                       {stats.completionPercentage}%
                     </span>
                   </div>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                  <p className="text-px-10 text-muted-foreground mt-0.5">
                     {stats.completedTasks}/{stats.totalTasks} {t('projects.list.tasks')}
                   </p>
                 </div>
@@ -170,14 +170,14 @@ export function ProjectsTable({
                     const member = technicians.find(t => t.id === memberId);
                     return member ? (
                       <Avatar key={member.id} className="h-5 w-5">
-                        <AvatarFallback className="text-[9px]">
+                        <AvatarFallback className="text-px-9">
                           {member.name.split(' ').map((n: any) => n[0]).join('')}
                         </AvatarFallback>
                       </Avatar>
                     ) : null;
                   })}
                   {project.teamMembers.length > 3 && (
-                    <div className="h-5 w-5 rounded-full bg-secondary flex items-center justify-center text-[9px] text-muted-foreground">
+                    <div className="h-5 w-5 rounded-full bg-secondary flex items-center justify-center text-px-9 text-muted-foreground">
                       +{project.teamMembers.length - 3}
                     </div>
                   )}

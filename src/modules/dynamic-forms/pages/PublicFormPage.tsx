@@ -315,7 +315,7 @@ export default function PublicFormPage() {
     const FieldHint = () => hint ? (
       <div className="flex items-start gap-1.5 mt-1.5 p-2 rounded bg-muted/50 border border-muted">
         <Info className="h-3.5 w-3.5 text-primary/70 flex-shrink-0 mt-0.5" />
-        <p className="text-[11px] text-muted-foreground leading-relaxed">{hint}</p>
+        <p className="text-px-11 text-muted-foreground leading-relaxed">{hint}</p>
       </div>
     ) : null;
 

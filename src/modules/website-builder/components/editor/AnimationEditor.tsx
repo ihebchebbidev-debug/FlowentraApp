@@ -60,7 +60,7 @@ export function AnimationEditor({ animation, onChange }: AnimationEditorProps) {
       <div className="space-y-3">
         {/* Entrance */}
         <div className="space-y-1.5">
-          <Label className="text-[11px] font-medium text-foreground/70">Entrance Effect</Label>
+          <Label className="text-px-11 font-medium text-foreground/70">Entrance Effect</Label>
           <Select value={anim.entrance} onValueChange={(v) => update({ entrance: v as EntranceAnimation })}>
             <SelectTrigger className="h-8 text-xs border-border/40 bg-background">
               <SelectValue />
@@ -75,7 +75,7 @@ export function AnimationEditor({ animation, onChange }: AnimationEditorProps) {
 
         {/* Hover */}
         <div className="space-y-1.5">
-          <Label className="text-[11px] font-medium text-foreground/70">Hover Effect</Label>
+          <Label className="text-px-11 font-medium text-foreground/70">Hover Effect</Label>
           <Select value={anim.hover} onValueChange={(v) => update({ hover: v as HoverEffect })}>
             <SelectTrigger className="h-8 text-xs border-border/40 bg-background">
               <SelectValue />
@@ -90,7 +90,7 @@ export function AnimationEditor({ animation, onChange }: AnimationEditorProps) {
 
         {/* Speed */}
         <div className="space-y-1.5">
-          <Label className="text-[11px] font-medium text-foreground/70">Speed</Label>
+          <Label className="text-px-11 font-medium text-foreground/70">Speed</Label>
           <Select value={anim.speed} onValueChange={(v) => update({ speed: v as TransitionSpeed })}>
             <SelectTrigger className="h-8 text-xs border-border/40 bg-background">
               <SelectValue />
@@ -107,8 +107,8 @@ export function AnimationEditor({ animation, onChange }: AnimationEditorProps) {
         {anim.entrance !== 'none' && (
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <Label className="text-[11px] font-medium text-foreground/70">Delay</Label>
-              <span className="text-[10px] text-muted-foreground/60 tabular-nums">{anim.delay}ms</span>
+              <Label className="text-px-11 font-medium text-foreground/70">Delay</Label>
+              <span className="text-px-10 text-muted-foreground/60 tabular-nums">{anim.delay}ms</span>
             </div>
             <Slider
               value={[anim.delay]}
@@ -124,8 +124,8 @@ export function AnimationEditor({ animation, onChange }: AnimationEditorProps) {
         {anim.entrance !== 'none' && (
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <Label className="text-[11px] font-medium text-foreground/70">Stagger (children)</Label>
-              <span className="text-[10px] text-muted-foreground/60 tabular-nums">{anim.stagger}ms</span>
+              <Label className="text-px-11 font-medium text-foreground/70">Stagger (children)</Label>
+              <span className="text-px-10 text-muted-foreground/60 tabular-nums">{anim.stagger}ms</span>
             </div>
             <Slider
               value={[anim.stagger]}
@@ -140,7 +140,7 @@ export function AnimationEditor({ animation, onChange }: AnimationEditorProps) {
         {/* Repeat */}
         {anim.entrance !== 'none' && (
           <div className="flex items-center justify-between py-1">
-            <Label className="text-[11px] font-medium text-foreground/70">Replay on scroll</Label>
+            <Label className="text-px-11 font-medium text-foreground/70">Replay on scroll</Label>
             <Switch
               checked={anim.repeat}
               onCheckedChange={(checked) => update({ repeat: checked })}
@@ -152,7 +152,7 @@ export function AnimationEditor({ animation, onChange }: AnimationEditorProps) {
         {hasAnimation && (
           <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-md bg-primary/5 border border-primary/10">
             <Sparkles className="h-3 w-3 text-primary/60 shrink-0" />
-            <p className="text-[10px] text-primary/70">Use Preview to see animations in action</p>
+            <p className="text-px-10 text-primary/70">Use Preview to see animations in action</p>
           </div>
         )}
       </div>

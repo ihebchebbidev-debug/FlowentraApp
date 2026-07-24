@@ -244,14 +244,14 @@ export function NewsletterBlock({
 
   const renderPrivacy = () =>
     showPrivacy ? (
-      <p className="text-[11px] opacity-50 mt-2" style={{ color: theme.secondaryColor }}>
+      <p className="text-px-11 opacity-50 mt-2" style={{ color: theme.secondaryColor }}>
         {privacyText}
       </p>
     ) : null;
 
   const renderEditHint = () =>
     isEditing ? (
-      <p className="text-[10px] text-center text-muted-foreground mt-3 opacity-60">
+      <p className="text-px-10 text-center text-muted-foreground mt-3 opacity-60">
         💡 Set webhook URL & form actions in Properties → Form Settings
       </p>
     ) : null;

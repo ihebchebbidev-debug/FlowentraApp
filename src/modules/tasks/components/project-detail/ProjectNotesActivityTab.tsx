@@ -307,7 +307,7 @@ export function ProjectNotesActivityTab({ project }: ProjectNotesActivityTabProp
                       {entry.type === "note" ? (
                         <>
                           <Avatar className="h-6 w-6">
-                            <AvatarFallback className="text-[10px] font-semibold">
+                            <AvatarFallback className="text-px-10 font-semibold">
                               {getInitials(entry.createdBy)}
                             </AvatarFallback>
                           </Avatar>

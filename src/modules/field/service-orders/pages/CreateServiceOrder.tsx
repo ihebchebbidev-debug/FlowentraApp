@@ -211,7 +211,7 @@ export default function CreateServiceOrder() {
           </Link>
           <div className="min-w-0">
             <h1 className="text-xl font-semibold text-foreground truncate">{t('create_service_order')}</h1>
-            <p className="text-[11px] text-muted-foreground truncate">{t('create_description')}</p>
+            <p className="text-px-11 text-muted-foreground truncate">{t('create_description')}</p>
           </div>
         </div>
       </div>

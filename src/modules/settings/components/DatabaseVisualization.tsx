@@ -94,7 +94,7 @@ const TableNode = ({ data }: { data: any }) => {
             </div>
             <div className="flex items-center gap-1 flex-shrink-0">
               <span className="text-muted-foreground">{field.type}</span>
-              {field.required && <span className="text-destructive text-[10px]">*</span>}
+              {field.required && <span className="text-destructive text-px-10">*</span>}
             </div>
           </div>
         ))}
@@ -1298,7 +1298,7 @@ const DatabaseVisualizationFlow = () => {
             <span>{t('databaseVisualization.legend.foreignKey')}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-destructive text-[10px] font-bold">*</span>
+            <span className="text-destructive text-px-10 font-bold">*</span>
             <span>{t('databaseVisualization.legend.requiredField')}</span>
           </div>
           <div className="flex items-center gap-2">

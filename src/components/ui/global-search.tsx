@@ -473,7 +473,7 @@ export function GlobalSearch() {
         ) : (
           <kbd
             aria-hidden="true"
-            className="hidden md:inline-flex pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-6 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground"
+            className="hidden md:inline-flex pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-6 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-px-10 font-medium text-muted-foreground"
           >
             <span className="text-xs">{isMac ? '⌘' : 'Ctrl'}</span>K
           </kbd>
@@ -515,7 +515,7 @@ export function GlobalSearch() {
                       <p className="text-sm font-medium text-foreground truncate">
                         {result.title}
                       </p>
-                      <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${getTypeColor(result.type)}`}>
+                      <Badge variant="outline" className={`text-px-10 px-1.5 py-0 ${getTypeColor(result.type)}`}>
                         {getTypeLabel(result.type)}
                       </Badge>
                     </div>
@@ -528,7 +528,7 @@ export function GlobalSearch() {
                     
                     <div className="flex items-center gap-2 mt-0.5">
                       {result.status && (
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                        <Badge variant="secondary" className="text-px-10 px-1.5 py-0">
                           {result.status}
                         </Badge>
                       )}

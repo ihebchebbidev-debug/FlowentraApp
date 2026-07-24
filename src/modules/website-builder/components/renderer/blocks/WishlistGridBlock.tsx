@@ -130,7 +130,7 @@ export function WishlistGridBlock({
                     )}
                   </div>
                   {item.inStock === false && (
-                    <span className="text-[10px] text-red-500 font-medium">Out of Stock</span>
+                    <span className="text-px-10 text-red-500 font-medium">Out of Stock</span>
                   )}
                   {showMoveToCart && item.inStock !== false && (
                     <button

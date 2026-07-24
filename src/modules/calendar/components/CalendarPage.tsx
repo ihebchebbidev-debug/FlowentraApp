@@ -245,7 +245,7 @@ export function CalendarPage() {
         </div>
         <div className="min-w-0">
           <h1 className="text-base sm:text-xl font-semibold text-foreground truncate">{t('title')}</h1>
-          <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">{t('subtitle')}</p>
+          <p className="text-px-10 sm:text-px-11 text-muted-foreground truncate">{t('subtitle')}</p>
         </div>
       </div>
       <div className="hidden sm:flex items-center gap-2">
@@ -340,7 +340,7 @@ export function CalendarPage() {
                 </PopoverContent>
               </Popover>
               {effectiveDateRange && (
-                <Badge variant="secondary" className="text-[10px]">
+                <Badge variant="secondary" className="text-px-10">
                   {t('events_in_range', { count: filteredEvents.length })}
                 </Badge>
               )}
@@ -349,7 +349,7 @@ export function CalendarPage() {
           {/* Active date range indicator */}
           {effectiveDateRange && dateRangePreset !== 'all' && dateRangePreset !== 'custom' && (
             <div className="px-4 pb-2">
-              <Badge variant="secondary" className="text-[10px]">
+              <Badge variant="secondary" className="text-px-10">
                 {format(effectiveDateRange.from, "MMM d")} — {format(effectiveDateRange.to, "MMM d, yyyy")}
               </Badge>
             </div>
@@ -489,21 +489,21 @@ export function CalendarPage() {
                         const place = ev.location || md.customerAddress;
                         const Row = ({ label, value }: { label: string; value: React.ReactNode }) => (
                           <div className="flex items-start justify-between gap-3">
-                            <span className="text-[10px] text-muted-foreground shrink-0">{label}</span>
-                            <span className="text-[10px] font-medium text-popover-foreground text-right break-words">{value}</span>
+                            <span className="text-px-10 text-muted-foreground shrink-0">{label}</span>
+                            <span className="text-px-10 font-medium text-popover-foreground text-right break-words">{value}</span>
                           </div>
                         );
                         return (
                           <Tooltip delayDuration={150}>
                             <TooltipTrigger asChild>
-                              <div className="w-full h-full text-white text-[10px] px-1 cursor-pointer hover:opacity-90 transition-opacity leading-[18px]">
-                                <span className="truncate font-medium text-[10px]">{ev.title}</span>
+                              <div className="w-full h-full text-white text-px-10 px-1 cursor-pointer hover:opacity-90 transition-opacity leading-[18px]">
+                                <span className="truncate font-medium text-px-10">{ev.title}</span>
                               </div>
                             </TooltipTrigger>
                             <TooltipContent side="top" className="max-w-[260px] p-0 overflow-hidden border shadow-lg">
                               <div className="px-2.5 py-2 border-b border-border" style={{ borderLeft: `3px solid ${ev.color || '#6b7280'}` }}>
                                 <p className="font-semibold text-xs text-popover-foreground break-words">{ev.title}</p>
-                                <p className="text-[10px] text-muted-foreground mt-0.5">{sourceLabel}</p>
+                                <p className="text-px-10 text-muted-foreground mt-0.5">{sourceLabel}</p>
                               </div>
                               <div className="p-2.5 space-y-1">
                                 <Row label={t('tooltip.when')} value={whenText} />
@@ -515,12 +515,12 @@ export function CalendarPage() {
                                 {amount && <Row label={t('tooltip.amount')} value={amount} />}
                                 {duration && <Row label={t('tooltip.duration')} value={duration} />}
                                 {place && (
-                                  <p className="text-[10px] text-muted-foreground break-words pt-1 mt-1 border-t border-border">📍 {place}</p>
+                                  <p className="text-px-10 text-muted-foreground break-words pt-1 mt-1 border-t border-border">📍 {place}</p>
                                 )}
                                 {ev.description && (
-                                  <p className="text-[10px] text-muted-foreground break-words pt-1 mt-1 border-t border-border line-clamp-3">{ev.description}</p>
+                                  <p className="text-px-10 text-muted-foreground break-words pt-1 mt-1 border-t border-border line-clamp-3">{ev.description}</p>
                                 )}
-                                <p className="text-[9px] text-muted-foreground/70 pt-1 mt-1 border-t border-border italic">{t('tooltip.hint')}</p>
+                                <p className="text-px-9 text-muted-foreground/70 pt-1 mt-1 border-t border-border italic">{t('tooltip.hint')}</p>
                               </div>
                             </TooltipContent>
                           </Tooltip>

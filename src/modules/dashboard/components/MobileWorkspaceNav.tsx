@@ -52,7 +52,7 @@ function ThemePickerMobile() {
             aria-pressed={active}
             aria-label={`${o.label} theme`}
             className={cn(
-              "flex flex-col items-center gap-0.5 rounded px-1 py-1.5 text-[10px] font-medium transition-colors",
+              "flex flex-col items-center gap-0.5 rounded px-1 py-1.5 text-px-10 font-medium transition-colors",
               active ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
             )}
           >
@@ -307,7 +307,7 @@ export function MobileWorkspaceNav() {
         >
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] leading-none px-1">
+            <span className="absolute -top-0.5 -right-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary text-primary-foreground text-px-10 leading-none px-1">
               {unreadCount > 99 ? "99+" : unreadCount}
             </span>
           )}

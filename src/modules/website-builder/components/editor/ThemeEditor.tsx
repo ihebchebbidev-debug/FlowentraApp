@@ -36,7 +36,7 @@ function Section({
     <div className="border border-border/40 rounded-lg overflow-hidden">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center gap-1.5 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/30 transition-colors"
+        className="w-full flex items-center gap-1.5 px-3 py-2 text-px-10 font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/30 transition-colors"
       >
         <Icon className="h-3 w-3" />
         <span className="flex-1 text-left">{title}</span>
@@ -142,7 +142,7 @@ function FontPicker({
 
   return (
     <div className="space-y-1.5">
-      <Label className="text-[10px] font-medium">{label}</Label>
+      <Label className="text-px-10 font-medium">{label}</Label>
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center justify-between p-2 rounded-lg border border-border/40 hover:border-primary/30 transition-colors text-left"
@@ -160,7 +160,7 @@ function FontPicker({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t('wb:theme.searchFonts')}
-              className="h-6 text-[10px]"
+              className="h-6 text-px-10"
             />
           </div>
           <div className="max-h-[240px] overflow-y-auto">
@@ -169,7 +169,7 @@ function FontPicker({
               if (filtered.length === 0) return null;
               return (
                 <div key={cat.category}>
-                  <div className="px-2 py-1 text-[8px] font-bold uppercase tracking-wider text-muted-foreground/40 bg-muted/20 sticky top-0">
+                  <div className="px-2 py-1 text-px-8 font-bold uppercase tracking-wider text-muted-foreground/40 bg-muted/20 sticky top-0">
                     {cat.category}
                   </div>
                   {filtered.map((font) => (
@@ -200,13 +200,13 @@ function ChipPicker<T extends string>({
 }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-[10px] font-medium">{label}</Label>
+      <Label className="text-px-10 font-medium">{label}</Label>
       <div className="flex flex-wrap gap-1">
         {options.map((opt) => (
           <button
             key={opt.value}
             onClick={() => onChange(opt.value)}
-            className={`px-2 py-1 rounded-md text-[9px] font-medium transition-all ${
+            className={`px-2 py-1 rounded-md text-px-9 font-medium transition-all ${
               value === opt.value ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted/50 hover:bg-muted text-muted-foreground'
             }`}
           >
@@ -251,7 +251,7 @@ export function ThemeEditor({ theme, onChange }: ThemeEditorProps) {
                 <button
                   key={preset.name}
                   onClick={() => applyPreset(preset.theme)}
-                  className={`flex items-center gap-2 p-2 rounded-lg border transition-all text-[10px] ${
+                  className={`flex items-center gap-2 p-2 rounded-lg border transition-all text-px-10 ${
                     isActive ? 'border-primary/50 bg-primary/5 ring-1 ring-primary/20' : 'border-border/50 hover:border-primary/30 hover:bg-accent'
                   }`}
                 >
@@ -286,14 +286,14 @@ export function ThemeEditor({ theme, onChange }: ThemeEditorProps) {
                     className="w-5 h-5 rounded border cursor-pointer shrink-0"
                   />
                   <div>
-                    <Label className="text-[9px] font-semibold block leading-tight">{label}</Label>
-                    <span className="text-[7px] text-muted-foreground/50">{desc}</span>
+                    <Label className="text-px-9 font-semibold block leading-tight">{label}</Label>
+                    <span className="text-px-7 text-muted-foreground/50">{desc}</span>
                   </div>
                 </div>
                 <Input
                   value={theme[key]}
                   onChange={(e) => update(key, e.target.value)}
-                  className="h-5 text-[8px] font-mono"
+                  className="h-5 text-px-8 font-mono"
                 />
               </div>
             ))}
@@ -312,11 +312,11 @@ export function ThemeEditor({ theme, onChange }: ThemeEditorProps) {
 
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <Label className="text-[10px] font-medium">{t('wb:theme.fontScale')}</Label>
-              <span className="text-[9px] text-muted-foreground font-mono">{(theme.fontScale ?? 1).toFixed(2)}×</span>
+              <Label className="text-px-10 font-medium">{t('wb:theme.fontScale')}</Label>
+              <span className="text-px-9 text-muted-foreground font-mono">{(theme.fontScale ?? 1).toFixed(2)}×</span>
             </div>
             <Slider value={[theme.fontScale ?? 1]} min={0.85} max={1.25} step={0.05} onValueChange={([v]) => update('fontScale', v)} className="w-full" />
-            <div className="flex justify-between text-[7px] text-muted-foreground/40">
+            <div className="flex justify-between text-px-7 text-muted-foreground/40">
               <span>{t('wb:theme.compact')}</span>
               <span>{t('wb:theme.normal')}</span>
               <span>{t('wb:theme.large')}</span>
@@ -325,8 +325,8 @@ export function ThemeEditor({ theme, onChange }: ThemeEditorProps) {
 
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <Label className="text-[10px] font-medium">{t('wb:theme.headingLetterSpacing')}</Label>
-              <span className="text-[9px] text-muted-foreground font-mono">{(theme.letterSpacing ?? 0).toFixed(2)}em</span>
+              <Label className="text-px-10 font-medium">{t('wb:theme.headingLetterSpacing')}</Label>
+              <span className="text-px-9 text-muted-foreground font-mono">{(theme.letterSpacing ?? 0).toFixed(2)}em</span>
             </div>
             <Slider value={[theme.letterSpacing ?? 0]} min={-0.05} max={0.2} step={0.01} onValueChange={([v]) => update('letterSpacing', v)} className="w-full" />
           </div>
@@ -372,8 +372,8 @@ export function ThemeEditor({ theme, onChange }: ThemeEditorProps) {
         <Section title={t('wb:theme.styleShape')} icon={Maximize2}>
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <Label className="text-[10px] font-medium">{t('wb:theme.borderRadius')}</Label>
-              <span className="text-[9px] text-muted-foreground font-mono">{theme.borderRadius}px</span>
+              <Label className="text-px-10 font-medium">{t('wb:theme.borderRadius')}</Label>
+              <span className="text-px-9 text-muted-foreground font-mono">{theme.borderRadius}px</span>
             </div>
             <Slider value={[theme.borderRadius]} min={0} max={24} step={1} onValueChange={([v]) => update('borderRadius', v)} className="w-full" />
             <div className="flex gap-1 pt-0.5">
@@ -421,7 +421,7 @@ export function ThemeEditor({ theme, onChange }: ThemeEditorProps) {
                 <button
                   key={s}
                   onClick={() => update('buttonStyle', s)}
-                  className={`flex-1 py-1.5 text-[8px] font-semibold transition-all ${isActive ? 'ring-1 ring-primary/40' : ''}`}
+                  className={`flex-1 py-1.5 text-px-8 font-semibold transition-all ${isActive ? 'ring-1 ring-primary/40' : ''}`}
                   style={{
                     borderRadius: radius,
                     backgroundColor: isOutlined ? 'transparent' : theme.primaryColor,
@@ -451,19 +451,19 @@ export function ThemeEditor({ theme, onChange }: ThemeEditorProps) {
         <Section title={t('wb:theme.spacingLayout')} icon={Settings2} defaultOpen={false}>
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <Label className="text-[10px] font-medium">{t('wb:theme.baseSpacing')}</Label>
-              <span className="text-[9px] text-muted-foreground font-mono">{theme.spacing}px</span>
+              <Label className="text-px-10 font-medium">{t('wb:theme.baseSpacing')}</Label>
+              <span className="text-px-9 text-muted-foreground font-mono">{theme.spacing}px</span>
             </div>
             <Slider value={[theme.spacing]} min={8} max={32} step={2} onValueChange={([v]) => update('spacing', v)} className="w-full" />
           </div>
 
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <Label className="text-[10px] font-medium">{t('wb:theme.sectionPadding')}</Label>
-              <span className="text-[9px] text-muted-foreground font-mono">{(theme.sectionPadding ?? 1).toFixed(1)}×</span>
+              <Label className="text-px-10 font-medium">{t('wb:theme.sectionPadding')}</Label>
+              <span className="text-px-9 text-muted-foreground font-mono">{(theme.sectionPadding ?? 1).toFixed(1)}×</span>
             </div>
             <Slider value={[theme.sectionPadding ?? 1]} min={0.5} max={2} step={0.1} onValueChange={([v]) => update('sectionPadding', v)} className="w-full" />
-            <div className="flex justify-between text-[7px] text-muted-foreground/40">
+            <div className="flex justify-between text-px-7 text-muted-foreground/40">
               <span>{t('wb:theme.compact')}</span>
               <span>{t('wb:theme.normal')}</span>
               <span>{t('wb:theme.spacious')}</span>
@@ -473,7 +473,7 @@ export function ThemeEditor({ theme, onChange }: ThemeEditorProps) {
 
         {/* ─── STORE CURRENCY ─── */}
         <Section title={t('wb:theme.storeCurrency', 'Store Currency')} icon={Banknote} defaultOpen={false}>
-          <p className="text-[10px] text-muted-foreground/60 leading-snug mb-1">
+          <p className="text-px-10 text-muted-foreground/60 leading-snug mb-1">
             {t('wb:theme.storeCurrencyHint', 'Used by the cart, checkout and mini-cart totals across the whole store.')}
           </p>
           <div className="grid grid-cols-4 gap-1.5">
@@ -490,7 +490,7 @@ export function ThemeEditor({ theme, onChange }: ThemeEditorProps) {
             ))}
           </div>
           <div className="flex items-center gap-2 mt-2">
-            <Label className="text-[10px] text-muted-foreground/70 shrink-0">{t('wb:theme.customCurrency', 'Custom')}</Label>
+            <Label className="text-px-10 text-muted-foreground/70 shrink-0">{t('wb:theme.customCurrency', 'Custom')}</Label>
             <Input
               value={theme.currency || ''}
               onChange={(e) => update('currency', e.target.value)}
@@ -529,7 +529,7 @@ export function ThemeEditor({ theme, onChange }: ThemeEditorProps) {
               RTL →←
             </Button>
           </div>
-          <p className="text-[9px] text-muted-foreground">
+          <p className="text-px-9 text-muted-foreground">
             {theme.direction === 'rtl' ? t('wb:theme.rtlDesc') : t('wb:theme.ltrDesc')}
           </p>
         </Section>
@@ -550,18 +550,18 @@ export function ThemeEditor({ theme, onChange }: ThemeEditorProps) {
                   <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: opt.cta }} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[9px] font-medium truncate">{opt.label}</p>
-                  <p className="text-[7px] text-muted-foreground/50 truncate">{opt.desc}</p>
+                  <p className="text-px-9 font-medium truncate">{opt.label}</p>
+                  <p className="text-px-7 text-muted-foreground/50 truncate">{opt.desc}</p>
                 </div>
               </div>
             ))}
           </div>
-          <p className="text-[8px] text-muted-foreground/50" dangerouslySetInnerHTML={{ __html: t('wb:theme.navHint') }} />
+          <p className="text-px-8 text-muted-foreground/50" dangerouslySetInnerHTML={{ __html: t('wb:theme.navHint') }} />
         </Section>
 
         {/* ─── LIVE PREVIEW ─── */}
         <div className="space-y-2">
-          <Label className="text-[10px] uppercase tracking-wider text-muted-foreground/60">{t('wb:theme.livePreview')}</Label>
+          <Label className="text-px-10 uppercase tracking-wider text-muted-foreground/60">{t('wb:theme.livePreview')}</Label>
           <div
             dir={theme.direction || 'ltr'}
             className="rounded-lg p-4 border space-y-2"
@@ -590,7 +590,7 @@ export function ThemeEditor({ theme, onChange }: ThemeEditorProps) {
             </p>
             <div className="flex gap-2 pt-1">
               <div
-                className="px-3 py-1.5 text-[10px] font-medium text-white"
+                className="px-3 py-1.5 text-px-10 font-medium text-white"
                 style={{
                   backgroundColor: theme.primaryColor,
                   borderRadius: theme.buttonStyle === 'pill' ? 999 : theme.buttonStyle === 'square' ? 0 : theme.borderRadius,
@@ -600,7 +600,7 @@ export function ThemeEditor({ theme, onChange }: ThemeEditorProps) {
                 {t('wb:theme.primaryButton')}
               </div>
               <div
-                className="px-3 py-1.5 text-[10px] font-medium"
+                className="px-3 py-1.5 text-px-10 font-medium"
                 style={{
                   backgroundColor: theme.buttonStyle === 'outlined' ? 'transparent' : theme.accentColor,
                   color: theme.buttonStyle === 'outlined' ? theme.accentColor : '#ffffff',

@@ -64,7 +64,7 @@ export function RichTextEditor({ value, onChange, disabled, placeholder, classNa
         <div className="w-px h-4 bg-border/40 mx-1" />
         <select
           onChange={(e) => { exec('fontSize', e.target.value); e.target.value = ''; }}
-          className="text-[11px] bg-transparent border-none outline-none text-muted-foreground cursor-pointer"
+          className="text-px-11 bg-transparent border-none outline-none text-muted-foreground cursor-pointer"
           defaultValue=""
           disabled={disabled}
         >
@@ -85,7 +85,7 @@ export function RichTextEditor({ value, onChange, disabled, placeholder, classNa
         data-placeholder={placeholder}
         suppressContentEditableWarning
         className={cn(
-          'px-3 py-2.5 text-[13px] leading-relaxed text-foreground outline-none overflow-y-auto',
+          'px-3 py-2.5 text-px-13 leading-relaxed text-foreground outline-none overflow-y-auto',
           'empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground/50'
         )}
         style={{ minHeight }}

@@ -61,7 +61,7 @@ export function TemplateLivePreview({ pages, theme }: TemplateLivePreviewProps) 
             <button
               key={pg.id}
               onClick={() => setActivePage(idx)}
-              className={`text-[11px] px-3 py-1.5 rounded-md whitespace-nowrap transition-colors ${
+              className={`text-px-11 px-3 py-1.5 rounded-md whitespace-nowrap transition-colors ${
                 idx === activePage
                   ? 'bg-primary text-primary-foreground font-medium'
                   : 'text-muted-foreground hover:bg-accent hover:text-foreground'
@@ -125,10 +125,10 @@ export function TemplateLivePreview({ pages, theme }: TemplateLivePreviewProps) 
 
       {/* Component count */}
       <div className="px-4 py-2 border-t border-border bg-muted/20 flex items-center gap-2">
-        <Badge variant="outline" className="text-[10px]">
+        <Badge variant="outline" className="text-px-10">
           {currentPage.components.length} components
         </Badge>
-        <span className="text-[10px] text-muted-foreground">
+        <span className="text-px-10 text-muted-foreground">
           /{currentPage.slug || ''}
         </span>
       </div>

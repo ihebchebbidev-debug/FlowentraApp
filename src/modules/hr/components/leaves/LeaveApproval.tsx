@@ -107,7 +107,7 @@ export function LeaveApproval() {
       <CardHeader>
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="text-base">{t('leavesPage.approvalTitle')}</CardTitle>
-          <Badge variant="secondary" className="text-[11px]">
+          <Badge variant="secondary" className="text-px-11">
             {pending.length}
           </Badge>
         </div>

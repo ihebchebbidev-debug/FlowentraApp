@@ -209,7 +209,7 @@ export function FormCreationCard({
       </div>
 
       {/* Footer hint */}
-      <p className="text-[11px] text-muted-foreground mt-3 flex items-center gap-1.5">
+      <p className="text-px-11 text-muted-foreground mt-3 flex items-center gap-1.5">
         <PenLine className="h-3 w-3" />
         {t('formSavedAsDraft', 'Form will be saved as draft. You can edit it afterward.')}
       </p>

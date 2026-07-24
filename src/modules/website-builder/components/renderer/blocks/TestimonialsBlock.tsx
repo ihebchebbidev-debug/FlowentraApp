@@ -523,11 +523,11 @@ function EditorialQuoteTestimonials({
             <span
               contentEditable suppressContentEditableWarning
               onBlur={(e) => onUpdate?.({ title: e.currentTarget.textContent || '' })}
-              className="text-[11px] tracking-[0.35em] uppercase font-semibold outline-none focus:ring-1 focus:ring-primary/30 rounded px-1"
+              className="text-px-11 tracking-[0.35em] uppercase font-semibold outline-none focus:ring-1 focus:ring-primary/30 rounded px-1"
               style={{ color: theme.primaryColor }}
             >{title}</span>
           ) : (
-            <span className="text-[11px] tracking-[0.35em] uppercase font-semibold" style={{ color: theme.primaryColor }}>{title}</span>
+            <span className="text-px-11 tracking-[0.35em] uppercase font-semibold" style={{ color: theme.primaryColor }}>{title}</span>
           )}
         </div>
 
@@ -577,7 +577,7 @@ function EditorialQuoteTestimonials({
                   <span key={j} className={j < (t.rating ?? 0) ? 'text-amber-400' : 'text-muted-foreground/30'}>★</span>
                 ))}
               </div>
-              <span className="text-[10px] tracking-widest uppercase opacity-50 ml-2" style={{ color: mutedColor }}>Verified</span>
+              <span className="text-px-10 tracking-widest uppercase opacity-50 ml-2" style={{ color: mutedColor }}>Verified</span>
             </div>
           )}
         </div>
@@ -585,7 +585,7 @@ function EditorialQuoteTestimonials({
         {/* Thumbnail navigator */}
         {total > 1 && (
           <div className="flex items-center gap-3 mt-8">
-            <span className="text-[10px] tracking-[0.3em] uppercase opacity-50 mr-3" style={{ color: mutedColor }}>
+            <span className="text-px-10 tracking-[0.3em] uppercase opacity-50 mr-3" style={{ color: mutedColor }}>
               {String(current + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
             </span>
             <div className="flex items-center gap-2 flex-1 flex-wrap">
@@ -609,7 +609,7 @@ function EditorialQuoteTestimonials({
                   {isEditing && total > 1 && (
                     <button
                       onClick={(e) => { e.stopPropagation(); removeTestimonial(i); if (current >= total - 1) setCurrent(Math.max(0, current - 1)); }}
-                      className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[10px] opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center"
+                      className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-px-10 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center"
                     >×</button>
                   )}
                 </button>

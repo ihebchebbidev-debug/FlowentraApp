@@ -157,7 +157,7 @@ function DraggableTaskCard({ task, getPriorityColor, onClick, onToggleComplete, 
                 {task.title}
               </h4>
               {overdue && !task.isCompleted && !isAnimating && (
-                <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5 shrink-0 font-medium">
+                <Badge variant="destructive" className="text-px-10 px-1.5 py-0 h-5 shrink-0 font-medium">
                   <AlertTriangle className="h-3 w-3 mr-1" />
                   {t('daily.daysLate', { count: daysLate })}
                 </Badge>
@@ -188,7 +188,7 @@ function DraggableTaskCard({ task, getPriorityColor, onClick, onToggleComplete, 
             <Badge 
               variant="outline" 
               className={cn(
-                "text-[10px] font-medium uppercase tracking-wide px-1.5 py-0 h-5",
+                "text-px-10 font-medium uppercase tracking-wide px-1.5 py-0 h-5",
                 task.priority === 'urgent' && "border-destructive/50 text-destructive",
                 task.priority === 'high' && "border-warning/50 text-warning",
                 task.priority === 'medium' && "border-primary/50 text-primary",
@@ -200,7 +200,7 @@ function DraggableTaskCard({ task, getPriorityColor, onClick, onToggleComplete, 
             
             {/* Time logged indicator */}
             {task.actualHours !== undefined && task.actualHours > 0 && (
-              <span className="text-[10px] flex items-center gap-1 text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">
+              <span className="text-px-10 flex items-center gap-1 text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">
                 <Clock className="h-3 w-3" />
                 {task.actualHours >= 1 
                   ? `${Math.floor(task.actualHours)}h${task.actualHours % 1 > 0 ? ` ${Math.round((task.actualHours % 1) * 60)}m` : ''}`
@@ -214,7 +214,7 @@ function DraggableTaskCard({ task, getPriorityColor, onClick, onToggleComplete, 
           <div className="flex items-center gap-2">
             {task.dueDate && (
               <span className={cn(
-                "text-[11px] flex items-center gap-1",
+                "text-px-11 flex items-center gap-1",
                 overdue && !task.isCompleted && !isAnimating 
                   ? 'text-destructive font-medium' 
                   : 'text-muted-foreground'
@@ -273,8 +273,8 @@ function DroppableColumn({ column, tasks, getPriorityColor, onAddTask, onTaskCli
       <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-border/30">
         <div className="flex items-center gap-2">
           <div className={`w-1.5 h-1.5 rounded-full ${column.color}`} />
-          <h3 className="text-[13px] font-semibold text-foreground uppercase tracking-wider">{column.title}</h3>
-          <span className="text-[11px] font-medium text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded-md min-w-[20px] text-center">
+          <h3 className="text-px-13 font-semibold text-foreground uppercase tracking-wider">{column.title}</h3>
+          <span className="text-px-11 font-medium text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded-md min-w-[20px] text-center">
             {tasks.length}
           </span>
         </div>
@@ -303,7 +303,7 @@ function DroppableColumn({ column, tasks, getPriorityColor, onAddTask, onTaskCli
         
         {tasks.length === 0 && (
           <div className={`flex items-center justify-center h-20 border border-dashed rounded-md transition-all duration-200 ${isOver ? 'border-primary/40 bg-primary/5' : 'border-border/30 bg-muted/10'}`}>
-            <p className="text-[11px] text-muted-foreground/60">{t('daily.dropHere')}</p>
+            <p className="text-px-11 text-muted-foreground/60">{t('daily.dropHere')}</p>
           </div>
         )}
       </div>
@@ -655,7 +655,7 @@ export default function DailyTasksPage() {
           </div>
           <div className="min-w-0">
             <h1 className="text-base font-semibold text-foreground truncate">{t('daily.title')}</h1>
-            <p className="text-[11px] text-muted-foreground truncate">{t('daily.subtitle')}</p>
+            <p className="text-px-11 text-muted-foreground truncate">{t('daily.subtitle')}</p>
           </div>
         </div>
         <Button 
@@ -664,7 +664,7 @@ export default function DailyTasksPage() {
           className="gap-2"
         >
           <PlusCircle className="h-3.5 w-3.5" />
-          <span className="text-[13px]">{t('daily.addTask')}</span>
+          <span className="text-px-13">{t('daily.addTask')}</span>
         </Button>
       </div>
 
@@ -892,7 +892,7 @@ export default function DailyTasksPage() {
                         </h4>
                         <div className="flex items-center gap-2 flex-shrink-0">
                           {overdue && (
-                            <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5 font-medium">
+                            <Badge variant="destructive" className="text-px-10 px-1.5 py-0 h-5 font-medium">
                               <AlertTriangle className="h-3 w-3 mr-1" />
                               {t('daily.daysLate', { count: daysLate })}
                             </Badge>
@@ -900,7 +900,7 @@ export default function DailyTasksPage() {
                           <Badge 
                             variant="outline"
                             className={cn(
-                              "text-[10px] px-1.5 py-0 h-5",
+                              "text-px-10 px-1.5 py-0 h-5",
                               taskStatus === 'done' && "border-success/50 text-success",
                               taskStatus === 'in-progress' && "border-primary/50 text-primary",
                               taskStatus === 'todo' && "border-muted-foreground/30 text-muted-foreground"
@@ -927,7 +927,7 @@ export default function DailyTasksPage() {
                       <Badge 
                         variant="outline" 
                         className={cn(
-                          "text-[10px] font-medium uppercase tracking-wide px-1.5 py-0 h-5",
+                          "text-px-10 font-medium uppercase tracking-wide px-1.5 py-0 h-5",
                           task.priority === 'urgent' && "border-destructive/50 text-destructive",
                           task.priority === 'high' && "border-warning/50 text-warning",
                           task.priority === 'medium' && "border-primary/50 text-primary",
@@ -939,7 +939,7 @@ export default function DailyTasksPage() {
                       
                       {/* Time logged indicator */}
                       {task.actualHours !== undefined && task.actualHours > 0 && (
-                        <span className="text-[10px] flex items-center gap-1 text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">
+                        <span className="text-px-10 flex items-center gap-1 text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">
                           <Clock className="h-3 w-3" />
                           {task.actualHours >= 1 
                             ? `${Math.floor(task.actualHours)}h${task.actualHours % 1 > 0 ? ` ${Math.round((task.actualHours % 1) * 60)}m` : ''}`
@@ -953,7 +953,7 @@ export default function DailyTasksPage() {
                     <div className="flex items-center gap-2">
                       {task.dueDate && (
                         <span className={cn(
-                          "text-[11px] flex items-center gap-1",
+                          "text-px-11 flex items-center gap-1",
                           overdue 
                             ? 'text-destructive font-medium' 
                             : 'text-muted-foreground'
@@ -1073,7 +1073,7 @@ export default function DailyTasksPage() {
                           <Badge 
                             variant="outline" 
                             className={cn(
-                              "text-[9px] px-1.5 py-0 h-4 opacity-60",
+                              "text-px-9 px-1.5 py-0 h-4 opacity-60",
                               task.priority === 'urgent' && "border-destructive/50 text-destructive",
                               task.priority === 'high' && "border-warning/50 text-warning",
                               task.priority === 'medium' && "border-primary/50 text-primary",

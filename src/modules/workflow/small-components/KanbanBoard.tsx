@@ -42,11 +42,11 @@ function DroppableColumn({
         <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
           <Badge
             variant="outline"
-            className={`text-[11px] font-medium px-2 py-0.5 rounded-sm shrink-0 ${getTagClasses(column.color)}`}
+            className={`text-px-11 font-medium px-2 py-0.5 rounded-sm shrink-0 ${getTagClasses(column.color)}`}
           >
             {column.title}
           </Badge>
-          <span className="text-[11px] text-muted-foreground font-normal">
+          <span className="text-px-11 text-muted-foreground font-normal">
             {items.length}
             {column.limit && ` / ${column.limit}`}
           </span>
@@ -63,7 +63,7 @@ function DroppableColumn({
         {items.map((item) => renderItem(item))}
 
         {items.length === 0 && (
-          <div className="flex items-center justify-center h-24 text-muted-foreground/50 text-[11px]">
+          <div className="flex items-center justify-center h-24 text-muted-foreground/50 text-px-11">
             No records
           </div>
         )}

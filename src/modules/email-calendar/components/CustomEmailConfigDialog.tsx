@@ -213,7 +213,7 @@ export function CustomEmailConfigDialog({ open, onOpenChange, onConnect }: Custo
                   </p>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="col-span-2 space-y-1">
-                      <Label className="text-[11px] text-muted-foreground">{t('customEmail.imap.server')}</Label>
+                      <Label className="text-px-11 text-muted-foreground">{t('customEmail.imap.server')}</Label>
                           <Input
                             placeholder={config.incomingProtocol === 'pop3' ? 'pop.yourhost.com' : 'imap.mail.ovh.net'}
                             value={config.imapServer}
@@ -222,7 +222,7 @@ export function CustomEmailConfigDialog({ open, onOpenChange, onConnect }: Custo
                           />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-[11px] text-muted-foreground">{t('customEmail.imap.port')}</Label>
+                      <Label className="text-px-11 text-muted-foreground">{t('customEmail.imap.port')}</Label>
                       <Input
                             type="number"
                             value={config.incomingProtocol === 'pop3' ? (config.pop3Port || 995) : config.imapPort}
@@ -231,7 +231,7 @@ export function CustomEmailConfigDialog({ open, onOpenChange, onConnect }: Custo
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-[11px] text-muted-foreground">{t('customEmail.imap.security')}</Label>
+                      <Label className="text-px-11 text-muted-foreground">{t('customEmail.imap.security')}</Label>
                       <Select value={config.imapSecurity} onValueChange={v => updateField('imapSecurity', v as ImapSecurity)}>
                         <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -252,7 +252,7 @@ export function CustomEmailConfigDialog({ open, onOpenChange, onConnect }: Custo
                   </p>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="col-span-2 space-y-1">
-                      <Label className="text-[11px] text-muted-foreground">{t('customEmail.smtp.server')}</Label>
+                      <Label className="text-px-11 text-muted-foreground">{t('customEmail.smtp.server')}</Label>
                       <Input
                         placeholder="smtp.mail.ovh.net"
                         value={config.smtpServer}
@@ -261,7 +261,7 @@ export function CustomEmailConfigDialog({ open, onOpenChange, onConnect }: Custo
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-[11px] text-muted-foreground">{t('customEmail.smtp.port')}</Label>
+                      <Label className="text-px-11 text-muted-foreground">{t('customEmail.smtp.port')}</Label>
                       <Input
                         type="number"
                         value={config.smtpPort}
@@ -270,7 +270,7 @@ export function CustomEmailConfigDialog({ open, onOpenChange, onConnect }: Custo
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-[11px] text-muted-foreground">{t('customEmail.smtp.security')}</Label>
+                      <Label className="text-px-11 text-muted-foreground">{t('customEmail.smtp.security')}</Label>
                       <Select value={config.smtpSecurity} onValueChange={v => updateField('smtpSecurity', v as SmtpSecurity)}>
                         <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                         <SelectContent>

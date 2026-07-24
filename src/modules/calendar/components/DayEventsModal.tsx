@@ -54,21 +54,21 @@ function EventCard({ ev, t, onClick }: { ev: CalendarEvent; t: any; onClick: () 
             <p className="font-medium text-sm text-foreground truncate group-hover:text-primary transition-colors leading-tight">
               {ev.title}
             </p>
-            <Badge variant="outline" className="shrink-0 text-[10px] h-5">
+            <Badge variant="outline" className="shrink-0 text-px-10 h-5">
               {isAllDay ? String(t('all_day')) : `${dayjs(ev.start).format('HH:mm')} - ${dayjs(ev.end).format('HH:mm')}`}
             </Badge>
           </div>
 
           {/* Source + Status badges */}
           <div className="flex items-center gap-1.5 flex-wrap">
-            <Badge className="text-[10px] h-4 px-1.5" style={{ backgroundColor: `${ev.color}20`, color: ev.color, border: `1px solid ${ev.color}30` }}>
+            <Badge className="text-px-10 h-4 px-1.5" style={{ backgroundColor: `${ev.color}20`, color: ev.color, border: `1px solid ${ev.color}30` }}>
               {sourceLabel}
             </Badge>
-            <Badge variant="secondary" className="text-[10px] h-4 px-1.5 capitalize">{statusLabel}</Badge>
+            <Badge variant="secondary" className="text-px-10 h-4 px-1.5 capitalize">{statusLabel}</Badge>
           </div>
 
           {/* Metadata row */}
-          <div className="flex items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
+          <div className="flex items-center gap-3 text-px-11 text-muted-foreground flex-wrap">
             {meta?.contactName && (
               <span className="flex items-center gap-1 truncate">
                 <User className="h-3 w-3 shrink-0" />
@@ -210,7 +210,7 @@ export function DayEventsModal({ open, date, events, onOpenChange, onAddEvent, o
                     <div className="flex items-center gap-2 mb-2">
                       <span className="h-2 w-2 rounded-full" style={{ backgroundColor: UnifiedCalendarService.getSourceColors()[source as keyof ReturnType<typeof UnifiedCalendarService.getSourceColors>] || '#6b7280' }} />
                       <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{sourceLabel}</span>
-                      <Badge variant="secondary" className="text-[10px] h-4 ml-auto">{list.length}</Badge>
+                      <Badge variant="secondary" className="text-px-10 h-4 ml-auto">{list.length}</Badge>
                     </div>
                     <div className="space-y-2">
                       {list.map(ev => (

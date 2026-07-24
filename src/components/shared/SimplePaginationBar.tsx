@@ -32,7 +32,7 @@ export function SimplePaginationBar({
   return (
     <div className={`p-2 sm:p-3 border-b border-border bg-muted/20 ${className}`}>
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[11px] sm:text-sm text-muted-foreground truncate">
+        <p className="text-px-11 sm:text-sm text-muted-foreground truncate">
           {t('pagination.showing_results', {
             start: startIndex + 1,
             end: endIndex,
@@ -43,17 +43,17 @@ export function SimplePaginationBar({
           <button
             onClick={onPreviousPage}
             disabled={!hasPreviousPage}
-            className="px-2 py-0.5 text-[11px] sm:px-3 sm:py-1 sm:text-sm border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
+            className="px-2 py-0.5 text-px-11 sm:px-3 sm:py-1 sm:text-sm border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
           >
             {t('pagination.previous')}
           </button>
-          <span className="px-2 py-0.5 text-[11px] sm:px-3 sm:py-1 sm:text-sm">
+          <span className="px-2 py-0.5 text-px-11 sm:px-3 sm:py-1 sm:text-sm">
             {t('pagination.page_of', { current: currentPage, total: totalPages })}
           </span>
           <button
             onClick={onNextPage}
             disabled={!hasNextPage}
-            className="px-2 py-0.5 text-[11px] sm:px-3 sm:py-1 sm:text-sm border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
+            className="px-2 py-0.5 text-px-11 sm:px-3 sm:py-1 sm:text-sm border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
           >
             {t('pagination.next')}
           </button>

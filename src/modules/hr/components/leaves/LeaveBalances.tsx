@@ -14,7 +14,7 @@ export function LeaveBalances(props: { year: number }) {
       <CardHeader>
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="text-base">{t('leavesPage.balancesTitle')}</CardTitle>
-          <Badge variant="secondary" className="text-[11px]">{total}</Badge>
+          <Badge variant="secondary" className="text-px-11">{total}</Badge>
         </div>
       </CardHeader>
       <CardContent>

@@ -71,7 +71,7 @@ const UserLogin: React.FC = () => {
       <Card className="w-full max-w-md shadow-strong border-border/40">
         <CardHeader className="text-center pb-2">
             <CardTitle className="text-xl font-semibold">{t('auth.welcome')}</CardTitle>
-            <CardDescription className="text-[13px]">
+            <CardDescription className="text-px-13">
               {t('auth.signIn')}
             </CardDescription>
           </CardHeader>

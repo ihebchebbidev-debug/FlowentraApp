@@ -1936,13 +1936,13 @@ export function WorkflowBuilder() {
               'w-2 h-2 rounded-full',
               isConnected ? 'bg-success animate-pulse' : 'bg-muted-foreground/40'
             )} />
-            <span className="text-[11px] text-muted-foreground font-medium">
+            <span className="text-px-11 text-muted-foreground font-medium">
               {isConnected ? t('connected', 'Connected') : t('disconnected', 'Disconnected')}
             </span>
           </div>
           
           {liveExecutionId && (
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[11px] font-medium">
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-px-11 font-medium">
               <Loader2 className="h-3 w-3 animate-spin" />
               {t('executionId')} #{liveExecutionId}
             </div>
@@ -1966,7 +1966,7 @@ export function WorkflowBuilder() {
 
           {/* Edit Mode Indicator */}
           {isEditMode && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-warning/15 border border-warning/30 text-[11px] text-warning font-semibold mr-1">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-warning/15 border border-warning/30 text-px-11 text-warning font-semibold mr-1">
               <Edit3 className="h-3 w-3" />
               <span>{t('editMode')}</span>
               {hasUnsavedChanges && (
@@ -1977,7 +1977,7 @@ export function WorkflowBuilder() {
           
           {/* Next Run Countdown - only show when not editing */}
           {!isEditMode && (
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-muted/40 text-[11px] text-muted-foreground mr-1">
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-muted/40 text-px-11 text-muted-foreground mr-1">
               <span>{t('nextRunIn')}</span>
               <span className="font-semibold text-foreground tabular-nums">{formatCountdown(nextRunCountdown)}</span>
             </div>
@@ -2114,7 +2114,7 @@ export function WorkflowBuilder() {
               {/* Autosave heartbeat — quiet reassurance so users know their
                   work is safe without pulling focus. */}
               {lastAutosaveAt && (
-                <span className="text-[10px] text-muted-foreground hidden md:inline">
+                <span className="text-px-10 text-muted-foreground hidden md:inline">
                   {t('autosavedAt', 'Autosaved {{time}}', { time: lastAutosaveAt.toLocaleTimeString() })}
                 </span>
               )}
@@ -2321,7 +2321,7 @@ export function WorkflowBuilder() {
                 </div>
 
                 {/* Quick hint */}
-                <p className="text-[11px] text-muted-foreground/50 mt-5">
+                <p className="text-px-11 text-muted-foreground/50 mt-5">
                   {t('emptyHint', 'Or drag a node from the panel on the left')}
                 </p>
               </div>

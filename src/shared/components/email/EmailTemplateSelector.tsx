@@ -41,7 +41,7 @@ export function EmailTemplateSelector({ documentType, selectedId, onSelect }: Em
         <span className="text-xs font-medium text-muted-foreground">
           {en ? 'Email Template' : 'Modèle d\'e-mail'}
         </span>
-        <Badge variant="outline" className="text-[10px]">
+        <Badge variant="outline" className="text-px-10">
           {EMAIL_TEMPLATES.length} {en ? 'templates' : 'modèles'}
         </Badge>
       </div>
@@ -100,7 +100,7 @@ function TemplateCard({
         </div>
       </div>
 
-      <span className="text-[10px] font-medium text-foreground leading-tight line-clamp-1">
+      <span className="text-px-10 font-medium text-foreground leading-tight line-clamp-1">
         {en ? template.nameEn : template.nameFr}
       </span>
 

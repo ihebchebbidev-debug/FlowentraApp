@@ -74,7 +74,7 @@ export function CollapsibleSearch({
           className="h-8 px-3 gap-2 hover:bg-muted/50 transition-all duration-150"
         >
           <Search className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="hidden sm:inline text-[13px] text-muted-foreground">{searchLabel || t('search')}</span>
+          <span className="hidden sm:inline text-px-13 text-muted-foreground">{searchLabel || t('search')}</span>
         </Button>
       ) : (
         <div className="flex items-center gap-2 animate-in slide-in-from-right-2 duration-200">
@@ -85,7 +85,7 @@ export function CollapsibleSearch({
               placeholder={placeholder || t('search_placeholder')}
               value={value}
               onChange={handleInputChange}
-              className="pl-9 pr-9 h-8 border-border/60 bg-background text-[13px] min-w-[200px] sm:min-w-[280px]"
+              className="pl-9 pr-9 h-8 border-border/60 bg-background text-px-13 min-w-[200px] sm:min-w-[280px]"
             />
             {value && (
               <Button

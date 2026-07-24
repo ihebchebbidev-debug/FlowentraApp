@@ -12,7 +12,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-popover/95 backdrop-blur-sm border border-border rounded-lg shadow-[var(--shadow-strong)] p-2.5 min-w-[100px]">
-        <p className="text-[12px] font-medium text-muted-foreground mb-1">{label}</p>
+        <p className="text-px-12 font-medium text-muted-foreground mb-1">{label}</p>
         <div className="flex items-center gap-2">
           <div 
             className="w-2.5 h-2.5 rounded-full" 

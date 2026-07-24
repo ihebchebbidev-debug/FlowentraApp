@@ -41,7 +41,7 @@ interface FontSelectProps {
 export function FontSelect({ label, value, onChange }: FontSelectProps) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-[11px] font-medium text-foreground/70">{label}</Label>
+      <Label className="text-px-11 font-medium text-foreground/70">{label}</Label>
       <Select value={value || FONT_OPTIONS[0]} onValueChange={onChange}>
         <SelectTrigger className="h-8 text-xs border-border/40 bg-background">
           <SelectValue />

@@ -335,7 +335,7 @@ function SupplierPerformanceContent() {
               <CardContent className="p-3 flex items-center gap-3">
                 <div className={`p-2 rounded-lg ${k.tone}`}><k.icon className="h-4 w-4" /></div>
                 <div className="min-w-0">
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground truncate">{k.label}</div>
+                  <div className="text-px-10 uppercase tracking-wide text-muted-foreground truncate">{k.label}</div>
                   <div className="text-sm font-semibold truncate">{k.value}</div>
                 </div>
               </CardContent>
@@ -352,22 +352,22 @@ function SupplierPerformanceContent() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <div className="text-sm font-semibold truncate">{summary.top.supplierName}</div>
-                    <Badge variant={gradeFor(summary.top.score).variant} className="text-[10px]">
+                    <Badge variant={gradeFor(summary.top.score).variant} className="text-px-10">
                       {gradeFor(summary.top.score).letter} · {summary.top.score}
                     </Badge>
                   </div>
                   <Progress value={summary.top.score} className="h-1.5" />
                   <div className="grid grid-cols-3 gap-2 pt-2 text-center">
                     <div>
-                      <div className="text-[10px] text-muted-foreground flex items-center justify-center gap-1"><Truck className="h-3 w-3" />{t('reports.supplierPerformance.onTime', 'On-time')}</div>
+                      <div className="text-px-10 text-muted-foreground flex items-center justify-center gap-1"><Truck className="h-3 w-3" />{t('reports.supplierPerformance.onTime', 'On-time')}</div>
                       <div className="text-xs font-semibold">{summary.top.onTimePct === null ? '—' : `${Math.round(summary.top.onTimePct)}%`}</div>
                     </div>
                     <div>
-                      <div className="text-[10px] text-muted-foreground flex items-center justify-center gap-1"><Clock className="h-3 w-3" />{t('reports.supplierPerformance.avgLead', 'Lead')}</div>
+                      <div className="text-px-10 text-muted-foreground flex items-center justify-center gap-1"><Clock className="h-3 w-3" />{t('reports.supplierPerformance.avgLead', 'Lead')}</div>
                       <div className="text-xs font-semibold">{summary.top.avgLead === null ? '—' : `${Math.round(summary.top.avgLead)}d`}</div>
                     </div>
                     <div>
-                      <div className="text-[10px] text-muted-foreground flex items-center justify-center gap-1"><FileCheck className="h-3 w-3" />{t('reports.supplierPerformance.paidPct', 'Paid')}</div>
+                      <div className="text-px-10 text-muted-foreground flex items-center justify-center gap-1"><FileCheck className="h-3 w-3" />{t('reports.supplierPerformance.paidPct', 'Paid')}</div>
                       <div className="text-xs font-semibold">{summary.top.paidPct === null ? '—' : `${Math.round(summary.top.paidPct)}%`}</div>
                     </div>
                   </div>
@@ -461,7 +461,7 @@ function SupplierPerformanceContent() {
           <CardContent>
             <div className="grid lg:grid-cols-3 gap-4">
               <div>
-                <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">{t('reports.supplierPerformance.score', 'Score')}</div>
+                <div className="text-px-10 uppercase tracking-wide text-muted-foreground mb-1">{t('reports.supplierPerformance.score', 'Score')}</div>
                 <ResponsiveContainer width="100%" height={180}>
                   <LineChart data={trendData} margin={{ top: 5, right: 8, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -473,7 +473,7 @@ function SupplierPerformanceContent() {
                 </ResponsiveContainer>
               </div>
               <div>
-                <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">{t('reports.supplierPerformance.onTime', 'On-time %')}</div>
+                <div className="text-px-10 uppercase tracking-wide text-muted-foreground mb-1">{t('reports.supplierPerformance.onTime', 'On-time %')}</div>
                 <ResponsiveContainer width="100%" height={180}>
                   <LineChart data={trendData} margin={{ top: 5, right: 8, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -485,7 +485,7 @@ function SupplierPerformanceContent() {
                 </ResponsiveContainer>
               </div>
               <div>
-                <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">{t('reports.supplierPerformance.spend', 'Spend')} ({currency.code})</div>
+                <div className="text-px-10 uppercase tracking-wide text-muted-foreground mb-1">{t('reports.supplierPerformance.spend', 'Spend')} ({currency.code})</div>
                 <ResponsiveContainer width="100%" height={180}>
                   <LineChart data={trendData} margin={{ top: 5, right: 8, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -531,7 +531,7 @@ function SupplierPerformanceContent() {
                       <TableRow key={r.supplierId} onClick={() => setSelectedId(r.supplierId)} className="cursor-pointer hover:bg-muted/50">
                         <TableCell className="text-xs font-medium">{r.supplierName}</TableCell>
                         <TableCell className="text-xs text-center">
-                          <Badge variant={grade.variant} className="text-[10px] font-bold">{grade.letter}</Badge>
+                          <Badge variant={grade.variant} className="text-px-10 font-bold">{grade.letter}</Badge>
                         </TableCell>
                         <TableCell className="text-xs">
                           <div className="flex items-center gap-2">
@@ -543,7 +543,7 @@ function SupplierPerformanceContent() {
                         <TableCell className="text-xs text-right font-medium tabular-nums">{fmt(r.totalSpend)}</TableCell>
                         <TableCell className="text-xs text-center">
                           {r.onTimePct === null ? <span className="text-muted-foreground">—</span> : (
-                            <Badge variant={r.onTimePct >= 80 ? 'default' : r.onTimePct >= 50 ? 'secondary' : 'destructive'} className="text-[10px]">{Math.round(r.onTimePct)}%</Badge>
+                            <Badge variant={r.onTimePct >= 80 ? 'default' : r.onTimePct >= 50 ? 'secondary' : 'destructive'} className="text-px-10">{Math.round(r.onTimePct)}%</Badge>
                           )}
                         </TableCell>
                         <TableCell className="text-xs text-center">{r.avgLead === null ? <span className="text-muted-foreground">—</span> : `${Math.round(r.avgLead)}d`}</TableCell>
@@ -551,7 +551,7 @@ function SupplierPerformanceContent() {
                         <TableCell className="text-xs text-center">{r.paidPct === null ? <span className="text-muted-foreground">—</span> : `${Math.round(r.paidPct)}%`}</TableCell>
                         <TableCell className="text-xs text-center">
                           {r.invoiceOverdueCount > 0
-                            ? <Badge variant="destructive" className="text-[10px]">{r.invoiceOverdueCount}</Badge>
+                            ? <Badge variant="destructive" className="text-px-10">{r.invoiceOverdueCount}</Badge>
                             : <span className="text-muted-foreground">0</span>}
                         </TableCell>
                       </TableRow>
@@ -563,7 +563,7 @@ function SupplierPerformanceContent() {
           </CardContent>
         </Card>
 
-        <p className="text-[10px] text-muted-foreground text-center">
+        <p className="text-px-10 text-muted-foreground text-center">
           {t('reports.supplierPerformance.scoreFormula', 'Score = 60% on-time delivery + 30% paid invoices + 10% lead-time efficiency')}
         </p>
       </div>
@@ -622,7 +622,7 @@ function SupplierDetailDrawer({ supplierId, onClose, rows, orders, invoices, fmt
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <SheetTitle className="text-base truncate">{row.supplierName}</SheetTitle>
-                  <SheetDescription className="text-[11px]">
+                  <SheetDescription className="text-px-11">
                     {t('reports.supplierPerformance.subtitle', 'On-time delivery, lead time and spend per supplier')}
                   </SheetDescription>
                 </div>
@@ -649,7 +649,7 @@ function SupplierDetailDrawer({ supplierId, onClose, rows, orders, invoices, fmt
                     <div key={k.label} className="flex items-center gap-2 p-2 rounded-md border bg-card">
                       <div className="p-1.5 rounded bg-primary/10"><k.icon className="h-3.5 w-3.5 text-primary" /></div>
                       <div className="min-w-0">
-                        <div className="text-[10px] uppercase tracking-wide text-muted-foreground truncate">{k.label}</div>
+                        <div className="text-px-10 uppercase tracking-wide text-muted-foreground truncate">{k.label}</div>
                         <div className="text-xs font-semibold truncate">{k.value}</div>
                       </div>
                     </div>
@@ -658,8 +658,8 @@ function SupplierDetailDrawer({ supplierId, onClose, rows, orders, invoices, fmt
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-[11px] text-muted-foreground">{t('reports.supplierPerformance.score', 'Score')}</span>
-                    <span className="text-[11px] font-semibold tabular-nums">{row.score}/100</span>
+                    <span className="text-px-11 text-muted-foreground">{t('reports.supplierPerformance.score', 'Score')}</span>
+                    <span className="text-px-11 font-semibold tabular-nums">{row.score}/100</span>
                   </div>
                   <Progress value={row.score} className="h-2" />
                 </div>
@@ -685,11 +685,11 @@ function SupplierDetailDrawer({ supplierId, onClose, rows, orders, invoices, fmt
                         <Table>
                           <TableHeader>
                             <TableRow>
-                              <TableHead className="text-[10px] h-8">#</TableHead>
-                              <TableHead className="text-[10px] h-8">{t('reports.supplierPerformance.date', 'Date')}</TableHead>
-                              <TableHead className="text-[10px] h-8">{t('reports.supplierPerformance.status', 'Status')}</TableHead>
-                              <TableHead className="text-[10px] h-8 text-right">{t('reports.supplierPerformance.spend', 'Total')}</TableHead>
-                              <TableHead className="text-[10px] h-8 w-8"></TableHead>
+                              <TableHead className="text-px-10 h-8">#</TableHead>
+                              <TableHead className="text-px-10 h-8">{t('reports.supplierPerformance.date', 'Date')}</TableHead>
+                              <TableHead className="text-px-10 h-8">{t('reports.supplierPerformance.status', 'Status')}</TableHead>
+                              <TableHead className="text-px-10 h-8 text-right">{t('reports.supplierPerformance.spend', 'Total')}</TableHead>
+                              <TableHead className="text-px-10 h-8 w-8"></TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -698,7 +698,7 @@ function SupplierDetailDrawer({ supplierId, onClose, rows, orders, invoices, fmt
                                 <TableCell className="text-xs font-medium py-2">{po.orderNumber}</TableCell>
                                 <TableCell className="text-xs py-2">{po.orderDate?.slice(0, 10) || '—'}</TableCell>
                                 <TableCell className="py-2">
-                                  <Badge variant={statusVariant(po.status)} className="text-[10px]">{po.status}</Badge>
+                                  <Badge variant={statusVariant(po.status)} className="text-px-10">{po.status}</Badge>
                                 </TableCell>
                                 <TableCell className="text-xs text-right tabular-nums py-2">{fmt(po.grandTotal)}</TableCell>
                                 <TableCell className="py-2">
@@ -722,11 +722,11 @@ function SupplierDetailDrawer({ supplierId, onClose, rows, orders, invoices, fmt
                         <Table>
                           <TableHeader>
                             <TableRow>
-                              <TableHead className="text-[10px] h-8">#</TableHead>
-                              <TableHead className="text-[10px] h-8">{t('reports.supplierPerformance.date', 'Date')}</TableHead>
-                              <TableHead className="text-[10px] h-8">{t('reports.supplierPerformance.status', 'Status')}</TableHead>
-                              <TableHead className="text-[10px] h-8 text-right">{t('reports.supplierPerformance.spend', 'Total')}</TableHead>
-                              <TableHead className="text-[10px] h-8 w-8"></TableHead>
+                              <TableHead className="text-px-10 h-8">#</TableHead>
+                              <TableHead className="text-px-10 h-8">{t('reports.supplierPerformance.date', 'Date')}</TableHead>
+                              <TableHead className="text-px-10 h-8">{t('reports.supplierPerformance.status', 'Status')}</TableHead>
+                              <TableHead className="text-px-10 h-8 text-right">{t('reports.supplierPerformance.spend', 'Total')}</TableHead>
+                              <TableHead className="text-px-10 h-8 w-8"></TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -735,7 +735,7 @@ function SupplierDetailDrawer({ supplierId, onClose, rows, orders, invoices, fmt
                                 <TableCell className="text-xs font-medium py-2">{inv.invoiceNumber}</TableCell>
                                 <TableCell className="text-xs py-2">{inv.invoiceDate?.slice(0, 10) || '—'}</TableCell>
                                 <TableCell className="py-2">
-                                  <Badge variant={statusVariant(inv.status)} className="text-[10px]">{inv.status}</Badge>
+                                  <Badge variant={statusVariant(inv.status)} className="text-px-10">{inv.status}</Badge>
                                 </TableCell>
                                 <TableCell className="text-xs text-right tabular-nums py-2">{fmt(inv.grandTotal)}</TableCell>
                                 <TableCell className="py-2">

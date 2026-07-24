@@ -144,7 +144,7 @@ export function HumanCheck({ verified, onVerifiedChange }: HumanCheckProps) {
 
         {/* Label */}
         <div className="flex-1 min-w-0">
-          <div className="text-[13px] font-medium text-foreground leading-tight">
+          <div className="text-px-13 font-medium text-foreground leading-tight">
             {isOk
               ? t('auth.captcha.verified_short', 'Succès !')
               : isFail
@@ -154,14 +154,14 @@ export function HumanCheck({ verified, onVerifiedChange }: HumanCheckProps) {
               : t('auth.captcha.title')}
           </div>
           {isFail && (
-            <div className="text-[11px] text-destructive mt-0.5 truncate">{reason}</div>
+            <div className="text-px-11 text-destructive mt-0.5 truncate">{reason}</div>
           )}
         </div>
 
         {/* Cloudflare branding */}
         <div className="flex flex-col items-end shrink-0 pl-2">
           <CloudflareLogo className="h-8 w-auto" />
-          <div className="flex items-center gap-1 mt-0.5 text-[10px] leading-none text-muted-foreground">
+          <div className="flex items-center gap-1 mt-0.5 text-px-10 leading-none text-muted-foreground">
             <a
               href="https://www.cloudflare.com/fr-fr/privacypolicy/"
               target="_blank"

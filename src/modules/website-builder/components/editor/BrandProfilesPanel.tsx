@@ -91,7 +91,7 @@ export function BrandProfilesPanel({ currentTheme, onApplyTheme }: BrandProfiles
     <ScrollArea className="h-full">
       <div className="p-3 space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70 flex items-center gap-1.5">
+          <h3 className="text-px-11 font-semibold uppercase tracking-widest text-muted-foreground/70 flex items-center gap-1.5">
             <Palette className="h-3.5 w-3.5" />{t('wb:brands.brandProfiles')}
           </h3>
           <Button variant="outline" size="icon" className="h-5 w-5 rounded-md" onClick={() => { setNewName(''); setShowCreate(true); }}>
@@ -99,7 +99,7 @@ export function BrandProfilesPanel({ currentTheme, onApplyTheme }: BrandProfiles
           </Button>
         </div>
 
-        <p className="text-[10px] text-muted-foreground/60 leading-relaxed">{t('wb:brands.brandDesc')}</p>
+        <p className="text-px-10 text-muted-foreground/60 leading-relaxed">{t('wb:brands.brandDesc')}</p>
 
         {loading ? (
           <div className="text-center py-8">
@@ -123,7 +123,7 @@ export function BrandProfilesPanel({ currentTheme, onApplyTheme }: BrandProfiles
                         <p className="text-xs font-semibold truncate">{profile.name}</p>
                         {isActive && <Check className="h-3 w-3 text-primary shrink-0" />}
                       </div>
-                      {profile.description && <p className="text-[10px] text-muted-foreground truncate">{profile.description}</p>}
+                      {profile.description && <p className="text-px-10 text-muted-foreground truncate">{profile.description}</p>}
                     </div>
                     {!profile.isBuiltIn && (
                       <Button variant="ghost" size="icon" className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" disabled={deletingId === profile.id} onClick={(e) => { e.stopPropagation(); handleDelete(profile.id); }}>
@@ -131,7 +131,7 @@ export function BrandProfilesPanel({ currentTheme, onApplyTheme }: BrandProfiles
                       </Button>
                     )}
                   </div>
-                  <div className="mt-2 h-6 rounded-md overflow-hidden flex text-[8px] font-bold">
+                  <div className="mt-2 h-6 rounded-md overflow-hidden flex text-px-8 font-bold">
                     <div className="flex-1 flex items-center justify-center" style={{ backgroundColor: profile.theme.backgroundColor, color: profile.theme.textColor }}>Aa</div>
                     <div className="flex-1 flex items-center justify-center text-white" style={{ backgroundColor: profile.theme.primaryColor }}>Btn</div>
                     <div className="flex-1 flex items-center justify-center text-white" style={{ backgroundColor: profile.theme.accentColor }}>Acc</div>
@@ -153,7 +153,7 @@ export function BrandProfilesPanel({ currentTheme, onApplyTheme }: BrandProfiles
           <div className="space-y-3">
             <Input placeholder={t('wb:brands.brandNamePlaceholder')} value={newName} onChange={(e) => setNewName(e.target.value)} autoFocus />
             <Input placeholder={t('wb:brands.descriptionPlaceholder')} value={newDesc} onChange={(e) => setNewDesc(e.target.value)} />
-            <p className="text-[10px] text-muted-foreground">{t('wb:brands.createBrandDesc')}</p>
+            <p className="text-px-10 text-muted-foreground">{t('wb:brands.createBrandDesc')}</p>
             <div className="flex -space-x-1">
               {[currentTheme.primaryColor, currentTheme.accentColor, currentTheme.backgroundColor, currentTheme.textColor].map((color, i) => (
                 <div key={i} className="w-8 h-8 rounded-full border-2 border-white shadow-sm" style={{ backgroundColor: color }} />

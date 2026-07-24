@@ -134,7 +134,7 @@ export function ExternalEndpointsList() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <p className="font-semibold text-sm text-foreground leading-snug line-clamp-1 flex-1">{ep.name}</p>
-                        <Badge variant={ep.isActive ? 'default' : 'secondary'} className="text-[10px] px-2 py-0.5 shrink-0">
+                        <Badge variant={ep.isActive ? 'default' : 'secondary'} className="text-px-10 px-2 py-0.5 shrink-0">
                           {ep.isActive ? t('external.detail.active') : t('external.detail.inactive')}
                         </Badge>
                       </div>
@@ -147,11 +147,11 @@ export function ExternalEndpointsList() {
                     {/* Direction badge */}
                     <div className="flex items-center gap-1.5">
                       {isBidirectional ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-blue-600 bg-blue-50 dark:bg-blue-950/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-full px-2 py-0.5">
+                        <span className="inline-flex items-center gap-1 text-px-10 font-medium text-blue-600 bg-blue-50 dark:bg-blue-950/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-full px-2 py-0.5">
                           <ArrowUpDown className="h-3 w-3" />{t('external.detail.flowBidirectional', 'In + Out')}
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-full px-2 py-0.5">
+                        <span className="inline-flex items-center gap-1 text-px-10 font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-full px-2 py-0.5">
                           <ArrowDownLeft className="h-3 w-3" />{t('external.detail.flowInbound', 'Inbound')}
                         </span>
                       )}
@@ -236,11 +236,11 @@ export function ExternalEndpointsList() {
                     </TableCell>
                     <TableCell className="hidden sm:table-cell">
                       {isBidirectional ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-600 bg-blue-50 dark:bg-blue-950/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-full px-2 py-0.5">
+                        <span className="inline-flex items-center gap-1 text-px-11 font-medium text-blue-600 bg-blue-50 dark:bg-blue-950/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-full px-2 py-0.5">
                           <ArrowUpDown className="h-3 w-3" />{t('external.detail.flowBidirectional', 'In + Out')}
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-full px-2 py-0.5">
+                        <span className="inline-flex items-center gap-1 text-px-11 font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-full px-2 py-0.5">
                           <ArrowDownLeft className="h-3 w-3" />{t('external.detail.flowInbound', 'Inbound')}
                         </span>
                       )}

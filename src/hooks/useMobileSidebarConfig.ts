@@ -149,8 +149,8 @@ export const ANIMATION_DURATIONS: Record<MobileSidebarAnimation, { open: string;
 };
 
 export const FONT_SIZE_MAP: Record<MobileSidebarFontSize, { label: string; sub: string }> = {
-  small: { label: 'text-xs', sub: 'text-[10px]' },
-  medium: { label: 'text-sm', sub: 'text-[11px]' },
+  small: { label: 'text-xs', sub: 'text-px-10' },
+  medium: { label: 'text-sm', sub: 'text-px-11' },
   large: { label: 'text-base', sub: 'text-xs' },
 };
 

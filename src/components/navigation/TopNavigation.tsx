@@ -613,7 +613,7 @@ export function TopNavigation() {
                          size="md"
                        />
                        <div className="min-w-0">
-                         <p className="text-[13px] font-medium text-sidebar-foreground leading-tight truncate">
+                         <p className="text-px-13 font-medium text-sidebar-foreground leading-tight truncate">
                            {fullName}
                          </p>
                        </div>
@@ -628,7 +628,7 @@ export function TopNavigation() {
                    <div className="px-3 pt-3 pb-1">
                      <button
                        onClick={() => { setIsMobileSidebarOpen(false); setIsSearchModalOpen(true); }}
-                       className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-sidebar-border/40 bg-sidebar-foreground/[0.02] hover:bg-sidebar-foreground/[0.05] text-muted-foreground/50 hover:text-muted-foreground/70 transition-all duration-150 text-[12px]"
+                       className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-sidebar-border/40 bg-sidebar-foreground/[0.02] hover:bg-sidebar-foreground/[0.05] text-muted-foreground/50 hover:text-muted-foreground/70 transition-all duration-150 text-px-12"
                      >
                        <Search className="h-3.5 w-3.5" />
                        <span className="flex-1 text-left">{t('sidebar.search', 'Search...')}</span>
@@ -641,7 +641,7 @@ export function TopNavigation() {
                        {/* Workspace Section */}
                        <Collapsible open={isWorkspaceOpen} onOpenChange={() => setIsWorkspaceOpen(!isWorkspaceOpen)}>
                          <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-1.5 mb-1 text-muted-foreground/35 hover:text-muted-foreground/55 transition-all duration-150 ease-out group rounded-md hover:bg-sidebar-foreground/[0.03]">
-                           <span className="text-[11px] font-bold uppercase tracking-[0.1em] select-none">{t('workspace')}</span>
+                           <span className="text-px-11 font-bold uppercase tracking-[0.1em] select-none">{t('workspace')}</span>
                            <ChevronDown className={`h-3 w-3 opacity-0 group-hover:opacity-100 transition-all duration-200 ${isWorkspaceOpen ? '' : '-rotate-90'}`} />
                          </CollapsibleTrigger>
                          <CollapsibleContent className="overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
@@ -654,7 +654,7 @@ export function TopNavigation() {
                        {/* CRM Section */}
                        <Collapsible open={isCrmOpen} onOpenChange={() => setIsCrmOpen(!isCrmOpen)} className="mt-4">
                          <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-1.5 mb-1 text-muted-foreground/35 hover:text-muted-foreground/55 transition-all duration-150 ease-out group rounded-md hover:bg-sidebar-foreground/[0.03]">
-                           <span className="text-[11px] font-bold uppercase tracking-[0.1em] select-none">{t('crm')}</span>
+                           <span className="text-px-11 font-bold uppercase tracking-[0.1em] select-none">{t('crm')}</span>
                            <ChevronDown className={`h-3 w-3 opacity-0 group-hover:opacity-100 transition-all duration-200 ${isCrmOpen ? '' : '-rotate-90'}`} />
                          </CollapsibleTrigger>
                          <CollapsibleContent className="overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
@@ -667,7 +667,7 @@ export function TopNavigation() {
                        {/* Service Section */}
                        <Collapsible open={isServiceOpen} onOpenChange={() => setIsServiceOpen(!isServiceOpen)} className="mt-4">
                          <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-1.5 mb-1 text-muted-foreground/35 hover:text-muted-foreground/55 transition-all duration-150 ease-out group rounded-md hover:bg-sidebar-foreground/[0.03]">
-                           <span className="text-[11px] font-bold uppercase tracking-[0.1em] select-none">{t('service')}</span>
+                           <span className="text-px-11 font-bold uppercase tracking-[0.1em] select-none">{t('service')}</span>
                            <ChevronDown className={`h-3 w-3 opacity-0 group-hover:opacity-100 transition-all duration-200 ${isServiceOpen ? '' : '-rotate-90'}`} />
                          </CollapsibleTrigger>
                          <CollapsibleContent className="overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
@@ -680,7 +680,7 @@ export function TopNavigation() {
                        {/* System Section */}
                        <Collapsible open={isSystemOpen} onOpenChange={() => setIsSystemOpen(!isSystemOpen)} className="mt-4">
                          <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-1.5 mb-1 text-muted-foreground/35 hover:text-muted-foreground/55 transition-all duration-150 ease-out group rounded-md hover:bg-sidebar-foreground/[0.03]">
-                           <span className="text-[11px] font-bold uppercase tracking-[0.1em] select-none">{t('system')}</span>
+                           <span className="text-px-11 font-bold uppercase tracking-[0.1em] select-none">{t('system')}</span>
                            <ChevronDown className={`h-3 w-3 opacity-0 group-hover:opacity-100 transition-all duration-200 ${isSystemOpen ? '' : '-rotate-90'}`} />
                          </CollapsibleTrigger>
                          <CollapsibleContent className="overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
@@ -727,7 +727,7 @@ export function TopNavigation() {
               >
                 {offlineEnabled ? "Offline" : "Online"}
                 {pendingCount > 0 && (
-                  <span className="absolute -top-2 -right-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] leading-none px-1">
+                  <span className="absolute -top-2 -right-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-px-10 leading-none px-1">
                     {pendingCount > 99 ? '99+' : pendingCount}
                   </span>
                 )}
@@ -767,7 +767,7 @@ export function TopNavigation() {
                     >
                       <Bell className={`h-4 w-4 ${hasNewNotifications ? 'text-primary' : ''}`} />
                       {unreadCount > 0 && (
-                        <span className={`absolute -top-1 -right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] leading-none px-1 ${hasNewNotifications ? 'animate-bounce' : ''}`}>
+                        <span className={`absolute -top-1 -right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary text-primary-foreground text-px-10 leading-none px-1 ${hasNewNotifications ? 'animate-bounce' : ''}`}>
                           {unreadCount > 99 ? '99+' : unreadCount}
                         </span>
                       )}
@@ -812,7 +812,7 @@ export function TopNavigation() {
                                   <div className={`mt-1.5 h-2 w-2 rounded-full flex-shrink-0 ${n.read ? 'bg-muted-foreground/40' : getTypeColor(n.type)}`} />
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-0.5">
-                                      <Badge variant={badge.variant} className="text-[10px] px-1.5 py-0">
+                                      <Badge variant={badge.variant} className="text-px-10 px-1.5 py-0">
                                         {badge.label}
                                       </Badge>
                                       <span className="text-xs text-muted-foreground">{n.time}</span>
@@ -1004,7 +1004,7 @@ export function TopNavigation() {
           >
             <Search className="h-4 w-4" />
             <span className="text-sm">{t('search.placeholder', 'Search...')}</span>
-            <kbd className="ml-auto pointer-events-none text-[10px] text-muted-foreground/60 border border-border rounded px-1.5 py-0.5">⌘K</kbd>
+            <kbd className="ml-auto pointer-events-none text-px-10 text-muted-foreground/60 border border-border rounded px-1.5 py-0.5">⌘K</kbd>
           </Button>
         </div>
       </div>

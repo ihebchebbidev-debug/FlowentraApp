@@ -83,7 +83,7 @@ function ThemePicker() {
   ];
   return (
     <div className="px-2 py-1.5">
-      <p className="mb-1.5 px-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+      <p className="mb-1.5 px-0.5 text-px-10 font-semibold uppercase tracking-wider text-muted-foreground">
         Theme
       </p>
       <div className="grid grid-cols-3 gap-1 rounded-md bg-muted/50 p-1">
@@ -99,7 +99,7 @@ function ThemePicker() {
                 setTheme(o.value);
               }}
               className={cn(
-                "flex flex-col items-center gap-0.5 rounded px-1 py-1.5 text-[10px] font-medium transition-colors",
+                "flex flex-col items-center gap-0.5 rounded px-1 py-1.5 text-px-10 font-medium transition-colors",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 active
                   ? "bg-white dark:bg-background text-foreground shadow-sm"
@@ -604,7 +604,7 @@ export function WorkspaceSidebar() {
           <div className="flex items-center justify-between px-2 pb-1 pt-2">
             <p
               id="workspaces-heading"
-              className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+              className="text-px-10 font-semibold uppercase tracking-wider text-muted-foreground"
             >
               Workspaces
             </p>

@@ -115,19 +115,19 @@ function SortableLanguageItem({ lang, isDefault, canDelete, onSetDefault, onRemo
       <span className="text-base">{FLAG_EMOJIS[lang.code] || '🌐'}</span>
       <div className="flex-1 min-w-0">
         <p className="text-xs font-medium truncate">{lang.label}</p>
-        <p className="text-[10px] text-muted-foreground">
+        <p className="text-px-10 text-muted-foreground">
           {lang.code.toUpperCase()} • {lang.direction.toUpperCase()}
         </p>
       </div>
       {isDefault ? (
-        <span className="text-[9px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+        <span className="text-px-9 font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded">
           Default
         </span>
       ) : (
         <Button
           variant="ghost"
           size="sm"
-          className="h-5 text-[9px] px-1.5"
+          className="h-5 text-px-9 px-1.5"
           onClick={onSetDefault}
         >
           Set Default
@@ -292,7 +292,7 @@ export function LanguageSwitcherEditor({
       <div className="flex items-center justify-between py-1">
         <div className="flex items-center gap-2">
           <Globe className="h-3.5 w-3.5 text-muted-foreground" />
-          <Label className="text-[11px] font-medium text-foreground/70">Show Language Switcher</Label>
+          <Label className="text-px-11 font-medium text-foreground/70">Show Language Switcher</Label>
         </div>
         <Switch 
           checked={showLanguageSwitcher} 
@@ -304,12 +304,12 @@ export function LanguageSwitcherEditor({
         <div className="space-y-3 mt-3 pt-3 border-t border-border/30">
           {/* Variant Selector */}
           <div className="space-y-1.5">
-            <Label className="text-[11px] font-medium text-foreground/70">Style</Label>
+            <Label className="text-px-11 font-medium text-foreground/70">Style</Label>
             <div className="grid grid-cols-5 gap-1">
               {VARIANT_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
-                  className={`flex flex-col items-center justify-center p-2 rounded-lg border text-[10px] transition-all ${
+                  className={`flex flex-col items-center justify-center p-2 rounded-lg border text-px-10 transition-all ${
                     languageSwitcherVariant === opt.value
                       ? 'border-primary bg-primary/10 text-primary'
                       : 'border-border/40 hover:border-border hover:bg-muted/30'
@@ -327,13 +327,13 @@ export function LanguageSwitcherEditor({
           {/* Languages List */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <Label className="text-[11px] font-medium text-foreground/70">
+              <Label className="text-px-11 font-medium text-foreground/70">
                 Languages ({languages.length})
               </Label>
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 text-[10px] px-2 text-primary"
+                className="h-6 text-px-10 px-2 text-primary"
                 onClick={() => {
                   setShowAddLanguage(!showAddLanguage);
                   setShowCustomForm(false);
@@ -359,7 +359,7 @@ export function LanguageSwitcherEditor({
                 {/* Common Languages Dropdown */}
                 {!showCustomForm && (
                   <>
-                    <Label className="text-[10px] text-muted-foreground">Select from common languages:</Label>
+                    <Label className="text-px-10 text-muted-foreground">Select from common languages:</Label>
                     <Select onValueChange={(code) => {
                       const lang = COMMON_LANGUAGES.find(l => l.code === code);
                       if (lang) handleAddLanguage(lang);
@@ -382,14 +382,14 @@ export function LanguageSwitcherEditor({
 
                     <div className="flex items-center gap-2 pt-1">
                       <div className="flex-1 h-px bg-border/40" />
-                      <span className="text-[9px] text-muted-foreground">or</span>
+                      <span className="text-px-9 text-muted-foreground">or</span>
                       <div className="flex-1 h-px bg-border/40" />
                     </div>
 
                     <Button
                       variant="outline"
                       size="sm"
-                      className="w-full h-7 text-[10px]"
+                      className="w-full h-7 text-px-10"
                       onClick={() => setShowCustomForm(true)}
                     >
                       <Plus className="h-3 w-3 mr-1" />
@@ -402,11 +402,11 @@ export function LanguageSwitcherEditor({
                 {showCustomForm && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-[10px] font-medium">Add Custom Language</Label>
+                      <Label className="text-px-10 font-medium">Add Custom Language</Label>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-5 text-[9px] px-1"
+                        className="h-5 text-px-9 px-1"
                         onClick={() => {
                           setShowCustomForm(false);
                           setCustomError('');
@@ -418,7 +418,7 @@ export function LanguageSwitcherEditor({
 
                     <div className="grid grid-cols-2 gap-2">
                       <div className="space-y-1">
-                        <Label className="text-[9px] text-muted-foreground">Code *</Label>
+                        <Label className="text-px-9 text-muted-foreground">Code *</Label>
                         <Input
                           value={customCode}
                           onChange={(e) => setCustomCode(e.target.value.toLowerCase())}
@@ -428,7 +428,7 @@ export function LanguageSwitcherEditor({
                         />
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-[9px] text-muted-foreground">Direction</Label>
+                        <Label className="text-px-9 text-muted-foreground">Direction</Label>
                         <Select value={customDirection} onValueChange={(v) => setCustomDirection(v as 'ltr' | 'rtl')}>
                           <SelectTrigger className="h-7 text-xs">
                             <SelectValue />
@@ -442,7 +442,7 @@ export function LanguageSwitcherEditor({
                     </div>
 
                     <div className="space-y-1">
-                      <Label className="text-[9px] text-muted-foreground">Language Name *</Label>
+                      <Label className="text-px-9 text-muted-foreground">Language Name *</Label>
                       <Input
                         value={customLabel}
                         onChange={(e) => setCustomLabel(e.target.value)}
@@ -453,12 +453,12 @@ export function LanguageSwitcherEditor({
                     </div>
 
                     {customError && (
-                      <p className="text-[10px] text-destructive">{customError}</p>
+                      <p className="text-px-10 text-destructive">{customError}</p>
                     )}
 
                     <Button
                       size="sm"
-                      className="w-full h-7 text-[10px]"
+                      className="w-full h-7 text-px-10"
                       onClick={handleAddCustomLanguage}
                     >
                       <Plus className="h-3 w-3 mr-1" />
@@ -495,7 +495,7 @@ export function LanguageSwitcherEditor({
             </DndContext>
 
             {languages.length === 0 && (
-              <p className="text-[10px] text-muted-foreground text-center py-3">
+              <p className="text-px-10 text-muted-foreground text-center py-3">
                 No languages configured. Add at least one language.
               </p>
             )}
@@ -503,7 +503,7 @@ export function LanguageSwitcherEditor({
 
           {/* Drag hint */}
           {languages.length > 1 && (
-            <p className="text-[10px] text-muted-foreground/60 text-center pt-2 border-t border-border/20">
+            <p className="text-px-10 text-muted-foreground/60 text-center pt-2 border-t border-border/20">
               💡 Drag to reorder languages. First language is shown by default in some styles.
             </p>
           )}

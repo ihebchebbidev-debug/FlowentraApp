@@ -90,7 +90,7 @@ const PO_STATUS_LABEL: Record<string, string> = {
 
 function StatusBadge({ status, small }: { status: string; small?: boolean }) {
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 font-medium ${small ? 'text-[10px]' : 'text-xs'} ${PO_STATUS_CLS[status] ?? 'bg-muted text-muted-foreground'}`}>
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 font-medium ${small ? 'text-px-10' : 'text-xs'} ${PO_STATUS_CLS[status] ?? 'bg-muted text-muted-foreground'}`}>
       {PO_STATUS_LABEL[status] ?? status}
     </span>
   );
@@ -295,7 +295,7 @@ function PageOrdersList({ state }: { state: PurchaseDemoState }) {
             className={`bg-card border rounded-lg p-2.5 cursor-default transition-all
               ${state.highlightedStatKey === s.key ? 'border-primary ring-1 ring-primary/30 shadow-md' : 'border-border'}`}
           >
-            <div className="flex items-center gap-1.5 text-muted-foreground text-[10px] font-medium">{s.icon}{s.label}</div>
+            <div className="flex items-center gap-1.5 text-muted-foreground text-px-10 font-medium">{s.icon}{s.label}</div>
             <p className="text-sm font-bold text-foreground mt-0.5">{s.value}</p>
           </div>
         ))}
@@ -308,7 +308,7 @@ function PageOrdersList({ state }: { state: PurchaseDemoState }) {
           <div className="h-8 pl-8 pr-3 rounded-md border border-border bg-background text-xs text-muted-foreground flex items-center">Search orders…</div>
         </div>
         <div id="po-demo-filter-btn" className={`h-8 px-3 rounded-md border text-xs flex items-center gap-1.5 cursor-default ${state.showFilters ? 'border-primary text-primary bg-primary/5' : 'border-border text-muted-foreground'}`}>
-          <Filter className="h-3.5 w-3.5" /> Filters {state.showFilters && <span className="h-4 w-4 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center">2</span>}
+          <Filter className="h-3.5 w-3.5" /> Filters {state.showFilters && <span className="h-4 w-4 rounded-full bg-primary text-primary-foreground text-px-10 flex items-center justify-center">2</span>}
         </div>
         <div className="ml-auto flex items-center gap-1 border border-border rounded-md overflow-hidden" id="po-demo-view-toggle">
           {(['table','list'] as const).map(m => (
@@ -321,7 +321,7 @@ function PageOrdersList({ state }: { state: PurchaseDemoState }) {
 
       {/* Smart filters + saved views bar */}
       <div className="flex flex-wrap items-center gap-1.5 px-4 py-2 border-b border-border/60 bg-muted/20">
-        <span id="po-demo-smart-filters" className="inline-flex items-center gap-1 text-[10px] text-muted-foreground font-medium pr-1">
+        <span id="po-demo-smart-filters" className="inline-flex items-center gap-1 text-px-10 text-muted-foreground font-medium pr-1">
           <TrendingUp className="h-3 w-3" /> Smart filters
         </span>
         {[
@@ -330,18 +330,18 @@ function PageOrdersList({ state }: { state: PurchaseDemoState }) {
           { label: 'Drafts', active: false },
           { label: 'High value (top 10%)', active: false },
         ].map(sf => (
-          <span key={sf.label} className={`h-6 px-2 rounded-full text-[10px] font-medium border cursor-default ${sf.active ? 'bg-primary text-primary-foreground border-primary shadow-sm' : 'bg-card border-border text-foreground'}`}>
+          <span key={sf.label} className={`h-6 px-2 rounded-full text-px-10 font-medium border cursor-default ${sf.active ? 'bg-primary text-primary-foreground border-primary shadow-sm' : 'bg-card border-border text-foreground'}`}>
             {sf.label}
           </span>
         ))}
         <span className="h-4 w-px bg-border mx-1" aria-hidden />
-        <span id="po-demo-saved-views" className="inline-flex items-center gap-1 text-[10px] text-muted-foreground font-medium pr-1">
+        <span id="po-demo-saved-views" className="inline-flex items-center gap-1 text-px-10 text-muted-foreground font-medium pr-1">
           <Star className="h-3 w-3" /> Saved views
         </span>
-        <span className="inline-flex items-center gap-1 h-6 pl-2 pr-1 rounded-full text-[10px] font-medium border bg-card border-border text-foreground cursor-default">
+        <span className="inline-flex items-center gap-1 h-6 pl-2 pr-1 rounded-full text-px-10 font-medium border bg-card border-border text-foreground cursor-default">
           Awaiting GR — Acme <X className="h-2.5 w-2.5 opacity-50" />
         </span>
-        <span className="ml-auto inline-flex items-center gap-1 h-6 px-2 rounded-md border border-border text-[10px] text-muted-foreground cursor-default">
+        <span className="ml-auto inline-flex items-center gap-1 h-6 px-2 rounded-md border border-border text-px-10 text-muted-foreground cursor-default">
           <Plus className="h-3 w-3" /> Save view
         </span>
       </div>
@@ -350,11 +350,11 @@ function PageOrdersList({ state }: { state: PurchaseDemoState }) {
       {state.showFilters && (
         <div className="flex gap-3 px-4 py-2 bg-muted/30 border-b border-border/60">
           <div className="flex flex-col gap-1">
-            <span className="text-[10px] text-muted-foreground font-medium">Status</span>
+            <span className="text-px-10 text-muted-foreground font-medium">Status</span>
             <div className="h-7 px-2.5 rounded-md border border-border bg-background text-xs text-foreground flex items-center gap-2 min-w-[120px]">Ordered <ChevronRight className="h-3 w-3 ml-auto rotate-90 text-muted-foreground" /></div>
           </div>
           <div className="flex flex-col gap-1">
-            <span className="text-[10px] text-muted-foreground font-medium">Payment</span>
+            <span className="text-px-10 text-muted-foreground font-medium">Payment</span>
             <div className="h-7 px-2.5 rounded-md border border-border bg-background text-xs text-foreground flex items-center gap-2 min-w-[120px]">Unpaid <ChevronRight className="h-3 w-3 ml-auto rotate-90 text-muted-foreground" /></div>
           </div>
         </div>
@@ -412,7 +412,7 @@ function PageOrdersList({ state }: { state: PurchaseDemoState }) {
                     <td className="px-3 py-2.5 font-medium text-primary">{po.num}</td>
                     <td className="px-3 py-2.5">
                       <div className="flex items-center gap-2">
-                        <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-[9px] font-bold text-muted-foreground shrink-0">
+                        <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-px-9 font-bold text-muted-foreground shrink-0">
                           {po.supplier.slice(0,2).toUpperCase()}
                         </div>
                         <span className="truncate max-w-[120px]">{po.supplier}</span>
@@ -484,8 +484,8 @@ function PageOrderCreate({ state }: { state: PurchaseDemoState }) {
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-medium text-foreground">Line Items</span>
             <div className="flex items-center gap-2">
-              <span id="po-demo-shortcuts" className="text-[10px] text-muted-foreground">Alt+N add line · Enter next · Ctrl+S save</span>
-              <div className="h-6 px-2 rounded border border-border text-[10px] text-muted-foreground flex items-center gap-1 cursor-default">
+              <span id="po-demo-shortcuts" className="text-px-10 text-muted-foreground">Alt+N add line · Enter next · Ctrl+S save</span>
+              <div className="h-6 px-2 rounded border border-border text-px-10 text-muted-foreground flex items-center gap-1 cursor-default">
                 <Plus className="h-3 w-3" /> Add Article
               </div>
             </div>
@@ -507,7 +507,7 @@ function PageOrderCreate({ state }: { state: PurchaseDemoState }) {
                       <td className="px-3 py-2 text-right">10</td>
                       <td className="px-3 py-2 text-right">
                         1,200 {resolveCurrencyCode()}
-                        <div id="po-demo-last-price" className="text-[10px] text-amber-600">Last: 1,150 {resolveCurrencyCode()}</div>
+                        <div id="po-demo-last-price" className="text-px-10 text-amber-600">Last: 1,150 {resolveCurrencyCode()}</div>
                       </td>
                       <td className="px-3 py-2 text-right">19%</td>
                       <td className="px-3 py-2 text-right font-medium">14,280 {resolveCurrencyCode()}</td>
@@ -587,7 +587,7 @@ function PageOrderDetail({ state }: { state: PurchaseDemoState }) {
         <div className="flex items-center gap-0 overflow-x-auto">
           {stages.map((s, i) => (
             <div key={s} className="flex items-center gap-0">
-              <div className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-md text-[10px] font-medium whitespace-nowrap cursor-default transition-colors
+              <div className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-md text-px-10 font-medium whitespace-nowrap cursor-default transition-colors
                 ${i < currentStageIdx ? 'text-green-700 bg-green-50 dark:text-green-400 dark:bg-green-950/20' :
                   i === currentStageIdx ? 'text-primary bg-primary/10 ring-1 ring-primary/30' :
                   'text-muted-foreground'}`}>
@@ -617,7 +617,7 @@ function PageOrderDetail({ state }: { state: PurchaseDemoState }) {
             >
               {tab.label}
               {tab.count && (
-                <span className="text-[10px] bg-muted text-muted-foreground rounded-full px-1.5 py-0.5">{tab.count}</span>
+                <span className="text-px-10 bg-muted text-muted-foreground rounded-full px-1.5 py-0.5">{tab.count}</span>
               )}
             </button>
           ))}
@@ -678,7 +678,7 @@ function PageOrderDetail({ state }: { state: PurchaseDemoState }) {
             <div id="po-demo-inline-timeline" className="bg-card border border-border rounded-lg p-4">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm font-medium flex items-center gap-2"><Activity className="h-4 w-4 text-muted-foreground" /> Activity</span>
-                <span className="text-[10px] rounded-full border border-border px-1.5 py-0.5 text-muted-foreground">4</span>
+                <span className="text-px-10 rounded-full border border-border px-1.5 py-0.5 text-muted-foreground">4</span>
               </div>
               <div className="space-y-3">
                 {DEMO_ACTIVITIES.slice(0, 3).map((a, i, arr) => (
@@ -691,7 +691,7 @@ function PageOrderDetail({ state }: { state: PurchaseDemoState }) {
                     </div>
                     <div className="min-w-0 pb-1">
                       <p className="text-xs font-medium">{a.detail}</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">{a.date} at {a.time} · {a.user}</p>
+                      <p className="text-px-10 text-muted-foreground mt-0.5">{a.date} at {a.time} · {a.user}</p>
                     </div>
                   </div>
                 ))}
@@ -755,12 +755,12 @@ function PageOrderDetail({ state }: { state: PurchaseDemoState }) {
             {DEMO_ACTIVITIES.slice(0, 4).map(a => (
               <div key={a.id} className="flex items-start gap-3 p-3 bg-card border border-border rounded-lg">
                 <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <span className="text-[10px] font-bold text-primary">{a.user.slice(0,2)}</span>
+                  <span className="text-px-10 font-bold text-primary">{a.user.slice(0,2)}</span>
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs font-medium text-foreground">{a.user} <span className="font-normal text-muted-foreground">{a.action.toLowerCase()}</span> <span className="font-medium text-primary">{a.doc}</span></p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">{a.detail}</p>
-                  <p className="text-[10px] text-muted-foreground/60 mt-0.5">{a.date} at {a.time}</p>
+                  <p className="text-px-11 text-muted-foreground mt-0.5">{a.detail}</p>
+                  <p className="text-px-10 text-muted-foreground/60 mt-0.5">{a.date} at {a.time}</p>
                 </div>
               </div>
             ))}
@@ -991,13 +991,13 @@ function PageInvoicesList({ state: _ }: { state: PurchaseDemoState }) {
                     {si.rs ? <span className="text-amber-600 font-medium">{fmt(si.rs)} {resolveCurrencyCode()}</span> : <span className="text-muted-foreground">—</span>}
                   </td>
                   <td className="px-4 py-2.5">
-                    {si.fel === 'registered' && <span className="text-[10px] text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full font-medium">Registered</span>}
-                    {si.fel === 'pending'    && <span className="text-[10px] text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-full font-medium">Pending</span>}
+                    {si.fel === 'registered' && <span className="text-px-10 text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full font-medium">Registered</span>}
+                    {si.fel === 'pending'    && <span className="text-px-10 text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-full font-medium">Pending</span>}
                     {!si.fel               && <span className="text-muted-foreground">—</span>}
                   </td>
                   <td className="px-4 py-2.5">
-                    {si.tej === 'synced'  && <span className="text-[10px] text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full font-medium">Synced</span>}
-                    {si.tej === 'pending' && <span className="text-[10px] text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-full font-medium">Pending</span>}
+                    {si.tej === 'synced'  && <span className="text-px-10 text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full font-medium">Synced</span>}
+                    {si.tej === 'pending' && <span className="text-px-10 text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-full font-medium">Pending</span>}
                     {!si.tej             && <span className="text-muted-foreground">—</span>}
                   </td>
                 </tr>
@@ -1096,7 +1096,7 @@ function PageInvoiceDetail() {
             <p className="text-xs font-semibold flex items-center gap-1.5"><FileText className="h-3.5 w-3.5 text-blue-500" /> Facture en Ligne</p>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Registration status</span>
-              <span className="text-[10px] text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full font-medium">Pending</span>
+              <span className="text-px-10 text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full font-medium">Pending</span>
             </div>
             <p className="text-muted-foreground">This invoice has not yet been registered on the official e-invoicing platform.</p>
           </div>
@@ -1105,9 +1105,9 @@ function PageInvoiceDetail() {
             <p className="text-xs font-semibold flex items-center gap-1.5"><Download className="h-3.5 w-3.5 text-amber-500" /> TEJ Sync</p>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Export status</span>
-              <span className="text-[10px] text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full font-medium">Pending</span>
+              <span className="text-px-10 text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full font-medium">Pending</span>
             </div>
-            <div className="h-7 px-3 rounded-md border border-border text-[11px] text-muted-foreground flex items-center gap-1.5 cursor-default w-fit">
+            <div className="h-7 px-3 rounded-md border border-border text-px-11 text-muted-foreground flex items-center gap-1.5 cursor-default w-fit">
               <Download className="h-3 w-3" /> Download TEJ XML
             </div>
           </div>
@@ -1165,9 +1165,9 @@ function PageCompliance() {
                   <p className="font-medium">{inv.num}</p>
                   <p className="text-muted-foreground">{inv.supplier.split(' ')[0]}</p>
                 </div>
-                {inv.fel === 'registered' && <span className="text-[10px] text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full font-medium">Registered</span>}
-                {inv.fel === 'pending'    && <span className="text-[10px] text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-full font-medium">Pending</span>}
-                {!inv.fel               && <span className="text-muted-foreground text-[10px]">Not started</span>}
+                {inv.fel === 'registered' && <span className="text-px-10 text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full font-medium">Registered</span>}
+                {inv.fel === 'pending'    && <span className="text-px-10 text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-full font-medium">Pending</span>}
+                {!inv.fel               && <span className="text-muted-foreground text-px-10">Not started</span>}
               </div>
             ))}
           </div>
@@ -1201,7 +1201,7 @@ function PageCompliance() {
                   <p className="font-medium">{inv.num}</p>
                   <p className="text-muted-foreground">{inv.supplier.split(' ')[0]}</p>
                 </div>
-                <div className="h-6 px-2 rounded border border-border bg-background text-[10px] flex items-center gap-1 cursor-default">
+                <div className="h-6 px-2 rounded border border-border bg-background text-px-10 flex items-center gap-1 cursor-default">
                   <Download className="h-2.5 w-2.5" /> Export
                 </div>
               </div>
@@ -1250,7 +1250,7 @@ function PageReports() {
             <div className="p-1.5 rounded bg-primary/10 shrink-0"><c.icon className="h-3.5 w-3.5 text-primary" /></div>
             <div>
               <p className="text-xs font-semibold">{c.title}</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">{c.sub}</p>
+              <p className="text-px-10 text-muted-foreground mt-0.5">{c.sub}</p>
             </div>
             <ArrowRight className="h-3.5 w-3.5 text-muted-foreground ml-auto mt-0.5 shrink-0" />
           </div>
@@ -1282,7 +1282,7 @@ function PageReports() {
             {monthlyBars.map(b => (
               <div key={b.month} className="flex-1 flex flex-col items-center gap-1">
                 <div className="w-full rounded-t bg-primary/70 transition-all" style={{ height: `${Math.max(b.pct * 0.8, b.value > 0 ? 4 : 0)}%` }} />
-                <span className="text-[9px] text-muted-foreground">{b.month}</span>
+                <span className="text-px-9 text-muted-foreground">{b.month}</span>
               </div>
             ))}
           </div>
@@ -1347,7 +1347,7 @@ function PageSupplierPerformance() {
               <span className="w-32 truncate text-right text-muted-foreground shrink-0">{s.name.split(' ')[0]}</span>
               <div className="flex-1 h-6 bg-muted rounded overflow-hidden flex items-center">
                 <div
-                  className={`h-full rounded flex items-center justify-end pr-2 text-[10px] font-medium text-white transition-all ${s.onTime >= 90 ? 'bg-green-500' : s.onTime >= 75 ? 'bg-amber-500' : 'bg-red-500'}`}
+                  className={`h-full rounded flex items-center justify-end pr-2 text-px-10 font-medium text-white transition-all ${s.onTime >= 90 ? 'bg-green-500' : s.onTime >= 75 ? 'bg-amber-500' : 'bg-red-500'}`}
                   style={{ width: `${s.onTime}%` }}
                 >
                   {s.onTime}%
@@ -1392,12 +1392,12 @@ function PageAuditLog() {
         {DEMO_ACTIVITIES.map(a => (
           <div key={a.id} className="bg-card border border-border rounded-lg p-3 flex items-start gap-3">
             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <span className="text-[11px] font-bold text-primary">{a.user.slice(0,2)}</span>
+              <span className="text-px-11 font-bold text-primary">{a.user.slice(0,2)}</span>
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs font-semibold text-foreground">{a.user}</span>
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium
+                <span className={`text-px-10 px-1.5 py-0.5 rounded-full font-medium
                   ${a.action === 'Created'   ? 'bg-blue-100 text-blue-700'    :
                     a.action === 'Validated' ? 'bg-purple-100 text-purple-700' :
                     a.action === 'Ordered'   ? 'bg-indigo-100 text-indigo-700' :
@@ -1407,8 +1407,8 @@ function PageAuditLog() {
                 </span>
                 <span className="text-xs font-medium text-primary">{a.doc}</span>
               </div>
-              <p className="text-[11px] text-muted-foreground mt-0.5">{a.detail}</p>
-              <p className="text-[10px] text-muted-foreground/60 mt-0.5">{a.date} at {a.time}</p>
+              <p className="text-px-11 text-muted-foreground mt-0.5">{a.detail}</p>
+              <p className="text-px-10 text-muted-foreground/60 mt-0.5">{a.date} at {a.time}</p>
             </div>
           </div>
         ))}
@@ -1431,8 +1431,8 @@ function PageOrderPdfPreview() {
             </div>
             <div>
               <p className="text-lg font-bold text-slate-900">Flowentra Demo SARL</p>
-              <p className="text-[10px] text-slate-500">12, Av. Habib Bourguiba · Tunis 1000 · MF 1234567A</p>
-              <p className="text-[10px] text-slate-500">contact@flowentra.tn · +216 71 000 000</p>
+              <p className="text-px-10 text-slate-500">12, Av. Habib Bourguiba · Tunis 1000 · MF 1234567A</p>
+              <p className="text-px-10 text-slate-500">contact@flowentra.tn · +216 71 000 000</p>
             </div>
           </div>
           <div className="text-right">
@@ -1445,14 +1445,14 @@ function PageOrderPdfPreview() {
         {/* Parties */}
         <div className="grid grid-cols-2 gap-4 p-6 text-xs">
           <div className="border border-slate-200 rounded p-3">
-            <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Fournisseur</p>
+            <p className="text-px-10 font-bold text-slate-500 uppercase mb-1">Fournisseur</p>
             <p className="font-semibold text-slate-900">Machinery Parts Ltd</p>
             <p className="text-slate-700">14, Rue de l'Industrie</p>
             <p className="text-slate-700">3000 Sfax · Tunisie</p>
             <p className="text-slate-500 mt-1">MF: 7891011B · contact@machineryparts.tn</p>
           </div>
           <div className="border border-slate-200 rounded p-3">
-            <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Livraison</p>
+            <p className="text-px-10 font-bold text-slate-500 uppercase mb-1">Livraison</p>
             <p className="font-semibold text-slate-900">Entrepôt Sfax</p>
             <p className="text-slate-700">Zone Industrielle Sidi Abid</p>
             <p className="text-slate-500 mt-1">Livraison prévue: <span className="font-semibold text-slate-700">2025-05-10</span></p>
@@ -1502,11 +1502,11 @@ function PageOrderPdfPreview() {
             <div className="flex justify-between text-slate-600"><span>TVA (19%)</span><span>5,189.900</span></div>
             <div className="flex justify-between text-slate-600"><span>Timbre fiscal</span><span>1.000</span></div>
             <div className="flex justify-between font-bold text-base text-slate-900 border-t-2 border-slate-300 pt-1.5 mt-1"><span>Total TTC</span><span>32,500.900 {resolveCurrencyCode()}</span></div>
-            <p className="text-[10px] text-slate-500 italic mt-2">Arrêté la présente commande à la somme de trente-deux mille cinq cents dinars et neuf cents millimes.</p>
+            <p className="text-px-10 text-slate-500 italic mt-2">Arrêté la présente commande à la somme de trente-deux mille cinq cents dinars et neuf cents millimes.</p>
           </div>
         </div>
 
-        <div className="border-t border-slate-200 px-6 py-3 flex items-center justify-between text-[10px] text-slate-500">
+        <div className="border-t border-slate-200 px-6 py-3 flex items-center justify-between text-px-10 text-slate-500">
           <span>Document généré par Flowentra · {new Date().toLocaleDateString('fr-TN')}</span>
           <span>Page 1 / 1</span>
         </div>
@@ -1682,7 +1682,7 @@ function TejXmlActions({ id, filename, xml }: { id?: string; filename: string; x
 function XmlLine({ n, indent, content, highlight }: { n: number; indent: number; content: React.ReactNode; highlight?: boolean }) {
   return (
     <div className={`grid grid-cols-[2.5rem_1fr] gap-2 transition-colors ${highlight ? 'bg-amber-100/60 dark:bg-amber-500/15' : ''}`}>
-      <span className="text-right text-[10px] text-muted-foreground/60 select-none pr-2 border-r border-border/40 py-[1px]">{n}</span>
+      <span className="text-right text-px-10 text-muted-foreground/60 select-none pr-2 border-r border-border/40 py-[1px]">{n}</span>
       <span className="whitespace-pre py-[1px]" style={{ paddingLeft: `${indent * 0.75}rem` }}>{content}</span>
     </div>
   );
@@ -1734,7 +1734,7 @@ function PageOrderTejXml({ state }: { state: PurchaseDemoState }) {
         <TejXmlActions id="po-demo-tej-xml-download" filename="tej-PO-2025-044.xml" xml={TEJ_PO_XML} />
       </div>
 
-      <div className="bg-slate-50 dark:bg-slate-900/40 border border-border rounded-lg overflow-x-auto font-mono text-[11px] leading-relaxed py-3">
+      <div className="bg-slate-50 dark:bg-slate-900/40 border border-border rounded-lg overflow-x-auto font-mono text-px-11 leading-relaxed py-3">
         <XmlLine n={1}  indent={0} content={<P>{'<?xml version="1.0" encoding="UTF-8"?>'}</P>} />
         <XmlLine n={2}  indent={0} highlight={h===4} content={<><XmlTag name="DeclarationsRS" attrs={<A name="VersionSchema" value="1.0" />} /></>} />
         <XmlLine n={3}  indent={1} highlight={h===4} content={<XmlTag name="Declarant" />} />
@@ -1789,15 +1789,15 @@ function PageOrderTejXml({ state }: { state: PurchaseDemoState }) {
 
       <div className="grid grid-cols-3 gap-3 text-xs">
         <div className="bg-card border border-border rounded-lg p-3">
-          <p className="text-[10px] text-muted-foreground font-medium uppercase">Total HT</p>
+          <p className="text-px-10 text-muted-foreground font-medium uppercase">Total HT</p>
           <p className="text-base font-bold text-foreground mt-0.5">27,310.000 {resolveCurrencyCode()}</p>
         </div>
         <div className="bg-card border border-border rounded-lg p-3">
-          <p className="text-[10px] text-muted-foreground font-medium uppercase">Total RS</p>
+          <p className="text-px-10 text-muted-foreground font-medium uppercase">Total RS</p>
           <p className="text-base font-bold text-amber-600 mt-0.5">1,625.000 {resolveCurrencyCode()}</p>
         </div>
         <div className="bg-card border border-border rounded-lg p-3">
-          <p className="text-[10px] text-muted-foreground font-medium uppercase">Net Servi</p>
+          <p className="text-px-10 text-muted-foreground font-medium uppercase">Net Servi</p>
           <p className="text-base font-bold text-green-600 mt-0.5">30,875.900 {resolveCurrencyCode()}</p>
         </div>
       </div>
@@ -1820,7 +1820,7 @@ function PageInvoiceTejXml({ state }: { state: PurchaseDemoState }) {
         <TejXmlActions filename="tej-INV-F-2025-002.xml" xml={TEJ_INVOICE_XML} />
       </div>
 
-      <div className="bg-slate-50 dark:bg-slate-900/40 border border-border rounded-lg overflow-x-auto font-mono text-[11px] leading-relaxed py-3">
+      <div className="bg-slate-50 dark:bg-slate-900/40 border border-border rounded-lg overflow-x-auto font-mono text-px-11 leading-relaxed py-3">
         <XmlLine n={1}  indent={0} content={<P>{'<?xml version="1.0" encoding="UTF-8"?>'}</P>} />
         <XmlLine n={2}  indent={0} content={<XmlTag name="DeclarationsRS" attrs={<A name="VersionSchema" value="1.0" />} />} />
         <XmlLine n={3}  indent={1} content={<span id="po-demo-itej-declarant"><XmlTag name="Declarant" /></span>} />
@@ -1944,7 +1944,7 @@ function PageArticleSuppliers({ state }: { state: PurchaseDemoState }) {
                   </td>
                   <td className="px-3 py-2.5 text-right">
                     <div className="inline-flex items-center gap-1">
-                      <div className="h-6 px-2 rounded border border-border text-[10px] text-muted-foreground flex items-center gap-1 cursor-default">
+                      <div className="h-6 px-2 rounded border border-border text-px-10 text-muted-foreground flex items-center gap-1 cursor-default">
                         <Plus className="h-2.5 w-2.5" /> PO
                       </div>
                       <div className="h-6 w-6 rounded border border-border flex items-center justify-center text-muted-foreground cursor-default">
@@ -1962,7 +1962,7 @@ function PageArticleSuppliers({ state }: { state: PurchaseDemoState }) {
       <div id="po-demo-as-price-history" className="bg-card border border-border rounded-lg overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
           <span className="text-sm font-medium flex items-center gap-1.5"><Activity className="h-3.5 w-3.5 text-primary" /> Price History</span>
-          <span className="text-[10px] text-muted-foreground">{DEMO_PRICE_HISTORY.length} changes recorded</span>
+          <span className="text-px-10 text-muted-foreground">{DEMO_PRICE_HISTORY.length} changes recorded</span>
         </div>
 
         {/* Mini chart */}
@@ -2049,7 +2049,7 @@ function PageInvoicePayment({ state }: { state: PurchaseDemoState }) {
             <>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Status</span>
-                <span className="text-[10px] text-green-700 bg-green-100 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 rounded-full font-medium inline-flex items-center gap-1">
+                <span className="text-px-10 text-green-700 bg-green-100 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 rounded-full font-medium inline-flex items-center gap-1">
                   <CheckCircle2 className="h-3 w-3" /> Sent
                 </span>
               </div>
@@ -2066,7 +2066,7 @@ function PageInvoicePayment({ state }: { state: PurchaseDemoState }) {
             <>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Status</span>
-                <span className="text-[10px] text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full font-medium">Pending</span>
+                <span className="text-px-10 text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full font-medium">Pending</span>
               </div>
               <div className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium flex items-center gap-1.5 cursor-default w-fit">
                 <Send className="h-3.5 w-3.5" /> Send to FEL Platform
@@ -2099,25 +2099,25 @@ function PageInvoicePayment({ state }: { state: PurchaseDemoState }) {
             </div>
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div>
-                <label className="block text-[10px] font-medium text-muted-foreground mb-1">Payment Date</label>
+                <label className="block text-px-10 font-medium text-muted-foreground mb-1">Payment Date</label>
                 <div className="h-8 px-2.5 rounded-md border border-border text-foreground flex items-center">2025-06-06</div>
               </div>
               <div>
-                <label className="block text-[10px] font-medium text-muted-foreground mb-1">Method</label>
+                <label className="block text-px-10 font-medium text-muted-foreground mb-1">Method</label>
                 <div className="h-8 px-2.5 rounded-md border border-border text-foreground flex items-center justify-between">Bank Transfer <ChevronRight className="h-3 w-3 rotate-90 text-muted-foreground" /></div>
               </div>
             </div>
             <div>
-              <label className="block text-[10px] font-medium text-muted-foreground mb-1">Amount ({resolveCurrencyCode()})</label>
+              <label className="block text-px-10 font-medium text-muted-foreground mb-1">Amount ({resolveCurrencyCode()})</label>
               <div className={`h-9 px-3 rounded-md border text-sm flex items-center justify-between transition-colors ${state.paymentStep === 2 ? 'border-primary bg-primary/5 text-foreground font-semibold' : 'border-border text-foreground'}`}>
                 <span>{state.paymentStep === 2 ? fmt(remaining + 0) : '0'}</span>
-                <span className="text-[10px] text-muted-foreground">Max: {fmt(INV.total - 12000)}</span>
+                <span className="text-px-10 text-muted-foreground">Max: {fmt(INV.total - 12000)}</span>
               </div>
-              <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
+              <p className="text-px-10 text-muted-foreground mt-1 flex items-center gap-1">
                 <AlertCircle className="h-2.5 w-2.5" /> Overpayment is blocked server-side under a row-level lock.
               </p>
             </div>
-            <div className="bg-muted/40 rounded p-2.5 text-[11px] space-y-1">
+            <div className="bg-muted/40 rounded p-2.5 text-px-11 space-y-1">
               <div className="flex justify-between"><span className="text-muted-foreground">After this payment</span><span className="font-medium">{fmt(state.paymentStep === 2 ? INV.total : 12000)} / {fmt(INV.total)}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">New status</span>
                 <StatusBadge status={state.paymentStep === 2 ? 'paid' : 'partially_paid'} small />
@@ -2169,12 +2169,12 @@ function PageRsCatalogue() {
           <tbody>
             {RS_CATALOGUE.map(r => (
               <tr key={r.code} className="border-b border-border/40 last:border-0 hover:bg-muted/20">
-                <td className="px-3 py-2.5"><span className="inline-flex h-6 px-2 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-bold text-[11px] items-center">{r.code}</span></td>
+                <td className="px-3 py-2.5"><span className="inline-flex h-6 px-2 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-bold text-px-11 items-center">{r.code}</span></td>
                 <td className="px-3 py-2.5 font-medium">{r.label}</td>
                 <td className="px-3 py-2.5 text-right">
                   <span className="font-mono font-semibold text-foreground">{r.rate.toFixed(1)}%</span>
                 </td>
-                <td className="px-3 py-2.5 font-mono text-purple-600 dark:text-purple-400 text-[11px]">{r.operation}</td>
+                <td className="px-3 py-2.5 font-mono text-purple-600 dark:text-purple-400 text-px-11">{r.operation}</td>
                 <td className="px-3 py-2.5 text-muted-foreground">{r.usage}</td>
               </tr>
             ))}
@@ -2232,7 +2232,7 @@ function PagePriceEvolution() {
           {/* Y-axis grid */}
           <div className="absolute inset-0 flex flex-col justify-between py-0 pointer-events-none">
             {[1400, 1200, 1000, 800].map(v => (
-              <div key={v} className="flex items-center gap-2 -ml-12 w-12 text-right text-[9px] text-muted-foreground">
+              <div key={v} className="flex items-center gap-2 -ml-12 w-12 text-right text-px-9 text-muted-foreground">
                 <span className="flex-1">{v}</span>
                 <span className="h-px w-1 bg-border" />
               </div>
@@ -2249,7 +2249,7 @@ function PagePriceEvolution() {
                     return <div key={s.name} className={`w-1.5 rounded-t ${s.color}`} style={{ height: `${pct}%` }} />;
                   })}
                 </div>
-                <span className="text-center text-[9px] text-muted-foreground mt-1">{m}</span>
+                <span className="text-center text-px-9 text-muted-foreground mt-1">{m}</span>
               </div>
             ))}
           </div>
@@ -2260,7 +2260,7 @@ function PagePriceEvolution() {
       <div id="po-demo-pe-table" className="bg-card border border-border rounded-lg overflow-hidden">
         <div className="px-4 py-3 border-b border-border/60 flex items-center justify-between">
           <span className="text-sm font-medium">Recorded Changes</span>
-          <span className="text-[10px] text-muted-foreground">5 entries · all-time</span>
+          <span className="text-px-10 text-muted-foreground">5 entries · all-time</span>
         </div>
         <table className="w-full text-xs">
           <thead><tr className="bg-muted/30 border-b border-border/60">
@@ -2327,9 +2327,9 @@ function PageInvoiceAging() {
       <div id="po-demo-aging-buckets" className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {AGING_BUCKETS.map(b => (
           <div key={b.name} className="bg-card border border-border rounded-lg p-3">
-            <p className="text-[10px] text-muted-foreground font-medium uppercase">{b.name}</p>
+            <p className="text-px-10 text-muted-foreground font-medium uppercase">{b.name}</p>
             <p className="text-lg font-bold text-foreground mt-0.5">{fmt(b.amount)}</p>
-            <p className="text-[10px] text-muted-foreground">{b.count} invoice{b.count !== 1 ? 's' : ''}</p>
+            <p className="text-px-10 text-muted-foreground">{b.count} invoice{b.count !== 1 ? 's' : ''}</p>
             <div className="h-1 rounded-full bg-muted overflow-hidden mt-2">
               <div className={`h-full ${b.color}`} style={{ width: `${(b.amount / total) * 100}%` }} />
             </div>
@@ -2344,9 +2344,9 @@ function PageInvoiceAging() {
             const pct = (b.amount / Math.max(...AGING_BUCKETS.map(x => x.amount))) * 100;
             return (
               <div key={b.name} className="flex-1 flex flex-col items-center gap-1.5">
-                <span className={`text-[10px] font-semibold ${b.text}`}>{fmt(b.amount)}</span>
+                <span className={`text-px-10 font-semibold ${b.text}`}>{fmt(b.amount)}</span>
                 <div className={`w-full rounded-t ${b.color} transition-all`} style={{ height: `${pct}%` }} />
-                <span className="text-[10px] text-muted-foreground">{b.name}</span>
+                <span className="text-px-10 text-muted-foreground">{b.name}</span>
               </div>
             );
           })}
@@ -2356,7 +2356,7 @@ function PageInvoiceAging() {
       <div id="po-demo-aging-table" className="bg-card border border-border rounded-lg overflow-hidden">
         <div className="px-4 py-3 border-b border-border/60 flex items-center justify-between">
           <span className="text-sm font-medium">Outstanding Invoices</span>
-          <span className="text-[10px] text-muted-foreground">Total {fmt(total)} {resolveCurrencyCode()}</span>
+          <span className="text-px-10 text-muted-foreground">Total {fmt(total)} {resolveCurrencyCode()}</span>
         </div>
         <table className="w-full text-xs">
           <thead><tr className="bg-muted/30 border-b border-border/60">
@@ -2383,7 +2383,7 @@ function PageInvoiceAging() {
                   <td className="px-3 py-2.5 text-right font-medium">{fmt(i.amount)}</td>
                   <td className="px-3 py-2.5 text-center">
                     <span className={`inline-block h-2 w-2 rounded-full ${bucket.color}`} />
-                    <span className="ml-1.5 text-[10px] text-muted-foreground">{bucket.name}</span>
+                    <span className="ml-1.5 text-px-10 text-muted-foreground">{bucket.name}</span>
                   </td>
                 </tr>
               );
@@ -2570,13 +2570,13 @@ export function PurchaseAutopilotDemo({ open, onClose }: Props) {
             <button
               key={ch.id}
               onClick={() => jumpChapter(ch.start)}
-              className={`text-[10px] font-medium px-2 py-0.5 rounded-full transition-colors cursor-pointer
+              className={`text-px-10 font-medium px-2 py-0.5 rounded-full transition-colors cursor-pointer
                 ${activeChapter.id === ch.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/70'}`}
             >
               {getChapterTitle(demoLang, ch.id, ch.title)}
             </button>
           ))}
-          <span className="ml-auto text-[10px] text-muted-foreground">{Math.min(stepIndex + 1, PO_STEPS.length)} / {PO_STEPS.length}</span>
+          <span className="ml-auto text-px-10 text-muted-foreground">{Math.min(stepIndex + 1, PO_STEPS.length)} / {PO_STEPS.length}</span>
         </div>
         <div className="h-1 rounded-full bg-muted overflow-hidden mb-2">
           <div

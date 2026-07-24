@@ -998,7 +998,7 @@ ${results.filter(r => r.status === 'failed').map(r => `❌ ${r.category} > ${r.n
                                               <Badge 
                                                 variant="outline" 
                                                 className={cn(
-                                                  'text-[10px]',
+                                                  'text-px-10',
                                                   record.operation === 'create' && 'bg-green-500/10 text-green-600',
                                                   record.operation === 'update' && 'bg-blue-500/10 text-blue-600',
                                                   record.operation === 'delete' && 'bg-red-500/10 text-red-600'
@@ -1159,7 +1159,7 @@ ${results.filter(r => r.status === 'failed').map(r => `❌ ${r.category} > ${r.n
                         <span className="text-muted-foreground whitespace-nowrap">
                           {new Date(log.timestamp).toLocaleTimeString()}
                         </span>
-                        <Badge variant="outline" className={cn('text-[10px] px-1.5 py-0', getLogLevelColor(log.level))}>
+                        <Badge variant="outline" className={cn('text-px-10 px-1.5 py-0', getLogLevelColor(log.level))}>
                           {log.level.substring(0, 4).toUpperCase()}
                         </Badge>
                         <span className="text-muted-foreground/70 max-w-[150px] truncate" title={log.category}>
@@ -1327,7 +1327,7 @@ ${results.filter(r => r.status === 'failed').map(r => `❌ ${r.category} > ${r.n
                     {selectedTestResult.requestData.body.calls.map((call: any, idx: number) => (
                       <div key={idx} className="flex items-center gap-2 text-xs font-mono p-1 hover:bg-muted rounded">
                         <Badge variant="outline" className={cn(
-                          'text-[10px] px-1.5',
+                          'text-px-10 px-1.5',
                           call.method === 'GET' ? 'text-blue-600 border-blue-500/30' :
                           call.method === 'POST' ? 'text-green-600 border-green-500/30' :
                           call.method === 'DELETE' ? 'text-red-600 border-red-500/30' :
@@ -1339,7 +1339,7 @@ ${results.filter(r => r.status === 'failed').map(r => `❌ ${r.category} > ${r.n
                           {call.url.replace(/https?:\/\/[^\/]+/gi, '')}
                         </span>
                         <Badge variant="outline" className={cn(
-                          'text-[10px]',
+                          'text-px-10',
                           call.status >= 200 && call.status < 300 ? 'text-green-600' : 'text-red-600'
                         )}>
                           {call.status}
@@ -1363,22 +1363,22 @@ ${results.filter(r => r.status === 'failed').map(r => `❌ ${r.category} > ${r.n
                       {selectedTestResult.responseData.body.apiCallDetails.slice(0, 20).map((detail: any, idx: number) => (
                         <div key={idx} className="p-2 bg-muted/50 rounded text-xs">
                           <div className="flex items-center gap-2 mb-1">
-                            <Badge variant="outline" className="text-[10px]">{detail.request.method}</Badge>
+                            <Badge variant="outline" className="text-px-10">{detail.request.method}</Badge>
                             <code className="text-muted-foreground truncate">{detail.request.url.replace(/https?:\/\/[^\/]+/gi, '')}</code>
                             <Badge variant="outline" className={cn(
-                              'text-[10px] ml-auto',
+                              'text-px-10 ml-auto',
                               detail.response.status >= 200 && detail.response.status < 300 ? 'text-green-600' : 'text-red-600'
                             )}>
                               {detail.response.status}
                             </Badge>
                           </div>
                           {detail.request.body && (
-                            <pre className="text-[10px] font-mono bg-background p-1 rounded mt-1 max-h-20 overflow-auto">
+                            <pre className="text-px-10 font-mono bg-background p-1 rounded mt-1 max-h-20 overflow-auto">
                               Request: {JSON.stringify(detail.request.body, null, 2)}
                             </pre>
                           )}
                           {detail.response.body && (
-                            <pre className="text-[10px] font-mono bg-background p-1 rounded mt-1 max-h-20 overflow-auto">
+                            <pre className="text-px-10 font-mono bg-background p-1 rounded mt-1 max-h-20 overflow-auto">
                               Response: {JSON.stringify(detail.response.body, null, 2).substring(0, 500)}...
                             </pre>
                           )}

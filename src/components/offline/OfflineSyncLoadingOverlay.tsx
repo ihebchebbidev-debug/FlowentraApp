@@ -306,7 +306,7 @@ export function OfflineSyncLoadingOverlay() {
                 <CardTitle id="offline-overlay-title" className="text-lg font-semibold tracking-tight sm:text-xl">
                   {title}
                 </CardTitle>
-                <CardDescription id="offline-overlay-desc" className="text-[13px] leading-relaxed">
+                <CardDescription id="offline-overlay-desc" className="text-px-13 leading-relaxed">
                   {isHydration ? t("syncDashboard.hydrationOverlay.subtitle") : t("syncDashboard.syncOverlay.subtitle")}
                 </CardDescription>
               </div>
@@ -319,7 +319,7 @@ export function OfflineSyncLoadingOverlay() {
                     {t("syncDashboard.hydrationOverlay.modeBadge")}
                   </Badge>
                   {tenant ? (
-                    <Badge variant="secondary" className="max-w-[200px] truncate font-mono text-[11px]">
+                    <Badge variant="secondary" className="max-w-[200px] truncate font-mono text-px-11">
                       {t("syncDashboard.hydrationOverlay.tenantBadge", { tenant })}
                     </Badge>
                   ) : null}
@@ -364,7 +364,7 @@ export function OfflineSyncLoadingOverlay() {
 
         <CardContent className="space-y-4 px-4 pb-6 pt-4 sm:px-8">
           {!isHydration && syncDetail ? (
-            <div className="flex flex-wrap gap-2 text-[11px]">
+            <div className="flex flex-wrap gap-2 text-px-11">
               {syncDetail.syncedCount != null ? (
                 <Badge variant="success" className="font-normal">
                   {t("syncDashboard.syncOverlay.statSynced")} · {syncDetail.syncedCount}
@@ -379,7 +379,7 @@ export function OfflineSyncLoadingOverlay() {
           ) : null}
 
           {isHydration && hydrationModules.length > 0 ? (
-            <div className="flex flex-wrap gap-2 text-[11px]">
+            <div className="flex flex-wrap gap-2 text-px-11">
               {hydrationStats.done > 0 ? (
                 <Badge variant="success" className="font-normal">
                   {t("syncDashboard.hydrationOverlay.statDone")} · {hydrationStats.done}
@@ -414,7 +414,7 @@ export function OfflineSyncLoadingOverlay() {
                 {isHydration ? t("syncDashboard.hydrationOverlay.detailsTitle") : t("syncDashboard.syncOverlay.detailsTitle")}
               </h4>
               {isHydration && hydrationModules.length > 0 ? (
-                <span className="text-[11px] text-muted-foreground">
+                <span className="text-px-11 text-muted-foreground">
                   {t("syncDashboard.hydrationOverlay.modulesCount", {
                     done: hydrationStats.finished,
                     total: hydrationStats.total,
@@ -482,11 +482,11 @@ export function OfflineSyncLoadingOverlay() {
                                 </span>
                               </div>
                               {stepLabel ? (
-                                <p className="text-[11px] text-muted-foreground">{stepLabel}</p>
+                                <p className="text-px-11 text-muted-foreground">{stepLabel}</p>
                               ) : null}
                               {(m.status === "done" || m.status === "error" || m.status === "skipped") &&
                               m.durationMs != null ? (
-                                <p className="text-[10px] tabular-nums text-muted-foreground">
+                                <p className="text-px-10 tabular-nums text-muted-foreground">
                                   {t("syncDashboard.hydrationOverlay.moduleTiming", {
                                     time: formatModuleDuration(m.durationMs),
                                   })}
@@ -495,7 +495,7 @@ export function OfflineSyncLoadingOverlay() {
                               <Progress value={pct} className="h-1.5" />
                               {m.error ? (
                                 <p
-                                  className="break-words rounded-md bg-destructive/10 px-2 py-1.5 font-mono text-[11px] leading-snug text-destructive"
+                                  className="break-words rounded-md bg-destructive/10 px-2 py-1.5 font-mono text-px-11 leading-snug text-destructive"
                                   title={m.error}
                                 >
                                   {m.error}
@@ -526,7 +526,7 @@ export function OfflineSyncLoadingOverlay() {
                           </div>
                           <ul className="mt-2 space-y-1 text-muted-foreground">
                             {group.sampleEndpoints.map((ep) => (
-                              <li key={`${group.entityType}-${ep}`} className="truncate font-mono text-[11px]" title={ep}>
+                              <li key={`${group.entityType}-${ep}`} className="truncate font-mono text-px-11" title={ep}>
                                 {ep}
                               </li>
                             ))}
@@ -554,7 +554,7 @@ export function OfflineSyncLoadingOverlay() {
                     ) : null}
                     {syncDetail.fatalError ? (
                       <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3">
-                        <p className="text-[11px] font-semibold uppercase text-destructive">
+                        <p className="text-px-11 font-semibold uppercase text-destructive">
                           {t("syncDashboard.syncOverlay.fatalTitle")}
                         </p>
                         <p className="mt-1 font-mono text-xs text-destructive">{syncDetail.fatalError}</p>
@@ -562,11 +562,11 @@ export function OfflineSyncLoadingOverlay() {
                     ) : null}
                     {syncDetail.httpStatus != null ? (
                       <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3">
-                        <p className="text-[11px] font-semibold text-amber-800 dark:text-amber-200">
+                        <p className="text-px-11 font-semibold text-amber-800 dark:text-amber-200">
                           {t("syncDashboard.syncOverlay.httpTitle", { status: syncDetail.httpStatus })}
                         </p>
                         {syncDetail.httpBody ? (
-                          <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded bg-background/80 p-2 font-mono text-[10px] leading-snug text-muted-foreground">
+                          <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded bg-background/80 p-2 font-mono text-px-10 leading-snug text-muted-foreground">
                             {syncDetail.httpBody}
                           </pre>
                         ) : null}
@@ -574,16 +574,16 @@ export function OfflineSyncLoadingOverlay() {
                     ) : null}
                     {(syncDetail.binaryFailures?.length ?? 0) > 0 ? (
                       <div>
-                        <p className="mb-2 text-[11px] font-medium text-muted-foreground">
+                        <p className="mb-2 text-px-11 font-medium text-muted-foreground">
                           {t("syncDashboard.syncOverlay.binaryFailuresTitle")}
                         </p>
                         <ul className="space-y-2">
                           {syncDetail.binaryFailures!.map((row) => (
                             <li
                               key={`bin-${row.opId}`}
-                              className="rounded-lg border border-border/50 bg-card/80 p-2 text-[11px]"
+                              className="rounded-lg border border-border/50 bg-card/80 p-2 text-px-11"
                             >
-                              <div className="flex flex-wrap gap-x-2 gap-y-0.5 font-mono text-[10px] text-muted-foreground">
+                              <div className="flex flex-wrap gap-x-2 gap-y-0.5 font-mono text-px-10 text-muted-foreground">
                                 <span className="text-foreground">{row.method}</span>
                                 <span className="min-w-0 break-all">{row.endpoint}</span>
                               </div>
@@ -595,27 +595,27 @@ export function OfflineSyncLoadingOverlay() {
                     ) : null}
                     {(syncDetail.failedOperations?.length ?? 0) > 0 ? (
                       <div>
-                        <p className="mb-2 text-[11px] font-medium text-muted-foreground">
+                        <p className="mb-2 text-px-11 font-medium text-muted-foreground">
                           {t("syncDashboard.syncOverlay.serverRejectedTitle")}
                         </p>
                         <ul className="space-y-2">
                           {(syncDetail.failedOperations ?? []).map((row) => (
                             <li
                               key={row.opId}
-                              className="rounded-lg border border-destructive/25 bg-destructive/[0.06] p-3 text-[11px]"
+                              className="rounded-lg border border-destructive/25 bg-destructive/[0.06] p-3 text-px-11"
                             >
                               <div className="flex flex-wrap items-center justify-between gap-2">
-                                <span className="font-mono text-[10px] text-muted-foreground">{row.opId}</span>
-                                <Badge variant="outline" className="text-[10px]">
+                                <span className="font-mono text-px-10 text-muted-foreground">{row.opId}</span>
+                                <Badge variant="outline" className="text-px-10">
                                   {row.status}
                                 </Badge>
                               </div>
                               {row.entityType ? (
-                                <p className="mt-1 text-[10px] text-muted-foreground">
+                                <p className="mt-1 text-px-10 text-muted-foreground">
                                   {t("syncDashboard.syncOverlay.entityType")}: {row.entityType}
                                 </p>
                               ) : null}
-                              <div className="mt-1 font-mono text-[10px] text-muted-foreground">
+                              <div className="mt-1 font-mono text-px-10 text-muted-foreground">
                                 <span className="text-foreground">{row.method}</span>{" "}
                                 <span className="break-all">{row.endpoint}</span>
                               </div>
@@ -635,7 +635,7 @@ export function OfflineSyncLoadingOverlay() {
 
           {isHydration && hydrationFatalDone ? (
             <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 space-y-1">
-              <p className="text-[11px] font-semibold uppercase text-destructive">
+              <p className="text-px-11 font-semibold uppercase text-destructive">
                 {t("syncDashboard.hydrationOverlay.fatalTitle")}
               </p>
               <p className="text-xs font-mono text-destructive break-words">{hydrationFatalDone}</p>
@@ -643,13 +643,13 @@ export function OfflineSyncLoadingOverlay() {
           ) : null}
 
           {isHydration ? (
-            <p className="border-t pt-4 text-[12px] leading-relaxed text-muted-foreground">
+            <p className="border-t pt-4 text-px-12 leading-relaxed text-muted-foreground">
               {hydrationCompletedWithIssues
                 ? t("syncDashboard.hydrationOverlay.footerNoteIssues")
                 : t("syncDashboard.hydrationOverlay.footerNote")}
             </p>
           ) : syncReportHasIssues ? (
-            <p className="border-t pt-4 text-[12px] leading-relaxed text-muted-foreground">
+            <p className="border-t pt-4 text-px-12 leading-relaxed text-muted-foreground">
               {t("syncDashboard.syncOverlay.syncCenterDetailHint")}
             </p>
           ) : null}

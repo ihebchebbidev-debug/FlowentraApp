@@ -130,7 +130,7 @@ export function PlanningTimelineDialog({ open, onClose, placements, assigned, sk
                       {/* Hour ruler */}
                       <div className="flex" style={{ paddingLeft: 160 }}>
                         <div className="relative" style={{ width }}>
-                          <div className="flex text-[10px] text-muted-foreground border-b border-border">
+                          <div className="flex text-px-10 text-muted-foreground border-b border-border">
                             {Array.from({ length: totalHours + 1 }).map((_, i) => (
                               <div key={i} className="flex-shrink-0 text-center border-l border-border/50 first:border-l-0" style={{ width: PX_PER_HOUR }}>
                                 {String(HOUR_START + i).padStart(2, "0")}:00
@@ -162,7 +162,7 @@ export function PlanningTimelineDialog({ open, onClose, placements, assigned, sk
                               return (
                                 <div
                                   key={p.jobId}
-                                  className={`absolute top-1 bottom-1 rounded-md border text-[10px] text-white px-1.5 py-0.5 overflow-hidden shadow-sm ${color}`}
+                                  className={`absolute top-1 bottom-1 rounded-md border text-px-10 text-white px-1.5 py-0.5 overflow-hidden shadow-sm ${color}`}
                                   style={{ left, width: w }}
                                   title={`${p.jobTitle}${p.customerName ? " — " + p.customerName : ""}\n${fmtTime(p.scheduledStart, locale)} – ${fmtTime(p.scheduledEnd, locale)}${p.travelKm != null ? `\n~${p.travelKm.toFixed(1)} km` : ""}`}
                                 >
@@ -182,7 +182,7 @@ export function PlanningTimelineDialog({ open, onClose, placements, assigned, sk
 
             {/* Legend */}
             {byDay.length > 0 && (
-              <div className="flex items-center gap-3 text-[11px] text-muted-foreground pt-1">
+              <div className="flex items-center gap-3 text-px-11 text-muted-foreground pt-1">
                 <span>{t("dispatcher.timeline.legend", { defaultValue: "Priority:" })}</span>
                 {(["urgent", "high", "medium", "low"] as const).map((p) => (
                   <span key={p} className="inline-flex items-center gap-1.5">

@@ -266,7 +266,7 @@ export function TaskTimeTracking({
           <p className="text-lg font-semibold text-foreground">
             {summary ? formatDuration(summary.totalLoggedMinutes) : '-'}
           </p>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{t('timeTracking.logged')}</p>
+          <p className="text-px-10 text-muted-foreground uppercase tracking-wide">{t('timeTracking.logged')}</p>
         </div>
         <div className="text-center border-l border-border">
           <p className="text-lg font-semibold text-foreground flex items-center justify-center">
@@ -280,17 +280,17 @@ export function TaskTimeTracking({
               </>
             ) : '-'}
           </p>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{t('timeTracking.billable')}</p>
+          <p className="text-px-10 text-muted-foreground uppercase tracking-wide">{t('timeTracking.billable')}</p>
         </div>
         <div className="text-center border-l border-border">
           <p className="text-lg font-semibold text-foreground">
             {estimatedHours ? `${estimatedHours}h` : '-'}
           </p>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{t('timeTracking.estimated')}</p>
+          <p className="text-px-10 text-muted-foreground uppercase tracking-wide">{t('timeTracking.estimated')}</p>
         </div>
         <div className="text-center border-l border-border">
           <p className="text-lg font-semibold text-foreground">{summary?.entryCount || 0}</p>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{t('timeTracking.entries')}</p>
+          <p className="text-px-10 text-muted-foreground uppercase tracking-wide">{t('timeTracking.entries')}</p>
         </div>
       </div>
 
@@ -321,7 +321,7 @@ export function TaskTimeTracking({
             <span className="flex items-center gap-2">
               {t('timeTracking.recentEntries')}
               {summary && summary.entries.length > 0 && (
-                <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
+                <Badge variant="secondary" className="h-5 px-1.5 text-px-10">
                   {summary.entries.length}
                 </Badge>
               )}

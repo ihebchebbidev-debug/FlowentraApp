@@ -100,7 +100,7 @@ export default function ClientsList() {
           </div>
           <div className="min-w-0">
             <h1 className="text-xl font-semibold text-foreground truncate">{t('field_customers:title', 'Field Customers')}</h1>
-            <p className="text-[11px] text-muted-foreground truncate">{t('field_customers:subtitle', 'Manage customers on the field — clients and to-dos')}</p>
+            <p className="text-px-11 text-muted-foreground truncate">{t('field_customers:subtitle', 'Manage customers on the field — clients and to-dos')}</p>
           </div>
         </div>
       </header>

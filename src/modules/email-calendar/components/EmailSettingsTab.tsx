@@ -467,7 +467,7 @@ export function EmailSettingsTab({
                   <Inbox className="h-3 w-3" />
                   {t('emails.inbox.filterAll', 'All')}
                   {emailsTotalCount > 0 && (
-                    <Badge variant="secondary" className="text-[10px] h-4 px-1 ml-0.5">{emailsTotalCount}</Badge>
+                    <Badge variant="secondary" className="text-px-10 h-4 px-1 ml-0.5">{emailsTotalCount}</Badge>
                   )}
                 </Button>
                 <Button
@@ -479,7 +479,7 @@ export function EmailSettingsTab({
                   <Mail className="h-3 w-3" />
                   {t('emails.inbox.filterUnread', 'Unread')}
                   {unreadCount > 0 && (
-                    <Badge variant="secondary" className="text-[10px] h-4 px-1 ml-0.5">{unreadCount}</Badge>
+                    <Badge variant="secondary" className="text-px-10 h-4 px-1 ml-0.5">{unreadCount}</Badge>
                   )}
                 </Button>
                 <Button
@@ -491,7 +491,7 @@ export function EmailSettingsTab({
                   <Star className="h-3 w-3" />
                   {t('emails.inbox.filterStarred', 'Starred')}
                   {starredCount > 0 && (
-                    <Badge variant="secondary" className="text-[10px] h-4 px-1 ml-0.5">{starredCount}</Badge>
+                    <Badge variant="secondary" className="text-px-10 h-4 px-1 ml-0.5">{starredCount}</Badge>
                   )}
                 </Button>
               </div>

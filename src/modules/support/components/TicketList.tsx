@@ -334,7 +334,7 @@ export default function TicketList() {
                               {ticket.subject}
                             </p>
                             {ticket.urgency && (
-                              <Badge className={`text-[10px] px-2 py-0.5 shrink-0 ${getUrgencyColor(ticket.urgency)}`} variant="secondary">
+                              <Badge className={`text-px-10 px-2 py-0.5 shrink-0 ${getUrgencyColor(ticket.urgency)}`} variant="secondary">
                                 {ticket.urgency}
                               </Badge>
                             )}
@@ -359,7 +359,7 @@ export default function TicketList() {
                       </div>
 
                       <div className="flex items-center justify-between pl-[52px] mt-3">
-                        <Badge className={`text-[10px] px-2 py-0.5 ${getStatusColor(ticket.status)}`} variant="secondary">
+                        <Badge className={`text-px-10 px-2 py-0.5 ${getStatusColor(ticket.status)}`} variant="secondary">
                           {ticket.status}
                         </Badge>
                         <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>

@@ -187,7 +187,7 @@ export function ScheduleJobModal({ open, onOpenChange, job, onScheduled }: Sched
                     <SelectItem key={user.id} value={String(user.id)}>
                       <div className="flex items-center gap-2">
                         <Avatar className="h-6 w-6">
-                          <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                          <AvatarFallback className="text-px-10 bg-primary/10 text-primary">
                             {(user.firstName?.[0] || "").toUpperCase()}
                             {(user.lastName?.[0] || "").toUpperCase()}
                           </AvatarFallback>
@@ -196,7 +196,7 @@ export function ScheduleJobModal({ open, onOpenChange, job, onScheduled }: Sched
                           {user.firstName} {user.lastName}
                         </span>
                         {(user as any).isMainAdmin && (
-                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Admin</Badge>
+                          <Badge variant="secondary" className="text-px-10 px-1.5 py-0">Admin</Badge>
                         )}
                       </div>
                     </SelectItem>

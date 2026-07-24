@@ -80,7 +80,7 @@ const STATUS_CLS: Record<string, string> = {
   completed:   'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
 };
 function Pill({ s }: { s: string }) {
-  return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium capitalize ${STATUS_CLS[s] ?? 'bg-muted text-muted-foreground'}`}>{s.replace(/_/g, ' ')}</span>;
+  return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-px-10 font-medium capitalize ${STATUS_CLS[s] ?? 'bg-muted text-muted-foreground'}`}>{s.replace(/_/g, ' ')}</span>;
 }
 
 // ─── Page: Dispatch Overview ────────────────────────────────────────────────
@@ -114,7 +114,7 @@ function PageOverview({ state }: { state: PlanningDemoState }) {
           <div className="p-2 rounded-lg bg-primary/10"><CalendarIcon className="h-6 w-6 text-primary" /></div>
           <div>
             <h1 id="pl-demo-title" className="text-xl font-semibold text-foreground">Planning &amp; Dispatch</h1>
-            <p className="text-[11px] text-muted-foreground">Schedule field work across your team</p>
+            <p className="text-px-11 text-muted-foreground">Schedule field work across your team</p>
           </div>
         </div>
         <div id="pl-demo-dispatch-jobs" className="h-9 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium inline-flex items-center gap-1.5 cursor-default">
@@ -211,22 +211,22 @@ function PageBoard({ state }: { state: PlanningDemoState }) {
           <div className="p-2 rounded-lg bg-primary/10"><CalendarIcon className="h-6 w-6 text-primary" /></div>
           <div className="min-w-0">
             <h1 className="text-xl font-semibold text-foreground truncate">Planning &amp; Dispatch</h1>
-            <p className="text-[11px] text-muted-foreground truncate">Schedule field work across your team</p>
+            <p className="text-px-11 text-muted-foreground truncate">Schedule field work across your team</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           {/* View Mode Toggle */}
           <div className="flex items-center bg-muted rounded-lg p-1">
-            <span className={`px-2.5 py-1 rounded-md text-[11px] inline-flex items-center gap-1.5 ${state.boardView === 'calendar' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground'}`}><LayoutGrid className="h-3.5 w-3.5" /> Calendar</span>
-            <span id="pl-demo-map-btn" className={`px-2.5 py-1 rounded-md text-[11px] inline-flex items-center gap-1.5 ${state.boardView === 'map' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground'}`}><Map className="h-3.5 w-3.5" /> Map</span>
+            <span className={`px-2.5 py-1 rounded-md text-px-11 inline-flex items-center gap-1.5 ${state.boardView === 'calendar' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground'}`}><LayoutGrid className="h-3.5 w-3.5" /> Calendar</span>
+            <span id="pl-demo-map-btn" className={`px-2.5 py-1 rounded-md text-px-11 inline-flex items-center gap-1.5 ${state.boardView === 'map' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground'}`}><Map className="h-3.5 w-3.5" /> Map</span>
           </div>
           {/* Smart Planning group */}
           <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-primary/30 bg-primary/5">
-            <span className="hidden md:inline text-[10px] font-medium text-primary uppercase tracking-wide pr-0.5">Smart Planning</span>
-            <div id="pl-demo-suggest-btn" className="h-8 px-2.5 rounded-md bg-primary text-primary-foreground text-[11px] inline-flex items-center gap-1.5 cursor-default"><Sparkles className="h-3.5 w-3.5" /> Suggest <span className="h-5 px-1.5 rounded bg-secondary text-secondary-foreground text-[10px] inline-flex items-center font-semibold">2</span></div>
-            <div id="pl-demo-autofill-btn" className="h-8 px-2.5 rounded-md bg-primary text-primary-foreground text-[11px] inline-flex items-center gap-1.5 cursor-default"><Wand2 className="h-3.5 w-3.5" /> Auto-fill day</div>
+            <span className="hidden md:inline text-px-10 font-medium text-primary uppercase tracking-wide pr-0.5">Smart Planning</span>
+            <div id="pl-demo-suggest-btn" className="h-8 px-2.5 rounded-md bg-primary text-primary-foreground text-px-11 inline-flex items-center gap-1.5 cursor-default"><Sparkles className="h-3.5 w-3.5" /> Suggest <span className="h-5 px-1.5 rounded bg-secondary text-secondary-foreground text-px-10 inline-flex items-center font-semibold">2</span></div>
+            <div id="pl-demo-autofill-btn" className="h-8 px-2.5 rounded-md bg-primary text-primary-foreground text-px-11 inline-flex items-center gap-1.5 cursor-default"><Wand2 className="h-3.5 w-3.5" /> Auto-fill day</div>
           </div>
-          <div className="h-8 px-2.5 rounded-md border border-border text-[11px] inline-flex items-center gap-1.5 text-muted-foreground"><RefreshCcw className="h-3.5 w-3.5" /> Update</div>
+          <div className="h-8 px-2.5 rounded-md border border-border text-px-11 inline-flex items-center gap-1.5 text-muted-foreground"><RefreshCcw className="h-3.5 w-3.5" /> Update</div>
         </div>
       </div>
 
@@ -238,12 +238,12 @@ function PageBoard({ state }: { state: PlanningDemoState }) {
             <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border bg-background">
               <div className="flex items-center gap-1">
                 <div className="h-7 w-7 rounded-md border border-border inline-flex items-center justify-center text-muted-foreground"><ChevronLeft className="h-4 w-4" /></div>
-                <div className="h-7 px-2.5 rounded-md border border-border text-[11px] inline-flex items-center text-foreground">Today</div>
+                <div className="h-7 px-2.5 rounded-md border border-border text-px-11 inline-flex items-center text-foreground">Today</div>
                 <div className="h-7 w-7 rounded-md border border-border inline-flex items-center justify-center text-muted-foreground"><ChevronRight className="h-4 w-4" /></div>
-                <div className="h-7 px-2.5 rounded-md border border-border text-[11px] inline-flex items-center gap-1.5 text-foreground ml-1"><CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" /> 16 Jun — 16 Jun 2025</div>
+                <div className="h-7 px-2.5 rounded-md border border-border text-px-11 inline-flex items-center gap-1.5 text-foreground ml-1"><CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" /> 16 Jun — 16 Jun 2025</div>
               </div>
               <div className="flex items-center gap-2">
-                <div id="pl-demo-view-toggle" className="flex items-center bg-muted rounded-lg p-0.5 text-[11px]">
+                <div id="pl-demo-view-toggle" className="flex items-center bg-muted rounded-lg p-0.5 text-px-11">
                   <span className={`px-2 py-1 rounded ${state.boardView === 'calendar' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground'}`}>Day</span>
                   <span className="px-2 py-1 rounded text-muted-foreground">Week</span>
                 </div>
@@ -260,15 +260,15 @@ function PageBoard({ state }: { state: PlanningDemoState }) {
               {/* Header row: technician-column header + date/hours */}
               <div className="flex border-b border-border bg-gradient-to-r from-card to-card/50">
                 <div className="w-44 shrink-0 border-r border-border flex items-center justify-center py-2">
-                  <div className="h-7 px-2.5 rounded-md border border-border bg-card text-[11px] inline-flex items-center gap-1.5 text-foreground"><Settings2 className="h-3.5 w-3.5" /> Edit planning</div>
+                  <div className="h-7 px-2.5 rounded-md border border-border bg-card text-px-11 inline-flex items-center gap-1.5 text-foreground"><Settings2 className="h-3.5 w-3.5" /> Edit planning</div>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="h-8 border-b border-border bg-gradient-to-b from-primary/5 to-transparent flex items-center justify-center">
-                    <span className="font-semibold text-[11px] text-foreground">Mon</span>
-                    <span className="text-[11px] text-muted-foreground ml-1">Jun 16</span>
+                    <span className="font-semibold text-px-11 text-foreground">Mon</span>
+                    <span className="text-px-11 text-muted-foreground ml-1">Jun 16</span>
                   </div>
                   <div className="h-6 flex bg-muted/20">
-                    {HOURS.map(h => <div key={h} className="flex-1 border-r border-border/40 last:border-0 text-[9px] text-muted-foreground flex items-center justify-center">{h}:00</div>)}
+                    {HOURS.map(h => <div key={h} className="flex-1 border-r border-border/40 last:border-0 text-px-9 text-muted-foreground flex items-center justify-center">{h}:00</div>)}
                   </div>
                 </div>
               </div>
@@ -279,12 +279,12 @@ function PageBoard({ state }: { state: PlanningDemoState }) {
                   <div key={tech.id} className="flex border-b border-border/60 last:border-0" style={{ height: '64px' }}>
                     {/* Technician cell */}
                     <div className="w-44 shrink-0 border-r border-border flex items-center gap-2 px-2.5 bg-card/40">
-                      <span className="h-7 w-7 rounded-full bg-primary/10 text-primary text-[10px] font-bold inline-flex items-center justify-center shrink-0">
+                      <span className="h-7 w-7 rounded-full bg-primary/10 text-primary text-px-10 font-bold inline-flex items-center justify-center shrink-0">
                         {tech.name.split(' ').map(w => w[0]).join('')}
                       </span>
                       <div className="min-w-0 flex-1">
-                        <div className="text-[11px] font-medium truncate">{tech.name}</div>
-                        <div className="text-[9px] text-muted-foreground inline-flex items-center gap-1">
+                        <div className="text-px-11 font-medium truncate">{tech.name}</div>
+                        <div className="text-px-9 text-muted-foreground inline-flex items-center gap-1">
                           <span className={`h-1.5 w-1.5 rounded-full ${tech.status === 'available' ? 'bg-green-500' : 'bg-amber-500'}`} />{tech.status}
                         </div>
                       </div>
@@ -299,15 +299,15 @@ function PageBoard({ state }: { state: PlanningDemoState }) {
                           id={ti === 0 && bi === 0 ? 'pl-demo-calendar-job' : undefined}
                           className={`absolute top-1.5 bottom-1.5 rounded border px-1.5 py-1 overflow-hidden ${b.cls}`}
                           style={{ left: b.left + '%', width: b.width + '%' }}>
-                          <div className="text-[10px] font-medium leading-tight truncate">{b.label}</div>
-                          <div className="text-[9px] opacity-80 truncate">{b.sub}</div>
+                          <div className="text-px-10 font-medium leading-tight truncate">{b.label}</div>
+                          <div className="text-px-9 opacity-80 truncate">{b.sub}</div>
                         </div>
                       ))}
                       {/* Dropped job (drag&drop demo) on Karim's row */}
                       {state.dropped && ti === 0 && (
                         <div id="pl-demo-drop-slot" className="absolute top-1.5 bottom-1.5 rounded border-2 border-primary bg-primary/15 px-1.5 py-1 animate-in fade-in zoom-in" style={{ left: '38.9%', width: '11.1%' }}>
-                          <div className="text-[10px] font-semibold leading-tight truncate text-primary">Inspection</div>
-                          <div className="text-[9px] text-primary/80 truncate">11:30 · Hydro</div>
+                          <div className="text-px-10 font-semibold leading-tight truncate text-primary">Inspection</div>
+                          <div className="text-px-9 text-primary/80 truncate">11:30 · Hydro</div>
                         </div>
                       )}
                     </div>
@@ -320,7 +320,7 @@ function PageBoard({ state }: { state: PlanningDemoState }) {
             {state.dropped && (
               <div id="pl-demo-collision" className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-card border border-amber-400/60 rounded-lg shadow-lg px-3 py-1.5 flex items-center gap-2 z-[5]">
                 <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-                <span className="text-[11px] text-foreground">No overlap · fits within working hours ✓</span>
+                <span className="text-px-11 text-foreground">No overlap · fits within working hours ✓</span>
               </div>
             )}
           </div>
@@ -330,10 +330,10 @@ function PageBoard({ state }: { state: PlanningDemoState }) {
             <div className="p-2.5 border-b border-border">
               <h3 className="text-xs font-semibold mb-1.5">Service Orders</h3>
               <div id="pl-demo-sidebar-search" className={`space-y-1.5 ${hi('search')}`}>
-                <div className="relative"><Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" /><div className="h-7 pl-7 rounded border border-border bg-background text-[11px] text-muted-foreground flex items-center">Search…</div></div>
-                <div className="h-7 px-2 rounded border border-border bg-background text-[11px] text-muted-foreground flex items-center justify-between">Priority <ChevronDown className="h-3 w-3" /></div>
+                <div className="relative"><Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" /><div className="h-7 pl-7 rounded border border-border bg-background text-px-11 text-muted-foreground flex items-center">Search…</div></div>
+                <div className="h-7 px-2 rounded border border-border bg-background text-px-11 text-muted-foreground flex items-center justify-between">Priority <ChevronDown className="h-3 w-3" /></div>
               </div>
-              <div id="pl-demo-planned" className={`mt-1.5 h-7 rounded text-[11px] flex items-center justify-center gap-1 ${state.sidebarHi === 'planned' ? 'bg-primary text-primary-foreground' : 'border border-border text-muted-foreground'}`}><Eye className="h-3 w-3" /> Show Planned</div>
+              <div id="pl-demo-planned" className={`mt-1.5 h-7 rounded text-px-11 flex items-center justify-center gap-1 ${state.sidebarHi === 'planned' ? 'bg-primary text-primary-foreground' : 'border border-border text-muted-foreground'}`}><Eye className="h-3 w-3" /> Show Planned</div>
             </div>
             <div className="flex-1 overflow-hidden p-2 space-y-1.5">
               {/* Service order group */}
@@ -341,25 +341,25 @@ function PageBoard({ state }: { state: PlanningDemoState }) {
                 <div className="p-2 border-b bg-muted/30 flex items-center gap-1.5">
                   <GripVertical id="pl-demo-drag-job" className="h-3 w-3 text-primary" />
                   <CalendarIcon className="h-3 w-3 text-primary" />
-                  <span className="font-medium text-[11px] flex-1 truncate">SO-2025-058 · Inspection</span>
+                  <span className="font-medium text-px-11 flex-1 truncate">SO-2025-058 · Inspection</span>
                   <span className="w-2 h-2 rounded-full bg-blue-400" />
                   <ChevronDown className="h-3 w-3 text-muted-foreground" />
                 </div>
                 <div className="p-1.5 space-y-1">
                   <div id="pl-demo-job-hover" className={`p-1.5 border rounded bg-card flex items-center gap-1.5 ${state.sidebarHi === 'job' ? 'border-primary ring-1 ring-primary/40' : 'border-border'}`}>
                     <GripVertical className="h-3 w-3 text-muted-foreground opacity-60" />
-                    <span className="text-[11px] font-medium flex-1 truncate">Pump inspection</span>
+                    <span className="text-px-11 font-medium flex-1 truncate">Pump inspection</span>
                     <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
                   </div>
                   {state.sidebarHi === 'job' && (
-                    <div className="rounded-lg border border-border bg-popover shadow-lg p-2.5 space-y-1.5 text-[11px]">
+                    <div className="rounded-lg border border-border bg-popover shadow-lg p-2.5 space-y-1.5 text-px-11">
                       <div className="font-semibold">Pump inspection</div>
                       <div className="flex items-center gap-1.5 text-muted-foreground"><User className="h-3 w-3" /> Hydro Parts SARL</div>
                       <div className="flex items-center gap-1.5 text-muted-foreground"><Clock className="h-3 w-3" /> 1h 30m</div>
                       <div className="flex items-center gap-1.5 text-muted-foreground"><MapPin className="h-3 w-3" /> Z.I. Sfax, Route de Gabès</div>
                       <div className="pt-1 border-t border-border/60">
-                        <span className="text-[9px] uppercase text-muted-foreground">Required skills</span>
-                        <div className="flex gap-1 mt-1">{['Hydraulics', 'Inspection'].map(s => <span key={s} className="px-1.5 rounded-full border border-border text-[9px]">{s}</span>)}</div>
+                        <span className="text-px-9 uppercase text-muted-foreground">Required skills</span>
+                        <div className="flex gap-1 mt-1">{['Hydraulics', 'Inspection'].map(s => <span key={s} className="px-1.5 rounded-full border border-border text-px-9">{s}</span>)}</div>
                       </div>
                     </div>
                   )}
@@ -369,15 +369,15 @@ function PageBoard({ state }: { state: PlanningDemoState }) {
               <div className="border border-border rounded-lg bg-card/50 p-2 flex items-center gap-1.5">
                 <GripVertical className="h-3 w-3 text-primary" />
                 <CalendarIcon className="h-3 w-3 text-primary" />
-                <span className="font-medium text-[11px] flex-1 truncate">SO-2025-061 · Maintenance</span>
+                <span className="font-medium text-px-11 flex-1 truncate">SO-2025-061 · Maintenance</span>
                 <span className="w-2 h-2 rounded-full bg-gray-300" />
                 <ChevronDown className="h-3 w-3 text-muted-foreground" />
               </div>
               {/* Planned divider */}
               {state.sidebarHi === 'planned' && (
                 <div className="pt-2">
-                  <div className="flex items-center gap-2 mb-1.5"><div className="h-px flex-1 bg-border" /><span className="text-[9px] uppercase text-muted-foreground inline-flex items-center gap-1"><CheckCircle2 className="h-2.5 w-2.5 text-green-600" /> Planned Orders</span><div className="h-px flex-1 bg-border" /></div>
-                  <div className="border border-border rounded-lg bg-muted/10 p-2 flex items-center gap-1.5"><CheckCircle2 className="h-3 w-3 text-green-600" /><span className="text-[11px] text-muted-foreground flex-1 truncate">SO-2025-044 · AC Overhaul</span><span className="text-[9px] px-1.5 rounded-full border border-blue-300 text-blue-600">scheduled</span></div>
+                  <div className="flex items-center gap-2 mb-1.5"><div className="h-px flex-1 bg-border" /><span className="text-px-9 uppercase text-muted-foreground inline-flex items-center gap-1"><CheckCircle2 className="h-2.5 w-2.5 text-green-600" /> Planned Orders</span><div className="h-px flex-1 bg-border" /></div>
+                  <div className="border border-border rounded-lg bg-muted/10 p-2 flex items-center gap-1.5"><CheckCircle2 className="h-3 w-3 text-green-600" /><span className="text-px-11 text-muted-foreground flex-1 truncate">SO-2025-044 · AC Overhaul</span><span className="text-px-9 px-1.5 rounded-full border border-blue-300 text-blue-600">scheduled</span></div>
                 </div>
               )}
             </div>
@@ -394,15 +394,15 @@ function PageBoard({ state }: { state: PlanningDemoState }) {
             ))}
             {/* technician markers */}
             {[{ x: '34%', y: '46%' }, { x: '66%', y: '38%' }].map((p, i) => (
-              <div key={i} className="absolute -translate-x-1/2 -translate-y-1/2 h-6 w-6 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center ring-2 ring-background" style={{ left: p.x, top: p.y }}>{['KT', 'LM'][i]}</div>
+              <div key={i} className="absolute -translate-x-1/2 -translate-y-1/2 h-6 w-6 rounded-full bg-primary text-primary-foreground text-px-9 font-bold flex items-center justify-center ring-2 ring-background" style={{ left: p.x, top: p.y }}>{['KT', 'LM'][i]}</div>
             ))}
-            <div className="absolute bottom-2 left-2 text-[10px] text-muted-foreground bg-background/70 rounded px-2 py-0.5">3 jobs · 2 technicians in range</div>
+            <div className="absolute bottom-2 left-2 text-px-10 text-muted-foreground bg-background/70 rounded px-2 py-0.5">3 jobs · 2 technicians in range</div>
             {state.mapAssign && (
               <div id="pl-demo-map-assign" className="absolute left-[28%] top-[40%] -translate-x-1/2 mt-1 w-52 bg-card border border-border rounded-lg shadow-2xl p-2.5">
-                <div className="text-[11px] font-semibold mb-1.5">Assign — Leak Repair</div>
+                <div className="text-px-11 font-semibold mb-1.5">Assign — Leak Repair</div>
                 <div className="space-y-1">
                   {[['Karim T.', '3.2 km', true], ['Leïla M.', '8.0 km', false]].map(([n, d, top]) => (
-                    <div key={n as string} className={`flex items-center justify-between px-2 py-1 rounded text-[11px] ${top ? 'bg-primary/10 text-primary' : 'text-muted-foreground'}`}><span>{n}</span><span>{d}</span></div>
+                    <div key={n as string} className={`flex items-center justify-between px-2 py-1 rounded text-px-11 ${top ? 'bg-primary/10 text-primary' : 'text-muted-foreground'}`}><span>{n}</span><span>{d}</span></div>
                   ))}
                 </div>
               </div>
@@ -416,17 +416,17 @@ function PageBoard({ state }: { state: PlanningDemoState }) {
         <div id="pl-demo-suggest-list" className="absolute right-4 top-16 z-[6] w-80 bg-card border border-border rounded-xl shadow-2xl overflow-hidden">
           <div className="px-3 py-2 border-b border-border">
             <div className="text-sm font-semibold">Best-fit technicians</div>
-            <div className="text-[11px] text-muted-foreground">For SO-2025-058 · Inspection</div>
+            <div className="text-px-11 text-muted-foreground">For SO-2025-058 · Inspection</div>
           </div>
           <div id="pl-demo-suggest-score" className="divide-y divide-border">
             {SUGGEST.map(s => (
               <div key={s.name} className="p-2.5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium inline-flex items-center gap-1.5">{s.top && <Star className="h-3 w-3 fill-amber-400 text-amber-400" />}{s.name}</span>
-                  <span className={`text-[11px] font-bold ${s.top ? 'text-primary' : 'text-muted-foreground'}`}>{s.score}<span className="text-[9px] font-normal">/100</span></span>
+                  <span className={`text-px-11 font-bold ${s.top ? 'text-primary' : 'text-muted-foreground'}`}>{s.score}<span className="text-px-9 font-normal">/100</span></span>
                 </div>
                 <div className="flex flex-wrap gap-1 mt-1">
-                  {s.reasons.map(r => <span key={r} className="px-1.5 rounded-full bg-muted text-[9px] text-muted-foreground">{r}</span>)}
+                  {s.reasons.map(r => <span key={r} className="px-1.5 rounded-full bg-muted text-px-9 text-muted-foreground">{r}</span>)}
                 </div>
               </div>
             ))}
@@ -451,7 +451,7 @@ function PageBoard({ state }: { state: PlanningDemoState }) {
       {state.autofill === 2 && (
         <div id="pl-demo-autofill-result" className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[6] bg-card border border-green-400/50 rounded-lg shadow-2xl px-4 py-2.5 flex items-center gap-2.5">
           <span className="h-7 w-7 rounded-full bg-green-100 dark:bg-green-900/30 inline-flex items-center justify-center"><CheckCircle2 className="h-4 w-4 text-green-600" /></span>
-          <div><p className="text-xs font-semibold">2 jobs auto-scheduled</p><p className="text-[10px] text-muted-foreground">Placed by priority · no conflicts · within working hours</p></div>
+          <div><p className="text-xs font-semibold">2 jobs auto-scheduled</p><p className="text-px-10 text-muted-foreground">Placed by priority · no conflicts · within working hours</p></div>
         </div>
       )}
       {/* Batch-assign modal with the single-dispatch toggle */}
@@ -462,13 +462,13 @@ function PageBoard({ state }: { state: PlanningDemoState }) {
             <p className="text-xs text-muted-foreground mb-3">3 jobs · Acme Corp · assign to Karim T.</p>
             <div className="space-y-1.5 mb-3">
               {['Diagnose compressor fault', 'Replace condenser unit', 'Commission & test'].map(j => (
-                <div key={j} className="flex items-center justify-between text-xs px-2 py-1.5 rounded-md border border-border/60"><span className="inline-flex items-center gap-1.5"><Wrench className="h-3 w-3 text-muted-foreground" /> {j}</span><span className="text-[10px] text-muted-foreground">medium</span></div>
+                <div key={j} className="flex items-center justify-between text-xs px-2 py-1.5 rounded-md border border-border/60"><span className="inline-flex items-center gap-1.5"><Wrench className="h-3 w-3 text-muted-foreground" /> {j}</span><span className="text-px-10 text-muted-foreground">medium</span></div>
               ))}
             </div>
             <div id="pl-demo-single-toggle" className="flex items-start justify-between gap-3 p-2.5 rounded-lg border border-primary/40 ring-2 ring-primary/15 bg-primary/5">
               <div>
                 <p className="text-xs font-medium">Plan as a single dispatch</p>
-                <p className="text-[10px] text-muted-foreground">All jobs go into one dispatch (materials, expenses and time stay per job).</p>
+                <p className="text-px-10 text-muted-foreground">All jobs go into one dispatch (materials, expenses and time stay per job).</p>
               </div>
               <div className="mt-0.5 h-5 w-9 rounded-full bg-primary flex items-center px-0.5 justify-end shrink-0"><span className="h-4 w-4 rounded-full bg-white shadow" /></div>
             </div>
@@ -506,18 +506,18 @@ function PageProfiles({ state }: { state: PlanningDemoState }) {
         <div className="flex">
           {/* Profile list */}
           <div id="pl-demo-profile-list" className="w-48 shrink-0 border-r border-border p-2 space-y-2">
-            <div className="text-[10px] uppercase tracking-wide text-muted-foreground px-1">My profiles</div>
+            <div className="text-px-10 uppercase tracking-wide text-muted-foreground px-1">My profiles</div>
             {PROFILES.filter(p => !p.shared).map(p => (
               <div key={p.name} className={`px-2 py-1.5 rounded-md text-xs flex items-center gap-1.5 cursor-default ${p.active ? 'bg-primary/10 text-primary border border-primary/30' : 'border border-transparent hover:bg-muted'}`}>
                 {p.active && <Star className="h-3 w-3 fill-amber-400 text-amber-400" />}<span className="flex-1 truncate">{p.name}</span>
               </div>
             ))}
-            <div className="text-[10px] uppercase tracking-wide text-muted-foreground px-1 pt-1">Shared</div>
+            <div className="text-px-10 uppercase tracking-wide text-muted-foreground px-1 pt-1">Shared</div>
             {PROFILES.filter(p => p.shared).map(p => (
               <div key={p.name} className="px-2 py-1.5 rounded-md text-xs flex items-center gap-1.5 border border-transparent hover:bg-muted"><Users className="h-3 w-3 text-muted-foreground" /><span className="flex-1 truncate">{p.name}</span></div>
             ))}
             <div className="flex gap-1 pt-1">
-              <div className="flex-1 h-7 rounded-md border border-border text-[10px] inline-flex items-center justify-center gap-1 text-muted-foreground"><Plus className="h-3 w-3" /> New</div>
+              <div className="flex-1 h-7 rounded-md border border-border text-px-10 inline-flex items-center justify-center gap-1 text-muted-foreground"><Plus className="h-3 w-3" /> New</div>
               <div className="h-7 w-7 rounded-md border border-border inline-flex items-center justify-center text-muted-foreground"><Copy className="h-3 w-3" /></div>
             </div>
           </div>
@@ -534,24 +534,24 @@ function PageProfiles({ state }: { state: PlanningDemoState }) {
             {state.profileTab === 'display' && (
               <div id="pl-demo-profile-display" className="grid grid-cols-2 gap-x-6">
                 <div>
-                  <div className="text-[10px] uppercase text-muted-foreground mb-1">Board mode</div>
+                  <div className="text-px-10 uppercase text-muted-foreground mb-1">Board mode</div>
                   <div className="flex gap-1 mb-3">
-                    <span className="px-2 py-1 rounded bg-primary text-primary-foreground text-[11px]">Service Orders</span>
-                    <span className="px-2 py-1 rounded border border-border text-[11px] text-muted-foreground">Installations</span>
+                    <span className="px-2 py-1 rounded bg-primary text-primary-foreground text-px-11">Service Orders</span>
+                    <span className="px-2 py-1 rounded border border-border text-px-11 text-muted-foreground">Installations</span>
                   </div>
-                  <div className="text-[10px] uppercase text-muted-foreground mb-1">Default view</div>
+                  <div className="text-px-10 uppercase text-muted-foreground mb-1">Default view</div>
                   <div className="flex gap-1 mb-3">
-                    <span className="px-2 py-1 rounded border border-border text-[11px] text-muted-foreground">Day</span>
-                    <span className="px-2 py-1 rounded bg-primary text-primary-foreground text-[11px]">Week</span>
+                    <span className="px-2 py-1 rounded border border-border text-px-11 text-muted-foreground">Day</span>
+                    <span className="px-2 py-1 rounded bg-primary text-primary-foreground text-px-11">Week</span>
                   </div>
                   <Toggle on label="Include weekends" />
                   <Toggle on label="Show duration labels" />
                 </div>
                 <div>
-                  <div className="text-[10px] uppercase text-muted-foreground mb-1">Colour jobs by</div>
+                  <div className="text-px-10 uppercase text-muted-foreground mb-1">Colour jobs by</div>
                   <div className="flex flex-wrap gap-1 mb-3">
                     {['Status', 'Priority', 'Order', 'Technician'].map((c, i) => (
-                      <span key={c} className={`px-2 py-1 rounded text-[11px] ${i === 0 ? 'bg-primary text-primary-foreground' : 'border border-border text-muted-foreground'}`}>{c}</span>
+                      <span key={c} className={`px-2 py-1 rounded text-px-11 ${i === 0 ? 'bg-primary text-primary-foreground' : 'border border-border text-muted-foreground'}`}>{c}</span>
                     ))}
                   </div>
                   <Toggle on={false} label="Compact rows" />
@@ -564,7 +564,7 @@ function PageProfiles({ state }: { state: PlanningDemoState }) {
             {state.profileTab === 'users' && (
               <div id="pl-demo-profile-users" className="grid grid-cols-2 gap-x-6">
                 <div>
-                  <div className="text-[10px] uppercase text-muted-foreground mb-1.5">Visible technicians</div>
+                  <div className="text-px-10 uppercase text-muted-foreground mb-1.5">Visible technicians</div>
                   <div className="space-y-1">
                     {TECHS.map(t => (
                       <div key={t.id} className="flex items-center gap-2 px-2 py-1 rounded border border-border text-xs">
@@ -577,15 +577,15 @@ function PageProfiles({ state }: { state: PlanningDemoState }) {
                   <div className="mt-2"><Toggle on label="Hide users without working hours" /><Toggle on label="Hide users on leave today" /></div>
                 </div>
                 <div id="pl-demo-profile-skills">
-                  <div className="text-[10px] uppercase text-muted-foreground mb-1.5">Required skills</div>
+                  <div className="text-px-10 uppercase text-muted-foreground mb-1.5">Required skills</div>
                   <div className="flex flex-wrap gap-1 mb-2">
-                    {['HVAC', 'Hydraulics'].map(s => <span key={s} className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[11px]">{s} ✕</span>)}
-                    <span className="px-2 py-0.5 rounded-full border border-dashed border-border text-[11px] text-muted-foreground">+ add</span>
+                    {['HVAC', 'Hydraulics'].map(s => <span key={s} className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-px-11">{s} ✕</span>)}
+                    <span className="px-2 py-0.5 rounded-full border border-dashed border-border text-px-11 text-muted-foreground">+ add</span>
                   </div>
-                  <div className="text-[10px] uppercase text-muted-foreground mb-1">Match mode</div>
+                  <div className="text-px-10 uppercase text-muted-foreground mb-1">Match mode</div>
                   <div className="flex gap-1 mb-3">
-                    <span className="px-2 py-1 rounded bg-primary text-primary-foreground text-[11px]">Any</span>
-                    <span className="px-2 py-1 rounded border border-border text-[11px] text-muted-foreground">All</span>
+                    <span className="px-2 py-1 rounded bg-primary text-primary-foreground text-px-11">Any</span>
+                    <span className="px-2 py-1 rounded border border-border text-px-11 text-muted-foreground">All</span>
                   </div>
                   <Toggle on label="Sort technicians by skill match" />
                 </div>
@@ -652,7 +652,7 @@ function PageScheduler() {
             </tbody>
           </table>
         </div>
-        <p className="text-[11px] text-muted-foreground mt-2">These hours bound the calendar, drive Auto-fill, and decide who can take a late job.</p>
+        <p className="text-px-11 text-muted-foreground mt-2">These hours bound the calendar, drive Auto-fill, and decide who can take a late job.</p>
       </div>
     </div>
   );
@@ -805,13 +805,13 @@ export function PlanningAutopilotDemo({ open, onClose }: Props) {
             <button
               key={ch.id}
               onClick={() => jumpChapter(ch.start)}
-              className={`text-[10px] font-medium px-2 py-0.5 rounded-full transition-colors cursor-pointer
+              className={`text-px-10 font-medium px-2 py-0.5 rounded-full transition-colors cursor-pointer
                 ${activeChapter.id === ch.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/70'}`}
             >
               {getChapterTitle(demoLang, ch.id, ch.title)}
             </button>
           ))}
-          <span className="ml-auto text-[10px] text-muted-foreground">{Math.min(stepIndex + 1, PL_STEPS.length)} / {PL_STEPS.length}</span>
+          <span className="ml-auto text-px-10 text-muted-foreground">{Math.min(stepIndex + 1, PL_STEPS.length)} / {PL_STEPS.length}</span>
         </div>
         <div className="h-1 rounded-full bg-muted overflow-hidden mb-2">
           <div className="h-full bg-primary transition-all duration-300" style={{ width: `${(Math.min(stepIndex + 1, PL_STEPS.length) / PL_STEPS.length) * 100}%` }} />

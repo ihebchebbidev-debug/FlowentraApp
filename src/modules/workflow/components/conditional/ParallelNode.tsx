@@ -80,7 +80,7 @@ export const ParallelNode = memo(({ data, id, onNodeClick, onRemove }: ParallelN
       <div className="space-y-1 mb-2">
         {Array.from({ length: Math.min(branches, 4) }).map((_, index) => (
           <div key={index} className="flex items-center justify-between">
-            <span className="text-[11px] text-muted-foreground">{t('nodeUi.branch')} {index + 1}</span>
+            <span className="text-px-11 text-muted-foreground">{t('nodeUi.branch')} {index + 1}</span>
             <Handle
               type="source"
               position={Position.Right}

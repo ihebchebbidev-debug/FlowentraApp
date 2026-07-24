@@ -38,7 +38,7 @@ export function DependencyModal({
         <div className="space-y-2 max-h-60 overflow-y-auto">
           {dependents.map((d) => (
             <div key={d.code} className="flex items-center gap-2 text-sm border rounded-md px-3 py-2">
-              <Badge variant="outline" className="font-mono text-[10px]">{d.code}</Badge>
+              <Badge variant="outline" className="font-mono text-px-10">{d.code}</Badge>
               <span className="text-muted-foreground">{d.moduleKey}</span>
             </div>
           ))}

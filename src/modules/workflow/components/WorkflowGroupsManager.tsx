@@ -267,14 +267,14 @@ export function WorkflowGroupsManager({
                             </h4>
                             <Badge 
                               variant={workflow.isActive ? "default" : "secondary"}
-                              className="text-[10px] px-1.5 py-0 h-4 shrink-0"
+                              className="text-px-10 px-1.5 py-0 h-4 shrink-0"
                             >
                               {workflow.isActive 
                                 ? t('workflowGroups.active', 'Active') 
                                 : t('workflowGroups.inactive', 'Inactive')
                               }
                             </Badge>
-                            <span className="text-[10px] text-muted-foreground/60 shrink-0">
+                            <span className="text-px-10 text-muted-foreground/60 shrink-0">
                               v{workflow.version}
                             </span>
                           </div>
@@ -286,7 +286,7 @@ export function WorkflowGroupsManager({
                           )}
 
                           {/* Stats Row */}
-                          <div className="flex items-center gap-3 text-[11px] text-muted-foreground/70">
+                          <div className="flex items-center gap-3 text-px-11 text-muted-foreground/70">
                             <span className="flex items-center gap-1">
                               <Zap className="h-3 w-3" />
                               {stats.nodeCount} {t('workflowGroups.nodes', 'nodes')}

@@ -241,7 +241,7 @@ export function ExecutionDebugPanel({
     };
     const s = map[status] || map.cancelled;
     return (
-      <Badge variant="outline" className={cn('gap-1 text-[10px] py-0 px-1.5', s.color)}>
+      <Badge variant="outline" className={cn('gap-1 text-px-10 py-0 px-1.5', s.color)}>
         {s.icon}
         {status}
       </Badge>
@@ -296,7 +296,7 @@ export function ExecutionDebugPanel({
         <div className="flex items-center justify-between">
           <Label className="text-xs text-muted-foreground">Recent Executions</Label>
           <div className="flex items-center gap-1.5">
-            <Label className="text-[10px] text-muted-foreground">Auto-refresh</Label>
+            <Label className="text-px-10 text-muted-foreground">Auto-refresh</Label>
             <Switch checked={isPolling} onCheckedChange={setIsPolling} className="scale-75" />
           </div>
         </div>
@@ -324,7 +324,7 @@ export function ExecutionDebugPanel({
               >
                 <span className="font-mono text-muted-foreground">#{exec.id}</span>
                 {getExecStatusBadge(exec.status)}
-                <span className="ml-auto text-[10px] text-muted-foreground">
+                <span className="ml-auto text-px-10 text-muted-foreground">
                   {formatDistanceToNow(new Date(exec.startedAt), { addSuffix: true })}
                 </span>
               </button>
@@ -340,12 +340,12 @@ export function ExecutionDebugPanel({
             <span className="text-xs font-medium">Pipeline #{selectedExecution.id}</span>
             <div className="flex items-center gap-2">
               {selectedExecution.status === 'running' && (
-                <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => handleCancel(selectedExecution.id)}>
+                <Button variant="ghost" size="sm" className="h-6 text-px-10 px-2" onClick={() => handleCancel(selectedExecution.id)}>
                   Cancel
                 </Button>
               )}
               {selectedExecution.status === 'failed' && (
-                <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => handleRetry(selectedExecution.id)}>
+                <Button variant="ghost" size="sm" className="h-6 text-px-10 px-2" onClick={() => handleRetry(selectedExecution.id)}>
                   <RotateCcw className="h-3 w-3 mr-1" />
                   Retry
                 </Button>
@@ -363,7 +363,7 @@ export function ExecutionDebugPanel({
               style={{ width: `${totalNodes > 0 ? ((completedCount / totalNodes) * 100) : 0}%` }}
             />
           </div>
-          <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+          <div className="flex items-center gap-2 text-px-10 text-muted-foreground">
             <span className="flex items-center gap-1">
               <CheckCircle2 className="h-3 w-3 text-success" />
               {completedCount}
@@ -381,7 +381,7 @@ export function ExecutionDebugPanel({
 
           {/* Global Error */}
           {selectedExecution.error && (
-            <div className="mt-2 p-2 rounded-md bg-destructive/10 border border-destructive/20 text-[11px] text-destructive">
+            <div className="mt-2 p-2 rounded-md bg-destructive/10 border border-destructive/20 text-px-11 text-destructive">
               <div className="flex items-center gap-1 font-medium mb-0.5">
                 <AlertTriangle className="h-3 w-3" />
                 Execution Error
@@ -392,13 +392,13 @@ export function ExecutionDebugPanel({
 
           {/* Blocked Node Warning */}
           {selectedExecution.currentNodeId && (selectedExecution.status === 'failed' || selectedExecution.status === 'waiting_approval') && (
-            <div className="mt-2 p-2 rounded-md bg-warning/10 border border-warning/20 text-[11px] text-warning">
+            <div className="mt-2 p-2 rounded-md bg-warning/10 border border-warning/20 text-px-11 text-warning">
               <div className="flex items-center gap-1 font-medium mb-0.5">
                 <AlertOctagon className="h-3 w-3" />
                 Blocked at: {selectedExecution.currentNodeId}
               </div>
               <button
-                className="text-primary underline text-[10px] mt-0.5"
+                className="text-primary underline text-px-10 mt-0.5"
                 onClick={() => onHighlightNode?.(selectedExecution.currentNodeId!)}
               >
                 → Focus on blocked node
@@ -427,10 +427,10 @@ export function ExecutionDebugPanel({
                   {getStatusIcon(entry.status)}
                   <div className="flex-1 min-w-0">
                     <div className="text-xs font-medium truncate">{entry.nodeLabel}</div>
-                    <div className="text-[10px] text-muted-foreground truncate">{entry.nodeType}</div>
+                    <div className="text-px-10 text-muted-foreground truncate">{entry.nodeType}</div>
                   </div>
                   {entry.duration != null && (
-                    <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                    <span className="text-px-10 text-muted-foreground whitespace-nowrap">
                       {entry.duration}ms
                     </span>
                   )}
@@ -438,7 +438,7 @@ export function ExecutionDebugPanel({
 
                 {/* Error detail */}
                 {entry.error && (
-                  <div className="mt-1.5 p-1.5 rounded bg-destructive/10 text-[10px] text-destructive">
+                  <div className="mt-1.5 p-1.5 rounded bg-destructive/10 text-px-10 text-destructive">
                     {entry.error}
                   </div>
                 )}
@@ -456,18 +456,18 @@ export function ExecutionDebugPanel({
                       });
                     }}
                   >
-                    <CollapsibleTrigger className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground hover:text-foreground">
+                    <CollapsibleTrigger className="flex items-center gap-1 mt-1 text-px-10 text-muted-foreground hover:text-foreground">
                       {expandedLogs.has(entry.log.id) ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
                       Log details
                     </CollapsibleTrigger>
                     <CollapsibleContent>
-                      <div className="mt-1 p-1.5 rounded bg-muted/50 text-[10px] space-y-1 font-mono">
+                      <div className="mt-1 p-1.5 rounded bg-muted/50 text-px-10 space-y-1 font-mono">
                         <div><span className="text-muted-foreground">Status:</span> {entry.log.status}</div>
                         <div><span className="text-muted-foreground">Time:</span> {entry.timestamp ? format(new Date(entry.timestamp), 'HH:mm:ss.SSS') : '-'}</div>
                         {entry.log.input && (
                           <div>
                             <span className="text-muted-foreground">Input:</span>
-                            <pre className="mt-0.5 text-[9px] whitespace-pre-wrap overflow-hidden max-h-20">
+                            <pre className="mt-0.5 text-px-9 whitespace-pre-wrap overflow-hidden max-h-20">
                               {typeof entry.log.input === 'string' ? entry.log.input : JSON.stringify(entry.log.input, null, 2)}
                             </pre>
                           </div>
@@ -475,7 +475,7 @@ export function ExecutionDebugPanel({
                         {entry.log.output && (
                           <div>
                             <span className="text-muted-foreground">Output:</span>
-                            <pre className="mt-0.5 text-[9px] whitespace-pre-wrap overflow-hidden max-h-20">
+                            <pre className="mt-0.5 text-px-9 whitespace-pre-wrap overflow-hidden max-h-20">
                               {typeof entry.log.output === 'string' ? entry.log.output : JSON.stringify(entry.log.output, null, 2)}
                             </pre>
                           </div>
@@ -509,7 +509,7 @@ export function ExecutionDebugPanel({
 
       {/* Footer */}
       {lastUpdated && (
-        <div className="p-2 border-t border-border text-[10px] text-muted-foreground text-center">
+        <div className="p-2 border-t border-border text-px-10 text-muted-foreground text-center">
           Last updated: {format(lastUpdated, 'HH:mm:ss')}
         </div>
       )}

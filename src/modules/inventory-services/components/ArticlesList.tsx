@@ -197,7 +197,7 @@ export function ArticlesList() {
           </div>
           <div>
             <h1 className="text-xl font-semibold text-foreground">{t('title')}</h1>
-            <p className="text-[11px] text-muted-foreground">{t('subtitle')}</p>
+            <p className="text-px-11 text-muted-foreground">{t('subtitle')}</p>
           </div>
         </div>
         <div>

@@ -103,7 +103,7 @@ export default function InventoryList() {
   };
 
   return (
-  <div className="flex flex-col text-[0.95rem]">
+  <div className="flex flex-col text-rem-95">
       {/* Desktop Header */}
       <div className="hidden md:flex items-center justify-between p-4 border-b border-border bg-card/50 backdrop-blur">
         <div className="flex items-center gap-3">
@@ -112,7 +112,7 @@ export default function InventoryList() {
           </div>
           <div>
             <h1 className="text-xl font-semibold text-foreground">{t('inventory_field:title', 'Field Articles')}</h1>
-            <p className="text-[11px] text-muted-foreground">{t('inventory_field:subtitle', 'Manage inventory & assets on the field')}</p>
+            <p className="text-px-11 text-muted-foreground">{t('inventory_field:subtitle', 'Manage inventory & assets on the field')}</p>
           </div>
         </div>
       </div>

@@ -66,7 +66,7 @@ export function WidgetDonut({ widget }: Props) {
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ paddingBottom: cfg.showLegend !== false ? '28px' : '0' }}>
           <div className="text-center">
             <p className="text-xl font-bold text-foreground">{total}</p>
-            <p className="text-[10px] text-muted-foreground">{t('dashboardBuilder.total')}</p>
+            <p className="text-px-10 text-muted-foreground">{t('dashboardBuilder.total')}</p>
           </div>
         </div>
       </div>

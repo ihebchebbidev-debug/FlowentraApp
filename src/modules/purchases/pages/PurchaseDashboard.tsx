@@ -145,7 +145,7 @@ function PurchaseDashboardContent() {
                       <s.icon className={cn('h-4 w-4 sm:h-5 sm:w-5', s.color)} />
                     </div>
                     <div className="min-w-0">
-                      <div className="text-[11px] text-muted-foreground truncate">{s.label}</div>
+                      <div className="text-px-11 text-muted-foreground truncate">{s.label}</div>
                       <div className="text-base sm:text-xl font-semibold text-foreground truncate">{s.value}</div>
                     </div>
                   </div>
@@ -178,7 +178,7 @@ function PurchaseDashboardContent() {
                       <TableRow key={po.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/dashboard/purchases/orders/${po.id}`)}>
                         <TableCell className="text-xs font-medium">{po.orderNumber}</TableCell>
                         <TableCell className="text-xs">{po.supplierName}</TableCell>
-                        <TableCell><Badge variant="secondary" className={`text-[10px] ${STATUS_COLORS[po.status] || ''}`}>{t(`status.${po.status}`)}</Badge></TableCell>
+                        <TableCell><Badge variant="secondary" className={`text-px-10 ${STATUS_COLORS[po.status] || ''}`}>{t(`status.${po.status}`)}</Badge></TableCell>
                         <TableCell className="text-xs text-right font-medium">{fmt(po.grandTotal)}</TableCell>
                       </TableRow>
                     ))}
@@ -213,7 +213,7 @@ function PurchaseDashboardContent() {
                         <TableCell className="text-xs font-medium">{po.orderNumber}</TableCell>
                         <TableCell className="text-xs">{po.supplierName}</TableCell>
                         <TableCell className="text-xs">{po.expectedDelivery || '-'}</TableCell>
-                        <TableCell><Badge variant="secondary" className={`text-[10px] ${STATUS_COLORS[po.status] || ''}`}>{t(`status.${po.status}`)}</Badge></TableCell>
+                        <TableCell><Badge variant="secondary" className={`text-px-10 ${STATUS_COLORS[po.status] || ''}`}>{t(`status.${po.status}`)}</Badge></TableCell>
                       </TableRow>
                     ))}
                     {pendingOrders.length === 0 && (

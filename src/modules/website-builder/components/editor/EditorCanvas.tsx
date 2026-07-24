@@ -129,7 +129,7 @@ function DropZone({
               e.stopPropagation();
               onClickInsert(index);
             }}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary text-primary-foreground text-[10px] font-medium shadow-md hover:shadow-lg hover:scale-105 transition-all"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary text-primary-foreground text-px-10 font-medium shadow-md hover:shadow-lg hover:scale-105 transition-all"
           >
             <Plus className="h-3 w-3" />
             Insert here
@@ -140,7 +140,7 @@ function DropZone({
       {/* Drop label for palette drag */}
       {isDragOver && (
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
-          <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold shadow-lg animate-pulse">
+          <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-px-10 font-semibold shadow-lg animate-pulse">
             <Plus className="h-3 w-3" />
             Drop to insert
           </div>
@@ -229,7 +229,7 @@ function DragPreview({ component, theme }: { component: BuilderComponent; theme:
       className="rounded-xl shadow-2xl border-2 border-primary/30 overflow-hidden pointer-events-none max-w-md"
       style={{ opacity: 0.9, transform: 'scale(0.85)' }}
     >
-      <div className="bg-primary text-primary-foreground text-[10px] font-semibold px-3 py-1 flex items-center gap-1.5">
+      <div className="bg-primary text-primary-foreground text-px-10 font-semibold px-3 py-1 flex items-center gap-1.5">
         <GripVertical className="h-3 w-3" />
         {component.label}
       </div>
@@ -291,7 +291,7 @@ function EmptyCanvas({ onDropBlock }: { onDropBlock: (blockType: string, index: 
         </p>
       </div>
       {!isDragOver && (
-        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/40 mt-2">
+        <div className="flex items-center gap-1.5 text-px-10 text-muted-foreground/40 mt-2">
           <MousePointerClick className="h-3 w-3" />
           <span>Drag & drop or click to add blocks</span>
         </div>
@@ -377,7 +377,7 @@ export function EditorCanvas({
           onClick={() => onSelect('')}
         >
           {isRtlPreview && (
-            <div className="absolute top-0 left-0 right-0 bg-accent text-accent-foreground text-[10px] font-medium text-center py-1 z-30">
+            <div className="absolute top-0 left-0 right-0 bg-accent text-accent-foreground text-px-10 font-medium text-center py-1 z-30">
               RTL Preview Mode
             </div>
           )}

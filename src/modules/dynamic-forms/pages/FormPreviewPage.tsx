@@ -349,7 +349,7 @@ export default function FormPreviewPage() {
                 {label}
                 {field.required && <span className="text-destructive ml-1">*</span>}
                 {field.use_dynamic_data && (
-                  <Badge variant="outline" className="ml-2 text-[10px] h-4">
+                  <Badge variant="outline" className="ml-2 text-px-10 h-4">
                     {field.dependency ? t('dynamic_data.cascading') : 'Dynamic'}
                   </Badge>
                 )}
@@ -424,7 +424,7 @@ export default function FormPreviewPage() {
                 {label}
                 {field.required && <span className="text-destructive ml-1">*</span>}
                 {field.use_dynamic_data && (
-                  <Badge variant="outline" className="ml-2 text-[10px] h-4">
+                  <Badge variant="outline" className="ml-2 text-px-10 h-4">
                     {field.dependency ? t('dynamic_data.cascading') : 'Dynamic'}
                   </Badge>
                 )}
@@ -480,7 +480,7 @@ export default function FormPreviewPage() {
                 {label}
                 {field.required && <span className="text-destructive ml-1">*</span>}
                 {field.use_dynamic_data && (
-                  <Badge variant="outline" className="ml-2 text-[10px] h-4">
+                  <Badge variant="outline" className="ml-2 text-px-10 h-4">
                     {field.dependency ? t('dynamic_data.cascading') : 'Dynamic'}
                   </Badge>
                 )}

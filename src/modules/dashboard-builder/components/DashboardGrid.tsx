@@ -233,7 +233,7 @@ export function DashboardGrid({ widgets, isEditing, gridSettings, onLayoutChange
                 <div className="absolute top-1.5 left-1.5 right-1.5 z-20 flex items-center justify-between">
                   <div className="widget-drag-handle cursor-grab active:cursor-grabbing flex items-center gap-1 px-1.5 py-1 rounded-md bg-background/80 backdrop-blur-sm border border-border/50 shadow-sm text-muted-foreground hover:text-foreground transition-colors">
                     <GripVertical className="h-3.5 w-3.5" />
-                    <span className="text-[10px] font-medium truncate max-w-[100px]">
+                    <span className="text-px-10 font-medium truncate max-w-[100px]">
                       {title}
                     </span>
                   </div>
@@ -268,7 +268,7 @@ export function DashboardGrid({ widgets, isEditing, gridSettings, onLayoutChange
                         {title}
                       </h4>
                       {description && (
-                        <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                        <p className="text-px-11 text-muted-foreground truncate mt-0.5">
                           {description}
                         </p>
                       )}
@@ -290,7 +290,7 @@ export function DashboardGrid({ widgets, isEditing, gridSettings, onLayoutChange
                       return (
                         <button
                           onClick={() => navigate(route)}
-                          className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors whitespace-nowrap"
+                          className="inline-flex items-center gap-1 text-px-11 font-medium text-primary hover:text-primary/80 transition-colors whitespace-nowrap"
                         >
                           {t('overview.viewAll')}
                           <ExternalLink className="h-3 w-3" />

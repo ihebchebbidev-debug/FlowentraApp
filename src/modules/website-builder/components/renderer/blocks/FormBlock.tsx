@@ -275,11 +275,11 @@ export function FormBlock({
                     <select
                       value={field.type}
                       onChange={e => updateField(i, 'type', e.target.value)}
-                      className="text-[10px] px-1 py-0.5 border rounded bg-background"
+                      className="text-px-10 px-1 py-0.5 border rounded bg-background"
                     >
                       {fieldTypeOptions.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                     </select>
-                    <label className="text-[10px] flex items-center gap-0.5 text-muted-foreground">
+                    <label className="text-px-10 flex items-center gap-0.5 text-muted-foreground">
                       <input
                         type="checkbox"
                         checked={field.required ?? false}
@@ -291,7 +291,7 @@ export function FormBlock({
                     <select
                       value={field.width || 'full'}
                       onChange={e => updateField(i, 'width', e.target.value)}
-                      className="text-[10px] px-1 py-0.5 border rounded bg-background"
+                      className="text-px-10 px-1 py-0.5 border rounded bg-background"
                     >
                       <option value="full">Full width</option>
                       <option value="half">Half width</option>
@@ -337,7 +337,7 @@ export function FormBlock({
             >
               <Plus className="h-3 w-3" /> Add Field
             </button>
-            <div className="text-[10px] text-center text-muted-foreground opacity-60">
+            <div className="text-px-10 text-center text-muted-foreground opacity-60">
               💡 Configure webhook URL, success message & actions in the Properties panel → Form Settings
             </div>
           </div>

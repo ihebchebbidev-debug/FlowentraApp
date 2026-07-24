@@ -504,7 +504,7 @@ export function EmailComposer({
                 <span className="font-medium text-sm">{doc.summaryLabel}</span>
               </div>
               <div className="flex items-center gap-2">
-                {doc.statusLabel && <Badge variant="outline" className="text-[10px] capitalize">{doc.statusLabel}</Badge>}
+                {doc.statusLabel && <Badge variant="outline" className="text-px-10 capitalize">{doc.statusLabel}</Badge>}
                 <Badge variant="outline" className="text-xs">#{doc.documentNumber}</Badge>
               </div>
             </div>
@@ -564,7 +564,7 @@ export function EmailComposer({
                         <div className="flex items-center gap-2">
                           <Mail className="h-3.5 w-3.5 text-muted-foreground" />
                           {a.handle}
-                          <Badge variant="outline" className="text-[10px] capitalize">{a.provider}</Badge>
+                          <Badge variant="outline" className="text-px-10 capitalize">{a.provider}</Badge>
                         </div>
                       </SelectItem>
                     ))}
@@ -581,7 +581,7 @@ export function EmailComposer({
                   {en ? 'Recipients' : 'Destinataires'}
                 </Label>
                 {!showCc && (
-                  <button className="text-[11px] text-primary hover:underline" onClick={() => setShowCc(true)}>+ Cc</button>
+                  <button className="text-px-11 text-primary hover:underline" onClick={() => setShowCc(true)}>+ Cc</button>
                 )}
               </div>
               <div className="flex flex-wrap gap-1.5 p-2 rounded-md border border-input bg-background min-h-[38px]">
@@ -641,7 +641,7 @@ export function EmailComposer({
                   {/* Insert Placeholder */}
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button type="button" variant="ghost" size="sm" className="h-6 text-[10px] gap-1 text-muted-foreground hover:text-foreground">
+                      <Button type="button" variant="ghost" size="sm" className="h-6 text-px-10 gap-1 text-muted-foreground hover:text-foreground">
                         <Braces className="h-3 w-3" />
                         {en ? 'Insert Variable' : 'Insérer variable'}
                       </Button>
@@ -653,7 +653,7 @@ export function EmailComposer({
                           if (items.length === 0) return null;
                           return (
                             <div key={cat}>
-                              <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-2 py-1">
+                              <div className="text-px-10 font-semibold text-muted-foreground uppercase tracking-wider px-2 py-1">
                                 {cat}
                               </div>
                               {items.map(p => (
@@ -666,7 +666,7 @@ export function EmailComposer({
                                   }}
                                 >
                                   <span>{en ? p.labelEn : p.labelFr}</span>
-                                  <code className="text-[10px] text-muted-foreground font-mono">{p.token}</code>
+                                  <code className="text-px-10 text-muted-foreground font-mono">{p.token}</code>
                                 </button>
                               ))}
                             </div>
@@ -681,7 +681,7 @@ export function EmailComposer({
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="h-6 text-[10px] gap-1 text-muted-foreground hover:text-foreground"
+                    className="h-6 text-px-10 gap-1 text-muted-foreground hover:text-foreground"
                     onClick={() => {
                       saveBodyTemplate(doc.type, bodyHtml);
                       // Show brief feedback
@@ -705,7 +705,7 @@ export function EmailComposer({
                 placeholder={en ? 'Compose your message... Use {contact.name} for smart placeholders' : 'Rédigez votre message... Utilisez {contact.name} pour les variables'}
                 minHeight="140px"
               />
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-px-10 text-muted-foreground">
                 {en
                   ? 'Tip: Use variables like {contact.name} to personalize. Click "Save as Default" to reuse this message.'
                   : 'Astuce : Utilisez des variables comme {contact.name} pour personnaliser. Cliquez "Sauvegarder" pour réutiliser ce message.'}
@@ -724,7 +724,7 @@ export function EmailComposer({
                   {signatureEnabled && (
                     <button
                       type="button"
-                      className="text-[11px] text-primary hover:underline"
+                      className="text-px-11 text-primary hover:underline"
                       onClick={() => setShowSignatureEditor(!showSignatureEditor)}
                     >
                       {showSignatureEditor ? (en ? 'Hide' : 'Masquer') : (en ? 'Edit' : 'Modifier')}
@@ -770,12 +770,12 @@ export function EmailComposer({
               <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
               <span className="text-sm text-foreground truncate">{doc.fileName}</span>
               {hasPdfSignature && (
-                <Badge variant="default" className="text-[10px] gap-1 shrink-0">
+                <Badge variant="default" className="text-px-10 gap-1 shrink-0">
                   <CheckCircle className="h-3 w-3" />
                   {en ? 'Signed' : 'Signé'}
                 </Badge>
               )}
-              <Badge variant="outline" className="text-[10px] ml-auto shrink-0">PDF</Badge>
+              <Badge variant="outline" className="text-px-10 ml-auto shrink-0">PDF</Badge>
               <div className="flex items-center gap-1.5 shrink-0">
                 {hasPdfSignature && (
                   <Button

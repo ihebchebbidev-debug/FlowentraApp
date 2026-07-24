@@ -45,7 +45,7 @@ export function AiThinkingIndicator({ isAnalyzingImage, className }: AiThinkingI
 
       {/* Image badge */}
       {isAnalyzingImage && (
-        <span className="ml-1 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+        <span className="ml-1 rounded bg-muted px-1.5 py-0.5 text-px-10 font-medium text-muted-foreground">
           + image
         </span>
       )}

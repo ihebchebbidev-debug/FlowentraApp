@@ -279,7 +279,7 @@ export function PreferencesStep({
                         </div>
                       )}
                     </div>
-                    <span className={`text-[10px] font-medium transition-colors ${isSelected ? 'text-foreground' : 'text-muted-foreground'}`}>
+                    <span className={`text-px-10 font-medium transition-colors ${isSelected ? 'text-foreground' : 'text-muted-foreground'}`}>
                       {color.name.split(' ')[0]}
                     </span>
                   </Label>
@@ -316,7 +316,7 @@ export function PreferencesStep({
               ))}
             </SelectContent>
           </Select>
-          <p className="text-[11px] text-muted-foreground mt-2">
+          <p className="text-px-11 text-muted-foreground mt-2">
             {t('onboarding.steps.preferences.currency.hint', 'You can change this later in Settings.')}
           </p>
         </SectionCard>

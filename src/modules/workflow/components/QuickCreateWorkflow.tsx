@@ -415,7 +415,7 @@ export function QuickCreateWorkflow({
                 <div className="flex items-center justify-between">
                   <div>
                     <Label>{t('quickCreate.autoCreateSaleLabel')}</Label>
-                    <p className="text-[11px] text-muted-foreground">{t('quickCreate.autoCreateSaleDesc')}</p>
+                    <p className="text-px-11 text-muted-foreground">{t('quickCreate.autoCreateSaleDesc')}</p>
                   </div>
                   <Switch
                     checked={data.notifications.autoCreateSale}
@@ -432,7 +432,7 @@ export function QuickCreateWorkflow({
                 <div className="flex items-center justify-between">
                   <div>
                     <Label>{t('quickCreate.notifyCustomerLabel')}</Label>
-                    <p className="text-[11px] text-muted-foreground">{t('quickCreate.notifyCustomerDesc')}</p>
+                    <p className="text-px-11 text-muted-foreground">{t('quickCreate.notifyCustomerDesc')}</p>
                   </div>
                   <Switch
                     checked={data.notifications.notifyCustomer}
@@ -449,7 +449,7 @@ export function QuickCreateWorkflow({
                 <div className="flex items-center justify-between">
                   <div>
                     <Label>{t('quickCreate.sendRemindersLabel')}</Label>
-                    <p className="text-[11px] text-muted-foreground">{t('quickCreate.sendRemindersDesc')}</p>
+                    <p className="text-px-11 text-muted-foreground">{t('quickCreate.sendRemindersDesc')}</p>
                   </div>
                   <Switch
                     checked={data.notifications.sendReminders}

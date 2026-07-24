@@ -197,8 +197,8 @@ export default function ReportIssueModal({ open, onOpenChange, prefill }: Props)
               <AlertTriangle className="h-4.5 w-4.5 text-primary" />
             </div>
             <div>
-              <DialogTitle className="text-[15px]">{t('reportIssue.title')}</DialogTitle>
-              <DialogDescription className="text-[12px] mt-0.5">
+              <DialogTitle className="text-px-15">{t('reportIssue.title')}</DialogTitle>
+              <DialogDescription className="text-px-12 mt-0.5">
                 {t('reportIssue.subtitle')}
               </DialogDescription>
             </div>
@@ -215,7 +215,7 @@ export default function ReportIssueModal({ open, onOpenChange, prefill }: Props)
             <div className="space-y-4">
               {/* Title */}
               <div className="space-y-1.5">
-                <Label htmlFor="issue-title" className="text-[13px] font-medium">
+                <Label htmlFor="issue-title" className="text-px-13 font-medium">
                   {t('reportIssue.issueTitle')} <span className="text-destructive">*</span>
                 </Label>
                 <Input
@@ -227,13 +227,13 @@ export default function ReportIssueModal({ open, onOpenChange, prefill }: Props)
                   autoFocus
                 />
                 {errors.title && (
-                  <p className="text-[11px] text-destructive mt-1">{t('reportIssue.required')}</p>
+                  <p className="text-px-11 text-destructive mt-1">{t('reportIssue.required')}</p>
                 )}
               </div>
 
               {/* Description */}
               <div className="space-y-1.5">
-                <Label htmlFor="issue-desc" className="text-[13px] font-medium">
+                <Label htmlFor="issue-desc" className="text-px-13 font-medium">
                   {t('reportIssue.description')} <span className="text-destructive">*</span>
                 </Label>
                 <Textarea
@@ -244,7 +244,7 @@ export default function ReportIssueModal({ open, onOpenChange, prefill }: Props)
                   className={`min-h-[110px] resize-y ${errors.description ? 'border-destructive focus-visible:ring-destructive/40' : ''}`}
                 />
                 {errors.description && (
-                  <p className="text-[11px] text-destructive mt-1">{t('reportIssue.required')}</p>
+                  <p className="text-px-11 text-destructive mt-1">{t('reportIssue.required')}</p>
                 )}
               </div>
             </div>
@@ -253,14 +253,14 @@ export default function ReportIssueModal({ open, onOpenChange, prefill }: Props)
 
             {/* === Optional Section === */}
             <div className="space-y-4">
-              <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
+              <p className="text-px-11 uppercase tracking-wider text-muted-foreground font-medium">
                 {t('reportIssue.optionalDetails', 'Optional details')}
               </p>
 
               {/* Urgency & Category */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label className="text-[13px] font-medium flex items-center gap-1.5">
+                  <Label className="text-px-13 font-medium flex items-center gap-1.5">
                     <Shield className="h-3.5 w-3.5 text-muted-foreground" />
                     {t('reportIssue.urgency')}
                   </Label>
@@ -282,7 +282,7 @@ export default function ReportIssueModal({ open, onOpenChange, prefill }: Props)
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label className="text-[13px] font-medium flex items-center gap-1.5">
+                  <Label className="text-px-13 font-medium flex items-center gap-1.5">
                     <Tag className="h-3.5 w-3.5 text-muted-foreground" />
                     {t('reportIssue.category')}
                   </Label>
@@ -302,7 +302,7 @@ export default function ReportIssueModal({ open, onOpenChange, prefill }: Props)
               {/* Current Page & URL side by side */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="current-page" className="text-[13px] font-medium flex items-center gap-1.5">
+                  <Label htmlFor="current-page" className="text-px-13 font-medium flex items-center gap-1.5">
                     <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
                     {t('reportIssue.currentPage')}
                   </Label>
@@ -311,12 +311,12 @@ export default function ReportIssueModal({ open, onOpenChange, prefill }: Props)
                     placeholder={t('reportIssue.currentPagePlaceholder')}
                     value={currentPage}
                     onChange={(e) => setCurrentPage(e.target.value)}
-                    className="h-9 text-[12px] font-mono text-muted-foreground"
+                    className="h-9 text-px-12 font-mono text-muted-foreground"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="related-url" className="text-[13px] font-medium flex items-center gap-1.5">
+                  <Label htmlFor="related-url" className="text-px-13 font-medium flex items-center gap-1.5">
                     <Globe className="h-3.5 w-3.5 text-muted-foreground" />
                     {t('reportIssue.relatedUrl')}
                   </Label>
@@ -333,7 +333,7 @@ export default function ReportIssueModal({ open, onOpenChange, prefill }: Props)
                 {/* Link to existing ticket (optional) */}
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-[12px] font-semibold text-muted-foreground flex items-center gap-2">
+                    <h4 className="text-px-12 font-semibold text-muted-foreground flex items-center gap-2">
                       <Ticket className="h-4 w-4" /> {t('reportIssue.linkToExisting', 'Link to existing ticket')}
                     </h4>
                   </div>
@@ -344,7 +344,7 @@ export default function ReportIssueModal({ open, onOpenChange, prefill }: Props)
 
                 {/* File Upload + Screenshot */}
               <div className="space-y-1.5">
-                <Label className="text-[13px] font-medium flex items-center gap-1.5">
+                <Label className="text-px-13 font-medium flex items-center gap-1.5">
                   <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />
                   {t('reportIssue.attachments')}
                 </Label>
@@ -367,11 +367,11 @@ export default function ReportIssueModal({ open, onOpenChange, prefill }: Props)
                     <div className={`p-2 rounded-full transition-colors ${dragOver ? 'bg-primary/10' : 'bg-muted/40'}`}>
                       <Upload className={`h-4 w-4 ${dragOver ? 'text-primary' : 'text-muted-foreground'}`} />
                     </div>
-                    <p className="text-[12px] text-muted-foreground text-center">
+                    <p className="text-px-12 text-muted-foreground text-center">
                       {t('reportIssue.dragDrop')}{' '}
                       <span className="text-primary font-medium">{t('reportIssue.browse')}</span>
                     </p>
-                    <p className="text-[10px] text-muted-foreground/60">
+                    <p className="text-px-10 text-muted-foreground/60">
                       {t('reportIssue.maxFiles', { max: MAX_FILES })}
                     </p>
                     <input
@@ -397,13 +397,13 @@ export default function ReportIssueModal({ open, onOpenChange, prefill }: Props)
                               className="w-9 h-7 object-cover rounded border border-border/30 flex-shrink-0"
                             />
                           ) : (
-                            <div className="w-9 h-7 flex items-center justify-center bg-muted rounded text-[10px] font-mono font-medium text-muted-foreground flex-shrink-0 border border-border/30">
+                            <div className="w-9 h-7 flex items-center justify-center bg-muted rounded text-px-10 font-mono font-medium text-muted-foreground flex-shrink-0 border border-border/30">
                               {file.name.split('.').pop()?.toUpperCase().slice(0, 4) || 'FILE'}
                             </div>
                           )}
                           <div className="min-w-0">
-                            <p className="text-[12px] truncate leading-tight">{file.name}</p>
-                            <p className="text-[10px] text-muted-foreground/70">
+                            <p className="text-px-12 truncate leading-tight">{file.name}</p>
+                            <p className="text-px-10 text-muted-foreground/70">
                               {file.size < 1024 * 1024
                                 ? `${(file.size / 1024).toFixed(0)} KB`
                                 : `${(file.size / (1024 * 1024)).toFixed(1)} MB`

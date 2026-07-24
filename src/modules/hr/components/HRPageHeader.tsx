@@ -37,7 +37,7 @@ export function HRPageHeader(props: {
             <div className="min-w-0">
               <h1 className="text-base font-bold text-foreground truncate">{props.title}</h1>
               {props.subtitle && (
-                <p className="text-[11px] text-muted-foreground truncate">{props.subtitle}</p>
+                <p className="text-px-11 text-muted-foreground truncate">{props.subtitle}</p>
               )}
             </div>
           </div>

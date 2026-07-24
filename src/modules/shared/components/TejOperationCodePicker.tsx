@@ -51,7 +51,7 @@ export function TejOperationCodePicker({
         <SelectContent className="max-h-80">
           {families.map(family => (
             <SelectGroup key={family}>
-              <SelectLabel className="text-[11px] uppercase tracking-wider text-muted-foreground">
+              <SelectLabel className="text-px-11 uppercase tracking-wider text-muted-foreground">
                 {family}
               </SelectLabel>
               {TEJ_OPERATION_BY_FAMILY[family].map(op => (
@@ -59,7 +59,7 @@ export function TejOperationCodePicker({
                   <span className="font-mono mr-2">{op.code}</span>
                   <span>{op.labelFr}</span>
                   {op.defaultRate !== null && (
-                    <Badge variant="outline" className="ml-2 text-[10px] px-1 py-0">
+                    <Badge variant="outline" className="ml-2 text-px-10 px-1 py-0">
                       {op.defaultRate}%
                     </Badge>
                   )}
@@ -70,7 +70,7 @@ export function TejOperationCodePicker({
         </SelectContent>
       </Select>
       {showHelp && current && (
-        <p className="text-[10px] text-muted-foreground mt-1">
+        <p className="text-px-10 text-muted-foreground mt-1">
           <span className="font-mono">{current.code}</span> · {current.family}
           {current.defaultRate !== null && <> · taux usuel {current.defaultRate}%</>}
         </p>

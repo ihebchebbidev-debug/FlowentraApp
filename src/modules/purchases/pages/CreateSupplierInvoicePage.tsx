@@ -215,7 +215,7 @@ export default function CreateSupplierInvoicePage() {
                   />
                   <div className="p-2 bg-amber-50 dark:bg-amber-900/20 rounded text-xs">
                     <p className="font-medium text-amber-700 dark:text-amber-400">{t('compliance.rsAmount')}: {fmt(rsAmount)} {currency.code}</p>
-                    <p className="text-[10px] text-muted-foreground mt-1">{t('compliance.rsNote')}</p>
+                    <p className="text-px-10 text-muted-foreground mt-1">{t('compliance.rsNote')}</p>
                   </div>
                 </>
               )}

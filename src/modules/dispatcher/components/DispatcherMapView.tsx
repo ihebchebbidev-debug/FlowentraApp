@@ -427,7 +427,7 @@ export function DispatcherMapView({ jobs, technicians, onJobClick, onJobAssigned
               <h3 className="text-sm font-semibold text-foreground truncate">
                 {t('mapAssign.nearbyTechnicians')}
               </h3>
-              <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+              <p className="text-px-11 text-muted-foreground truncate mt-0.5">
                 {selectedJobForAssign.title || selectedJobForAssign.serviceOrderTitle}
               </p>
             </div>
@@ -480,7 +480,7 @@ export function DispatcherMapView({ jobs, technicians, onJobClick, onJobAssigned
                         <div className="text-sm font-medium text-foreground truncate">
                           {tech.firstName} {tech.lastName}
                         </div>
-                        <div className="text-[10px] text-muted-foreground">
+                        <div className="text-px-10 text-muted-foreground">
                           {t('mapAssign.distance', { distance: tech.distance })}
                         </div>
                       </div>
@@ -489,12 +489,12 @@ export function DispatcherMapView({ jobs, technicians, onJobClick, onJobAssigned
                     {tech.skills.length > 0 && (
                       <div className="flex flex-wrap gap-1 mb-2">
                         {tech.skills.slice(0, 3).map((skill, i) => (
-                          <Badge key={i} variant="outline" className="text-[9px] px-1.5 py-0">
+                          <Badge key={i} variant="outline" className="text-px-9 px-1.5 py-0">
                             {skill}
                           </Badge>
                         ))}
                         {tech.skills.length > 3 && (
-                          <Badge variant="outline" className="text-[9px] px-1.5 py-0">
+                          <Badge variant="outline" className="text-px-9 px-1.5 py-0">
                             +{tech.skills.length - 3}
                           </Badge>
                         )}

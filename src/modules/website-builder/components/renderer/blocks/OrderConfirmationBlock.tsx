@@ -133,7 +133,7 @@ export function OrderConfirmationBlock({
       <p className="text-sm opacity-70 mb-2" style={{ color: theme.secondaryColor }}>
         {subtitle}
       </p>
-      <div className="flex items-center justify-center gap-3 text-[11px] opacity-60 flex-wrap" style={{ color: theme.secondaryColor }}>
+      <div className="flex items-center justify-center gap-3 text-px-11 opacity-60 flex-wrap" style={{ color: theme.secondaryColor }}>
         <span className="font-mono font-semibold" style={{ color: theme.primaryColor }}>{order.orderId}</span>
         <span>·</span>
         <span>{formatDate(order.placedAt)}</span>
@@ -154,8 +154,8 @@ export function OrderConfirmationBlock({
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium truncate" style={{ color: theme.textColor }}>{it.name}</p>
-              {it.variant && <p className="text-[10px] opacity-50" style={{ color: theme.secondaryColor }}>{it.variant}</p>}
-              <p className="text-[10px] opacity-40" style={{ color: theme.secondaryColor }}>Qty: {it.quantity}</p>
+              {it.variant && <p className="text-px-10 opacity-50" style={{ color: theme.secondaryColor }}>{it.variant}</p>}
+              <p className="text-px-10 opacity-40" style={{ color: theme.secondaryColor }}>Qty: {it.quantity}</p>
             </div>
             <span className="text-xs font-semibold shrink-0" style={{ color: theme.textColor }}>{it.price}</span>
           </div>
@@ -192,7 +192,7 @@ export function OrderConfirmationBlock({
         <div className="flex justify-between text-sm font-bold pt-2 mt-2 border-t border-border/20" style={{ color: theme.textColor }}>
           <span>Total</span><span>{order.displayTotal}</span>
         </div>
-        <div className="pt-3 mt-2 border-t border-border/20 flex items-center gap-2 text-[11px]" style={{ color: theme.secondaryColor }}>
+        <div className="pt-3 mt-2 border-t border-border/20 flex items-center gap-2 text-px-11" style={{ color: theme.secondaryColor }}>
           <CreditCard className="h-3.5 w-3.5 opacity-60" />
           <span>Paid with {order.payment.method}</span>
           {order.payment.last4 && <span className="font-mono opacity-70">•••• {order.payment.last4}</span>}
@@ -208,7 +208,7 @@ export function OrderConfirmationBlock({
       </h3>
       <AddressLines addr={order.shippingAddress || {}} theme={theme} />
       {order.shippingMethod && (
-        <div className="mt-3 pt-3 border-t border-border/20 flex items-center gap-2 text-[11px]" style={{ color: theme.secondaryColor }}>
+        <div className="mt-3 pt-3 border-t border-border/20 flex items-center gap-2 text-px-11" style={{ color: theme.secondaryColor }}>
           <Truck className="h-3.5 w-3.5 opacity-60" />
           <span className="font-medium" style={{ color: theme.textColor }}>{order.shippingMethod.label}</span>
           <span className="opacity-60">· {order.shippingMethod.estimate}</span>
@@ -230,7 +230,7 @@ export function OrderConfirmationBlock({
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-semibold" style={{ color: theme.textColor }}>{s.title}</p>
-                {s.description && <p className="text-[11px] opacity-60 mt-0.5" style={{ color: theme.secondaryColor }}>{s.description}</p>}
+                {s.description && <p className="text-px-11 opacity-60 mt-0.5" style={{ color: theme.secondaryColor }}>{s.description}</p>}
               </div>
             </li>
           );
@@ -265,7 +265,7 @@ export function OrderConfirmationBlock({
   );
 
   const Support = supportEmail ? (
-    <p className="text-center text-[11px] opacity-60 mt-2" style={{ color: theme.secondaryColor }}>
+    <p className="text-center text-px-11 opacity-60 mt-2" style={{ color: theme.secondaryColor }}>
       Need help? <a href={`mailto:${supportEmail}`} className="underline" style={{ color: theme.primaryColor }}>{supportEmail}</a>
     </p>
   ) : null;

@@ -69,7 +69,7 @@ export const SwitchNode = memo(({ data, id, onNodeClick, onRemove }: SwitchNodeP
       </div>
 
       {/* Field Display */}
-  <div className="text-[11px] text-gray-600 mb-3 px-2 py-1 bg-white/60 rounded">
+  <div className="text-px-11 text-gray-600 mb-3 px-2 py-1 bg-white/60 rounded">
         {hasField ? (
           <span>{t('nodeUi.basedOn')}: <strong>{data.config.field}</strong></span>
         ) : (
@@ -80,7 +80,7 @@ export const SwitchNode = memo(({ data, id, onNodeClick, onRemove }: SwitchNodeP
       {/* Cases */}
       <div className="space-y-1 mb-3">
   {cases.slice(0, 3).map((caseItem, index) => (
-          <div key={index} className="flex items-center justify-between text-[11px]">
+          <div key={index} className="flex items-center justify-between text-px-11">
             <span className="bg-white/80 px-2 py-1 rounded text-gray-700">
               {caseItem.label || caseItem.value}
             </span>
@@ -99,13 +99,13 @@ export const SwitchNode = memo(({ data, id, onNodeClick, onRemove }: SwitchNodeP
         ))}
         
         {cases.length > 3 && (
-          <div className="text-[11px] text-gray-500 text-center">
+          <div className="text-px-11 text-gray-500 text-center">
             +{cases.length - 3} {t('nodeUi.moreCases')}
           </div>
         )}
         
         {cases.length === 0 && (
-          <div className="flex items-center gap-1 text-[11px] text-gray-400 justify-center">
+          <div className="flex items-center gap-1 text-px-11 text-gray-400 justify-center">
             <Plus className="h-3 w-3" />
             {t('nodeUi.addCases')}
           </div>

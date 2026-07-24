@@ -165,7 +165,7 @@ export function IconPicker({ label, value, onChange, showSocial = false }: IconP
   if (!open) {
     return (
       <div className="space-y-1.5">
-        <Label className="text-[11px] font-medium text-foreground/70">{label}</Label>
+        <Label className="text-px-11 font-medium text-foreground/70">{label}</Label>
         <button
           onClick={() => setOpen(true)}
           className="w-full h-9 flex items-center gap-2 px-2.5 rounded-lg border border-border/40 bg-background hover:bg-muted/30 transition-colors text-left"
@@ -190,7 +190,7 @@ export function IconPicker({ label, value, onChange, showSocial = false }: IconP
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
-        <Label className="text-[11px] font-medium text-foreground/70">{label}</Label>
+        <Label className="text-px-11 font-medium text-foreground/70">{label}</Label>
         <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground" onClick={() => setOpen(false)}>
           <X className="h-3 w-3" />
         </Button>
@@ -213,7 +213,7 @@ export function IconPicker({ label, value, onChange, showSocial = false }: IconP
         {(['popular', 'all', ...(showSocial ? ['social'] : [])] as const).map(t => (
           <button
             key={t}
-            className={`flex-1 text-[10px] font-medium py-1 rounded transition-colors ${
+            className={`flex-1 text-px-10 font-medium py-1 rounded transition-colors ${
               tab === t ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
             }`}
             onClick={() => setTab(t as any)}
@@ -255,7 +255,7 @@ export function IconPicker({ label, value, onChange, showSocial = false }: IconP
           )}
           {filteredIcons.length === 0 && filteredSocial.length === 0 && (
             <div className="col-span-6 py-6 text-center">
-              <p className="text-[10px] text-muted-foreground/50">No icons match "{search}"</p>
+              <p className="text-px-10 text-muted-foreground/50">No icons match "{search}"</p>
             </div>
           )}
         </div>

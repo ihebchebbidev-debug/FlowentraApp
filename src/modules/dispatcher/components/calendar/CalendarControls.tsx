@@ -128,7 +128,7 @@ export function CalendarControls({
                 )}
               >
                 <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                <span className="text-[12px]">
+                <span className="text-px-12">
                   {format(dateRange.from, 'dd MMM', { locale: dateLocale })} — {format(dateRange.to, 'dd MMM yyyy', { locale: dateLocale })}
                 </span>
               </Button>

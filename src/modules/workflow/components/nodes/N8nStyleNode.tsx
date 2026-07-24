@@ -118,7 +118,7 @@ const OutputSchemaBadges = memo(({ nodeType }: { nodeType: string }) => {
           return (
             <span
               key={field.key}
-              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] bg-muted/50 text-muted-foreground/70 font-mono"
+              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-px-9 bg-muted/50 text-muted-foreground/70 font-mono"
             >
               <Icon className="h-2.5 w-2.5" />
               {field.key}
@@ -126,7 +126,7 @@ const OutputSchemaBadges = memo(({ nodeType }: { nodeType: string }) => {
           );
         })}
         {!expanded && hasMore && (
-          <span className="text-[9px] text-muted-foreground/50 self-center cursor-default">
+          <span className="text-px-9 text-muted-foreground/50 self-center cursor-default">
             +{fields.length - 3}
           </span>
         )}
@@ -210,12 +210,12 @@ export const N8nStyleNode = memo(forwardRef<HTMLDivElement, N8nStyleNodeProps>((
 
           {/* Labels */}
           <div className="flex-1 min-w-0">
-            <div className="font-semibold text-[13px] text-foreground truncate leading-tight">
+            <div className="font-semibold text-px-13 text-foreground truncate leading-tight">
               {displayLabel}
             </div>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span
-                className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wider"
+                className="inline-flex items-center px-1.5 py-0.5 rounded-full text-px-9 font-semibold uppercase tracking-wider"
                 style={{ background: `${categoryColor}18`, color: categoryColor }}
               >
                 {t(`category.${data.category}`, data.category)}
@@ -225,7 +225,7 @@ export const N8nStyleNode = memo(forwardRef<HTMLDivElement, N8nStyleNodeProps>((
 
           {/* Trigger badge */}
           {data.isTrigger && (
-            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider"
+            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-px-9 font-bold uppercase tracking-wider"
               style={{ background: `${categoryColor}20`, color: categoryColor }}
             >
               <Play className="h-2.5 w-2.5" />
@@ -236,7 +236,7 @@ export const N8nStyleNode = memo(forwardRef<HTMLDivElement, N8nStyleNodeProps>((
         {/* Status config display */}
         {hasStatusConfig && (
           <div className="px-3.5 pb-2">
-            <div className="flex items-center gap-1.5 text-[10px]">
+            <div className="flex items-center gap-1.5 text-px-10">
               {data.fromStatus && (
                 <span className="px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground font-medium">
                   {t(`status.${entityType}.${data.fromStatus}`, data.fromStatus)}
@@ -259,7 +259,7 @@ export const N8nStyleNode = memo(forwardRef<HTMLDivElement, N8nStyleNodeProps>((
         {/* Description */}
         {data.description && !hasStatusConfig && (
           <div className="px-3.5 pb-2.5">
-            <div className="text-[11px] text-muted-foreground/80 truncate">
+            <div className="text-px-11 text-muted-foreground/80 truncate">
               {data.description}
             </div>
           </div>
@@ -268,7 +268,7 @@ export const N8nStyleNode = memo(forwardRef<HTMLDivElement, N8nStyleNodeProps>((
         {/* Error */}
         {data.error && (
           <div className="px-3.5 pb-2.5">
-            <div className="flex items-center gap-1 text-[10px] text-destructive">
+            <div className="flex items-center gap-1 text-px-10 text-destructive">
               <AlertCircle className="h-3 w-3 flex-shrink-0" />
               <span className="truncate">{data.error}</span>
             </div>

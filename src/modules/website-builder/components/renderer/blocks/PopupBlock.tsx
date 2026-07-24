@@ -194,7 +194,7 @@ export function PopupBlock({
           <div className="flex items-center gap-2 px-5 py-3 border-b" style={{ borderColor: accent + '15', backgroundColor: accent + '06' }}>
             <TemplateIcon className="h-4 w-4" style={{ color: accent }} />
             <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: accent }}>{template} popup</span>
-            <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: accent + '15', color: accent }}>
+            <span className="ml-auto text-px-10 px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: accent + '15', color: accent }}>
               {trigger === 'click' ? '👆 Click' : trigger === 'delay' ? `⏱ ${triggerDelay}s` : trigger === 'scroll' ? `📜 ${triggerScrollPercent}%` : '↗ Exit'}
             </span>
           </div>
@@ -209,7 +209,7 @@ export function PopupBlock({
           {/* Content preview */}
           <div className="p-5 space-y-3">
             {showBadge && (
-              <span className="inline-block text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full" style={{ backgroundColor: accent + '15', color: accent }}>
+              <span className="inline-block text-px-10 font-bold uppercase tracking-wider px-2.5 py-1 rounded-full" style={{ backgroundColor: accent + '15', color: accent }}>
                 {badgeText}
               </span>
             )}
@@ -264,17 +264,17 @@ export function PopupBlock({
 
             {/* Editor actions */}
             <div className="flex gap-3 pt-2 border-t" style={{ borderColor: accent + '10' }}>
-              <button onClick={addButton} className="inline-flex items-center gap-1 text-[10px] font-medium hover:underline" style={{ color: accent }}>
+              <button onClick={addButton} className="inline-flex items-center gap-1 text-px-10 font-medium hover:underline" style={{ color: accent }}>
                 <Plus className="h-3 w-3" /> Add Button
               </button>
-              <button onClick={addFormField} className="inline-flex items-center gap-1 text-[10px] font-medium hover:underline" style={{ color: accent }}>
+              <button onClick={addFormField} className="inline-flex items-center gap-1 text-px-10 font-medium hover:underline" style={{ color: accent }}>
                 <Plus className="h-3 w-3" /> Add Field
               </button>
             </div>
           </div>
 
           {/* Position indicator */}
-          <div className="px-5 py-2 border-t text-[10px] opacity-50 flex items-center justify-between" style={{ borderColor: accent + '10' }}>
+          <div className="px-5 py-2 border-t text-px-10 opacity-50 flex items-center justify-between" style={{ borderColor: accent + '10' }}>
             <span>Position: {position} • Size: {size} • Animation: {animation}</span>
           </div>
         </div>
@@ -353,7 +353,7 @@ export function PopupBlock({
           <div className="p-6 space-y-4">
             {/* Badge */}
             {showBadge && (
-              <span className="inline-block text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full" style={{ backgroundColor: accent + '15', color: accent }}>
+              <span className="inline-block text-px-11 font-bold uppercase tracking-wider px-3 py-1 rounded-full" style={{ backgroundColor: accent + '15', color: accent }}>
                 {badgeText}
               </span>
             )}

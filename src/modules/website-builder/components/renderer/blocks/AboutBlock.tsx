@@ -95,7 +95,7 @@ export function AboutBlock({ title, description, imageUrl, bgColor, theme, isEdi
               {isEditing && (
                 <button
                   onClick={handleFileInput}
-                  className="absolute bottom-2 right-2 z-10 flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium bg-black/60 text-white hover:bg-black/80 transition-colors"
+                  className="absolute bottom-2 right-2 z-10 flex items-center gap-1 px-2 py-1 rounded-md text-px-10 font-medium bg-black/60 text-white hover:bg-black/80 transition-colors"
                 >
                   <Upload className="h-3 w-3" /> Change
                 </button>

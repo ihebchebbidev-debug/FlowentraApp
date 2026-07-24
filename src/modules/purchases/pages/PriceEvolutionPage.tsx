@@ -146,7 +146,7 @@ function PriceEvolutionContent() {
               {suppliers.length > 0 && (
                 <div className="flex flex-wrap gap-1 pt-2">
                   {supplierNames.map((name, i) => (
-                    <Badge key={name} variant="outline" className="text-[10px]" style={{ borderColor: COLORS[i % COLORS.length], color: COLORS[i % COLORS.length] }}>
+                    <Badge key={name} variant="outline" className="text-px-10" style={{ borderColor: COLORS[i % COLORS.length], color: COLORS[i % COLORS.length] }}>
                       {name}
                     </Badge>
                   ))}

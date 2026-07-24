@@ -123,7 +123,7 @@ export default function PublicDashboardPage() {
               )}
             </div>
             {dashboard.snapshotAt && (
-              <span className="text-[10px] text-muted-foreground shrink-0">
+              <span className="text-px-10 text-muted-foreground shrink-0">
                 {t('dashboardBuilder.publicSnapshotAt', 'Data from')}: {new Date(dashboard.snapshotAt).toLocaleDateString()}
               </span>
             )}
@@ -143,7 +143,7 @@ export default function PublicDashboardPage() {
 
           {/* Footer */}
           <div className="border-t border-border bg-card px-4 py-2 text-center">
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-px-10 text-muted-foreground">
               {t('dashboardBuilder.publicFooter', 'Shared dashboard • Read-only view')}
             </p>
           </div>

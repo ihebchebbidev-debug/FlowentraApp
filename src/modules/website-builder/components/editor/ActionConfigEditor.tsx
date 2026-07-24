@@ -202,7 +202,7 @@ export function ActionConfigEditor({
             placeholder="myCustomHandler"
             className="h-9"
           />
-          <p className="text-[10px] text-muted-foreground mt-1">
+          <p className="text-px-10 text-muted-foreground mt-1">
             {t('editor.customEventHint')}
           </p>
         </div>

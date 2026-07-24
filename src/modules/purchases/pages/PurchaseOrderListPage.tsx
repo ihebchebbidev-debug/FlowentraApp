@@ -547,7 +547,7 @@ function PurchaseOrderListContent() {
                                 </p>
                                 <Badge
                                   variant="secondary"
-                                  className={`text-[10px] px-2 py-0.5 shrink-0 ${STATUS_COLORS[po.status] || ""}`}
+                                  className={`text-px-10 px-2 py-0.5 shrink-0 ${STATUS_COLORS[po.status] || ""}`}
                                 >
                                   {t(`status.${po.status}`)}
                                 </Badge>
@@ -564,7 +564,7 @@ function PurchaseOrderListContent() {
                               <span>{po.orderDate}</span>
                             </div>
                             <div className="list-row-meta-item">
-                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                              <Badge variant="outline" className="text-px-10 px-1.5 py-0">
                                 {t(`paymentStatus.${po.paymentStatus}`)}
                               </Badge>
                             </div>
@@ -659,24 +659,24 @@ function PurchaseOrderListContent() {
                                 <TableCell className="text-xs">
                                   <div className="flex items-center gap-2 min-w-0">
                                     <Avatar className="h-6 w-6 shrink-0">
-                                      <AvatarFallback className="text-[10px] bg-muted">
+                                      <AvatarFallback className="text-px-10 bg-muted">
                                         {initials(po.supplierName)}
                                       </AvatarFallback>
                                     </Avatar>
                                     <div className="flex flex-col min-w-0">
                                       <span className="truncate">{po.supplierName}</span>
-                                      <CompanyBadge tenantId={(po as any).tenantId} className="text-[9px] mt-0.5" />
+                                      <CompanyBadge tenantId={(po as any).tenantId} className="text-px-9 mt-0.5" />
                                     </div>
                                   </div>
                                 </TableCell>
                                 <TableCell className="text-xs text-muted-foreground">{po.orderDate}</TableCell>
                                 <TableCell>
-                                  <Badge variant="secondary" className={`text-[10px] ${STATUS_COLORS[po.status] || ""}`}>
+                                  <Badge variant="secondary" className={`text-px-10 ${STATUS_COLORS[po.status] || ""}`}>
                                     {t(`status.${po.status}`)}
                                   </Badge>
                                 </TableCell>
                                 <TableCell>
-                                  <Badge variant="outline" className="text-[10px]">
+                                  <Badge variant="outline" className="text-px-10">
                                     {t(`paymentStatus.${po.paymentStatus}`)}
                                   </Badge>
                                 </TableCell>
@@ -753,10 +753,10 @@ function PurchaseOrderListContent() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <span className="text-sm font-medium text-primary">{po.orderNumber}</span>
-                              <Badge variant="secondary" className={`text-[10px] ${STATUS_COLORS[po.status] || ""}`}>
+                              <Badge variant="secondary" className={`text-px-10 ${STATUS_COLORS[po.status] || ""}`}>
                                 {t(`status.${po.status}`)}
                               </Badge>
-                              <CompanyBadge tenantId={(po as any).tenantId} className="text-[9px]" />
+                              <CompanyBadge tenantId={(po as any).tenantId} className="text-px-9" />
                             </div>
                             <div className="text-xs text-muted-foreground truncate mt-0.5">
                               {po.supplierName} · {po.orderDate}
@@ -764,7 +764,7 @@ function PurchaseOrderListContent() {
                           </div>
                           <div className="text-right shrink-0">
                             <div className="text-sm font-semibold">{fmt(po.grandTotal)} {currency.code}</div>
-                            <Badge variant="outline" className="text-[10px] mt-0.5">
+                            <Badge variant="outline" className="text-px-10 mt-0.5">
                               {t(`paymentStatus.${po.paymentStatus}`)}
                             </Badge>
                           </div>

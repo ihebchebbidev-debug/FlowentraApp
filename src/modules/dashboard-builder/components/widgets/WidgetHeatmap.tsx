@@ -41,13 +41,13 @@ export function WidgetHeatmap({ widget }: Props) {
         <div className="h-full w-full flex flex-col p-3 gap-2">
           <div className="flex gap-1 pl-16">
             {colLabels.map((col, ci) => (
-              <div key={ci} className="flex-1 text-center text-[10px] text-muted-foreground font-medium truncate">{col}</div>
+              <div key={ci} className="flex-1 text-center text-px-10 text-muted-foreground font-medium truncate">{col}</div>
             ))}
           </div>
           <div className="flex-1 flex flex-col gap-1 min-h-0">
             {grid.map((row, ri) => (
               <div key={ri} className="flex gap-1 items-stretch flex-1">
-                <div className="w-16 flex items-center text-[10px] text-muted-foreground font-medium truncate">{rowLabels[ri]}</div>
+                <div className="w-16 flex items-center text-px-10 text-muted-foreground font-medium truncate">{rowLabels[ri]}</div>
                 {row.map((val, ci) => (
                   <Tooltip key={ci}>
                     <TooltipTrigger asChild>

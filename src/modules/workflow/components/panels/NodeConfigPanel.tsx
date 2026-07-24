@@ -530,7 +530,7 @@ export function NodeConfigPanel({ isOpen, onClose, nodeId, nodeData, onSave, nod
                 {config.field && ((config.cases as any[]) || []).length > 0 && (
                   <div className="bg-muted/50 p-3 rounded-lg text-sm">
                     <p className="text-xs font-medium text-foreground mb-2">{t('preview', 'Preview')}:</p>
-                    <div className="font-mono text-[11px] space-y-1">
+                    <div className="font-mono text-px-11 space-y-1">
                       <div className="text-violet-600 dark:text-violet-400">switch ({config.field}) {'{'}</div>
                       {((config.cases as any[]) || []).filter((c: any) => c.value).map((c: any, i: number) => (
                         <div key={i} className="pl-4">
@@ -1508,7 +1508,7 @@ export function NodeConfigPanel({ isOpen, onClose, nodeId, nodeData, onSave, nod
                   className="font-mono text-xs leading-relaxed"
                   spellCheck={false}
                 />
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-px-11 text-muted-foreground">
                   {t('config.codeHint', 'Use input.trigger for trigger data, input.<nodeId> for previous node outputs. Return a value to pass downstream.')}
                 </p>
                 <div className="flex items-center gap-2">
@@ -1532,7 +1532,7 @@ export function NodeConfigPanel({ isOpen, onClose, nodeId, nodeData, onSave, nod
                       <Zap className="h-4 w-4" />
                       <span className="text-sm font-medium">{t('triggerCondition', 'Trigger Condition')}</span>
                       {isFromBackend && (
-                        <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+                        <span className="ml-auto text-px-10 px-1.5 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
                           {t('fromLookups', 'From Lookups')}
                         </span>
                       )}
@@ -1632,7 +1632,7 @@ export function NodeConfigPanel({ isOpen, onClose, nodeId, nodeData, onSave, nod
                       <ArrowRight className="h-4 w-4" />
                       <span className="text-sm font-medium">{t('statusUpdate', 'Status Update')}</span>
                       {isFromBackend && (
-                        <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+                        <span className="ml-auto text-px-10 px-1.5 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
                           {t('fromLookups', 'From Lookups')}
                         </span>
                       )}

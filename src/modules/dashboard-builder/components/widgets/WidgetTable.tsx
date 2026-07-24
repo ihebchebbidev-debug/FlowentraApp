@@ -55,9 +55,9 @@ export function WidgetTable({ widget }: Props) {
         <table className="w-full text-sm">
           <thead className="sticky top-0 bg-card z-10">
             <tr className="border-b border-border">
-              <th className="text-left p-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{t('dashboardBuilder.tableHeaders.name')}</th>
-              <th className="text-left p-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{t('dashboardBuilder.tableHeaders.status')}</th>
-              <th className="text-right p-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{t('dashboardBuilder.tableHeaders.amount')}</th>
+              <th className="text-left p-2 text-px-11 font-semibold text-muted-foreground uppercase tracking-wider">{t('dashboardBuilder.tableHeaders.name')}</th>
+              <th className="text-left p-2 text-px-11 font-semibold text-muted-foreground uppercase tracking-wider">{t('dashboardBuilder.tableHeaders.status')}</th>
+              <th className="text-right p-2 text-px-11 font-semibold text-muted-foreground uppercase tracking-wider">{t('dashboardBuilder.tableHeaders.amount')}</th>
             </tr>
           </thead>
           <tbody>
@@ -65,7 +65,7 @@ export function WidgetTable({ widget }: Props) {
               <tr key={row.id || i} className="border-b border-border/30 hover:bg-muted/30 transition-colors">
                 <td className="p-2 text-foreground font-medium truncate max-w-[160px]">{row.name}</td>
                 <td className="p-2">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${getStatusClass(row.status)}`}>{translateStatus(row.status)}</span>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-px-11 font-medium ${getStatusClass(row.status)}`}>{translateStatus(row.status)}</span>
                 </td>
                 <td className="p-2 text-right font-semibold text-foreground tabular-nums">{format(row.amount)}</td>
               </tr>

@@ -338,10 +338,10 @@ export function CalendarSettingsTab({
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium text-foreground truncate">{event.title || t('eventDetail.noTitle')}</span>
                             {event.isAllDay && (
-                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{t('calendar.events.allDay')}</Badge>
+                              <Badge variant="secondary" className="text-px-10 px-1.5 py-0">{t('calendar.events.allDay')}</Badge>
                             )}
                             {event.status === 'cancelled' && (
-                              <Badge variant="destructive" className="text-[10px] px-1.5 py-0">{t('eventDetail.cancelled')}</Badge>
+                              <Badge variant="destructive" className="text-px-10 px-1.5 py-0">{t('eventDetail.cancelled')}</Badge>
                             )}
                           </div>
 

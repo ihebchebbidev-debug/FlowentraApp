@@ -412,7 +412,7 @@ export function CompanySettings() {
                   : t('company.uploadLogo', { defaultValue: 'Upload Logo' })
                 }
               </Button>
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-px-10 text-muted-foreground">
                 {t('company.logoFormats', { defaultValue: 'PNG, JPG, SVG — max 5MB' })}
               </p>
             </div>

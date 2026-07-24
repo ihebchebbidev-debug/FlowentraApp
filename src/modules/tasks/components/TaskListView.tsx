@@ -258,7 +258,7 @@ export default function TaskListView({
                                     
                                     {/* Project badge if available */}
                                     {task.projectName && (
-                                      <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 font-normal flex-shrink-0">
+                                      <Badge variant="outline" className="text-px-9 px-1.5 py-0 h-4 font-normal flex-shrink-0">
                                         {task.projectName}
                                       </Badge>
                                     )}
@@ -288,7 +288,7 @@ export default function TaskListView({
                                   <Badge 
                                     variant="outline" 
                                     className={cn(
-                                      "text-[10px] font-medium uppercase tracking-wide px-1.5 py-0 h-5",
+                                      "text-px-10 font-medium uppercase tracking-wide px-1.5 py-0 h-5",
                                       getPriorityBadgeStyle(task.priority || 'medium')
                                     )}
                                   >
@@ -304,7 +304,7 @@ export default function TaskListView({
                                         seed={(task as any).assigneeId ?? assigneeName}
                                         size="xs"
                                       />
-                                      <span className="text-[11px] text-muted-foreground truncate max-w-[80px] hidden sm:inline">
+                                      <span className="text-px-11 text-muted-foreground truncate max-w-[80px] hidden sm:inline">
                                         {assigneeName}
                                       </span>
                                     </div>
@@ -314,12 +314,12 @@ export default function TaskListView({
                                   {task.tags && task.tags.length > 0 && (
                                     <div className="hidden sm:flex gap-1">
                                       {task.tags.slice(0, 2).map((tag, index) => (
-                                        <Badge key={index} variant="outline" className="text-[9px] px-1 py-0 h-4 bg-muted/50">
+                                        <Badge key={index} variant="outline" className="text-px-9 px-1 py-0 h-4 bg-muted/50">
                                           {tag}
                                         </Badge>
                                       ))}
                                       {task.tags.length > 2 && (
-                                        <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 bg-muted/50">
+                                        <Badge variant="outline" className="text-px-9 px-1 py-0 h-4 bg-muted/50">
                                           +{task.tags.length - 2}
                                         </Badge>
                                       )}
@@ -330,7 +330,7 @@ export default function TaskListView({
                                 {/* Right side: Due date + Complete button */}
                                 <div className="flex items-center gap-2">
                                   {formattedDueDate && (
-                                    <span className="text-[11px] flex items-center gap-1 text-muted-foreground">
+                                    <span className="text-px-11 flex items-center gap-1 text-muted-foreground">
                                       <Calendar className="h-3 w-3" />
                                       {formattedDueDate}
                                     </span>
@@ -338,7 +338,7 @@ export default function TaskListView({
                                   
                                   {/* Estimated hours if available */}
                                   {task.estimatedHours && (
-                                    <span className="text-[11px] text-muted-foreground hidden sm:inline">
+                                    <span className="text-px-11 text-muted-foreground hidden sm:inline">
                                       {task.estimatedHours}h
                                     </span>
                                   )}

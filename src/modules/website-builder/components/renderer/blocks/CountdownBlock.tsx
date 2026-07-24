@@ -68,7 +68,7 @@ export function CountdownBlock({ title, targetDate, theme, isEditing, onUpdate, 
                 style={{ backgroundColor: theme.primaryColor + '12', color: theme.primaryColor, borderRadius: theme.borderRadius }}>
                 {u.value}
               </div>
-              <p className="text-[10px] sm:text-xs mt-1.5 sm:mt-2 opacity-60" style={{ color: theme.secondaryColor }}>{u.label}</p>
+              <p className="text-px-10 sm:text-xs mt-1.5 sm:mt-2 opacity-60" style={{ color: theme.secondaryColor }}>{u.label}</p>
             </div>
           ))}
         </div>

@@ -358,7 +358,7 @@ export function DocumentsList() {
         </div>
         <div className="min-w-0">
           <h1 className="text-base sm:text-xl font-semibold text-foreground truncate">{t('documents.title', 'Documents')}</h1>
-          <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">{t('documents.subtitle', 'Manage and share files across modules')}</p>
+          <p className="text-px-10 sm:text-px-11 text-muted-foreground truncate">{t('documents.subtitle', 'Manage and share files across modules')}</p>
         </div>
       </div>
       <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
@@ -546,7 +546,7 @@ export function DocumentsList() {
       {viewMode === 'list' ? (
         <div className="p-3 sm:p-4 lg:p-6">
               {documents.length === 0 ? (
-                <Card className="p-8 text-center text-[0.85rem]">
+                <Card className="p-8 text-center text-rem-85">
                   <div className="space-y-4">
                     <FileText className="h-12 w-12 text-muted-foreground mx-auto" />
                     <div>
@@ -681,7 +681,7 @@ export function DocumentsList() {
                                 <p className="list-row-title flex-1">
                                   {document.fileName}
                                 </p>
-                                <Badge variant="secondary" className={`text-[10px] px-2 py-0.5 shrink-0 ${moduleColorClass}`}>
+                                <Badge variant="secondary" className={`text-px-10 px-2 py-0.5 shrink-0 ${moduleColorClass}`}>
                                   {document.fileType.toUpperCase()}
                                 </Badge>
                               </div>

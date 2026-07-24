@@ -265,12 +265,12 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
                   {t('dispatcher.profiles.currently_active', { defaultValue: 'Currently active' })}:
                 </span>
                 {activeProfile ? (
-                  <Badge variant="default" className="gap-1 py-0.5 text-[11px]">
+                  <Badge variant="default" className="gap-1 py-0.5 text-px-11">
                     <Star className="h-2.5 w-2.5" fill="currentColor" />
                     <span className="max-w-[120px] truncate">{activeProfile.name}</span>
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="text-[11px]">
+                  <Badge variant="outline" className="text-px-11">
                     {t('dispatcher.profiles.no_active_profile', { defaultValue: 'No active profile' })}
                   </Badge>
                 )}
@@ -360,7 +360,7 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
                           <GraduationCap className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                           {t('dispatcher.profiles.tab_skills', { defaultValue: 'Skills' })}
                           {(draft.requiredSkillIds?.length ?? 0) > 0 && (
-                            <Badge variant="default" className="h-4 px-1 text-[10px] ml-0.5">
+                            <Badge variant="default" className="h-4 px-1 text-px-10 ml-0.5">
                               {draft.requiredSkillIds!.length}
                             </Badge>
                           )}
@@ -536,12 +536,12 @@ export function PlanningProfilesModal({ open, onOpenChange }: Props) {
                                       }}
                                       className={`text-xs px-2 py-1 rounded-md border transition-colors ${selected ? 'bg-primary text-primary-foreground border-primary' : atMax ? 'bg-background text-muted-foreground/40 border-border/50 cursor-not-allowed' : 'bg-background text-muted-foreground hover:bg-muted'}`}
                                     >
-                                      {selected && <span className="mr-1 text-[10px] opacity-80">{idx + 1}</span>}{fieldLabel}
+                                      {selected && <span className="mr-1 text-px-10 opacity-80">{idx + 1}</span>}{fieldLabel}
                                     </button>
                                   );
                                 })}
                               </div>
-                              <p className="text-[11px] text-muted-foreground mt-1">
+                              <p className="text-px-11 text-muted-foreground mt-1">
                                 {t('dispatcher.profiles.card_label_hint_two')}
                               </p>
                               <p className="text-xs text-muted-foreground mt-1 truncate">

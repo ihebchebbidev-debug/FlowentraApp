@@ -83,7 +83,7 @@ function SpacingBox({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
-        <Label className="text-[10px] font-medium text-foreground/50 flex items-center gap-1">
+        <Label className="text-px-10 font-medium text-foreground/50 flex items-center gap-1">
           {icon}
           {label}
         </Label>
@@ -107,7 +107,7 @@ function SpacingBox({
           value={top}
           onChange={(e) => handleLinkedChange(e.target.value)}
           placeholder="0"
-          className="h-7 text-[10px] border-border/30 bg-background text-center"
+          className="h-7 text-px-10 border-border/30 bg-background text-center"
         />
       ) : (
         /* Unlinked: WordPress-style box layout */
@@ -117,48 +117,48 @@ function SpacingBox({
             {/* Top */}
             <div className="flex justify-center mb-0.5">
               <div className="text-center">
-                <span className="text-[7px] text-muted-foreground/40 block leading-none">Top</span>
+                <span className="text-px-7 text-muted-foreground/40 block leading-none">Top</span>
                 <Input
                   value={top}
                   onChange={(e) => onUpdate(topKey, e.target.value)}
                   placeholder="0"
-                  className="h-5 w-14 text-[9px] border-border/20 bg-muted/20 text-center px-1 mt-0.5"
+                  className="h-5 w-14 text-px-9 border-border/20 bg-muted/20 text-center px-1 mt-0.5"
                 />
               </div>
             </div>
             {/* Left — Center indicator — Right */}
             <div className="flex items-center justify-between gap-1 my-0.5">
               <div className="text-center">
-                <span className="text-[7px] text-muted-foreground/40 block leading-none">Left</span>
+                <span className="text-px-7 text-muted-foreground/40 block leading-none">Left</span>
                 <Input
                   value={left}
                   onChange={(e) => onUpdate(leftKey, e.target.value)}
                   placeholder="0"
-                  className="h-5 w-14 text-[9px] border-border/20 bg-muted/20 text-center px-1 mt-0.5"
+                  className="h-5 w-14 text-px-9 border-border/20 bg-muted/20 text-center px-1 mt-0.5"
                 />
               </div>
               <div className="flex-1 h-6 mx-1 rounded border border-border/20 bg-muted/10 flex items-center justify-center">
-                <span className="text-[7px] text-muted-foreground/30 uppercase tracking-wider font-medium">{label}</span>
+                <span className="text-px-7 text-muted-foreground/30 uppercase tracking-wider font-medium">{label}</span>
               </div>
               <div className="text-center">
-                <span className="text-[7px] text-muted-foreground/40 block leading-none">Right</span>
+                <span className="text-px-7 text-muted-foreground/40 block leading-none">Right</span>
                 <Input
                   value={right}
                   onChange={(e) => onUpdate(rightKey, e.target.value)}
                   placeholder="0"
-                  className="h-5 w-14 text-[9px] border-border/20 bg-muted/20 text-center px-1 mt-0.5"
+                  className="h-5 w-14 text-px-9 border-border/20 bg-muted/20 text-center px-1 mt-0.5"
                 />
               </div>
             </div>
             {/* Bottom */}
             <div className="flex justify-center mt-0.5">
               <div className="text-center">
-                <span className="text-[7px] text-muted-foreground/40 block leading-none">Bottom</span>
+                <span className="text-px-7 text-muted-foreground/40 block leading-none">Bottom</span>
                 <Input
                   value={bottom}
                   onChange={(e) => onUpdate(bottomKey, e.target.value)}
                   placeholder="0"
-                  className="h-5 w-14 text-[9px] border-border/20 bg-muted/20 text-center px-1 mt-0.5"
+                  className="h-5 w-14 text-px-9 border-border/20 bg-muted/20 text-center px-1 mt-0.5"
                 />
               </div>
             </div>
@@ -190,7 +190,7 @@ export function DimensionsEditor({ styles, onChange }: DimensionsEditorProps) {
     const val = toCssString((deviceStyles as any)[key]);
     return (
       <div className="space-y-1">
-        <Label className="text-[10px] font-medium text-foreground/50 flex items-center gap-1">
+        <Label className="text-px-10 font-medium text-foreground/50 flex items-center gap-1">
           {icon}
           {label}
         </Label>
@@ -199,20 +199,20 @@ export function DimensionsEditor({ styles, onChange }: DimensionsEditorProps) {
             value={val}
             onChange={(e) => update(key, e.target.value)}
             placeholder={placeholder}
-            className="h-7 text-[10px] border-border/30 bg-background flex-1"
+            className="h-7 text-px-10 border-border/30 bg-background flex-1"
           />
           <Select
             value={val || '__auto__'}
             onValueChange={(v) => update(key, v === '__auto__' ? '' : v)}
           >
-            <SelectTrigger className="h-7 w-[52px] text-[9px] border-border/30 bg-background px-1">
+            <SelectTrigger className="h-7 w-[52px] text-px-9 border-border/30 bg-background px-1">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="z-[200]">
-              <SelectItem value="__auto__" className="text-[10px]">Auto</SelectItem>
-              <SelectItem value="100%" className="text-[10px]">100%</SelectItem>
-              <SelectItem value="50%" className="text-[10px]">50%</SelectItem>
-              <SelectItem value="100vh" className="text-[10px]">100vh</SelectItem>
+              <SelectItem value="__auto__" className="text-px-10">Auto</SelectItem>
+              <SelectItem value="100%" className="text-px-10">100%</SelectItem>
+              <SelectItem value="50%" className="text-px-10">50%</SelectItem>
+              <SelectItem value="100vh" className="text-px-10">100vh</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -235,7 +235,7 @@ export function DimensionsEditor({ styles, onChange }: DimensionsEditorProps) {
             key={key}
             onClick={() => setActiveDevice(key)}
             className={cn(
-              'flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all relative',
+              'flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-md text-px-10 font-medium transition-all relative',
               activeDevice === key
                 ? 'bg-background text-foreground shadow-sm border border-border/40'
                 : 'text-muted-foreground hover:text-foreground/70 hover:bg-muted/20'
@@ -252,7 +252,7 @@ export function DimensionsEditor({ styles, onChange }: DimensionsEditorProps) {
       </div>
 
       {activeDevice !== 'desktop' && (
-        <p className="text-[9px] text-muted-foreground/50 leading-snug px-0.5">
+        <p className="text-px-9 text-muted-foreground/50 leading-snug px-0.5">
           {activeDevice === 'tablet' ? 'Tablet' : 'Mobile'} overrides. Empty = inherits from desktop.
         </p>
       )}

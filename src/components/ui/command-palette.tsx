@@ -223,18 +223,18 @@ export function CommandPalette() {
       </CommandList>
 
       {/* Footer with keyboard hints */}
-      <div className="border-t border-border/40 px-3 py-2 flex items-center justify-between text-[11px] text-muted-foreground/60">
+      <div className="border-t border-border/40 px-3 py-2 flex items-center justify-between text-px-11 text-muted-foreground/60">
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">↑↓</kbd>
+            <kbd className="px-1.5 py-0.5 bg-muted rounded text-px-10 font-mono">↑↓</kbd>
             {t('commandPalette.navigate', 'Navigate')}
           </span>
           <span className="flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">↵</kbd>
+            <kbd className="px-1.5 py-0.5 bg-muted rounded text-px-10 font-mono">↵</kbd>
             {t('commandPalette.select', 'Select')}
           </span>
           <span className="flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">Esc</kbd>
+            <kbd className="px-1.5 py-0.5 bg-muted rounded text-px-10 font-mono">Esc</kbd>
             {t('commandPalette.close', 'Close')}
           </span>
         </div>

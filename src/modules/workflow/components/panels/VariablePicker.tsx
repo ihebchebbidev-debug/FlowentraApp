@@ -414,7 +414,7 @@ export function VariablePicker({ currentNodeId, nodes, edges, onSelect, triggerL
                     )} />
                     {step.icon && <step.icon className="h-3.5 w-3.5 text-primary" />}
                     <span className="truncate flex-1 text-left">{step.stepName}</span>
-                    <Badge variant="outline" className="text-[10px] h-4 px-1">
+                    <Badge variant="outline" className="text-px-10 h-4 px-1">
                       {step.fields.length}
                     </Badge>
                   </button>
@@ -434,7 +434,7 @@ export function VariablePicker({ currentNodeId, nodes, edges, onSelect, triggerL
                             >
                               <TypeIcon className="h-3 w-3 text-muted-foreground" />
                               <span className="flex-1 text-left">{field.label}</span>
-                              <span className="text-[10px] text-muted-foreground font-mono">{field.type}</span>
+                              <span className="text-px-10 text-muted-foreground font-mono">{field.type}</span>
                             </button>
 
                             {/* Nested children */}
@@ -448,12 +448,12 @@ export function VariablePicker({ currentNodeId, nodes, edges, onSelect, triggerL
                                       onClick={() => handleSelect(step.stepId, `${field.key}.${child.key}`)}
                                       className={cn(
                                         'w-full flex items-center gap-2 px-2 py-0.5 rounded-sm',
-                                        'hover:bg-primary/10 transition-colors text-[11px]'
+                                        'hover:bg-primary/10 transition-colors text-px-11'
                                       )}
                                     >
                                       <ChildIcon className="h-2.5 w-2.5 text-muted-foreground" />
                                       <span className="flex-1 text-left">{child.label}</span>
-                                      <span className="text-[9px] text-muted-foreground font-mono">{child.type}</span>
+                                      <span className="text-px-9 text-muted-foreground font-mono">{child.type}</span>
                                     </button>
                                   );
                                 })}
@@ -471,7 +471,7 @@ export function VariablePicker({ currentNodeId, nodes, edges, onSelect, triggerL
         </ScrollArea>
 
         <div className="p-2 border-t border-border">
-          <p className="text-[10px] text-muted-foreground text-center">
+          <p className="text-px-10 text-muted-foreground text-center">
             {t('variablePicker.hint', 'Click a field to insert {{variable}} reference')}
           </p>
         </div>
@@ -493,7 +493,7 @@ export function StepOutputSchemaPreview({ node }: { node: Node }) {
         return (
           <span
             key={field.key}
-            className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] bg-muted/60 text-muted-foreground"
+            className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-px-9 bg-muted/60 text-muted-foreground"
           >
             <Icon className="h-2 w-2" />
             {field.key}
@@ -501,7 +501,7 @@ export function StepOutputSchemaPreview({ node }: { node: Node }) {
         );
       })}
       {fields.length > 4 && (
-        <span className="text-[9px] text-muted-foreground">+{fields.length - 4}</span>
+        <span className="text-px-9 text-muted-foreground">+{fields.length - 4}</span>
       )}
     </div>
   );

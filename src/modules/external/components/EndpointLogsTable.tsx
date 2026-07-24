@@ -198,7 +198,7 @@ export function EndpointLogsTable({ endpointId }: Props) {
                 <TableCell><Badge variant="outline">{log.method}</Badge></TableCell>
                 <TableCell className="hidden sm:table-cell">
                   {ctInfo
-                    ? <span className={`inline-flex items-center gap-1 text-[10px] font-medium border rounded px-1.5 py-0.5 ${ctInfo.color}`}><Code2 className="h-2.5 w-2.5" />{ctInfo.label}</span>
+                    ? <span className={`inline-flex items-center gap-1 text-px-10 font-medium border rounded px-1.5 py-0.5 ${ctInfo.color}`}><Code2 className="h-2.5 w-2.5" />{ctInfo.label}</span>
                     : <span className="text-muted-foreground/50 text-xs">—</span>
                   }
                 </TableCell>
@@ -263,7 +263,7 @@ export function EndpointLogsTable({ endpointId }: Props) {
                 <div className="flex flex-wrap gap-4">
                   <div><span className="text-muted-foreground font-medium">{t('external.logs.method')}:</span> <Badge variant="outline" className="ml-1">{selectedLog.method}</Badge></div>
                   <div><Badge variant={selectedLog.statusCode === 200 ? 'default' : 'destructive'}>{selectedLog.statusCode}</Badge></div>
-                  {selectedLog.contentType && (() => { const ci = formatContentType(selectedLog.contentType); return ci ? <span className={`inline-flex items-center gap-1 text-[10px] font-medium border rounded px-1.5 py-0.5 ${ci.color}`}><Code2 className="h-2.5 w-2.5" />{ci.label}</span> : null; })()}
+                  {selectedLog.contentType && (() => { const ci = formatContentType(selectedLog.contentType); return ci ? <span className={`inline-flex items-center gap-1 text-px-10 font-medium border rounded px-1.5 py-0.5 ${ci.color}`}><Code2 className="h-2.5 w-2.5" />{ci.label}</span> : null; })()}
                   {selectedLog.companyId && <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted rounded px-1.5 py-0.5"><Building2 className="h-3 w-3" />{t('external.logs.company', 'Company')}: <strong>{selectedLog.companyId}</strong></span>}
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
@@ -323,7 +323,7 @@ export function EndpointLogsTable({ endpointId }: Props) {
                       ? t('external.logs.previewDescOffer', { defaultValue: 'Review the fields detected from this payload before creating the offer.' })
                       : t('external.logs.previewDescSale', { defaultValue: 'Review the fields detected from this payload before creating the sale.' })}
                   </p>
-                  <div className="flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
+                  <div className="flex flex-wrap items-center gap-2 text-px-10 text-muted-foreground">
                     <ConfidenceBadge level="exact" /> {t('external.logs.confExact', { defaultValue: 'Direct match' })}
                     <ConfidenceBadge level="inferred" /> {t('external.logs.confInferred', { defaultValue: 'Best guess' })}
                     <ConfidenceBadge level="edited" /> {t('external.logs.confEdited', { defaultValue: 'Manually edited' })}
@@ -467,7 +467,7 @@ function ConfidenceBadge({ level }: { level?: FieldConfidence }) {
   };
   const m = map[level];
   return (
-    <span title={m.title} className={`inline-flex items-center px-1.5 py-0.5 rounded border text-[10px] font-medium leading-none ${m.cls}`}>
+    <span title={m.title} className={`inline-flex items-center px-1.5 py-0.5 rounded border text-px-10 font-medium leading-none ${m.cls}`}>
       {m.label}
     </span>
   );

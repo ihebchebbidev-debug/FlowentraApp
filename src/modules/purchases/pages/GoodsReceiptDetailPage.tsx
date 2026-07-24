@@ -107,7 +107,7 @@ function GoodsReceiptDetailContent() {
                   <TableRow key={item.id}>
                     <TableCell>
                       <div className="text-xs font-medium">{item.articleName}</div>
-                      <div className="text-[10px] text-muted-foreground">{item.articleNumber}</div>
+                      <div className="text-px-10 text-muted-foreground">{item.articleNumber}</div>
                     </TableCell>
                     <TableCell className="text-xs text-center">{Number(item.orderedQty || 0).toFixed(2)}</TableCell>
                     <TableCell className="text-xs text-center text-green-600 font-medium">{Number(item.quantityReceived || 0).toFixed(2)}</TableCell>

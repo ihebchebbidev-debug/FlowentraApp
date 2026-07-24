@@ -237,7 +237,7 @@ export function ModuleScopeDialog({ open, onOpenChange }: Props) {
                         <p className="text-sm font-medium text-foreground truncate capitalize">{r.label}</p>
                         <Badge
                           variant={isShared ? 'default' : 'secondary'}
-                          className="text-[10px] h-4 px-1.5"
+                          className="text-px-10 h-4 px-1.5"
                         >
                           {isShared
                             ? t('moduleScope.shared', 'Shared')

@@ -114,7 +114,7 @@ function InvoiceAgingContent() {
           {(Object.keys(BUCKET_LABELS) as Bucket[]).map(b => (
             <Card key={b}>
               <CardContent className="p-3">
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{t(`reports.aging.bucket.${b}`, BUCKET_LABELS[b])}</div>
+                <div className="text-px-10 uppercase tracking-wider text-muted-foreground">{t(`reports.aging.bucket.${b}`, BUCKET_LABELS[b])}</div>
                 <div className={b === 'b90plus' ? 'text-base font-semibold mt-1 text-destructive' : 'text-base font-semibold mt-1'}>
                   {fmt(perBucket[b])} {currency.code}
                 </div>
@@ -189,7 +189,7 @@ function InvoiceAgingContent() {
                       <TableCell className="text-xs">{inv.dueDate ? new Date(inv.dueDate).toLocaleDateString(undefined) : '—'}</TableCell>
                       <TableCell className="text-xs text-center">{daysOverdue > 0 ? daysOverdue : '—'}</TableCell>
                       <TableCell className="text-xs text-center">
-                        <Badge variant={bucketBadgeVariant(bucket)} className="text-[10px]">
+                        <Badge variant={bucketBadgeVariant(bucket)} className="text-px-10">
                           {t(`reports.aging.bucket.${bucket}`, BUCKET_LABELS[bucket])}
                         </Badge>
                       </TableCell>

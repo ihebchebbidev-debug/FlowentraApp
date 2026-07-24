@@ -202,7 +202,7 @@ export function SteppedFormPreview({
     return (
       <div className="flex items-start gap-1.5 mt-1 p-2 rounded bg-muted/50 border border-muted">
         <Info className="h-3.5 w-3.5 text-primary/70 flex-shrink-0 mt-0.5" />
-        <p className="text-[11px] text-muted-foreground leading-relaxed">{hint}</p>
+        <p className="text-px-11 text-muted-foreground leading-relaxed">{hint}</p>
       </div>
     );
   };
@@ -342,7 +342,7 @@ export function SteppedFormPreview({
                 {label}
                 {field.required && <span className="text-destructive ml-1">*</span>}
                 {field.use_dynamic_data && (
-                  <Badge variant="outline" className="ml-2 text-[10px] h-4">
+                  <Badge variant="outline" className="ml-2 text-px-10 h-4">
                     {field.dependency ? t('dynamic_data.cascading') : 'Dynamic'}
                   </Badge>
                 )}
@@ -420,7 +420,7 @@ export function SteppedFormPreview({
                 {label}
                 {field.required && <span className="text-destructive ml-1">*</span>}
                 {field.use_dynamic_data && (
-                  <Badge variant="outline" className="ml-2 text-[10px] h-4">
+                  <Badge variant="outline" className="ml-2 text-px-10 h-4">
                     {field.dependency ? t('dynamic_data.cascading') : 'Dynamic'}
                   </Badge>
                 )}
@@ -478,7 +478,7 @@ export function SteppedFormPreview({
                 {label}
                 {field.required && <span className="text-destructive ml-1">*</span>}
                 {field.use_dynamic_data && (
-                  <Badge variant="outline" className="ml-2 text-[10px] h-4">
+                  <Badge variant="outline" className="ml-2 text-px-10 h-4">
                     {field.dependency ? t('dynamic_data.cascading') : 'Dynamic'}
                   </Badge>
                 )}

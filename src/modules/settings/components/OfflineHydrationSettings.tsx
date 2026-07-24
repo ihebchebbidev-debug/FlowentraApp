@@ -121,7 +121,7 @@ export function OfflineHydrationSettings() {
                       {t(m.labelKey)}
                     </Label>
                     {!overridden && (
-                      <p className="text-[11px] text-muted-foreground">{t("offlineHydration.defaultOn")}</p>
+                      <p className="text-px-11 text-muted-foreground">{t("offlineHydration.defaultOn")}</p>
                     )}
                   </div>
                 </div>

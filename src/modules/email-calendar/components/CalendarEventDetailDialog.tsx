@@ -110,7 +110,7 @@ export function CalendarEventDetailDialog({
                     <div className="space-y-1.5">
                       {attendees.map((attendee) => (
                         <div key={attendee} className="flex items-center gap-2">
-                          <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-medium text-muted-foreground shrink-0">
+                          <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-px-10 font-medium text-muted-foreground shrink-0">
                             {attendee.charAt(0).toUpperCase()}
                           </div>
                           <span className="text-sm text-foreground truncate">{attendee}</span>

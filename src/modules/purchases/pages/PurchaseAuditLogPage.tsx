@@ -107,8 +107,8 @@ function PurchaseAuditLogContent() {
                     <TableRow key={a.id}>
                       <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{new Date(a.performedAt).toLocaleString()}</TableCell>
                       <TableCell className="text-xs">{a.performedByName}</TableCell>
-                      <TableCell><Badge variant="outline" className="text-[10px]">{t(`auditLog.entity.${a.entityType}`, a.entityType)}</Badge></TableCell>
-                      <TableCell><Badge variant="secondary" className={`text-[10px] ${ACTION_COLORS[a.action] || ''}`}>{t(`auditLog.actionLabel.${a.action}`, a.action?.replace(/_/g, ' ') || '—')}</Badge></TableCell>
+                      <TableCell><Badge variant="outline" className="text-px-10">{t(`auditLog.entity.${a.entityType}`, a.entityType)}</Badge></TableCell>
+                      <TableCell><Badge variant="secondary" className={`text-px-10 ${ACTION_COLORS[a.action] || ''}`}>{t(`auditLog.actionLabel.${a.action}`, a.action?.replace(/_/g, ' ') || '—')}</Badge></TableCell>
                       <TableCell className="text-xs max-w-[300px] truncate">{a.description}</TableCell>
                     </TableRow>
                   ))}

@@ -203,11 +203,11 @@ function KanbanCard({
           {/* Title + Priority row */}
           <div className="flex items-start gap-1">
             <div className="flex-1 min-w-0">
-              <h4 className="text-[12px] sm:text-[13px] font-semibold text-foreground truncate leading-snug">
+              <h4 className="text-px-12 sm:text-px-13 font-semibold text-foreground truncate leading-snug">
                 {item.title}
               </h4>
               {item.subtitle && (
-                <span className="text-[10px] text-muted-foreground font-mono">
+                <span className="text-px-10 text-muted-foreground font-mono">
                   {item.subtitle.replace('#', '#')}
                 </span>
               )}
@@ -216,7 +216,7 @@ function KanbanCard({
               <Badge
                 variant="outline"
                 className={cn(
-                  'text-[9px] h-4 px-1 flex-shrink-0 border-0 font-semibold capitalize',
+                  'text-px-9 h-4 px-1 flex-shrink-0 border-0 font-semibold capitalize',
                   PRIORITY_CONFIG[item.priority]?.color || 'text-muted-foreground',
                   item.priority === 'urgent' && 'bg-destructive/10',
                   item.priority === 'high' && 'bg-warning/10',
@@ -235,7 +235,7 @@ function KanbanCard({
               <Avatar className="h-5 w-5 flex-shrink-0">
                 <AvatarFallback
                   className={cn(
-                    'text-[8px] font-bold',
+                    'text-px-8 font-bold',
                     column.bgColor,
                     column.iconColor
                   )}
@@ -245,12 +245,12 @@ function KanbanCard({
               </Avatar>
               <div className="min-w-0 flex-1 leading-none">
                 {item.contactName && (
-                  <span className="text-[11px] font-medium text-foreground truncate block">
+                  <span className="text-px-11 font-medium text-foreground truncate block">
                     {item.contactName}
                   </span>
                 )}
                 {item.companyName && item.companyName !== item.contactName && (
-                  <span className="text-[10px] text-muted-foreground truncate block">
+                  <span className="text-px-10 text-muted-foreground truncate block">
                     {item.companyName}
                   </span>
                 )}
@@ -262,13 +262,13 @@ function KanbanCard({
           {item.value && (
             <div className="flex items-center justify-between mt-2 gap-1">
               <span className={cn(
-                'text-[12px] sm:text-[13px] font-bold tabular-nums',
+                'text-px-12 sm:text-px-13 font-bold tabular-nums',
                 column.iconColor
               )}>
                 {item.value}
               </span>
               {item.itemsCount !== undefined && item.itemsCount > 0 && (
-                <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                <span className="text-px-10 text-muted-foreground flex items-center gap-0.5">
                   <FileText className="h-2.5 w-2.5" />
                   {item.itemsCount}
                 </span>
@@ -280,12 +280,12 @@ function KanbanCard({
           {(item.category || (item.badges && item.badges.length > 0)) && (
             <div className="flex flex-wrap gap-1 mt-1.5">
               {item.category && (
-                <Badge variant="outline" className="text-[8px] sm:text-[9px] h-4 px-1 font-normal">
+                <Badge variant="outline" className="text-px-8 sm:text-px-9 h-4 px-1 font-normal">
                   {item.category}
                 </Badge>
               )}
               {item.badges?.map((badge, i) => (
-                <Badge key={i} variant={badge.variant || 'secondary'} className="text-[8px] sm:text-[9px] h-4 px-1">
+                <Badge key={i} variant={badge.variant || 'secondary'} className="text-px-8 sm:text-px-9 h-4 px-1">
                   {badge.label}
                 </Badge>
               ))}
@@ -294,7 +294,7 @@ function KanbanCard({
 
           {/* Date footer */}
           {item.date && (
-            <div className="flex items-center gap-1 mt-1.5 pt-1.5 border-t border-border/30 text-[10px] text-muted-foreground">
+            <div className="flex items-center gap-1 mt-1.5 pt-1.5 border-t border-border/30 text-px-10 text-muted-foreground">
               <Calendar className="h-2.5 w-2.5 flex-shrink-0" />
               <span className="truncate">{item.date}</span>
             </div>
@@ -340,15 +340,15 @@ function KanbanColumn({
             className="h-2.5 w-2.5 rounded-sm flex-shrink-0"
             style={{ backgroundColor: column.color }}
           />
-          <span className="text-[12px] sm:text-[13px] font-semibold text-foreground tracking-tight truncate">
+          <span className="text-px-12 sm:text-px-13 font-semibold text-foreground tracking-tight truncate">
             {column.label}
           </span>
-          <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground bg-background/60 rounded-full h-5 min-w-[18px] px-1 inline-flex items-center justify-center flex-shrink-0">
+          <span className="text-px-10 sm:text-px-11 font-medium text-muted-foreground bg-background/60 rounded-full h-5 min-w-[18px] px-1 inline-flex items-center justify-center flex-shrink-0">
             {items.length}
           </span>
         </div>
         {totalLabel && (
-          <div className="mt-1 text-[11px] sm:text-[12px] font-semibold text-muted-foreground truncate">
+          <div className="mt-1 text-px-11 sm:text-px-12 font-semibold text-muted-foreground truncate">
             {totalLabel}
           </div>
         )}

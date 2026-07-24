@@ -154,7 +154,7 @@ export const WorkflowNode = memo(({ data, id, onNodeClick, onRemove }: WorkflowN
             {data.config?.name || data.label}
           </div>
           {data.description && (
-            <div className="text-[11px] text-muted-foreground truncate mt-0.5">
+            <div className="text-px-11 text-muted-foreground truncate mt-0.5">
               {data.description}
             </div>
           )}

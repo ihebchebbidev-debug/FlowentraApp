@@ -88,7 +88,7 @@ function SuccessPanel({
 
               {/* Webhook URL */}
               <div className="space-y-1">
-                <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">
+                <p className="text-px-11 text-muted-foreground font-medium uppercase tracking-wide">
                   {t('external.detail.publicUrl')}
                 </p>
                 <div className="flex items-center gap-2">
@@ -136,7 +136,7 @@ function SuccessPanel({
             <ol className="space-y-2">
               {connector.setupInstructions.map((step, i) => (
                 <li key={i} className="flex gap-3 text-sm">
-                  <span className="flex-none w-5 h-5 rounded-full bg-primary/10 text-primary text-[11px] font-bold flex items-center justify-center mt-0.5">
+                  <span className="flex-none w-5 h-5 rounded-full bg-primary/10 text-primary text-px-11 font-bold flex items-center justify-center mt-0.5">
                     {i + 1}
                   </span>
                   <span className="text-foreground/80">{step}</span>
@@ -338,7 +338,7 @@ export function CreateConnection() {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground">{entity.label}</p>
                 <p className="text-xs text-muted-foreground">
-                  {entity.erpObjectName} → <Badge variant="outline" className="text-[10px] px-1 py-0">{MODULE_LABELS[entity.targetModule] ?? entity.targetModule}</Badge>
+                  {entity.erpObjectName} → <Badge variant="outline" className="text-px-10 px-1 py-0">{MODULE_LABELS[entity.targetModule] ?? entity.targetModule}</Badge>
                 </p>
               </div>
               {selectedEntities.has(entity.type) && (
@@ -395,7 +395,7 @@ export function CreateConnection() {
             <ol className="space-y-2">
               {connector.setupInstructions.map((step, i) => (
                 <li key={i} className="flex gap-3 text-sm">
-                  <span className="flex-none w-5 h-5 rounded-full bg-primary/10 text-primary text-[11px] font-bold flex items-center justify-center mt-0.5">
+                  <span className="flex-none w-5 h-5 rounded-full bg-primary/10 text-primary text-px-11 font-bold flex items-center justify-center mt-0.5">
                     {i + 1}
                   </span>
                   <span className="text-foreground/80">{step}</span>

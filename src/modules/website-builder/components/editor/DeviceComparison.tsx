@@ -34,8 +34,8 @@ export function DeviceComparison({ components, theme, syncScroll = true }: Devic
       <div className="flex-1 flex flex-col min-w-0">
         <div className="flex items-center gap-2 mb-2 px-1">
           <div className="w-2 h-2 rounded-full bg-primary" />
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Desktop</span>
-          <span className="text-[10px] text-muted-foreground/50 ml-auto">1440px</span>
+          <span className="text-px-10 font-semibold uppercase tracking-wider text-muted-foreground">Desktop</span>
+          <span className="text-px-10 text-muted-foreground/50 ml-auto">1440px</span>
         </div>
         <ScrollArea
           ref={desktopRef}
@@ -58,8 +58,8 @@ export function DeviceComparison({ components, theme, syncScroll = true }: Devic
       <div className="flex flex-col" style={{ width: 375 }}>
         <div className="flex items-center gap-2 mb-2 px-1">
           <div className="w-2 h-2 rounded-full bg-accent" />
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Mobile</span>
-          <span className="text-[10px] text-muted-foreground/50 ml-auto">375px</span>
+          <span className="text-px-10 font-semibold uppercase tracking-wider text-muted-foreground">Mobile</span>
+          <span className="text-px-10 text-muted-foreground/50 ml-auto">375px</span>
         </div>
         <ScrollArea
           ref={mobileRef}

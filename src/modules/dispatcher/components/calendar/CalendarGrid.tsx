@@ -310,7 +310,7 @@ export function CalendarGrid({
                   {workloadLevel && !isDayNotPlannable && (
                     <div className="absolute top-0.5 right-0.5 z-30 flex items-center gap-1 px-1 py-0.5 rounded-sm bg-background/80 backdrop-blur-sm" title={getWorkloadLabel(workloadLevel)}>
                       <div className={`w-2 h-2 rounded-full ${heatmapDotColor}`} />
-                      <span className="text-[9px] font-medium text-foreground/70">{getWorkloadLabel(workloadLevel)}</span>
+                      <span className="text-px-9 font-medium text-foreground/70">{getWorkloadLabel(workloadLevel)}</span>
                     </div>
                   )}
                   {/* Leave overlay - Green */}
@@ -320,7 +320,7 @@ export function CalendarGrid({
                       <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent_6px,rgba(16,185,129,0.15)_6px,rgba(16,185,129,0.15)_12px)]" />
                       <div className="bg-success/10 border border-success/30 rounded px-2 py-1 flex items-center gap-1.5 shadow-sm z-20">
                         <CalendarDays className="h-3.5 w-3.5 text-success" />
-                        <span className="text-[10px] font-medium text-success truncate max-w-[80px]">
+                        <span className="text-px-10 font-medium text-success truncate max-w-[80px]">
                           {isOnLeave ? leaveOnDate.leaveType : t('dispatcher.unavailable')}
                         </span>
                       </div>
@@ -334,7 +334,7 @@ export function CalendarGrid({
                       <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent_8px,rgba(239,68,68,0.12)_8px,rgba(239,68,68,0.12)_16px)]" />
                       <div className="bg-destructive/10 border border-destructive/30 rounded px-2 py-1 flex items-center gap-1.5 shadow-sm z-20">
                         <Clock className="h-3.5 w-3.5 text-destructive" />
-                        <span className="text-[10px] font-medium text-destructive">
+                        <span className="text-px-10 font-medium text-destructive">
                           {t('dispatcher.day_off')}
                         </span>
                       </div>
@@ -394,7 +394,7 @@ export function CalendarGrid({
                             title={t('dispatcher.lunch_break')}
                           >
                             <div className="absolute inset-0 flex items-center justify-center">
-                              <span className="text-[8px] font-medium text-muted-foreground/60 uppercase tracking-wider select-none">
+                              <span className="text-px-8 font-medium text-muted-foreground/60 uppercase tracking-wider select-none">
                                 {t('dispatcher.lunch')}
                               </span>
                             </div>

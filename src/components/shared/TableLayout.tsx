@@ -160,7 +160,7 @@ function InlineEditCell<T>({
           onBlur={commit}
           onKeyDown={handleKeyDown}
           onClick={(e) => e.stopPropagation()}
-          className="w-full h-7 px-1.5 text-[13px] bg-background border border-primary/40 rounded-md focus:outline-none focus:ring-1 focus:ring-primary/50 shadow-sm"
+          className="w-full h-7 px-1.5 text-px-13 bg-background border border-primary/40 rounded-md focus:outline-none focus:ring-1 focus:ring-primary/50 shadow-sm"
         >
           {editable.options?.map((opt) => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -178,7 +178,7 @@ function InlineEditCell<T>({
         onBlur={commit}
         onKeyDown={handleKeyDown}
         onClick={(e) => e.stopPropagation()}
-        className="h-7 px-1.5 text-[13px] border-primary/40 focus-visible:ring-primary/50 shadow-sm"
+        className="h-7 px-1.5 text-px-13 border-primary/40 focus-visible:ring-primary/50 shadow-sm"
       />
     );
   }

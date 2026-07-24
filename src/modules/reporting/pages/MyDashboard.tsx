@@ -81,7 +81,7 @@ export const MyDashboard = () => {
                   onClick={() => nav(sourceRoute[w.source])}
                   aria-label={t('my.openSource', 'Open source dashboard')}
                   title={`${w.source} · ${t('my.open', 'Open')}`}
-                  className="absolute -top-2 left-2 z-10 hidden items-center gap-1 rounded-full border bg-card px-2 py-0.5 text-[10px] font-medium text-muted-foreground shadow-sm transition hover:text-foreground group-hover:flex"
+                  className="absolute -top-2 left-2 z-10 hidden items-center gap-1 rounded-full border bg-card px-2 py-0.5 text-px-10 font-medium text-muted-foreground shadow-sm transition hover:text-foreground group-hover:flex"
                 >
                   <ExternalLink className="h-3 w-3" />
                   {w.source}

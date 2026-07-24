@@ -74,7 +74,7 @@ export function QuickViewBlock({ product, theme, isEditing, onUpdate, style }: Q
           {/* Image Side */}
           <div className="relative bg-gray-50 aspect-square md:aspect-auto">
             {product.badge && (
-              <span className="absolute top-4 left-4 z-10 text-[11px] font-bold px-3 py-1 rounded-full text-white" style={{ backgroundColor: theme.accentColor }}>
+              <span className="absolute top-4 left-4 z-10 text-px-11 font-bold px-3 py-1 rounded-full text-white" style={{ backgroundColor: theme.accentColor }}>
                 {product.badge}
               </span>
             )}

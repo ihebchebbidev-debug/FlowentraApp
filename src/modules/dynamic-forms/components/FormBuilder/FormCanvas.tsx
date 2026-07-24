@@ -180,7 +180,7 @@ function SortableField({ field, isSelected, onSelect, onRemove, onDuplicate, isE
       <div className="flex items-center gap-2 mb-1">
           <Badge 
             variant="secondary" 
-            className={`text-[10px] font-medium ${isSection ? 'bg-primary/10 text-primary' : ''}`}
+            className={`text-px-10 font-medium ${isSection ? 'bg-primary/10 text-primary' : ''}`}
           >
             {t(`field_types.${field.type}`)}
           </Badge>
@@ -365,7 +365,7 @@ function PreviewField({ field, isSelected, onSelect, onRemove, onDuplicate, isEn
     return (
       <div className="flex items-start gap-1.5 mt-1 p-2 rounded bg-muted/50 border border-muted">
         <Info className="h-3.5 w-3.5 text-primary/70 flex-shrink-0 mt-0.5" />
-        <p className="text-[11px] text-muted-foreground leading-relaxed">{hint}</p>
+        <p className="text-px-11 text-muted-foreground leading-relaxed">{hint}</p>
       </div>
     );
   };
@@ -493,7 +493,7 @@ function PreviewField({ field, isSelected, onSelect, onRemove, onDuplicate, isEn
               {label}
               {field.required && <span className="text-destructive ml-1">*</span>}
               {field.use_dynamic_data && field.dependency && (
-                <Badge variant="outline" className="ml-2 text-[10px] h-4">
+                <Badge variant="outline" className="ml-2 text-px-10 h-4">
                   {t('dynamic_data.cascading')}
                 </Badge>
               )}
@@ -535,7 +535,7 @@ function PreviewField({ field, isSelected, onSelect, onRemove, onDuplicate, isEn
               {label}
               {field.required && <span className="text-destructive ml-1">*</span>}
               {field.use_dynamic_data && field.dependency && (
-                <Badge variant="outline" className="ml-2 text-[10px] h-4">
+                <Badge variant="outline" className="ml-2 text-px-10 h-4">
                   {t('dynamic_data.cascading')}
                 </Badge>
               )}
@@ -573,7 +573,7 @@ function PreviewField({ field, isSelected, onSelect, onRemove, onDuplicate, isEn
               {label}
               {field.required && <span className="text-destructive ml-1">*</span>}
               {field.use_dynamic_data && field.dependency && (
-                <Badge variant="outline" className="ml-2 text-[10px] h-4">
+                <Badge variant="outline" className="ml-2 text-px-10 h-4">
                   {t('dynamic_data.cascading')}
                 </Badge>
               )}
@@ -748,7 +748,7 @@ export function FormCanvas({ fields, selectedFieldId, onSelectField, onRemoveFie
           <h3 className="text-sm font-semibold text-foreground">
             {t('builder.form_canvas')}
           </h3>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-px-11 text-muted-foreground">
             {viewMode === 'preview' ? t('builder.preview_mode_hint', 'Click fields to edit') : t('builder.canvas_hint')}
           </p>
         </div>

@@ -549,7 +549,7 @@ export function EmployeeDetail() {
                             {dayjs(e.timestamp).format('YYYY-MM-DD HH:mm')}
                           </TableCell>
                           <TableCell>
-                            <Badge variant="outline" className="text-[11px]">{e.eventType.replace(/_/g, ' ')}</Badge>
+                            <Badge variant="outline" className="text-px-11">{e.eventType.replace(/_/g, ' ')}</Badge>
                           </TableCell>
                           <TableCell className="text-sm">{e.description}</TableCell>
                         </TableRow>

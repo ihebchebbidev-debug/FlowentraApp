@@ -107,7 +107,7 @@ export const FinanceDashboard = () => {
             <ChartCard title={t('finance.invoiceTable', 'Recent Invoices')} favorite={{ id: 'f-inv', title: 'Recent Invoices', source: SOURCE }} bodyClassName="p-0" empty={!invoices.length} emptyLabel={t('finance.invoiceEmpty', 'Invoice detail rows not yet populated')}>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
-                  <thead className="bg-muted/50 text-[11px] uppercase tracking-wide text-muted-foreground">
+                  <thead className="bg-muted/50 text-px-11 uppercase tracking-wide text-muted-foreground">
                     <tr>
                       <th className="w-8 px-3 py-2"></th>
                       <th className="whitespace-nowrap px-3 py-2 text-left">{t('finance.invoiceNumber', 'Invoice')}</th>

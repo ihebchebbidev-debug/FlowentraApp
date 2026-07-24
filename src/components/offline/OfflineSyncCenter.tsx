@@ -103,7 +103,7 @@ export const OfflineSyncCenter: React.FC = () => {
           </div>
           <div className="flex items-center gap-2">
             {pendingCount > 0 && (
-              <Badge variant="secondary" className="text-[10px] h-5 px-1.5 font-mono">
+              <Badge variant="secondary" className="text-px-10 h-5 px-1.5 font-mono">
                 {pendingCount}
               </Badge>
             )}
@@ -197,7 +197,7 @@ export const OfflineSyncCenter: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setShowSyncDetail((v) => !v)}
-                          className="flex items-center gap-1 mt-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                          className="flex items-center gap-1 mt-1.5 text-px-11 text-muted-foreground hover:text-foreground transition-colors"
                         >
                           {showSyncDetail ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
                           {t("syncDashboard.syncOverlay.reportTitle", "View details")}
@@ -208,39 +208,39 @@ export const OfflineSyncCenter: React.FC = () => {
 
                   {/* Error details */}
                   {showSyncDetail && lastSyncDetail && (
-                    <div className="mt-2 rounded-md border border-border bg-muted/30 p-2.5 text-[11px] space-y-2 max-h-48 overflow-auto">
+                    <div className="mt-2 rounded-md border border-border bg-muted/30 p-2.5 text-px-11 space-y-2 max-h-48 overflow-auto">
                       {lastSyncDetail.httpStatus != null && (
                         <p className="text-warning font-medium">
                           {t("syncDashboard.syncOverlay.httpTitle", { status: lastSyncDetail.httpStatus })}
                         </p>
                       )}
                       {lastSyncDetail.httpBody && (
-                        <pre className="whitespace-pre-wrap break-words rounded bg-background p-2 font-mono text-[10px] text-muted-foreground border border-border">
+                        <pre className="whitespace-pre-wrap break-words rounded bg-background p-2 font-mono text-px-10 text-muted-foreground border border-border">
                           {lastSyncDetail.httpBody}
                         </pre>
                       )}
                       {lastSyncDetail.fatalError && (
-                        <p className="font-mono text-destructive text-[10px]">{lastSyncDetail.fatalError}</p>
+                        <p className="font-mono text-destructive text-px-10">{lastSyncDetail.fatalError}</p>
                       )}
                       {(lastSyncDetail.binaryFailures ?? []).map((row) => (
                         <div key={`b-${row.opId}`} className="border-t border-border pt-2">
-                          <span className="font-mono text-[10px] text-muted-foreground">{row.method}</span>{" "}
+                          <span className="font-mono text-px-10 text-muted-foreground">{row.method}</span>{" "}
                           <span className="break-all text-foreground">{row.endpoint}</span>
                           <p className="text-destructive mt-0.5">{row.error}</p>
                         </div>
                       ))}
                       {(lastSyncDetail.failedOperations ?? []).map((row) => (
                         <div key={row.opId} className="border-t border-border pt-2 space-y-0.5">
-                          <div className="flex flex-wrap gap-1.5 text-[10px] text-muted-foreground">
+                          <div className="flex flex-wrap gap-1.5 text-px-10 text-muted-foreground">
                             <span className="font-mono">{row.opId}</span>
-                            <Badge variant="outline" className="text-[9px] h-4 px-1">
+                            <Badge variant="outline" className="text-px-9 h-4 px-1">
                               {row.status}
                             </Badge>
                           </div>
-                          <p className="font-mono text-[10px] break-all text-muted-foreground">
+                          <p className="font-mono text-px-10 break-all text-muted-foreground">
                             {row.method} {row.endpoint}
                           </p>
-                          <p className="text-destructive text-[10px]">
+                          <p className="text-destructive text-px-10">
                             {row.error || t("syncDashboard.syncOverlay.noServerMessage")}
                           </p>
                         </div>

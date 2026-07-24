@@ -708,7 +708,7 @@ export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onData
                           <div className="flex items-center gap-2">
                             <span>{row.name}</span>
                             {row.isPlanned && (
-                              <Badge variant="outline" className="text-[10px] uppercase tracking-wide border-primary/40 text-primary">
+                              <Badge variant="outline" className="text-px-10 uppercase tracking-wide border-primary/40 text-primary">
                                 {t('materials_tab.pre_planned')}
                               </Badge>
                             )}
@@ -717,7 +717,7 @@ export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onData
                         {isMultiJob && (
                           <td className="px-4 py-3 text-sm">
                             {row.jobId != null
-                              ? <Badge variant="outline" className="text-[10px]">📋 {jobLabel(row.jobId)}</Badge>
+                              ? <Badge variant="outline" className="text-px-10">📋 {jobLabel(row.jobId)}</Badge>
                               : <span className="text-muted-foreground">—</span>}
                           </td>
                         )}

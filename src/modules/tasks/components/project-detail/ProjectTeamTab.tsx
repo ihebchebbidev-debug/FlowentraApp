@@ -225,7 +225,7 @@ export function ProjectTeamTab({
                             {tasksCompleted}/{tasksAssigned}
                           </span>
                         </div>
-                        <p className="text-[10px] text-muted-foreground">
+                        <p className="text-px-10 text-muted-foreground">
                           {t("projects.detail.team.tasksAssigned")}
                         </p>
                       </div>

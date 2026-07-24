@@ -26,7 +26,7 @@ export function UserProfileBlock({ name, bio, avatar, coverImage, stats, socialL
             {isEditing && (
               <button
                 onClick={() => { const u = prompt('Cover image URL:', coverImage); if (u !== null) onUpdate?.({ coverImage: u }); }}
-                className="absolute bottom-2 right-2 px-2 py-1 rounded text-[10px] bg-black/50 text-white hover:bg-black/70"
+                className="absolute bottom-2 right-2 px-2 py-1 rounded text-px-10 bg-black/50 text-white hover:bg-black/70"
               >Change Cover</button>
             )}
           </div>

@@ -22,7 +22,7 @@ export function EditorSection({ title, icon, defaultOpen = true, children }: Edi
       >
         <div className="flex items-center gap-2">
           {icon && <span className="text-muted-foreground/40 group-hover:text-muted-foreground/60 transition-colors">{icon}</span>}
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50 group-hover:text-muted-foreground/70 transition-colors">{title}</span>
+          <span className="text-px-10 font-semibold uppercase tracking-wider text-muted-foreground/50 group-hover:text-muted-foreground/70 transition-colors">{title}</span>
         </div>
         {open ? <ChevronDown className="h-3 w-3 text-muted-foreground/30" /> : <ChevronRight className="h-3 w-3 text-muted-foreground/30" />}
       </button>

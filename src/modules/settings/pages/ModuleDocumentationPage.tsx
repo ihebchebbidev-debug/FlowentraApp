@@ -237,7 +237,7 @@ export default function ModuleDocumentationPage() {
                   </CardTitle>
                   <CardDescription>
                     REST endpoints consumed by this module ({MODULE_APIS[mod.key].length}).
-                    Path params are shown as <code className="text-[11px]">{"{id}"}</code>.
+                    Path params are shown as <code className="text-px-11">{"{id}"}</code>.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -246,7 +246,7 @@ export default function ModuleDocumentationPage() {
                       <li key={i} className="py-2 flex items-start gap-3">
                         <Badge
                           variant="outline"
-                          className={`shrink-0 font-mono text-[10px] px-1.5 py-0.5 ${methodBadge(ep.method)}`}
+                          className={`shrink-0 font-mono text-px-10 px-1.5 py-0.5 ${methodBadge(ep.method)}`}
                         >
                           {ep.method}
                         </Badge>
@@ -255,7 +255,7 @@ export default function ModuleDocumentationPage() {
                             {ep.path}
                           </code>
                           {ep.description ? (
-                            <div className="text-[11px] text-muted-foreground mt-0.5">{ep.description}</div>
+                            <div className="text-px-11 text-muted-foreground mt-0.5">{ep.description}</div>
                           ) : null}
                         </div>
                       </li>
@@ -286,7 +286,7 @@ export default function ModuleDocumentationPage() {
                               <CollapsibleTrigger className="w-full flex items-center gap-2 px-2.5 py-2 hover:bg-muted/60 transition-colors text-left group">
                                 <Database className="h-3.5 w-3.5 text-primary/70 shrink-0" />
                                 <code className="text-xs font-mono font-semibold flex-1 truncate">{t}</code>
-                                <Badge variant="outline" className="text-[10px] shrink-0">{cols.length} cols</Badge>
+                                <Badge variant="outline" className="text-px-10 shrink-0">{cols.length} cols</Badge>
                                 <ChevronDown className="h-3.5 w-3.5 text-muted-foreground transition-transform group-data-[state=open]:rotate-180 shrink-0" />
                               </CollapsibleTrigger>
                               <CollapsibleContent>
@@ -302,12 +302,12 @@ export default function ModuleDocumentationPage() {
                                         <code className="font-mono font-medium truncate flex-1">{c.name}</code>
                                         <Badge
                                           variant="outline"
-                                          className={`text-[10px] font-mono px-1.5 py-0 shrink-0 ${typeBadgeColor(c.type)}`}
+                                          className={`text-px-10 font-mono px-1.5 py-0 shrink-0 ${typeBadgeColor(c.type)}`}
                                         >
                                           {c.type}
                                         </Badge>
                                         {c.notNull && (
-                                          <Badge variant="outline" className="text-[9px] px-1 py-0 shrink-0 border-red-500/30 text-red-600 dark:text-red-300">
+                                          <Badge variant="outline" className="text-px-9 px-1 py-0 shrink-0 border-red-500/30 text-red-600 dark:text-red-300">
                                             NOT NULL
                                           </Badge>
                                         )}
@@ -321,7 +321,7 @@ export default function ModuleDocumentationPage() {
                             <div className="flex items-center gap-2 px-2.5 py-2">
                               <Database className="h-3.5 w-3.5 text-primary/70 shrink-0" />
                               <code className="text-xs font-mono flex-1 truncate">{t}</code>
-                              <Badge variant="outline" className="text-[10px] text-muted-foreground shrink-0">schema n/a</Badge>
+                              <Badge variant="outline" className="text-px-10 text-muted-foreground shrink-0">schema n/a</Badge>
                             </div>
                           )}
                         </li>
@@ -362,7 +362,7 @@ export default function ModuleDocumentationPage() {
                       <span className="absolute top-3 right-3 rounded bg-background/85 backdrop-blur p-1.5 opacity-0 group-hover:opacity-100 transition-opacity border">
                         <Maximize2 className="h-4 w-4" />
                       </span>
-                      <span className="absolute bottom-3 left-3 rounded bg-background/85 backdrop-blur px-2 py-1 text-[11px] font-mono border">
+                      <span className="absolute bottom-3 left-3 rounded bg-background/85 backdrop-blur px-2 py-1 text-px-11 font-mono border">
                         {idx + 1} / {shots.length}
                       </span>
                     </button>
@@ -370,7 +370,7 @@ export default function ModuleDocumentationPage() {
                       <h3 className="font-semibold text-sm leading-snug">{s.caption}</h3>
                       {s.details?.length ? (
                         <div>
-                          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Details</p>
+                          <p className="text-px-11 font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Details</p>
                           <ul className="text-xs space-y-1.5 text-foreground/85">
                             {s.details.map((d, i) => (
                               <li key={i} className="flex gap-2">
@@ -385,7 +385,7 @@ export default function ModuleDocumentationPage() {
                         <>
                           <Separator />
                           <div>
-                            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">What you can do</p>
+                            <p className="text-px-11 font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">What you can do</p>
                             <ul className="text-xs space-y-1.5 text-foreground/85">
                               {s.whatYouCanDo.map((d, i) => (
                                 <li key={i} className="flex gap-2">
@@ -401,7 +401,7 @@ export default function ModuleDocumentationPage() {
                         <>
                           <Separator />
                           <div>
-                            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Fields & actions</p>
+                            <p className="text-px-11 font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Fields & actions</p>
                             <ul className="text-xs space-y-1.5 text-foreground/85">
                               {s.fieldsActions.map((d, i) => (
                                 <li key={i} className="flex gap-2">
@@ -428,7 +428,7 @@ export default function ModuleDocumentationPage() {
               <Link to={`/dashboard/settings/documentation/module/${prevMod.key}`} className="min-w-0">
                 <ChevronLeft className="h-4 w-4 mr-2 shrink-0" />
                 <span className="text-left min-w-0">
-                  <span className="block text-[10px] text-muted-foreground uppercase tracking-wider">Previous</span>
+                  <span className="block text-px-10 text-muted-foreground uppercase tracking-wider">Previous</span>
                   <span className="block text-sm truncate">{prevMod.name}</span>
                 </span>
               </Link>
@@ -441,7 +441,7 @@ export default function ModuleDocumentationPage() {
             <Button variant="outline" asChild className="max-w-[45%] sm:max-w-[200px]">
               <Link to={`/dashboard/settings/documentation/module/${nextMod.key}`} className="min-w-0">
                 <span className="text-right min-w-0">
-                  <span className="block text-[10px] text-muted-foreground uppercase tracking-wider">Next</span>
+                  <span className="block text-px-10 text-muted-foreground uppercase tracking-wider">Next</span>
                   <span className="block text-sm truncate">{nextMod.name}</span>
                 </span>
                 <ChevronRight className="h-4 w-4 ml-2 shrink-0" />
@@ -497,7 +497,7 @@ export default function ModuleDocumentationPage() {
               <ChevronRight className="h-5 w-5" />
             </Button>
           </div>
-          <div className="border-t bg-background/80 px-4 py-2 text-[11px] text-muted-foreground text-center">
+          <div className="border-t bg-background/80 px-4 py-2 text-px-11 text-muted-foreground text-center">
             ← / → to navigate · Esc to close
           </div>
         </div>

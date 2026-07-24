@@ -404,7 +404,7 @@ export function ProjectTasksTab({
                         <Badge
                           variant="outline"
                           className={cn(
-                            "text-[9px] px-1.5 py-0 h-4 opacity-60",
+                            "text-px-9 px-1.5 py-0 h-4 opacity-60",
                             task.priority === "urgent" && "border-destructive/50 text-destructive",
                             task.priority === "high" && "border-warning/50 text-warning",
                             task.priority === "medium" && "border-warning/50 text-warning",

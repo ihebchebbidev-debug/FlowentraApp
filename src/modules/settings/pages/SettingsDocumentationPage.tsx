@@ -465,7 +465,7 @@ export default function SettingsDocumentationPage() {
                   <ScrollArea className="h-[calc(100vh-20rem)] pr-2">
                     {(["Personal", "Administration"] as const).map((g) => (
                       <div key={g} className="mb-3">
-                        <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-2 mb-1">
+                        <div className="text-px-10 font-semibold uppercase tracking-wider text-muted-foreground px-2 mb-1">
                           {g}
                         </div>
                         <ul className="space-y-0.5">
@@ -527,10 +527,10 @@ export default function SettingsDocumentationPage() {
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <span className="font-medium text-sm">{m.label}</span>
-                                  <Badge variant="outline" className="text-[10px] capitalize">{m.kind.replace("-", " ")}</Badge>
+                                  <Badge variant="outline" className="text-px-10 capitalize">{m.kind.replace("-", " ")}</Badge>
                                 </div>
                                 {m.sub && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{m.sub}</p>}
-                                <div className="flex items-center gap-1.5 mt-1 text-[11px] text-muted-foreground">
+                                <div className="flex items-center gap-1.5 mt-1 text-px-11 text-muted-foreground">
                                   <SIcon className="h-3 w-3" />
                                   <span>{m.section.group} → {m.section.name}</span>
                                 </div>
@@ -564,10 +564,10 @@ export default function SettingsDocumentationPage() {
                             <CardTitle className="text-base">{s.name}</CardTitle>
                             <CardDescription className="mt-1">{s.summary}</CardDescription>
                             <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                              {s.fields && <Badge variant="outline" className="text-[10px]">{s.fields.length} fields</Badge>}
-                              {s.actions && <Badge variant="outline" className="text-[10px]">{s.actions.length} actions</Badge>}
-                              {s.modals && <Badge variant="outline" className="text-[10px]">{s.modals.length} modals</Badge>}
-                              <Link to={s.route} className="text-[11px] text-primary hover:underline ml-1">Open in app →</Link>
+                              {s.fields && <Badge variant="outline" className="text-px-10">{s.fields.length} fields</Badge>}
+                              {s.actions && <Badge variant="outline" className="text-px-10">{s.actions.length} actions</Badge>}
+                              {s.modals && <Badge variant="outline" className="text-px-10">{s.modals.length} modals</Badge>}
+                              <Link to={s.route} className="text-px-11 text-primary hover:underline ml-1">Open in app →</Link>
                             </div>
                           </div>
                         </div>
@@ -580,8 +580,8 @@ export default function SettingsDocumentationPage() {
                               {s.fields.map((f) => (
                                 <li key={f.name} className="text-sm flex flex-wrap items-baseline gap-x-2">
                                   <span className="font-medium">{f.name}</span>
-                                  {f.type && <Badge variant="outline" className="text-[10px] font-mono">{f.type}</Badge>}
-                                  {f.required && <Badge className="text-[10px]" variant="destructive">required</Badge>}
+                                  {f.type && <Badge variant="outline" className="text-px-10 font-mono">{f.type}</Badge>}
+                                  {f.required && <Badge className="text-px-10" variant="destructive">required</Badge>}
                                   <span className="text-muted-foreground">— {f.description}</span>
                                 </li>
                               ))}
@@ -617,17 +617,17 @@ export default function SettingsDocumentationPage() {
                                     <div className="flex items-center gap-2 flex-wrap">
                                       <FileText className="h-4 w-4 text-primary" />
                                       <span className="font-medium text-sm">{m.name}</span>
-                                      <Badge variant="outline" className="text-[10px]">Trigger: {m.trigger}</Badge>
+                                      <Badge variant="outline" className="text-px-10">Trigger: {m.trigger}</Badge>
                                     </div>
                                     {m.fields?.length ? (
                                       <div className="mt-2">
-                                        <p className="text-[11px] font-semibold text-muted-foreground uppercase mb-1">Fields</p>
+                                        <p className="text-px-11 font-semibold text-muted-foreground uppercase mb-1">Fields</p>
                                         <ul className="text-xs space-y-1">
                                           {m.fields.map((f) => (
                                             <li key={f.name} className="flex flex-wrap items-baseline gap-x-2">
                                               <span className="font-medium">{f.name}</span>
-                                              {f.type && <Badge variant="outline" className="text-[10px] font-mono">{f.type}</Badge>}
-                                              {f.required && <Badge variant="destructive" className="text-[10px]">required</Badge>}
+                                              {f.type && <Badge variant="outline" className="text-px-10 font-mono">{f.type}</Badge>}
+                                              {f.required && <Badge variant="destructive" className="text-px-10">required</Badge>}
                                               <span className="text-muted-foreground">— {f.description}</span>
                                             </li>
                                           ))}
@@ -636,7 +636,7 @@ export default function SettingsDocumentationPage() {
                                     ) : null}
                                     {m.actions?.length ? (
                                       <div className="mt-2">
-                                        <p className="text-[11px] font-semibold text-muted-foreground uppercase mb-1">Actions</p>
+                                        <p className="text-px-11 font-semibold text-muted-foreground uppercase mb-1">Actions</p>
                                         <ul className="text-xs space-y-1">
                                           {m.actions.map((a) => (
                                             <li key={a.label}>
@@ -647,7 +647,7 @@ export default function SettingsDocumentationPage() {
                                         </ul>
                                       </div>
                                     ) : null}
-                                    {m.notes && <p className="text-[11px] text-muted-foreground italic mt-2">{m.notes}</p>}
+                                    {m.notes && <p className="text-px-11 text-muted-foreground italic mt-2">{m.notes}</p>}
                                   </div>
                                 ))}
                               </div>
@@ -737,7 +737,7 @@ export default function SettingsDocumentationPage() {
               aria-label="Next"
             ><ChevronRight className="h-5 w-5" /></Button>
           </div>
-          <div className="border-t bg-background/80 px-4 py-2 text-[11px] text-muted-foreground text-center">
+          <div className="border-t bg-background/80 px-4 py-2 text-px-11 text-muted-foreground text-center">
             {lightbox.index + 1} / {lightboxShots.length} · ← / → to navigate · Esc to close
           </div>
         </div>

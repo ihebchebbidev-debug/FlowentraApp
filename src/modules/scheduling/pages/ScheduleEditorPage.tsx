@@ -671,7 +671,7 @@ export default function ScheduleEditorPage() {
                           <div className="flex items-center gap-2">
                             <span>{lt.name}</span>
                             {lt.isPaid !== undefined && (
-                              <Badge variant={lt.isPaid ? "default" : "outline"} className="text-[10px] px-1 py-0 h-4">
+                              <Badge variant={lt.isPaid ? "default" : "outline"} className="text-px-10 px-1 py-0 h-4">
                                 {lt.isPaid ? t('scheduling.paid', 'Paid') : t('scheduling.unpaid', 'Unpaid')}
                               </Badge>
                             )}
@@ -759,16 +759,16 @@ export default function ScheduleEditorPage() {
                               {leaveTypeInfo?.name || l.leaveType}
                             </span>
                             {isPartialDay && (
-                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">
+                              <Badge variant="outline" className="text-px-10 px-1.5 py-0 h-4">
                                 {t('scheduling.partial', 'Partial')}
                               </Badge>
                             )}
                             {leaveTypeInfo?.isPaid !== undefined && (
-                              <Badge variant={leaveTypeInfo.isPaid ? "default" : "outline"} className="text-[10px] px-1.5 py-0 h-4">
+                              <Badge variant={leaveTypeInfo.isPaid ? "default" : "outline"} className="text-px-10 px-1.5 py-0 h-4">
                                 {leaveTypeInfo.isPaid ? t('scheduling.paid', 'Paid') : t('scheduling.unpaid', 'Unpaid')}
                               </Badge>
                             )}
-                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
+                            <Badge variant="secondary" className="text-px-10 px-1.5 py-0 h-4">
                               {l.status || 'pending'}
                             </Badge>
                           </div>

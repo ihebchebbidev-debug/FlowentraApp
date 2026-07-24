@@ -102,9 +102,9 @@ const formatCellValue = (value: any): React.ReactNode => {
   if (typeof value === 'boolean') return value ? <span className="text-green-500">✓</span> : <span className="text-red-500">✗</span>;
   if (typeof value === 'object') {
     if (Array.isArray(value)) {
-      return <Badge variant="outline" className="text-[10px]">[{value.length}]</Badge>;
+      return <Badge variant="outline" className="text-px-10">[{value.length}]</Badge>;
     }
-    return <Badge variant="outline" className="text-[10px]">{'{...}'}</Badge>;
+    return <Badge variant="outline" className="text-px-10">{'{...}'}</Badge>;
   }
   const strVal = String(value);
   if (strVal.length > 40) {
@@ -202,7 +202,7 @@ export function TableDataVisualizer({ testData }: TableDataVisualizerProps) {
                     <div className="flex items-center gap-2">
                       {tableIcons[table] || <Database className="h-4 w-4" />}
                       <span>{table}</span>
-                      <Badge variant="secondary" className="text-[10px] ml-1">
+                      <Badge variant="secondary" className="text-px-10 ml-1">
                         {stats.total}
                       </Badge>
                     </div>
@@ -276,7 +276,7 @@ export function TableDataVisualizer({ testData }: TableDataVisualizerProps) {
                       <TableCell className="py-2">
                         <Badge 
                           variant="outline" 
-                          className={cn('text-[10px] font-medium', operationColors[record.operation])}
+                          className={cn('text-px-10 font-medium', operationColors[record.operation])}
                         >
                           {record.operation === 'create' ? 'C' : record.operation === 'update' ? 'U' : 'D'}
                         </Badge>

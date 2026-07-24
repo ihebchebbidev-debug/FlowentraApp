@@ -255,7 +255,7 @@ export function ContactsList() {
           </div>
           <div>
             <h1 className="text-xl font-semibold text-foreground">{t('contacts.title')}</h1>
-            <p className="text-[11px] text-muted-foreground">{t('contacts.subtitle')}</p>
+            <p className="text-px-11 text-muted-foreground">{t('contacts.subtitle')}</p>
           </div>
         </div>
         {(effectiveMainAdmin || canCreate('contacts')) && (
@@ -475,7 +475,7 @@ export function ContactsList() {
                 <Send className="h-4 w-4" />
                 <span className="hidden sm:inline">Send Mass Email</span>
                 <span className="sm:hidden">Email</span>
-                <Badge variant="secondary" className="text-[10px] ml-1">{massEmailRecipients.length}</Badge>
+                <Badge variant="secondary" className="text-px-10 ml-1">{massEmailRecipients.length}</Badge>
               </Button>
               <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>
                 <X className="h-4 w-4" />
@@ -498,7 +498,7 @@ export function ContactsList() {
           </CreateActionButton>
         </div>
       ) : viewMode === 'list' ? <div className="p-3 sm:p-4 lg:p-6">
-        <Card className="shadow-card border-0 bg-card text-[0.85rem]">
+        <Card className="shadow-card border-0 bg-card text-rem-85">
           
           <CardContent className="p-0">
             <SimplePaginationBar
@@ -637,7 +637,7 @@ export function ContactsList() {
           </CardContent>
         </Card>
     </div> : <div className="p-3 sm:p-4 lg:p-6">
-      <Card className="shadow-card border-0 bg-card text-[0.95rem]">
+      <Card className="shadow-card border-0 bg-card text-rem-95">
           
             <CardContent className="p-0">
               <div className="overflow-x-auto w-full scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"

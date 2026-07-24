@@ -357,7 +357,7 @@ export function EmailDetailDialog({
             {email.labels && (
               <div className="flex flex-wrap gap-1">
                 {JSON.parse(email.labels).filter((l: string) => l !== 'UNREAD').map((label: string) => (
-                  <Badge key={label} variant="outline" className="text-[10px]">{label}</Badge>
+                  <Badge key={label} variant="outline" className="text-px-10">{label}</Badge>
                 ))}
               </div>
             )}
@@ -409,7 +409,7 @@ export function EmailDetailDialog({
                             <div className="flex items-center justify-between px-2 py-1.5 bg-muted/30">
                               <div className="min-w-0 flex-1">
                                 <span className="text-xs text-foreground truncate block">{att.fileName}</span>
-                                <span className="text-[10px] text-muted-foreground">{formatFileSize(att.size)}</span>
+                                <span className="text-px-10 text-muted-foreground">{formatFileSize(att.size)}</span>
                               </div>
                               <button
                                 onClick={() => handleDownloadAttachment(att)}
@@ -543,8 +543,8 @@ export function EmailDetailDialog({
                 {attachments.map((att, i) => (
                   <div key={i} className="flex items-center gap-2 px-2 py-1 rounded-md border border-border/60 bg-muted/20">
                     <FileText className="h-3 w-3 text-muted-foreground shrink-0" />
-                    <span className="text-[11px] text-foreground truncate flex-1">{att.file.name}</span>
-                    <span className="text-[10px] text-muted-foreground shrink-0">{formatFileSize(att.file.size)}</span>
+                    <span className="text-px-11 text-foreground truncate flex-1">{att.file.name}</span>
+                    <span className="text-px-10 text-muted-foreground shrink-0">{formatFileSize(att.file.size)}</span>
                     <button onClick={() => removeAttachment(i)} className="text-muted-foreground hover:text-destructive">
                       <X className="h-3 w-3" />
                     </button>
@@ -572,7 +572,7 @@ export function EmailDetailDialog({
                 <Paperclip className="h-3 w-3" />
                 {t('compose.attach', 'Attach')}
                 {attachments.length > 0 && (
-                  <Badge variant="secondary" className="text-[10px] px-1 py-0">{attachments.length}</Badge>
+                  <Badge variant="secondary" className="text-px-10 px-1 py-0">{attachments.length}</Badge>
                 )}
               </Button>
               <Button

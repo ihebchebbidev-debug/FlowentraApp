@@ -52,7 +52,7 @@ export function StockGauge({ percentage, status, stock, className }: StockGaugeP
         />
         {/* Percentage text overlay */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className={cn('text-[10px] font-bold', getTextColor())}>
+          <span className={cn('text-px-10 font-bold', getTextColor())}>
             {percentage}%
           </span>
         </div>

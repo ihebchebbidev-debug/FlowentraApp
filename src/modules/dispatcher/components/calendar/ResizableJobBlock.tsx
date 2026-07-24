@@ -374,46 +374,46 @@ function ResizableJobBlockInner({
           // Compact stacked variant — single line
           <div className="flex items-center gap-1.5 h-full">
             <span className={`inline-block w-1.5 h-1.5 rounded-full flex-shrink-0 ${statusInfo.color}`} title={statusInfo.label} />
-            <span className="font-semibold truncate text-[11px] leading-none flex-1">{cardLabel}</span>
+            <span className="font-semibold truncate text-px-11 leading-none flex-1">{cardLabel}</span>
             {isShared && (
-              <span className="px-1 rounded bg-accent/30 text-accent-foreground text-[8px] font-bold uppercase tracking-wide flex-shrink-0" title={t('dispatcher.shared_dispatch', 'Shared with multiple technicians')}>
+              <span className="px-1 rounded bg-accent/30 text-accent-foreground text-px-8 font-bold uppercase tracking-wide flex-shrink-0" title={t('dispatcher.shared_dispatch', 'Shared with multiple technicians')}>
                 {t('dispatcher.shared', 'Shared')}
               </span>
             )}
-            <span className="text-[9px] font-medium text-muted-foreground flex-shrink-0">
+            <span className="text-px-9 font-medium text-muted-foreground flex-shrink-0">
               {format(scheduledStart, 'HH:mm')}–{format(effectiveEnd, 'HH:mm')}
             </span>
-            {isLocked && <span className="text-[10px] flex-shrink-0">🔒</span>}
+            {isLocked && <span className="text-px-10 flex-shrink-0">🔒</span>}
           </div>
         ) : (
           <>
             <div className="flex items-center gap-1 mb-0.5">
-              <span className={`inline-flex px-1.5 py-0.5 rounded text-[9px] font-semibold ${statusInfo.color} ${statusInfo.textColor}`}>
+              <span className={`inline-flex px-1.5 py-0.5 rounded text-px-9 font-semibold ${statusInfo.color} ${statusInfo.textColor}`}>
                 {statusInfo.label}
               </span>
               {isShared && (
-                <span className="inline-flex px-1 py-0.5 rounded text-[9px] font-bold bg-accent/30 text-accent-foreground uppercase" title={t('dispatcher.shared_dispatch', 'Shared with multiple technicians')}>
+                <span className="inline-flex px-1 py-0.5 rounded text-px-9 font-bold bg-accent/30 text-accent-foreground uppercase" title={t('dispatcher.shared_dispatch', 'Shared with multiple technicians')}>
                   {t('dispatcher.shared', 'Shared')}
                 </span>
               )}
             </div>
-            <div className="font-semibold truncate text-[10px] leading-tight">{cardLabel}</div>
+            <div className="font-semibold truncate text-px-10 leading-tight">{cardLabel}</div>
             {subJobs ? (
-              <div className="text-[8px] text-muted-foreground/80 mt-0.5">
+              <div className="text-px-8 text-muted-foreground/80 mt-0.5">
                 📋 {subJobs.length} {t('dispatcher.jobs', 'jobs')}
               </div>
             ) : job.installationName && job.description && /^\d+ jobs$/.test(job.description) && (
-              <div className="text-[8px] text-muted-foreground/80 mt-0.5">{job.description}</div>
+              <div className="text-px-8 text-muted-foreground/80 mt-0.5">{job.description}</div>
             )}
             <div className="flex items-center gap-1 mt-1">
-              <div className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-black/10 dark:bg-white/15 backdrop-blur-sm text-[8px] font-semibold text-foreground shadow-sm">
+              <div className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-black/10 dark:bg-white/15 backdrop-blur-sm text-px-8 font-semibold text-foreground shadow-sm">
                 <span>{format(scheduledStart, 'HH:mm')}</span>
                 <span className="opacity-60">→</span>
                 <span>{format(effectiveEnd, 'HH:mm')}</span>
               </div>
             </div>
             {isLocked && (
-              <div className="text-[10px] text-green-600 font-medium">🔒 {t('dispatcher.locked').toUpperCase()}</div>
+              <div className="text-px-10 text-green-600 font-medium">🔒 {t('dispatcher.locked').toUpperCase()}</div>
             )}
           </>
         )}

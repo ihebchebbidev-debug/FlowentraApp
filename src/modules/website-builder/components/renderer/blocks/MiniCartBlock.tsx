@@ -78,7 +78,7 @@ export function MiniCartBlock({
         <ShoppingCart className="h-5 w-5" style={{ color: iconColor }} />
         {cartCount > 0 && (
           <span
-            className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 flex items-center justify-center rounded-full text-[11px] font-bold border-2 border-background"
+            className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 flex items-center justify-center rounded-full text-px-11 font-bold border-2 border-background"
             style={{ backgroundColor: theme.accentColor || '#ef4444', color: '#fff' }}
           >
             {cartCount}
@@ -131,7 +131,7 @@ export function MiniCartBlock({
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{item.name}</p>
-                      {item.variant && <p className="text-[11px] opacity-60">{item.variant}</p>}
+                      {item.variant && <p className="text-px-11 opacity-60">{item.variant}</p>}
                       <p className="text-sm font-semibold mt-0.5" style={{ color: accent }}>{item.price}</p>
                       <div className="flex items-center gap-2 mt-1.5">
                         <div className="flex items-center rounded-md border" style={{ borderColor: `${theme.textColor}20` }}>
@@ -185,7 +185,7 @@ export function MiniCartBlock({
                       </div>
                     )}
                     {totals.notes.slice(0, 1).map((n, i) => (
-                      <div key={i} className="text-[10px] opacity-60">{n}</div>
+                      <div key={i} className="text-px-10 opacity-60">{n}</div>
                     ))}
                     <div className="flex items-center justify-between text-sm pt-1 border-t" style={{ borderColor: `${theme.textColor}15` }}>
                       <span className="opacity-70">Total</span>

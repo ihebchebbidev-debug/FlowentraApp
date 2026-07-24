@@ -76,14 +76,14 @@ export function FormPreviewCard({ formData, onCreateForm, isCreating }: FormPrev
             return (
               <span 
                 key={type}
-                className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${config.color}`}
+                className={`text-px-10 px-2 py-0.5 rounded-full font-medium ${config.color}`}
               >
                 {config.label} {count > 1 && `×${count}`}
               </span>
             );
           })}
           {Object.keys(fieldTypeCounts).length > 8 && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+            <span className="text-px-10 px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
               +{Object.keys(fieldTypeCounts).length - 8} more
             </span>
           )}
@@ -92,7 +92,7 @@ export function FormPreviewCard({ formData, onCreateForm, isCreating }: FormPrev
 
       {/* Actions */}
       <div className="flex items-center justify-between">
-        <p className="text-[10px] text-muted-foreground">
+        <p className="text-px-10 text-muted-foreground">
           Form will be saved as draft
         </p>
         <Button

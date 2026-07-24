@@ -190,7 +190,7 @@ export function TechnicianDetailModal({
                       return (
                         <div key={us.id} className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-md bg-muted/20">
                           <span className="text-sm font-medium">{us.skillName}</span>
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border ${proficiencyBadgeClass[profLevel] ?? proficiencyBadgeClass.beginner}`}>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-px-11 font-medium border ${proficiencyBadgeClass[profLevel] ?? proficiencyBadgeClass.beginner}`}>
                             {us.proficiencyLevel ?? 'beginner'}
                           </span>
                         </div>

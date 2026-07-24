@@ -91,7 +91,7 @@ export function UserFilter({
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
               {selectedUsers.length > 0 && selectedUsers.length < users.length && (
-                <Badge variant="secondary" className="text-[10px] h-5 px-1.5 font-normal rounded-md">
+                <Badge variant="secondary" className="text-px-10 h-5 px-1.5 font-normal rounded-md">
                   {selectedUsers.length}
                 </Badge>
               )}

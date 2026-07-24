@@ -34,7 +34,7 @@ const STATUS_CLS: Record<string, string> = {
   completed:             'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
   invoiced:              'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
 };
-function Pill({ s }: { s: string }) { return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium capitalize ${STATUS_CLS[s] ?? 'bg-muted text-muted-foreground'}`}>{s.replace(/_/g, ' ')}</span>; }
+function Pill({ s }: { s: string }) { return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-px-10 font-medium capitalize ${STATUS_CLS[s] ?? 'bg-muted text-muted-foreground'}`}>{s.replace(/_/g, ' ')}</span>; }
 const PRIO_CLS: Record<string, string> = { urgent: 'bg-red-500', high: 'bg-orange-400', medium: 'bg-blue-400', low: 'bg-gray-300' };
 const initials = (n: string) => n.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2);
 
@@ -43,7 +43,7 @@ const STEPPER = ['pending', 'scheduled', 'in_progress', 'technically_completed',
 function StatCard({ id, icon, label, value, active }: { id: string; icon: React.ReactNode; label: string; value: string; active?: boolean }) {
   return (
     <div id={id} className={`rounded-lg p-3 border cursor-default transition-all ${active ? 'border-2 border-primary bg-primary/5' : 'border-border bg-card'}`}>
-      <div className="flex items-center gap-2.5"><span className={`p-2 rounded-lg ${active ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>{icon}</span><div className="min-w-0"><p className="text-[11px] text-muted-foreground font-medium truncate">{label}</p><p className="text-sm font-bold">{value}</p></div></div>
+      <div className="flex items-center gap-2.5"><span className={`p-2 rounded-lg ${active ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>{icon}</span><div className="min-w-0"><p className="text-px-11 text-muted-foreground font-medium truncate">{label}</p><p className="text-sm font-bold">{value}</p></div></div>
     </div>
   );
 }
@@ -52,7 +52,7 @@ function PageList({ state }: { state: SODemoState }) {
   return (
     <div className="flex flex-col">
       <div className="flex items-center justify-between p-4 border-b border-border bg-card/50">
-        <div className="flex items-center gap-3"><div className="p-2 rounded-lg bg-primary/10"><ClipboardList className="h-6 w-6 text-primary" /></div><div><h1 id="so-demo-title" className="text-xl font-semibold">Service Orders</h1><p className="text-[11px] text-muted-foreground">Field work orders</p></div></div>
+        <div className="flex items-center gap-3"><div className="p-2 rounded-lg bg-primary/10"><ClipboardList className="h-6 w-6 text-primary" /></div><div><h1 id="so-demo-title" className="text-xl font-semibold">Service Orders</h1><p className="text-px-11 text-muted-foreground">Field work orders</p></div></div>
         <div id="so-demo-create-open" className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium inline-flex items-center gap-1.5 cursor-default"><Plus className="h-3.5 w-3.5" /> New Order</div>
       </div>
 
@@ -92,7 +92,7 @@ function PageList({ state }: { state: SODemoState }) {
           {[['28%', '40%', 'bg-amber-500'], ['60%', '55%', 'bg-blue-500'], ['46%', '72%', 'bg-muted-foreground'], ['70%', '32%', 'bg-green-600']].map((p, i) => (
             <div key={i} id={i === 0 ? 'so-demo-map-pin' : undefined} className="absolute -translate-x-1/2 -translate-y-full" style={{ left: p[0], top: p[1] }}><MapPin className={`h-6 w-6 ${p[2]} text-white rounded-full p-0.5`} fill="currentColor" /></div>
           ))}
-          <div id="so-demo-map" className="absolute bottom-2 left-2 text-[10px] text-muted-foreground bg-background/70 rounded px-2 py-0.5">4 orders mapped · by status</div>
+          <div id="so-demo-map" className="absolute bottom-2 left-2 text-px-10 text-muted-foreground bg-background/70 rounded px-2 py-0.5">4 orders mapped · by status</div>
         </div></div>
       ) : (
         <div className="p-4">
@@ -111,8 +111,8 @@ function PageList({ state }: { state: SODemoState }) {
                 {DEMO_ORDERS.map((o, i) => (
                   <tr key={o.id} className={`border-b border-border/40 last:border-0 ${state.bulkBar && i < 3 ? 'bg-primary/5' : ''}`}>
                     {state.bulkBar && <td className="px-3 py-2.5"><span className={`h-3.5 w-3.5 rounded border inline-block ${i < 3 ? 'bg-primary border-primary' : 'border-border bg-background'}`} /></td>}
-                    <td className="px-3 py-2.5"><div className="font-medium text-primary">{o.num}</div><div className="text-[10px] text-muted-foreground">{o.title}</div></td>
-                    <td className="px-3 py-2.5"><span className="inline-flex items-center gap-1.5"><span className="h-5 w-5 rounded-full bg-primary/10 text-primary text-[9px] font-bold inline-flex items-center justify-center">{initials(o.customer)}</span>{o.customer}</span></td>
+                    <td className="px-3 py-2.5"><div className="font-medium text-primary">{o.num}</div><div className="text-px-10 text-muted-foreground">{o.title}</div></td>
+                    <td className="px-3 py-2.5"><span className="inline-flex items-center gap-1.5"><span className="h-5 w-5 rounded-full bg-primary/10 text-primary text-px-9 font-bold inline-flex items-center justify-center">{initials(o.customer)}</span>{o.customer}</span></td>
                     <td className="px-3 py-2.5 text-muted-foreground">{o.type}</td>
                     <td className="px-3 py-2.5"><Pill s={o.status} /></td>
                     <td className="px-3 py-2.5"><span className="inline-flex items-center gap-1.5"><span className={`w-2 h-2 rounded-full ${PRIO_CLS[o.priority]}`} /><span className="capitalize">{o.priority}</span></span></td>
@@ -149,7 +149,7 @@ function PageCreate({ state }: { state: SODemoState }) {
           <Field label="Priority" active={step === 2}><Box muted={step < 2}>{step >= 2 ? 'High' : '—'}</Box></Field>
         </div>
         <div id="so-demo-create-jobs" className={`transition-opacity ${step >= 3 ? '' : 'opacity-40'}`}>
-          <div className="flex items-center justify-between mb-2"><span className="text-xs font-medium">Jobs</span><span className="h-6 px-2 rounded border border-border text-[10px] text-muted-foreground inline-flex items-center gap-1"><Plus className="h-3 w-3" /> Add job</span></div>
+          <div className="flex items-center justify-between mb-2"><span className="text-xs font-medium">Jobs</span><span className="h-6 px-2 rounded border border-border text-px-10 text-muted-foreground inline-flex items-center gap-1"><Plus className="h-3 w-3" /> Add job</span></div>
           <div className="border border-border rounded-md overflow-hidden">
             <table className="w-full text-xs">
               <thead><tr className="bg-muted/40 border-b border-border"><th className="text-left px-3 py-1.5 text-muted-foreground">Job</th><th className="text-right px-3 py-1.5 text-muted-foreground">Duration</th><th className="text-left px-3 py-1.5 text-muted-foreground">Skills</th></tr></thead>
@@ -195,7 +195,7 @@ function PageDetail({ state }: { state: SODemoState }) {
         <div className="flex items-center gap-0 min-w-max">
           {STEPPER.map((s, i) => (
             <div key={s} className="flex items-center gap-0">
-              <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[10px] font-medium capitalize whitespace-nowrap ${i <= state.statusStage ? 'text-primary bg-primary/10' : 'text-muted-foreground'}`}>{i < state.statusStage && <CheckCircle2 className="h-3 w-3" />}{s.replace(/_/g, ' ')}</div>
+              <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-px-10 font-medium capitalize whitespace-nowrap ${i <= state.statusStage ? 'text-primary bg-primary/10' : 'text-muted-foreground'}`}>{i < state.statusStage && <CheckCircle2 className="h-3 w-3" />}{s.replace(/_/g, ' ')}</div>
               {i < STEPPER.length - 1 && <ChevronRight className="h-3 w-3 text-muted-foreground/40" />}
             </div>
           ))}
@@ -221,8 +221,8 @@ function PageDetail({ state }: { state: SODemoState }) {
               <div className="flex justify-between text-muted-foreground"><span>Materials</span><span>4 parts</span></div>
               <div className="flex justify-between font-bold text-sm border-t border-border pt-1"><span>Est. value</span><span>18,400 TND</span></div>
               <div id="so-demo-preferred-skills" className={`mt-2 pt-2 border-t border-border/60 transition-all ${state.preferredSkills ? 'ring-1 ring-primary/40 rounded-md p-2 -m-1 bg-primary/[0.04]' : ''}`}>
-                <p className="text-[10px] text-muted-foreground mb-1 inline-flex items-center gap-1"><Wrench className="h-2.5 w-2.5" /> Preferred skills · read from sale line</p>
-                <div className="flex flex-wrap gap-1">{['HVAC', 'Welding', 'Electrical'].map(s => <span key={s} className="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-medium">{s}</span>)}</div>
+                <p className="text-px-10 text-muted-foreground mb-1 inline-flex items-center gap-1"><Wrench className="h-2.5 w-2.5" /> Preferred skills · read from sale line</p>
+                <div className="flex flex-wrap gap-1">{['HVAC', 'Welding', 'Electrical'].map(s => <span key={s} className="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-px-10 font-medium">{s}</span>)}</div>
               </div>
             </div>
           </div>
@@ -237,7 +237,7 @@ function PageDetail({ state }: { state: SODemoState }) {
         {state.activeTab === 'dispatches' && (
           <div className="space-y-2">
             {[['DISP-2025-101', 'Karim T.', 'in_progress', 'Mon 16 Jun · 09:00'], ['DISP-2025-108', 'Leïla M.', 'completed', 'Sun 15 Jun · 14:00']].map(d => (
-              <div key={d[0]} className="flex items-center justify-between p-3 bg-card border border-border rounded-lg"><div className="flex items-center gap-2.5"><Truck className="h-4 w-4 text-primary" /><div><p className="text-xs font-medium">{d[0]}</p><p className="text-[10px] text-muted-foreground inline-flex items-center gap-1"><UserCheck className="h-2.5 w-2.5" /> {d[1]} · {d[3]}</p></div></div><Pill s={d[2]} /></div>
+              <div key={d[0]} className="flex items-center justify-between p-3 bg-card border border-border rounded-lg"><div className="flex items-center gap-2.5"><Truck className="h-4 w-4 text-primary" /><div><p className="text-xs font-medium">{d[0]}</p><p className="text-px-10 text-muted-foreground inline-flex items-center gap-1"><UserCheck className="h-2.5 w-2.5" /> {d[1]} · {d[3]}</p></div></div><Pill s={d[2]} /></div>
             ))}
           </div>
         )}
@@ -247,9 +247,9 @@ function PageDetail({ state }: { state: SODemoState }) {
               <div id="so-demo-plan-vs-actual" className="rounded-lg border-2 border-dashed border-primary/40 bg-primary/5 p-3 space-y-2">
                 <div className="flex items-center justify-between text-xs flex-wrap gap-2">
                   <p className="font-medium inline-flex items-center gap-1.5 text-primary"><Target className="h-3.5 w-3.5" /> Plan · inherited from Sale item lineage</p>
-                  <span id="so-demo-overrun" className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Actual 3.5 h / Plan 3.0 h · +17%</span>
+                  <span id="so-demo-overrun" className="px-2 py-0.5 rounded-full text-px-10 font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Actual 3.5 h / Plan 3.0 h · +17%</span>
                 </div>
-                <div className="grid md:grid-cols-3 gap-2 text-[10px]">
+                <div className="grid md:grid-cols-3 gap-2 text-px-10">
                   <div className="p-2 rounded border border-border bg-card"><div className="text-muted-foreground">Planned labour</div><div className="font-semibold text-xs">3.0 h · 1 tech</div><div className="text-muted-foreground">from offer line OFF-2025-031 · L2</div></div>
                   <div className="p-2 rounded border border-border bg-card"><div className="text-muted-foreground">Planned expenses</div><div className="font-semibold text-xs">45 TND · travel</div><div className="text-muted-foreground">from sale line INV-2025-044 · L2</div></div>
                   <div className="p-2 rounded border border-border bg-card"><div className="text-muted-foreground">Planned materials</div><div className="font-semibold text-xs">1× condenser · 4 kg R410A</div><div className="text-muted-foreground">from sale line INV-2025-044 · L1</div></div>
@@ -258,12 +258,12 @@ function PageDetail({ state }: { state: SODemoState }) {
             )}
             <div className="grid md:grid-cols-2 gap-3">
               <div className="bg-card border border-border rounded-lg p-3">
-                <div className="flex items-center justify-between mb-2"><p className="text-sm font-medium inline-flex items-center gap-1.5"><Clock className="h-4 w-4 text-primary" /> Time{state.planVsActual ? ' · actual' : ''}</p><span className="h-6 px-2 rounded bg-primary/10 text-primary text-[10px] inline-flex items-center gap-1"><Timer className="h-3 w-3" /> Book time</span></div>
+                <div className="flex items-center justify-between mb-2"><p className="text-sm font-medium inline-flex items-center gap-1.5"><Clock className="h-4 w-4 text-primary" /> Time{state.planVsActual ? ' · actual' : ''}</p><span className="h-6 px-2 rounded bg-primary/10 text-primary text-px-10 inline-flex items-center gap-1"><Timer className="h-3 w-3" /> Book time</span></div>
                 {[['Karim T.', '2.0 h'], ['Leïla M.', '1.5 h']].map(t => <div key={t[0]} className="flex justify-between text-xs py-1 border-b border-border/40 last:border-0"><span>{t[0]}</span><span className="font-medium">{t[1]}</span></div>)}
                 <div className="flex justify-between text-xs pt-1 font-semibold"><span>Total</span><span>3.5 h</span></div>
               </div>
               <div className="bg-card border border-border rounded-lg p-3">
-                <div className="flex items-center justify-between mb-2"><p className="text-sm font-medium inline-flex items-center gap-1.5"><DollarSign className="h-4 w-4 text-primary" /> Expenses{state.planVsActual ? ' · actual' : ''}</p><span className="h-6 px-2 rounded bg-primary/10 text-primary text-[10px] inline-flex items-center gap-1"><Plus className="h-3 w-3" /> Add expense</span></div>
+                <div className="flex items-center justify-between mb-2"><p className="text-sm font-medium inline-flex items-center gap-1.5"><DollarSign className="h-4 w-4 text-primary" /> Expenses{state.planVsActual ? ' · actual' : ''}</p><span className="h-6 px-2 rounded bg-primary/10 text-primary text-px-10 inline-flex items-center gap-1"><Plus className="h-3 w-3" /> Add expense</span></div>
                 {[['Travel', '45 TND'], ['Parking', '8 TND']].map(t => <div key={t[0]} className="flex justify-between text-xs py-1 border-b border-border/40 last:border-0"><span>{t[0]}</span><span className="font-medium">{t[1]}</span></div>)}
                 <div className="flex justify-between text-xs pt-1 font-semibold"><span>Total</span><span>53 TND</span></div>
               </div>
@@ -285,7 +285,7 @@ function PageDetail({ state }: { state: SODemoState }) {
             {/* Per-job checklists carried from the sale's service lines. */}
             {[['Replace condenser unit', [['Power isolated before work', true], ['Old unit removed safely', true], ['New unit tested & cooling', false]]], ['Annual Maintenance Plan', [['Inspect & clean unit', false], ['Replace filters', false], ['Performance report', false]]]].map(([job, items]) => (
               <div key={job as string} className="bg-card border border-border rounded-lg p-4 space-y-1.5">
-                <p className="text-sm font-medium inline-flex items-center gap-2"><ListChecks className="h-4 w-4 text-primary" /> {job as string} <span className="text-[10px] font-normal text-muted-foreground">· from the sale’s service line</span></p>
+                <p className="text-sm font-medium inline-flex items-center gap-2"><ListChecks className="h-4 w-4 text-primary" /> {job as string} <span className="text-px-10 font-normal text-muted-foreground">· from the sale’s service line</span></p>
                 {(items as [string, boolean][]).map(c => (
                   <div key={c[0]} className="flex items-center gap-2 text-xs"><span className={`h-4 w-4 rounded border inline-flex items-center justify-center ${c[1] ? 'bg-primary border-primary' : 'border-border'}`}>{c[1] && <CheckCircle2 className="h-3 w-3 text-primary-foreground" />}</span><span className={c[1] ? 'line-through text-muted-foreground' : ''}>{c[0]}</span></div>
                 ))}
@@ -294,7 +294,7 @@ function PageDetail({ state }: { state: SODemoState }) {
           </div>
         )}
         {state.activeTab === 'activity' && (
-          <div className="space-y-2">{[['Order created from sale', 'System', '2025-06-08'], ['Scheduled for 16 Jun', 'Ahmed B.', '2025-06-12'], ['Dispatched to Karim T.', 'Ahmed B.', '2025-06-12'], ['Job 1 completed on site', 'Karim T.', '2025-06-16']].map((a, i, arr) => (<div key={a[0]} className="flex gap-3"><div className="flex flex-col items-center shrink-0"><span className="h-6 w-6 rounded-full bg-primary/10 text-primary inline-flex items-center justify-center"><Activity className="h-3 w-3" /></span>{i < arr.length - 1 && <div className="w-px flex-1 bg-border mt-1" />}</div><div className="pb-1"><p className="text-xs font-medium">{a[0]}</p><p className="text-[10px] text-muted-foreground">{a[2]} · {a[1]}</p></div></div>))}</div>
+          <div className="space-y-2">{[['Order created from sale', 'System', '2025-06-08'], ['Scheduled for 16 Jun', 'Ahmed B.', '2025-06-12'], ['Dispatched to Karim T.', 'Ahmed B.', '2025-06-12'], ['Job 1 completed on site', 'Karim T.', '2025-06-16']].map((a, i, arr) => (<div key={a[0]} className="flex gap-3"><div className="flex flex-col items-center shrink-0"><span className="h-6 w-6 rounded-full bg-primary/10 text-primary inline-flex items-center justify-center"><Activity className="h-3 w-3" /></span>{i < arr.length - 1 && <div className="w-px flex-1 bg-border mt-1" />}</div><div className="pb-1"><p className="text-xs font-medium">{a[0]}</p><p className="text-px-10 text-muted-foreground">{a[2]} · {a[1]}</p></div></div>))}</div>
         )}
       </div>
 
@@ -315,7 +315,7 @@ function PageDetail({ state }: { state: SODemoState }) {
           <p className="text-xs text-muted-foreground mb-2">Best fit by skill &amp; availability</p>
           <div className="space-y-1">
             {[['Karim T.', 'HVAC · Welding · available · 3.2 km', 92, true], ['Leïla M.', 'HVAC · available · 8.0 km', 74, false]].map((t, i) => (
-              <div key={t[0] as string} id={i === 0 ? 'so-demo-smart-tech' : undefined} className={`flex items-center justify-between px-2.5 py-2 rounded-lg border ${t[3] ? 'border-primary bg-primary/5' : 'border-border'}`}><div><p className="text-xs font-medium">{t[0]}</p><p className="text-[10px] text-muted-foreground">{t[1]}</p></div><span className={`text-[11px] font-bold ${t[3] ? 'text-primary' : 'text-muted-foreground'}`}>{t[2]}</span></div>
+              <div key={t[0] as string} id={i === 0 ? 'so-demo-smart-tech' : undefined} className={`flex items-center justify-between px-2.5 py-2 rounded-lg border ${t[3] ? 'border-primary bg-primary/5' : 'border-border'}`}><div><p className="text-xs font-medium">{t[0]}</p><p className="text-px-10 text-muted-foreground">{t[1]}</p></div><span className={`text-px-11 font-bold ${t[3] ? 'text-primary' : 'text-muted-foreground'}`}>{t[2]}</span></div>
             ))}
           </div>
           <div className="flex justify-end gap-2 mt-3"><div className="h-8 px-3 rounded-md border border-border text-xs flex items-center text-muted-foreground">Cancel</div><div className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium inline-flex items-center gap-1.5"><Truck className="h-3.5 w-3.5" /> Assign &amp; dispatch</div></div>
@@ -327,7 +327,7 @@ function PageDetail({ state }: { state: SODemoState }) {
         <div className="absolute inset-0 z-[6] flex items-start justify-center pt-10 bg-background/40"><div id="so-demo-time-book" className="w-[380px] bg-card border border-border rounded-xl shadow-2xl p-4 text-center">
           <p className="text-sm font-semibold mb-3 inline-flex items-center gap-2"><Timer className="h-4 w-4 text-primary" /> Book Time</p>
           <div className="text-3xl font-bold tabular-nums mb-1">00:32:08</div>
-          <p className="text-[11px] text-muted-foreground mb-3">Replace condenser unit · Karim T.</p>
+          <p className="text-px-11 text-muted-foreground mb-3">Replace condenser unit · Karim T.</p>
           <div className="flex justify-center gap-2"><div className="h-9 px-4 rounded-md border border-border text-xs flex items-center gap-1.5 text-muted-foreground"><Clock className="h-3.5 w-3.5" /> Log hours</div><div className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-xs font-medium flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5" /> Stop &amp; log</div></div>
         </div></div>
       )}
@@ -335,7 +335,7 @@ function PageDetail({ state }: { state: SODemoState }) {
       {state.expenseBookOpen && (
         <div className="absolute inset-0 z-[6] flex items-start justify-center pt-10 bg-background/40"><div id="so-demo-expense-book" className="w-[380px] bg-card border border-border rounded-xl shadow-2xl p-4">
           <p className="text-sm font-semibold mb-3 inline-flex items-center gap-2"><DollarSign className="h-4 w-4 text-primary" /> Add Expense</p>
-          <div className="space-y-2 text-xs"><div className="grid grid-cols-2 gap-2"><div><label className="block text-[10px] text-muted-foreground mb-1">Type</label><Box>Travel</Box></div><div><label className="block text-[10px] text-muted-foreground mb-1">Amount</label><Box>45 TND</Box></div></div><div className="h-16 rounded-md border border-dashed border-border flex items-center justify-center gap-1.5 text-muted-foreground"><Paperclip className="h-3.5 w-3.5" /> Attach receipt photo</div></div>
+          <div className="space-y-2 text-xs"><div className="grid grid-cols-2 gap-2"><div><label className="block text-px-10 text-muted-foreground mb-1">Type</label><Box>Travel</Box></div><div><label className="block text-px-10 text-muted-foreground mb-1">Amount</label><Box>45 TND</Box></div></div><div className="h-16 rounded-md border border-dashed border-border flex items-center justify-center gap-1.5 text-muted-foreground"><Paperclip className="h-3.5 w-3.5" /> Attach receipt photo</div></div>
           <div className="flex justify-end gap-2 mt-3"><div className="h-8 px-3 rounded-md border border-border text-xs flex items-center text-muted-foreground">Cancel</div><div className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium flex items-center">Add</div></div>
         </div></div>
       )}
@@ -360,11 +360,11 @@ function PageDetail({ state }: { state: SODemoState }) {
       {state.pdfOpen && (
         <div className="absolute inset-0 z-[6] flex items-center justify-center bg-background/50 p-6"><div className="flex gap-3 h-full max-h-[80%]">
           <div className="w-72 bg-white text-black rounded-lg shadow-2xl border border-border overflow-hidden flex flex-col">
-            <div className="bg-primary/90 text-white p-3"><div className="text-sm font-bold">SERVICE ORDER · SO-2025-044</div><div className="text-[9px] opacity-90">Flowentra SARL · MF 0000000/A/M/000</div></div>
-            <div className="p-3 text-[9px] space-y-2 flex-1"><div><div className="font-semibold">Site</div><div>Médina Resorts · Sousse</div></div><div className="font-semibold">Jobs performed</div><div>Diagnose compressor · Replace condenser</div><div className="font-semibold pt-1">Materials</div><div>Condenser unit ×1 · Refrigerant 4kg</div><div className="text-right border-t border-gray-300 pt-1 font-bold text-[11px]">Total 18,400 TND</div></div>
+            <div className="bg-primary/90 text-white p-3"><div className="text-sm font-bold">SERVICE ORDER · SO-2025-044</div><div className="text-px-9 opacity-90">Flowentra SARL · MF 0000000/A/M/000</div></div>
+            <div className="p-3 text-px-9 space-y-2 flex-1"><div><div className="font-semibold">Site</div><div>Médina Resorts · Sousse</div></div><div className="font-semibold">Jobs performed</div><div>Diagnose compressor · Replace condenser</div><div className="font-semibold pt-1">Materials</div><div>Condenser unit ×1 · Refrigerant 4kg</div><div className="text-right border-t border-gray-300 pt-1 font-bold text-px-11">Total 18,400 TND</div></div>
           </div>
           {state.pdfSettings && (
-            <div id="so-demo-pdf-settings" className="w-56 bg-card border border-border rounded-lg shadow-2xl p-3"><p className="text-xs font-semibold mb-2 inline-flex items-center gap-1.5"><Palette className="h-3.5 w-3.5 text-primary" /> PDF Studio</p><div className="flex gap-1 mb-3 border-b border-border pb-2">{['Colours', 'Type', 'Layout', 'Data'].map((t, i) => <span key={t} className={`text-[10px] px-1.5 py-0.5 rounded ${i === 0 ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>{t}</span>)}</div><div className="space-y-2"><div><div className="text-[10px] text-muted-foreground mb-1">Accent colour</div><div className="flex gap-1">{['bg-primary', 'bg-blue-500', 'bg-emerald-500', 'bg-rose-500'].map((c, i) => <span key={c} className={`h-5 w-5 rounded ${c} ${i === 0 ? 'ring-2 ring-offset-1 ring-foreground' : ''}`} />)}</div></div><div className="flex items-center justify-between"><span className="text-[11px]">Show materials</span><span className="h-4 w-7 rounded-full bg-primary relative"><span className="absolute top-0.5 left-3.5 h-3 w-3 rounded-full bg-white" /></span></div></div></div>
+            <div id="so-demo-pdf-settings" className="w-56 bg-card border border-border rounded-lg shadow-2xl p-3"><p className="text-xs font-semibold mb-2 inline-flex items-center gap-1.5"><Palette className="h-3.5 w-3.5 text-primary" /> PDF Studio</p><div className="flex gap-1 mb-3 border-b border-border pb-2">{['Colours', 'Type', 'Layout', 'Data'].map((t, i) => <span key={t} className={`text-px-10 px-1.5 py-0.5 rounded ${i === 0 ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>{t}</span>)}</div><div className="space-y-2"><div><div className="text-px-10 text-muted-foreground mb-1">Accent colour</div><div className="flex gap-1">{['bg-primary', 'bg-blue-500', 'bg-emerald-500', 'bg-rose-500'].map((c, i) => <span key={c} className={`h-5 w-5 rounded ${c} ${i === 0 ? 'ring-2 ring-offset-1 ring-foreground' : ''}`} />)}</div></div><div className="flex items-center justify-between"><span className="text-px-11">Show materials</span><span className="h-4 w-7 rounded-full bg-primary relative"><span className="absolute top-0.5 left-3.5 h-3 w-3 rounded-full bg-white" /></span></div></div></div>
           )}
         </div></div>
       )}
@@ -382,39 +382,39 @@ function PageDetail({ state }: { state: SODemoState }) {
             <p className="text-xs text-muted-foreground mb-3">SO-2025-044 · 2 jobs · Cold Room #3</p>
 
             <div className="space-y-1.5 mb-3">
-              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Jobs · select what to dispatch</p>
+              <p className="text-px-10 font-medium text-muted-foreground uppercase tracking-wide">Jobs · select what to dispatch</p>
               {[['Diagnose compressor fault', '90 min', 'HVAC'], ['Replace condenser unit', '120 min', 'HVAC · Welding']].map(j => (
                 <div key={j[0]} className="flex items-center gap-2 px-2 py-1.5 rounded border border-primary bg-primary/5">
                   <span className="h-3.5 w-3.5 rounded bg-primary border border-primary inline-flex items-center justify-center"><CheckCircle2 className="h-2.5 w-2.5 text-primary-foreground" /></span>
                   <span className="text-xs flex-1">{j[0]}</span>
-                  <span className="text-[10px] text-muted-foreground">{j[1]} · {j[2]}</span>
+                  <span className="text-px-10 text-muted-foreground">{j[1]} · {j[2]}</span>
                 </div>
               ))}
             </div>
 
             <div className="grid grid-cols-3 gap-2 mb-3">
-              <div><label className="block text-[10px] text-muted-foreground mb-1">Date</label><Box>2025-06-16</Box></div>
-              <div><label className="block text-[10px] text-muted-foreground mb-1">Start</label><Box>09:00</Box></div>
-              <div><label className="block text-[10px] text-muted-foreground mb-1">Mode</label><div className="h-9 px-2 rounded-md border border-primary bg-primary/5 text-primary text-[11px] flex items-center gap-1.5"><CheckCircle2 className="h-3 w-3" /> Back-to-back</div></div>
+              <div><label className="block text-px-10 text-muted-foreground mb-1">Date</label><Box>2025-06-16</Box></div>
+              <div><label className="block text-px-10 text-muted-foreground mb-1">Start</label><Box>09:00</Box></div>
+              <div><label className="block text-px-10 text-muted-foreground mb-1">Mode</label><div className="h-9 px-2 rounded-md border border-primary bg-primary/5 text-primary text-px-11 flex items-center gap-1.5"><CheckCircle2 className="h-3 w-3" /> Back-to-back</div></div>
             </div>
-            <div className="flex items-center gap-2 mb-3 px-2 py-1.5 rounded border border-border text-[11px]">
+            <div className="flex items-center gap-2 mb-3 px-2 py-1.5 rounded border border-border text-px-11">
               <span className="h-3.5 w-3.5 rounded bg-primary border border-primary inline-flex items-center justify-center"><CheckCircle2 className="h-2.5 w-2.5 text-primary-foreground" /></span>
               <span className="text-muted-foreground">Split by installation · one dispatch per equipment</span>
             </div>
 
             <div className="space-y-1.5 mb-3">
-              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Technicians · ranked by skill · availability · distance</p>
+              <p className="text-px-10 font-medium text-muted-foreground uppercase tracking-wide">Technicians · ranked by skill · availability · distance</p>
               <div className="flex items-center justify-between px-2.5 py-2 rounded-lg border border-primary bg-primary/5">
-                <div className="flex items-center gap-2"><span className="h-6 w-6 rounded-full bg-primary/10 text-primary text-[9px] font-bold inline-flex items-center justify-center">KT</span><div><p className="text-xs font-medium">Karim T.</p><p className="text-[10px] text-muted-foreground">HVAC · Welding · 3.2 km · free 09:00–14:00</p></div></div>
-                <span className="text-[11px] font-bold text-primary">92</span>
+                <div className="flex items-center gap-2"><span className="h-6 w-6 rounded-full bg-primary/10 text-primary text-px-9 font-bold inline-flex items-center justify-center">KT</span><div><p className="text-xs font-medium">Karim T.</p><p className="text-px-10 text-muted-foreground">HVAC · Welding · 3.2 km · free 09:00–14:00</p></div></div>
+                <span className="text-px-11 font-bold text-primary">92</span>
               </div>
               <div id="so-demo-plan-conflict" className="flex items-center justify-between px-2.5 py-2 rounded-lg border border-red-300 bg-red-50 dark:bg-red-900/10">
-                <div className="flex items-center gap-2"><span className="h-6 w-6 rounded-full bg-red-100 text-red-700 text-[9px] font-bold inline-flex items-center justify-center">SB</span><div><p className="text-xs font-medium">Sami B.</p><p className="text-[10px] text-red-600 dark:text-red-400">Double-booked 09:00–11:00 · DISP-2025-102</p></div></div>
-                <span className="text-[11px] font-bold text-red-600">—</span>
+                <div className="flex items-center gap-2"><span className="h-6 w-6 rounded-full bg-red-100 text-red-700 text-px-9 font-bold inline-flex items-center justify-center">SB</span><div><p className="text-xs font-medium">Sami B.</p><p className="text-px-10 text-red-600 dark:text-red-400">Double-booked 09:00–11:00 · DISP-2025-102</p></div></div>
+                <span className="text-px-11 font-bold text-red-600">—</span>
               </div>
               <div className="flex items-center justify-between px-2.5 py-2 rounded-lg border border-border">
-                <div className="flex items-center gap-2"><span className="h-6 w-6 rounded-full bg-muted text-muted-foreground text-[9px] font-bold inline-flex items-center justify-center">LM</span><div><p className="text-xs font-medium">Leïla M.</p><p className="text-[10px] text-muted-foreground">HVAC · 8.0 km · free after 10:30</p></div></div>
-                <span className="text-[11px] font-bold text-muted-foreground">74</span>
+                <div className="flex items-center gap-2"><span className="h-6 w-6 rounded-full bg-muted text-muted-foreground text-px-9 font-bold inline-flex items-center justify-center">LM</span><div><p className="text-xs font-medium">Leïla M.</p><p className="text-px-10 text-muted-foreground">HVAC · 8.0 km · free after 10:30</p></div></div>
+                <span className="text-px-11 font-bold text-muted-foreground">74</span>
               </div>
             </div>
 
@@ -496,8 +496,8 @@ export function ServiceOrdersAutopilotDemo({ open, onClose }: Props) {
 
       <div className="shrink-0 border-t border-border/60 bg-card px-4 py-3">
         <div className="flex items-center gap-2 mb-2 flex-wrap">
-          {SO_CHAPTERS.map(ch => (<button key={ch.id} onClick={() => jumpChapter(ch.start)} className={`text-[10px] font-medium px-2 py-0.5 rounded-full transition-colors cursor-pointer ${activeChapter.id === ch.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/70'}`}>{getChapterTitle(demoLang, ch.id, ch.title)}</button>))}
-          <span className="ml-auto text-[10px] text-muted-foreground">{Math.min(stepIndex + 1, SO_STEPS.length)} / {SO_STEPS.length}</span>
+          {SO_CHAPTERS.map(ch => (<button key={ch.id} onClick={() => jumpChapter(ch.start)} className={`text-px-10 font-medium px-2 py-0.5 rounded-full transition-colors cursor-pointer ${activeChapter.id === ch.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/70'}`}>{getChapterTitle(demoLang, ch.id, ch.title)}</button>))}
+          <span className="ml-auto text-px-10 text-muted-foreground">{Math.min(stepIndex + 1, SO_STEPS.length)} / {SO_STEPS.length}</span>
         </div>
         <div className="h-1 rounded-full bg-muted overflow-hidden mb-2"><div className="h-full bg-primary transition-all duration-300" style={{ width: `${(Math.min(stepIndex + 1, SO_STEPS.length) / SO_STEPS.length) * 100}%` }} /></div>
         <p className="text-sm text-foreground/90 min-h-[20px] flex items-center gap-2"><Languages className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />{finished ? finishedMsg : captionText}</p>

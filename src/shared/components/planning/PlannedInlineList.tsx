@@ -283,7 +283,7 @@ export function PlannedInlineList({
             {kindMeta.sectionLabel}
           </h4>
           {filtered.length > 0 && (
-            <Badge variant="secondary" className="text-[10px]">
+            <Badge variant="secondary" className="text-px-10">
               {filtered.length}
             </Badge>
           )}
@@ -326,14 +326,14 @@ export function PlannedInlineList({
                 </Badge>
                 {renderRow(e, effectiveCurrency, t)}
                 {multiJob && jobLabels?.[e.parentId] && (
-                  <Badge variant="outline" className="text-[10px]">
+                  <Badge variant="outline" className="text-px-10">
                     📋 {jobLabels[e.parentId]}
                   </Badge>
                 )}
                 {e.originOfferItemId && parentType !== 'offer_item' && (
                   <Badge
                     variant="outline"
-                    className="border-sky-300 bg-sky-50 text-[10px] text-sky-800 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-300"
+                    className="border-sky-300 bg-sky-50 text-px-10 text-sky-800 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-300"
                     title={t('planning.originOfferTooltip', 'Inherited from the source offer item')}
                   >
                     {t('planning.fromOffer', 'from Offer')}
@@ -342,7 +342,7 @@ export function PlannedInlineList({
                 {parentType === 'service_order_job' && !e.originOfferItemId && (
                   <Badge
                     variant="outline"
-                    className="border-emerald-300 bg-emerald-50 text-[10px] text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"
+                    className="border-emerald-300 bg-emerald-50 text-px-10 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"
                     title={t('planning.originJobTooltip', 'Added directly on this service order job')}
                   >
                     {t('planning.onJob', 'on Job')}
@@ -700,7 +700,7 @@ function renderRow(
           {e.technicianCount ?? 1} × {formatPlannedMinutes(e.plannedMinutes ?? 0)}
         </span>
         {e.plannedDate && (
-          <Badge variant="outline" className="text-[10px]">
+          <Badge variant="outline" className="text-px-10">
             {new Date(e.plannedDate).toLocaleDateString()}
           </Badge>
         )}
@@ -713,7 +713,7 @@ function renderRow(
   if (e.kind === 'expense') {
     return (
       <span className="flex min-w-0 items-center gap-2">
-        <Badge variant="outline" className="text-[10px]">
+        <Badge variant="outline" className="text-px-10">
           {t(`planning.expenseTypes.${e.expenseType}`, e.expenseType ?? '')}
         </Badge>
         <span className="font-medium">
@@ -840,7 +840,7 @@ function ArticleSearchPicker({ onSelect }: { onSelect: (a: Article) => void }) {
       </div>
 
       {picked && (
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-px-11 text-muted-foreground">
           {t('planning.pickedArticle', 'Selected')}: <span className="font-medium">{picked.name}</span>
           {picked.sku ? ` (${picked.sku})` : ''}
         </p>

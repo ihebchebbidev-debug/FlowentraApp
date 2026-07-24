@@ -222,7 +222,7 @@ export function DashboardHeader() {
             {offlineEnabled || !online ? <WifiOff className="h-3.5 w-3.5" /> : <Wifi className="h-3.5 w-3.5" />}
             <span className="text-xs hidden lg:inline">{offlineEnabled ? "Offline" : "Online"}</span>
             {pendingCount > 0 && (
-              <span className="absolute -top-2 -right-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] leading-none px-1">
+              <span className="absolute -top-2 -right-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-px-10 leading-none px-1">
                 {pendingCount > 99 ? "99+" : pendingCount}
               </span>
             )}
@@ -264,7 +264,7 @@ export function DashboardHeader() {
                 <div className="relative">
                   <Bell className="h-4 w-4" />
                   {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] leading-none px-1">
+                    <span className="absolute -top-1 -right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary text-primary-foreground text-px-10 leading-none px-1">
                       {unreadCount > 99 ? '99+' : unreadCount}
                     </span>
                   )}
@@ -308,7 +308,7 @@ export function DashboardHeader() {
                             <div className={`mt-1.5 h-2 w-2 rounded-full flex-shrink-0 ${n.read ? 'bg-muted-foreground/40' : getTypeColor(n.type)}`} />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-0.5">
-                                <Badge variant={badge.variant} className="text-[10px] px-1.5 py-0">
+                                <Badge variant={badge.variant} className="text-px-10 px-1.5 py-0">
                                   {badge.label}
                                 </Badge>
                                 <span className="text-xs text-muted-foreground">{n.time}</span>
@@ -396,7 +396,7 @@ export function DashboardHeader() {
                 {tOnboarding('tour.replayTour')}
               </DropdownMenuItem>
               <DropdownMenuSeparator className="my-1" />
-              <DropdownMenuLabel className="px-2.5 pt-1 pb-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">{t('theme')}</DropdownMenuLabel>
+              <DropdownMenuLabel className="px-2.5 pt-1 pb-0.5 text-px-10 font-medium uppercase tracking-wider text-muted-foreground/70">{t('theme')}</DropdownMenuLabel>
               <ThemeOptions />
               <DropdownMenuSeparator className="my-1" />
               <DropdownMenuItem onClick={handleSignOut} className="text-xs gap-2 px-2.5 py-2 rounded-md text-destructive focus:text-destructive cursor-pointer">

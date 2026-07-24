@@ -221,7 +221,7 @@ export function OverviewCalendarGrid({
                           {format(date, 'd')}
                         </span>
                         {totalJobs > 0 && (
-                          <Badge variant="outline" className="text-[10px] h-5 px-1.5 bg-card border-border">
+                          <Badge variant="outline" className="text-px-10 h-5 px-1.5 bg-card border-border">
                             {totalJobs} {totalJobs === 1 ? t('dispatcher.job') : t('dispatcher.jobs')}
                           </Badge>
                         )}
@@ -264,7 +264,7 @@ export function OverviewCalendarGrid({
                                     }`}
                                   />
                                   {jobs.length > 0 && (
-                                    <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[8px] rounded-full w-4 h-4 flex items-center justify-center leading-none shadow-sm font-medium">
+                                    <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-px-8 rounded-full w-4 h-4 flex items-center justify-center leading-none shadow-sm font-medium">
                                       {jobs.length}
                                     </span>
                                   )}
@@ -300,7 +300,7 @@ export function OverviewCalendarGrid({
 
                       {/* On-leave summary (when not expanded) */}
                       {!isExpanded && techsOnLeave.length > 0 && (
-                        <div className="text-[10px] text-warning flex items-center gap-1">
+                        <div className="text-px-10 text-warning flex items-center gap-1">
                           <CalendarDays className="h-3 w-3 flex-shrink-0" />
                           <span className="truncate">
                             {techsOnLeave.length} {t('dispatcher.on_leave').toLowerCase()}
@@ -313,7 +313,7 @@ export function OverviewCalendarGrid({
                         <div className="mt-1.5 space-y-1.5 border-t border-border pt-1.5">
                           {techSummaries.filter(s => s.jobs.length > 0).map(({ tech, jobs }) => (
                             <div key={tech.id} className="space-y-0.5">
-                              <div className="text-[10px] text-muted-foreground truncate font-medium">
+                              <div className="text-px-10 text-muted-foreground truncate font-medium">
                                 {tech.firstName} {tech.lastName}
                               </div>
                               {jobs.map(job => {
@@ -321,7 +321,7 @@ export function OverviewCalendarGrid({
                                 return (
                                   <div
                                     key={job.id}
-                                    className={`${statusClasses} rounded px-1.5 py-0.5 text-[9px] leading-tight cursor-pointer truncate hover:opacity-80 transition-opacity`}
+                                    className={`${statusClasses} rounded px-1.5 py-0.5 text-px-9 leading-tight cursor-pointer truncate hover:opacity-80 transition-opacity`}
                                     onClick={(e) => { e.stopPropagation(); onJobClick(job); }}
                                   >
                                     <div className="flex items-center gap-1">
@@ -335,7 +335,7 @@ export function OverviewCalendarGrid({
                             </div>
                           ))}
                           {techsOnLeave.map(({ tech }) => (
-                            <div key={`leave-${tech.id}`} className="flex items-center gap-1 text-[10px] text-warning">
+                            <div key={`leave-${tech.id}`} className="flex items-center gap-1 text-px-10 text-warning">
                               <CalendarDays className="h-2.5 w-2.5" />
                               <span className="truncate">{tech.firstName} - {t('dispatcher.on_leave')}</span>
                             </div>

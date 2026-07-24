@@ -95,7 +95,7 @@ export default function TicketLinkSelector({ ticketId, existingLinks = [], onLin
                   <div className="text-xs text-muted-foreground">{r.userEmail || r.tenant || ''}</div>
                 </div>
               <div className="ml-2">
-                <Badge variant="secondary" className="text-[11px]">{r.status}</Badge>
+                <Badge variant="secondary" className="text-px-11">{r.status}</Badge>
               </div>
             </div>
           ))}

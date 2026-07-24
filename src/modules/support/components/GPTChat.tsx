@@ -409,13 +409,13 @@ export default function GPTChat() {
             {messages.map((msg) => (
               <div key={msg.localId} className="flex flex-col gap-2 w-full min-w-0">
                 <div 
-                  className={`rounded-xl px-3.5 py-2.5 min-w-0 overflow-hidden text-[13px] leading-relaxed ${
+                  className={`rounded-xl px-3.5 py-2.5 min-w-0 overflow-hidden text-px-13 leading-relaxed ${
                     msg.from === 'user' 
                       ? 'bg-primary text-primary-foreground ml-auto w-fit max-w-[85%] rounded-br-sm' 
                       : 'bg-muted/60 border border-border/40 mr-auto w-fit max-w-[85%] rounded-bl-sm'
                   }`}
                 >
-                  <span className="font-medium text-[11px] text-muted-foreground/70 mb-1 block uppercase tracking-wider">
+                  <span className="font-medium text-px-11 text-muted-foreground/70 mb-1 block uppercase tracking-wider">
                     {msg.from === 'user' ? 'You' : 'Assistant'}
                   </span>
                   {msg.from === 'user' ? (
@@ -473,9 +473,9 @@ export default function GPTChat() {
             onChange={e => setInput(e.target.value)}
             disabled={loading}
             autoFocus
-            className="flex-1 h-9 text-[13px] rounded-lg border-border/60 focus-visible:border-primary/50"
+            className="flex-1 h-9 text-px-13 rounded-lg border-border/60 focus-visible:border-primary/50"
           />
-          <Button type="submit" disabled={loading || !input.trim()} className="h-9 px-4 rounded-lg text-[13px]">
+          <Button type="submit" disabled={loading || !input.trim()} className="h-9 px-4 rounded-lg text-px-13">
             Send
           </Button>
         </form>

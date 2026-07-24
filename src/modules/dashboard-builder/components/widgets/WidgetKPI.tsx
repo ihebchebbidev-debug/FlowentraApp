@@ -73,7 +73,7 @@ export function WidgetKPI({ widget }: Props) {
             {cfg.prefix}{value}{cfg.suffix}
           </p>
           <p
-            className={showLightText ? 'text-[11px] truncate mt-0.5' : 'text-[11px] text-muted-foreground truncate mt-0.5'}
+            className={showLightText ? 'text-px-11 truncate mt-0.5' : 'text-px-11 text-muted-foreground truncate mt-0.5'}
             style={{ color: showLightText ? 'rgba(255,255,255,0.6)' : undefined }}>
             {widget.descriptionCustom || (widget.descriptionKey ? t(widget.descriptionKey) : `${t(`dashboardBuilder.dataSources.${widget.dataSource}`)} · ${t(`dashboardBuilder.metrics.${widget.metric}`)}`)}
           </p>

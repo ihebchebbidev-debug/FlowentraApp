@@ -130,7 +130,7 @@ export const ServiceDashboard = () => {
               actions={byStatusAll.length > 5 ? (
                 <Dialog open={statusesOpen} onOpenChange={setStatusesOpen}>
                   <DialogTrigger asChild>
-                    <button type="button" className="flex h-7 items-center gap-1 rounded px-2 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground" title={t('reporting:general.noData', 'See all') as string}>
+                    <button type="button" className="flex h-7 items-center gap-1 rounded px-2 text-px-11 text-muted-foreground hover:bg-muted hover:text-foreground" title={t('reporting:general.noData', 'See all') as string}>
                       <List className="h-3.5 w-3.5" /> {t('reporting:my.open', 'See all')} ({byStatusAll.length})
                     </button>
                   </DialogTrigger>
@@ -161,7 +161,7 @@ export const ServiceDashboard = () => {
               actions={byTypeAll.length > 5 ? (
                 <Dialog open={typesOpen} onOpenChange={setTypesOpen}>
                   <DialogTrigger asChild>
-                    <button type="button" className="flex h-7 items-center gap-1 rounded px-2 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground">
+                    <button type="button" className="flex h-7 items-center gap-1 rounded px-2 text-px-11 text-muted-foreground hover:bg-muted hover:text-foreground">
                       <List className="h-3.5 w-3.5" /> {t('reporting:my.open', 'See all')} ({byTypeAll.length})
                     </button>
                   </DialogTrigger>
@@ -206,7 +206,7 @@ export const ServiceDashboard = () => {
                 ].map((s) => (
                   <div key={s.l} className="rounded-md bg-muted p-2 text-center">
                     <div className={`text-base font-bold ${s.tone}`}>{s.v}</div>
-                    <div className="text-[10px] text-muted-foreground">{s.l}</div>
+                    <div className="text-px-10 text-muted-foreground">{s.l}</div>
                   </div>
                 ))}
               </div>
@@ -217,7 +217,7 @@ export const ServiceDashboard = () => {
             <ChartCard title={t('service.techTable', 'Technician Performance Detail')} favorite={{ id: 'sv-techs', title: 'Technician Performance', source: SOURCE }} bodyClassName="p-0" empty={!techs.length} emptyLabel={t('service.techEmpty', 'Technician table not yet populated')}>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
-                  <thead className="bg-muted/50 text-[11px] uppercase tracking-wide text-muted-foreground">
+                  <thead className="bg-muted/50 text-px-11 uppercase tracking-wide text-muted-foreground">
                     <tr>
                       <th className="whitespace-nowrap px-3 py-2 text-left">{t('service.tech', 'Technician')}</th>
                       <th className="whitespace-nowrap px-3 py-2 text-right">{t('service.completed', 'Completion %')}</th>

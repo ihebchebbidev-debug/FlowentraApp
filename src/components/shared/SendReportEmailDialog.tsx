@@ -270,7 +270,7 @@ export function SendReportEmailDialog({
                         <div className="flex items-center gap-2">
                           <Mail className="h-3.5 w-3.5 text-muted-foreground" />
                           {a.handle}
-                          <Badge variant="outline" className="text-[10px] capitalize">{a.provider}</Badge>
+                          <Badge variant="outline" className="text-px-10 capitalize">{a.provider}</Badge>
                         </div>
                       </SelectItem>
                     ))}
@@ -284,7 +284,7 @@ export function SendReportEmailDialog({
               <div className="flex items-center justify-between">
                 <Label className="text-xs font-medium">{t('sendReport.to')}</Label>
                 {!showCc && (
-                  <button className="text-[11px] text-primary hover:underline" onClick={() => setShowCc(true)}>
+                  <button className="text-px-11 text-primary hover:underline" onClick={() => setShowCc(true)}>
                     + Cc
                   </button>
                 )}
@@ -359,7 +359,7 @@ export function SendReportEmailDialog({
             <div className="flex items-center gap-2 p-2.5 rounded-md border border-border/60 bg-muted/30">
               <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
               <span className="text-sm text-foreground truncate">{fileName}</span>
-              <Badge variant="outline" className="text-[10px] ml-auto shrink-0">PDF</Badge>
+              <Badge variant="outline" className="text-px-10 ml-auto shrink-0">PDF</Badge>
             </div>
           </div>
 

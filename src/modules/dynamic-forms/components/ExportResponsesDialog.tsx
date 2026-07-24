@@ -467,7 +467,7 @@ export function ExportResponsesDialog({
                                     <Badge 
                                       variant="secondary" 
                                       className={cn(
-                                        "text-[10px] h-4 cursor-help",
+                                        "text-px-10 h-4 cursor-help",
                                         aiInfo.confidence >= 0.8 ? "bg-success/10 text-success" :
                                         aiInfo.confidence >= 0.5 ? "bg-warning/10 text-warning" :
                                         "bg-destructive/10 text-destructive"
@@ -509,7 +509,7 @@ export function ExportResponsesDialog({
                                   <div className="flex items-center gap-2">
                                     <span>{getEntityFieldLabel(ef)}</span>
                                     {ef.required && (
-                                      <Badge variant="destructive" className="text-[10px] h-4">
+                                      <Badge variant="destructive" className="text-px-10 h-4">
                                         {t('common.required', 'Required')}
                                       </Badge>
                                     )}

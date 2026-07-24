@@ -145,7 +145,7 @@ export const EntityActionNode = memo(forwardRef<HTMLDivElement, EntityActionNode
             </div>
             {/* Action type badge */}
             <div
-              className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-sm"
+              className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-px-10 font-bold text-white shadow-sm"
               style={{ background: style.color }}
             >
               {action.icon}
@@ -154,14 +154,14 @@ export const EntityActionNode = memo(forwardRef<HTMLDivElement, EntityActionNode
 
           {/* Labels */}
           <div className="flex-1 min-w-0">
-            <div className="font-semibold text-[13px] text-foreground truncate leading-tight">
+            <div className="font-semibold text-px-13 text-foreground truncate leading-tight">
               {displayLabel}
             </div>
             <div className="flex items-center gap-1 mt-0.5">
-              <span className="text-[11px] font-medium" style={{ color: style.color }}>
+              <span className="text-px-11 font-medium" style={{ color: style.color }}>
                 {actionLabel}
               </span>
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-px-10 text-muted-foreground">
                 • {t(`entity.${data.entityType}`, data.entityType)}
               </span>
             </div>
@@ -175,7 +175,7 @@ export const EntityActionNode = memo(forwardRef<HTMLDivElement, EntityActionNode
           <div className="px-3.5 pb-2.5">
             <div className="flex items-center gap-2 text-xs p-2 rounded-lg bg-muted/40">
               <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/50" />
-              <span className="text-muted-foreground text-[11px]">{t('setTo')}:</span>
+              <span className="text-muted-foreground text-px-11">{t('setTo')}:</span>
               <span className="px-2 py-0.5 rounded-md text-xs font-semibold text-white shadow-sm"
                 style={{ background: style.color }}
               >
@@ -188,7 +188,7 @@ export const EntityActionNode = memo(forwardRef<HTMLDivElement, EntityActionNode
         {/* Auto Create */}
         {data.autoCreate && (
           <div className="px-3.5 pb-2.5">
-            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/70">
+            <div className="flex items-center gap-1.5 text-px-11 text-muted-foreground/70">
               <Check className="h-3 w-3 text-success" />
               <span>{t('autoCreate')}</span>
             </div>
@@ -198,7 +198,7 @@ export const EntityActionNode = memo(forwardRef<HTMLDivElement, EntityActionNode
         {/* Description */}
         {data.description && (
           <div className="px-3.5 pb-2.5 border-t border-border/30 pt-2">
-            <div className="text-[11px] text-muted-foreground/70 truncate">
+            <div className="text-px-11 text-muted-foreground/70 truncate">
               {data.description}
             </div>
           </div>

@@ -101,7 +101,7 @@ function LocationSection({ config, onUpdate }: { config: Partial<MapConfig>; onU
     <EditorSection title="Location" icon={<MapPin className="h-3.5 w-3.5" />} defaultOpen>
       <div className="space-y-3">
         <div className="space-y-1.5">
-          <Label className="text-[10px] text-muted-foreground">Address</Label>
+          <Label className="text-px-10 text-muted-foreground">Address</Label>
           <Input
             value={config.address || ''}
             onChange={(e) => onUpdate({ address: e.target.value })}
@@ -112,7 +112,7 @@ function LocationSection({ config, onUpdate }: { config: Partial<MapConfig>; onU
         
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-muted-foreground">Latitude</Label>
+            <Label className="text-px-10 text-muted-foreground">Latitude</Label>
             <Input
               type="number"
               step="0.0001"
@@ -122,7 +122,7 @@ function LocationSection({ config, onUpdate }: { config: Partial<MapConfig>; onU
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-muted-foreground">Longitude</Label>
+            <Label className="text-px-10 text-muted-foreground">Longitude</Label>
             <Input
               type="number"
               step="0.0001"
@@ -134,14 +134,14 @@ function LocationSection({ config, onUpdate }: { config: Partial<MapConfig>; onU
         </div>
         
         <div className="space-y-1.5">
-          <Label className="text-[10px] text-muted-foreground">Google Maps Embed URL (optional)</Label>
+          <Label className="text-px-10 text-muted-foreground">Google Maps Embed URL (optional)</Label>
           <Input
             value={config.embedUrl || ''}
             onChange={(e) => onUpdate({ embedUrl: e.target.value })}
             placeholder="https://maps.google.com/maps?..."
             className="h-7 text-xs"
           />
-          <p className="text-[9px] text-muted-foreground/60">Leave empty to use Leaflet map with coordinates</p>
+          <p className="text-px-9 text-muted-foreground/60">Leave empty to use Leaflet map with coordinates</p>
         </div>
       </div>
     </EditorSection>
@@ -154,7 +154,7 @@ function MapSettingsSection({ config, onUpdate }: { config: Partial<MapConfig>; 
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-muted-foreground">Zoom Level</Label>
+            <Label className="text-px-10 text-muted-foreground">Zoom Level</Label>
             <div className="flex items-center gap-2">
               <Slider
                 value={[config.zoom ?? 14]}
@@ -164,11 +164,11 @@ function MapSettingsSection({ config, onUpdate }: { config: Partial<MapConfig>; 
                 step={1}
                 className="flex-1"
               />
-              <span className="text-[10px] text-muted-foreground w-6">{config.zoom ?? 14}</span>
+              <span className="text-px-10 text-muted-foreground w-6">{config.zoom ?? 14}</span>
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-muted-foreground">Height (px)</Label>
+            <Label className="text-px-10 text-muted-foreground">Height (px)</Label>
             <Input
               type="number"
               value={config.height ?? 400}
@@ -179,12 +179,12 @@ function MapSettingsSection({ config, onUpdate }: { config: Partial<MapConfig>; 
         </div>
         
         <div className="space-y-1.5">
-          <Label className="text-[10px] text-muted-foreground">Map Style</Label>
+          <Label className="text-px-10 text-muted-foreground">Map Style</Label>
           <div className="grid grid-cols-4 gap-1">
             {MAP_THEMES.map((t) => (
               <button
                 key={t.value}
-                className={`px-2 py-1.5 text-[9px] rounded-lg border transition-all capitalize ${
+                className={`px-2 py-1.5 text-px-9 rounded-lg border transition-all capitalize ${
                   config.mapTheme === t.value
                     ? 'border-primary bg-primary/10 text-primary'
                     : 'border-border/40 hover:border-border hover:bg-muted/30'
@@ -204,7 +204,7 @@ function MapSettingsSection({ config, onUpdate }: { config: Partial<MapConfig>; 
         />
         
         <div className="flex flex-wrap gap-3">
-          <label className="flex items-center gap-2 text-[10px]">
+          <label className="flex items-center gap-2 text-px-10">
             <Switch
               checked={config.showZoomControl !== false}
               onCheckedChange={(v) => onUpdate({ showZoomControl: v })}
@@ -212,7 +212,7 @@ function MapSettingsSection({ config, onUpdate }: { config: Partial<MapConfig>; 
             />
             Zoom Controls
           </label>
-          <label className="flex items-center gap-2 text-[10px]">
+          <label className="flex items-center gap-2 text-px-10">
             <Switch
               checked={config.draggable !== false}
               onCheckedChange={(v) => onUpdate({ draggable: v })}
@@ -220,7 +220,7 @@ function MapSettingsSection({ config, onUpdate }: { config: Partial<MapConfig>; 
             />
             Draggable
           </label>
-          <label className="flex items-center gap-2 text-[10px]">
+          <label className="flex items-center gap-2 text-px-10">
             <Switch
               checked={config.scrollWheelZoom === true}
               onCheckedChange={(v) => onUpdate({ scrollWheelZoom: v })}
@@ -239,7 +239,7 @@ function LayoutSection({ config, onUpdate }: { config: Partial<MapConfig>; onUpd
     <EditorSection title="Layout" icon={<Layout className="h-3.5 w-3.5" />} defaultOpen>
       <div className="space-y-3">
         <div className="space-y-1.5">
-          <Label className="text-[10px] text-muted-foreground">Variant</Label>
+          <Label className="text-px-10 text-muted-foreground">Variant</Label>
           <div className="grid grid-cols-2 gap-1">
             {[
               { value: 'map-only', label: 'Map Only' },
@@ -249,7 +249,7 @@ function LayoutSection({ config, onUpdate }: { config: Partial<MapConfig>; onUpd
             ].map((v) => (
               <button
                 key={v.value}
-                className={`px-2 py-1.5 text-[9px] rounded-lg border transition-all ${
+                className={`px-2 py-1.5 text-px-9 rounded-lg border transition-all ${
                   config.variant === v.value
                     ? 'border-primary bg-primary/10 text-primary'
                     : 'border-border/40 hover:border-border hover:bg-muted/30'
@@ -264,12 +264,12 @@ function LayoutSection({ config, onUpdate }: { config: Partial<MapConfig>; onUpd
         
         {(config.variant === 'split') && (
           <div className="space-y-1.5">
-            <Label className="text-[10px] text-muted-foreground">Info Position</Label>
+            <Label className="text-px-10 text-muted-foreground">Info Position</Label>
             <div className="grid grid-cols-4 gap-1">
               {['left', 'right', 'top', 'bottom'].map((pos) => (
                 <button
                   key={pos}
-                  className={`px-2 py-1.5 text-[9px] rounded-lg border transition-all capitalize ${
+                  className={`px-2 py-1.5 text-px-9 rounded-lg border transition-all capitalize ${
                     config.infoPosition === pos
                       ? 'border-primary bg-primary/10 text-primary'
                       : 'border-border/40 hover:border-border hover:bg-muted/30'
@@ -284,7 +284,7 @@ function LayoutSection({ config, onUpdate }: { config: Partial<MapConfig>; onUpd
         )}
         
         <div className="flex flex-wrap gap-3">
-          <label className="flex items-center gap-2 text-[10px]">
+          <label className="flex items-center gap-2 text-px-10">
             <Switch
               checked={config.showBorder === true}
               onCheckedChange={(v) => onUpdate({ showBorder: v })}
@@ -295,7 +295,7 @@ function LayoutSection({ config, onUpdate }: { config: Partial<MapConfig>; onUpd
         </div>
         
         <div className="space-y-1.5">
-          <Label className="text-[10px] text-muted-foreground">Border Radius</Label>
+          <Label className="text-px-10 text-muted-foreground">Border Radius</Label>
           <div className="flex items-center gap-2">
             <Slider
               value={[config.borderRadius ?? 8]}
@@ -305,7 +305,7 @@ function LayoutSection({ config, onUpdate }: { config: Partial<MapConfig>; onUpd
               step={2}
               className="flex-1"
             />
-            <span className="text-[10px] text-muted-foreground w-8">{config.borderRadius ?? 8}px</span>
+            <span className="text-px-10 text-muted-foreground w-8">{config.borderRadius ?? 8}px</span>
           </div>
         </div>
       </div>
@@ -324,7 +324,7 @@ function ContactCardSection({ config, onUpdate }: { config: Partial<MapConfig>; 
     <EditorSection title="Contact Card" icon={<Phone className="h-3.5 w-3.5" />} defaultOpen>
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <Label className="text-[11px] font-medium">Show Contact Card</Label>
+          <Label className="text-px-11 font-medium">Show Contact Card</Label>
           <Switch
             checked={config.showContactCard === true}
             onCheckedChange={(v) => onUpdate({ showContactCard: v })}
@@ -334,7 +334,7 @@ function ContactCardSection({ config, onUpdate }: { config: Partial<MapConfig>; 
         {config.showContactCard && (
           <>
             <div className="space-y-1.5">
-              <Label className="text-[10px] text-muted-foreground">Card Title</Label>
+              <Label className="text-px-10 text-muted-foreground">Card Title</Label>
               <Input
                 value={config.contactCardTitle || 'Contact Us'}
                 onChange={(e) => onUpdate({ contactCardTitle: e.target.value })}
@@ -344,12 +344,12 @@ function ContactCardSection({ config, onUpdate }: { config: Partial<MapConfig>; 
             </div>
             
             <div className="space-y-1.5">
-              <Label className="text-[10px] text-muted-foreground">Card Style</Label>
+              <Label className="text-px-10 text-muted-foreground">Card Style</Label>
               <div className="grid grid-cols-3 gap-1">
                 {CONTACT_CARD_STYLES.map((s) => (
                   <button
                     key={s.value}
-                    className={`px-2 py-1.5 text-[9px] rounded-lg border transition-all ${
+                    className={`px-2 py-1.5 text-px-9 rounded-lg border transition-all ${
                       (config.contactCardStyle || 'default') === s.value
                         ? 'border-primary bg-primary/10 text-primary'
                         : 'border-border/40 hover:border-border hover:bg-muted/30'
@@ -364,7 +364,7 @@ function ContactCardSection({ config, onUpdate }: { config: Partial<MapConfig>; 
             </div>
             
             <div className="pt-2 border-t border-border/30 space-y-2">
-              <Label className="text-[10px] font-medium text-muted-foreground/70">Contact Details</Label>
+              <Label className="text-px-10 font-medium text-muted-foreground/70">Contact Details</Label>
               
               <div className="flex items-center gap-2">
                 <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
@@ -410,7 +410,7 @@ function ContactCardSection({ config, onUpdate }: { config: Partial<MapConfig>; 
             
             <div className="pt-2 border-t border-border/30 space-y-2">
               <div className="flex items-center justify-between">
-                <Label className="text-[10px] text-muted-foreground">Directions Button</Label>
+                <Label className="text-px-10 text-muted-foreground">Directions Button</Label>
                 <Switch
                   checked={config.showDirectionsButton !== false}
                   onCheckedChange={(v) => onUpdate({ showDirectionsButton: v })}
@@ -444,7 +444,7 @@ function AppearanceSection({ config, onUpdate }: { config: Partial<MapConfig>; o
           onChange={(v) => onUpdate({ bgColor: v })}
         />
         
-        <label className="flex items-center gap-2 text-[10px]">
+        <label className="flex items-center gap-2 text-px-10">
           <Switch
             checked={config.showAttribution !== false}
             onCheckedChange={(v) => onUpdate({ showAttribution: v })}

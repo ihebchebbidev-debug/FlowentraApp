@@ -111,7 +111,7 @@ export function WorkflowTemplatesGallery({ open, onOpenChange, onPick }: Props) 
                   key={c.id}
                   onClick={() => setCat(c.id)}
                   className={cn(
-                    'px-2.5 py-1 rounded-full text-[11px] font-medium border transition-colors',
+                    'px-2.5 py-1 rounded-full text-px-11 font-medium border transition-colors',
                     active
                       ? 'bg-primary text-primary-foreground border-primary'
                       : 'bg-muted/40 text-muted-foreground border-border hover:bg-muted',
@@ -121,7 +121,7 @@ export function WorkflowTemplatesGallery({ open, onOpenChange, onPick }: Props) 
                 </button>
               );
             })}
-            <span className="ml-auto text-[11px] text-muted-foreground tabular-nums">
+            <span className="ml-auto text-px-11 text-muted-foreground tabular-nums">
               {filtered.length} template{filtered.length === 1 ? '' : 's'}
             </span>
           </div>
@@ -159,7 +159,7 @@ export function WorkflowTemplatesGallery({ open, onOpenChange, onPick }: Props) 
                         </div>
                       </div>
                     </div>
-                    <p className="text-[12px] text-muted-foreground leading-snug flex-1">
+                    <p className="text-px-12 text-muted-foreground leading-snug flex-1">
                       {tpl.description}
                     </p>
                     <Button

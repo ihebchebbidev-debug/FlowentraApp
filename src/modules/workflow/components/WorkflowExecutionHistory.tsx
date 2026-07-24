@@ -65,7 +65,7 @@ function JsonBlock({ label, value }: { label: string; value?: string | null }) {
       <summary className="cursor-pointer px-2 py-1 text-xs font-medium text-muted-foreground hover:text-foreground">
         {label}
       </summary>
-      <pre className="px-2 pb-2 text-[11px] leading-snug text-foreground whitespace-pre-wrap break-all max-h-64 overflow-auto">{pretty}</pre>
+      <pre className="px-2 pb-2 text-px-11 leading-snug text-foreground whitespace-pre-wrap break-all max-h-64 overflow-auto">{pretty}</pre>
     </details>
   );
 }

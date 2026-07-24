@@ -64,7 +64,7 @@ const DashboardBuildingSkeleton = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="text-[11px] font-medium text-muted-foreground truncate"
+              className="text-px-11 font-medium text-muted-foreground truncate"
             >
               {labels[step]}
             </motion.p>
@@ -265,8 +265,8 @@ export function DashboardAiAssistant({ open, onClose, onApplyWidgets }: Props) {
                   <AiLogoIcon size={16} variant="auto" />
                 </div>
                 <div>
-                  <h2 className="text-[13px] font-semibold text-foreground">{ai('panelTitle')}</h2>
-                  <p className="text-[10px] text-muted-foreground">{ai('panelSubtitle')}</p>
+                  <h2 className="text-px-13 font-semibold text-foreground">{ai('panelTitle')}</h2>
+                  <p className="text-px-10 text-muted-foreground">{ai('panelSubtitle')}</p>
                 </div>
               </div>
               <div className="flex items-center gap-0.5">
@@ -304,11 +304,11 @@ export function DashboardAiAssistant({ open, onClose, onApplyWidgets }: Props) {
                     transition={{ duration: 0.3 }}
                     className="space-y-3 pt-1"
                   >
-                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    <p className="text-px-11 text-muted-foreground leading-relaxed">
                       {ai('hint')}
                     </p>
                     <div className="space-y-1">
-                      <p className="text-[9px] font-semibold text-muted-foreground/70 uppercase tracking-widest mb-2">
+                      <p className="text-px-9 font-semibold text-muted-foreground/70 uppercase tracking-widest mb-2">
                         {ai('quickSuggestions')}
                       </p>
                       {AI_QUICK_PROMPTS.map((qp, i) => (
@@ -323,7 +323,7 @@ export function DashboardAiAssistant({ open, onClose, onApplyWidgets }: Props) {
                           <div className="w-7 h-7 rounded-md bg-muted/50 group-hover:bg-primary/10 flex items-center justify-center shrink-0 transition-colors">
                             <LayoutDashboard className="h-3 w-3 text-muted-foreground group-hover:text-primary transition-colors" />
                           </div>
-                          <span className="text-[11px] text-foreground/80 group-hover:text-foreground font-medium flex-1 leading-tight">
+                          <span className="text-px-11 text-foreground/80 group-hover:text-foreground font-medium flex-1 leading-tight">
                             {t(qp.labelKey)}
                           </span>
                           <ChevronRight className="h-3 w-3 text-muted-foreground/30 group-hover:text-primary/50 transition-colors" />
@@ -343,7 +343,7 @@ export function DashboardAiAssistant({ open, onClose, onApplyWidgets }: Props) {
                     className={cn('flex', msg.role === 'user' ? 'justify-end' : 'justify-start')}
                   >
                     <div className={cn(
-                      'max-w-[88%] rounded-xl px-3.5 py-2.5 text-[12px] leading-relaxed',
+                      'max-w-[88%] rounded-xl px-3.5 py-2.5 text-px-12 leading-relaxed',
                       msg.role === 'user'
                         ? 'bg-primary text-primary-foreground rounded-br-sm'
                         : 'bg-muted/40 text-foreground border border-border/20 rounded-bl-sm'
@@ -353,7 +353,7 @@ export function DashboardAiAssistant({ open, onClose, onApplyWidgets }: Props) {
                       ) : msg.error ? (
                         <div className="flex items-start gap-2.5">
                           <AlertCircle className="h-3.5 w-3.5 text-destructive shrink-0 mt-0.5" />
-                          <span className="text-destructive text-[11px]">{msg.content}</span>
+                          <span className="text-destructive text-px-11">{msg.content}</span>
                         </div>
                       ) : msg.widgets ? (
                         <motion.div
@@ -364,16 +364,16 @@ export function DashboardAiAssistant({ open, onClose, onApplyWidgets }: Props) {
                         >
                           <div className="flex items-center gap-2">
                             <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                            <span className="font-medium text-[11px]">{ai('generated')}</span>
+                            <span className="font-medium text-px-11">{ai('generated')}</span>
                           </div>
-                          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground px-1">
+                          <div className="flex items-center gap-1.5 text-px-10 text-muted-foreground px-1">
                             <LayoutDashboard className="h-3 w-3" />
                             {msg.widgets.length} {ai('widgetsGenerated')}
                           </div>
                           <Button
                             size="sm"
                             onClick={() => handleApply(msg.widgets!)}
-                            className="w-full h-8 text-[11px] gap-1.5 font-medium"
+                            className="w-full h-8 text-px-11 gap-1.5 font-medium"
                           >
                             <AiLogoIcon size={12} variant="light" />
                             {ai('apply')}
@@ -407,7 +407,7 @@ export function DashboardAiAssistant({ open, onClose, onApplyWidgets }: Props) {
                   onKeyDown={handleKeyDown}
                   placeholder={ai('placeholder')}
                   disabled={isGenerating}
-                  className="h-9 text-[12px] bg-background border-border/50 rounded-lg"
+                  className="h-9 text-px-12 bg-background border-border/50 rounded-lg"
                 />
                 <Button
                   size="icon"

@@ -101,7 +101,7 @@ export const AddButtonEdge = memo(({
             className="nodrag nopan"
           >
             <span className={cn(
-              'text-[9px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border shadow-sm',
+              'text-px-9 font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border shadow-sm',
               getLabelStyle()
             )}>
               {label}

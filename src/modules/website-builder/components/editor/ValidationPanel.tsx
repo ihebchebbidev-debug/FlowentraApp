@@ -37,27 +37,27 @@ export function ValidationPanel({ components, onSelectComponent }: ValidationPan
     <ScrollArea className="h-full">
       <div className="p-3 space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70">
+          <h3 className="text-px-11 font-semibold uppercase tracking-widest text-muted-foreground/70">
             {t('wb:validation.validation')}
           </h3>
           {totalIssues === 0 ? (
-            <span className="text-[10px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+            <span className="text-px-10 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
               <CheckCircle2 className="h-3 w-3" /> {t('wb:validation.allClear')}
             </span>
           ) : (
             <div className="flex items-center gap-1.5">
               {counts.errors > 0 && (
-                <span className="text-[10px] bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 px-1.5 py-0.5 rounded-full font-medium">
+                <span className="text-px-10 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 px-1.5 py-0.5 rounded-full font-medium">
                   {counts.errors} {t('wb:validation.error').toLowerCase()}{counts.errors > 1 ? 's' : ''}
                 </span>
               )}
               {counts.warnings > 0 && (
-                <span className="text-[10px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded-full font-medium">
+                <span className="text-px-10 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded-full font-medium">
                   {counts.warnings}
                 </span>
               )}
               {counts.infos > 0 && (
-                <span className="text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 px-1.5 py-0.5 rounded-full font-medium">
+                <span className="text-px-10 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 px-1.5 py-0.5 rounded-full font-medium">
                   {counts.infos}
                 </span>
               )}
@@ -69,7 +69,7 @@ export function ValidationPanel({ components, onSelectComponent }: ValidationPan
           <div className="text-center py-8">
             <CheckCircle2 className="h-8 w-8 mx-auto text-green-500 mb-2" />
             <p className="text-sm font-medium text-green-700 dark:text-green-400">{t('wb:validation.pageLooksGreat')}</p>
-            <p className="text-[11px] text-muted-foreground mt-1">{t('wb:validation.noIssuesDetected')}</p>
+            <p className="text-px-11 text-muted-foreground mt-1">{t('wb:validation.noIssuesDetected')}</p>
           </div>
         )}
 
@@ -87,17 +87,17 @@ export function ValidationPanel({ components, onSelectComponent }: ValidationPan
                   <Icon className={`h-3.5 w-3.5 mt-0.5 shrink-0 ${cfg.color}`} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">{cfg.label}</span>
+                      <span className="text-px-10 font-bold uppercase tracking-wider opacity-60">{cfg.label}</span>
                       {item.componentLabel && (
                         <>
-                          <span className="text-[10px] opacity-30">·</span>
-                          <span className="text-[10px] font-medium text-foreground/70 truncate">{item.componentLabel}</span>
+                          <span className="text-px-10 opacity-30">·</span>
+                          <span className="text-px-10 font-medium text-foreground/70 truncate">{item.componentLabel}</span>
                         </>
                       )}
                     </div>
                     <p className="text-xs font-medium mt-0.5">{item.issue.message}</p>
                     {item.issue.suggestion && (
-                      <p className="text-[10px] text-muted-foreground mt-1 leading-relaxed">{item.issue.suggestion}</p>
+                      <p className="text-px-10 text-muted-foreground mt-1 leading-relaxed">{item.issue.suggestion}</p>
                     )}
                   </div>
                   {item.componentId && <ChevronRight className="h-3 w-3 shrink-0 mt-1 opacity-30" />}

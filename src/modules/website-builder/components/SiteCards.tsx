@@ -66,7 +66,7 @@ export function SiteGridCard({ site, onEdit, onDelete }: SiteCardProps) {
         </div>
       </div>
       <div className="mt-3 flex items-center gap-2">
-        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+        <span className={`text-px-10 px-2 py-0.5 rounded-full font-medium ${
           site.published ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
         }`}>
           {site.published ? t('wb:common.published') : t('wb:common.draft')}
@@ -94,7 +94,7 @@ export function SiteListItem({ site, onEdit, onDelete }: SiteCardProps) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <h3 className="font-semibold text-sm truncate">{site.name}</h3>
-          <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0 ${
+          <span className={`text-px-10 px-2 py-0.5 rounded-full font-medium shrink-0 ${
             site.published ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
           }`}>
             {site.published ? t('wb:common.published') : t('wb:common.draft')}
@@ -158,7 +158,7 @@ export function SiteTableView({ sites, onEdit, onDelete }: { sites: WebsiteSite[
                 </div>
               </td>
               <td className="p-3 hidden sm:table-cell">
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                <span className={`text-px-10 px-2 py-0.5 rounded-full font-medium ${
                   site.published ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
                 }`}>
                   {site.published ? t('wb:common.published') : t('wb:common.draft')}

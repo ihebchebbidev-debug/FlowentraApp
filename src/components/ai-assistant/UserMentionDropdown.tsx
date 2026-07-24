@@ -178,7 +178,7 @@ export function UserMentionDropdown({
 
       {/* Footer hint */}
       <div className="bg-popover border-t border-border px-3 py-1.5">
-        <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+        <div className="flex items-center gap-3 text-px-10 text-muted-foreground">
           <span>↑↓ {t('navigate', 'Navigate')}</span>
           <span>↵ {t('select', 'Select')}</span>
           <span>Esc {t('close', 'Close')}</span>

@@ -393,7 +393,7 @@ export default function ContactsPage() {
           </div>
           <div className="min-w-0">
             <h1 className="text-base sm:text-xl font-semibold text-foreground truncate">{t('contacts.title')}</h1>
-            <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">{t('contacts.subtitle')}</p>
+            <p className="text-px-10 sm:text-px-11 text-muted-foreground truncate">{t('contacts.subtitle')}</p>
           </div>
         </div>
         <div className="flex gap-1.5 sm:gap-2 items-center flex-shrink-0">
@@ -699,11 +699,11 @@ export default function ContactsPage() {
                       <div onClick={e => { e.stopPropagation(); handleSelectItem(contact.id, !isSelected); }}>
                         {isSelected ? (
                           <div className="list-row-avatar list-row-avatar-selected mt-0.5">
-                            <span className="text-[11px] font-bold">{initials}</span>
+                            <span className="text-px-11 font-bold">{initials}</span>
                           </div>
                         ) : (
                           <div className="list-row-avatar mt-0.5">
-                            <span className="text-[11px] font-semibold">{initials}</span>
+                            <span className="text-px-11 font-semibold">{initials}</span>
                           </div>
                         )}
                       </div>
@@ -722,7 +722,7 @@ export default function ContactsPage() {
                                 : t('detail.type.individual')}
                             </p>
                           </div>
-                          <Badge variant={getStatusColor(contact.status || 'active') as any} className="text-[10px] px-2 py-0.5 shrink-0 capitalize">
+                          <Badge variant={getStatusColor(contact.status || 'active') as any} className="text-px-10 px-2 py-0.5 shrink-0 capitalize">
                             {t(`detail.status.${String(contact.status || 'active').toLowerCase()}`)}
                           </Badge>
                         </div>

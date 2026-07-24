@@ -44,7 +44,7 @@ export function ArticlesListView({
                         <p className="font-semibold text-foreground text-sm leading-snug line-clamp-2 flex-1">
                           {article.name}
                         </p>
-                        <Badge className={`${getStatusColor(article.status)} text-[10px] px-2 py-0.5 shrink-0 font-medium flex items-center gap-1`}>
+                        <Badge className={`${getStatusColor(article.status)} text-px-10 px-2 py-0.5 shrink-0 font-medium flex items-center gap-1`}>
                           <StatusIcon className="h-3 w-3" />
                           {article.status.replace('_', ' ')}
                         </Badge>

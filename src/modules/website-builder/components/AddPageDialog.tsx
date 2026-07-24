@@ -121,7 +121,7 @@ export function AddPageDialog({ open, onOpenChange, onAddPage, existingPageCount
                   }`}
                 >
                   <p className="text-sm font-medium">{template.name}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">{template.description}</p>
+                  <p className="text-px-10 text-muted-foreground mt-0.5">{template.description}</p>
                 </button>
               ))}
             </div>

@@ -155,7 +155,7 @@ export function SystemLogs() {
           </div>
           <div className="min-w-0">
             <h1 className="text-xl font-semibold text-foreground truncate">{t('systemLogs.title')}</h1>
-            <p className="text-[11px] text-muted-foreground truncate">{t('systemLogs.desc')}</p>
+            <p className="text-px-11 text-muted-foreground truncate">{t('systemLogs.desc')}</p>
           </div>
         </div>
 

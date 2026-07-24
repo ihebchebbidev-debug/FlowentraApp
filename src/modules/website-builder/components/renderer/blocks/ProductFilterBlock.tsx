@@ -174,7 +174,7 @@ export function ProductFilterBlock({
           style={{ accentColor: theme.primaryColor }}
         />
       </div>
-      <div className="flex justify-between text-[10px] opacity-50" style={{ color: theme.secondaryColor }}>
+      <div className="flex justify-between text-px-10 opacity-50" style={{ color: theme.secondaryColor }}>
         <span>{priceCurrency}{priceMin}</span>
         <span>{priceCurrency}{priceMax}</span>
       </div>
@@ -243,13 +243,13 @@ export function ProductFilterBlock({
   const ActiveFiltersBadges = () =>
     activeFilters.length > 0 ? (
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-[10px] font-medium opacity-50" style={{ color: theme.secondaryColor }}>
+        <span className="text-px-10 font-medium opacity-50" style={{ color: theme.secondaryColor }}>
           Active:
         </span>
         {activeFilters.map((f, i) => (
           <span
             key={i}
-            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border border-border/30"
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-px-10 font-medium border border-border/30"
             style={{ color: theme.primaryColor }}
           >
             {f}
@@ -258,7 +258,7 @@ export function ProductFilterBlock({
         ))}
         <button
           onClick={clearAll}
-          className="text-[10px] underline opacity-50 hover:opacity-100 transition-opacity"
+          className="text-px-10 underline opacity-50 hover:opacity-100 transition-opacity"
           style={{ color: theme.primaryColor }}
         >
           Clear all
@@ -327,7 +327,7 @@ export function ProductFilterBlock({
 
           {/* Edit hint */}
           {isEditing && (
-            <p className="text-[10px] text-center text-muted-foreground opacity-60">
+            <p className="text-px-10 text-center text-muted-foreground opacity-60">
               💡 This filter block works with Product Grid and Carousel blocks on the same page
             </p>
           )}

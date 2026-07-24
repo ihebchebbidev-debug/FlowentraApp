@@ -38,7 +38,7 @@ const Controls = ({
     <>
       {filters.map((f) => (
         <div key={f.key} className="flex items-center gap-2">
-          <span className="whitespace-nowrap text-[11px] font-medium text-muted-foreground">{f.label}</span>
+          <span className="whitespace-nowrap text-px-11 font-medium text-muted-foreground">{f.label}</span>
           <Select
             value={values[f.key] ?? f.defaultValue ?? f.options[0]?.value}
             onValueChange={(v) => setValues({ ...values, [f.key]: v })}

@@ -240,7 +240,7 @@ export default function SelectCompany() {
                               <ImageOff className="h-3 w-3" />
                             </span>
                           </div>
-                          <span className="text-[10px] uppercase tracking-wider text-muted-foreground/80">
+                          <span className="text-px-10 uppercase tracking-wider text-muted-foreground/80">
                             No logo uploaded
                           </span>
                         </div>
@@ -248,7 +248,7 @@ export default function SelectCompany() {
                       {t.isDefault && (
                         <Badge
                           variant="secondary"
-                          className="absolute top-2 right-2 gap-1 text-[10px] font-medium"
+                          className="absolute top-2 right-2 gap-1 text-px-10 font-medium"
                         >
                           <Check className="h-3 w-3" />
                           Default
@@ -342,7 +342,7 @@ export default function SelectCompany() {
           >
             <LogOut className="h-4 w-4" /> Sign out
           </Button>
-          <p className="text-[11px] text-muted-foreground/70">
+          <p className="text-px-11 text-muted-foreground/70">
             You can switch companies anytime from the top navigation.
           </p>
         </div>

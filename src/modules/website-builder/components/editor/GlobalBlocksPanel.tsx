@@ -117,10 +117,10 @@ export function GlobalBlocksPanel({ onInsertBlock, selectedComponent, siteId }: 
     <ScrollArea className="h-full">
       <div className="p-3 space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70 flex items-center gap-1.5">
+          <h3 className="text-px-11 font-semibold uppercase tracking-widest text-muted-foreground/70 flex items-center gap-1.5">
             <Layers className="h-3.5 w-3.5" />{t('wb:globalBlocks.globalBlocks')}
           </h3>
-          <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-semibold">{blocks.length}</span>
+          <span className="text-px-10 bg-primary/10 text-primary px-2 py-0.5 rounded-full font-semibold">{blocks.length}</span>
         </div>
 
         {selectedComponent && (
@@ -145,7 +145,7 @@ export function GlobalBlocksPanel({ onInsertBlock, selectedComponent, siteId }: 
           <div className="text-center py-8">
             <Layers className="h-7 w-7 mx-auto text-muted-foreground/30 mb-2" />
             <p className="text-xs text-muted-foreground">{blocks.length === 0 ? t('wb:globalBlocks.noGlobalBlocks') : t('wb:globalBlocks.noMatches')}</p>
-            <p className="text-[10px] text-muted-foreground/60 mt-1">{t('wb:globalBlocks.reuseTip')}</p>
+            <p className="text-px-10 text-muted-foreground/60 mt-1">{t('wb:globalBlocks.reuseTip')}</p>
           </div>
         ) : (
           <div className="space-y-1.5">
@@ -155,13 +155,13 @@ export function GlobalBlocksPanel({ onInsertBlock, selectedComponent, siteId }: 
                   <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0"><Globe2 className="h-4 w-4 text-primary" /></div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold truncate">{block.name}</p>
-                    <p className="text-[10px] text-muted-foreground truncate">{block.component.type}</p>
-                    {block.description && <p className="text-[10px] text-muted-foreground/60 mt-0.5 truncate">{block.description}</p>}
-                    {block.usageCount > 0 && <p className="text-[9px] text-muted-foreground/50 mt-1">{t('wb:globalBlocks.usedCount', { count: block.usageCount })}</p>}
+                    <p className="text-px-10 text-muted-foreground truncate">{block.component.type}</p>
+                    {block.description && <p className="text-px-10 text-muted-foreground/60 mt-0.5 truncate">{block.description}</p>}
+                    {block.usageCount > 0 && <p className="text-px-9 text-muted-foreground/50 mt-1">{t('wb:globalBlocks.usedCount', { count: block.usageCount })}</p>}
                   </div>
                 </div>
                 <div className="flex gap-1 mt-2">
-                  <Button variant="outline" size="sm" className="h-6 text-[10px] flex-1" onClick={() => handleInsert(block)}>
+                  <Button variant="outline" size="sm" className="h-6 text-px-10 flex-1" onClick={() => handleInsert(block)}>
                     <Copy className="h-3 w-3 mr-1" /> {t('wb:common.insert')}
                   </Button>
                   <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive opacity-0 group-hover:opacity-100 transition-opacity" disabled={deletingId === block.id} onClick={() => handleDelete(block.id)}>
@@ -181,14 +181,14 @@ export function GlobalBlocksPanel({ onInsertBlock, selectedComponent, siteId }: 
             <div className="space-y-1">
               <Label className="text-xs">{t('wb:globalBlocks.blockName')}</Label>
               <Input placeholder={t('wb:globalBlocks.blockNamePlaceholder')} value={blockName} onChange={(e) => { setBlockName(e.target.value); if (formErrors.name) setFormErrors(prev => ({ ...prev, name: undefined })); }} className={formErrors.name ? 'border-destructive' : ''} autoFocus maxLength={100} />
-              {formErrors.name && <p className="text-[10px] text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3" />{formErrors.name}</p>}
+              {formErrors.name && <p className="text-px-10 text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3" />{formErrors.name}</p>}
             </div>
             <div className="space-y-1">
               <Label className="text-xs">{t('wb:globalBlocks.descriptionOptional')}</Label>
               <Input placeholder={t('wb:globalBlocks.descriptionPlaceholder')} value={blockDesc} onChange={(e) => { setBlockDesc(e.target.value); if (formErrors.description) setFormErrors(prev => ({ ...prev, description: undefined })); }} className={formErrors.description ? 'border-destructive' : ''} maxLength={300} />
-              {formErrors.description && <p className="text-[10px] text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3" />{formErrors.description}</p>}
+              {formErrors.description && <p className="text-px-10 text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3" />{formErrors.description}</p>}
             </div>
-            <p className="text-[10px] text-muted-foreground">{t('wb:globalBlocks.globalBlocksTip')}</p>
+            <p className="text-px-10 text-muted-foreground">{t('wb:globalBlocks.globalBlocksTip')}</p>
           </div>
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setShowSaveDialog(false)}>{t('wb:common.cancel')}</Button>

@@ -405,7 +405,7 @@ export function TenantManagement() {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   {isViewAllMode() && (
-                    <Badge variant="default" className="text-[10px] h-5 px-2">{t('companies.active', 'Active')}</Badge>
+                    <Badge variant="default" className="text-px-10 h-5 px-2">{t('companies.active', 'Active')}</Badge>
                   )}
                   <Eye className={`h-4 w-4 ${isViewAllMode() ? 'text-primary' : 'text-muted-foreground'}`} />
                 </div>
@@ -446,13 +446,13 @@ export function TenantManagement() {
                     <div className="flex items-center gap-2">
                       <h3 className="font-medium text-sm text-foreground truncate">{tenant.companyName}</h3>
                       {isCurrentTenant && (
-                        <Badge variant="secondary" className="text-[10px] h-4 px-1.5">{t('companies.currentBadge', 'Current')}</Badge>
+                        <Badge variant="secondary" className="text-px-10 h-4 px-1.5">{t('companies.currentBadge', 'Current')}</Badge>
                       )}
                       {tenant.isDefault && (
-                        <Badge variant="default" className="text-[10px] h-4 px-1.5">{t('companies.defaultBadge')}</Badge>
+                        <Badge variant="default" className="text-px-10 h-4 px-1.5">{t('companies.defaultBadge')}</Badge>
                       )}
                       {!tenant.isActive && (
-                        <Badge variant="destructive" className="text-[10px] h-4 px-1.5">{t('companies.inactiveBadge')}</Badge>
+                        <Badge variant="destructive" className="text-px-10 h-4 px-1.5">{t('companies.inactiveBadge')}</Badge>
                       )}
                     </div>
                     <div className="flex items-center gap-3 mt-0.5">
@@ -538,7 +538,7 @@ export function TenantManagement() {
                   placeholder={t('companies.slugPlaceholder')}
                   className="font-mono"
                 />
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-px-10 text-muted-foreground">
                   {t('companies.slugHint')}
                 </p>
               </div>

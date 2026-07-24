@@ -125,17 +125,17 @@ function ActivityRow({
               <button
                 type="button"
                 onClick={() => onOpenEntity(path)}
-                className="text-[11px] px-1.5 py-0.5 rounded border border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 hover:underline transition font-mono"
+                className="text-px-11 px-1.5 py-0.5 rounded border border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 hover:underline transition font-mono"
                 title={t('activity.view', 'View')}
               >
                 {number}
               </button>
             ) : (
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-mono">{number}</Badge>
+              <Badge variant="outline" className="text-px-10 px-1.5 py-0 font-mono">{number}</Badge>
             )
           )}
           {isStatusChange && (oldStatus || newStatus) && (
-            <span className="inline-flex items-center gap-1 text-[11px]">
+            <span className="inline-flex items-center gap-1 text-px-11">
               {oldStatus && (
                 <Badge variant="outline" className="px-1.5 py-0 capitalize text-muted-foreground">
                   {statusLabel(oldStatus)}
@@ -150,7 +150,7 @@ function ActivityRow({
             </span>
           )}
           {!isStatusChange && newStatus && (
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 capitalize">
+            <Badge variant="secondary" className="text-px-10 px-1.5 py-0 capitalize">
               {statusLabel(newStatus)}
             </Badge>
           )}

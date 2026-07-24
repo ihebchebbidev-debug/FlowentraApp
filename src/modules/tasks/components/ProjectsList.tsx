@@ -90,7 +90,7 @@ export function ProjectsList({
         return (
           <div 
               key={project.id}
-              className="p-3 sm:p-4 lg:p-6 hover:bg-muted/50 transition-colors group cursor-pointer text-[0.85rem]"
+              className="p-3 sm:p-4 lg:p-6 hover:bg-muted/50 transition-colors group cursor-pointer text-rem-85"
               onClick={() => onOpenProject(project)}
             >
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">

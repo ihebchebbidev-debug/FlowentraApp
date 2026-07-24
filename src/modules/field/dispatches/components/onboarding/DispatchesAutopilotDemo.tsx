@@ -34,7 +34,7 @@ const STATUS_CLS: Record<string, string> = {
   completed:   'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
   cancelled:   'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
 };
-function Pill({ s }: { s: string }) { return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium capitalize ${STATUS_CLS[s] ?? 'bg-muted text-muted-foreground'}`}>{s.replace(/_/g, ' ')}</span>; }
+function Pill({ s }: { s: string }) { return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-px-10 font-medium capitalize ${STATUS_CLS[s] ?? 'bg-muted text-muted-foreground'}`}>{s.replace(/_/g, ' ')}</span>; }
 const PRIO_CLS: Record<string, string> = { urgent: 'bg-red-500', high: 'bg-orange-400', medium: 'bg-blue-400', low: 'bg-gray-300' };
 const initials = (n: string) => n.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2);
 
@@ -48,7 +48,7 @@ function PageList({ state }: { state: DPDemoState }) {
           <div className="p-2 rounded-lg bg-primary/10"><Truck className="h-6 w-6 text-primary" /></div>
           <div>
             <h1 id="dp-demo-title" className="text-xl font-semibold">Dispatches</h1>
-            <p className="text-[11px] text-muted-foreground">Field job tickets</p>
+            <p className="text-px-11 text-muted-foreground">Field job tickets</p>
           </div>
         </div>
         <div className="h-9 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium inline-flex items-center gap-1.5"><Plus className="h-3.5 w-3.5" /> New dispatch</div>
@@ -96,10 +96,10 @@ function PageList({ state }: { state: DPDemoState }) {
               {DEMO_DISPATCHES.map((d, i) => (
                 <tr key={d.id} className={`border-b border-border/40 last:border-0 ${state.bulkBar && i < 2 ? 'bg-primary/5' : ''}`}>
                   {state.bulkBar && <td className="px-3 py-2.5"><span className={`h-3.5 w-3.5 rounded border inline-block ${i < 2 ? 'bg-primary border-primary' : 'border-border bg-background'}`} /></td>}
-                  <td className="px-3 py-2.5"><div className="font-medium text-primary">{d.num}</div><div className="text-[10px] text-muted-foreground">{d.so}</div></td>
-                  <td className="px-3 py-2.5"><div>{d.customer}</div><div className="text-[10px] text-muted-foreground">{d.city}</div></td>
+                  <td className="px-3 py-2.5"><div className="font-medium text-primary">{d.num}</div><div className="text-px-10 text-muted-foreground">{d.so}</div></td>
+                  <td className="px-3 py-2.5"><div>{d.customer}</div><div className="text-px-10 text-muted-foreground">{d.city}</div></td>
                   <td className="px-3 py-2.5 text-muted-foreground">{d.time}</td>
-                  <td className="px-3 py-2.5"><span className="inline-flex items-center gap-1.5"><span className="h-5 w-5 rounded-full bg-primary/10 text-primary text-[9px] font-bold inline-flex items-center justify-center">{initials(d.tech)}</span><span className="text-primary">{d.tech}</span></span></td>
+                  <td className="px-3 py-2.5"><span className="inline-flex items-center gap-1.5"><span className="h-5 w-5 rounded-full bg-primary/10 text-primary text-px-9 font-bold inline-flex items-center justify-center">{initials(d.tech)}</span><span className="text-primary">{d.tech}</span></span></td>
                   <td className="px-3 py-2.5"><Pill s={d.status} /></td>
                   <td className="px-3 py-2.5"><span className="inline-flex items-center gap-1.5"><span className={`w-2 h-2 rounded-full ${PRIO_CLS[d.priority]}`} /><span className="capitalize">{d.priority}</span></span></td>
                   <td className="px-3 py-2.5 relative">
@@ -132,11 +132,11 @@ function PageList({ state }: { state: DPDemoState }) {
               { x: 82, y: 78, l: 'Gabès' },
             ].map(p => (
               <div key={p.l} style={{ left: `${p.x}%`, top: `${p.y}%` }} className="absolute -translate-x-1/2 -translate-y-full flex flex-col items-center">
-                <div className="px-1.5 py-0.5 rounded text-[9px] bg-card border border-border shadow">{p.l}</div>
+                <div className="px-1.5 py-0.5 rounded text-px-9 bg-card border border-border shadow">{p.l}</div>
                 <MapPin className="h-5 w-5 text-primary drop-shadow" />
               </div>
             ))}
-            <div className="absolute top-2 right-2 px-2 py-1 rounded bg-card/90 text-[10px] border border-border">4 dispatches pinned</div>
+            <div className="absolute top-2 right-2 px-2 py-1 rounded bg-card/90 text-px-10 border border-border">4 dispatches pinned</div>
           </div>
         </div>
       )}
@@ -154,7 +154,7 @@ function PageList({ state }: { state: DPDemoState }) {
                 </label>
               ))}
             </div>
-            <div className="flex items-center justify-between text-[11px] mb-3">
+            <div className="flex items-center justify-between text-px-11 mb-3">
               <span className="text-muted-foreground">Filename</span>
               <div className="h-8 px-2 rounded border border-border flex items-center">dispatches-2025-07-24.xlsx</div>
             </div>
@@ -173,7 +173,7 @@ function PageList({ state }: { state: DPDemoState }) {
             <p className="text-sm font-semibold mb-1 inline-flex items-center gap-2"><Trash2 className="h-4 w-4 text-destructive" /> Delete 2 dispatches?</p>
             <p className="text-xs text-muted-foreground mb-3">This permanently removes the selected dispatch tickets, their time entries, expenses and materials. This action cannot be undone.</p>
             <div className="mb-3">
-              <div className="flex items-center justify-between text-[11px] mb-1"><span className="text-muted-foreground">Deleting…</span><span className="font-mono">{state.bulkProgress}%</span></div>
+              <div className="flex items-center justify-between text-px-11 mb-1"><span className="text-muted-foreground">Deleting…</span><span className="font-mono">{state.bulkProgress}%</span></div>
               <div className="h-1.5 rounded-full bg-muted overflow-hidden"><div className="h-full bg-destructive transition-all" style={{ width: `${state.bulkProgress}%` }} /></div>
             </div>
             <div className="flex justify-end gap-2">
@@ -231,7 +231,7 @@ function PageDetail({ state }: { state: DPDemoState }) {
         <div className="flex items-center gap-0 min-w-max">
           {STEPPER.map((s, i) => (
             <div key={s} className="flex items-center gap-0">
-              <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[10px] font-medium capitalize whitespace-nowrap ${i <= state.statusStage ? 'text-primary bg-primary/10' : 'text-muted-foreground'}`}>
+              <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-px-10 font-medium capitalize whitespace-nowrap ${i <= state.statusStage ? 'text-primary bg-primary/10' : 'text-muted-foreground'}`}>
                 {i < state.statusStage && <CheckCircle2 className="h-3 w-3" />}{s.replace(/_/g, ' ')}
               </div>
               {i < STEPPER.length - 1 && <ChevronRight className="h-3 w-3 text-muted-foreground/40" />}
@@ -259,10 +259,10 @@ function PageDetail({ state }: { state: DPDemoState }) {
               <p className="text-sm font-medium mb-2 inline-flex items-center gap-2"><ListChecks className="h-4 w-4 text-primary" /> Required skills</p>
               <div className="flex flex-wrap gap-1.5">
                 {['HVAC', 'Hydraulics', 'Electrical'].map(s => (
-                  <span key={s} className="px-2 py-1 rounded-md text-[11px] bg-primary/10 text-primary inline-flex items-center gap-1">{s}{state.skillsEditing && <X className="h-2.5 w-2.5" />}</span>
+                  <span key={s} className="px-2 py-1 rounded-md text-px-11 bg-primary/10 text-primary inline-flex items-center gap-1">{s}{state.skillsEditing && <X className="h-2.5 w-2.5" />}</span>
                 ))}
                 {state.skillsEditing && (
-                  <span className="px-2 py-1 rounded-md text-[11px] border border-dashed border-primary/40 text-primary inline-flex items-center gap-1"><Plus className="h-2.5 w-2.5" /> Add skill from catalog</span>
+                  <span className="px-2 py-1 rounded-md text-px-11 border border-dashed border-primary/40 text-primary inline-flex items-center gap-1"><Plus className="h-2.5 w-2.5" /> Add skill from catalog</span>
                 )}
               </div>
             </div>
@@ -273,7 +273,7 @@ function PageDetail({ state }: { state: DPDemoState }) {
           <div className="space-y-2">
             <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-primary/5 border border-primary/20 text-xs">
               <span className="inline-flex items-center gap-1.5 font-medium text-primary"><Wrench className="h-3.5 w-3.5" /> 3 jobs · grouped by installation</span>
-              <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-primary/15 text-primary">Par installation</span>
+              <span className="px-1.5 py-0.5 rounded text-px-9 font-semibold bg-primary/15 text-primary">Par installation</span>
             </div>
             {state.jobsFilterOpen && (
               <div className="flex gap-2 items-center bg-card border border-border rounded-lg p-2">
@@ -287,12 +287,12 @@ function PageDetail({ state }: { state: DPDemoState }) {
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium inline-flex items-center gap-1.5"><Wrench className="h-3 w-3 text-muted-foreground" />{j[0]}</span>
                   <div className="flex items-center gap-1.5">
-                    {state.multiJobCurrent && (i === 1 ? <span id="dp-demo-multijob-current" className="px-1.5 py-0.5 rounded bg-primary/15 text-primary text-[9px] font-semibold inline-flex items-center gap-1"><CheckCircle2 className="h-2.5 w-2.5" /> Current job</span> : <span className="px-1.5 py-0.5 rounded border border-border text-[9px] text-muted-foreground">Set current</span>)}
-                    <span className="px-1.5 py-0.5 rounded bg-muted text-[9px] text-muted-foreground capitalize">{j[2]}</span>
+                    {state.multiJobCurrent && (i === 1 ? <span id="dp-demo-multijob-current" className="px-1.5 py-0.5 rounded bg-primary/15 text-primary text-px-9 font-semibold inline-flex items-center gap-1"><CheckCircle2 className="h-2.5 w-2.5" /> Current job</span> : <span className="px-1.5 py-0.5 rounded border border-border text-px-9 text-muted-foreground">Set current</span>)}
+                    <span className="px-1.5 py-0.5 rounded bg-muted text-px-9 text-muted-foreground capitalize">{j[2]}</span>
                     <Pill s={j[1]} />
                   </div>
                 </div>
-                <div className="text-[10px] text-muted-foreground mt-1">Installation · Cold Room #3</div>
+                <div className="text-px-10 text-muted-foreground mt-1">Installation · Cold Room #3</div>
               </div>
             ))}
           </div>
@@ -302,12 +302,12 @@ function PageDetail({ state }: { state: DPDemoState }) {
           <div className="space-y-3">
             <div className="grid md:grid-cols-2 gap-3">
               <div className="bg-card border border-border rounded-lg p-3">
-                <div className="flex items-center justify-between mb-2"><p className="text-sm font-medium inline-flex items-center gap-1.5"><Clock className="h-4 w-4 text-primary" /> Time entries</p><span className="h-6 px-2 rounded bg-primary/10 text-primary text-[10px] inline-flex items-center gap-1"><Plus className="h-3 w-3" /> Add time</span></div>
-                {[['Travel', '0.5 h', 'Karim T.'], ['Work', '1.5 h', 'Karim T.'], ['Setup', '0.5 h', 'Sami B.']].map(t => <div key={t[0]} className="flex justify-between text-xs py-1 border-b border-border/40 last:border-0"><span className="inline-flex items-center gap-1.5"><span className="px-1.5 py-0.5 rounded bg-muted text-[9px] text-muted-foreground">{t[0]}</span><span className="text-muted-foreground">{t[2]}</span></span><span className="font-medium">{t[1]}</span></div>)}
+                <div className="flex items-center justify-between mb-2"><p className="text-sm font-medium inline-flex items-center gap-1.5"><Clock className="h-4 w-4 text-primary" /> Time entries</p><span className="h-6 px-2 rounded bg-primary/10 text-primary text-px-10 inline-flex items-center gap-1"><Plus className="h-3 w-3" /> Add time</span></div>
+                {[['Travel', '0.5 h', 'Karim T.'], ['Work', '1.5 h', 'Karim T.'], ['Setup', '0.5 h', 'Sami B.']].map(t => <div key={t[0]} className="flex justify-between text-xs py-1 border-b border-border/40 last:border-0"><span className="inline-flex items-center gap-1.5"><span className="px-1.5 py-0.5 rounded bg-muted text-px-9 text-muted-foreground">{t[0]}</span><span className="text-muted-foreground">{t[2]}</span></span><span className="font-medium">{t[1]}</span></div>)}
               </div>
               <div className="bg-card border border-border rounded-lg p-3">
-                <div className="flex items-center justify-between mb-2"><p className="text-sm font-medium inline-flex items-center gap-1.5"><FileText className="h-4 w-4 text-primary" /> Expenses</p><span className="h-6 px-2 rounded bg-primary/10 text-primary text-[10px] inline-flex items-center gap-1"><Plus className="h-3 w-3" /> Add expense</span></div>
-                {[['Travel', '45 TND'], ['Parking', '8 TND']].map(t => <div key={t[0]} className="flex justify-between text-xs py-1 border-b border-border/40 last:border-0"><span className="inline-flex items-center gap-1.5"><span className="px-1.5 py-0.5 rounded bg-muted text-[9px] text-muted-foreground">{t[0]}</span></span><span className="font-medium">{t[1]}</span></div>)}
+                <div className="flex items-center justify-between mb-2"><p className="text-sm font-medium inline-flex items-center gap-1.5"><FileText className="h-4 w-4 text-primary" /> Expenses</p><span className="h-6 px-2 rounded bg-primary/10 text-primary text-px-10 inline-flex items-center gap-1"><Plus className="h-3 w-3" /> Add expense</span></div>
+                {[['Travel', '45 TND'], ['Parking', '8 TND']].map(t => <div key={t[0]} className="flex justify-between text-xs py-1 border-b border-border/40 last:border-0"><span className="inline-flex items-center gap-1.5"><span className="px-1.5 py-0.5 rounded bg-muted text-px-9 text-muted-foreground">{t[0]}</span></span><span className="font-medium">{t[1]}</span></div>)}
               </div>
             </div>
             {state.plannedRollup && (
@@ -322,7 +322,7 @@ function PageDetail({ state }: { state: DPDemoState }) {
                     <span className="font-medium">{r.l}</span>
                     <span className="text-muted-foreground">Plan · {r.p}</span>
                     <span className="font-semibold">Actual · {r.a}</span>
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full text-center ${r.tone === 'emerald' ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' : 'bg-amber-500/15 text-amber-700 dark:text-amber-400'}`}>{r.tone === 'emerald' ? 'On plan' : 'Over'}</span>
+                    <span className={`text-px-10 font-semibold px-2 py-0.5 rounded-full text-center ${r.tone === 'emerald' ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' : 'bg-amber-500/15 text-amber-700 dark:text-amber-400'}`}>{r.tone === 'emerald' ? 'On plan' : 'Over'}</span>
                   </div>
                 ))}
               </div>
@@ -334,7 +334,7 @@ function PageDetail({ state }: { state: DPDemoState }) {
           <div className="bg-card border border-border rounded-lg overflow-hidden">
             <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/60">
               <span className="text-sm font-medium inline-flex items-center gap-2"><Package className="h-4 w-4 text-primary" /> Materials used</span>
-              <span className="h-6 px-2 rounded border border-border text-[10px] text-muted-foreground inline-flex items-center gap-1"><Plus className="h-3 w-3" /> Add material</span>
+              <span className="h-6 px-2 rounded border border-border text-px-10 text-muted-foreground inline-flex items-center gap-1"><Plus className="h-3 w-3" /> Add material</span>
             </div>
             <table className="w-full text-xs"><thead><tr className="bg-muted/30 border-b border-border/60"><th className="text-left px-4 py-2 text-muted-foreground">Article</th><th className="text-left px-4 py-2 text-muted-foreground">Job</th><th className="text-right px-4 py-2 text-muted-foreground">Qty</th><th className="text-right px-4 py-2 text-muted-foreground">Used by</th></tr></thead><tbody>
               {[['Condenser CU-12', 'Replace condenser', '1', 'Karim T.'], ['Refrigerant R410A', 'Replace condenser', '4 kg', 'Karim T.'], ['Seal kit SK-12', 'Commission & test', '2', 'Sami B.']].map(r => (<tr key={r[0]} className="border-b border-border/40 last:border-0"><td className="px-4 py-2.5 font-medium">{r[0]}</td><td className="px-4 py-2.5 text-muted-foreground">{r[1]}</td><td className="px-4 py-2.5 text-right">{r[2]}</td><td className="px-4 py-2.5 text-right text-muted-foreground">{r[3]}</td></tr>))}
@@ -344,7 +344,7 @@ function PageDetail({ state }: { state: DPDemoState }) {
 
         {state.activeTab === 'attachments' && (
           <div className="space-y-3">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">{[['before.jpg', 'Dispatch'], ['after.jpg', 'Dispatch'], ['nameplate.jpg', 'Dispatch'], ['SO-quote.pdf', 'Service order'], ['warranty.pdf', 'Sale'], ['spec-sheet.pdf', 'Offer']].map(d => <div key={d[0]} className="aspect-video flex flex-col items-center justify-center gap-1 bg-card border border-border rounded-lg text-muted-foreground"><Paperclip className="h-4 w-4" /><span className="text-[10px]">{d[0]}</span><span className="text-[9px] px-1.5 py-0.5 rounded bg-muted">{d[1]}</span></div>)}</div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">{[['before.jpg', 'Dispatch'], ['after.jpg', 'Dispatch'], ['nameplate.jpg', 'Dispatch'], ['SO-quote.pdf', 'Service order'], ['warranty.pdf', 'Sale'], ['spec-sheet.pdf', 'Offer']].map(d => <div key={d[0]} className="aspect-video flex flex-col items-center justify-center gap-1 bg-card border border-border rounded-lg text-muted-foreground"><Paperclip className="h-4 w-4" /><span className="text-px-10">{d[0]}</span><span className="text-px-9 px-1.5 py-0.5 rounded bg-muted">{d[1]}</span></div>)}</div>
           </div>
         )}
 
@@ -382,9 +382,9 @@ function PageDetail({ state }: { state: DPDemoState }) {
                 <div className="pb-1">
                   <div className="flex items-center gap-2">
                     <p className="text-xs font-medium">{a.l}</p>
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded ${a.k === 'user' ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400' : 'bg-primary/15 text-primary'}`}>{a.k === 'user' ? 'User note' : 'System activity'}</span>
+                    <span className={`text-px-9 px-1.5 py-0.5 rounded ${a.k === 'user' ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400' : 'bg-primary/15 text-primary'}`}>{a.k === 'user' ? 'User note' : 'System activity'}</span>
                   </div>
-                  <p className="text-[10px] text-muted-foreground">Today · {a.t}{a.by ? ` · ${a.by}` : ''}</p>
+                  <p className="text-px-10 text-muted-foreground">Today · {a.t}{a.by ? ` · ${a.by}` : ''}</p>
                 </div>
               </div>
             ))}
@@ -392,7 +392,7 @@ function PageDetail({ state }: { state: DPDemoState }) {
               <div id="dp-demo-add-note" className="mt-3 p-3 bg-card border border-primary/40 ring-2 ring-primary/10 rounded-lg">
                 <p className="text-xs font-medium mb-2 text-primary">Add a note</p>
                 <div className="h-16 rounded-md border border-border p-2 text-xs text-foreground">Second unit stable after adjustment — schedule inspection in 30 days.</div>
-                <div className="flex justify-end gap-2 mt-2"><div className="h-7 px-2.5 rounded-md border border-border text-[11px] flex items-center text-muted-foreground">Cancel</div><div className="h-7 px-2.5 rounded-md bg-primary text-primary-foreground text-[11px] font-medium flex items-center">Save note</div></div>
+                <div className="flex justify-end gap-2 mt-2"><div className="h-7 px-2.5 rounded-md border border-border text-px-11 flex items-center text-muted-foreground">Cancel</div><div className="h-7 px-2.5 rounded-md bg-primary text-primary-foreground text-px-11 font-medium flex items-center">Save note</div></div>
               </div>
             )}
           </div>
@@ -416,23 +416,23 @@ function PageDetail({ state }: { state: DPDemoState }) {
           <div className="w-[420px] bg-card border border-border rounded-xl shadow-2xl p-4">
             <p className="text-sm font-semibold mb-3 inline-flex items-center gap-2"><Timer className="h-4 w-4 text-primary" /> Book time</p>
             <div className="mb-2 text-xs">
-              <label className="block text-[10px] text-muted-foreground mb-1">Job</label>
+              <label className="block text-px-10 text-muted-foreground mb-1">Job</label>
               <div className="h-8 rounded-md border border-primary/50 ring-2 ring-primary/20 flex items-center justify-between px-2"><span className="inline-flex items-center gap-1.5"><Wrench className="h-3 w-3 text-primary" /> Replace condenser</span><ChevronDown className="h-3.5 w-3.5 text-muted-foreground" /></div>
             </div>
             <div className="mb-3">
-              <p className="text-[10px] text-muted-foreground mb-1">Work type</p>
+              <p className="text-px-10 text-muted-foreground mb-1">Work type</p>
               <div className="flex flex-wrap gap-1.5">
                 {['Travel', 'Work', 'Setup', 'Documentation', 'Cleanup'].map((w, i) => (
-                  <span key={w} className={`px-2 py-1 rounded-md text-[11px] border ${i === 1 ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-muted-foreground border-border'}`}>{w}</span>
+                  <span key={w} className={`px-2 py-1 rounded-md text-px-11 border ${i === 1 ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-muted-foreground border-border'}`}>{w}</span>
                 ))}
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2 mb-3 text-xs">
-              <div><label className="block text-[10px] text-muted-foreground mb-1">Start</label><div className="h-8 px-2 rounded-md border border-border flex items-center">09:15</div></div>
-              <div><label className="block text-[10px] text-muted-foreground mb-1">Stop</label><div className="h-8 px-2 rounded-md border border-border flex items-center">11:00</div></div>
-              <div><label className="block text-[10px] text-muted-foreground mb-1">Duration</label><div className="h-8 px-2 rounded-md border border-border bg-muted/40 flex items-center font-medium">1 h 45</div></div>
+              <div><label className="block text-px-10 text-muted-foreground mb-1">Start</label><div className="h-8 px-2 rounded-md border border-border flex items-center">09:15</div></div>
+              <div><label className="block text-px-10 text-muted-foreground mb-1">Stop</label><div className="h-8 px-2 rounded-md border border-border flex items-center">11:00</div></div>
+              <div><label className="block text-px-10 text-muted-foreground mb-1">Duration</label><div className="h-8 px-2 rounded-md border border-border bg-muted/40 flex items-center font-medium">1 h 45</div></div>
             </div>
-            <div className="mb-3 text-xs"><label className="block text-[10px] text-muted-foreground mb-1">Description</label><div className="h-8 px-2 rounded-md border border-border flex items-center text-muted-foreground">Compressor swap and leak test</div></div>
+            <div className="mb-3 text-xs"><label className="block text-px-10 text-muted-foreground mb-1">Description</label><div className="h-8 px-2 rounded-md border border-border flex items-center text-muted-foreground">Compressor swap and leak test</div></div>
             <div className="flex justify-end gap-2"><div className="h-8 px-3 rounded-md border border-border text-xs flex items-center text-muted-foreground">Cancel</div><div className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium">Save entry</div></div>
           </div>
         </div>
@@ -444,15 +444,15 @@ function PageDetail({ state }: { state: DPDemoState }) {
           <div className="w-[420px] bg-card border border-border rounded-xl shadow-2xl p-4">
             <p className="text-sm font-semibold mb-3 inline-flex items-center gap-2"><FileText className="h-4 w-4 text-primary" /> Log expense</p>
             <div className="mb-2 text-xs">
-              <label className="block text-[10px] text-muted-foreground mb-1">Job</label>
+              <label className="block text-px-10 text-muted-foreground mb-1">Job</label>
               <div className="h-8 rounded-md border border-primary/50 ring-2 ring-primary/20 flex items-center justify-between px-2"><span className="inline-flex items-center gap-1.5"><Wrench className="h-3 w-3 text-primary" /> Replace condenser</span><ChevronDown className="h-3.5 w-3.5 text-muted-foreground" /></div>
             </div>
             <div className="grid grid-cols-2 gap-2 mb-2 text-xs">
-              <div><label className="block text-[10px] text-muted-foreground mb-1">Type</label><div className="h-8 rounded-md border border-border flex items-center justify-between px-2">Travel <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" /></div></div>
-              <div><label className="block text-[10px] text-muted-foreground mb-1">Amount</label><div className="h-8 rounded-md border border-border flex items-center px-2">45,000 TND</div></div>
+              <div><label className="block text-px-10 text-muted-foreground mb-1">Type</label><div className="h-8 rounded-md border border-border flex items-center justify-between px-2">Travel <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" /></div></div>
+              <div><label className="block text-px-10 text-muted-foreground mb-1">Amount</label><div className="h-8 rounded-md border border-border flex items-center px-2">45,000 TND</div></div>
             </div>
-            <div className="mb-2 text-xs"><label className="block text-[10px] text-muted-foreground mb-1">Description</label><div className="h-8 rounded-md border border-border flex items-center px-2 text-muted-foreground">Sousse → Tunis return</div></div>
-            <div className="text-[10px] text-muted-foreground mb-3">Types: travel · meal · parking · supplies · other</div>
+            <div className="mb-2 text-xs"><label className="block text-px-10 text-muted-foreground mb-1">Description</label><div className="h-8 rounded-md border border-border flex items-center px-2 text-muted-foreground">Sousse → Tunis return</div></div>
+            <div className="text-px-10 text-muted-foreground mb-3">Types: travel · meal · parking · supplies · other</div>
             <div className="flex justify-end gap-2"><div className="h-8 px-3 rounded-md border border-border text-xs flex items-center text-muted-foreground">Cancel</div><div className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium">Save expense</div></div>
           </div>
         </div>
@@ -464,12 +464,12 @@ function PageDetail({ state }: { state: DPDemoState }) {
           <div className="w-[460px] bg-card border border-border rounded-xl shadow-2xl p-4">
             <p className="text-sm font-semibold mb-3 inline-flex items-center gap-2"><Package className="h-4 w-4 text-primary" /> Add material</p>
             <div className="space-y-2 text-xs">
-              <div><label className="block text-[10px] text-muted-foreground mb-1">Article</label><div className="h-9 rounded-md border border-border flex items-center px-2">Condenser CU-12 · Refrigeration</div></div>
+              <div><label className="block text-px-10 text-muted-foreground mb-1">Article</label><div className="h-9 rounded-md border border-border flex items-center px-2">Condenser CU-12 · Refrigeration</div></div>
               <div className="grid grid-cols-2 gap-2">
-                <div><label className="block text-[10px] text-muted-foreground mb-1">Job</label><div className="h-9 rounded-md border border-primary/50 ring-2 ring-primary/20 flex items-center px-2"><Wrench className="h-3 w-3 text-primary mr-1.5" /> Replace condenser</div></div>
-                <div><label className="block text-[10px] text-muted-foreground mb-1">Quantity</label><div className="h-9 rounded-md border border-border flex items-center px-2">1</div></div>
+                <div><label className="block text-px-10 text-muted-foreground mb-1">Job</label><div className="h-9 rounded-md border border-primary/50 ring-2 ring-primary/20 flex items-center px-2"><Wrench className="h-3 w-3 text-primary mr-1.5" /> Replace condenser</div></div>
+                <div><label className="block text-px-10 text-muted-foreground mb-1">Quantity</label><div className="h-9 rounded-md border border-border flex items-center px-2">1</div></div>
               </div>
-              <div><label className="block text-[10px] text-muted-foreground mb-1">Used by</label><div className="h-9 rounded-md border border-border flex items-center px-2">Karim T.</div></div>
+              <div><label className="block text-px-10 text-muted-foreground mb-1">Used by</label><div className="h-9 rounded-md border border-border flex items-center px-2">Karim T.</div></div>
             </div>
             <div className="flex justify-end gap-2 mt-3"><div className="h-8 px-3 rounded-md border border-border text-xs flex items-center text-muted-foreground">Cancel</div><div className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium">Save</div></div>
           </div>
@@ -507,7 +507,7 @@ function PageDetail({ state }: { state: DPDemoState }) {
             <div className="space-y-2 text-xs">
               <div className="p-2 rounded border border-border bg-muted/40 flex items-center justify-between">
                 <span className="text-primary truncate">https://flowentra.app/s/disp-2025-101/abc123</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary">Copy</span>
+                <span className="text-px-10 px-1.5 py-0.5 rounded bg-primary/10 text-primary">Copy</span>
               </div>
               <div className="flex items-center justify-between p-2 rounded border border-border"><span>Include time & materials</span><span className="h-4 w-7 rounded-full bg-primary relative"><span className="absolute top-0.5 left-3.5 h-3 w-3 rounded-full bg-white" /></span></div>
               <div className="flex items-center justify-between p-2 rounded border border-border"><span>Track when opened</span><span className="h-4 w-7 rounded-full bg-primary relative"><span className="absolute top-0.5 left-3.5 h-3 w-3 rounded-full bg-white" /></span></div>
@@ -523,8 +523,8 @@ function PageDetail({ state }: { state: DPDemoState }) {
           <div className="w-[460px] bg-card border border-border rounded-xl shadow-2xl p-4">
             <p className="text-sm font-semibold mb-3 inline-flex items-center gap-2"><Send className="h-4 w-4" /> Send work report</p>
             <div className="space-y-2 text-xs">
-              <div><label className="block text-[10px] text-muted-foreground mb-1">To</label><div className="h-9 px-3 rounded-md border border-border flex items-center">s.bouazizi@medina.tn</div></div>
-              <div><label className="block text-[10px] text-muted-foreground mb-1">Subject</label><div className="h-9 px-3 rounded-md border border-border flex items-center">Work report — DISP-2025-101</div></div>
+              <div><label className="block text-px-10 text-muted-foreground mb-1">To</label><div className="h-9 px-3 rounded-md border border-border flex items-center">s.bouazizi@medina.tn</div></div>
+              <div><label className="block text-px-10 text-muted-foreground mb-1">Subject</label><div className="h-9 px-3 rounded-md border border-border flex items-center">Work report — DISP-2025-101</div></div>
               <div className="h-16 rounded-md border border-border p-2 text-muted-foreground">Please find attached the work report for the intervention on Cold Room #3. Thank you for your trust.</div>
               <div className="flex items-center gap-1.5 text-muted-foreground"><Paperclip className="h-3 w-3" /> DISP-2025-101-report.pdf</div>
             </div>
@@ -538,8 +538,8 @@ function PageDetail({ state }: { state: DPDemoState }) {
         <div className="absolute inset-0 z-[6] flex items-center justify-center bg-background/50 p-6">
           <div className="flex gap-3 h-full max-h-[85%]">
             <div className="w-72 bg-white text-black rounded-lg shadow-2xl border border-border overflow-hidden flex flex-col">
-              <div className="bg-primary/90 text-white p-3"><div className="text-sm font-bold">WORK REPORT · DISP-2025-101</div><div className="text-[9px] opacity-90">Flowentra SARL</div></div>
-              <div className="p-3 text-[9px] space-y-2 flex-1">
+              <div className="bg-primary/90 text-white p-3"><div className="text-sm font-bold">WORK REPORT · DISP-2025-101</div><div className="text-px-9 opacity-90">Flowentra SARL</div></div>
+              <div className="p-3 text-px-9 space-y-2 flex-1">
                 <div><div className="font-semibold">Customer</div><div>Médina Resorts · Sousse</div></div>
                 <div className="font-semibold">Jobs performed</div>
                 <div>Diagnose compressor · Replace condenser · Commission & test</div>
@@ -548,13 +548,13 @@ function PageDetail({ state }: { state: DPDemoState }) {
                 <div className="font-semibold pt-1">Attachments</div>
                 <div>before.jpg · after.jpg · nameplate.jpg</div>
               </div>
-              <div className="p-2 border-t border-border/40 flex gap-1 justify-end"><span className="text-[9px] px-2 py-1 rounded bg-primary/10 text-primary inline-flex items-center gap-1"><Download className="h-2.5 w-2.5" /> Download</span></div>
+              <div className="p-2 border-t border-border/40 flex gap-1 justify-end"><span className="text-px-9 px-2 py-1 rounded bg-primary/10 text-primary inline-flex items-center gap-1"><Download className="h-2.5 w-2.5" /> Download</span></div>
             </div>
             {state.pdfSettingsOpen && (
               <div id="dp-demo-pdf-settings" className="w-72 bg-card border border-border rounded-lg shadow-2xl p-3 flex flex-col">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs font-semibold inline-flex items-center gap-1.5"><Palette className="h-3.5 w-3.5 text-primary" /> PDF Studio</p>
-                  <div className="flex gap-1 text-[9px] text-muted-foreground">
+                  <div className="flex gap-1 text-px-9 text-muted-foreground">
                     <span className="px-1.5 py-0.5 rounded border border-border">Import</span>
                     <span className="px-1.5 py-0.5 rounded border border-border">Export</span>
                     <span className="px-1.5 py-0.5 rounded border border-border">Reset</span>
@@ -562,16 +562,16 @@ function PageDetail({ state }: { state: DPDemoState }) {
                 </div>
                 <div className="flex gap-1 mb-3 border-b border-border pb-2 flex-wrap">
                   {['Data', 'Layout', 'Colors', 'Typography', 'Advanced'].map((t, i) => (
-                    <span key={t} className={`text-[10px] px-1.5 py-0.5 rounded ${i === 0 ? 'bg-primary text-primary-foreground' : 'text-muted-foreground border border-border'}`}>{t}</span>
+                    <span key={t} className={`text-px-10 px-1.5 py-0.5 rounded ${i === 0 ? 'bg-primary text-primary-foreground' : 'text-muted-foreground border border-border'}`}>{t}</span>
                   ))}
                 </div>
                 <div className="space-y-2 text-xs flex-1">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Sections</p>
+                  <p className="text-px-10 text-muted-foreground uppercase tracking-wide">Sections</p>
                   {['Show customer block', 'Show jobs table', 'Show time & materials', 'Show attachments list'].map((l, i) => (
-                    <div key={l} className="flex items-center justify-between text-[11px]"><span>{l}</span><span className={`h-4 w-7 rounded-full ${i < 3 ? 'bg-primary' : 'bg-muted'} relative`}><span className={`absolute top-0.5 h-3 w-3 rounded-full bg-white ${i < 3 ? 'left-3.5' : 'left-0.5'}`} /></span></div>
+                    <div key={l} className="flex items-center justify-between text-px-11"><span>{l}</span><span className={`h-4 w-7 rounded-full ${i < 3 ? 'bg-primary' : 'bg-muted'} relative`}><span className={`absolute top-0.5 h-3 w-3 rounded-full bg-white ${i < 3 ? 'left-3.5' : 'left-0.5'}`} /></span></div>
                   ))}
                 </div>
-                <div className="flex justify-end gap-1 mt-3 pt-2 border-t border-border"><span className="text-[10px] px-2 py-1 rounded border border-border text-muted-foreground">Cancel</span><span className="text-[10px] px-2 py-1 rounded bg-primary text-primary-foreground">Save & close</span></div>
+                <div className="flex justify-end gap-1 mt-3 pt-2 border-t border-border"><span className="text-px-10 px-2 py-1 rounded border border-border text-muted-foreground">Cancel</span><span className="text-px-10 px-2 py-1 rounded bg-primary text-primary-foreground">Save & close</span></div>
               </div>
             )}
           </div>
@@ -650,8 +650,8 @@ export function DispatchesAutopilotDemo({ open, onClose }: Props) {
 
       <div className="shrink-0 border-t border-border/60 bg-card px-4 py-3">
         <div className="flex items-center gap-2 mb-2 flex-wrap">
-          {DP_CHAPTERS.map(ch => (<button key={ch.id} onClick={() => jumpChapter(ch.start)} className={`text-[10px] font-medium px-2 py-0.5 rounded-full transition-colors cursor-pointer ${activeChapter.id === ch.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/70'}`}>{getChapterTitle(demoLang, ch.id, ch.title)}</button>))}
-          <span className="ml-auto text-[10px] text-muted-foreground">{Math.min(stepIndex + 1, DP_STEPS.length)} / {DP_STEPS.length}</span>
+          {DP_CHAPTERS.map(ch => (<button key={ch.id} onClick={() => jumpChapter(ch.start)} className={`text-px-10 font-medium px-2 py-0.5 rounded-full transition-colors cursor-pointer ${activeChapter.id === ch.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/70'}`}>{getChapterTitle(demoLang, ch.id, ch.title)}</button>))}
+          <span className="ml-auto text-px-10 text-muted-foreground">{Math.min(stepIndex + 1, DP_STEPS.length)} / {DP_STEPS.length}</span>
         </div>
         <div className="h-1 rounded-full bg-muted overflow-hidden mb-2"><div className="h-full bg-primary transition-all duration-300" style={{ width: `${(Math.min(stepIndex + 1, DP_STEPS.length) / DP_STEPS.length) * 100}%` }} /></div>
         <p className="text-sm text-foreground/90 min-h-[20px] flex items-center gap-2"><Languages className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />{finished ? finishedMsg : captionText}</p>

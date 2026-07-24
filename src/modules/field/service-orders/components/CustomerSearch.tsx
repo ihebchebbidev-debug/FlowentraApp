@@ -207,7 +207,7 @@ export default function CustomerSearch({ onSelect, selectedCustomer }: Props) {
                       </div>
                       <Badge 
                         variant={customer.type === 'company' ? 'default' : 'secondary'} 
-                        className="text-[10px] shrink-0"
+                        className="text-px-10 shrink-0"
                       >
                         {customer.type === 'company' ? 'Company' : 'Person'}
                       </Badge>

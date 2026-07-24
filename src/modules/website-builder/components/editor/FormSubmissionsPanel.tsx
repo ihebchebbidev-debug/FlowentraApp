@@ -113,11 +113,11 @@ export function FormSubmissionsPanel({ siteId }: FormSubmissionsPanelProps) {
         </div>
         {formGroups.size > 1 && (
           <div className="flex flex-wrap gap-1">
-            <button onClick={() => setSelectedForm('all')} className={`text-[10px] px-2 py-0.5 rounded-full transition-colors ${selectedForm === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}>
+            <button onClick={() => setSelectedForm('all')} className={`text-px-10 px-2 py-0.5 rounded-full transition-colors ${selectedForm === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}>
               {t('wb:manager.all')} ({submissions.length})
             </button>
             {Array.from(formGroups).map(([formId, { label, count }]) => (
-              <button key={formId} onClick={() => setSelectedForm(formId)} className={`text-[10px] px-2 py-0.5 rounded-full transition-colors ${selectedForm === formId ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}>
+              <button key={formId} onClick={() => setSelectedForm(formId)} className={`text-px-10 px-2 py-0.5 rounded-full transition-colors ${selectedForm === formId ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}>
                 {label} ({count})
               </button>
             ))}
@@ -135,7 +135,7 @@ export function FormSubmissionsPanel({ siteId }: FormSubmissionsPanelProps) {
           <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
             <Inbox className="h-8 w-8 mb-3 opacity-30" />
             <p className="text-xs">{t('wb:submissions.noSubmissions')}</p>
-            <p className="text-[10px] opacity-60 mt-1">{t('wb:submissions.noSubmissionsHint')}</p>
+            <p className="text-px-10 opacity-60 mt-1">{t('wb:submissions.noSubmissionsHint')}</p>
           </div>
         ) : (
           <div className="p-2 space-y-1.5">
@@ -148,17 +148,17 @@ export function FormSubmissionsPanel({ siteId }: FormSubmissionsPanelProps) {
                     {isExpanded ? <ChevronDown className="h-3 w-3 mt-0.5 shrink-0 text-muted-foreground" /> : <ChevronRight className="h-3 w-3 mt-0.5 shrink-0 text-muted-foreground" />}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-medium text-foreground">{sub.formLabel}</span>
-                        <span className="text-[9px] text-muted-foreground">·</span>
-                        <span className="text-[9px] text-muted-foreground">{sub.pageTitle}</span>
+                        <span className="text-px-10 font-medium text-foreground">{sub.formLabel}</span>
+                        <span className="text-px-9 text-muted-foreground">·</span>
+                        <span className="text-px-9 text-muted-foreground">{sub.pageTitle}</span>
                         {sub.webhookStatus && (
-                          <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${sub.webhookStatus === 'success' ? 'bg-green-100 text-green-700' : sub.webhookStatus === 'failed' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                          <span className={`text-px-9 px-1.5 py-0.5 rounded-full ${sub.webhookStatus === 'success' ? 'bg-green-100 text-green-700' : sub.webhookStatus === 'failed' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
                             {sub.webhookStatus}
                           </span>
                         )}
                       </div>
-                      <p className="text-[10px] text-muted-foreground truncate mt-0.5">{preview}</p>
-                      <p className="text-[9px] text-muted-foreground/50 mt-0.5">{new Date(sub.submittedAt).toLocaleString()}</p>
+                      <p className="text-px-10 text-muted-foreground truncate mt-0.5">{preview}</p>
+                      <p className="text-px-9 text-muted-foreground/50 mt-0.5">{new Date(sub.submittedAt).toLocaleString()}</p>
                     </div>
                     <Button variant="ghost" size="icon" className="h-5 w-5 opacity-0 group-hover:opacity-100 shrink-0" disabled={deletingId === sub.id} onClick={(e) => { e.stopPropagation(); handleDelete(sub.id); }}>
                       {deletingId === sub.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3 text-destructive" />}
@@ -166,7 +166,7 @@ export function FormSubmissionsPanel({ siteId }: FormSubmissionsPanelProps) {
                   </button>
                   {isExpanded && (
                     <div className="px-3 pb-3 pt-0 border-t bg-muted/20">
-                      <table className="w-full text-[10px] mt-2">
+                      <table className="w-full text-px-10 mt-2">
                         <tbody>
                           {Object.entries(sub.data).map(([key, val]) => (
                             <tr key={key} className="border-b border-border/30 last:border-0">

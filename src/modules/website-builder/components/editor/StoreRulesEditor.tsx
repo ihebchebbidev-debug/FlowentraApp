@@ -28,7 +28,7 @@ interface Props {
 
 const inputCls = 'h-7 text-xs';
 const rowCls = 'flex items-center justify-between py-1';
-const smallLabel = 'text-[11px] font-medium text-foreground/70';
+const smallLabel = 'text-px-11 font-medium text-foreground/70';
 
 export function StoreRulesEditor({ component, onPropChange }: Props) {
   const rules: StoreRules = component.props.rules || {};
@@ -87,14 +87,14 @@ export function StoreRulesEditor({ component, onPropChange }: Props) {
   return (
     <EditorSection title="🛒 Store Rules" defaultOpen={false}>
       <div className="space-y-4">
-        <p className="text-[10px] text-muted-foreground/60 leading-snug">
+        <p className="text-px-10 text-muted-foreground/60 leading-snug">
           Shared business logic for coupons, discounts, shipping, and tax. Cart, checkout, and
           order confirmation all use these rules.
         </p>
 
         {/* ── Shipping ── */}
         <div className="rounded-md border border-border/40 p-2.5 space-y-2">
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-foreground/80">
+          <div className="flex items-center gap-1.5 text-px-11 font-semibold text-foreground/80">
             <Truck className="h-3.5 w-3.5" /> Shipping
           </div>
           <div className="grid grid-cols-2 gap-2">
@@ -125,7 +125,7 @@ export function StoreRulesEditor({ component, onPropChange }: Props) {
 
         {/* ── Tax ── */}
         <div className="rounded-md border border-border/40 p-2.5 space-y-2">
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-foreground/80">
+          <div className="flex items-center gap-1.5 text-px-11 font-semibold text-foreground/80">
             <Percent className="h-3.5 w-3.5" /> Tax
           </div>
           <div className="space-y-1">
@@ -137,7 +137,7 @@ export function StoreRulesEditor({ component, onPropChange }: Props) {
                 onChange={(e) => setNumber('taxRate')(e.target.value)}
                 className={inputCls}
               />
-              <span className="text-[10px] text-muted-foreground/60">= {((rules.taxRate ?? 0) * 100).toFixed(2)}%</span>
+              <span className="text-px-10 text-muted-foreground/60">= {((rules.taxRate ?? 0) * 100).toFixed(2)}%</span>
             </div>
           </div>
 
@@ -166,12 +166,12 @@ export function StoreRulesEditor({ component, onPropChange }: Props) {
                   <Label className={smallLabel}>Included in price (VAT)</Label>
                   <Switch checked={!!t.includedInPrice} onCheckedChange={(v) => setTax(i, { includedInPrice: v })} />
                 </div>
-                <Button variant="ghost" size="sm" className="h-6 text-[10px] w-full" onClick={() => removeTax(i)}>
+                <Button variant="ghost" size="sm" className="h-6 text-px-10 w-full" onClick={() => removeTax(i)}>
                   <Trash2 className="h-3 w-3 mr-1" /> Remove
                 </Button>
               </div>
             ))}
-            <Button variant="outline" size="sm" className="h-7 text-[11px] w-full" onClick={addTax}>
+            <Button variant="outline" size="sm" className="h-7 text-px-11 w-full" onClick={addTax}>
               <Plus className="h-3 w-3 mr-1" /> Add region
             </Button>
           </div>
@@ -179,7 +179,7 @@ export function StoreRulesEditor({ component, onPropChange }: Props) {
 
         {/* ── Coupons ── */}
         <div className="rounded-md border border-border/40 p-2.5 space-y-2">
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-foreground/80">
+          <div className="flex items-center gap-1.5 text-px-11 font-semibold text-foreground/80">
             <Tag className="h-3.5 w-3.5" /> Coupons
           </div>
           {coupons.map((c, i) => (
@@ -218,12 +218,12 @@ export function StoreRulesEditor({ component, onPropChange }: Props) {
               )}
               <Input placeholder="Label shown to buyer" value={c.label ?? ''}
                 onChange={(e) => setCoupon(i, { label: e.target.value })} className={inputCls} />
-              <Button variant="ghost" size="sm" className="h-6 text-[10px] w-full" onClick={() => removeCoupon(i)}>
+              <Button variant="ghost" size="sm" className="h-6 text-px-10 w-full" onClick={() => removeCoupon(i)}>
                 <Trash2 className="h-3 w-3 mr-1" /> Remove
               </Button>
             </div>
           ))}
-          <Button variant="outline" size="sm" className="h-7 text-[11px] w-full" onClick={addCoupon}>
+          <Button variant="outline" size="sm" className="h-7 text-px-11 w-full" onClick={addCoupon}>
             <Plus className="h-3 w-3 mr-1" /> Add coupon
           </Button>
           <div className="space-y-1 pt-1">
@@ -236,7 +236,7 @@ export function StoreRulesEditor({ component, onPropChange }: Props) {
 
         {/* ── Spend tiers ── */}
         <div className="rounded-md border border-border/40 p-2.5 space-y-2">
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-foreground/80">
+          <div className="flex items-center gap-1.5 text-px-11 font-semibold text-foreground/80">
             <TrendingUp className="h-3.5 w-3.5" /> Spend tiers
           </div>
           {spendTiers.map((t, i) => (
@@ -255,19 +255,19 @@ export function StoreRulesEditor({ component, onPropChange }: Props) {
               </div>
               <Input placeholder="Label" value={t.label ?? ''}
                 onChange={(e) => setSpend(i, { label: e.target.value })} className={inputCls} />
-              <Button variant="ghost" size="sm" className="h-6 text-[10px] w-full" onClick={() => removeSpend(i)}>
+              <Button variant="ghost" size="sm" className="h-6 text-px-10 w-full" onClick={() => removeSpend(i)}>
                 <Trash2 className="h-3 w-3 mr-1" /> Remove
               </Button>
             </div>
           ))}
-          <Button variant="outline" size="sm" className="h-7 text-[11px] w-full" onClick={addSpend}>
+          <Button variant="outline" size="sm" className="h-7 text-px-11 w-full" onClick={addSpend}>
             <Plus className="h-3 w-3 mr-1" /> Add tier
           </Button>
         </div>
 
         {/* ── Quantity tiers ── */}
         <div className="rounded-md border border-border/40 p-2.5 space-y-2">
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-foreground/80">
+          <div className="flex items-center gap-1.5 text-px-11 font-semibold text-foreground/80">
             <Layers className="h-3.5 w-3.5" /> Quantity tiers (per item)
           </div>
           {qtyTiers.map((t, i) => (
@@ -284,19 +284,19 @@ export function StoreRulesEditor({ component, onPropChange }: Props) {
                     onChange={(e) => setQty(i, { discountPercent: Number(e.target.value) })} className={inputCls} />
                 </div>
               </div>
-              <Button variant="ghost" size="sm" className="h-6 text-[10px] w-full" onClick={() => removeQty(i)}>
+              <Button variant="ghost" size="sm" className="h-6 text-px-10 w-full" onClick={() => removeQty(i)}>
                 <Trash2 className="h-3 w-3 mr-1" /> Remove
               </Button>
             </div>
           ))}
-          <Button variant="outline" size="sm" className="h-7 text-[11px] w-full" onClick={addQty}>
+          <Button variant="outline" size="sm" className="h-7 text-px-11 w-full" onClick={addQty}>
             <Plus className="h-3 w-3 mr-1" /> Add tier
           </Button>
         </div>
 
         {/* ── Safety cap ── */}
         <div className="rounded-md border border-border/40 p-2.5 space-y-2">
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-foreground/80">
+          <div className="flex items-center gap-1.5 text-px-11 font-semibold text-foreground/80">
             <Shield className="h-3.5 w-3.5" /> Safety cap
           </div>
           <div className="space-y-1">
@@ -306,7 +306,7 @@ export function StoreRulesEditor({ component, onPropChange }: Props) {
                 value={rules.maxDiscountFraction ?? ''}
                 onChange={(e) => setNumber('maxDiscountFraction')(e.target.value)}
                 className={inputCls} />
-              <span className="text-[10px] text-muted-foreground/60">
+              <span className="text-px-10 text-muted-foreground/60">
                 {((rules.maxDiscountFraction ?? 0.9) * 100).toFixed(0)}% cap
               </span>
             </div>

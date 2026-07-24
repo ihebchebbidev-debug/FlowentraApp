@@ -106,7 +106,7 @@ function PinnedCard({ w, onOpen, onRemove }: PinnedCardProps) {
         </div>
         <div className="w-full">
           <div className="truncate text-xs font-semibold text-foreground">{w.title}</div>
-          <div className="text-[10px] text-muted-foreground">{w.source}</div>
+          <div className="text-px-10 text-muted-foreground">{w.source}</div>
         </div>
       </button>
     </div>
@@ -142,12 +142,12 @@ export function PinnedReportingWidgets() {
             {t('my.pinnedTitle', 'My Pinned Widgets')}
           </h2>
           {widgets.length > 0 && (
-            <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+            <span className="rounded bg-muted px-1.5 py-0.5 text-px-10 font-semibold text-muted-foreground">
               {widgets.length}
             </span>
           )}
           {widgets.length > 1 && (
-            <span className="hidden text-[10px] text-muted-foreground sm:inline">
+            <span className="hidden text-px-10 text-muted-foreground sm:inline">
               {t('my.dragHint', '— drag to reorder')}
             </span>
           )}

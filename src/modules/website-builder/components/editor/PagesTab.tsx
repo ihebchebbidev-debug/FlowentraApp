@@ -46,11 +46,11 @@ export function PagesTab({
       {activeLangLabel && (
         <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-primary/8 border border-primary/15">
           <Globe className="h-3 w-3 text-primary" />
-          <span className="text-[10px] font-semibold text-primary flex-1">
+          <span className="text-px-10 font-semibold text-primary flex-1">
             {t('wb:editor.editingLanguage', { language: activeLangLabel })}
           </span>
           <button
-            className="text-[10px] text-primary/70 hover:text-primary underline"
+            className="text-px-10 text-primary/70 hover:text-primary underline"
             onClick={onClearLanguage}
           >
             {t('wb:editor.default')}
@@ -80,7 +80,7 @@ export function PagesTab({
             )}
             <span className="flex-1 truncate">{pg.title}</span>
             {(site.languages?.length ?? 0) > 0 && (
-              <span className="text-[9px] text-muted-foreground/40 tabular-nums">
+              <span className="text-px-9 text-muted-foreground/40 tabular-nums">
                 {Object.keys(pg.translations || {}).length}/{site.languages?.length || 0}
               </span>
             )}

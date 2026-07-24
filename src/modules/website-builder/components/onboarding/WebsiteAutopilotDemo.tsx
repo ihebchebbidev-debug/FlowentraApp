@@ -161,7 +161,7 @@ export function WebsiteAutopilotDemo({ open, onClose, onStart }: Props) {
               <span className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-sm shrink-0"><Layers className="h-4 w-4 text-primary-foreground" /></span>
               <div className="min-w-0">
                 <h1 className="text-base font-semibold truncate">Choose a Template</h1>
-                <p className="text-[11px] text-muted-foreground">{SITE_TEMPLATES.length}+ professional templates · or start from scratch</p>
+                <p className="text-px-11 text-muted-foreground">{SITE_TEMPLATES.length}+ professional templates · or start from scratch</p>
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
@@ -181,7 +181,7 @@ export function WebsiteAutopilotDemo({ open, onClose, onStart }: Props) {
                   </div>
                   <div className="p-3">
                     <div className="flex items-center gap-1.5 min-w-0"><span className="text-base leading-none shrink-0">{tmpl.icon}</span><h3 className="text-sm font-semibold truncate">{tmpl.name}</h3></div>
-                    <div className="flex items-center gap-1.5 mt-1.5"><Badge variant="secondary" className="text-[9px]">{tmpl.category}</Badge><Badge variant="outline" className="text-[9px]">{tmpl.pageCount} pages</Badge></div>
+                    <div className="flex items-center gap-1.5 mt-1.5"><Badge variant="secondary" className="text-px-9">{tmpl.category}</Badge><Badge variant="outline" className="text-px-9">{tmpl.pageCount} pages</Badge></div>
                   </div>
                 </div>
               ))}
@@ -199,7 +199,7 @@ export function WebsiteAutopilotDemo({ open, onClose, onStart }: Props) {
           <span className="text-sm font-semibold truncate">My Store</span>
           <span className="text-muted-foreground/40">/</span>
           <span className="text-xs text-muted-foreground truncate">Home</span>
-          <span className="ml-1 inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Saved</span>
+          <span className="ml-1 inline-flex items-center gap-1 text-px-11 text-emerald-600 dark:text-emerald-400"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Saved</span>
         </div>
 
         <div className="flex-1 flex items-center justify-center gap-2">
@@ -304,11 +304,11 @@ export function WebsiteAutopilotDemo({ open, onClose, onStart }: Props) {
         <div className="flex items-center gap-2 mb-2">
           {WB_CHAPTERS.map(ch => (
             <button key={ch.id} onClick={() => jumpChapter(ch.start)}
-              className={`text-[10px] font-medium px-2 py-0.5 rounded-full transition-colors ${activeChapter.id === ch.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/70'}`}>
+              className={`text-px-10 font-medium px-2 py-0.5 rounded-full transition-colors ${activeChapter.id === ch.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/70'}`}>
               {ch.title}
             </button>
           ))}
-          <span className="ml-auto text-[10px] text-muted-foreground">{Math.min(stepIndex + 1, WB_STEPS.length)} / {WB_STEPS.length}</span>
+          <span className="ml-auto text-px-10 text-muted-foreground">{Math.min(stepIndex + 1, WB_STEPS.length)} / {WB_STEPS.length}</span>
         </div>
         <div className="h-1 rounded-full bg-muted overflow-hidden mb-2">
           <div className="h-full bg-primary transition-all duration-300" style={{ width: `${(Math.min(stepIndex + 1, WB_STEPS.length) / WB_STEPS.length) * 100}%` }} />

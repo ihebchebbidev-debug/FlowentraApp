@@ -19,7 +19,7 @@ export function TrustBadgesBlock({ title, badges, bgColor, theme, style }: Trust
           {badges.map((b, i) => (
             <div key={i} className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg border min-h-[44px]" style={{ borderRadius: theme.borderRadius }}>
               <DynamicIcon name={b.icon} className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
-              <span className="text-[11px] sm:text-xs font-medium" style={{ color: theme.textColor }}>{b.label}</span>
+              <span className="text-px-11 sm:text-xs font-medium" style={{ color: theme.textColor }}>{b.label}</span>
             </div>
           ))}
         </div>

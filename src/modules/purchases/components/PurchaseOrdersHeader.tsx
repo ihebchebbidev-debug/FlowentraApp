@@ -23,7 +23,7 @@ export function PurchaseOrdersHeader({ total, onExport }: Props) {
           <h1 className="text-lg md:text-xl font-semibold text-foreground truncate">
             {t("orders.title", "Purchase Orders")}
           </h1>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-px-11 text-muted-foreground">
             {t("orders.subtitle", "{{count}} orders", { count: total })}
           </p>
         </div>

@@ -85,7 +85,7 @@ export function SalaryConfigForm(props: {
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle className="text-base">{t('employee.saveSalaryConfig')}</CardTitle>
-          <Badge variant="secondary" className="text-[11px] inline-flex items-center gap-1.5">
+          <Badge variant="secondary" className="text-px-11 inline-flex items-center gap-1.5">
             <ShieldCheck className="h-3.5 w-3.5" />
             {t('payrollSlip.tunisianLaw2025')}
           </Badge>

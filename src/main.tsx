@@ -1,7 +1,14 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
+import { applyTypography } from './config/typography.runtime'
 import App from './App.tsx'
+
+// Inject the shared typography system as CSS custom properties on :root
+// BEFORE the first paint so Tailwind semantic tokens (text-body, text-h1,
+// font-heading, …) resolve consistently across every page.
+applyTypography()
+
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

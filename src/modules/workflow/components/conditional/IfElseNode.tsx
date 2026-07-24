@@ -73,7 +73,7 @@ export const IfElseNode = memo(({ data, id, onNodeClick, onRemove }: IfElseNodeP
       </div>
 
       {/* Condition Display */}
-  <div className="text-[11px] text-muted-foreground mb-3 px-2 py-1 bg-white/60 rounded">
+  <div className="text-px-11 text-muted-foreground mb-3 px-2 py-1 bg-white/60 rounded">
         {hasCondition ? (
           <span>
             {t('previewCondition', { field: condition.field, operator: condition.operator, value: condition.value })}

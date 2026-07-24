@@ -133,7 +133,7 @@ export function NavbarStylePresets({ currentProps, onApply }: NavbarStylePresets
 
   return (
     <div className="space-y-2">
-      <Label className="text-[10px] uppercase tracking-wider text-muted-foreground/60">
+      <Label className="text-px-10 uppercase tracking-wider text-muted-foreground/60">
         Header Style Presets
       </Label>
       <div className="grid grid-cols-2 gap-1.5">
@@ -186,7 +186,7 @@ export function NavbarStylePresets({ currentProps, onApply }: NavbarStylePresets
                   style={{ backgroundColor: preset.preview[2] }}
                 />
               </div>
-              <span className="text-[9px] font-medium truncate">{preset.name}</span>
+              <span className="text-px-9 font-medium truncate">{preset.name}</span>
             </button>
           );
         })}
@@ -194,7 +194,7 @@ export function NavbarStylePresets({ currentProps, onApply }: NavbarStylePresets
 
       {/* Variant selector */}
       <div className="space-y-1.5 pt-1">
-        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground/60">
+        <Label className="text-px-10 uppercase tracking-wider text-muted-foreground/60">
           Layout Variant
         </Label>
         <div className="grid grid-cols-3 gap-1">
@@ -202,7 +202,7 @@ export function NavbarStylePresets({ currentProps, onApply }: NavbarStylePresets
             <button
               key={v}
               onClick={() => onApply({ variant: v })}
-              className={`px-1.5 py-1.5 rounded-md text-[9px] font-medium transition-all capitalize ${
+              className={`px-1.5 py-1.5 rounded-md text-px-9 font-medium transition-all capitalize ${
                 currentProps.variant === v
                   ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'bg-muted/50 hover:bg-muted text-muted-foreground'

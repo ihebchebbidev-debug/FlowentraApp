@@ -112,7 +112,7 @@ export function ProductCardBlock({
   const renderStars = (rating: number) => (
     <div className="flex gap-0.5">
       {[1, 2, 3, 4, 5].map(s => (
-        <span key={s} className="text-[10px]" style={{ color: s <= rating ? '#f59e0b' : '#d1d5db' }}>★</span>
+        <span key={s} className="text-px-10" style={{ color: s <= rating ? '#f59e0b' : '#d1d5db' }}>★</span>
       ))}
     </div>
   );
@@ -165,7 +165,7 @@ export function ProductCardBlock({
               <div key={i} className="flex flex-col sm:flex-row gap-4 border rounded-xl overflow-hidden group hover:shadow-md transition-shadow" style={{ borderRadius: theme.borderRadius }}>
                 <div className="w-full sm:w-40 h-48 sm:h-40 shrink-0 bg-gray-50 overflow-hidden relative">
                   {product.badge && (
-                    <span className="absolute top-2 left-2 z-10 text-[10px] font-bold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: theme.accentColor }}>
+                    <span className="absolute top-2 left-2 z-10 text-px-10 font-bold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: theme.accentColor }}>
                       {product.badge}
                     </span>
                   )}
@@ -214,7 +214,7 @@ export function ProductCardBlock({
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
                 {product.badge && (
-                  <span className="absolute top-3 left-3 z-10 text-[11px] font-bold px-2.5 py-1 rounded-full text-white" style={{ backgroundColor: theme.accentColor }}>
+                  <span className="absolute top-3 left-3 z-10 text-px-11 font-bold px-2.5 py-1 rounded-full text-white" style={{ backgroundColor: theme.accentColor }}>
                     {product.badge}
                   </span>
                 )}
@@ -260,7 +260,7 @@ export function ProductCardBlock({
               style={{ borderRadius: theme.borderRadius }}
             >
               {product.badge && (
-                <span className="absolute top-3 left-3 z-10 text-[11px] font-bold px-2.5 py-1 rounded-full text-white" style={{ backgroundColor: theme.accentColor }}>
+                <span className="absolute top-3 left-3 z-10 text-px-11 font-bold px-2.5 py-1 rounded-full text-white" style={{ backgroundColor: theme.accentColor }}>
                   {product.badge}
                 </span>
               )}

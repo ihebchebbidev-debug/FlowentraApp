@@ -280,7 +280,7 @@ export default function DispatchesList() {
           >
             <SlidersHorizontal className="h-4 w-4" />
             {statusFilter !== 'all' && (
-              <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-primary text-[9px] text-white flex items-center justify-center font-bold">1</span>
+              <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-primary text-px-9 text-white flex items-center justify-center font-bold">1</span>
             )}
           </Button>
           <Button
@@ -436,10 +436,10 @@ export default function DispatchesList() {
                           <div className="flex items-start justify-between gap-2">
                             <p className="list-row-title flex-1">{dispatch.jobNumber}</p>
                             <div className="flex items-center gap-1 shrink-0">
-                              <Badge className={`${getPriorityColor(dispatch.priority)} text-[10px] px-2 py-0.5 capitalize`}>
+                              <Badge className={`${getPriorityColor(dispatch.priority)} text-px-10 px-2 py-0.5 capitalize`}>
                                 {t(`dispatches.priorities.${dispatch.priority}`)}
                               </Badge>
-                              <Badge className={`${getStatusColor(dispatch.status)} text-[10px] px-2 py-0.5`}>
+                              <Badge className={`${getStatusColor(dispatch.status)} text-px-10 px-2 py-0.5`}>
                                 {t(`dispatches.statuses.${dispatch.status}`)}
                               </Badge>
                             </div>

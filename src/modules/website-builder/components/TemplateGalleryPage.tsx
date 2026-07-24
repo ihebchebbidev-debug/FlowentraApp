@@ -138,7 +138,7 @@ export function TemplateGalleryPage({ onSelect, onBack }: TemplateGalleryPagePro
                   maxLength={100}
                 />
                 {siteNameError && (
-                  <p className="absolute -bottom-5 left-0 text-[10px] text-destructive whitespace-nowrap">
+                  <p className="absolute -bottom-5 left-0 text-px-10 text-destructive whitespace-nowrap">
                     {siteNameError}
                   </p>
                 )}
@@ -187,7 +187,7 @@ export function TemplateGalleryPage({ onSelect, onBack }: TemplateGalleryPagePro
                 maxLength={100}
               />
               {siteNameError && (
-                <p className="absolute -bottom-5 left-0 text-[10px] text-destructive whitespace-nowrap">
+                <p className="absolute -bottom-5 left-0 text-px-10 text-destructive whitespace-nowrap">
                   {siteNameError}
                 </p>
               )}
@@ -254,7 +254,7 @@ export function TemplateGalleryPage({ onSelect, onBack }: TemplateGalleryPagePro
                           style={{ backgroundColor: c.color }}
                           title={c.label}
                         />
-                        <p className="text-[9px] text-muted-foreground mt-1">{c.label}</p>
+                        <p className="text-px-9 text-muted-foreground mt-1">{c.label}</p>
                       </div>
                     ))}
                   </div>
@@ -262,7 +262,7 @@ export function TemplateGalleryPage({ onSelect, onBack }: TemplateGalleryPagePro
                   <h3 className="text-sm font-medium text-muted-foreground pt-2">Features</h3>
                   <div className="flex flex-wrap gap-1.5">
                     {previewTemplate.features.map((f, i) => (
-                      <Badge key={i} variant="outline" className="text-[10px]">{f}</Badge>
+                      <Badge key={i} variant="outline" className="text-px-10">{f}</Badge>
                     ))}
                   </div>
                 </div>
@@ -276,7 +276,7 @@ export function TemplateGalleryPage({ onSelect, onBack }: TemplateGalleryPagePro
               <div className="flex items-center gap-2 mb-4">
                 <MonitorPlay className="h-4 w-4 text-muted-foreground" />
                 <h2 className="text-lg font-semibold text-foreground">Live Preview</h2>
-                <span className="text-[10px] text-muted-foreground">(scroll to explore)</span>
+                <span className="text-px-10 text-muted-foreground">(scroll to explore)</span>
               </div>
               <div className="border border-border rounded-xl overflow-hidden bg-muted/10" style={{ height: 480 }}>
                 <TemplateLivePreview pages={pages} theme={previewTemplate.theme} />
@@ -310,18 +310,18 @@ export function TemplateGalleryPage({ onSelect, onBack }: TemplateGalleryPagePro
                         </div>
                       </div>
                       {pg.isHomePage && (
-                        <Badge className="absolute top-2 right-2 text-[9px] bg-primary/90">Home</Badge>
+                        <Badge className="absolute top-2 right-2 text-px-9 bg-primary/90">Home</Badge>
                       )}
                     </div>
                     <CardContent className="p-3">
                       <div className="flex items-center justify-between">
                         <div>
                           <h4 className="font-medium text-sm">{pg.title}</h4>
-                          <p className="text-[10px] text-muted-foreground">
+                          <p className="text-px-10 text-muted-foreground">
                             {pg.components.length} components · /{pg.slug || ''}
                           </p>
                         </div>
-                        <Badge variant="outline" className="text-[9px]">
+                        <Badge variant="outline" className="text-px-9">
                           <FileText className="h-3 w-3 mr-1" />
                           Page {idx + 1}
                         </Badge>
@@ -352,7 +352,7 @@ export function TemplateGalleryPage({ onSelect, onBack }: TemplateGalleryPagePro
             </div>
             <div className="min-w-0">
               <h1 className="text-lg sm:text-xl font-semibold text-foreground leading-tight truncate">Choose a Template</h1>
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-px-11 text-muted-foreground">
                 <span className="text-foreground/70 font-medium">{SITE_TEMPLATES.length}</span> professional templates · {categories.length - 1} categories
               </p>
             </div>
@@ -369,7 +369,7 @@ export function TemplateGalleryPage({ onSelect, onBack }: TemplateGalleryPagePro
                 maxLength={100}
               />
               {siteNameError && (
-                <p className="absolute -bottom-5 left-0 text-[10px] text-destructive whitespace-nowrap">
+                <p className="absolute -bottom-5 left-0 text-px-10 text-destructive whitespace-nowrap">
                   {siteNameError}
                 </p>
               )}
@@ -436,11 +436,11 @@ export function TemplateGalleryPage({ onSelect, onBack }: TemplateGalleryPagePro
                     />
                     {cat === 'all'
                       ? <Layers className="h-4 w-4 shrink-0" />
-                      : <span className="text-[15px] leading-none">{getCategoryIcon(cat)}</span>}
+                      : <span className="text-px-15 leading-none">{getCategoryIcon(cat)}</span>}
                     <span className="truncate">{cat === 'all' ? 'All Templates' : cat}</span>
                     <Badge
                       variant={isActive ? 'default' : 'secondary'}
-                      className={cn('ml-auto text-[10px] h-5 px-1.5 transition-colors', isActive && 'bg-primary/20 text-primary hover:bg-primary/20')}
+                      className={cn('ml-auto text-px-10 h-5 px-1.5 transition-colors', isActive && 'bg-primary/20 text-primary hover:bg-primary/20')}
                     >
                       {count}
                     </Badge>
@@ -536,12 +536,12 @@ export function TemplateGalleryPage({ onSelect, onBack }: TemplateGalleryPagePro
                   <Globe className="h-7 w-7 text-muted-foreground group-hover:text-primary transition-colors" />
                 </div>
                 <span className="text-sm font-semibold text-foreground">Start from Scratch</span>
-                <span className="text-[11px] text-muted-foreground mt-0.5">Empty canvas — build anything</span>
+                <span className="text-px-11 text-muted-foreground mt-0.5">Empty canvas — build anything</span>
               </div>
               <CardContent className="p-3.5 border-t border-border/40">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-sm">Blank Site</h3>
-                  <Badge variant="outline" className="text-[9px]">1 page</Badge>
+                  <Badge variant="outline" className="text-px-9">1 page</Badge>
                 </div>
               </CardContent>
             </Card>
@@ -576,7 +576,7 @@ export function TemplateGalleryPage({ onSelect, onBack }: TemplateGalleryPagePro
 
                   {/* NEW badge */}
                   {tmpl.isNew && (
-                    <div className="absolute top-2.5 left-2.5 z-10 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-primary to-primary/80 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary-foreground shadow-md ring-1 ring-primary/30">
+                    <div className="absolute top-2.5 left-2.5 z-10 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-primary to-primary/80 px-2 py-0.5 text-px-9 font-bold uppercase tracking-wider text-primary-foreground shadow-md ring-1 ring-primary/30">
                       ✨ New
                     </div>
                   )}
@@ -623,15 +623,15 @@ export function TemplateGalleryPage({ onSelect, onBack }: TemplateGalleryPagePro
                     <span className="text-base leading-none shrink-0">{tmpl.icon}</span>
                     <h3 className="font-semibold text-sm truncate">{tmpl.name}</h3>
                   </div>
-                  <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2 leading-relaxed min-h-[30px]">{tmpl.description}</p>
+                  <p className="text-px-11 text-muted-foreground mt-1 line-clamp-2 leading-relaxed min-h-[30px]">{tmpl.description}</p>
 
                   <div className="flex items-center justify-between gap-2 mt-2.5 pt-2.5 border-t border-border/40">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="inline-flex items-center gap-1 text-[10px] font-medium text-foreground/70 bg-muted/60 rounded-full px-2 py-0.5 truncate">
+                      <span className="inline-flex items-center gap-1 text-px-10 font-medium text-foreground/70 bg-muted/60 rounded-full px-2 py-0.5 truncate">
                         <span className="leading-none">{getCategoryIcon(tmpl.category)}</span>
                         <span className="truncate">{tmpl.category}</span>
                       </span>
-                      <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground shrink-0">
+                      <span className="inline-flex items-center gap-1 text-px-10 text-muted-foreground shrink-0">
                         <FileText className="h-3 w-3" />
                         {tmpl.pageCount}
                       </span>

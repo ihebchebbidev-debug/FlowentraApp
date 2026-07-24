@@ -182,7 +182,7 @@ export function DraggableTaskCard({ task, isDragging = false, onTaskClick, onTas
                 {task.title}
               </h4>
               {task.projectName && (
-                <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 shrink-0 font-normal">
+                <Badge variant="outline" className="text-px-9 px-1.5 py-0 h-4 shrink-0 font-normal">
                   {task.projectName}
                 </Badge>
               )}
@@ -212,7 +212,7 @@ export function DraggableTaskCard({ task, isDragging = false, onTaskClick, onTas
             <Badge 
               variant="outline" 
               className={cn(
-                "text-[10px] font-medium uppercase tracking-wide px-1.5 py-0 h-5",
+                "text-px-10 font-medium uppercase tracking-wide px-1.5 py-0 h-5",
                 getPriorityBadgeStyle(normalizedPriority)
               )}
             >
@@ -228,7 +228,7 @@ export function DraggableTaskCard({ task, isDragging = false, onTaskClick, onTas
                   seed={task.assigneeId ?? task.assignee}
                   size="xs"
                 />
-                <span className="text-[11px] text-muted-foreground truncate max-w-[80px]">
+                <span className="text-px-11 text-muted-foreground truncate max-w-[80px]">
                   {task.assignee}
                 </span>
               </div>
@@ -238,7 +238,7 @@ export function DraggableTaskCard({ task, isDragging = false, onTaskClick, onTas
           {/* Right side: Due date + Complete button */}
           <div className="flex items-center gap-2">
             {formattedDueDate && (
-              <span className="text-[11px] flex items-center gap-1 text-muted-foreground">
+              <span className="text-px-11 flex items-center gap-1 text-muted-foreground">
                 <Calendar className="h-3 w-3" />
                 {formattedDueDate}
               </span>

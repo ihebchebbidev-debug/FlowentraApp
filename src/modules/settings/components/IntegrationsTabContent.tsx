@@ -174,7 +174,7 @@ export function IntegrationsTabContent() {
               <div className="flex gap-1.5 pb-1">
                 <button
                   onClick={() => setSelectedCategory('all')}
-                  className={`shrink-0 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                  className={`shrink-0 px-2.5 py-1 rounded-md text-px-11 font-medium transition-colors ${
                     selectedCategory === 'all'
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -190,7 +190,7 @@ export function IntegrationsTabContent() {
                     <button
                       key={cat}
                       onClick={() => setSelectedCategory(cat)}
-                      className={`shrink-0 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors whitespace-nowrap ${
+                      className={`shrink-0 px-2.5 py-1 rounded-md text-px-11 font-medium transition-colors whitespace-nowrap ${
                         selectedCategory === cat
                           ? 'bg-primary text-primary-foreground'
                           : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -317,12 +317,12 @@ function IntegrationCard({ item, t, onConnect, onOpenCustomDialog, onOpenOpenRou
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium text-foreground truncate">{item.name}</span>
-          <Badge variant="outline" className={`text-[10px] h-4 px-1.5 gap-0.5 shrink-0 ${className}`}>
+          <Badge variant="outline" className={`text-px-10 h-4 px-1.5 gap-0.5 shrink-0 ${className}`}>
             {icon}
             {badge}
           </Badge>
         </div>
-        <p className="text-[11px] text-muted-foreground truncate mt-0.5">{item.description}</p>
+        <p className="text-px-11 text-muted-foreground truncate mt-0.5">{item.description}</p>
       </div>
 
       {isClickable && (

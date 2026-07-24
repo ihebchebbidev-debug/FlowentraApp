@@ -94,7 +94,7 @@ export function PurchaseOrdersStats({ stats, selected, onSelect }: Props) {
                     <s.icon className={cn("h-4 w-4", s.color)} />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-[11px] text-muted-foreground truncate">
+                    <div className="text-px-11 text-muted-foreground truncate">
                       {s.label}
                     </div>
                     <div className="text-base sm:text-lg font-semibold text-foreground truncate">

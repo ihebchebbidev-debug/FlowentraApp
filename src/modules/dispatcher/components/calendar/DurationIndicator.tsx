@@ -101,7 +101,7 @@ export function DurationIndicator({
           {t('dispatcher.exceeds_by')} {formatDuration(difference)} ({Math.round(percentageOver)}%)
         </div>
       )}
-      <div className="text-muted-foreground text-[10px] pt-1 border-t border-border/50">
+      <div className="text-muted-foreground text-px-10 pt-1 border-t border-border/50">
         {t('dispatcher.original_from_article')}
       </div>
     </div>
@@ -117,7 +117,7 @@ export function DurationIndicator({
               config.bgColor,
               config.borderColor,
               config.textColor,
-              size === 'sm' ? 'text-[9px]' : 'text-xs',
+              size === 'sm' ? 'text-px-9' : 'text-xs',
               className
             )}
           >
@@ -168,7 +168,7 @@ export function DurationIndicatorCompact({
     <div className={cn("flex items-center gap-1", className)}>
       <div className={cn("w-2 h-2 rounded-full", getColor())} />
       {difference > 0 && (
-        <span className="text-[9px] font-medium opacity-80">
+        <span className="text-px-9 font-medium opacity-80">
           +{Math.round(difference)}{t('dispatcher.minutes_short')}
         </span>
       )}

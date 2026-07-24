@@ -126,7 +126,7 @@ export const HrDashboard = () => {
             <ChartCard title={t('hr.employeeTable', 'Employee Detail')} favorite={{ id: 'h-emp', title: 'Employees', source: SOURCE }} bodyClassName="p-0" empty={!employees.length} emptyLabel={t('hr.empty', 'Employee table not yet populated')}>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
-                  <thead className="bg-muted/50 text-[11px] uppercase tracking-wide text-muted-foreground">
+                  <thead className="bg-muted/50 text-px-11 uppercase tracking-wide text-muted-foreground">
                     <tr>
                       <th className="whitespace-nowrap px-3 py-2 text-left">{t('hr.employee', 'Employee')}</th>
                       <th className="whitespace-nowrap px-3 py-2 text-left">{t('hr.department', 'Department')}</th>

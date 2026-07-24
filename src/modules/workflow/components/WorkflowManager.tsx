@@ -170,7 +170,7 @@ export function WorkflowManager({ nodes, edges, onLoadWorkflow, onNewWorkflow }:
             <FolderOpen className="h-4 w-4 mr-2" />
             {t('myWorkflows', { defaultValue: 'My workflows' })}
             {workflows.length > 0 && (
-              <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-[10px]">
+              <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-px-10">
                 {workflows.length}
               </Badge>
             )}
@@ -243,14 +243,14 @@ export function WorkflowManager({ nodes, edges, onLoadWorkflow, onNewWorkflow }:
                             <span className="text-sm font-medium truncate">{wf.name}</span>
                             <Badge
                               variant={wf.isActive ? 'default' : 'secondary'}
-                              className="text-[10px] px-1.5 py-0 h-4"
+                              className="text-px-10 px-1.5 py-0 h-4"
                             >
                               {wf.isActive
                                 ? t('active', { defaultValue: 'Active' })
                                 : t('paused', { defaultValue: 'Paused' })}
                             </Badge>
                             {isCurrent && (
-                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">
+                              <Badge variant="outline" className="text-px-10 px-1.5 py-0 h-4">
                                 {t('current', { defaultValue: 'Open' })}
                               </Badge>
                             )}
@@ -258,7 +258,7 @@ export function WorkflowManager({ nodes, edges, onLoadWorkflow, onNewWorkflow }:
                           {wf.description && (
                             <div className="text-xs text-muted-foreground truncate">{wf.description}</div>
                           )}
-                          <div className="text-[10px] text-muted-foreground mt-0.5">
+                          <div className="text-px-10 text-muted-foreground mt-0.5">
                             {t('updated', { defaultValue: 'Updated' })}{' '}
                             {formatDistanceToNow(new Date(wf.updatedAt), { addSuffix: true })}
                           </div>

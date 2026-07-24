@@ -138,7 +138,7 @@ const SheetDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SheetPrimitive.Description
     ref={ref}
-    className={cn("text-[13px] text-muted-foreground", className)}
+    className={cn("text-px-13 text-muted-foreground", className)}
     {...props}
   />
 ))

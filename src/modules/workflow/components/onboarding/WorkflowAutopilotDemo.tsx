@@ -154,7 +154,7 @@ function FieldRow({ field, idx }: { field: ConfigField; idx: number }) {
         </div>
       )}
       {field.type === 'textarea' && (
-        <div className="min-h-[54px] rounded-md border border-border bg-background px-2 py-1.5 text-[11px] text-foreground/90 font-mono whitespace-pre-wrap leading-tight">
+        <div className="min-h-[54px] rounded-md border border-border bg-background px-2 py-1.5 text-px-11 text-foreground/90 font-mono whitespace-pre-wrap leading-tight">
           {field.value}
         </div>
       )}
@@ -175,14 +175,14 @@ function FieldRow({ field, idx }: { field: ConfigField; idx: number }) {
       {field.type === 'tag' && (
         <div className="flex gap-1 flex-wrap">
           {field.value.split('·').map((t, i) => (
-            <span key={i} className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-muted text-foreground/70">
+            <span key={i} className="inline-flex items-center px-1.5 py-0.5 rounded-md text-px-10 font-medium bg-muted text-foreground/70">
               {t.trim()}
             </span>
           ))}
         </div>
       )}
       {field.hint && (
-        <p className="text-[10px] text-muted-foreground/70 italic mt-0.5">{field.hint}</p>
+        <p className="text-px-10 text-muted-foreground/70 italic mt-0.5">{field.hint}</p>
       )}
     </div>
   );
@@ -255,16 +255,16 @@ function PanelContent({ kind, t }: { kind: Exclude<OpenPanel, null>; t: (k: stri
               <Sparkles className="h-3.5 w-3.5 text-primary" />
             </div>
             <div>
-              <div className="text-[12px] font-semibold">{t('onboarding.demo.panel.ai.title', 'Build with AI')}</div>
-              <div className="text-[10px] text-muted-foreground">{t('onboarding.demo.panel.ai.sub', 'Describe what should happen — AI builds the graph')}</div>
+              <div className="text-px-12 font-semibold">{t('onboarding.demo.panel.ai.title', 'Build with AI')}</div>
+              <div className="text-px-10 text-muted-foreground">{t('onboarding.demo.panel.ai.sub', 'Describe what should happen — AI builds the graph')}</div>
             </div>
           </div>
-          <div className="rounded-md border border-border bg-background px-2 py-1.5 text-[11px] text-foreground/90 font-mono leading-snug">
+          <div className="rounded-md border border-border bg-background px-2 py-1.5 text-px-11 text-foreground/90 font-mono leading-snug">
             When an offer is accepted, send an email to the customer, request manager approval over 10k, then create a Sale.
           </div>
           <div className="flex flex-wrap gap-1">
             {['Email on accept', 'SLA reminder', 'Auto Service Order', 'Slack alert'].map(s => (
-              <span key={s} className="text-[10px] px-1.5 py-0.5 rounded border border-border bg-muted/40">{s}</span>
+              <span key={s} className="text-px-10 px-1.5 py-0.5 rounded border border-border bg-muted/40">{s}</span>
             ))}
           </div>
           <div className="flex justify-end">
@@ -279,7 +279,7 @@ function PanelContent({ kind, t }: { kind: Exclude<OpenPanel, null>; t: (k: stri
         <div className="p-3">
           <div className="flex items-center gap-2 pb-2 border-b border-border mb-2">
             <Bug className="h-3.5 w-3.5 text-primary" />
-            <div className="text-[12px] font-semibold">{t('onboarding.demo.panel.debug.title', 'Debug console')}</div>
+            <div className="text-px-12 font-semibold">{t('onboarding.demo.panel.debug.title', 'Debug console')}</div>
           </div>
           <div className="font-mono text-[10.5px] leading-tight space-y-0.5 max-h-40 overflow-hidden">
             {[
@@ -308,7 +308,7 @@ function PanelContent({ kind, t }: { kind: Exclude<OpenPanel, null>; t: (k: stri
         <div className="p-2.5 flex items-center gap-2">
           <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
           <div>
-            <div className="text-[12px] font-semibold">{t('onboarding.demo.panel.copy.title', 'Configuration copied')}</div>
+            <div className="text-px-12 font-semibold">{t('onboarding.demo.panel.copy.title', 'Configuration copied')}</div>
             <div className="text-[10.5px] text-muted-foreground">{t('onboarding.demo.panel.copy.sub', 'Workflow JSON is on your clipboard — paste to share or back up')}</div>
           </div>
         </div>
@@ -318,12 +318,12 @@ function PanelContent({ kind, t }: { kind: Exclude<OpenPanel, null>; t: (k: stri
         <div className="p-3 space-y-2">
           <div className="flex items-center gap-2 pb-2 border-b border-border">
             <Upload className="h-3.5 w-3.5 text-primary" />
-            <div className="text-[12px] font-semibold">{t('onboarding.demo.panel.import.title', 'Import workflow')}</div>
+            <div className="text-px-12 font-semibold">{t('onboarding.demo.panel.import.title', 'Import workflow')}</div>
           </div>
-          <div className="rounded-md border border-dashed border-border bg-muted/30 p-3 text-center text-[11px] text-muted-foreground">
+          <div className="rounded-md border border-dashed border-border bg-muted/30 p-3 text-center text-px-11 text-muted-foreground">
             {t('onboarding.demo.panel.import.drop', 'Drop a .json file or paste JSON below')}
           </div>
-          <div className="rounded-md border border-border bg-background p-1.5 font-mono text-[10px] text-muted-foreground/80 leading-tight max-h-16 overflow-hidden">
+          <div className="rounded-md border border-border bg-background p-1.5 font-mono text-px-10 text-muted-foreground/80 leading-tight max-h-16 overflow-hidden">
             {'{ "name": "Offer → Sale flow", "nodes": [...], "edges": [...] }'}
           </div>
         </div>
@@ -331,7 +331,7 @@ function PanelContent({ kind, t }: { kind: Exclude<OpenPanel, null>; t: (k: stri
     case 'export':
       return (
         <div className="py-1.5">
-          <div className="px-3 pb-1.5 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold border-b border-border">
+          <div className="px-3 pb-1.5 text-px-10 uppercase tracking-wider text-muted-foreground font-semibold border-b border-border">
             {t('onboarding.demo.panel.export.title', 'Export as')}
           </div>
           {[
@@ -344,7 +344,7 @@ function PanelContent({ kind, t }: { kind: Exclude<OpenPanel, null>; t: (k: stri
               <o.i className="h-3.5 w-3.5 text-muted-foreground" />
               <div className="flex-1">
                 <div className="text-[11.5px] font-medium">{o.l}</div>
-                <div className="text-[10px] text-muted-foreground">{o.d}</div>
+                <div className="text-px-10 text-muted-foreground">{o.d}</div>
               </div>
             </div>
           ))}
@@ -353,7 +353,7 @@ function PanelContent({ kind, t }: { kind: Exclude<OpenPanel, null>; t: (k: stri
     case 'groups':
       return (
         <div className="p-2">
-          <div className="px-1 pb-1.5 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+          <div className="px-1 pb-1.5 text-px-10 uppercase tracking-wider text-muted-foreground font-semibold">
             {t('onboarding.demo.panel.groups.title', 'Workflow groups')}
           </div>
           {[
@@ -365,7 +365,7 @@ function PanelContent({ kind, t }: { kind: Exclude<OpenPanel, null>; t: (k: stri
             <div key={i} className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50">
               <FolderOpen className="h-3.5 w-3.5 text-primary" />
               <span className="text-[11.5px] font-medium flex-1">{g.n}</span>
-              <span className="text-[10px] text-muted-foreground tabular-nums">{g.on}/{g.c}</span>
+              <span className="text-px-10 text-muted-foreground tabular-nums">{g.on}/{g.c}</span>
             </div>
           ))}
         </div>
@@ -374,10 +374,10 @@ function PanelContent({ kind, t }: { kind: Exclude<OpenPanel, null>; t: (k: stri
       return (
         <div className="p-2">
           <div className="px-1 pb-1.5 flex items-center justify-between">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+            <span className="text-px-10 uppercase tracking-wider text-muted-foreground font-semibold">
               {t('onboarding.demo.panel.manager.title', 'All workflows')}
             </span>
-            <span className="text-[10px] text-muted-foreground tabular-nums">24 total</span>
+            <span className="text-px-10 text-muted-foreground tabular-nums">24 total</span>
           </div>
           {[
             { n: 'Offer → Sale handoff',     s: 'active',  r: '2m ago' },
@@ -394,7 +394,7 @@ function PanelContent({ kind, t }: { kind: Exclude<OpenPanel, null>; t: (k: stri
                 w.s === 'draft'  && 'bg-amber-500/15 text-amber-600',
                 w.s === 'paused' && 'bg-muted text-muted-foreground',
               )}>{w.s}</span>
-              <span className="text-[10px] text-muted-foreground tabular-nums w-12 text-right">{w.r}</span>
+              <span className="text-px-10 text-muted-foreground tabular-nums w-12 text-right">{w.r}</span>
             </div>
           ))}
         </div>
@@ -402,7 +402,7 @@ function PanelContent({ kind, t }: { kind: Exclude<OpenPanel, null>; t: (k: stri
     case 'version':
       return (
         <div className="p-2.5 space-y-1.5">
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold pb-1">
+          <div className="text-px-10 uppercase tracking-wider text-muted-foreground font-semibold pb-1">
             {t('onboarding.demo.panel.version.title', 'Version history')}
           </div>
           {[
@@ -411,7 +411,7 @@ function PanelContent({ kind, t }: { kind: Exclude<OpenPanel, null>; t: (k: stri
             { v: 'v1', when: 'Mon',     who: 'Imen B.',      tag: 'Archived' },
           ].map((r, i) => (
             <div key={i} className="flex items-center gap-2 px-1.5 py-1 rounded hover:bg-muted/50">
-              <span className="text-[11px] font-bold tabular-nums w-6">{r.v}</span>
+              <span className="text-px-11 font-bold tabular-nums w-6">{r.v}</span>
               <span className="text-[10.5px] text-muted-foreground flex-1 truncate">{r.who} · {r.when}</span>
               <span className="text-[9.5px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-semibold">{r.tag}</span>
             </div>
@@ -611,7 +611,7 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
           <div className="flex items-center gap-2.5 min-w-0">
             <div data-demo-target="tb-status" className="flex items-center gap-1.5 shrink-0">
               <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-              <span className="text-[11px] text-muted-foreground font-medium">{t('connected', 'Connected')}</span>
+              <span className="text-px-11 text-muted-foreground font-medium">{t('connected', 'Connected')}</span>
             </div>
 
             {/* Version badge — mirrors WorkflowVersionBadge: [icon] Active v1 */}
@@ -632,7 +632,7 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
                     ? t('onboarding.demo.tb.vDraft', 'Draft')
                     : t('onboarding.demo.tb.vEditing', 'Editing')}
               </span>
-              <span className="text-[10px] opacity-70 tabular-nums">v{state.saved ? 3 : 2}</span>
+              <span className="text-px-10 opacity-70 tabular-nums">v{state.saved ? 3 : 2}</span>
             </div>
 
             <button className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-muted/50 text-muted-foreground" aria-label="History">
@@ -643,14 +643,14 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
           {/* RIGHT: actions */}
           <div className="flex items-center gap-1.5 shrink-0">
             {!state.saved && (
-              <div data-demo-target="tb-edit-pill" className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-warning/15 border border-warning/30 text-[11px] text-warning font-semibold mr-1">
+              <div data-demo-target="tb-edit-pill" className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-warning/15 border border-warning/30 text-px-11 text-warning font-semibold mr-1">
                 <Edit3 className="h-3 w-3" />
                 <span>{t('editMode', 'Edit mode')}</span>
                 <span className="w-1.5 h-1.5 rounded-full bg-warning animate-pulse" />
               </div>
             )}
             {state.saved && (
-              <div data-demo-target="tb-nextrun" className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-muted/40 text-[11px] text-muted-foreground mr-1">
+              <div data-demo-target="tb-nextrun" className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-muted/40 text-px-11 text-muted-foreground mr-1">
                 <span>{t('onboarding.demo.tb.nextRunIn', 'Next run in')}</span>
                 <span className="font-semibold text-foreground tabular-nums">04:21</span>
               </div>
@@ -736,7 +736,7 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
 
             <div className="w-px h-5 bg-border mx-0.5" />
 
-            <span className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-primary/30 bg-primary/5 text-[10px] font-semibold text-primary shrink-0">
+            <span className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-primary/30 bg-primary/5 text-px-10 font-semibold text-primary shrink-0">
               <Sparkles className="h-3 w-3" />
               <span className="tabular-nums">{Math.min(stepIndex + 1, steps.length)}/{steps.length}</span>
             </span>
@@ -757,7 +757,7 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
               </h3>
               <div className="relative" data-demo-target="palette-search">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-                <div className="h-7 rounded-md border border-border bg-background pl-7 pr-2 flex items-center text-[11px] text-muted-foreground/70">
+                <div className="h-7 rounded-md border border-border bg-background pl-7 pr-2 flex items-center text-px-11 text-muted-foreground/70">
                   {state.paletteSearch || t('onboarding.demo.searchPlaceholder')}
                 </div>
               </div>
@@ -781,7 +781,7 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
                           <section.icon className="h-3 w-3" style={{ color: section.iconColor }} />
                         </div>
                         <span className="flex-1 text-left">{t(section.labelKey)}</span>
-                        <span className="text-[10px] font-normal text-muted-foreground tabular-nums">
+                        <span className="text-px-10 font-normal text-muted-foreground tabular-nums">
                           {section.items.length}
                         </span>
                         <ChevronDown className={cn('h-3.5 w-3.5 text-muted-foreground transition-transform duration-200', isOpen && 'rotate-180')} />
@@ -832,7 +832,7 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
               </div>
             </ScrollArea>
 
-            <div className="px-3 py-2 border-t border-border shrink-0 flex items-center justify-between text-[10px] text-muted-foreground">
+            <div className="px-3 py-2 border-t border-border shrink-0 flex items-center justify-between text-px-10 text-muted-foreground">
               <div className="flex items-center gap-1.5">
                 <Clock className="h-3 w-3 opacity-60" />
                 <span>{t('onboarding.demo.nextRun')}</span>
@@ -943,7 +943,7 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
                 key={`ghost-${state.grabbingItemId}`}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 0.85 }}
-                className="absolute pointer-events-none rounded-md border border-primary bg-primary/10 px-2 py-1 text-[11px] font-medium text-primary z-50 shadow-md"
+                className="absolute pointer-events-none rounded-md border border-primary bg-primary/10 px-2 py-1 text-px-11 font-medium text-primary z-50 shadow-md"
                 style={{ left: cursorPos.x - 252 + 12, top: cursorPos.y + 12 }}
               >
                 {state.grabbingItemId}
@@ -968,7 +968,7 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
                         initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
                         className="rounded border border-border bg-background p-1.5"
                       >
-                        <div className="flex items-center gap-1 text-[10px] font-medium">
+                        <div className="flex items-center gap-1 text-px-10 font-medium">
                           {l.status === 'ok' && <CheckCircle2 className="h-3 w-3 text-emerald-500" />}
                           {l.status === 'wait' && <PauseCircle className="h-3 w-3 text-amber-500" />}
                           {l.status === 'running' && <Loader2 className="h-3 w-3 animate-spin text-primary" />}
@@ -976,7 +976,7 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
                           <span className="truncate">{l.node}</span>
                         </div>
                         {l.ms !== undefined && (
-                          <div className="text-[9px] text-muted-foreground mt-0.5 tabular-nums">{l.ms}ms</div>
+                          <div className="text-px-9 text-muted-foreground mt-0.5 tabular-nums">{l.ms}ms</div>
                         )}
                       </motion.div>
                     ))}
@@ -1008,7 +1008,7 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-semibold truncate">{state.configPanel.title}</div>
                     {state.configPanel.subtitle && (
-                      <div className="text-[11px] text-muted-foreground mt-0.5 leading-tight">{state.configPanel.subtitle}</div>
+                      <div className="text-px-11 text-muted-foreground mt-0.5 leading-tight">{state.configPanel.subtitle}</div>
                     )}
                   </div>
                   <X className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-1" />
@@ -1022,7 +1022,7 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
                         key={tab}
                         data-demo-target={`tab-${tab}`}
                         className={cn(
-                          'px-3 py-1.5 text-[11px] font-medium rounded-md cursor-default',
+                          'px-3 py-1.5 text-px-11 font-medium rounded-md cursor-default',
                           state.configPanel?.tab === tab
                             ? 'bg-primary/10 text-primary border-b-2 border-primary'
                             : 'text-muted-foreground',
@@ -1045,12 +1045,12 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
 
                 {/* Footer */}
                 <div className="px-4 py-3 border-t border-border flex items-center justify-end gap-2 shrink-0">
-                  <button className="rounded-md border border-border bg-background px-3 py-1.5 text-[11px] font-medium">
+                  <button className="rounded-md border border-border bg-background px-3 py-1.5 text-px-11 font-medium">
                     {t('onboarding.demo.cancel')}
                   </button>
                   <button
                     data-demo-target="config-save"
-                    className="rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-[11px] font-medium shadow-sm"
+                    className="rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-px-11 font-medium shadow-sm"
                   >
                     {t('onboarding.demo.applyChanges')}
                   </button>
@@ -1111,7 +1111,7 @@ export function WorkflowAutopilotDemo({ open, onClose }: Props) {
                 <motion.p
                   key={stepIndex}
                   initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
-                  className="text-[13px] text-foreground leading-snug"
+                  className="text-px-13 text-foreground leading-snug"
                 >
                   {finished ? t('onboarding.demo.finished') : currentCaption}
                 </motion.p>

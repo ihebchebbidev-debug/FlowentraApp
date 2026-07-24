@@ -52,7 +52,7 @@ const PaginationLink = ({
         variant: isActive ? "outline" : "ghost",
         size,
       }),
-      "h-7 w-7 text-[12px] cursor-pointer rounded-md transition-all duration-150",
+      "h-7 w-7 text-px-12 cursor-pointer rounded-md transition-all duration-150",
       isActive && "border-primary/50 bg-primary/8 font-semibold text-primary shadow-sm",
       !isActive && "text-muted-foreground hover:text-foreground hover:bg-muted/60",
       className

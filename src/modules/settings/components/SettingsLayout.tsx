@@ -252,7 +252,7 @@ export function SettingsLayout() {
             </div>
             <div className="min-w-0">
               <h1 className="text-xl font-semibold text-foreground truncate">{t('settings')}</h1>
-              <p className="text-[11px] text-muted-foreground truncate">Manage your account and application preferences</p>
+              <p className="text-px-11 text-muted-foreground truncate">Manage your account and application preferences</p>
             </div>
           </div>
         </div>

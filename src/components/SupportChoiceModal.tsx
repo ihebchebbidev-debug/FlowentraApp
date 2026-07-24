@@ -29,10 +29,10 @@ export default function SupportChoiceModal({ open, onOpenChange, onCreateTicket 
               <TicketCheck className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <DialogTitle className="text-[15px]">
+              <DialogTitle className="text-px-15">
                 {t('supportChoice.title', 'Support')}
               </DialogTitle>
-              <DialogDescription className="text-[12px] mt-0.5">
+              <DialogDescription className="text-px-12 mt-0.5">
                 {t('supportChoice.subtitle', 'How can we help you today?')}
               </DialogDescription>
             </div>
@@ -55,7 +55,7 @@ export default function SupportChoiceModal({ open, onOpenChange, onCreateTicket 
               <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
                 {t('supportChoice.createTicket', 'Report an Issue')}
               </p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">
+              <p className="text-px-11 text-muted-foreground mt-0.5">
                 {t('supportChoice.createTicketDesc', 'Describe a problem and our team will handle it')}
               </p>
             </div>
@@ -76,7 +76,7 @@ export default function SupportChoiceModal({ open, onOpenChange, onCreateTicket 
               <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
                 {t('supportChoice.viewTickets', 'View My Tickets')}
               </p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">
+              <p className="text-px-11 text-muted-foreground mt-0.5">
                 {t('supportChoice.viewTicketsDesc', 'Check the status of your submitted tickets')}
               </p>
             </div>

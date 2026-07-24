@@ -341,7 +341,7 @@ export function DocumentUploadModal({
             <div className="relative" ref={dropdownRef}>
               {selectedRecord ? (
                 <div className="flex items-center gap-2 border rounded-md px-3 py-2 bg-muted/30">
-                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${typeBadgeColors[selectedRecord.type]}`}>
+                  <span className={`text-px-10 font-medium px-1.5 py-0.5 rounded ${typeBadgeColors[selectedRecord.type]}`}>
                     {typeLabels[selectedRecord.type]}
                   </span>
                   <span className="text-sm font-medium flex-1 truncate">{selectedRecord.label}</span>
@@ -384,7 +384,7 @@ export function DocumentUploadModal({
                     return (
                       <div key={type}>
                         <div className="px-3 py-1.5 bg-muted/40 sticky top-0">
-                          <span className={`text-[10px] font-semibold uppercase tracking-wide ${typeBadgeColors[type]?.split(' ').find(c => c.startsWith('text-')) || 'text-muted-foreground'}`}>
+                          <span className={`text-px-10 font-semibold uppercase tracking-wide ${typeBadgeColors[type]?.split(' ').find(c => c.startsWith('text-')) || 'text-muted-foreground'}`}>
                             {typeLabels[type]} ({group.length})
                           </span>
                         </div>
@@ -394,13 +394,13 @@ export function DocumentUploadModal({
                             className="w-full text-left px-3 py-2 hover:bg-accent/60 focus:bg-accent/60 transition-colors flex items-center gap-2.5 outline-none"
                             onClick={() => handleSelectRecord(result)}
                           >
-                            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded shrink-0 ${typeBadgeColors[result.type]}`}>
+                            <span className={`text-px-10 font-medium px-1.5 py-0.5 rounded shrink-0 ${typeBadgeColors[result.type]}`}>
                               {typeLabels[result.type]}
                             </span>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium truncate">{result.label}</p>
                               {result.subLabel && (
-                                <p className="text-[11px] text-muted-foreground truncate">{result.subLabel}</p>
+                                <p className="text-px-11 text-muted-foreground truncate">{result.subLabel}</p>
                               )}
                             </div>
                           </button>

@@ -552,7 +552,7 @@ export function NodePalette({
                       <category.icon className={cn('h-3 w-3', category.color)} />
                     </div>
                     <span className="flex-1 text-left">{t(category.labelKey)}</span>
-                    <span className="text-[10px] font-normal text-muted-foreground tabular-nums">
+                    <span className="text-px-10 font-normal text-muted-foreground tabular-nums">
                       {categoryTemplates.length}
                     </span>
                     <ChevronDown className={cn(
@@ -610,7 +610,7 @@ export function NodePalette({
       {/* Footer */}
       <div className="px-3 py-2 border-t border-border shrink-0">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground tabular-nums">
+          <div className="flex items-center gap-1.5 text-px-10 text-muted-foreground tabular-nums">
             <Clock className="h-3 w-3 opacity-60" />
             <span>{t('nextRunIn')}</span>
             <span className="font-medium text-foreground/70">{formatCountdown(nextRunCountdown)}</span>

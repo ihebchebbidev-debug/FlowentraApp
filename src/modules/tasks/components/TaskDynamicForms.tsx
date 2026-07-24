@@ -637,7 +637,7 @@ export function TaskDynamicForms({
           <ClipboardList className="h-4 w-4 text-muted-foreground" />
           {t('dynamicForms.title', 'Forms')}
           {attachedForms.length > 0 && (
-            <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
+            <Badge variant="secondary" className="h-5 px-1.5 text-px-10">
               {attachedForms.length}
             </Badge>
           )}
@@ -668,7 +668,7 @@ export function TaskDynamicForms({
                       <span className="text-sm font-medium truncate">
                         {lang === 'fr' ? attached.form.name_fr : attached.form.name_en}
                       </span>
-                      <Badge variant="outline" className="text-[10px] border-warning/50 text-warning bg-warning/10">
+                      <Badge variant="outline" className="text-px-10 border-warning/50 text-warning bg-warning/10">
                         <Clock className="h-3 w-3 mr-1" />
                         {t('dynamicForms.draft', 'Created')}
                       </Badge>
@@ -721,7 +721,7 @@ export function TaskDynamicForms({
                     <span className="text-sm font-medium">
                       {lang === 'fr' ? attached.form.name_fr : attached.form.name_en}
                     </span>
-                    <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">
+                    <Badge variant="outline" className="text-px-10 border-primary/30 text-primary">
                       <CheckCircle2 className="h-3 w-3 mr-1" />
                       {t('dynamicForms.completed', 'Completed')}
                     </Badge>
@@ -819,13 +819,13 @@ export function TaskDynamicForms({
                                   {lang === 'fr' ? form.name_fr : form.name_en}
                                 </p>
                                 {isDraft && (
-                                  <Badge variant="outline" className="text-[10px] border-warning/50 text-warning">
+                                  <Badge variant="outline" className="text-px-10 border-warning/50 text-warning">
                                     <Clock className="h-3 w-3 mr-1" />
                                     {t('dynamicForms.draft', 'Created')}
                                   </Badge>
                                 )}
                                 {isCompleted && (
-                                  <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">
+                                  <Badge variant="outline" className="text-px-10 border-primary/30 text-primary">
                                     <CheckCircle2 className="h-3 w-3 mr-1" />
                                     {t('dynamicForms.completed', 'Completed')}
                                   </Badge>
@@ -837,7 +837,7 @@ export function TaskDynamicForms({
                                 </p>
                               )}
                             </div>
-                            <Badge variant="outline" className="text-[10px] shrink-0 ml-2">
+                            <Badge variant="outline" className="text-px-10 shrink-0 ml-2">
                               {form.fields.length} {t('dynamicForms.fields', 'fields')}
                             </Badge>
                           </div>

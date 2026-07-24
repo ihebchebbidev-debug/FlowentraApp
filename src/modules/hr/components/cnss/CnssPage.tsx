@@ -229,7 +229,7 @@ export function CnssPage() {
                 <div className="text-xs text-muted-foreground mb-2">{t('cnssPage.history')}</div>
                 <div className="flex flex-wrap gap-2">
                   {(ratesQuery.data ?? []).map(r => (
-                    <Badge key={r.id} variant={r.isActive ? 'default' : 'outline'} className="text-[11px]">
+                    <Badge key={r.id} variant={r.isActive ? 'default' : 'outline'} className="text-px-11">
                       {r.effectiveFrom} · ee {(r.employeeRate * 100).toFixed(2)}% · er {(r.employerRate * 100).toFixed(2)}%
                     </Badge>
                   ))}

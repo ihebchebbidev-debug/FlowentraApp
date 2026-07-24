@@ -3153,7 +3153,7 @@ export default function DocumentationPage() {
                       const Icon = CATEGORY_ICON[cat] ?? FolderKanban;
                       return (
                         <div key={cat} className="mb-3">
-                          <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-2 mb-1 inline-flex items-center gap-1">
+                          <div className="text-px-10 font-semibold uppercase tracking-wider text-muted-foreground px-2 mb-1 inline-flex items-center gap-1">
                             <Icon className="h-3 w-3" /> {cat}
                           </div>
                           <ul className="space-y-0.5">
@@ -3227,10 +3227,10 @@ export default function DocumentationPage() {
                                     </CardTitle>
                                     <CardDescription className="mt-1 line-clamp-2">{m.description}</CardDescription>
                                     <div className="flex items-center gap-1.5 mt-2.5 flex-wrap">
-                                      <Badge variant="outline" className="text-[10px]">{m.routes.length} routes</Badge>
-                                      <Badge variant="outline" className="text-[10px]">{m.features.length} features</Badge>
+                                      <Badge variant="outline" className="text-px-10">{m.routes.length} routes</Badge>
+                                      <Badge variant="outline" className="text-px-10">{m.features.length} features</Badge>
                                       {hasShots && (
-                                        <Badge variant="secondary" className="text-[10px]">{SHOTS[m.key].length} screenshots</Badge>
+                                        <Badge variant="secondary" className="text-px-10">{SHOTS[m.key].length} screenshots</Badge>
                                       )}
                                     </div>
                                   </div>
@@ -3315,7 +3315,7 @@ export default function DocumentationPage() {
               <ChevronRight className="h-5 w-5" />
             </Button>
           </div>
-          <div className="border-t bg-background/80 px-4 py-2 text-[11px] text-muted-foreground text-center">
+          <div className="border-t bg-background/80 px-4 py-2 text-px-11 text-muted-foreground text-center">
             ← / → to navigate · Esc to close
           </div>
         </div>

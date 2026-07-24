@@ -262,11 +262,11 @@ export function TestEndpointModal({ endpointId: _endpointId, publicUrl, cachedAp
               <Label>{t('external.test.body', 'Request Body')} ({ctLabel})</Label>
               {requiredFields.length > 0 && (
                 <div className="flex items-center gap-1 flex-wrap">
-                  <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  <span className="text-px-10 uppercase tracking-wide text-muted-foreground">
                     {t('external.test.requiredFields', 'Required')}:
                   </span>
                   {requiredFields.map((f) => (
-                    <Badge key={f} variant="secondary" className="text-[10px] font-mono">{f}</Badge>
+                    <Badge key={f} variant="secondary" className="text-px-10 font-mono">{f}</Badge>
                   ))}
                 </div>
               )}
@@ -279,7 +279,7 @@ export function TestEndpointModal({ endpointId: _endpointId, publicUrl, cachedAp
               placeholder={t('external.test.bodyPlaceholder', 'Enter request payload')}
             />
             {requiredFields.length > 0 && (
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-px-11 text-muted-foreground">
                 {t(
                   'external.test.bodySeededFromSchema',
                   "Body pre-filled from this endpoint's expected schema. All listed fields must be present and non-empty.",

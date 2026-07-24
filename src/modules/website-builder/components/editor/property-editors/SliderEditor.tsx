@@ -19,8 +19,8 @@ export function SliderEditor({ label, value, min, max, step = 1, unit = '', onCh
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
-        <Label className="text-[11px] font-medium text-foreground/70">{label}</Label>
-        <span className="text-[10px] text-muted-foreground/60 tabular-nums">{value}{unit}</span>
+        <Label className="text-px-11 font-medium text-foreground/70">{label}</Label>
+        <span className="text-px-10 text-muted-foreground/60 tabular-nums">{value}{unit}</span>
       </div>
       <Slider value={[value]} min={min} max={max} step={step} onValueChange={([v]) => onChange(v)} />
     </div>

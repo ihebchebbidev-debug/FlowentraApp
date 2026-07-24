@@ -115,16 +115,16 @@ function KpiCard({
       onClick={onClick}
     >
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[12px] font-medium text-muted-foreground truncate">{label}</p>
+        <p className="text-px-12 font-medium text-muted-foreground truncate">{label}</p>
         <span className={`grid place-items-center h-8 w-8 rounded-lg shrink-0 ${TONE[tone].chip}`}>
           <Icon className="h-4 w-4" />
         </span>
       </div>
       <div className="mt-2.5 flex items-end gap-2 flex-wrap">
-        <span className="text-[24px] font-bold tracking-tight tabular-nums leading-none text-foreground">{value}</span>
+        <span className="text-px-24 font-bold tracking-tight tabular-nums leading-none text-foreground">{value}</span>
         {trend !== undefined && Number.isFinite(trend) && (
           <span
-            className={`inline-flex items-center gap-0.5 text-[10px] font-semibold rounded-full px-1.5 py-0.5 mb-0.5 ${
+            className={`inline-flex items-center gap-0.5 text-px-10 font-semibold rounded-full px-1.5 py-0.5 mb-0.5 ${
               trend >= 0 ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-600'
             }`}
           >
@@ -145,7 +145,7 @@ function Stat({ icon: Icon, label, value, tone = 'primary' }: { icon: React.Comp
         <Icon className="h-[18px] w-[18px]" />
       </span>
       <div className="min-w-0">
-        <p className="text-[11px] text-muted-foreground truncate">{label}</p>
+        <p className="text-px-11 text-muted-foreground truncate">{label}</p>
         <p className="text-base font-bold tabular-nums leading-tight truncate">{value}</p>
       </div>
     </div>
@@ -251,7 +251,7 @@ function SortableCard({
           }}
           onPointerDown={(e) => e.stopPropagation()}
           aria-label={t('overview.openSourceReport', { defaultValue: 'Open source report' })}
-          className="absolute right-2 top-2 z-20 hidden items-center gap-1 rounded-full border bg-card px-2 py-0.5 text-[10px] font-medium text-muted-foreground shadow-sm transition hover:text-foreground group-hover:flex"
+          className="absolute right-2 top-2 z-20 hidden items-center gap-1 rounded-full border bg-card px-2 py-0.5 text-px-10 font-medium text-muted-foreground shadow-sm transition hover:text-foreground group-hover:flex"
         >
           <ExternalLink className="h-3 w-3" />
         </button>
@@ -466,7 +466,7 @@ export default function DashboardOverview() {
                 <div key={tech.id} className="grid grid-cols-12 gap-2 px-4 py-2.5 items-center hover:bg-muted/30 transition-colors">
                   <div className="col-span-5 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="h-7 w-7 rounded-full bg-primary/10 text-primary text-[10px] font-bold inline-flex items-center justify-center shrink-0">
+                      <span className="h-7 w-7 rounded-full bg-primary/10 text-primary text-px-10 font-bold inline-flex items-center justify-center shrink-0">
                         {tech.name.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2)}
                       </span>
                       <span className="text-sm font-medium truncate">{tech.name}</span>
@@ -513,7 +513,7 @@ export default function DashboardOverview() {
             <Stat icon={XCircle} tone="danger" label={t('overview.outOfStock', { defaultValue: 'Out of stock' })} value={stockStats.out} />
           </div>
           <div className="border-t border-border/60 px-4 py-3">
-            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">{t('overview.needsRestock', { defaultValue: 'Needs restocking' })}</p>
+            <p className="text-px-11 font-medium text-muted-foreground uppercase tracking-wide mb-1.5">{t('overview.needsRestock', { defaultValue: 'Needs restocking' })}</p>
             {lowStockItems.length === 0 ? (
               <div className="py-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
@@ -692,7 +692,7 @@ export default function DashboardOverview() {
       {/* ══ Header · greeting + customize button ══ */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-[22px] font-bold leading-tight tracking-tight truncate">
+          <h1 className="text-px-22 font-bold leading-tight tracking-tight truncate">
             {greeting}{user?.firstName ? `, ${user.firstName}` : ''} 👋
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
@@ -709,7 +709,7 @@ export default function DashboardOverview() {
             <Settings2 className="h-3.5 w-3.5" />
             {t('overview.customize', { defaultValue: 'Customize' })}
             {(hiddenDefaults.length > 0 || pinnedWidgets.length > 0) && (
-              <span className="ml-1 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+              <span className="ml-1 rounded-full bg-primary/15 px-1.5 py-0.5 text-px-10 font-semibold text-primary">
                 {pinnedWidgets.length + hiddenDefaults.length}
               </span>
             )}

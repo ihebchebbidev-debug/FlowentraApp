@@ -101,7 +101,7 @@ export function FieldProperties({ field, allFields, onUpdate }: FieldPropertiesP
         <h3 className="text-sm font-semibold text-foreground">
           {t('builder.field_properties')}
         </h3>
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-px-11 text-muted-foreground">
           {t(`field_types.${field.type}`)}
         </p>
       </div>
@@ -113,11 +113,11 @@ export function FieldProperties({ field, allFields, onUpdate }: FieldPropertiesP
             <Tabs defaultValue="en" className="w-full">
               <TabsList className="grid w-full grid-cols-2 h-8">
                 <TabsTrigger value="en" className="text-xs">
-                  <span className="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 text-[10px] font-medium mr-1.5">EN</span>
+                  <span className="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 text-px-10 font-medium mr-1.5">EN</span>
                   {t('languages.english')}
                 </TabsTrigger>
                 <TabsTrigger value="fr" className="text-xs">
-                  <span className="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-600 text-[10px] font-medium mr-1.5">FR</span>
+                  <span className="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-600 text-px-10 font-medium mr-1.5">FR</span>
                   {t('languages.french')}
                 </TabsTrigger>
               </TabsList>
@@ -152,7 +152,7 @@ export function FieldProperties({ field, allFields, onUpdate }: FieldPropertiesP
                     className="h-9"
                     placeholder={t('field_props.hint_placeholder')}
                   />
-                  <p className="text-[10px] text-muted-foreground">{t('field_props.hint_desc')}</p>
+                  <p className="text-px-10 text-muted-foreground">{t('field_props.hint_desc')}</p>
                 </div>
                 {field.type !== 'section' && field.type !== 'checkbox' && field.type !== 'radio' && field.type !== 'content' && (
                   <div className="space-y-1.5">
@@ -288,7 +288,7 @@ export function FieldProperties({ field, allFields, onUpdate }: FieldPropertiesP
                     <ExternalLink className="h-4 w-4 text-muted-foreground" />
                     <div>
                       <Label htmlFor="link_new_tab" className="text-sm font-medium">{t('field_props.link_new_tab')}</Label>
-                      <p className="text-[10px] text-muted-foreground">{t('field_props.link_new_tab_hint')}</p>
+                      <p className="text-px-10 text-muted-foreground">{t('field_props.link_new_tab_hint')}</p>
                     </div>
                   </div>
                   <Switch
@@ -312,7 +312,7 @@ export function FieldProperties({ field, allFields, onUpdate }: FieldPropertiesP
               <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                 <div>
                   <Label htmlFor="required" className="text-sm font-medium">{t('field_props.required')}</Label>
-                  <p className="text-[10px] text-muted-foreground">{t('field_props.required_hint')}</p>
+                  <p className="text-px-10 text-muted-foreground">{t('field_props.required_hint')}</p>
                 </div>
                 <Switch
                   id="required"
@@ -359,14 +359,14 @@ export function FieldProperties({ field, allFields, onUpdate }: FieldPropertiesP
                             <div className="h-4 w-full rounded-sm bg-primary" />
                           )}
                         </div>
-                        <span className="text-[10px] font-medium">
+                        <span className="text-px-10 font-medium">
                           {t(`field_props.width_${widthOption}`)}
                         </span>
                       </div>
                     </button>
                   ))}
                 </div>
-                <p className="text-[10px] text-muted-foreground">{t('field_props.width_hint')}</p>
+                <p className="text-px-10 text-muted-foreground">{t('field_props.width_hint')}</p>
               </div>
             )}
             
@@ -375,7 +375,7 @@ export function FieldProperties({ field, allFields, onUpdate }: FieldPropertiesP
               <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                 <div>
                   <Label htmlFor="collapsible" className="text-sm font-medium">{t('field_props.collapsible')}</Label>
-                  <p className="text-[10px] text-muted-foreground">{t('field_props.collapsible_hint')}</p>
+                  <p className="text-px-10 text-muted-foreground">{t('field_props.collapsible_hint')}</p>
                 </div>
                 <Switch
                   id="collapsible"
@@ -452,7 +452,7 @@ export function FieldProperties({ field, allFields, onUpdate }: FieldPropertiesP
                   onChange={(e) => onUpdate({ maxStars: e.target.value ? parseInt(e.target.value) : 5 })}
                   className="h-9"
                 />
-                <p className="text-[10px] text-muted-foreground">{t('field_props.max_stars_hint')}</p>
+                <p className="text-px-10 text-muted-foreground">{t('field_props.max_stars_hint')}</p>
               </div>
             )}
             
@@ -559,7 +559,7 @@ export function FieldProperties({ field, allFields, onUpdate }: FieldPropertiesP
                       {field.options?.map((option, index) => (
                         <div key={option.id} className="flex items-start gap-2 p-3 rounded-lg border bg-background">
                           <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-1">
-                            <span className="text-[10px] font-medium text-muted-foreground">{index + 1}</span>
+                            <span className="text-px-10 font-medium text-muted-foreground">{index + 1}</span>
                           </div>
                           <div className="flex-1 space-y-2">
                             <Input
@@ -611,7 +611,7 @@ export function FieldProperties({ field, allFields, onUpdate }: FieldPropertiesP
                 <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                   <div>
                     <Label className="text-sm font-medium">{t('conditional.enable')}</Label>
-                    <p className="text-[10px] text-muted-foreground">{t('conditional.enable_hint')}</p>
+                    <p className="text-px-10 text-muted-foreground">{t('conditional.enable_hint')}</p>
                   </div>
                   <Switch
                     checked={!!field.condition}

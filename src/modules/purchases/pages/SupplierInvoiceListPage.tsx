@@ -385,7 +385,7 @@ function SupplierInvoiceListContent() {
             <h1 className="text-lg md:text-xl font-semibold text-foreground truncate">
               {t("invoices.title", "Supplier Invoices")}
             </h1>
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-px-11 text-muted-foreground">
               {t("invoices.subtitle", "{{count}} invoices", { count: total })}
             </p>
           </div>
@@ -431,7 +431,7 @@ function SupplierInvoiceListContent() {
                       <s.icon className={cn("h-4 w-4", s.color)} />
                     </div>
                     <div className="min-w-0">
-                      <div className="text-[11px] text-muted-foreground truncate">{s.label}</div>
+                      <div className="text-px-11 text-muted-foreground truncate">{s.label}</div>
                       <div className="text-base sm:text-lg font-semibold text-foreground truncate">{s.value}</div>
                     </div>
                   </div>
@@ -464,7 +464,7 @@ function SupplierInvoiceListContent() {
               <Filter className="h-3.5 w-3.5 sm:mr-1.5" />
               <span className="hidden sm:inline">{t("filters.title", "Filters")}</span>
               {hasActiveFilter && (
-                <Badge variant="secondary" className="ml-1.5 h-4 px-1 text-[10px]">•</Badge>
+                <Badge variant="secondary" className="ml-1.5 h-4 px-1 text-px-10">•</Badge>
               )}
             </Button>
             {viewAll && <CompanyFilter value={companyId} onChange={setCompanyId} />}
@@ -594,13 +594,13 @@ function SupplierInvoiceListContent() {
                             <TableCell className="text-xs">
                               <div className="flex items-center gap-2 min-w-0">
                                 <Avatar className="h-6 w-6 shrink-0">
-                                  <AvatarFallback className="text-[10px] bg-muted">
+                                  <AvatarFallback className="text-px-10 bg-muted">
                                     {initials(inv.supplierName)}
                                   </AvatarFallback>
                                 </Avatar>
                                 <div className="flex flex-col min-w-0">
                                   <span className="truncate">{inv.supplierName}</span>
-                                  <CompanyBadge tenantId={(inv as any).tenantId} className="text-[9px] mt-0.5" />
+                                  <CompanyBadge tenantId={(inv as any).tenantId} className="text-px-9 mt-0.5" />
                                 </div>
                               </div>
                             </TableCell>
@@ -608,13 +608,13 @@ function SupplierInvoiceListContent() {
                             <TableCell className="text-xs text-muted-foreground">{inv.invoiceDate}</TableCell>
                             <TableCell className="text-xs text-muted-foreground">{inv.dueDate}</TableCell>
                             <TableCell>
-                              <Badge variant="secondary" className={`text-[10px] ${STATUS_COLORS[inv.status] || ""}`}>
+                              <Badge variant="secondary" className={`text-px-10 ${STATUS_COLORS[inv.status] || ""}`}>
                                 {t(`invoiceStatus.${inv.status}`)}
                               </Badge>
                             </TableCell>
                             <TableCell>
                               {inv.rsApplicable ? (
-                                <Badge variant="outline" className="text-[10px]">
+                                <Badge variant="outline" className="text-px-10">
                                   {rsRateForCode(inv.rsTypeCode) ?? inv.rsTypeCode}%
                                 </Badge>
                               ) : (
@@ -686,10 +686,10 @@ function SupplierInvoiceListContent() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <span className="text-sm font-medium text-primary">{inv.invoiceNumber}</span>
-                              <Badge variant="secondary" className={`text-[10px] ${STATUS_COLORS[inv.status] || ""}`}>
+                              <Badge variant="secondary" className={`text-px-10 ${STATUS_COLORS[inv.status] || ""}`}>
                                 {t(`invoiceStatus.${inv.status}`)}
                               </Badge>
-                              <CompanyBadge tenantId={(inv as any).tenantId} className="text-[9px]" />
+                              <CompanyBadge tenantId={(inv as any).tenantId} className="text-px-9" />
                             </div>
                             <div className="text-xs text-muted-foreground truncate mt-0.5">
                               {inv.supplierName} · {t("fields.dueDate", "Due")}: {inv.dueDate}
@@ -698,7 +698,7 @@ function SupplierInvoiceListContent() {
                           <div className="text-right shrink-0">
                             <div className="text-sm font-semibold">{fmt(inv.grandTotal)} {currency.code}</div>
                             {inv.rsApplicable && (
-                              <Badge variant="outline" className="text-[10px] mt-0.5">
+                              <Badge variant="outline" className="text-px-10 mt-0.5">
                                 RS {rsRateForCode(inv.rsTypeCode) ?? inv.rsTypeCode}%
                               </Badge>
                             )}

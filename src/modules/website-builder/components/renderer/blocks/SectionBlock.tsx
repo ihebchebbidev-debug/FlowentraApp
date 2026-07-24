@@ -160,7 +160,7 @@ export function SectionBlock({
 
       {/* Editor badge */}
       {isEditing && variant !== 'default' && (
-        <div className="absolute top-2 right-2 z-10 bg-black/50 text-white text-[9px] px-2 py-0.5 rounded-md capitalize">
+        <div className="absolute top-2 right-2 z-10 bg-black/50 text-white text-px-9 px-2 py-0.5 rounded-md capitalize">
           {variant} section
         </div>
       )}

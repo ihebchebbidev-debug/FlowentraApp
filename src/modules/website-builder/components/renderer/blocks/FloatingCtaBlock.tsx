@@ -85,7 +85,7 @@ export function FloatingCtaBlock({
             {text}
             {icon && <DynamicIcon name={icon} className="h-4 w-4" />}
           </div>
-          <p className="text-[9px] mt-2 opacity-40" style={{ color: theme.textColor }}>
+          <p className="text-px-9 mt-2 opacity-40" style={{ color: theme.textColor }}>
             Position: {position} • Shows after {showAfterScroll}px • Offset: {offsetX}x {offsetY}y
           </p>
         </div>

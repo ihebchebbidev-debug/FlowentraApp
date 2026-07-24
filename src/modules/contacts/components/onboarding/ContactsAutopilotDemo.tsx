@@ -79,7 +79,7 @@ const STATUS_CLS: Record<string, string> = {
   rejected:       'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
 };
 function Pill({ status }: { status: string }) {
-  return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium capitalize ${STATUS_CLS[status] ?? 'bg-muted text-muted-foreground'}`}>{status.replace(/_/g, ' ')}</span>;
+  return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-px-10 font-medium capitalize ${STATUS_CLS[status] ?? 'bg-muted text-muted-foreground'}`}>{status.replace(/_/g, ' ')}</span>;
 }
 const initials = (n: string) => n.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2);
 
@@ -96,7 +96,7 @@ function PageList({ state }: { state: ContactsDemoState }) {
           <div className="p-2 rounded-lg bg-primary/10"><Users className="h-6 w-6 text-primary" /></div>
           <div>
             <h1 id="ct-demo-title" className="text-xl font-semibold text-foreground">Contacts</h1>
-            <p className="text-[11px] text-muted-foreground">People, companies &amp; suppliers</p>
+            <p className="text-px-11 text-muted-foreground">People, companies &amp; suppliers</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -146,7 +146,7 @@ function PageList({ state }: { state: ContactsDemoState }) {
               { id: 'ct-demo-filter-favorites', focus: 'favorites', label: 'Favourites', value: 'All contacts' },
             ].map(f => (
               <div key={f.focus} className="flex flex-col gap-1 min-w-[150px]">
-                <span className="text-[10px] font-medium text-muted-foreground">{f.label}</span>
+                <span className="text-px-10 font-medium text-muted-foreground">{f.label}</span>
                 <div id={f.id} className={`h-9 px-2.5 rounded-md border text-sm flex items-center gap-2 cursor-default ${state.filterFocus === f.focus ? 'border-primary text-primary bg-primary/5' : 'border-border text-foreground'}`}>
                   {f.value} <ChevronRight className="h-3.5 w-3.5 ml-auto rotate-90 text-muted-foreground" />
                 </div>
@@ -177,7 +177,7 @@ function PageList({ state }: { state: ContactsDemoState }) {
               <MapPin className={`h-6 w-6 ${p.c} text-white rounded-full p-0.5`} fill="currentColor" />
             </div>
           ))}
-          <div className="absolute bottom-2 left-2 text-[10px] text-muted-foreground bg-background/70 rounded px-2 py-0.5">4 contacts mapped · Tunis · Sousse · Sfax</div>
+          <div className="absolute bottom-2 left-2 text-px-10 text-muted-foreground bg-background/70 rounded px-2 py-0.5">4 contacts mapped · Tunis · Sousse · Sfax</div>
         </div>
       )}
 
@@ -202,16 +202,16 @@ function PageList({ state }: { state: ContactsDemoState }) {
                   <td className="px-3 py-2.5"><span className={`h-3.5 w-3.5 rounded border inline-block ${state.selectMode ? 'bg-primary border-primary' : 'border-border bg-background'}`} /></td>
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-2.5">
-                      <span className="h-7 w-7 rounded-full bg-primary/10 text-primary text-[10px] font-bold inline-flex items-center justify-center">{initials(c.name)}</span>
+                      <span className="h-7 w-7 rounded-full bg-primary/10 text-primary text-px-10 font-bold inline-flex items-center justify-center">{initials(c.name)}</span>
                       <div className="min-w-0">
                         <div className="font-medium text-foreground flex items-center gap-1.5">{c.name}{c.fav && <Star className="h-3 w-3 fill-amber-400 text-amber-400" />}</div>
-                        {c.role && <div className="text-[11px] text-muted-foreground">{c.role}</div>}
+                        {c.role && <div className="text-px-11 text-muted-foreground">{c.role}</div>}
                       </div>
                     </div>
                   </td>
                   <td className="px-3 py-2.5"><span className="inline-flex items-center gap-1.5 text-muted-foreground"><Mail className="h-3 w-3 text-primary" />{c.email}</span></td>
                   <td className="px-3 py-2.5"><span className="inline-flex items-center gap-1.5 text-muted-foreground"><Phone className="h-3 w-3 text-primary" />{c.phone}</span></td>
-                  <td className="px-3 py-2.5"><span className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground">{TYPE_LABEL[c.type]}</span></td>
+                  <td className="px-3 py-2.5"><span className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-px-10 text-muted-foreground">{TYPE_LABEL[c.type]}</span></td>
                   <td className="px-3 py-2.5"><Pill status={c.status} /></td>
                   <td className="px-3 py-2.5 text-right">
                     <div className="inline-flex items-center gap-1">
@@ -236,7 +236,7 @@ function PageList({ state }: { state: ContactsDemoState }) {
             <p className="text-sm font-semibold mb-1 inline-flex items-center gap-2"><Trash2 className="h-4 w-4 text-destructive" /> Delete 3 contacts?</p>
             <p className="text-xs text-muted-foreground mb-3">This permanently removes the selected contacts. This action cannot be undone.</p>
             <div className="mb-3">
-              <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-1"><span>Deleting…</span><span>66%</span></div>
+              <div className="flex items-center justify-between text-px-11 text-muted-foreground mb-1"><span>Deleting…</span><span>66%</span></div>
               <div className="w-full h-2 rounded-full bg-muted overflow-hidden"><div className="h-full bg-destructive rounded-full" style={{ width: '66%' }} /></div>
             </div>
             <div className="flex justify-end gap-2"><div className="h-8 px-3 rounded-md border border-border text-xs flex items-center text-muted-foreground cursor-default">Cancel</div><div className="h-8 px-3 rounded-md bg-destructive text-destructive-foreground text-xs font-medium inline-flex items-center gap-1.5 cursor-default"><Trash2 className="h-3.5 w-3.5" /> Delete</div></div>
@@ -312,7 +312,7 @@ function PageCreate({ state }: { state: ContactsDemoState }) {
           <Field label="Status" active={step === 5}><div className="h-9 w-36 px-3 rounded-md border border-border text-sm flex items-center">{step >= 5 ? 'Customer' : '—'}</div></Field>
           <div className="flex items-center gap-1.5 h-9"><Star className={`h-4 w-4 ${step >= 5 ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground'}`} /><span className="text-xs text-muted-foreground">Favourite</span></div>
           <div className="flex gap-1.5 h-9 items-center">
-            {step >= 5 ? ['VIP', 'North Region'].map(tg => <span key={tg} className="h-6 px-2 rounded-full bg-primary/10 text-primary text-[10px] inline-flex items-center">{tg}</span>) : <span className="text-xs text-muted-foreground">tags…</span>}
+            {step >= 5 ? ['VIP', 'North Region'].map(tg => <span key={tg} className="h-6 px-2 rounded-full bg-primary/10 text-primary text-px-10 inline-flex items-center">{tg}</span>) : <span className="text-xs text-muted-foreground">tags…</span>}
           </div>
         </div>
       </div>
@@ -336,7 +336,7 @@ function PageImport({ state }: { state: ContactsDemoState }) {
         <h1 className="text-lg font-semibold">Import Contacts</h1>
       </div>
 
-      <div className="flex items-center gap-0 text-[11px]">
+      <div className="flex items-center gap-0 text-px-11">
         {['Upload', 'Mapping', 'Duplicates', 'Confirm'].map((s, i) => (
           <div key={s} className="flex items-center gap-0">
             <span className={`px-2.5 py-1 rounded-full font-medium ${i <= step ? 'bg-primary/10 text-primary' : 'text-muted-foreground'}`}>{s}</span>
@@ -350,9 +350,9 @@ function PageImport({ state }: { state: ContactsDemoState }) {
           <FileSpreadsheet className="h-8 w-8 text-green-600 shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium">contacts-import.xlsx</p>
-            <p className="text-[11px] text-muted-foreground">312 rows · name, email, phone, company, type, status, address, city, CIN, matricule fiscale</p>
+            <p className="text-px-11 text-muted-foreground">312 rows · name, email, phone, company, type, status, address, city, CIN, matricule fiscale</p>
           </div>
-          <span className="h-7 px-2.5 rounded-md border border-border text-[11px] text-muted-foreground inline-flex items-center gap-1 cursor-default"><Upload className="h-3 w-3" /> Template</span>
+          <span className="h-7 px-2.5 rounded-md border border-border text-px-11 text-muted-foreground inline-flex items-center gap-1 cursor-default"><Upload className="h-3 w-3" /> Template</span>
         </div>
 
         <div id="ct-demo-import-mapping" className={`transition-opacity ${step >= 1 ? '' : 'opacity-40'}`}>
@@ -383,7 +383,7 @@ function PageImport({ state }: { state: ContactsDemoState }) {
             {[['Mariem Khelifi', 'Update existing'], ['Acme Industries', 'Skip'], ['Sami Bouazizi', 'Import as new']].map(d => (
               <div key={d[0]} className="flex items-center justify-between p-2 rounded-md border border-border bg-muted/20 text-xs">
                 <span className="font-medium">{d[0]}</span>
-                <span className={`h-6 px-2 rounded-full text-[10px] inline-flex items-center ${step >= 2 ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>{step >= 2 ? d[1] : '—'}</span>
+                <span className={`h-6 px-2 rounded-full text-px-10 inline-flex items-center ${step >= 2 ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>{step >= 2 ? d[1] : '—'}</span>
               </div>
             ))}
           </div>
@@ -409,7 +409,7 @@ function RelatedList({ records, icon: Icon }: { records: { id: string; num: stri
             <Icon className="h-4 w-4 text-primary shrink-0" />
             <div>
               <div className="flex items-center gap-2"><span className="text-sm font-medium">{r.num}</span><Pill status={r.status} /></div>
-              <div className="flex items-center gap-1 mt-0.5 text-[11px] text-muted-foreground"><Calendar className="h-3 w-3" />{r.date}</div>
+              <div className="flex items-center gap-1 mt-0.5 text-px-11 text-muted-foreground"><Calendar className="h-3 w-3" />{r.date}</div>
             </div>
           </div>
           {r.amount > 0 && <span className="text-sm font-semibold mr-2">{fmt(r.amount)} TND</span>}
@@ -461,7 +461,7 @@ function PageDetail({ state }: { state: ContactsDemoState }) {
               <div className="flex items-center gap-2">
                 <h1 className="text-lg font-semibold">{c.name}</h1>
                 <Pill status={c.status} />
-                <span className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground">{TYPE_LABEL[c.type]}</span>
+                <span className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-px-10 text-muted-foreground">{TYPE_LABEL[c.type]}</span>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">{c.role ? `${c.role} · ` : ''}{c.company}</p>
             </div>
@@ -495,13 +495,13 @@ function PageDetail({ state }: { state: ContactsDemoState }) {
               {info.map(it => (
                 <div key={it.label} className="flex items-start gap-2.5 p-2.5 rounded-lg bg-muted/40 border border-border/60">
                   <span className="p-1.5 rounded-md bg-background"><it.icon className="h-3.5 w-3.5 text-primary" /></span>
-                  <div className="min-w-0"><p className="text-[10px] text-muted-foreground">{it.label}</p><p className="text-xs font-medium truncate">{it.value}</p></div>
+                  <div className="min-w-0"><p className="text-px-10 text-muted-foreground">{it.label}</p><p className="text-xs font-medium truncate">{it.value}</p></div>
                 </div>
               ))}
             </div>
             <div id="ct-demo-overview-status" className="flex flex-wrap items-center gap-4 pt-3 mt-3 border-t border-border">
               <span className="text-xs text-muted-foreground">Status: <Pill status={c.status} /></span>
-              <span className="text-xs text-muted-foreground">Type: <span className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-[10px]">{TYPE_LABEL[c.type]}</span></span>
+              <span className="text-xs text-muted-foreground">Type: <span className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-px-10">{TYPE_LABEL[c.type]}</span></span>
             </div>
           </div>
         )}
@@ -546,7 +546,7 @@ function PageDetail({ state }: { state: ContactsDemoState }) {
                 <span className="h-7 w-7 rounded-full bg-primary/10 text-primary inline-flex items-center justify-center shrink-0"><StickyNote className="h-3.5 w-3.5" /></span>
                 <div className="min-w-0">
                   <p className="text-xs text-foreground">{n.text}</p>
-                  <p className="text-[10px] text-muted-foreground mt-1">{n.date} · {n.by}</p>
+                  <p className="text-px-10 text-muted-foreground mt-1">{n.date} · {n.by}</p>
                 </div>
               </div>
             ))}
@@ -740,13 +740,13 @@ export function ContactsAutopilotDemo({ open, onClose }: Props) {
             <button
               key={ch.id}
               onClick={() => jumpChapter(ch.start)}
-              className={`text-[10px] font-medium px-2 py-0.5 rounded-full transition-colors cursor-pointer
+              className={`text-px-10 font-medium px-2 py-0.5 rounded-full transition-colors cursor-pointer
                 ${activeChapter.id === ch.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/70'}`}
             >
               {getChapterTitle(demoLang, ch.id, ch.title)}
             </button>
           ))}
-          <span className="ml-auto text-[10px] text-muted-foreground">{Math.min(stepIndex + 1, CT_STEPS.length)} / {CT_STEPS.length}</span>
+          <span className="ml-auto text-px-10 text-muted-foreground">{Math.min(stepIndex + 1, CT_STEPS.length)} / {CT_STEPS.length}</span>
         </div>
         <div className="h-1 rounded-full bg-muted overflow-hidden mb-2">
           <div className="h-full bg-primary transition-all duration-300" style={{ width: `${(Math.min(stepIndex + 1, CT_STEPS.length) / CT_STEPS.length) * 100}%` }} />

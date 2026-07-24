@@ -77,7 +77,7 @@ export const EventListView: React.FC<EventListViewProps> = ({
                   {d.format('dddd, MMM D')}
                 </span>
               </div>
-              <Badge variant="secondary" className="text-[10px] h-5">
+              <Badge variant="secondary" className="text-px-10 h-5">
                 {list.length} {list.length === 1 ? t('event') : t('events')}
               </Badge>
             </div>
@@ -105,12 +105,12 @@ export const EventListView: React.FC<EventListViewProps> = ({
                           <span className="font-medium text-sm truncate text-foreground group-hover:text-primary transition-colors">
                             {ev.title}
                           </span>
-                          <span className="text-[11px] text-muted-foreground shrink-0">
+                          <span className="text-px-11 text-muted-foreground shrink-0">
                             {isAllDay ? t('all_day') : `${dayjs(ev.start).format('HH:mm')} - ${dayjs(ev.end).format('HH:mm')}`}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
-                          <Badge variant="secondary" className="text-[10px] h-4 px-1.5 capitalize">{statusLabel}</Badge>
+                        <div className="flex items-center gap-2 text-px-11 text-muted-foreground flex-wrap">
+                          <Badge variant="secondary" className="text-px-10 h-4 px-1.5 capitalize">{statusLabel}</Badge>
                           {meta?.contactName && (
                             <span className="flex items-center gap-1">
                               <User className="h-2.5 w-2.5" /> {meta.contactName}

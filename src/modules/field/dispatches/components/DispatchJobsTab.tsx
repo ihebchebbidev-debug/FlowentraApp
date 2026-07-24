@@ -482,11 +482,11 @@ export function DispatchJobsTab({
                         )}
                       </div>
                       <div className="flex items-center gap-1.5 flex-shrink-0">
-                        <Badge variant="outline" className="text-[11px]">
+                        <Badge variant="outline" className="text-px-11">
                           {t('jobs_tab.jobs_count', { count: grp.jobs.length })}
                         </Badge>
                         {groupDuration > 0 && (
-                          <Badge variant="outline" className="text-[11px]">
+                          <Badge variant="outline" className="text-px-11">
                             {formatDuration(groupDuration)}
                           </Badge>
                         )}

@@ -74,7 +74,7 @@ export const KpiCard = ({
         <div className={cn('flex items-center gap-2', favorite && 'mr-7')}>
           {rag && <RagDot status={rag} />}
           {tag && (
-            <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-muted-foreground">
+            <span className="rounded bg-muted px-1.5 py-0.5 text-px-10 font-semibold tracking-wide text-muted-foreground">
               {tag}
             </span>
           )}
@@ -86,7 +86,7 @@ export const KpiCard = ({
       </div>
       <div className="mt-1 text-xs text-muted-foreground">{label}</div>
       {trend && (
-        <div className={cn('mt-2 flex items-center gap-1 text-[11px] font-medium', trendCls)}>
+        <div className={cn('mt-2 flex items-center gap-1 text-px-11 font-medium', trendCls)}>
           <TrendIcon className="h-3 w-3" />
           <span>{trend}</span>
         </div>

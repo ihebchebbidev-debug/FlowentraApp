@@ -80,7 +80,7 @@ export function VirtualTable({
         {columns.map((column, index) => (
           <div
             key={column.key}
-            className="flex items-center px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50"
+            className="flex items-center px-3 text-px-10 font-semibold uppercase tracking-widest text-muted-foreground/50"
             style={{ width: columnWidths[index], minWidth: columnWidths[index] }}
           >
             <span className="truncate">{column.label}</span>
@@ -112,7 +112,7 @@ export function VirtualTable({
           {columns.map((column, colIndex) => (
             <div
               key={column.key}
-              className="flex items-center px-3 text-[13px]"
+              className="flex items-center px-3 text-px-13"
               style={{ width: columnWidths[colIndex], minWidth: columnWidths[colIndex] }}
             >
               {column.render ? (
@@ -134,7 +134,7 @@ export function VirtualTable({
     return (
       <div className={cn('border border-border/30 rounded-lg overflow-hidden', className)}>
         {Header}
-        <div className="flex items-center justify-center py-10 text-[13px] text-muted-foreground/60">
+        <div className="flex items-center justify-center py-10 text-px-13 text-muted-foreground/60">
           No data available
         </div>
       </div>

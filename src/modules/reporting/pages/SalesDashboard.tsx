@@ -141,7 +141,7 @@ export const SalesDashboard = () => {
             <ChartCard title={t('sales.topCustomers', 'Top Customers — Offers & Orders')} favorite={{ id: 's-topcust', title: 'Top Customers', source: SOURCE }} bodyClassName="p-0" empty={!topCustomers.length}>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
-                  <thead className="bg-muted/50 text-[11px] uppercase tracking-wide text-muted-foreground">
+                  <thead className="bg-muted/50 text-px-11 uppercase tracking-wide text-muted-foreground">
                     <tr>
                       <th className="whitespace-nowrap px-3 py-2 text-left">{t('sales.customer', 'Customer')}</th>
                       <th className="whitespace-nowrap px-3 py-2 text-right">{t('sales.revenue', 'Revenue')}</th>

@@ -70,7 +70,7 @@ export default function CommentThread({ ticketId }: Props) {
 
   return (
     <div className="space-y-3">
-      <h4 className="text-[12px] font-semibold text-muted-foreground">{t('comments.title', 'Conversation')}</h4>
+      <h4 className="text-px-12 font-semibold text-muted-foreground">{t('comments.title', 'Conversation')}</h4>
 
       {isLoading ? (
         <div className="py-6 flex items-center justify-center"><Loader2 className="h-5 w-5 animate-spin" /></div>
@@ -100,7 +100,7 @@ export default function CommentThread({ ticketId }: Props) {
                     </div>
                   )}
                   {c.isInternal && isMainAdminUser && (
-                    <div className="mt-2 text-[11px] inline-flex items-center gap-2 px-2 py-0.5 bg-muted rounded text-muted-foreground">{t('comments.internal', 'Internal')}</div>
+                    <div className="mt-2 text-px-11 inline-flex items-center gap-2 px-2 py-0.5 bg-muted rounded text-muted-foreground">{t('comments.internal', 'Internal')}</div>
                   )}
                 </div>
               </div>
@@ -111,7 +111,7 @@ export default function CommentThread({ ticketId }: Props) {
 
       {/* Add comment form */}
       <form onSubmit={handleSubmit} className="space-y-2">
-        <Label className="text-[12px]">{t('comments.add', 'Add a comment')}</Label>
+        <Label className="text-px-12">{t('comments.add', 'Add a comment')}</Label>
         <Textarea value={text} onChange={(e) => setText(e.target.value)} placeholder={t('comments.placeholder', 'Write a message...')} />
         <div className="flex items-center gap-3">
           <input type="file" multiple onChange={onFileChange} />

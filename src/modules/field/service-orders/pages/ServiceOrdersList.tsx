@@ -424,7 +424,7 @@ export default function ServiceOrdersList() {
           </div>
           <div>
             <h1 className="text-xl font-semibold text-foreground">{t('list.title')}</h1>
-            <p className="text-[11px] text-muted-foreground">{t('list.subtitle')}</p>
+            <p className="text-px-11 text-muted-foreground">{t('list.subtitle')}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -454,7 +454,7 @@ export default function ServiceOrdersList() {
           </div>
           <div className="min-w-0">
             <h1 className="text-base font-semibold text-foreground truncate">{t('list.title')}</h1>
-            <p className="text-[10px] text-muted-foreground truncate">{t('list.subtitle')}</p>
+            <p className="text-px-10 text-muted-foreground truncate">{t('list.subtitle')}</p>
           </div>
         </div>
         {hasCreateAccess && (
@@ -530,7 +530,7 @@ export default function ServiceOrdersList() {
           >
             <SlidersHorizontal className="h-4 w-4" />
             {(filterStatus !== 'all' || filterPriority !== 'all' || filterAssigned !== 'all') && (
-              <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-primary text-[9px] text-white flex items-center justify-center font-bold">
+              <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-primary text-px-9 text-white flex items-center justify-center font-bold">
                 {[filterStatus !== 'all' ? 1 : 0, filterPriority !== 'all' ? 1 : 0, filterAssigned !== 'all' ? 1 : 0].reduce((a, b) => a + b, 0)}
               </span>
             )}
@@ -854,10 +854,10 @@ export default function ServiceOrdersList() {
                               {order.orderNumber}
                             </p>
                             <div className="flex items-center gap-1 shrink-0">
-                              <Badge className={`${getPriorityColor(order.priority)} text-[10px] px-2 py-0.5`}>
+                              <Badge className={`${getPriorityColor(order.priority)} text-px-10 px-2 py-0.5`}>
                                 {t(`priorities.${order.priority}`)}
                               </Badge>
-                              <Badge className={`${getStatusColor(order.status)} text-[10px] px-2 py-0.5`}>
+                              <Badge className={`${getStatusColor(order.status)} text-px-10 px-2 py-0.5`}>
                                 {t(`statuses.${order.status}`)}
                               </Badge>
                             </div>

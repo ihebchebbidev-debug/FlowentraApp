@@ -219,7 +219,7 @@ export function EndpointDetail() {
             <div className="flex items-center gap-2 text-muted-foreground/40 shrink-0">
               <div className="hidden sm:flex items-center gap-1.5">
                 <div className="h-px w-12 bg-muted-foreground/20" />
-                <div className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/50">
+                <div className="flex items-center gap-1 text-px-10 font-medium uppercase tracking-wider text-muted-foreground/50">
                   <Zap className="h-3 w-3" /> Flowentra
                 </div>
                 <div className="h-px w-12 bg-muted-foreground/20" />
@@ -241,7 +241,7 @@ export function EndpointDetail() {
                       <span className="text-sm font-medium text-blue-600">+{endpoint.sentToday}</span>
                       <span className="text-xs text-muted-foreground">{t('external.detail.sentToday', 'today')}</span>
                     </div>
-                    <p className="text-[11px] text-muted-foreground truncate max-w-[200px] mt-0.5">{endpoint.webhookForwardUrl}</p>
+                    <p className="text-px-11 text-muted-foreground truncate max-w-[200px] mt-0.5">{endpoint.webhookForwardUrl}</p>
                   </div>
                 </>
               ) : (

@@ -99,7 +99,7 @@ function RecordCard({
                     </span>
                     <Badge 
                       variant="outline" 
-                      className={`text-[10px] capitalize ${statusColors[record.status] || ''}`}
+                      className={`text-px-10 capitalize ${statusColors[record.status] || ''}`}
                     >
                       {record.status.replace('_', ' ')}
                     </Badge>

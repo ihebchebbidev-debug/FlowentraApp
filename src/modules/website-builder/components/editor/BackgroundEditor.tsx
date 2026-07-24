@@ -168,7 +168,7 @@ export function BackgroundEditor({ value, onChange }: BackgroundEditorProps) {
 
   return (
     <div className="space-y-2.5">
-      <Label className="text-[11px] font-medium text-foreground/70">Background</Label>
+      <Label className="text-px-11 font-medium text-foreground/70">Background</Label>
 
       {/* Mode selector */}
       <div className="flex gap-1 p-0.5 rounded-lg bg-muted/30 border border-border/20">
@@ -176,7 +176,7 @@ export function BackgroundEditor({ value, onChange }: BackgroundEditorProps) {
           <button
             key={mode}
             onClick={() => update({ mode })}
-            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[10px] font-medium transition-all flex-1 justify-center ${
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-px-10 font-medium transition-all flex-1 justify-center ${
               parsed.mode === mode
                 ? 'bg-background text-foreground shadow-sm'
                 : 'text-muted-foreground/60 hover:text-muted-foreground'
@@ -242,8 +242,8 @@ export function BackgroundEditor({ value, onChange }: BackgroundEditorProps) {
           {/* Opacity slider */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <Label className="text-[10px] text-muted-foreground/60">Opacity</Label>
-              <span className="text-[10px] text-muted-foreground/50 tabular-nums">{parsed.opacity}%</span>
+              <Label className="text-px-10 text-muted-foreground/60">Opacity</Label>
+              <span className="text-px-10 text-muted-foreground/50 tabular-nums">{parsed.opacity}%</span>
             </div>
             <Slider
               value={[parsed.opacity]}
@@ -261,7 +261,7 @@ export function BackgroundEditor({ value, onChange }: BackgroundEditorProps) {
         <div className="space-y-2.5">
           {/* Gradient type */}
           <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground/60">Type</Label>
+            <Label className="text-px-10 text-muted-foreground/60">Type</Label>
             <Select value={parsed.gradientType} onValueChange={(v) => update({ gradientType: v as GradientType })}>
               <SelectTrigger className="h-7 text-xs border-border/40 bg-background">
                 <SelectValue />
@@ -276,7 +276,7 @@ export function BackgroundEditor({ value, onChange }: BackgroundEditorProps) {
           {/* From / To colors */}
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <Label className="text-[10px] text-muted-foreground/60">From</Label>
+              <Label className="text-px-10 text-muted-foreground/60">From</Label>
               <div className="flex items-center gap-1.5">
                 <input
                   type="color"
@@ -288,12 +288,12 @@ export function BackgroundEditor({ value, onChange }: BackgroundEditorProps) {
                 <Input
                   value={parsed.gradientFrom}
                   onChange={(e) => update({ gradientFrom: e.target.value })}
-                  className="h-7 text-[10px] font-mono border-border/30 bg-background"
+                  className="h-7 text-px-10 font-mono border-border/30 bg-background"
                 />
               </div>
             </div>
             <div className="space-y-1">
-              <Label className="text-[10px] text-muted-foreground/60">To</Label>
+              <Label className="text-px-10 text-muted-foreground/60">To</Label>
               <div className="flex items-center gap-1.5">
                 <input
                   type="color"
@@ -305,7 +305,7 @@ export function BackgroundEditor({ value, onChange }: BackgroundEditorProps) {
                 <Input
                   value={parsed.gradientTo}
                   onChange={(e) => update({ gradientTo: e.target.value })}
-                  className="h-7 text-[10px] font-mono border-border/30 bg-background"
+                  className="h-7 text-px-10 font-mono border-border/30 bg-background"
                 />
               </div>
             </div>
@@ -315,8 +315,8 @@ export function BackgroundEditor({ value, onChange }: BackgroundEditorProps) {
           {parsed.gradientType === 'linear' && (
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <Label className="text-[10px] text-muted-foreground/60">Angle</Label>
-                <span className="text-[10px] text-muted-foreground/50 tabular-nums">{parsed.gradientAngle}°</span>
+                <Label className="text-px-10 text-muted-foreground/60">Angle</Label>
+                <span className="text-px-10 text-muted-foreground/50 tabular-nums">{parsed.gradientAngle}°</span>
               </div>
               <Slider
                 value={[parsed.gradientAngle]}
@@ -330,7 +330,7 @@ export function BackgroundEditor({ value, onChange }: BackgroundEditorProps) {
 
           {/* Gradient presets */}
           <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground/60">Presets</Label>
+            <Label className="text-px-10 text-muted-foreground/60">Presets</Label>
             <div className="grid grid-cols-4 gap-1.5">
               {PRESET_GRADIENTS.map((g) => (
                 <button

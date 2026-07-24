@@ -120,7 +120,7 @@ export function ScrollToTopBlock({
               <DynamicIcon name={icon} className="w-5 h-5" />
             </button>
           </div>
-          <p className="text-[9px] mt-2 opacity-40" style={{ color: theme.textColor }}>
+          <p className="text-px-9 mt-2 opacity-40" style={{ color: theme.textColor }}>
             Mode: {modeLabel} • Position: {position} • Shows after {showAfterScroll}px
           </p>
         </div>

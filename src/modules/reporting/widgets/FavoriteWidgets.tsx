@@ -163,7 +163,7 @@ const SalesWidget = ({ fav }: { fav: FavoriteWidget }) => {
         <ChartCard title={t('sales.topCustomers', 'Top Customers — Offers & Orders')} favorite={fav} bodyClassName="p-0" empty={!topCustomers.length}>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
-              <thead className="bg-muted/50 text-[11px] uppercase tracking-wide text-muted-foreground">
+              <thead className="bg-muted/50 text-px-11 uppercase tracking-wide text-muted-foreground">
                 <tr>
                   <th className="whitespace-nowrap px-3 py-2 text-left">{t('sales.customer', 'Customer')}</th>
                   <th className="whitespace-nowrap px-3 py-2 text-right">{t('sales.revenue', 'Revenue')}</th>
@@ -305,7 +305,7 @@ const ServiceWidget = ({ fav }: { fav: FavoriteWidget }) => {
             ].map((s) => (
               <div key={s.l} className="rounded-md bg-muted p-2 text-center">
                 <div className={`text-base font-bold ${s.tone}`}>{s.v}</div>
-                <div className="text-[10px] text-muted-foreground">{s.l}</div>
+                <div className="text-px-10 text-muted-foreground">{s.l}</div>
               </div>
             ))}
           </div>
@@ -317,7 +317,7 @@ const ServiceWidget = ({ fav }: { fav: FavoriteWidget }) => {
         <ChartCard title={t('service.techTable', 'Technician Performance Detail')} favorite={fav} bodyClassName="p-0" empty={!techs.length} emptyLabel={t('service.techEmpty', 'Technician table not yet populated')}>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
-              <thead className="bg-muted/50 text-[11px] uppercase tracking-wide text-muted-foreground">
+              <thead className="bg-muted/50 text-px-11 uppercase tracking-wide text-muted-foreground">
                 <tr>
                   <th className="whitespace-nowrap px-3 py-2 text-left">{t('service.tech', 'Technician')}</th>
                   <th className="whitespace-nowrap px-3 py-2 text-right">{t('service.completed', 'Completion %')}</th>
@@ -410,7 +410,7 @@ const FinanceWidget = ({ fav }: { fav: FavoriteWidget }) => {
         <ChartCard title={t('finance.invoiceTable', 'Recent Invoices')} favorite={fav} bodyClassName="p-0" empty={!invoices.length} emptyLabel={t('finance.invoiceEmpty', 'Invoice detail rows not yet populated')}>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
-              <thead className="bg-muted/50 text-[11px] uppercase tracking-wide text-muted-foreground">
+              <thead className="bg-muted/50 text-px-11 uppercase tracking-wide text-muted-foreground">
                 <tr>
                   <th className="w-8 px-3 py-2"></th>
                   <th className="whitespace-nowrap px-3 py-2 text-left">{t('finance.invoiceNumber', 'Invoice')}</th>
@@ -530,7 +530,7 @@ const HrWidget = ({ fav }: { fav: FavoriteWidget }) => {
         <ChartCard title={t('hr.employeeTable', 'Employee Detail')} favorite={fav} bodyClassName="p-0" empty={!employees.length} emptyLabel={t('hr.empty', 'Employee table not yet populated')}>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
-              <thead className="bg-muted/50 text-[11px] uppercase tracking-wide text-muted-foreground">
+              <thead className="bg-muted/50 text-px-11 uppercase tracking-wide text-muted-foreground">
                 <tr>
                   <th className="whitespace-nowrap px-3 py-2 text-left">{t('hr.employee', 'Employee')}</th>
                   <th className="whitespace-nowrap px-3 py-2 text-left">{t('hr.department', 'Department')}</th>
@@ -646,7 +646,7 @@ const PurchaseWidget = ({ fav }: { fav: FavoriteWidget }) => {
         <ChartCard title={t('purchase.poTable', 'Purchase Order Detail')} favorite={fav} bodyClassName="p-0" empty={!pos.length} emptyLabel={t('purchase.empty', 'PO detail table not yet populated')}>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
-              <thead className="bg-muted/50 text-[11px] uppercase tracking-wide text-muted-foreground">
+              <thead className="bg-muted/50 text-px-11 uppercase tracking-wide text-muted-foreground">
                 <tr>
                   <th className="whitespace-nowrap px-3 py-2 text-left">{t('purchase.poNumber', 'PO')}</th>
                   <th className="whitespace-nowrap px-3 py-2 text-left">{t('purchase.supplier', 'Supplier')}</th>

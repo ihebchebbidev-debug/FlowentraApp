@@ -35,7 +35,7 @@ const STATUS_CLS: Record<string, string> = {
   lost:        'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
 };
 function Pill({ s }: { s: string }) {
-  return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium capitalize ${STATUS_CLS[s] ?? 'bg-muted text-muted-foreground'}`}>{s}</span>;
+  return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-px-10 font-medium capitalize ${STATUS_CLS[s] ?? 'bg-muted text-muted-foreground'}`}>{s}</span>;
 }
 const initials = (n: string) => n.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2);
 
@@ -47,7 +47,7 @@ function StatCard({ id, icon, label, value, active }: { id: string; icon: React.
     <div id={id} className={`rounded-lg p-3 border cursor-default transition-all ${active ? 'border-2 border-primary bg-primary/5' : 'border-border bg-card'}`}>
       <div className="flex items-center gap-2.5">
         <span className={`p-2 rounded-lg ${active ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>{icon}</span>
-        <div className="min-w-0"><p className="text-[11px] text-muted-foreground font-medium truncate">{label}</p><p className="text-sm font-bold">{value}</p></div>
+        <div className="min-w-0"><p className="text-px-11 text-muted-foreground font-medium truncate">{label}</p><p className="text-sm font-bold">{value}</p></div>
       </div>
     </div>
   );
@@ -59,7 +59,7 @@ function PageList({ state }: { state: OffersDemoState }) {
       <div className="flex items-center justify-between p-4 border-b border-border bg-card/50">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-primary/10"><FileText className="h-6 w-6 text-primary" /></div>
-          <div><h1 id="of-demo-title" className="text-xl font-semibold">Offers</h1><p className="text-[11px] text-muted-foreground">Quotes &amp; sales pipeline</p></div>
+          <div><h1 id="of-demo-title" className="text-xl font-semibold">Offers</h1><p className="text-px-11 text-muted-foreground">Quotes &amp; sales pipeline</p></div>
         </div>
         <div className="flex gap-2">
           <div id="of-demo-import" className="h-8 px-3 rounded-md border border-border text-xs inline-flex items-center gap-1.5 cursor-default text-muted-foreground"><Upload className="h-3.5 w-3.5" /> Import</div>
@@ -102,8 +102,8 @@ function PageList({ state }: { state: OffersDemoState }) {
         <div id="of-demo-bulk" className="mx-4 mt-4 rounded-md border border-primary/40 bg-primary/5 px-3 py-2 flex items-center gap-3">
           <span className="text-xs font-medium text-primary">2 selected</span>
           <span className="h-4 w-px bg-border" />
-          <span className="text-[11px] inline-flex items-center gap-1 text-muted-foreground"><Trash2 className="h-3 w-3" /> Delete</span>
-          <span className="ml-auto text-[10px] text-muted-foreground">Bulk actions apply to every ticked row.</span>
+          <span className="text-px-11 inline-flex items-center gap-1 text-muted-foreground"><Trash2 className="h-3 w-3" /> Delete</span>
+          <span className="ml-auto text-px-10 text-muted-foreground">Bulk actions apply to every ticked row.</span>
         </div>
       )}
 
@@ -111,7 +111,7 @@ function PageList({ state }: { state: OffersDemoState }) {
         <div className="p-4"><div className="h-56 rounded-lg border border-border overflow-hidden relative bg-[linear-gradient(135deg,#e8f0e8_0%,#dce9f0_100%)] dark:bg-[linear-gradient(135deg,#1b2a1b_0%,#16242e_100%)]">
           <div className="absolute inset-0 opacity-40" style={{ backgroundImage: 'repeating-linear-gradient(0deg,transparent,transparent 28px,rgba(120,120,120,.25) 29px),repeating-linear-gradient(90deg,transparent,transparent 28px,rgba(120,120,120,.25) 29px)' }} />
           {[['28%', '40%'], ['62%', '55%'], ['46%', '70%']].map((p, i) => <div key={i} className="absolute -translate-x-1/2 -translate-y-full" style={{ left: p[0], top: p[1] }}><Map className="h-6 w-6 bg-primary text-white rounded-full p-1" /></div>)}
-          <div className="absolute bottom-2 left-2 text-[10px] text-muted-foreground bg-background/70 rounded px-2 py-0.5">Offers by customer location</div>
+          <div className="absolute bottom-2 left-2 text-px-10 text-muted-foreground bg-background/70 rounded px-2 py-0.5">Offers by customer location</div>
         </div></div>
       ) : (
         <div className="p-4">
@@ -132,15 +132,15 @@ function PageList({ state }: { state: OffersDemoState }) {
                   return (
                     <tr key={o.id} className={`border-b border-border/40 last:border-0 ${checked ? 'bg-primary/[0.04]' : ''}`}>
                       <td className="px-3 py-2.5"><span className={`h-3.5 w-3.5 rounded border inline-flex items-center justify-center ${checked ? 'bg-primary border-primary' : 'border-border'}`}>{checked && <CheckCircle2 className="h-2.5 w-2.5 text-primary-foreground" />}</span></td>
-                      <td className="px-3 py-2.5"><div className="font-medium text-primary">{o.num}</div><div className="text-[10px] text-muted-foreground truncate max-w-[180px]">{o.title}</div></td>
-                      <td className="px-3 py-2.5"><span className="inline-flex items-center gap-1.5"><span className="h-5 w-5 rounded-full bg-primary/10 text-primary text-[9px] font-bold inline-flex items-center justify-center">{initials(o.customer)}</span>{o.customer}</span></td>
+                      <td className="px-3 py-2.5"><div className="font-medium text-primary">{o.num}</div><div className="text-px-10 text-muted-foreground truncate max-w-[180px]">{o.title}</div></td>
+                      <td className="px-3 py-2.5"><span className="inline-flex items-center gap-1.5"><span className="h-5 w-5 rounded-full bg-primary/10 text-primary text-px-9 font-bold inline-flex items-center justify-center">{initials(o.customer)}</span>{o.customer}</span></td>
                       <td className="px-3 py-2.5 text-right font-semibold">{fmt(o.amount)} TND</td>
                       <td className="px-3 py-2.5"><Pill s={o.status} /></td>
                       <td className="px-3 py-2.5 text-muted-foreground">{o.valid}</td>
                       <td className="px-3 py-2.5 relative">
                         <span id={i === 0 ? 'of-demo-row-actions' : undefined} className="inline-flex h-6 w-6 items-center justify-center rounded-md hover:bg-muted text-muted-foreground"><MoreHorizontal className="h-3.5 w-3.5" /></span>
                         {i === 0 && (
-                          <div className="absolute right-3 top-8 z-[3] w-40 bg-popover border border-border rounded-md shadow-lg py-1 text-[11px]">
+                          <div className="absolute right-3 top-8 z-[3] w-40 bg-popover border border-border rounded-md shadow-lg py-1 text-px-11">
                             {[[<Eye key="v" className="h-3 w-3" />, 'View'], [<Edit key="e" className="h-3 w-3" />, 'Edit'], [<Send key="s" className="h-3 w-3" />, 'Send'], [<GitBranch key="c" className="h-3 w-3" />, 'Convert to Sale'], [<ClipboardList key="r" className="h-3 w-3" />, 'Report'], [<Trash2 key="d" className="h-3 w-3 text-red-500" />, 'Delete']].map(([ic, l]) => (
                               <div key={l as string} className="flex items-center gap-2 px-2.5 py-1 hover:bg-muted cursor-default">{ic}<span>{l as string}</span></div>
                             ))}
@@ -180,7 +180,7 @@ function PageCreate({ state }: { state: OffersDemoState }) {
         </div>
         {/* Items */}
         <div id="of-demo-create-items" className={`transition-opacity ${step >= 2 ? '' : 'opacity-40'}`}>
-          <div className="flex items-center justify-between mb-2"><span className="text-xs font-medium">Line items</span><span className="h-6 px-2 rounded border border-border text-[10px] text-muted-foreground inline-flex items-center gap-1"><Plus className="h-3 w-3" /> Add</span></div>
+          <div className="flex items-center justify-between mb-2"><span className="text-xs font-medium">Line items</span><span className="h-6 px-2 rounded border border-border text-px-10 text-muted-foreground inline-flex items-center gap-1"><Plus className="h-3 w-3" /> Add</span></div>
           <div className="border border-border rounded-md overflow-hidden">
             <table className="w-full text-xs">
               <thead><tr className="bg-muted/40 border-b border-border"><th className="text-left px-3 py-1.5 text-muted-foreground">Item</th><th className="text-right px-3 py-1.5 text-muted-foreground">Qty</th><th className="text-right px-3 py-1.5 text-muted-foreground">Price</th><th className="text-right px-3 py-1.5 text-muted-foreground">Total</th></tr></thead>
@@ -251,15 +251,15 @@ function PageDetail({ state }: { state: OffersDemoState }) {
         <div className="flex items-center gap-0">
           {STEPPER.map((s, i) => (
             <div key={s} className="flex items-center gap-0">
-              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium capitalize ${i <= state.statusStage ? 'text-primary bg-primary/10' : 'text-muted-foreground'}`}>
+              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-px-11 font-medium capitalize ${i <= state.statusStage ? 'text-primary bg-primary/10' : 'text-muted-foreground'}`}>
                 {i < state.statusStage && <CheckCircle2 className="h-3 w-3" />}{s}
               </div>
               {i < STEPPER.length - 1 && <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40" />}
             </div>
           ))}
           <div className="ml-auto flex gap-1.5">
-            <span className="px-2 py-1 rounded text-[10px] border border-red-300 text-red-600">Decline</span>
-            <span className="px-2 py-1 rounded text-[10px] border border-border text-muted-foreground">Cancel</span>
+            <span className="px-2 py-1 rounded text-px-10 border border-red-300 text-red-600">Decline</span>
+            <span className="px-2 py-1 rounded text-px-10 border border-border text-muted-foreground">Cancel</span>
           </div>
         </div>
       </div>
@@ -306,18 +306,18 @@ function PageDetail({ state }: { state: OffersDemoState }) {
         {state.activeTab === 'checklists' && (
           <div className="space-y-3">
             <div className="bg-card border border-border rounded-lg p-4 space-y-2">
-              <p className="text-sm font-medium mb-1 inline-flex items-center gap-2"><ListChecks className="h-4 w-4 text-primary" /> Pre-send checklist <span className="text-[10px] font-normal text-muted-foreground">· offer-level</span></p>
+              <p className="text-sm font-medium mb-1 inline-flex items-center gap-2"><ListChecks className="h-4 w-4 text-primary" /> Pre-send checklist <span className="text-px-10 font-normal text-muted-foreground">· offer-level</span></p>
               {[['Site survey completed', true], ['Pricing approved by manager', true], ['Lead time confirmed with supplier', false]].map(c => (
                 <div key={c[0] as string} className="flex items-center gap-2 text-xs"><span className={`h-4 w-4 rounded border inline-flex items-center justify-center ${c[1] ? 'bg-primary border-primary' : 'border-border'}`}>{c[1] && <CheckCircle2 className="h-3 w-3 text-primary-foreground" />}</span><span className={c[1] ? 'line-through text-muted-foreground' : ''}>{c[0]}</span></div>
               ))}
             </div>
             {/* Item-level checklist on a service line — follows to the job/dispatch. */}
             <div id="of-demo-item-checklist" className="bg-card border border-primary/30 ring-1 ring-primary/15 rounded-lg p-4 space-y-2">
-              <p className="text-sm font-medium mb-1 inline-flex items-center gap-2"><ListChecks className="h-4 w-4 text-primary" /> Service line: Annual Maintenance Plan <span className="text-[10px] font-normal text-primary">· follows to the job →</span></p>
+              <p className="text-sm font-medium mb-1 inline-flex items-center gap-2"><ListChecks className="h-4 w-4 text-primary" /> Service line: Annual Maintenance Plan <span className="text-px-10 font-normal text-primary">· follows to the job →</span></p>
               {[['Inspect & clean unit', false], ['Replace filters', false], ['Performance test & report', false]].map(c => (
                 <div key={c[0] as string} className="flex items-center gap-2 text-xs"><span className="h-4 w-4 rounded border border-border inline-flex items-center justify-center" /><span>{c[0]}</span></div>
               ))}
-              <p className="text-[10px] text-muted-foreground pt-1">Carried offer → sale → service-order job → dispatch.</p>
+              <p className="text-px-10 text-muted-foreground pt-1">Carried offer → sale → service-order job → dispatch.</p>
             </div>
           </div>
         )}
@@ -332,10 +332,10 @@ function PageDetail({ state }: { state: OffersDemoState }) {
           <div className="space-y-2">
             <div className="flex items-center justify-between mb-1">
               <p className="text-xs font-medium inline-flex items-center gap-2"><Activity className="h-3.5 w-3.5 text-primary" /> Notes &amp; activity</p>
-              <span className="h-6 px-2 rounded border border-border text-[10px] text-muted-foreground inline-flex items-center gap-1"><Plus className="h-3 w-3" /> Add note</span>
+              <span className="h-6 px-2 rounded border border-border text-px-10 text-muted-foreground inline-flex items-center gap-1"><Plus className="h-3 w-3" /> Add note</span>
             </div>
             {[['Called Sami — wants delivery before July.', 'Ahmed B.', '2025-06-09'], ['Sent revised pricing with 5% discount.', 'Sara M.', '2025-06-05'], ['Offer created', 'Ahmed B.', '2025-06-01']].map(n => (
-              <div key={n[0]} className="flex gap-3 p-3 bg-card border border-border rounded-lg"><span className="h-7 w-7 rounded-full bg-primary/10 text-primary inline-flex items-center justify-center shrink-0"><StickyNote className="h-3.5 w-3.5" /></span><div><p className="text-xs">{n[0]}</p><p className="text-[10px] text-muted-foreground mt-0.5">{n[2]} · {n[1]}</p></div></div>
+              <div key={n[0]} className="flex gap-3 p-3 bg-card border border-border rounded-lg"><span className="h-7 w-7 rounded-full bg-primary/10 text-primary inline-flex items-center justify-center shrink-0"><StickyNote className="h-3.5 w-3.5" /></span><div><p className="text-xs">{n[0]}</p><p className="text-px-10 text-muted-foreground mt-0.5">{n[2]} · {n[1]}</p></div></div>
             ))}
           </div>
         )}
@@ -361,24 +361,24 @@ function PageDetail({ state }: { state: OffersDemoState }) {
         <div className="absolute inset-0 z-[6] flex items-center justify-center bg-background/50 p-6">
           <div className="flex gap-3 h-full max-h-[80%]">
             <div id="of-demo-pdf-download" className="w-72 bg-white text-black rounded-lg shadow-2xl border border-border overflow-hidden flex flex-col">
-              <div className="bg-primary/90 text-white p-3"><div className="text-sm font-bold">QUOTE · OFF-2025-031</div><div className="text-[9px] opacity-90">Flowentra SARL · MF 0000000/A/M/000</div></div>
-              <div className="p-3 text-[9px] space-y-2 flex-1">
+              <div className="bg-primary/90 text-white p-3"><div className="text-sm font-bold">QUOTE · OFF-2025-031</div><div className="text-px-9 opacity-90">Flowentra SARL · MF 0000000/A/M/000</div></div>
+              <div className="p-3 text-px-9 space-y-2 flex-1">
                 <div className="flex justify-between"><div><div className="font-semibold">Bill to</div><div>Médina Resorts</div><div>MF 1234567/A/M/000</div></div><div className="text-right"><div>Date 02/06/2025</div><div>Valid 30/06/2025</div></div></div>
                 <table className="w-full"><thead><tr className="border-b border-gray-300"><th className="text-left py-0.5">Item</th><th className="text-right">Total</th></tr></thead><tbody>
                   <tr><td className="py-0.5">Split AC unit ×6</td><td className="text-right">12,600</td></tr>
                   <tr><td className="py-0.5">Installation</td><td className="text-right">3,400</td></tr>
                 </tbody></table>
-                <div className="text-right space-y-0.5 border-t border-gray-300 pt-1"><div>TVA 19% · stamp 1</div><div className="font-bold text-[11px]">Total 18,400 TND</div></div>
+                <div className="text-right space-y-0.5 border-t border-gray-300 pt-1"><div>TVA 19% · stamp 1</div><div className="font-bold text-px-11">Total 18,400 TND</div></div>
               </div>
             </div>
             {state.pdfSettings && (
               <div id="of-demo-pdf-settings" className="w-56 bg-card border border-border rounded-lg shadow-2xl p-3">
                 <p className="text-xs font-semibold mb-2 inline-flex items-center gap-1.5"><Palette className="h-3.5 w-3.5 text-primary" /> PDF Studio</p>
-                <div className="flex gap-1 mb-3 border-b border-border pb-2 flex-wrap">{['Colors', 'Typography', 'Layout', 'Data', 'Advanced'].map((t, i) => <span key={t} className={`text-[10px] px-1.5 py-0.5 rounded ${i === 0 ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>{t}</span>)}</div>
+                <div className="flex gap-1 mb-3 border-b border-border pb-2 flex-wrap">{['Colors', 'Typography', 'Layout', 'Data', 'Advanced'].map((t, i) => <span key={t} className={`text-px-10 px-1.5 py-0.5 rounded ${i === 0 ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>{t}</span>)}</div>
                 <div className="space-y-2">
-                  <div><div className="text-[10px] text-muted-foreground mb-1">Accent colour</div><div className="flex gap-1">{['bg-primary', 'bg-blue-500', 'bg-emerald-500', 'bg-rose-500', 'bg-amber-500'].map((c, i) => <span key={c} className={`h-5 w-5 rounded ${c} ${i === 0 ? 'ring-2 ring-offset-1 ring-foreground' : ''}`} />)}</div></div>
-                  <div><div className="text-[10px] text-muted-foreground mb-1">Font</div><div className="h-7 rounded border border-border text-[11px] flex items-center px-2">Inter</div></div>
-                  <div className="flex items-center justify-between"><span className="text-[11px]">Show fiscal stamp</span><span className="h-4 w-7 rounded-full bg-primary relative"><span className="absolute top-0.5 left-3.5 h-3 w-3 rounded-full bg-white" /></span></div>
+                  <div><div className="text-px-10 text-muted-foreground mb-1">Accent colour</div><div className="flex gap-1">{['bg-primary', 'bg-blue-500', 'bg-emerald-500', 'bg-rose-500', 'bg-amber-500'].map((c, i) => <span key={c} className={`h-5 w-5 rounded ${c} ${i === 0 ? 'ring-2 ring-offset-1 ring-foreground' : ''}`} />)}</div></div>
+                  <div><div className="text-px-10 text-muted-foreground mb-1">Font</div><div className="h-7 rounded border border-border text-px-11 flex items-center px-2">Inter</div></div>
+                  <div className="flex items-center justify-between"><span className="text-px-11">Show fiscal stamp</span><span className="h-4 w-7 rounded-full bg-primary relative"><span className="absolute top-0.5 left-3.5 h-3 w-3 rounded-full bg-white" /></span></div>
                 </div>
               </div>
             )}
@@ -396,7 +396,7 @@ function PageDetail({ state }: { state: OffersDemoState }) {
               <div className="flex justify-between p-2 rounded-md bg-muted/40"><span className="text-muted-foreground">Customer</span><span className="font-medium">Médina Resorts</span></div>
               <div className="flex justify-between p-2 rounded-md bg-muted/40"><span className="text-muted-foreground">Line count</span><span className="font-medium">2 items</span></div>
               <div className="flex justify-between p-2 rounded-md bg-primary/5 border border-primary/20"><span className="text-primary">Total</span><span className="text-primary font-semibold">18,400 TND</span></div>
-              <p className="text-[10px] text-muted-foreground pt-1">The new sale keeps the link to this offer. From the sale you can invoice, deduct stock, and — if it includes services — create a service order.</p>
+              <p className="text-px-10 text-muted-foreground pt-1">The new sale keeps the link to this offer. From the sale you can invoice, deduct stock, and — if it includes services — create a service order.</p>
             </div>
             <div className="flex justify-end gap-2 mt-3"><div className="h-8 px-3 rounded-md border border-border text-xs flex items-center text-muted-foreground">Cancel</div><div className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium inline-flex items-center gap-1.5"><GitBranch className="h-3.5 w-3.5" /> Confirm convert</div></div>
           </div>
@@ -494,9 +494,9 @@ export function OffersAutopilotDemo({ open, onClose }: Props) {
       <div className="shrink-0 border-t border-border/60 bg-card px-4 py-3">
         <div className="flex items-center gap-2 mb-2 flex-wrap">
           {OF_CHAPTERS.map(ch => (
-            <button key={ch.id} onClick={() => jumpChapter(ch.start)} className={`text-[10px] font-medium px-2 py-0.5 rounded-full transition-colors cursor-pointer ${activeChapter.id === ch.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/70'}`}>{getChapterTitle(demoLang, ch.id, ch.title)}</button>
+            <button key={ch.id} onClick={() => jumpChapter(ch.start)} className={`text-px-10 font-medium px-2 py-0.5 rounded-full transition-colors cursor-pointer ${activeChapter.id === ch.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/70'}`}>{getChapterTitle(demoLang, ch.id, ch.title)}</button>
           ))}
-          <span className="ml-auto text-[10px] text-muted-foreground">{Math.min(stepIndex + 1, OF_STEPS.length)} / {OF_STEPS.length}</span>
+          <span className="ml-auto text-px-10 text-muted-foreground">{Math.min(stepIndex + 1, OF_STEPS.length)} / {OF_STEPS.length}</span>
         </div>
         <div className="h-1 rounded-full bg-muted overflow-hidden mb-2"><div className="h-full bg-primary transition-all duration-300" style={{ width: `${(Math.min(stepIndex + 1, OF_STEPS.length) / OF_STEPS.length) * 100}%` }} /></div>
         <p className="text-sm text-foreground/90 min-h-[20px] flex items-center gap-2"><Languages className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />{finished ? finishedMsg : captionText}</p>
@@ -509,13 +509,13 @@ export function OffersAutopilotDemo({ open, onClose }: Props) {
             <p className="text-sm font-semibold mb-1 inline-flex items-center gap-2"><Target className="h-4 w-4 text-primary" /> Planning entries · Line 2 · On-site installation</p>
             <p className="text-xs text-muted-foreground mb-3">These planned costs travel with the item to the sale and then to the service order.</p>
             <div className="grid grid-cols-3 gap-2 text-xs">
-              <div className="p-2.5 rounded-lg border border-border"><p className="text-[10px] text-muted-foreground inline-flex items-center gap-1"><Wrench className="h-3 w-3" /> Planned labour</p><p className="font-semibold mt-1">180 min · 1 tech</p><p className="text-[10px] text-muted-foreground">HVAC skill</p></div>
-              <div className="p-2.5 rounded-lg border border-border"><p className="text-[10px] text-muted-foreground inline-flex items-center gap-1"><DollarSign className="h-3 w-3" /> Planned expenses</p><p className="font-semibold mt-1">45 TND · travel</p><p className="text-[10px] text-muted-foreground">Round trip Sousse</p></div>
-              <div className="p-2.5 rounded-lg border border-border"><p className="text-[10px] text-muted-foreground inline-flex items-center gap-1"><ShoppingCart className="h-3 w-3" /> Planned materials</p><p className="font-semibold mt-1">4 kg R410A</p><p className="text-[10px] text-muted-foreground">from stock</p></div>
+              <div className="p-2.5 rounded-lg border border-border"><p className="text-px-10 text-muted-foreground inline-flex items-center gap-1"><Wrench className="h-3 w-3" /> Planned labour</p><p className="font-semibold mt-1">180 min · 1 tech</p><p className="text-px-10 text-muted-foreground">HVAC skill</p></div>
+              <div className="p-2.5 rounded-lg border border-border"><p className="text-px-10 text-muted-foreground inline-flex items-center gap-1"><DollarSign className="h-3 w-3" /> Planned expenses</p><p className="font-semibold mt-1">45 TND · travel</p><p className="text-px-10 text-muted-foreground">Round trip Sousse</p></div>
+              <div className="p-2.5 rounded-lg border border-border"><p className="text-px-10 text-muted-foreground inline-flex items-center gap-1"><ShoppingCart className="h-3 w-3" /> Planned materials</p><p className="font-semibold mt-1">4 kg R410A</p><p className="text-px-10 text-muted-foreground">from stock</p></div>
             </div>
             <div id="of-demo-planning-lineage" className="mt-3 rounded-lg border-2 border-dashed border-primary/40 bg-primary/5 p-2.5">
-              <p className="text-[10px] font-medium text-primary inline-flex items-center gap-1 mb-1.5"><GitBranch className="h-3 w-3" /> Lineage · same plan travels downstream</p>
-              <div className="flex items-center gap-1.5 text-[10px] flex-wrap">
+              <p className="text-px-10 font-medium text-primary inline-flex items-center gap-1 mb-1.5"><GitBranch className="h-3 w-3" /> Lineage · same plan travels downstream</p>
+              <div className="flex items-center gap-1.5 text-px-10 flex-wrap">
                 <span className="px-1.5 py-0.5 rounded bg-card border border-border font-mono">OFF-2025-031 · L2</span>
                 <ChevronRight className="h-3 w-3 text-muted-foreground" />
                 <span className="px-1.5 py-0.5 rounded bg-card border border-border font-mono">SALE-2025-044 · L2</span>

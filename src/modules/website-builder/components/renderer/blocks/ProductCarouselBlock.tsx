@@ -160,7 +160,7 @@ export function ProductCarouselBlock({
                 style={{ borderRadius: theme.borderRadius }}
               >
                 {product.badge && (
-                  <span className="absolute top-3 left-3 z-10 text-[11px] font-bold px-2.5 py-1 rounded-full text-white" style={{ backgroundColor: theme.accentColor }}>
+                  <span className="absolute top-3 left-3 z-10 text-px-11 font-bold px-2.5 py-1 rounded-full text-white" style={{ backgroundColor: theme.accentColor }}>
                     {product.badge}
                   </span>
                 )}

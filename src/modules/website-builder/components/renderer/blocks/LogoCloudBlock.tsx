@@ -50,7 +50,7 @@ export function LogoCloudBlock({ title, logos, bgColor, theme, isEditing, onUpda
           )) : (
             Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="h-10 w-24 rounded bg-muted flex items-center justify-center">
-                <span className="text-[10px] text-muted-foreground">Logo {i + 1}</span>
+                <span className="text-px-10 text-muted-foreground">Logo {i + 1}</span>
               </div>
             ))
           )}

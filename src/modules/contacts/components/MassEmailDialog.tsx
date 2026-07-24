@@ -242,7 +242,7 @@ export function MassEmailDialog({ open, onOpenChange, recipients }: MassEmailDia
                         <div className="flex items-center gap-2">
                           <Mail className="h-3.5 w-3.5 text-muted-foreground" />
                           {a.handle}
-                          <Badge variant="outline" className="text-[10px] capitalize">{a.provider}</Badge>
+                          <Badge variant="outline" className="text-px-10 capitalize">{a.provider}</Badge>
                         </div>
                       </SelectItem>
                     ))}
@@ -290,7 +290,7 @@ export function MassEmailDialog({ open, onOpenChange, recipients }: MassEmailDia
               <div className="flex items-center justify-between">
                 <Label className="text-xs font-medium">{isEn ? 'Subject' : 'Objet'}</Label>
                 {!showCc && (
-                  <button className="text-[11px] text-primary hover:underline" onClick={() => setShowCc(true)}>+ Cc</button>
+                  <button className="text-px-11 text-primary hover:underline" onClick={() => setShowCc(true)}>+ Cc</button>
                 )}
               </div>
               <Input value={subject} onChange={e => setSubject(e.target.value)} className="h-9" placeholder={isEn ? 'Email subject...' : 'Objet de l\'e-mail...'} />
@@ -324,7 +324,7 @@ export function MassEmailDialog({ open, onOpenChange, recipients }: MassEmailDia
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <Label className="text-xs font-medium">{isEn ? 'Message' : 'Message'}</Label>
-                <span className="text-[10px] text-muted-foreground">{isEn ? 'Use {name} for personalization' : 'Utilisez {name} pour personnaliser'}</span>
+                <span className="text-px-10 text-muted-foreground">{isEn ? 'Use {name} for personalization' : 'Utilisez {name} pour personnaliser'}</span>
               </div>
               <Textarea value={body} onChange={e => setBody(e.target.value)} rows={8} className="text-sm resize-none" />
             </div>

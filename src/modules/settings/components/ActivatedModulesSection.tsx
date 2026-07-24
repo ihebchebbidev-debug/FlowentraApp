@@ -105,13 +105,13 @@ export function ActivatedModulesSection() {
                         <Lock className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
                       )}
                     </div>
-                    <p className="text-[10px] text-muted-foreground font-mono truncate">
+                    <p className="text-px-10 text-muted-foreground font-mono truncate">
                       {s.manifest.code}
                     </p>
                   </div>
                   <Badge
                     variant={s.isEnabled ? 'success' : 'ghost'}
-                    className="text-[10px] shrink-0"
+                    className="text-px-10 shrink-0"
                   >
                     {s.isEnabled
                       ? t('plugins.statusActive', 'Active')

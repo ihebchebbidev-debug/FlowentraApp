@@ -86,7 +86,7 @@ function InlineColor({ value, onChange, allowEmpty = true }: { value: string; on
           value={value || ''}
           onChange={(e) => onChange(e.target.value)}
           placeholder={allowEmpty ? 'inherit' : '#000000'}
-          className="h-7 text-[10px] font-mono border-border/30 bg-background flex-1"
+          className="h-7 text-px-10 font-mono border-border/30 bg-background flex-1"
         />
         {allowEmpty && value && (
           <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground/60" title="Clear" onClick={() => onChange('')}>
@@ -107,13 +107,13 @@ function LabeledSlider({ label, value, min, max, step = 1, unit, onChange, allow
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
-        <Label className="text-[10px] font-medium text-foreground/60">{label}</Label>
+        <Label className="text-px-10 font-medium text-foreground/60">{label}</Label>
         <div className="flex items-center gap-1">
-          <span className="text-[10px] text-muted-foreground/60 tabular-nums">
+          <span className="text-px-10 text-muted-foreground/60 tabular-nums">
             {value === undefined ? '—' : `${value}${unit || ''}`}
           </span>
           {allowUnset && value !== undefined && (
-            <button className="text-[9px] text-muted-foreground/50 hover:text-foreground" onClick={() => onChange(undefined)}>reset</button>
+            <button className="text-px-9 text-muted-foreground/50 hover:text-foreground" onClick={() => onChange(undefined)}>reset</button>
           )}
         </div>
       </div>
@@ -139,13 +139,13 @@ function CornerRadius({ styles, patch }: { styles: React.CSSProperties; patch: (
     return (
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
-          <Label className="text-[10px] font-medium text-foreground/60">Radius</Label>
+          <Label className="text-px-10 font-medium text-foreground/60">Radius</Label>
           <Button variant="ghost" size="icon" className="h-5 w-5 text-primary bg-primary/10" onClick={() => setLinked(false)} title="Unlink corners">
             <LinkIcon className="h-3 w-3" />
           </Button>
         </div>
         <Slider value={[all]} min={0} max={64} step={1} onValueChange={([v]) => patch({ borderRadius: v })} />
-        <div className="text-[10px] text-right text-muted-foreground/60 tabular-nums">{all}px</div>
+        <div className="text-px-10 text-right text-muted-foreground/60 tabular-nums">{all}px</div>
       </div>
     );
   }
@@ -154,13 +154,13 @@ function CornerRadius({ styles, patch }: { styles: React.CSSProperties; patch: (
     <Input
       value={val ?? ''} placeholder="0"
       onChange={(e) => patch({ [key]: e.target.value === '' ? undefined : Number(e.target.value) } as any)}
-      className="h-6 text-[10px] w-full text-center border-border/30 bg-background"
+      className="h-6 text-px-10 w-full text-center border-border/30 bg-background"
     />
   );
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
-        <Label className="text-[10px] font-medium text-foreground/60">Radius (per corner)</Label>
+        <Label className="text-px-10 font-medium text-foreground/60">Radius (per corner)</Label>
         <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground/60" onClick={() => { setLinked(true); patch({ borderTopLeftRadius: undefined, borderTopRightRadius: undefined, borderBottomLeftRadius: undefined, borderBottomRightRadius: undefined }); }} title="Link corners">
           <Unlink className="h-3 w-3" />
         </Button>
@@ -213,7 +213,7 @@ export function DesignPanel({ styles, onChange }: DesignPanelProps) {
             key={key}
             onClick={() => setDevice(key)}
             className={cn(
-              'flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all relative',
+              'flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-md text-px-10 font-medium transition-all relative',
               device === key
                 ? 'bg-background text-foreground shadow-sm border border-border/40'
                 : 'text-muted-foreground hover:text-foreground/70 hover:bg-muted/20'
@@ -228,7 +228,7 @@ export function DesignPanel({ styles, onChange }: DesignPanelProps) {
         ))}
       </div>
       {device !== 'desktop' && (
-        <p className="text-[9px] text-muted-foreground/50 leading-snug px-0.5">
+        <p className="text-px-9 text-muted-foreground/50 leading-snug px-0.5">
           {device === 'tablet' ? 'Tablet' : 'Mobile'} overrides. Empty = inherits from desktop.
         </p>
       )}
@@ -240,7 +240,7 @@ export function DesignPanel({ styles, onChange }: DesignPanelProps) {
             key={key}
             onClick={() => setTab(key)}
             className={cn(
-              'flex flex-col items-center gap-0.5 px-1 py-1.5 rounded-md text-[9px] font-medium transition-all',
+              'flex flex-col items-center gap-0.5 px-1 py-1.5 rounded-md text-px-9 font-medium transition-all',
               tab === key
                 ? 'bg-background text-foreground shadow-sm border border-border/40'
                 : 'text-muted-foreground hover:text-foreground/70'
@@ -256,7 +256,7 @@ export function DesignPanel({ styles, onChange }: DesignPanelProps) {
       {tab === 'typography' && (
         <div className="space-y-3">
           <div className="space-y-1">
-            <Label className="text-[10px] font-medium text-foreground/60">Font Family</Label>
+            <Label className="text-px-10 font-medium text-foreground/60">Font Family</Label>
             <Select value={(deviceStyles.fontFamily as string) || ''} onValueChange={(v) => patch({ fontFamily: v || undefined })}>
               <SelectTrigger className="h-7 text-xs border-border/40 bg-background">
                 <SelectValue placeholder="Inherit" />
@@ -272,7 +272,7 @@ export function DesignPanel({ styles, onChange }: DesignPanelProps) {
 
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <Label className="text-[10px] font-medium text-foreground/60">Weight</Label>
+              <Label className="text-px-10 font-medium text-foreground/60">Weight</Label>
               <Select value={String(deviceStyles.fontWeight ?? '')} onValueChange={(v) => patch({ fontWeight: v ? Number(v) : undefined })}>
                 <SelectTrigger className="h-7 text-xs border-border/40 bg-background">
                   <SelectValue placeholder="Inherit" />
@@ -283,7 +283,7 @@ export function DesignPanel({ styles, onChange }: DesignPanelProps) {
               </Select>
             </div>
             <div className="space-y-1">
-              <Label className="text-[10px] font-medium text-foreground/60">Transform</Label>
+              <Label className="text-px-10 font-medium text-foreground/60">Transform</Label>
               <Select value={(deviceStyles.textTransform as string) || 'none'} onValueChange={(v) => patch({ textTransform: v === 'none' ? undefined : (v as any) })}>
                 <SelectTrigger className="h-7 text-xs border-border/40 bg-background"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -301,7 +301,7 @@ export function DesignPanel({ styles, onChange }: DesignPanelProps) {
           <LabeledSlider label="Letter spacing" value={typeof deviceStyles.letterSpacing === 'string' ? Math.round(parseFloat(deviceStyles.letterSpacing) * 100) : undefined} min={-10} max={50} step={1} unit="em/100" onChange={(v) => patch({ letterSpacing: v === undefined ? undefined : `${(v / 100).toFixed(2)}em` })} allowUnset />
 
           <div className="space-y-1">
-            <Label className="text-[10px] font-medium text-foreground/60">Align</Label>
+            <Label className="text-px-10 font-medium text-foreground/60">Align</Label>
             <div className="flex gap-0.5 p-0.5 rounded-md bg-muted/30 border border-border/30">
               {[
                 { v: 'left',   Icon: AlignLeft },
@@ -324,20 +324,20 @@ export function DesignPanel({ styles, onChange }: DesignPanelProps) {
           <div className="flex gap-1">
             <button
               onClick={() => patch({ fontStyle: deviceStyles.fontStyle === 'italic' ? undefined : 'italic' })}
-              className={cn('flex-1 h-7 rounded-md border border-border/30 flex items-center justify-center text-[11px]', deviceStyles.fontStyle === 'italic' ? 'bg-primary/10 text-primary border-primary/40' : 'bg-background hover:bg-muted/40')}
+              className={cn('flex-1 h-7 rounded-md border border-border/30 flex items-center justify-center text-px-11', deviceStyles.fontStyle === 'italic' ? 'bg-primary/10 text-primary border-primary/40' : 'bg-background hover:bg-muted/40')}
             ><Italic className="h-3 w-3" /></button>
             <button
               onClick={() => patch({ textDecoration: deviceStyles.textDecoration === 'underline' ? undefined : 'underline' })}
-              className={cn('flex-1 h-7 rounded-md border border-border/30 flex items-center justify-center text-[11px]', deviceStyles.textDecoration === 'underline' ? 'bg-primary/10 text-primary border-primary/40' : 'bg-background hover:bg-muted/40')}
+              className={cn('flex-1 h-7 rounded-md border border-border/30 flex items-center justify-center text-px-11', deviceStyles.textDecoration === 'underline' ? 'bg-primary/10 text-primary border-primary/40' : 'bg-background hover:bg-muted/40')}
             ><Underline className="h-3 w-3" /></button>
             <button
               onClick={() => patch({ fontWeight: (deviceStyles.fontWeight === 700 || deviceStyles.fontWeight === '700') ? undefined : 700 })}
-              className={cn('flex-1 h-7 rounded-md border border-border/30 flex items-center justify-center text-[11px]', (deviceStyles.fontWeight === 700 || deviceStyles.fontWeight === '700') ? 'bg-primary/10 text-primary border-primary/40' : 'bg-background hover:bg-muted/40')}
+              className={cn('flex-1 h-7 rounded-md border border-border/30 flex items-center justify-center text-px-11', (deviceStyles.fontWeight === 700 || deviceStyles.fontWeight === '700') ? 'bg-primary/10 text-primary border-primary/40' : 'bg-background hover:bg-muted/40')}
             ><Bold className="h-3 w-3" /></button>
           </div>
 
           <div className="space-y-1">
-            <Label className="text-[10px] font-medium text-foreground/60">Text color</Label>
+            <Label className="text-px-10 font-medium text-foreground/60">Text color</Label>
             <InlineColor value={(deviceStyles.color as string) || ''} onChange={(v) => patch({ color: v || undefined })} />
           </div>
         </div>
@@ -347,12 +347,12 @@ export function DesignPanel({ styles, onChange }: DesignPanelProps) {
       {tab === 'background' && (
         <div className="space-y-3">
           <div className="space-y-1">
-            <Label className="text-[10px] font-medium text-foreground/60">Solid color</Label>
+            <Label className="text-px-10 font-medium text-foreground/60">Solid color</Label>
             <InlineColor value={(deviceStyles.backgroundColor as string) || ''} onChange={(v) => patch({ backgroundColor: v || undefined })} />
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-[10px] font-medium text-foreground/60">Gradient presets</Label>
+            <Label className="text-px-10 font-medium text-foreground/60">Gradient presets</Label>
             <div className="grid grid-cols-4 gap-1.5">
               {[
                 { from: '#667eea', to: '#764ba2' },
@@ -377,24 +377,24 @@ export function DesignPanel({ styles, onChange }: DesignPanelProps) {
               })}
             </div>
             {deviceStyles.backgroundImage && (
-              <button className="text-[9px] text-muted-foreground/60 hover:text-foreground" onClick={() => patch({ backgroundImage: undefined })}>Clear gradient</button>
+              <button className="text-px-9 text-muted-foreground/60 hover:text-foreground" onClick={() => patch({ backgroundImage: undefined })}>Clear gradient</button>
             )}
           </div>
 
           <div className="space-y-1">
-            <Label className="text-[10px] font-medium text-foreground/60">Background image URL</Label>
+            <Label className="text-px-10 font-medium text-foreground/60">Background image URL</Label>
             <Input
               value={typeof deviceStyles.backgroundImage === 'string' && !deviceStyles.backgroundImage.startsWith('linear-') && !deviceStyles.backgroundImage.startsWith('radial-') ? deviceStyles.backgroundImage.replace(/^url\(['"]?/, '').replace(/['"]?\)$/, '') : ''}
               placeholder="https://..."
               onChange={(e) => patch({ backgroundImage: e.target.value ? `url('${e.target.value}')` : undefined })}
-              className="h-7 text-[10px] border-border/30 bg-background"
+              className="h-7 text-px-10 border-border/30 bg-background"
             />
           </div>
 
           {deviceStyles.backgroundImage && (
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
-                <Label className="text-[10px] font-medium text-foreground/60">Size</Label>
+                <Label className="text-px-10 font-medium text-foreground/60">Size</Label>
                 <Select value={(deviceStyles.backgroundSize as string) || 'cover'} onValueChange={(v) => patch({ backgroundSize: v as any })}>
                   <SelectTrigger className="h-7 text-xs border-border/40 bg-background"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -406,7 +406,7 @@ export function DesignPanel({ styles, onChange }: DesignPanelProps) {
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label className="text-[10px] font-medium text-foreground/60">Position</Label>
+                <Label className="text-px-10 font-medium text-foreground/60">Position</Label>
                 <Select value={(deviceStyles.backgroundPosition as string) || 'center'} onValueChange={(v) => patch({ backgroundPosition: v as any })}>
                   <SelectTrigger className="h-7 text-xs border-border/40 bg-background"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -428,7 +428,7 @@ export function DesignPanel({ styles, onChange }: DesignPanelProps) {
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <Label className="text-[10px] font-medium text-foreground/60">Style</Label>
+              <Label className="text-px-10 font-medium text-foreground/60">Style</Label>
               <Select value={(deviceStyles.borderStyle as string) || 'none'} onValueChange={(v) => patch({ borderStyle: v === 'none' ? undefined : (v as any) })}>
                 <SelectTrigger className="h-7 text-xs border-border/40 bg-background"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -439,16 +439,16 @@ export function DesignPanel({ styles, onChange }: DesignPanelProps) {
             <LabeledSlider label="Width" value={num(deviceStyles.borderWidth)} min={0} max={16} unit="px" onChange={(v) => patch({ borderWidth: v === undefined ? undefined : v })} allowUnset />
           </div>
           <div className="space-y-1">
-            <Label className="text-[10px] font-medium text-foreground/60">Border color</Label>
+            <Label className="text-px-10 font-medium text-foreground/60">Border color</Label>
             <InlineColor value={(deviceStyles.borderColor as string) || ''} onChange={(v) => patch({ borderColor: v || undefined })} />
           </div>
           <CornerRadius styles={deviceStyles} patch={patch} />
           <div className="space-y-1">
-            <Label className="text-[10px] font-medium text-foreground/60">Outline (focus ring)</Label>
+            <Label className="text-px-10 font-medium text-foreground/60">Outline (focus ring)</Label>
             <div className="grid grid-cols-2 gap-2">
               <LabeledSlider label="Width" value={num(deviceStyles.outlineWidth)} min={0} max={8} unit="px" onChange={(v) => patch({ outlineWidth: v === undefined ? undefined : v, outlineStyle: v && v > 0 ? 'solid' : undefined })} allowUnset />
               <div className="space-y-1">
-                <Label className="text-[10px] font-medium text-foreground/60">Color</Label>
+                <Label className="text-px-10 font-medium text-foreground/60">Color</Label>
                 <InlineColor value={(deviceStyles.outlineColor as string) || ''} onChange={(v) => patch({ outlineColor: v || undefined })} />
               </div>
             </div>
@@ -460,7 +460,7 @@ export function DesignPanel({ styles, onChange }: DesignPanelProps) {
       {tab === 'effects' && (
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <Label className="text-[10px] font-medium text-foreground/60">Shadow presets</Label>
+            <Label className="text-px-10 font-medium text-foreground/60">Shadow presets</Label>
             <div className="grid grid-cols-3 gap-1.5">
               {SHADOW_PRESETS.map(s => {
                 const active = (deviceStyles.boxShadow || 'none') === s.value;
@@ -468,7 +468,7 @@ export function DesignPanel({ styles, onChange }: DesignPanelProps) {
                   <button
                     key={s.label}
                     onClick={() => patch({ boxShadow: s.value === 'none' ? undefined : s.value })}
-                    className={cn('h-10 rounded-md bg-background border border-border/30 text-[9px] flex items-center justify-center transition-all', active ? 'ring-2 ring-primary ring-offset-1' : 'hover:border-border/60')}
+                    className={cn('h-10 rounded-md bg-background border border-border/30 text-px-9 flex items-center justify-center transition-all', active ? 'ring-2 ring-primary ring-offset-1' : 'hover:border-border/60')}
                     style={{ boxShadow: s.value === 'none' ? undefined : s.value }}
                   >
                     {s.label}
@@ -485,7 +485,7 @@ export function DesignPanel({ styles, onChange }: DesignPanelProps) {
           <LabeledSlider label="Blur (filter)" value={typeof deviceStyles.filter === 'string' ? (deviceStyles.filter.match(/blur\((\d+)px\)/)?.[1] ? Number(RegExp.$1) : undefined) : undefined} min={0} max={20} unit="px" onChange={(v) => patch({ filter: v === undefined || v === 0 ? undefined : `blur(${v}px)` })} allowUnset />
 
           <div className="space-y-1">
-            <Label className="text-[10px] font-medium text-foreground/60">Cursor</Label>
+            <Label className="text-px-10 font-medium text-foreground/60">Cursor</Label>
             <Select value={(deviceStyles.cursor as string) || 'auto'} onValueChange={(v) => patch({ cursor: v === 'auto' ? undefined : (v as any) })}>
               <SelectTrigger className="h-7 text-xs border-border/40 bg-background"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -499,7 +499,7 @@ export function DesignPanel({ styles, onChange }: DesignPanelProps) {
           </div>
 
           {(deviceStyles.boxShadow || deviceStyles.opacity !== undefined || deviceStyles.transform || deviceStyles.filter) && (
-            <button className="text-[10px] text-muted-foreground/60 hover:text-destructive" onClick={() => patch({ boxShadow: undefined, opacity: undefined, transform: undefined, filter: undefined })}>Clear all effects</button>
+            <button className="text-px-10 text-muted-foreground/60 hover:text-destructive" onClick={() => patch({ boxShadow: undefined, opacity: undefined, transform: undefined, filter: undefined })}>Clear all effects</button>
           )}
         </div>
       )}

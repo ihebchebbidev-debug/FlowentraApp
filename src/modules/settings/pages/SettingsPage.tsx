@@ -318,7 +318,7 @@ export default function SettingsPage() {
             <SelectContent className="bg-white dark:bg-card rounded-xl shadow-lg border-border/60">
               {personalItems.length > 0 && (
                 <>
-                  <div className="px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t('nav.sectionPersonal')}</div>
+                  <div className="px-2 py-1.5 text-px-11 font-semibold uppercase tracking-wide text-muted-foreground">{t('nav.sectionPersonal')}</div>
                   {personalItems.map(item => (
                     <SelectItem key={item.id} value={item.id} className="rounded-lg cursor-pointer py-2.5">
                       <span className="flex items-center gap-2.5">
@@ -333,7 +333,7 @@ export default function SettingsPage() {
               )}
               {adminItems.length > 0 && (
                 <>
-                  <div className="px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mt-1">{t('nav.sectionAdmin')}</div>
+                  <div className="px-2 py-1.5 text-px-11 font-semibold uppercase tracking-wide text-muted-foreground mt-1">{t('nav.sectionAdmin')}</div>
                   {adminItems.map(item => (
                     <SelectItem key={item.id} value={item.id} className="rounded-lg cursor-pointer py-2.5">
                       <span className="flex items-center gap-2.5">
@@ -730,7 +730,7 @@ export default function SettingsPage() {
           </div>
           <div className="min-w-0">
             <h1 className="text-base sm:text-xl font-semibold text-foreground truncate">{t('header.title')}</h1>
-            <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">
+            <p className="text-px-10 sm:text-px-11 text-muted-foreground truncate">
               {t('header.descAdmin')}
             </p>
           </div>
@@ -769,7 +769,7 @@ export default function SettingsPage() {
           <div className="hidden md:block">
             {/* Personal section */}
             <div className="px-5 mb-2">
-              <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70">
+              <span className="text-px-11 font-semibold uppercase tracking-widest text-muted-foreground/70">
                 {t('nav.sectionPersonal')}
               </span>
             </div>
@@ -801,7 +801,7 @@ export default function SettingsPage() {
             {adminItems.length > 0 && (
               <>
                 <div className="px-5 mb-2">
-                  <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70">
+                  <span className="text-px-11 font-semibold uppercase tracking-widest text-muted-foreground/70">
                     {t('nav.sectionAdmin')}
                   </span>
                 </div>

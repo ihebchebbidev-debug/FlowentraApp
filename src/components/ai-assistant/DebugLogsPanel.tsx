@@ -205,7 +205,7 @@ ${log.details ? `Details: ${log.details}` : ''}`;
                     )}
 
                     {log.details && (
-                      <div className="mt-1.5 p-1.5 rounded bg-background/50 font-mono text-[10px] text-muted-foreground overflow-x-auto">
+                      <div className="mt-1.5 p-1.5 rounded bg-background/50 font-mono text-px-10 text-muted-foreground overflow-x-auto">
                         {log.details.length > 200 ? log.details.slice(0, 200) + '...' : log.details}
                       </div>
                     )}

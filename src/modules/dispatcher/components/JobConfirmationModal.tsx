@@ -175,12 +175,12 @@ export function JobConfirmationModal({
               <h3 className="font-semibold text-base leading-tight">{job.title}</h3>
               <div className="flex gap-1.5 flex-shrink-0">
                 {isLocked && (
-                  <Badge variant="default" className="bg-success text-white text-[10px] px-1.5 py-0">
+                  <Badge variant="default" className="bg-success text-white text-px-10 px-1.5 py-0">
                     <Lock className="h-2.5 w-2.5 mr-0.5" />
                     {t('dispatcher.locked')}
                   </Badge>
                 )}
-                <Badge variant={getPriorityColor(job.priority)} className="text-[10px]">
+                <Badge variant={getPriorityColor(job.priority)} className="text-px-10">
                   {t(`dispatcher.priority_${job.priority}`).toUpperCase()}
                 </Badge>
               </div>
@@ -307,7 +307,7 @@ export function JobConfirmationModal({
                   )}
                 </div>
                 {!isLocked && onScheduleChange && (
-                  <Button variant="ghost" size="sm" className="h-5 px-1.5 text-[10px] flex-shrink-0" onClick={() => setIsEditingSchedule(true)}>
+                  <Button variant="ghost" size="sm" className="h-5 px-1.5 text-px-10 flex-shrink-0" onClick={() => setIsEditingSchedule(true)}>
                     <Pencil className="h-2.5 w-2.5 mr-0.5" />
                     {t('dispatcher.edit_schedule')}
                   </Button>
@@ -326,7 +326,7 @@ export function JobConfirmationModal({
                   <DurationIndicator plannedDuration={durationMinutes} originalDuration={job.originalDuration} size="sm" />
                 </div>
                 {!isLocked && onDurationChange && !isEditingDuration && (
-                  <Button variant="ghost" size="sm" className="h-5 px-1.5 text-[10px] flex-shrink-0" onClick={() => setIsEditingDuration(true)}>
+                  <Button variant="ghost" size="sm" className="h-5 px-1.5 text-px-10 flex-shrink-0" onClick={() => setIsEditingDuration(true)}>
                     <Pencil className="h-2.5 w-2.5 mr-0.5" />
                     {t('dispatcher.edit_duration', 'Edit')}
                   </Button>
@@ -355,13 +355,13 @@ export function JobConfirmationModal({
                     <span className="text-xs text-muted-foreground w-8">{t('dispatcher.minutes_short')}</span>
                   </div>
                   {job.originalDuration && job.originalDuration > 0 && (
-                    <div className="flex items-center justify-between text-[10px] px-1">
+                    <div className="flex items-center justify-between text-px-10 px-1">
                       <span className="text-muted-foreground">{t('dispatcher.expected_duration')}: {formatDuration(job.originalDuration)}</span>
                       <DurationIndicator plannedDuration={editedDurationMinutes} originalDuration={job.originalDuration} size="sm" showLabel />
                     </div>
                   )}
                   {job.scheduledStart && (
-                    <div className="text-[10px] text-muted-foreground px-1">
+                    <div className="text-px-10 text-muted-foreground px-1">
                       {t('dispatcher.new')}: {format(job.scheduledStart, 'HH:mm')} → {format(addMinutes(job.scheduledStart, editedDurationMinutes), 'HH:mm')}
                     </div>
                   )}

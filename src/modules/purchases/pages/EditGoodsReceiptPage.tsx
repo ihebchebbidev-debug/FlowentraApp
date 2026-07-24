@@ -347,7 +347,7 @@ export default function EditGoodsReceiptPage() {
                     <TableRow key={`${row.id ?? 'new'}-${row.purchaseOrderItemId}-${idx}`}>
                       <TableCell>
                         <div className="text-xs font-medium">{row.articleName}</div>
-                        <div className="text-[10px] text-muted-foreground">
+                        <div className="text-px-10 text-muted-foreground">
                           {row.articleNumber}
                           {!row.id && (
                             <span className="ml-2 text-primary">

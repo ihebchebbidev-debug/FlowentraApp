@@ -63,7 +63,7 @@ export class BlockErrorBoundary extends Component<BlockErrorBoundaryProps, Block
                   <strong>{this.props.blockLabel}</strong> ({this.props.blockType}) encountered an error.
                 </p>
                 {this.state.error && (
-                  <p className="text-[10px] text-muted-foreground/70 font-mono truncate mt-1">
+                  <p className="text-px-10 text-muted-foreground/70 font-mono truncate mt-1">
                     {this.state.error.message}
                   </p>
                 )}

@@ -295,7 +295,7 @@ export default function LookupsPage() {
           </div>
           <div>
             <h1 className="text-xl font-semibold text-foreground">{t('title')}</h1>
-            <p className="text-[11px] text-muted-foreground">{t('subtitle')}</p>
+            <p className="text-px-11 text-muted-foreground">{t('subtitle')}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -332,7 +332,7 @@ export default function LookupsPage() {
           </div>
           <div className="min-w-0 flex-1">
             <h1 className="text-lg font-semibold text-foreground truncate">{t('title')}</h1>
-            <p className="text-[11px] text-muted-foreground truncate">{t('subtitle')}</p>
+            <p className="text-px-11 text-muted-foreground truncate">{t('subtitle')}</p>
           </div>
         </div>
         {returnUrl && (

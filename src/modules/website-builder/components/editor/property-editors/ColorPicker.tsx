@@ -29,8 +29,8 @@ export function ColorPicker({ label, value, onChange, description, showThemeSwat
 
   return (
     <div className="space-y-1.5">
-      <Label className="text-[11px] font-medium text-foreground/70">{label}</Label>
-      {description && <p className="text-[10px] text-muted-foreground/50">{description}</p>}
+      <Label className="text-px-11 font-medium text-foreground/70">{label}</Label>
+      {description && <p className="text-px-10 text-muted-foreground/50">{description}</p>}
       <div className="flex items-center gap-2">
         <div className="relative shrink-0">
           <input
@@ -58,7 +58,7 @@ export function ColorPicker({ label, value, onChange, description, showThemeSwat
       </div>
       {showThemeSwatches && (
         <div className="space-y-1">
-          <span className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground/60">Theme</span>
+          <span className="text-px-9 font-medium uppercase tracking-wider text-muted-foreground/60">Theme</span>
           <ThemeSwatches currentValue={value} onSelect={onChange} />
         </div>
       )}

@@ -301,7 +301,7 @@ function DashboardManagerInner({ silentRefresh }: { silentRefresh: () => void })
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-foreground">{t('dashboardBuilder.ai.welcomePromptTitle')}</h3>
-                  <p className="text-[11px] text-muted-foreground">{t('dashboardBuilder.ai.welcomePromptDesc')}</p>
+                  <p className="text-px-11 text-muted-foreground">{t('dashboardBuilder.ai.welcomePromptDesc')}</p>
                 </div>
               </div>
 
@@ -334,7 +334,7 @@ function DashboardManagerInner({ silentRefresh }: { silentRefresh: () => void })
                     <div className="w-7 h-7 rounded-md bg-primary/8 flex items-center justify-center shrink-0">
                       <AiLogoIcon size={13} variant="auto" />
                     </div>
-                    <p className="text-[11px] font-medium text-muted-foreground">{t('dashboardBuilder.ai.generating')}</p>
+                    <p className="text-px-11 font-medium text-muted-foreground">{t('dashboardBuilder.ai.generating')}</p>
                     <div className="flex gap-0.5 ml-auto">
                       {[0, 1, 2, 3].map(i => (
                         <div key={i} className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-pulse" style={{ animationDelay: `${i * 300}ms` }} />
@@ -379,7 +379,7 @@ function DashboardManagerInner({ silentRefresh }: { silentRefresh: () => void })
                     key={i}
                     onClick={() => handleInlineAiGenerate(qp.prompt)}
                     disabled={isInlineGenerating}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium border border-border/60 bg-background text-muted-foreground hover:text-foreground hover:border-primary/30 hover:bg-primary/5 transition-all disabled:opacity-50 disabled:pointer-events-none"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-px-11 font-medium border border-border/60 bg-background text-muted-foreground hover:text-foreground hover:border-primary/30 hover:bg-primary/5 transition-all disabled:opacity-50 disabled:pointer-events-none"
                   >
                     <AiLogoIcon size={12} />
                     {t(qp.labelKey)}
@@ -396,7 +396,7 @@ function DashboardManagerInner({ silentRefresh }: { silentRefresh: () => void })
             {/* Divider */}
             <div className="flex items-center gap-3">
               <div className="flex-1 h-px bg-border" />
-              <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">{t('dashboardBuilder.ai.orChooseTemplate')}</span>
+              <span className="text-px-11 text-muted-foreground font-medium uppercase tracking-wider">{t('dashboardBuilder.ai.orChooseTemplate')}</span>
               <div className="flex-1 h-px bg-border" />
             </div>
 
@@ -411,7 +411,7 @@ function DashboardManagerInner({ silentRefresh }: { silentRefresh: () => void })
                   <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
                     {tpl === 'custom' ? t('dashboardBuilder.templates.blank') : t(`dashboardBuilder.templates.${tpl}`)}
                   </p>
-                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  <p className="text-px-11 text-muted-foreground leading-relaxed">
                     {t(`dashboardBuilder.templateDesc${tpl === 'custom' ? 'Blank' : tpl.charAt(0).toUpperCase() + tpl.slice(1)}`)}
                   </p>
                   <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-primary/60 group-hover:translate-x-0.5 transition-all mt-0.5" />

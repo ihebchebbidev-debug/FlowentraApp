@@ -209,9 +209,9 @@ export function MegaMenuBlock({
                                 >
                                   {item.icon && <DynamicIcon name={item.icon} className="h-3.5 w-3.5 opacity-50" />}
                                   <div className="min-w-0">
-                                    <span className="block text-[13px]">{item.title}</span>
+                                    <span className="block text-px-13">{item.title}</span>
                                     {item.description && (
-                                      <span className="block text-[11px] opacity-40 truncate">{item.description}</span>
+                                      <span className="block text-px-11 opacity-40 truncate">{item.description}</span>
                                     )}
                                   </div>
                                 </a>

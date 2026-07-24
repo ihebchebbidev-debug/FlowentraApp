@@ -45,9 +45,9 @@ function ConnectorCard({ connector, onConnect }: { connector: ConnectorDefinitio
         <div className="flex items-start justify-between gap-2">
           <span className="text-3xl leading-none select-none">{connector.logo}</span>
           <div className="flex flex-col items-end gap-1">
-            <Badge variant="outline" className="text-[10px] capitalize">{categoryLabel}</Badge>
+            <Badge variant="outline" className="text-px-10 capitalize">{categoryLabel}</Badge>
             {connector.isPopular && (
-              <Badge className="text-[10px] bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-400">
+              <Badge className="text-px-10 bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-400">
                 {t('hub.popular', 'Popular')}
               </Badge>
             )}
@@ -57,7 +57,7 @@ function ConnectorCard({ connector, onConnect }: { connector: ConnectorDefinitio
         {/* Name + vendor */}
         <div>
           <p className="font-semibold text-sm text-foreground leading-tight">{connector.name}</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">{connector.vendor}</p>
+          <p className="text-px-11 text-muted-foreground mt-0.5">{connector.vendor}</p>
         </div>
 
         {/* Description */}
@@ -66,19 +66,19 @@ function ConnectorCard({ connector, onConnect }: { connector: ConnectorDefinitio
         {/* Entity chips */}
         <div className="flex flex-wrap gap-1">
           {connector.entities.slice(0, 3).map(e => (
-            <span key={e.type} className="text-[10px] bg-muted px-1.5 py-0.5 rounded-sm text-muted-foreground">
+            <span key={e.type} className="text-px-10 bg-muted px-1.5 py-0.5 rounded-sm text-muted-foreground">
               {e.label}
             </span>
           ))}
           {connector.entities.length > 3 && (
-            <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-sm text-muted-foreground">
+            <span className="text-px-10 bg-muted px-1.5 py-0.5 rounded-sm text-muted-foreground">
               +{connector.entities.length - 3}
             </span>
           )}
         </div>
 
         {/* Data flow direction */}
-        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+        <div className="flex items-center gap-1 text-px-10 text-muted-foreground">
           <span className="font-medium">{connector.vendor}</span>
           <ArrowRight className="h-2.5 w-2.5 shrink-0" />
           <span className="font-medium text-primary">Flowentra</span>
@@ -129,11 +129,11 @@ function ActiveConnectionCard({ group, onManage }: { group: ConnectorGroup; onMa
                 <p className="font-semibold text-sm text-foreground truncate">{group.connectorName}</p>
                 <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
                 {hasBidirectional ? (
-                  <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-blue-600 bg-blue-50 dark:bg-blue-950/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-full px-1.5 py-0.5 shrink-0">
+                  <span className="inline-flex items-center gap-0.5 text-px-10 font-medium text-blue-600 bg-blue-50 dark:bg-blue-950/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-full px-1.5 py-0.5 shrink-0">
                     <ArrowUpDown className="h-2.5 w-2.5" />{t('external.detail.flowBidirectional', 'In + Out')}
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-full px-1.5 py-0.5 shrink-0">
+                  <span className="inline-flex items-center gap-0.5 text-px-10 font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-full px-1.5 py-0.5 shrink-0">
                     <ArrowDownLeft className="h-2.5 w-2.5" />{t('external.detail.flowInbound', 'Inbound')}
                   </span>
                 )}
@@ -149,7 +149,7 @@ function ActiveConnectionCard({ group, onManage }: { group: ConnectorGroup; onMa
                 {group.endpoints.map(ep => (
                   <button
                     key={ep.id}
-                    className="text-[10px] bg-muted hover:bg-muted/80 px-1.5 py-0.5 rounded-sm text-muted-foreground transition-colors"
+                    className="text-px-10 bg-muted hover:bg-muted/80 px-1.5 py-0.5 rounded-sm text-muted-foreground transition-colors"
                     onClick={() => onManage(ep.id)}
                   >
                     {ep.name.replace(`${group.connectorName} — `, '')}
@@ -293,14 +293,14 @@ export function IntegrationHub() {
             <Plug className="h-3.5 w-3.5" />
             {t('hub.tabs.connections', 'Connections')}
             {connectorGroups.length > 0 && (
-              <Badge className="ml-1 text-[10px] h-4 px-1">{connectorGroups.length}</Badge>
+              <Badge className="ml-1 text-px-10 h-4 px-1">{connectorGroups.length}</Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="webhooks" className="gap-2">
             <Globe className="h-3.5 w-3.5" />
             {t('hub.tabs.webhooks', 'Webhooks')}
             {standaloneEndpoints.length > 0 && (
-              <Badge variant="outline" className="ml-1 text-[10px] h-4 px-1">{standaloneEndpoints.length}</Badge>
+              <Badge variant="outline" className="ml-1 text-px-10 h-4 px-1">{standaloneEndpoints.length}</Badge>
             )}
           </TabsTrigger>
         </TabsList>
@@ -460,11 +460,11 @@ export function IntegrationHub() {
                         </TableCell>
                         <TableCell className="hidden sm:table-cell">
                           {isBidirectional ? (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-600 bg-blue-50 dark:bg-blue-950/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-full px-2 py-0.5">
+                            <span className="inline-flex items-center gap-1 text-px-11 font-medium text-blue-600 bg-blue-50 dark:bg-blue-950/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-full px-2 py-0.5">
                               <ArrowUpDown className="h-3 w-3" />{t('external.detail.flowBidirectional', 'In + Out')}
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-full px-2 py-0.5">
+                            <span className="inline-flex items-center gap-1 text-px-11 font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-full px-2 py-0.5">
                               <ArrowDownLeft className="h-3 w-3" />{t('external.detail.flowInbound', 'Inbound')}
                             </span>
                           )}

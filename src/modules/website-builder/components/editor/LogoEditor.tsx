@@ -85,7 +85,7 @@ export function LogoEditor({ logoText, logoImage, onTextChange, onImageChange }:
 
   return (
     <div className="space-y-2">
-      <Label className="text-[11px] font-medium text-foreground/70">Logo</Label>
+      <Label className="text-px-11 font-medium text-foreground/70">Logo</Label>
 
       {/* Mode toggle */}
       <div className="flex gap-0.5 p-0.5 rounded-lg bg-muted/30 border border-border/30">
@@ -94,7 +94,7 @@ export function LogoEditor({ logoText, logoImage, onTextChange, onImageChange }:
             key={tab.key}
             onClick={() => setMode(tab.key)}
             className={cn(
-              'flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all',
+              'flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-md text-px-10 font-medium transition-all',
               mode === tab.key
                 ? 'bg-background text-foreground shadow-sm border border-border/40'
                 : 'text-muted-foreground hover:text-foreground/70 hover:bg-muted/20'
@@ -111,7 +111,7 @@ export function LogoEditor({ logoText, logoImage, onTextChange, onImageChange }:
         <Button
           variant="outline"
           size="sm"
-          className="w-full h-7 text-[10px] gap-1.5 border-border/40"
+          className="w-full h-7 text-px-10 gap-1.5 border-border/40"
           onClick={handleUseCompanyLogo}
         >
           <Building2 className="h-3 w-3" /> Use company logo
@@ -121,12 +121,12 @@ export function LogoEditor({ logoText, logoImage, onTextChange, onImageChange }:
       {/* Text input */}
       {(mode === 'text' || mode === 'both') && (
         <div className="space-y-1">
-          <Label className="text-[10px] text-foreground/50">Logo Text</Label>
+          <Label className="text-px-10 text-foreground/50">Logo Text</Label>
           <Input
             value={logoText}
             onChange={(e) => onTextChange(e.target.value)}
             placeholder="Company name..."
-            className="h-7 text-[11px] border-border/30 bg-background"
+            className="h-7 text-px-11 border-border/30 bg-background"
           />
         </div>
       )}
@@ -134,7 +134,7 @@ export function LogoEditor({ logoText, logoImage, onTextChange, onImageChange }:
       {/* Image uploader */}
       {(mode === 'image' || mode === 'both') && (
         <div className="space-y-1">
-          <Label className="text-[10px] text-foreground/50">Logo Image</Label>
+          <Label className="text-px-10 text-foreground/50">Logo Image</Label>
           {hasImage ? (
             <div className="flex items-center gap-2 p-2 rounded-lg border border-border/40 bg-muted/10">
               <img
@@ -144,12 +144,12 @@ export function LogoEditor({ logoText, logoImage, onTextChange, onImageChange }:
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] text-foreground/60 truncate">
+                <p className="text-px-10 text-foreground/60 truncate">
                   {getImageLabel(effectiveImage)}
                 </p>
                 <button
                   onClick={() => inputRef.current?.click()}
-                  className="text-[10px] text-primary hover:underline font-medium mt-0.5"
+                  className="text-px-10 text-primary hover:underline font-medium mt-0.5"
                 >
                   Change
                 </button>
@@ -176,11 +176,11 @@ export function LogoEditor({ logoText, logoImage, onTextChange, onImageChange }:
                 className="w-full h-14 flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border/40 bg-muted/10 hover:bg-muted/20 hover:border-primary/30 transition-all cursor-pointer"
               >
                 <Upload className="h-4 w-4 text-muted-foreground/40" />
-                <span className="text-[10px] text-muted-foreground/50 font-medium">Upload logo image</span>
+                <span className="text-px-10 text-muted-foreground/50 font-medium">Upload logo image</span>
               </button>
               <Input
                 placeholder="Or paste image URL..."
-                className="h-7 text-[10px] border-border/30 bg-background"
+                className="h-7 text-px-10 border-border/30 bg-background"
                 onBlur={(e) => {
                   const url = e.target.value.trim();
                   if (url && isImageSrc(url)) {
@@ -204,7 +204,7 @@ export function LogoEditor({ logoText, logoImage, onTextChange, onImageChange }:
       )}
 
       {/* Hint */}
-      <p className="text-[9px] text-muted-foreground/40 leading-snug">
+      <p className="text-px-9 text-muted-foreground/40 leading-snug">
         {mode === 'text' && 'Displays as styled text in the header/footer.'}
         {mode === 'image' && 'Image logo replaces text in the header/footer.'}
         {mode === 'both' && 'Shows logo image with text alongside it.'}

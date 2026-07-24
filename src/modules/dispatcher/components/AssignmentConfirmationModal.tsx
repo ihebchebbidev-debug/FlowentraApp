@@ -116,7 +116,7 @@ export function AssignmentConfirmationModal({
           <div className="space-y-3">
             <div className="flex items-start justify-between">
               <h3 className="font-semibold text-base">{job.title}</h3>
-              <Badge variant={getPriorityColor(job.priority)} className="text-[10px]">
+              <Badge variant={getPriorityColor(job.priority)} className="text-px-10">
                 {getPriorityLabel(job.priority).toUpperCase()}
               </Badge>
             </div>

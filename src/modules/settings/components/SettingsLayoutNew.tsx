@@ -173,7 +173,7 @@ export function SettingsLayoutNew() {
           </div>
           <div>
             <h1 className="text-xl font-semibold text-foreground">{t('header.title')}</h1>
-            <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5">
+            <div className="flex items-center gap-2 text-px-11 text-muted-foreground mt-0.5">
               <span>{t('breadcrumb.home', { defaultValue: 'Home' })}</span>
               <span>›</span>
               <span>{t('header.title')}</span>

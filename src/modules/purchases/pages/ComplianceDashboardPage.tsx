@@ -68,7 +68,7 @@ function ComplianceDashboardContent() {
                   <div key={inv.id} className="flex items-center justify-between p-2 rounded bg-muted/50">
                     <div>
                       <p className="text-xs font-medium">{inv.invoiceNumber}</p>
-                      <p className="text-[10px] text-muted-foreground">{inv.supplierName}</p>
+                      <p className="text-px-10 text-muted-foreground">{inv.supplierName}</p>
                     </div>
                     <span className="text-xs font-medium">{fmt(inv.rsAmount)} {currency.code}</span>
                   </div>
@@ -83,22 +83,22 @@ function ComplianceDashboardContent() {
               <div className="grid grid-cols-3 gap-2 text-center">
                 <div className="p-2 rounded bg-amber-50 dark:bg-amber-900/20">
                   <p className="text-lg font-bold text-amber-600">{felInvoices.filter(i => i.factureEnLigneStatus === 'pending').length}</p>
-                  <p className="text-[10px] text-muted-foreground">{t('factureStatus.pending')}</p>
+                  <p className="text-px-10 text-muted-foreground">{t('factureStatus.pending')}</p>
                 </div>
                 <div className="p-2 rounded bg-blue-50 dark:bg-blue-900/20">
                   <p className="text-lg font-bold text-blue-600">{felInvoices.filter(i => i.factureEnLigneStatus === 'sent').length}</p>
-                  <p className="text-[10px] text-muted-foreground">{t('factureStatus.sent')}</p>
+                  <p className="text-px-10 text-muted-foreground">{t('factureStatus.sent')}</p>
                 </div>
                 <div className="p-2 rounded bg-green-50 dark:bg-green-900/20">
                   <p className="text-lg font-bold text-green-600">{felInvoices.filter(i => i.factureEnLigneStatus === 'validated').length}</p>
-                  <p className="text-[10px] text-muted-foreground">{t('factureStatus.validated')}</p>
+                  <p className="text-px-10 text-muted-foreground">{t('factureStatus.validated')}</p>
                 </div>
               </div>
               <div className="space-y-2">
                 {felInvoices.map(inv => (
                   <div key={inv.id} className="flex items-center justify-between p-2 rounded bg-muted/50">
                     <span className="text-xs">{inv.invoiceNumber}</span>
-                    <Badge variant="outline" className="text-[10px]">
+                    <Badge variant="outline" className="text-px-10">
                       {inv.factureEnLigneStatus === 'validated' && <CheckCircle className="h-3 w-3 mr-1 text-green-500" />}
                       {inv.factureEnLigneStatus === 'pending' && <Clock className="h-3 w-3 mr-1 text-amber-500" />}
                       {t(`factureStatus.${inv.factureEnLigneStatus || 'pending'}`)}
@@ -115,18 +115,18 @@ function ComplianceDashboardContent() {
               <div className="grid grid-cols-2 gap-2 text-center">
                 <div className="p-2 rounded bg-green-50 dark:bg-green-900/20">
                   <p className="text-lg font-bold text-green-600">{invoices.filter(i => i.tejSynced).length}</p>
-                  <p className="text-[10px] text-muted-foreground">{t('tejStatus.synced')}</p>
+                  <p className="text-px-10 text-muted-foreground">{t('tejStatus.synced')}</p>
                 </div>
                 <div className="p-2 rounded bg-amber-50 dark:bg-amber-900/20">
                   <p className="text-lg font-bold text-amber-600">{tejPending.length}</p>
-                  <p className="text-[10px] text-muted-foreground">{t('tejStatus.pending')}</p>
+                  <p className="text-px-10 text-muted-foreground">{t('tejStatus.pending')}</p>
                 </div>
               </div>
               <div className="space-y-2">
                 {invoices.map(inv => (
                   <div key={inv.id} className="flex items-center justify-between p-2 rounded bg-muted/50">
                     <span className="text-xs">{inv.invoiceNumber}</span>
-                    <Badge variant={inv.tejSynced ? 'default' : 'outline'} className="text-[10px]">
+                    <Badge variant={inv.tejSynced ? 'default' : 'outline'} className="text-px-10">
                       {inv.tejSynced ? <CheckCircle className="h-3 w-3 mr-1" /> : <AlertTriangle className="h-3 w-3 mr-1" />}
                       {t(`tejStatus.${inv.tejSyncStatus || 'pending'}`)}
                     </Badge>

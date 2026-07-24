@@ -336,7 +336,7 @@ export function InvoicePreparationModal({
                       <h4 className="text-sm font-semibold text-foreground">
                         {t("invoicePreparation.materials")}
                       </h4>
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-normal">
+                      <Badge variant="secondary" className="text-px-10 px-1.5 py-0 font-normal">
                         {availableMaterials.length}
                       </Badge>
                     </div>
@@ -385,7 +385,7 @@ export function InvoicePreparationModal({
                         <div className="flex-1 min-w-0">
                           <p className="text-sm text-muted-foreground truncate">{mat.name}</p>
                         </div>
-                        <Badge variant="outline" className="text-[10px] shrink-0">
+                        <Badge variant="outline" className="text-px-10 shrink-0">
                           {t("invoicePreparation.alreadySelected")}
                         </Badge>
                         <span className="text-sm text-muted-foreground whitespace-nowrap">
@@ -407,7 +407,7 @@ export function InvoicePreparationModal({
                       <h4 className="text-sm font-semibold text-foreground">
                         {t("invoicePreparation.expenses")}
                       </h4>
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-normal">
+                      <Badge variant="secondary" className="text-px-10 px-1.5 py-0 font-normal">
                         {availableExpenses.length}
                       </Badge>
                     </div>
@@ -460,7 +460,7 @@ export function InvoicePreparationModal({
                         <div className="flex-1 min-w-0">
                           <p className="text-sm text-muted-foreground">{formatLabel(exp.type)}</p>
                         </div>
-                        <Badge variant="outline" className="text-[10px] shrink-0">
+                        <Badge variant="outline" className="text-px-10 shrink-0">
                           {t("invoicePreparation.alreadySelected")}
                         </Badge>
                         <span className="text-sm text-muted-foreground whitespace-nowrap">{format(exp.amount)}</span>
@@ -480,7 +480,7 @@ export function InvoicePreparationModal({
                       <h4 className="text-sm font-semibold text-foreground">
                         {t("invoicePreparation.timeEntries")}
                       </h4>
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-normal">
+                      <Badge variant="secondary" className="text-px-10 px-1.5 py-0 font-normal">
                         {availableTimeEntries.length}
                       </Badge>
                     </div>
@@ -516,7 +516,7 @@ export function InvoicePreparationModal({
                               <p className="text-sm font-medium text-foreground">
                                 {formatLabel(te.workType)}
                               </p>
-                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                              <Badge variant="outline" className="text-px-10 px-1.5 py-0">
                                 {formatDuration(te.duration)}
                               </Badge>
                             </div>
@@ -547,7 +547,7 @@ export function InvoicePreparationModal({
                             {formatLabel(te.workType)} — {formatDuration(te.duration)}
                           </p>
                         </div>
-                        <Badge variant="outline" className="text-[10px] shrink-0">
+                        <Badge variant="outline" className="text-px-10 shrink-0">
                           {t("invoicePreparation.alreadySelected")}
                         </Badge>
                         <span className="text-sm text-muted-foreground whitespace-nowrap">{format(te.totalCost || 0)}</span>

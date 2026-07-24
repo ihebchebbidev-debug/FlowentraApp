@@ -71,7 +71,7 @@ export const LoopNode = memo(({ data, id, onNodeClick, onRemove }: LoopNodeProps
       </div>
 
       {/* Loop Configuration Display */}
-  <div className="text-[11px] text-gray-600 mb-3 px-2 py-1 bg-white/60 rounded">
+  <div className="text-px-11 text-gray-600 mb-3 px-2 py-1 bg-white/60 rounded">
         {hasConfig ? (
           <span>
             {isForLoop ? (
@@ -86,7 +86,7 @@ export const LoopNode = memo(({ data, id, onNodeClick, onRemove }: LoopNodeProps
       </div>
 
       {/* Loop Body Connection Area */}
-    <div className="bg-white/80 border border-dashed border-cyan-300 rounded p-2 mb-2 text-center text-[11px] text-gray-500">
+    <div className="bg-white/80 border border-dashed border-cyan-300 rounded p-2 mb-2 text-center text-px-11 text-gray-500">
   {t('nodeUi.loopBody')}
         <Handle
           type="source"

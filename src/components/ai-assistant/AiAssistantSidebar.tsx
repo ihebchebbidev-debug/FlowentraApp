@@ -1533,7 +1533,7 @@ export function AiAssistantSidebar({ isOpen, onClose }: AiAssistantSidebarProps)
             <div className="h-7 w-7 rounded-md bg-primary flex items-center justify-center">
               <AiLogoIcon size={14} variant="light" />
             </div>
-            <span className="text-foreground font-medium text-[13px]">{t('title')}</span>
+            <span className="text-foreground font-medium text-px-13">{t('title')}</span>
           </div>
           <div className="flex items-center gap-0.5">
             {/* Discover Button */}
@@ -1692,7 +1692,7 @@ export function AiAssistantSidebar({ isOpen, onClose }: AiAssistantSidebarProps)
                 >
                   <div
                     className={cn(
-                      "rounded-xl px-3.5 py-2.5 w-fit max-w-[85%] min-w-0 overflow-hidden text-[13px] leading-relaxed",
+                      "rounded-xl px-3.5 py-2.5 w-fit max-w-[85%] min-w-0 overflow-hidden text-px-13 leading-relaxed",
                       message.role === 'user' 
                         ? "bg-primary text-primary-foreground rounded-br-sm" 
                         : "bg-muted/60 text-foreground border border-border/40 rounded-bl-sm",
@@ -1874,7 +1874,7 @@ export function AiAssistantSidebar({ isOpen, onClose }: AiAssistantSidebarProps)
                                     variant="outline"
                                     size="sm"
                                     className={cn(
-                                      "h-6 px-2 text-[10px] gap-1 justify-start font-normal",
+                                      "h-6 px-2 text-px-10 gap-1 justify-start font-normal",
                                       !task.dueDate && "text-muted-foreground"
                                     )}
                                   >
@@ -1931,7 +1931,7 @@ export function AiAssistantSidebar({ isOpen, onClose }: AiAssistantSidebarProps)
                         {t('addAnotherTask')}
                       </Button>
                       
-                      <p className="text-[10px] text-muted-foreground mt-2 flex items-center gap-1">
+                      <p className="text-px-10 text-muted-foreground mt-2 flex items-center gap-1">
                         <Pencil className="h-3 w-3" />
                         {t('editBeforeCreating')}
                       </p>
@@ -2067,7 +2067,7 @@ export function AiAssistantSidebar({ isOpen, onClose }: AiAssistantSidebarProps)
                   {/* Loading indicator for follow-up questions */}
                   {message.role === 'assistant' && !message.isLoading && !message.isStreaming && message.isGeneratingSuggestions && (
                     <div className="mt-3 space-y-1.5">
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                      <p className="text-px-10 text-muted-foreground uppercase tracking-wider flex items-center gap-1">
                         <AiLogoIcon size={12} className="animate-pulse" />
                         {t('suggestions.generating')}
                       </p>
@@ -2086,7 +2086,7 @@ export function AiAssistantSidebar({ isOpen, onClose }: AiAssistantSidebarProps)
                   {/* Suggested follow-up questions */}
                   {message.role === 'assistant' && !message.isLoading && !message.isStreaming && !message.isGeneratingSuggestions && message.suggestedQuestions && message.suggestedQuestions.length > 0 && (
                     <div className="mt-3 space-y-1.5 max-w-full overflow-hidden">
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                      <p className="text-px-10 text-muted-foreground uppercase tracking-wider flex items-center gap-1">
                         <AiLogoIcon size={12} className="flex-shrink-0" />
                         {t('suggestions.title')}
                       </p>
@@ -2366,7 +2366,7 @@ export function AiAssistantSidebar({ isOpen, onClose }: AiAssistantSidebarProps)
             </div>
           )}
           
-          <p className="text-[11px] text-muted-foreground mt-3 text-center">
+          <p className="text-px-11 text-muted-foreground mt-3 text-center">
             {t('poweredBy')}
           </p>
         </div>

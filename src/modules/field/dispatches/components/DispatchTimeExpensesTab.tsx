@@ -880,7 +880,7 @@ export function DispatchTimeExpensesTab({
                         {getWorkTypeLabel(entry.workType)}
                       </Badge>
                       {isMultiJob && entry.serviceOrderJobId != null && (
-                        <Badge variant="outline" className="text-[10px]">📋 {jobLabel(entry.serviceOrderJobId)}</Badge>
+                        <Badge variant="outline" className="text-px-10">📋 {jobLabel(entry.serviceOrderJobId)}</Badge>
                       )}
                     </div>
                     <div className="flex items-center gap-1">
@@ -983,7 +983,7 @@ export function DispatchTimeExpensesTab({
                         {getExpenseTypeLabel(expense.type)}
                       </Badge>
                       {isMultiJob && expense.serviceOrderJobId != null && (
-                        <Badge variant="outline" className="text-[10px]">📋 {jobLabel(expense.serviceOrderJobId)}</Badge>
+                        <Badge variant="outline" className="text-px-10">📋 {jobLabel(expense.serviceOrderJobId)}</Badge>
                       )}
                     </div>
                     <div className="flex items-center gap-1">

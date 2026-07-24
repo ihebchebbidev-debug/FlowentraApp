@@ -570,7 +570,7 @@ export function OffersList() {
           </div>
           <div>
             <h1 className="text-xl font-semibold text-foreground">{t('title', 'Offers')}</h1>
-            <p className="text-[11px] text-muted-foreground">{t('subtitle', 'Manage quotes and proposals')}</p>
+            <p className="text-px-11 text-muted-foreground">{t('subtitle', 'Manage quotes and proposals')}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -597,7 +597,7 @@ export function OffersList() {
           </div>
           <div className="min-w-0">
             <h1 className="text-base font-semibold text-foreground truncate">{t('title', 'Offers')}</h1>
-            <p className="text-[10px] text-muted-foreground truncate">{t('subtitle', 'Manage quotes and proposals')}</p>
+            <p className="text-px-10 text-muted-foreground truncate">{t('subtitle', 'Manage quotes and proposals')}</p>
           </div>
         </div>
         {hasCreateAccess && (
@@ -814,7 +814,7 @@ export function OffersList() {
         />
       ) : viewMode === 'list' ? (
         <div className="p-2 sm:p-3 lg:p-4">
-          <Card className="shadow-card border-0 bg-card text-[0.85rem]">
+          <Card className="shadow-card border-0 bg-card text-rem-85">
             <MapOverlay
               items={mapOffersToMapItems(filteredOffers)}
               onViewItem={handleViewOffer}
@@ -861,12 +861,12 @@ export function OffersList() {
                             <p className="list-row-title flex-1">{offer.title}</p>
                             <div className="flex items-center gap-1 shrink-0">
                               {(offer.sentCount !== undefined && offer.sentCount > 0) && (
-                                <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 gap-1">
+                                <Badge variant="outline" className="text-px-10 px-1.5 py-0.5 gap-1">
                                   <Send className="w-3 h-3 text-primary" />
                                   {offer.sentCount}
                                 </Badge>
                               )}
-                              <Badge className={`${getStatusColor(offer.status)} text-[10px] px-2 py-0.5`}>
+                              <Badge className={`${getStatusColor(offer.status)} text-px-10 px-2 py-0.5`}>
                                 {t(getStatusTranslationKey('offer', offer.status))}
                               </Badge>
                             </div>
@@ -885,7 +885,7 @@ export function OffersList() {
                             userId={offer.assignedTo}
                             name={offer.assignedToName}
                             size="xs"
-                            className="text-[12px] text-muted-foreground/90"
+                            className="text-px-12 text-muted-foreground/90"
                           />
                         )}
                         {offer.validUntil && (
@@ -902,12 +902,12 @@ export function OffersList() {
                         {offer.tags.length > 0 && (
                           <div className="flex gap-1 flex-wrap">
                             {offer.tags.slice(0, 2).map((tag, index) => (
-                              <Badge key={index} variant="outline" className="text-[10px] px-1.5 py-0">
+                              <Badge key={index} variant="outline" className="text-px-10 px-1.5 py-0">
                                 {tag}
                               </Badge>
                             ))}
                             {offer.tags.length > 2 && (
-                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                              <Badge variant="outline" className="text-px-10 px-1.5 py-0">
                                 +{offer.tags.length - 2}
                               </Badge>
                             )}

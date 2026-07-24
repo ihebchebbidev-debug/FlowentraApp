@@ -279,7 +279,7 @@ export function SchedulerManager() {
           </div>
           <div className="min-w-0">
             <h1 className="text-base sm:text-xl font-semibold text-foreground truncate">{t('scheduling.manage_scheduler', 'Manage scheduler')}</h1>
-            <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">{t('scheduling.manage_scheduler_description', 'Manage technician schedules, leaves and capacity')}</p>
+            <p className="text-px-10 sm:text-px-11 text-muted-foreground truncate">{t('scheduling.manage_scheduler_description', 'Manage technician schedules, leaves and capacity')}</p>
           </div>
         </div>
         <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="gap-1 sm:gap-2 flex-shrink-0">
