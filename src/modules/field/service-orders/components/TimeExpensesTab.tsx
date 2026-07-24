@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import { useSubmitGuard } from "@/shared/hooks/useSubmitGuard";
 import { getAuthHeaders } from '@/utils/apiHeaders';
 import { ContentSkeleton } from "@/components/ui/page-skeleton";
 import { useTranslation } from "react-i18next";
@@ -179,6 +180,7 @@ export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries
     editing: PlannedLineEntry | null;
   }>({ open: false, kind: 'time', editing: null });
   const [plannedDeleteTarget, setPlannedDeleteTarget] = useState<PlannedLineEntry | null>(null);
+  const plannedDeleteGuard = useSubmitGuard();
 
   const openPlanCreate = (kind: 'time' | 'expense') => {
     setPlannedEditor({ open: true, kind, editing: null });
@@ -186,7 +188,7 @@ export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries
   const openPlanEdit = (entry: PlannedLineEntry) => {
     setPlannedEditor({ open: true, kind: entry.kind as 'time' | 'expense', editing: entry });
   };
-  const confirmPlanDelete = async () => {
+  const confirmPlanDelete = plannedDeleteGuard.guard(async () => {
     if (!plannedDeleteTarget) return;
     try {
       await plannedEntriesApi.remove(plannedDeleteTarget.id);
@@ -196,7 +198,7 @@ export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries
     } catch (e: any) {
       toast.error(e?.message || 'Failed to delete');
     }
-  };
+  });
   
   // Dispatches for this service order
   const [dispatches, setDispatches] = useState<Dispatch[]>([]);
@@ -1442,11 +1444,13 @@ export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('cancel', 'Cancel')}</AlertDialogCancel>
+            <AlertDialogCancel disabled={plannedDeleteGuard.pending}>{t('cancel', 'Cancel')}</AlertDialogCancel>
             <AlertDialogAction
-              onClick={confirmPlanDelete}
+              onClick={(e) => { e.preventDefault(); void confirmPlanDelete(); }}
+              disabled={plannedDeleteGuard.pending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
+              {plannedDeleteGuard.pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {t('delete', 'Delete')}
             </AlertDialogAction>
           </AlertDialogFooter>

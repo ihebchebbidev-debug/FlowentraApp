@@ -9,6 +9,7 @@ using MyApi.Modules.Contacts.Models;
 using MyApi.Modules.Contacts.Services;
 using MyApi.Modules.Planning.DTOs;
 using MyApi.Modules.Planning.Models;
+using MyApi.Modules.Shared.Services;
 
 namespace MyApi.Modules.Planning.Services
 {
@@ -17,6 +18,7 @@ namespace MyApi.Modules.Planning.Services
         private readonly ApplicationDbContext _db;
         private readonly ILogger<PlannedLineEntryService>? _logger;
         private readonly IContactActivityService? _contactActivity;
+        private readonly IActivityLogger? _activityLogger;
         private static readonly HashSet<string> ValidParents = new(StringComparer.OrdinalIgnoreCase)
             { "offer_item", "sale_item", "service_order_job", "deal_item" };
         private static readonly HashSet<string> ValidKinds = new(StringComparer.OrdinalIgnoreCase)
@@ -27,11 +29,13 @@ namespace MyApi.Modules.Planning.Services
         public PlannedLineEntryService(
             ApplicationDbContext db,
             ILogger<PlannedLineEntryService>? logger = null,
-            IContactActivityService? contactActivity = null)
+            IContactActivityService? contactActivity = null,
+            IActivityLogger? activityLogger = null)
         {
             _db = db;
             _logger = logger;
             _contactActivity = contactActivity;
+            _activityLogger = activityLogger;
         }
 
         public async Task<List<PlannedLineEntryDto>> GetForParentAsync(string parentType, int parentId)
@@ -78,6 +82,7 @@ namespace MyApi.Modules.Planning.Services
 
             var syncWarning = await SyncChainFromAsync(parentType, parentId, userId);
             await LogPlannedActivityAsync(entity, ContactActivityTypes.PlannedEntryAdded, userId);
+            await LogModuleActivityAsync(entity, "item_added", userId);
             var mapped = Map(entity);
             mapped.SyncWarning = syncWarning;
             return mapped;
@@ -107,6 +112,7 @@ namespace MyApi.Modules.Planning.Services
 
             var syncWarning = await SyncChainFromAsync(entity.ParentType, entity.ParentId, userId);
             await LogPlannedActivityAsync(entity, ContactActivityTypes.PlannedEntryUpdated, userId);
+            await LogModuleActivityAsync(entity, "item_updated", userId);
             var mapped = Map(entity);
             mapped.SyncWarning = syncWarning;
             return mapped;
@@ -123,6 +129,7 @@ namespace MyApi.Modules.Planning.Services
 
             var syncWarning = await SyncChainFromAsync(parentType, parentId, userId);
             await LogPlannedActivityAsync(entity, ContactActivityTypes.PlannedEntryDeleted, userId);
+            await LogModuleActivityAsync(entity, "item_deleted", userId);
             return syncWarning;
         }
 
@@ -905,6 +912,96 @@ namespace MyApi.Modules.Planning.Services
             {
                 // Activity logging is best-effort — never block the primary write.
                 _logger?.LogWarning(ex, "Failed to log planned entry activity for entry {EntryId}", entry.Id);
+            }
+        }
+
+        /// <summary>
+        /// Resolve the module-level parent (Offer / Sale / Deal / Project) that owns
+        /// this planned entry so it surfaces on that entity's Activity tab.
+        /// </summary>
+        private async Task<(string entityType, int entityId, string module)?> ResolveModuleParentAsync(string parentType, int parentId)
+        {
+            try
+            {
+                var pt = (parentType ?? "").ToLowerInvariant();
+                if (pt == "offer_item")
+                {
+                    var offerId = await _db.OfferItems.Where(oi => oi.Id == parentId).Select(oi => (int?)oi.OfferId).FirstOrDefaultAsync();
+                    if (offerId.HasValue) return ("Offer", offerId.Value, "Offers");
+                }
+                else if (pt == "sale_item")
+                {
+                    var saleId = await _db.SaleItems.Where(si => si.Id == parentId).Select(si => (int?)si.SaleId).FirstOrDefaultAsync();
+                    if (saleId.HasValue) return ("Sale", saleId.Value, "Sales");
+                }
+                else if (pt == "deal_item")
+                {
+                    var dealId = await _db.Set<MyApi.Modules.Deals.Models.DealItem>().Where(di => di.Id == parentId).Select(di => (int?)di.DealId).FirstOrDefaultAsync();
+                    if (dealId.HasValue) return ("Deal", dealId.Value, "Deals");
+                }
+                else if (pt == "service_order_job")
+                {
+                    var so = await _db.ServiceOrderJobs
+                        .Where(j => j.Id == parentId)
+                        .Join(_db.ServiceOrders, j => j.ServiceOrderId, s => s.Id, (j, s) => s)
+                        .FirstOrDefaultAsync();
+                    if (so != null)
+                    {
+                        if (so.ProjectId.HasValue) return ("Project", so.ProjectId.Value, "ServiceOrders");
+                        if (int.TryParse(so.SaleId, out var sid)) return ("Sale", sid, "ServiceOrders");
+                        if (so.AutoGeneratedSaleId.HasValue) return ("Sale", so.AutoGeneratedSaleId.Value, "ServiceOrders");
+                        if (int.TryParse(so.OfferId, out var oid)) return ("Offer", oid, "ServiceOrders");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "Failed to resolve module parent for {ParentType} {ParentId}", parentType, parentId);
+            }
+            return null;
+        }
+
+        private async Task LogModuleActivityAsync(PlannedLineEntry entry, string action, string userId)
+        {
+            if (_activityLogger == null) return;
+            try
+            {
+                var parent = await ResolveModuleParentAsync(entry.ParentType, entry.ParentId);
+                if (parent == null) return;
+
+                string summary = entry.Kind?.ToLowerInvariant() switch
+                {
+                    "time" => $"{(entry.PlannedMinutes ?? 0)} min" +
+                              ((entry.TechnicianCount ?? 1) > 1 ? $" x {entry.TechnicianCount} tech" : ""),
+                    "expense" => $"{entry.ExpenseType} {entry.PlannedAmount:0.##} {entry.Currency}".Trim(),
+                    "material" => $"{entry.ArticleName ?? ("article #" + entry.ArticleId)} x {entry.Quantity}",
+                    _ => entry.Description ?? ""
+                };
+
+                string verb = action switch
+                {
+                    "item_added" => "Planned",
+                    "item_updated" => "Updated planned",
+                    "item_deleted" => "Removed planned",
+                    _ => "Changed planned"
+                };
+
+                await _activityLogger.LogAsync(new ActivityLogEntry
+                {
+                    Module = parent.Value.module,
+                    Action = $"planned_{action}",
+                    EntityType = "PlannedLineEntry",
+                    EntityId = entry.Id.ToString(),
+                    Message = $"{verb} {entry.Kind}: {summary}".Trim(),
+                    UserId = userId,
+                    ParentEntityType = parent.Value.entityType,
+                    ParentEntityId = parent.Value.entityId,
+                    Details = $"{{\"parentType\":\"{entry.ParentType}\",\"parentId\":{entry.ParentId},\"kind\":\"{entry.Kind}\"}}",
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "Failed to log module activity for planned entry {EntryId}", entry.Id);
             }
         }
     }

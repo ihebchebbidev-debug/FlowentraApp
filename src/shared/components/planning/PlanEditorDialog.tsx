@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSubmitGuard } from '@/shared/hooks/useSubmitGuard';
 import { useTranslation } from 'react-i18next';
 import { Loader2, Settings2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -83,6 +84,8 @@ export function PlanEditorDialog({
   const [draft, setDraft] = useState<CreatePlannedLineEntry>(defaultDraft(kind, currency));
   const [selectedParentId, setSelectedParentId] = useState<number | null>(parentIds[0] ?? null);
   const [saving, setSaving] = useState(false);
+  const { guard, pending } = useSubmitGuard();
+  const busy = saving || pending;
 
   useEffect(() => {
     if (!open) return;
@@ -126,7 +129,7 @@ export function PlanEditorDialog({
     return null;
   };
 
-  const save = async () => {
+  const save = guard(async () => {
     const err = validate();
     if (err) { toast.error(err); return; }
     setSaving(true);
@@ -150,7 +153,7 @@ export function PlanEditorDialog({
     } finally {
       setSaving(false);
     }
-  };
+  });
 
   const title = editing
     ? t('planning.editEntry', 'Edit planned entry')
@@ -298,11 +301,11 @@ export function PlanEditorDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>
             {t('cancel', 'Cancel')}
           </Button>
-          <Button onClick={save} disabled={saving}>
-            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <Button onClick={save} disabled={busy}>
+            {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {t('save', 'Save')}
           </Button>
         </DialogFooter>

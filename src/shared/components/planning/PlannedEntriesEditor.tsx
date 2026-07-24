@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { Loader2 } from 'lucide-react';
+import { useSubmitGuard } from '@/shared/hooks/useSubmitGuard';
 import { useTranslation } from 'react-i18next';
 import { Plus, Trash2, Clock, Wallet, Users, AlertCircle, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -77,6 +79,9 @@ export function PlannedEntriesEditor({ parentType, parentId, currency, readOnly 
   const [draft, setDraft] = useState<CreatePlannedLineEntry>({ kind: 'time', technicianCount: 1, plannedMinutes: 60 });
   const [pendingDelete, setPendingDelete] = useState<PlannedLineEntry | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const saveGuard = useSubmitGuard();
+  const deleteGuard = useSubmitGuard();
+
 
   const idReady = parentId !== null && parentId !== undefined && parentId !== '' && Number(parentId) > 0;
 
@@ -123,7 +128,7 @@ export function PlannedEntriesEditor({ parentType, parentId, currency, readOnly 
     setEditorOpen(true);
   };
 
-  const save = async () => {
+  const save = saveGuard.guard(async () => {
     if (!idReady) {
       toast.error(t('planning.saveLineFirst', 'Save the line first, then plan time/expenses.'));
       return;
@@ -147,13 +152,13 @@ export function PlannedEntriesEditor({ parentType, parentId, currency, readOnly 
     } catch (e: any) {
       toast.error(e?.message || 'Failed to save');
     }
-  };
+  });
 
   const remove = (entry: PlannedLineEntry) => {
     setPendingDelete(entry);
   };
 
-  const confirmRemove = async () => {
+  const confirmRemove = deleteGuard.guard(async () => {
     if (!pendingDelete) return;
     setDeleting(true);
     try {
@@ -165,7 +170,7 @@ export function PlannedEntriesEditor({ parentType, parentId, currency, readOnly 
     } finally {
       setDeleting(false);
     }
-  };
+  });
 
   const timeEntries = entries.filter(e => e.kind === 'time');
   const expenseEntries = entries.filter(e => e.kind === 'expense');
@@ -355,8 +360,11 @@ export function PlannedEntriesEditor({ parentType, parentId, currency, readOnly 
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditorOpen(false)}>{t('cancel', 'Cancel')}</Button>
-            <Button onClick={save}>{t('save', 'Save')}</Button>
+            <Button variant="outline" onClick={() => setEditorOpen(false)} disabled={saveGuard.pending}>{t('cancel', 'Cancel')}</Button>
+            <Button onClick={save} disabled={saveGuard.pending}>
+              {saveGuard.pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {t('save', 'Save')}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -372,11 +380,12 @@ export function PlannedEntriesEditor({ parentType, parentId, currency, readOnly 
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting}>{t('cancel', 'Cancel')}</AlertDialogCancel>
             <AlertDialogAction
-              onClick={(e) => { e.preventDefault(); confirmRemove(); }}
-              disabled={deleting}
+              onClick={(e) => { e.preventDefault(); void confirmRemove(); }}
+              disabled={deleting || deleteGuard.pending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleting ? t('deleting', 'Deleting…') : t('delete', 'Delete')}
+              {(deleting || deleteGuard.pending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {(deleting || deleteGuard.pending) ? t('deleting', 'Deleting…') : t('delete', 'Delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

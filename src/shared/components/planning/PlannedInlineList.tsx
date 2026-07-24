@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSubmitGuard } from '@/shared/hooks/useSubmitGuard';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { Clock, Wallet, Package, Plus, Pencil, Trash2, Users, Search, Loader2, ExternalLink, Settings2 } from 'lucide-react';
@@ -119,6 +120,9 @@ export function PlannedInlineList({
     return EXPENSE_TYPES.map((et) => ({ value: et, label: t(`planning.expenseTypes.${et}`, et) }));
   }, [expenseTypeLookups, t]);
   const { entries, reload } = usePlannedEntries(parentType, parentIds);
+  const saveGuard = useSubmitGuard();
+  const removeGuard = useSubmitGuard();
+  const removeAllGuard = useSubmitGuard();
 
   const normalizedIds = parentIds
     .map((v) => (v == null ? NaN : Number(v)))
@@ -210,7 +214,7 @@ export function PlannedInlineList({
     }
   };
 
-  const save = async () => {
+  const save = saveGuard.guard(async () => {
     const err = validateDraft();
     if (err) { toast.error(err); return; }
     try {
@@ -235,9 +239,9 @@ export function PlannedInlineList({
     } catch (e: any) {
       toast.error(e?.message || 'Failed to save');
     }
-  };
+  });
 
-  const confirmRemove = async () => {
+  const confirmRemove = removeGuard.guard(async () => {
     if (!deleteTarget) return;
     const removed = deleteTarget;
     try {
@@ -249,9 +253,9 @@ export function PlannedInlineList({
     } catch (e: any) {
       toast.error(e?.message || 'Failed to delete');
     }
-  };
+  });
 
-  const confirmRemoveAll = async () => {
+  const confirmRemoveAll = removeAllGuard.guard(async () => {
     const snapshot = filtered.slice();
     try {
       await Promise.all(snapshot.map((e) => plannedEntriesApi.remove(e.id)));
@@ -263,7 +267,7 @@ export function PlannedInlineList({
     } catch (e: any) {
       toast.error(e?.message || 'Failed to delete');
     }
-  };
+  });
 
 
   const kindMeta = getKindMeta(kind, t);
@@ -590,10 +594,13 @@ export function PlannedInlineList({
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditorOpen(false)}>
+            <Button variant="outline" onClick={() => setEditorOpen(false)} disabled={saveGuard.pending}>
               {t('cancel', 'Cancel')}
             </Button>
-            <Button onClick={save}>{t('save', 'Save')}</Button>
+            <Button onClick={save} disabled={saveGuard.pending}>
+              {saveGuard.pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {t('save', 'Save')}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -609,11 +616,13 @@ export function PlannedInlineList({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('cancel', 'Cancel')}</AlertDialogCancel>
+            <AlertDialogCancel disabled={removeGuard.pending}>{t('cancel', 'Cancel')}</AlertDialogCancel>
             <AlertDialogAction
-              onClick={confirmRemove}
+              onClick={(e) => { e.preventDefault(); void confirmRemove(); }}
+              disabled={removeGuard.pending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
+              {removeGuard.pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {t('delete', 'Delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -631,11 +640,13 @@ export function PlannedInlineList({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('cancel', 'Cancel')}</AlertDialogCancel>
+            <AlertDialogCancel disabled={removeAllGuard.pending}>{t('cancel', 'Cancel')}</AlertDialogCancel>
             <AlertDialogAction
-              onClick={confirmRemoveAll}
+              onClick={(e) => { e.preventDefault(); void confirmRemoveAll(); }}
+              disabled={removeAllGuard.pending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
+              {removeAllGuard.pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {t('planning.deleteAll', 'Delete all')}
             </AlertDialogAction>
           </AlertDialogFooter>
