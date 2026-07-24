@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -31,7 +30,6 @@ export function PreferredSkillsCard({
   onChange,
 }: PreferredSkillsCardProps) {
   const [catalog, setCatalog] = useState<string[]>([]);
-  const [customValue, setCustomValue] = useState("");
   const [selectValue, setSelectValue] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [open, setOpen] = useState(false);
@@ -48,7 +46,7 @@ export function PreferredSkillsCard({
         setCatalog(Array.from(new Set(names)));
       })
       .catch(() => {
-        /* silently ignore — user can still free-type */
+        /* silently ignore */
       });
     return () => {
       cancelled = true;
@@ -90,13 +88,6 @@ export function PreferredSkillsCard({
 
   const removeSkill = async (skill: string) => {
     await persist(skills.filter((s) => s.toLowerCase() !== skill.toLowerCase()));
-  };
-
-  const handleAddCustom = async () => {
-    const value = customValue.trim();
-    if (!value) return;
-    await addSkill(value);
-    setCustomValue("");
   };
 
   const handleSelectCatalog = async (value: string) => {
@@ -150,7 +141,7 @@ export function PreferredSkillsCard({
           </PopoverTrigger>
           <PopoverContent className="w-64 p-2 space-y-2" align="start">
             <div className="text-xs font-medium text-muted-foreground">
-              Add skill
+              Add skill from catalog
             </div>
             <Select
               value={selectValue}
@@ -174,31 +165,6 @@ export function PreferredSkillsCard({
                 ))}
               </SelectContent>
             </Select>
-            <div className="flex items-center gap-1.5">
-              <Input
-                className="h-8 text-xs"
-                placeholder="Or type custom..."
-                value={customValue}
-                onChange={(e) => setCustomValue(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    void handleAddCustom();
-                  }
-                }}
-                disabled={saving}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="h-8 w-8 shrink-0"
-                onClick={handleAddCustom}
-                disabled={saving || !customValue.trim()}
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </Button>
-            </div>
           </PopoverContent>
         </Popover>
       </div>

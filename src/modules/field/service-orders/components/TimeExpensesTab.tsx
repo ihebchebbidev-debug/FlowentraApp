@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Plus, Trash2, Edit, AlertCircle, Settings2, Clock, Receipt, Truck, User, Loader2, Upload } from "lucide-react";
 import { useWorkTypes, useExpenseTypes } from "@/modules/lookups/hooks/useLookups";
+import { useCurrency } from "@/shared/hooks/useCurrency";
 import { serviceOrdersApi } from "@/services/api/serviceOrdersApi";
 import { dispatchesApi, type Dispatch } from "@/services/api/dispatchesApi";
 import { logServiceOrderActivity, logDispatchActivityWithPropagation, formatDurationForLog, calculateDurationMinutes } from "@/services/activityLogger";
@@ -65,7 +66,9 @@ import { API_URL } from '@/config/api';
 
 export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries, expenses: externalExpenses, onUpdate, jobIds = [], jobLabels }: TimeExpensesTabProps) {
   const { t } = useTranslation('service_orders');
+  const { current: currencyInfo } = useCurrency();
   const location = useLocation();
+  
   
   // Build returnUrl for lookups navigation
   const currentPath = location.pathname;
@@ -434,7 +437,7 @@ export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries
   const [expenseFormData, setExpenseFormData] = useState({
     type: "travel",
     amount: 0,
-    currency: "TND",
+    currency: currencyInfo.code,
     description: "",
     date: new Date().toISOString().split('T')[0],
   });
@@ -673,7 +676,7 @@ export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries
     setExpenseFormData({
       type: defaultExpenseType,
       amount: 0,
-      currency: "TND", 
+      currency: currencyInfo.code, 
       description: "",
       date: new Date().toISOString().split('T')[0],
     });
@@ -1177,7 +1180,7 @@ export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries
                       </Select>
                     </div>
                     <div>
-                      <Label>{t('expense_booking.amount')} (TND)</Label>
+                      <Label>{t('expense_booking.amount')} ({currencyInfo.code})</Label>
                       <Input 
                         type="number"
                         step="0.01"

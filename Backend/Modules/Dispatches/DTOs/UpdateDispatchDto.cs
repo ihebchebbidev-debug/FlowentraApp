@@ -11,5 +11,6 @@ namespace MyApi.Modules.Dispatches.DTOs
         public TimeSpan? ScheduledEndTime { get; set; }
         public string? Priority { get; set; }
         public string? Notes { get; set; }
+        public List<string>? RequiredSkills { get; set; }
     }
 }

@@ -33,6 +33,7 @@ namespace MyApi.Modules.Dispatches.Mapping
                     Id = at.TechnicianId,
                     Name = technicianNames != null && technicianNames.TryGetValue(at.TechnicianId, out var n) ? n : null
                 }).ToList() ?? new(),
+                RequiredSkills = src.RequiredSkills?.ToList(),
                 ScheduledDate = src.ScheduledDate,
                 ScheduledStartTime = src.ScheduledStartTime?.ToString(@"hh\:mm"),
                 ScheduledEndTime = src.ScheduledEndTime?.ToString(@"hh\:mm"),

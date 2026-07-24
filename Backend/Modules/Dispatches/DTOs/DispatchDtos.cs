@@ -33,6 +33,7 @@ namespace MyApi.Modules.Dispatches.DTOs
         public string Status { get; set; } = null!;
         public string Priority { get; set; } = null!;
         public List<UserLightDto> AssignedTechnicians { get; set; } = new();
+        public List<string>? RequiredSkills { get; set; }
         public SchedulingDto? Scheduling { get; set; }
         // Added for technician filtering - contains [TECH_ID:xxx] marker
         public string? Notes { get; set; }

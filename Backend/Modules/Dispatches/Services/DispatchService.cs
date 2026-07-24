@@ -824,6 +824,7 @@ namespace MyApi.Modules.Dispatches.Services
             if (dto.ScheduledStartTime.HasValue) d.ScheduledStartTime = dto.ScheduledStartTime.Value;
             if (dto.ScheduledEndTime.HasValue) d.ScheduledEndTime = dto.ScheduledEndTime.Value;
             if (!string.IsNullOrEmpty(dto.Priority)) d.Priority = dto.Priority;
+            if (dto.RequiredSkills != null) d.RequiredSkills = dto.RequiredSkills.ToArray();
 
             d.ModifiedDate = DateTime.UtcNow;
             d.ModifiedBy = userId;

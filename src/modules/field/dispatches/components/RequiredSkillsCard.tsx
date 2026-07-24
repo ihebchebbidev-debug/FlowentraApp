@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -35,7 +34,6 @@ export function RequiredSkillsCard({
   const { t } = useTranslation("job-detail");
 
   const [catalog, setCatalog] = useState<string[]>([]);
-  const [customValue, setCustomValue] = useState("");
   const [selectValue, setSelectValue] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [open, setOpen] = useState(false);
@@ -95,13 +93,6 @@ export function RequiredSkillsCard({
 
   const removeSkill = async (skill: string) => {
     await persist(skills.filter((s) => s.toLowerCase() !== skill.toLowerCase()));
-  };
-
-  const handleAddCustom = async () => {
-    const value = customValue.trim();
-    if (!value) return;
-    await addSkill(value);
-    setCustomValue("");
   };
 
   const handleSelectCatalog = async (value: string) => {
@@ -180,31 +171,6 @@ export function RequiredSkillsCard({
                 ))}
               </SelectContent>
             </Select>
-            <div className="flex items-center gap-1.5">
-              <Input
-                className="h-8 text-xs"
-                placeholder={t("dispatch_detail.required_skills_custom_placeholder")}
-                value={customValue}
-                onChange={(e) => setCustomValue(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    void handleAddCustom();
-                  }
-                }}
-                disabled={saving}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="h-8 w-8 shrink-0"
-                onClick={handleAddCustom}
-                disabled={saving || !customValue.trim()}
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </Button>
-            </div>
           </PopoverContent>
         </Popover>
       </div>
