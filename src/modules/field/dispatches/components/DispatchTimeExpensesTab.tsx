@@ -39,6 +39,8 @@ interface DispatchTimeExpensesTabProps {
   dispatchJobs?: DispatchJobSummary[];
   /** The job the technician is currently working on — preselected in add dialogs. */
   preselectedJobId?: number | null;
+  /** Owning service order id — used to build drilldown links on planned rows. */
+  serviceOrderId?: number | null;
   initialTimeEntries?: TimeEntry[];
   initialExpenses?: Expense[];
   onDataChange?: () => void;
@@ -67,6 +69,7 @@ export function DispatchTimeExpensesTab({
   dispatchStatus,
   dispatchJobs = [],
   preselectedJobId,
+  serviceOrderId,
   initialTimeEntries = [],
   initialExpenses = [],
   onDataChange
@@ -814,6 +817,10 @@ export function DispatchTimeExpensesTab({
               kind="time"
               readOnly
               hideWhenEmpty
+              getEntryLink={serviceOrderId ? (entry) => ({
+                to: `/dashboard/field/service-orders/${serviceOrderId}?tab=jobs#job-${entry.parentId}`,
+                label: t('dispatches.planning.openSource', 'Open on Service Order'),
+              }) : undefined}
             />
             <PlannedInlineList
               parentType="service_order_job"
@@ -822,6 +829,10 @@ export function DispatchTimeExpensesTab({
               kind="expense"
               readOnly
               hideWhenEmpty
+              getEntryLink={serviceOrderId ? (entry) => ({
+                to: `/dashboard/field/service-orders/${serviceOrderId}?tab=jobs#job-${entry.parentId}`,
+                label: t('dispatches.planning.openSource', 'Open on Service Order'),
+              }) : undefined}
             />
           </div>
         )}

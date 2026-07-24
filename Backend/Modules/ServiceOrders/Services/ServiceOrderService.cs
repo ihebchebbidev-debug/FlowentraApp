@@ -607,6 +607,10 @@ namespace MyApi.Modules.ServiceOrders.Services
                     // dropped 30–80% of planned budget on installation-grouped sales.
                     // CopyAsync is idempotent (see PlannedLineEntryService), so a strategy retry
                     // does not stack duplicates.
+                    if (_plannedEntries == null)
+                    {
+                        _logger.LogError("PlannedLineEntryService is not registered — planned time/expenses will NOT propagate from sale items to service order jobs. Fix DI registration.");
+                    }
                     if (_plannedEntries != null || _formDocuments != null)
                     {
                         foreach (var j in jobs)

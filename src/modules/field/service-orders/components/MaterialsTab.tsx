@@ -698,6 +698,17 @@ export function MaterialsTab({ serviceOrder, onUpdate, jobIds = [], jobLabels }:
               jobLabels={jobLabels}
               kind="material"
               currency={(serviceOrder as any)?.currency || 'TND'}
+              onChanged={async ({ action, entry }) => {
+                try {
+                  await logServiceOrderActivity(serviceOrderId, {
+                    type: action === 'delete' ? 'material_deleted' : (action === 'create' ? 'material_added' : 'material_updated'),
+                    articleName: entry.articleName ?? `Article #${entry.articleId ?? ''}`,
+                    quantity: entry.quantity ?? 1,
+                    amount: (entry.quantity ?? 0) * (entry.unitPrice ?? 0),
+                    currency: entry.currency ?? undefined,
+                  });
+                } catch (e) { console.warn('SO planned material audit failed', e); }
+              }}
             />
           </div>
         )}

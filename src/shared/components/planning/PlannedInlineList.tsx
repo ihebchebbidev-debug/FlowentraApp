@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Clock, Wallet, Package, Plus, Pencil, Trash2, Users, Search, Loader2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Clock, Wallet, Package, Plus, Pencil, Trash2, Users, Search, Loader2, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -70,6 +71,23 @@ interface Props {
    * an empty "Planned" section (planning happens on the job/service order).
    */
   hideWhenEmpty?: boolean;
+  /**
+   * Optional per-entry drilldown resolver. When it returns a value, a small
+   * "open source" icon is rendered on the row that navigates to `to`. Used
+   * from Dispatches to jump back to the originating Service Order job, and
+   * from Service Orders to jump back to the source Offer/Sale item.
+   */
+  getEntryLink?: (entry: PlannedLineEntry) => { to: string; label?: string } | null;
+  /**
+   * Notify consumers of planned-entry mutations so they can write an audit
+   * note on the surrounding entity (Offer/Sale/Service Order/Dispatch).
+   * Called AFTER the API call succeeds. Errors are swallowed so a failing
+   * note write never blocks the primary save.
+   */
+  onChanged?: (evt: {
+    action: 'create' | 'update' | 'delete';
+    entry: PlannedLineEntry;
+  }) => void | Promise<void>;
 }
 
 const EXPENSE_TYPES: PlannedExpenseType[] = ['travel', 'per_diem', 'materials', 'subcontractor'];
@@ -82,6 +100,8 @@ export function PlannedInlineList({
   currency,
   readOnly = false,
   hideWhenEmpty = false,
+  getEntryLink,
+  onChanged,
 }: Props) {
   const { t } = useTranslation();
   const { current: currencyInfo } = useCurrency();
@@ -177,23 +197,41 @@ export function PlannedInlineList({
     return null;
   };
 
+  const fireChanged = async (
+    action: 'create' | 'update' | 'delete',
+    entry: PlannedLineEntry,
+  ) => {
+    if (!onChanged) return;
+    try {
+      await onChanged({ action, entry });
+    } catch (e) {
+      // Audit-note failures must never break the primary planning action.
+      console.warn('[PlannedInlineList] onChanged callback failed:', e);
+    }
+  };
+
   const save = async () => {
     const err = validateDraft();
     if (err) { toast.error(err); return; }
     try {
+      let saved: PlannedLineEntry;
+      let action: 'create' | 'update';
       if (editing) {
-        await plannedEntriesApi.update(editing.id, draft);
+        saved = await plannedEntriesApi.update(editing.id, draft);
+        action = 'update';
       } else {
         const pid = selectedParentId ?? normalizedIds[0];
         if (!pid) {
           toast.error(t('planning.noParent', 'Cannot plan without a linked job'));
           return;
         }
-        await plannedEntriesApi.create(parentType, pid, draft);
+        saved = await plannedEntriesApi.create(parentType, pid, draft);
+        action = 'create';
       }
       toast.success(t('planning.savedToast', 'Plan saved'));
       setEditorOpen(false);
       await reload();
+      void fireChanged(action, saved);
     } catch (e: any) {
       toast.error(e?.message || 'Failed to save');
     }
@@ -201,26 +239,32 @@ export function PlannedInlineList({
 
   const confirmRemove = async () => {
     if (!deleteTarget) return;
+    const removed = deleteTarget;
     try {
-      await plannedEntriesApi.remove(deleteTarget.id);
+      await plannedEntriesApi.remove(removed.id);
       toast.success(t('planning.deletedToast', 'Planned entry deleted'));
       setDeleteTarget(null);
       await reload();
+      void fireChanged('delete', removed);
     } catch (e: any) {
       toast.error(e?.message || 'Failed to delete');
     }
   };
 
   const confirmRemoveAll = async () => {
+    const snapshot = filtered.slice();
     try {
-      await Promise.all(filtered.map((e) => plannedEntriesApi.remove(e.id)));
+      await Promise.all(snapshot.map((e) => plannedEntriesApi.remove(e.id)));
       toast.success(t('planning.deletedAllToast', 'All planned entries deleted'));
       setDeleteAllOpen(false);
       await reload();
+      // Emit one delete event per entry so consumers can bulk-audit.
+      for (const e of snapshot) void fireChanged('delete', e);
     } catch (e: any) {
       toast.error(e?.message || 'Failed to delete');
     }
   };
+
 
   const kindMeta = getKindMeta(kind, t);
   const canAdd = !readOnly && normalizedIds.length > 0;
@@ -282,27 +326,64 @@ export function PlannedInlineList({
                     📋 {jobLabels[e.parentId]}
                   </Badge>
                 )}
+                {e.originOfferItemId && parentType !== 'offer_item' && (
+                  <Badge
+                    variant="outline"
+                    className="border-sky-300 bg-sky-50 text-[10px] text-sky-800 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-300"
+                    title={t('planning.originOfferTooltip', 'Inherited from the source offer item')}
+                  >
+                    {t('planning.fromOffer', 'from Offer')}
+                  </Badge>
+                )}
+                {parentType === 'service_order_job' && !e.originOfferItemId && (
+                  <Badge
+                    variant="outline"
+                    className="border-emerald-300 bg-emerald-50 text-[10px] text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"
+                    title={t('planning.originJobTooltip', 'Added directly on this service order job')}
+                  >
+                    {t('planning.onJob', 'on Job')}
+                  </Badge>
+                )}
               </div>
-              {!readOnly && (
-                <div className="flex gap-1">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 w-7 p-0"
-                    onClick={() => openEdit(e)}
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 w-7 p-0 text-destructive"
-                    onClick={() => setDeleteTarget(e)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              )}
+              <div className="flex gap-1">
+                {(() => {
+                  const link = getEntryLink?.(e);
+                  if (!link) return null;
+                  return (
+                    <Button
+                      asChild
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 w-7 p-0"
+                      title={link.label ?? t('planning.openSource', 'Open source')}
+                    >
+                      <Link to={link.to} aria-label={link.label ?? t('planning.openSource', 'Open source')}>
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </Link>
+                    </Button>
+                  );
+                })()}
+                {!readOnly && (
+                  <>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 w-7 p-0"
+                      onClick={() => openEdit(e)}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 w-7 p-0 text-destructive"
+                      onClick={() => setDeleteTarget(e)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </>
+                )}
+              </div>
             </li>
           ))}
         </ul>

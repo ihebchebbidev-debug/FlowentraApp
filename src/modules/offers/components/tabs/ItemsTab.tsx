@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
+import { PlannedInlineList } from "@/shared/components/planning/PlannedInlineList";
 import { calculateEntityTotal } from "@/lib/calculateTotal";
 import { ContentSkeleton } from "@/components/ui/page-skeleton";
 import { useTranslation } from "react-i18next";
@@ -325,8 +326,12 @@ export function ItemsTab({ offer, onItemsUpdated }: ItemsTabProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {offer.items.map((item, index) => (
-                    <TableRow key={item.id || index} className="hover:bg-muted/50 transition-colors">
+                  {offer.items.map((item, index) => {
+                    const parentIdNum = Number(item.id);
+                    const canPlan = Number.isFinite(parentIdNum) && parentIdNum > 0;
+                    return (
+                    <Fragment key={item.id || index}>
+                    <TableRow className="hover:bg-muted/50 transition-colors">
                       <TableCell className="text-center">
                         {getItemTypeIcon(item.type)}
                       </TableCell>
@@ -386,7 +391,42 @@ export function ItemsTab({ offer, onItemsUpdated }: ItemsTabProps) {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    {canPlan && (
+                      <TableRow className="bg-muted/10 hover:bg-muted/10">
+                        <TableCell colSpan={7} className="py-2">
+                          <div className="grid gap-2 md:grid-cols-2">
+                            <PlannedInlineList
+                              parentType="offer_item"
+                              parentIds={[parentIdNum]}
+                              kind="time"
+                              hideWhenEmpty={false}
+                              onChanged={async ({ action, entry }) => {
+                                const offerId = parseInt(offer.id, 10);
+                                if (Number.isNaN(offerId)) return;
+                                const mins = entry.plannedMinutes ?? 0;
+                                const desc = `Planned time ${action}d on offer item #${entry.parentId}: ${Math.floor(mins/60)}h${mins%60 ? ` ${mins%60}m` : ''}${entry.description ? ` — ${entry.description}` : ''}`;
+                                try { await offersApi.addActivity(offerId, { type: `planned_time_${action}`, description: desc }); } catch (e) { console.warn('offer planned audit failed', e); }
+                              }}
+                            />
+                            <PlannedInlineList
+                              parentType="offer_item"
+                              parentIds={[parentIdNum]}
+                              kind="expense"
+                              hideWhenEmpty={false}
+                              onChanged={async ({ action, entry }) => {
+                                const offerId = parseInt(offer.id, 10);
+                                if (Number.isNaN(offerId)) return;
+                                const desc = `Planned expense ${action}d on offer item #${entry.parentId}: ${entry.expenseType ?? ''} ${(entry.plannedAmount ?? 0).toFixed(2)} ${entry.currency ?? ''}${entry.description ? ` — ${entry.description}` : ''}`;
+                                try { await offersApi.addActivity(offerId, { type: `planned_expense_${action}`, description: desc }); } catch (e) { console.warn('offer planned audit failed', e); }
+                              }}
+                            />
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    </Fragment>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>

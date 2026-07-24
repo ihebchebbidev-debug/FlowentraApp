@@ -171,6 +171,10 @@
   "planning": {
     "title": "Planned time & expenses",
     "plannedBadge": "Planned",
+    "fromOffer": "from Offer",
+    "originOfferTooltip": "Inherited from the source offer item",
+    "onJob": "on Job",
+    "originJobTooltip": "Added directly on this service order job",
     "plannedTime": "Planned time",
     "plannedExpenses": "Planned expenses",
     "plannedTimeSection": "Planned time",

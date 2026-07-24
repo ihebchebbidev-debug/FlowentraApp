@@ -78,6 +78,8 @@ interface DispatchMaterialsTabProps {
   dispatchJobs?: DispatchJobSummary[];
   /** The job the technician is currently working on — preselected for new materials. */
   preselectedJobId?: number | null;
+  /** Owning service order id — used to build drilldown links on planned rows. */
+  serviceOrderId?: number | null;
 }
 
 // Extended type to hold resolved names
@@ -103,7 +105,7 @@ interface EditMaterialFormData {
   internalComment: string;
 }
 
-export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onDataChange, installationId, serviceOrderMaterials = [], dispatchJobs = [], preselectedJobId }: DispatchMaterialsTabProps) {
+export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onDataChange, installationId, serviceOrderMaterials = [], dispatchJobs = [], preselectedJobId, serviceOrderId }: DispatchMaterialsTabProps) {
   const { t } = useTranslation('dispatches');
   const [materials, setMaterials] = useState<MaterialUsage[]>(initialMaterials);
   const [isMaterialModalOpen, setIsMaterialModalOpen] = useState(false);
@@ -677,6 +679,10 @@ export function DispatchMaterialsTab({ dispatchId, initialMaterials = [], onData
                 kind="material"
                 readOnly
                 hideWhenEmpty
+                getEntryLink={serviceOrderId ? (entry) => ({
+                  to: `/dashboard/field/service-orders/${serviceOrderId}?tab=jobs#job-${entry.parentId}`,
+                  label: t('dispatches.planning.openSource', 'Open on Service Order'),
+                }) : undefined}
               />
             </div>
           )}

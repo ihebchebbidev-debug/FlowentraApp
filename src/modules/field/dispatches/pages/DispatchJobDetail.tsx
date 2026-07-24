@@ -1004,7 +1004,7 @@ export default function DispatchJobDetail() {
 
           {/* Time & Expenses Tab */}
           <TabsContent value="time_expenses" className="mt-0">
-            <DispatchTimeExpensesTab dispatchId={dispatchId} dispatchStatus={dispatch?.status} dispatchJobs={dispatch?.jobs} preselectedJobId={currentJobId} />
+            <DispatchTimeExpensesTab dispatchId={dispatchId} dispatchStatus={dispatch?.status} dispatchJobs={dispatch?.jobs} preselectedJobId={currentJobId} serviceOrderId={dispatch?.serviceOrderId != null ? Number(dispatch.serviceOrderId) : null} />
           </TabsContent>
 
           {/* Materials Tab */}
@@ -1015,6 +1015,7 @@ export default function DispatchJobDetail() {
               serviceOrderMaterials={serviceOrderMaterials}
               dispatchJobs={dispatch?.jobs}
               preselectedJobId={currentJobId}
+              serviceOrderId={dispatch?.serviceOrderId != null ? Number(dispatch.serviceOrderId) : null}
             />
           </TabsContent>
 

@@ -980,6 +980,21 @@ const planningEn = {
       materials: 'Materials',
       subcontractor: 'Subcontractor',
     },
+    deleteAll: 'Delete all',
+    deletedToast: 'Planned entry deleted',
+    deletedAllToast: 'All planned entries deleted',
+    confirmDeleteTitle: 'Delete planned entry?',
+    confirmDeleteAllTitle: 'Delete all planned entries?',
+    confirmDeleteAll: 'This will remove every planned entry in this section. This action cannot be undone.',
+    fromOffer: 'from Offer',
+    onJob: 'on Job',
+    openSource: 'Open source',
+    originOfferTooltip: 'Inherited from the source offer item',
+    originJobTooltip: 'Added directly on this service order job',
+    durationRequired: 'Planned duration must be greater than 0 minutes.',
+    amountRequired: 'Amount must be greater than 0.',
+    materialNameRequired: 'Please pick or enter an article name.',
+    quantityRequired: 'Quantity must be greater than 0.',
     overrun: {
       onPlan: 'On plan',
       nearLimit: 'Near limit',
@@ -1031,6 +1046,21 @@ const planningFr = {
       materials: 'Matériel',
       subcontractor: 'Sous-traitance',
     },
+    deleteAll: 'Tout supprimer',
+    deletedToast: 'Entrée planifiée supprimée',
+    deletedAllToast: 'Toutes les entrées planifiées ont été supprimées',
+    confirmDeleteTitle: 'Supprimer l’entrée planifiée ?',
+    confirmDeleteAllTitle: 'Supprimer toutes les entrées planifiées ?',
+    confirmDeleteAll: 'Cela supprimera toutes les entrées planifiées de cette section. Cette action est irréversible.',
+    fromOffer: 'depuis Offre',
+    onJob: 'sur Intervention',
+    openSource: 'Ouvrir la source',
+    originOfferTooltip: 'Hérité de l’article de l’offre d’origine',
+    originJobTooltip: 'Ajouté directement sur cette intervention',
+    durationRequired: 'La durée planifiée doit être supérieure à 0 minute.',
+    amountRequired: 'Le montant doit être supérieur à 0.',
+    materialNameRequired: 'Veuillez choisir ou saisir un nom d’article.',
+    quantityRequired: 'La quantité doit être supérieure à 0.',
     overrun: {
       onPlan: 'Conforme',
       nearLimit: 'Proche limite',
@@ -1039,6 +1069,9 @@ const planningFr = {
     },
   },
 };
+// dispatches.planning.* — used by dispatch tab drilldown link tooltip.
+i18n.addResourceBundle('en', 'translation', { dispatches: { planning: { openSource: 'Open on Service Order' } } }, true, true);
+i18n.addResourceBundle('fr', 'translation', { dispatches: { planning: { openSource: 'Ouvrir dans l’ordre d’intervention' } } }, true, true);
 i18n.addResourceBundle('en', 'translation', planningEn, true, true);
 i18n.addResourceBundle('fr', 'translation', planningFr, true, true);
 i18n.addResourceBundle('de', 'translation', planningEn, true, true);

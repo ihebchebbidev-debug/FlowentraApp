@@ -171,6 +171,10 @@
   "planning": {
     "title": "Temps & dépenses planifiés",
     "plannedBadge": "Planifié",
+    "fromOffer": "depuis l'offre",
+    "originOfferTooltip": "Hérité de l'article d'offre source",
+    "onJob": "sur la tâche",
+    "originJobTooltip": "Ajouté directement sur cette tâche d'ordre de service",
     "plannedTime": "Temps planifié",
     "plannedExpenses": "Dépenses planifiées",
     "plannedTimeSection": "Temps planifié",
