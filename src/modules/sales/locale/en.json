@@ -254,7 +254,8 @@
   "tabs": {
     "overview": "Overview",
     "items": "Items",
-    "notesActivity": "Notes & Activity",
+    "notesActivity": "Activity",
+    "activity": "Activity",
     "checklists": "Checklists",
     "documents": "Documents"
   },
@@ -267,6 +268,8 @@
     "affectedContact": "Affected Contact",
     "unknownContact": "Unknown Contact",
     "contactEmail": "Contact Email",
+    "contactPhone": "Contact Phone",
+    "createdDate": "Created Date",
     "notSpecified": "Not specified",
     "relatedOffer": "Related Offer",
     "relatedServiceOrder": "Related Service Order",
@@ -291,7 +294,15 @@
     "tva": "VAT",
     "taxType": "VAT Type",
     "totalAmount": "Total Amount",
-    "inclTva": "incl. VAT"
+    "inclTva": "incl. VAT",
+    "source": "Source",
+    "category": "Category",
+    "totalItems": "Total Items",
+    "totalQuantity": "Total Quantity",
+    "financialBreakdown": "Financial Breakdown",
+    "discount": "Discount",
+    "shipping": "Shipping",
+    "fiscalStamp": "Fiscal Stamp"
   },
   "itemsTab": {
     "title": "Sale Items",

@@ -32,8 +32,21 @@ interface AggregatedExpenseEntry extends Omit<ExpenseEntry, 'dispatchId'> {
 }
 
 import { DatePicker } from "@/components/ui/date-time-picker";
-import { PlannedInlineList } from "@/shared/components/planning/PlannedInlineList";
 import { PlannedTotalsBadge } from "@/shared/components/planning/OverrunBadge";
+import { PlanEditorDialog } from "@/shared/components/planning/PlanEditorDialog";
+import { PlannedEntryCard } from "@/shared/components/planning/PlannedEntryCard";
+import { usePlannedEntries } from "@/shared/components/planning/usePlannedEntries";
+import { plannedEntriesApi, type PlannedLineEntry } from "@/services/plannedEntriesService";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface TimeExpensesTabProps {
   serviceOrder: any;
@@ -147,6 +160,43 @@ export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries
   const [editingTimeId, setEditingTimeId] = useState<string | null>(null);
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Planned entries (unified into the same list as actuals, tagged "Planned")
+  const soCurrency = (serviceOrder as any)?.currency || currencyInfo.code || 'TND';
+  const { entries: plannedEntries, reload: reloadPlanned } = usePlannedEntries(
+    'service_order_job',
+    jobIds
+  );
+  const normalizedJobIds = jobIds
+    .map((v) => (v == null ? NaN : Number(v)))
+    .filter((n) => Number.isFinite(n) && n > 0) as number[];
+  const plannedTime = plannedEntries.filter((e) => e.kind === 'time');
+  const plannedExpense = plannedEntries.filter((e) => e.kind === 'expense');
+
+  const [plannedEditor, setPlannedEditor] = useState<{
+    open: boolean;
+    kind: 'time' | 'expense';
+    editing: PlannedLineEntry | null;
+  }>({ open: false, kind: 'time', editing: null });
+  const [plannedDeleteTarget, setPlannedDeleteTarget] = useState<PlannedLineEntry | null>(null);
+
+  const openPlanCreate = (kind: 'time' | 'expense') => {
+    setPlannedEditor({ open: true, kind, editing: null });
+  };
+  const openPlanEdit = (entry: PlannedLineEntry) => {
+    setPlannedEditor({ open: true, kind: entry.kind as 'time' | 'expense', editing: entry });
+  };
+  const confirmPlanDelete = async () => {
+    if (!plannedDeleteTarget) return;
+    try {
+      await plannedEntriesApi.remove(plannedDeleteTarget.id);
+      toast.success(t('planning.deletedToast', 'Planned entry deleted'));
+      setPlannedDeleteTarget(null);
+      await reloadPlanned();
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to delete');
+    }
+  };
   
   // Dispatches for this service order
   const [dispatches, setDispatches] = useState<Dispatch[]>([]);
@@ -767,36 +817,16 @@ export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries
 
   return (
     <div className="space-y-6">
-      {/* Planned rows (inline, tagged with a "Planned" badge) */}
-      {jobIds.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <PlannedInlineList
-            parentType="service_order_job"
-            parentIds={jobIds}
-            jobLabels={jobLabels}
-            kind="time"
-            currency={(serviceOrder as any)?.currency || 'TND'}
-          />
-          <PlannedInlineList
-            parentType="service_order_job"
-            parentIds={jobIds}
-            jobLabels={jobLabels}
-            kind="expense"
-            currency={(serviceOrder as any)?.currency || 'TND'}
-          />
-        </div>
-      )}
-
       {isLoadingAggregatedData ? (
         <ContentSkeleton rows={8} />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Time Tracking Section */}
           <div>
-            <div className="flex flex-row items-center justify-between space-y-0 pb-4">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-sm font-medium">
-                  {t('time_booking.title')} ({aggregatedTimeEntries.length})
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-4">
+              <div className="flex items-center gap-2 flex-wrap min-w-0">
+                <h3 className="text-sm font-medium truncate">
+                  {t('time_booking.title')} ({aggregatedTimeEntries.length + plannedTime.length})
                 </h3>
                 {jobIds.length > 0 && (
                   <PlannedTotalsBadge
@@ -807,12 +837,24 @@ export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries
                   />
                 )}
               </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                {normalizedJobIds.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 gap-1 border-amber-300 text-amber-800 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-950/40"
+                    onClick={() => openPlanCreate('time')}
+                  >
+                    <Plus className="h-4 w-4" />
+                    {t('planning.planTime', 'Plan Time')}
+                  </Button>
+                )}
               <Dialog open={isTimeDialogOpen} onOpenChange={setIsTimeDialogOpen}>
                 <DialogTrigger asChild>
                   <Button 
                     size="sm"
                     variant="outline"
-                    className="border-border bg-background hover:bg-muted"
+                    className="h-8 border-border bg-background hover:bg-muted"
                     onClick={() => {
                       resetTimeForm();
                       setEditingTimeId(null);
@@ -1013,9 +1055,10 @@ export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
+              </div>
             </div>
             <div className="max-h-[500px] overflow-y-auto pr-2">
-              {aggregatedTimeEntries.length === 0 ? (
+              {aggregatedTimeEntries.length === 0 && plannedTime.length === 0 ? (
                 <div className="text-center py-8">
                   <Clock className="h-8 w-8 mx-auto mb-3 text-muted-foreground/40" />
                   <h3 className="text-sm font-medium text-foreground mb-2">
@@ -1027,6 +1070,16 @@ export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries
                 </div>
               ) : (
                 <div className="space-y-3">
+                  {plannedTime.map((p) => (
+                    <PlannedEntryCard
+                      key={`planned-time-${p.id}`}
+                      entry={p}
+                      currency={soCurrency}
+                      jobLabel={normalizedJobIds.length > 1 ? jobLabels?.[p.parentId] : undefined}
+                      onEdit={() => openPlanEdit(p)}
+                      onDelete={() => setPlannedDeleteTarget(p)}
+                    />
+                  ))}
                   {aggregatedTimeEntries.map((entry) => (
                     <div key={`${entry.source}-${entry.id}`} className="border rounded-lg p-3 hover:bg-muted/50 transition-colors">
                       <div className="flex items-center justify-between mb-2">
@@ -1106,10 +1159,10 @@ export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries
 
           {/* Expense Tracking Section */}
           <div>
-            <div className="flex flex-row items-center justify-between space-y-0 pb-4">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-sm font-medium">
-                  {t('expense_booking.title')} ({aggregatedExpenses.length})
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-4">
+              <div className="flex items-center gap-2 flex-wrap min-w-0">
+                <h3 className="text-sm font-medium truncate">
+                  {t('expense_booking.title')} ({aggregatedExpenses.length + plannedExpense.length})
                 </h3>
                 {jobIds.length > 0 && (
                   <PlannedTotalsBadge
@@ -1121,12 +1174,24 @@ export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries
                   />
                 )}
               </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                {normalizedJobIds.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 gap-1 border-amber-300 text-amber-800 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-950/40"
+                    onClick={() => openPlanCreate('expense')}
+                  >
+                    <Plus className="h-4 w-4" />
+                    {t('planning.planExpense', 'Plan Expense')}
+                  </Button>
+                )}
               <Dialog open={isExpenseDialogOpen} onOpenChange={setIsExpenseDialogOpen}>
                 <DialogTrigger asChild>
                   <Button 
                     size="sm"
                     variant="outline"
-                    className="border-border bg-background hover:bg-muted"
+                    className="h-8 border-border bg-background hover:bg-muted"
                     onClick={() => {
                       resetExpenseForm();
                       setEditingExpenseId(null);
@@ -1252,9 +1317,10 @@ export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
+              </div>
             </div>
             <div className="max-h-[500px] overflow-y-auto pr-2">
-              {aggregatedExpenses.length === 0 ? (
+              {aggregatedExpenses.length === 0 && plannedExpense.length === 0 ? (
                 <div className="text-center py-8">
                   <Receipt className="h-8 w-8 mx-auto mb-3 text-muted-foreground/40" />
                   <h3 className="text-sm font-medium text-foreground mb-2">
@@ -1266,6 +1332,17 @@ export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries
                 </div>
               ) : (
                 <div className="space-y-3">
+                  {plannedExpense.map((p) => (
+                    <PlannedEntryCard
+                      key={`planned-exp-${p.id}`}
+                      entry={p}
+                      currency={soCurrency}
+                      expenseTypeLabel={getExpenseTypeLabel}
+                      jobLabel={normalizedJobIds.length > 1 ? jobLabels?.[p.parentId] : undefined}
+                      onEdit={() => openPlanEdit(p)}
+                      onDelete={() => setPlannedDeleteTarget(p)}
+                    />
+                  ))}
                   {aggregatedExpenses.map((expense) => (
                     <div key={`${expense.source}-${expense.id}`} className="border rounded-lg p-3 hover:bg-muted/50 transition-colors">
                       <div className="flex items-center justify-between mb-2">
@@ -1324,12 +1401,6 @@ export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries
                             {getTechnicianDisplayName(expense.technicianName, expense.technicianId)}
                           </div>
                         </div>
-                        <div>
-                          <span className="text-muted-foreground">{t('expense_booking.status', 'Status')}</span>
-                          <Badge variant="outline" className={`text-xs ${getStatusBadgeColor(expense.status)}`}>
-                            {expense.status}
-                          </Badge>
-                        </div>
                       </div>
                       {expense.description && (
                         <div className="mt-2 pt-2 border-t">
@@ -1344,6 +1415,43 @@ export function TimeExpensesTab({ serviceOrder, timeEntries: externalTimeEntries
           </div>
         </div>
       )}
+
+      <PlanEditorDialog
+        open={plannedEditor.open}
+        onOpenChange={(o) => setPlannedEditor((s) => ({ ...s, open: o }))}
+        parentType="service_order_job"
+        parentIds={normalizedJobIds}
+        jobLabels={jobLabels}
+        kind={plannedEditor.kind}
+        currency={soCurrency}
+        editing={plannedEditor.editing}
+        onSaved={() => reloadPlanned()}
+      />
+
+      <AlertDialog
+        open={!!plannedDeleteTarget}
+        onOpenChange={(o) => !o && setPlannedDeleteTarget(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('planning.confirmDeleteTitle', 'Delete planned entry?')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('planning.confirmDelete', 'Delete this planned entry?')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('cancel', 'Cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmPlanDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t('delete', 'Delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

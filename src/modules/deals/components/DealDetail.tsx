@@ -237,8 +237,7 @@ export function DealDetail() {
               { value: 'items',      icon: Package,         label: t('detail.tabs.items') },
               { value: 'documents',  icon: FolderOpen,      label: t('detail.tabs.documents') },
               { value: 'checklists', icon: CheckSquare,     label: t('detail.tabs.checklists') },
-              { value: 'activity',   icon: Activity,        label: t('detail.tabs.activity') },
-              { value: 'notes',      icon: StickyNote,      label: t('detail.tabs.notes') },
+              { value: 'notes',      icon: StickyNote,      label: t('detail.tabs.activity') },
             ];
             const current = TABS.find(tab => tab.value === activeTab);
             return (
@@ -277,8 +276,7 @@ export function DealDetail() {
               <TabsTrigger value="items">{t("detail.tabs.items")}</TabsTrigger>
               <TabsTrigger value="documents">{t("detail.tabs.documents")}</TabsTrigger>
               <TabsTrigger value="checklists">{t("detail.tabs.checklists")}</TabsTrigger>
-              <TabsTrigger value="activity">{t("detail.tabs.activity")}</TabsTrigger>
-              <TabsTrigger value="notes">{t("detail.tabs.notes")}</TabsTrigger>
+              <TabsTrigger value="notes">{t("detail.tabs.activity")}</TabsTrigger>
             </TabsList>
 
           </div>
@@ -288,7 +286,6 @@ export function DealDetail() {
             <TabsContent value="items"><ItemsTab deal={deal} /></TabsContent>
             <TabsContent value="documents"><DocumentsTab deal={deal} /></TabsContent>
             <TabsContent value="checklists"><ChecklistsTab deal={deal} /></TabsContent>
-            <TabsContent value="activity"><ActivityTab dealId={dealId} /></TabsContent>
             <TabsContent value="notes"><NotesTab deal={deal} onSaved={load} /></TabsContent>
           </div>
         </Tabs>

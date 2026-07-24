@@ -15,6 +15,7 @@ export interface PlannedLineEntry {
   plannedMinutes?: number | null;
   technicianCount?: number | null;
   hourlyRate?: number | null;
+  plannedDate?: string | null;
   expenseType?: PlannedExpenseType | null;
   plannedAmount?: number | null;
   currency?: string | null;
@@ -31,6 +32,7 @@ export interface CreatePlannedLineEntry {
   plannedMinutes?: number | null;
   technicianCount?: number | null;
   hourlyRate?: number | null;
+  plannedDate?: string | null;
   expenseType?: PlannedExpenseType | null;
   plannedAmount?: number | null;
   currency?: string | null;

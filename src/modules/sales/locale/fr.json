@@ -254,7 +254,8 @@
   "tabs": {
     "overview": "Aperçu",
     "items": "Articles",
-    "notesActivity": "Notes & Activité",
+    "notesActivity": "Activité",
+    "activity": "Activité",
     "checklists": "Checklists",
     "documents": "Documents"
   },
@@ -267,6 +268,8 @@
     "affectedContact": "Contact Concerné",
     "unknownContact": "Contact Inconnu",
     "contactEmail": "Email du Contact",
+    "contactPhone": "Téléphone du Contact",
+    "createdDate": "Date de Création",
     "notSpecified": "Non spécifié",
     "relatedOffer": "Offre Associée",
     "relatedServiceOrder": "Ordre de Service Associé",
@@ -291,7 +294,15 @@
     "tva": "TVA",
     "taxType": "Type de TVA",
     "totalAmount": "Montant Total",
-    "inclTva": "TVA incluse"
+    "inclTva": "TVA incluse",
+    "source": "Source",
+    "category": "Catégorie",
+    "totalItems": "Total Articles",
+    "totalQuantity": "Quantité Totale",
+    "financialBreakdown": "Détail Financier",
+    "discount": "Remise",
+    "shipping": "Livraison",
+    "fiscalStamp": "Timbre Fiscal"
   },
   "itemsTab": {
     "title": "Articles de Vente",

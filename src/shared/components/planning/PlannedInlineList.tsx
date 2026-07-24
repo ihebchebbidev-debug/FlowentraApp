@@ -33,6 +33,19 @@ import {
 import { usePlannedEntries } from './usePlannedEntries';
 import { articlesApi } from '@/services/api/articlesApi';
 import type { Article } from '@/types/articles';
+import { useExpenseTypes } from '@/modules/lookups/hooks/useLookups';
+import { useCurrency } from '@/shared/hooks/useCurrency';
+import { PlannedDateField } from './PlannedDateField';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 /**
  * Inline "Planned" section that appears at the top of the Time / Expenses /
@@ -66,11 +79,25 @@ export function PlannedInlineList({
   parentIds,
   jobLabels,
   kind,
-  currency = 'TND',
+  currency,
   readOnly = false,
   hideWhenEmpty = false,
 }: Props) {
   const { t } = useTranslation();
+  const { current: currencyInfo } = useCurrency();
+  const effectiveCurrency = currency ?? currencyInfo.code;
+  const { items: expenseTypeLookups } = useExpenseTypes();
+  const expenseTypeOptions = useMemo(() => {
+    const active = expenseTypeLookups
+      .filter((i: any) => i.isActive)
+      .sort((a: any, b: any) => (a.sortOrder || 0) - (b.sortOrder || 0))
+      .map((i: any) => ({
+        value: i.value || i.name.toLowerCase().replace(/\s+/g, '_'),
+        label: i.name,
+      }));
+    if (active.length > 0) return active;
+    return EXPENSE_TYPES.map((et) => ({ value: et, label: t(`planning.expenseTypes.${et}`, et) }));
+  }, [expenseTypeLookups, t]);
   const { entries, reload } = usePlannedEntries(parentType, parentIds);
 
   const normalizedIds = parentIds
@@ -84,14 +111,20 @@ export function PlannedInlineList({
   const [selectedParentId, setSelectedParentId] = useState<number | null>(
     normalizedIds[0] ?? null
   );
-  const [draft, setDraft] = useState<CreatePlannedLineEntry>(defaultDraft(kind, currency));
+  const [draft, setDraft] = useState<CreatePlannedLineEntry>(defaultDraft(kind, effectiveCurrency));
+  const [deleteTarget, setDeleteTarget] = useState<PlannedLineEntry | null>(null);
+  const [deleteAllOpen, setDeleteAllOpen] = useState(false);
 
   if (hideWhenEmpty && filtered.length === 0) return null;
 
   const openAdd = () => {
     setEditing(null);
     setSelectedParentId(normalizedIds[0] ?? null);
-    setDraft(defaultDraft(kind, currency));
+    const base = defaultDraft(kind, effectiveCurrency);
+    if (kind === 'expense' && expenseTypeOptions.length > 0) {
+      base.expenseType = expenseTypeOptions[0].value as PlannedExpenseType;
+    }
+    setDraft(base);
     setEditorOpen(true);
   };
 
@@ -102,10 +135,10 @@ export function PlannedInlineList({
       kind: entry.kind,
       plannedMinutes: entry.plannedMinutes ?? undefined,
       technicianCount: entry.technicianCount ?? undefined,
-      hourlyRate: entry.hourlyRate ?? undefined,
+      plannedDate: entry.plannedDate ?? undefined,
       expenseType: entry.expenseType ?? undefined,
       plannedAmount: entry.plannedAmount ?? undefined,
-      currency: entry.currency ?? currency,
+      currency: entry.currency ?? effectiveCurrency,
       description: entry.description ?? undefined,
       articleId: entry.articleId ?? undefined,
       articleName: entry.articleName ?? undefined,
@@ -116,7 +149,37 @@ export function PlannedInlineList({
     setEditorOpen(true);
   };
 
+  const validateDraft = (): string | null => {
+    if (draft.kind === 'time') {
+      const mins = Number(draft.plannedMinutes ?? 0);
+      if (!Number.isFinite(mins) || mins <= 0) {
+        return t('planning.durationRequired', 'Planned duration must be greater than 0 minutes.');
+      }
+    }
+    if (draft.kind === 'expense') {
+      const amt = Number(draft.plannedAmount ?? 0);
+      if (!Number.isFinite(amt) || amt <= 0) {
+        return t('planning.amountRequired', 'Amount must be greater than 0.');
+      }
+      if (!draft.expenseType) {
+        return t('planning.expenseType', 'Expense type');
+      }
+    }
+    if (draft.kind === 'material') {
+      if (!draft.articleName || !draft.articleName.trim()) {
+        return t('planning.materialNameRequired', 'Please pick or enter an article name.');
+      }
+      const qty = Number(draft.quantity ?? 0);
+      if (!Number.isFinite(qty) || qty <= 0) {
+        return t('planning.quantityRequired', 'Quantity must be greater than 0.');
+      }
+    }
+    return null;
+  };
+
   const save = async () => {
+    const err = validateDraft();
+    if (err) { toast.error(err); return; }
     try {
       if (editing) {
         await plannedEntriesApi.update(editing.id, draft);
@@ -136,10 +199,23 @@ export function PlannedInlineList({
     }
   };
 
-  const remove = async (entry: PlannedLineEntry) => {
-    if (!confirm(t('planning.confirmDelete', 'Delete this planned entry?'))) return;
+  const confirmRemove = async () => {
+    if (!deleteTarget) return;
     try {
-      await plannedEntriesApi.remove(entry.id);
+      await plannedEntriesApi.remove(deleteTarget.id);
+      toast.success(t('planning.deletedToast', 'Planned entry deleted'));
+      setDeleteTarget(null);
+      await reload();
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to delete');
+    }
+  };
+
+  const confirmRemoveAll = async () => {
+    try {
+      await Promise.all(filtered.map((e) => plannedEntriesApi.remove(e.id)));
+      toast.success(t('planning.deletedAllToast', 'All planned entries deleted'));
+      setDeleteAllOpen(false);
       await reload();
     } catch (e: any) {
       toast.error(e?.message || 'Failed to delete');
@@ -164,12 +240,25 @@ export function PlannedInlineList({
             </Badge>
           )}
         </div>
-        {canAdd && (
-          <Button size="sm" variant="outline" className="h-7 gap-1" onClick={openAdd}>
-            <Plus className="h-3 w-3" />
-            {kindMeta.addLabel}
-          </Button>
-        )}
+        <div className="flex items-center gap-1">
+          {!readOnly && filtered.length > 0 && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 gap-1 text-destructive hover:text-destructive"
+              onClick={() => setDeleteAllOpen(true)}
+            >
+              <Trash2 className="h-3 w-3" />
+              {t('planning.deleteAll', 'Delete all')}
+            </Button>
+          )}
+          {canAdd && (
+            <Button size="sm" variant="outline" className="h-7 gap-1" onClick={openAdd}>
+              <Plus className="h-3 w-3" />
+              {kindMeta.addLabel}
+            </Button>
+          )}
+        </div>
       </div>
 
       {filtered.length === 0 ? (
@@ -187,7 +276,7 @@ export function PlannedInlineList({
                 <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
                   {t('planning.plannedBadge', 'Planned')}
                 </Badge>
-                {renderRow(e, currency, t)}
+                {renderRow(e, effectiveCurrency, t)}
                 {multiJob && jobLabels?.[e.parentId] && (
                   <Badge variant="outline" className="text-[10px]">
                     📋 {jobLabels[e.parentId]}
@@ -208,7 +297,7 @@ export function PlannedInlineList({
                     size="sm"
                     variant="ghost"
                     className="h-7 w-7 p-0 text-destructive"
-                    onClick={() => remove(e)}
+                    onClick={() => setDeleteTarget(e)}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
@@ -250,50 +339,58 @@ export function PlannedInlineList({
 
           {kind === 'time' && (
             <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label className="text-xs">{t('planning.technicianCount', 'Technicians')}</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={draft.technicianCount ?? 1}
-                    onChange={(e) =>
-                      setDraft({
-                        ...draft,
-                        technicianCount: Math.max(1, parseInt(e.target.value) || 1),
-                      })
-                    }
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">{t('planning.durationMinutes', 'Duration (min)')}</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={draft.plannedMinutes ?? 0}
-                    onChange={(e) =>
-                      setDraft({
-                        ...draft,
-                        plannedMinutes: Math.max(0, parseInt(e.target.value) || 0),
-                      })
-                    }
-                  />
-                </div>
+              <div>
+                <Label className="text-xs">{t('planning.plannedDate', 'Planned day')}</Label>
+                <PlannedDateField
+                  value={draft.plannedDate ?? null}
+                  onChange={(v) => setDraft({ ...draft, plannedDate: v })}
+                />
               </div>
               <div>
-                <Label className="text-xs">{t('planning.hourlyRate', 'Hourly rate (optional)')}</Label>
+                <Label className="text-xs">{t('planning.technicianCount', 'Technicians')}</Label>
                 <Input
                   type="number"
-                  step="0.01"
-                  min={0}
-                  value={draft.hourlyRate ?? ''}
+                  min={1}
+                  value={draft.technicianCount ?? 1}
                   onChange={(e) =>
                     setDraft({
                       ...draft,
-                      hourlyRate: e.target.value === '' ? null : parseFloat(e.target.value),
+                      technicianCount: Math.max(1, parseInt(e.target.value) || 1),
                     })
                   }
                 />
+              </div>
+              <div>
+                <Label className="text-xs">{t('planning.duration', 'Duration')}</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min={0}
+                      value={Math.floor((draft.plannedMinutes ?? 0) / 60)}
+                      onChange={(e) => {
+                        const h = Math.max(0, parseInt(e.target.value) || 0);
+                        const m = (draft.plannedMinutes ?? 0) % 60;
+                        setDraft({ ...draft, plannedMinutes: h * 60 + m });
+                      }}
+                    />
+                    <span className="text-xs text-muted-foreground">{t('planning.hoursShort', 'h')}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min={0}
+                      max={59}
+                      value={(draft.plannedMinutes ?? 0) % 60}
+                      onChange={(e) => {
+                        const m = Math.max(0, Math.min(59, parseInt(e.target.value) || 0));
+                        const h = Math.floor((draft.plannedMinutes ?? 0) / 60);
+                        setDraft({ ...draft, plannedMinutes: h * 60 + m });
+                      }}
+                    />
+                    <span className="text-xs text-muted-foreground">{t('planning.minutesShort', 'min')}</span>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -303,42 +400,32 @@ export function PlannedInlineList({
               <div>
                 <Label className="text-xs">{t('planning.expenseType', 'Expense type')}</Label>
                 <Select
-                  value={draft.expenseType ?? 'travel'}
+                  value={draft.expenseType ?? expenseTypeOptions[0]?.value}
                   onValueChange={(v) => setDraft({ ...draft, expenseType: v as PlannedExpenseType })}
                 >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {EXPENSE_TYPES.map((et) => (
-                      <SelectItem key={et} value={et}>
-                        {t(`planning.expenseTypes.${et}`, et)}
+                    {expenseTypeOptions.map((et) => (
+                      <SelectItem key={et.value} value={et.value}>
+                        {et.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label className="text-xs">{t('planning.amount', 'Amount')}</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min={0}
-                    value={draft.plannedAmount ?? 0}
-                    onChange={(e) =>
-                      setDraft({ ...draft, plannedAmount: parseFloat(e.target.value) || 0 })
-                    }
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">{t('planning.currency', 'Currency')}</Label>
-                  <Input
-                    value={draft.currency ?? currency}
-                    maxLength={3}
-                    onChange={(e) =>
-                      setDraft({ ...draft, currency: e.target.value.toUpperCase() })
-                    }
-                  />
-                </div>
+              <div>
+                <Label className="text-xs">
+                  {t('planning.amount', 'Amount')}
+                </Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min={0}
+                  value={draft.plannedAmount ?? 0}
+                  onChange={(e) =>
+                    setDraft({ ...draft, plannedAmount: parseFloat(e.target.value) || 0, currency: effectiveCurrency })
+                  }
+                />
               </div>
             </div>
           )}
@@ -420,6 +507,50 @@ export function PlannedInlineList({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('planning.confirmDeleteTitle', 'Delete planned entry?')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('planning.confirmDelete', 'Delete this planned entry?')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('cancel', 'Cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmRemove}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t('delete', 'Delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={deleteAllOpen} onOpenChange={setDeleteAllOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('planning.confirmDeleteAllTitle', 'Delete all planned entries?')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('planning.confirmDeleteAll', 'This will remove all {{count}} planned entries in this section.', { count: filtered.length })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('cancel', 'Cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmRemoveAll}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t('planning.deleteAll', 'Delete all')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -467,6 +598,11 @@ function renderRow(
         <span className="font-medium">
           {e.technicianCount ?? 1} × {formatPlannedMinutes(e.plannedMinutes ?? 0)}
         </span>
+        {e.plannedDate && (
+          <Badge variant="outline" className="text-[10px]">
+            {new Date(e.plannedDate).toLocaleDateString()}
+          </Badge>
+        )}
         {e.description && (
           <span className="truncate text-xs text-muted-foreground">— {e.description}</span>
         )}

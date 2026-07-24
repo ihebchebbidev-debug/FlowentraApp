@@ -534,9 +534,9 @@ export function OfferDetail() {
                 const TABS = [
                   { value: 'overview',   icon: LayoutDashboard, label: t('tabs.overview') },
                   { value: 'items',      icon: Package,          label: t('tabs.items') },
-                  { value: 'notes',      icon: StickyNote,       label: t('tabs.notes') },
                   { value: 'checklists', icon: CheckSquare,      label: t('tabs.checklists') },
                   { value: 'documents',  icon: FolderOpen,       label: t('tabs.documents') },
+                  { value: 'notes',      icon: StickyNote,       label: t('tabs.activity', 'Activity') },
                 ];
                 const current = TABS.find(tab => tab.value === activeTab);
                 return (
@@ -570,9 +570,9 @@ export function OfferDetail() {
               <TabsList variant="underline">
                 <TabsTrigger value="overview">{t('tabs.overview')}</TabsTrigger>
                 <TabsTrigger value="items">{t('tabs.items')}</TabsTrigger>
-                <TabsTrigger value="notes">{t('tabs.notes')}</TabsTrigger>
                 <TabsTrigger value="checklists">{t('tabs.checklists')}</TabsTrigger>
                 <TabsTrigger value="documents">{t('tabs.documents')}</TabsTrigger>
+                <TabsTrigger value="notes">{t('tabs.activity', 'Activity')}</TabsTrigger>
               </TabsList>
 
             )}

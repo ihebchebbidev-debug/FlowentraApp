@@ -35,6 +35,10 @@ import {
   sumPlannedMinutes,
   sumPlannedExpenses,
 } from '@/services/plannedEntriesService';
+import { useMemo as useMemoReact } from 'react';
+import { useExpenseTypes } from '@/modules/lookups/hooks/useLookups';
+import { useCurrency } from '@/shared/hooks/useCurrency';
+import { PlannedDateField } from './PlannedDateField';
 
 /**
  * Drop-in editor for planned time & expenses on an offer/sale/service-order-job line.
@@ -50,8 +54,22 @@ interface Props {
 
 const EXPENSE_TYPES: PlannedExpenseType[] = ['travel', 'per_diem', 'materials', 'subcontractor'];
 
-export function PlannedEntriesEditor({ parentType, parentId, currency = 'TND', readOnly = false }: Props) {
+export function PlannedEntriesEditor({ parentType, parentId, currency, readOnly = false }: Props) {
   const { t } = useTranslation();
+  const { current: currencyInfo } = useCurrency();
+  const effectiveCurrency = currency ?? currencyInfo.code;
+  const { items: expenseTypeLookups } = useExpenseTypes();
+  const expenseTypeOptions = useMemoReact(() => {
+    const active = expenseTypeLookups
+      .filter((i: any) => i.isActive)
+      .sort((a: any, b: any) => (a.sortOrder || 0) - (b.sortOrder || 0))
+      .map((i: any) => ({
+        value: i.value || i.name.toLowerCase().replace(/\s+/g, '_'),
+        label: i.name,
+      }));
+    if (active.length > 0) return active;
+    return EXPENSE_TYPES.map((et) => ({ value: et, label: t(`planning.expenseTypes.${et}`, et) }));
+  }, [expenseTypeLookups, t]);
   const [entries, setEntries] = useState<PlannedLineEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -85,7 +103,7 @@ export function PlannedEntriesEditor({ parentType, parentId, currency = 'TND', r
     setDraft(
       kind === 'time'
         ? { kind: 'time', technicianCount: 1, plannedMinutes: 60 }
-        : { kind: 'expense', expenseType: 'travel', plannedAmount: 0, currency }
+        : { kind: 'expense', expenseType: (expenseTypeOptions[0]?.value ?? 'travel') as PlannedExpenseType, plannedAmount: 0, currency: effectiveCurrency }
     );
     setEditorOpen(true);
   };
@@ -96,10 +114,10 @@ export function PlannedEntriesEditor({ parentType, parentId, currency = 'TND', r
       kind: entry.kind,
       plannedMinutes: entry.plannedMinutes ?? undefined,
       technicianCount: entry.technicianCount ?? undefined,
-      hourlyRate: entry.hourlyRate ?? undefined,
+      plannedDate: entry.plannedDate ?? undefined,
       expenseType: entry.expenseType ?? undefined,
       plannedAmount: entry.plannedAmount ?? undefined,
-      currency: entry.currency ?? currency,
+      currency: entry.currency ?? effectiveCurrency,
       description: entry.description ?? undefined,
     });
     setEditorOpen(true);
@@ -164,7 +182,7 @@ export function PlannedEntriesEditor({ parentType, parentId, currency = 'TND', r
             <Clock className="h-3 w-3" /> {formatPlannedMinutes(totalMinutes)}
           </Badge>
           <Badge variant="secondary" className="gap-1">
-            <Wallet className="h-3 w-3" /> {totalExpenses.toFixed(2)} {currency}
+            <Wallet className="h-3 w-3" /> {totalExpenses.toFixed(2)} {effectiveCurrency}
           </Badge>
         </div>
       </div>
@@ -232,7 +250,7 @@ export function PlannedEntriesEditor({ parentType, parentId, currency = 'TND', r
                 <div className="flex items-center gap-2 min-w-0">
                   <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
                   <Badge variant="outline" className="text-xs">{t(`planning.expenseTypes.${e.expenseType}`, e.expenseType ?? '')}</Badge>
-                  <span className="font-medium">{(e.plannedAmount ?? 0).toFixed(2)} {e.currency ?? currency}</span>
+                  <span className="font-medium">{(e.plannedAmount ?? 0).toFixed(2)} {e.currency ?? effectiveCurrency}</span>
                   {e.description && <span className="text-xs text-muted-foreground truncate">— {e.description}</span>}
                 </div>
                 {!readOnly && (
@@ -266,22 +284,42 @@ export function PlannedEntriesEditor({ parentType, parentId, currency = 'TND', r
 
           {draft.kind === 'time' ? (
             <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label className="text-xs">{t('planning.technicianCount', 'Technicians')}</Label>
-                  <Input type="number" min={1} value={draft.technicianCount ?? 1}
-                    onChange={e => setDraft({ ...draft, technicianCount: Math.max(1, parseInt(e.target.value) || 1) })} />
-                </div>
-                <div>
-                  <Label className="text-xs">{t('planning.durationMinutes', 'Duration (min)')}</Label>
-                  <Input type="number" min={1} value={draft.plannedMinutes ?? 0}
-                    onChange={e => setDraft({ ...draft, plannedMinutes: Math.max(0, parseInt(e.target.value) || 0) })} />
-                </div>
+              <div>
+                <Label className="text-xs">{t('planning.plannedDate', 'Planned day')}</Label>
+                <PlannedDateField
+                  value={draft.plannedDate ?? null}
+                  onChange={(v) => setDraft({ ...draft, plannedDate: v })}
+                />
               </div>
               <div>
-                <Label className="text-xs">{t('planning.hourlyRate', 'Hourly rate (optional)')}</Label>
-                <Input type="number" step="0.01" min={0} value={draft.hourlyRate ?? ''}
-                  onChange={e => setDraft({ ...draft, hourlyRate: e.target.value === '' ? null : parseFloat(e.target.value) })} />
+                <Label className="text-xs">{t('planning.technicianCount', 'Technicians')}</Label>
+                <Input type="number" min={1} value={draft.technicianCount ?? 1}
+                  onChange={e => setDraft({ ...draft, technicianCount: Math.max(1, parseInt(e.target.value) || 1) })} />
+              </div>
+              <div>
+                <Label className="text-xs">{t('planning.duration', 'Duration')}</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-center gap-2">
+                    <Input type="number" min={0}
+                      value={Math.floor((draft.plannedMinutes ?? 0) / 60)}
+                      onChange={e => {
+                        const h = Math.max(0, parseInt(e.target.value) || 0);
+                        const m = (draft.plannedMinutes ?? 0) % 60;
+                        setDraft({ ...draft, plannedMinutes: h * 60 + m });
+                      }} />
+                    <span className="text-xs text-muted-foreground">{t('planning.hoursShort', 'h')}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Input type="number" min={0} max={59}
+                      value={(draft.plannedMinutes ?? 0) % 60}
+                      onChange={e => {
+                        const m = Math.max(0, Math.min(59, parseInt(e.target.value) || 0));
+                        const h = Math.floor((draft.plannedMinutes ?? 0) / 60);
+                        setDraft({ ...draft, plannedMinutes: h * 60 + m });
+                      }} />
+                    <span className="text-xs text-muted-foreground">{t('planning.minutesShort', 'min')}</span>
+                  </div>
+                </div>
               </div>
             </div>
           ) : (
@@ -289,28 +327,23 @@ export function PlannedEntriesEditor({ parentType, parentId, currency = 'TND', r
               <div>
                 <Label className="text-xs">{t('planning.expenseType', 'Expense type')}</Label>
                 <Select
-                  value={draft.expenseType ?? 'travel'}
+                  value={draft.expenseType ?? expenseTypeOptions[0]?.value}
                   onValueChange={v => setDraft({ ...draft, expenseType: v as PlannedExpenseType })}
                 >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {EXPENSE_TYPES.map(et => (
-                      <SelectItem key={et} value={et}>{t(`planning.expenseTypes.${et}`, et)}</SelectItem>
+                    {expenseTypeOptions.map(et => (
+                      <SelectItem key={et.value} value={et.value}>{et.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label className="text-xs">{t('planning.amount', 'Amount')}</Label>
-                  <Input type="number" step="0.01" min={0} value={draft.plannedAmount ?? 0}
-                    onChange={e => setDraft({ ...draft, plannedAmount: parseFloat(e.target.value) || 0 })} />
-                </div>
-                <div>
-                  <Label className="text-xs">{t('planning.currency', 'Currency')}</Label>
-                  <Input value={draft.currency ?? currency} maxLength={3}
-                    onChange={e => setDraft({ ...draft, currency: e.target.value.toUpperCase() })} />
-                </div>
+              <div>
+                <Label className="text-xs">
+                  {t('planning.amount', 'Amount')}
+                </Label>
+                <Input type="number" step="0.01" min={0} value={draft.plannedAmount ?? 0}
+                  onChange={e => setDraft({ ...draft, plannedAmount: parseFloat(e.target.value) || 0, currency: effectiveCurrency })} />
               </div>
             </div>
           )}

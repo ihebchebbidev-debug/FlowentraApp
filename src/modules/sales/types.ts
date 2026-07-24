@@ -50,6 +50,8 @@ export interface Sale {
   shippingCost?: number;
   totalAmount?: number;
   fiscalStamp?: number;
+  source?: string;
+  category?: string;
   // Related offer fields (for sales converted from offers)
   offerId?: string;
   offerNumber?: string;
