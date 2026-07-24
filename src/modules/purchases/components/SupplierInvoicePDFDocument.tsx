@@ -62,7 +62,8 @@ interface SupplierInvoicePDFDocumentProps {
   language?: string;
 }
 
-export function SupplierInvoicePDFDocument({ invoice, formatCurrency, settings, translations, currencyCode = 'TND', language = 'en' }: SupplierInvoicePDFDocumentProps) {
+export function SupplierInvoicePDFDocument({ invoice, formatCurrency, settings, translations, currencyCode, language = 'en' }: SupplierInvoicePDFDocumentProps) {
+  currencyCode = currencyCode || invoice?.currency || '';
   const t = translations || {
     supplierInvoice: 'SUPPLIER INVOICE', invoiceNumber: 'Invoice N°', date: 'Date',
     supplierInformation: 'Supplier Information', invoiceDetails: 'Invoice Details',

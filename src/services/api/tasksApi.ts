@@ -925,6 +925,26 @@ export const tasksApi = {
     return await response.json();
   },
 
+  // Batched stats for many projects in one round-trip.
+  async getBulkProjectTaskStats(projectIds: number[]): Promise<Record<number, {
+    totalTasks: number;
+    completedTasks: number;
+    overdueTasks: number;
+    completionPercentage: number;
+  }>> {
+    if (!projectIds.length) return {};
+    const qs = new URLSearchParams();
+    projectIds.forEach(id => qs.append('projectIds', String(id)));
+    const response = await fetch(`${API_URL}/api/Tasks/projects/bulk-stats?${qs}`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
+    const offline = await parseOfflineNoCacheBody(response);
+    if (isOfflineNoCache503(offline)) return {};
+    await throwIfNotOkAfterOfflineCheck(response, offline, 'Failed to fetch bulk project task stats');
+    return await response.json();
+  },
+
   // ============ Sub-tasks ============
 
   // Get sub-tasks

@@ -45,7 +45,7 @@ function ComplianceDashboardContent() {
   const rsInvoices = invoices.filter(i => i.rsApplicable);
   const felInvoices = invoices.filter(i => i.factureEnLigneStatus);
   const tejPending = invoices.filter(i => i.tejSyncStatus === 'pending' || !i.tejSynced);
-  const fmt = (n: number) => n.toLocaleString('fr-TN', { minimumFractionDigits: 2 });
+  const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2 });
 
   return (
     <div className="flex flex-col">

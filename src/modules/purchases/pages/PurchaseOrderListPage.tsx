@@ -19,7 +19,7 @@ import {
   Download, FileText, DollarSign, Clock, CheckCircle2, X,
   List as ListIcon, Table as TableIcon,
 } from "lucide-react";
-import { purchaseOrderService } from "../services/purchaseService";
+import { purchaseOrderService, purchaseStatsService } from "../services/purchaseService";
 import { PurchaseErrorBoundary, PurchaseErrorFallback } from "../components/PurchaseErrorBoundary";
 import { ListTableSkeleton } from "../components/PurchaseSkeletons";
 import { PullToRefreshIndicator } from "../components/PullToRefreshIndicator";
@@ -65,7 +65,7 @@ const initials = (name: string): string =>
     .toUpperCase();
 
 function PurchaseOrderListContent() {
-  const { t } = useTranslation("purchases");
+  const { t, i18n } = useTranslation("purchases");
   const { current: currency } = useCurrency();
   const navigate = useNavigate();
 
@@ -201,16 +201,48 @@ function PurchaseOrderListContent() {
   // so the list renders whatever the API returns — no extra client filter.
   const companyScopedOrders = filteredOrders;
 
-  // Stats — calculated from currently loaded orders
-  const stats = useMemo(() => {
-    const open = orders.filter((o) =>
-      ["draft", "validated", "ordered", "partially_received"].includes(o.status),
-    ).length;
-    const received = orders.filter((o) => o.status === "received" || o.status === "closed").length;
-    const unpaid = orders.filter((o) => o.paymentStatus !== "paid").length;
-    const totalValue = companyScopedOrders.reduce((s, o) => s + (o.grandTotal || 0), 0);
-    return { open, received, unpaid, totalValue };
-  }, [orders, companyScopedOrders]);
+  // Stats — fetched from server so cards reflect the FULL dataset, not just
+  // the currently loaded infinite-scroll pages. Previous implementation used
+  // orders.reduce(...) which silently undercounted whenever total > 20.
+  const [stats, setStats] = useState<{ open: number; received: number; unpaid: number; totalValue: number }>(
+    { open: 0, received: 0, unpaid: 0, totalValue: 0 },
+  );
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const searchArg = debouncedSearch || undefined;
+        const [openR, validatedR, orderedR, partialR, receivedR, closedR, unpaidR, dashboard] =
+          await Promise.all([
+            purchaseOrderService.getAll({ search: searchArg, status: "draft" as any, limit: 1 }),
+            purchaseOrderService.getAll({ search: searchArg, status: "validated" as any, limit: 1 }),
+            purchaseOrderService.getAll({ search: searchArg, status: "ordered" as any, limit: 1 }),
+            purchaseOrderService.getAll({ search: searchArg, status: "partially_received" as any, limit: 1 }),
+            purchaseOrderService.getAll({ search: searchArg, status: "received" as any, limit: 1 }),
+            purchaseOrderService.getAll({ search: searchArg, status: "closed" as any, limit: 1 }),
+            purchaseOrderService.getAll({ search: searchArg, paymentStatus: "unpaid" as any, limit: 1 }),
+            purchaseStatsService.getDashboardStats().catch(() => null),
+          ]);
+        if (cancelled) return;
+        const openCount =
+          (openR.pagination?.total || 0) +
+          (validatedR.pagination?.total || 0) +
+          (orderedR.pagination?.total || 0) +
+          (partialR.pagination?.total || 0);
+        const receivedCount =
+          (receivedR.pagination?.total || 0) + (closedR.pagination?.total || 0);
+        const unpaidCount = unpaidR.pagination?.total || 0;
+        const totalValue = dashboard?.totalSpendThisYear ?? dashboard?.monthlySpend ?? 0;
+        setStats({ open: openCount, received: receivedCount, unpaid: unpaidCount, totalValue });
+      } catch {
+        // Leave previous stats in place on transient errors; the list itself
+        // surfaces its own error state via `error`.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedSearch]);
 
   // Single delete (optimistic)
   const handleDelete = async () => {
@@ -336,7 +368,7 @@ function PurchaseOrderListContent() {
   const handleBulkClose = () => runBulkLifecycle("close", { status: "closed" });
   const handleBulkExport = () => setShowExport(true);
 
-  const fmt = (n: number) => n.toLocaleString("fr-TN", { minimumFractionDigits: 2 });
+  const fmt = (n: number) => n.toLocaleString(i18n.language || undefined, { minimumFractionDigits: 2 });
 
   // Stat cards — interactive (clicking one filters the list)
   const statCards: Array<{

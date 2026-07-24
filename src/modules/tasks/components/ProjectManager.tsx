@@ -143,59 +143,31 @@ export function ProjectManager({ onSwitchToTasks: _onSwitchToTasks }: ProjectMan
       // Show projects immediately, load stats in background
       setLoading(false);
 
-      // Use the dedicated completion percentage endpoint when possible,
-      // falling back to task-count based stats. Limit concurrency to 4.
-      const CONCURRENCY = 4;
-      const statsMap: Record<string, ProjectStats> = {};
-      
-      const buildStatsForProject = async (project: Project) => {
-        const projectId = parseInt(project.id, 10);
-        const defaultStats: ProjectStats = {
-          totalTasks: 0,
-          completedTasks: 0,
-          overdueTasks: 0,
-          activeMembers: project.teamMembers?.length || 0,
-          completionPercentage: project.progress || 0,
-        };
-        if (isNaN(projectId)) return { id: project.id, stats: defaultStats };
+      // Single batched request to the backend for task-stats of every project,
+      // replacing the previous N-parallel fan-out (was 2 requests × N projects).
+      const projectIds = fetchedProjects
+        .map(p => parseInt(p.id, 10))
+        .filter(id => !isNaN(id));
 
-        try {
-          // Try bulk stats endpoint first (single request vs fetching all tasks)
-          const [statusCounts, completionPct] = await Promise.all([
-            TasksService.getTaskStatusCounts(projectId).catch(() => ({})),
-            TasksService.getTaskCompletionPercentage(projectId).catch(() => 0),
-          ]);
+      if (projectIds.length === 0) return;
 
-          const totalTasks = Object.values(statusCounts).reduce((a, b) => a + b, 0);
-          const completedTasks = (statusCounts['done'] || 0) + (statusCounts['completed'] || 0);
-          const overdueTasks = statusCounts['overdue'] || 0;
-
-          return {
-            id: project.id,
-            stats: {
-              totalTasks,
-              completedTasks,
-              overdueTasks,
-              activeMembers: project.teamMembers?.length || 0,
-              completionPercentage: completionPct || (totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0),
-            },
+      try {
+        const bulk = await TasksService.getBulkProjectTaskStats(projectIds);
+        const statsMap: Record<string, ProjectStats> = {};
+        for (const project of fetchedProjects) {
+          const numId = parseInt(project.id, 10);
+          const entry = bulk[numId];
+          statsMap[project.id] = {
+            totalTasks: entry?.totalTasks ?? 0,
+            completedTasks: entry?.completedTasks ?? 0,
+            overdueTasks: entry?.overdueTasks ?? 0,
+            activeMembers: project.teamMembers?.length || 0,
+            completionPercentage: entry?.completionPercentage ?? (project.progress || 0),
           };
-        } catch {
-          return { id: project.id, stats: defaultStats };
         }
-      };
-
-      // Process in batches for controlled concurrency
-      for (let i = 0; i < fetchedProjects.length; i += CONCURRENCY) {
-        const batch = fetchedProjects.slice(i, i + CONCURRENCY);
-        const results = await Promise.allSettled(batch.map(buildStatsForProject));
-        for (const r of results) {
-          if (r.status === 'fulfilled') {
-            statsMap[r.value.id] = r.value.stats;
-          }
-        }
-        // Update progressively so the UI fills in
-        setProjectStatsMap(prev => ({ ...prev, ...statsMap }));
+        setProjectStatsMap(statsMap);
+      } catch (statsError) {
+        console.error('Failed to load bulk project stats:', statsError);
       }
     } catch (error) {
       console.error('Failed to fetch projects:', error);

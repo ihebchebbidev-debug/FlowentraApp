@@ -39,6 +39,7 @@ namespace MyApi.Modules.Projects.Services
 
         // Task statistics
         Task<TaskStatisticsDto> GetTaskStatisticsAsync(string? entityType = null, int? entityId = null);
+        Task<Dictionary<int, ProjectTaskStatsDto>> GetBulkProjectTaskStatsAsync(List<int> projectIds);
         Task<bool> TaskExistsAsync(int id, bool isProjectTask = true);
     }
 }

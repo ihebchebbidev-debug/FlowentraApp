@@ -639,6 +639,28 @@ namespace MyApi.Modules.Projects.Controllers
             }
         }
 
+        /// <summary>
+        /// Bulk task stats for many projects — one round-trip instead of a fan-out.
+        /// Returns a map { projectId -> { totalTasks, completedTasks, overdueTasks, completionPercentage } }.
+        /// </summary>
+        [HttpGet("projects/bulk-stats")]
+        public async Task<ActionResult<Dictionary<int, object>>> GetBulkProjectStats([FromQuery] List<int> projectIds)
+        {
+            try
+            {
+                if (projectIds == null || projectIds.Count == 0)
+                    return Ok(new Dictionary<int, object>());
+
+                var result = await _taskService.GetBulkProjectTaskStatsAsync(projectIds);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting bulk project stats");
+                return StatusCode(500, "An error occurred while retrieving bulk project stats");
+            }
+        }
+
         #endregion
 
         private string GetCurrentUser()

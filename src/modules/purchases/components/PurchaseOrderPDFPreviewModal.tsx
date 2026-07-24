@@ -13,6 +13,7 @@ import { PDFAnnotationViewer } from '@/components/shared/PDFAnnotationViewer';
 import { useCompanyLogo } from '@/hooks/useCompanyLogo';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTranslation } from 'react-i18next';
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import { useToast } from '@/hooks/use-toast';
 
 interface PurchaseOrderPDFPreviewModalProps {
@@ -24,6 +25,7 @@ interface PurchaseOrderPDFPreviewModalProps {
 
 export function PurchaseOrderPDFPreviewModal({ isOpen, onClose, order, formatCurrency }: PurchaseOrderPDFPreviewModalProps) {
   const { t, i18n } = useTranslation('purchases');
+  const { current: currency } = useCurrency();
   const { toast } = useToast();
   const companyLogo = useCompanyLogo();
   const [pdfSettings, setPdfSettings] = useState(defaultSettings);
@@ -98,7 +100,7 @@ export function PurchaseOrderPDFPreviewModal({ isOpen, onClose, order, formatCur
       settings={pdfSettings}
       translations={pdfTranslations}
       language={i18n.language}
-      currencyCode={order?.currency || 'TND'}
+      currencyCode={order?.currency || currency.code}
     />
   ), [order, formatCurrency, pdfSettings, pdfTranslations, i18n.language]);
 
@@ -157,7 +159,7 @@ export function PurchaseOrderPDFPreviewModal({ isOpen, onClose, order, formatCur
             <Separator />
             <div className="flex items-center justify-between py-2 px-1 text-xs text-muted-foreground">
               <span>{t('pdf.generatedOn', { date: new Date().toLocaleDateString(), defaultValue: `Generated on ${new Date().toLocaleDateString()}` })}</span>
-              <Badge variant="secondary" className="text-xs">{order.currency || 'TND'}</Badge>
+              <Badge variant="secondary" className="text-xs">{order.currency || currency.code}</Badge>
             </div>
           </>
         )}

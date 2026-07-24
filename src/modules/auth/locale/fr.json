@@ -116,11 +116,14 @@
     "category": "Système"
   },
   "captcha": {
-    "title": "Je ne suis pas un robot",
+    "title": "Vérifiez que vous êtes humain",
     "verified": "Vous êtes vérifié comme humain",
+    "verified_short": "Succès !",
     "verifying": "Vérification…",
     "failed": "Échec de la vérification",
     "privacy": "Vérification respectueuse de la vie privée",
+    "privacy_link": "Confidentialité",
+    "help_link": "Aide",
     "please_verify": "Veuillez confirmer que vous n'êtes pas un robot.",
     "reason_automated": "Clic automatisé détecté.",
     "reason_webdriver": "Automatisation du navigateur détectée.",

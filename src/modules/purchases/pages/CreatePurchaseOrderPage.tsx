@@ -238,7 +238,7 @@ export default function CreatePurchaseOrderPage() {
   });
   const grandTotal = totals.total;
   const taxAmount = totals.taxAmount;
-  const fmt = (n: number) => n.toLocaleString('fr-TN', { minimumFractionDigits: 2 });
+  const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2 });
 
   const handleSave = async () => {
     if (isTenantRequired) { toast.error(t('validation.tenantRequired', 'Please select a target company')); return; }
@@ -261,7 +261,7 @@ export default function CreatePurchaseOrderPage() {
         expectedDelivery: expectedDelivery ? new Date(`${expectedDelivery}T00:00:00Z`).toISOString() : undefined,
         paymentTerms,
         notes: notes || undefined,
-        currency: 'TND',
+        currency: currency.code,
         discount: 0,
         discountType: 'fixed',
         fiscalStamp,
@@ -432,7 +432,7 @@ export default function CreatePurchaseOrderPage() {
                             title={t('create.useLastPrice', 'Use last price')}
                             className={`block text-[10px] mt-0.5 hover:underline ${differs ? 'text-amber-600' : 'text-muted-foreground'}`}
                           >
-                            {t('create.lastPrice', 'Last: {{price}} {{currency}}', { price: fmt(sa.purchasePrice), currency: sa.currency || 'TND' })}
+                            {t('create.lastPrice', 'Last: {{price}} {{currency}}', { price: fmt(sa.purchasePrice), currency: sa.currency || currency.code })}
                           </button>
                         );
                       })()}

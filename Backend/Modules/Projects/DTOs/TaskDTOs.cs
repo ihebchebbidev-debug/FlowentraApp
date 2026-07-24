@@ -221,4 +221,12 @@ namespace MyApi.Modules.Projects.DTOs
         public Dictionary<string, int> TasksByType { get; set; } = new Dictionary<string, int>();
         public Dictionary<string, int> TasksByStatus { get; set; } = new Dictionary<string, int>();
     }
+
+    public class ProjectTaskStatsDto
+    {
+        public int TotalTasks { get; set; }
+        public int CompletedTasks { get; set; }
+        public int OverdueTasks { get; set; }
+        public double CompletionPercentage { get; set; }
+    }
 }

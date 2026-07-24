@@ -95,7 +95,7 @@ export default function CreateSupplierInvoicePage() {
   const rsRate = RS_TRANSACTION_TYPES.find(r => r.code === rsTypeCode)?.rate || 0;
   const rsAmount = rsApplicable ? afterDiscount * (rsRate / 100) : 0;
   const grandTotal = afterDiscount + taxAmount + fiscalStamp - rsAmount;
-  const fmt = (n: number) => n.toLocaleString('fr-TN', { minimumFractionDigits: 2 });
+  const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2 });
 
   const handleSave = async () => {
     if (isTenantRequired) { toast.error(t('validation.tenantRequired', 'Please select a target company')); return; }
@@ -110,7 +110,7 @@ export default function CreateSupplierInvoicePage() {
         invoiceDate: new Date(`${invoiceDate}T00:00:00Z`).toISOString(),
         dueDate: new Date(`${dueDate}T00:00:00Z`).toISOString(),
         supplierInvoiceRef: supplierRef || undefined,
-        currency: 'TND',
+        currency: currency.code,
         discount: 0,
         discountType: 'fixed',
         fiscalStamp,

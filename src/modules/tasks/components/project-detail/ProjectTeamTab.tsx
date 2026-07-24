@@ -94,20 +94,21 @@ export function ProjectTeamTab({
     if (!selectedMemberToAdd) return;
     const user = technicians.find((t) => t.id === selectedMemberToAdd);
     if (!user) return;
-    const ok = await ProjectsService.assignTeamMember(
-      Number(project.id),
-      Number(selectedMemberToAdd),
-      user.name,
-      project.name
-    );
-    if (ok) {
+    try {
+      await ProjectsService.assignTeamMember(
+        Number(project.id),
+        Number(selectedMemberToAdd),
+        user.name,
+        project.name
+      );
       toast({
         title: t("projects.detail.team.memberAdded"),
         description: t("projects.detail.team.memberAddedDesc", { name: user.name, project: project.name }),
       });
       setSelectedMemberToAdd("");
       onTeamUpdated?.();
-    } else {
+    } catch (err) {
+      console.error('assignTeamMember failed:', err);
       toast({ title: t("projects.detail.team.addFailed"), variant: "destructive" });
     }
   };
@@ -115,11 +116,12 @@ export function ProjectTeamTab({
   const handleRemoveMember = async () => {
     if (!selectedMemberToRemove) return;
     const memberId = selectedMemberToRemove;
-    const ok = await ProjectsService.removeTeamMember(Number(project.id), Number(memberId));
-    if (ok) {
+    try {
+      await ProjectsService.removeTeamMember(Number(project.id), Number(memberId));
       toast({ title: t("projects.detail.team.memberRemoved") });
       onTeamUpdated?.();
-    } else {
+    } catch (err) {
+      console.error('removeTeamMember failed:', err);
       toast({ title: t("projects.detail.team.removeFailed"), variant: "destructive" });
     }
     setSelectedMemberToRemove(null);

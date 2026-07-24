@@ -247,7 +247,7 @@ function PurchaseOrderDetailPage() {
   if (error) return <PurchaseErrorFallback error={error} onRetry={fetchData} backTo="/dashboard/purchases/orders" />;
   if (!po) return <PurchaseErrorFallback error={t('orders.notFound')} backTo="/dashboard/purchases/orders" />;
 
-  const fmt = (n: number) => n.toLocaleString('fr-TN', { minimumFractionDigits: 2 });
+  const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2 });
 
   // Map the backend audit trail onto the shared inline timeline shape.
   const timelineEvents: TimelineEvent[] = activities.map((a) => ({

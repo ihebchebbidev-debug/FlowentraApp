@@ -31,7 +31,7 @@ export function LoginForm({ onSignIn, onSignUp, isLoading = false }: LoginFormPr
   const [rememberMe, setRememberMe] = useState(true);
   const [oauthPrefilled, setOauthPrefilled] = useState(false); // Track if email was set via OAuth and signup completed
   const [oauthEmailTemp, setOauthEmailTemp] = useState(''); // Temporary OAuth email (not locked)
-  const [humanVerified, setHumanVerified] = useState(true);
+  const [humanVerified, setHumanVerified] = useState(false);
   
   // Admin exists state - determines if signup is allowed
   const [adminExists, setAdminExists] = useState<boolean | null>(null);
@@ -80,7 +80,14 @@ export function LoginForm({ onSignIn, onSignUp, isLoading = false }: LoginFormPr
   }, []);
 
   const handleSubmit = async () => {
-    // HumanCheck temporarily bypassed for QA screenshots
+    if (!humanVerified) {
+      toast({
+        title: t('auth.error'),
+        description: t('auth.captcha.please_verify'),
+        variant: 'destructive',
+      });
+      return;
+    }
     if (isSignUp) {
       // Use either locked OAuth email or the current email field
       const finalEmail = oauthPrefilled ? email : (oauthEmailTemp || email);
@@ -330,10 +337,12 @@ export function LoginForm({ onSignIn, onSignUp, isLoading = false }: LoginFormPr
         </CardHeader>
         
         <CardContent className="space-y-4 px-6 sm:px-8 pb-6">
+          <HumanCheck verified={humanVerified} onVerifiedChange={setHumanVerified} />
+
           <Button
             onClick={handleSubmit}
-            className="w-full h-10 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground font-semibold text-sm rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]"
-            disabled={isLoading}
+            className="w-full h-10 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground font-semibold text-sm rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
+            disabled={isLoading || !humanVerified}
           >
             {isLoading ? (
               <div className="flex items-center justify-center space-x-2">

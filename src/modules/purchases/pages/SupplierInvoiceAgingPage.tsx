@@ -93,7 +93,7 @@ function InvoiceAgingContent() {
   if (loading) return <><PurchasePageHeader title={t('reports.aging.title', 'Supplier Invoice Aging')} icon={Clock} backTo={{ to: '/dashboard/purchases/reports', label: t('reports.title') }} /><ChartSkeleton /></>;
   if (error) return <><PurchasePageHeader title={t('reports.aging.title', 'Supplier Invoice Aging')} icon={Clock} backTo={{ to: '/dashboard/purchases/reports', label: t('reports.title') }} /><PurchaseErrorFallback error={error} onRetry={load} backTo="/dashboard/purchases" /></>;
 
-  const fmt = (n: number) => n.toLocaleString('fr-TN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const bucketBadgeVariant = (b: Bucket): 'default' | 'secondary' | 'destructive' => {
     if (b === 'notDue') return 'secondary';
     if (b === 'b30') return 'default';
@@ -186,7 +186,7 @@ function InvoiceAgingContent() {
                     <TableRow key={inv.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/dashboard/purchases/invoices/${inv.id}`)}>
                       <TableCell className="text-xs font-medium">{inv.invoiceNumber}</TableCell>
                       <TableCell className="text-xs">{inv.supplierName}</TableCell>
-                      <TableCell className="text-xs">{inv.dueDate ? new Date(inv.dueDate).toLocaleDateString('fr-TN') : '—'}</TableCell>
+                      <TableCell className="text-xs">{inv.dueDate ? new Date(inv.dueDate).toLocaleDateString(undefined) : '—'}</TableCell>
                       <TableCell className="text-xs text-center">{daysOverdue > 0 ? daysOverdue : '—'}</TableCell>
                       <TableCell className="text-xs text-center">
                         <Badge variant={bucketBadgeVariant(bucket)} className="text-[10px]">

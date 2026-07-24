@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
 import { ShoppingCart, Clock, CheckCircle2, DollarSign } from "lucide-react";
 import { formatStatValue } from "@/lib/formatters";
-import { getGlobalCurrencyCode } from "@/lib/currencies";
+import { useCurrency } from "@/shared/hooks/useCurrency";
 import { cn } from "@/lib/utils";
 
 interface Stats {
@@ -19,10 +19,11 @@ interface Props {
 }
 
 export function PurchaseOrdersStats({ stats, selected, onSelect }: Props) {
-  const { t } = useTranslation("purchases");
+  const { t, i18n } = useTranslation("purchases");
+  const { current: currency } = useCurrency();
 
   const fmt = (n: number) =>
-    n.toLocaleString("fr-TN", { minimumFractionDigits: 2 });
+    n.toLocaleString(i18n.language || undefined, { minimumFractionDigits: 2 });
 
   const cards: Array<{
     key: string;
@@ -60,7 +61,7 @@ export function PurchaseOrdersStats({ stats, selected, onSelect }: Props) {
     {
       key: "value",
       label: t("orders.stats.value", "Total Value"),
-      value: `${fmt(stats.totalValue)} ${getGlobalCurrencyCode()}`,
+      value: `${fmt(stats.totalValue)} ${currency.code}`,
       icon: DollarSign,
       color: "text-chart-4",
       bg: "bg-chart-4/10",

@@ -116,11 +116,14 @@
     "category": "System"
   },
   "captcha": {
-    "title": "I'm not a robot",
+    "title": "Verify you are human",
     "verified": "You're verified as human",
+    "verified_short": "Success!",
     "verifying": "Verifying…",
     "failed": "Verification failed",
     "privacy": "Privacy-friendly check",
+    "privacy_link": "Privacy",
+    "help_link": "Help",
     "please_verify": "Please confirm you're not a robot.",
     "reason_automated": "Automated click detected.",
     "reason_webdriver": "Browser automation detected.",

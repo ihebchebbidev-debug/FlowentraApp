@@ -302,7 +302,7 @@ function SupplierPerformanceContent() {
   if (loading) return <><PurchasePageHeader title={t('reports.supplierPerformance.title', 'Supplier Performance')} subtitle={t('reports.supplierPerformance.subtitle', 'On-time delivery, lead time and spend per supplier')} icon={TrendingUp} backTo={{ to: '/dashboard/purchases/reports', label: t('reports.title') }} /><ChartSkeleton /></>;
   if (error) return <><PurchasePageHeader title={t('reports.supplierPerformance.title', 'Supplier Performance')} icon={TrendingUp} backTo={{ to: '/dashboard/purchases/reports', label: t('reports.title') }} /><PurchaseErrorFallback error={error} onRetry={load} backTo="/dashboard/purchases" /></>;
 
-  const fmt = (n: number) => n.toLocaleString('fr-TN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const fmtCompact = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}k` : n.toFixed(0);
   const tooltipStyle = { background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', color: 'hsl(var(--foreground))', fontSize: 12 };
 

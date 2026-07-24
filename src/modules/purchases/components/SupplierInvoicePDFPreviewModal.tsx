@@ -14,6 +14,7 @@ import { useCompanyLogo } from '@/hooks/useCompanyLogo';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '@/hooks/use-toast';
+import { useCurrency } from '@/shared/hooks/useCurrency';
 
 interface SupplierInvoicePDFPreviewModalProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ interface SupplierInvoicePDFPreviewModalProps {
 
 export function SupplierInvoicePDFPreviewModal({ isOpen, onClose, invoice, formatCurrency }: SupplierInvoicePDFPreviewModalProps) {
   const { t, i18n } = useTranslation('purchases');
+  const { current: currency } = useCurrency();
   const { toast } = useToast();
   const companyLogo = useCompanyLogo();
   const [pdfSettings, setPdfSettings] = useState(defaultSettings);
@@ -104,7 +106,7 @@ export function SupplierInvoicePDFPreviewModal({ isOpen, onClose, invoice, forma
       settings={pdfSettings}
       translations={pdfTranslations}
       language={i18n.language}
-      currencyCode={invoice?.currency || 'TND'}
+      currencyCode={invoice?.currency || currency.code}
     />
   ), [invoice, formatCurrency, pdfSettings, pdfTranslations, i18n.language]);
 
@@ -165,7 +167,7 @@ export function SupplierInvoicePDFPreviewModal({ isOpen, onClose, invoice, forma
               <span>{t('pdf.generatedOn', { date: new Date().toLocaleDateString(), defaultValue: `Generated on ${new Date().toLocaleDateString()}` })}</span>
               <div className="flex items-center gap-2">
                 {invoice.rsApplicable && <Badge variant="outline" className="text-xs text-amber-600">RS</Badge>}
-                <Badge variant="secondary" className="text-xs">{invoice.currency || 'TND'}</Badge>
+                <Badge variant="secondary" className="text-xs">{invoice.currency || currency.code}</Badge>
               </div>
             </div>
           </>

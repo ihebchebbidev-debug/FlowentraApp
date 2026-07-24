@@ -59,6 +59,7 @@ export const WORKSPACES: Workspace[] = [
       { key: "contacts", label: "Customers", url: "/dashboard/contacts?type=customer", icon: "Users", pluginCode: "PL0001CONTACTS" },
       { key: "articles", label: "Articles", url: "/dashboard/inventory-services", icon: "Package", pluginCode: "PL0007ARTICLES" },
       { key: "installations", label: "Installations", url: "/dashboard/field/installations/list", icon: "Wrench", pluginCode: "PL0018INSTALLATIONS" },
+      { key: "sales-documents", label: "Documents", url: "/dashboard/documents?workspace=sales", icon: "Folder", pluginCode: "PL0012DOCUMENTS" },
     ],
   },
   {
@@ -72,6 +73,7 @@ export const WORKSPACES: Workspace[] = [
       { key: "suppliers", label: "Suppliers", url: "/dashboard/suppliers", icon: "Truck", pluginCode: "PL0001CONTACTS" },
       { key: "articles", label: "Articles", url: "/dashboard/inventory-services", icon: "Package", pluginCode: "PL0007ARTICLES" },
       { key: "payments", label: "Payments", url: "/dashboard/payments", icon: "CreditCard", pluginCode: "PL0026PAYMENTS" },
+      { key: "purchases-documents", label: "Documents", url: "/dashboard/documents?workspace=purchases", icon: "Folder", pluginCode: "PL0012DOCUMENTS" },
     ],
   },
   {
@@ -87,6 +89,7 @@ export const WORKSPACES: Workspace[] = [
       { key: "planning", label: "Planning board", url: "/dashboard/field/dispatcher/interface", icon: "CalendarDays", pluginCode: "PL0023SCHEDULING" },
       { key: "articles", label: "Articles", url: "/dashboard/inventory-services", icon: "Package", pluginCode: "PL0007ARTICLES" },
       { key: "contacts", label: "Contacts", url: "/dashboard/contacts", icon: "Users", pluginCode: "PL0001CONTACTS" },
+      { key: "service-documents", label: "Documents", url: "/dashboard/documents?workspace=service", icon: "Folder", pluginCode: "PL0012DOCUMENTS" },
     ],
   },
   {
@@ -98,7 +101,7 @@ export const WORKSPACES: Workspace[] = [
       { key: "projects", label: "Projects", url: "/dashboard/tasks/projects", icon: "FolderKanban", pluginCode: "PL0004PROJECTS" },
       { key: "contacts", label: "Contacts", url: "/dashboard/contacts", icon: "Users", pluginCode: "PL0001CONTACTS" },
       { key: "calendar", label: "Calendar", url: "/dashboard/calendar", icon: "Calendar", pluginCode: "PL0010CALENDAR" },
-      { key: "documents", label: "Documents", url: "/dashboard/documents", icon: "Folder", pluginCode: "PL0012DOCUMENTS" },
+      { key: "documents", label: "Documents", url: "/dashboard/documents?workspace=projects", icon: "Folder", pluginCode: "PL0012DOCUMENTS" },
     ],
   },
   {
@@ -114,6 +117,7 @@ export const WORKSPACES: Workspace[] = [
       { key: "recruitment", label: "Recruitment", url: "/dashboard/hr/recruitment", icon: "UserPlus", pluginCode: "PL0013HR" },
       { key: "performance", label: "Performance", url: "/dashboard/hr/performance", icon: "Target", pluginCode: "PL0013HR" },
       { key: "skills", label: "Skills", url: "/dashboard/hr/employees?tab=skills", icon: "Award", pluginCode: "PL0014SKILLS" },
+      { key: "hr-documents", label: "Documents", url: "/dashboard/documents?workspace=hr", icon: "Folder", pluginCode: "PL0012DOCUMENTS" },
     ],
   },
   {

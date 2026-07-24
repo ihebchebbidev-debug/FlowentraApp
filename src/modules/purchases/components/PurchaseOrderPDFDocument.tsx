@@ -61,7 +61,11 @@ interface PurchaseOrderPDFDocumentProps {
   language?: string;
 }
 
-export function PurchaseOrderPDFDocument({ order, formatCurrency, settings, translations, currencyCode = 'TND', language = 'en' }: PurchaseOrderPDFDocumentProps) {
+export function PurchaseOrderPDFDocument({ order, formatCurrency, settings, translations, currencyCode, language = 'en' }: PurchaseOrderPDFDocumentProps) {
+  // PDF renderer runs outside React context (react-pdf worker) so we can't call
+  // useCurrency() here — callers pass the resolved code. Fallback keeps rendering
+  // working if a caller forgets to pass one.
+  currencyCode = currencyCode || order?.currency || '';
   const t = translations || {
     purchaseOrder: 'PURCHASE ORDER', orderNumber: 'Order N°', date: 'Date',
     supplierInformation: 'Supplier Information', orderDetails: 'Order Details',

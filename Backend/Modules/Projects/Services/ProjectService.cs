@@ -96,8 +96,9 @@ namespace MyApi.Modules.Projects.Services
                 var totalCount = await query.CountAsync();
 
                 // Apply pagination
-                var pageNumber = searchRequest?.PageNumber ?? 1;
-                var pageSize = searchRequest?.PageSize ?? 20;
+                // Clamp pagination to safe bounds (mirrors Deals: page >= 1, size 1..200).
+                var pageNumber = Math.Max(1, searchRequest?.PageNumber ?? 1);
+                var pageSize = Math.Clamp(searchRequest?.PageSize ?? 20, 1, 200);
                 var skip = (pageNumber - 1) * pageSize;
 
                 var projects = await query
@@ -310,20 +311,29 @@ namespace MyApi.Modules.Projects.Services
         {
             try
             {
-                var projects = await _context.Projects.ToListAsync();
+                // Server-side aggregation: one SELECT per grouping, no full-table load.
+                var statusCounts = await _context.Projects
+                    .GroupBy(p => p.Status ?? "")
+                    .Select(g => new { Status = g.Key, Count = g.Count() })
+                    .ToDictionaryAsync(x => x.Status, x => x.Count);
 
-                var statistics = new ProjectStatisticsDto
+                var priorityCounts = await _context.Projects
+                    .GroupBy(p => p.Priority ?? "")
+                    .Select(g => new { Priority = g.Key, Count = g.Count() })
+                    .ToDictionaryAsync(x => x.Priority, x => x.Count);
+
+                var total = statusCounts.Values.Sum();
+
+                return new ProjectStatisticsDto
                 {
-                    TotalProjects = projects.Count,
-                    ActiveProjects = projects.Count(p => p.Status == "active"),
-                    CompletedProjects = projects.Count(p => p.Status == "completed"),
-                    OnHoldProjects = projects.Count(p => p.Status == "on-hold"),
-                    HighPriorityCount = projects.Count(p => p.Priority == "high"),
-                    MediumPriorityCount = projects.Count(p => p.Priority == "medium"),
-                    LowPriorityCount = projects.Count(p => p.Priority == "low")
+                    TotalProjects = total,
+                    ActiveProjects = statusCounts.TryGetValue("active", out var a) ? a : 0,
+                    CompletedProjects = statusCounts.TryGetValue("completed", out var c) ? c : 0,
+                    OnHoldProjects = statusCounts.TryGetValue("on-hold", out var h) ? h : 0,
+                    HighPriorityCount = priorityCounts.TryGetValue("high", out var hp) ? hp : 0,
+                    MediumPriorityCount = priorityCounts.TryGetValue("medium", out var mp) ? mp : 0,
+                    LowPriorityCount = priorityCounts.TryGetValue("low", out var lp) ? lp : 0,
                 };
-
-                return statistics;
             }
             catch (Exception ex)
             {
@@ -336,11 +346,13 @@ namespace MyApi.Modules.Projects.Services
         {
             try
             {
-                var searchLower = searchTerm.ToLower();
+                // Use EF.Functions.ILike / Like for index-friendly, case-insensitive matching
+                // instead of .ToLower() which forces a full scan.
+                var pattern = $"%{searchTerm}%";
                 var projects = await _context.Projects
                     .Include(p => p.Contact)
-                    .Where(p => p.Name.ToLower().Contains(searchLower) ||
-                               (p.Description != null && p.Description.ToLower().Contains(searchLower)))
+                    .Where(p => EF.Functions.Like(p.Name, pattern)
+                        || (p.Description != null && EF.Functions.Like(p.Description, pattern)))
                     .Take(50)
                     .ToListAsync();
 

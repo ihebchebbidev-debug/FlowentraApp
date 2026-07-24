@@ -160,7 +160,7 @@ export default function CreateGoodsReceiptPage() {
                 <div className="p-2 rounded bg-muted/50 text-xs space-y-1">
                   <div className="flex justify-between"><span className="text-muted-foreground">{t('fields.supplier')}</span><span className="font-medium">{selectedPO.supplierName}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">{t('fields.date')}</span><span>{selectedPO.orderDate}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">{t('fields.total')}</span><span>{selectedPO.grandTotal.toLocaleString('fr-TN', { minimumFractionDigits: 2 })} {currency.code}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">{t('fields.total')}</span><span>{selectedPO.grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })} {currency.code}</span></div>
                 </div>
               )}
             </CardContent>

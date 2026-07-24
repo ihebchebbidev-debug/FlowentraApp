@@ -35,7 +35,7 @@ type StatFilter = "all" | "open" | "won" | "lost";
 export function DealsList() {
   const { t } = useTranslation("deals");
   const navigate = useNavigate();
-  const { deals, stats, loading, refetch, deleteDeal } = useDeals();
+  const { deals, stats, loading, refetch, deleteDeal, updateStage } = useDeals();
   const { canCreate, canUpdate, canDelete, isMainAdmin } = usePermissions();
 
   const hasCreateAccess = isMainAdmin || canCreate('deals');
@@ -258,7 +258,7 @@ export function DealsList() {
           <DealsKanbanView
             deals={filtered}
             onOpen={d => navigate(`/dashboard/deals/${d.id}`)}
-            onRefetch={refetch}
+            onMove={updateStage}
           />
         ) : viewMode === "list" ? (
           <Card className="shadow-card border-0 bg-card">

@@ -225,6 +225,11 @@ export class TasksService {
     return await tasksApi.getTaskCompletionPercentage(projectId);
   }
 
+  // Bulk task stats for many projects in a single request.
+  static async getBulkProjectTaskStats(projectIds: number[]) {
+    return await tasksApi.getBulkProjectTaskStats(projectIds);
+  }
+
   // ============ Sub-tasks ============
 
   // Create sub-task

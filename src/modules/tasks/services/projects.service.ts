@@ -25,14 +25,9 @@ export class ProjectsService {
     return await projectsApi.update(id, data);
   }
 
-  // Delete project
-  static async deleteProject(id: number): Promise<boolean> {
-    try {
-      await projectsApi.delete(id);
-      return true;
-    } catch {
-      return false;
-    }
+  // Delete project — rethrows so callers can surface the real error.
+  static async deleteProject(id: number): Promise<void> {
+    await projectsApi.delete(id);
   }
 
   // Search projects
@@ -96,42 +91,29 @@ export class ProjectsService {
   }
 
   // Assign team member
-  static async assignTeamMember(projectId: number, userId: number, userName: string, projectName?: string): Promise<boolean> {
-    try {
-      await projectsApi.assignTeamMember(projectId, { userId, userName });
-      
-      // Send notification to the assigned user
-      try {
-        await notificationsApi.create({
-          userId: userId,
-          title: 'Added to project',
-          description: `You have been added to project ${projectName || `#${projectId}`}`,
-          type: 'info',
-          category: 'task',
-          link: `/dashboard/tasks/projects/${projectId}`,
-          relatedEntityId: projectId,
-          relatedEntityType: 'project'
-        });
-      } catch (notifError) {
-        console.error('Failed to send project assignment notification:', notifError);
-      }
-      
-      return true;
-    } catch (err) {
-      console.error('assignTeamMember failed:', err);
-      return false;
-    }
+  static async assignTeamMember(projectId: number, userId: number, userName: string, projectName?: string): Promise<void> {
+    await projectsApi.assignTeamMember(projectId, { userId, userName });
 
+    // Notification is best-effort — never fail the assignment on notification errors.
+    try {
+      await notificationsApi.create({
+        userId: userId,
+        title: 'Added to project',
+        description: `You have been added to project ${projectName || `#${projectId}`}`,
+        type: 'info',
+        category: 'task',
+        link: `/dashboard/tasks/projects/${projectId}`,
+        relatedEntityId: projectId,
+        relatedEntityType: 'project'
+      });
+    } catch (notifError) {
+      console.error('Failed to send project assignment notification:', notifError);
+    }
   }
 
-  // Remove team member
-  static async removeTeamMember(projectId: number, userId: number): Promise<boolean> {
-    try {
-      await projectsApi.removeTeamMember(projectId, { userId });
-      return true;
-    } catch {
-      return false;
-    }
+  // Remove team member — rethrows on failure so the UI can show a real error.
+  static async removeTeamMember(projectId: number, userId: number): Promise<void> {
+    await projectsApi.removeTeamMember(projectId, { userId });
   }
 
   // Get team members
@@ -139,73 +121,74 @@ export class ProjectsService {
     return await projectsApi.getTeamMembers(projectId);
   }
 
-  // Bulk update status
-  static async bulkUpdateStatus(projectIds: number[], status: string): Promise<boolean> {
-    try {
-      await projectsApi.bulkUpdateStatus({ projectIds, status });
-      return true;
-    } catch {
-      return false;
-    }
+  // Bulk update status — rethrows on failure.
+  static async bulkUpdateStatus(projectIds: number[], status: string): Promise<void> {
+    await projectsApi.bulkUpdateStatus({ projectIds, status });
   }
 
-  // Bulk archive
-  static async bulkArchive(projectIds: number[], archive = true): Promise<boolean> {
-    try {
-      await projectsApi.bulkArchive(projectIds, archive);
-      return true;
-    } catch {
-      return false;
-    }
+  // Bulk archive — rethrows on failure.
+  static async bulkArchive(projectIds: number[], archive = true): Promise<void> {
+    await projectsApi.bulkArchive(projectIds, archive);
   }
 
-  // Get overdue projects
+  // Internal helper: page through all non-archived projects with the server-capped page size
+  // (200 rows/page). Used only where a full working set is unavoidable.
+  private static async fetchAllProjects(params: ProjectSearchRequestDto = {}): Promise<Project[]> {
+    const pageSize = 200;
+    const all: Project[] = [];
+    let pageNumber = 1;
+    // Safety cap to avoid runaway loops if the server reports a huge count.
+    for (let i = 0; i < 50; i++) {
+      const result = await projectsApi.getAll({ ...params, pageNumber, pageSize });
+      all.push(...result.projects);
+      if (result.projects.length < pageSize || all.length >= (result.totalCount ?? all.length)) break;
+      pageNumber++;
+    }
+    return all;
+  }
+
+  // Get overdue projects — must page through all rows; server does not filter by "endDate<now".
   static async getOverdueProjects(): Promise<Project[]> {
-    const result = await projectsApi.getAll({ isArchived: false });
+    const projects = await this.fetchAllProjects({ isArchived: false });
     const now = new Date();
-    return result.projects.filter(project => 
-      project.endDate && 
-      new Date(project.endDate) < now && 
+    return projects.filter(project =>
+      project.endDate &&
+      new Date(project.endDate) < now &&
       project.status !== 'completed'
     );
   }
 
   // Get active projects
   static async getActiveProjects(): Promise<Project[]> {
-    const result = await projectsApi.getAll({ status: 'active', isArchived: false });
-    return result.projects;
+    return this.fetchAllProjects({ status: 'active', isArchived: false });
   }
 
   // Get completed projects
   static async getCompletedProjects(): Promise<Project[]> {
-    const result = await projectsApi.getAll({ status: 'completed' });
-    return result.projects;
+    return this.fetchAllProjects({ status: 'completed' });
   }
 
-  // Get project status counts
+  // Get project status counts — uses the server-side aggregated /statistics endpoint
+  // instead of paging through every project and reducing client-side.
   static async getProjectStatusCounts(): Promise<Record<string, number>> {
-    const result = await projectsApi.getAll({ isArchived: false });
-    const counts: Record<string, number> = {};
-    
-    result.projects.forEach(project => {
-      counts[project.status] = (counts[project.status] || 0) + 1;
-    });
-    
-    return counts;
+    const stats = await projectsApi.getStatistics();
+    return {
+      active: stats.activeProjects,
+      completed: stats.completedProjects,
+      'on-hold': stats.onHoldProjects,
+    };
   }
 
-  // Get project completion stats
+  // Get project completion stats — uses the server-side aggregated /statistics endpoint.
   static async getProjectCompletionStats(): Promise<{ totalProjects: number; completedProjects: number; averageCompletion: number }> {
-    const result = await projectsApi.getAll({ isArchived: false });
-    const completedProjects = result.projects.filter(p => p.status === 'completed');
-    const averageCompletion = result.projects.length > 0 
-      ? result.projects.reduce((sum, p) => sum + (p.progress || 0), 0) / result.projects.length 
+    const stats = await projectsApi.getStatistics();
+    const averageCompletion = stats.totalProjects > 0
+      ? Math.round((stats.completedProjects / stats.totalProjects) * 100)
       : 0;
-    
     return {
-      totalProjects: result.projects.length,
-      completedProjects: completedProjects.length,
-      averageCompletion: Math.round(averageCompletion),
+      totalProjects: stats.totalProjects,
+      completedProjects: stats.completedProjects,
+      averageCompletion,
     };
   }
 }

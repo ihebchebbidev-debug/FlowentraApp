@@ -31,8 +31,8 @@ namespace MyApi.Modules.Deals.Services
         Task<bool> DeleteDealItemAsync(int dealId, int itemId, string userId = "system", string? userName = null);
 
         // Activities
-        Task<List<DealActivityDto>> GetDealActivitiesAsync(int dealId, string? type = null, int page = 1, int limit = 20);
+        Task<(List<DealActivityDto> Items, int Total)> GetDealActivitiesAsync(int dealId, string? type = null, int page = 1, int limit = 20);
         Task<DealActivityDto?> AddDealActivityAsync(int dealId, CreateDealActivityDto activityDto, string userId, string? userName = null);
-        Task<bool> DeleteDealActivityAsync(int dealId, int activityId);
+        Task<bool> DeleteDealActivityAsync(int dealId, int activityId, string userId = "system", string? userName = null);
     }
 }

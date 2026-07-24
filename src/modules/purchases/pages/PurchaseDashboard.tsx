@@ -65,7 +65,7 @@ function PurchaseDashboardContent() {
 
   useEffect(() => { load(); }, []);
 
-  const fmt = (n: number) => n.toLocaleString('fr-TN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
   return (
     <div className="flex flex-col">

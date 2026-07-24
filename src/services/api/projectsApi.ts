@@ -498,6 +498,31 @@ export const projectsApi = {
     return { ...EMPTY_PROJECT_STATS };
   },
 
+  // Aggregated project statistics (server-side counts, single request).
+  async getStatistics(): Promise<{
+    totalProjects: number;
+    activeProjects: number;
+    completedProjects: number;
+    onHoldProjects: number;
+    highPriorityCount: number;
+    mediumPriorityCount: number;
+    lowPriorityCount: number;
+  }> {
+    const response = await fetch(`${API_URL}/api/Projects/statistics`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
+    const offline = await parseOfflineNoCacheBody(response);
+    if (isOfflineNoCache503(offline)) {
+      return {
+        totalProjects: 0, activeProjects: 0, completedProjects: 0, onHoldProjects: 0,
+        highPriorityCount: 0, mediumPriorityCount: 0, lowPriorityCount: 0,
+      };
+    }
+    await throwIfNotOkAfterOfflineCheck(response, offline, 'Failed to fetch project statistics');
+    return await response.json();
+  },
+
   // Bulk update project status — not yet implemented in backend, no-op
   async bulkUpdateStatus(_dto: BulkUpdateProjectStatusDto): Promise<void> {
     // Backend endpoint not yet available; callers catch errors and treat them as warnings.

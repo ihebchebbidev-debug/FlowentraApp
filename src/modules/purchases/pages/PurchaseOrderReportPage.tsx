@@ -21,7 +21,7 @@ import { useCurrency } from "@/shared/hooks/useCurrency";
 export default function PurchaseOrderReportPage() {
   const { id } = useParams<{ id: string }>();
   const { t, i18n } = useTranslation("purchases");
-  const { format: formatCurrency } = useCurrency();
+  const { format: formatCurrency, current: currency } = useCurrency();
   const companyLogo = useCompanyLogo();
 
   const [order, setOrder] = useState<any>(null);
@@ -111,7 +111,7 @@ export default function PurchaseOrderReportPage() {
           settings={pdfSettings}
           translations={pdfTranslations}
           language={i18n.language}
-          currencyCode={order?.currency || "TND"}
+          currencyCode={order?.currency || currency.code}
         />
       </PDFViewer>
     </div>

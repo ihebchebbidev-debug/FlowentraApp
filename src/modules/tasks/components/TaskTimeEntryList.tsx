@@ -23,6 +23,7 @@ import { toast } from 'sonner';
 import { taskTimeEntryApi } from '@/services/api/taskTimeEntryApi';
 import type { TaskTimeEntry } from '@/modules/tasks/types/timeTracking';
 import { formatDuration } from '@/modules/tasks/types/timeTracking';
+import { usePreferences } from '@/hooks/usePreferences';
 
 interface TaskTimeEntryListProps {
   entries: TaskTimeEntry[];
@@ -38,6 +39,8 @@ export function TaskTimeEntryList({
   onRefresh,
 }: TaskTimeEntryListProps) {
   const { t, i18n } = useTranslation('tasks');
+  const { preferences } = usePreferences();
+  const userCurrency = preferences?.currency || 'TND';
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -144,9 +147,9 @@ export function TaskTimeEntryList({
               <p className="text-lg font-semibold">{formatDuration(entry.duration)}</p>
               {entry.totalCost && entry.totalCost > 0 && (
                 <p className="text-xs text-muted-foreground">
-                  {entry.totalCost.toLocaleString(i18n.language === 'fr' ? 'fr-TN' : 'en-US', {
+                  {entry.totalCost.toLocaleString(i18n.language === 'fr' ? 'fr-FR' : 'en-US', {
                     style: 'currency',
-                    currency: 'TND',
+                    currency: userCurrency,
                   })}
                 </p>
               )}

@@ -19,7 +19,7 @@ import { useCurrency } from "@/shared/hooks/useCurrency";
 export default function SupplierInvoiceReportPage() {
   const { id } = useParams<{ id: string }>();
   const { t, i18n } = useTranslation("purchases");
-  const { format: formatCurrency } = useCurrency();
+  const { format: formatCurrency, current: currency } = useCurrency();
   const companyLogo = useCompanyLogo();
 
   const [invoice, setInvoice] = useState<any>(null);
@@ -115,7 +115,7 @@ export default function SupplierInvoiceReportPage() {
           settings={pdfSettings}
           translations={pdfTranslations}
           language={i18n.language}
-          currencyCode={invoice?.currency || "TND"}
+          currencyCode={invoice?.currency || currency.code}
         />
       </PDFViewer>
     </div>

@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatStatValue } from "@/lib/formatters";
 import { Button } from '@/components/ui/button';
@@ -58,6 +58,28 @@ import { getInitialViewMode } from '../../../hooks/getInitialViewMode';
 
 export function DocumentsList() {
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
+
+  // Workspace-scoped documents: when the sidebar links here with ?modules=sales,offers
+  // (or ?workspace=<id>), we restrict the list to those module types and hide the
+  // top stats + filter bar so the page acts as a workspace-local documents view.
+  const WORKSPACE_MODULE_MAP: Record<string, string[]> = {
+    sales: ['sales', 'offers', 'deals'],
+    purchases: ['purchases'],
+    service: ['services', 'field'],
+    projects: ['projects'],
+    hr: ['hr'],
+    reporting: [],
+  };
+  const scopedModules = useMemo<string[] | null>(() => {
+    const raw = searchParams.get('modules');
+    if (raw) return raw.split(',').map(s => s.trim()).filter(Boolean);
+    const ws = searchParams.get('workspace');
+    if (ws && WORKSPACE_MODULE_MAP[ws]) return WORKSPACE_MODULE_MAP[ws];
+    return null;
+  }, [searchParams]);
+  const isWorkspaceScoped = scopedModules !== null;
+
   const [activeTab, setActiveTab] = useState<'all' | 'offers' | 'sales' | 'services' | 'field' | 'deals'>('all');
   const [searchInput, setSearchInput] = useState('');
   const [showUpload, setShowUpload] = useState(false);
@@ -67,6 +89,7 @@ export function DocumentsList() {
   const [viewMode, setViewMode] = useState<'list' | 'table'>(() => getInitialViewMode(['list','table'] as const, 'table'));
   const [selectedStat, setSelectedStat] = useState<string>('all');
   const [showFilterBar, setShowFilterBar] = useState(false);
+
 
   // Selection state for bulk actions
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -97,13 +120,16 @@ export function DocumentsList() {
 
   const { documents: allDocuments, stats, loading, refetch, deleteDocument, bulkDeleteDocuments, downloadDocument } = useDocuments(apiFilters);
 
-  // Only show documents related to core modules (offers, sales, services, field, deals)
-  const relevantModuleTypes = ['offers', 'sales', 'services', 'field', 'deals'];
+  // Only show documents related to core modules (offers, sales, services, field, deals),
+  // or narrowed further when scoped to a workspace.
+  const relevantModuleTypes = scopedModules ?? ['offers', 'sales', 'services', 'field', 'deals'];
   const documents = useMemo(() => {
     const moduleFiltered = allDocuments.filter(doc => relevantModuleTypes.includes(doc.moduleType));
+    if (isWorkspaceScoped) return moduleFiltered;
     if (activeTab === 'all') return moduleFiltered;
     return moduleFiltered.filter(doc => doc.moduleType === activeTab);
-  }, [allDocuments, activeTab]);
+  }, [allDocuments, activeTab, relevantModuleTypes, isWorkspaceScoped]);
+
 
   // Selection helpers
   const toggleSelect = useCallback((id: string) => {
@@ -378,8 +404,10 @@ export function DocumentsList() {
       {/* Header */}
       <Header />
 
-      {/* Stats Cards */}
+      {/* Stats Cards — hidden when scoped to a workspace */}
+      {!isWorkspaceScoped && (
       <div className="p-3 sm:p-4 border-b border-border">
+
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
           {statsData.map((stat, index) => {
             const isSelected = selectedStat === stat.filter;
@@ -421,6 +449,9 @@ export function DocumentsList() {
           })}
         </div>
       </div>
+      )}
+
+
 
       {/* Search and Controls */}
       <div className="p-3 sm:p-4 border-b border-border bg-card">
@@ -445,12 +476,15 @@ export function DocumentsList() {
                 </Button>
               )}
             </div>
+            {!isWorkspaceScoped && (
             <div className="relative">
               <Button variant="outline" size="sm" className="h-9 sm:h-10 px-3 sm:px-4 whitespace-nowrap" onClick={() => setShowFilterBar(s => !s)}>
                 <Filter className="h-4 w-4 mr-2" />
                 {t('documents.filters')}
               </Button>
             </div>
+            )}
+
           </div>
           <div className="flex gap-1 sm:gap-2">
             <Button 

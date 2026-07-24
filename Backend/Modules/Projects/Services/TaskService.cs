@@ -592,25 +592,35 @@ namespace MyApi.Modules.Projects.Services
 
         public async Task<bool> BulkMoveTaskStatusesAsync(BulkMoveTasksRequestDto bulkMoveDto, string movedByUser)
         {
-            // Wrap in execution strategy to be compatible with EnableRetryOnFailure
+            // Set-based update: one SELECT to load all target rows, in-memory patch,
+            // one SaveChanges. Replaces the previous N+1 loop over MoveTaskStatusAsync.
             var strategy = _context.Database.CreateExecutionStrategy();
             return await strategy.ExecuteAsync(async () =>
             {
                 using var transaction = await _context.Database.BeginTransactionAsync();
                 try
                 {
-                    foreach (var taskMove in bulkMoveDto.Tasks)
-                    {
-                        var moveDto = new MoveTaskRequestDto
-                        {
-                            Status = taskMove.Status
-                        };
+                    var ids = bulkMoveDto.Tasks.Select(t => t.Id).ToList();
+                    var statusById = bulkMoveDto.Tasks.ToDictionary(t => t.Id, t => t.Status);
 
-                        await MoveTaskStatusAsync(taskMove.Id, moveDto, movedByUser);
+                    var tasks = await _context.ProjectTasks
+                        .Where(t => ids.Contains(t.Id))
+                        .ToListAsync();
+
+                    var now = DateTime.UtcNow;
+                    foreach (var task in tasks)
+                    {
+                        if (statusById.TryGetValue(task.Id, out var newStatus))
+                        {
+                            task.Status = newStatus;
+                            task.ModifiedBy = movedByUser;
+                            task.ModifiedDate = now;
+                        }
                     }
 
+                    await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
-                    _logger.LogInformation("Bulk moved status for {Count} tasks", bulkMoveDto.Tasks.Count);
+                    _logger.LogInformation("Bulk moved status for {Count} tasks", tasks.Count);
                     return true;
                 }
                 catch (Exception ex)
@@ -772,6 +782,44 @@ namespace MyApi.Modules.Projects.Services
                 _logger.LogError(ex, "Error getting task statistics");
                 throw;
             }
+        }
+
+        public async Task<Dictionary<int, ProjectTaskStatsDto>> GetBulkProjectTaskStatsAsync(List<int> projectIds)
+        {
+            var result = new Dictionary<int, ProjectTaskStatsDto>();
+            if (projectIds == null || projectIds.Count == 0) return result;
+
+            // One SQL round-trip: group tasks by project + status server-side.
+            var now = DateTime.UtcNow;
+            var rows = await _context.ProjectTasks
+                .Where(t => t.RelatedEntityType == "project"
+                    && t.RelatedEntityId.HasValue
+                    && projectIds.Contains(t.RelatedEntityId.Value))
+                .GroupBy(t => new { ProjectId = t.RelatedEntityId!.Value, Status = t.Status ?? "open" })
+                .Select(g => new
+                {
+                    g.Key.ProjectId,
+                    g.Key.Status,
+                    Count = g.Count(),
+                    Overdue = g.Count(t => t.DueDate.HasValue && t.DueDate.Value < now && (t.Status ?? "open") != "completed" && (t.Status ?? "open") != "done"),
+                })
+                .ToListAsync();
+
+            foreach (var pid in projectIds)
+            {
+                var pidRows = rows.Where(r => r.ProjectId == pid).ToList();
+                var total = pidRows.Sum(r => r.Count);
+                var completed = pidRows.Where(r => r.Status == "completed" || r.Status == "done").Sum(r => r.Count);
+                var overdue = pidRows.Sum(r => r.Overdue);
+                result[pid] = new ProjectTaskStatsDto
+                {
+                    TotalTasks = total,
+                    CompletedTasks = completed,
+                    OverdueTasks = overdue,
+                    CompletionPercentage = total > 0 ? Math.Round((double)completed / total * 100d, 2) : 0d,
+                };
+            }
+            return result;
         }
 
         public async Task<bool> TaskExistsAsync(int id, bool isProjectTask = true)

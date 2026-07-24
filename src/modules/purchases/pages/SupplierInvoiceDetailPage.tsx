@@ -287,7 +287,7 @@ function SupplierInvoiceDetailContent() {
   if (error) return <PurchaseErrorFallback error={error} onRetry={fetchData} backTo="/dashboard/purchases/invoices" />;
   if (!inv) return <PurchaseErrorFallback error={t('invoices.notFound')} backTo="/dashboard/purchases/invoices" />;
 
-  const fmt = (n: number) => n.toLocaleString('fr-TN', { minimumFractionDigits: 2 });
+  const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2 });
   const rsType = RS_TRANSACTION_TYPES.find(r => r.code === inv.rsTypeCode);
 
   // Supplier invoices have no dedicated activity endpoint, so synthesise a timeline

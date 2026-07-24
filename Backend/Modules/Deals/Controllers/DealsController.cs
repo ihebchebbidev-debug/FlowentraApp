@@ -212,8 +212,8 @@ namespace MyApi.Modules.Deals.Controllers
         {
             try
             {
-                var activities = await _dealService.GetDealActivitiesAsync(id, type, page, limit);
-                return Ok(new { success = true, data = new { activities, pagination = new { page, limit, total = activities.Count } } });
+                var (activities, total) = await _dealService.GetDealActivitiesAsync(id, type, page, limit);
+                return Ok(new { success = true, data = new { activities, pagination = new { page, limit, total } } });
             }
             catch (Exception ex)
             {
@@ -243,7 +243,7 @@ namespace MyApi.Modules.Deals.Controllers
         {
             try
             {
-                var ok = await _dealService.DeleteDealActivityAsync(id, activityId);
+                var ok = await _dealService.DeleteDealActivityAsync(id, activityId, GetCurrentUserId(), GetCurrentUserName());
                 if (!ok) return NotFound(new { success = false, error = new { code = "ACTIVITY_NOT_FOUND", message = "Activity not found" } });
                 return Ok(new { success = true });
             }

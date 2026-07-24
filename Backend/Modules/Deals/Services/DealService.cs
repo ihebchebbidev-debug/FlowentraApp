@@ -720,15 +720,21 @@ namespace MyApi.Modules.Deals.Services
 
         // ── Activities ──
 
-        public async Task<List<DealActivityDto>> GetDealActivitiesAsync(int dealId, string? type = null, int page = 1, int limit = 20)
+        public async Task<(List<DealActivityDto> Items, int Total)> GetDealActivitiesAsync(int dealId, string? type = null, int page = 1, int limit = 20)
         {
+            if (page < 1) page = 1;
+            if (limit < 1) limit = 20;
+            if (limit > 200) limit = 200;
+
             var query = _context.DealActivities.AsNoTracking().Where(a => a.DealId == dealId);
             if (!string.IsNullOrEmpty(type)) query = query.Where(a => a.Type == type);
+
+            var total = await query.CountAsync();
             var list = await query
                 .OrderByDescending(a => a.CreatedAt)
                 .Skip((page - 1) * limit).Take(limit)
                 .ToListAsync();
-            return list.Select(MapActivity).ToList();
+            return (list.Select(MapActivity).ToList(), total);
         }
 
         public async Task<DealActivityDto?> AddDealActivityAsync(int dealId, CreateDealActivityDto dto, string userId, string? userName = null)
@@ -741,12 +747,17 @@ namespace MyApi.Modules.Deals.Services
             return MapActivity(activity);
         }
 
-        public async Task<bool> DeleteDealActivityAsync(int dealId, int activityId)
+        public async Task<bool> DeleteDealActivityAsync(int dealId, int activityId, string userId = "system", string? userName = null)
         {
             var activity = await _context.DealActivities.FirstOrDefaultAsync(a => a.Id == activityId && a.DealId == dealId);
             if (activity == null) return false;
+            var snapshotType = activity.Type;
+            var snapshotDesc = activity.Description;
             _context.DealActivities.Remove(activity);
             await _context.SaveChangesAsync();
+
+            await LogActivityAsync("activity_deleted", "DealActivity", activityId.ToString(), dealId,
+                $"Activity removed ({snapshotType}): {snapshotDesc}", userId, userName);
             return true;
         }
 
