@@ -761,7 +761,24 @@ export function DocumentsList() {
                         </div>
                       );
                     })}
-                    <div className="border-t border-border px-4 py-2 bg-card">
+                    <SimplePaginationBar
+                      startIndex={pagination.info.startIndex}
+                      endIndex={pagination.info.endIndex}
+                      totalItems={documents.length}
+                      currentPage={pagination.state.currentPage}
+                      totalPages={pagination.info.totalPages}
+                      hasPreviousPage={pagination.info.hasPreviousPage}
+                      hasNextPage={pagination.info.hasNextPage}
+                      onPreviousPage={pagination.actions.previousPage}
+                      onNextPage={pagination.actions.nextPage}
+                      className="border-t"
+                    />
+
+                  </div>
+
+                  {/* Desktop table — hidden on mobile */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <Card>
                       <SimplePaginationBar
                         startIndex={pagination.info.startIndex}
                         endIndex={pagination.info.endIndex}
@@ -773,25 +790,7 @@ export function DocumentsList() {
                         onPreviousPage={pagination.actions.previousPage}
                         onNextPage={pagination.actions.nextPage}
                       />
-                    </div>
-                  </div>
 
-                  {/* Desktop table — hidden on mobile */}
-                  <div className="hidden md:block overflow-x-auto">
-                    <Card>
-                      <div className="border-b border-border px-4 py-2">
-                        <SimplePaginationBar
-                          startIndex={pagination.info.startIndex}
-                          endIndex={pagination.info.endIndex}
-                          totalItems={documents.length}
-                          currentPage={pagination.state.currentPage}
-                          totalPages={pagination.info.totalPages}
-                          hasPreviousPage={pagination.info.hasPreviousPage}
-                          hasNextPage={pagination.info.hasNextPage}
-                          onPreviousPage={pagination.actions.previousPage}
-                          onNextPage={pagination.actions.nextPage}
-                        />
-                      </div>
                       <Table>
                         <TableHeader>
                           <TableRow>
@@ -859,19 +858,19 @@ export function DocumentsList() {
                           })}
                         </TableBody>
                       </Table>
-                      <div className="border-t border-border px-4 py-2">
-                        <SimplePaginationBar
-                          startIndex={pagination.info.startIndex}
-                          endIndex={pagination.info.endIndex}
-                          totalItems={documents.length}
-                          currentPage={pagination.state.currentPage}
-                          totalPages={pagination.info.totalPages}
-                          hasPreviousPage={pagination.info.hasPreviousPage}
-                          hasNextPage={pagination.info.hasNextPage}
-                          onPreviousPage={pagination.actions.previousPage}
-                          onNextPage={pagination.actions.nextPage}
-                        />
-                      </div>
+                      <SimplePaginationBar
+                        startIndex={pagination.info.startIndex}
+                        endIndex={pagination.info.endIndex}
+                        totalItems={documents.length}
+                        currentPage={pagination.state.currentPage}
+                        totalPages={pagination.info.totalPages}
+                        hasPreviousPage={pagination.info.hasPreviousPage}
+                        hasNextPage={pagination.info.hasNextPage}
+                        onPreviousPage={pagination.actions.previousPage}
+                        onNextPage={pagination.actions.nextPage}
+                        className="border-t"
+                      />
+
                     </Card>
                   </div>
                 </>

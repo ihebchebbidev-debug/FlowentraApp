@@ -955,25 +955,24 @@ export default function InstallationsList() {
             <Card className="shadow-card">
               <CardContent className="p-0">
                 {filteredInstallations.length > 0 && (
-                  <div className="border-b border-border px-4 py-2">
-                    <SimplePaginationBar
-                      startIndex={pagination.info.startIndex}
-                      endIndex={pagination.info.endIndex}
-                      totalItems={filteredInstallations.length}
-                      currentPage={pagination.state.currentPage}
-                      totalPages={pagination.info.totalPages}
-                      hasPreviousPage={pagination.info.hasPreviousPage}
-                      hasNextPage={pagination.info.hasNextPage}
-                      onPreviousPage={pagination.actions.previousPage}
-                      onNextPage={pagination.actions.nextPage}
-                    />
-                  </div>
+                  <SimplePaginationBar
+                    startIndex={pagination.info.startIndex}
+                    endIndex={pagination.info.endIndex}
+                    totalItems={filteredInstallations.length}
+                    currentPage={pagination.state.currentPage}
+                    totalPages={pagination.info.totalPages}
+                    hasPreviousPage={pagination.info.hasPreviousPage}
+                    hasNextPage={pagination.info.hasNextPage}
+                    onPreviousPage={pagination.actions.previousPage}
+                    onNextPage={pagination.actions.nextPage}
+                  />
                 )}
+
 <TableLayout
                   items={pagination.data}
                   rowKey={(installation: any) => installation.id}
                   onRowClick={handleInstallationClick}
-                  tableClassName="w-full table-fixed min-w-[900px]"
+                  tableClassName="w-full min-w-[900px]"
                   enableSelection={true}
                   selectedIds={selectedIds as unknown as Set<string | number>}
                   onSelectionChange={(ids) => setSelectedIds(ids as Set<number>)}
@@ -1047,7 +1046,6 @@ export default function InstallationsList() {
                     {
                       key: 'actions',
                       title: t('list.actions'),
-                      width: 'w-16',
                       render: (installation: any) => (
                         <div onClick={(e) => e.stopPropagation()}>
                           <TableRowActions actions={[
@@ -1061,28 +1059,6 @@ export default function InstallationsList() {
                   ]}
                 />
                 {filteredInstallations.length > 0 && (
-                  <div className="border-t border-border px-4 py-2">
-                    <SimplePaginationBar
-                      startIndex={pagination.info.startIndex}
-                      endIndex={pagination.info.endIndex}
-                      totalItems={filteredInstallations.length}
-                      currentPage={pagination.state.currentPage}
-                      totalPages={pagination.info.totalPages}
-                      hasPreviousPage={pagination.info.hasPreviousPage}
-                      hasNextPage={pagination.info.hasNextPage}
-                      onPreviousPage={pagination.actions.previousPage}
-                      onNextPage={pagination.actions.nextPage}
-                    />
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        ) : !isLoading && filteredInstallations.length > 0 ? (
-          <div className="p-3 sm:p-4">
-            <Card className="shadow-card">
-              <CardContent className="p-0 list-editorial">
-                <div className="border-b border-border px-4 py-2">
                   <SimplePaginationBar
                     startIndex={pagination.info.startIndex}
                     endIndex={pagination.info.endIndex}
@@ -1093,8 +1069,29 @@ export default function InstallationsList() {
                     hasNextPage={pagination.info.hasNextPage}
                     onPreviousPage={pagination.actions.previousPage}
                     onNextPage={pagination.actions.nextPage}
+                    className="border-t"
                   />
-                </div>
+                )}
+
+              </CardContent>
+            </Card>
+          </div>
+        ) : !isLoading && filteredInstallations.length > 0 ? (
+          <div className="p-3 sm:p-4">
+            <Card className="shadow-card">
+              <CardContent className="p-0 list-editorial">
+                <SimplePaginationBar
+                  startIndex={pagination.info.startIndex}
+                  endIndex={pagination.info.endIndex}
+                  totalItems={filteredInstallations.length}
+                  currentPage={pagination.state.currentPage}
+                  totalPages={pagination.info.totalPages}
+                  hasPreviousPage={pagination.info.hasPreviousPage}
+                  hasNextPage={pagination.info.hasNextPage}
+                  onPreviousPage={pagination.actions.previousPage}
+                  onNextPage={pagination.actions.nextPage}
+                />
+
                 {pagination.data.map((installation) => {
                   const warrantyStatus = getWarrantyStatus(installation.warranty);
                   const customer = installation.contactId ? contactsMap.get(installation.contactId) : null;
@@ -1164,20 +1161,20 @@ export default function InstallationsList() {
                   );
                 })}
                 {filteredInstallations.length > 0 && (
-                  <div className="border-t border-border px-4 py-2">
-                    <SimplePaginationBar
-                      startIndex={pagination.info.startIndex}
-                      endIndex={pagination.info.endIndex}
-                      totalItems={filteredInstallations.length}
-                      currentPage={pagination.state.currentPage}
-                      totalPages={pagination.info.totalPages}
-                      hasPreviousPage={pagination.info.hasPreviousPage}
-                      hasNextPage={pagination.info.hasNextPage}
-                      onPreviousPage={pagination.actions.previousPage}
-                      onNextPage={pagination.actions.nextPage}
-                    />
-                  </div>
+                  <SimplePaginationBar
+                    startIndex={pagination.info.startIndex}
+                    endIndex={pagination.info.endIndex}
+                    totalItems={filteredInstallations.length}
+                    currentPage={pagination.state.currentPage}
+                    totalPages={pagination.info.totalPages}
+                    hasPreviousPage={pagination.info.hasPreviousPage}
+                    hasNextPage={pagination.info.hasNextPage}
+                    onPreviousPage={pagination.actions.previousPage}
+                    onNextPage={pagination.actions.nextPage}
+                    className="border-t"
+                  />
                 )}
+
               </CardContent>
             </Card>
           </div>

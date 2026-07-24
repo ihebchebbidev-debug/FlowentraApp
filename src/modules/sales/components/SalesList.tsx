@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import { calculateEntityTotal } from "@/lib/calculateTotal";
 import { usePaginatedData } from "@/shared/hooks/usePagination";
 import { formatStatValue } from "@/lib/formatters";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -36,7 +36,8 @@ import {
   Lock,
   Loader2,
   X,
-  Play
+  Play,
+  ExternalLink
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CollapsibleSearch } from "@/components/ui/collapsible-search";
@@ -877,17 +878,15 @@ export function SalesList() {
                                 <TableCell><CompanyBadge tenantId={(sale as any).tenantId} forceShow /></TableCell>
                               )}
                               <TableCell>
-                                <Button
-                                  variant="link"
-                                  className="p-0 h-auto text-left flex flex-col items-start min-w-0 max-w-[180px]"
-                                  onClick={(e: any) => {
-                                    e.stopPropagation();
-                                    navigate(`/dashboard/contacts/${sale.contactId}`);
-                                  }}
-                                >
-                                  <span className="text-sm text-foreground break-words whitespace-normal leading-tight text-left">{sale.contactName}</span>
-                                  <span className="text-sm text-muted-foreground break-words whitespace-normal leading-tight text-left">{sale.contactCompany}</span>
-                                </Button>
+                                <div className="min-w-0" onClick={(e) => e.stopPropagation()}>
+                                  <Link
+                                    to={`/dashboard/contacts/${sale.contactId}`}
+                                    className="flex items-center gap-1 text-primary hover:underline font-medium truncate"
+                                  >
+                                    {sale.contactName}
+                                    <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                                  </Link>
+                                </div>
                               </TableCell>
                               <TableCell>
                                 {sale.offerId ? (

@@ -493,7 +493,7 @@ export default function DispatchesList() {
                     items={filteredDispatches}
                     rowKey={(dispatch) => dispatch.id}
                     onRowClick={handleDispatchClick}
-                    tableClassName="w-full table-fixed min-w-[900px]"
+                    tableClassName="w-full min-w-[900px]"
                     enableSelection={hasDeleteAccess}
                     selectedIds={selectedIds}
                     onSelectionChange={(ids) => setSelectedIds(ids as Set<string>)}
@@ -604,48 +604,15 @@ export default function DispatchesList() {
                       {
                         key: 'actions',
                         title: t('common.actions'),
-                        headerClass: 'text-right',
-                        cellClass: 'px-3 py-2 text-right',
+                        headerClass: 'text-right whitespace-nowrap',
+                        cellClass: 'px-3 py-2 text-right whitespace-nowrap',
                         render: (dispatch) => (
-                          <div onClick={(e) => e.stopPropagation()}>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                  <MoreVertical className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>{t('common.actions')}</DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => handleDispatchClick(dispatch)}>
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  {t('common.view')}
-                                </DropdownMenuItem>
-                                {hasUpdateAccess && (
-                                  <DropdownMenuItem onClick={() => handleEditDispatch(dispatch)}>
-                                    <Edit className="h-4 w-4 mr-2" />
-                                    {t('common.edit')}
-                                  </DropdownMenuItem>
-                                )}
-                                <DropdownMenuItem onClick={() => window.open(`/dashboard/field/dispatches/${dispatch.id}/report`, '_blank')}>
-                                  <FileText className="h-4 w-4 mr-2" />
-                                  {t('common.report', 'Report')}
-                                </DropdownMenuItem>
-                                {hasDeleteAccess && (
-                                  <>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem
-                                      onClick={() => handleDeleteClick(dispatch)}
-                                      className="text-destructive focus:text-destructive"
-                                    >
-                                      <Trash2 className="h-4 w-4 mr-2" />
-                                      {t('common.delete')}
-                                    </DropdownMenuItem>
-                                  </>
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
+                          <TableRowActions actions={[
+                            { icon: Eye, label: t('common.view'), onClick: (e) => { e.stopPropagation(); handleDispatchClick(dispatch); } },
+                            { icon: Edit, label: t('common.edit'), onClick: (e) => { e.stopPropagation(); handleEditDispatch(dispatch); }, show: hasUpdateAccess },
+                            { icon: FileText, label: t('common.report', 'Report'), onClick: (e) => { e.stopPropagation(); window.open(`/dashboard/field/dispatches/${dispatch.id}/report`, '_blank'); } },
+                            { icon: Trash2, label: t('common.delete'), onClick: (e) => { e.stopPropagation(); handleDeleteClick(dispatch); }, variant: 'destructive', show: hasDeleteAccess },
+                          ]} className="justify-end" />
                         )
                       }
                     ]}

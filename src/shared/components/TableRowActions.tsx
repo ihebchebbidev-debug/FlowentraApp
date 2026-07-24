@@ -56,3 +56,5 @@ export function TableRowActions({ actions, className }: TableRowActionsProps) {
     </TooltipProvider>
   );
 }
+
+

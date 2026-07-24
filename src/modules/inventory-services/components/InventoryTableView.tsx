@@ -4,15 +4,14 @@ import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table as TableComponent, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Clock, Edit, Eye, MoreVertical, Trash2, Loader2 } from "lucide-react";
+import { Clock, Edit, Eye, Trash2, Loader2 } from "lucide-react";
 import { getLocationIcon, getTypeIcon } from "./utils";
 import { useArticles } from "@/modules/articles/hooks/useArticles";
 import { isViewAllMode } from '@/utils/tenant';
 import { CompanyBadge } from '@/components/CompanyBadge';
+import { TableRowActions } from "@/shared/components/TableRowActions";
 
 interface InventoryTableViewProps {
   items: any[];
@@ -173,37 +172,12 @@ export function InventoryTableView({ items, onClick, selectedIds, onSelectionCha
                           : `${Math.floor((item as any).basePrice || 0)} TND`}
                       </span>
                     </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={e => e.stopPropagation()}>
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem className="gap-2" onClick={() => onClick(item)}>
-                            <Eye className="h-4 w-4" />
-                            {t('table.view_details')}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="gap-2" onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/dashboard/inventory-services/article/${item.id}/edit`);
-                          }}>
-                            <Edit className="h-4 w-4" />
-                            {item.type === 'material' ? t('table.edit_material') : t('table.edit_service')}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            className="gap-2 text-destructive"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDeleteItem(item);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            {t('table.delete')}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <TableRowActions actions={[
+                        { icon: Eye, label: t('table.view_details'), onClick: (e) => { e.stopPropagation(); onClick(item); } },
+                        { icon: Edit, label: item.type === 'material' ? t('table.edit_material') : t('table.edit_service'), onClick: (e) => { e.stopPropagation(); navigate(`/dashboard/inventory-services/article/${item.id}/edit`); } },
+                        { icon: Trash2, label: t('table.delete'), onClick: (e) => { e.stopPropagation(); setDeleteItem(item); }, variant: 'destructive' }
+                      ]} />
                     </TableCell>
                   </TableRow>
                 );

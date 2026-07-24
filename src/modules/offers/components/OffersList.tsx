@@ -3,7 +3,7 @@ import { calculateEntityTotal } from "@/lib/calculateTotal";
 import { usePaginatedData } from "@/shared/hooks/usePagination";
 import { getStatusColorClass, getStatusTranslationKey } from "@/config/entity-statuses";
 import { formatStatValue, formatCurrencyValue } from "@/lib/formatters";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -42,7 +42,8 @@ import {
   ShieldAlert,
   Lock,
   Loader2,
-  Play
+  Play,
+  ExternalLink
 } from "lucide-react";
 import { CollapsibleSearch } from "@/components/ui/collapsible-search";
 import { ChevronDown } from "lucide-react";
@@ -991,7 +992,7 @@ export function OffersList() {
                       items={pagination.data}
                       rowKey={(offer: Offer) => offer.id}
                       onRowClick={handleOfferClick}
-                      tableClassName="w-full table-fixed min-w-[900px]"
+                      tableClassName="w-full min-w-[900px]"
                       enableSelection={true}
                       selectedIds={selectedIds as unknown as Set<string | number>}
                       onSelectionChange={(ids) => setSelectedIds(ids as Set<string>)}
@@ -1018,11 +1019,14 @@ export function OffersList() {
                           key: 'contact',
                           title: t('table.contact'),
                           render: (offer: Offer) => (
-                            <div>
-                              <div className="text-sm text-foreground">
+                            <div className="min-w-0" onClick={(e) => e.stopPropagation()}>
+                              <Link
+                                to={`/dashboard/contacts/${offer.contactId}`}
+                                className="flex items-center gap-1 text-primary hover:underline font-medium truncate"
+                              >
                                 {offer.contactName}
-                              </div>
-                              <div className="text-sm text-muted-foreground">{offer.contactCompany}</div>
+                                <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                              </Link>
                             </div>
                           )
                         },
@@ -1048,18 +1052,12 @@ export function OffersList() {
                           )
                         },
                         {
-                          key: 'validUntil',
-                          title: t('table.validUntil'),
-                          render: (offer: Offer) => (
-                            <div className="text-sm text-muted-foreground">
-                              {offer.validUntil ? formatDate(offer.validUntil) : t('noExpiryDate')}
-                            </div>
-                          )
-                        },
-                        {
                           key: 'actions',
-                          title: '',
-                          width: 'w-[50px]',
+                          title: t('table.actions', 'Actions'),
+                          cellClass: 'px-3 py-2 whitespace-nowrap text-right',
+                          headerClass: 'text-right',
+
+
                           resizable: false,
                           render: (offer: Offer) => (
                             <TableRowActions actions={[
