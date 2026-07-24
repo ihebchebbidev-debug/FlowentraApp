@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { Clock, Wallet, Package, Plus, Pencil, Trash2, Users, Search, Loader2, ExternalLink } from 'lucide-react';
+import { Clock, Wallet, Package, Plus, Pencil, Trash2, Users, Search, Loader2, ExternalLink, Settings2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -479,7 +479,16 @@ export function PlannedInlineList({
           {kind === 'expense' && (
             <div className="space-y-3">
               <div>
-                <Label className="text-xs">{t('planning.expenseType', 'Expense type')}</Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">{t('planning.expenseType', 'Expense type')}</Label>
+                  <Link
+                    to={`/dashboard/lookups?tab=expenseTypes&returnUrl=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname + window.location.search : '')}`}
+                    className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors"
+                  >
+                    <Settings2 className="h-3 w-3" />
+                    {t('planning.manageLookup', 'Manage')}
+                  </Link>
+                </div>
                 <Select
                   value={draft.expenseType ?? expenseTypeOptions[0]?.value}
                   onValueChange={(v) => setDraft({ ...draft, expenseType: v as PlannedExpenseType })}

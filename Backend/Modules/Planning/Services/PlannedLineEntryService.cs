@@ -62,6 +62,8 @@ namespace MyApi.Modules.Planning.Services
             };
             _db.Set<PlannedLineEntry>().Add(entity);
             await _db.SaveChangesAsync();
+
+            await SyncChainFromAsync(parentType, parentId, userId);
             return Map(entity);
         }
 
@@ -86,6 +88,8 @@ namespace MyApi.Modules.Planning.Services
             entity.ModifiedBy = userId;
             entity.ModifiedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();
+
+            await SyncChainFromAsync(entity.ParentType, entity.ParentId, userId);
             return Map(entity);
         }
 
@@ -93,8 +97,114 @@ namespace MyApi.Modules.Planning.Services
         {
             var entity = await _db.Set<PlannedLineEntry>().FirstOrDefaultAsync(p => p.Id == id);
             if (entity == null) return;
+            var parentType = entity.ParentType;
+            var parentId = entity.ParentId;
             _db.Set<PlannedLineEntry>().Remove(entity);
             await _db.SaveChangesAsync();
+
+            await SyncChainFromAsync(parentType, parentId, userId);
+        }
+
+        /// <summary>
+        /// Bidirectional chain sync: after any change on one level (offer_item / sale_item /
+        /// service_order_job), overwrite the linked peers on the other two levels so that
+        /// planned time/expenses stay identical across offer, sale, and dispatch views.
+        ///
+        /// Chain resolution:
+        ///   offer_item  X  ↔  sale_item Y (Y.OriginOfferItemId = X, on the converted sale)
+        ///   sale_item   Y  ↔  service_order_job J (J.SaleItemId = Y.Id.ToString())
+        ///
+        /// Each peer scope is fully overwritten from the source so all three views match.
+        /// Called after CreateAsync/UpdateAsync/DeleteAsync; uses CopyAsync (direct DB add)
+        /// so it never re-triggers this cascade.
+        /// </summary>
+        private async Task SyncChainFromAsync(string sourceParentType, int sourceParentId, string userId)
+        {
+            try
+            {
+                int? offerItemId = null;
+                int? saleItemId = null;
+
+                if (sourceParentType.Equals("offer_item", StringComparison.OrdinalIgnoreCase))
+                {
+                    offerItemId = sourceParentId;
+                    saleItemId = await ResolveSaleItemFromOfferItemAsync(sourceParentId);
+                }
+                else if (sourceParentType.Equals("sale_item", StringComparison.OrdinalIgnoreCase))
+                {
+                    saleItemId = sourceParentId;
+                    var saleItem = await _db.SaleItems.FirstOrDefaultAsync(si => si.Id == sourceParentId);
+                    offerItemId = saleItem?.OriginOfferItemId;
+                }
+                else if (sourceParentType.Equals("service_order_job", StringComparison.OrdinalIgnoreCase))
+                {
+                    var job = await _db.ServiceOrderJobs.FirstOrDefaultAsync(j => j.Id == sourceParentId);
+                    if (job != null && !string.IsNullOrEmpty(job.SaleItemId) && int.TryParse(job.SaleItemId, out var sid))
+                    {
+                        saleItemId = sid;
+                        var saleItem = await _db.SaleItems.FirstOrDefaultAsync(si => si.Id == sid);
+                        offerItemId = saleItem?.OriginOfferItemId;
+                    }
+                }
+
+                // Overwrite each peer level (skip the level that originated the change).
+                if (offerItemId.HasValue && !(sourceParentType.Equals("offer_item", StringComparison.OrdinalIgnoreCase) && sourceParentId == offerItemId.Value))
+                    await OverwriteScopeAsync(sourceParentType, sourceParentId, "offer_item", offerItemId.Value, userId);
+
+                if (saleItemId.HasValue && !(sourceParentType.Equals("sale_item", StringComparison.OrdinalIgnoreCase) && sourceParentId == saleItemId.Value))
+                    await OverwriteScopeAsync(sourceParentType, sourceParentId, "sale_item", saleItemId.Value, userId);
+
+                if (saleItemId.HasValue)
+                {
+                    var saleItemIdStr = saleItemId.Value.ToString();
+                    var jobs = await _db.ServiceOrderJobs
+                        .Where(j => j.SaleItemId == saleItemIdStr)
+                        .Select(j => j.Id)
+                        .ToListAsync();
+                    foreach (var jobId in jobs)
+                    {
+                        if (sourceParentType.Equals("service_order_job", StringComparison.OrdinalIgnoreCase) && sourceParentId == jobId)
+                            continue;
+                        await OverwriteScopeAsync(sourceParentType, sourceParentId, "service_order_job", jobId, userId);
+                    }
+                }
+            }
+            catch
+            {
+                // Cascade is best-effort — never block the primary write.
+            }
+        }
+
+        private async Task<int?> ResolveSaleItemFromOfferItemAsync(int offerItemId)
+        {
+            var offerItem = await _db.OfferItems.FirstOrDefaultAsync(oi => oi.Id == offerItemId);
+            if (offerItem == null) return null;
+            var offer = await _db.Offers.FirstOrDefaultAsync(o => o.Id == offerItem.OfferId);
+            if (offer == null || string.IsNullOrEmpty(offer.ConvertedToSaleId)) return null;
+            if (!int.TryParse(offer.ConvertedToSaleId, out var saleId)) return null;
+            var saleItem = await _db.SaleItems
+                .FirstOrDefaultAsync(si => si.SaleId == saleId && si.OriginOfferItemId == offerItemId);
+            return saleItem?.Id;
+        }
+
+        /// <summary>
+        /// Fully overwrite the target scope's planned entries with a copy of the source scope.
+        /// Wipes every row at (targetParentType, targetParentId) then re-copies from source so
+        /// the two views end up identical. This is intentional: the user wants offer, sale, and
+        /// dispatch to display the same set of planned time/expenses.
+        /// </summary>
+        private async Task OverwriteScopeAsync(string sourceParentType, int sourceParentId, string targetParentType, int targetParentId, string userId)
+        {
+            var targetType = targetParentType.ToLower();
+            var existing = await _db.Set<PlannedLineEntry>()
+                .Where(p => p.ParentType == targetType && p.ParentId == targetParentId)
+                .ToListAsync();
+            if (existing.Count > 0)
+            {
+                _db.Set<PlannedLineEntry>().RemoveRange(existing);
+                await _db.SaveChangesAsync();
+            }
+            await CopyAsync(sourceParentType, sourceParentId, targetParentType, targetParentId, userId);
         }
 
         public async Task CopyAsync(string sourceParentType, int sourceParentId, string targetParentType, int targetParentId, string userId)

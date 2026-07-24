@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Settings2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -242,7 +243,16 @@ export function PlanEditorDialog({
           {kind === 'expense' && (
             <>
               <div>
-                <Label className="text-xs">{t('planning.expenseType', 'Expense type')}</Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">{t('planning.expenseType', 'Expense type')}</Label>
+                  <Link
+                    to={`/dashboard/lookups?tab=expenseTypes&returnUrl=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname + window.location.search : '')}`}
+                    className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors"
+                  >
+                    <Settings2 className="h-3 w-3" />
+                    {t('planning.manageLookup', 'Manage')}
+                  </Link>
+                </div>
                 <Select
                   value={draft.expenseType ?? expenseTypeOptions[0]?.value}
                   onValueChange={(v) => setDraft({ ...draft, expenseType: v as PlannedExpenseType })}

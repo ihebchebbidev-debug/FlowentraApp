@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Package, Wrench, Eye, ExternalLink, Plus, Loader2, Search, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
+import { Package, Wrench, Eye, ExternalLink, Plus, Loader2, Search, ChevronLeft, ChevronRight, Trash2, Clock, EyeOff } from "lucide-react";
 import { Sale, SaleItem } from "../../types";
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { SalesService } from "../../services/sales.service";
@@ -52,6 +52,7 @@ export function ItemsTab({ sale, onItemsUpdated }: ItemsTabProps) {
   const { t } = useTranslation('sales');
   const { format: formatCurrency } = useCurrency();
   const [selectedItem, setSelectedItem] = useState<SaleItem | null>(null);
+  const [showPlanning, setShowPlanning] = useState(false);
   
   // Add Items Modal state
   const [showAddItemsModal, setShowAddItemsModal] = useState(false);
@@ -303,10 +304,20 @@ export function ItemsTab({ sale, onItemsUpdated }: ItemsTabProps) {
               <Package className="h-4 w-4 text-primary" />
               {t('itemsTab.saleItems')} ({sale.items.length})
             </div>
-            <Button size="sm" onClick={handleOpenAddItems}>
-              <Plus className="h-4 w-4 mr-2" />
-              {t('addItems')}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant={showPlanning ? "secondary" : "outline"}
+                onClick={() => setShowPlanning((v) => !v)}
+              >
+                {showPlanning ? <EyeOff className="h-4 w-4 mr-2" /> : <Clock className="h-4 w-4 mr-2" />}
+                {showPlanning ? t('itemsTab.hidePlanning', 'Hide Time & Expenses') : t('itemsTab.showPlanning', 'Plan Time & Expenses')}
+              </Button>
+              <Button size="sm" onClick={handleOpenAddItems}>
+                <Plus className="h-4 w-4 mr-2" />
+                {t('addItems')}
+              </Button>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -404,7 +415,7 @@ export function ItemsTab({ sale, onItemsUpdated }: ItemsTabProps) {
                         </div>
                       </TableCell>
                     </TableRow>
-                    {canPlan && (
+                    {canPlan && showPlanning && item.type === 'service' && (
                       <TableRow className="bg-muted/10 hover:bg-muted/10">
                         <TableCell colSpan={7} className="py-2">
                           <div className="grid gap-2 md:grid-cols-2">

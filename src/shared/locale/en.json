@@ -210,6 +210,7 @@
     "minutesShort": "min",
     "hourlyRate": "Hourly rate (optional)",
     "expenseType": "Expense type",
+    "manageLookup": "Manage",
     "amount": "Amount",
     "amountRequired": "Amount must be greater than 0.",
     "currency": "Currency",
