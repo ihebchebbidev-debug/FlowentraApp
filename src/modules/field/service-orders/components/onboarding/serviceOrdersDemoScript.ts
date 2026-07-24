@@ -22,6 +22,9 @@ export interface SODemoState {
   pdfOpen: boolean;
   pdfSettings: boolean;
   sendOpen: boolean;
+  preferredSkills: boolean;
+  planDispatchOpen: boolean;
+  planVsActual: boolean;
 }
 
 export const initialSODemoState: SODemoState = {
@@ -42,6 +45,9 @@ export const initialSODemoState: SODemoState = {
   pdfOpen: false,
   pdfSettings: false,
   sendOpen: false,
+  preferredSkills: false,
+  planDispatchOpen: false,
+  planVsActual: false,
 };
 
 export interface SODemoStep { target: string; caption: string; duration: number; apply: (s: SODemoState) => SODemoState; }
@@ -111,8 +117,20 @@ export const SO_STEPS: SODemoStep[] = [
   { target: 'so-demo-pdf-settings', caption: 'And the layout is yours — a studio for colours, typography, layout, and visible fields, so every document matches your brand.', duration: 4800, apply: pure(() => ({ pdfSettings: true })) },
   { target: 'so-demo-send', caption: 'Send it to the customer by email in a click — the PDF attached, the send tracked — closing the loop from work done to customer informed.', duration: 4800, apply: pure(() => ({ pdfSettings: false, pdfOpen: false, sendOpen: true })) },
 
-  // ── Chapter 10 · Wrap-up ───────────────────────────────────────────────────
-  { target: 'so-demo-title', caption: 'That is Service Orders end to end — KPIs and a map of your field, a guided builder, jobs and scheduling, dispatch and execution with time and materials, branded documents, and one-click invoicing.', duration: 5800, apply: pure(() => ({ page: 'list' as const, sendOpen: false, selectedStat: 'all' as const })) },
+  // ── Chapter 10 · Smart routing ─────────────────────────────────────────────
+  { target: 'so-demo-preferred-skills', caption: 'Every order carries the skills it needs — HVAC, welding, electrical, plumbing. Flowentra reads these preferred skills straight from the sale line, so the system already knows who is qualified before you even open the planner.', duration: 5800, apply: pure(() => ({ page: 'detail' as const, sendOpen: false, activeTab: 'overview' as const, statusStage: 2, preferredSkills: true })) },
+  { target: 'so-demo-smart-tech', caption: 'When you assign, the shortlist is ranked by skill match, live availability and travel distance from the site — you pick the best fit in a click, and if nobody scores, the system tells you exactly what skill is missing.', duration: 6200, apply: pure(() => ({ assignOpen: true })) },
+
+  // ── Chapter 11 · Plan Dispatch ─────────────────────────────────────────────
+  { target: 'so-demo-plan-dispatch', caption: 'Plan Dispatch is the heart of scheduling. Pick jobs, pick a date and time, pick technicians — and Flowentra creates the dispatch tickets, splits by installation when needed, and sequences jobs back-to-back on the same visit.', duration: 6400, apply: pure(() => ({ assignOpen: false, preferredSkills: false, activeTab: 'jobs' as const, planDispatchOpen: true })) },
+  { target: 'so-demo-plan-conflict', caption: 'Overlaps are caught before they happen — a red badge shows a technician already booked at that slot, so you never double-book the field. Confirm and every dispatch, calendar entry and technician notification lands in one atomic step.', duration: 6000, apply: pure(() => ({})) },
+
+  // ── Chapter 12 · Plan vs Actual ────────────────────────────────────────────
+  { target: 'so-demo-plan-vs-actual', caption: 'Every job carries its plan — labour minutes, expenses, materials — inherited from the offer and sale where it was quoted. On execution, Flowentra sits the plan next to the actuals, in the same tab.', duration: 6200, apply: pure(() => ({ planDispatchOpen: false, activeTab: 'time_expenses' as const, planVsActual: true })) },
+  { target: 'so-demo-overrun', caption: 'A green badge means on-plan, amber warns you at ninety percent, red the moment the actual crosses the plan — so overruns surface the second they happen, and every hour and dinar traces back to the offer line that quoted it.', duration: 5800, apply: pure(() => ({})) },
+
+  // ── Chapter 13 · Wrap-up ───────────────────────────────────────────────────
+  { target: 'so-demo-title', caption: 'That is Service Orders end to end — KPIs and a map of your field, a guided builder, smart technician routing, Plan Dispatch with conflict detection, plan-vs-actual on execution, branded documents, and one-click invoicing.', duration: 5800, apply: pure(() => ({ page: 'list' as const, planVsActual: false, selectedStat: 'all' as const })) },
   { target: 'so-demo-stat-value', caption: 'Sales flow into service orders, orders into dispatches, dispatches into invoices — and every hour, part, and signature is tracked. Create your first order and put your field team to work.', duration: 5400, apply: pure(() => ({})) },
 ];
 
@@ -126,5 +144,8 @@ export const SO_CHAPTERS: SODemoChapter[] = [
   { id: 'execution', title: 'Time & Materials', start: 23, end: 28 },
   { id: 'tabs',      title: 'Evidence',        start: 28, end: 31 },
   { id: 'invoice',   title: 'Invoice & PDF',   start: 31, end: 35 },
-  { id: 'wrapup',    title: 'Wrap-up',         start: 35, end: SO_STEPS.length },
+  { id: 'skills',    title: 'Smart Routing',   start: 35, end: 37 },
+  { id: 'plan-dispatch',   title: 'Plan Dispatch',   start: 37, end: 39 },
+  { id: 'plan-vs-actual',  title: 'Plan vs Actual',  start: 39, end: 41 },
+  { id: 'wrapup',    title: 'Wrap-up',         start: 41, end: SO_STEPS.length },
 ];

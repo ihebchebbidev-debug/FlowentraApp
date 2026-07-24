@@ -419,53 +419,53 @@ export default function DispatchesList() {
             ) : (
               <>
                 {/* Mobile cards — visible below md breakpoint */}
-                <div className="md:hidden divide-y divide-border">
+                <div className="md:hidden list-editorial">
                   {filteredDispatches.map((dispatch) => (
                     <div
                       key={dispatch.id}
-                      className="p-4 hover:bg-muted/30 transition-colors cursor-pointer active:bg-muted/50"
+                      className="list-row-editorial"
                       onClick={() => handleDispatchClick(dispatch)}
                     >
                       {/* Header: icon + job number/title + status */}
                       <div className="flex items-start gap-3 mb-2.5">
-                        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <ClipboardList className="h-4 w-4 text-primary" />
+                        <div className="list-row-avatar mt-0.5">
+                          <ClipboardList className="h-4 w-4" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
-                            <p className="font-semibold text-foreground text-sm leading-snug line-clamp-1 flex-1">{dispatch.jobNumber}</p>
+                            <p className="list-row-title flex-1">{dispatch.jobNumber}</p>
                             <Badge className={`${getStatusColor(dispatch.status)} text-[10px] px-2 py-0.5 shrink-0`}>
                               {t(`dispatches.statuses.${dispatch.status}`)}
                             </Badge>
                           </div>
-                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{dispatch.title}</p>
+                          <p className="list-row-subtitle">{dispatch.title}</p>
                         </div>
                       </div>
 
                       {/* Details */}
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pl-12 mb-3">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pl-[52px] mb-3">
                         {dispatch.customer.address?.city && (
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <MapPin className="h-3 w-3 shrink-0" />
+                          <div className="list-row-meta-item">
+                            <MapPin className="h-3.5 w-3.5 shrink-0" />
                             <span className="truncate max-w-[160px]">{dispatch.customer.company} · {dispatch.customer.address.city}</span>
                           </div>
                         )}
                         {dispatch.scheduledDate && (
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <Calendar className="h-3 w-3 shrink-0" />
+                          <div className="list-row-meta-item">
+                            <Calendar className="h-3.5 w-3.5 shrink-0" />
                             <span>{dispatch.scheduledDate.toLocaleDateString()}</span>
                           </div>
                         )}
                         {dispatch.assignedTechnicians.length > 0 && (
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <Users className="h-3 w-3 shrink-0" />
+                          <div className="list-row-meta-item">
+                            <Users className="h-3.5 w-3.5 shrink-0" />
                             <span className="truncate">{dispatch.assignedTechnicians.slice(0, 2).map(tech => tech.name).join(', ')}{dispatch.assignedTechnicians.length > 2 ? ` +${dispatch.assignedTechnicians.length - 2}` : ''}</span>
                           </div>
                         )}
                       </div>
 
                       {/* Footer: priority badge + actions */}
-                      <div className="flex items-center justify-between pl-12" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-between pl-[52px]" onClick={(e) => e.stopPropagation()}>
                         <Badge className={`${getPriorityColor(dispatch.priority)} text-[10px] px-2 py-0.5 capitalize`}>
                           {t(`dispatches.priorities.${dispatch.priority}`)}
                         </Badge>

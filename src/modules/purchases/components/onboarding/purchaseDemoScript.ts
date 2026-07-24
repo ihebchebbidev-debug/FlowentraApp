@@ -113,7 +113,7 @@ export const PO_STEPS: PurchaseDemoStep[] = [
   {
     target: 'po-demo-quick-links',
     caption:
-      'Quick-access buttons jump directly to Compliance, Reports, Audit Log, and the Supplier Performance scorecard — the four most-visited areas outside the core document flow.',
+      'Quick-access buttons jump directly to Compliance, Reports, Audit Log, and the Suppliers directory (which lives in the Contacts module) — the four most-visited destinations outside the core document flow.',
     duration: 4000,
     apply: pure(() => ({})),
   },
@@ -284,7 +284,7 @@ export const PO_STEPS: PurchaseDemoStep[] = [
   {
     target: 'po-demo-pdf-doc',
     caption:
-      'Here is the rendered PDF. The header carries your company branding, fiscal identity, and contact block. The supplier "Bill To" panel mirrors it on the right.',
+      'Here is a preview of the generated PDF. The header carries your company branding, fiscal identity, and contact block. The supplier "Bill To" panel mirrors it on the right.',
     duration: 5200,
     apply: pure(() => ({ page: 'order-pdf-preview' as const })),
   },
@@ -314,9 +314,16 @@ export const PO_STEPS: PurchaseDemoStep[] = [
   {
     target: 'po-demo-tej-xml-header',
     caption:
-      'This is the actual XML Flowentra generates — version 1.0 schema, UTF-8 without BOM (TEJ rejects BOM). The Declarant block carries your matricule fiscal, raison sociale, and contact info.',
+      'Here is exactly what the downloaded file contains — schema v1.0, UTF-8 without BOM (TEJ rejects BOM). The Declarant block carries your matricule fiscal, raison sociale, and contact info.',
     duration: 6000,
     apply: pure(() => ({ page: 'order-tej-xml' as const, xmlHighlightLine: 4 })),
+  },
+  {
+    target: 'po-demo-tej-xml-refdecl',
+    caption:
+      'The ReferenceDeclaration block anchors the file to a fiscal period — ActeDepot (0 = initial, 1 = corrective), AnneeDepot and MoisDepot. TEJ groups every certificate under one monthly deposit so you file once per period.',
+    duration: 5500,
+    apply: pure(() => ({ xmlHighlightLine: 16 })),
   },
   {
     target: 'po-demo-tej-xml-cert',
@@ -324,6 +331,20 @@ export const PO_STEPS: PurchaseDemoStep[] = [
       'Each Certificat carries the operation code (RS1_xxxxxx), the beneficiary supplier with their MF, the invoice reference, payment date, and every amount in millimes — HT, TVA, RS rate, and net servi.',
     duration: 6200,
     apply: pure(() => ({ xmlHighlightLine: 15 })),
+  },
+  {
+    target: 'po-demo-tej-xml-facture',
+    caption:
+      'Inside every Certificat sits a Facture sub-element — invoice number, invoice date, payment date, MontantHT, MontantTVA, TauxRS (500 = 5.00%), MontantRS and MontantNetServi. Every monetary field is an integer in millimes.',
+    duration: 6200,
+    apply: pure(() => ({ xmlHighlightLine: 33 })),
+  },
+  {
+    target: 'po-demo-tej-xml-totals',
+    caption:
+      'The trailing Total* elements — TotalMontantHT, TotalMontantTVA, TotalMontantRS, TotalMontantNetServi — are auto-summed across every Certificat and cross-checked before download so an out-of-balance file never reaches the DGI.',
+    duration: 5800,
+    apply: pure(() => ({ xmlHighlightLine: 45 })),
   },
   {
     target: 'po-demo-tej-xml-download',
@@ -337,7 +358,7 @@ export const PO_STEPS: PurchaseDemoStep[] = [
   {
     target: 'po-demo-as-title',
     caption:
-      'Every Article can be sourced from multiple suppliers. The Article-Suppliers panel lists each vendor with their reference, purchase price, MOQ, lead time, and a "preferred" star.',
+      'Every Article can be sourced from multiple suppliers. The Article-Suppliers panel — reached from an Article\'s detail page in the Articles module — lists each vendor with their reference, purchase price, MOQ, lead time, and a "preferred" star. Purchases uses it to power the last-price hint you saw in the PO builder.',
     duration: 5200,
     apply: pure(() => ({ page: 'article-suppliers' as const, highlightedSupplierId: null })),
   },
@@ -449,21 +470,21 @@ export const PO_STEPS: PurchaseDemoStep[] = [
   {
     target: 'po-demo-si-record-payment',
     caption:
-      'Click Record Payment to capture a part-payment or settle the invoice in full. The dialog enforces an overpayment guard server-side under a row-level lock — never double-bills.',
+      'Payment progress is driven by the Supplier Invoice status flow — advancing it to Partially Paid or Paid updates the invoice, and the amount paid, payment date and method are captured on the header for full traceability.',
     duration: 5500,
     apply: pure(() => ({ paymentStep: 1 })),
   },
   {
     target: 'po-demo-si-payment-dialog',
     caption:
-      'Pick a payment method, date, and amount — Flowentra computes the remaining balance live and auto-transitions the status: pending, partially-paid, or paid. The linked PO\'s payment status syncs in the same transaction.',
+      'The financial summary shows amount paid vs. remaining balance and the linked Purchase Order\'s payment status stays in sync, so a three-way match between PO, receipt and invoice is always visible at a glance.',
     duration: 5800,
     apply: pure(() => ({ paymentStep: 2 })),
   },
   {
     target: 'po-demo-si-fel-send',
     caption:
-      'Once the invoice is settled, mark it as submitted to Facture en Ligne. The status flips to "Sent" with a timestamp — your compliance dashboard updates in real time so you always know what is still outstanding.',
+      'Once the invoice is settled, use the Send F.E.L. action to mark it as submitted to Facture en Ligne. The status flips with a timestamp and your Compliance dashboard updates in real time so you always know what is still outstanding.',
     duration: 5200,
     apply: pure(() => ({ paymentStep: 0, felSent: true })),
   },
@@ -471,7 +492,7 @@ export const PO_STEPS: PurchaseDemoStep[] = [
   {
     target: 'po-demo-si-tej-xml-btn',
     caption:
-      'Finally export the TEJ XML for this invoice. Let me show you exactly what gets submitted — every TEJ schema field included.',
+      'Finally, use Download TEJ XML on the invoice detail — it registers the TEJ declaration and downloads the file in one click. Here is a preview of what that file contains.',
     duration: 4500,
     apply: pure(() => ({})),
   },
@@ -480,9 +501,16 @@ export const PO_STEPS: PurchaseDemoStep[] = [
   {
     target: 'po-demo-itej-declarant',
     caption:
-      'Here is the live XML. The Declarant block identifies you with TypeIdentifiant=1 (Matricule Fiscal), your company category, and full contact block — address, email, phone.',
+      'Here is the generated XML. The Declarant block identifies you with TypeIdentifiant=1 (Matricule Fiscal), your company category, and a full contact block — address, email, phone.',
     duration: 6200,
     apply: pure(() => ({ page: 'invoice-tej-xml' as const, xmlHighlightLine: 4 })),
+  },
+  {
+    target: 'po-demo-itej-refdecl',
+    caption:
+      'ReferenceDeclaration binds the file to a fiscal period — ActeDepot=0 flags an initial deposit, AnneeDepot and MoisDepot pin the exact month. Corrective re-filings reuse the period with ActeDepot=1.',
+    duration: 5500,
+    apply: pure(() => ({ xmlHighlightLine: 14 })),
   },
   {
     target: 'po-demo-itej-cert',
@@ -497,6 +525,20 @@ export const PO_STEPS: PurchaseDemoStep[] = [
       'The Facture sub-element captures invoice number, dates, and every amount in millimes — MontantHT, MontantTVA, TauxRS, MontantRS, MontantNetServi, and PriseEnCharge. The totals are auto-summed and validated before download.',
     duration: 6500,
     apply: pure(() => ({ xmlHighlightLine: 32 })),
+  },
+  {
+    target: 'po-demo-itej-totals',
+    caption:
+      'The trailing Total* block sums HT, RS and Net Servi across the whole file. Flowentra cross-checks these against every Facture before letting you download — a mismatched file never leaves the app.',
+    duration: 5800,
+    apply: pure(() => ({ xmlHighlightLine: 48 })),
+  },
+  {
+    target: 'po-demo-itej-facture',
+    caption:
+      'Reminder on encoding: every monetary field is an integer in millimes. 27,310.000 TND is written as 27310000 and TauxRS uses basis points × 100 (500 = 5.00%). Flowentra handles the conversion for you.',
+    duration: 5800,
+    apply: pure(() => ({ xmlHighlightLine: null })),
   },
 
   // ── Chapter 12 · Compliance dashboard ─────────────────────────────────────
@@ -524,16 +566,44 @@ export const PO_STEPS: PurchaseDemoStep[] = [
   {
     target: 'po-demo-compliance-tej',
     caption:
-      'The TEJ Sync section counts invoices pending XML export. Click any row to jump directly to that invoice and trigger the download — zero hunting through lists.',
+      'The TEJ Sync section lists every invoice with its export status — synced, pending, or errored — so you always know what still needs to be downloaded and submitted.',
     duration: 5000,
     apply: pure(() => ({})),
   },
   {
     target: 'po-demo-rs-catalogue-table',
     caption:
-      'Flowentra ships with the complete RS rate catalogue: P1 at 1.5%, P2 at 5% (honoraires), P3 at 10%, P4 at 15%, P5 at 25% — plus the legacy DGI codes. Pick a code on the invoice and the rate, amount, and net servi compute automatically.',
-    duration: 6200,
+      'Zooming into the RS catalogue itself — the transaction-type picker on the invoice form is powered by this table, the full DGI reference. Five codes, five rates, and one TEJ operation identifier per line.',
+    duration: 5500,
     apply: pure(() => ({ page: 'rs-catalogue' as const })),
+  },
+  {
+    target: 'po-demo-rs-code',
+    caption:
+      'The Code column is the short DGI label — P1, P2, P3, P4, P5. Older invoices carrying legacy numeric codes (10, 05, 03, 20) are auto-mapped on read so nothing in your history breaks.',
+    duration: 5500,
+    apply: pure(() => ({})),
+  },
+  {
+    target: 'po-demo-rs-rate',
+    caption:
+      'The Rate column drives every calculation. Pick P2 on a supplier invoice and Flowentra multiplies the HT amount by 5%, exposes MontantRS on the header, and subtracts it from the Net Servi shown to the accountant.',
+    duration: 5500,
+    apply: pure(() => ({})),
+  },
+  {
+    target: 'po-demo-rs-tej-op',
+    caption:
+      'The TEJ Operation column is the identifier the DGI expects inside every Certificat — RS1_015000 for P1, RS1_500000 for P2, and so on. When you export the TEJ XML, this value is written verbatim into IdTypeOperation.',
+    duration: 5800,
+    apply: pure(() => ({})),
+  },
+  {
+    target: 'po-demo-rs-legacy',
+    caption:
+      'Older invoices you imported still use the historical numeric codes. Flowentra maps them to the modern P1–P5 catalogue on the fly, so your legacy data keeps producing valid TEJ files without any migration work.',
+    duration: 5500,
+    apply: pure(() => ({})),
   },
 
   // ── Chapter 13 · Reports ──────────────────────────────────────────────────
@@ -543,6 +613,13 @@ export const PO_STEPS: PurchaseDemoStep[] = [
       'The Reports hub provides deep analytics on your purchasing: spend by supplier, monthly trend, and three dedicated sub-reports — Supplier Performance, Price Evolution, and Invoice Aging.',
     duration: 4800,
     apply: pure(() => ({ page: 'reports' as const, reportSection: 'overview' })),
+  },
+  {
+    target: 'po-demo-report-cards',
+    caption:
+      'The three cards at the top of the Reports hub are your entry points into every sub-report — Supplier Performance, Price Evolution, and Invoice Aging. Each opens a fully-drilled analytics view fed by the same live data.',
+    duration: 5200,
+    apply: pure(() => ({})),
   },
   {
     target: 'po-demo-report-supplier-chart',
@@ -612,7 +689,7 @@ export const PO_STEPS: PurchaseDemoStep[] = [
   {
     target: 'po-demo-nav-audit',
     caption:
-      'The Audit Log is an immutable record of every action taken in the Purchases module — who created, modified, validated, or deleted any document, and exactly when.',
+      'The Audit Log is an immutable record of Purchase Order activity — who created, modified, validated, or deleted an order, and exactly when. Goods Receipt and Invoice activity live on each document\'s own Activity tab.',
     duration: 5000,
     apply: pure(() => ({ page: 'audit-log' as const })),
   },
@@ -626,7 +703,7 @@ export const PO_STEPS: PurchaseDemoStep[] = [
   {
     target: 'po-demo-audit-filter',
     caption:
-      'Filter by document type (Purchase Order, Receipt, Invoice), action (created, validated, deleted), or date range to pinpoint any event across your entire history in seconds.',
+      'A single search box narrows the log by description or user in real time — type a supplier name, an action verb, or a PO number and the list filters as you type.',
     duration: 4800,
     apply: pure(() => ({})),
   },
@@ -650,7 +727,7 @@ export const PO_STEPS: PurchaseDemoStep[] = [
   {
     target: 'po-demo-saved-views',
     caption:
-      'Any combination of filters can be saved as a named view — "Awaiting GR — Acme", "My team\'s drafts". They persist locally in your browser, so your daily workflow is one click away every morning.',
+      'On the Purchase Orders list, any combination of filters can be saved as a named view — "Awaiting GR — Acme", "My team\'s drafts". They persist locally in your browser, so your daily workflow is one click away every morning.',
     duration: 5200,
     apply: pure(() => ({})),
   },
@@ -671,7 +748,7 @@ export const PO_STEPS: PurchaseDemoStep[] = [
   {
     target: 'po-demo-shortcuts',
     caption:
-      'The PO builder is keyboard-first: Alt+N adds a line and Enter from the last cell drops a new row — capture a long order without ever reaching for the mouse.',
+      'The PO builder is keyboard-first: Alt+N adds a line, Enter from the last cell drops a new row, and Ctrl+S (or ⌘S) saves the draft — capture a long order without ever reaching for the mouse.',
     duration: 5200,
     apply: pure(() => ({ page: 'order-create' as const, createFormStep: 2 })),
   },
@@ -713,15 +790,15 @@ export const PO_CHAPTERS: PurchaseDemoChapter[] = [
   { id: 'create',      title: 'Create PO',          start: 12, end: 18 },
   { id: 'detail',      title: 'PO Detail',          start: 18, end: 26 },
   { id: 'pdf',         title: 'PO PDF',             start: 26, end: 29 },
-  { id: 'po-tej',      title: 'PO · TEJ XML',       start: 29, end: 32 },
-  { id: 'as',          title: 'Article-Suppliers',  start: 32, end: 36 },
-  { id: 'receipts',    title: 'Goods Receipts',     start: 36, end: 41 },
-  { id: 'invoices',    title: 'Supplier Invoices',  start: 41, end: 47 },
-  { id: 'inv-flow',    title: 'Payment & FEL',      start: 47, end: 51 },
-  { id: 'inv-tej',     title: 'Invoice · TEJ XML',  start: 51, end: 54 },
-  { id: 'compliance',  title: 'Compliance',         start: 54, end: 59 },
-  { id: 'reports',     title: 'Reports',            start: 59, end: 69 },
-  { id: 'audit',       title: 'Audit Log',          start: 69, end: 72 },
-  { id: 'ux',          title: 'UX & Productivity',  start: 72, end: 78 },
-  { id: 'wrapup',      title: 'Wrap-up',            start: 78, end: PO_STEPS.length },
+  { id: 'po-tej',      title: 'PO · TEJ XML',       start: 29, end: 36 },
+  { id: 'as',          title: 'Article-Suppliers',  start: 36, end: 40 },
+  { id: 'receipts',    title: 'Goods Receipts',     start: 40, end: 45 },
+  { id: 'invoices',    title: 'Supplier Invoices',  start: 45, end: 51 },
+  { id: 'inv-flow',    title: 'Payment & FEL',      start: 51, end: 55 },
+  { id: 'inv-tej',     title: 'Invoice · TEJ XML',  start: 55, end: 61 },
+  { id: 'compliance',  title: 'Compliance',         start: 61, end: 70 },
+  { id: 'reports',     title: 'Reports',            start: 70, end: 81 },
+  { id: 'audit',       title: 'Audit Log',          start: 81, end: 84 },
+  { id: 'ux',          title: 'UX & Productivity',  start: 84, end: 90 },
+  { id: 'wrapup',      title: 'Wrap-up',            start: 90, end: PO_STEPS.length },
 ];

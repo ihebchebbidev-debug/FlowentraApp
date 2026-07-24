@@ -317,20 +317,20 @@ export default function TicketList() {
             ) : (
               <div className="flex flex-col gap-0">
                 {/* Mobile cards */}
-                <div className="md:hidden divide-y divide-border/50 rounded-lg border border-border overflow-hidden">
+                <div className="md:hidden list-editorial rounded-lg border border-border overflow-hidden">
                   {tickets.map((ticket: any) => (
                     <div
                       key={ticket.id}
-                      className="p-4 bg-card hover:bg-muted/30 transition-colors cursor-pointer"
+                      className="list-row-editorial bg-card"
                       onClick={() => setSelectedTicket(ticket)}
                     >
                       <div className="flex items-start gap-3">
-                        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <MessageSquare className="h-4 w-4 text-primary" />
+                        <div className="list-row-avatar mt-0.5">
+                          <MessageSquare className="h-4 w-4" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
-                            <p className="font-semibold text-sm text-foreground leading-snug line-clamp-1 flex-1">
+                            <p className="list-row-title flex-1">
                               {ticket.subject}
                             </p>
                             {ticket.urgency && (
@@ -339,26 +339,26 @@ export default function TicketList() {
                               </Badge>
                             )}
                           </div>
-                          <p className="text-xs text-muted-foreground mt-0.5">#{ticket.id}</p>
+                          <p className="list-row-subtitle font-mono">#{ticket.id}</p>
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pl-12 mt-2">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pl-[52px] mt-2">
                         {ticket.createdAt && (
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <Calendar className="h-3 w-3 shrink-0" />
+                          <div className="list-row-meta-item">
+                            <Calendar className="h-3.5 w-3.5 shrink-0" />
                             <span>{typeof ticket.createdAt === 'string' ? ticket.createdAt.slice(0, 10) : new Date(ticket.createdAt).toLocaleDateString()}</span>
                           </div>
                         )}
                         {ticket.category && (
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <AlertCircle className="h-3 w-3 shrink-0" />
+                          <div className="list-row-meta-item">
+                            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                             <span>{ticket.category}</span>
                           </div>
                         )}
                       </div>
 
-                      <div className="flex items-center justify-between pl-12 mt-3">
+                      <div className="flex items-center justify-between pl-[52px] mt-3">
                         <Badge className={`text-[10px] px-2 py-0.5 ${getStatusColor(ticket.status)}`} variant="secondary">
                           {ticket.status}
                         </Badge>

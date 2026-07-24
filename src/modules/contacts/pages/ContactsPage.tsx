@@ -683,37 +683,38 @@ export default function ContactsPage() {
             <p className="text-muted-foreground">{t('contacts.no_contacts_description')}</p>
           </div> : <>
             {/* Mobile card list */}
-            <div className="md:hidden divide-y divide-border/50">
+            <div className="md:hidden list-editorial">
               {contacts.map(contact => {
                 const isSelected = selectedIds.has(contact.id);
                 const initials = getInitials(contact.name);
                 return (
                   <div
                     key={contact.id}
-                    className={`p-4 hover:bg-muted/30 transition-colors cursor-pointer active:bg-muted/50 ${isSelected ? 'bg-primary/5' : ''}`}
+                    className="list-row-editorial"
+                    data-selected={isSelected ? 'true' : 'false'}
                     onClick={() => navigate(`/dashboard/contacts/${contact.id}`)}
                   >
                     {/* Header: avatar + name + status */}
                     <div className="flex items-start gap-3 mb-2.5">
                       <div onClick={e => { e.stopPropagation(); handleSelectItem(contact.id, !isSelected); }}>
                         {isSelected ? (
-                          <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <span className="text-white text-xs font-bold">{initials}</span>
+                          <div className="list-row-avatar list-row-avatar-selected mt-0.5">
+                            <span className="text-[11px] font-bold">{initials}</span>
                           </div>
                         ) : (
-                          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <span className="text-primary text-xs font-semibold">{initials}</span>
+                          <div className="list-row-avatar mt-0.5">
+                            <span className="text-[11px] font-semibold">{initials}</span>
                           </div>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-foreground text-sm leading-snug line-clamp-1 flex items-center gap-1.5">
+                            <p className="list-row-title flex items-center gap-1.5">
                               {contact.name}
                               {contact.favorite && <Star className="h-3 w-3 fill-warning text-warning flex-shrink-0" />}
                             </p>
-                            <p className="text-xs text-muted-foreground mt-0.5 capitalize">
+                            <p className="list-row-subtitle capitalize">
                               {contact.type === 'individual' ? t('detail.type.individual')
                                 : contact.type === 'company' ? t('detail.type.company')
                                 : contact.type === 'partner' ? t('detail.type.partner')
@@ -729,23 +730,23 @@ export default function ContactsPage() {
                     </div>
 
                     {/* Contact details */}
-                    <div className="flex flex-col gap-1.5 pl-12 mb-3">
+                    <div className="flex flex-col gap-1.5 pl-[52px] mb-3">
                       {contact.email && (
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <Mail className="h-3 w-3 shrink-0 text-muted-foreground/60" />
+                        <div className="list-row-meta-item">
+                          <Mail className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
                           <span className="truncate">{contact.email}</span>
                         </div>
                       )}
                       {contact.phone && (
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <Phone className="h-3 w-3 shrink-0 text-muted-foreground/60" />
+                        <div className="list-row-meta-item">
+                          <Phone className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
                           <span>{contact.phone}</span>
                         </div>
                       )}
                     </div>
 
                     {/* Footer: actions */}
-                    <div className="flex items-center justify-end pl-12 gap-1" onClick={e => e.stopPropagation()}>
+                    <div className="flex items-center justify-end pl-[52px] gap-1" onClick={e => e.stopPropagation()}>
                       {(isMainAdmin || canUpdate('contacts')) ? (
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingContact(contact)}>
                           <Edit2 className="h-3.5 w-3.5" />

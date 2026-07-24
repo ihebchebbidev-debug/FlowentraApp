@@ -264,21 +264,21 @@ export function DealsList() {
           <Card className="shadow-card border-0 bg-card">
             <CardContent className="p-0">
               {paginationBar}
-              <div className="divide-y divide-border">
+              <div className="list-editorial">
                 {pagination.data.map(d => (
                   <div
                     key={d.id}
-                    className="p-4 hover:bg-muted/30 transition-colors cursor-pointer active:bg-muted/50"
+                    className="list-row-editorial"
                     onClick={() => navigate(`/dashboard/deals/${d.id}`)}
                   >
                     {/* Header: icon + title + stage badge */}
                     <div className="flex items-start gap-3 mb-2.5">
-                      <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <Handshake className="h-4 w-4 text-primary" />
+                      <div className="list-row-avatar mt-0.5">
+                        <Handshake className="h-4 w-4" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
-                          <p className="font-semibold text-foreground text-sm leading-snug line-clamp-1 flex-1">
+                          <p className="list-row-title flex-1">
                             {d.title}
                             {isAtRisk(d) && <AlertTriangle className="inline h-3.5 w-3.5 text-amber-500 ml-1 shrink-0" aria-label={t("forecast.atRisk", { defaultValue: "At risk" })} />}
                           </p>
@@ -286,31 +286,31 @@ export function DealsList() {
                             {t(`stages.${d.stage}`)}
                           </Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                        <p className="list-row-subtitle">
                           {d.contactName || d.contact?.name || "—"}{d.dealNumber ? ` · ${d.dealNumber}` : ""}
                         </p>
                       </div>
                     </div>
 
                     {/* Details */}
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pl-12 mb-3">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pl-[52px] mb-3">
                       {d.expectedCloseDate && (
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <Calendar className="h-3 w-3 shrink-0" />
+                        <div className="list-row-meta-item">
+                          <Calendar className="h-3.5 w-3.5 shrink-0" />
                           <span>{format(new Date(d.expectedCloseDate), "dd MMM yyyy")}</span>
                         </div>
                       )}
                       {d.probability != null && (
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <TrendingUp className="h-3 w-3 shrink-0" />
+                        <div className="list-row-meta-item">
+                          <TrendingUp className="h-3.5 w-3.5 shrink-0" />
                           <span>{d.probability}%</span>
                         </div>
                       )}
                     </div>
 
                     {/* Footer: value + actions */}
-                    <div className="flex items-center justify-between pl-12" onClick={e => e.stopPropagation()}>
-                      <span className="text-sm font-semibold text-primary">
+                    <div className="flex items-center justify-between pl-[52px]" onClick={e => e.stopPropagation()}>
+                      <span className="list-row-amount">
                         {formatCurrencyValue(d.estimatedValue, d.currency)}
                       </span>
                       <div className="ml-auto">

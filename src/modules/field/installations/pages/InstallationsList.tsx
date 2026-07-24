@@ -1082,49 +1082,49 @@ export default function InstallationsList() {
         ) : !isLoading && filteredInstallations.length > 0 ? (
           <div className="p-3 sm:p-4">
             <Card className="shadow-card">
-              <CardContent className="p-0 divide-y divide-border">
+              <CardContent className="p-0 list-editorial">
                 {pagination.data.map((installation) => {
                   const warrantyStatus = getWarrantyStatus(installation.warranty);
                   const customer = installation.contactId ? contactsMap.get(installation.contactId) : null;
                   return (
                     <div
                       key={installation.id}
-                      className="p-4 hover:bg-muted/30 transition-colors cursor-pointer active:bg-muted/50"
+                      className="list-row-editorial"
                       onClick={() => handleInstallationClick(installation)}
                     >
                       {/* Header: icon + name + warranty status */}
                       <div className="flex items-start gap-3 mb-2.5">
-                        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <Building2 className="h-4 w-4 text-primary" />
+                        <div className="list-row-avatar mt-0.5">
+                          <Building2 className="h-4 w-4" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
-                            <p className="font-semibold text-foreground text-sm leading-snug line-clamp-1 flex-1">{installation.name}</p>
+                            <p className="list-row-title flex-1">{installation.name}</p>
                             <Badge className={`${warrantyStatus.color} text-[10px] px-2 py-0.5 shrink-0`}>{warrantyStatus.text}</Badge>
                           </div>
-                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                          <p className="list-row-subtitle">
                             {[installation.manufacturer, installation.model].filter(Boolean).join(' · ') || '—'}
                           </p>
                         </div>
                       </div>
 
                       {/* Details */}
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pl-12 mb-3">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pl-[52px] mb-3">
                         {installation.siteAddress && (
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <MapPin className="h-3 w-3 shrink-0" />
+                          <div className="list-row-meta-item">
+                            <MapPin className="h-3.5 w-3.5 shrink-0" />
                             <span className="truncate max-w-[180px]">{installation.siteAddress}</span>
                           </div>
                         )}
                         {installation.installationDate && (
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <Calendar className="h-3 w-3 shrink-0" />
+                          <div className="list-row-meta-item">
+                            <Calendar className="h-3.5 w-3.5 shrink-0" />
                             <span>{new Date(installation.installationDate).toLocaleDateString()}</span>
                           </div>
                         )}
                         {customer && (
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground" onClick={(e) => e.stopPropagation()}>
-                            <Building className="h-3 w-3 shrink-0" />
+                          <div className="list-row-meta-item" onClick={(e) => e.stopPropagation()}>
+                            <Building className="h-3.5 w-3.5 shrink-0" />
                             <Link
                               to={`/dashboard/contacts/${customer.id}`}
                               className="text-primary hover:underline truncate max-w-[140px]"
@@ -1136,7 +1136,7 @@ export default function InstallationsList() {
                       </div>
 
                       {/* Footer: type badge + actions */}
-                      <div className="flex items-center justify-between pl-12" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-between pl-[52px]" onClick={(e) => e.stopPropagation()}>
                         <Badge className={`${getTypeColor(!customer ? 'internal' : installation.type)} text-[10px] px-2 py-0.5`}>
                           {!customer ? t('internal') : (installation.type === 'internal' ? t('internal') : t('external'))}
                         </Badge>

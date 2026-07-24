@@ -660,14 +660,15 @@ export function DocumentsList() {
               ) : (
                 <>
                   {/* Mobile cards — visible below md breakpoint */}
-                  <div className="md:hidden divide-y divide-border/50 rounded-lg border border-border overflow-hidden">
+                  <div className="md:hidden list-editorial rounded-lg border border-border overflow-hidden">
                     {documents.map((document) => {
                       const FileIcon = getFileIcon(document.fileType);
                       const moduleColorClass = getModuleColor(document.moduleType);
                       return (
                         <div
                           key={document.id}
-                          className={`p-4 bg-card hover:bg-muted/30 transition-colors cursor-pointer ${selectedIds.has(document.id) ? 'bg-primary/5' : ''}`}
+                          className="list-row-editorial bg-card"
+                          data-selected={selectedIds.has(document.id) ? 'true' : 'false'}
                           onClick={() => handlePreviewDocument(document)}
                         >
                           {/* Header row */}
@@ -677,37 +678,37 @@ export function DocumentsList() {
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between gap-2">
-                                <p className="font-semibold text-sm text-foreground leading-snug line-clamp-1 flex-1">
+                                <p className="list-row-title flex-1">
                                   {document.fileName}
                                 </p>
                                 <Badge variant="secondary" className={`text-[10px] px-2 py-0.5 shrink-0 ${moduleColorClass}`}>
                                   {document.fileType.toUpperCase()}
                                 </Badge>
                               </div>
-                              <p className="text-xs text-muted-foreground mt-0.5 font-mono">
+                              <p className="list-row-subtitle font-mono">
                                 {t(`documents.${document.moduleType}`)}
                                 {document.moduleName ? ` · ${document.moduleName}` : ''}
                               </p>
                             </div>
                           </div>
                           {/* Detail row */}
-                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pl-12 mt-2">
-                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                              <Calendar className="h-3 w-3 shrink-0" />
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pl-[52px] mt-2">
+                            <div className="list-row-meta-item">
+                              <Calendar className="h-3.5 w-3.5 shrink-0" />
                               <span>{formatDate(document.uploadedAt)}</span>
                             </div>
-                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                              <User className="h-3 w-3 shrink-0" />
+                            <div className="list-row-meta-item">
+                              <User className="h-3.5 w-3.5 shrink-0" />
                               <span>{document.uploadedByName}</span>
                             </div>
-                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                              <FileText className="h-3 w-3 shrink-0" />
+                            <div className="list-row-meta-item">
+                              <FileText className="h-3.5 w-3.5 shrink-0" />
                               <span>{DocumentsService.formatFileSize(document.fileSize)}</span>
                             </div>
                           </div>
                           {/* Footer row */}
                           <div
-                            className="flex items-center justify-between pl-12 mt-3"
+                            className="flex items-center justify-between pl-[52px] mt-3"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <div className="flex items-center gap-1.5">

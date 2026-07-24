@@ -220,6 +220,10 @@ function PageDetail({ state }: { state: SODemoState }) {
               <div className="flex justify-between text-muted-foreground"><span>Labour</span><span>3.5 h</span></div>
               <div className="flex justify-between text-muted-foreground"><span>Materials</span><span>4 parts</span></div>
               <div className="flex justify-between font-bold text-sm border-t border-border pt-1"><span>Est. value</span><span>18,400 TND</span></div>
+              <div id="so-demo-preferred-skills" className={`mt-2 pt-2 border-t border-border/60 transition-all ${state.preferredSkills ? 'ring-1 ring-primary/40 rounded-md p-2 -m-1 bg-primary/[0.04]' : ''}`}>
+                <p className="text-[10px] text-muted-foreground mb-1 inline-flex items-center gap-1"><Wrench className="h-2.5 w-2.5" /> Preferred skills · read from sale line</p>
+                <div className="flex flex-wrap gap-1">{['HVAC', 'Welding', 'Electrical'].map(s => <span key={s} className="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-medium">{s}</span>)}</div>
+              </div>
             </div>
           </div>
         )}
@@ -238,16 +242,31 @@ function PageDetail({ state }: { state: SODemoState }) {
           </div>
         )}
         {state.activeTab === 'time_expenses' && (
-          <div className="grid md:grid-cols-2 gap-3">
-            <div className="bg-card border border-border rounded-lg p-3">
-              <div className="flex items-center justify-between mb-2"><p className="text-sm font-medium inline-flex items-center gap-1.5"><Clock className="h-4 w-4 text-primary" /> Time</p><span className="h-6 px-2 rounded bg-primary/10 text-primary text-[10px] inline-flex items-center gap-1"><Timer className="h-3 w-3" /> Book time</span></div>
-              {[['Karim T.', '2.0 h'], ['Leïla M.', '1.5 h']].map(t => <div key={t[0]} className="flex justify-between text-xs py-1 border-b border-border/40 last:border-0"><span>{t[0]}</span><span className="font-medium">{t[1]}</span></div>)}
-              <div className="flex justify-between text-xs pt-1 font-semibold"><span>Total</span><span>3.5 h</span></div>
-            </div>
-            <div className="bg-card border border-border rounded-lg p-3">
-              <div className="flex items-center justify-between mb-2"><p className="text-sm font-medium inline-flex items-center gap-1.5"><DollarSign className="h-4 w-4 text-primary" /> Expenses</p><span className="h-6 px-2 rounded bg-primary/10 text-primary text-[10px] inline-flex items-center gap-1"><Plus className="h-3 w-3" /> Add expense</span></div>
-              {[['Travel', '45 TND'], ['Parking', '8 TND']].map(t => <div key={t[0]} className="flex justify-between text-xs py-1 border-b border-border/40 last:border-0"><span>{t[0]}</span><span className="font-medium">{t[1]}</span></div>)}
-              <div className="flex justify-between text-xs pt-1 font-semibold"><span>Total</span><span>53 TND</span></div>
+          <div className="space-y-3">
+            {state.planVsActual && (
+              <div id="so-demo-plan-vs-actual" className="rounded-lg border-2 border-dashed border-primary/40 bg-primary/5 p-3 space-y-2">
+                <div className="flex items-center justify-between text-xs flex-wrap gap-2">
+                  <p className="font-medium inline-flex items-center gap-1.5 text-primary"><Target className="h-3.5 w-3.5" /> Plan · inherited from Sale item lineage</p>
+                  <span id="so-demo-overrun" className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Actual 3.5 h / Plan 3.0 h · +17%</span>
+                </div>
+                <div className="grid md:grid-cols-3 gap-2 text-[10px]">
+                  <div className="p-2 rounded border border-border bg-card"><div className="text-muted-foreground">Planned labour</div><div className="font-semibold text-xs">3.0 h · 1 tech</div><div className="text-muted-foreground">from offer line OFF-2025-031 · L2</div></div>
+                  <div className="p-2 rounded border border-border bg-card"><div className="text-muted-foreground">Planned expenses</div><div className="font-semibold text-xs">45 TND · travel</div><div className="text-muted-foreground">from sale line INV-2025-044 · L2</div></div>
+                  <div className="p-2 rounded border border-border bg-card"><div className="text-muted-foreground">Planned materials</div><div className="font-semibold text-xs">1× condenser · 4 kg R410A</div><div className="text-muted-foreground">from sale line INV-2025-044 · L1</div></div>
+                </div>
+              </div>
+            )}
+            <div className="grid md:grid-cols-2 gap-3">
+              <div className="bg-card border border-border rounded-lg p-3">
+                <div className="flex items-center justify-between mb-2"><p className="text-sm font-medium inline-flex items-center gap-1.5"><Clock className="h-4 w-4 text-primary" /> Time{state.planVsActual ? ' · actual' : ''}</p><span className="h-6 px-2 rounded bg-primary/10 text-primary text-[10px] inline-flex items-center gap-1"><Timer className="h-3 w-3" /> Book time</span></div>
+                {[['Karim T.', '2.0 h'], ['Leïla M.', '1.5 h']].map(t => <div key={t[0]} className="flex justify-between text-xs py-1 border-b border-border/40 last:border-0"><span>{t[0]}</span><span className="font-medium">{t[1]}</span></div>)}
+                <div className="flex justify-between text-xs pt-1 font-semibold"><span>Total</span><span>3.5 h</span></div>
+              </div>
+              <div className="bg-card border border-border rounded-lg p-3">
+                <div className="flex items-center justify-between mb-2"><p className="text-sm font-medium inline-flex items-center gap-1.5"><DollarSign className="h-4 w-4 text-primary" /> Expenses{state.planVsActual ? ' · actual' : ''}</p><span className="h-6 px-2 rounded bg-primary/10 text-primary text-[10px] inline-flex items-center gap-1"><Plus className="h-3 w-3" /> Add expense</span></div>
+                {[['Travel', '45 TND'], ['Parking', '8 TND']].map(t => <div key={t[0]} className="flex justify-between text-xs py-1 border-b border-border/40 last:border-0"><span>{t[0]}</span><span className="font-medium">{t[1]}</span></div>)}
+                <div className="flex justify-between text-xs pt-1 font-semibold"><span>Total</span><span>53 TND</span></div>
+              </div>
             </div>
           </div>
         )}
@@ -295,8 +314,8 @@ function PageDetail({ state }: { state: SODemoState }) {
           <p className="text-sm font-semibold mb-1 inline-flex items-center gap-2"><UserCheck className="h-4 w-4 text-primary" /> Assign Technician</p>
           <p className="text-xs text-muted-foreground mb-2">Best fit by skill &amp; availability</p>
           <div className="space-y-1">
-            {[['Karim T.', 'HVAC · available · 3.2 km', 92, true], ['Leïla M.', 'HVAC · available · 8.0 km', 74, false]].map(t => (
-              <div key={t[0] as string} className={`flex items-center justify-between px-2.5 py-2 rounded-lg border ${t[3] ? 'border-primary bg-primary/5' : 'border-border'}`}><div><p className="text-xs font-medium">{t[0]}</p><p className="text-[10px] text-muted-foreground">{t[1]}</p></div><span className={`text-[11px] font-bold ${t[3] ? 'text-primary' : 'text-muted-foreground'}`}>{t[2]}</span></div>
+            {[['Karim T.', 'HVAC · Welding · available · 3.2 km', 92, true], ['Leïla M.', 'HVAC · available · 8.0 km', 74, false]].map((t, i) => (
+              <div key={t[0] as string} id={i === 0 ? 'so-demo-smart-tech' : undefined} className={`flex items-center justify-between px-2.5 py-2 rounded-lg border ${t[3] ? 'border-primary bg-primary/5' : 'border-border'}`}><div><p className="text-xs font-medium">{t[0]}</p><p className="text-[10px] text-muted-foreground">{t[1]}</p></div><span className={`text-[11px] font-bold ${t[3] ? 'text-primary' : 'text-muted-foreground'}`}>{t[2]}</span></div>
             ))}
           </div>
           <div className="flex justify-end gap-2 mt-3"><div className="h-8 px-3 rounded-md border border-border text-xs flex items-center text-muted-foreground">Cancel</div><div className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium inline-flex items-center gap-1.5"><Truck className="h-3.5 w-3.5" /> Assign &amp; dispatch</div></div>
@@ -354,6 +373,55 @@ function PageDetail({ state }: { state: SODemoState }) {
       {state.sendOpen && (
         <div className="absolute inset-0 z-[6] flex items-start justify-center pt-10 bg-background/40"><div className="w-[420px] bg-card border border-border rounded-xl shadow-2xl p-4"><p className="text-sm font-semibold mb-3 inline-flex items-center gap-2"><Send className="h-4 w-4" /> Send Service Order</p><div className="space-y-2 text-xs"><Box>contact@medina.tn</Box><div className="flex items-center gap-1.5 text-muted-foreground"><Paperclip className="h-3 w-3" /> SO-2025-044.pdf attached</div></div><div className="flex justify-end gap-2 mt-3"><div className="h-8 px-3 rounded-md border border-border text-xs flex items-center text-muted-foreground">Cancel</div><div className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium inline-flex items-center gap-1.5"><Send className="h-3.5 w-3.5" /> Send</div></div></div></div>
       )}
+
+      {/* Plan Dispatch modal — multi-job splitter with conflict detection */}
+      {state.planDispatchOpen && (
+        <div className="absolute inset-0 z-[6] flex items-center justify-center bg-background/50 p-4">
+          <div id="so-demo-plan-dispatch" className="w-[560px] max-w-full bg-card border border-border rounded-xl shadow-2xl p-4">
+            <p className="text-sm font-semibold mb-1 inline-flex items-center gap-2"><Calendar className="h-4 w-4 text-primary" /> Plan Dispatch</p>
+            <p className="text-xs text-muted-foreground mb-3">SO-2025-044 · 2 jobs · Cold Room #3</p>
+
+            <div className="space-y-1.5 mb-3">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Jobs · select what to dispatch</p>
+              {[['Diagnose compressor fault', '90 min', 'HVAC'], ['Replace condenser unit', '120 min', 'HVAC · Welding']].map(j => (
+                <div key={j[0]} className="flex items-center gap-2 px-2 py-1.5 rounded border border-primary bg-primary/5">
+                  <span className="h-3.5 w-3.5 rounded bg-primary border border-primary inline-flex items-center justify-center"><CheckCircle2 className="h-2.5 w-2.5 text-primary-foreground" /></span>
+                  <span className="text-xs flex-1">{j[0]}</span>
+                  <span className="text-[10px] text-muted-foreground">{j[1]} · {j[2]}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 mb-3">
+              <div><label className="block text-[10px] text-muted-foreground mb-1">Date</label><Box>2025-06-16</Box></div>
+              <div><label className="block text-[10px] text-muted-foreground mb-1">Start</label><Box>09:00</Box></div>
+              <div><label className="block text-[10px] text-muted-foreground mb-1">Mode</label><div className="h-9 px-2 rounded-md border border-primary bg-primary/5 text-primary text-[11px] flex items-center gap-1.5"><CheckCircle2 className="h-3 w-3" /> Back-to-back</div></div>
+            </div>
+            <div className="flex items-center gap-2 mb-3 px-2 py-1.5 rounded border border-border text-[11px]">
+              <span className="h-3.5 w-3.5 rounded bg-primary border border-primary inline-flex items-center justify-center"><CheckCircle2 className="h-2.5 w-2.5 text-primary-foreground" /></span>
+              <span className="text-muted-foreground">Split by installation · one dispatch per equipment</span>
+            </div>
+
+            <div className="space-y-1.5 mb-3">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Technicians · ranked by skill · availability · distance</p>
+              <div className="flex items-center justify-between px-2.5 py-2 rounded-lg border border-primary bg-primary/5">
+                <div className="flex items-center gap-2"><span className="h-6 w-6 rounded-full bg-primary/10 text-primary text-[9px] font-bold inline-flex items-center justify-center">KT</span><div><p className="text-xs font-medium">Karim T.</p><p className="text-[10px] text-muted-foreground">HVAC · Welding · 3.2 km · free 09:00–14:00</p></div></div>
+                <span className="text-[11px] font-bold text-primary">92</span>
+              </div>
+              <div id="so-demo-plan-conflict" className="flex items-center justify-between px-2.5 py-2 rounded-lg border border-red-300 bg-red-50 dark:bg-red-900/10">
+                <div className="flex items-center gap-2"><span className="h-6 w-6 rounded-full bg-red-100 text-red-700 text-[9px] font-bold inline-flex items-center justify-center">SB</span><div><p className="text-xs font-medium">Sami B.</p><p className="text-[10px] text-red-600 dark:text-red-400">Double-booked 09:00–11:00 · DISP-2025-102</p></div></div>
+                <span className="text-[11px] font-bold text-red-600">—</span>
+              </div>
+              <div className="flex items-center justify-between px-2.5 py-2 rounded-lg border border-border">
+                <div className="flex items-center gap-2"><span className="h-6 w-6 rounded-full bg-muted text-muted-foreground text-[9px] font-bold inline-flex items-center justify-center">LM</span><div><p className="text-xs font-medium">Leïla M.</p><p className="text-[10px] text-muted-foreground">HVAC · 8.0 km · free after 10:30</p></div></div>
+                <span className="text-[11px] font-bold text-muted-foreground">74</span>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2"><div className="h-8 px-3 rounded-md border border-border text-xs flex items-center text-muted-foreground">Cancel</div><div className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium inline-flex items-center gap-1.5"><Truck className="h-3.5 w-3.5" /> Create 2 dispatches</div></div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -383,7 +451,7 @@ export function ServiceOrdersAutopilotDemo({ open, onClose }: Props) {
     if (!open || finished) return;
     const place = () => { const el = document.getElementById(step.target); if (!el) return; const r = el.getBoundingClientRect(); setCursor({ x: r.left + Math.min(r.width / 2, 120), y: r.top + Math.min(r.height / 2, 40), clicking: true }); if (clickRef.current) clearTimeout(clickRef.current); clickRef.current = setTimeout(() => setCursor(c => ({ ...c, clicking: false })), 450); };
     const t = setTimeout(place, 160); return () => clearTimeout(t);
-  }, [stepIndex, open, finished, step?.target, state.page, state.activeTab, state.listView, state.showFilters, state.bulkBar, state.createStep, state.scheduleOpen, state.assignOpen, state.timeBookOpen, state.expenseBookOpen, state.invoiceOpen, state.pdfOpen, state.pdfSettings, state.sendOpen]);
+  }, [stepIndex, open, finished, step?.target, state.page, state.activeTab, state.listView, state.showFilters, state.bulkBar, state.createStep, state.scheduleOpen, state.assignOpen, state.timeBookOpen, state.expenseBookOpen, state.invoiceOpen, state.pdfOpen, state.pdfSettings, state.sendOpen, state.preferredSkills, state.planDispatchOpen, state.planVsActual]);
   useEffect(() => {
     if (!open || !playing || finished) return;
     const advance = () => setStepIndex(i => i + 1);

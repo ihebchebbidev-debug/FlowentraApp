@@ -836,21 +836,21 @@ export default function ServiceOrdersList() {
                   onPreviousPage={pagination.actions.previousPage}
                   onNextPage={pagination.actions.nextPage}
                 />
-                <div className="divide-y divide-border">
+                <div className="list-editorial">
                   {pagination.data.map((order) => (
                     <div
                       key={order.id}
-                      className="p-4 hover:bg-muted/30 transition-colors cursor-pointer active:bg-muted/50"
+                      className="list-row-editorial"
                       onClick={() => handleServiceOrderClick(order)}
                     >
                       {/* Header: icon + order number + status badge */}
                       <div className="flex items-start gap-3 mb-2.5">
-                        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <ClipboardList className="h-4 w-4 text-primary" />
+                        <div className="list-row-avatar mt-0.5">
+                          <ClipboardList className="h-4 w-4" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
-                            <p className="font-semibold text-foreground text-sm leading-snug line-clamp-1 flex-1">
+                            <p className="list-row-title flex-1">
                               {order.orderNumber}
                             </p>
                             <div className="flex items-center gap-1 shrink-0">
@@ -862,7 +862,7 @@ export default function ServiceOrdersList() {
                               </Badge>
                             </div>
                           </div>
-                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                          <p className="list-row-subtitle">
                             {order.customer.company}
                             {order.customer.contactPerson && order.customer.contactPerson !== order.customer.company
                               ? ` · ${order.customer.contactPerson}`
@@ -872,28 +872,28 @@ export default function ServiceOrdersList() {
                       </div>
 
                       {/* Details */}
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pl-12 mb-3">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pl-[52px] mb-3">
                         {order.repair.location ? (
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <MapPin className="h-3 w-3 shrink-0" />
+                          <div className="list-row-meta-item">
+                            <MapPin className="h-3.5 w-3.5 shrink-0" />
                             <span className="truncate">{order.repair.location}</span>
                           </div>
                         ) : null}
                         {order.assignedTechnicians.length > 0 && (
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <User className="h-3 w-3 shrink-0" />
+                          <div className="list-row-meta-item">
+                            <User className="h-3.5 w-3.5 shrink-0" />
                             <span>{order.assignedTechnicians.length} {t('list.technicians', 'technicians')}</span>
                           </div>
                         )}
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <Calendar className="h-3 w-3 shrink-0" />
+                        <div className="list-row-meta-item">
+                          <Calendar className="h-3.5 w-3.5 shrink-0" />
                           <span>{order.createdAt.toLocaleDateString()}</span>
                         </div>
                       </div>
 
                       {/* Footer: cost + actions */}
-                      <div className="flex items-center justify-between pl-12" onClick={e => e.stopPropagation()}>
-                        <span className="text-sm font-semibold text-primary">
+                      <div className="flex items-center justify-between pl-[52px]" onClick={e => e.stopPropagation()}>
+                        <span className="list-row-amount">
                           {order.financials.estimatedCost.toLocaleString()} TND
                         </span>
                         <div className="ml-auto">

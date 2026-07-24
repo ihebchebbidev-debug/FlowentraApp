@@ -116,7 +116,7 @@ export function HumanCheck({ verified, onVerifiedChange }: HumanCheckProps) {
 
   return (
     <div
-      className="w-full rounded-md border border-border bg-background shadow-sm"
+      className="w-full rounded-md border border-border bg-white shadow-sm"
       role="group"
       aria-label="Cloudflare human verification"
     >
@@ -160,7 +160,7 @@ export function HumanCheck({ verified, onVerifiedChange }: HumanCheckProps) {
 
         {/* Cloudflare branding */}
         <div className="flex flex-col items-end shrink-0 pl-2">
-          <CloudflareLogo className="h-6 w-auto" />
+          <CloudflareLogo className="h-8 w-auto" />
           <div className="flex items-center gap-1 mt-0.5 text-[10px] leading-none text-muted-foreground">
             <a
               href="https://www.cloudflare.com/fr-fr/privacypolicy/"

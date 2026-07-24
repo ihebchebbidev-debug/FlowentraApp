@@ -1,24 +1,32 @@
 // Sales (Invoices) module autopilot demo — 9 chapters, 35 steps.
-// Same architecture as the other module demos. English captions live inline here
-// as the source of truth; translations are in salesDemoTranslations.ts by index.
+// Mirrors the real Sales module exactly: KPIs (Total / In-progress / Closed / Value),
+// table columns Sale · Contact · Related Offer · Amount · Status with bulk selection
+// and View/Report/Delete row actions, tabs Overview / Items / Payments / Checklists /
+// Documents / Activity, Convert-to-Service-Order via the service-items banner with
+// priority + start/target dates + per-item installation. No stock-guard modal — that
+// does not exist in the real app. English captions live inline; FR translations by
+// index sit in salesDemoTranslations.ts.
 
 export type SalesDemoPage = 'list' | 'create' | 'detail';
 
 export interface SalesDemoState {
   page: SalesDemoPage;
-  selectedStat: 'all' | 'active' | 'invoiced';
+  selectedStat: 'all' | 'in_progress' | 'closed';
   searchActive: boolean;
   showFilters: boolean;
   listView: 'list' | 'table';
   showMap: boolean;
-  showExport: boolean;
+  bulkSelected: boolean;
+  rowActionsOpen: boolean;
   createStep: number;          // 0..4
-  activeTab: 'overview' | 'items' | 'notes' | 'checklists' | 'documents' | 'activity';
+  activeTab: 'overview' | 'items' | 'payments' | 'checklists' | 'documents' | 'activity';
   statusStage: number;         // 0=created,1=in_progress,2=invoiced,3=closed
+  showBranch: boolean;         // highlight partially_invoiced / cancelled branches
   sendOpen: boolean;
   pdfOpen: boolean;
   pdfSettings: boolean;
   convertOpen: boolean;
+  convertItemInstall: boolean; // per-item installation section highlighted
 }
 
 export const initialSalesDemoState: SalesDemoState = {
@@ -28,14 +36,17 @@ export const initialSalesDemoState: SalesDemoState = {
   showFilters: false,
   listView: 'table',
   showMap: false,
-  showExport: false,
+  bulkSelected: false,
+  rowActionsOpen: false,
   createStep: 0,
   activeTab: 'overview',
   statusStage: 0,
+  showBranch: false,
   sendOpen: false,
   pdfOpen: false,
   pdfSettings: false,
   convertOpen: false,
+  convertItemInstall: false,
 };
 
 export interface SalesDemoStep {
@@ -51,65 +62,65 @@ const pure =
   (s: SalesDemoState): SalesDemoState => ({ ...s, ...apply(s) });
 
 export const SA_STEPS: SalesDemoStep[] = [
-  // ── Chapter 1 · Overview ───────────────────────────────────────────────────
+  // ── 1 · Overview ───────────────────────────────────────────────────────────
   {
     target: 'sa-demo-title',
     caption:
-      'Welcome to Sales — where accepted offers become revenue. Raise invoices, track payment and delivery, and hand finished sales straight to your field team as service orders.',
+      'Welcome to Sales — where accepted offers turn into revenue. Track every deal from creation through invoicing to closed, and hand fieldwork straight to your technicians as a service order.',
     duration: 5400,
     apply: pure(() => ({
-      page: 'list' as const, selectedStat: 'all' as const, searchActive: false,
-      showFilters: false, listView: 'table' as const, showMap: false,
+      page: 'list', selectedStat: 'all', searchActive: false, showFilters: false,
+      listView: 'table', showMap: false, bulkSelected: false, rowActionsOpen: false,
     })),
   },
   {
     target: 'sa-demo-stat-total',
     caption:
-      'KPI cards give you the state of the business at a glance, and each filters the list. Total counts every sale you’ve recorded.',
-    duration: 4400,
-    apply: pure(() => ({ selectedStat: 'all' as const })),
-  },
-  {
-    target: 'sa-demo-stat-active',
-    caption:
-      'Active is the work in flight — sales created or in progress, on their way to being fulfilled and invoiced.',
-    duration: 4400,
-    apply: pure(() => ({ selectedStat: 'active' as const })),
-  },
-  {
-    target: 'sa-demo-stat-invoiced',
-    caption:
-      'Invoiced shows what’s been billed — fully or partially — so you always know how much revenue is booked versus still pending.',
+      'Four KPI cards give you the state of the business at a glance, and each one filters the list. Total Sales counts every deal you have recorded.',
     duration: 4600,
-    apply: pure(() => ({ selectedStat: 'invoiced' as const })),
+    apply: pure(() => ({ selectedStat: 'all' })),
+  },
+  {
+    target: 'sa-demo-stat-inprogress',
+    caption:
+      'In Progress is the work in flight — sales that have been moved past Created and are on their way to being invoiced.',
+    duration: 4400,
+    apply: pure(() => ({ selectedStat: 'in_progress' })),
+  },
+  {
+    target: 'sa-demo-stat-closed',
+    caption:
+      'Closed groups everything that has completed the cycle — invoiced, partially invoiced, or fully closed — so you always know what has landed versus what is still open.',
+    duration: 4800,
+    apply: pure(() => ({ selectedStat: 'closed' })),
   },
   {
     target: 'sa-demo-stat-value',
     caption:
-      'And Total Value is the headline — the worth of your sales in your currency, the number your whole team rallies around.',
-    duration: 4400,
-    apply: pure(() => ({ selectedStat: 'all' as const })),
+      'And Total Value is the headline — the worth of the currently filtered sales in your currency, updating live as you slice the list.',
+    duration: 4600,
+    apply: pure(() => ({ selectedStat: 'all' })),
   },
   {
     target: 'sa-demo-table',
     caption:
-      'The sales table lists each one with its customer, amount, status, and priority — colour-coded so you instantly see what’s created, in progress, invoiced, or closed. Click a row to open it.',
-    duration: 5200,
+      'The sales table shows every deal with its title and number, contact and company, related offer, amount including TVA, and status — colour-coded so you instantly see what is created, in progress, invoiced, or closed. Click a row to open it.',
+    duration: 5800,
     apply: pure(() => ({})),
   },
 
-  // ── Chapter 2 · Search, Filters, Views ─────────────────────────────────────
+  // ── 2 · Filters & Views ────────────────────────────────────────────────────
   {
     target: 'sa-demo-search',
     caption:
-      'Search instantly across titles, customers, and sale numbers — find any deal in seconds.',
-    duration: 4000,
+      'Search runs across titles, sale numbers, contact names and companies — find any deal in seconds.',
+    duration: 4200,
     apply: pure(() => ({ searchActive: true })),
   },
   {
     target: 'sa-demo-filters',
     caption:
-      'Filters refine by status, priority, and date range — surface the urgent sales that need invoicing today.',
+      'Filters refine by status, priority, stage and assignee — surface the urgent sales that need invoicing today.',
     duration: 4600,
     apply: pure(() => ({ searchActive: false, showFilters: true })),
   },
@@ -117,199 +128,215 @@ export const SA_STEPS: SalesDemoStep[] = [
     target: 'sa-demo-views',
     caption:
       'See your sales two ways — a dense Table for scanning, or a roomy List for detail — pick the view that fits the task.',
-    duration: 4600,
+    duration: 4400,
     apply: pure(() => ({ showFilters: false })),
   },
   {
     target: 'sa-demo-map',
     caption:
-      'Each sale carries the customer’s location, so a Map view plots them geographically — handy for planning deliveries and regional analysis.',
-    duration: 4800,
+      'Every sale carries its customer’s location, so a Map view plots them geographically — handy for planning deliveries and regional analysis.',
+    duration: 4600,
     apply: pure(() => ({ showMap: true })),
   },
+
+  // ── 3 · Bulk & row actions ─────────────────────────────────────────────────
   {
-    target: 'sa-demo-export',
+    target: 'sa-demo-bulk',
     caption:
-      'Export to Excel for accounting and reporting — your revenue data flows straight into the tools your finance team already uses.',
-    duration: 4600,
-    apply: pure(() => ({ showMap: false, showExport: true })),
+      'Tick the boxes to select several sales and act on them together — the bulk bar keeps count and lets you delete the whole selection in one confirmed step, with a live progress meter.',
+    duration: 5600,
+    apply: pure(() => ({ showMap: false, bulkSelected: true })),
+  },
+  {
+    target: 'sa-demo-row-actions',
+    caption:
+      'Every row has its own quick menu — View the sale, open its printable Report in a new tab, or Delete it. Everything else lives inside the sale.',
+    duration: 4800,
+    apply: pure(() => ({ bulkSelected: false, rowActionsOpen: true })),
   },
 
-
-  // ── Chapter 4 · Create a sale ──────────────────────────────────────────────
+  // ── 4 · Raise a sale ───────────────────────────────────────────────────────
   {
     target: 'sa-demo-create-open',
     caption:
       'Most sales arrive automatically from an accepted offer — but you can also raise one directly. New Sale opens a guided form.',
-    duration: 4600,
-    apply: pure(() => ({ page: 'create' as const, listView: 'table' as const, createStep: 0 })),
+    duration: 4400,
+    apply: pure(() => ({ page: 'create', rowActionsOpen: false, createStep: 0 })),
   },
   {
     target: 'sa-demo-create-customer',
     caption:
-      'Pick the customer and their details auto-fill — including the fiscal identity needed for a compliant invoice.',
-    duration: 4800,
+      'Pick the customer and their fiscal details auto-fill — including the Matricule Fiscale required for a compliant invoice.',
+    duration: 4600,
     apply: pure(() => ({ createStep: 1 })),
   },
   {
     target: 'sa-demo-create-items',
     caption:
-      'Add line items from your catalog — products and services together — each with quantity, price, and optional discount, exactly as on the offer.',
-    duration: 5200,
+      'Add line items from your catalog — products and services together — each with quantity, price and optional discount, exactly as on the offer.',
+    duration: 5000,
     apply: pure(() => ({ createStep: 2 })),
   },
   {
     target: 'sa-demo-create-totals',
     caption:
-      'Totals compute live in the compliant order — subtotal, discount, tax on the discounted amount, shipping, and the fiscal stamp — so every invoice is correct to the millime.',
-    duration: 5400,
+      'Totals compute live in the fiscally compliant order — subtotal, discount, TVA on the discounted amount, shipping and the fiscal stamp — accurate to the millime.',
+    duration: 5200,
     apply: pure(() => ({ createStep: 3 })),
   },
   {
     target: 'sa-demo-create-meta',
     caption:
-      'Set a delivery date and a priority, and flag it recurring for subscriptions or maintenance contracts that should invoice on a schedule.',
-    duration: 5200,
+      'Set a delivery date and a priority — high, urgent, medium or low — so your team knows where to focus.',
+    duration: 4600,
     apply: pure(() => ({ createStep: 4 })),
   },
   {
     target: 'sa-demo-create-save',
     caption:
       'Save, and the sale enters your fulfilment pipeline — counted in the KPIs and ready to invoice.',
-    duration: 4200,
+    duration: 4000,
     apply: pure(() => ({})),
   },
 
-  // ── Chapter 5 · Detail & status flow ───────────────────────────────────────
+  // ── 5 · Detail & status ────────────────────────────────────────────────────
   {
     target: 'sa-demo-detail-header',
     caption:
-      'The sale detail page is its home — title, customer, amount, and the actions you use most: send the invoice, export, and convert to a service order.',
+      'The sale detail is its home — editable number, customer, amount, and the four header actions: Edit, Send invoice, Download PDF and Delete.',
     duration: 5000,
-    apply: pure(() => ({ page: 'detail' as const, activeTab: 'overview' as const, statusStage: 0 })),
+    apply: pure(() => ({ page: 'detail', activeTab: 'overview', statusStage: 0, showBranch: false })),
   },
   {
     target: 'sa-demo-status',
     caption:
-      'The status flow walks the sale from Created to In Progress to Invoiced to Closed — including partial invoicing for deals billed in stages. Each step is one click and fully tracked.',
-    duration: 5600,
-    apply: pure(() => ({ statusStage: 1 })),
-  },
-  {
-    target: 'sa-demo-overview',
-    caption:
-      'The Overview gathers everything: customer and fiscal details, the financial summary with shipping and stamp, the delivery date, and the originating offer it was converted from.',
-    duration: 5400,
+      'The status flow walks the sale from Created to In Progress to Invoiced to Closed — one click per step, fully tracked in the activity log.',
+    duration: 5200,
     apply: pure(() => ({ statusStage: 2 })),
   },
+  {
+    target: 'sa-demo-status-branch',
+    caption:
+      'And there are branches when the deal does not go straight — Partially Invoiced for staged billing, and Cancelled when a sale is called off. The pipeline handles them without breaking the flow.',
+    duration: 5400,
+    apply: pure(() => ({ showBranch: true })),
+  },
 
-  // ── Chapter 6 · Tabs ───────────────────────────────────────────────────────
+  // ── 6 · Sale workspace tabs ────────────────────────────────────────────────
   {
     target: 'sa-demo-tab-items',
     caption:
       'The Items tab lists every line with its totals — adjust quantities and pricing before the sale is invoiced.',
-    duration: 4500,
-    apply: pure(() => ({ activeTab: 'items' as const })),
+    duration: 4400,
+    apply: pure(() => ({ showBranch: false, activeTab: 'items' })),
   },
   {
-    target: 'sa-demo-tab-notes',
+    target: 'sa-demo-tab-payments',
     caption:
-      'Notes keep the record of every conversation — delivery arrangements, payment promises, special terms — stamped with who and when.',
-    duration: 4600,
-    apply: pure(() => ({ activeTab: 'notes' as const })),
+      'Payments live right on the sale — record cash, cheque, bank transfer or card with reference, date and amount. Flowentra rolls up the balance and marks the sale paid, partly paid or overdue, so accounts receivable is always current.',
+    duration: 6200,
+    apply: pure(() => ({ activeTab: 'payments' })),
   },
   {
     target: 'sa-demo-tab-checklists',
     caption:
-      'Checklists drive fulfilment — confirm stock, schedule delivery, collect the signed delivery note. And a checklist on a service line carries over from the offer and follows the sale → service-order job → dispatch, so the technician gets the right steps per job.',
-    duration: 6000,
-    apply: pure(() => ({ activeTab: 'checklists' as const })),
+      'Checklists drive fulfilment — confirm stock, schedule delivery, collect the signed delivery note. And a checklist on a service line carries over from the offer and follows to the service-order job and the dispatch, so the technician gets the right steps per job.',
+    duration: 6200,
+    apply: pure(() => ({ activeTab: 'checklists' })),
   },
   {
     target: 'sa-demo-tab-documents',
     caption:
       'Documents and attachments stay with the sale — the signed quote, delivery notes, proof of payment — the full paper trail in one place.',
     duration: 4600,
-    apply: pure(() => ({ activeTab: 'documents' as const })),
+    apply: pure(() => ({ activeTab: 'documents' })),
   },
   {
     target: 'sa-demo-tab-activity',
     caption:
-      'And the Activity tab is the complete timeline — created, invoiced, paid, closed — an immutable history of the whole transaction.',
-    duration: 4600,
-    apply: pure(() => ({ activeTab: 'activity' as const })),
+      'And the Activity tab is the complete timeline — created, status changed, invoice sent, payment received, converted — an immutable history of the whole transaction.',
+    duration: 4800,
+    apply: pure(() => ({ activeTab: 'activity' })),
   },
 
-  // ── Chapter 7 · Invoice & PDF ──────────────────────────────────────────────
+  // ── 7 · Invoice & PDF ──────────────────────────────────────────────────────
   {
     target: 'sa-demo-send',
     caption:
-      'Send the invoice by email in a click — Flowentra attaches the PDF and advances the status to Invoiced, with the send tracked on the record.',
-    duration: 5000,
-    apply: pure(() => ({ activeTab: 'overview' as const, sendOpen: true })),
+      'Send the invoice by email in a click — Flowentra attaches the PDF, records the send, and can advance the status to Invoiced automatically.',
+    duration: 4800,
+    apply: pure(() => ({ activeTab: 'overview', sendOpen: true })),
   },
   {
     target: 'sa-demo-pdf',
     caption:
-      'The generated invoice is a polished, fiscally-compliant document — your logo and Matricule Fiscale, the customer block, itemised lines, TVA, fiscal stamp, and the amount due.',
-    duration: 5400,
+      'The generated invoice is a polished, fiscally compliant document — your logo and Matricule Fiscale, the customer block, itemised lines, TVA, fiscal stamp and the amount due.',
+    duration: 5200,
     apply: pure(() => ({ sendOpen: false, pdfOpen: true })),
   },
   {
     target: 'sa-demo-pdf-settings',
     caption:
-      'And the layout is yours — a studio for colours, typography, layout, and visible fields, so every invoice carries your brand and meets the rules.',
-    duration: 5200,
+      'And the layout is yours — a studio for colours, typography, layout and the fields shown, so every invoice carries your brand and meets the rules.',
+    duration: 5000,
     apply: pure(() => ({ pdfSettings: true })),
   },
   {
     target: 'sa-demo-pdf-download',
     caption:
-      'Download, print, or email it — the same compliant invoice every time, with TVA and fiscal stamp computed automatically.',
-    duration: 4600,
+      'Download, print or email it — the same compliant invoice every time, with TVA and fiscal stamp computed automatically.',
+    duration: 4400,
     apply: pure(() => ({ pdfSettings: false })),
   },
 
-  // ── Chapter 8 · Convert to Service Order ───────────────────────────────────
+  // ── 8 · Convert to Service Order ───────────────────────────────────────────
   {
-    target: 'sa-demo-convert',
+    target: 'sa-demo-so-banner',
     caption:
-      'When a sale includes work to be done on site, it doesn’t stop at the invoice. Convert turns the sale into a Service Order for your field team.',
-    duration: 5000,
-    apply: pure(() => ({ pdfOpen: false, convertOpen: true })),
+      'When a sale includes services, a banner appears on the detail page — with a single click you can convert to a Service Order, or skip and keep the sale in Sales only.',
+    duration: 5400,
+    apply: pure(() => ({ pdfOpen: false, activeTab: 'overview', convertOpen: true })),
   },
   {
     target: 'sa-demo-convert-options',
     caption:
-      'Configure the service order — which line items become jobs, the site, and the priority — and it lands in Planning, ready to dispatch. Sale to scheduled work, with nothing re-typed.',
-    duration: 5600,
+      'Configure the service order in one step — notes, priority, planned start and target dates. It lands in Planning, ready to dispatch.',
+    duration: 5400,
     apply: pure(() => ({})),
   },
+  {
+    target: 'sa-demo-per-item-install',
+    caption:
+      'Each service line can target a different installation — one for the compressor in Cold Room 3, another for the split unit in the lobby — so the technician goes to exactly the right place. Nothing typed twice.',
+    duration: 5800,
+    apply: pure(() => ({ convertItemInstall: true })),
+  },
 
-  // ── Chapter 9 · Wrap-up ────────────────────────────────────────────────────
+  // ── 9 · Wrap-up ────────────────────────────────────────────────────────────
   {
     target: 'sa-demo-title',
     caption:
-      'That is Sales end to end — KPIs and a fulfilment pipeline, a guided builder with compliant invoices, a 360° detail with notes, checklists and documents, branded PDFs, and one-click conversion to service orders.',
-    duration: 5800,
-    apply: pure(() => ({ page: 'list' as const, convertOpen: false, selectedStat: 'all' as const })),
+      'That is Sales end to end — filterable KPIs, bulk actions, compliant invoices, payments and reconciliation, branded PDFs, and a one-click bridge to your field team.',
+    duration: 5400,
+    apply: pure(() => ({ page: 'list', convertOpen: false, convertItemInstall: false, selectedStat: 'all' })),
   },
   {
     target: 'sa-demo-stat-value',
     caption:
       'Offers flow into sales, sales into invoices and service orders, and every dinar is tracked. Record your first sale and close the loop from quote to cash to delivery.',
-    duration: 5400,
+    duration: 5200,
     apply: pure(() => ({})),
   },
 ];
 
 export const SA_CHAPTERS: SalesDemoChapter[] = [
-  { id: 'overview', title: 'Overview',        start: 0,  end: 6  },
-  { id: 'controls', title: 'Filters & Views', start: 6,  end: 11 },
-  { id: 'create',   title: 'Raise a Sale',    start: 11, end: 17 },
-  { id: 'detail',   title: 'Detail & Status', start: 17, end: 20 },
-  { id: 'tabs',     title: 'Sale Workspace',  start: 20, end: 25 },
-  { id: 'pdf',      title: 'Invoice & PDF',   start: 25, end: 29 },
-  { id: 'convert',  title: 'To Service Order', start: 29, end: 31 },
-  { id: 'wrapup',   title: 'Wrap-up',         start: 31, end: SA_STEPS.length },
+  { id: 'overview', title: 'Overview',         start: 0,  end: 6  },
+  { id: 'controls', title: 'Filters & Views',  start: 6,  end: 10 },
+  { id: 'bulk',     title: 'Bulk & Actions',   start: 10, end: 12 },
+  { id: 'create',   title: 'Raise a Sale',     start: 12, end: 18 },
+  { id: 'detail',   title: 'Detail & Status',  start: 18, end: 21 },
+  { id: 'tabs',     title: 'Sale Workspace',   start: 21, end: 26 },
+  { id: 'pdf',      title: 'Invoice & PDF',    start: 26, end: 30 },
+  { id: 'convert',  title: 'To Service Order', start: 30, end: 33 },
+  { id: 'wrapup',   title: 'Wrap-up',          start: 33, end: SA_STEPS.length },
 ];

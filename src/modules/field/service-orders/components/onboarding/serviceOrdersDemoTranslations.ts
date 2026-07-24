@@ -17,7 +17,9 @@ export const CHAPTER_TITLES: Record<DemoLang, Record<string, string>> = {
   fr: {
     'overview': 'Vue d’ensemble', 'controls': 'Filtres & Vues', 'map': 'Carte terrain',
     'create': 'Créer un ordre', 'detail': 'Détail & Statut', 'jobs': 'Tâches & Planning',
-    'execution': 'Temps & Matériels', 'tabs': 'Preuves', 'invoice': 'Facture & PDF', 'wrapup': 'Conclusion',
+    'execution': 'Temps & Matériels', 'tabs': 'Preuves', 'invoice': 'Facture & PDF',
+    'skills': 'Routage intelligent', 'plan-dispatch': 'Planifier l’envoi',
+    'plan-vs-actual': 'Plan vs Réel', 'wrapup': 'Conclusion',
   },
 };
 
@@ -57,7 +59,13 @@ const CAPTIONS_FR: string[] = [
   'L’ordre de service lui-même s’imprime en document soigné et à votre marque — votre logo et identité fiscale, le client et le site, les tâches réalisées et les matériels utilisés.',
   'Et la mise en page vous appartient — un studio pour couleurs, typographie, disposition et champs affichés, pour que chaque document colle à votre marque.',
   'Envoyez-le au client par e-mail en un clic — le PDF joint, l’envoi suivi — bouclant la boucle du travail réalisé au client informé.',
-  'Voilà Ordres de service de bout en bout — des KPI et une carte de votre terrain, un constructeur guidé, tâches et planning, envoi et exécution avec temps et matériels, documents à votre marque, et facturation en un clic.',
+  'Chaque ordre porte les compétences dont il a besoin — HVAC, soudure, électricité, plomberie. Flowentra lit ces compétences préférées directement sur la ligne de vente : le système sait déjà qui est qualifié avant même d’ouvrir le planificateur.',
+  'À l’affectation, la liste courte est classée par correspondance de compétence, disponibilité en direct et distance depuis le site — vous choisissez le meilleur profil en un clic, et si personne ne convient, le système vous dit exactement quelle compétence manque.',
+  'Planifier l’envoi est le cœur du planning. Choisissez des tâches, une date et une heure, des techniciens — et Flowentra crée les tickets d’envoi, sépare par installation si besoin, et enchaîne les tâches sur la même visite.',
+  'Les chevauchements sont détectés avant qu’ils n’arrivent — un badge rouge signale un technicien déjà réservé sur ce créneau, pour ne jamais double-réserver le terrain. Confirmez, et chaque envoi, entrée de calendrier et notification technicien se pose en une seule étape atomique.',
+  'Chaque tâche porte son plan — minutes de main-d’œuvre, frais, matériels — hérité du devis et de la vente où il a été chiffré. À l’exécution, Flowentra place le plan à côté du réel, dans le même onglet.',
+  'Un badge vert signifie conforme au plan, orange alerte à quatre-vingt-dix pour cent, rouge dès que le réel dépasse le plan — les dépassements apparaissent à la seconde, et chaque heure et dinar remonte à la ligne d’offre qui l’a chiffré.',
+  'Voilà Ordres de service de bout en bout — KPI et carte, constructeur guidé, routage intelligent, Planifier l’envoi avec détection des conflits, plan vs réel à l’exécution, documents à votre marque, et facturation en un clic.',
   'Les ventes deviennent des ordres de service, les ordres des envois, les envois des factures — et chaque heure, pièce et signature est suivie. Créez votre premier ordre et mettez votre équipe terrain au travail.',
 ];
 

@@ -708,44 +708,44 @@ export function SalesList() {
                   onPreviousPage={pagination.actions.previousPage}
                   onNextPage={pagination.actions.nextPage}
                 />
-                <div className="divide-y divide-border">
+                <div className="list-editorial">
                   {pagination.data.map((sale) => (
                     <div
                       key={sale.id}
-                      className="p-4 hover:bg-muted/30 transition-colors cursor-pointer active:bg-muted/50"
+                      className="list-row-editorial"
                       onClick={() => handleSaleClick(sale)}
                     >
                       {/* Header: icon + title + status badge */}
                       <div className="flex items-start gap-3 mb-2.5">
-                        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <TrendingUp className="h-4 w-4 text-primary" />
+                        <div className="list-row-avatar mt-0.5">
+                          <TrendingUp className="h-4 w-4" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
-                            <p className="font-semibold text-foreground text-sm leading-snug line-clamp-1 flex-1">{sale.title}</p>
+                            <p className="list-row-title flex-1">{sale.title}</p>
                             <Badge className={`${getStatusColor(sale.status)} text-[10px] px-2 py-0.5 shrink-0`}>
                               {t(sale.status)}
                             </Badge>
                           </div>
-                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                          <p className="list-row-subtitle">
                             {sale.contactName}{sale.contactCompany ? ` · ${sale.contactCompany}` : ''}
                           </p>
                         </div>
                       </div>
 
                       {/* Details */}
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pl-12 mb-3">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pl-[52px] mb-3">
                         {(sale.assignedTo || sale.assignedToName) && (
                           <UserInline
                             userId={sale.assignedTo}
                             name={sale.assignedToName}
                             size="xs"
-                            className="text-xs text-muted-foreground"
+                            className="text-[12px] text-muted-foreground/90"
                           />
                         )}
                         {sale.estimatedCloseDate && (
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <Calendar className="h-3 w-3 shrink-0" />
+                          <div className="list-row-meta-item">
+                            <Calendar className="h-3.5 w-3.5 shrink-0" />
                             <span>{formatDate(sale.estimatedCloseDate)}</span>
                           </div>
                         )}
@@ -766,8 +766,8 @@ export function SalesList() {
                       </div>
 
                       {/* Footer: amount + actions */}
-                      <div className="flex items-center justify-between pl-12" onClick={e => e.stopPropagation()}>
-                        <span className="text-sm font-semibold text-primary">
+                      <div className="flex items-center justify-between pl-[52px]" onClick={e => e.stopPropagation()}>
+                        <span className="list-row-amount">
                           {formatCurrency(calculateItemsTotal(sale))}
                         </span>
                         <div className="ml-auto">

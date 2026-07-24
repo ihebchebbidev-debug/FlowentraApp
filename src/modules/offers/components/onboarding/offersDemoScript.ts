@@ -1,7 +1,11 @@
-// Offers (Quotes) module autopilot demo — 9 chapters, 35 steps.
-// Same architecture as the other module demos: scripted state transitions, a
-// virtual cursor, and FR/AR narration. English captions live inline here as the
-// source of truth; translations are in offersDemoTranslations.ts keyed by index.
+// Offers (Quotes) module autopilot demo.
+// Scripted state transitions, virtual cursor, and FR narration.
+// English captions live inline here as the source of truth; translations are in
+// offersDemoTranslations.ts keyed by step index — keep both arrays aligned.
+//
+// Every step below maps 1:1 to something the user actually sees in the real
+// Offers module today. Kanban view and Tunisian fiscal exports (RS Récap / TEJ)
+// were removed from the app — they are intentionally absent from this demo.
 
 export type OffersDemoPage = 'list' | 'create' | 'detail';
 
@@ -13,16 +17,18 @@ export interface OffersDemoState {
   showFilters: boolean;
   listView: 'list' | 'table';
   showMap: boolean;
-  showExport: boolean;
+  bulkSelected: boolean;
   // Create
   createStep: number;          // 0..4
   // Detail
-  activeTab: 'overview' | 'items' | 'notes' | 'checklists' | 'documents' | 'activity';
+  activeTab: 'overview' | 'items' | 'checklists' | 'documents' | 'activity';
   statusStage: number;         // 0=draft,1=sent,2=accepted (stepper highlight)
   sendOpen: boolean;
   pdfOpen: boolean;
   pdfSettings: boolean;
   convertOpen: boolean;
+  planningOpen: boolean;
+  renewFlash: boolean;
 }
 
 export const initialOffersDemoState: OffersDemoState = {
@@ -32,7 +38,7 @@ export const initialOffersDemoState: OffersDemoState = {
   showFilters: false,
   listView: 'table',
   showMap: false,
-  showExport: false,
+  bulkSelected: false,
   createStep: 0,
   activeTab: 'overview',
   statusStage: 0,
@@ -40,6 +46,8 @@ export const initialOffersDemoState: OffersDemoState = {
   pdfOpen: false,
   pdfSettings: false,
   convertOpen: false,
+  planningOpen: false,
+  renewFlash: false,
 };
 
 export interface OffersDemoStep {
@@ -59,261 +67,294 @@ export const OF_STEPS: OffersDemoStep[] = [
   {
     target: 'of-demo-title',
     caption:
-      'Welcome to Offers — where every deal begins. Build professional quotes, send them, track them through your pipeline, and convert the winners into sales in one click.',
-    duration: 5400,
+      'This is Offers — where every deal begins. Build a quote, send it, follow it through the pipeline, and convert the winners into sales.',
+    duration: 5000,
     apply: pure(() => ({
       page: 'list' as const, selectedStat: 'all' as const, searchActive: false,
-      showFilters: false, listView: 'table' as const, showMap: false,
+      showFilters: false, listView: 'table' as const, showMap: false, bulkSelected: false,
     })),
   },
   {
     target: 'of-demo-stat-total',
     caption:
-      'KPI cards summarise your whole quoting activity at a glance — and each one filters the list. Total counts every offer you’ve created.',
-    duration: 4400,
+      'Four KPI cards sit above the list, and each one filters it. Total counts every offer you have.',
+    duration: 4200,
     apply: pure(() => ({ selectedStat: 'all' as const })),
   },
   {
     target: 'of-demo-stat-pipeline',
     caption:
-      'Pipeline is the live money in motion — offers that are sent or in negotiation, still open and chaseable. This is your sales team’s heartbeat.',
-    duration: 4800,
+      'Pipeline is the live money in motion — offers that are still open and chaseable.',
+    duration: 4200,
     apply: pure(() => ({ selectedStat: 'pipeline' as const })),
   },
   {
     target: 'of-demo-stat-accepted',
     caption:
-      'Accepted shows the deals you’ve won — ready to become invoices. Paired with the total, it gives you an instant win-rate.',
-    duration: 4600,
+      'Accepted shows the deals you have won — ready to become sales.',
+    duration: 4000,
     apply: pure(() => ({ selectedStat: 'accepted' as const })),
   },
   {
     target: 'of-demo-stat-value',
     caption:
-      'And Total Value sums the worth of your offers in your currency — the headline number that tells you how much business is on the table.',
+      'Total Value adds up your offers in your currency — the headline number for how much business is on the table.',
     duration: 4400,
     apply: pure(() => ({ selectedStat: 'all' as const })),
   },
   {
     target: 'of-demo-table',
     caption:
-      'The offers table lists each quote with its customer, amount, status, and validity — colour-coded so you instantly see what’s draft, sent, accepted, or lost. Click any row to open it.',
-    duration: 5200,
+      'The table shows each quote with its customer, amount, status and validity date, colour-coded by state.',
+    duration: 4600,
     apply: pure(() => ({})),
+  },
+  {
+    target: 'of-demo-row-actions',
+    caption:
+      'Every row has a menu — View, Edit, Send, Convert to Sale, Report, Delete — so you can act without opening the offer.',
+    duration: 5000,
+    apply: pure(() => ({})),
+  },
+  {
+    target: 'of-demo-bulk',
+    caption:
+      'Tick several rows and a bulk bar appears — clean up drafts or archive lost deals in one go.',
+    duration: 4600,
+    apply: pure(() => ({ bulkSelected: true })),
   },
 
   // ── Chapter 2 · Search, Filters, Views ─────────────────────────────────────
   {
     target: 'of-demo-search',
     caption:
-      'Search instantly across titles, customers, and offer numbers — find any quote in seconds.',
-    duration: 4000,
-    apply: pure(() => ({ searchActive: true })),
+      'Search across titles, customers and offer numbers — find any quote in a couple of keystrokes.',
+    duration: 4200,
+    apply: pure(() => ({ bulkSelected: false, searchActive: true })),
   },
   {
     target: 'of-demo-filters',
     caption:
-      'Filters refine by status, who it’s assigned to, and a date range — build the exact view you need, like "my offers, sent this month, still open".',
-    duration: 5000,
+      'Filters refine by status, assignee and date range — build the exact view you need.',
+    duration: 4600,
     apply: pure(() => ({ searchActive: false, showFilters: true })),
   },
   {
     target: 'of-demo-views',
     caption:
-      'See your offers two ways: a dense Table for scanning, or a roomy List for detail — pick the view that fits the task.',
-    duration: 4800,
+      'Two ways to look at the same data — a dense Table for scanning, or a roomier List for detail.',
+    duration: 4400,
     apply: pure(() => ({ showFilters: false })),
   },
   {
     target: 'of-demo-map',
     caption:
-      'Offers carry the customer’s location, so a Map view plots every deal geographically — perfect for planning visits and spotting regional opportunities.',
-    duration: 4800,
+      'Offers carry the customer location, so a Map view plots every deal geographically — handy for planning visits.',
+    duration: 4600,
     apply: pure(() => ({ showMap: true })),
   },
   {
-    target: 'of-demo-export',
+    target: 'of-demo-import',
     caption:
-      'Export to Excel for reporting, or bulk-import an existing quote list from a spreadsheet — your data moves both ways without friction.',
-    duration: 4600,
-    apply: pure(() => ({ showMap: false, showExport: true })),
+      'And you can bulk-import an existing quote list from a spreadsheet — your data comes across in one shot.',
+    duration: 4400,
+    apply: pure(() => ({ showMap: false })),
   },
 
-
-  // ── Chapter 4 · Create an offer ────────────────────────────────────────────
+  // ── Chapter 3 · Create an offer ────────────────────────────────────────────
   {
     target: 'of-demo-create-open',
     caption:
-      'Let’s build a quote. New Offer opens a guided form — customer, line items, and totals, all on one page.',
-    duration: 4400,
+      'Let us build a quote. New Offer opens a guided form — customer, line items, totals, all on one page.',
+    duration: 4200,
     apply: pure(() => ({ page: 'create' as const, listView: 'table' as const, createStep: 0 })),
   },
   {
     target: 'of-demo-create-contact',
     caption:
-      'Pick the customer from your CRM and their details auto-fill — including the fiscal identity (CIN and Matricule Fiscale) needed for compliant documents.',
+      'Pick the customer from your CRM and their details auto-fill — including CIN and Matricule Fiscale for compliant documents.',
     duration: 5000,
     apply: pure(() => ({ createStep: 1 })),
   },
   {
     target: 'of-demo-create-items',
     caption:
-      'Add line items straight from your catalog — materials and services together — each with quantity, unit price, and an optional discount. The catalog keeps pricing consistent.',
-    duration: 5400,
+      'Add lines straight from your catalog — materials and services together — each with quantity, price and an optional discount.',
+    duration: 5000,
     apply: pure(() => ({ createStep: 2 })),
   },
   {
     target: 'of-demo-create-totals',
     caption:
-      'Totals compute live in the correct order: subtotal, then discount, then tax on the discounted amount, then the Tunisian fiscal stamp — always accurate, always compliant.',
-    duration: 5400,
+      'Totals compute live in the right order — subtotal, then discount, then tax on the discounted amount, then the Tunisian fiscal stamp.',
+    duration: 5200,
     apply: pure(() => ({ createStep: 3 })),
   },
   {
     target: 'of-demo-create-meta',
     caption:
-      'Classify the deal with a category and source for your analytics, set a validity date, and add notes — context that powers your reporting later.',
-    duration: 5000,
+      'Tag the deal with a category and source, set a validity date, add notes — the context that feeds your reports later.',
+    duration: 4800,
     apply: pure(() => ({ createStep: 4 })),
   },
   {
     target: 'of-demo-create-save',
     caption:
       'Save, and the offer joins your pipeline as a draft — counted in the KPIs and ready to send.',
-    duration: 4200,
+    duration: 4000,
     apply: pure(() => ({})),
   },
 
-  // ── Chapter 5 · Detail & status flow ───────────────────────────────────────
+  // ── Chapter 4 · Detail & status flow ───────────────────────────────────────
   {
     target: 'of-demo-detail-header',
     caption:
-      'The offer detail page is the deal’s home — title, customer, amount, and the actions you use most: send, export, and convert.',
-    duration: 4800,
+      'The offer detail is the home of the deal — title, customer, amount, and the actions you use the most.',
+    duration: 4600,
     apply: pure(() => ({ page: 'detail' as const, activeTab: 'overview' as const, statusStage: 0 })),
   },
   {
     target: 'of-demo-status',
     caption:
-      'The status flow walks the offer from Draft to Sent to Accepted — with one-click branches to Decline or Cancel, each confirmed so a deal is never closed by accident.',
-    duration: 5400,
+      'The status flow walks the offer from Draft to Sent to Accepted, with confirmed branches for Decline and Cancel so nothing closes by accident.',
+    duration: 5200,
     apply: pure(() => ({ statusStage: 1 })),
   },
   {
     target: 'of-demo-overview',
     caption:
-      'The Overview gathers everything: customer and fiscal details, the financial summary, validity, and the linked installation if the quote covers equipment on site.',
-    duration: 5200,
+      'Overview gathers everything — customer and fiscal details, financial summary, validity, and the linked installation if the quote is on site.',
+    duration: 5000,
     apply: pure(() => ({ statusStage: 2 })),
   },
 
-  // ── Chapter 6 · Tabs ───────────────────────────────────────────────────────
+  // ── Chapter 5 · Tabs ───────────────────────────────────────────────────────
   {
     target: 'of-demo-tab-items',
     caption:
-      'The Items tab lists every line with its totals — edit quantities, prices, and discounts inline while the offer is still a draft.',
-    duration: 4600,
-    apply: pure(() => ({ activeTab: 'items' as const })),
-  },
-  {
-    target: 'of-demo-tab-notes',
-    caption:
-      'Notes keep the conversation with the customer — every call and follow-up, stamped with who wrote it and when.',
+      'Items lists every line with its totals — edit quantity, price and discount inline while the offer is still a draft.',
     duration: 4400,
-    apply: pure(() => ({ activeTab: 'notes' as const })),
+    apply: pure(() => ({ activeTab: 'items' as const })),
   },
   {
     target: 'of-demo-tab-checklists',
     caption:
-      'Checklists turn a quote into a process. Offer-level ones cover qualification and approvals before you send; and a checklist attached to a service line travels with it — offer → sale → service-order job → dispatch — so the field gets the exact steps for that job.',
+      'Checklists turn a quote into a process. Offer-level ones cover qualification before you send; and a checklist attached to a service line travels with it — offer to sale to service order job to dispatch — so the field team gets the exact steps.',
     duration: 6000,
     apply: pure(() => ({ activeTab: 'checklists' as const })),
   },
   {
     target: 'of-demo-tab-documents',
     caption:
-      'Documents and attachments live with the offer — specs, drawings, signed approvals — everything the deal needs in one place.',
-    duration: 4600,
+      'Documents keep specs, drawings and signed approvals with the offer — everything the deal needs, in one place.',
+    duration: 4400,
     apply: pure(() => ({ activeTab: 'documents' as const })),
   },
   {
     target: 'of-demo-tab-activity',
     caption:
-      'And the Activity tab is the full timeline — created, sent, opened, accepted — an immutable history of how the deal moved.',
-    duration: 4600,
+      'Activity is your notes feed on the deal — every call and follow-up stamped with who wrote it and when.',
+    duration: 4400,
     apply: pure(() => ({ activeTab: 'activity' as const })),
   },
 
-  // ── Chapter 7 · Send & PDF ─────────────────────────────────────────────────
+  // ── Chapter 6 · Send & PDF ─────────────────────────────────────────────────
   {
     target: 'of-demo-send',
     caption:
-      'Send the offer by email in a click — Flowentra attaches the PDF, tracks how many times it’s been sent, and advances the status to Sent automatically.',
-    duration: 5200,
+      'Send the offer by e-mail in a click — the PDF is attached, the send count ticks up, and the status moves to Sent automatically.',
+    duration: 5000,
     apply: pure(() => ({ activeTab: 'overview' as const, sendOpen: true })),
   },
   {
     target: 'of-demo-pdf',
     caption:
-      'The generated PDF is a polished, branded quote — your logo and fiscal identity, the customer block, itemised lines, totals, and terms, ready to win the deal.',
-    duration: 5200,
+      'The generated PDF is a polished, branded quote — your logo and fiscal identity, customer block, itemised lines, totals and terms.',
+    duration: 5000,
     apply: pure(() => ({ sendOpen: false, pdfOpen: true })),
   },
   {
     target: 'of-demo-pdf-settings',
     caption:
-      'And it’s fully yours to design — a settings studio for colours, typography, layout, and which fields appear, so every quote matches your brand exactly.',
-    duration: 5200,
+      'And it is fully yours — a studio for colours, typography, layout, data fields and advanced options, so every quote matches your brand.',
+    duration: 5000,
     apply: pure(() => ({ pdfSettings: true })),
   },
   {
     target: 'of-demo-pdf-download',
     caption:
-      'Download it, print it, or send it — the same crisp document every time, with your tax stamp and totals computed to the millime.',
-    duration: 4600,
+      'Download it, print it or share it — the same crisp document every time, with the stamp and totals computed to the millime.',
+    duration: 4400,
     apply: pure(() => ({ pdfSettings: false })),
   },
 
-  // ── Chapter 8 · Convert ────────────────────────────────────────────────────
+  // ── Chapter 7 · Convert ────────────────────────────────────────────────────
   {
     target: 'of-demo-convert',
     caption:
-      'Here’s where the offer pays off. Once it’s accepted, Convert turns the quote into the next stage of your business — no re-keying, nothing lost.',
-    duration: 5000,
+      'Here is where the offer pays off. Once it is accepted, Convert turns the quote into a sale in one click.',
+    duration: 4800,
     apply: pure(() => ({ pdfOpen: false, convertOpen: true })),
   },
   {
     target: 'of-demo-convert-options',
     caption:
-      'Convert it into a Sale to invoice the customer, and — if it includes services — into a Service Order to dispatch the work, in a single step. The whole pipeline, connected end to end.',
-    duration: 5600,
+      'You confirm the customer, the line count and the total — and the sale is created, linked back to the offer, ready to invoice or to plan as a service order.',
+    duration: 5400,
     apply: pure(() => ({})),
   },
 
-  // ── Chapter 9 · Wrap-up ────────────────────────────────────────────────────
+  // ── Chapter 8 · Planning lineage on items ─────────────────────────────────
+  {
+    target: 'of-demo-planning',
+    caption:
+      'Every offer line can carry its plan — labour minutes, planned expenses like travel, and planned materials. That plan travels with the item as the offer becomes a sale, then a service order.',
+    duration: 6200,
+    apply: pure(() => ({ convertOpen: false, page: 'detail' as const, activeTab: 'items' as const, planningOpen: true })),
+  },
+  {
+    target: 'of-demo-planning-lineage',
+    caption:
+      'On the service order the same plan sits next to the actuals — plan versus done, in green, amber or red — so overruns show the moment they happen.',
+    duration: 5800,
+    apply: pure(() => ({})),
+  },
+
+  // ── Chapter 9 · Renew ──────────────────────────────────────────────────────
+  {
+    target: 'of-demo-renew',
+    caption:
+      'When a quote expires or is declined, Renew clones it in one click — a fresh offer with the same customer and lines, ready to chase again.',
+    duration: 5000,
+    apply: pure(() => ({ planningOpen: false, page: 'list' as const, renewFlash: true })),
+  },
+
+  // ── Chapter 10 · Wrap-up ──────────────────────────────────────────────────
   {
     target: 'of-demo-title',
     caption:
-      'That is Offers end to end — KPIs and a visual pipeline, a guided builder with compliant totals, a 360° detail with notes, checklists and documents, branded PDFs, email tracking, and one-click conversion.',
-    duration: 5800,
-    apply: pure(() => ({ page: 'list' as const, convertOpen: false, selectedStat: 'all' as const })),
+      'That is Offers end to end — KPI-driven pipeline, a guided builder with compliant totals, planning entries that travel to the field, branded PDFs and one-click conversion.',
+    duration: 5400,
+    apply: pure(() => ({ page: 'list' as const, renewFlash: false, convertOpen: false, selectedStat: 'all' as const })),
   },
   {
     target: 'of-demo-stat-value',
     caption:
-      'Every quote flows into a sale, every sale into delivery, and every step is tracked. Create your first offer and start turning prospects into revenue.',
-    duration: 5200,
+      'Every quote flows into a sale, every sale into delivery — and every step is tracked. Create your first offer and start turning prospects into revenue.',
+    duration: 5000,
     apply: pure(() => ({})),
   },
 ];
 
 export const OF_CHAPTERS: OffersDemoChapter[] = [
-  { id: 'overview', title: 'Overview',        start: 0,  end: 6  },
-  { id: 'controls', title: 'Filters & Views', start: 6,  end: 11 },
-  { id: 'create',   title: 'Build a Quote',   start: 11, end: 17 },
-  { id: 'detail',   title: 'Detail & Status', start: 17, end: 20 },
-  { id: 'tabs',     title: 'Deal Workspace',  start: 20, end: 25 },
-  { id: 'pdf',      title: 'Send & PDF',      start: 25, end: 29 },
-  { id: 'convert',  title: 'Convert',         start: 29, end: 31 },
-  { id: 'wrapup',   title: 'Wrap-up',         start: 31, end: OF_STEPS.length },
+  { id: 'overview', title: 'Overview',         start: 0,  end: 8  },
+  { id: 'controls', title: 'Search & Views',   start: 8,  end: 13 },
+  { id: 'create',   title: 'Build a Quote',    start: 13, end: 19 },
+  { id: 'detail',   title: 'Detail & Status',  start: 19, end: 22 },
+  { id: 'tabs',     title: 'Deal Workspace',   start: 22, end: 26 },
+  { id: 'pdf',      title: 'Send & PDF',       start: 26, end: 30 },
+  { id: 'convert',  title: 'Convert to Sale',  start: 30, end: 32 },
+  { id: 'planning', title: 'Planning Lineage', start: 32, end: 34 },
+  { id: 'renew',    title: 'Renew',            start: 34, end: 35 },
+  { id: 'wrapup',   title: 'Wrap-up',          start: 35, end: OF_STEPS.length },
 ];

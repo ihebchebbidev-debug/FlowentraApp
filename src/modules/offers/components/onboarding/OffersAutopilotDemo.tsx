@@ -2,10 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   X, Play, Pause, RotateCcw, Volume2, VolumeX, Languages,
-  FileText, Search, Filter, List, Table as TableIcon, LayoutGrid, Map, Download,
+  FileText, Search, Filter, List, Table as TableIcon, Map, Upload,
   Plus, Send, GitBranch, DollarSign, Target, CheckCircle2, Building2, User,
   Calendar, StickyNote, ListChecks, Paperclip, Activity, ChevronRight, ChevronDown,
-  Palette, ShoppingCart, Wrench, Mail,
+  Palette, ShoppingCart, Wrench, Mail, MoreHorizontal, Eye, Edit, Trash2, ClipboardList,
 } from 'lucide-react';
 import { DemoCursor } from '@/modules/external/components/onboarding/DemoCursor';
 import { pickBestVoice, splitForSpeech, languageTagFor, configureUtteranceForFemaleVoice } from '@/modules/external/components/onboarding/narrationVoice';
@@ -62,7 +62,7 @@ function PageList({ state }: { state: OffersDemoState }) {
           <div><h1 id="of-demo-title" className="text-xl font-semibold">Offers</h1><p className="text-[11px] text-muted-foreground">Quotes &amp; sales pipeline</p></div>
         </div>
         <div className="flex gap-2">
-          <div id="of-demo-export" className={`h-8 px-3 rounded-md border text-xs inline-flex items-center gap-1.5 cursor-default ${state.showExport ? 'border-primary text-primary bg-primary/5' : 'border-border text-muted-foreground'}`}><Download className="h-3.5 w-3.5" /> Export</div>
+          <div id="of-demo-import" className="h-8 px-3 rounded-md border border-border text-xs inline-flex items-center gap-1.5 cursor-default text-muted-foreground"><Upload className="h-3.5 w-3.5" /> Import</div>
           <div id="of-demo-create-open" className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium inline-flex items-center gap-1.5 cursor-default"><Plus className="h-3.5 w-3.5" /> New Offer</div>
         </div>
       </div>
@@ -97,6 +97,16 @@ function PageList({ state }: { state: OffersDemoState }) {
         )}
       </div>
 
+      {/* Bulk action bar */}
+      {state.bulkSelected && (
+        <div id="of-demo-bulk" className="mx-4 mt-4 rounded-md border border-primary/40 bg-primary/5 px-3 py-2 flex items-center gap-3">
+          <span className="text-xs font-medium text-primary">2 selected</span>
+          <span className="h-4 w-px bg-border" />
+          <span className="text-[11px] inline-flex items-center gap-1 text-muted-foreground"><Trash2 className="h-3 w-3" /> Delete</span>
+          <span className="ml-auto text-[10px] text-muted-foreground">Bulk actions apply to every ticked row.</span>
+        </div>
+      )}
+
       {state.showMap ? (
         <div className="p-4"><div className="h-56 rounded-lg border border-border overflow-hidden relative bg-[linear-gradient(135deg,#e8f0e8_0%,#dce9f0_100%)] dark:bg-[linear-gradient(135deg,#1b2a1b_0%,#16242e_100%)]">
           <div className="absolute inset-0 opacity-40" style={{ backgroundImage: 'repeating-linear-gradient(0deg,transparent,transparent 28px,rgba(120,120,120,.25) 29px),repeating-linear-gradient(90deg,transparent,transparent 28px,rgba(120,120,120,.25) 29px)' }} />
@@ -108,22 +118,38 @@ function PageList({ state }: { state: OffersDemoState }) {
           <div id="of-demo-table" className="border border-border rounded-lg overflow-hidden bg-card">
             <table className="w-full text-xs">
               <thead><tr className="border-b border-border/60 bg-muted/30">
+                <th className="w-8 px-3 py-2"></th>
                 <th className="text-left px-3 py-2 text-muted-foreground font-medium">Offer</th>
-                <th className="text-left px-3 py-2 text-muted-foreground font-medium">Customer</th>
+                <th className="text-left px-3 py-2 text-muted-foreground font-medium">Contact</th>
                 <th className="text-right px-3 py-2 text-muted-foreground font-medium">Amount</th>
                 <th className="text-left px-3 py-2 text-muted-foreground font-medium">Status</th>
                 <th className="text-left px-3 py-2 text-muted-foreground font-medium">Valid until</th>
+                <th className="w-10 px-3 py-2"></th>
               </tr></thead>
               <tbody>
-                {DEMO_OFFERS.map(o => (
-                  <tr key={o.id} className="border-b border-border/40 last:border-0">
-                    <td className="px-3 py-2.5"><div className="font-medium text-primary">{o.num}</div><div className="text-[10px] text-muted-foreground truncate max-w-[180px]">{o.title}</div></td>
-                    <td className="px-3 py-2.5"><span className="inline-flex items-center gap-1.5"><span className="h-5 w-5 rounded-full bg-primary/10 text-primary text-[9px] font-bold inline-flex items-center justify-center">{initials(o.customer)}</span>{o.customer}</span></td>
-                    <td className="px-3 py-2.5 text-right font-semibold">{fmt(o.amount)} TND</td>
-                    <td className="px-3 py-2.5"><Pill s={o.status} /></td>
-                    <td className="px-3 py-2.5 text-muted-foreground">{o.valid}</td>
-                  </tr>
-                ))}
+                {DEMO_OFFERS.map((o, i) => {
+                  const checked = state.bulkSelected && i < 2;
+                  return (
+                    <tr key={o.id} className={`border-b border-border/40 last:border-0 ${checked ? 'bg-primary/[0.04]' : ''}`}>
+                      <td className="px-3 py-2.5"><span className={`h-3.5 w-3.5 rounded border inline-flex items-center justify-center ${checked ? 'bg-primary border-primary' : 'border-border'}`}>{checked && <CheckCircle2 className="h-2.5 w-2.5 text-primary-foreground" />}</span></td>
+                      <td className="px-3 py-2.5"><div className="font-medium text-primary">{o.num}</div><div className="text-[10px] text-muted-foreground truncate max-w-[180px]">{o.title}</div></td>
+                      <td className="px-3 py-2.5"><span className="inline-flex items-center gap-1.5"><span className="h-5 w-5 rounded-full bg-primary/10 text-primary text-[9px] font-bold inline-flex items-center justify-center">{initials(o.customer)}</span>{o.customer}</span></td>
+                      <td className="px-3 py-2.5 text-right font-semibold">{fmt(o.amount)} TND</td>
+                      <td className="px-3 py-2.5"><Pill s={o.status} /></td>
+                      <td className="px-3 py-2.5 text-muted-foreground">{o.valid}</td>
+                      <td className="px-3 py-2.5 relative">
+                        <span id={i === 0 ? 'of-demo-row-actions' : undefined} className="inline-flex h-6 w-6 items-center justify-center rounded-md hover:bg-muted text-muted-foreground"><MoreHorizontal className="h-3.5 w-3.5" /></span>
+                        {i === 0 && (
+                          <div className="absolute right-3 top-8 z-[3] w-40 bg-popover border border-border rounded-md shadow-lg py-1 text-[11px]">
+                            {[[<Eye key="v" className="h-3 w-3" />, 'View'], [<Edit key="e" className="h-3 w-3" />, 'Edit'], [<Send key="s" className="h-3 w-3" />, 'Send'], [<GitBranch key="c" className="h-3 w-3" />, 'Convert to Sale'], [<ClipboardList key="r" className="h-3 w-3" />, 'Report'], [<Trash2 key="d" className="h-3 w-3 text-red-500" />, 'Delete']].map(([ic, l]) => (
+                              <div key={l as string} className="flex items-center gap-2 px-2.5 py-1 hover:bg-muted cursor-default">{ic}<span>{l as string}</span></div>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -202,7 +228,6 @@ function PageDetail({ state }: { state: OffersDemoState }) {
   const tabs = [
     { k: 'overview', l: 'Overview', id: undefined as string | undefined },
     { k: 'items', l: 'Items', id: 'of-demo-tab-items' },
-    { k: 'notes', l: 'Notes', id: 'of-demo-tab-notes' },
     { k: 'checklists', l: 'Checklists', id: 'of-demo-tab-checklists' },
     { k: 'documents', l: 'Documents', id: 'of-demo-tab-documents' },
     { k: 'activity', l: 'Activity', id: 'of-demo-tab-activity' },
@@ -278,13 +303,6 @@ function PageDetail({ state }: { state: OffersDemoState }) {
             </table>
           </div>
         )}
-        {state.activeTab === 'notes' && (
-          <div className="space-y-2">
-            {[['Called Sami — wants delivery before July.', 'Ahmed B.', '2025-06-09'], ['Sent revised pricing with 5% discount.', 'Sara M.', '2025-06-05']].map(n => (
-              <div key={n[0]} className="flex gap-3 p-3 bg-card border border-border rounded-lg"><span className="h-7 w-7 rounded-full bg-primary/10 text-primary inline-flex items-center justify-center shrink-0"><StickyNote className="h-3.5 w-3.5" /></span><div><p className="text-xs">{n[0]}</p><p className="text-[10px] text-muted-foreground mt-0.5">{n[2]} · {n[1]}</p></div></div>
-            ))}
-          </div>
-        )}
         {state.activeTab === 'checklists' && (
           <div className="space-y-3">
             <div className="bg-card border border-border rounded-lg p-4 space-y-2">
@@ -312,8 +330,12 @@ function PageDetail({ state }: { state: OffersDemoState }) {
         )}
         {state.activeTab === 'activity' && (
           <div className="space-y-2">
-            {[['Offer created', 'Ahmed B.', '2025-06-01'], ['Sent to customer', 'Ahmed B.', '2025-06-02'], ['Opened by customer', '', '2025-06-03'], ['Moved to Negotiation', 'Sara M.', '2025-06-05']].map((a, i, arr) => (
-              <div key={a[0]} className="flex gap-3"><div className="flex flex-col items-center shrink-0"><span className="h-6 w-6 rounded-full bg-primary/10 text-primary inline-flex items-center justify-center"><Activity className="h-3 w-3" /></span>{i < arr.length - 1 && <div className="w-px flex-1 bg-border mt-1" />}</div><div className="pb-1"><p className="text-xs font-medium">{a[0]}</p><p className="text-[10px] text-muted-foreground">{a[2]}{a[1] ? ` · ${a[1]}` : ''}</p></div></div>
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs font-medium inline-flex items-center gap-2"><Activity className="h-3.5 w-3.5 text-primary" /> Notes &amp; activity</p>
+              <span className="h-6 px-2 rounded border border-border text-[10px] text-muted-foreground inline-flex items-center gap-1"><Plus className="h-3 w-3" /> Add note</span>
+            </div>
+            {[['Called Sami — wants delivery before July.', 'Ahmed B.', '2025-06-09'], ['Sent revised pricing with 5% discount.', 'Sara M.', '2025-06-05'], ['Offer created', 'Ahmed B.', '2025-06-01']].map(n => (
+              <div key={n[0]} className="flex gap-3 p-3 bg-card border border-border rounded-lg"><span className="h-7 w-7 rounded-full bg-primary/10 text-primary inline-flex items-center justify-center shrink-0"><StickyNote className="h-3.5 w-3.5" /></span><div><p className="text-xs">{n[0]}</p><p className="text-[10px] text-muted-foreground mt-0.5">{n[2]} · {n[1]}</p></div></div>
             ))}
           </div>
         )}
@@ -352,7 +374,7 @@ function PageDetail({ state }: { state: OffersDemoState }) {
             {state.pdfSettings && (
               <div id="of-demo-pdf-settings" className="w-56 bg-card border border-border rounded-lg shadow-2xl p-3">
                 <p className="text-xs font-semibold mb-2 inline-flex items-center gap-1.5"><Palette className="h-3.5 w-3.5 text-primary" /> PDF Studio</p>
-                <div className="flex gap-1 mb-3 border-b border-border pb-2">{['Colours', 'Type', 'Layout', 'Data'].map((t, i) => <span key={t} className={`text-[10px] px-1.5 py-0.5 rounded ${i === 0 ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>{t}</span>)}</div>
+                <div className="flex gap-1 mb-3 border-b border-border pb-2 flex-wrap">{['Colors', 'Typography', 'Layout', 'Data', 'Advanced'].map((t, i) => <span key={t} className={`text-[10px] px-1.5 py-0.5 rounded ${i === 0 ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>{t}</span>)}</div>
                 <div className="space-y-2">
                   <div><div className="text-[10px] text-muted-foreground mb-1">Accent colour</div><div className="flex gap-1">{['bg-primary', 'bg-blue-500', 'bg-emerald-500', 'bg-rose-500', 'bg-amber-500'].map((c, i) => <span key={c} className={`h-5 w-5 rounded ${c} ${i === 0 ? 'ring-2 ring-offset-1 ring-foreground' : ''}`} />)}</div></div>
                   <div><div className="text-[10px] text-muted-foreground mb-1">Font</div><div className="h-7 rounded border border-border text-[11px] flex items-center px-2">Inter</div></div>
@@ -364,17 +386,19 @@ function PageDetail({ state }: { state: OffersDemoState }) {
         </div>
       )}
 
-      {/* Convert modal */}
+      {/* Convert modal — single Convert-to-Sale confirmation (matches real ConvertToSale dialog) */}
       {state.convertOpen && (
         <div className="absolute inset-0 z-[6] flex items-center justify-center bg-background/40">
           <div id="of-demo-convert-options" className="w-[440px] bg-card border border-border rounded-xl shadow-2xl p-4">
-            <p className="text-sm font-semibold mb-1 inline-flex items-center gap-2"><GitBranch className="h-4 w-4 text-primary" /> Convert Offer</p>
-            <p className="text-xs text-muted-foreground mb-3">OFF-2025-031 · 2 products · 1 service</p>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2.5 p-2.5 rounded-lg border border-primary bg-primary/5"><span className="h-4 w-4 rounded bg-primary border border-primary inline-flex items-center justify-center"><CheckCircle2 className="h-3 w-3 text-primary-foreground" /></span><ShoppingCart className="h-4 w-4 text-primary" /><div><p className="text-xs font-medium">Convert to Sale</p><p className="text-[10px] text-muted-foreground">Invoice the customer for 18,400 TND</p></div></div>
-              <div className="flex items-center gap-2.5 p-2.5 rounded-lg border border-primary bg-primary/5"><span className="h-4 w-4 rounded bg-primary border border-primary inline-flex items-center justify-center"><CheckCircle2 className="h-3 w-3 text-primary-foreground" /></span><Wrench className="h-4 w-4 text-primary" /><div><p className="text-xs font-medium">Convert to Service Order</p><p className="text-[10px] text-muted-foreground">Dispatch the installation work</p></div></div>
+            <p className="text-sm font-semibold mb-1 inline-flex items-center gap-2"><GitBranch className="h-4 w-4 text-primary" /> Convert to Sale</p>
+            <p className="text-xs text-muted-foreground mb-3">OFF-2025-031 · 2 lines · Total 18,400 TND</p>
+            <div className="space-y-2 text-xs">
+              <div className="flex justify-between p-2 rounded-md bg-muted/40"><span className="text-muted-foreground">Customer</span><span className="font-medium">Médina Resorts</span></div>
+              <div className="flex justify-between p-2 rounded-md bg-muted/40"><span className="text-muted-foreground">Line count</span><span className="font-medium">2 items</span></div>
+              <div className="flex justify-between p-2 rounded-md bg-primary/5 border border-primary/20"><span className="text-primary">Total</span><span className="text-primary font-semibold">18,400 TND</span></div>
+              <p className="text-[10px] text-muted-foreground pt-1">The new sale keeps the link to this offer. From the sale you can invoice, deduct stock, and — if it includes services — create a service order.</p>
             </div>
-            <div className="flex justify-end gap-2 mt-3"><div className="h-8 px-3 rounded-md border border-border text-xs flex items-center text-muted-foreground">Cancel</div><div className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium inline-flex items-center gap-1.5"><GitBranch className="h-3.5 w-3.5" /> Convert</div></div>
+            <div className="flex justify-end gap-2 mt-3"><div className="h-8 px-3 rounded-md border border-border text-xs flex items-center text-muted-foreground">Cancel</div><div className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium inline-flex items-center gap-1.5"><GitBranch className="h-3.5 w-3.5" /> Confirm convert</div></div>
           </div>
         </div>
       )}
@@ -418,7 +442,7 @@ export function OffersAutopilotDemo({ open, onClose }: Props) {
     if (!open || finished) return;
     const place = () => { const el = document.getElementById(step.target); if (!el) return; const r = el.getBoundingClientRect(); setCursor({ x: r.left + Math.min(r.width / 2, 120), y: r.top + Math.min(r.height / 2, 40), clicking: true }); if (clickRef.current) clearTimeout(clickRef.current); clickRef.current = setTimeout(() => setCursor(c => ({ ...c, clicking: false })), 450); };
     const t = setTimeout(place, 160); return () => clearTimeout(t);
-  }, [stepIndex, open, finished, step?.target, state.page, state.activeTab, state.listView, state.showFilters, state.showMap, state.showExport, state.createStep, state.sendOpen, state.pdfOpen, state.pdfSettings, state.convertOpen]);
+  }, [stepIndex, open, finished, step?.target, state.page, state.activeTab, state.listView, state.showFilters, state.showMap, state.bulkSelected, state.createStep, state.sendOpen, state.pdfOpen, state.pdfSettings, state.convertOpen, state.planningOpen, state.renewFlash]);
   useEffect(() => {
     if (!open || !playing || finished) return;
     const advance = () => setStepIndex(i => i + 1);
@@ -478,6 +502,46 @@ export function OffersAutopilotDemo({ open, onClose }: Props) {
         <p className="text-sm text-foreground/90 min-h-[20px] flex items-center gap-2"><Languages className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />{finished ? finishedMsg : captionText}</p>
       </div>
 
+      {/* Planning entries on offer line */}
+      {state.planningOpen && (
+        <div className="absolute inset-0 z-[6] flex items-center justify-center bg-background/40 p-4">
+          <div id="of-demo-planning" className="w-[620px] max-w-full bg-card border border-border rounded-xl shadow-2xl p-4">
+            <p className="text-sm font-semibold mb-1 inline-flex items-center gap-2"><Target className="h-4 w-4 text-primary" /> Planning entries · Line 2 · On-site installation</p>
+            <p className="text-xs text-muted-foreground mb-3">These planned costs travel with the item to the sale and then to the service order.</p>
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <div className="p-2.5 rounded-lg border border-border"><p className="text-[10px] text-muted-foreground inline-flex items-center gap-1"><Wrench className="h-3 w-3" /> Planned labour</p><p className="font-semibold mt-1">180 min · 1 tech</p><p className="text-[10px] text-muted-foreground">HVAC skill</p></div>
+              <div className="p-2.5 rounded-lg border border-border"><p className="text-[10px] text-muted-foreground inline-flex items-center gap-1"><DollarSign className="h-3 w-3" /> Planned expenses</p><p className="font-semibold mt-1">45 TND · travel</p><p className="text-[10px] text-muted-foreground">Round trip Sousse</p></div>
+              <div className="p-2.5 rounded-lg border border-border"><p className="text-[10px] text-muted-foreground inline-flex items-center gap-1"><ShoppingCart className="h-3 w-3" /> Planned materials</p><p className="font-semibold mt-1">4 kg R410A</p><p className="text-[10px] text-muted-foreground">from stock</p></div>
+            </div>
+            <div id="of-demo-planning-lineage" className="mt-3 rounded-lg border-2 border-dashed border-primary/40 bg-primary/5 p-2.5">
+              <p className="text-[10px] font-medium text-primary inline-flex items-center gap-1 mb-1.5"><GitBranch className="h-3 w-3" /> Lineage · same plan travels downstream</p>
+              <div className="flex items-center gap-1.5 text-[10px] flex-wrap">
+                <span className="px-1.5 py-0.5 rounded bg-card border border-border font-mono">OFF-2025-031 · L2</span>
+                <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                <span className="px-1.5 py-0.5 rounded bg-card border border-border font-mono">SALE-2025-044 · L2</span>
+                <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                <span className="px-1.5 py-0.5 rounded bg-card border border-border font-mono">SO-2025-044 · Job 1</span>
+                <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                <span className="px-1.5 py-0.5 rounded bg-primary/15 text-primary font-mono">DISP-2025-101</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Renew — real behaviour is an instant clone, not a modal. Toast-style flash. */}
+      {state.renewFlash && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-[6]">
+          <div id="of-demo-renew" className="bg-card border border-primary/40 shadow-2xl rounded-lg px-4 py-3 flex items-center gap-3 max-w-md">
+            <span className="h-8 w-8 rounded-full bg-primary/10 text-primary inline-flex items-center justify-center shrink-0"><RotateCcw className="h-4 w-4" /></span>
+            <div className="text-xs">
+              <p className="font-semibold">Offer renewed</p>
+              <p className="text-muted-foreground">Cloned <span className="font-mono">OFF-2025-020</span> → new draft <span className="font-mono text-primary">OFF-2025-042</span> · same customer &amp; lines.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {!finished && <DemoCursor x={cursor.x} y={cursor.y} clicking={cursor.clicking} />}
 
       {finished && (
@@ -485,7 +549,7 @@ export function OffersAutopilotDemo({ open, onClose }: Props) {
           <div className="bg-card border border-border rounded-2xl shadow-2xl p-6 max-w-sm text-center">
             <div className="h-12 w-12 mx-auto rounded-2xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center mb-3"><FileText className="h-6 w-6 text-primary-foreground" /></div>
             <h3 className="text-lg font-semibold mb-1">Quote, win, convert</h3>
-            <p className="text-sm text-muted-foreground mb-5">Visual pipeline · Compliant builder · Branded PDFs · Email tracking · One-click conversion to sales.</p>
+            <p className="text-sm text-muted-foreground mb-5">KPI-driven pipeline · Compliant builder · Branded PDFs · Email tracking · One-click conversion to sales.</p>
             <div className="flex flex-col gap-2">
               <button onClick={onClose} className="w-full h-10 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 cursor-pointer">Create your first offer</button>
               <button onClick={restart} className="w-full h-9 rounded-lg border border-border text-sm font-medium hover:bg-muted/40 inline-flex items-center justify-center gap-1.5 cursor-pointer"><RotateCcw className="h-3.5 w-3.5" /> Replay</button>

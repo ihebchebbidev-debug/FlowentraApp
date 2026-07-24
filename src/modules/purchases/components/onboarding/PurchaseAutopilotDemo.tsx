@@ -1240,7 +1240,7 @@ function PageReports() {
       </div>
 
       {/* Sub-report cards */}
-      <div className="grid grid-cols-3 gap-3">
+      <div id="po-demo-report-cards" className="grid grid-cols-3 gap-3">
         {[
           { id: 'po-demo-report-nav-perf', icon: TrendingUp, title: 'Supplier Performance', sub: 'On-time rate, lead time and spend per vendor' },
           { id: undefined, icon: Award, title: 'Price Evolution', sub: 'Track purchase price changes per supplier' },
@@ -1750,11 +1750,11 @@ function PageOrderTejXml({ state }: { state: PurchaseDemoState }) {
         <XmlElem n={13} indent={3} name="Telephone" value="+21671000000" highlight={h===4} />
         <XmlLine n={14} indent={2} highlight={h===4} content={<XmlTag name="InfosContact" close />} />
         <XmlLine n={15} indent={1} highlight={h===4} content={<XmlTag name="Declarant" close />} />
-        <XmlLine n={16} indent={1} content={<XmlTag name="ReferenceDeclaration" />} />
-        <XmlElem n={17} indent={2} name="ActeDepot" value="0" />
-        <XmlElem n={18} indent={2} name="AnneeDepot" value="2025" />
-        <XmlElem n={19} indent={2} name="MoisDepot" value="05" />
-        <XmlLine n={20} indent={1} content={<XmlTag name="ReferenceDeclaration" close />} />
+        <XmlLine n={16} indent={1} highlight={h===16} content={<span id="po-demo-tej-xml-refdecl"><XmlTag name="ReferenceDeclaration" /></span>} />
+        <XmlElem n={17} indent={2} name="ActeDepot" value="0" highlight={h===16} />
+        <XmlElem n={18} indent={2} name="AnneeDepot" value="2025" highlight={h===16} />
+        <XmlElem n={19} indent={2} name="MoisDepot" value="05" highlight={h===16} />
+        <XmlLine n={20} indent={1} highlight={h===16} content={<XmlTag name="ReferenceDeclaration" close />} />
         <XmlLine n={21} indent={1} highlight={h===15} content={<XmlTag name="AjouterCertificats" />} />
         <XmlLine n={22} indent={2} highlight={h===15} content={<span id="po-demo-tej-xml-cert"><XmlTag name="Certificat" /></span>} />
         <XmlElem n={23} indent={3} name="RefCertifChezDeclarant" value="CRT-2025-002" highlight={h===15} />
@@ -1767,23 +1767,23 @@ function PageOrderTejXml({ state }: { state: PurchaseDemoState }) {
         <XmlElem n={30} indent={4} name="NometprenonOuRaisonsociale" value="Machinery Parts Ltd" highlight={h===15} />
         <XmlElem n={31} indent={4} name="Pays" value="TN" highlight={h===15} />
         <XmlLine n={32} indent={3} content={<XmlTag name="Beneficiaire" close />} />
-        <XmlLine n={33} indent={3} content={<XmlTag name="Facture" />} />
-        <XmlElem n={34} indent={4} name="NumeroFacture" value="INV-F-2025-002" />
-        <XmlElem n={35} indent={4} name="DateFacture" value="10/05/2025" />
-        <XmlElem n={36} indent={4} name="DatePayement" value="15/05/2025" />
-        <XmlElem n={37} indent={4} name="MontantHT" value="27310000" />
-        <XmlElem n={38} indent={4} name="MontantTVA" value="5189900" />
-        <XmlElem n={39} indent={4} name="TauxRS" value="500" />
-        <XmlElem n={40} indent={4} name="MontantRS" value="1625000" />
-        <XmlElem n={41} indent={4} name="MontantNetServi" value="30875900" />
-        <XmlElem n={42} indent={4} name="PriseEnCharge" value="0" />
-        <XmlLine n={43} indent={3} content={<XmlTag name="Facture" close />} />
+        <XmlLine n={33} indent={3} highlight={h===33} content={<span id="po-demo-tej-xml-facture"><XmlTag name="Facture" /></span>} />
+        <XmlElem n={34} indent={4} name="NumeroFacture" value="INV-F-2025-002" highlight={h===33} />
+        <XmlElem n={35} indent={4} name="DateFacture" value="10/05/2025" highlight={h===33} />
+        <XmlElem n={36} indent={4} name="DatePayement" value="15/05/2025" highlight={h===33} />
+        <XmlElem n={37} indent={4} name="MontantHT" value="27310000" highlight={h===33} />
+        <XmlElem n={38} indent={4} name="MontantTVA" value="5189900" highlight={h===33} />
+        <XmlElem n={39} indent={4} name="TauxRS" value="500" highlight={h===33} />
+        <XmlElem n={40} indent={4} name="MontantRS" value="1625000" highlight={h===33} />
+        <XmlElem n={41} indent={4} name="MontantNetServi" value="30875900" highlight={h===33} />
+        <XmlElem n={42} indent={4} name="PriseEnCharge" value="0" highlight={h===33} />
+        <XmlLine n={43} indent={3} highlight={h===33} content={<XmlTag name="Facture" close />} />
         <XmlLine n={44} indent={2} content={<XmlTag name="Certificat" close />} />
-        <XmlElem n={45} indent={2} name="TotalMontantHT" value="27310000" />
-        <XmlElem n={46} indent={2} name="TotalMontantTVA" value="5189900" />
-        <XmlElem n={47} indent={2} name="TotalMontantRS" value="1625000" />
-        <XmlElem n={48} indent={2} name="TotalMontantNetServi" value="30875900" />
-        <XmlLine n={49} indent={1} content={<XmlTag name="AjouterCertificats" close />} />
+        <XmlElem n={45} indent={2} name="TotalMontantHT" value="27310000" highlight={h===45} />
+        <XmlElem n={46} indent={2} name="TotalMontantTVA" value="5189900" highlight={h===45} />
+        <XmlElem n={47} indent={2} name="TotalMontantRS" value="1625000" highlight={h===45} />
+        <XmlElem n={48} indent={2} name="TotalMontantNetServi" value="30875900" highlight={h===45} />
+        <XmlLine n={49} indent={1} content={<span id="po-demo-tej-xml-totals"><XmlTag name="AjouterCertificats" close /></span>} />
         <XmlLine n={50} indent={0} content={<XmlTag name="DeclarationsRS" close />} />
       </div>
 
@@ -1834,11 +1834,11 @@ function PageInvoiceTejXml({ state }: { state: PurchaseDemoState }) {
         <XmlElem n={11} indent={3} name="Telephone" value="+21671000000" highlight={h===4} />
         <XmlLine n={12} indent={2} highlight={h===4} content={<XmlTag name="InfosContact" close />} />
         <XmlLine n={13} indent={1} highlight={h===4} content={<XmlTag name="Declarant" close />} />
-        <XmlLine n={14} indent={1} content={<XmlTag name="ReferenceDeclaration" />} />
-        <XmlElem n={15} indent={2} name="ActeDepot" value="0" />
-        <XmlElem n={16} indent={2} name="AnneeDepot" value="2025" />
-        <XmlElem n={17} indent={2} name="MoisDepot" value="05" />
-        <XmlLine n={18} indent={1} content={<XmlTag name="ReferenceDeclaration" close />} />
+        <XmlLine n={14} indent={1} highlight={h===14} content={<span id="po-demo-itej-refdecl"><XmlTag name="ReferenceDeclaration" /></span>} />
+        <XmlElem n={15} indent={2} name="ActeDepot" value="0" highlight={h===14} />
+        <XmlElem n={16} indent={2} name="AnneeDepot" value="2025" highlight={h===14} />
+        <XmlElem n={17} indent={2} name="MoisDepot" value="05" highlight={h===14} />
+        <XmlLine n={18} indent={1} highlight={h===14} content={<XmlTag name="ReferenceDeclaration" close />} />
         <XmlLine n={19} indent={1} content={<XmlTag name="AjouterCertificats" />} />
         <XmlLine n={20} indent={2} highlight={h===18} content={<span id="po-demo-itej-cert"><XmlTag name="Certificat" /></span>} />
         <XmlElem n={21} indent={3} name="RefCertifChezDeclarant" value="CRT-2025-002" highlight={h===18} />
@@ -1868,10 +1868,10 @@ function PageInvoiceTejXml({ state }: { state: PurchaseDemoState }) {
         <XmlElem n={45} indent={4} name="PriseEnCharge" value="0" highlight={h===32} />
         <XmlLine n={46} indent={3} highlight={h===32} content={<XmlTag name="Facture" close />} />
         <XmlLine n={47} indent={2} content={<XmlTag name="Certificat" close />} />
-        <XmlElem n={48} indent={2} name="TotalMontantHT" value="27310000" />
-        <XmlElem n={49} indent={2} name="TotalMontantRS" value="1625000" />
-        <XmlElem n={50} indent={2} name="TotalMontantNetServi" value="30875900" />
-        <XmlLine n={51} indent={1} content={<XmlTag name="AjouterCertificats" close />} />
+        <XmlElem n={48} indent={2} name="TotalMontantHT" value="27310000" highlight={h===48} />
+        <XmlElem n={49} indent={2} name="TotalMontantRS" value="1625000" highlight={h===48} />
+        <XmlElem n={50} indent={2} name="TotalMontantNetServi" value="30875900" highlight={h===48} />
+        <XmlLine n={51} indent={1} content={<span id="po-demo-itej-totals"><XmlTag name="AjouterCertificats" close /></span>} />
         <XmlLine n={52} indent={0} content={<XmlTag name="DeclarationsRS" close />} />
       </div>
 
@@ -2160,10 +2160,10 @@ function PageRsCatalogue() {
       <div id="po-demo-rs-catalogue-table" className="bg-card border border-border rounded-lg overflow-hidden">
         <table className="w-full text-xs">
           <thead><tr className="bg-muted/30 border-b border-border/60">
-            <th className="text-left px-3 py-2 text-muted-foreground font-medium">Code</th>
+            <th id="po-demo-rs-code" className="text-left px-3 py-2 text-muted-foreground font-medium">Code</th>
             <th className="text-left px-3 py-2 text-muted-foreground font-medium">Libellé</th>
-            <th className="text-right px-3 py-2 text-muted-foreground font-medium">Rate</th>
-            <th className="text-left px-3 py-2 text-muted-foreground font-medium">TEJ Operation</th>
+            <th id="po-demo-rs-rate" className="text-right px-3 py-2 text-muted-foreground font-medium">Rate</th>
+            <th id="po-demo-rs-tej-op" className="text-left px-3 py-2 text-muted-foreground font-medium">TEJ Operation</th>
             <th className="text-left px-3 py-2 text-muted-foreground font-medium">Typical Usage</th>
           </tr></thead>
           <tbody>
@@ -2182,7 +2182,7 @@ function PageRsCatalogue() {
         </table>
       </div>
 
-      <div className="bg-muted/40 border border-border rounded-lg p-3 text-xs flex items-start gap-2">
+      <div id="po-demo-rs-legacy" className="bg-muted/40 border border-border rounded-lg p-3 text-xs flex items-start gap-2">
         <AlertCircle className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
         <div>
           <p className="font-semibold text-foreground">Legacy codes still accepted.</p>

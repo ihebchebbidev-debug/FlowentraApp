@@ -519,7 +519,7 @@ function PurchaseOrderListContent() {
             {viewMode === "table" ? (
               <>
                 {/* Mobile cards — visible below md breakpoint */}
-                <div className="md:hidden divide-y divide-border/50 rounded-lg border border-border overflow-hidden">
+                <div className="md:hidden list-editorial rounded-lg border border-border overflow-hidden">
                   {companyScopedOrders.length === 0 ? (
                     <div className="p-12 text-center text-muted-foreground">
                       <FileText className="h-8 w-8 opacity-40 mx-auto mb-2" />
@@ -531,17 +531,18 @@ function PurchaseOrderListContent() {
                       return (
                         <div
                           key={po.id}
-                          className={`p-4 bg-card hover:bg-muted/30 transition-colors cursor-pointer ${isSelected ? 'bg-primary/5' : ''}`}
+                          className="list-row-editorial bg-card"
+                          data-selected={isSelected ? 'true' : 'false'}
                           onClick={() => navigate(`/dashboard/purchases/orders/${po.id}`)}
                         >
                           {/* Header */}
                           <div className="flex items-start gap-3">
-                            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                              <ShoppingCart className="h-4 w-4 text-primary" />
+                            <div className="list-row-avatar mt-0.5">
+                              <ShoppingCart className="h-4 w-4" />
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between gap-2">
-                                <p className="font-semibold text-sm text-foreground leading-snug line-clamp-1 flex-1">
+                                <p className="list-row-title flex-1">
                                   {po.orderNumber}
                                 </p>
                                 <Badge
@@ -551,18 +552,18 @@ function PurchaseOrderListContent() {
                                   {t(`status.${po.status}`)}
                                 </Badge>
                               </div>
-                              <p className="text-xs text-muted-foreground mt-0.5 font-mono">
+                              <p className="list-row-subtitle font-mono">
                                 {po.supplierName}
                               </p>
                             </div>
                           </div>
                           {/* Details */}
-                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pl-12 mt-2">
-                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                              <Clock className="h-3 w-3 shrink-0" />
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pl-[52px] mt-2">
+                            <div className="list-row-meta-item">
+                              <Clock className="h-3.5 w-3.5 shrink-0" />
                               <span>{po.orderDate}</span>
                             </div>
-                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <div className="list-row-meta-item">
                               <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                                 {t(`paymentStatus.${po.paymentStatus}`)}
                               </Badge>
@@ -570,10 +571,10 @@ function PurchaseOrderListContent() {
                           </div>
                           {/* Footer */}
                           <div
-                            className="flex items-center justify-between pl-12 mt-3"
+                            className="flex items-center justify-between pl-[52px] mt-3"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <span className="text-sm font-semibold text-primary">
+                            <span className="list-row-amount">
                               {fmt(po.grandTotal)} {currency.code}
                             </span>
                             <div className="flex gap-2">
