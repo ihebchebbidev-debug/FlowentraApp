@@ -844,82 +844,83 @@ export function OffersList() {
                   onPreviousPage={pagination.actions.previousPage}
                   onNextPage={pagination.actions.nextPage}
                 />
-                <div className="divide-y divide-border">
+                <div className="list-editorial">
                   {pagination.data.map((offer) => (
                     <div
                       key={offer.id}
-                      className="p-3 sm:p-4 lg:p-6 hover:bg-muted/50 transition-colors group cursor-pointer"
+                      className="list-row-editorial"
                       onClick={() => handleOfferClick(offer)}
                     >
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-                        <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-1 min-w-0">
-                          <Avatar className="h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0">
-                            <AvatarFallback className="text-xs sm:text-sm bg-primary/10 text-primary">
-                              <FileText className="h-4 w-4 sm:h-6 sm:w-6" />
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex flex-wrap items-center gap-2 mb-1">
-                              <h3 className="text-foreground text-sm sm:text-base break-words line-clamp-2">{offer.title}</h3>
-                              <Badge className={`${getStatusColor(offer.status)} text-xs`}>
-                                {t(getStatusTranslationKey('offer', offer.status))}
-                              </Badge>
+                      {/* Header: icon + title + status badge */}
+                      <div className="flex items-start gap-3 mb-2.5">
+                        <div className="list-row-avatar mt-0.5">
+                          <FileText className="h-4 w-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="list-row-title flex-1">{offer.title}</p>
+                            <div className="flex items-center gap-1 shrink-0">
                               {(offer.sentCount !== undefined && offer.sentCount > 0) && (
-                                <Badge variant="outline" className="text-xs gap-1 opacity-80">
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 gap-1">
                                   <Send className="w-3 h-3 text-primary" />
                                   {offer.sentCount}
                                 </Badge>
                               )}
-                            </div>
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-muted-foreground mb-2">
-                              <span className="truncate flex items-center gap-1">
-                                {offer.contactName} - {offer.contactCompany}
-                                {offer.contactHasLocation === 1 && (
-                                  <MapPin className="h-3 w-3 text-primary flex-shrink-0" />
-                                )}
-                              </span>
-                              <span className="text-foreground">
-                                {calculateItemsTotal(offer).toLocaleString()} {offer.currency}
-                              </span>
-                            </div>
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
-                              {offer.assignedTo || offer.assignedToName ? (
-                                <UserInline
-                                  userId={offer.assignedTo}
-                                  name={offer.assignedToName}
-                                  size="xs"
-                                />
-                              ) : (
-                                <div className="flex items-center gap-1">
-                                  <User className="h-3 w-3 flex-shrink-0" />
-                                  <span className="truncate">{t('unassigned')}</span>
-                                </div>
-                              )}
-
-                              <div className="hidden sm:flex items-center gap-1">
-                                <Calendar className="h-3 w-3 flex-shrink-0" />
-                                <span>
-                                  {offer.validUntil ? formatDate(offer.validUntil) : t('noExpiryDate')}
-                                </span>
-                              </div>
+                              <Badge className={`${getStatusColor(offer.status)} text-[10px] px-2 py-0.5`}>
+                                {t(getStatusTranslationKey('offer', offer.status))}
+                              </Badge>
                             </div>
                           </div>
+                          <p className="list-row-subtitle">
+                            {offer.contactName}
+                            {offer.contactCompany ? ` · ${offer.contactCompany}` : ''}
+                          </p>
                         </div>
+                      </div>
 
-                        <div className="flex items-center justify-between sm:justify-end gap-2 mt-2 sm:mt-0">
-                          <div className="flex gap-1 flex-wrap flex-1 sm:flex-none">
+                      {/* Details */}
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pl-[52px] mb-3">
+                        {(offer.assignedTo || offer.assignedToName) && (
+                          <UserInline
+                            userId={offer.assignedTo}
+                            name={offer.assignedToName}
+                            size="xs"
+                            className="text-[12px] text-muted-foreground/90"
+                          />
+                        )}
+                        {offer.validUntil && (
+                          <div className="list-row-meta-item">
+                            <Calendar className="h-3.5 w-3.5 shrink-0" />
+                            <span>{formatDate(offer.validUntil)}</span>
+                          </div>
+                        )}
+                        {offer.contactHasLocation === 1 && (
+                          <div className="list-row-meta-item">
+                            <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
+                          </div>
+                        )}
+                        {offer.tags.length > 0 && (
+                          <div className="flex gap-1 flex-wrap">
                             {offer.tags.slice(0, 2).map((tag, index) => (
-                              <Badge key={index} variant="outline" className="text-xs px-1.5 py-0.5">
+                              <Badge key={index} variant="outline" className="text-[10px] px-1.5 py-0">
                                 {tag}
                               </Badge>
                             ))}
                             {offer.tags.length > 2 && (
-                              <Badge variant="outline" className="text-xs px-1.5 py-0.5">
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                                 +{offer.tags.length - 2}
                               </Badge>
                             )}
                           </div>
+                        )}
+                      </div>
 
+                      {/* Footer: amount + actions */}
+                      <div className="flex items-center justify-between pl-[52px]" onClick={e => e.stopPropagation()}>
+                        <span className="list-row-amount">
+                          {calculateItemsTotal(offer).toLocaleString()} {offer.currency}
+                        </span>
+                        <div className="ml-auto">
                           <TableRowActions actions={[
                             { icon: Eye, label: t('listView.viewDetails'), onClick: (e) => { e.stopPropagation(); handleOfferClick(offer); } },
                             { icon: Edit, label: t('listView.editOffer'), onClick: (e) => { e.stopPropagation(); navigate(`/dashboard/offers/${offer.id}/edit`); }, show: hasUpdateAccess },
@@ -933,6 +934,7 @@ export function OffersList() {
                     </div>
                   ))}
                 </div>
+
                 </>
               )}
             </CardContent>

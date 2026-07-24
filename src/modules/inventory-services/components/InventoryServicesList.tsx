@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from "react";
-import { PageSizeSelector } from "@/components/shared/PageSizeSelector";
+import { SimplePaginationBar } from "@/components/shared/SimplePaginationBar";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { AlertTriangle, Package, Wrench, Loader2, Plus, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -302,27 +302,22 @@ export function InventoryServicesList() {
         </div>
       )}
 
-      {/* Pagination - Top */}
-      {filteredItems.length > 0 && (
-        <div className="px-3 sm:px-4 lg:px-6">
-          <PageSizeSelector
-            currentPage={invPage}
-            totalPages={Math.ceil(filteredItems.length / invPageSize)}
-            totalItems={filteredItems.length}
-            pageSize={invPageSize}
-            startIndex={(invPage - 1) * invPageSize}
-            endIndex={Math.min(invPage * invPageSize, filteredItems.length)}
-            onPageChange={setInvPage}
-            onPageSizeChange={(size) => { setInvPageSize(size); setInvPage(1); }}
-            hasPreviousPage={invPage > 1}
-            hasNextPage={invPage < Math.ceil(filteredItems.length / invPageSize)}
-          />
-        </div>
-      )}
-
       {/* Items List */}
       <div className="p-3 sm:p-4 lg:p-6">
-        <div className="bg-card rounded-lg">
+        <div className="bg-card rounded-lg overflow-hidden">
+          {filteredItems.length > 0 && (
+            <SimplePaginationBar
+              startIndex={(invPage - 1) * invPageSize}
+              endIndex={Math.min(invPage * invPageSize, filteredItems.length)}
+              totalItems={filteredItems.length}
+              currentPage={invPage}
+              totalPages={Math.ceil(filteredItems.length / invPageSize)}
+              hasPreviousPage={invPage > 1}
+              hasNextPage={invPage < Math.ceil(filteredItems.length / invPageSize)}
+              onPreviousPage={() => setInvPage(p => Math.max(1, p - 1))}
+              onNextPage={() => setInvPage(p => p + 1)}
+            />
+          )}
           {filteredItems.length === 0 ? (
             <div className="py-16 px-8 text-center">
               <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -339,6 +334,19 @@ export function InventoryServicesList() {
               onClick={handleItemClick}
               selectedIds={selectedIds}
               onSelectionChange={setSelectedIds}
+            />
+          )}
+          {filteredItems.length > 0 && Math.ceil(filteredItems.length / invPageSize) > 1 && (
+            <SimplePaginationBar
+              startIndex={(invPage - 1) * invPageSize}
+              endIndex={Math.min(invPage * invPageSize, filteredItems.length)}
+              totalItems={filteredItems.length}
+              currentPage={invPage}
+              totalPages={Math.ceil(filteredItems.length / invPageSize)}
+              hasPreviousPage={invPage > 1}
+              hasNextPage={invPage < Math.ceil(filteredItems.length / invPageSize)}
+              onPreviousPage={() => setInvPage(p => Math.max(1, p - 1))}
+              onNextPage={() => setInvPage(p => p + 1)}
             />
           )}
         </div>

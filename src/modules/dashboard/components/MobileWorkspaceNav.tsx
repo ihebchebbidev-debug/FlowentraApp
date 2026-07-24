@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import * as Icons from "lucide-react";
-import { Menu, ChevronRight, Sun, Moon, Monitor, LogOut, Settings as SettingsIcon, User as UserIcon, Bell } from "lucide-react";
+import { Menu, ChevronRight, ChevronLeft, Sun, Moon, Monitor, LogOut, Settings as SettingsIcon, User as UserIcon, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -71,6 +71,8 @@ export function MobileWorkspaceNav() {
   const { user, logout } = useAuth();
   const companyLogo = useCompanyLogo();
   const [open, setOpen] = useState(false);
+  const [activeSubmenuId, setActiveSubmenuId] = useState<string | null>(null);
+  const NO_SECONDARY = useMemo(() => new Set(["explore", "settings", "lookups"]), []);
   const { unreadCount } = useNotifications();
   const aiAssistantAvailable = useAiAssistantAvailable();
   const [aiSidebarOpen, setAiSidebarOpen] = useState(false);
@@ -103,9 +105,27 @@ export function MobileWorkspaceNav() {
   }, [open]);
 
   const openWorkspace = (ws: Workspace) => {
-    setOpen(false);
-    navigate(ws.landingUrl);
+    // Workspaces without a submenu navigate immediately.
+    if (NO_SECONDARY.has(ws.id) || !ws.modules || ws.modules.length === 0) {
+      setOpen(false);
+      setActiveSubmenuId(null);
+      navigate(ws.landingUrl);
+      return;
+    }
+    // Otherwise reveal the submenu inside the drawer.
+    setActiveSubmenuId(ws.id);
   };
+
+  const activeSubmenuWs = useMemo(
+    () => WORKSPACES.find((w) => w.id === activeSubmenuId) ?? null,
+    [activeSubmenuId]
+  );
+
+  // Reset submenu view whenever the drawer closes.
+  useEffect(() => {
+    if (!open) setActiveSubmenuId(null);
+  }, [open]);
+
 
   return (
     <header className="sticky top-0 z-40 flex h-14 items-center gap-2 border-b border-border bg-background px-2">
@@ -129,32 +149,91 @@ export function MobileWorkspaceNav() {
 
             {/* Header */}
             <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-              <h2 className="truncate text-base font-semibold">Workspaces</h2>
+              {activeSubmenuWs ? (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 -ml-1"
+                    aria-label="Back to workspaces"
+                    onClick={() => setActiveSubmenuId(null)}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Icon name={activeSubmenuWs.icon} className="h-4 w-4 text-primary" />
+                  <h2 className="truncate text-base font-semibold">{activeSubmenuWs.label}</h2>
+                </>
+              ) : (
+                <h2 className="truncate text-base font-semibold">Workspaces</h2>
+              )}
             </div>
 
             {/* Body */}
             <div className="flex-1 overflow-y-auto p-2">
-              <div className="flex flex-col gap-1">
-                {WORKSPACES.map((ws) => {
-                  const active = currentWs?.id === ws.id;
-                  return (
-                    <button
-                      key={ws.id}
-                      type="button"
-                      onClick={() => openWorkspace(ws)}
-                      className={cn(
-                        "flex items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent",
-                        active && "border-primary/40 bg-primary/5"
-                      )}
-                    >
-                      <Icon name={ws.icon} className="h-5 w-5 text-primary" />
-                      <span className="flex-1 font-medium">{ws.label}</span>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                    </button>
-                  );
-                })}
-              </div>
+              {activeSubmenuWs ? (
+                <div className="flex flex-col gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      setActiveSubmenuId(null);
+                      navigate(activeSubmenuWs.landingUrl);
+                    }}
+                    className="flex items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent"
+                  >
+                    <Icon name={activeSubmenuWs.icon} className="h-5 w-5 text-primary" />
+                    <span className="flex-1 font-medium">Overview</span>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                  {activeSubmenuWs.modules.map((m) => {
+                    const active = location.pathname.startsWith(m.url);
+                    return (
+                      <button
+                        key={m.key}
+                        type="button"
+                        onClick={() => {
+                          setOpen(false);
+                          setActiveSubmenuId(null);
+                          navigate(m.url);
+                        }}
+                        className={cn(
+                          "flex items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent",
+                          active && "border-primary/40 bg-primary/5"
+                        )}
+                      >
+                        <Icon name={m.icon} className="h-5 w-5 text-primary" />
+                        <span className="flex-1 font-medium">{m.label}</span>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="flex flex-col gap-1">
+                  {WORKSPACES.map((ws) => {
+                    const active = currentWs?.id === ws.id;
+                    const hasSubmenu = !NO_SECONDARY.has(ws.id) && ws.modules.length > 0;
+                    return (
+                      <button
+                        key={ws.id}
+                        type="button"
+                        onClick={() => openWorkspace(ws)}
+                        className={cn(
+                          "flex items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent",
+                          active && "border-primary/40 bg-primary/5"
+                        )}
+                        aria-haspopup={hasSubmenu ? "menu" : undefined}
+                      >
+                        <Icon name={ws.icon} className="h-5 w-5 text-primary" />
+                        <span className="flex-1 font-medium">{ws.label}</span>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
+
 
             {/* Footer — user + theme */}
             <div className="mt-auto shrink-0 border-t border-border bg-background/60 p-3 space-y-3">

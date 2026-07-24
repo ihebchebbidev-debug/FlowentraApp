@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { usePaginatedData } from "@/shared/hooks/usePagination";
-import { PageSizeSelector } from "@/components/shared/PageSizeSelector";
+import { SimplePaginationBar } from "@/components/shared/SimplePaginationBar";
 import { formatStatValue } from "@/lib/formatters";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
@@ -948,17 +948,16 @@ export default function InstallationsList() {
       {/* Pagination - Top */}
       {!isLoading && filteredInstallations.length > 0 && (
         <div className="px-3 sm:px-4">
-          <PageSizeSelector
-            currentPage={pagination.state.currentPage}
-            totalPages={pagination.info.totalPages}
-            totalItems={filteredInstallations.length}
-            pageSize={installPageSize}
+          <SimplePaginationBar
             startIndex={pagination.info.startIndex}
             endIndex={pagination.info.endIndex}
-            onPageChange={pagination.actions.goToPage}
-            onPageSizeChange={(size) => { setInstallPageSize(size); pagination.actions.setItemsPerPage(size); }}
+            totalItems={filteredInstallations.length}
+            currentPage={pagination.state.currentPage}
+            totalPages={pagination.info.totalPages}
             hasPreviousPage={pagination.info.hasPreviousPage}
             hasNextPage={pagination.info.hasNextPage}
+            onPreviousPage={pagination.actions.previousPage}
+            onNextPage={pagination.actions.nextPage}
           />
         </div>
       )}
@@ -1062,17 +1061,16 @@ export default function InstallationsList() {
                 />
                 {filteredInstallations.length > 0 && (
                   <div className="border-t border-border px-4 py-2">
-                    <PageSizeSelector
-                      currentPage={pagination.state.currentPage}
-                      totalPages={pagination.info.totalPages}
-                      totalItems={filteredInstallations.length}
-                      pageSize={installPageSize}
+                    <SimplePaginationBar
                       startIndex={pagination.info.startIndex}
                       endIndex={pagination.info.endIndex}
-                      onPageChange={pagination.actions.goToPage}
-                      onPageSizeChange={(size) => { setInstallPageSize(size); pagination.actions.setItemsPerPage(size); }}
+                      totalItems={filteredInstallations.length}
+                      currentPage={pagination.state.currentPage}
+                      totalPages={pagination.info.totalPages}
                       hasPreviousPage={pagination.info.hasPreviousPage}
                       hasNextPage={pagination.info.hasNextPage}
+                      onPreviousPage={pagination.actions.previousPage}
+                      onNextPage={pagination.actions.nextPage}
                     />
                   </div>
                 )}
@@ -1083,6 +1081,17 @@ export default function InstallationsList() {
           <div className="p-3 sm:p-4">
             <Card className="shadow-card">
               <CardContent className="p-0 list-editorial">
+                <SimplePaginationBar
+                  startIndex={pagination.info.startIndex}
+                  endIndex={pagination.info.endIndex}
+                  totalItems={filteredInstallations.length}
+                  currentPage={pagination.state.currentPage}
+                  totalPages={pagination.info.totalPages}
+                  hasPreviousPage={pagination.info.hasPreviousPage}
+                  hasNextPage={pagination.info.hasNextPage}
+                  onPreviousPage={pagination.actions.previousPage}
+                  onNextPage={pagination.actions.nextPage}
+                />
                 {pagination.data.map((installation) => {
                   const warrantyStatus = getWarrantyStatus(installation.warranty);
                   const customer = installation.contactId ? contactsMap.get(installation.contactId) : null;
@@ -1151,24 +1160,21 @@ export default function InstallationsList() {
                     </div>
                   );
                 })}
+                {filteredInstallations.length > 0 && (
+                  <SimplePaginationBar
+                    startIndex={pagination.info.startIndex}
+                    endIndex={pagination.info.endIndex}
+                    totalItems={filteredInstallations.length}
+                    currentPage={pagination.state.currentPage}
+                    totalPages={pagination.info.totalPages}
+                    hasPreviousPage={pagination.info.hasPreviousPage}
+                    hasNextPage={pagination.info.hasNextPage}
+                    onPreviousPage={pagination.actions.previousPage}
+                    onNextPage={pagination.actions.nextPage}
+                  />
+                )}
               </CardContent>
             </Card>
-            {filteredInstallations.length > 0 && (
-              <div className="mt-4">
-                <PageSizeSelector
-                  currentPage={pagination.state.currentPage}
-                  totalPages={pagination.info.totalPages}
-                  totalItems={filteredInstallations.length}
-                  pageSize={installPageSize}
-                  startIndex={pagination.info.startIndex}
-                  endIndex={pagination.info.endIndex}
-                  onPageChange={pagination.actions.goToPage}
-                  onPageSizeChange={(size) => { setInstallPageSize(size); pagination.actions.setItemsPerPage(size); }}
-                  hasPreviousPage={pagination.info.hasPreviousPage}
-                  hasNextPage={pagination.info.hasNextPage}
-                />
-              </div>
-            )}
           </div>
         ) : null}
         

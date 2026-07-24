@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { formatStatValue } from "@/lib/formatters";
+import { getStatusColorClass } from "@/config/entity-statuses";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -66,6 +67,7 @@ interface DisplayDispatch {
   id: string;
   serviceOrderId: string;
   serviceOrderTitle?: string;
+  serviceOrderNumber?: string;
   jobId: string;
   dispatchNumber: string;
   assignedTechnicians: string[];
@@ -851,25 +853,29 @@ useEffect(() => {
                                   onCheckedChange={() => toggleSelect(dispatch.id)}
                                   onClick={(e: React.MouseEvent) => e.stopPropagation()}
                                 />
-                                <div className="flex items-center gap-2">{getStatusIcon(dispatch.status)}</div>
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
-                                    <h3 className="font-semibold text-foreground text-sm sm:text-base truncate">{dispatch.dispatchNumber}</h3>
-                                    <div className="flex items-center gap-2">
-                                      <Badge variant={getPriorityColor(dispatch.priority)}>
-                                        {t(`dispatcher.priority_${dispatch.priority}`)}
-                                      </Badge>
-                                      <Badge 
-                                        variant="outline" 
-                                        className="text-xs cursor-pointer hover:bg-primary hover:text-white"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleServiceOrderClick(dispatch.serviceOrderId);
-                                        }}
-                                      >
-                                        SO: {dispatch.serviceOrderId}
-                                      </Badge>
+                                  <div className="flex items-start justify-between gap-2 mb-1">
+                                    <div className="min-w-0 flex-1">
+                                      <h3 className="font-semibold text-foreground text-sm sm:text-base truncate">{dispatch.dispatchNumber}</h3>
+                                      <div className="flex items-center gap-2 flex-wrap mt-1">
+                                        <Badge variant={getPriorityColor(dispatch.priority)}>
+                                          {t(`dispatcher.priority_${dispatch.priority}`)}
+                                        </Badge>
+                                        <Badge
+                                          variant="outline"
+                                          className="text-xs cursor-pointer hover:bg-primary hover:text-white"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleServiceOrderClick(dispatch.serviceOrderId);
+                                          }}
+                                        >
+                                          {dispatch.serviceOrderNumber || `SO-${dispatch.serviceOrderId}`}
+                                        </Badge>
+                                      </div>
                                     </div>
+                                    <Badge className={`${getStatusColorClass('dispatch', dispatch.status)} text-[10px] px-2 py-0.5 shrink-0 capitalize`}>
+                                      {t(`dispatcher.statuses.${dispatch.status}`, dispatch.status.replace('_', ' '))}
+                                    </Badge>
                                   </div>
                                   <div className="text-sm text-muted-foreground mb-2 flex flex-wrap gap-1">
                                     <span>Technicians:</span>

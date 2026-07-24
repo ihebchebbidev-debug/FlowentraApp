@@ -60,6 +60,7 @@ import { useDispatchDeletion } from "../hooks/useDispatchDeletion";
 import { useToast } from "@/hooks/use-toast";
 import { CreateActionButton } from '@/components/CreateActionButton';
 import TableLayout, { Column } from "@/components/shared/TableLayout";
+import { TableRowActions } from "@/shared/components/TableRowActions";
 
 export default function DispatchesList() {
   const { t } = useTranslation();
@@ -418,7 +419,7 @@ export default function DispatchesList() {
               </div>
             ) : (
               <>
-                {/* Mobile cards — visible below md breakpoint */}
+                {/* Mobile cards — visible below md breakpoint (matches Service Orders list) */}
                 <div className="md:hidden list-editorial">
                   {filteredDispatches.map((dispatch) => (
                     <div
@@ -426,7 +427,7 @@ export default function DispatchesList() {
                       className="list-row-editorial"
                       onClick={() => handleDispatchClick(dispatch)}
                     >
-                      {/* Header: icon + job number/title + status */}
+                      {/* Header: icon + dispatch/job number + priority + status */}
                       <div className="flex items-start gap-3 mb-2.5">
                         <div className="list-row-avatar mt-0.5">
                           <ClipboardList className="h-4 w-4" />
@@ -434,11 +435,19 @@ export default function DispatchesList() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
                             <p className="list-row-title flex-1">{dispatch.jobNumber}</p>
-                            <Badge className={`${getStatusColor(dispatch.status)} text-[10px] px-2 py-0.5 shrink-0`}>
-                              {t(`dispatches.statuses.${dispatch.status}`)}
-                            </Badge>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <Badge className={`${getPriorityColor(dispatch.priority)} text-[10px] px-2 py-0.5 capitalize`}>
+                                {t(`dispatches.priorities.${dispatch.priority}`)}
+                              </Badge>
+                              <Badge className={`${getStatusColor(dispatch.status)} text-[10px] px-2 py-0.5`}>
+                                {t(`dispatches.statuses.${dispatch.status}`)}
+                              </Badge>
+                            </div>
                           </div>
-                          <p className="list-row-subtitle">{dispatch.title}</p>
+                          <p className="list-row-subtitle">
+                            {dispatch.customer.company}
+                            {dispatch.title ? ` · ${dispatch.title}` : ''}
+                          </p>
                         </div>
                       </div>
 
@@ -447,7 +456,13 @@ export default function DispatchesList() {
                         {dispatch.customer.address?.city && (
                           <div className="list-row-meta-item">
                             <MapPin className="h-3.5 w-3.5 shrink-0" />
-                            <span className="truncate max-w-[160px]">{dispatch.customer.company} · {dispatch.customer.address.city}</span>
+                            <span className="truncate max-w-[160px]">{dispatch.customer.address.city}</span>
+                          </div>
+                        )}
+                        {dispatch.assignedTechnicians.length > 0 && (
+                          <div className="list-row-meta-item">
+                            <Users className="h-3.5 w-3.5 shrink-0" />
+                            <span>{dispatch.assignedTechnicians.length} {t('list.technicians', 'technicians')}</span>
                           </div>
                         )}
                         {dispatch.scheduledDate && (
@@ -456,62 +471,21 @@ export default function DispatchesList() {
                             <span>{dispatch.scheduledDate.toLocaleDateString()}</span>
                           </div>
                         )}
-                        {dispatch.assignedTechnicians.length > 0 && (
-                          <div className="list-row-meta-item">
-                            <Users className="h-3.5 w-3.5 shrink-0" />
-                            <span className="truncate">{dispatch.assignedTechnicians.slice(0, 2).map(tech => tech.name).join(', ')}{dispatch.assignedTechnicians.length > 2 ? ` +${dispatch.assignedTechnicians.length - 2}` : ''}</span>
-                          </div>
-                        )}
                       </div>
 
-                      {/* Footer: priority badge + actions */}
-                      <div className="flex items-center justify-between pl-[52px]" onClick={(e) => e.stopPropagation()}>
-                        <Badge className={`${getPriorityColor(dispatch.priority)} text-[10px] px-2 py-0.5 capitalize`}>
-                          {t(`dispatches.priorities.${dispatch.priority}`)}
-                        </Badge>
-                        <div className="ml-auto">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>{t('common.actions')}</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => handleDispatchClick(dispatch)}>
-                                <Eye className="h-4 w-4 mr-2" />
-                                {t('common.view')}
-                              </DropdownMenuItem>
-                              {hasUpdateAccess && (
-                                <DropdownMenuItem onClick={() => handleEditDispatch(dispatch)}>
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  {t('common.edit')}
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuItem onClick={() => window.open(`/dashboard/field/dispatches/${dispatch.id}/report`, '_blank')}>
-                                <FileText className="h-4 w-4 mr-2" />
-                                {t('common.report', 'Report')}
-                              </DropdownMenuItem>
-                              {hasDeleteAccess && (
-                                <>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem
-                                    onClick={() => handleDeleteClick(dispatch)}
-                                    className="text-destructive focus:text-destructive"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    {t('common.delete')}
-                                  </DropdownMenuItem>
-                                </>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
+                      {/* Footer: actions */}
+                      <div className="flex items-center justify-end pl-[52px]" onClick={(e) => e.stopPropagation()}>
+                        <TableRowActions actions={[
+                          { icon: Eye, label: t('common.view'), onClick: (e) => { e.stopPropagation(); handleDispatchClick(dispatch); } },
+                          { icon: Edit, label: t('common.edit'), onClick: (e) => { e.stopPropagation(); handleEditDispatch(dispatch); }, show: hasUpdateAccess },
+                          { icon: FileText, label: t('common.report', 'Report'), onClick: (e) => { e.stopPropagation(); window.open(`/dashboard/field/dispatches/${dispatch.id}/report`, '_blank'); } },
+                          { icon: Trash2, label: t('common.delete'), onClick: (e) => { e.stopPropagation(); handleDeleteClick(dispatch); }, variant: 'destructive', show: hasDeleteAccess },
+                        ]} />
                       </div>
                     </div>
                   ))}
                 </div>
+
 
                 {/* Desktop table — hidden on mobile */}
                 <div className="hidden md:block overflow-x-auto">
