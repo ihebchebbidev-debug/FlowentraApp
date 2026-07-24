@@ -16,8 +16,8 @@ namespace MyApi.Modules.Planning.Services
             { "offer_item", "sale_item", "service_order_job", "deal_item" };
         private static readonly HashSet<string> ValidKinds = new(StringComparer.OrdinalIgnoreCase)
             { "time", "expense", "material" };
-        private static readonly HashSet<string> ValidExpenseTypes = new(StringComparer.OrdinalIgnoreCase)
-            { "travel", "per_diem", "materials", "subcontractor" };
+        // Expense types are now managed via the Lookups module (expense_types table).
+        // Any non-empty value is accepted here; the UI supplies values from that lookup.
 
         public PlannedLineEntryService(ApplicationDbContext db) { _db = db; }
 
@@ -339,8 +339,8 @@ namespace MyApi.Modules.Planning.Services
             }
             else if (string.Equals(dto.Kind, "expense", StringComparison.OrdinalIgnoreCase))
             {
-                if (string.IsNullOrWhiteSpace(dto.ExpenseType) || !ValidExpenseTypes.Contains(dto.ExpenseType))
-                    throw new ArgumentException("ExpenseType is required (travel|per_diem|materials|subcontractor)");
+                if (string.IsNullOrWhiteSpace(dto.ExpenseType))
+                    throw new ArgumentException("ExpenseType is required for expense entries");
                 if ((dto.PlannedAmount ?? 0) <= 0)
                     throw new ArgumentException("PlannedAmount is required and must be > 0 for expense entries");
             }
