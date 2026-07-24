@@ -934,8 +934,19 @@ export function OffersList() {
                     </div>
                   ))}
                 </div>
-
+                <SimplePaginationBar
+                  startIndex={pagination.info.startIndex}
+                  endIndex={pagination.info.endIndex}
+                  totalItems={filteredOffers.length}
+                  currentPage={pagination.state.currentPage}
+                  totalPages={pagination.info.totalPages}
+                  hasPreviousPage={pagination.info.hasPreviousPage}
+                  hasNextPage={pagination.info.hasNextPage}
+                  onPreviousPage={pagination.actions.previousPage}
+                  onNextPage={pagination.actions.nextPage}
+                />
                 </>
+
               )}
             </CardContent>
           </Card>
@@ -962,8 +973,20 @@ export function OffersList() {
               ) : (
                 <>
 
+                  <SimplePaginationBar
+                    startIndex={pagination.info.startIndex}
+                    endIndex={pagination.info.endIndex}
+                    totalItems={filteredOffers.length}
+                    currentPage={pagination.state.currentPage}
+                    totalPages={pagination.info.totalPages}
+                    hasPreviousPage={pagination.info.hasPreviousPage}
+                    hasNextPage={pagination.info.hasNextPage}
+                    onPreviousPage={pagination.actions.previousPage}
+                    onNextPage={pagination.actions.nextPage}
+                  />
                   <div className="overflow-x-auto w-full scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
                     style={{ WebkitOverflowScrolling: 'touch' }}>
+
                     <TableLayout
                       items={pagination.data}
                       rowKey={(offer: Offer) => offer.id}
@@ -1050,7 +1073,19 @@ export function OffersList() {
                       ]}
                     />
                   </div>
+                  <SimplePaginationBar
+                    startIndex={pagination.info.startIndex}
+                    endIndex={pagination.info.endIndex}
+                    totalItems={filteredOffers.length}
+                    currentPage={pagination.state.currentPage}
+                    totalPages={pagination.info.totalPages}
+                    hasPreviousPage={pagination.info.hasPreviousPage}
+                    hasNextPage={pagination.info.hasNextPage}
+                    onPreviousPage={pagination.actions.previousPage}
+                    onNextPage={pagination.actions.nextPage}
+                  />
                 </>
+
               )}
             </CardContent>
           </Card>

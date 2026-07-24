@@ -10,6 +10,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { TableRowActions } from "@/shared/components/TableRowActions";
 import {
   Plus, LayoutGrid, List, Table as TableIcon, Target, Trophy, TrendingUp,
   MoreVertical, Eye, Edit, Trash2, GitBranch, Loader2, Handshake, Play, Filter, ChevronDown, AlertTriangle, Calendar,
@@ -314,34 +315,14 @@ export function DealsList() {
                         {formatCurrencyValue(d.estimatedValue, d.currency)}
                       </span>
                       <div className="ml-auto">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => navigate(`/dashboard/deals/${d.id}`)}>
-                              <Eye className="h-4 w-4 mr-2" /> {t("actions.view")}
-                            </DropdownMenuItem>
-                            {hasUpdateAccess && (
-                              <DropdownMenuItem onClick={() => navigate(`/dashboard/deals/${d.id}/edit`)}>
-                                <Edit className="h-4 w-4 mr-2" /> {t("actions.edit")}
-                              </DropdownMenuItem>
-                            )}
-                            {hasUpdateAccess && (
-                              <DropdownMenuItem onClick={() => setToConvert(d)}>
-                                <GitBranch className="h-4 w-4 mr-2" /> {t("actions.convert")}
-                              </DropdownMenuItem>
-                            )}
-                            {hasDeleteAccess && (
-                              <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem className="text-red-600" onClick={() => setToDelete(d)}>
-                                  <Trash2 className="h-4 w-4 mr-2" /> {t("actions.delete")}
-                                </DropdownMenuItem>
-                              </>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <TableRowActions
+                          actions={[
+                            { icon: Eye, label: t("actions.view"), onClick: () => navigate(`/dashboard/deals/${d.id}`) },
+                            { icon: Edit, label: t("actions.edit"), onClick: () => navigate(`/dashboard/deals/${d.id}/edit`), show: hasUpdateAccess },
+                            { icon: GitBranch, label: t("actions.convert"), onClick: () => setToConvert(d), show: hasUpdateAccess },
+                            { icon: Trash2, label: t("actions.delete"), onClick: () => setToDelete(d), variant: "destructive", show: hasDeleteAccess },
+                          ]}
+                        />
                       </div>
                     </div>
                   </div>
@@ -385,34 +366,14 @@ export function DealsList() {
                       <TableCell className="text-center hidden md:table-cell">{d.probability}%</TableCell>
                       <TableCell className="hidden md:table-cell">{d.expectedCloseDate ? format(new Date(d.expectedCloseDate), "dd MMM yyyy") : "—"}</TableCell>
                       <TableCell onClick={e => e.stopPropagation()}>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => navigate(`/dashboard/deals/${d.id}`)}>
-                              <Eye className="h-4 w-4 mr-2" /> {t("actions.view")}
-                            </DropdownMenuItem>
-                            {hasUpdateAccess && (
-                              <DropdownMenuItem onClick={() => navigate(`/dashboard/deals/${d.id}/edit`)}>
-                                <Edit className="h-4 w-4 mr-2" /> {t("actions.edit")}
-                              </DropdownMenuItem>
-                            )}
-                            {hasUpdateAccess && (
-                              <DropdownMenuItem onClick={() => setToConvert(d)}>
-                                <GitBranch className="h-4 w-4 mr-2" /> {t("actions.convert")}
-                              </DropdownMenuItem>
-                            )}
-                            {hasDeleteAccess && (
-                              <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem className="text-red-600" onClick={() => setToDelete(d)}>
-                                  <Trash2 className="h-4 w-4 mr-2" /> {t("actions.delete")}
-                                </DropdownMenuItem>
-                              </>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <TableRowActions
+                          actions={[
+                            { icon: Eye, label: t("actions.view"), onClick: () => navigate(`/dashboard/deals/${d.id}`) },
+                            { icon: Edit, label: t("actions.edit"), onClick: () => navigate(`/dashboard/deals/${d.id}/edit`), show: hasUpdateAccess },
+                            { icon: GitBranch, label: t("actions.convert"), onClick: () => setToConvert(d), show: hasUpdateAccess },
+                            { icon: Trash2, label: t("actions.delete"), onClick: () => setToDelete(d), variant: "destructive", show: hasDeleteAccess },
+                          ]}
+                        />
                       </TableCell>
                     </TableRow>
                   ))}

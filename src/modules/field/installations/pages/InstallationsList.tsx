@@ -945,22 +945,7 @@ export default function InstallationsList() {
         </div>
       )}
 
-      {/* Pagination - Top */}
-      {!isLoading && filteredInstallations.length > 0 && (
-        <div className="px-3 sm:px-4">
-          <SimplePaginationBar
-            startIndex={pagination.info.startIndex}
-            endIndex={pagination.info.endIndex}
-            totalItems={filteredInstallations.length}
-            currentPage={pagination.state.currentPage}
-            totalPages={pagination.info.totalPages}
-            hasPreviousPage={pagination.info.hasPreviousPage}
-            hasNextPage={pagination.info.hasNextPage}
-            onPreviousPage={pagination.actions.previousPage}
-            onNextPage={pagination.actions.nextPage}
-          />
-        </div>
-      )}
+      {/* Pagination moved inside white card below (matches Sales style) */}
 
       {/* Results */}
       <div className="flex-1">
@@ -969,6 +954,21 @@ export default function InstallationsList() {
 
             <Card className="shadow-card">
               <CardContent className="p-0">
+                {filteredInstallations.length > 0 && (
+                  <div className="border-b border-border px-4 py-2">
+                    <SimplePaginationBar
+                      startIndex={pagination.info.startIndex}
+                      endIndex={pagination.info.endIndex}
+                      totalItems={filteredInstallations.length}
+                      currentPage={pagination.state.currentPage}
+                      totalPages={pagination.info.totalPages}
+                      hasPreviousPage={pagination.info.hasPreviousPage}
+                      hasNextPage={pagination.info.hasNextPage}
+                      onPreviousPage={pagination.actions.previousPage}
+                      onNextPage={pagination.actions.nextPage}
+                    />
+                  </div>
+                )}
 <TableLayout
                   items={pagination.data}
                   rowKey={(installation: any) => installation.id}
@@ -1034,10 +1034,11 @@ export default function InstallationsList() {
                     {
                       key: 'warranty',
                       title: t('list.table_warranty'),
+                      width: 'w-28',
                       render: (installation: any) => {
                         const warrantyStatus = getWarrantyStatus(installation.warranty);
                         return (
-                          <Badge className={warrantyStatus.color}>
+                          <Badge className={`${warrantyStatus.color} whitespace-nowrap`}>
                             {warrantyStatus.text}
                           </Badge>
                         );
@@ -1081,17 +1082,19 @@ export default function InstallationsList() {
           <div className="p-3 sm:p-4">
             <Card className="shadow-card">
               <CardContent className="p-0 list-editorial">
-                <SimplePaginationBar
-                  startIndex={pagination.info.startIndex}
-                  endIndex={pagination.info.endIndex}
-                  totalItems={filteredInstallations.length}
-                  currentPage={pagination.state.currentPage}
-                  totalPages={pagination.info.totalPages}
-                  hasPreviousPage={pagination.info.hasPreviousPage}
-                  hasNextPage={pagination.info.hasNextPage}
-                  onPreviousPage={pagination.actions.previousPage}
-                  onNextPage={pagination.actions.nextPage}
-                />
+                <div className="border-b border-border px-4 py-2">
+                  <SimplePaginationBar
+                    startIndex={pagination.info.startIndex}
+                    endIndex={pagination.info.endIndex}
+                    totalItems={filteredInstallations.length}
+                    currentPage={pagination.state.currentPage}
+                    totalPages={pagination.info.totalPages}
+                    hasPreviousPage={pagination.info.hasPreviousPage}
+                    hasNextPage={pagination.info.hasNextPage}
+                    onPreviousPage={pagination.actions.previousPage}
+                    onNextPage={pagination.actions.nextPage}
+                  />
+                </div>
                 {pagination.data.map((installation) => {
                   const warrantyStatus = getWarrantyStatus(installation.warranty);
                   const customer = installation.contactId ? contactsMap.get(installation.contactId) : null;
@@ -1161,17 +1164,19 @@ export default function InstallationsList() {
                   );
                 })}
                 {filteredInstallations.length > 0 && (
-                  <SimplePaginationBar
-                    startIndex={pagination.info.startIndex}
-                    endIndex={pagination.info.endIndex}
-                    totalItems={filteredInstallations.length}
-                    currentPage={pagination.state.currentPage}
-                    totalPages={pagination.info.totalPages}
-                    hasPreviousPage={pagination.info.hasPreviousPage}
-                    hasNextPage={pagination.info.hasNextPage}
-                    onPreviousPage={pagination.actions.previousPage}
-                    onNextPage={pagination.actions.nextPage}
-                  />
+                  <div className="border-t border-border px-4 py-2">
+                    <SimplePaginationBar
+                      startIndex={pagination.info.startIndex}
+                      endIndex={pagination.info.endIndex}
+                      totalItems={filteredInstallations.length}
+                      currentPage={pagination.state.currentPage}
+                      totalPages={pagination.info.totalPages}
+                      hasPreviousPage={pagination.info.hasPreviousPage}
+                      hasNextPage={pagination.info.hasNextPage}
+                      onPreviousPage={pagination.actions.previousPage}
+                      onNextPage={pagination.actions.nextPage}
+                    />
+                  </div>
                 )}
               </CardContent>
             </Card>

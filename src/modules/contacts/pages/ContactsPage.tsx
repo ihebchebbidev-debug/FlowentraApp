@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { PageSizeSelector } from '@/components/shared/PageSizeSelector';
+import { SimplePaginationBar } from '@/components/shared/SimplePaginationBar';
 import { TableSkeleton } from '@/components/ui/page-skeleton';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -641,23 +641,7 @@ export default function ContactsPage() {
         </div>
       )}
 
-      {/* Pagination - Top */}
-      {totalCount > 0 && (
-        <div className="px-3 sm:px-4 lg:px-6">
-          <PageSizeSelector
-            currentPage={pageNumber}
-            totalPages={Math.ceil(totalCount / searchParams.pageSize!)}
-            totalItems={totalCount}
-            pageSize={searchParams.pageSize!}
-            startIndex={(pageNumber - 1) * searchParams.pageSize!}
-            endIndex={Math.min(pageNumber * searchParams.pageSize!, totalCount)}
-            onPageChange={(p) => setSearchParams({ ...searchParams, pageNumber: p })}
-            onPageSizeChange={(size) => setSearchParams({ ...searchParams, pageSize: size, pageNumber: 1 })}
-            hasPreviousPage={hasPreviousPage}
-            hasNextPage={hasNextPage}
-          />
-        </div>
-      )}
+      {/* Pagination moved inside the Card below */}
 
       {/* Table */}
       <div className="p-3 sm:p-4 lg:p-6">
@@ -677,6 +661,19 @@ export default function ContactsPage() {
           )}
           
           <CardContent className={showMap ? "pt-4 p-0" : "p-0"}>
+        {totalCount > 0 && (
+          <SimplePaginationBar
+            startIndex={(pageNumber - 1) * searchParams.pageSize!}
+            endIndex={Math.min(pageNumber * searchParams.pageSize!, totalCount)}
+            totalItems={totalCount}
+            currentPage={pageNumber}
+            totalPages={Math.ceil(totalCount / searchParams.pageSize!)}
+            hasPreviousPage={hasPreviousPage}
+            hasNextPage={hasNextPage}
+            onPreviousPage={() => setSearchParams({ ...searchParams, pageNumber: pageNumber - 1 })}
+            onNextPage={() => setSearchParams({ ...searchParams, pageNumber: pageNumber + 1 })}
+          />
+        )}
         {isLoading ? <TableSkeleton rows={6} cols={5} /> : contacts.length === 0 ? <div className="text-center p-12">
             <User className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">{t('contacts.no_contacts')}</h3>
@@ -870,27 +867,22 @@ export default function ContactsPage() {
               </Table>
             </div>
           </>}
+          <SimplePaginationBar
+            startIndex={(pageNumber - 1) * searchParams.pageSize!}
+            endIndex={Math.min(pageNumber * searchParams.pageSize!, totalCount)}
+            totalItems={totalCount}
+            currentPage={pageNumber}
+            totalPages={Math.ceil(totalCount / searchParams.pageSize!)}
+            hasPreviousPage={hasPreviousPage}
+            hasNextPage={hasNextPage}
+            onPreviousPage={() => setSearchParams({ ...searchParams, pageNumber: pageNumber - 1 })}
+            onNextPage={() => setSearchParams({ ...searchParams, pageNumber: pageNumber + 1 })}
+          />
           </CardContent>
         </Card>
       </div>
 
-      {/* Pagination */}
-      {totalCount > 0 && (
-        <div className="px-6 pb-4">
-          <PageSizeSelector
-            currentPage={pageNumber}
-            totalPages={Math.ceil(totalCount / searchParams.pageSize!)}
-            totalItems={totalCount}
-            pageSize={searchParams.pageSize!}
-            startIndex={(pageNumber - 1) * searchParams.pageSize!}
-            endIndex={Math.min(pageNumber * searchParams.pageSize!, totalCount)}
-            onPageChange={(p) => setSearchParams({ ...searchParams, pageNumber: p })}
-            onPageSizeChange={(size) => setSearchParams({ ...searchParams, pageSize: size, pageNumber: 1 })}
-            hasPreviousPage={hasPreviousPage}
-            hasNextPage={hasNextPage}
-          />
-        </div>
-      )}
+      {/* Pagination moved inside the Card above */}
 
       {/* Dialogs */}
       

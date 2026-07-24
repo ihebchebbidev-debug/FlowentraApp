@@ -2,6 +2,8 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
+import { usePaginatedData } from '@/shared/hooks/usePagination';
+import { SimplePaginationBar } from '@/components/shared/SimplePaginationBar';
 import { formatStatValue } from "@/lib/formatters";
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +12,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { CompanyBadge } from '@/components/CompanyBadge';
 import { isViewAllMode } from '@/utils/tenant';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,7 +35,6 @@ import {
   User,
   List,
   Table as TableIcon,
-  MoreVertical,
   FolderOpen,
   Files,
   Activity,
@@ -53,6 +53,7 @@ import DocumentEditorModal from '@/modules/shared/components/documents/DocumentE
 import { DocumentThumbnail } from './DocumentThumbnail';
 import { Document, DocumentFilters as FilterType } from '../types';
 import { DocumentsService } from '../services/documents.service';
+import { TableRowActions } from '@/shared/components/TableRowActions';
 import { toast } from 'sonner';
 import { getInitialViewMode } from '../../../hooks/getInitialViewMode';
 
@@ -129,6 +130,11 @@ export function DocumentsList() {
     if (activeTab === 'all') return moduleFiltered;
     return moduleFiltered.filter(doc => doc.moduleType === activeTab);
   }, [allDocuments, activeTab, relevantModuleTypes, isWorkspaceScoped]);
+
+  // Client-side pagination over filtered documents
+  const pagination = usePaginatedData(documents, 20);
+  const paginatedDocuments = pagination.data;
+
 
 
   // Selection helpers
@@ -273,6 +279,17 @@ export function DocumentsList() {
       </Link>
     );
   };
+
+  const renderDocumentActions = (document: Document) => (
+    <TableRowActions
+      className="justify-end"
+      actions={[
+        { icon: Eye, label: t('documents.preview'), onClick: () => handlePreviewDocument(document) },
+        { icon: Download, label: t('documents.download'), onClick: () => downloadDocument(document) },
+        { icon: Trash2, label: t('documents.delete'), onClick: () => handleDeleteDocument(document), variant: 'destructive' },
+      ]}
+    />
+  );
 
   const statsData = useMemo(() => [
     {
@@ -566,8 +583,21 @@ export function DocumentsList() {
                   </div>
                 </Card>
               ) : (
+                <Card className="shadow-card">
+                  <CardContent className="p-4 space-y-4">
+                    <SimplePaginationBar
+                      startIndex={pagination.info.startIndex}
+                      endIndex={pagination.info.endIndex}
+                      totalItems={documents.length}
+                      currentPage={pagination.state.currentPage}
+                      totalPages={pagination.info.totalPages}
+                      hasPreviousPage={pagination.info.hasPreviousPage}
+                      hasNextPage={pagination.info.hasNextPage}
+                      onPreviousPage={pagination.actions.previousPage}
+                      onNextPage={pagination.actions.nextPage}
+                    />
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {documents.map((document) => {
+                  {paginatedDocuments.map((document) => {
                     const FileIcon = getFileIcon(document.fileType);
                     return (
                       <Card key={document.id} className={`hover:shadow-md transition-shadow ${selectedIds.has(document.id) ? 'ring-2 ring-primary' : ''}`}>
@@ -594,31 +624,7 @@ export function DocumentsList() {
                                 </div>
                               </div>
                             </div>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                  <MoreVertical className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handlePreviewDocument(document)}>
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  {t('documents.preview')}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => downloadDocument(document)}>
-                                  <Download className="h-4 w-4 mr-2" />
-                                  {t('documents.download')}
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem 
-                                  onClick={() => handleDeleteDocument(document)}
-                                  className="text-destructive"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  {t('documents.delete')}
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                            {renderDocumentActions(document)}
                           </div>
                           <div className="space-y-2 text-sm text-muted-foreground">
                             <div className="flex items-center gap-2">
@@ -639,6 +645,19 @@ export function DocumentsList() {
                     );
                   })}
                 </div>
+                    <SimplePaginationBar
+                      startIndex={pagination.info.startIndex}
+                      endIndex={pagination.info.endIndex}
+                      totalItems={documents.length}
+                      currentPage={pagination.state.currentPage}
+                      totalPages={pagination.info.totalPages}
+                      hasPreviousPage={pagination.info.hasPreviousPage}
+                      hasNextPage={pagination.info.hasNextPage}
+                      onPreviousPage={pagination.actions.previousPage}
+                      onNextPage={pagination.actions.nextPage}
+                    />
+                  </CardContent>
+                </Card>
               )}
         </div>
       ) : (
@@ -661,7 +680,7 @@ export function DocumentsList() {
                 <>
                   {/* Mobile cards — visible below md breakpoint */}
                   <div className="md:hidden list-editorial rounded-lg border border-border overflow-hidden">
-                    {documents.map((document) => {
+                    {paginatedDocuments.map((document) => {
                       const FileIcon = getFileIcon(document.fileType);
                       const moduleColorClass = getModuleColor(document.moduleType);
                       return (
@@ -742,11 +761,37 @@ export function DocumentsList() {
                         </div>
                       );
                     })}
+                    <div className="border-t border-border px-4 py-2 bg-card">
+                      <SimplePaginationBar
+                        startIndex={pagination.info.startIndex}
+                        endIndex={pagination.info.endIndex}
+                        totalItems={documents.length}
+                        currentPage={pagination.state.currentPage}
+                        totalPages={pagination.info.totalPages}
+                        hasPreviousPage={pagination.info.hasPreviousPage}
+                        hasNextPage={pagination.info.hasNextPage}
+                        onPreviousPage={pagination.actions.previousPage}
+                        onNextPage={pagination.actions.nextPage}
+                      />
+                    </div>
                   </div>
 
                   {/* Desktop table — hidden on mobile */}
                   <div className="hidden md:block overflow-x-auto">
                     <Card>
+                      <div className="border-b border-border px-4 py-2">
+                        <SimplePaginationBar
+                          startIndex={pagination.info.startIndex}
+                          endIndex={pagination.info.endIndex}
+                          totalItems={documents.length}
+                          currentPage={pagination.state.currentPage}
+                          totalPages={pagination.info.totalPages}
+                          hasPreviousPage={pagination.info.hasPreviousPage}
+                          hasNextPage={pagination.info.hasNextPage}
+                          onPreviousPage={pagination.actions.previousPage}
+                          onNextPage={pagination.actions.nextPage}
+                        />
+                      </div>
                       <Table>
                         <TableHeader>
                           <TableRow>
@@ -766,11 +811,11 @@ export function DocumentsList() {
                             {isViewAllMode() && (
                               <TableHead className="w-[160px]">{t('documents.company', 'Company')}</TableHead>
                             )}
-                            <TableHead className="w-[50px]"></TableHead>
+                              <TableHead className="w-[116px] text-right">{t('common.actions', 'Actions')}</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {documents.map((document) => {
+                          {paginatedDocuments.map((document) => {
                             const FileIcon = getFileIcon(document.fileType);
                             return (
                               <TableRow key={document.id} className={selectedIds.has(document.id) ? 'bg-primary/5' : ''}>
@@ -806,38 +851,27 @@ export function DocumentsList() {
                                     <CompanyBadge tenantId={(document as any).tenantId} forceShow />
                                   </TableCell>
                                 )}
-                                <TableCell>
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="sm">
-                                        <MoreVertical className="h-4 w-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      <DropdownMenuItem onClick={() => handlePreviewDocument(document)}>
-                                        <Eye className="h-4 w-4 mr-2" />
-                                        {t('documents.preview')}
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem onClick={() => downloadDocument(document)}>
-                                        <Download className="h-4 w-4 mr-2" />
-                                        {t('documents.download')}
-                                      </DropdownMenuItem>
-                                      <DropdownMenuSeparator />
-                                      <DropdownMenuItem
-                                        onClick={() => handleDeleteDocument(document)}
-                                        className="text-destructive"
-                                      >
-                                        <Trash2 className="h-4 w-4 mr-2" />
-                                        {t('documents.delete')}
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
+                                <TableCell className="text-right">
+                                  {renderDocumentActions(document)}
                                 </TableCell>
                               </TableRow>
                             );
                           })}
                         </TableBody>
                       </Table>
+                      <div className="border-t border-border px-4 py-2">
+                        <SimplePaginationBar
+                          startIndex={pagination.info.startIndex}
+                          endIndex={pagination.info.endIndex}
+                          totalItems={documents.length}
+                          currentPage={pagination.state.currentPage}
+                          totalPages={pagination.info.totalPages}
+                          hasPreviousPage={pagination.info.hasPreviousPage}
+                          hasNextPage={pagination.info.hasNextPage}
+                          onPreviousPage={pagination.actions.previousPage}
+                          onNextPage={pagination.actions.nextPage}
+                        />
+                      </div>
                     </Card>
                   </div>
                 </>

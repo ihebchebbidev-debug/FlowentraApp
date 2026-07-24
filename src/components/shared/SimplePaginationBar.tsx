@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
 
 interface SimplePaginationBarProps {
   startIndex: number;
@@ -28,35 +29,44 @@ export function SimplePaginationBar({
   className = '',
 }: SimplePaginationBarProps) {
   const { t } = useTranslation();
-  if (totalPages <= 1) return null;
+  if (totalItems <= 0) return null;
+  const safeTotalPages = Math.max(totalPages, 1);
+  const safeEndIndex = Math.max(endIndex, startIndex + 1);
+
   return (
     <div className={`p-2 sm:p-3 border-b border-border bg-muted/20 ${className}`}>
       <div className="flex items-center justify-between gap-2">
         <p className="text-px-11 sm:text-sm text-muted-foreground truncate">
           {t('pagination.showing_results', {
             start: startIndex + 1,
-            end: endIndex,
+            end: safeEndIndex,
             total: totalItems,
           })}
         </p>
         <div className="flex items-center gap-1 shrink-0">
-          <button
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
             onClick={onPreviousPage}
             disabled={!hasPreviousPage}
-            className="px-2 py-0.5 text-px-11 sm:px-3 sm:py-1 sm:text-sm border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
+            className="h-7 px-2 text-px-11 sm:h-8 sm:px-3 sm:text-sm"
           >
             {t('pagination.previous')}
-          </button>
+          </Button>
           <span className="px-2 py-0.5 text-px-11 sm:px-3 sm:py-1 sm:text-sm">
-            {t('pagination.page_of', { current: currentPage, total: totalPages })}
+            {t('pagination.page_of', { current: currentPage, total: safeTotalPages })}
           </span>
-          <button
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
             onClick={onNextPage}
             disabled={!hasNextPage}
-            className="px-2 py-0.5 text-px-11 sm:px-3 sm:py-1 sm:text-sm border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
+            className="h-7 px-2 text-px-11 sm:h-8 sm:px-3 sm:text-sm"
           >
             {t('pagination.next')}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

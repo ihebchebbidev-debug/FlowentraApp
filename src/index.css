@@ -659,3 +659,22 @@ p.text-muted-foreground.text-\[11px\] {
   }
 }
 
+/* ------------------------------------------------------------------ */
+/* Global rule: any element painted with the primary brand color as   */
+/* its background renders its text (and inline SVG icons) in white    */
+/* for maximum contrast, regardless of variant / className overrides. */
+/* This complements the --primary-foreground token (already white)    */
+/* and enforces it across every button call-site that uses            */
+/* `bg-primary`, the default shadcn Button variant, gradient-primary  */
+/* surfaces, and `hover:bg-primary` utilities.                        */
+/* ------------------------------------------------------------------ */
+.bg-primary,
+.bg-primary *,
+[class*="bg-gradient-primary"],
+[class*="bg-gradient-primary"] *,
+.hover\:bg-primary:hover,
+.hover\:bg-primary:hover * {
+  color: hsl(0 0% 100%) !important;
+}
+
+
