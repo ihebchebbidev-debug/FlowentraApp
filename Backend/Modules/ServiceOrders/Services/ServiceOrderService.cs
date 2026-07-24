@@ -607,9 +607,14 @@ namespace MyApi.Modules.ServiceOrders.Services
                     // dropped 30–80% of planned budget on installation-grouped sales.
                     // CopyAsync is idempotent (see PlannedLineEntryService), so a strategy retry
                     // does not stack duplicates.
+                    // Fail-fast: planning propagation is a hard requirement of the ServiceOrder
+                    // creation flow. If DI is misconfigured we must NOT quietly create jobs
+                    // without their planned time/expenses — that silently loses budget data.
                     if (_plannedEntries == null)
                     {
-                        _logger.LogError("PlannedLineEntryService is not registered — planned time/expenses will NOT propagate from sale items to service order jobs. Fix DI registration.");
+                        _logger.LogError("PlannedLineEntryService is not registered — aborting service-order creation to avoid dropping planned time/expenses. Fix DI registration.");
+                        throw new InvalidOperationException(
+                            "IPlannedLineEntryService is not registered. Register it in Program.cs so planned time/expenses propagate from sale items to service order jobs.");
                     }
                     if (_plannedEntries != null || _formDocuments != null)
                     {

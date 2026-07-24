@@ -21,6 +21,13 @@ namespace MyApi.Modules.Planning.DTOs
         public decimal? Quantity { get; set; }
         public decimal? UnitPrice { get; set; }
         public string? Unit { get; set; }
+        /// <summary>
+        /// If the primary write succeeded but the bidirectional propagation to
+        /// linked offer / sale / service-order-job planned entries failed, this
+        /// carries the exact reason so the UI can surface a toast to the user
+        /// (planning views may drift until the next edit).
+        /// </summary>
+        public string? SyncWarning { get; set; }
     }
 
     public class CreatePlannedLineEntryDto

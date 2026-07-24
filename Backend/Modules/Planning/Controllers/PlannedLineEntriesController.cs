@@ -35,8 +35,10 @@ namespace MyApi.Modules.Planning.Controllers
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {
-            await _svc.DeleteAsync(id, UserId);
-            return NoContent();
+            var syncWarning = await _svc.DeleteAsync(id, UserId);
+            // Always return 200 with a body so the UI can surface a planning-sync
+            // failure toast; syncWarning is null on the happy path.
+            return Ok(new { syncWarning });
         }
 
         /// <summary>Plan vs actual rollup for a given service order job.</summary>

@@ -191,6 +191,7 @@
     "noMaterials": "No planned materials",
     "noParent": "Cannot plan without a linked job",
     "savedToast": "Plan saved",
+    "syncFailedToast": "Planning sync failed — related offer, sale, service order or dispatch views may be out of date",
     "confirmDelete": "Delete this planned entry?",
     "confirmDeleteTitle": "Delete planned entry?",
     "deletedToast": "Planned entry deleted",

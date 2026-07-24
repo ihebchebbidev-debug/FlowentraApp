@@ -191,6 +191,7 @@
     "noMaterials": "Aucun matériau planifié",
     "noParent": "Impossible de planifier sans tâche liée",
     "savedToast": "Planification enregistrée",
+    "syncFailedToast": "Échec de la synchronisation de la planification — les vues liées (offre, vente, ordre de service ou intervention) peuvent être obsolètes",
     "confirmDelete": "Supprimer cette entrée planifiée ?",
     "confirmDeleteTitle": "Supprimer l'entrée planifiée ?",
     "deletedToast": "Entrée planifiée supprimée",

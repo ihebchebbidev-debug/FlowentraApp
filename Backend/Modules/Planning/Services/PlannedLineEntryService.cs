@@ -76,9 +76,11 @@ namespace MyApi.Modules.Planning.Services
             _db.Set<PlannedLineEntry>().Add(entity);
             await _db.SaveChangesAsync();
 
-            await SyncChainFromAsync(parentType, parentId, userId);
+            var syncWarning = await SyncChainFromAsync(parentType, parentId, userId);
             await LogPlannedActivityAsync(entity, ContactActivityTypes.PlannedEntryAdded, userId);
-            return Map(entity);
+            var mapped = Map(entity);
+            mapped.SyncWarning = syncWarning;
+            return mapped;
         }
 
         public async Task<PlannedLineEntryDto> UpdateAsync(int id, UpdatePlannedLineEntryDto dto, string userId)
@@ -103,22 +105,25 @@ namespace MyApi.Modules.Planning.Services
             entity.ModifiedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();
 
-            await SyncChainFromAsync(entity.ParentType, entity.ParentId, userId);
+            var syncWarning = await SyncChainFromAsync(entity.ParentType, entity.ParentId, userId);
             await LogPlannedActivityAsync(entity, ContactActivityTypes.PlannedEntryUpdated, userId);
-            return Map(entity);
+            var mapped = Map(entity);
+            mapped.SyncWarning = syncWarning;
+            return mapped;
         }
 
-        public async Task DeleteAsync(int id, string userId)
+        public async Task<string?> DeleteAsync(int id, string userId)
         {
             var entity = await _db.Set<PlannedLineEntry>().FirstOrDefaultAsync(p => p.Id == id);
-            if (entity == null) return;
+            if (entity == null) return null;
             var parentType = entity.ParentType;
             var parentId = entity.ParentId;
             _db.Set<PlannedLineEntry>().Remove(entity);
             await _db.SaveChangesAsync();
 
-            await SyncChainFromAsync(parentType, parentId, userId);
+            var syncWarning = await SyncChainFromAsync(parentType, parentId, userId);
             await LogPlannedActivityAsync(entity, ContactActivityTypes.PlannedEntryDeleted, userId);
+            return syncWarning;
         }
 
 
@@ -132,7 +137,7 @@ namespace MyApi.Modules.Planning.Services
         /// only the affected OriginOfferItemId slice on grouped jobs, so changing one offer
         /// line never wipes plans belonging to sibling sale items in the same job.
         /// </summary>
-        private async Task SyncChainFromAsync(string sourceParentType, int sourceParentId, string userId)
+        private async Task<string?> SyncChainFromAsync(string sourceParentType, int sourceParentId, string userId)
         {
             try
             {
@@ -213,14 +218,19 @@ namespace MyApi.Modules.Planning.Services
                         replaceOriginIds: sourceOrigins.Count > 0 ? sourceOrigins : null,
                         copiedOriginOverride: sourceType == "sale_item" && sourceOrigins.Count == 1 ? sourceOrigins[0] : null);
                 }
+                return null;
             }
             catch (Exception ex)
             {
-                // Cascade is best-effort — never block the primary write.
-                _logger?.LogWarning(ex,
-                    "Failed to sync planned entries from {ParentType} {ParentId}",
+                // Cascade is best-effort — never block the primary write, but surface
+                // the failure at Error level so silent drift between offer / sale /
+                // service-order-job planned views is visible in monitoring, and
+                // return the reason so the UI can toast the exact cause.
+                _logger?.LogError(ex,
+                    "Failed to sync planned entries from {ParentType} {ParentId}. Offer/Sale/ServiceOrderJob planning views may drift until the next edit.",
                     sourceParentType,
                     sourceParentId);
+                return ex.Message;
             }
         }
 
