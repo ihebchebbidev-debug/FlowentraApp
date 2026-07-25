@@ -176,13 +176,11 @@ export const WORKSPACES: Workspace[] = [
     id: "service-desk",
     label: "Service Desk",
     icon: "HelpCircle",
-    landingUrl: "/support",
+    landingUrl: "/dashboard/support/tickets/dashboard",
     modules: [
-      { key: "support-home", label: "Service Desk", url: "/support", icon: "HelpCircle" },
-      { key: "support-tickets", label: "My tickets", url: "/support/tickets", icon: "Ticket" },
-      { key: "support-new-ticket", label: "Report an issue", url: "/support/tickets/new", icon: "AlertCircle" },
-      { key: "support-faq", label: "FAQ", url: "/support/faq", icon: "BookOpen" },
-      { key: "support-traceability", label: "Traceability", url: "/dashboard/traceability?workspace=support", icon: "Activity" },
+      { key: "support-dashboard", label: "Dashboard", url: "/dashboard/support/tickets/dashboard", icon: "LayoutDashboard" },
+      { key: "support-tickets", label: "My tickets", url: "/dashboard/support/tickets", icon: "Ticket" },
+      { key: "support-new-ticket", label: "New ticket", url: "/dashboard/support/tickets/new", icon: "Plus" },
     ],
   },
   {
@@ -200,6 +198,8 @@ export const WORKSPACES: Workspace[] = [
       { key: "documentation", label: "Documentation", labelI18nKey: "workspace.modules.documentation", url: "/dashboard/settings/documentation", icon: "BookOpen" },
       { key: "system-logs", label: "System logs", labelI18nKey: "workspace.modules.systemLogs", url: "/dashboard/settings/logs", icon: "ScrollText" },
       { key: "system-config", label: "System configuration", labelI18nKey: "workspace.modules.systemConfig", url: "/dashboard/settings/system-config", icon: "Monitor" },
+      { key: "tickets-admin-queue", label: "Tickets queue", url: "/dashboard/ticketsadmin", icon: "Inbox" },
+      { key: "tickets-admin-dashboard", label: "Tickets dashboard", url: "/dashboard/ticketsadmin/dashboard", icon: "LayoutDashboard" },
       { key: "admin-traceability", label: "Traceability", url: "/dashboard/traceability?workspace=administration", icon: "Activity" },
       {
         key: "settings",

@@ -6,6 +6,8 @@ import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { PluginGate } from "@/modules/shared/plugins";
 
 const TicketsAdminPage = lazyWithRetry(() => import("@/pages/TicketsAdminPage"));
+const TicketsAdminDashboard = lazyWithRetry(() => import("@/modules/support/tickets/pages/TicketsAdminDashboardPage"));
+const SupportModuleRoutes = lazyWithRetry(() => import("@/modules/support/SupportModuleRoutes"));
 
 // Lazy load CRM Dashboard for better initial load
 const DashboardOverview = lazyWithRetry(() => import("./DashboardOverview"));
@@ -229,6 +231,12 @@ export function DashboardContent() {
 
         {/* Help/Support route */}
         <Route path="help/*" element={<HelpModule />} />
+        {/* Service Desk (tickets) — mounted here so the workspace sidebar stays visible */}
+        <Route path="support/*" element={
+          <Suspense fallback={<PageSkeleton />}>
+            <SupportModuleRoutes />
+          </Suspense>
+        } />
         {/* Projects: standalone /dashboard/projects URLs redirect into the tasks module */}
         <Route path="projects" element={<Navigate to="/dashboard/tasks/projects" replace />} />
         <Route path="projects/*" element={<Navigate to="/dashboard/tasks/projects" replace />} />
@@ -237,6 +245,13 @@ export function DashboardContent() {
           <PermissionRoute module="settings" action="read">
             <Suspense fallback={<PageSkeleton />}>
               <TicketsAdminPage />
+            </Suspense>
+          </PermissionRoute>
+        } />
+        <Route path="ticketsadmin/dashboard" element={
+          <PermissionRoute module="settings" action="read">
+            <Suspense fallback={<PageSkeleton />}>
+              <TicketsAdminDashboard />
             </Suspense>
           </PermissionRoute>
         } />

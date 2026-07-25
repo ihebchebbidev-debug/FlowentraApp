@@ -19,7 +19,7 @@ import { lazyWithRetry } from "./lib/lazyWithRetry";
 const PublicWebsitePage = lazyWithRetry(() => import("./modules/website-builder/pages/PublicWebsitePage"));
 const PublicDashboardPage = lazyWithRetry(() => import("./modules/dashboard-builder/pages/PublicDashboardPage"));
 const DbConsolePage = lazyWithRetry(() => import("./modules/settings/pages/DbConsolePage"));
-import SupportModuleRoutes from "./modules/support/SupportModuleRoutes";
+
 import { OAuthCallbackPage } from "./modules/email-calendar/components/OAuthCallbackPage";
 import { LookupsProvider } from "./shared/contexts/LookupsContext";
 import { LoadingProvider } from "./shared";
@@ -358,8 +358,9 @@ const App = () => {
 
                    <Route path="/select-company" element={<SelectCompany />} />
                    <Route path="/dashboard/*" element={<RequireEmailVerified><RequireCompany><DashboardGate /></RequireCompany></RequireEmailVerified>} />
-                    {/* Customer Support Module */}
-                    <Route path="/support/*" element={<SupportModuleRoutes />} />
+                     {/* Customer Support Module — redirect standalone /support paths into dashboard so sidebar shows */}
+                     <Route path="/support" element={<Navigate to="/dashboard/support/tickets/dashboard" replace />} />
+                     <Route path="/support/*" element={<PrefixRedirect to="/dashboard/support" />} />
                     {/* Public Forms (no authentication required) */}
                     <Route path="/public/forms/:slug" element={<PublicFormPage />} />
                     {/* Public Dashboards (no authentication required) */}

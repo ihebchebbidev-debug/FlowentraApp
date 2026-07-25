@@ -304,11 +304,6 @@ export function WorkspaceSidebar() {
   };
 
   const handleWorkspaceClick = (ws: Workspace, viaKeyboard = false) => {
-    if (ws.id === "service-desk") {
-      closePanel({ restoreFocus: false });
-      setServiceDeskModalOpen(true);
-      return;
-    }
     // Workspaces with no secondary panel or only a single module behave like a
     // direct link — no chevron, just navigate.
     if (NO_SECONDARY.has(ws.id) || ws.modules.length <= 1) {

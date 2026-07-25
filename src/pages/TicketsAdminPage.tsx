@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { supportTicketsApi, SupportTicketResponse } from '@/services/api/supportTicketsApi';
 import { API_CONFIG } from '@/config/api.config';
 import { Button } from '@/components/ui/button';
@@ -58,6 +59,7 @@ import {
   ArrowUp,
   Filter,
   X,
+  LayoutDashboard,
 } from 'lucide-react';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType; dotColor: string }> = {
@@ -76,6 +78,7 @@ const URGENCY_CONFIG: Record<string, { label: string; color: string }> = {
 
 export default function TicketsAdminPage() {
   const { t } = useTranslation('support');
+  const navigate = useNavigate();
   const [tickets, setTickets] = useState<SupportTicketResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -286,10 +289,16 @@ export default function TicketsAdminPage() {
             </p>
           </div>
         </div>
-        <Button variant="outline" className="shadow-soft hover-lift" onClick={fetchTickets} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-          {t('admin.refresh', 'Refresh')}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" className="shadow-soft hover-lift" onClick={() => navigate('/dashboard/ticketsadmin/dashboard')}>
+            <LayoutDashboard className="h-4 w-4 mr-2" />
+            {t('admin.viewDashboard', 'View dashboard')}
+          </Button>
+          <Button variant="outline" className="shadow-soft hover-lift" onClick={fetchTickets} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            {t('admin.refresh', 'Refresh')}
+          </Button>
+        </div>
       </div>
 
       {/* Mobile header */}
