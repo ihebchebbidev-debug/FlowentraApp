@@ -20,6 +20,7 @@ import { RoleAssignmentModal } from "@/modules/users/components/RoleAssignmentMo
 import { RolesTable } from "@/modules/settings/components/RolesTable";
 import { CreateRoleModal } from "@/modules/settings/components/CreateRoleModal";
 import { EditRoleModal } from "@/modules/settings/components/EditRoleModal";
+import { UserGroupManagement } from "@/modules/settings/components/UserGroupManagement";
 import { AccountSettings } from "@/modules/settings/components/AccountSettings";
 import { IntegrationsTabContent } from "@/modules/settings/components/IntegrationsTabContent";
 import { SubscriptionSettings } from "@/modules/settings/components/SubscriptionSettings";
@@ -51,28 +52,41 @@ interface NavItem {
   visible: boolean;
 }
 
-export default function SettingsPage() {
+interface SettingsPageProps {
+  /** When set, the page renders in standalone mode: no sidebar, section is locked, URL is not synced. */
+  standaloneSection?: string;
+}
+
+export default function SettingsPage({ standaloneSection }: SettingsPageProps = {}) {
   const { toast } = useToast();
   const { t } = useTranslation('settings');
   const { isMainAdmin, hasPermission } = usePermissions();
   const { isMobile } = useLayoutModeContext();
   const [searchParams, setSearchParams] = useSearchParams();
+  const isStandalone = !!standaloneSection;
   const [activeSection, setActiveSectionState] = useState(
-    () => searchParams.get('section') || 'profile'
+    () => standaloneSection || searchParams.get('section') || 'profile'
   );
   const setActiveSection = useCallback(
     (id: string) => {
+      if (isStandalone) return;
       setActiveSectionState(id);
       const next = new URLSearchParams(searchParams);
       next.set('section', id);
       setSearchParams(next, { replace: true });
     },
-    [searchParams, setSearchParams]
+    [searchParams, setSearchParams, isStandalone]
   );
   useEffect(() => {
+    if (isStandalone) {
+      if (standaloneSection && standaloneSection !== activeSection) {
+        setActiveSectionState(standaloneSection);
+      }
+      return;
+    }
     const q = searchParams.get('section');
     if (q && q !== activeSection) setActiveSectionState(q);
-  }, [searchParams, activeSection]);
+  }, [searchParams, activeSection, isStandalone, standaloneSection]);
   const [demoOpen, setDemoOpen] = useState(false);
   
   // Permission-based tab visibility
@@ -285,7 +299,8 @@ export default function SettingsPage() {
     { id: 'profile', labelKey: 'nav.profile', icon: User, section: 'personal', visible: true },
     { id: 'security', labelKey: 'nav.security', icon: Lock, section: 'personal', visible: true },
     { id: 'company', labelKey: 'nav.company', icon: Building2, section: 'general', visible: true },
-    { id: 'preferences', labelKey: 'nav.preferences', icon: Palette, section: 'general', visible: canViewPreferences },
+    // Preferences merged into the Company section; kept hidden here for direct-URL back-compat.
+    { id: 'preferences', labelKey: 'nav.preferences', icon: Palette, section: 'general', visible: false },
     { id: 'subscription', labelKey: 'nav.subscription', icon: CreditCard, section: 'general', visible: isMainAdmin },
     { id: 'offline', labelKey: 'nav.offline', icon: WifiOff, section: 'general', visible: true },
     { id: 'system', labelKey: 'nav.system', icon: Monitor, section: 'general', visible: canViewSystem },
@@ -302,6 +317,20 @@ export default function SettingsPage() {
   const adminItems = navItems.filter(i => i.section === 'general' && i.visible);
 
   const activeItem = navItems.find(i => i.id === activeSection);
+
+  // Standalone mode: dedicated route page for a single admin section — no settings sidebar.
+  if (isStandalone) {
+    return (
+      <div className="flex flex-col h-full" style={{ minHeight: 'calc(100vh - 56px)' }}>
+        <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 lg:p-8 bg-background">
+          <div className="w-full">
+            {renderContent()}
+          </div>
+        </main>
+        {renderModals()}
+      </div>
+    );
+  }
 
   // Mobile: use a select dropdown for navigation
   if (isMobile) {
@@ -390,7 +419,7 @@ export default function SettingsPage() {
         case 'security':
           return <SecuritySection />;
         case 'preferences':
-          return canViewPreferences ? <UserPreferencesTab /> : null;
+          return <CompanySection />;
         case 'offline':
           return <OfflineHydrationSettings />;
         case 'companies':
@@ -408,7 +437,7 @@ export default function SettingsPage() {
         case 'syncHistory':
           return canViewSystem ? renderSyncHistoryShortcut() : null;
         case 'userGroups':
-          return renderUserGroupsPlaceholder();
+          return <UserGroupManagement />;
         default:
           return <ProfileSection />;
       }
@@ -422,19 +451,7 @@ export default function SettingsPage() {
     );
   }
 
-  function renderUserGroupsPlaceholder() {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('userGroups.title')}</CardTitle>
-          <CardDescription>{t('userGroups.description')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">{t('userGroups.comingSoon')}</p>
-        </CardContent>
-      </Card>
-    );
-  }
+  // User Groups now rendered via UserGroupManagement component.
 
   function ProfileSection() {
     return (
@@ -446,8 +463,9 @@ export default function SettingsPage() {
 
   function CompanySection() {
     return (
-      <div className="space-y-1">
+      <div className="space-y-6">
         <AccountSettings section="company" />
+        {canViewPreferences && <UserPreferencesTab />}
       </div>
     );
   }

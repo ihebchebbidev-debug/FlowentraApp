@@ -85,6 +85,10 @@ namespace MyApi.Data
         public DbSet<Skill> Skills { get; set; }
         public DbSet<UserSkill> UserSkills { get; set; }
         public DbSet<RoleSkill> RoleSkills { get; set; }
+
+        // User Groups Module
+        public DbSet<MyApi.Modules.UserGroups.Models.UserGroup> UserGroups { get; set; }
+        public DbSet<MyApi.Modules.UserGroups.Models.UserGroupMember> UserGroupMembers { get; set; }
         
         // Contacts Module
         public DbSet<Contact> Contacts { get; set; }
@@ -584,6 +588,10 @@ namespace MyApi.Data
             new MyApi.Modules.Skills.Data.Configurations.SkillConfiguration().Configure(modelBuilder);
             new MyApi.Modules.Skills.Data.Configurations.UserSkillConfiguration().Configure(modelBuilder);
             new MyApi.Modules.Roles.Data.Configurations.RoleSkillConfiguration().Configure(modelBuilder);
+
+            // User Groups domain configurations
+            new MyApi.Modules.UserGroups.Data.Configurations.UserGroupConfiguration().Configure(modelBuilder);
+            new MyApi.Modules.UserGroups.Data.Configurations.UserGroupMemberConfiguration().Configure(modelBuilder);
             
             // Contacts domain configurations
             new MyApi.Modules.Contacts.Data.Configurations.ContactConfiguration().Configure(modelBuilder);

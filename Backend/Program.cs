@@ -301,6 +301,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
 builder.Services.AddScoped<ISkillService, SkillService>();
+builder.Services.AddScoped<MyApi.Modules.UserGroups.Services.IUserGroupService, MyApi.Modules.UserGroups.Services.UserGroupService>();
 
 // Contacts Module Services
 builder.Services.AddScoped<IContactService, ContactService>();

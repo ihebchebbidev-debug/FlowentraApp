@@ -2,7 +2,7 @@
   "_version": "2.0",
   "nav": {
     "profile": "Profil",
-    "company": "Entreprise",
+    "company": "Entreprise et préférences",
     "security": "Sécurité",
     "preferences": "Préférences",
     "offline": "Synchronisation hors ligne",
@@ -21,7 +21,84 @@
   "userGroups": {
     "title": "Groupes d'utilisateurs",
     "description": "Organisez les utilisateurs en groupes pour les permissions et les notifications.",
-    "comingSoon": "La gestion des groupes d'utilisateurs arrive bientôt."
+    "comingSoon": "La gestion des groupes d'utilisateurs arrive bientôt.",
+    "managementTitle": "Gestion des groupes d'utilisateurs",
+    "managementDesc": "Créez des groupes et organisez vos utilisateurs.",
+    "loading": "Chargement des groupes...",
+    "membersCount": "{{count}} membre(s)",
+    "manageMembers": "Gérer les membres",
+    "status": {
+      "active": "Actif",
+      "inactive": "Inactif"
+    },
+    "table": {
+      "noGroupsPrompt": "Aucun groupe pour le moment. Créez votre premier groupe pour commencer."
+    },
+    "create": {
+      "title": "Créer un groupe",
+      "desc": "Ajoutez un nouveau groupe pour organiser vos utilisateurs.",
+      "nameLabel": "Nom du groupe",
+      "namePlaceholder": "ex. Équipe commerciale",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Description optionnelle",
+      "nameRequired": "Le nom du groupe est requis",
+      "create": "Créer le groupe",
+      "creating": "Création...",
+      "cancel": "Annuler",
+      "createSuccessTitle": "Succès",
+      "createSuccess": "Groupe créé avec succès",
+      "createFailedTitle": "Erreur",
+      "createFailed": "Échec de la création du groupe"
+    },
+    "edit": {
+      "title": "Modifier le groupe",
+      "desc": "Mettez à jour les informations de ce groupe.",
+      "nameLabel": "Nom du groupe",
+      "descriptionLabel": "Description",
+      "save": "Enregistrer",
+      "saving": "Enregistrement...",
+      "updateSuccessTitle": "Succès",
+      "updateSuccess": "Groupe mis à jour avec succès",
+      "updateFailedTitle": "Erreur",
+      "updateFailed": "Échec de la mise à jour du groupe"
+    },
+    "delete": {
+      "confirmTitle": "Supprimer le groupe ?",
+      "confirmDesc": "Cette action supprimera définitivement le groupe « {{name}} » et toutes ses affectations de membres. Cette action est irréversible.",
+      "deleteAction": "Supprimer",
+      "deleteSuccessTitle": "Succès",
+      "deleteSuccess": "Le groupe « {{name}} » a été supprimé.",
+      "deleteFailed": "Échec de la suppression du groupe"
+    },
+    "members": {
+      "title": "Gérer les membres du groupe",
+      "desc": "Ajoutez ou retirez des utilisateurs de « {{name}} ».",
+      "current": "Membres actuels",
+      "empty": "Aucun membre pour le moment.",
+      "addLabel": "Ajouter un utilisateur",
+      "add": "Ajouter",
+      "remove": "Retirer",
+      "selectUser": "Sélectionner un utilisateur",
+      "loadingUsers": "Chargement des utilisateurs...",
+      "noAvailableUsers": "Aucun utilisateur disponible",
+      "loadFailed": "Impossible de charger les membres",
+      "addSuccessTitle": "Succès",
+      "addSuccess": "Utilisateur ajouté au groupe",
+      "addFailed": "Échec de l'ajout de l'utilisateur au groupe",
+      "removeSuccessTitle": "Succès",
+      "removeSuccess": "Utilisateur retiré du groupe",
+      "removeFailed": "Échec du retrait de l'utilisateur du groupe"
+    },
+    "validation": {
+      "nameRequired": "Le nom du groupe est requis",
+      "nameMin": "Le nom du groupe doit contenir au moins {{min}} caractères",
+      "nameMax": "Le nom du groupe doit contenir au plus {{max}} caractères",
+      "nameInvalid": "Le nom du groupe contient des caractères invalides",
+      "descMax": "La description doit contenir au plus {{max}} caractères",
+      "selectUserRequired": "Veuillez sélectionner un utilisateur",
+      "userAlreadyMember": "Cet utilisateur est déjà membre du groupe",
+      "invalidForm": "Veuillez corriger les champs en surbrillance"
+    }
   },
   "lookups": "Données de référence",
   "watchDemo": "Voir la démo",
@@ -251,7 +328,8 @@
     "deleteRole": {
       "title": "Supprimer le rôle",
       "desc": "Êtes-vous sûr de vouloir supprimer le rôle \"{{roleName}}\" ? Cela retirera le rôle de {{count}} utilisateur(s)."
-    }
+    },
+    "close": "Fermer"
   },
   "account": {
     "profileTitle": "Informations du profil",
@@ -883,7 +961,7 @@
     "allCompanies": "Toutes les Entreprises",
     "viewAllMode": "Affichage de toutes les entreprises",
     "switchToModify": "Basculez vers une entreprise spécifique pour modifier les données",
-    "company": "Entreprise",
+    "company": "Entreprise et préférences",
     "viewOnly": "Lecture seule",
     "selectTargetCompany": "Sélectionnez l'entreprise cible avant de créer ou modifier des enregistrements",
     "createBlockedSelectCompany": "Vous consultez toutes les entreprises. Sélectionnez d'abord une entreprise cible pour créer de nouveaux enregistrements.",
@@ -956,5 +1034,6 @@
     },
     "statusActive": "Actif",
     "statusInactive": "Inactif"
-  }
+  },
+  "retry": "Réessayer"
 }

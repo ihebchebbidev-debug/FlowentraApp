@@ -2,7 +2,7 @@
   "_version": "2.0",
   "nav": {
     "profile": "Profile",
-    "company": "Company",
+    "company": "Company & preferences",
     "security": "Security",
     "preferences": "Preferences",
     "offline": "Offline sync",
@@ -21,7 +21,84 @@
   "userGroups": {
     "title": "User groups",
     "description": "Organize users into groups for permissions and notifications.",
-    "comingSoon": "User groups management is coming soon."
+    "comingSoon": "User groups management is coming soon.",
+    "managementTitle": "User Groups Management",
+    "managementDesc": "Create groups and organize your users into them.",
+    "loading": "Loading user groups...",
+    "membersCount": "{{count}} member(s)",
+    "manageMembers": "Manage members",
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "table": {
+      "noGroupsPrompt": "No user groups yet. Create your first group to get started."
+    },
+    "create": {
+      "title": "Create User Group",
+      "desc": "Add a new user group to organize your users.",
+      "nameLabel": "Group Name",
+      "namePlaceholder": "e.g. Sales team",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Optional description",
+      "nameRequired": "Group name is required",
+      "create": "Create Group",
+      "creating": "Creating...",
+      "cancel": "Cancel",
+      "createSuccessTitle": "Success",
+      "createSuccess": "User group created successfully",
+      "createFailedTitle": "Error",
+      "createFailed": "Failed to create user group"
+    },
+    "edit": {
+      "title": "Edit User Group",
+      "desc": "Update the details of this user group.",
+      "nameLabel": "Group Name",
+      "descriptionLabel": "Description",
+      "save": "Save Changes",
+      "saving": "Saving...",
+      "updateSuccessTitle": "Success",
+      "updateSuccess": "User group updated successfully",
+      "updateFailedTitle": "Error",
+      "updateFailed": "Failed to update user group"
+    },
+    "delete": {
+      "confirmTitle": "Delete user group?",
+      "confirmDesc": "This will permanently remove the group \"{{name}}\" and all its member assignments. This action cannot be undone.",
+      "deleteAction": "Delete",
+      "deleteSuccessTitle": "Success",
+      "deleteSuccess": "Group \"{{name}}\" was deleted.",
+      "deleteFailed": "Failed to delete user group"
+    },
+    "members": {
+      "title": "Manage Group Members",
+      "desc": "Add or remove users from \"{{name}}\".",
+      "current": "Current members",
+      "empty": "No members yet.",
+      "addLabel": "Add a user",
+      "add": "Add",
+      "remove": "Remove",
+      "selectUser": "Select a user",
+      "loadingUsers": "Loading users...",
+      "noAvailableUsers": "No available users",
+      "loadFailed": "Failed to load members",
+      "addSuccessTitle": "Success",
+      "addSuccess": "User added to the group",
+      "addFailed": "Failed to add user to the group",
+      "removeSuccessTitle": "Success",
+      "removeSuccess": "User removed from the group",
+      "removeFailed": "Failed to remove user from the group"
+    },
+    "validation": {
+      "nameRequired": "Group name is required",
+      "nameMin": "Group name must be at least {{min}} characters",
+      "nameMax": "Group name must be at most {{max}} characters",
+      "nameInvalid": "Group name contains invalid characters",
+      "descMax": "Description must be at most {{max}} characters",
+      "selectUserRequired": "Please select a user",
+      "userAlreadyMember": "This user is already a member of the group",
+      "invalidForm": "Please fix the highlighted fields"
+    }
   },
   "lookups": "Lookups",
   "watchDemo": "Watch Demo",
@@ -251,7 +328,8 @@
     "deleteRole": {
       "title": "Delete Role",
       "desc": "Are you sure you want to delete the role \"{{roleName}}\"? This will remove the role from {{count}} user(s)."
-    }
+    },
+    "close": "Close"
   },
   "account": {
     "profileTitle": "Profile Information",
@@ -883,7 +961,7 @@
     "allCompanies": "All Companies",
     "viewAllMode": "Viewing all companies",
     "switchToModify": "Switch to a specific company to modify data",
-    "company": "Company",
+    "company": "Company & preferences",
     "viewOnly": "View Only",
     "selectTargetCompany": "Select target company when creating or editing records",
     "createBlockedSelectCompany": "You are viewing all companies. Select a target company first to create new records.",
@@ -956,5 +1034,6 @@
     },
     "statusActive": "Active",
     "statusInactive": "Inactive"
-  }
+  },
+  "retry": "Retry"
 }

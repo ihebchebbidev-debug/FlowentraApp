@@ -5,7 +5,8 @@
 export type DataEvent =
   | 'roles:changed'
   | 'skills:changed'
-  | 'users:changed';
+  | 'users:changed'
+  | 'userGroups:changed';
 
 type Listener = () => void;
 

@@ -13,11 +13,17 @@ import DbConsolePage from "./pages/DbConsolePage";
 import { DynamicFormsModule } from "@/modules/dynamic-forms";
 import SyncDashboardPage from "./pages/SyncDashboardPage";
 import PluginsPage from "./pages/PluginsPage";
+import UsersAdminPage from "./pages/UsersAdminPage";
+import RolesAdminPage from "./pages/RolesAdminPage";
+import UserGroupsAdminPage from "./pages/UserGroupsAdminPage";
 
 export function SettingsModule() {
   return (
     <Routes>
       <Route index element={<SettingsPage />} />
+      <Route path="users" element={<UsersAdminPage />} />
+      <Route path="roles" element={<RolesAdminPage />} />
+      <Route path="user-groups" element={<UserGroupsAdminPage />} />
       <Route path="advanced" element={<SettingsLayoutNew />} />
       <Route path="system" element={<SettingsLayout />} />
       <Route path="logs" element={<SystemLogsPage />} />

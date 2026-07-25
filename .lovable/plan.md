@@ -1,50 +1,198 @@
-# Rename Sales → Orders (i18n + UI)
 
-## 1. Translated sidebar submenu label
+# User Groups — Implementation Plan
 
-Add a shared i18n key used by the workspace sidebar module labels.
+A new feature under **Settings › Administration** to create groups, edit them, and assign users to them. It will mirror the existing **Roles** pattern end-to-end (backend module, tenant-scoped tables, junction table, REST API, React CRUD page + dialogs, i18n in EN/FR). The frontend stub already exists (`SettingsPage.tsx` has a `userGroups` placeholder + `nav.userGroups` key, and the Administration workspace sidebar already links to it) — we replace the placeholder with a real implementation.
 
-- Add to `src/shared/locale/en.json` and `src/shared/locale/fr.json`:
-  - `workspace.modules.orders` → `"Orders"` / `"Commandes"`
-  - `workspace.modules.ordersDashboard` → `"Orders dashboard"` / `"Tableau de bord commandes"`
-- In `src/modules/dashboard/components/workspaces.config.ts`, add an optional `labelI18nKey?: string` to `SidebarModuleItemProps` (and workspace-level equivalent for consistency) and set it on the sales submenu items:
-  - `{ key: "sales-dash", labelI18nKey: "workspace.modules.ordersDashboard", label: "Orders dashboard", ... }`
-  - `{ key: "sales", labelI18nKey: "workspace.modules.orders", label: "Orders", ... }`
-- In `src/modules/dashboard/components/WorkspaceSidebar.tsx` and `MobileWorkspaceNav.tsx`, resolve the rendered label via `t(m.labelI18nKey, { defaultValue: m.label })` using `useTranslation()`. The fallback keeps every other entry working unchanged.
+## Scope
 
-## 2. Rename Sales → Orders in the Sales module UI
+- Groups CRUD (name, description, active flag) scoped by `TenantId`.
+- Assign / remove users to a group (many-to-many).
+- List a group's members; list a user's groups.
+- Permission-gated in Settings (superadmin + `userGroups.read/write/delete`).
+- Full EN + FR translations under the existing `settings` namespace (same as Roles).
 
-Scope: user-visible strings only in the Sales list, detail, edit, and status views. No route, table, plugin code, or backend rename.
+Out of scope (can come later): group → role mapping, group → permission mapping, group → skill mapping. The schema will leave room for these but the UI ships with users-only.
 
-Update `src/modules/sales/locale/en.json` and `fr.json` values (keys stay the same):
+## Backend
 
-- `sales` → `Orders` / `Commandes`
-- `sale` → `Order` / `Commande`
-- `newSale` → `New Order` / `Nouvelle commande`
-- `addSaleButton` → `Add Order` / `Ajouter commande`
-- `viewSale`, `deleteSale`, `saleDetails`, `salesManagement`, `manageSalesAndOffers`
-- `allSales`, `activeSales`, `inProgressSales`, `closedSales`, `wonSales`, `lostSales`
-- `editSale.pageTitle`, `editSale.pageDescription`, `editSale.saleInformation`, `editSale.successUpdated`, `editSale.errorUpdating`, `editSale.loadingSale`
-- `deleteConfirmTitle`, `deleteConfirmDescription`, `deleteSuccess`, `deleteError`
+### 1. Migration — `Backend/Neon/38_user_groups.sql` (next free number)
 
-Every occurrence of the words "Sale/Sales/Vente/Facture" in these values becomes "Order/Orders/Commande/Commandes". Placeholders (`{{title}}`) preserved.
+```sql
+CREATE TABLE IF NOT EXISTS "UserGroups" (
+  "Id"          SERIAL PRIMARY KEY,
+  "TenantId"    INTEGER NOT NULL,
+  "Name"        VARCHAR(100) NOT NULL,
+  "Description" VARCHAR(500),
+  "IsActive"    BOOLEAN NOT NULL DEFAULT TRUE,
+  "IsDeleted"   BOOLEAN NOT NULL DEFAULT FALSE,
+  "CreatedAt"   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  "CreatedBy"   VARCHAR(100),
+  "UpdatedAt"   TIMESTAMPTZ,
+  "ModifiedBy"  VARCHAR(100),
+  UNIQUE ("TenantId", "Name")
+);
 
-Also sweep hard-coded English "Sales"/"Sale" text in the Sales module components that render titles/labels/toasts (list header, detail header, kanban column titles, breadcrumbs, buttons) and route them through the existing `t()` keys above. Files in scope:
+CREATE TABLE IF NOT EXISTS "UserGroupMembers" (
+  "Id"          SERIAL PRIMARY KEY,
+  "TenantId"    INTEGER NOT NULL,
+  "GroupId"     INTEGER NOT NULL,
+  "UserId"      INTEGER NOT NULL,
+  "IsActive"    BOOLEAN NOT NULL DEFAULT TRUE,
+  "AssignedAt"  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  "AssignedBy"  VARCHAR(100),
+  FOREIGN KEY ("GroupId") REFERENCES "UserGroups"("Id") ON DELETE CASCADE,
+  FOREIGN KEY ("UserId")  REFERENCES "Users"("Id")      ON DELETE CASCADE,
+  UNIQUE ("GroupId", "UserId")
+);
 
-- `src/modules/sales/pages/AddSale.tsx`, `EditSale.tsx`, `SaleReportPage.tsx`
-- `src/modules/sales/components/SalesList.tsx`, `SaleDetail.tsx`, `SalesKanbanView.tsx`, `SaleStatusFlow.tsx`, `SendSaleModal.tsx`, `ConvertToServiceOrderDialog.tsx`
-- `src/modules/sales/components/tabs/*`
+CREATE INDEX IF NOT EXISTS "idx_usergroups_tenant"        ON "UserGroups"("TenantId");
+CREATE INDEX IF NOT EXISTS "idx_usergroupmembers_group"   ON "UserGroupMembers"("GroupId");
+CREATE INDEX IF NOT EXISTS "idx_usergroupmembers_user"    ON "UserGroupMembers"("UserId");
+CREATE INDEX IF NOT EXISTS "idx_usergroupmembers_tenant"  ON "UserGroupMembers"("TenantId");
+```
 
-No changes to identifiers, permissions, routes (`/dashboard/sales`), plugin code (`PL0002SALES`), DB tables, or the module folder name — only display strings.
+Before writing this file we confirm the current max `NN_` number in `Backend/Neon/` and pick the next one.
 
-## 3. Out of scope
+### 2. New backend module — `Backend/Modules/UserGroups/`
 
-- Other workspaces (Purchases, Field, etc.) keep their existing labels.
-- Reporting page label at `workspaces.config.ts` line 129 (`Sales` under reporting) stays as-is unless you want it renamed too — flag on approval.
-- The word "sale" appearing in unrelated descriptive copy (e.g. "sale orders" in company settings) is left alone to avoid meaning drift.
+Mirrors `Backend/Modules/Roles/` layout exactly:
 
-## Technical notes
+```text
+Backend/Modules/UserGroups/
+├── Controllers/UserGroupsController.cs        // [ApiController][Route("api/[controller]")][Authorize]
+├── Models/UserGroup.cs                        // : ITenantEntity, audit fields
+├── Models/UserGroupMember.cs                  // : ITenantEntity, junction
+├── DTOs/UserGroupDto.cs
+├── DTOs/CreateUserGroupRequest.cs
+├── DTOs/UpdateUserGroupRequest.cs
+├── DTOs/AssignUsersToGroupRequest.cs          // { userIds: int[] }
+├── Configurations/UserGroupConfiguration.cs   // IEntityConfiguration, unique(TenantId,Name)
+├── Configurations/UserGroupMemberConfiguration.cs
+├── Services/IUserGroupService.cs
+└── Services/UserGroupService.cs
+```
 
-- The sidebar today renders `m.label` literally; adding `labelI18nKey` with a `t()` fallback keeps every other module entry rendering untouched and lets us drive translation only where we opt in.
-- Locale value edits do not require code changes because the sales UI already reads through `t('sales:...')`. For components still using literal English strings, we replace them with the existing keys.
-- Build check: `bun run build` after edits; smoke-check the Sales list, detail page, and sidebar in EN and FR via the preview.
+Endpoints (matches `RolesController` shape and route-ordering rule):
+
+```text
+GET    /api/UserGroups                         -> list (with memberCount)
+GET    /api/UserGroups/{id}                    -> detail
+POST   /api/UserGroups                         -> create
+PUT    /api/UserGroups/{id}                    -> update
+DELETE /api/UserGroups/{id}                    -> soft-delete
+
+GET    /api/UserGroups/{id}/members            -> list members (User summaries)
+POST   /api/UserGroups/{id}/members            -> body: { userIds:int[] } bulk assign
+DELETE /api/UserGroups/{groupId}/members/{userId}
+GET    /api/UserGroups/user/{userId}           -> groups a user belongs to
+```
+
+DI registration in `Backend/Program.cs` next to the existing `IRoleService` line:
+
+```csharp
+services.AddScoped<IUserGroupService, UserGroupService>();
+```
+
+EF entity configs picked up by the existing `IEntityConfiguration` scan (same as `RoleConfiguration`/`UserRoleConfiguration`). `TenantId` is set by the current tenant interceptor (same mechanism Roles/UserRoles rely on).
+
+## Frontend
+
+### 3. Types — `src/types/users.ts` (append)
+
+```ts
+export interface UserGroup {
+  id: number;
+  name: string;
+  description?: string;
+  isActive: boolean;
+  memberCount: number;
+  createdAt: string;
+  updatedAt?: string;
+}
+export interface CreateUserGroupRequest { name: string; description?: string }
+export interface UpdateUserGroupRequest { name: string; description?: string; isActive?: boolean }
+```
+
+### 4. API client — `src/services/api/userGroupsApi.ts`
+
+Copy `rolesApi.ts` verbatim, swap URLs to `/api/UserGroups`, add `getMembers(id)`, `assignUsers(id, userIds[])`, `removeUser(groupId, userId)`, `getUserGroups(userId)`. Re-export via `src/services/userGroupsApi.ts` for parity with `src/services/rolesApi.ts`.
+
+### 5. UI components — under `src/modules/settings/components/`
+
+- `UserGroupManagement.tsx` — page component (mirrors `RoleManagement.tsx`): list card, search, "Create group" button, table of groups with member count, edit/delete actions, "Manage members" action opening the assignment modal.
+- `CreateUserGroupModal.tsx` — mirrors `CreateRoleModal.tsx` (name + description form, toast, `emitDataEvent('userGroups:changed')`).
+- `EditUserGroupModal.tsx` — mirrors `EditRoleModal.tsx`.
+- `GroupMembersModal.tsx` — mirrors `RoleAssignmentModal.tsx` but user→group: two lists (available users / current members), add/remove, bulk save via `POST /members`.
+
+### 6. Wire into Settings — `src/modules/settings/pages/SettingsPage.tsx`
+
+- Add `canViewUserGroups = isMainAdmin || hasPermission('userGroups','read')` next to `canViewUsers/canViewRoles`.
+- Flip existing nav item `{ id:'userGroups', ..., visible: canViewUserGroups }`.
+- Replace `renderUserGroupsPlaceholder()` with a `renderUserGroupsContent()` that renders `<UserGroupManagement />` — same structure as `renderRolesContent()`.
+- `adminHeaderMap['userGroups']` keys are already there (`nav.userGroups`, `userGroups.description`) — reuse.
+
+The existing Administration workspace sidebar entry (`workspaces.config.ts` → `/dashboard/settings?section=userGroups`) needs no change; it already points at this section.
+
+### 7. Permissions
+
+Register a new permission module string `userGroups` alongside `users` / `roles` (in whatever `PERMISSION_MODULES` list the app uses on both FE and BE) with actions `read / write / delete`. Superadmin gets it by default via existing seeder logic. If the seeder is code-side we'll add a one-line entry; if it's SQL we'll append `INSERT`s in the same migration.
+
+### 8. Data-event bus
+
+Emit `userGroups:changed` after any create/update/delete/assignment mutation so tables refetch (matches `roles:changed` usage).
+
+## i18n
+
+All keys live under the existing `settings` namespace (same as Roles). Add to `src/modules/settings/locale/en.json` and `fr.json`:
+
+```text
+nav.userGroups                              // already present, keep
+userGroups.title, userGroups.description
+userGroups.create.{title,desc,nameLabel,namePlaceholder,
+                   descriptionLabel,descriptionPlaceholder,
+                   create,creating,cancel,
+                   createSuccessTitle,createSuccess,
+                   createFailedTitle,createFailed,nameRequired}
+userGroups.edit.{title,desc,save,saving,
+                 updateSuccess,updateFailed}
+userGroups.delete.{confirmTitle,confirmDesc,deleteSuccess,deleteFailed}
+userGroups.table.{name,description,members,status,actions,noGroupsPrompt}
+userGroups.members.{title,desc,available,current,add,remove,save,
+                    saveSuccess,saveFailed}
+userGroups.status.{active,inactive}
+```
+
+FR is a straight translation pass (same keys, French copy).
+
+Also add `workspace.modules.userGroups` in the workspace/i18n namespace already referenced by `workspaces.config.ts:183` for both EN and FR.
+
+## Architecture
+
+```text
+Frontend (React)                     Backend (.NET)                Postgres
+──────────────────                   ─────────────────             ─────────
+SettingsPage.tsx
+  └─ UserGroupManagement.tsx  ─────► UserGroupsController ───────► UserGroups
+       ├─ CreateUserGroupModal        │   ├─ IUserGroupService     UserGroupMembers
+       ├─ EditUserGroupModal          │   └─ EF + TenantInterceptor    │
+       └─ GroupMembersModal           └─ AuthN via [Authorize]          │
+              │                                                        │
+   userGroupsApi.ts ── GET/POST/PUT/DELETE /api/UserGroups ─────────────┘
+```
+
+## Verification
+
+1. `dotnet build` for backend.
+2. Run migration `38_user_groups.sql` in dev DB; confirm tables and indexes.
+3. Frontend typecheck (`tsgo`) — must be clean.
+4. Manual: Settings › Administration › User groups → create, edit, add members, remove members, delete; deep-link via `/dashboard/settings?section=userGroups`.
+5. Language switch to FR: all labels/toasts translated (no raw keys visible).
+6. Permission check: non-admin user without `userGroups.read` sees the section hidden.
+
+## Open items to confirm before coding
+
+- Exact next free number in `Backend/Neon/` (probably `38_`).
+- Whether the tenant scoping is applied via EF global filter/interceptor (assumed yes, same as Roles).
+- Whether the permission catalogue is TS-only or also needs a SQL seed row.
+
+I'll resolve these three during the first implementation pass and adjust the file names/seeder accordingly.
