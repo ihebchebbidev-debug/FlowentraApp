@@ -28,29 +28,40 @@ export function CreateInvoiceFromSaleDialog({ open, onOpenChange, contactId, onC
   const [loading, setLoading] = useState(false);
   const [selectedSaleId, setSelectedSaleId] = useState<number | null>(null);
 
+  const [eligible, setEligible] = useState<Array<{ sale: Sale; total: number; remaining: number }>>([]);
+
   useEffect(() => {
     if (!open) return;
     setSelectedSaleId(null);
     setLoading(true);
-    salesApi
-      .getAll({ contactId, limit: 100 })
-      .then(async (res) => {
-        const allSales = res.data.sales.filter((s) => s.status !== 'cancelled');
-        // Best-effort: exclude sales that already have a non-void invoice covering them fully.
-        const eligible: Sale[] = [];
-        for (const sale of allSales) {
-          try {
-            const existing = await customerInvoicesApi.list({ contactId, saleId: sale.id });
-            const active = existing.data.filter((inv) => inv.status !== 'void');
-            const totalInvoiced = active.reduce((sum, inv) => sum + inv.grandTotal, 0);
-            if (!sale.totalAmount || totalInvoiced < sale.totalAmount) {
-              eligible.push(sale);
-            }
-          } catch {
-            eligible.push(sale);
-          }
+    // One list call for the contact's invoices instead of one per sale.
+    Promise.all([
+      salesApi.getAll({ contactId, limit: 100 }),
+      customerInvoicesApi.list({ contactId, limit: 200 }).catch(() => ({ data: [] as any[] })),
+    ])
+      .then(([salesRes, invRes]) => {
+        const invoicedBySale = new Map<number, number>();
+        for (const invoice of invRes.data ?? []) {
+          if (invoice.status === 'void' || !invoice.saleId) continue;
+          invoicedBySale.set(invoice.saleId, (invoicedBySale.get(invoice.saleId) ?? 0) + (invoice.grandTotal ?? 0));
         }
-        setSales(eligible);
+
+        const rows = (salesRes.data.sales ?? [])
+          .filter((s) => s.status !== 'cancelled')
+          .map((sale) => {
+            const total = (sale as any).grandTotal ?? sale.totalAmount ?? 0;
+            const invoiced = invoicedBySale.get(sale.id) ?? 0;
+            return { sale, total, remaining: total > 0 ? total - invoiced : 0 };
+          })
+          // Keep sales that still have something left to invoice (or no total yet).
+          .filter((row) => row.total <= 0 || row.remaining > 0.009);
+
+        setEligible(rows);
+        setSales(rows.map((r) => r.sale));
+      })
+      .catch(() => {
+        setEligible([]);
+        setSales([]);
       })
       .finally(() => setLoading(false));
   }, [open, contactId]);
@@ -86,7 +97,18 @@ export function CreateInvoiceFromSaleDialog({ open, onOpenChange, contactId, onC
                 <div key={sale.id} className="flex items-center space-x-2 border rounded-md p-2">
                   <RadioGroupItem value={String(sale.id)} id={`sale-${sale.id}`} />
                   <Label htmlFor={`sale-${sale.id}`} className="flex-1 cursor-pointer">
-                    {sale.saleNumber} — {sale.title}
+                    <span className="block">{sale.saleNumber} — {sale.title}</span>
+                    {(() => {
+                      const row = eligible.find((r) => r.sale.id === sale.id);
+                      if (!row || row.total <= 0) return null;
+                      return (
+                        <span className="block text-xs text-muted-foreground">
+                          {t('create_from_sale.remaining', { defaultValue: 'Remaining to invoice' })}:{' '}
+                          {row.remaining.toFixed(2)} {sale.currency || 'TND'}
+                          {row.remaining < row.total && ` / ${row.total.toFixed(2)}`}
+                        </span>
+                      );
+                    })()}
                   </Label>
                 </div>
               ))}

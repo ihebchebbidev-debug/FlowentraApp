@@ -135,6 +135,21 @@ namespace MyApi.Modules.Invoices.Services
             };
             RecalculateTotals(invoice);
 
+            // Over-invoicing guard: the sum of a sale's live invoices may never
+            // exceed the order total.
+            var saleTotal = sale.GrandTotal > 0m ? sale.GrandTotal : sale.TotalAmount;
+            if (saleTotal > 0m)
+            {
+                var alreadyInvoiced = await GetInvoicedTotalForSaleAsync(sale.Id);
+                if (alreadyInvoiced + invoice.GrandTotal > saleTotal + 0.009m)
+                {
+                    throw new InvalidOperationException(
+                        $"This invoice ({invoice.GrandTotal:0.##}) would take sale {sale.Id} to " +
+                        $"{alreadyInvoiced + invoice.GrandTotal:0.##} {invoice.Currency}, over its total of {saleTotal:0.##}. " +
+                        $"Remaining to invoice: {Math.Max(0m, saleTotal - alreadyInvoiced):0.##}.");
+                }
+            }
+
             _context.Add(invoice);
             await _context.SaveChangesAsync();
             _logger.LogInformation("Invoice draft {Id} created for sale {SaleId} / contact {ContactId}",
@@ -142,6 +157,9 @@ namespace MyApi.Modules.Invoices.Services
             await LogActivityAsync(invoice.Id, "created", userId,
                 description: $"Draft invoice created for sale #{invoice.SaleId} with {invoice.Lines.Count} line(s).",
                 newValue: invoice.SaleId?.ToString());
+            await LogSaleActivityAsync(invoice.SaleId, "invoice_created", userId,
+                $"Invoice {InvoiceLabel(invoice)} drafted for this sale ({invoice.Lines.Count} line(s), {invoice.GrandTotal:0.##} {invoice.Currency}).");
+            await SyncSaleInvoiceStateAsync(sale.Id);
             return await EnrichAsync(invoice);
         }
 
@@ -154,26 +172,98 @@ namespace MyApi.Modules.Invoices.Services
             if (string.Equals(sale.Status, "cancelled", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException($"Sale {saleId} is cancelled and cannot be invoiced.");
 
+            var saleItems = (sale.Items ?? new List<Sales.Models.SaleItem>()).ToList();
+            if (saleItems.Count == 0)
+                throw new InvalidOperationException($"Sale {saleId} has no items to invoice.");
 
+            // Authoritative sale money, recomputed from the lines so a stale or
+            // never-persisted total can never leak into an invoice.
+            var saleTotals = Sales.Services.SaleTotalsCalculator.Compute(
+                saleItems.Sum(i => Sales.Services.SaleTotalsCalculator.ComputeLineTotal(
+                    i.Quantity, i.UnitPrice, i.Discount, i.DiscountType)),
+                sale.Discount, Sales.Services.SaleTotalsCalculator.HeaderDiscountType(sale),
+                sale.Taxes, sale.TaxType, sale.FiscalStamp);
 
-            var lines = (sale.Items ?? new List<Sales.Models.SaleItem>())
-                .OrderBy(i => i.DisplayOrder)
-                .Select((i, idx) => new InvoiceLine
+            // Over-invoicing guard: never let the invoiced amount exceed the order.
+            var alreadyInvoiced = await GetInvoicedTotalForSaleAsync(saleId);
+            var remaining = saleTotals.GrandTotal - alreadyInvoiced;
+            if (saleTotals.GrandTotal > 0m && remaining <= 0.009m)
+            {
+                throw new InvalidOperationException(
+                    $"Sale {saleId} is already fully invoiced ({alreadyInvoiced:0.##} of {saleTotals.GrandTotal:0.##} {sale.Currency}). " +
+                    "Void an existing invoice before creating a new one.");
+            }
+
+            // An invoice has no header-discount or fiscal-stamp field: it is
+            // just lines + per-line tax. So the sale's header discount is spread
+            // pro-rata over the lines and the fiscal stamp becomes its own line.
+            // That way the invoice's grand total equals the sale's to the cent,
+            // which is what the over-invoicing guard and the sale's
+            // invoiced/partially_invoiced state rely on.
+            var scale = saleTotals.Subtotal > 0m ? saleTotals.AfterDiscount / saleTotals.Subtotal : 1m;
+            var taxRate = saleTotals.EffectiveTaxRate;
+            var discounted = saleTotals.DiscountAmount > 0m;
+
+            var ordered = saleItems.OrderBy(i => i.DisplayOrder).ThenBy(i => i.Id).ToList();
+            var lines = new List<InvoiceLine>();
+            var displayOrder = 0;
+            foreach (var i in ordered)
+            {
+                // Recompute from qty/price/discount — line discounts must survive
+                // the sale → invoice copy.
+                var gross = Sales.Services.SaleTotalsCalculator.ComputeLineTotal(
+                    i.Quantity, i.UnitPrice, i.Discount, i.DiscountType);
+                var net = Round2(gross * scale);
+                var qty = i.Quantity != 0m ? i.Quantity : 1m;
+                lines.Add(new InvoiceLine
                 {
                     SourceType = "sale_item",
                     SourceId = i.Id.ToString(),
                     ItemName = i.ItemName ?? "Item",
-                    Description = i.Description,
+                    Description = discounted
+                        ? string.Join(" — ", new[] { i.Description, "order discount applied" }.Where(x => !string.IsNullOrWhiteSpace(x)))
+                        : i.Description,
                     Quantity = i.Quantity,
                     Unit = null,
-                    UnitPrice = i.UnitPrice,
-                    TaxRate = 0m,
-                    LineTotal = i.LineTotal,
-                    TaxAmount = 0m,
-                    DisplayOrder = idx,
+                    // Effective unit price after all discounts, so the printed
+                    // invoice adds up line by line.
+                    UnitPrice = Round2(net / qty),
+                    TaxRate = taxRate,
+                    LineTotal = net,
+                    TaxAmount = Round2(net * (taxRate / 100m)),
+                    DisplayOrder = displayOrder++,
                     CreatedAt = DateTime.UtcNow,
-                })
-                .ToList();
+                });
+            }
+
+            // Push rounding remainders onto the last taxable line so the invoice
+            // matches the sale exactly instead of drifting by a cent.
+            if (lines.Count > 0)
+            {
+                var last = lines[^1];
+                last.LineTotal = Round2(last.LineTotal + (saleTotals.AfterDiscount - lines.Sum(l => l.LineTotal)));
+                if (last.Quantity != 0m) last.UnitPrice = Round2(last.LineTotal / last.Quantity);
+                last.TaxAmount = Round2(last.TaxAmount + (saleTotals.TaxAmount - lines.Sum(l => l.TaxAmount)));
+            }
+
+            // Fiscal stamp: a flat, untaxed line.
+            if (saleTotals.FiscalStamp > 0m)
+            {
+                lines.Add(new InvoiceLine
+                {
+                    SourceType = "fiscal_stamp",
+                    SourceId = null,
+                    ItemName = "Fiscal stamp",
+                    Quantity = 1m,
+                    Unit = null,
+                    UnitPrice = saleTotals.FiscalStamp,
+                    TaxRate = 0m,
+                    LineTotal = saleTotals.FiscalStamp,
+                    TaxAmount = 0m,
+                    DisplayOrder = displayOrder++,
+                    CreatedAt = DateTime.UtcNow,
+                });
+            }
 
             var invoice = new Invoice
             {
@@ -191,13 +281,17 @@ namespace MyApi.Modules.Invoices.Services
 
             _context.Add(invoice);
             await _context.SaveChangesAsync();
-            _logger.LogInformation("Invoice draft {Id} created from sale {SaleId} ({LineCount} lines)",
-                invoice.Id, sale.Id, lines.Count);
+            _logger.LogInformation("Invoice draft {Id} created from sale {SaleId} ({LineCount} lines, total {Total})",
+                invoice.Id, sale.Id, lines.Count, invoice.GrandTotal);
             await LogActivityAsync(invoice.Id, "created_from_sale", userId,
-                description: $"Draft invoice created from sale #{sale.Id} ({lines.Count} line(s)).",
+                description: $"Draft invoice created from sale #{sale.Id} ({lines.Count} line(s), {invoice.GrandTotal:0.##} {invoice.Currency}).",
                 newValue: sale.Id.ToString());
+            await LogSaleActivityAsync(sale.Id, "invoice_created", userId,
+                $"Invoice {InvoiceLabel(invoice)} drafted for this sale ({lines.Count} line(s), {invoice.GrandTotal:0.##} {invoice.Currency}).");
+            await SyncSaleInvoiceStateAsync(sale.Id);
             return await EnrichAsync(invoice);
         }
+
 
         public async Task<InvoiceDto> UpdateDraftAsync(int id, UpdateInvoiceDto dto, string userId)
         {
@@ -247,6 +341,8 @@ namespace MyApi.Modules.Invoices.Services
                 await LogActivityAsync(invoice.Id, "updated", userId,
                     description: $"Draft edited: {string.Join(", ", changes)}.");
             }
+            if (invoice.SaleId.HasValue && prevGrand != invoice.GrandTotal)
+                await SyncSaleInvoiceStateAsync(invoice.SaleId.Value);
             return await EnrichAsync(invoice);
         }
 
@@ -286,7 +382,10 @@ namespace MyApi.Modules.Invoices.Services
                 description: $"Invoice posted as {invoice.InvoiceNumber} — total {invoice.GrandTotal:0.##} {invoice.Currency}.",
                 oldValue: "draft",
                 newValue: invoice.InvoiceNumber);
+            await LogSaleActivityAsync(invoice.SaleId, "invoice_posted", userId,
+                $"Invoice {InvoiceLabel(invoice)} posted — total {invoice.GrandTotal:0.##} {invoice.Currency}.");
             await RecalculatePaymentStateAsync(invoice.Id);
+            if (invoice.SaleId.HasValue) await SyncSaleInvoiceStateAsync(invoice.SaleId.Value);
             return await EnrichAsync(invoice);
         }
 
@@ -314,6 +413,10 @@ namespace MyApi.Modules.Invoices.Services
                 description: $"Invoice voided. Reason: {invoice.VoidReason}",
                 oldValue: prevStatus,
                 newValue: "void");
+            await LogSaleActivityAsync(invoice.SaleId, "invoice_voided", userId,
+                $"Invoice {InvoiceLabel(invoice)} voided. Reason: {invoice.VoidReason}");
+            // A voided invoice no longer covers the sale — reopen it for invoicing.
+            if (invoice.SaleId.HasValue) await SyncSaleInvoiceStateAsync(invoice.SaleId.Value);
             return await EnrichAsync(invoice);
         }
 
@@ -331,6 +434,9 @@ namespace MyApi.Modules.Invoices.Services
 
             var prevStatus = invoice.Status;
             invoice.Status = "paid";
+            // Manually marking paid means the full balance was settled — keep
+            // AmountPaid consistent so "due" never shows a phantom balance.
+            if (invoice.AmountPaid < invoice.GrandTotal) invoice.AmountPaid = invoice.GrandTotal;
             invoice.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
             _logger.LogInformation("Invoice {Id} manually marked paid by {User}", invoice.Id, userId);
@@ -338,6 +444,8 @@ namespace MyApi.Modules.Invoices.Services
                 description: $"Invoice manually marked as paid. Memo: {dto.Memo!.Trim()}",
                 oldValue: prevStatus,
                 newValue: "paid");
+            await LogSaleActivityAsync(invoice.SaleId, "invoice_marked_paid", userId,
+                $"Invoice {InvoiceLabel(invoice)} marked as paid. Memo: {dto.Memo!.Trim()}");
             return await EnrichAsync(invoice);
         }
 
@@ -364,8 +472,11 @@ namespace MyApi.Modules.Invoices.Services
                 description: $"Invoice reopened from '{prevStatus}'. Memo: {dto.Memo!.Trim()}",
                 oldValue: prevStatus,
                 newValue: "posted");
+            await LogSaleActivityAsync(invoice.SaleId, "invoice_reopened", userId,
+                $"Invoice {InvoiceLabel(invoice)} reopened from '{prevStatus}'. Memo: {dto.Memo!.Trim()}");
             // Re-sync payment state in case payments changed while it was paid/void.
             await RecalculatePaymentStateAsync(invoice.Id);
+            if (invoice.SaleId.HasValue) await SyncSaleInvoiceStateAsync(invoice.SaleId.Value);
             return await EnrichAsync(invoice);
         }
 
@@ -381,6 +492,9 @@ namespace MyApi.Modules.Invoices.Services
             await _context.SaveChangesAsync();
             await LogActivityAsync(invoice.Id, "deleted", userId,
                 description: "Draft invoice deleted.");
+            await LogSaleActivityAsync(invoice.SaleId, "invoice_deleted", userId,
+                $"Draft invoice {InvoiceLabel(invoice)} deleted.");
+            if (invoice.SaleId.HasValue) await SyncSaleInvoiceStateAsync(invoice.SaleId.Value);
             return true;
         }
 
@@ -416,6 +530,12 @@ namespace MyApi.Modules.Invoices.Services
                         : $"Payment reversed — status returned to posted (paid {paid:0.##} of {invoice.GrandTotal:0.##} {invoice.Currency}).",
                     oldValue: prevStatus,
                     newValue: invoice.Status);
+                await LogSaleActivityAsync(invoice.SaleId,
+                    invoice.Status == "paid" ? "invoice_auto_marked_paid" : "invoice_auto_reopened",
+                    "system",
+                    invoice.Status == "paid"
+                        ? $"Invoice {InvoiceLabel(invoice)} fully paid ({paid:0.##} {invoice.Currency})."
+                        : $"Invoice {InvoiceLabel(invoice)} payment reversed — back to posted ({paid:0.##} / {invoice.GrandTotal:0.##} {invoice.Currency}).");
             }
         }
 
@@ -436,6 +556,37 @@ namespace MyApi.Modules.Invoices.Services
                 CreatedAt = a.CreatedAt,
                 CreatedBy = a.CreatedBy,
             }).ToList();
+        }
+
+        /// <summary>Stable human label for an invoice: its number once posted, otherwise #id.</summary>
+        private static string InvoiceLabel(Invoice invoice) =>
+            string.IsNullOrWhiteSpace(invoice.InvoiceNumber) ? $"#{invoice.Id}" : invoice.InvoiceNumber!;
+
+        /// <summary>
+        /// Mirrors an invoice lifecycle event onto the related sale's activity feed so the
+        /// order timeline (and the traceability module, which aggregates it) shows who
+        /// posted / voided / paid / reopened / deleted an invoice and when.
+        /// Best-effort: an audit failure never breaks the invoice action.
+        /// </summary>
+        private async Task LogSaleActivityAsync(int? saleId, string type, string userId, string description)
+        {
+            if (!saleId.HasValue) return;
+            try
+            {
+                _context.Add(new MyApi.Modules.Sales.Models.SaleActivity
+                {
+                    SaleId = saleId.Value,
+                    Type = type,
+                    Description = description,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedByName = string.IsNullOrEmpty(userId) ? "system" : userId,
+                });
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to mirror {Type} onto sale {SaleId} activity", type, saleId);
+            }
         }
 
         private async Task LogActivityAsync(int invoiceId, string type, string userId,
@@ -466,8 +617,8 @@ namespace MyApi.Modules.Invoices.Services
         // ── helpers ───────────────────────────────────────────
         private static InvoiceLine BuildLine(CreateInvoiceLineDto dto, int idx)
         {
-            var lineTotal = dto.Quantity * dto.UnitPrice;
-            var tax = Math.Round(lineTotal * (dto.TaxRate / 100m), 2, MidpointRounding.AwayFromZero);
+            var lineTotal = Round2(dto.Quantity * dto.UnitPrice);
+            var tax = Round2(lineTotal * (dto.TaxRate / 100m));
             return new InvoiceLine
             {
                 SourceType = dto.SourceType,
@@ -487,10 +638,77 @@ namespace MyApi.Modules.Invoices.Services
 
         private static void RecalculateTotals(Invoice invoice)
         {
-            invoice.Subtotal = invoice.Lines.Sum(l => l.LineTotal);
-            invoice.TaxAmount = invoice.Lines.Sum(l => l.TaxAmount);
-            invoice.GrandTotal = invoice.Subtotal + invoice.TaxAmount;
+            var lines = invoice.Lines ?? new List<InvoiceLine>();
+            invoice.Subtotal = Round2(lines.Sum(l => l.LineTotal));
+            invoice.TaxAmount = Round2(lines.Sum(l => l.TaxAmount));
+            invoice.GrandTotal = Round2(invoice.Subtotal + invoice.TaxAmount);
         }
+
+        private static decimal Round2(decimal v) => Math.Round(v, 2, MidpointRounding.AwayFromZero);
+
+        /// <summary>
+        /// Total already committed to invoices for a sale (drafts included, voided
+        /// excluded). Basis for the over-invoicing guard and the sale's
+        /// invoiced / partially_invoiced state.
+        /// </summary>
+        private async Task<decimal> GetInvoicedTotalForSaleAsync(int saleId, int? excludeInvoiceId = null)
+        {
+            return await _context.Set<Invoice>()
+                .Where(i => !i.IsDeleted
+                            && i.SaleId == saleId
+                            && i.Status != "void"
+                            && (!excludeInvoiceId.HasValue || i.Id != excludeInvoiceId.Value))
+                .SumAsync(i => (decimal?)i.GrandTotal) ?? 0m;
+        }
+
+        /// <summary>
+        /// Reflects invoicing progress back onto the sale so the orders list /
+        /// kanban shows whether an order is partially or fully invoiced.
+        /// Never overrides a terminal sale status (closed, cancelled, lost, ...).
+        /// </summary>
+        private async Task SyncSaleInvoiceStateAsync(int saleId)
+        {
+            try
+            {
+                var sale = await _context.Sales
+                    .Include(s => s.Items)
+                    .FirstOrDefaultAsync(s => s.Id == saleId && !s.IsDeleted);
+                if (sale == null) return;
+
+                // Only these statuses participate in the invoicing sub-flow.
+                var mutable = new[] { "created", "in_progress", "partially_invoiced", "invoiced" };
+                if (!mutable.Contains((sale.Status ?? string.Empty).ToLowerInvariant())) return;
+
+                // Recompute (and heal) the sale's totals: legacy sales were saved
+                // with zeros, which would otherwise make every sale look
+                // "partially invoiced" forever.
+                var saleTotal = sale.GrandTotal;
+                if ((sale.Items?.Count ?? 0) > 0)
+                    saleTotal = Sales.Services.SaleTotalsCalculator.Apply(sale, sale.Items).GrandTotal;
+                else if (saleTotal <= 0m)
+                    saleTotal = sale.TotalAmount;
+
+                var invoiced = await GetInvoicedTotalForSaleAsync(saleId);
+
+                string next;
+                if (invoiced <= 0m) next = sale.Status == "invoiced" || sale.Status == "partially_invoiced" ? "in_progress" : sale.Status!;
+                else if (saleTotal > 0m && invoiced + 0.009m >= saleTotal) next = "invoiced";
+                else next = "partially_invoiced";
+
+                if (!string.Equals(next, sale.Status, StringComparison.OrdinalIgnoreCase))
+                {
+                    sale.Status = next;
+                }
+                sale.UpdatedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                // Never let the sale-state mirror break the invoice action itself.
+                _logger.LogWarning(ex, "Failed to sync invoice state onto sale {SaleId}", saleId);
+            }
+        }
+
 
         // Enrichment ensures the DTO carries the sale number and contact display name
         // so the frontend can render the "invoice → order → customer" chain without extra fetches.

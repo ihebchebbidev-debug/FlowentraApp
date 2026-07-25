@@ -12,7 +12,7 @@ import {
   History, MessageSquare, Mail, Phone, Calendar, Plus, 
   RefreshCw, Loader2, ArrowRightLeft, Briefcase, FileText,
   CheckCircle, XCircle, Edit, DollarSign, Package, ClipboardList, Truck, Clock, Receipt,
-  Settings, User
+  Settings, User, Send, Ban, Trash2
 } from "lucide-react";
 import { Sale } from "../../types";
 import { salesApi, SaleActivity } from "@/services/api/salesApi";
@@ -180,6 +180,21 @@ export function ActivityTab({ sale, onDataChange }: ActivityTabProps) {
         return <Edit className="h-4 w-4 text-warning" />;
       case 'item_added':
         return <Package className="h-4 w-4 text-primary" />;
+      // Invoice lifecycle events mirrored from the Invoices module.
+      case 'invoice_created':
+        return <Receipt className="h-4 w-4 text-primary" />;
+      case 'invoice_posted':
+        return <Send className="h-4 w-4 text-primary" />;
+      case 'invoice_marked_paid':
+      case 'invoice_auto_marked_paid':
+        return <CheckCircle className="h-4 w-4 text-success" />;
+      case 'invoice_voided':
+        return <Ban className="h-4 w-4 text-destructive" />;
+      case 'invoice_deleted':
+        return <Trash2 className="h-4 w-4 text-destructive" />;
+      case 'invoice_reopened':
+      case 'invoice_auto_reopened':
+        return <RefreshCw className="h-4 w-4 text-warning" />;
       case 'email':
         return <Mail className="h-4 w-4 text-primary" />;
       case 'phone':
@@ -223,6 +238,18 @@ export function ActivityTab({ sale, onDataChange }: ActivityTabProps) {
         return 'bg-warning/10 text-warning border-warning/30';
       case 'item_added':
         return 'bg-primary/10 text-primary border-primary/30';
+      case 'invoice_created':
+      case 'invoice_posted':
+        return 'bg-primary/10 text-primary border-primary/30';
+      case 'invoice_marked_paid':
+      case 'invoice_auto_marked_paid':
+        return 'bg-success/10 text-success border-success/30';
+      case 'invoice_voided':
+      case 'invoice_deleted':
+        return 'bg-destructive/10 text-destructive border-destructive/30';
+      case 'invoice_reopened':
+      case 'invoice_auto_reopened':
+        return 'bg-warning/10 text-warning border-warning/30';
       case 'note':
         return 'bg-muted text-muted-foreground border-muted-foreground/30';
       default:
@@ -247,6 +274,15 @@ export function ActivityTab({ sale, onDataChange }: ActivityTabProps) {
       case 'updated': return t('activityTab.types.updated');
       case 'modified': return t('activityTab.types.modified');
       case 'item_added': return t('activityTab.types.itemAdded');
+      case 'invoice_created':
+      case 'invoice_posted':
+      case 'invoice_voided':
+      case 'invoice_marked_paid':
+      case 'invoice_reopened':
+      case 'invoice_deleted':
+      case 'invoice_auto_marked_paid':
+      case 'invoice_auto_reopened':
+        return t(`activityTab.types.${type}`, { defaultValue: type.replace(/_/g, ' ') });
       case 'note': return t('activityTab.types.note');
       default: return type.replace(/_/g, ' ');
     }

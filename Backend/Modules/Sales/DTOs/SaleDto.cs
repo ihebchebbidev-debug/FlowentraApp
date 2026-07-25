@@ -20,6 +20,8 @@ namespace MyApi.Modules.Sales.DTOs
         public decimal? Taxes { get; set; }
         public string? TaxType { get; set; }
         public decimal? Discount { get; set; }
+        /// <summary>"percentage" or "fixed" — how <see cref="Discount"/> should be read.</summary>
+        public string? DiscountType { get; set; }
         public decimal? FiscalStamp { get; set; }
         public decimal? TotalAmount { get; set; }
         
@@ -141,6 +143,7 @@ namespace MyApi.Modules.Sales.DTOs
         public decimal? Taxes { get; set; }
         public string? TaxType { get; set; }
         public decimal? Discount { get; set; }
+        public string? DiscountType { get; set; }
         public decimal? FiscalStamp { get; set; }
         public string? OfferId { get; set; }
         public List<CreateSaleItemDto>? Items { get; set; }
@@ -186,6 +189,7 @@ namespace MyApi.Modules.Sales.DTOs
         public decimal? Taxes { get; set; }
         public string? TaxType { get; set; }
         public decimal? Discount { get; set; }
+        public string? DiscountType { get; set; }
         public decimal? FiscalStamp { get; set; }
         public DateTime? EstimatedCloseDate { get; set; }
         public DateTime? ActualCloseDate { get; set; }

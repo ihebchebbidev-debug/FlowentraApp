@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { formatDistanceToNow } from 'date-fns';
-import { enUS, fr as frLocale } from 'date-fns/locale';
 import { Download, RefreshCw, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,13 +22,8 @@ import { SOURCE_TO_MODULE } from '../permissions';
 
 const POLL_MS = 20_000;
 
-function localeFor(lang: string) {
-  if (lang?.startsWith('fr')) return frLocale;
-  return enUS;
-}
-
 export default function TraceabilityPage() {
-  const { t, i18n } = useTranslation('traceability');
+  const { t } = useTranslation('traceability');
   const { isMainAdmin, hasAnyPermission, isLoading: permsLoading } = usePermissions();
   const [searchParams] = useSearchParams();
   const workspace = (searchParams.get('workspace') || '').toLowerCase();
@@ -59,7 +52,6 @@ export default function TraceabilityPage() {
     loading,
     isRefetching,
     error,
-    lastUpdatedAt,
     newEventIds,
     refresh,
   } = useAggregatedActivity({
@@ -136,13 +128,6 @@ export default function TraceabilityPage() {
     URL.revokeObjectURL(url);
   };
 
-  const dateLocale = localeFor(i18n.language);
-  const updatedLabel = lastUpdatedAt
-    ? t('live.updated', {
-        time: formatDistanceToNow(lastUpdatedAt, { addSuffix: true, locale: dateLocale }),
-      })
-    : null;
-
   const subtitle = workspace
 
     ? t('subtitleWorkspace', {
@@ -193,10 +178,6 @@ export default function TraceabilityPage() {
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-8 h-9 bg-white"
               />
-            </div>
-            <div className="text-xs text-muted-foreground flex items-center gap-3 sm:ml-auto">
-              {updatedLabel && <span className="hidden sm:inline">{updatedLabel}</span>}
-              <span>{t('counts', { shown: filtered.length, total: events.length })}</span>
             </div>
           </div>
         </div>

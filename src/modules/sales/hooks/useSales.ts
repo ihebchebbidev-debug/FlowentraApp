@@ -4,6 +4,16 @@ import { Sale, SaleFilters, SaleStats } from '../types';
 import { SalesService } from '../services/sales.service';
 import { salesApi } from '@/services/api/salesApi';
 
+// Server-side guards (already invoiced, over-invoicing, ...) explain *why* an
+// action was refused — show that instead of a generic failure toast.
+function serverMessage(error: any, fallback: string): string {
+  const detail =
+    error?.response?.data?.message ??
+    error?.response?.data?.error ??
+    error?.message;
+  return typeof detail === 'string' && detail.trim() ? detail : fallback;
+}
+
 export function useSales() {
   const [sales, setSales] = useState<Sale[]>([]);
   const [stats, setStats] = useState<SaleStats>({
@@ -61,7 +71,7 @@ export function useSales() {
       toast.success('Sale status updated');
       fetchSales();
     } catch (error) {
-      toast.error('Failed to update sale status');
+      toast.error(serverMessage(error, 'Failed to update sale status'));
     }
   };
 
@@ -71,7 +81,7 @@ export function useSales() {
       toast.success('Sale deleted successfully');
       fetchSales();
     } catch (error) {
-      toast.error('Failed to delete sale');
+      toast.error(serverMessage(error, 'Failed to delete sale'));
     }
   };
 

@@ -163,9 +163,11 @@
     "paid": "Paid",
     "outstanding": "Outstanding",
     "coverage": "Invoicing coverage",
-    "create_invoice": "Create invoice from this sale",
+    "create_invoice": "Create invoice",
     "empty": "No invoice has been created for this sale yet.",
     "confirm_create_title": "Create invoice from this sale?",
-    "confirm_create_body": "A draft invoice will be created with a snapshot of this sale's items. You can edit it before posting."
+    "confirm_create_body": "A draft invoice will be created with a snapshot of this sale's items. You can edit it before posting.",
+    "heading": "Invoices",
+    "count_summary": "{{count}} invoice(s), {{drafts}} draft(s)"
   }
 }

@@ -30,6 +30,15 @@ const LEVEL_BY_ACTION: Record<string, ActivityLevel> = {
   auto_reopened: 'warning',
   manual_reopened: 'warning',
   deleted: 'warning',
+  // Invoice lifecycle events mirrored onto the related sale's feed.
+  invoice_created: 'info',
+  invoice_posted: 'info',
+  invoice_marked_paid: 'success',
+  invoice_auto_marked_paid: 'success',
+  invoice_voided: 'warning',
+  invoice_deleted: 'warning',
+  invoice_reopened: 'warning',
+  invoice_auto_reopened: 'warning',
 };
 
 function levelFor(action?: string): ActivityLevel {
@@ -40,6 +49,7 @@ function levelFor(action?: string): ActivityLevel {
 function bucketFor(action?: string): ActivityBucket {
   const a = (action || '').toLowerCase();
   if (!a) return 'other';
+  if (a.startsWith('invoice_')) return a === 'invoice_created' ? 'created' : 'status';
   if (/(created|added|opened)/.test(a)) return 'created';
   if (/(status|posted|sent|paid|voided|void|reopened|completed|started|assigned|confirmed|cancelled|accepted|rejected)/.test(a))
     return 'status';

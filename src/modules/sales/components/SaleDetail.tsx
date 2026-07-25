@@ -152,10 +152,6 @@ export function SaleDetail() {
     toast.success(t('detail.saleSent'));
   };
 
-  const handleSendInvoice = () => {
-    toast.success(t('detail.invoiceSent'));
-  };
-
   const handleDownloadPDF = () => {
     setIsPDFModalOpen(true);
   };
@@ -260,10 +256,6 @@ export function SaleDetail() {
                 <DropdownMenuItem onClick={handleDownloadPDF} className="gap-2">
                   <FileDown className="h-4 w-4" />
                   {t('detail.downloadPdf')}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleSendInvoice} className="gap-2">
-                  <Send className="h-4 w-4" />
-                  {t('detail.sendInvoice')}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleDeleteSale} className="gap-2 text-destructive">
@@ -420,7 +412,7 @@ export function SaleDetail() {
                               <Send className="h-4 w-4" />
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent side="bottom">{t('sendInvoice')}</TooltipContent>
+                          <TooltipContent side="bottom">{t('sendSale')}</TooltipContent>
                         </Tooltip>
 
                         <Tooltip>

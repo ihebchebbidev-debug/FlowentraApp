@@ -416,7 +416,15 @@
       "invoiced": "Facturée",
       "partiallyInvoiced": "Partiellement Facturée",
       "closed": "Clôturée",
-      "cancelled": "Annulée"
+      "cancelled": "Annulée",
+      "invoice_created": "Facture en Brouillon",
+      "invoice_posted": "Facture Publiée",
+      "invoice_voided": "Facture Annulée",
+      "invoice_marked_paid": "Facture Marquée Payée",
+      "invoice_reopened": "Facture Rouverte",
+      "invoice_deleted": "Facture Supprimée",
+      "invoice_auto_marked_paid": "Facture Payée",
+      "invoice_auto_reopened": "Paiement de Facture Annulé"
     }
   },
   "attachmentsTab": {

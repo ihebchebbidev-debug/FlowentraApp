@@ -76,7 +76,15 @@
     "time_entry_added": "Time entry added",
     "expense_added": "Expense added",
     "material_added": "Material added",
-    "other": "Other"
+    "other": "Other",
+    "invoice_created": "Invoice drafted",
+    "invoice_posted": "Invoice posted",
+    "invoice_voided": "Invoice voided",
+    "invoice_marked_paid": "Invoice marked paid",
+    "invoice_reopened": "Invoice reopened",
+    "invoice_deleted": "Invoice deleted",
+    "invoice_auto_marked_paid": "Invoice paid",
+    "invoice_auto_reopened": "Invoice payment reversed"
   },
   "csv": {
     "timestamp": "Timestamp",

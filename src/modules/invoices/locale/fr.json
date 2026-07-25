@@ -163,9 +163,11 @@
     "paid": "Payé",
     "outstanding": "Reste dû",
     "coverage": "Taux de facturation",
-    "create_invoice": "Créer une facture pour cette vente",
+    "create_invoice": "Créer une facture",
     "empty": "Aucune facture n'a encore été créée pour cette vente.",
     "confirm_create_title": "Créer une facture depuis cette vente ?",
-    "confirm_create_body": "Un brouillon sera créé avec une copie des articles de cette vente. Vous pourrez le modifier avant émission."
+    "confirm_create_body": "Un brouillon sera créé avec une copie des articles de cette vente. Vous pourrez le modifier avant émission.",
+    "heading": "Factures",
+    "count_summary": "{{count}} facture(s), {{drafts}} brouillon(s)"
   }
 }

@@ -416,7 +416,15 @@
       "invoiced": "Invoiced",
       "partiallyInvoiced": "Partially Invoiced",
       "closed": "Closed",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "invoice_created": "Invoice Drafted",
+      "invoice_posted": "Invoice Posted",
+      "invoice_voided": "Invoice Voided",
+      "invoice_marked_paid": "Invoice Marked Paid",
+      "invoice_reopened": "Invoice Reopened",
+      "invoice_deleted": "Invoice Deleted",
+      "invoice_auto_marked_paid": "Invoice Paid",
+      "invoice_auto_reopened": "Invoice Payment Reversed"
     }
   },
   "attachmentsTab": {

@@ -76,7 +76,15 @@
     "time_entry_added": "Temps ajouté",
     "expense_added": "Dépense ajoutée",
     "material_added": "Matériel ajouté",
-    "other": "Autre"
+    "other": "Autre",
+    "invoice_created": "Facture en brouillon",
+    "invoice_posted": "Facture publiée",
+    "invoice_voided": "Facture annulée",
+    "invoice_marked_paid": "Facture marquée payée",
+    "invoice_reopened": "Facture rouverte",
+    "invoice_deleted": "Facture supprimée",
+    "invoice_auto_marked_paid": "Facture payée",
+    "invoice_auto_reopened": "Paiement de facture annulé"
   },
   "csv": {
     "timestamp": "Horodatage",

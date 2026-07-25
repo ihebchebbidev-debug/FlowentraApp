@@ -75,6 +75,24 @@ const fragmentMap: Array<{ en: RegExp; fr: RegExp; enText: string; frText: strin
 // Whole-string patterns (kept for backwards compatibility with older notes).
 // ---------------------------------------------------------------------------
 const notePatterns: Array<{ pattern: RegExp; en: string; fr: string }> = [
+    // Invoice lifecycle events mirrored onto the related sale's activity feed
+    // (see Backend/Modules/Invoices/Services/InvoiceService.LogSaleActivityAsync).
+    { pattern: /^Invoice (.+) drafted for this sale \((\d+) line\(s\), (.+)\)\.$/i, en: 'Invoice $1 drafted for this sale ($2 line(s), $3).', fr: 'Facture $1 créée en brouillon pour cette commande ($2 ligne(s), $3).' },
+    { pattern: /^Facture (.+) créée en brouillon pour cette commande \((\d+) ligne\(s\), (.+)\)\.$/i, en: 'Invoice $1 drafted for this sale ($2 line(s), $3).', fr: 'Facture $1 créée en brouillon pour cette commande ($2 ligne(s), $3).' },
+    { pattern: /^Invoice (.+) posted — total (.+)\.$/i, en: 'Invoice $1 posted — total $2.', fr: 'Facture $1 publiée — total $2.' },
+    { pattern: /^Facture (.+) publiée — total (.+)\.$/i, en: 'Invoice $1 posted — total $2.', fr: 'Facture $1 publiée — total $2.' },
+    { pattern: /^Invoice (.+) voided\. Reason: (.*)$/i, en: 'Invoice $1 voided. Reason: $2', fr: 'Facture $1 annulée. Motif : $2' },
+    { pattern: /^Facture (.+) annulée\. Motif\s*: (.*)$/i, en: 'Invoice $1 voided. Reason: $2', fr: 'Facture $1 annulée. Motif : $2' },
+    { pattern: /^Invoice (.+) marked as paid\. Memo: (.*)$/i, en: 'Invoice $1 marked as paid. Memo: $2', fr: 'Facture $1 marquée comme payée. Mémo : $2' },
+    { pattern: /^Facture (.+) marquée comme payée\. Mémo\s*: (.*)$/i, en: 'Invoice $1 marked as paid. Memo: $2', fr: 'Facture $1 marquée comme payée. Mémo : $2' },
+    { pattern: /^Invoice (.+) reopened from '(.+)'\. Memo: (.*)$/i, en: "Invoice $1 reopened from '$2'. Memo: $3", fr: "Facture $1 rouverte depuis '$2'. Mémo : $3" },
+    { pattern: /^Facture (.+) rouverte depuis '(.+)'\. Mémo\s*: (.*)$/i, en: "Invoice $1 reopened from '$2'. Memo: $3", fr: "Facture $1 rouverte depuis '$2'. Mémo : $3" },
+    { pattern: /^Draft invoice (.+) deleted\.$/i, en: 'Draft invoice $1 deleted.', fr: 'Facture brouillon $1 supprimée.' },
+    { pattern: /^Facture brouillon (.+) supprimée\.$/i, en: 'Draft invoice $1 deleted.', fr: 'Facture brouillon $1 supprimée.' },
+    { pattern: /^Invoice (.+) fully paid \((.+)\)\.$/i, en: 'Invoice $1 fully paid ($2).', fr: 'Facture $1 entièrement payée ($2).' },
+    { pattern: /^Facture (.+) entièrement payée \((.+)\)\.$/i, en: 'Invoice $1 fully paid ($2).', fr: 'Facture $1 entièrement payée ($2).' },
+    { pattern: /^Invoice (.+) payment reversed — back to posted \((.+)\)\.$/i, en: 'Invoice $1 payment reversed — back to posted ($2).', fr: 'Facture $1 : paiement annulé — retour à publiée ($2).' },
+    { pattern: /^Facture (.+) : paiement annulé — retour à publiée \((.+)\)\.$/i, en: 'Invoice $1 payment reversed — back to posted ($2).', fr: 'Facture $1 : paiement annulé — retour à publiée ($2).' },
     { pattern: /^Checklist ajouté\s*:\s*(.+)$/i, en: 'Checklist added: $1', fr: 'Checklist ajouté : $1' },
     { pattern: /^Checklist added\s*:\s*(.+)$/i, en: 'Checklist added: $1', fr: 'Checklist ajouté : $1' },
     { pattern: /^Checklist complété\s*:\s*(.+)$/i, en: 'Checklist completed: $1', fr: 'Checklist complété : $1' },
@@ -105,6 +123,13 @@ const entityTypeTranslations: Record<string, { en: string; fr: string }> = {
 // Status translations
 const statusTranslations: Record<string, { en: string; fr: string }> = {
   'draft': { en: 'Created', fr: 'Brouillon' },
+  'posted': { en: 'Posted', fr: 'Publiée' },
+  'void': { en: 'Voided', fr: 'Annulée' },
+  'voided': { en: 'Voided', fr: 'Annulée' },
+  'payé': { en: 'Paid', fr: 'Payé' },
+  'payée': { en: 'Paid', fr: 'Payé' },
+  'publiée': { en: 'Posted', fr: 'Publiée' },
+  'annulée': { en: 'Voided', fr: 'Annulée' },
   'brouillon': { en: 'Created', fr: 'Brouillon' },
   'sent': { en: 'Sent', fr: 'Envoyé' },
   'envoyé': { en: 'Sent', fr: 'Envoyé' },

@@ -179,6 +179,11 @@ namespace MyApi.Modules.Sales.Services
                 Taxes = createDto.Taxes ?? 0,
                 TaxType = createDto.TaxType ?? "percentage",
                 Discount = createDto.Discount ?? 0,
+                // The header discount type has no column of its own: a non-null
+                // DiscountPercent means "read Discount as a percentage".
+                DiscountPercent = string.Equals(createDto.DiscountType, "percentage", StringComparison.OrdinalIgnoreCase)
+                    ? createDto.Discount ?? 0
+                    : (decimal?)null,
                 FiscalStamp = createDto.FiscalStamp ?? 1.000m,
                 TotalAmount = 0,
                 OfferId = createDto.OfferId,
@@ -224,6 +229,11 @@ namespace MyApi.Modules.Sales.Services
                 _context.SaleItems.AddRange(items);
                 await _context.SaveChangesAsync();
             }
+
+            // Persist line totals + header totals (subtotal, tax, grand total).
+            // Without this the sale would be stored with 0 amounts.
+            await RecalculateSaleTotalsAsync(sale.Id);
+
 
             if (_contactActivity != null && sale.ContactId > 0)
             {
@@ -312,6 +322,9 @@ namespace MyApi.Modules.Sales.Services
                     Taxes = offer.Taxes ?? 0,
                     TaxType = offer.TaxType ?? "percentage",
                     Discount = offer.Discount ?? 0,
+                    DiscountPercent = string.Equals(offer.DiscountType, "percentage", StringComparison.OrdinalIgnoreCase)
+                        ? offer.Discount ?? 0
+                        : (decimal?)null,
                     FiscalStamp = offer.FiscalStamp ?? 1.000m,
                     TotalAmount = offer.TotalAmount,
                     AssignedTo = offer.AssignedTo,
@@ -369,11 +382,22 @@ namespace MyApi.Modules.Sales.Services
                             // find the related sale item or downstream service-order jobs.
                             OriginOfferItemId = offerItem.Id
                         };
+                        SaleTotalsCalculator.ApplyLineTotal(saleItem);
                         _context.SaleItems.Add(saleItem);
                         itemPairs.Add((offerItem, saleItem));
                     }
                     await _context.SaveChangesAsync();
                 }
+
+                // Recompute the header money from the copied lines so the sale
+                // never inherits a stale/zero total from the offer. Offers with no
+                // lines keep their manually entered total as-is.
+                if (itemPairs.Count > 0)
+                    SaleTotalsCalculator.Apply(sale, itemPairs.Select(p => p.Dst).ToList());
+                else
+                    sale.GrandTotal = sale.TotalAmount;
+
+
 
                 // Propagate planned time/expenses from offer_item → sale_item.
                 // Inside the transaction: any failure rolls the whole conversion back
@@ -480,6 +504,17 @@ namespace MyApi.Modules.Sales.Services
             if (!isSaleFinalized && updateDto.Taxes.HasValue) sale.Taxes = updateDto.Taxes.Value;
             if (!isSaleFinalized && updateDto.TaxType != null) sale.TaxType = updateDto.TaxType;
             if (!isSaleFinalized && updateDto.Discount.HasValue) sale.Discount = updateDto.Discount.Value;
+            if (!isSaleFinalized && updateDto.DiscountType != null)
+            {
+                sale.DiscountPercent = string.Equals(updateDto.DiscountType, "percentage", StringComparison.OrdinalIgnoreCase)
+                    ? (updateDto.Discount ?? sale.Discount ?? 0)
+                    : (decimal?)null;
+            }
+            else if (!isSaleFinalized && updateDto.Discount.HasValue && sale.DiscountPercent.HasValue)
+            {
+                // Keep the percentage mirror in sync when only the value changes.
+                sale.DiscountPercent = updateDto.Discount.Value;
+            }
             if (!isSaleFinalized && updateDto.FiscalStamp.HasValue) sale.FiscalStamp = updateDto.FiscalStamp.Value;
             if (updateDto.EstimatedCloseDate.HasValue) sale.EstimatedCloseDate = updateDto.EstimatedCloseDate;
             if (updateDto.ActualCloseDate.HasValue) sale.ActualCloseDate = updateDto.ActualCloseDate;
@@ -627,8 +662,12 @@ namespace MyApi.Modules.Sales.Services
                     createdBy: userId);
             }
 
+            // Keep persisted money in sync with items / tax / discount changes.
+            await RecalculateSaleTotalsAsync(id);
+
             var updatedSale = await GetSaleByIdAsync(id);
             return updatedSale!;
+
         }
 
         public async Task<bool> DeleteSaleAsync(int id, string userId = "system")
@@ -646,6 +685,21 @@ namespace MyApi.Modules.Sales.Services
 
                     if (sale == null || sale.IsDeleted)
                         return false;
+
+                    // Data integrity: never orphan an invoice. A sale that has any
+                    // non-void invoice (draft included) must have those invoices
+                    // removed/voided first, otherwise the invoice would point at a
+                    // deleted order and the customer ledger loses its audit chain.
+                    var linkedInvoices = await GetActiveInvoicesForSaleAsync(id);
+                    if (linkedInvoices.Count > 0)
+                    {
+                        var numbers = string.Join(", ", linkedInvoices.Select(i => i.InvoiceNumber ?? $"draft #{i.Id}"));
+                        throw new InvalidOperationException(
+                            $"Cannot delete this sale: {linkedInvoices.Count} invoice(s) are linked to it ({numbers}). " +
+                            "Delete the drafts and void the posted invoices first.");
+                    }
+
+
 
                     // Get user name for activity logging
                     string deletedByName = userId;
@@ -776,6 +830,10 @@ namespace MyApi.Modules.Sales.Services
             if (sale == null)
                 throw new KeyNotFoundException($"Sale with ID {saleId} not found");
 
+            // Adding scope to an already-invoiced sale would make the invoice
+            // under-charge without anyone noticing.
+            await GuardSaleNotInvoicedAsync(saleId, "add an item");
+
             var nextOrder = await _context.SaleItems
                 .Where(si => si.SaleId == saleId)
                 .Select(si => (int?)si.DisplayOrder)
@@ -800,11 +858,14 @@ namespace MyApi.Modules.Sales.Services
                 Currency = sale.Currency,
                 DisplayOrder = itemDto.DisplayOrder ?? (nextOrder + 1)
             };
+            SaleTotalsCalculator.ApplyLineTotal(item);
 
             _context.SaleItems.Add(item);
             await _context.SaveChangesAsync();
+            await RecalculateSaleTotalsAsync(saleId);
 
             var addedItem = await _context.SaleItems.FindAsync(item.Id);
+
 
             if (_activityLogger != null)
             {
@@ -827,11 +888,16 @@ namespace MyApi.Modules.Sales.Services
 
         public async Task<SaleItemDto> UpdateSaleItemAsync(int saleId, int itemId, CreateSaleItemDto itemDto)
         {
+            // Changing a line after it has been invoiced would silently desync the
+            // invoice (invoice lines are value copies taken at generation time).
+            await GuardSaleNotInvoicedAsync(saleId, "edit this item");
+
             var item = await _context.SaleItems
                 .FirstOrDefaultAsync(i => i.Id == itemId && i.SaleId == saleId);
 
             if (item == null)
                 throw new KeyNotFoundException($"Item with ID {itemId} not found in sale {saleId}");
+
 
             var oldName = item.ItemName;
             var oldQty = item.Quantity;
@@ -849,8 +915,11 @@ namespace MyApi.Modules.Sales.Services
             item.InstallationId = itemDto.InstallationId;
             item.InstallationName = itemDto.InstallationName;
             item.RequiresServiceOrder = itemDto.RequiresServiceOrder;
+            SaleTotalsCalculator.ApplyLineTotal(item);
 
             await _context.SaveChangesAsync();
+            await RecalculateSaleTotalsAsync(saleId);
+
 
             if (_activityLogger != null)
             {
@@ -873,6 +942,10 @@ namespace MyApi.Modules.Sales.Services
 
         public async Task<bool> DeleteSaleItemAsync(int saleId, int itemId)
         {
+            // Removing a line after invoicing would leave the invoice charging for
+            // something the order no longer contains.
+            await GuardSaleNotInvoicedAsync(saleId, "remove this item");
+
             var item = await _context.SaleItems
                 .FirstOrDefaultAsync(i => i.Id == itemId && i.SaleId == saleId);
 
@@ -884,6 +957,8 @@ namespace MyApi.Modules.Sales.Services
 
             _context.SaleItems.Remove(item);
             await _context.SaveChangesAsync();
+            await RecalculateSaleTotalsAsync(saleId);
+
 
             if (_activityLogger != null)
             {
@@ -957,6 +1032,7 @@ namespace MyApi.Modules.Sales.Services
                 Taxes = sale.Taxes,
                 TaxType = sale.TaxType,
                 Discount = sale.Discount,
+                DiscountType = sale.DiscountPercent.HasValue ? "percentage" : "fixed",
                 FiscalStamp = sale.FiscalStamp,
                 TotalAmount = sale.GrandTotal > 0 ? sale.GrandTotal : sale.TotalAmount,
                 Status = sale.Status,
@@ -1018,7 +1094,52 @@ namespace MyApi.Modules.Sales.Services
             };
         }
 
+        /// <summary>
+        /// Recomputes and persists every line total plus the sale header totals
+        /// (subtotal / tax / grand total). Called after any write that can change
+        /// the money on a sale, so the API never returns zeroed amounts.
+        /// </summary>
+        private async Task<SaleTotalsCalculator.SaleTotals> RecalculateSaleTotalsAsync(int saleId)
+        {
+            var sale = await _context.Sales
+                .Include(s => s.Items)
+                .FirstOrDefaultAsync(s => s.Id == saleId);
+            if (sale == null)
+                return SaleTotalsCalculator.Compute(0, 0, "fixed", 0, "fixed", 0);
+
+            var totals = SaleTotalsCalculator.Apply(sale, sale.Items);
+            sale.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            return totals;
+        }
+
+        /// <summary>
+        /// Non-void, non-deleted invoices attached to a sale. Used to lock the
+        /// sale's scope once it has been (partially) invoiced, so an invoice can
+        /// never silently desync from the order it was generated from.
+        /// </summary>
+        private async Task<List<MyApi.Modules.Invoices.Models.Invoice>> GetActiveInvoicesForSaleAsync(int saleId)
+        {
+            return await _context.Set<MyApi.Modules.Invoices.Models.Invoice>()
+                .Where(i => !i.IsDeleted && i.SaleId == saleId && i.Status != "void")
+                .ToListAsync();
+        }
+
+        private async Task GuardSaleNotInvoicedAsync(int saleId, string action)
+        {
+            var invoices = await GetActiveInvoicesForSaleAsync(saleId);
+            var blocking = invoices.Where(i => i.Status != "draft").ToList();
+            if (blocking.Count > 0)
+            {
+                var numbers = string.Join(", ", blocking.Select(i => i.InvoiceNumber ?? $"#{i.Id}"));
+                throw new InvalidOperationException(
+                    $"Cannot {action}: this sale is already invoiced ({numbers}). " +
+                    "Void or credit the invoice first, then adjust the sale.");
+            }
+        }
+
         private async Task<string> ResolveUserNameAsync(string userId)
+
         {
             // Try admin users first
             var adminUser = await _context.MainAdminUsers.FirstOrDefaultAsync(u => u.Id.ToString() == userId);
