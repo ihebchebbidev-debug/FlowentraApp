@@ -217,19 +217,23 @@ interface DashboardCard {
 function SortableCard({
   card,
   onOpen,
+  editMode,
 }: {
   card: DashboardCard;
   onOpen?: () => void;
+  editMode: boolean;
 }) {
   const { t } = useTranslation('dashboard');
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: card.id,
+    disabled: !editMode,
   });
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 20 : undefined,
   };
+  const dragProps = editMode ? { ...attributes, ...listeners } : {};
   return (
     <div
       ref={setNodeRef}
@@ -237,12 +241,12 @@ function SortableCard({
       className={cn(
         SPAN[card.size],
         'group relative min-w-0',
-        isDragging && 'opacity-80 shadow-lg ring-2 ring-primary/40 rounded-xl'
+        editMode && 'cursor-grab active:cursor-grabbing rounded-xl ring-1 ring-primary/30 ring-offset-2 ring-offset-background',
+        isDragging && 'opacity-80 shadow-lg ring-2 ring-primary/50 rounded-xl'
       )}
-      {...attributes}
-      {...listeners}
+      {...dragProps}
     >
-      {card.reporting && onOpen && (
+      {card.reporting && onOpen && !editMode && (
         <button
           type="button"
           onClick={(e) => {
@@ -256,7 +260,7 @@ function SortableCard({
           <ExternalLink className="h-3 w-3" />
         </button>
       )}
-      <div className="h-full">{card.node}</div>
+      <div className={cn('h-full', editMode && 'pointer-events-none select-none')}>{card.node}</div>
     </div>
   );
 }
@@ -700,15 +704,22 @@ export default function DashboardOverview() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {customizeOpen && (
+            <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-px-10 font-semibold text-primary">
+              {t('overview.editing', { defaultValue: 'Editing layout — drag cards to reorder' })}
+            </span>
+          )}
           <Button
-            variant="outline"
+            variant={customizeOpen ? 'default' : 'outline'}
             size="sm"
             className="h-8 gap-1.5 text-xs"
-            onClick={() => setCustomizeOpen(true)}
+            onClick={() => setCustomizeOpen((v) => !v)}
           >
             <Settings2 className="h-3.5 w-3.5" />
-            {t('overview.customize', { defaultValue: 'Customize' })}
-            {(hiddenDefaults.length > 0 || pinnedWidgets.length > 0) && (
+            {customizeOpen
+              ? t('overview.doneCustomize', { defaultValue: 'Done' })
+              : t('overview.customize', { defaultValue: 'Customize' })}
+            {!customizeOpen && (hiddenDefaults.length > 0 || pinnedWidgets.length > 0) && (
               <span className="ml-1 rounded-full bg-primary/15 px-1.5 py-0.5 text-px-10 font-semibold text-primary">
                 {pinnedWidgets.length + hiddenDefaults.length}
               </span>
@@ -727,6 +738,7 @@ export default function DashboardOverview() {
                 <SortableCard
                   key={card.id}
                   card={card}
+                  editMode={customizeOpen}
                   onOpen={
                     card.reporting
                       ? () => {

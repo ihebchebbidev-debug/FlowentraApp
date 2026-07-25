@@ -225,36 +225,38 @@ export function UserManagement() {
                       {user.isActive ? t('users.status.active') : t('users.status.inactive')}
                     </Badge>
                   </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        className="gap-2"
-                        onClick={() => { setSelectedUser(user); setShowEditModal(true); }}
-                      >
-                        <Edit className="h-4 w-4" />
-                        {t('users.editUser')}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="gap-2"
-                        onClick={() => handleChangeRole(user)}
-                      >
-                        <Shield className="h-4 w-4" />
-                        {t('users.changeRole')}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="gap-2 text-destructive"
-                        onClick={() => setUserToDelete(user)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        {t('users.removeUser')}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      title={t('users.editUser')}
+                      aria-label={t('users.editUser')}
+                      onClick={() => { setSelectedUser(user); setShowEditModal(true); }}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      title={t('users.changeRole')}
+                      aria-label={t('users.changeRole')}
+                      onClick={() => handleChangeRole(user)}
+                    >
+                      <Shield className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      title={t('users.removeUser')}
+                      aria-label={t('users.removeUser')}
+                      onClick={() => setUserToDelete(user)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}

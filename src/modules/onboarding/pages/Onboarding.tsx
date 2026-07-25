@@ -89,18 +89,15 @@ const Onboarding = () => {
       userData?.onboardingCompleted || localStorage.getItem('onboarding-completed');
     if (!hasCompletedOnboarding) return;
 
-    let cancelled = false;
+    // Redirect immediately to avoid the brief /onboarding flash for
+    // users who have already completed onboarding. Refresh tenants and
+    // pin the active company in the background — Dashboard will pick
+    // them up from the tenant context when they arrive.
+    navigate('/dashboard', { replace: true });
     void (async () => {
       const freshTenants = await refetchTenants({ bustCache: true });
-      if (cancelled) return;
       await ensureActiveCompanyPinned(isMainAdminFromStorage(), freshTenants);
-      if (cancelled) return;
-      navigate('/dashboard', { replace: true });
     })();
-
-    return () => {
-      cancelled = true;
-    };
   }, [navigate, refetchTenants]);
 
   useEffect(() => {

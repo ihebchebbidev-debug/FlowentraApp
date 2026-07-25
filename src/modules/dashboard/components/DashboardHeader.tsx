@@ -228,8 +228,8 @@ export function DashboardHeader() {
             )}
           </Button>
 
-          {/* Ask AI Button - Only show if user has AI permission and network / not offline mode */}
-          {canAccessAi && aiAssistantAvailable && (
+          {/* Ask AI Button - Hidden for now */}
+          {false && canAccessAi && aiAssistantAvailable && (
             <Button
               variant="outline"
               size="sm"
@@ -243,8 +243,8 @@ export function DashboardHeader() {
             </Button>
           )}
 
-          {/* Mobile Ask AI Button - Only show if user has AI permission and network / not offline mode */}
-          {canAccessAi && aiAssistantAvailable && (
+          {/* Mobile Ask AI Button - Hidden for now */}
+          {false && canAccessAi && aiAssistantAvailable && (
             <Button
               variant="ghost"
               size="icon"

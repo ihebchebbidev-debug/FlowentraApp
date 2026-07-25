@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Users, Shield, Settings2, Palette, Filter, ChevronDown, Activity, Database, Monitor, Link2, User, Building2, Lock, ChevronRight, CreditCard, Layers, RefreshCw, WifiOff, Play } from "lucide-react";
+import { Plus, Users, Shield, Settings2, Palette, Filter, ChevronDown, Database, Monitor, Link2, User, Building2, Lock, CreditCard, Layers, RefreshCw, WifiOff, Play } from "lucide-react";
 import { SettingsAutopilotDemo } from "@/modules/settings/components/onboarding/SettingsAutopilotDemo";
 import { useLayoutModeContext } from "@/hooks/useLayoutMode";
 import { useQuery } from "@tanstack/react-query";
@@ -608,65 +608,6 @@ export default function SettingsPage({ standaloneSection }: SettingsPageProps = 
   function renderSystemContent() {
     return (
       <div className="space-y-4">
-        <Card className="shadow-card border-0 bg-card">
-          <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
-              <Monitor className="h-4 w-4 text-primary" />
-              {t('system.title')}
-            </CardTitle>
-            <CardDescription className="text-xs">{t('system.desc')}</CardDescription>
-          </CardHeader>
-          <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <button 
-                className="rounded-lg border border-border/50 bg-muted/30 p-4 text-left hover:border-primary/50 hover:bg-primary/5 transition-all group"
-                onClick={() => navigate('/dashboard/settings/logs')}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-destructive/10 text-destructive">
-                    <Activity className="h-4 w-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-medium text-sm text-foreground">{t('system.logsTitle')}</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">{t('system.logsDesc')}</p>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-foreground transition-colors" />
-                </div>
-              </button>
-              <button 
-                className="rounded-lg border border-border/50 bg-muted/30 p-4 text-left hover:border-primary/50 hover:bg-primary/5 transition-all group"
-                onClick={() => navigate('/dashboard/settings/documentation')}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                    <Settings2 className="h-4 w-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-medium text-sm text-foreground">{t('system.documentationTitle')}</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">{t('system.documentationDesc')}</p>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-foreground transition-colors" />
-                </div>
-              </button>
-              <button
-                className="rounded-lg border border-border/50 bg-muted/30 p-4 text-left hover:border-primary/50 hover:bg-primary/5 transition-all group"
-                onClick={() => navigate('/dashboard/settings/sync')}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                    <RefreshCw className="h-4 w-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-medium text-sm text-foreground">{t('system.syncTitle')}</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">{t('system.syncDesc')}</p>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-foreground transition-colors" />
-                </div>
-              </button>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Job Conversion Mode Setting */}
         <JobConversionModeSettings />
 

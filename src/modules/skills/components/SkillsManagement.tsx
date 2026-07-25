@@ -240,24 +240,27 @@ export function SkillsManagement() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center justify-end gap-2">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem className="gap-2" onClick={() => handleEditSkill(skill)}>
-                          <Edit className="h-4 w-4" />
-                          {t('common.editSkill')}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="gap-2 text-destructive" onClick={() => handleDeleteSkill(skill)}>
-                          <Trash2 className="h-4 w-4" />
-                          {t('common.deleteSkill')}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                  <div className="flex items-center justify-end gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      title={t('common.editSkill')}
+                      aria-label={t('common.editSkill')}
+                      onClick={() => handleEditSkill(skill)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      title={t('common.deleteSkill')}
+                      aria-label={t('common.deleteSkill')}
+                      onClick={() => handleDeleteSkill(skill)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               ))

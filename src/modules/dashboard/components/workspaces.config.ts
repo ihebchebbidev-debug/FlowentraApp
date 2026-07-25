@@ -189,7 +189,7 @@ export const WORKSPACES: Workspace[] = [
       { key: "background-services", label: "Background services", labelI18nKey: "workspace.modules.backgroundServices", url: "/dashboard/settings/sync", icon: "Activity" },
       { key: "documentation", label: "Documentation", labelI18nKey: "workspace.modules.documentation", url: "/dashboard/settings/documentation", icon: "BookOpen" },
       { key: "system-logs", label: "System logs", labelI18nKey: "workspace.modules.systemLogs", url: "/dashboard/settings/logs", icon: "ScrollText" },
-      { key: "system-config", label: "System configuration", labelI18nKey: "workspace.modules.systemConfig", url: "/dashboard/settings?section=system", icon: "Monitor" },
+      { key: "system-config", label: "System configuration", labelI18nKey: "workspace.modules.systemConfig", url: "/dashboard/settings/system-config", icon: "Monitor" },
       {
         key: "settings",
         label: "Settings",

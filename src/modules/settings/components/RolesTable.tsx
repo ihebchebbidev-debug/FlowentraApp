@@ -1,9 +1,9 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, MoreVertical } from "lucide-react";
+import { Edit, Trash2 } from "lucide-react";
 import { Role } from "@/types/users";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format } from "date-fns";
 import { useTranslation } from 'react-i18next';
 
@@ -56,30 +56,30 @@ export function RolesTable({ roles, onEdit, onDelete, canUpdate = true, canDelet
                   {format(new Date(role.createdAt), "MMM d, yyyy")}
                 </TableCell>
                 <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                  <TooltipProvider delayDuration={200}>
+                    <div className="flex items-center justify-end gap-1">
                       {canUpdate && (
-                        <DropdownMenuItem onClick={() => onEdit(role)}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          {t('edit') || 'Edit'}
-                        </DropdownMenuItem>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(role)} aria-label={t('edit') || 'Edit'}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>{t('edit') || 'Edit'}</TooltipContent>
+                        </Tooltip>
                       )}
                       {canDelete && (
-                        <DropdownMenuItem 
-                          onClick={() => onDelete(role)}
-                          className="text-destructive focus:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          {t('delete') || 'Delete'}
-                        </DropdownMenuItem>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => onDelete(role)} aria-label={t('delete') || 'Delete'}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>{t('delete') || 'Delete'}</TooltipContent>
+                        </Tooltip>
                       )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                    </div>
+                  </TooltipProvider>
                 </TableCell>
               </TableRow>
             ))

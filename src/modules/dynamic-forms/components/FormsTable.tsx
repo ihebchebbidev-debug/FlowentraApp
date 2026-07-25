@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { MoreHorizontal, Edit, Trash2, Copy, Eye, CheckCircle, Archive, RotateCcw, FileText, Share2, Globe, GlobeLock } from 'lucide-react';
+import { Edit, Trash2, Copy, Eye, CheckCircle, Archive, RotateCcw, FileText, Share2, Globe, GlobeLock } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -10,13 +10,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -177,6 +170,56 @@ export function FormsTable({ forms, isLoading }: FormsTableProps) {
       </Badge>
     );
   };
+
+  const iconBtn = (
+    key: string,
+    label: string,
+    Icon: React.ComponentType<{ className?: string }>,
+    onClick: () => void,
+    destructive = false,
+  ) => (
+    <TooltipProvider key={key} delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`h-8 w-8 ${destructive ? 'text-destructive hover:text-destructive hover:bg-destructive/10' : ''}`}
+            onClick={(e) => { e.stopPropagation(); onClick(); }}
+            aria-label={label}
+          >
+            <Icon className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{label}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+
+  const renderRowActions = (form: DynamicForm) => {
+    const items: React.ReactNode[] = [];
+    if (canView) items.push(iconBtn(`prev-${form.id}`, t('actions.preview'), Eye, () => handlePreview(form.id)));
+    if (canEdit) items.push(iconBtn(`edit-${form.id}`, t('actions.edit'), Edit, () => handleEdit(form.id)));
+    if (canCreate) items.push(iconBtn(`dup-${form.id}`, t('actions.duplicate'), Copy, () => handleDuplicate(form.id)));
+    if (canView) items.push(iconBtn(`resp-${form.id}`, t('actions.view_responses'), FileText, () => handleViewResponses(form.id)));
+    if (canEdit) {
+      if (form.status === 'draft') items.push(iconBtn(`rel-${form.id}`, t('actions.release'), CheckCircle, () => handleStatusChange(form.id, 'released')));
+      if (form.status === 'released') {
+        items.push(iconBtn(
+          `pub-${form.id}`,
+          form.is_public ? t('actions.make_private') : t('actions.make_public'),
+          form.is_public ? GlobeLock : Globe,
+          () => handleTogglePublic(form),
+        ));
+        items.push(iconBtn(`arc-${form.id}`, t('actions.archive'), Archive, () => handleStatusChange(form.id, 'archived')));
+      }
+      if (form.status === 'archived') items.push(iconBtn(`res-${form.id}`, t('actions.restore'), RotateCcw, () => handleStatusChange(form.id, 'draft')));
+    }
+    if (canDelete) items.push(iconBtn(`del-${form.id}`, t('actions.delete'), Trash2, () => setDeleteId(form.id), true));
+    return items;
+  };
+
+
   
   if (isLoading) {
     return (
@@ -259,72 +302,9 @@ export function FormsTable({ forms, isLoading }: FormsTableProps) {
                   </Tooltip>
                 </TooltipProvider>
 
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {canView && (
-                      <DropdownMenuItem onClick={() => handlePreview(form.id)}>
-                        <Eye className="h-4 w-4 mr-2" />{t('actions.preview')}
-                      </DropdownMenuItem>
-                    )}
-                    {canEdit && (
-                      <DropdownMenuItem onClick={() => handleEdit(form.id)}>
-                        <Edit className="h-4 w-4 mr-2" />{t('actions.edit')}
-                      </DropdownMenuItem>
-                    )}
-                    {canCreate && (
-                      <DropdownMenuItem onClick={() => handleDuplicate(form.id)}>
-                        <Copy className="h-4 w-4 mr-2" />{t('actions.duplicate')}
-                      </DropdownMenuItem>
-                    )}
-                    {canView && (
-                      <DropdownMenuItem onClick={() => handleViewResponses(form.id)}>
-                        <FileText className="h-4 w-4 mr-2" />{t('actions.view_responses')}
-                      </DropdownMenuItem>
-                    )}
-                    {canEdit && (
-                      <>
-                        <DropdownMenuSeparator />
-                        {form.status === 'draft' && (
-                          <DropdownMenuItem onClick={() => handleStatusChange(form.id, 'released')}>
-                            <CheckCircle className="h-4 w-4 mr-2" />{t('actions.release')}
-                          </DropdownMenuItem>
-                        )}
-                        {form.status === 'released' && (
-                          <DropdownMenuItem onClick={() => handleStatusChange(form.id, 'archived')}>
-                            <Archive className="h-4 w-4 mr-2" />{t('actions.archive')}
-                          </DropdownMenuItem>
-                        )}
-                        {form.status === 'archived' && (
-                          <DropdownMenuItem onClick={() => handleStatusChange(form.id, 'draft')}>
-                            <RotateCcw className="h-4 w-4 mr-2" />{t('actions.restore')}
-                          </DropdownMenuItem>
-                        )}
-                        {canEdit && (
-                          <DropdownMenuItem onClick={() => handleTogglePublic(form)}>
-                            {form.is_public ? (
-                              <><GlobeLock className="h-4 w-4 mr-2" />{t('actions.make_private')}</>
-                            ) : (
-                              <><Globe className="h-4 w-4 mr-2" />{t('actions.make_public')}</>
-                            )}
-                          </DropdownMenuItem>
-                        )}
-                      </>
-                    )}
-                    {canDelete && (
-                      <>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive" onClick={() => setDeleteId(form.id)}>
-                          <Trash2 className="h-4 w-4 mr-2" />{t('actions.delete')}
-                        </DropdownMenuItem>
-                      </>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <div className="flex items-center gap-0.5">
+                  {renderRowActions(form)}
+                </div>
               </div>
             </div>
           );
@@ -392,101 +372,9 @@ export function FormsTable({ forms, isLoading }: FormsTableProps) {
                   </TooltipProvider>
                 </TableCell>
                 <TableCell onClick={(e) => e.stopPropagation()}>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      {/* Preview - always available if can view */}
-                      {canView && (
-                        <DropdownMenuItem onClick={() => handlePreview(form.id)}>
-                          <Eye className="h-4 w-4 mr-2" />
-                          {t('actions.preview')}
-                        </DropdownMenuItem>
-                      )}
-                      
-                      {/* Edit - requires update permission */}
-                      {canEdit && (
-                        <DropdownMenuItem onClick={() => handleEdit(form.id)}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          {t('actions.edit')}
-                        </DropdownMenuItem>
-                      )}
-                      
-                      {/* Duplicate - requires create permission */}
-                      {canCreate && (
-                        <DropdownMenuItem onClick={() => handleDuplicate(form.id)}>
-                          <Copy className="h-4 w-4 mr-2" />
-                          {t('actions.duplicate')}
-                        </DropdownMenuItem>
-                      )}
-                      
-                      {/* View Responses - requires read permission */}
-                      {canView && (
-                        <DropdownMenuItem onClick={() => handleViewResponses(form.id)}>
-                          <FileText className="h-4 w-4 mr-2" />
-                          {t('actions.view_responses')}
-                        </DropdownMenuItem>
-                      )}
-                      
-                      {/* Status changes - requires update permission */}
-                      {canEdit && (
-                        <>
-                          <DropdownMenuSeparator />
-                          
-                          {form.status === 'draft' && (
-                            <DropdownMenuItem onClick={() => handleStatusChange(form.id, 'released')}>
-                              <CheckCircle className="h-4 w-4 mr-2" />
-                              {t('actions.release')}
-                            </DropdownMenuItem>
-                          )}
-                          {form.status === 'released' && (
-                            <>
-                              <DropdownMenuItem onClick={() => handleTogglePublic(form)}>
-                                {form.is_public ? (
-                                  <>
-                                    <GlobeLock className="h-4 w-4 mr-2" />
-                                    {t('actions.make_private')}
-                                  </>
-                                ) : (
-                                  <>
-                                    <Globe className="h-4 w-4 mr-2" />
-                                    {t('actions.make_public')}
-                                  </>
-                                )}
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleStatusChange(form.id, 'archived')}>
-                                <Archive className="h-4 w-4 mr-2" />
-                                {t('actions.archive')}
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                          {form.status === 'archived' && (
-                            <DropdownMenuItem onClick={() => handleStatusChange(form.id, 'draft')}>
-                              <RotateCcw className="h-4 w-4 mr-2" />
-                              {t('actions.restore')}
-                            </DropdownMenuItem>
-                          )}
-                        </>
-                      )}
-                      
-                      {/* Delete - requires delete permission */}
-                      {canDelete && (
-                        <>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            onClick={() => setDeleteId(form.id)}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            {t('actions.delete')}
-                          </DropdownMenuItem>
-                        </>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <div className="flex items-center gap-0.5">
+                    {renderRowActions(form)}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

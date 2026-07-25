@@ -8,8 +8,9 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
-import { Hash, Eye, Save, AlertTriangle, CheckCircle2, FileText, ShoppingCart, Wrench, Truck, Handshake, Copy, Info } from 'lucide-react';
+import { Hash, Eye, Save, AlertTriangle, CheckCircle2, FileText, ShoppingCart, Wrench, Truck, Handshake, Copy, Info, ChevronDown } from 'lucide-react';
 import { numberingApi, type NumberingSettingsDto, type NumberingEntity, type UpdateNumberingRequest } from '@/services/numberingApi';
 
 const DEFAULT_CONFIGS: Record<NumberingEntity, { template: string; strategy: string; resetFrequency: string; startValue: number; padding: number }> = {
@@ -226,60 +227,68 @@ export function NumberingSettings() {
       </CardHeader>
 
       <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-3">
-        {/* Token reference table */}
-        <div className="rounded-lg border border-border/50 bg-muted/10 overflow-hidden">
-          <div className="px-4 py-2.5 bg-muted/30 border-b border-border/50 flex items-center justify-between">
-            <p className="text-xs font-medium text-foreground flex items-center gap-2">
-              <Info className="h-3.5 w-3.5 text-muted-foreground" />
-              Référence des jetons
-            </p>
-            <p className="text-px-10 text-muted-foreground">Cliquez sur un jeton pour le copier</p>
-          </div>
-
-          <div className="divide-y divide-border/30">
-            {/* Table header */}
-            <div className="grid grid-cols-[140px_1fr_120px] sm:grid-cols-[160px_1fr_140px] px-4 py-1.5 bg-muted/20">
-              <span className="text-px-10 font-medium text-muted-foreground uppercase tracking-wider">Jeton</span>
-              <span className="text-px-10 font-medium text-muted-foreground uppercase tracking-wider">Description</span>
-              <span className="text-px-10 font-medium text-muted-foreground uppercase tracking-wider">Exemple</span>
-            </div>
-
-            {TOKEN_HELP.map((t, idx) => {
-              const isFirstInCategory = idx === 0 || TOKEN_HELP[idx - 1].category !== t.category;
-              return (
-                <div key={t.token}>
-                  {isFirstInCategory && (
-                    <div className="px-4 py-1.5 bg-muted/15">
-                      <span className="text-px-10 font-semibold text-muted-foreground uppercase tracking-wider">
-                        {CATEGORY_LABELS[t.category]?.label}
-                      </span>
-                    </div>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigator.clipboard.writeText(t.token);
-                      toast({ title: 'Copié', description: `${t.token} dans le presse-papier` });
-                    }}
-                    className="w-full grid grid-cols-[140px_1fr_120px] sm:grid-cols-[160px_1fr_140px] px-4 py-2 hover:bg-primary/5 transition-colors text-left group"
-                  >
-                    <code className="text-px-11 font-mono text-primary flex items-center gap-1.5">
-                      {t.token}
-                      <Copy className="h-2.5 w-2.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </code>
-                    <span className="text-px-11 text-foreground/80">
-                      {t.desc}
-                      {t.hint && (
-                        <span className="text-muted-foreground ml-1 hidden sm:inline">— {t.hint}</span>
-                      )}
-                    </span>
-                    <span className="text-px-11 font-mono text-muted-foreground">{t.example}</span>
-                  </button>
+        {/* Token reference table — collapsed by default */}
+        <Collapsible defaultOpen={false}>
+          <CollapsibleTrigger asChild>
+            <button className="w-full flex items-center justify-between rounded-lg border border-border/50 bg-muted/10 px-3 py-2 text-left hover:bg-muted/20 transition-colors group">
+              <p className="text-xs font-medium text-foreground flex items-center gap-2">
+                <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                Référence des jetons
+              </p>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground hidden sm:inline">Cliquez pour ouvrir</span>
+                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+              </div>
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="rounded-lg border border-border/50 bg-muted/10 overflow-hidden mt-2">
+              <div className="divide-y divide-border/30">
+                {/* Table header */}
+                <div className="grid grid-cols-[140px_1fr_120px] sm:grid-cols-[160px_1fr_140px] px-4 py-1.5 bg-muted/20">
+                  <span className="text-px-10 font-medium text-muted-foreground uppercase tracking-wider">Jeton</span>
+                  <span className="text-px-10 font-medium text-muted-foreground uppercase tracking-wider">Description</span>
+                  <span className="text-px-10 font-medium text-muted-foreground uppercase tracking-wider">Exemple</span>
                 </div>
-              );
-            })}
-          </div>
-        </div>
+
+                {TOKEN_HELP.map((t, idx) => {
+                  const isFirstInCategory = idx === 0 || TOKEN_HELP[idx - 1].category !== t.category;
+                  return (
+                    <div key={t.token}>
+                      {isFirstInCategory && (
+                        <div className="px-4 py-1.5 bg-muted/15">
+                          <span className="text-px-10 font-semibold text-muted-foreground uppercase tracking-wider">
+                            {CATEGORY_LABELS[t.category]?.label}
+                          </span>
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(t.token);
+                          toast({ title: 'Copié', description: `${t.token} dans le presse-papier` });
+                        }}
+                        className="w-full grid grid-cols-[140px_1fr_120px] sm:grid-cols-[160px_1fr_140px] px-4 py-2 hover:bg-primary/5 transition-colors text-left group"
+                      >
+                        <code className="text-px-11 font-mono text-primary flex items-center gap-1.5">
+                          {t.token}
+                          <Copy className="h-2.5 w-2.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </code>
+                        <span className="text-px-11 text-foreground/80">
+                          {t.desc}
+                          {t.hint && (
+                            <span className="text-muted-foreground ml-1 hidden sm:inline">— {t.hint}</span>
+                          )}
+                        </span>
+                        <span className="text-px-11 font-mono text-muted-foreground">{t.example}</span>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
 
         <Separator />
 
@@ -297,7 +306,7 @@ export function NumberingSettings() {
             >
               {/* Header row */}
               <button
-                className="w-full flex items-center justify-between p-3 hover:bg-muted/30 transition-colors"
+                className="w-full flex items-center justify-between p-2.5 hover:bg-muted/30 transition-colors"
                 onClick={() => setExpandedEntity(isExpanded ? null : entity.key)}
               >
                 <div className="flex items-center gap-3">

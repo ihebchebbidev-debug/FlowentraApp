@@ -16,6 +16,7 @@ import PluginsPage from "./pages/PluginsPage";
 import UsersAdminPage from "./pages/UsersAdminPage";
 import RolesAdminPage from "./pages/RolesAdminPage";
 import UserGroupsAdminPage from "./pages/UserGroupsAdminPage";
+import SystemAdminPage from "./pages/SystemAdminPage";
 
 export function SettingsModule() {
   return (
@@ -25,6 +26,7 @@ export function SettingsModule() {
       <Route path="roles" element={<RolesAdminPage />} />
       <Route path="user-groups" element={<UserGroupsAdminPage />} />
       <Route path="advanced" element={<SettingsLayoutNew />} />
+      <Route path="system-config" element={<SystemAdminPage />} />
       <Route path="system" element={<SettingsLayout />} />
       <Route path="logs" element={<SystemLogsPage />} />
       <Route path="database-full-view" element={<DatabaseFullView />} />

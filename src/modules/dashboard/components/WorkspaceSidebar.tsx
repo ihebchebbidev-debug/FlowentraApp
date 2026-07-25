@@ -309,7 +309,9 @@ export function WorkspaceSidebar() {
       setServiceDeskModalOpen(true);
       return;
     }
-    if (NO_SECONDARY.has(ws.id)) {
+    // Workspaces with no secondary panel or only a single module behave like a
+    // direct link — no chevron, just navigate.
+    if (NO_SECONDARY.has(ws.id) || ws.modules.length <= 1) {
       closePanel({ restoreFocus: false });
       navigate(ws.landingUrl);
       return;
@@ -769,7 +771,7 @@ export function WorkspaceSidebar() {
                 >
                   <Icon name={ws.icon} className="h-5 w-5 shrink-0" />
                   <span className="flex-1 truncate text-left">{tWorkspaceLabel(ws)}</span>
-                  {!NO_SECONDARY.has(ws.id) && ws.modules.length > 0 && (
+                  {!NO_SECONDARY.has(ws.id) && ws.modules.length > 1 && (
                     <Icons.ChevronRight
                       aria-hidden="true"
                       className={cn(

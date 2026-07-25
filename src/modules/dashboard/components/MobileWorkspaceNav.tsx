@@ -352,8 +352,8 @@ export function MobileWorkspaceNav() {
 
       {/* Right-side controls — pinned to the right corner */}
       <div className="ml-auto flex shrink-0 items-center gap-1">
-        {/* Ask AI */}
-        {aiAssistantAvailable && (
+        {/* Ask AI - Hidden for now */}
+        {false && aiAssistantAvailable && (
           <Button
             variant="ghost"
             size="icon"

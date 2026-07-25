@@ -4,12 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CollapsibleSearch } from "@/components/ui/collapsible-search";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,7 +18,6 @@ import {
 import {
   UsersRound,
   Plus,
-  MoreVertical,
   Edit,
   Trash2,
   UserPlus,
@@ -217,30 +211,34 @@ export function UserGroupManagement() {
                       {group.createdAt ? format(new Date(group.createdAt), "MMM d, yyyy") : "—"}
                     </TableCell>
                     <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => { setSelected(group); setShowEdit(true); }}>
-                            <Edit className="h-4 w-4 mr-2" />
-                            {t("userGroups.edit", { defaultValue: "Edit group" })}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => { setSelected(group); setShowMembers(true); }}>
-                            <UserPlus className="h-4 w-4 mr-2" />
-                            {t("userGroups.manageMembers")}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => setGroupToDelete(group)}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            {t("userGroups.delete.deleteAction")}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <TooltipProvider delayDuration={200}>
+                        <div className="flex items-center justify-end gap-1">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setSelected(group); setShowEdit(true); }} aria-label={t("userGroups.edit", { defaultValue: "Edit group" })}>
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>{t("userGroups.edit", { defaultValue: "Edit group" })}</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setSelected(group); setShowMembers(true); }} aria-label={t("userGroups.manageMembers")}>
+                                <UserPlus className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>{t("userGroups.manageMembers")}</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setGroupToDelete(group)} aria-label={t("userGroups.delete.deleteAction")}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>{t("userGroups.delete.deleteAction")}</TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </TooltipProvider>
                     </TableCell>
                   </TableRow>
                 ))
