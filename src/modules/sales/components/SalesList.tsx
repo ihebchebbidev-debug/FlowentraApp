@@ -168,7 +168,7 @@ export function SalesList() {
       
       // Handle stat filters
       if (selectedStat === 'closed') return matchesSearch && (sale.status === 'closed' || sale.status === 'invoiced');
-      if (selectedStat === 'active') return matchesSearch && ['created', 'in_progress'].includes(sale.status);
+      if (selectedStat === 'active') return matchesSearch && ['created', 'in_progress', 'ready_to_invoice'].includes(sale.status);
 
       return matchesSearch && matchesStatus && matchesStage && matchesPriority && matchesAssigned;
     });

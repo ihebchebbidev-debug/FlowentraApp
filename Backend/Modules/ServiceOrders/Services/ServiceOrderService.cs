@@ -2521,6 +2521,31 @@ namespace MyApi.Modules.ServiceOrders.Services
             // Using the same helper as GetInvoiceSummary keeps the two views strictly in sync.
             var linkedDispatchIds = await ResolveLinkedDispatchIdsAsync(serviceOrder);
 
+            // #6 fix: when the SO is only PARTIALLY completed, refuse to bill work from
+            // dispatches that aren't done yet. Previously any linked-dispatch row could be
+            // pushed to the sale even if the technician hadn't finished the visit. We keep
+            // partial invoicing (its intended feature) but scope the "linked dispatches"
+            // set to those with Status == "completed" for the partial case. Fully
+            // technically_completed / completed / ready_for_invoice SOs are unaffected
+            // because by definition all their dispatches are already done.
+            if (string.Equals(serviceOrder.Status, "partially_completed", StringComparison.OrdinalIgnoreCase)
+                && linkedDispatchIds.Count > 0)
+            {
+                var completedLinkedDispatchIds = await _context.Dispatches
+                    .Where(d => linkedDispatchIds.Contains(d.Id) && d.Status == "completed")
+                    .Select(d => d.Id)
+                    .ToListAsync();
+                var skipped = linkedDispatchIds.Except(completedLinkedDispatchIds).ToList();
+                if (skipped.Any())
+                {
+                    _logger.LogInformation(
+                        "PrepareForInvoice: SO {Id} is partially_completed; ignoring {Count} not-yet-completed dispatch(es): [{Ids}]",
+                        id, skipped.Count, string.Join(",", skipped));
+                }
+                linkedDispatchIds = completedLinkedDispatchIds;
+            }
+
+
             // Idempotency for dispatch-sourced lines: DispatchMaterials / DispatchExpenses / dispatch TimeEntries
             // do NOT carry an InvoiceStatus column, so we can't flip a per-row flag like we do for
             // SO-sourced entities. Instead we build a signature set from existing SaleItems already
@@ -2899,11 +2924,41 @@ namespace MyApi.Modules.ServiceOrders.Services
                         updatedSale.TotalAmount = updatedSale.Items?.Sum(i => i.LineTotal) ?? 0;
                         updatedSale.GrandTotal = updatedSale.TotalAmount;
                         updatedSale.LastActivity = DateTime.UtcNow;
+
+                        // #5 fix: mark SaleItems belonging to this SO as fulfilled once
+                        // the SO is (technically) done. Was previously left at "pending"
+                        // forever because CompleteAsync/PrepareForInvoiceAsync never touched it.
+                        var soIdStr = id.ToString();
+                        var soDone = new[] { "technically_completed", "completed", "ready_for_invoice" };
+                        var soPartial = "partially_completed";
+                        var isFullyDone = soDone.Contains(serviceOrder.Status);
+                        var isPartial = string.Equals(serviceOrder.Status, soPartial, StringComparison.OrdinalIgnoreCase);
+                        if ((isFullyDone || isPartial) && updatedSale.Items != null)
+                        {
+                            foreach (var si in updatedSale.Items.Where(i => i.ServiceOrderId == soIdStr))
+                            {
+                                si.FulfillmentStatus = isFullyDone ? "fulfilled" : "partial";
+                            }
+                        }
+
+                        // #2 fix: advance the sale to "ready_to_invoice" so the pipeline
+                        // reflects that field work is done and billing is queued. Only
+                        // touch pre-invoice statuses; never override partially_invoiced /
+                        // invoiced / any terminal state. SyncSaleInvoiceStateAsync (called
+                        // by CreateDraftFromSaleAsync below) flips it onward to
+                        // partially_invoiced / invoiced once the draft is created.
+                        var preInvoice = new[] { "created", "in_progress" };
+                        if (preInvoice.Contains((updatedSale.Status ?? "").ToLowerInvariant()))
+                        {
+                            updatedSale.Status = "ready_to_invoice";
+                        }
+
                         await _context.SaveChangesAsync();
-                        
-                        _logger.LogInformation("PrepareForInvoice: Sale {SaleId} now has {ItemCount} items, total: {Total}", 
-                            saleId, updatedSale.Items?.Count ?? 0, updatedSale.TotalAmount);
+
+                        _logger.LogInformation("PrepareForInvoice: Sale {SaleId} now has {ItemCount} items, total: {Total}, status: {Status}",
+                            saleId, updatedSale.Items?.Count ?? 0, updatedSale.TotalAmount, updatedSale.Status);
                     }
+
 
                     await transaction.CommitAsync();
                     _logger.LogInformation("PrepareForInvoice: Transaction committed. Transferred {ItemCount} items to sale {SaleId}", newSaleItems.Count, saleId);

@@ -23,6 +23,9 @@ namespace MyApi.Modules.Offers.Services
         private readonly MyApi.Modules.Planning.Services.IPlannedLineEntryService? _plannedEntries;
         private readonly IActivityLogger? _activityLogger;
         private readonly IContactActivityService? _contactActivity;
+        // Resolved lazily via IServiceProvider to sidestep any DI cycle risk between
+        // Offers ↔ ServiceOrders modules.
+        private readonly IServiceProvider? _serviceProvider;
 
         public OfferService(
             ApplicationDbContext context, 
@@ -33,7 +36,8 @@ namespace MyApi.Modules.Offers.Services
             MyApi.Modules.Numbering.Services.INumberingService? numberingService = null,
             MyApi.Modules.Planning.Services.IPlannedLineEntryService? plannedEntries = null,
             IActivityLogger? activityLogger = null,
-            IContactActivityService? contactActivity = null)
+            IContactActivityService? contactActivity = null,
+            IServiceProvider? serviceProvider = null)
         {
             _context = context;
             _logger = logger;
@@ -44,7 +48,9 @@ namespace MyApi.Modules.Offers.Services
             _plannedEntries = plannedEntries;
             _activityLogger = activityLogger;
             _contactActivity = contactActivity;
+            _serviceProvider = serviceProvider;
         }
+
 
         public async Task<PaginatedOfferResponse> GetOffersAsync(
             string? status = null,
@@ -845,7 +851,13 @@ namespace MyApi.Modules.Offers.Services
                             Currency = sale.Currency
                         }).ToList();
                         _context.SaleItems.AddRange(saleItems);
+
+                        // #7 fix: recompute the sale's authoritative totals from the freshly
+                        // copied line items instead of trusting the offer's stored TotalAmount,
+                        // which may be stale if the offer was edited without a total refresh.
+                        MyApi.Modules.Sales.Services.SaleTotalsCalculator.Apply(sale, saleItems);
                     }
+
 
                     // Log sale creation activity
                     _context.SaleActivities.Add(new MyApi.Modules.Sales.Models.SaleActivity
@@ -955,7 +967,41 @@ namespace MyApi.Modules.Offers.Services
                         warnings.Add($"workflow_trigger_failed_sale: {ex.Message}");
                     }
                 }
+
+                // #1 fix: honor ConvertToServiceOrder. The UI exposes a checkbox that used
+                // to be silently ignored — users had to convert the resulting sale a second
+                // time to get a service order. Runs post-commit so a service-order failure
+                // never rolls back the sale (SO can always be created manually later).
+                if (convertDto.ConvertToServiceOrder && _serviceProvider != null)
+                {
+                    try
+                    {
+                        var soService = _serviceProvider.GetService(
+                            typeof(MyApi.Modules.ServiceOrders.Services.IServiceOrderService))
+                            as MyApi.Modules.ServiceOrders.Services.IServiceOrderService;
+                        if (soService != null)
+                        {
+                            var soDto = new MyApi.Modules.ServiceOrders.DTOs.CreateServiceOrderDto
+                            {
+                                ProjectId = createdSale.ProjectId,
+                                Priority = createdSale.Priority,
+                            };
+                            var so = await soService.CreateFromSaleAsync(createdSale.Id, soDto, userId);
+                            serviceOrderId = so?.Id;
+                        }
+                        else
+                        {
+                            warnings.Add("service_order_create_skipped: IServiceOrderService not registered.");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to create ServiceOrder from Sale {SaleId} (offer {OfferId})", createdSale.Id, id);
+                        warnings.Add($"service_order_create_failed: {ex.Message}");
+                    }
+                }
             }
+
 
             // Trigger workflow for the offer status change
             if (_workflowTriggerService != null)

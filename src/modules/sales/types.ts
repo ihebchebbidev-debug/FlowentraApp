@@ -19,7 +19,8 @@ export interface Sale {
   contactHasLocation?: number;
   amount: number;
   currency: 'USD' | 'EUR' | 'GBP' | 'TND';
-  status: 'created' | 'in_progress' | 'invoiced' | 'partially_invoiced' | 'closed' | 'cancelled';
+  status: 'created' | 'in_progress' | 'ready_to_invoice' | 'invoiced' | 'partially_invoiced' | 'closed' | 'cancelled';
+
   stage: 'offer' | 'negotiation' | 'closed' | 'converted';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   description?: string;
@@ -97,7 +98,7 @@ export interface CreateSaleData {
   customerEmail: string;
   customerPhone: string;
   customerAddress: string;
-  status: 'created' | 'in_progress' | 'invoiced' | 'partially_invoiced' | 'closed' | 'cancelled';
+  status: 'created' | 'in_progress' | 'ready_to_invoice' | 'invoiced' | 'partially_invoiced' | 'closed' | 'cancelled';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   category?: string;
   source?: string;

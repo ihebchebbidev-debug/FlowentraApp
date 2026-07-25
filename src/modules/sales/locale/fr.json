@@ -480,8 +480,10 @@
   "statusFlow": {
     "created": "Créée",
     "inProgress": "En cours",
+    "readyToInvoice": "Prête à facturer",
     "invoiced": "Facturée",
     "partiallyInvoiced": "Partiellement facturée",
+
     "closed": "Clôturée",
     "cancelled": "Annulée",
     "updating": "Mise à jour...",

@@ -79,15 +79,6 @@ export function SaleInvoicesTab({ saleId, saleTotal, currency }: Props) {
             <div className="text-center py-8 text-muted-foreground">
               <Receipt className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>{t('sale_tab.empty')}</p>
-              <Button
-                size="sm"
-                className="mt-4"
-                onClick={() => setConfirmOpen(true)}
-                disabled={createFromSale.isPending}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                {t('sale_tab.create_invoice')}
-              </Button>
             </div>
           ) : (
             <div className="overflow-x-auto">

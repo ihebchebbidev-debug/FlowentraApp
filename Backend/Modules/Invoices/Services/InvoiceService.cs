@@ -178,115 +178,184 @@ namespace MyApi.Modules.Invoices.Services
             if (string.Equals(sale.Status, "cancelled", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException($"Sale {saleId} is cancelled and cannot be invoiced.");
 
-            var saleItems = (sale.Items ?? new List<Sales.Models.SaleItem>()).ToList();
-            if (saleItems.Count == 0)
-                throw new InvalidOperationException($"Sale {saleId} has no items to invoice.");
+            // #3 fix: skip sale items that are already on a non-void invoice.
+            // Previously CreateDraftFromSaleAsync re-billed every sale item on every call,
+            // gated only by a money-total guard — so adding a new item to a partially-invoiced
+            // sale and re-drafting would duplicate the already-billed lines. Schema already
+            // supports this: InvoiceLine.SourceType/SourceId are stamped at line 234.
+            var alreadyInvoicedItemIds = await _context.Set<InvoiceLine>()
+                .Where(l => l.SourceType == "sale_item"
+                            && l.Invoice != null
+                            && l.Invoice.SaleId == saleId
+                            && l.Invoice.Status != "void"
+                            && !l.Invoice.IsDeleted
+                            && l.SourceId != null)
+                .Select(l => l.SourceId!)
+                .ToListAsync();
+            var alreadyInvoicedItemIdSet = new HashSet<string>(alreadyInvoicedItemIds);
 
-            // Authoritative sale money, recomputed from the lines so a stale or
-            // never-persisted total can never leak into an invoice.
+            var allSaleItems = (sale.Items ?? new List<Sales.Models.SaleItem>()).ToList();
+            var saleItems = allSaleItems
+                .Where(i => !alreadyInvoicedItemIdSet.Contains(i.Id.ToString()))
+                .ToList();
+            if (saleItems.Count == 0)
+                throw new InvalidOperationException(
+                    allSaleItems.Count == 0
+                        ? $"Sale {saleId} has no items to invoice."
+                        : $"Sale {saleId} has no un-invoiced items left. Add new items or void an existing invoice first.");
+
+            // Has the fiscal stamp already been billed on a prior (non-void) invoice for this sale?
+            var fiscalStampAlreadyBilled = await _context.Set<InvoiceLine>()
+                .AnyAsync(l => l.SourceType == "fiscal_stamp"
+                               && l.Invoice != null
+                               && l.Invoice.SaleId == saleId
+                               && l.Invoice.Status != "void"
+                               && !l.Invoice.IsDeleted);
+
+            // Authoritative money for THIS draft: recomputed from the subset of un-invoiced
+            // items only. Header discount and tax are applied to that subset's subtotal so
+            // pro-rata math still balances; fiscal stamp is billed once per sale.
             var saleTotals = Sales.Services.SaleTotalsCalculator.Compute(
                 saleItems.Sum(i => Sales.Services.SaleTotalsCalculator.ComputeLineTotal(
                     i.Quantity, i.UnitPrice, i.Discount, i.DiscountType)),
                 sale.Discount, Sales.Services.SaleTotalsCalculator.HeaderDiscountType(sale),
+                sale.Taxes, sale.TaxType,
+                fiscalStampAlreadyBilled ? 0m : sale.FiscalStamp);
+
+            // Guard reference: the FULL sale grand total, computed from ALL sale items
+            // (not just the un-invoiced subset). Used only for the over-invoicing guards.
+            var fullSaleTotals = Sales.Services.SaleTotalsCalculator.Compute(
+                allSaleItems.Sum(i => Sales.Services.SaleTotalsCalculator.ComputeLineTotal(
+                    i.Quantity, i.UnitPrice, i.Discount, i.DiscountType)),
+                sale.Discount, Sales.Services.SaleTotalsCalculator.HeaderDiscountType(sale),
                 sale.Taxes, sale.TaxType, sale.FiscalStamp);
 
-            // Over-invoicing guard: never let the invoiced amount exceed the order.
-            var alreadyInvoiced = await GetInvoicedTotalForSaleAsync(saleId);
-            var remaining = saleTotals.GrandTotal - alreadyInvoiced;
-            if (saleTotals.GrandTotal > 0m && remaining <= 0.009m)
-            {
-                throw new InvalidOperationException(
-                    $"Sale {saleId} is already fully invoiced ({alreadyInvoiced:0.##} of {saleTotals.GrandTotal:0.##} {sale.Currency}). " +
-                    "Void an existing invoice before creating a new one.");
-            }
 
-            // An invoice has no header-discount or fiscal-stamp field: it is
-            // just lines + per-line tax. So the sale's header discount is spread
-            // pro-rata over the lines and the fiscal stamp becomes its own line.
-            // That way the invoice's grand total equals the sale's to the cent,
-            // which is what the over-invoicing guard and the sale's
-            // invoiced/partially_invoiced state rely on.
-            var scale = saleTotals.Subtotal > 0m ? saleTotals.AfterDiscount / saleTotals.Subtotal : 1m;
-            var taxRate = saleTotals.EffectiveTaxRate;
-            var discounted = saleTotals.DiscountAmount > 0m;
 
-            var ordered = saleItems.OrderBy(i => i.DisplayOrder).ThenBy(i => i.Id).ToList();
-            var lines = new List<InvoiceLine>();
-            var displayOrder = 0;
-            foreach (var i in ordered)
+            // #4 fix: wrap the over-invoicing guard + insert in a serializable transaction
+            // via the execution strategy. Without this, two concurrent CreateDraftFromSale
+            // calls can both pass the guard before either commits, silently double-invoicing
+            // past the sale total. The offer→sale conversion path already uses this pattern.
+            Invoice invoice = null!;
+            List<InvoiceLine> lines = null!;
+            var strategy = _context.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
             {
-                // Recompute from qty/price/discount — line discounts must survive
-                // the sale → invoice copy.
-                var gross = Sales.Services.SaleTotalsCalculator.ComputeLineTotal(
-                    i.Quantity, i.UnitPrice, i.Discount, i.DiscountType);
-                var net = Round2(gross * scale);
-                var qty = i.Quantity != 0m ? i.Quantity : 1m;
-                lines.Add(new InvoiceLine
+                _context.ChangeTracker.Clear();
+                await using var tx = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+                try
                 {
-                    SourceType = "sale_item",
-                    SourceId = i.Id.ToString(),
-                    ItemName = i.ItemName ?? "Item",
-                    Description = discounted
-                        ? string.Join(" — ", new[] { i.Description, "order discount applied" }.Where(x => !string.IsNullOrWhiteSpace(x)))
-                        : i.Description,
-                    Quantity = i.Quantity,
-                    Unit = null,
-                    // Effective unit price after all discounts, so the printed
-                    // invoice adds up line by line.
-                    UnitPrice = Round2(net / qty),
-                    TaxRate = taxRate,
-                    LineTotal = net,
-                    TaxAmount = Round2(net * (taxRate / 100m)),
-                    DisplayOrder = displayOrder++,
-                    CreatedAt = DateTime.UtcNow,
-                });
-            }
+                    // Re-check the guard inside the serializable transaction so a
+                    // concurrent draft cannot slip past before we commit. Uses the FULL
+                    // sale total as the ceiling — saleTotals here is the un-invoiced subset.
+                    var alreadyInvoiced = await GetInvoicedTotalForSaleAsync(saleId);
+                    var remaining = fullSaleTotals.GrandTotal - alreadyInvoiced;
+                    if (fullSaleTotals.GrandTotal > 0m && remaining <= 0.009m)
+                    {
+                        throw new InvalidOperationException(
+                            $"Sale {saleId} is already fully invoiced ({alreadyInvoiced:0.##} of {fullSaleTotals.GrandTotal:0.##} {sale.Currency}). " +
+                            "Void an existing invoice before creating a new one.");
+                    }
 
-            // Push rounding remainders onto the last taxable line so the invoice
-            // matches the sale exactly instead of drifting by a cent.
-            if (lines.Count > 0)
-            {
-                var last = lines[^1];
-                last.LineTotal = Round2(last.LineTotal + (saleTotals.AfterDiscount - lines.Sum(l => l.LineTotal)));
-                if (last.Quantity != 0m) last.UnitPrice = Round2(last.LineTotal / last.Quantity);
-                last.TaxAmount = Round2(last.TaxAmount + (saleTotals.TaxAmount - lines.Sum(l => l.TaxAmount)));
-            }
 
-            // Fiscal stamp: a flat, untaxed line.
-            if (saleTotals.FiscalStamp > 0m)
-            {
-                lines.Add(new InvoiceLine
+                    // An invoice has no header-discount or fiscal-stamp field: it is
+                    // just lines + per-line tax. So the sale's header discount is spread
+                    // pro-rata over the lines and the fiscal stamp becomes its own line.
+                    var scale = saleTotals.Subtotal > 0m ? saleTotals.AfterDiscount / saleTotals.Subtotal : 1m;
+                    var taxRate = saleTotals.EffectiveTaxRate;
+                    var discounted = saleTotals.DiscountAmount > 0m;
+
+                    var ordered = saleItems.OrderBy(i => i.DisplayOrder).ThenBy(i => i.Id).ToList();
+                    lines = new List<InvoiceLine>();
+                    var displayOrder = 0;
+                    foreach (var i in ordered)
+                    {
+                        var gross = Sales.Services.SaleTotalsCalculator.ComputeLineTotal(
+                            i.Quantity, i.UnitPrice, i.Discount, i.DiscountType);
+                        var net = Round2(gross * scale);
+                        var qty = i.Quantity != 0m ? i.Quantity : 1m;
+                        lines.Add(new InvoiceLine
+                        {
+                            SourceType = "sale_item",
+                            SourceId = i.Id.ToString(),
+                            ItemName = i.ItemName ?? "Item",
+                            Description = discounted
+                                ? string.Join(" — ", new[] { i.Description, "order discount applied" }.Where(x => !string.IsNullOrWhiteSpace(x)))
+                                : i.Description,
+                            Quantity = i.Quantity,
+                            Unit = null,
+                            UnitPrice = Round2(net / qty),
+                            TaxRate = taxRate,
+                            LineTotal = net,
+                            TaxAmount = Round2(net * (taxRate / 100m)),
+                            DisplayOrder = displayOrder++,
+                            CreatedAt = DateTime.UtcNow,
+                        });
+                    }
+
+                    // Push rounding remainders onto the last taxable line so the invoice
+                    // matches the sale exactly instead of drifting by a cent.
+                    if (lines.Count > 0)
+                    {
+                        var last = lines[^1];
+                        last.LineTotal = Round2(last.LineTotal + (saleTotals.AfterDiscount - lines.Sum(l => l.LineTotal)));
+                        if (last.Quantity != 0m) last.UnitPrice = Round2(last.LineTotal / last.Quantity);
+                        last.TaxAmount = Round2(last.TaxAmount + (saleTotals.TaxAmount - lines.Sum(l => l.TaxAmount)));
+                    }
+
+                    // Fiscal stamp: a flat, untaxed line.
+                    if (saleTotals.FiscalStamp > 0m)
+                    {
+                        lines.Add(new InvoiceLine
+                        {
+                            SourceType = "fiscal_stamp",
+                            SourceId = null,
+                            ItemName = "Fiscal stamp",
+                            Quantity = 1m,
+                            Unit = null,
+                            UnitPrice = saleTotals.FiscalStamp,
+                            TaxRate = 0m,
+                            LineTotal = saleTotals.FiscalStamp,
+                            TaxAmount = 0m,
+                            DisplayOrder = displayOrder++,
+                            CreatedAt = DateTime.UtcNow,
+                        });
+                    }
+
+                    invoice = new Invoice
+                    {
+                        ContactId = sale.ContactId,
+                        SaleId = sale.Id,
+                        ServiceOrderId = serviceOrderId,
+                        Title = sale.Title,
+                        Currency = string.IsNullOrEmpty(sale.Currency) ? "TND" : sale.Currency,
+                        Status = "draft",
+                        CreatedBy = userId,
+                        CreatedAt = DateTime.UtcNow,
+                        Lines = lines,
+                    };
+                    RecalculateTotals(invoice);
+
+                    // Final in-tx guard uses the FULL sale total as the ceiling.
+                    if (fullSaleTotals.GrandTotal > 0m && alreadyInvoiced + invoice.GrandTotal > fullSaleTotals.GrandTotal + 0.009m)
+                    {
+                        throw new InvalidOperationException(
+                            $"This invoice ({invoice.GrandTotal:0.##}) would take sale {saleId} to " +
+                            $"{alreadyInvoiced + invoice.GrandTotal:0.##} {invoice.Currency}, over its total of {fullSaleTotals.GrandTotal:0.##}.");
+                    }
+
+
+                    _context.Add(invoice);
+                    await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
+                }
+                catch
                 {
-                    SourceType = "fiscal_stamp",
-                    SourceId = null,
-                    ItemName = "Fiscal stamp",
-                    Quantity = 1m,
-                    Unit = null,
-                    UnitPrice = saleTotals.FiscalStamp,
-                    TaxRate = 0m,
-                    LineTotal = saleTotals.FiscalStamp,
-                    TaxAmount = 0m,
-                    DisplayOrder = displayOrder++,
-                    CreatedAt = DateTime.UtcNow,
-                });
-            }
+                    await tx.RollbackAsync();
+                    throw;
+                }
+            });
 
-            var invoice = new Invoice
-            {
-                ContactId = sale.ContactId,
-                SaleId = sale.Id,
-                ServiceOrderId = serviceOrderId,
-                Title = sale.Title,
-                Currency = string.IsNullOrEmpty(sale.Currency) ? "TND" : sale.Currency,
-                Status = "draft",
-                CreatedBy = userId,
-                CreatedAt = DateTime.UtcNow,
-                Lines = lines,
-            };
-            RecalculateTotals(invoice);
-
-            _context.Add(invoice);
-            await _context.SaveChangesAsync();
             _logger.LogInformation("Invoice draft {Id} created from sale {SaleId} ({LineCount} lines, total {Total})",
                 invoice.Id, sale.Id, lines.Count, invoice.GrandTotal);
             await LogActivityAsync(invoice.Id, "created_from_sale", userId,
@@ -297,6 +366,7 @@ namespace MyApi.Modules.Invoices.Services
             await SyncSaleInvoiceStateAsync(sale.Id);
             return await EnrichAsync(invoice);
         }
+
 
 
         public async Task<InvoiceDto> UpdateDraftAsync(int id, UpdateInvoiceDto dto, string userId)
@@ -682,7 +752,8 @@ namespace MyApi.Modules.Invoices.Services
                 if (sale == null) return;
 
                 // Only these statuses participate in the invoicing sub-flow.
-                var mutable = new[] { "created", "in_progress", "partially_invoiced", "invoiced" };
+                var mutable = new[] { "created", "in_progress", "ready_to_invoice", "partially_invoiced", "invoiced" };
+
                 if (!mutable.Contains((sale.Status ?? string.Empty).ToLowerInvariant())) return;
 
                 // Recompute (and heal) the sale's totals: legacy sales were saved

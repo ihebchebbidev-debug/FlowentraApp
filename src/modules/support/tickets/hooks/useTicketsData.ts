@@ -67,7 +67,8 @@ export function useTicketsData({ scope, currentUserEmail }: UseTicketsDataOption
     setError(null);
     try {
       const data = await supportTicketsApi.getAll();
-      setList(data);
+      // Hide auto/system-generated tickets from the UI
+      setList(data.filter((t) => (t.source || 'manual').toLowerCase() !== 'auto'));
     } catch (err) {
       setError(err as Error);
     } finally {
@@ -89,9 +90,9 @@ export function useTicketsData({ scope, currentUserEmail }: UseTicketsDataOption
 
   const scoped = useMemo(() => {
     if (scope === 'admin') return list;
-    if (!email) return list.filter(t => (t.source || '').toLowerCase() === 'auto');
+    if (!email) return [];
     const e = email.toLowerCase();
-    return list.filter(t => (t.userEmail || '').toLowerCase() === e || (t.source || '').toLowerCase() === 'auto');
+    return list.filter(t => (t.userEmail || '').toLowerCase() === e);
   }, [list, scope, email]);
 
   const kpis: TicketKpis = useMemo(() => {

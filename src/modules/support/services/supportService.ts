@@ -80,15 +80,11 @@ export const supportService = {
   getTickets: async (): Promise<Ticket[]> => {
     const all = await supportTicketsApi.getAll();
     const email = getUserEmail();
-    // Show the user's own tickets AND any auto-tagged/system-generated tickets
-    // (auto-incident tickets typically have no userEmail attached).
+    // Hide auto/system-generated tickets from the UI; only show user's own manual tickets.
+    const nonAuto = all.filter((t) => (t.source || 'manual').toLowerCase() !== 'auto');
     const filtered = email
-      ? all.filter((t) => {
-          const isMine = (t.userEmail || '').toLowerCase() === email.toLowerCase();
-          const isAuto = (t.source || '').toLowerCase() === 'auto';
-          return isMine || isAuto;
-        })
-      : all;
+      ? nonAuto.filter((t) => (t.userEmail || '').toLowerCase() === email.toLowerCase())
+      : nonAuto;
     return filtered.map(mapApiTicket);
   },
 

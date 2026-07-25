@@ -29,7 +29,7 @@ import {
   MoreVertical,
   LayoutDashboard,
   Package,
-  CreditCard,
+  Receipt,
   StickyNote,
   CheckSquare,
   FolderOpen,
@@ -54,7 +54,7 @@ import { ItemsTab } from "./tabs/ItemsTab";
 import { NotesTab } from "./tabs/NotesTab";
 import { ChecklistsTab } from "./tabs/ChecklistsTab";
 import { DocumentsTab } from "./tabs/DocumentsTab";
-import { PaymentsTab } from "@/modules/payments/components/PaymentsTab";
+
 import { SaleInvoicesTab } from "@/modules/invoices/components/tabs/SaleInvoicesTab";
 import { EditableEntityNumber } from "@/components/shared/EditableEntityNumber";
 import { salesApi } from "@/services/api/salesApi";
@@ -567,7 +567,7 @@ export function SaleDetail() {
                 const TABS = [
                   { value: 'overview',   icon: LayoutDashboard, label: t('tabs.overview') },
                   { value: 'items',      icon: Package,          label: t('tabs.items') },
-                  { value: 'payments',   icon: CreditCard,       label: t('payments:title', 'Payments') },
+                  { value: 'invoices',   icon: Receipt,          label: t('tabs.invoices') },
                   { value: 'checklists', icon: CheckSquare,      label: t('tabs.checklists') },
                   { value: 'documents',  icon: FolderOpen,       label: t('tabs.documents') },
                   { value: 'notes',      icon: StickyNote,       label: t('tabs.activity', 'Activity') },
@@ -604,7 +604,7 @@ export function SaleDetail() {
               <TabsList variant="underline">
                 <TabsTrigger value="overview">{t('tabs.overview')}</TabsTrigger>
                 <TabsTrigger value="items">{t('tabs.items')}</TabsTrigger>
-                <TabsTrigger value="payments">{t('payments:title', 'Payments')}</TabsTrigger>
+                
                 <TabsTrigger value="invoices">{t('tabs.invoices')}</TabsTrigger>
                 <TabsTrigger value="checklists">{t('tabs.checklists')}</TabsTrigger>
                 <TabsTrigger value="documents">{t('tabs.documents')}</TabsTrigger>
@@ -622,21 +622,6 @@ export function SaleDetail() {
             <ItemsTab sale={sale} onItemsUpdated={fetchSale} />
           </TabsContent>
 
-          <TabsContent value="payments">
-            <PaymentsTab
-              entityType="sale"
-              entityId={sale.id}
-              entityNumber={sale.saleNumber ?? sale.id}
-              totalAmount={calculateEntityTotal(sale).total}
-              currency={sale.currency ?? 'TND'}
-              items={(sale.items ?? []).map(item => ({
-                id: item.id,
-                itemName: item.itemName,
-                totalPrice: item.totalPrice ?? 0,
-              }))}
-              entityData={sale}
-            />
-          </TabsContent>
 
           <TabsContent value="invoices">
             <SaleInvoicesTab

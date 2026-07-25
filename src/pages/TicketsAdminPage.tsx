@@ -99,7 +99,8 @@ export default function TicketsAdminPage() {
     setLoading(true);
     try {
       const data = await supportTicketsApi.getAll();
-      setTickets(data);
+      // Hide system/auto-created tickets from the UI
+      setTickets(data.filter((tk) => (tk.source || 'manual').toLowerCase() !== 'auto'));
     } catch (err) {
       console.error('Failed to fetch tickets:', err);
       toast.error(t('admin.fetchError', 'Failed to load tickets'));
