@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MyApi.Data;
 using MyApi.Modules.Invoices.DTOs;
@@ -21,16 +22,21 @@ namespace MyApi.Modules.Invoices.Services
         private readonly ApplicationDbContext _context;
         private readonly ILogger<InvoiceService> _logger;
         private readonly INumberingService? _numbering;
+        // Resolved lazily to avoid a DI cycle (ServiceOrderService depends on IInvoiceService).
+        private readonly IServiceProvider? _serviceProvider;
 
         public InvoiceService(
             ApplicationDbContext context,
             ILogger<InvoiceService> logger,
-            INumberingService? numbering = null)
+            INumberingService? numbering = null,
+            IServiceProvider? serviceProvider = null)
         {
             _context = context;
             _logger = logger;
             _numbering = numbering;
+            _serviceProvider = serviceProvider;
         }
+
 
         public async Task<PagedInvoiceResponse> GetInvoicesAsync(InvoiceQueryParams q)
         {
@@ -695,13 +701,34 @@ namespace MyApi.Modules.Invoices.Services
                 else if (saleTotal > 0m && invoiced + 0.009m >= saleTotal) next = "invoiced";
                 else next = "partially_invoiced";
 
-                if (!string.Equals(next, sale.Status, StringComparison.OrdinalIgnoreCase))
+                var statusChanged = !string.Equals(next, sale.Status, StringComparison.OrdinalIgnoreCase);
+                if (statusChanged)
                 {
                     sale.Status = next;
                 }
                 sale.UpdatedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
+
+                // Cascade the sale's new status onto every linked Service Order so
+                // an SO stuck at ready_for_invoice flips to invoiced automatically
+                // once the sale is fully invoiced. Best-effort — never throws.
+                if (statusChanged && _serviceProvider != null)
+                {
+                    try
+                    {
+                        var soService = _serviceProvider.GetService<MyApi.Modules.ServiceOrders.Services.IServiceOrderService>();
+                        if (soService != null)
+                        {
+                            await soService.CascadeSaleStatusToServiceOrdersAsync(saleId, next, "system");
+                        }
+                    }
+                    catch (Exception cascadeEx)
+                    {
+                        _logger.LogWarning(cascadeEx, "InvoiceService: cascade to service orders failed for sale {SaleId}", saleId);
+                    }
+                }
             }
+
             catch (Exception ex)
             {
                 // Never let the sale-state mirror break the invoice action itself.

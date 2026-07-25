@@ -1,45 +1,86 @@
-## What I found
 
-**Sales detail page (`SaleDetail.tsx`, 702 lines)**
-- The Invoices tab already exists (`SaleInvoicesTab`) and correctly fetches invoices filtered by `saleId`.
-- Leftover fake invoice logic in the header:
-  - `handleSendInvoice()` → only fires `toast.success('invoiceSent')`. Does nothing. Wired to the "Send invoice" dropdown item.
-  - The header Send icon tooltip says **"Send invoice"** but it opens `SendSaleModal` (sends the *sale*, not an invoice) — mislabeled.
-  - `handleDeleteSale()` shows a success toast and navigates away without calling the API.
-- Result: two different, misleading "invoice" entry points on a page that already has a proper Invoices tab.
+## Goal
 
-**Invoices tab (`SaleInvoicesTab.tsx`)**
-- Functionally right (summary + list + create-from-sale), but visually it does **not** match the Items tab:
-  - Uses `Card className="shadow-card border-0"` + `CardContent pt-6` with no `CardHeader`/`CardTitle`; Items uses `Card` > `CardHeader` > `CardTitle` (icon + label + count, action button on the right).
-  - Two stacked cards (summary card + list card) where Items uses one card with a totals footer under a top border.
-  - Hand-rolled `md:hidden` mobile card list — Items has no such split, just `overflow-x-auto`.
-  - Hardcoded color utilities (`bg-blue-100`, `text-green-700`, `dark:...`) in `STATUS_COLOR` instead of the project's status config (`getStatusColorClass('invoice', …)` from `src/config/entity-statuses`), which already defines invoice statuses.
-- Coverage math treats `saleTotal` as the invoiceable base — fine, but `notInvoiced` should be hidden when the sale is fully invoiced rather than showing `0.00`.
+Eliminate the double-work on Service Orders after items have been transferred to the Sale. Once the Sale is invoiced or closed, the linked Service Order(s) transition automatically — the user never re-opens the SO to advance it.
 
-## Plan
+## Current flow (what already works)
 
-### 1. Rewrite `SaleInvoicesTab` to mirror the Items table
-- Single `Card` + `CardHeader`/`CardTitle`: `Receipt` icon + "Invoices (n)" on the left, **Create invoice** button on the right — identical to Items' "Sale items (n)" + "Add items".
-- Empty state matching Items: centered icon `h-12 w-12 opacity-50`, message, primary button below.
-- Table: drop the mobile card branch, use plain `overflow-x-auto` + `Table` like Items.
-  - Columns: icon (`w-12`) · Number · Status · Issue date · Total (right) · Paid (right) · Due (right) · Actions (center).
-  - Rows: `hover:bg-muted/50 transition-colors`, click → `/dashboard/invoices/:id`; actions cell uses the same `h-8 w-8 p-0` ghost buttons (Eye → open detail, ExternalLink → open in new tab).
-- Move the summary out of its own card into a **totals footer** (`mt-6 pt-4 border-t`) exactly like Items: left = "n invoices, n drafts", right = Sale total / Invoiced / Paid / Outstanding lines + coverage progress bar.
+1. Service Order reaches `technically_completed` / `partially_completed`.
+2. User runs **Prepare for Invoice** → `ServiceOrderService.PrepareForInvoiceAsync`
+   - Copies SO items / materials / dispatches / time entries / expenses onto the linked Sale.
+   - Sets SO status → `ready_for_invoice`.
+3. User creates an invoice from the Sale → `InvoiceService.SyncSaleInvoiceStateAsync`
+   - Sale becomes `partially_invoiced` or `invoiced` automatically based on invoiced total vs sale grand total.
+4. User can manually close the Sale → `SaleService.UpdateSaleAsync` (`closed`), which deducts stock, triggers workflow, logs contact activity.
 
-### 2. Use semantic status tokens
-- Delete the local `STATUS_COLOR` map; render status via `getStatusColorClass('invoice', status)` from `src/config/entity-statuses` so invoice badges match the rest of the app and dark mode.
+**Gap:** the Service Order stays stuck at `ready_for_invoice` forever. That is the "double job" the user is complaining about.
 
-### 3. Clean the Sale detail header
-- Remove `handleSendInvoice` and the "Send invoice" dropdown item (dead action; sending is an invoice-level concern handled on the invoice detail page).
-- Relabel the header Send icon tooltip from `sendInvoice` to `sendSale` — it opens `SendSaleModal`.
-- Leave the Invoices tab as the single invoice entry point on the sale.
+## What we're adding
 
-### 4. Keep management inside Invoices
-- No invoice editing/posting/voiding on the sale page — the tab stays read-only plus "Create invoice", and every row navigates into the Invoices module where post/void/mark-paid/reopen already live.
+A single new server-side helper `CascadeSaleStatusToServiceOrdersAsync(saleId, newSaleStatus, userId)` in `ServiceOrderService`, called from two places:
 
-### 5. Translations
-- Add/adjust keys in the invoices locale for the new header, count label and footer rows; add `sales:sendSale` if missing. No backend changes — the API already supports `?saleId=`.
+- `InvoiceService.SyncSaleInvoiceStateAsync` — right after `sale.Status` is written and saved.
+- `SaleService.UpdateSaleAsync` — right after `sale.Status` is written and saved (covers manual close, cancel, reopen).
 
-## Technical notes
-- Files touched: `src/modules/invoices/components/tabs/SaleInvoicesTab.tsx` (rewrite), `src/modules/sales/components/SaleDetail.tsx` (remove dead action + tooltip label), invoices/sales locale JSON.
-- No schema, service, or API changes. `useCustomerInvoicesList({ saleId })` and `useInvoiceMutations().createFromSale` stay as-is.
+The helper finds every non-deleted, non-terminal Service Order linked to the Sale via either `SaleId == saleId.ToString()` or `AutoGeneratedSaleId == saleId`, and cascades according to the table below.
+
+### Cascade rules
+
+| New Sale status         | Eligible SO current status                                                                                          | New SO status       |
+|-------------------------|---------------------------------------------------------------------------------------------------------------------|---------------------|
+| `invoiced`              | `ready_for_invoice`, `technically_completed`, `partially_completed`, `completed`, `in_progress`                     | `invoiced`          |
+| `closed`                | `ready_for_invoice`, `technically_completed`, `partially_completed`, `completed`, `in_progress`, `invoiced`         | `closed`            |
+| `cancelled`             | anything except `closed` / `cancelled`                                                                              | `cancelled`         |
+| `partially_invoiced`    | *(no cascade — items may still be pending transfer)*                                                                | —                   |
+| `in_progress` (reopen)  | `invoiced` (only rows we auto-set)                                                                                  | `ready_for_invoice` |
+
+Rules the cascade never breaks:
+- Never overwrites `cancelled`.
+- Never touches SOs still upstream of `in_progress` (draft / pending / ready_for_planning / planned / scheduled) — those haven't earned their items yet.
+- Idempotent: if the SO is already at target, skip.
+- Runs inside a `try/catch` — a cascade failure logs a warning but never rolls back the invoice / sale save (same pattern as `SyncSaleInvoiceStateAsync`).
+
+### Per-SO write path
+
+For each SO to cascade we reuse the existing `UpdateStatusAsync` semantics inline (not the public method, to avoid re-entrancy and permission checks):
+
+- Set `Status`, `ModifiedDate = UtcNow`, `ModifiedBy = userId`.
+- When target is `closed`, also set `CompletedDate` if null and `CompletionPercentage = 100`.
+- Fire `_workflowTriggerService.TriggerStatusChangeAsync("service_order", ...)` so workflow automations still see the transition.
+- Log to `_logger` with `SaleId` + `ServiceOrderId` + `from → to` so we can audit the cascade.
+
+## Files touched
+
+1. **`Backend/Modules/ServiceOrders/Services/IServiceOrderService.cs`**
+   - Add `Task CascadeSaleStatusToServiceOrdersAsync(int saleId, string newSaleStatus, string userId);`
+
+2. **`Backend/Modules/ServiceOrders/Services/ServiceOrderService.cs`**
+   - Implement `CascadeSaleStatusToServiceOrdersAsync` following the table above.
+   - Reuse existing `_workflowTriggerService`, `_logger`, `_context`.
+
+3. **`Backend/Modules/Invoices/Services/InvoiceService.cs`**
+   - Inject `IServiceOrderService` (constructor param, optional — null-safe).
+   - At the end of `SyncSaleInvoiceStateAsync`, if `next` was `invoiced` (or if sale is `closed`/`cancelled`), await the cascade.
+
+4. **`Backend/Modules/Sales/Services/SaleService.cs`**
+   - Inject `IServiceOrderService` (optional / null-safe to avoid circular DI risk — SO service already depends on Sale-related bits).
+   - After `SaveChangesAsync()` in `UpdateSaleAsync`, when `previousStatus != updateDto.Status`, call the cascade with the new status.
+
+If DI turns out to be circular (SO service already references sales pieces), we'll break the cycle by resolving `IServiceOrderService` lazily via `IServiceProvider` inside `SaleService` / `InvoiceService`. That's a mechanical fallback, not a design change.
+
+## Verification
+
+- Build the backend (`dotnet build`) — must be green.
+- Manual trace on a live sale (id 14, currently open in preview):
+  1. SO in `ready_for_invoice`, Sale in `in_progress`.
+  2. Create invoice covering full amount → Sale flips to `invoiced` → **SO auto-flips to `invoiced`**.
+  3. Close the Sale manually → Sale `closed` → **SO auto-flips to `closed`** and `CompletedDate` is stamped.
+  4. Reopen Sale (`in_progress`) → SOs previously auto-invoiced revert to `ready_for_invoice`.
+- Watch server logs for `Cascade: Sale {id} {oldStatus}→{newStatus} propagated to SO {id}` lines.
+
+## Explicit non-goals
+
+- No FE changes — the SO detail page will just show the new status on next fetch.
+- No change to `PrepareForInvoiceAsync` — the "transfer items to sale" step stays exactly as it is.
+- No change to partial-invoicing behavior — `partially_invoiced` deliberately does not cascade, because more SO items may still be pending transfer.
+- No new database migrations.

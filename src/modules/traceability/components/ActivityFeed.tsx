@@ -13,7 +13,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import type { ActivityEvent } from '../types';
+import type { ActivityActor, ActivityEvent } from '../types';
+
+function resolveActorName(actor: ActivityActor): string {
+  const idStr = actor.id != null ? String(actor.id) : '';
+  const nameStr = actor.name != null ? String(actor.name) : '';
+  if (idStr === '1' || nameStr === '1') return 'MainAdminUser';
+  return nameStr || 'System';
+}
 
 function localeFor(lang: string) {
   if (lang?.startsWith('fr')) return frLocale;
@@ -100,7 +107,7 @@ export function ActivityFeed({
                     {ev.entityUrl ? (
                       <Link
                         to={ev.entityUrl}
-                        className="text-xs font-medium text-foreground hover:underline"
+                        className="text-xs font-medium text-primary hover:underline underline-offset-2 decoration-primary/40 hover:decoration-primary transition-colors"
                       >
                         {ev.entityLabel}
                       </Link>
@@ -123,7 +130,7 @@ export function ActivityFeed({
                     )}
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground align-top">
-                    <span className="truncate block max-w-[160px]">{ev.actor.name}</span>
+                    <span className="truncate block max-w-[160px]">{resolveActorName(ev.actor)}</span>
                   </TableCell>
                 </TableRow>
               );

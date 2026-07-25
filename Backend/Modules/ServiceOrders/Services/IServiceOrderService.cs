@@ -67,5 +67,13 @@ namespace MyApi.Modules.ServiceOrders.Services
         
         // Invoice preparation
         Task<ServiceOrderDto> PrepareForInvoiceAsync(int id, PrepareInvoiceDto dto, string userId);
+
+        /// <summary>
+        /// Cascade a Sale's status change onto every Service Order linked to it,
+        /// so the user never has to re-open the SO to advance it after items were
+        /// transferred to the Sale. Best-effort: failures log but do not throw.
+        /// </summary>
+        Task CascadeSaleStatusToServiceOrdersAsync(int saleId, string newSaleStatus, string userId);
     }
 }
+

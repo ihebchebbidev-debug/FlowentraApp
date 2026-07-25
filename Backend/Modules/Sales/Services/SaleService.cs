@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using MyApi.Data;
 using MyApi.Modules.Sales.DTOs;
 using MyApi.Modules.Sales.Models;
@@ -6,6 +7,7 @@ using MyApi.Modules.Contacts.Models;
 using MyApi.Modules.Articles.Services;
 using MyApi.Modules.WorkflowEngine.Services;
 using MyApi.Modules.Projects.Services;
+
 
 namespace MyApi.Modules.Sales.Services
 {
@@ -20,6 +22,8 @@ namespace MyApi.Modules.Sales.Services
         private readonly MyApi.Modules.Shared.Services.IEntityFormDocumentService? _formDocuments;
         private readonly MyApi.Modules.Shared.Services.IActivityLogger? _activityLogger;
         private readonly MyApi.Modules.Contacts.Services.IContactActivityService? _contactActivity;
+        // Resolved lazily to avoid a DI cycle (ServiceOrderService already depends on IInvoiceService).
+        private readonly IServiceProvider? _serviceProvider;
 
         public SaleService(
             ApplicationDbContext context,
@@ -30,7 +34,8 @@ namespace MyApi.Modules.Sales.Services
             MyApi.Modules.Planning.Services.IPlannedLineEntryService? plannedEntries = null,
             MyApi.Modules.Shared.Services.IEntityFormDocumentService? formDocuments = null,
             MyApi.Modules.Shared.Services.IActivityLogger? activityLogger = null,
-            MyApi.Modules.Contacts.Services.IContactActivityService? contactActivity = null)
+            MyApi.Modules.Contacts.Services.IContactActivityService? contactActivity = null,
+            IServiceProvider? serviceProvider = null)
         {
             _context = context;
             _logger = logger;
@@ -41,7 +46,9 @@ namespace MyApi.Modules.Sales.Services
             _formDocuments = formDocuments;
             _activityLogger = activityLogger;
             _contactActivity = contactActivity;
+            _serviceProvider = serviceProvider;
         }
+
 
 
         public async Task<PaginatedSaleResponse> GetSalesAsync(
@@ -662,8 +669,28 @@ namespace MyApi.Modules.Sales.Services
                     createdBy: userId);
             }
 
+            // Cascade the sale's new status onto every linked Service Order so the
+            // user doesn't have to reopen each SO after items were transferred.
+            // Runs after the sale row is persisted; failures are swallowed inside the cascade.
+            if (updateDto.Status != null && previousStatus != updateDto.Status && _serviceProvider != null)
+            {
+                try
+                {
+                    var soService = _serviceProvider.GetService<MyApi.Modules.ServiceOrders.Services.IServiceOrderService>();
+                    if (soService != null)
+                    {
+                        await soService.CascadeSaleStatusToServiceOrdersAsync(id, updateDto.Status, userId);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "SaleService: cascade to service orders failed for sale {SaleId}", id);
+                }
+            }
+
             // Keep persisted money in sync with items / tax / discount changes.
             await RecalculateSaleTotalsAsync(id);
+
 
             var updatedSale = await GetSaleByIdAsync(id);
             return updatedSale!;
