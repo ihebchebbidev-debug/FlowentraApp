@@ -1,15 +1,171 @@
 {
   "title": "Invoices",
+  "watchDemo": "Watch Demo",
+  "loading": "Loading…",
   "empty": "No invoices for this contact yet.",
   "empty_filtered": "No invoices match your filters.",
+  "empty_global": "No invoices yet. Create one from a sale to get started.",
   "search_placeholder": "Search by number, title or notes…",
-  "filters": { "date_from": "From date", "date_to": "To date", "clear": "Clear filters" },
-  "pagination": { "summary": "Showing {{count}} of {{total}}", "page_of": "Page {{page}} of {{total}}" },
-  "status": { "all": "All", "draft": "Draft", "posted": "Posted", "paid": "Paid", "void": "Void" },
-  "columns": { "number": "Number", "issue_date": "Issue date", "due_date": "Due date", "total": "Total", "paid": "Paid", "due": "Due", "status": "Status" },
-  "actions": { "new_from_sale": "New from sale", "post": "Post", "void": "Void", "delete": "Delete", "open_sale": "Open sale", "open_service_order": "Open service order" },
-  "detail": { "no_number_yet": "Draft (no number yet)", "sale": "Sale", "service_order": "Service order", "subtotal": "Subtotal", "tax": "Tax", "grand_total": "Total", "amount_paid": "Paid", "amount_due": "Due", "lines": "Lines", "payments": "Payments" },
-  "confirm": { "post_title": "Post this invoice?", "post_body": "A number will be assigned and the invoice becomes final.", "void_title": "Void this invoice?", "void_body": "This cannot be undone. Optionally provide a reason.", "void_reason": "Reason (optional)", "delete_title": "Delete this draft?", "delete_body": "The draft will be removed permanently." },
-  "toast": { "created": "Draft invoice created", "create_failed": "Could not create invoice", "posted": "Invoice posted", "post_failed": "Could not post invoice", "voided": "Invoice voided", "void_failed": "Could not void invoice", "deleted": "Invoice deleted", "delete_failed": "Could not delete invoice" },
-  "create_from_sale": { "title": "Create invoice from sale", "pick_sale": "Pick a sale", "no_eligible_sales": "No eligible sales for this contact.", "confirm": "Create draft" }
+  "plugin": {
+    "name": "Invoices",
+    "description": "Customer invoices with statuses, payments and PDF export."
+  },
+  "page": {
+    "subtitle": "Track every customer invoice, what is paid, and what is still due."
+  },
+  "stats": {
+    "total_invoiced": "Total invoiced",
+    "outstanding": "Outstanding",
+    "paid": "Paid",
+    "overdue": "Overdue"
+  },
+  "filters": {
+    "date_from": "From date",
+    "date_to": "To date",
+    "clear": "Clear filters"
+  },
+  "pagination": {
+    "summary": "Showing {{count}} of {{total}}",
+    "page_of": "Page {{page}} of {{total}}"
+  },
+  "status": {
+    "all": "All",
+    "draft": "Draft",
+    "posted": "Posted",
+    "paid": "Paid",
+    "void": "Void",
+    "overdue": "Overdue"
+  },
+  "columns": {
+    "number": "Number",
+    "contact": "Contact",
+    "sale": "Sale",
+    "issue_date": "Issue date",
+    "due_date": "Due date",
+    "total": "Total",
+    "paid": "Paid",
+    "due": "Due",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "actions": {
+    "new_from_sale": "New from sale",
+    "post": "Post",
+    "void": "Void",
+    "mark_paid": "Mark as paid",
+    "reopen": "Reopen",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "open_sale": "Open sale",
+    "open_service_order": "Open service order",
+    "back_to_list": "Back to invoices",
+    "download_pdf": "Download PDF"
+  },
+  "detail": {
+    "no_number_yet": "Draft (no number yet)",
+    "sale": "Sale",
+    "service_order": "Service order",
+    "contact": "Contact",
+    "currency": "Currency",
+    "subtotal": "Subtotal",
+    "tax": "Tax",
+    "grand_total": "Total",
+    "amount_paid": "Paid",
+    "amount_due": "Due",
+    "lines": "Lines",
+    "payments": "Payments",
+    "notes": "Notes",
+    "item": "Item",
+    "qty": "Qty",
+    "unit_price": "Unit price",
+    "line_total": "Line total",
+    "activity": "Activity"
+  },
+  "activity": {
+    "empty": "No activity yet for this invoice.",
+    "by": "by",
+    "from": "from",
+    "to": "to",
+    "system": "System",
+    "types": {
+      "created": "Draft created",
+      "created_from_sale": "Created from sale",
+      "updated": "Draft edited",
+      "posted": "Posted",
+      "voided": "Voided",
+      "deleted": "Deleted",
+      "auto_marked_paid": "Marked as paid",
+      "auto_reopened": "Reopened",
+      "manual_marked_paid": "Marked as paid (manual)",
+      "manual_reopened": "Reopened (manual)"
+    }
+  },
+  "confirm": {
+    "post_title": "Post this invoice?",
+    "post_body": "A number will be assigned and the invoice becomes final.",
+    "void_title": "Void this invoice?",
+    "void_body": "This cannot be undone. A reason is required and will be saved to the audit trail.",
+    "void_reason": "Reason",
+    "reason_placeholder": "Explain why…",
+    "reason_required": "A reason is required.",
+    "mark_paid_title": "Mark this invoice as paid?",
+    "mark_paid_body": "Use this only when full settlement was received outside the payments module. A memo is required.",
+    "reopen_title": "Reopen this invoice?",
+    "reopen_body": "The invoice will move back to Posted status. A memo is required.",
+    "memo": "Memo",
+    "memo_placeholder": "Add context for the audit trail…",
+    "memo_required": "A memo is required.",
+    "delete_title": "Delete this draft?",
+    "delete_body": "The draft will be removed permanently."
+  },
+  "toast": {
+    "created": "Draft invoice created",
+    "create_failed": "Could not create invoice",
+    "posted": "Invoice posted",
+    "post_failed": "Could not post invoice",
+    "voided": "Invoice voided",
+    "void_failed": "Could not void invoice",
+    "marked_paid": "Invoice marked as paid",
+    "mark_paid_failed": "Could not mark invoice as paid",
+    "reopened": "Invoice reopened",
+    "reopen_failed": "Could not reopen invoice",
+    "deleted": "Invoice deleted",
+    "delete_failed": "Could not delete invoice"
+  },
+  "create_from_sale": {
+    "title": "Create invoice from sale",
+    "pick_sale": "Pick a sale",
+    "search_placeholder": "Search sales by number, title or contact…",
+    "no_eligible_sales": "No eligible sales found.",
+    "confirm": "Create draft"
+  },
+  "pdf": {
+    "invoice": "INVOICE",
+    "invoice_number": "Invoice N°",
+    "customer_information": "Customer Information",
+    "invoice_details": "Invoice Details",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "address": "Address",
+    "sale_reference": "Sale reference",
+    "pos": "Pos",
+    "description": "Description",
+    "payment_summary": "Payment Summary",
+    "page_label": "Page",
+    "draft_number": "DRAFT",
+    "preparing": "Preparing…"
+  },
+  "sale_tab": {
+    "sale_total": "Sale total",
+    "invoiced": "Invoiced",
+    "not_invoiced": "Not invoiced",
+    "paid": "Paid",
+    "outstanding": "Outstanding",
+    "coverage": "Invoicing coverage",
+    "create_invoice": "Create invoice from this sale",
+    "empty": "No invoice has been created for this sale yet.",
+    "confirm_create_title": "Create invoice from this sale?",
+    "confirm_create_body": "A draft invoice will be created with a snapshot of this sale's items. You can edit it before posting."
+  }
 }

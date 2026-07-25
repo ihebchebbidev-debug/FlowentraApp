@@ -1,6 +1,6 @@
 // API service for Customer Invoices (contact-facing invoices)
 import { apiFetch } from './apiClient';
-import type { Invoice, InvoiceQueryParams, PagedInvoiceResponse } from '@/modules/invoices/types';
+import type { Invoice, InvoiceActivity, InvoiceQueryParams, PagedInvoiceResponse } from '@/modules/invoices/types';
 
 const BASE = '/api/invoices';
 
@@ -45,14 +45,29 @@ export const customerInvoicesApi = {
     return unwrap(result, 'Failed to post invoice');
   },
 
-  async void(id: number, body: { reason?: string } = {}): Promise<Invoice> {
+  async void(id: number, body: { reason: string }): Promise<Invoice> {
     const result = await apiFetch<Invoice>(`${BASE}/${id}/void`, { method: 'POST', body: JSON.stringify(body) });
     return unwrap(result, 'Failed to void invoice');
+  },
+
+  async markPaid(id: number, body: { memo: string }): Promise<Invoice> {
+    const result = await apiFetch<Invoice>(`${BASE}/${id}/mark-paid`, { method: 'POST', body: JSON.stringify(body) });
+    return unwrap(result, 'Failed to mark invoice as paid');
+  },
+
+  async reopen(id: number, body: { memo: string }): Promise<Invoice> {
+    const result = await apiFetch<Invoice>(`${BASE}/${id}/reopen`, { method: 'POST', body: JSON.stringify(body) });
+    return unwrap(result, 'Failed to reopen invoice');
   },
 
   async remove(id: number): Promise<void> {
     const result = await apiFetch<void>(`${BASE}/${id}`, { method: 'DELETE' });
     if (result.error) throw new Error(result.error);
+  },
+
+  async getActivities(id: number): Promise<InvoiceActivity[]> {
+    const result = await apiFetch<InvoiceActivity[]>(`${BASE}/${id}/activities`);
+    return unwrap(result, 'Failed to fetch invoice activities');
   },
 };
 

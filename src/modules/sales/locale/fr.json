@@ -257,7 +257,8 @@
     "notesActivity": "Activité",
     "activity": "Activité",
     "checklists": "Checklists",
-    "documents": "Documents"
+    "documents": "Documents",
+    "invoices": "Factures"
   },
   "overview": {
     "saleDetails": "Détails de la Commande",

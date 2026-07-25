@@ -183,6 +183,7 @@ namespace MyApi.Data
         // Invoices Module (Phase B)
         public DbSet<MyApi.Modules.Invoices.Models.Invoice> Invoices { get; set; }
         public DbSet<MyApi.Modules.Invoices.Models.InvoiceLine> InvoiceLines { get; set; }
+        public DbSet<MyApi.Modules.Invoices.Models.InvoiceActivity> InvoiceActivities { get; set; }
 
         // Planning Module
         public DbSet<UserWorkingHours> UserWorkingHours { get; set; }
@@ -638,6 +639,7 @@ namespace MyApi.Data
             // Invoices domain configurations (Phase B)
             new MyApi.Modules.Invoices.Data.InvoiceConfiguration().Configure(modelBuilder);
             new MyApi.Modules.Invoices.Data.InvoiceLineConfiguration().Configure(modelBuilder);
+            new MyApi.Modules.Invoices.Data.InvoiceActivityConfiguration().Configure(modelBuilder);
             
             // Notifications configuration
             new NotificationConfiguration().Configure(modelBuilder);

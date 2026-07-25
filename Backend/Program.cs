@@ -956,6 +956,34 @@ CREATE INDEX IF NOT EXISTS ""idx_users_twofactor"" ON ""Users""(""TwoFactorEnabl
         {
             migrationLogger.LogWarning(ex, "⚠️ Could not ensure ContactActivities table — contact activity feed will be unavailable.");
         }
+
+        // ─── Ensure InvoiceActivities table exists (migrations are disabled) ───
+        // Idempotent: powers the "Activity" audit trail on the invoice detail page.
+        try
+        {
+            context.Database.ExecuteSqlRaw(@"
+                CREATE TABLE IF NOT EXISTS ""InvoiceActivities"" (
+                    ""Id""           SERIAL       PRIMARY KEY,
+                    ""TenantId""     INTEGER      NOT NULL DEFAULT 0,
+                    ""InvoiceId""    INTEGER      NOT NULL,
+                    ""ActivityType"" VARCHAR(50)  NOT NULL,
+                    ""Description""  VARCHAR(1000) NULL,
+                    ""OldValue""     VARCHAR(500) NULL,
+                    ""NewValue""     VARCHAR(500) NULL,
+                    ""CreatedAt""    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+                    ""CreatedBy""    VARCHAR(100) NOT NULL DEFAULT ''
+                );
+                CREATE INDEX IF NOT EXISTS ""IX_InvoiceActivities_Tenant_Invoice_CreatedAt""
+                    ON ""InvoiceActivities"" (""TenantId"", ""InvoiceId"", ""CreatedAt"" DESC);
+                CREATE INDEX IF NOT EXISTS ""IX_InvoiceActivities_Tenant_Type""
+                    ON ""InvoiceActivities"" (""TenantId"", ""ActivityType"");
+            ");
+            migrationLogger.LogInformation("✅ InvoiceActivities table ensured (idempotent).");
+        }
+        catch (Exception ex)
+        {
+            migrationLogger.LogWarning(ex, "⚠️ Could not ensure InvoiceActivities table — invoice activity feed will be unavailable.");
+        }
     }
     catch (Exception ex)
     {

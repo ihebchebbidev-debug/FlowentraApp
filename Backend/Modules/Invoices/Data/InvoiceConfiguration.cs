@@ -39,4 +39,22 @@ namespace MyApi.Modules.Invoices.Data
             });
         }
     }
+
+    public class InvoiceActivityConfiguration : IEntityConfiguration
+    {
+        public void Configure(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<InvoiceActivity>(e =>
+            {
+                e.ToTable("InvoiceActivities");
+                e.HasKey(x => x.Id);
+                e.HasIndex(x => new { x.TenantId, x.InvoiceId, x.CreatedAt });
+                e.HasIndex(x => new { x.TenantId, x.Type });
+                e.HasOne(x => x.Invoice)
+                    .WithMany()
+                    .HasForeignKey(x => x.InvoiceId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+        }
+    }
 }

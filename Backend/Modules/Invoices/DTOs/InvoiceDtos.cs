@@ -3,13 +3,27 @@ using System.Collections.Generic;
 
 namespace MyApi.Modules.Invoices.DTOs
 {
+    public class InvoiceActivityDto
+    {
+        public int Id { get; set; }
+        public int InvoiceId { get; set; }
+        public string Type { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public string? OldValue { get; set; }
+        public string? NewValue { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public string CreatedBy { get; set; } = string.Empty;
+    }
+
     public class InvoiceDto
     {
         public int Id { get; set; }
         public string? InvoiceNumber { get; set; }
         public string Status { get; set; } = "draft";
         public int ContactId { get; set; }
+        public string? ContactName { get; set; }
         public int? SaleId { get; set; }
+        public string? SaleNumber { get; set; }
         public int? ServiceOrderId { get; set; }
         public string? Title { get; set; }
         public string? Notes { get; set; }
@@ -92,6 +106,16 @@ namespace MyApi.Modules.Invoices.DTOs
     public class VoidInvoiceDto
     {
         public string? Reason { get; set; }
+    }
+
+    public class MarkPaidInvoiceDto
+    {
+        public string? Memo { get; set; }
+    }
+
+    public class ReopenInvoiceDto
+    {
+        public string? Memo { get; set; }
     }
 
     public class InvoiceQueryParams

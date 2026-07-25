@@ -63,6 +63,7 @@ export const WORKSPACES: Workspace[] = [
     modules: [
       { key: "sales-dash", label: "Orders dashboard", labelI18nKey: "workspace.modules.ordersDashboard", url: "/dashboard/reporting/sales", icon: "BarChart3" },
       { key: "sales", label: "Orders", labelI18nKey: "workspace.modules.orders", url: "/dashboard/sales", icon: "TrendingUp", pluginCode: "PL0002SALES" },
+      { key: "invoices", label: "Invoices", labelI18nKey: "workspace.modules.invoices", url: "/dashboard/invoices", icon: "Receipt", pluginCode: "PL0004INVOICES" },
       { key: "offers", label: "Offers", url: "/dashboard/offers", icon: "FileText", pluginCode: "PL0005OFFERS" },
       { key: "deals", label: "Deals", url: "/dashboard/deals", icon: "Handshake", pluginCode: "PL0003DEALS" },
       { key: "contacts", label: "Customers", url: "/dashboard/contacts?type=customer", icon: "Users", pluginCode: "PL0001CONTACTS" },

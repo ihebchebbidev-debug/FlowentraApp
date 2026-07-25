@@ -1,15 +1,171 @@
 {
   "title": "Factures",
+  "watchDemo": "Voir la démo",
+  "loading": "Chargement…",
   "empty": "Aucune facture pour ce contact pour le moment.",
   "empty_filtered": "Aucune facture ne correspond à vos filtres.",
+  "empty_global": "Aucune facture pour le moment. Créez-en une à partir d'une vente pour commencer.",
   "search_placeholder": "Rechercher par numéro, titre ou notes…",
-  "filters": { "date_from": "Date de début", "date_to": "Date de fin", "clear": "Effacer les filtres" },
-  "pagination": { "summary": "{{count}} sur {{total}} affichées", "page_of": "Page {{page}} sur {{total}}" },
-  "status": { "all": "Toutes", "draft": "Brouillon", "posted": "Émise", "paid": "Payée", "void": "Annulée" },
-  "columns": { "number": "Numéro", "issue_date": "Date d'émission", "due_date": "Échéance", "total": "Total", "paid": "Payé", "due": "Reste dû", "status": "Statut" },
-  "actions": { "new_from_sale": "Nouvelle depuis vente", "post": "Émettre", "void": "Annuler", "delete": "Supprimer", "open_sale": "Ouvrir la vente", "open_service_order": "Ouvrir l'ordre de service" },
-  "detail": { "no_number_yet": "Brouillon (pas encore numéroté)", "sale": "Vente", "service_order": "Ordre de service", "subtotal": "Sous-total", "tax": "TVA", "grand_total": "Total", "amount_paid": "Payé", "amount_due": "Reste dû", "lines": "Lignes", "payments": "Paiements" },
-  "confirm": { "post_title": "Émettre cette facture ?", "post_body": "Un numéro sera attribué et la facture deviendra définitive.", "void_title": "Annuler cette facture ?", "void_body": "Cette action est irréversible. Motif facultatif.", "void_reason": "Motif (facultatif)", "delete_title": "Supprimer ce brouillon ?", "delete_body": "Le brouillon sera supprimé définitivement." },
-  "toast": { "created": "Brouillon de facture créé", "create_failed": "Impossible de créer la facture", "posted": "Facture émise", "post_failed": "Impossible d'émettre la facture", "voided": "Facture annulée", "void_failed": "Impossible d'annuler la facture", "deleted": "Facture supprimée", "delete_failed": "Impossible de supprimer la facture" },
-  "create_from_sale": { "title": "Créer une facture depuis une vente", "pick_sale": "Choisir une vente", "no_eligible_sales": "Aucune vente éligible pour ce contact.", "confirm": "Créer le brouillon" }
+  "plugin": {
+    "name": "Factures",
+    "description": "Factures clients avec statuts, paiements et export PDF."
+  },
+  "page": {
+    "subtitle": "Suivez chaque facture client, ce qui est payé et ce qui reste dû."
+  },
+  "stats": {
+    "total_invoiced": "Total facturé",
+    "outstanding": "Reste dû",
+    "paid": "Payé",
+    "overdue": "En retard"
+  },
+  "filters": {
+    "date_from": "Date de début",
+    "date_to": "Date de fin",
+    "clear": "Effacer les filtres"
+  },
+  "pagination": {
+    "summary": "{{count}} sur {{total}} affichées",
+    "page_of": "Page {{page}} sur {{total}}"
+  },
+  "status": {
+    "all": "Toutes",
+    "draft": "Brouillon",
+    "posted": "Émise",
+    "paid": "Payée",
+    "void": "Annulée",
+    "overdue": "En retard"
+  },
+  "columns": {
+    "number": "Numéro",
+    "contact": "Contact",
+    "sale": "Vente",
+    "issue_date": "Date d'émission",
+    "due_date": "Échéance",
+    "total": "Total",
+    "paid": "Payé",
+    "due": "Reste dû",
+    "status": "Statut",
+    "actions": "Actions"
+  },
+  "actions": {
+    "new_from_sale": "Nouvelle depuis vente",
+    "post": "Émettre",
+    "void": "Annuler",
+    "mark_paid": "Marquer comme payée",
+    "reopen": "Rouvrir",
+    "delete": "Supprimer",
+    "cancel": "Annuler",
+    "open_sale": "Ouvrir la vente",
+    "open_service_order": "Ouvrir l'ordre de service",
+    "back_to_list": "Retour aux factures",
+    "download_pdf": "Télécharger le PDF"
+  },
+  "detail": {
+    "no_number_yet": "Brouillon (pas encore numéroté)",
+    "sale": "Vente",
+    "service_order": "Ordre de service",
+    "contact": "Contact",
+    "currency": "Devise",
+    "subtotal": "Sous-total",
+    "tax": "TVA",
+    "grand_total": "Total",
+    "amount_paid": "Payé",
+    "amount_due": "Reste dû",
+    "lines": "Lignes",
+    "payments": "Paiements",
+    "notes": "Notes",
+    "item": "Article",
+    "qty": "Qté",
+    "unit_price": "Prix unitaire",
+    "line_total": "Total ligne",
+    "activity": "Activité"
+  },
+  "activity": {
+    "empty": "Aucune activité pour cette facture.",
+    "by": "par",
+    "from": "de",
+    "to": "à",
+    "system": "Système",
+    "types": {
+      "created": "Brouillon créé",
+      "created_from_sale": "Créée depuis une vente",
+      "updated": "Brouillon modifié",
+      "posted": "Émise",
+      "voided": "Annulée",
+      "deleted": "Supprimée",
+      "auto_marked_paid": "Marquée comme payée",
+      "auto_reopened": "Rouverte",
+      "manual_marked_paid": "Marquée comme payée (manuel)",
+      "manual_reopened": "Rouverte (manuel)"
+    }
+  },
+  "confirm": {
+    "post_title": "Émettre cette facture ?",
+    "post_body": "Un numéro sera attribué et la facture deviendra définitive.",
+    "void_title": "Annuler cette facture ?",
+    "void_body": "Cette action est irréversible. Un motif est obligatoire et sera enregistré dans le journal d'audit.",
+    "void_reason": "Motif",
+    "reason_placeholder": "Expliquez pourquoi…",
+    "reason_required": "Un motif est obligatoire.",
+    "mark_paid_title": "Marquer cette facture comme payée ?",
+    "mark_paid_body": "À utiliser uniquement si le règlement complet a été reçu hors module Paiements. Une note est obligatoire.",
+    "reopen_title": "Rouvrir cette facture ?",
+    "reopen_body": "La facture repassera au statut Émise. Une note est obligatoire.",
+    "memo": "Note",
+    "memo_placeholder": "Ajoutez le contexte pour le journal d'audit…",
+    "memo_required": "Une note est obligatoire.",
+    "delete_title": "Supprimer ce brouillon ?",
+    "delete_body": "Le brouillon sera supprimé définitivement."
+  },
+  "toast": {
+    "created": "Brouillon de facture créé",
+    "create_failed": "Impossible de créer la facture",
+    "posted": "Facture émise",
+    "post_failed": "Impossible d'émettre la facture",
+    "voided": "Facture annulée",
+    "void_failed": "Impossible d'annuler la facture",
+    "marked_paid": "Facture marquée comme payée",
+    "mark_paid_failed": "Impossible de marquer la facture comme payée",
+    "reopened": "Facture rouverte",
+    "reopen_failed": "Impossible de rouvrir la facture",
+    "deleted": "Facture supprimée",
+    "delete_failed": "Impossible de supprimer la facture"
+  },
+  "create_from_sale": {
+    "title": "Créer une facture depuis une vente",
+    "pick_sale": "Choisir une vente",
+    "search_placeholder": "Rechercher par numéro, titre ou contact…",
+    "no_eligible_sales": "Aucune vente éligible trouvée.",
+    "confirm": "Créer le brouillon"
+  },
+  "pdf": {
+    "invoice": "FACTURE",
+    "invoice_number": "Facture N°",
+    "customer_information": "Informations client",
+    "invoice_details": "Détails de la facture",
+    "name": "Nom",
+    "email": "E-mail",
+    "phone": "Téléphone",
+    "address": "Adresse",
+    "sale_reference": "Référence de la vente",
+    "pos": "Pos",
+    "description": "Description",
+    "payment_summary": "Résumé des paiements",
+    "page_label": "Page",
+    "draft_number": "BROUILLON",
+    "preparing": "Préparation…"
+  },
+  "sale_tab": {
+    "sale_total": "Total de la vente",
+    "invoiced": "Facturé",
+    "not_invoiced": "Non facturé",
+    "paid": "Payé",
+    "outstanding": "Reste dû",
+    "coverage": "Taux de facturation",
+    "create_invoice": "Créer une facture pour cette vente",
+    "empty": "Aucune facture n'a encore été créée pour cette vente.",
+    "confirm_create_title": "Créer une facture depuis cette vente ?",
+    "confirm_create_body": "Un brouillon sera créé avec une copie des articles de cette vente. Vous pourrez le modifier avant émission."
+  }
 }

@@ -15,6 +15,7 @@ const ContactsModule = lazyWithRetry(() => import("@/modules/contacts/ContactsMo
 const SuppliersModule = lazyWithRetry(() => import("@/modules/contacts/SuppliersModule").then(m => ({ default: m.SuppliersModule })));
 const SalesModule = lazyWithRetry(() => import("@/modules/sales").then(m => ({ default: m.SalesModule })));
 const OffersModule = lazyWithRetry(() => import("@/modules/offers").then(m => ({ default: m.OffersModule })));
+const InvoicesModule = lazyWithRetry(() => import("@/modules/invoices").then(m => ({ default: m.InvoicesModule })));
 const ArticlesModule = lazyWithRetry(() => import("@/modules/articles/ArticlesModule").then(m => ({ default: m.ArticlesModule })));
 const InventoryServicesModule = lazyWithRetry(() => import("@/modules/inventory-services/InventoryServicesModule"));
 const StockManagementModule = lazyWithRetry(() => import("@/modules/stock-management"));
@@ -79,6 +80,13 @@ export function DashboardContent() {
           <PermissionRoute module="sales" action="read">
             <Suspense fallback={<PageSkeleton />}>
               <SalesModule />
+            </Suspense>
+          </PermissionRoute>
+        } />
+        <Route path="invoices/*" element={
+          <PermissionRoute module="sales" action="read">
+            <Suspense fallback={<PageSkeleton />}>
+              <InvoicesModule />
             </Suspense>
           </PermissionRoute>
         } />

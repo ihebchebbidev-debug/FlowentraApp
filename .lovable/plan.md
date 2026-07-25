@@ -1,198 +1,68 @@
+# Align Invoices with Sales & Offers
 
-# User Groups — Implementation Plan
+Goal: the Invoices module should look and behave exactly like Sales and Offers — same header, stats, filter/search patterns, list/table views, mobile cards, detail page structure, fonts, sizes, spacing — while keeping the invoice-specific business logic (posting, payments, void, reopen, PDF, audit trail) intact and fully translated in EN/FR.
 
-A new feature under **Settings › Administration** to create groups, edit them, and assign users to them. It will mirror the existing **Roles** pattern end-to-end (backend module, tenant-scoped tables, junction table, REST API, React CRUD page + dialogs, i18n in EN/FR). The frontend stub already exists (`SettingsPage.tsx` has a `userGroups` placeholder + `nav.userGroups` key, and the Administration workspace sidebar already links to it) — we replace the placeholder with a real implementation.
+## 1. Invoices List page — mirror `SalesList` / `OffersList`
 
-## Scope
+Rebuild `src/modules/invoices/pages/InvoicesPage.tsx` around the same primitives Sales uses:
 
-- Groups CRUD (name, description, active flag) scoped by `TenantId`.
-- Assign / remove users to a group (many-to-many).
-- List a group's members; list a user's groups.
-- Permission-gated in Settings (superadmin + `userGroups.read/write/delete`).
-- Full EN + FR translations under the existing `settings` namespace (same as Roles).
+- Page shell: same padding, header typography (`text-2xl`/`text-sm muted`), primary action button on the right.
+- Stats row using the same `Card` + `CardContent` sizing and icon tone conventions as `SalesList` stat cards (not the current custom `StatCard`). Clickable to filter — like Sales.
+- View mode switch: `list` and `table` only (no kanban, as requested). Persist via `getInitialViewMode`.
+- `CollapsibleSearch` + filter bar toggled by a Filter button, matching Sales layout.
+- Status filter, date-from/date-to, contact filter, sale-number filter, "overdue only" quick chip.
+- Table view rendered via shared `TableLayout` with the exact column header styling, sort chevrons, row hover, and row-action dropdown (`TableRowActions`) used in Sales.
+- List (mobile-first) view rendered as the same card component style Sales uses on `md:hidden`, with identical typography, spacing, badges.
+- Pagination via `SimplePaginationBar` (same as Sales) — replace the current custom pagination.
+- Bulk selection column with `Checkbox`, plus bulk void/download actions (safe subset).
+- Permissions via `usePermissions('invoices')` mirroring Sales' `canRead/canCreate/...` gates.
+- Export button opening the shared `ExportModal` (CSV of currently filtered invoices).
 
-Out of scope (can come later): group → role mapping, group → permission mapping, group → skill mapping. The schema will leave room for these but the UI ships with users-only.
+## 2. Invoice Detail page — mirror `OfferDetail` / `SaleDetail`
 
-## Backend
+Rebuild `src/modules/invoices/pages/InvoiceDetailPage.tsx` to use the same detail shell as Offers/Sales:
 
-### 1. Migration — `Backend/Neon/38_user_groups.sql` (next free number)
+- Back link + breadcrumb, header with invoice number, status badge, and right-aligned action buttons (Download PDF, Post, Mark Paid, Reopen, Void, Delete) all rendered with the same button sizes/variants as Offers.
+- Summary card grid (contact, sale link, issue/due dates, totals, amount paid/due) using the same card grid Offers uses in its overview header.
+- Tabbed body using the same `Tabs` layout as Offers, with these tabs — each implemented as a component under `src/modules/invoices/components/tabs/` to match the Offers/Sales tab folder pattern:
+  - `OverviewTab` — header info + totals summary.
+  - `ItemsTab` — invoice lines table styled identically to Offers/Sales `ItemsTab`.
+  - `PaymentsTab` — existing payment list + Mark Paid/Reopen/Void actions with required memo dialogs (already implemented, moved into the tab).
+  - `ActivityTab` — the existing `InvoiceActivityTab` renamed/aligned to match Offers `ActivityTab` styling (icons, timeline, timestamps, actor).
+  - `NotesTab` — notes on the invoice, mirroring Offers.
+  - `AttachmentsTab` — attachments, mirroring Offers (backend endpoint reused if exists; otherwise stub UI only when backend not present — no fake data).
+- Detail drawer (`InvoiceDetailDrawer`) kept but updated to use the same header/footer pattern as the Offers drawer.
 
-```sql
-CREATE TABLE IF NOT EXISTS "UserGroups" (
-  "Id"          SERIAL PRIMARY KEY,
-  "TenantId"    INTEGER NOT NULL,
-  "Name"        VARCHAR(100) NOT NULL,
-  "Description" VARCHAR(500),
-  "IsActive"    BOOLEAN NOT NULL DEFAULT TRUE,
-  "IsDeleted"   BOOLEAN NOT NULL DEFAULT FALSE,
-  "CreatedAt"   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  "CreatedBy"   VARCHAR(100),
-  "UpdatedAt"   TIMESTAMPTZ,
-  "ModifiedBy"  VARCHAR(100),
-  UNIQUE ("TenantId", "Name")
-);
+## 3. Translations (EN + FR)
 
-CREATE TABLE IF NOT EXISTS "UserGroupMembers" (
-  "Id"          SERIAL PRIMARY KEY,
-  "TenantId"    INTEGER NOT NULL,
-  "GroupId"     INTEGER NOT NULL,
-  "UserId"      INTEGER NOT NULL,
-  "IsActive"    BOOLEAN NOT NULL DEFAULT TRUE,
-  "AssignedAt"  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  "AssignedBy"  VARCHAR(100),
-  FOREIGN KEY ("GroupId") REFERENCES "UserGroups"("Id") ON DELETE CASCADE,
-  FOREIGN KEY ("UserId")  REFERENCES "Users"("Id")      ON DELETE CASCADE,
-  UNIQUE ("GroupId", "UserId")
-);
+- Audit `public/locales/en/invoices.json` and `fr/invoices.json` for every new key introduced by the refactor (view mode labels, filter bar, bulk actions, table headers, tab titles, empty states, export modal strings, permission-denied strings).
+- Cross-check with `sales.json` / `offers.json` to reuse consistent phrasing.
+- Verify no raw English string leaks (grep for hardcoded strings in the new files).
 
-CREATE INDEX IF NOT EXISTS "idx_usergroups_tenant"        ON "UserGroups"("TenantId");
-CREATE INDEX IF NOT EXISTS "idx_usergroupmembers_group"   ON "UserGroupMembers"("GroupId");
-CREATE INDEX IF NOT EXISTS "idx_usergroupmembers_user"    ON "UserGroupMembers"("UserId");
-CREATE INDEX IF NOT EXISTS "idx_usergroupmembers_tenant"  ON "UserGroupMembers"("TenantId");
-```
+## 4. Backend verification (no schema changes expected)
 
-Before writing this file we confirm the current max `NN_` number in `Backend/Neon/` and pick the next one.
+- Confirm existing endpoints cover the UI needs:
+  - `GET /invoices` supports `status`, `search`, `dateFrom`, `dateTo`, `contactId`, `saleId`, `sortBy`, `sortOrder`, `page`, `limit`.
+  - `POST /invoices/:id/void|mark-paid|reopen` accept and persist `Reason`/`Memo` (already added).
+  - `GET /invoices/:id/activities` returns actor + timestamp + memo.
+- If a filter used by the new UI is missing on the API, add it in `InvoiceService.cs` + `InvoicesController.cs` and log the activity where appropriate.
+- Re-verify soft-delete exclusion, tenant scoping, and cancelled-sale guard remain in place.
 
-### 2. New backend module — `Backend/Modules/UserGroups/`
+## 5. Verification
 
-Mirrors `Backend/Modules/Roles/` layout exactly:
+- Type-check the invoices module.
+- Load `/dashboard/invoices` and `/dashboard/invoices/:id` in the preview (desktop + mobile viewports) with Playwright, screenshot both, and diff visually against `/dashboard/sales` and `/dashboard/offers` for header, stats, filter bar, table, cards, and detail tabs.
+- Switch language to FR and screenshot again to confirm no missing translations.
 
-```text
-Backend/Modules/UserGroups/
-├── Controllers/UserGroupsController.cs        // [ApiController][Route("api/[controller]")][Authorize]
-├── Models/UserGroup.cs                        // : ITenantEntity, audit fields
-├── Models/UserGroupMember.cs                  // : ITenantEntity, junction
-├── DTOs/UserGroupDto.cs
-├── DTOs/CreateUserGroupRequest.cs
-├── DTOs/UpdateUserGroupRequest.cs
-├── DTOs/AssignUsersToGroupRequest.cs          // { userIds: int[] }
-├── Configurations/UserGroupConfiguration.cs   // IEntityConfiguration, unique(TenantId,Name)
-├── Configurations/UserGroupMemberConfiguration.cs
-├── Services/IUserGroupService.cs
-└── Services/UserGroupService.cs
-```
+## Technical notes
 
-Endpoints (matches `RolesController` shape and route-ordering rule):
+- Reuse: `TableLayout`, `SimplePaginationBar`, `CollapsibleSearch`, `TableRowActions`, `ExportModal`, `CreateActionButton`, `CompanyBadge`, `UserInline`, `getInitialViewMode`, `useCurrency`, `usePermissions`.
+- Keep `useCustomerInvoicesList` / `customerInvoicesApi` as the data layer; only extend params if a new filter is added.
+- Do not introduce Kanban view (explicit user requirement).
+- No hardcoded Tailwind colors — use existing semantic tokens/badge variants already used by Sales/Offers status badges.
+- Keep `InvoicePDFDocument` and `InvoiceDownloadPdfButton` unchanged in styling — already aligned to Sales/Offers PDFs.
 
-```text
-GET    /api/UserGroups                         -> list (with memberCount)
-GET    /api/UserGroups/{id}                    -> detail
-POST   /api/UserGroups                         -> create
-PUT    /api/UserGroups/{id}                    -> update
-DELETE /api/UserGroups/{id}                    -> soft-delete
+## Out of scope
 
-GET    /api/UserGroups/{id}/members            -> list members (User summaries)
-POST   /api/UserGroups/{id}/members            -> body: { userIds:int[] } bulk assign
-DELETE /api/UserGroups/{groupId}/members/{userId}
-GET    /api/UserGroups/user/{userId}           -> groups a user belongs to
-```
-
-DI registration in `Backend/Program.cs` next to the existing `IRoleService` line:
-
-```csharp
-services.AddScoped<IUserGroupService, UserGroupService>();
-```
-
-EF entity configs picked up by the existing `IEntityConfiguration` scan (same as `RoleConfiguration`/`UserRoleConfiguration`). `TenantId` is set by the current tenant interceptor (same mechanism Roles/UserRoles rely on).
-
-## Frontend
-
-### 3. Types — `src/types/users.ts` (append)
-
-```ts
-export interface UserGroup {
-  id: number;
-  name: string;
-  description?: string;
-  isActive: boolean;
-  memberCount: number;
-  createdAt: string;
-  updatedAt?: string;
-}
-export interface CreateUserGroupRequest { name: string; description?: string }
-export interface UpdateUserGroupRequest { name: string; description?: string; isActive?: boolean }
-```
-
-### 4. API client — `src/services/api/userGroupsApi.ts`
-
-Copy `rolesApi.ts` verbatim, swap URLs to `/api/UserGroups`, add `getMembers(id)`, `assignUsers(id, userIds[])`, `removeUser(groupId, userId)`, `getUserGroups(userId)`. Re-export via `src/services/userGroupsApi.ts` for parity with `src/services/rolesApi.ts`.
-
-### 5. UI components — under `src/modules/settings/components/`
-
-- `UserGroupManagement.tsx` — page component (mirrors `RoleManagement.tsx`): list card, search, "Create group" button, table of groups with member count, edit/delete actions, "Manage members" action opening the assignment modal.
-- `CreateUserGroupModal.tsx` — mirrors `CreateRoleModal.tsx` (name + description form, toast, `emitDataEvent('userGroups:changed')`).
-- `EditUserGroupModal.tsx` — mirrors `EditRoleModal.tsx`.
-- `GroupMembersModal.tsx` — mirrors `RoleAssignmentModal.tsx` but user→group: two lists (available users / current members), add/remove, bulk save via `POST /members`.
-
-### 6. Wire into Settings — `src/modules/settings/pages/SettingsPage.tsx`
-
-- Add `canViewUserGroups = isMainAdmin || hasPermission('userGroups','read')` next to `canViewUsers/canViewRoles`.
-- Flip existing nav item `{ id:'userGroups', ..., visible: canViewUserGroups }`.
-- Replace `renderUserGroupsPlaceholder()` with a `renderUserGroupsContent()` that renders `<UserGroupManagement />` — same structure as `renderRolesContent()`.
-- `adminHeaderMap['userGroups']` keys are already there (`nav.userGroups`, `userGroups.description`) — reuse.
-
-The existing Administration workspace sidebar entry (`workspaces.config.ts` → `/dashboard/settings?section=userGroups`) needs no change; it already points at this section.
-
-### 7. Permissions
-
-Register a new permission module string `userGroups` alongside `users` / `roles` (in whatever `PERMISSION_MODULES` list the app uses on both FE and BE) with actions `read / write / delete`. Superadmin gets it by default via existing seeder logic. If the seeder is code-side we'll add a one-line entry; if it's SQL we'll append `INSERT`s in the same migration.
-
-### 8. Data-event bus
-
-Emit `userGroups:changed` after any create/update/delete/assignment mutation so tables refetch (matches `roles:changed` usage).
-
-## i18n
-
-All keys live under the existing `settings` namespace (same as Roles). Add to `src/modules/settings/locale/en.json` and `fr.json`:
-
-```text
-nav.userGroups                              // already present, keep
-userGroups.title, userGroups.description
-userGroups.create.{title,desc,nameLabel,namePlaceholder,
-                   descriptionLabel,descriptionPlaceholder,
-                   create,creating,cancel,
-                   createSuccessTitle,createSuccess,
-                   createFailedTitle,createFailed,nameRequired}
-userGroups.edit.{title,desc,save,saving,
-                 updateSuccess,updateFailed}
-userGroups.delete.{confirmTitle,confirmDesc,deleteSuccess,deleteFailed}
-userGroups.table.{name,description,members,status,actions,noGroupsPrompt}
-userGroups.members.{title,desc,available,current,add,remove,save,
-                    saveSuccess,saveFailed}
-userGroups.status.{active,inactive}
-```
-
-FR is a straight translation pass (same keys, French copy).
-
-Also add `workspace.modules.userGroups` in the workspace/i18n namespace already referenced by `workspaces.config.ts:183` for both EN and FR.
-
-## Architecture
-
-```text
-Frontend (React)                     Backend (.NET)                Postgres
-──────────────────                   ─────────────────             ─────────
-SettingsPage.tsx
-  └─ UserGroupManagement.tsx  ─────► UserGroupsController ───────► UserGroups
-       ├─ CreateUserGroupModal        │   ├─ IUserGroupService     UserGroupMembers
-       ├─ EditUserGroupModal          │   └─ EF + TenantInterceptor    │
-       └─ GroupMembersModal           └─ AuthN via [Authorize]          │
-              │                                                        │
-   userGroupsApi.ts ── GET/POST/PUT/DELETE /api/UserGroups ─────────────┘
-```
-
-## Verification
-
-1. `dotnet build` for backend.
-2. Run migration `38_user_groups.sql` in dev DB; confirm tables and indexes.
-3. Frontend typecheck (`tsgo`) — must be clean.
-4. Manual: Settings › Administration › User groups → create, edit, add members, remove members, delete; deep-link via `/dashboard/settings?section=userGroups`.
-5. Language switch to FR: all labels/toasts translated (no raw keys visible).
-6. Permission check: non-admin user without `userGroups.read` sees the section hidden.
-
-## Open items to confirm before coding
-
-- Exact next free number in `Backend/Neon/` (probably `38_`).
-- Whether the tenant scoping is applied via EF global filter/interceptor (assumed yes, same as Roles).
-- Whether the permission catalogue is TS-only or also needs a SQL seed row.
-
-I'll resolve these three during the first implementation pass and adjust the file names/seeder accordingly.
+- Any change to invoice numbering, tax logic, or currency conversion.
+- New backend tables. No schema migration is expected; if one becomes necessary for a missing filter, it will be flagged before writing.

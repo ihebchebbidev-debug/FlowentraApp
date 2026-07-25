@@ -21,7 +21,9 @@ export interface Invoice {
   invoiceNumber?: string;
   status: InvoiceStatus;
   contactId: number;
+  contactName?: string;
   saleId?: number;
+  saleNumber?: string;
   serviceOrderId?: number;
   title?: string;
   notes?: string;
@@ -46,7 +48,7 @@ export interface InvoiceQueryParams {
   contactId?: number;
   saleId?: number;
   serviceOrderId?: number;
-  status?: InvoiceStatus | 'all';
+  status?: InvoiceStatus | 'all' | 'overdue';
   dateFrom?: string;
   dateTo?: string;
   search?: string;
@@ -62,4 +64,28 @@ export interface PagedInvoiceResponse {
   pageSize: number;
   totalItems: number;
   totalPages: number;
+}
+
+export type InvoiceActivityType =
+  | 'created'
+  | 'created_from_sale'
+  | 'updated'
+  | 'posted'
+  | 'voided'
+  | 'deleted'
+  | 'auto_marked_paid'
+  | 'auto_reopened'
+  | 'manual_marked_paid'
+  | 'manual_reopened'
+  | string;
+
+export interface InvoiceActivity {
+  id: number;
+  invoiceId: number;
+  type: InvoiceActivityType;
+  description?: string;
+  oldValue?: string;
+  newValue?: string;
+  createdAt: string;
+  createdBy: string;
 }

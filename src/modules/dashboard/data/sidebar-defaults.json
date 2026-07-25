@@ -203,6 +203,11 @@
           "title": "orders",
           "url": "/dashboard/sales",
           "description": "Sales pipeline"
+        },
+        {
+          "title": "invoices",
+          "url": "/dashboard/invoices",
+          "description": "Customer invoices"
         }
       ],
       "meta": {}

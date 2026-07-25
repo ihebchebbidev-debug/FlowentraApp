@@ -55,6 +55,7 @@ import { NotesTab } from "./tabs/NotesTab";
 import { ChecklistsTab } from "./tabs/ChecklistsTab";
 import { DocumentsTab } from "./tabs/DocumentsTab";
 import { PaymentsTab } from "@/modules/payments/components/PaymentsTab";
+import { SaleInvoicesTab } from "@/modules/invoices/components/tabs/SaleInvoicesTab";
 import { EditableEntityNumber } from "@/components/shared/EditableEntityNumber";
 import { salesApi } from "@/services/api/salesApi";
 import { checkDuplicateDocumentNumber } from "@/services/documentNumberValidator";
@@ -612,6 +613,7 @@ export function SaleDetail() {
                 <TabsTrigger value="overview">{t('tabs.overview')}</TabsTrigger>
                 <TabsTrigger value="items">{t('tabs.items')}</TabsTrigger>
                 <TabsTrigger value="payments">{t('payments:title', 'Payments')}</TabsTrigger>
+                <TabsTrigger value="invoices">{t('tabs.invoices')}</TabsTrigger>
                 <TabsTrigger value="checklists">{t('tabs.checklists')}</TabsTrigger>
                 <TabsTrigger value="documents">{t('tabs.documents')}</TabsTrigger>
                 <TabsTrigger value="notes">{t('tabs.activity', 'Activity')}</TabsTrigger>
@@ -641,6 +643,14 @@ export function SaleDetail() {
                 totalPrice: item.totalPrice ?? 0,
               }))}
               entityData={sale}
+            />
+          </TabsContent>
+
+          <TabsContent value="invoices">
+            <SaleInvoicesTab
+              saleId={Number(sale.id)}
+              saleTotal={calculateEntityTotal(sale).total}
+              currency={sale.currency ?? 'TND'}
             />
           </TabsContent>
 

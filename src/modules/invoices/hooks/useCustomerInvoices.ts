@@ -22,6 +22,15 @@ export function useCustomerInvoice(id: number | null) {
   });
 }
 
+export function useInvoiceActivities(id: number | null) {
+  return useQuery({
+    queryKey: [KEY, 'activities', id],
+    queryFn: () => customerInvoicesApi.getActivities(id as number),
+    enabled: !!id,
+    staleTime: 15_000,
+  });
+}
+
 export function useInvoiceMutations() {
   const qc = useQueryClient();
   const { t } = useTranslation('invoices');
@@ -39,9 +48,19 @@ export function useInvoiceMutations() {
       onError: () => toast.error(t('toast.post_failed')),
     }),
     void: useMutation({
-      mutationFn: (v: { id: number; reason?: string }) => customerInvoicesApi.void(v.id, { reason: v.reason }),
+      mutationFn: (v: { id: number; reason: string }) => customerInvoicesApi.void(v.id, { reason: v.reason }),
       onSuccess: () => { toast.success(t('toast.voided')); inv(); },
-      onError: () => toast.error(t('toast.void_failed')),
+      onError: (e: any) => toast.error(e?.message || t('toast.void_failed')),
+    }),
+    markPaid: useMutation({
+      mutationFn: (v: { id: number; memo: string }) => customerInvoicesApi.markPaid(v.id, { memo: v.memo }),
+      onSuccess: () => { toast.success(t('toast.marked_paid')); inv(); },
+      onError: (e: any) => toast.error(e?.message || t('toast.mark_paid_failed')),
+    }),
+    reopen: useMutation({
+      mutationFn: (v: { id: number; memo: string }) => customerInvoicesApi.reopen(v.id, { memo: v.memo }),
+      onSuccess: () => { toast.success(t('toast.reopened')); inv(); },
+      onError: (e: any) => toast.error(e?.message || t('toast.reopen_failed')),
     }),
     remove: useMutation({
       mutationFn: (id: number) => customerInvoicesApi.remove(id),

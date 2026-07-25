@@ -55,11 +55,11 @@ export function InvoiceDetailDrawer({ invoiceId, open, onOpenChange }: InvoiceDe
   };
 
   const handleVoidConfirm = () => {
-    if (invoice) {
-      voidMutation.mutate({ id: invoice.id, reason: voidReason || undefined }, {
-        onSuccess: () => { setVoidDialogOpen(false); setVoidReason(''); },
-      });
-    }
+    if (!invoice) return;
+    if (!voidReason.trim()) return;
+    voidMutation.mutate({ id: invoice.id, reason: voidReason.trim() }, {
+      onSuccess: () => { setVoidDialogOpen(false); setVoidReason(''); },
+    });
   };
 
   const handleDeleteConfirm = () => {
@@ -199,19 +199,20 @@ export function InvoiceDetailDrawer({ invoiceId, open, onOpenChange }: InvoiceDe
         </SheetContent>
       </Sheet>
 
-      <Dialog open={voidDialogOpen} onOpenChange={setVoidDialogOpen}>
+      <Dialog open={voidDialogOpen} onOpenChange={(o) => { setVoidDialogOpen(o); if (!o) setVoidReason(''); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('confirm.void_title')}</DialogTitle>
             <DialogDescription>{t('confirm.void_body')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
-            <Label>{t('confirm.void_reason')}</Label>
-            <Textarea value={voidReason} onChange={(e) => setVoidReason(e.target.value)} />
+            <Label>{t('confirm.void_reason')} <span className="text-destructive">*</span></Label>
+            <Textarea value={voidReason} onChange={(e) => setVoidReason(e.target.value)} placeholder={t('confirm.reason_placeholder')} />
+            {!voidReason.trim() && <p className="text-xs text-destructive">{t('confirm.reason_required')}</p>}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setVoidDialogOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleVoidConfirm}>{t('actions.void')}</Button>
+            <Button variant="outline" onClick={() => setVoidDialogOpen(false)}>{t('actions.cancel')}</Button>
+            <Button variant="destructive" onClick={handleVoidConfirm} disabled={!voidReason.trim() || voidMutation.isPending}>{t('actions.void')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

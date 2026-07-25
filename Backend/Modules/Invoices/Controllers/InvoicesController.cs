@@ -55,11 +55,23 @@ namespace MyApi.Modules.Invoices.Controllers
         public async Task<IActionResult> Void(int id, [FromBody] VoidInvoiceDto dto)
             => Ok(await _service.VoidAsync(id, dto ?? new VoidInvoiceDto(), UserId()));
 
+        [HttpPost("{id:int}/mark-paid")]
+        public async Task<IActionResult> MarkPaid(int id, [FromBody] MarkPaidInvoiceDto dto)
+            => Ok(await _service.MarkPaidAsync(id, dto ?? new MarkPaidInvoiceDto(), UserId()));
+
+        [HttpPost("{id:int}/reopen")]
+        public async Task<IActionResult> Reopen(int id, [FromBody] ReopenInvoiceDto dto)
+            => Ok(await _service.ReopenAsync(id, dto ?? new ReopenInvoiceDto(), UserId()));
+
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {
             var ok = await _service.DeleteDraftAsync(id, UserId());
             return ok ? NoContent() : NotFound();
         }
+
+        [HttpGet("{id:int}/activities")]
+        public async Task<IActionResult> Activities(int id)
+            => Ok(await _service.GetActivitiesAsync(id));
     }
 }
