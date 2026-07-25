@@ -13,6 +13,10 @@ export interface WorkspaceModule {
   icon: string;
   /** Optional plugin gate. When present and the plugin is disabled, the module is hidden. */
   pluginCode?: string;
+  /** Optional nested children; when present the module renders as a collapsible group. */
+  children?: WorkspaceModule[];
+  /** Optional section header rendered above this module in the panel. */
+  sectionLabel?: string;
 }
 
 /**
@@ -179,13 +183,27 @@ export const WORKSPACES: Workspace[] = [
     landingUrl: "/dashboard/settings/users",
     modules: [
       { key: "users", label: "Users", labelI18nKey: "workspace.modules.users", url: "/dashboard/settings/users", icon: "Users", pluginCode: "PL0043USERS" },
-      { key: "user-groups", label: "User groups", labelI18nKey: "workspace.modules.userGroups", url: "/dashboard/settings/user-groups", icon: "UsersRound" },
       { key: "roles", label: "Roles", labelI18nKey: "workspace.modules.roles", url: "/dashboard/settings/roles", icon: "Shield" },
+      { key: "user-groups", label: "User groups", labelI18nKey: "workspace.modules.userGroups", url: "/dashboard/settings/user-groups", icon: "UsersRound" },
       { key: "dynamic-forms", label: "Dynamic forms", labelI18nKey: "workspace.modules.dynamicForms", url: "/dashboard/settings/dynamic-forms", icon: "FormInput", pluginCode: "PL0032DYNAMICFORMS" },
       { key: "background-services", label: "Background services", labelI18nKey: "workspace.modules.backgroundServices", url: "/dashboard/settings/sync", icon: "Activity" },
       { key: "documentation", label: "Documentation", labelI18nKey: "workspace.modules.documentation", url: "/dashboard/settings/documentation", icon: "BookOpen" },
       { key: "system-logs", label: "System logs", labelI18nKey: "workspace.modules.systemLogs", url: "/dashboard/settings/logs", icon: "ScrollText" },
-      { key: "settings", label: "Settings", labelI18nKey: "workspace.modules.settings", url: "/dashboard/settings", icon: "Settings" },
+      { key: "system-config", label: "System configuration", labelI18nKey: "workspace.modules.systemConfig", url: "/dashboard/settings?section=system", icon: "Monitor" },
+      {
+        key: "settings",
+        label: "Settings",
+        labelI18nKey: "workspace.modules.settings",
+        url: "/dashboard/settings",
+        icon: "Settings",
+        children: [
+          { key: "settings-profile", label: "Profile", labelI18nKey: "workspace.modules.profile", url: "/dashboard/settings?section=profile", icon: "User", sectionLabel: "Personal" },
+          { key: "settings-security", label: "Security", labelI18nKey: "workspace.modules.security", url: "/dashboard/settings?section=security", icon: "Lock" },
+          { key: "settings-company", label: "Company", labelI18nKey: "workspace.modules.company", url: "/dashboard/settings?section=company", icon: "Building2", sectionLabel: "General" },
+          { key: "settings-subscription", label: "Tenants subscriptions", labelI18nKey: "workspace.modules.tenantsSubscriptions", url: "/dashboard/settings?section=subscription", icon: "CreditCard" },
+          { key: "settings-offline", label: "Offline sync", labelI18nKey: "workspace.modules.offlineSync", url: "/dashboard/settings?section=offline", icon: "WifiOff" },
+        ],
+      },
     ],
   },
 ];

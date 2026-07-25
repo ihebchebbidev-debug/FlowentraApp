@@ -74,7 +74,8 @@ export function MobileWorkspaceNav() {
   const [open, setOpen] = useState(false);
   const { t } = useTranslation();
   const [activeSubmenuId, setActiveSubmenuId] = useState<string | null>(null);
-  const NO_SECONDARY = useMemo(() => new Set(["explore", "settings", "lookups"]), []);
+  const [activeModuleKey, setActiveModuleKey] = useState<string | null>(null);
+  const NO_SECONDARY = useMemo(() => new Set(["explore", "lookups"]), []);
   const { unreadCount } = useNotifications();
   const aiAssistantAvailable = useAiAssistantAvailable();
   const [aiSidebarOpen, setAiSidebarOpen] = useState(false);
@@ -123,9 +124,17 @@ export function MobileWorkspaceNav() {
     [activeSubmenuId]
   );
 
+  const activeModule = useMemo(() => {
+    if (!activeSubmenuWs || !activeModuleKey) return null;
+    return activeSubmenuWs.modules.find((m) => m.key === activeModuleKey) ?? null;
+  }, [activeSubmenuWs, activeModuleKey]);
+
   // Reset submenu view whenever the drawer closes.
   useEffect(() => {
-    if (!open) setActiveSubmenuId(null);
+    if (!open) {
+      setActiveSubmenuId(null);
+      setActiveModuleKey(null);
+    }
   }, [open]);
 
 
@@ -151,7 +160,23 @@ export function MobileWorkspaceNav() {
 
             {/* Header */}
             <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-              {activeSubmenuWs ? (
+              {activeModule ? (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 -ml-1"
+                    aria-label="Back"
+                    onClick={() => setActiveModuleKey(null)}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Icon name={activeModule.icon} className="h-4 w-4 text-primary" />
+                  <h2 className="truncate text-base font-semibold">
+                    {activeModule.labelI18nKey ? t(activeModule.labelI18nKey, { defaultValue: activeModule.label }) : activeModule.label}
+                  </h2>
+                </>
+              ) : activeSubmenuWs ? (
                 <>
                   <Button
                     variant="ghost"
@@ -172,7 +197,42 @@ export function MobileWorkspaceNav() {
 
             {/* Body */}
             <div className="flex-1 overflow-y-auto p-2">
-              {activeSubmenuWs ? (
+              {activeModule && activeModule.children ? (
+                <div className="flex flex-col gap-1">
+                  {activeModule.children.map((child, idx) => {
+                    const prev = idx > 0 ? activeModule.children![idx - 1] : null;
+                    const showSection = child.sectionLabel && child.sectionLabel !== prev?.sectionLabel;
+                    const active = location.pathname + location.search === child.url
+                      || location.pathname.startsWith(child.url.split("?")[0]) && (child.url.includes("?") ? location.search.includes(child.url.split("?")[1]) : true);
+                    return (
+                      <div key={child.key}>
+                        {showSection && (
+                          <div className="mt-2 mb-1 px-2 text-px-10 font-semibold uppercase tracking-wider text-muted-foreground">
+                            {child.sectionLabel}
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOpen(false);
+                            setActiveSubmenuId(null);
+                            setActiveModuleKey(null);
+                            navigate(child.url);
+                          }}
+                          className={cn(
+                            "flex w-full items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent",
+                            active && "border-primary/40 bg-primary/5"
+                          )}
+                        >
+                          <Icon name={child.icon} className="h-5 w-5 text-primary" />
+                          <span className="flex-1 font-medium">{child.labelI18nKey ? t(child.labelI18nKey, { defaultValue: child.label }) : child.label}</span>
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : activeSubmenuWs ? (
                 <div className="flex flex-col gap-1">
                   <button
                     type="button"
@@ -188,19 +248,24 @@ export function MobileWorkspaceNav() {
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </button>
                   {activeSubmenuWs.modules.map((m) => {
-                    const active = location.pathname.startsWith(m.url);
+                    const hasChildren = !!(m.children && m.children.length > 0);
+                    const active = location.pathname.startsWith(m.url.split("?")[0]);
                     return (
                       <button
                         key={m.key}
                         type="button"
                         onClick={() => {
+                          if (hasChildren) {
+                            setActiveModuleKey(m.key);
+                            return;
+                          }
                           setOpen(false);
                           setActiveSubmenuId(null);
                           navigate(m.url);
                         }}
                         className={cn(
                           "flex items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent",
-                          active && "border-primary/40 bg-primary/5"
+                          active && !hasChildren && "border-primary/40 bg-primary/5"
                         )}
                       >
                         <Icon name={m.icon} className="h-5 w-5 text-primary" />
@@ -235,6 +300,7 @@ export function MobileWorkspaceNav() {
                 </div>
               )}
             </div>
+
 
 
             {/* Footer — user + theme */}

@@ -27,7 +27,7 @@ import { SubscriptionSettings } from "@/modules/settings/components/Subscription
 import { TenantManagement } from "@/modules/settings/components/TenantManagement";
 import { UserPreferencesTab } from "@/modules/settings/components/UserPreferencesTab";
 import { OfflineHydrationSettings } from "@/modules/settings/components/OfflineHydrationSettings";
-import { AdminPageHeader } from "@/modules/settings/components/AdminPageHeader";
+
 import { CollapsibleSearch } from "@/components/ui/collapsible-search";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -395,61 +395,38 @@ export default function SettingsPage({ standaloneSection }: SettingsPageProps = 
   }
 
   function renderContent() {
-    // Show an "Administration" banner for pages reached from the Administration workspace
-    const adminHeaderMap: Record<string, { icon: any; titleKey: string; descKey: string; descFallback: string }> = {
-      users: { icon: Users, titleKey: 'nav.users', descKey: 'users.description', descFallback: 'Manage users, their access and role assignments.' },
-      roles: { icon: Shield, titleKey: 'nav.roles', descKey: 'roles.description', descFallback: 'Define roles and the permissions granted to each.' },
-      userGroups: { icon: Users, titleKey: 'nav.userGroups', descKey: 'userGroups.description', descFallback: 'Organize users into groups for permissions and notifications.' },
-    };
-    const adminMeta = adminHeaderMap[activeSection];
-    const header = adminMeta ? (
-      <AdminPageHeader
-        icon={adminMeta.icon}
-        title={t(adminMeta.titleKey)}
-        description={t(adminMeta.descKey, { defaultValue: adminMeta.descFallback })}
-      />
-    ) : null;
-
-    const body = (() => {
-      switch (activeSection) {
-        case 'profile':
-          return <ProfileSection />;
-        case 'company':
-          return <CompanySection />;
-        case 'security':
-          return <SecuritySection />;
-        case 'preferences':
-          return <CompanySection />;
-        case 'offline':
-          return <OfflineHydrationSettings />;
-        case 'companies':
-          return isMainAdmin ? <TenantManagement /> : null;
-        case 'integrations':
-          return <IntegrationsTabContent />;
-        case 'subscription':
-          return isMainAdmin ? <SubscriptionSettings /> : null;
-        case 'users':
-          return canViewUsers ? renderUsersContent() : null;
-        case 'roles':
-          return canViewRoles ? renderRolesContent() : null;
-        case 'system':
-          return canViewSystem ? renderSystemContent() : null;
-        case 'syncHistory':
-          return canViewSystem ? renderSyncHistoryShortcut() : null;
-        case 'userGroups':
-          return <UserGroupManagement />;
-        default:
-          return <ProfileSection />;
-      }
-    })();
-
-    return (
-      <>
-        {header}
-        {body}
-      </>
-    );
+    switch (activeSection) {
+      case 'profile':
+        return <ProfileSection />;
+      case 'company':
+        return <CompanySection />;
+      case 'security':
+        return <SecuritySection />;
+      case 'preferences':
+        return <CompanySection />;
+      case 'offline':
+        return <OfflineHydrationSettings />;
+      case 'companies':
+        return isMainAdmin ? <TenantManagement /> : null;
+      case 'integrations':
+        return <IntegrationsTabContent />;
+      case 'subscription':
+        return isMainAdmin ? <SubscriptionSettings /> : null;
+      case 'users':
+        return canViewUsers ? renderUsersContent() : null;
+      case 'roles':
+        return canViewRoles ? renderRolesContent() : null;
+      case 'system':
+        return canViewSystem ? renderSystemContent() : null;
+      case 'syncHistory':
+        return canViewSystem ? renderSyncHistoryShortcut() : null;
+      case 'userGroups':
+        return <UserGroupManagement />;
+      default:
+        return <ProfileSection />;
+    }
   }
+
 
   // User Groups now rendered via UserGroupManagement component.
 

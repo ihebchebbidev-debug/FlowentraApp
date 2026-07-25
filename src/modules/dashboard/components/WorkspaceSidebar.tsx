@@ -47,23 +47,40 @@ function ModuleItem({
   label,
   active = false,
   linkRef,
-}: SidebarModuleItemProps & { linkRef?: React.Ref<HTMLAnchorElement> }) {
+  depth = 0,
+}: SidebarModuleItemProps & { linkRef?: React.Ref<HTMLAnchorElement>; depth?: number }) {
   return (
     <NavLink
       ref={linkRef}
       to={url}
       className={cn(
-        "flex items-center gap-3 rounded-md px-3 py-2 text-base transition-colors",
+        "flex items-center gap-3 rounded-md py-2 text-base transition-colors",
+        depth > 0 ? "pl-9 pr-3 text-sm" : "px-3",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         active
           ? "bg-accent text-accent-foreground font-medium"
           : "text-foreground/80 hover:bg-accent/50 hover:text-foreground"
       )}
     >
-      <Icon name={icon} className="h-5 w-5 shrink-0" />
+      <Icon name={icon} className={cn("shrink-0", depth > 0 ? "h-4 w-4" : "h-5 w-5")} />
       <span className="truncate">{label}</span>
     </NavLink>
   );
+}
+
+/** Match active state including optional ?section= query params. */
+function moduleMatchesLocation(url: string, pathname: string, search: string): boolean {
+  const [urlPath, urlQuery] = url.split("?");
+  if (urlQuery) {
+    if (pathname !== urlPath && !pathname.startsWith(urlPath + "/")) return false;
+    const currentParams = new URLSearchParams(search);
+    const targetParams = new URLSearchParams(urlQuery);
+    for (const [k, v] of targetParams.entries()) {
+      if (currentParams.get(k) !== v) return false;
+    }
+    return true;
+  }
+  return workspaceModuleMatchesPath(url, pathname);
 }
 
 /** Filter modules by plugin activation (empty pluginCode = always visible). */
@@ -140,7 +157,7 @@ export function WorkspaceSidebar() {
 
   // Which workspace's module sidebar is shown. Seed from the current route so
   // route navigation/remounts keep the module sidebar visible after selection.
-  const NO_SECONDARY = new Set(["settings", "lookups"]);
+  const NO_SECONDARY = new Set(["lookups"]);
   const WORKSPACE_STORAGE_KEY = "sidebar.openWorkspaceId";
 
   // Prefer a persisted workspace choice on deep-link/refresh when the current
@@ -247,6 +264,22 @@ export function WorkspaceSidebar() {
     () => (activeWs ? visibleModules(activeWs.modules, isEnabled) : []),
     [activeWs, isEnabled]
   );
+
+  // Third panel: which parent-with-children module is currently expanded.
+  const [openSubId, setOpenSubId] = useState<string | null>(null);
+  // Auto-open the sub-panel when the current route matches one of a parent's children.
+  useEffect(() => {
+    if (!activeWs) { setOpenSubId(null); return; }
+    const match = activeModules.find(
+      (m) => m.children?.some((c) => moduleMatchesLocation(c.url, location.pathname, location.search))
+    );
+    if (match) setOpenSubId(match.key);
+  }, [activeWs, activeModules, location.pathname, location.search]);
+  const activeSubModule = useMemo(
+    () => (openSubId ? activeModules.find((m) => m.key === openSubId) ?? null : null),
+    [openSubId, activeModules]
+  );
+
 
   const openWorkspace = (ws: Workspace, viaKeyboard: boolean) => {
     openedViaKeyboard.current = viaKeyboard;
@@ -477,20 +510,40 @@ export function WorkspaceSidebar() {
 
           <div className="flex h-20 shrink-0 items-center justify-between border-b border-border px-3">
             <div className="flex min-w-0 items-center gap-2">
-              <Icon name={activeWs.icon} className="h-5 w-5 shrink-0 text-primary" />
-              <h2 className="truncate text-base font-semibold">{activeWs.label}</h2>
+              {activeSubModule ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setOpenSubId(null)}
+                    className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-label="Back"
+                    title="Back"
+                  >
+                    <Icons.ChevronLeft aria-hidden="true" className="h-5 w-5" />
+                  </button>
+                  <Icon name={activeSubModule.icon} className="h-5 w-5 shrink-0 text-primary" />
+                  <h2 className="truncate text-base font-semibold">{tModuleLabel(activeSubModule)}</h2>
+                </>
+              ) : (
+                <>
+                  <Icon name={activeWs.icon} className="h-5 w-5 shrink-0 text-primary" />
+                  <h2 className="truncate text-base font-semibold">{activeWs.label}</h2>
+                </>
+              )}
             </div>
             <div className="flex items-center gap-1">
-              <button
-                ref={closeBtnRef}
-                type="button"
-                onClick={(e) => closePanel({ restoreFocus: e.detail === 0 })}
-                className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                aria-label={`Back to workspaces`}
-                title="Back to workspaces"
-              >
-                <Icons.ChevronLeft aria-hidden="true" className="h-5 w-5" />
-              </button>
+              {!activeSubModule && (
+                <button
+                  ref={closeBtnRef}
+                  type="button"
+                  onClick={(e) => closePanel({ restoreFocus: e.detail === 0 })}
+                  className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label={`Back to workspaces`}
+                  title="Back to workspaces"
+                >
+                  <Icons.ChevronLeft aria-hidden="true" className="h-5 w-5" />
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setSidebarOpen(false)}
@@ -504,18 +557,71 @@ export function WorkspaceSidebar() {
           </div>
 
           <div className="flex-1 overflow-y-auto p-2">
-            {activeModules.length > 0 ? (
-              <div className="flex flex-col gap-0.5">
-                {activeModules.map((m, idx) => (
-                  <ModuleItem
-                    key={m.key}
-                    url={m.url}
-                    icon={m.icon}
-                    label={tModuleLabel(m)}
-                    active={isPathActive(m.url, activeModules)}
-                    linkRef={idx === 0 ? firstModuleRef : undefined}
-                  />
+            {activeSubModule ? (
+              <div className="flex flex-col gap-0.5 animate-in fade-in slide-in-from-right-2 duration-150">
+                {activeSubModule.children!.map((c) => (
+                  <div key={c.key} className="flex flex-col">
+                    {c.sectionLabel && (
+                      <p className="mt-2 mb-1 px-3 text-px-10 font-semibold uppercase tracking-wider text-muted-foreground">
+                        {c.sectionLabel}
+                      </p>
+                    )}
+                    <ModuleItem
+                      url={c.url}
+                      icon={c.icon}
+                      label={tModuleLabel(c)}
+                      active={moduleMatchesLocation(c.url, location.pathname, location.search)}
+                    />
+                  </div>
                 ))}
+              </div>
+            ) : activeModules.length > 0 ? (
+              <div className="flex flex-col gap-0.5">
+                {activeModules.map((m, idx) => {
+                  const hasChildren = !!m.children?.length;
+                  const childActive = hasChildren
+                    ? m.children!.some((c) => moduleMatchesLocation(c.url, location.pathname, location.search))
+                    : false;
+                  const selfActive = !hasChildren && isPathActive(m.url, activeModules);
+                  return (
+                    <div key={m.key} className="flex flex-col">
+                      {m.sectionLabel && (
+                        <p className="mt-2 mb-1 px-3 text-px-10 font-semibold uppercase tracking-wider text-muted-foreground">
+                          {m.sectionLabel}
+                        </p>
+                      )}
+                      {hasChildren ? (
+                        <button
+                          type="button"
+                          onClick={() => setOpenSubId(m.key)}
+                          className={cn(
+                            "flex items-center gap-3 rounded-md px-3 py-2 text-base transition-colors text-left",
+                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                            childActive
+                              ? "bg-accent text-accent-foreground font-medium"
+                              : "text-foreground/80 hover:bg-accent/50 hover:text-foreground"
+                          )}
+                        >
+                          <Icon name={m.icon} className="h-5 w-5 shrink-0" />
+                          <span className="flex-1 truncate">{tModuleLabel(m)}</span>
+                          <Icons.ChevronRight
+                            aria-hidden="true"
+                            className="h-4 w-4 text-muted-foreground"
+                          />
+                        </button>
+                      ) : (
+                        <ModuleItem
+                          url={m.url}
+                          icon={m.icon}
+                          label={tModuleLabel(m)}
+                          active={selfActive}
+                          linkRef={idx === 0 ? firstModuleRef : undefined}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center gap-2 px-3 py-10 text-center">
@@ -533,6 +639,7 @@ export function WorkspaceSidebar() {
               </div>
             )}
           </div>
+
 
           {/* User pinned at bottom */}
           <div data-tour="sidebar-user" className="mt-auto shrink-0 border-t border-border px-3 py-3">
@@ -581,8 +688,10 @@ export function WorkspaceSidebar() {
           </div>
         </nav>
       </aside>
+
     );
   }
+
 
   return (
     <>
@@ -660,13 +769,15 @@ export function WorkspaceSidebar() {
                 >
                   <Icon name={ws.icon} className="h-5 w-5 shrink-0" />
                   <span className="flex-1 truncate text-left">{tWorkspaceLabel(ws)}</span>
-                  <Icons.ChevronRight
-                    aria-hidden="true"
-                    className={cn(
-                      "h-4 w-4 text-muted-foreground transition-transform",
-                      isOpen && "rotate-90"
-                    )}
-                  />
+                  {!NO_SECONDARY.has(ws.id) && ws.modules.length > 0 && (
+                    <Icons.ChevronRight
+                      aria-hidden="true"
+                      className={cn(
+                        "h-4 w-4 text-muted-foreground transition-transform",
+                        isOpen && "rotate-90"
+                      )}
+                    />
+                  )}
                 </button>
               );
             })}
