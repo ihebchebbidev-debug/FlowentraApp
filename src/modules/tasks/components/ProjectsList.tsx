@@ -104,7 +104,7 @@ export function ProjectsList({
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-foreground text-xs sm:text-sm truncate">{project.name}</h3>
+                      <h3 className="list-row-title truncate">{project.name}</h3>
                       <Badge className={`${getStatusColor(project.status)} text-xs`}>
                         {t(`projects.list.status.${project.status}`, { defaultValue: project.status })}
                       </Badge>
@@ -114,11 +114,11 @@ export function ProjectsList({
                     </Badge>
                   </div>
                   {project.description && (
-                    <div className="text-xs sm:text-sm text-muted-foreground mb-2 line-clamp-2">
+                    <div className="list-row-subtitle mb-2 line-clamp-2">
                       {project.description}
                     </div>
                   )}
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-px-10 text-muted-foreground">
                     {project.startDate && (
                       <div className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />

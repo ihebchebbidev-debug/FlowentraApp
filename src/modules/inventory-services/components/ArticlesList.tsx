@@ -393,18 +393,18 @@ export function ArticlesList() {
                             <div className="flex-1 min-w-0">
                               <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
                                 <div className="flex items-center gap-2">
-                                  <h3 className="font-semibold text-foreground text-sm sm:text-base break-words line-clamp-2">{article.name}</h3>
+                                  <h3 className="list-row-title break-words line-clamp-2">{article.name}</h3>
                                 </div>
                                 <Badge className={`${getStatusColor(article.status)} text-xs`}>
                                   <StatusIcon className="h-3 w-3 mr-1" />
                                   {article.status.replace("_", " ")}
                                 </Badge>
                               </div>
-                              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-muted-foreground mb-2">
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-px-10 text-muted-foreground mb-2">
                                 <span className="truncate">SKU: {article.sku} • {article.category}</span>
-                                <span className="text-xs">Stock: {article.stock} units</span>
+                                <span className="text-px-10">Stock: {article.stock} units</span>
                               </div>
-                              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-px-10 text-muted-foreground">
                                 <div className="flex items-center gap-1">
                                   <Warehouse className="h-3 w-3 flex-shrink-0" />
                                   <span className="truncate">{article.location}</span>
@@ -472,22 +472,22 @@ export function ArticlesList() {
                       </div>
                       
                       <div className="mb-3 sm:mb-4">
-                        <h3 className="font-semibold text-foreground text-sm sm:text-base mb-1 break-words line-clamp-2">{article.name}</h3>
-                        <p className="text-xs sm:text-sm text-muted-foreground mb-2 break-words line-clamp-1">SKU: {article.sku} • {article.category}</p>
+                        <h3 className="list-row-title mb-1 break-words line-clamp-2">{article.name}</h3>
+                        <p className="list-row-subtitle mb-2 break-words line-clamp-1">SKU: {article.sku} • {article.category}</p>
                         <Badge className={`${getStatusColor(article.status)} text-xs`}>
                           <StatusIcon className="h-3 w-3 mr-1" />
                           {article.status.replace("_", " ")}
                         </Badge>
                       </div>
                       
-                      <div className="space-y-2 text-xs sm:text-sm text-muted-foreground">
+                      <div className="space-y-2 text-px-10 text-muted-foreground">
                         <div className="flex justify-between">
                           <span>Stock:</span>
                           <span className="font-medium">{article.stock} units</span>
                         </div>
                         <div className="flex justify-between">
                           <span>Price:</span>
-                          <span className="font-medium">{article.sellPrice} TND</span>
+                          <span className="list-row-amount">{article.sellPrice} TND</span>
                         </div>
                         <div className="flex justify-between">
                           <span>Location:</span>

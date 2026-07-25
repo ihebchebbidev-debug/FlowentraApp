@@ -856,7 +856,7 @@ useEffect(() => {
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-start justify-between gap-2 mb-1">
                                     <div className="min-w-0 flex-1">
-                                      <h3 className="font-semibold text-foreground text-sm sm:text-base truncate">{dispatch.dispatchNumber}</h3>
+                                      <h3 className="list-row-title truncate">{dispatch.dispatchNumber}</h3>
                                       <div className="flex items-center gap-2 flex-wrap mt-1">
                                         <Badge variant={getPriorityColor(dispatch.priority)}>
                                           {t(`dispatcher.priority_${dispatch.priority}`)}
@@ -877,7 +877,7 @@ useEffect(() => {
                                       {t(`dispatcher.statuses.${dispatch.status}`, dispatch.status.replace('_', ' '))}
                                     </Badge>
                                   </div>
-                                  <div className="text-sm text-muted-foreground mb-2 flex flex-wrap gap-1">
+                                  <div className="list-row-subtitle mb-2 flex flex-wrap gap-1">
                                     <span>Technicians:</span>
                                     {dispatch.assignedTechnicianIds.length > 0 ? (
                                       dispatch.assignedTechnicianIds.map((techId, idx) => (
@@ -894,7 +894,7 @@ useEffect(() => {
                                       <span>{dispatch.assignedTechnicians.join(', ')}</span>
                                     )}
                                   </div>
-                                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
+                                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-px-10 text-muted-foreground">
                                     <div className="flex items-center gap-1">
                                       <Clock className="h-3 w-3" />
                                       <span>

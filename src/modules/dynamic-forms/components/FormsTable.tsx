@@ -262,11 +262,11 @@ export function FormsTable({ forms, isLoading }: FormsTableProps) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
-                    <p className="font-semibold text-foreground text-sm leading-snug line-clamp-2 flex-1">{name}</p>
+                    <p className="list-row-title leading-snug line-clamp-2 flex-1">{name}</p>
                     {getStatusBadge(form)}
                   </div>
                   {description && (
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{description}</p>
+                    <p className="list-row-subtitle mt-1 line-clamp-2">{description}</p>
                   )}
                 </div>
               </div>

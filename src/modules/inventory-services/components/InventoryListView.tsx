@@ -42,7 +42,7 @@ export function InventoryListView({ items, onClick }: { items: any[]; onClick: (
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
-                    <p className="flex-1 font-semibold text-foreground text-px-13 leading-snug tracking-tight line-clamp-2 break-words">{item.name}</p>
+                    <p className="list-row-title flex-1 line-clamp-2 break-words">{item.name}</p>
                     <div className="flex items-center gap-1 shrink-0">
                       <Badge variant="outline" className="text-px-10 px-2 py-0.5 capitalize">
                         {item.type}
@@ -90,7 +90,7 @@ export function InventoryListView({ items, onClick }: { items: any[]; onClick: (
 
               {/* Footer: price + actions */}
               <div className="flex items-center justify-between pl-[52px]" onClick={e => e.stopPropagation()}>
-                <span className="inline-flex items-center gap-1 text-px-11 sm:text-px-13 font-semibold text-foreground tabular-nums">
+                <span className="list-row-amount inline-flex items-center gap-1">
                   <DollarSign className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                   {Number(price).toFixed(2)} TND
                 </span>

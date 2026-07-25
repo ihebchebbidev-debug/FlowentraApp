@@ -23,10 +23,10 @@ export function StockCard({ material, onReplenish, onViewHistory }: StockCardPro
       <div className="flex flex-col items-center text-center gap-3">
         {/* Name and Category */}
         <div className="w-full">
-          <h3 className="font-semibold text-foreground text-sm line-clamp-2 break-words" title={material.name}>
+          <h3 className="list-row-title line-clamp-2 break-words" title={material.name}>
             {material.name}
           </h3>
-          <p className="text-xs text-muted-foreground line-clamp-1" title={material.category}>
+          <p className="list-row-subtitle line-clamp-1" title={material.category}>
             {material.category}
           </p>
         </div>

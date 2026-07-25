@@ -50,7 +50,7 @@ const RoleRow = memo(function RoleRow({
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <p className="font-medium text-foreground text-sm sm:text-base capitalize">{role.name}</p>
+            <p className="list-row-title capitalize">{role.name}</p>
             {!role.isActive && (
               <span className="px-2 py-1 text-xs bg-destructive/10 text-destructive rounded-full">
                 {t("roles.status.inactive")}
@@ -58,9 +58,9 @@ const RoleRow = memo(function RoleRow({
             )}
           </div>
           {role.description && (
-            <p className="text-sm text-muted-foreground mb-1">{role.description}</p>
+            <p className="list-row-subtitle mb-1">{role.description}</p>
           )}
-          <p className="text-sm text-muted-foreground">
+          <p className="text-px-10 text-muted-foreground">
             {t("roles.assignedUsers", { count: role.userCount })}
           </p>
         </div>

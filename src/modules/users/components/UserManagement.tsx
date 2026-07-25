@@ -211,9 +211,9 @@ export function UserManagement() {
                     <span className="text-primary font-medium text-sm">{user.firstName.charAt(0)}</span>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium text-foreground text-sm sm:text-base">{user.firstName} {user.lastName}</p>
-                    <p className="text-sm text-muted-foreground truncate">{user.email}</p>
-                    <p className="text-xs text-muted-foreground truncate">
+                    <p className="list-row-title">{user.firstName} {user.lastName}</p>
+                    <p className="list-row-subtitle truncate">{user.email}</p>
+                    <p className="text-px-10 text-muted-foreground truncate">
                       {t('users.table.created')}: {new Date(user.createdDate).toLocaleDateString()}
                     </p>
                   </div>

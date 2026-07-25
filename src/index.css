@@ -640,10 +640,10 @@ p.text-muted-foreground.text-\[11px\] {
     box-shadow: inset 0 0 0 1px hsl(var(--primary));
   }
   .list-row-title {
-    @apply font-semibold text-foreground text-px-15 leading-tight tracking-tight line-clamp-1;
+    @apply font-semibold text-foreground text-base leading-tight tracking-tight line-clamp-1;
   }
   .list-row-subtitle {
-    @apply text-[12.5px] text-muted-foreground mt-1 line-clamp-1;
+    @apply text-px-10 text-muted-foreground mt-1 line-clamp-1;
   }
   .list-row-meta {
     @apply flex flex-wrap items-center gap-x-4 gap-y-1 mt-2.5;
@@ -652,7 +652,7 @@ p.text-muted-foreground.text-\[11px\] {
     @apply inline-flex items-center gap-1.5 text-px-12 text-muted-foreground/90;
   }
   .list-row-amount {
-    @apply text-px-15 font-semibold text-foreground tabular-nums;
+    @apply text-base font-semibold text-foreground tabular-nums;
   }
   .list-row-status {
     @apply text-[10.5px] font-medium tracking-wide uppercase px-2 py-0.5 rounded-md;

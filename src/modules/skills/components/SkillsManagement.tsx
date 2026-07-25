@@ -207,13 +207,13 @@ export function SkillsManagement() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <p className="font-medium text-foreground text-sm sm:text-base">{skill.name}</p>
+                        <p className="list-row-title">{skill.name}</p>
                         {!skill.isActive && (
                           <Badge variant="secondary" className="text-xs">{t('common.inactive')}</Badge>
                         )}
                       </div>
                       {skill.description && (
-                        <p className="text-sm text-muted-foreground mb-2">{skill.description}</p>
+                        <p className="list-row-subtitle mb-2">{skill.description}</p>
                       )}
                       <div className="flex flex-wrap gap-2">
                         <Badge

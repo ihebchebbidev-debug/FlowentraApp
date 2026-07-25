@@ -41,7 +41,7 @@ export function ArticlesListView({
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
-                        <p className="font-semibold text-foreground text-sm leading-snug line-clamp-2 flex-1">
+                        <p className="list-row-title leading-snug line-clamp-2 flex-1">
                           {article.name}
                         </p>
                         <Badge className={`${getStatusColor(article.status)} text-px-10 px-2 py-0.5 shrink-0 font-medium flex items-center gap-1`}>
@@ -49,7 +49,7 @@ export function ArticlesListView({
                           {article.status.replace('_', ' ')}
                         </Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">
+                      <p className="list-row-subtitle mt-0.5">
                         {article.sku} {article.category ? `• ${article.category}` : ''}
                       </p>
                     </div>
@@ -57,11 +57,11 @@ export function ArticlesListView({
 
                   {/* Details row */}
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 pl-12 mb-3">
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1.5 text-px-10 text-muted-foreground">
                       <Warehouse className="h-3 w-3 text-muted-foreground/70 shrink-0" />
                       <span>{article.location || t('fields.no_location', 'No location')}</span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-xs font-medium text-foreground">
+                    <div className="flex items-center gap-1.5 text-px-10 font-medium text-foreground">
                       <span className="text-muted-foreground font-normal">{t('fields.stock')}:</span>
                       <span>{article.stock ?? 0} {t('fields.units')}</span>
                     </div>
@@ -69,7 +69,7 @@ export function ArticlesListView({
 
                   {/* Footer: price + actions */}
                   <div className="flex items-center justify-between pl-12" onClick={e => e.stopPropagation()}>
-                    <span className="text-sm font-semibold text-primary">{article.sellPrice} TND</span>
+                    <span className="list-row-amount text-primary">{article.sellPrice} TND</span>
                     <div>
                       <TableRowActions actions={[
                         { icon: Eye, label: t('actions.view_details'), onClick: (e) => { e.stopPropagation(); onView(article); } },

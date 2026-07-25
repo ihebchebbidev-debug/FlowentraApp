@@ -49,15 +49,15 @@ export function ArticlesGridView({
                 </div>
                 
                 <div className="mb-3 sm:mb-4">
-                  <h3 className="font-semibold text-foreground text-sm sm:text-base mb-1 truncate">{article.name}</h3>
-                  <p className="text-xs sm:text-sm text-muted-foreground mb-2 truncate">{t("fields.sku")}: {article.sku} - {article.category}</p>
+                  <h3 className="list-row-title mb-1 truncate">{article.name}</h3>
+                  <p className="list-row-subtitle mb-2 truncate">{t("fields.sku")}: {article.sku} - {article.category}</p>
                   <Badge className={`${getStatusColor(article.status)} text-xs`}>
                     <StatusIcon className="h-3 w-3 mr-1" />
                     {article.status.replace("_", " ")}
                   </Badge>
                 </div>
                 
-                <div className="space-y-2 text-xs sm:text-sm text-muted-foreground">
+                <div className="space-y-2 text-px-10 text-muted-foreground">
                   <div className="flex justify-between">
                     <span>{t("fields.stock")}:</span>
                     <span className="font-medium">{article.stock} {t("fields.units")}</span>

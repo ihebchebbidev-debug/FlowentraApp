@@ -248,16 +248,16 @@ export default function InventoryList() {
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
                             <div className="flex items-center gap-2">
-                              <h3 className="text-foreground text-sm sm:text-base break-words line-clamp-2">{item.name}</h3>
+                              <h3 className="list-row-title break-words line-clamp-2">{item.name}</h3>
                               {item.favorite && <Star className="h-3 w-3 sm:h-4 sm:w-4 text-warning fill-warning flex-shrink-0" />}
                             </div>
                             <Badge className={`${getStatusColor(item.status)} text-xs`}>{item.status}</Badge>
                           </div>
-                          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-muted-foreground mb-2">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-px-10 text-muted-foreground mb-2">
                             <span className="truncate">{item.category} • Qty: {item.quantity}</span>
-                            <span className="text-xs">#{item.serialNumber}</span>
+                            <span className="text-px-10">#{item.serialNumber}</span>
                           </div>
-                          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-px-10 text-muted-foreground">
                             <div className="flex items-center gap-1">
                               <MapPin className="h-3 w-3 flex-shrink-0" />
                               <span className="truncate">{item.location}</span>

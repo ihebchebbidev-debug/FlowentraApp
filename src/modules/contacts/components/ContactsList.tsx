@@ -531,20 +531,20 @@ export function ContactsList() {
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
                           <div className="flex items-center gap-2">
-                            <h3 className="text-foreground text-xs sm:text-sm break-words line-clamp-2">{contact.name}</h3>
+                            <h3 className="list-row-title break-words line-clamp-2">{contact.name}</h3>
                             {contact.favorite && <Star className="h-3 w-3 sm:h-4 sm:w-4 text-warning fill-warning flex-shrink-0" />}
                           </div>
                           <Badge className={`${getStatusColor(contact.status)} text-xs`}>{contact.status}</Badge>
                         </div>
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-muted-foreground mb-2">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-px-10 text-muted-foreground mb-2">
                           <span className="break-words line-clamp-1">{contact.position} at {contact.company}</span>
                           {contact.type === 'company' && contact.tags?.length && (
-                            <span className="text-xs">
+                            <span className="text-px-10">
                               {contact.tags.length} tags
                             </span>
                           )}
                         </div>
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-px-10 text-muted-foreground">
                           <div className="flex items-center gap-1">
                             <Mail className="h-3 w-3 flex-shrink-0" />
                             <span className="truncate">{contact.email}</span>
