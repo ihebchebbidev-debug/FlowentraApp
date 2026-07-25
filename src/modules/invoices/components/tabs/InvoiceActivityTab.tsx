@@ -70,20 +70,21 @@ export function InvoiceActivityTab({ invoiceId }: Props) {
   }
 
   return (
-    <div className="space-y-3">
-      {list.map((a: InvoiceActivity) => {
-        const cfg = TYPE_ICON[a.type] ?? { icon: Activity, className: 'text-muted-foreground bg-muted' };
-        const Icon = cfg.icon;
-        // Prefer a localized label; fall back to the raw type key if a translation is missing.
-        const label = t(`activity.types.${a.type}`, { defaultValue: a.type });
-        return (
-          <Card key={a.id} className="shadow-card border-0">
-            <CardContent className="pt-4 pb-4">
-              <div className="flex items-start gap-3">
-                <div className={`h-9 w-9 rounded-full flex items-center justify-center shrink-0 ${cfg.className}`}>
-                  <Icon className="h-4 w-4" />
-                </div>
-                <div className="flex-1 min-w-0">
+    <div className="relative pl-4">
+      {/* vertical timeline rail */}
+      <div className="absolute left-[27px] top-2 bottom-2 w-px bg-border" aria-hidden />
+      <div className="space-y-3">
+        {list.map((a: InvoiceActivity) => {
+          const cfg = TYPE_ICON[a.type] ?? { icon: Activity, className: 'text-muted-foreground bg-muted' };
+          const Icon = cfg.icon;
+          const label = t(`activity.types.${a.type}`, { defaultValue: a.type });
+          return (
+            <div key={a.id} className="relative flex items-start gap-3">
+              <div className={`relative z-10 h-10 w-10 rounded-full flex items-center justify-center shrink-0 ring-4 ring-background ${cfg.className}`}>
+                <Icon className="h-4 w-4" />
+              </div>
+              <Card className="flex-1 shadow-card border-0 hover:shadow-md transition-shadow">
+                <CardContent className="py-3 px-4">
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="secondary" className="font-medium">{label}</Badge>
                     <span className="text-xs text-muted-foreground">
@@ -94,21 +95,21 @@ export function InvoiceActivityTab({ invoiceId }: Props) {
                     </span>
                   </div>
                   {a.description && (
-                    <p className="text-sm mt-1 text-foreground whitespace-pre-wrap">{a.description}</p>
+                    <p className="text-sm mt-1.5 text-foreground whitespace-pre-wrap">{a.description}</p>
                   )}
                   {(a.oldValue || a.newValue) && a.type !== 'created' && a.type !== 'created_from_sale' && (
-                    <div className="text-xs text-muted-foreground mt-1">
+                    <div className="text-xs text-muted-foreground mt-1.5">
                       {a.oldValue && <span>{t('activity.from')} <code className="px-1 rounded bg-muted">{a.oldValue}</code></span>}
                       {a.oldValue && a.newValue && ' → '}
                       {a.newValue && <span>{t('activity.to')} <code className="px-1 rounded bg-muted">{a.newValue}</code></span>}
                     </div>
                   )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })}
+                </CardContent>
+              </Card>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -62,14 +62,15 @@ export const WORKSPACES: Workspace[] = [
     landingUrl: "/dashboard/reporting/sales",
     modules: [
       { key: "sales-dash", label: "Orders dashboard", labelI18nKey: "workspace.modules.ordersDashboard", url: "/dashboard/reporting/sales", icon: "BarChart3" },
+      { key: "offers", label: "Offers", url: "/dashboard/offers", icon: "FileText", pluginCode: "PL0005OFFERS" },
       { key: "sales", label: "Orders", labelI18nKey: "workspace.modules.orders", url: "/dashboard/sales", icon: "TrendingUp", pluginCode: "PL0002SALES" },
       { key: "invoices", label: "Invoices", labelI18nKey: "workspace.modules.invoices", url: "/dashboard/invoices", icon: "Receipt", pluginCode: "PL0004INVOICES" },
-      { key: "offers", label: "Offers", url: "/dashboard/offers", icon: "FileText", pluginCode: "PL0005OFFERS" },
       { key: "deals", label: "Deals", url: "/dashboard/deals", icon: "Handshake", pluginCode: "PL0003DEALS" },
       { key: "contacts", label: "Customers", url: "/dashboard/contacts?type=customer", icon: "Users", pluginCode: "PL0001CONTACTS" },
       { key: "articles", label: "Articles", url: "/dashboard/inventory-services", icon: "Package", pluginCode: "PL0007ARTICLES" },
       { key: "installations", label: "Installations", url: "/dashboard/field/installations/list", icon: "Wrench", pluginCode: "PL0018INSTALLATIONS" },
       { key: "sales-documents", label: "Documents", url: "/dashboard/documents?workspace=sales", icon: "Folder", pluginCode: "PL0012DOCUMENTS" },
+      { key: "sales-traceability", label: "Traceability", url: "/dashboard/traceability?workspace=sales", icon: "Activity" },
     ],
   },
   {
@@ -84,6 +85,7 @@ export const WORKSPACES: Workspace[] = [
       { key: "articles", label: "Articles", url: "/dashboard/inventory-services", icon: "Package", pluginCode: "PL0007ARTICLES" },
       { key: "payments", label: "Payments", url: "/dashboard/payments", icon: "CreditCard", pluginCode: "PL0026PAYMENTS" },
       { key: "purchases-documents", label: "Documents", url: "/dashboard/documents?workspace=purchases", icon: "Folder", pluginCode: "PL0012DOCUMENTS" },
+      { key: "purchases-traceability", label: "Traceability", url: "/dashboard/traceability?workspace=purchases", icon: "Activity" },
     ],
   },
   {
@@ -100,6 +102,7 @@ export const WORKSPACES: Workspace[] = [
       { key: "articles", label: "Articles", url: "/dashboard/inventory-services", icon: "Package", pluginCode: "PL0007ARTICLES" },
       { key: "contacts", label: "Contacts", url: "/dashboard/contacts", icon: "Users", pluginCode: "PL0001CONTACTS" },
       { key: "service-documents", label: "Documents", url: "/dashboard/documents?workspace=service", icon: "Folder", pluginCode: "PL0012DOCUMENTS" },
+      { key: "service-traceability", label: "Traceability", url: "/dashboard/traceability?workspace=service", icon: "Activity" },
     ],
   },
   {
@@ -112,6 +115,7 @@ export const WORKSPACES: Workspace[] = [
       { key: "contacts", label: "Contacts", url: "/dashboard/contacts", icon: "Users", pluginCode: "PL0001CONTACTS" },
       { key: "calendar", label: "Calendar", url: "/dashboard/calendar", icon: "Calendar", pluginCode: "PL0010CALENDAR" },
       { key: "documents", label: "Documents", url: "/dashboard/documents?workspace=projects", icon: "Folder", pluginCode: "PL0012DOCUMENTS" },
+      { key: "projects-traceability", label: "Traceability", url: "/dashboard/traceability?workspace=projects", icon: "Activity" },
     ],
   },
   {
@@ -128,6 +132,7 @@ export const WORKSPACES: Workspace[] = [
       { key: "performance", label: "Performance", url: "/dashboard/hr/performance", icon: "Target", pluginCode: "PL0013HR" },
       { key: "skills", label: "Skills", url: "/dashboard/hr/employees?tab=skills", icon: "Award", pluginCode: "PL0014SKILLS" },
       { key: "hr-documents", label: "Documents", url: "/dashboard/documents?workspace=hr", icon: "Folder", pluginCode: "PL0012DOCUMENTS" },
+      { key: "hr-traceability", label: "Traceability", url: "/dashboard/traceability?workspace=hr", icon: "Activity" },
     ],
   },
   {
@@ -154,6 +159,7 @@ export const WORKSPACES: Workspace[] = [
       { key: "workflow", label: "Workflow", url: "/dashboard/workflow", icon: "GitBranch", pluginCode: "PL0031WORKFLOW" },
       { key: "external", label: "External APIs", url: "/dashboard/external", icon: "Webhook", pluginCode: "PL0030EXTERNAL" },
       { key: "sync", label: "Sync", url: "/dashboard/settings/sync", icon: "RefreshCw" },
+      { key: "integrations-traceability", label: "Traceability", url: "/dashboard/traceability?workspace=integrations", icon: "Activity" },
     ],
   },
   {
@@ -163,6 +169,7 @@ export const WORKSPACES: Workspace[] = [
     landingUrl: "/dashboard/lookups",
     modules: [
       { key: "lookups", label: "Lookups", url: "/dashboard/lookups", icon: "Database", pluginCode: "PL0037LOOKUPS" },
+      { key: "lookups-traceability", label: "Traceability", url: "/dashboard/traceability?workspace=lookups", icon: "Activity" },
     ],
   },
   {
@@ -175,6 +182,7 @@ export const WORKSPACES: Workspace[] = [
       { key: "support-tickets", label: "My tickets", url: "/support/tickets", icon: "Ticket" },
       { key: "support-new-ticket", label: "Report an issue", url: "/support/tickets/new", icon: "AlertCircle" },
       { key: "support-faq", label: "FAQ", url: "/support/faq", icon: "BookOpen" },
+      { key: "support-traceability", label: "Traceability", url: "/dashboard/traceability?workspace=support", icon: "Activity" },
     ],
   },
   {
@@ -192,6 +200,7 @@ export const WORKSPACES: Workspace[] = [
       { key: "documentation", label: "Documentation", labelI18nKey: "workspace.modules.documentation", url: "/dashboard/settings/documentation", icon: "BookOpen" },
       { key: "system-logs", label: "System logs", labelI18nKey: "workspace.modules.systemLogs", url: "/dashboard/settings/logs", icon: "ScrollText" },
       { key: "system-config", label: "System configuration", labelI18nKey: "workspace.modules.systemConfig", url: "/dashboard/settings/system-config", icon: "Monitor" },
+      { key: "admin-traceability", label: "Traceability", url: "/dashboard/traceability?workspace=administration", icon: "Activity" },
       {
         key: "settings",
         label: "Settings",

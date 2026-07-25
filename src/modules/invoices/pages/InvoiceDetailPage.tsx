@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, ExternalLink, Receipt, Send, Trash2, Ban, CheckCircle2, RefreshCw } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Receipt, Send, Trash2, Ban, CheckCircle2, RefreshCw, User, Printer } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCustomerInvoice, useInvoiceMutations } from '../hooks/useCustomerInvoices';
 import { useCurrency } from '@/shared/hooks/useCurrency';
@@ -31,7 +31,7 @@ export function InvoiceDetailPage() {
   const invoiceId = id ? parseInt(id, 10) : null;
   const { t } = useTranslation('invoices');
   const navigate = useNavigate();
-  const { format } = useCurrency();
+  const { format, current: currencyInfo } = useCurrency();
   const { data: invoice, isLoading } = useCustomerInvoice(invoiceId);
   const { post, void: voidMutation, remove, markPaid, reopen } = useInvoiceMutations();
 
@@ -72,6 +72,15 @@ export function InvoiceDetailPage() {
           </div>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-2"
+            onClick={() => window.open(`/dashboard/invoices/${invoice.id}/report`, '_blank', 'noopener,noreferrer')}
+          >
+            <Printer className="h-4 w-4" />
+            <span className="hidden sm:inline">{t('actions.print', 'Print / View PDF')}</span>
+          </Button>
           <InvoiceDownloadPdfButton invoice={invoice} />
           {invoice.status === 'draft' && (
             <Button size="sm" className="gap-2 bg-primary text-white hover:bg-primary/90 shadow-medium" onClick={() => post.mutate(invoice.id)}>
@@ -116,7 +125,16 @@ export function InvoiceDetailPage() {
               </div>
               <div>
                 <div className="text-muted-foreground">{t('detail.contact')}</div>
-                <div>{invoice.contactName || `#${invoice.contactId}`}</div>
+                {invoice.contactId ? (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/dashboard/contacts/${invoice.contactId}`)}
+                    className="inline-flex items-center gap-1 text-primary hover:underline font-medium"
+                  >
+                    <User className="h-3.5 w-3.5" />
+                    {invoice.contactName || `#${invoice.contactId}`}
+                  </button>
+                ) : '—'}
               </div>
               <div>
                 <div className="text-muted-foreground">{t('detail.sale')}</div>
@@ -130,7 +148,7 @@ export function InvoiceDetailPage() {
               </div>
               <div>
                 <div className="text-muted-foreground">{t('detail.currency')}</div>
-                <div>{invoice.currency}</div>
+                <div>{currencyInfo.code}</div>
               </div>
             </div>
 
@@ -175,13 +193,26 @@ export function InvoiceDetailPage() {
         </Card>
 
         <Card className="shadow-card border-0">
-          <CardContent className="pt-6 space-y-2 text-sm">
-            <div className="flex justify-between"><span className="text-muted-foreground">{t('detail.subtotal')}</span><span>{format(invoice.subtotal)} {invoice.currency}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">{t('detail.tax')}</span><span>{format(invoice.taxAmount)} {invoice.currency}</span></div>
+          <CardContent className="pt-6 space-y-2.5 text-sm">
+            <div className="flex justify-between"><span className="text-muted-foreground">{t('detail.subtotal')}</span><span className="font-medium">{format(invoice.subtotal)}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">{t('detail.tax')}</span><span className="font-medium">{format(invoice.taxAmount)}</span></div>
             <Separator />
-            <div className="flex justify-between font-semibold text-base"><span>{t('detail.grand_total')}</span><span>{format(invoice.grandTotal)} {invoice.currency}</span></div>
-            <div className="flex justify-between text-green-700 dark:text-green-400"><span>{t('detail.amount_paid')}</span><span>{format(invoice.amountPaid)} {invoice.currency}</span></div>
-            <div className="flex justify-between text-amber-700 dark:text-amber-400"><span>{t('detail.amount_due')}</span><span>{format(invoice.amountDue)} {invoice.currency}</span></div>
+            <div className="flex justify-between font-semibold text-base"><span>{t('detail.grand_total')}</span><span>{format(invoice.grandTotal)}</span></div>
+            <div className="flex justify-between text-green-700 dark:text-green-400"><span>{t('detail.amount_paid')}</span><span className="font-medium">{format(invoice.amountPaid)}</span></div>
+            <div className="flex justify-between text-amber-700 dark:text-amber-400"><span>{t('detail.amount_due')}</span><span className="font-medium">{format(invoice.amountDue)}</span></div>
+            {invoice.grandTotal > 0 && (
+              <div className="pt-2">
+                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full bg-green-500 transition-all"
+                    style={{ width: `${Math.min(100, Math.round((invoice.amountPaid / invoice.grandTotal) * 100))}%` }}
+                  />
+                </div>
+                <div className="mt-1 text-xs text-muted-foreground text-right">
+                  {Math.min(100, Math.round((invoice.amountPaid / invoice.grandTotal) * 100))}%
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -189,9 +220,15 @@ export function InvoiceDetailPage() {
       <Card className="shadow-card border-0">
         <CardContent className="pt-6">
           <Tabs defaultValue="payments" className="w-full">
-            <TabsList>
-              <TabsTrigger value="payments">{t('detail.payments')}</TabsTrigger>
-              <TabsTrigger value="activity">{t('detail.activity')}</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 sm:w-auto sm:inline-flex">
+              <TabsTrigger value="payments" className="gap-2">
+                <CheckCircle2 className="h-4 w-4" />
+                {t('detail.payments')}
+              </TabsTrigger>
+              <TabsTrigger value="activity" className="gap-2">
+                <RefreshCw className="h-4 w-4" />
+                {t('detail.activity')}
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="payments" className="mt-4 space-y-4">
               {(invoice.status === 'posted' || invoice.status === 'paid' || invoice.status === 'void') && (
@@ -221,7 +258,7 @@ export function InvoiceDetailPage() {
                 entityId={String(invoice.id)}
                 entityNumber={invoice.invoiceNumber}
                 totalAmount={invoice.grandTotal}
-                currency={invoice.currency}
+                currency={currencyInfo.code}
               />
             </TabsContent>
             <TabsContent value="activity" className="mt-4">

@@ -5,15 +5,29 @@ import { enUS, fr as frLocale, arSA } from 'date-fns/locale';
 import {
   Activity,
   AlertTriangle,
+  Boxes,
+  Calendar as CalendarIcon,
   CheckCircle2,
+  ClipboardList,
+  CreditCard,
   FileText,
+  Folder,
   Info,
+  LifeBuoy,
+  ListTree,
+  LogIn,
   Package,
+  Plug,
   Receipt,
+  Settings as SettingsIcon,
+  Shield,
   ShoppingCart,
   Tag,
   Target,
   User,
+  Users as UsersIcon,
+  Workflow as WorkflowIcon,
+  Wrench,
   XCircle,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -30,7 +44,6 @@ const SOURCE_ICON: Record<ActivitySource, typeof Activity> = {
   service: FileText,
   hr: User,
   contacts: User,
-  system: Activity,
 };
 
 const LEVEL_STYLES: Record<

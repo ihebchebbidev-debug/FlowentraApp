@@ -1,16 +1,28 @@
 {
   "title": "Traceability",
-  "subtitle": "Unified activity log across every workspace",
-  "search": "Search actions, entities, users…",
-  "level": {
-    "label": "Level",
-    "all": "All levels",
-    "info": "Info",
-    "success": "Success",
-    "warning": "Warning",
-    "error": "Error"
+  "subtitle": "Business events across every workspace — who did what and when",
+  "subtitleWorkspace": "Business events in the {{workspace}} workspace",
+  "workspaces": {
+    "sales": "Sales",
+    "purchases": "Purchases",
+    "service": "Service",
+    "projects": "Projects",
+    "hr": "HR",
+    "contacts": "Contacts",
+    "integrations": "Integrations",
+    "lookups": "Lookups",
+    "support": "Service desk",
+    "administration": "Administration"
   },
+  "search": "Search actions, entities, users…",
   "counts": "{{shown}} of {{total}} events",
+  "stats": {
+    "total": "Total events",
+    "created": "Created",
+    "updated": "Updated",
+    "status": "Status changes",
+    "other": "Other"
+  },
   "empty": "No activity yet.",
   "loadError": "Failed to load activity",
   "refresh": "Refresh",
@@ -32,8 +44,7 @@
     "purchases": "Purchases",
     "service": "Service",
     "hr": "HR",
-    "contacts": "Contacts",
-    "system": "System"
+    "contacts": "Contacts"
   },
   "source": {
     "sales": "Orders",
@@ -43,8 +54,7 @@
     "purchases": "Purchases",
     "service": "Service",
     "hr": "HR",
-    "contacts": "Contacts",
-    "system": "System"
+    "contacts": "Contacts"
   },
   "action": {
     "created": "Created",
@@ -66,14 +76,6 @@
     "time_entry_added": "Time entry added",
     "expense_added": "Expense added",
     "material_added": "Material added",
-    "login": "Login",
-    "logout": "Logout",
-    "create": "Created",
-    "update": "Updated",
-    "delete": "Deleted",
-    "read": "Read",
-    "export": "Exported",
-    "import": "Imported",
     "other": "Other"
   },
   "csv": {
@@ -84,5 +86,5 @@
     "user": "User",
     "message": "Message"
   },
-  "noAccess": "You don't have access to any workspace activity. Ask an administrator to grant read access."
+  "noAccess": "You don't have access to any activity in this workspace. Ask an administrator to grant read access."
 }

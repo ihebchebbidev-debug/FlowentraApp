@@ -1,16 +1,28 @@
 {
   "title": "Traçabilité",
-  "subtitle": "Journal d'activité unifié pour tous les espaces de travail",
-  "search": "Rechercher des actions, entités, utilisateurs…",
-  "level": {
-    "label": "Niveau",
-    "all": "Tous les niveaux",
-    "info": "Info",
-    "success": "Succès",
-    "warning": "Avertissement",
-    "error": "Erreur"
+  "subtitle": "Événements métier sur tous les espaces de travail — qui a fait quoi et quand",
+  "subtitleWorkspace": "Événements métier dans l'espace {{workspace}}",
+  "workspaces": {
+    "sales": "Ventes",
+    "purchases": "Achats",
+    "service": "Service",
+    "projects": "Projets",
+    "hr": "RH",
+    "contacts": "Contacts",
+    "integrations": "Intégrations",
+    "lookups": "Listes",
+    "support": "Support",
+    "administration": "Administration"
   },
+  "search": "Rechercher des actions, entités, utilisateurs…",
   "counts": "{{shown}} sur {{total}} événements",
+  "stats": {
+    "total": "Total des événements",
+    "created": "Créés",
+    "updated": "Modifiés",
+    "status": "Changements de statut",
+    "other": "Autres"
+  },
   "empty": "Aucune activité pour le moment.",
   "loadError": "Impossible de charger l'activité",
   "refresh": "Actualiser",
@@ -32,8 +44,7 @@
     "purchases": "Achats",
     "service": "Service",
     "hr": "RH",
-    "contacts": "Contacts",
-    "system": "Système"
+    "contacts": "Contacts"
   },
   "source": {
     "sales": "Commandes",
@@ -43,21 +54,20 @@
     "purchases": "Achats",
     "service": "Service",
     "hr": "RH",
-    "contacts": "Contacts",
-    "system": "Système"
+    "contacts": "Contacts"
   },
   "action": {
     "created": "Créé",
-    "created_from_sale": "Créé depuis une commande",
-    "updated": "Mis à jour",
-    "posted": "Émis",
+    "created_from_sale": "Créé depuis commande",
+    "updated": "Modifié",
+    "posted": "Publié",
     "sent": "Envoyé",
     "status_changed": "Statut modifié",
     "paid": "Payé",
     "auto_marked_paid": "Marqué payé (auto)",
     "manual_marked_paid": "Marqué payé",
-    "auto_reopened": "Réouvert (auto)",
-    "manual_reopened": "Réouvert",
+    "auto_reopened": "Rouvert (auto)",
+    "manual_reopened": "Rouvert",
     "voided": "Annulé",
     "void": "Annulé",
     "deleted": "Supprimé",
@@ -66,14 +76,6 @@
     "time_entry_added": "Temps ajouté",
     "expense_added": "Dépense ajoutée",
     "material_added": "Matériel ajouté",
-    "login": "Connexion",
-    "logout": "Déconnexion",
-    "create": "Créé",
-    "update": "Mis à jour",
-    "delete": "Supprimé",
-    "read": "Consulté",
-    "export": "Exporté",
-    "import": "Importé",
     "other": "Autre"
   },
   "csv": {
@@ -84,5 +86,5 @@
     "user": "Utilisateur",
     "message": "Message"
   },
-  "noAccess": "Vous n'avez accès à l'activité d'aucun espace de travail. Demandez à un administrateur de vous accorder l'accès en lecture."
+  "noAccess": "Vous n'avez accès à aucune activité de cet espace. Demandez à un administrateur l'accès en lecture."
 }

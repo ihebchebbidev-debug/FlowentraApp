@@ -6,10 +6,12 @@ export type ActivitySource =
   | 'purchases'
   | 'service'
   | 'hr'
-  | 'contacts'
-  | 'system';
+  | 'contacts';
 
 export type ActivityLevel = 'info' | 'success' | 'warning' | 'error';
+
+/** Coarse buckets used for stats/filters — business-event oriented. */
+export type ActivityBucket = 'created' | 'updated' | 'status' | 'other';
 
 export interface ActivityActor {
   id?: string;
@@ -27,6 +29,7 @@ export interface ActivityEvent {
   action: string;
   actionLabel: string;
   level: ActivityLevel;
+  bucket: ActivityBucket;
   actor: ActivityActor;
   performedAt: string;
   message: string;
@@ -38,8 +41,29 @@ export interface ActivityEvent {
 export interface ActivityFilters {
   search?: string;
   source?: ActivitySource | 'all';
-  level?: ActivityLevel | 'all';
+  bucket?: ActivityBucket | 'all';
   actor?: string;
   fromDate?: string;
   toDate?: string;
 }
+
+/** Workspace → domain sources it should surface. */
+export const WORKSPACE_SOURCES: Record<string, ActivitySource[]> = {
+  sales: ['sales', 'offers', 'deals', 'invoices', 'contacts'],
+  purchases: ['purchases'],
+  service: ['service'],
+  hr: ['hr'],
+  contacts: ['contacts'],
+  projects: ['service', 'sales'],
+};
+
+export const ALL_SOURCES: ActivitySource[] = [
+  'sales',
+  'offers',
+  'deals',
+  'invoices',
+  'purchases',
+  'service',
+  'hr',
+  'contacts',
+];
