@@ -459,6 +459,12 @@ builder.Services.AddHostedService<WorkflowPollingService>();
 // Payment Reminder Background Service (checks every hour for upcoming installments)
 builder.Services.AddHostedService<MyApi.Modules.Payments.Services.PaymentReminderService>();
 
+// Processes module — schedule storage, per-key handlers, and the ticking scheduler.
+builder.Services.AddSingleton<MyApi.Modules.Processes.Services.IProcessHandler, MyApi.Modules.Processes.Services.Handlers.PurgeSystemLogsHandler>();
+builder.Services.AddSingleton<MyApi.Modules.Processes.Services.IProcessHandler, MyApi.Modules.Processes.Services.Handlers.RetryUnsentEmailsHandler>();
+builder.Services.AddSingleton<MyApi.Modules.Processes.Services.ProcessHandlerRegistry>();
+builder.Services.AddHostedService<MyApi.Modules.Processes.Services.ProcessSchedulerService>();
+
 // SignalR for real-time workflow notifications
 builder.Services.AddSignalR();
 

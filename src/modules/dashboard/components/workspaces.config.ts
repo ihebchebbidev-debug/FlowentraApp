@@ -198,8 +198,7 @@ export const WORKSPACES: Workspace[] = [
       { key: "documentation", label: "Documentation", labelI18nKey: "workspace.modules.documentation", url: "/dashboard/settings/documentation", icon: "BookOpen" },
       { key: "system-logs", label: "System logs", labelI18nKey: "workspace.modules.systemLogs", url: "/dashboard/settings/logs", icon: "ScrollText" },
       { key: "system-config", label: "System configuration", labelI18nKey: "workspace.modules.systemConfig", url: "/dashboard/settings/system-config", icon: "Monitor" },
-      { key: "tickets-admin-queue", label: "Tickets queue", url: "/dashboard/ticketsadmin", icon: "Inbox" },
-      { key: "tickets-admin-dashboard", label: "Tickets dashboard", url: "/dashboard/ticketsadmin/dashboard", icon: "LayoutDashboard" },
+      { key: "processes", label: "Processes", url: "/dashboard/settings/processes", icon: "Zap" },
       { key: "admin-traceability", label: "Traceability", url: "/dashboard/traceability?workspace=administration", icon: "Activity" },
       {
         key: "settings",
@@ -207,13 +206,6 @@ export const WORKSPACES: Workspace[] = [
         labelI18nKey: "workspace.modules.settings",
         url: "/dashboard/settings",
         icon: "Settings",
-        children: [
-          { key: "settings-profile", label: "Profile", labelI18nKey: "workspace.modules.profile", url: "/dashboard/settings?section=profile", icon: "User", sectionLabel: "Personal" },
-          { key: "settings-security", label: "Security", labelI18nKey: "workspace.modules.security", url: "/dashboard/settings?section=security", icon: "Lock" },
-          { key: "settings-company", label: "Company", labelI18nKey: "workspace.modules.company", url: "/dashboard/settings?section=company", icon: "Building2", sectionLabel: "General" },
-          { key: "settings-subscription", label: "Tenants subscriptions", labelI18nKey: "workspace.modules.tenantsSubscriptions", url: "/dashboard/settings?section=subscription", icon: "CreditCard" },
-          { key: "settings-offline", label: "Offline sync", labelI18nKey: "workspace.modules.offlineSync", url: "/dashboard/settings?section=offline", icon: "WifiOff" },
-        ],
       },
     ],
   },

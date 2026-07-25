@@ -226,6 +226,10 @@ namespace MyApi.Data
         // System Logs Module
         public DbSet<SystemLog> SystemLogs { get; set; }
 
+        // Processes Module (admin scheduled jobs)
+        public DbSet<MyApi.Modules.Processes.Models.ProcessSchedule> ProcessSchedules { get; set; }
+        public DbSet<MyApi.Modules.Processes.Models.ProcessRun> ProcessRuns { get; set; }
+
         // PDF Settings Module (Global settings)
         public DbSet<PdfSettings> PdfSettings { get; set; }
 
