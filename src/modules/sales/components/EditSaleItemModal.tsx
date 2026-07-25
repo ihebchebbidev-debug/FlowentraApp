@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SaleItem } from "../types";
-import PlannedEntriesEditor from "@/shared/components/planning/PlannedEntriesEditor";
+
 import { ChecklistsSection } from "@/modules/shared/components/documents";
 
 interface EditSaleItemModalProps {
@@ -129,11 +129,6 @@ export function EditSaleItemModal({ item, isOpen, onClose, onSave }: EditSaleIte
             </CardContent>
           </Card>
 
-          {/* Planning panel — every line type can carry a planned budget. */}
-          <PlannedEntriesEditor
-            parentType="sale_item"
-            parentId={Number(editedItem.id)}
-          />
 
           {/* Checklists on a service line follow sale → service-order job → dispatch. */}
           {editedItem.type === 'service' && Number(editedItem.id) > 0 && (

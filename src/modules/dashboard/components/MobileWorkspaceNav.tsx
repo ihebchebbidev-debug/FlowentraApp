@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import * as Icons from "lucide-react";
 import { Menu, ChevronRight, ChevronLeft, Sun, Moon, Monitor, LogOut, Settings as SettingsIcon, User as UserIcon, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -71,6 +72,7 @@ export function MobileWorkspaceNav() {
   const { user, logout } = useAuth();
   const companyLogo = useCompanyLogo();
   const [open, setOpen] = useState(false);
+  const { t } = useTranslation();
   const [activeSubmenuId, setActiveSubmenuId] = useState<string | null>(null);
   const NO_SECONDARY = useMemo(() => new Set(["explore", "settings", "lookups"]), []);
   const { unreadCount } = useNotifications();
@@ -202,7 +204,7 @@ export function MobileWorkspaceNav() {
                         )}
                       >
                         <Icon name={m.icon} className="h-5 w-5 text-primary" />
-                        <span className="flex-1 font-medium">{m.label}</span>
+                        <span className="flex-1 font-medium">{m.labelI18nKey ? t(m.labelI18nKey, { defaultValue: m.label }) : m.label}</span>
                         <ChevronRight className="h-4 w-4 text-muted-foreground" />
                       </button>
                     );
@@ -225,7 +227,7 @@ export function MobileWorkspaceNav() {
                         aria-haspopup={hasSubmenu ? "menu" : undefined}
                       >
                         <Icon name={ws.icon} className="h-5 w-5 text-primary" />
-                        <span className="flex-1 font-medium">{ws.label}</span>
+                        <span className="flex-1 font-medium">{ws.labelI18nKey ? t(ws.labelI18nKey, { defaultValue: ws.label }) : ws.label}</span>
                         <ChevronRight className="h-4 w-4 text-muted-foreground" />
                       </button>
                     );

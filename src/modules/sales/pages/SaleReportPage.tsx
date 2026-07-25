@@ -79,7 +79,7 @@ export default function SaleReportPage() {
     saleOrder: t('pdf.saleOrder', 'SALE'), saleNumber: t('pdf.saleNumber', 'Sale N°'),
     date: t('pdf.date', 'Date'), client: t('pdf.client', 'CLIENT'),
     customerInformation: t('pdf.customerInformation', 'Customer Information'),
-    saleDetails: t('pdf.saleDetails', 'Sale Details'), name: t('pdf.name', 'Name'),
+    saleDetails: t('pdf.saleDetails', 'Order Details'), name: t('pdf.name', 'Name'),
     position: t('pdf.position', 'Position'), email: t('pdf.email', 'Email'),
     phone: t('pdf.phone', 'Phone'), address: t('pdf.address', 'Address'),
     status: t('pdf.status', 'Status'), created: t('pdf.created', 'Created'),

@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Package, Wrench, DollarSign, Percent } from "lucide-react";
 import { OfferItem } from "../types";
-import PlannedEntriesEditor from "@/shared/components/planning/PlannedEntriesEditor";
+
 import { ChecklistsSection } from "@/modules/shared/components/documents";
 
 interface EditOfferItemModalProps {
@@ -258,17 +258,6 @@ export function EditOfferItemModal({ open, onOpenChange, item, onUpdateItem, cur
             </div>
           )}
 
-          {/*
-            Planning panel — shown for every line type. Service lines mainly
-            use planned time, article/material lines use planned expenses
-            (subcontractor / materials buckets). Hiding it for non-services
-            meant article lines could never have a planned expense budget.
-          */}
-          <PlannedEntriesEditor
-            parentType="offer_item"
-            parentId={Number(item.id)}
-            currency={currency}
-          />
 
           {/* Checklists on a service line follow offer → sale → service-order job. */}
           {item.type === 'service' && Number(item.id) > 0 && (

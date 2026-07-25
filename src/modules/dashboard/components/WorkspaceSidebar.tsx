@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import * as Icons from "lucide-react";
 import { PackageOpen, Settings as SettingsIcon, LogOut, Sun, Moon, Monitor, PanelLeftOpen, PanelLeftClose } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -125,6 +126,12 @@ export function WorkspaceSidebar() {
   const companyLogo = useCompanyLogo();
   const { user, logout } = useAuth();
   const { open: sidebarOpen, setOpen: setSidebarOpen } = useSidebar();
+  const { t } = useTranslation();
+  const tModuleLabel = (m: WorkspaceModule) =>
+    m.labelI18nKey ? t(m.labelI18nKey, { defaultValue: m.label }) : m.label;
+  const tWorkspaceLabel = (ws: Workspace) =>
+    ws.labelI18nKey ? t(ws.labelI18nKey, { defaultValue: ws.label }) : ws.label;
+
 
   const detected = useMemo(
     () => findWorkspaceForPath(location.pathname),
@@ -379,8 +386,8 @@ export function WorkspaceSidebar() {
                     handleWorkspaceClick(ws, false);
                   }}
                   aria-current={isCurrent ? "page" : undefined}
-                  title={ws.label}
-                  aria-label={ws.label}
+                  title={tWorkspaceLabel(ws)}
+                  aria-label={tWorkspaceLabel(ws)}
                   className={cn(
                     "flex h-10 w-10 items-center justify-center rounded-md transition-colors",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
@@ -504,7 +511,7 @@ export function WorkspaceSidebar() {
                     key={m.key}
                     url={m.url}
                     icon={m.icon}
-                    label={m.label}
+                    label={tModuleLabel(m)}
                     active={isPathActive(m.url, activeModules)}
                     linkRef={idx === 0 ? firstModuleRef : undefined}
                   />
@@ -652,7 +659,7 @@ export function WorkspaceSidebar() {
                   )}
                 >
                   <Icon name={ws.icon} className="h-5 w-5 shrink-0" />
-                  <span className="flex-1 truncate text-left">{ws.label}</span>
+                  <span className="flex-1 truncate text-left">{tWorkspaceLabel(ws)}</span>
                   <Icons.ChevronRight
                     aria-hidden="true"
                     className={cn(

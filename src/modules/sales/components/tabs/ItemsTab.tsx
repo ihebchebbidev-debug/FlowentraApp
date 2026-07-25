@@ -1,5 +1,5 @@
 import { Fragment, useState } from "react";
-import { PlannedInlineList } from "@/shared/components/planning/PlannedInlineList";
+
 import { calculateEntityTotal } from "@/lib/calculateTotal";
 import { ContentSkeleton } from "@/components/ui/page-skeleton";
 import { useTranslation } from "react-i18next";
@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Package, Wrench, Eye, ExternalLink, Plus, Loader2, Search, ChevronLeft, ChevronRight, Trash2, Clock, EyeOff } from "lucide-react";
+import { Package, Wrench, Eye, ExternalLink, Plus, Loader2, Search, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import { Sale, SaleItem } from "../../types";
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { SalesService } from "../../services/sales.service";
@@ -52,7 +52,7 @@ export function ItemsTab({ sale, onItemsUpdated }: ItemsTabProps) {
   const { t } = useTranslation('sales');
   const { format: formatCurrency } = useCurrency();
   const [selectedItem, setSelectedItem] = useState<SaleItem | null>(null);
-  const [showPlanning, setShowPlanning] = useState(false);
+  
   
   // Add Items Modal state
   const [showAddItemsModal, setShowAddItemsModal] = useState(false);
@@ -305,14 +305,6 @@ export function ItemsTab({ sale, onItemsUpdated }: ItemsTabProps) {
               {t('itemsTab.saleItems')} ({sale.items.length})
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant={showPlanning ? "secondary" : "outline"}
-                onClick={() => setShowPlanning((v) => !v)}
-              >
-                {showPlanning ? <EyeOff className="h-4 w-4 mr-2" /> : <Clock className="h-4 w-4 mr-2" />}
-                {showPlanning ? t('itemsTab.hidePlanning', 'Hide Time & Expenses') : t('itemsTab.showPlanning', 'Plan Time & Expenses')}
-              </Button>
               <Button size="sm" onClick={handleOpenAddItems}>
                 <Plus className="h-4 w-4 mr-2" />
                 {t('addItems')}
@@ -352,7 +344,7 @@ export function ItemsTab({ sale, onItemsUpdated }: ItemsTabProps) {
                 <TableBody>
                   {sale.items.map((item, index) => {
                     const parentIdNum = Number(item.id);
-                    const canPlan = Number.isFinite(parentIdNum) && parentIdNum > 0;
+                    
                     return (
                     <Fragment key={item.id || index}>
                     <TableRow className="hover:bg-muted/50 transition-colors">
@@ -415,39 +407,6 @@ export function ItemsTab({ sale, onItemsUpdated }: ItemsTabProps) {
                         </div>
                       </TableCell>
                     </TableRow>
-                    {canPlan && showPlanning && item.type === 'service' && (
-                      <TableRow className="bg-muted/10 hover:bg-muted/10">
-                        <TableCell colSpan={7} className="py-2">
-                          <div className="grid gap-2 md:grid-cols-2">
-                            <PlannedInlineList
-                              parentType="sale_item"
-                              parentIds={[parentIdNum]}
-                              kind="time"
-                              hideWhenEmpty={false}
-                              onChanged={async ({ action, entry }) => {
-                                const saleId = parseInt(sale.id, 10);
-                                if (Number.isNaN(saleId)) return;
-                                const mins = entry.plannedMinutes ?? 0;
-                                const desc = `Planned time ${action}d on sale item #${entry.parentId}: ${Math.floor(mins/60)}h${mins%60 ? ` ${mins%60}m` : ''}${entry.description ? ` — ${entry.description}` : ''}`;
-                                try { await salesApi.addActivity(saleId, { type: `planned_time_${action}`, description: desc }); } catch (e) { console.warn('sale planned audit failed', e); }
-                              }}
-                            />
-                            <PlannedInlineList
-                              parentType="sale_item"
-                              parentIds={[parentIdNum]}
-                              kind="expense"
-                              hideWhenEmpty={false}
-                              onChanged={async ({ action, entry }) => {
-                                const saleId = parseInt(sale.id, 10);
-                                if (Number.isNaN(saleId)) return;
-                                const desc = `Planned expense ${action}d on sale item #${entry.parentId}: ${entry.expenseType ?? ''} ${(entry.plannedAmount ?? 0).toFixed(2)} ${entry.currency ?? ''}${entry.description ? ` — ${entry.description}` : ''}`;
-                                try { await salesApi.addActivity(saleId, { type: `planned_expense_${action}`, description: desc }); } catch (e) { console.warn('sale planned audit failed', e); }
-                              }}
-                            />
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )}
                     </Fragment>
                     );
                   })}

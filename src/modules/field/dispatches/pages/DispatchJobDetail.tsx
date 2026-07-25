@@ -632,7 +632,7 @@ export default function DispatchJobDetail() {
                       <CheckCircle className="h-4 w-4 mr-2 text-success" />
                       {t('dispatch_detail.mark_complete', 'Mark Complete')}
                     </DropdownMenuItem>
-                    {(dispatch.status as string) !== 'completed' && (dispatch.status as string) !== 'cancelled' && (dispatch.status as string) !== 'rejected' && (
+                    {(dispatch.status as string) !== 'completed' && (dispatch.status as string) !== 'cancelled' && (dispatch.status as string) !== 'rejected' && (dispatch.status as string) !== 'technically_completed' && (dispatch.status as string) !== 'closed' && (dispatch.status as string) !== 'invoiced' && (dispatch.status as string) !== 'ready_for_invoice' && (
                       <DropdownMenuItem onClick={() => handleStatusChange('cancelled')} className="text-destructive focus:text-destructive">
                         <Trash2 className="h-4 w-4 mr-2" />
                         {t('dispatch_detail.cancel_dispatch', 'Cancel Dispatch')}
@@ -706,7 +706,7 @@ export default function DispatchJobDetail() {
                     {(() => {
                       const s = dispatch.status as DispatchStatus;
                       const canRelease = s === 'pending' || s === 'planned' || s === 'assigned';
-                      const canCancel = s !== 'completed' && s !== 'cancelled' && s !== 'rejected';
+                      const canCancel = s !== 'completed' && s !== 'cancelled' && s !== 'rejected' && (s as string) !== 'technically_completed' && (s as string) !== 'closed' && (s as string) !== 'invoiced' && (s as string) !== 'ready_for_invoice';
                       if (!canRelease && !canCancel) return null;
                       return (
                         <div className="flex items-center gap-2">

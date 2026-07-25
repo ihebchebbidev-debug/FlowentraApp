@@ -294,7 +294,7 @@ export function AddSale() {
           <Button variant="ghost" size="sm" asChild>
             <Link to="/dashboard/sales" className="gap-2">
               <ArrowLeft className="h-4 w-4" />
-              {t("addSale.backToSales", "Back to Sales")}
+              {t("addSale.backToSales", "Back to Orders")}
             </Link>
           </Button>
           <div className="flex items-center gap-2">
@@ -697,7 +697,7 @@ export function AddSale() {
             className="gradient-primary"
           >
             <Send className="h-4 w-4 mr-2" />
-            {t("addSale.createSale", "Create Sale")}
+            {t("addSale.createSale", "Create Order")}
           </Button>
         </div>
       </form>

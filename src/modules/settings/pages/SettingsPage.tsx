@@ -26,6 +26,7 @@ import { SubscriptionSettings } from "@/modules/settings/components/Subscription
 import { TenantManagement } from "@/modules/settings/components/TenantManagement";
 import { UserPreferencesTab } from "@/modules/settings/components/UserPreferencesTab";
 import { OfflineHydrationSettings } from "@/modules/settings/components/OfflineHydrationSettings";
+import { AdminPageHeader } from "@/modules/settings/components/AdminPageHeader";
 import { CollapsibleSearch } from "@/components/ui/collapsible-search";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -276,23 +277,29 @@ export default function SettingsPage() {
   };
 
   // Navigation items grouped by section
+  // Personal: Profile, Security
+  // General: Company (incl. preferences), Tenants subscription, Offline sync, System configuration
+  // Other admin items (users, roles, integrations, syncHistory, companies) are reachable
+  // from the Administration workspace sidebar via ?section= URLs and remain functional here.
   const navItems: NavItem[] = [
     { id: 'profile', labelKey: 'nav.profile', icon: User, section: 'personal', visible: true },
-    { id: 'company', labelKey: 'nav.company', icon: Building2, section: 'personal', visible: true },
     { id: 'security', labelKey: 'nav.security', icon: Lock, section: 'personal', visible: true },
-    { id: 'preferences', labelKey: 'nav.preferences', icon: Palette, section: 'personal', visible: canViewPreferences },
-    { id: 'offline', labelKey: 'nav.offline', icon: WifiOff, section: 'personal', visible: true },
-    { id: 'companies', labelKey: 'nav.companies', icon: Layers, section: 'admin', visible: isMainAdmin },
-    { id: 'users', labelKey: 'nav.users', icon: Users, section: 'admin', visible: canViewUsers },
-    { id: 'roles', labelKey: 'nav.roles', icon: Shield, section: 'admin', visible: canViewRoles },
-    { id: 'integrations', labelKey: 'nav.integrations', icon: Link2, section: 'admin', visible: true },
-    { id: 'subscription', labelKey: 'nav.subscription', icon: CreditCard, section: 'admin', visible: isMainAdmin },
-    { id: 'system', labelKey: 'nav.system', icon: Monitor, section: 'admin', visible: canViewSystem },
-    { id: 'syncHistory', labelKey: 'nav.syncHistory', icon: RefreshCw, section: 'admin', visible: canViewSystem },
+    { id: 'company', labelKey: 'nav.company', icon: Building2, section: 'general', visible: true },
+    { id: 'preferences', labelKey: 'nav.preferences', icon: Palette, section: 'general', visible: canViewPreferences },
+    { id: 'subscription', labelKey: 'nav.subscription', icon: CreditCard, section: 'general', visible: isMainAdmin },
+    { id: 'offline', labelKey: 'nav.offline', icon: WifiOff, section: 'general', visible: true },
+    { id: 'system', labelKey: 'nav.system', icon: Monitor, section: 'general', visible: canViewSystem },
+    // Reachable via direct URL from the Administration workspace sidebar:
+    { id: 'companies', labelKey: 'nav.companies', icon: Layers, section: 'admin', visible: false },
+    { id: 'users', labelKey: 'nav.users', icon: Users, section: 'admin', visible: false },
+    { id: 'roles', labelKey: 'nav.roles', icon: Shield, section: 'admin', visible: false },
+    { id: 'userGroups', labelKey: 'nav.userGroups', icon: Users, section: 'admin', visible: false },
+    { id: 'integrations', labelKey: 'nav.integrations', icon: Link2, section: 'admin', visible: false },
+    { id: 'syncHistory', labelKey: 'nav.syncHistory', icon: RefreshCw, section: 'admin', visible: false },
   ];
 
   const personalItems = navItems.filter(i => i.section === 'personal' && i.visible);
-  const adminItems = navItems.filter(i => i.section === 'admin' && i.visible);
+  const adminItems = navItems.filter(i => i.section === 'general' && i.visible);
 
   const activeItem = navItems.find(i => i.id === activeSection);
 
@@ -333,7 +340,7 @@ export default function SettingsPage() {
               )}
               {adminItems.length > 0 && (
                 <>
-                  <div className="px-2 py-1.5 text-px-11 font-semibold uppercase tracking-wide text-muted-foreground mt-1">{t('nav.sectionAdmin')}</div>
+                  <div className="px-2 py-1.5 text-px-11 font-semibold uppercase tracking-wide text-muted-foreground mt-1">{t('nav.sectionGeneral')}</div>
                   {adminItems.map(item => (
                     <SelectItem key={item.id} value={item.id} className="rounded-lg cursor-pointer py-2.5">
                       <span className="flex items-center gap-2.5">
@@ -359,34 +366,74 @@ export default function SettingsPage() {
   }
 
   function renderContent() {
-    switch (activeSection) {
-      case 'profile':
-        return <ProfileSection />;
-      case 'company':
-        return <CompanySection />;
-      case 'security':
-        return <SecuritySection />;
-      case 'preferences':
-        return canViewPreferences ? <UserPreferencesTab /> : null;
-      case 'offline':
-        return <OfflineHydrationSettings />;
-      case 'companies':
-        return isMainAdmin ? <TenantManagement /> : null;
-      case 'integrations':
-        return <IntegrationsTabContent />;
-      case 'subscription':
-        return isMainAdmin ? <SubscriptionSettings /> : null;
-      case 'users':
-        return canViewUsers ? renderUsersContent() : null;
-      case 'roles':
-        return canViewRoles ? renderRolesContent() : null;
-      case 'system':
-        return canViewSystem ? renderSystemContent() : null;
-      case 'syncHistory':
-        return canViewSystem ? renderSyncHistoryShortcut() : null;
-      default:
-        return <ProfileSection />;
-    }
+    // Show an "Administration" banner for pages reached from the Administration workspace
+    const adminHeaderMap: Record<string, { icon: any; titleKey: string; descKey: string; descFallback: string }> = {
+      users: { icon: Users, titleKey: 'nav.users', descKey: 'users.description', descFallback: 'Manage users, their access and role assignments.' },
+      roles: { icon: Shield, titleKey: 'nav.roles', descKey: 'roles.description', descFallback: 'Define roles and the permissions granted to each.' },
+      userGroups: { icon: Users, titleKey: 'nav.userGroups', descKey: 'userGroups.description', descFallback: 'Organize users into groups for permissions and notifications.' },
+    };
+    const adminMeta = adminHeaderMap[activeSection];
+    const header = adminMeta ? (
+      <AdminPageHeader
+        icon={adminMeta.icon}
+        title={t(adminMeta.titleKey)}
+        description={t(adminMeta.descKey, { defaultValue: adminMeta.descFallback })}
+      />
+    ) : null;
+
+    const body = (() => {
+      switch (activeSection) {
+        case 'profile':
+          return <ProfileSection />;
+        case 'company':
+          return <CompanySection />;
+        case 'security':
+          return <SecuritySection />;
+        case 'preferences':
+          return canViewPreferences ? <UserPreferencesTab /> : null;
+        case 'offline':
+          return <OfflineHydrationSettings />;
+        case 'companies':
+          return isMainAdmin ? <TenantManagement /> : null;
+        case 'integrations':
+          return <IntegrationsTabContent />;
+        case 'subscription':
+          return isMainAdmin ? <SubscriptionSettings /> : null;
+        case 'users':
+          return canViewUsers ? renderUsersContent() : null;
+        case 'roles':
+          return canViewRoles ? renderRolesContent() : null;
+        case 'system':
+          return canViewSystem ? renderSystemContent() : null;
+        case 'syncHistory':
+          return canViewSystem ? renderSyncHistoryShortcut() : null;
+        case 'userGroups':
+          return renderUserGroupsPlaceholder();
+        default:
+          return <ProfileSection />;
+      }
+    })();
+
+    return (
+      <>
+        {header}
+        {body}
+      </>
+    );
+  }
+
+  function renderUserGroupsPlaceholder() {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('userGroups.title')}</CardTitle>
+          <CardDescription>{t('userGroups.description')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">{t('userGroups.comingSoon')}</p>
+        </CardContent>
+      </Card>
+    );
   }
 
   function ProfileSection() {
@@ -802,7 +849,7 @@ export default function SettingsPage() {
               <>
                 <div className="px-5 mb-2">
                   <span className="text-px-11 font-semibold uppercase tracking-widest text-muted-foreground/70">
-                    {t('nav.sectionAdmin')}
+                    {t('nav.sectionGeneral')}
                   </span>
                 </div>
                 <div className="space-y-0.5 px-3">

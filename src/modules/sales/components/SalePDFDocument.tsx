@@ -233,11 +233,11 @@ interface SalePDFDocumentProps {
 
 export function SalePDFDocument({ sale, formatCurrency, settings, translations, currencyCode = 'TND', language = 'en', signatureImage, installationsData }: SalePDFDocumentProps) {
   const t = translations || {
-    saleOrder: 'SALE', saleNumber: 'Sale N°', date: 'Date', client: 'CLIENT',
-    customerInformation: 'Customer Information', saleDetails: 'Sale Details',
+    saleOrder: 'ORDER', saleNumber: 'Order N°', date: 'Date', client: 'CLIENT',
+    customerInformation: 'Customer Information', saleDetails: 'Order Details',
     name: 'Name', position: 'Position', email: 'Email', phone: 'Phone', address: 'Address',
     status: 'Status', created: 'Created', deliveryDate: 'Delivery Date',
-    assignedTo: 'Assigned To', description: 'Description', saleItems: 'Sale Items',
+    assignedTo: 'Assigned To', description: 'Description', saleItems: 'Order Items',
     pos: 'Pos', qty: 'Qty', unit: 'Unit', total: 'Total',
     subtotal: 'Subtotal', tax: 'Tax', tva: 'TVA', discount: 'Discount',
     additionalNotes: 'Additional Notes', thankYouMessage: 'Thank you for your business.',

@@ -69,9 +69,11 @@ export function PlanDispatchModal({
   onCreated,
 }: PlanDispatchModalProps) {
   const { t } = useTranslation('service_orders');
-  // Eligible jobs = not dispatched / not cancelled
+  // Any non-cancelled job can be planned into a new dispatch. Jobs already
+  // covered by an earlier dispatch remain selectable — planning them again
+  // creates a new, independent dispatch (different technicians / times).
   const eligibleJobs = useMemo(
-    () => jobs.filter(j => j.status !== 'dispatched' && j.status !== 'cancelled'),
+    () => jobs.filter(j => j.status !== 'cancelled'),
     [jobs]
   );
 
@@ -790,6 +792,11 @@ export function PlanDispatchModal({
                           <span className="text-px-11 text-muted-foreground capitalize">
                             {j.status}
                           </span>
+                          {j.status === 'dispatched' && (
+                            <Badge variant="secondary" className="text-px-10 py-0 h-4">
+                              {t('plan_dispatch.already_planned', 'already planned')}
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     </label>

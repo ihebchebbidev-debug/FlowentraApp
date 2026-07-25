@@ -165,8 +165,8 @@ export function EditSale() {
           const { salesApi } = await import('@/services/api/salesApi');
           await salesApi.addActivity(saleId, {
             type: 'updated',
-            description: 'Sale details were updated',
-            details: `Sale updated on ${new Date().toLocaleDateString()}`,
+            description: 'Order details were updated',
+            details: `Order updated on ${new Date().toLocaleDateString()}`,
           });
         }
       } catch (e) {

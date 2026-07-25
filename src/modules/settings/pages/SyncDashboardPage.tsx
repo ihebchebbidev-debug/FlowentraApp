@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { AlertTriangle, CheckCircle2, Clock3, CloudDownload, RefreshCw, Search, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock3, CloudDownload, RefreshCw, Search, XCircle, Activity } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { getSyncHistory, retrySyncItem, type SyncHistoryItem } from "@/services/
 import { useToast } from "@/hooks/use-toast";
 import { HydrationLastRunPanel } from "@/components/offline/HydrationLastRunPanel";
 import { useOffline } from "@/contexts/OfflineContext";
+import { AdminPageHeader } from "../components/AdminPageHeader";
 
 function statusIcon(status: string) {
   if (status === "applied" || status === "duplicate") return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
@@ -75,6 +76,11 @@ export default function SyncDashboardPage() {
 
   return (
     <div className="p-6 space-y-4">
+      <AdminPageHeader
+        icon={Activity}
+        title={t("syncDashboard.title")}
+        description={t("nav.syncHistory", { defaultValue: "Background services & sync history" })}
+      />
       <HydrationLastRunPanel variant="compact" />
       <Card className="border-0 shadow-card">
         <CardHeader>

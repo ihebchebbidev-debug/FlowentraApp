@@ -44,7 +44,7 @@ export function SendSaleModal({ open, onOpenChange, sale, onSendSuccess }: SendS
     totalAmount: sale.totalAmount != null ? formatCurrency(sale.totalAmount) : undefined,
     companyName: pdfSettings.company?.name,
     companyLogoUrl: companyLogo || undefined,
-    summaryLabel: sale.title || `${t('entity', 'Sale')} #${sale.saleNumber || sale.id}`,
+    summaryLabel: sale.title || `${t('entity', 'Order')} #${sale.saleNumber || sale.id}`,
     fileName: `sale-order-${sale.saleNumber || sale.id}.pdf`,
   }), [sale, formatCurrency, pdfSettings, t, companyLogo]);
 

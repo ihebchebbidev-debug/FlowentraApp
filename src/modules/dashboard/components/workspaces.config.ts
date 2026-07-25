@@ -7,6 +7,8 @@
 export interface WorkspaceModule {
   key: string;
   label: string;
+  /** Optional i18n key resolved via t(); when present it overrides `label` for display. */
+  labelI18nKey?: string;
   url: string;
   icon: string;
   /** Optional plugin gate. When present and the plugin is disabled, the module is hidden. */
@@ -22,6 +24,7 @@ export interface SidebarModuleItemProps {
   url: string;
   icon: string;
   label: string;
+  labelI18nKey?: string;
   pluginCode?: string;
   active?: boolean;
   onSelect?: () => void;
@@ -30,6 +33,8 @@ export interface SidebarModuleItemProps {
 export interface Workspace {
   id: string;
   label: string;
+  /** Optional i18n key resolved via t(); when present it overrides `label` for display. */
+  labelI18nKey?: string;
   icon: string;
   /** Route the primary tile navigates to when clicked (usually the workspace's dashboard). */
   landingUrl: string;
@@ -52,8 +57,8 @@ export const WORKSPACES: Workspace[] = [
     icon: "TrendingUp",
     landingUrl: "/dashboard/reporting/sales",
     modules: [
-      { key: "sales-dash", label: "Sales dashboard", url: "/dashboard/reporting/sales", icon: "BarChart3" },
-      { key: "sales", label: "Sales", url: "/dashboard/sales", icon: "TrendingUp", pluginCode: "PL0002SALES" },
+      { key: "sales-dash", label: "Orders dashboard", labelI18nKey: "workspace.modules.ordersDashboard", url: "/dashboard/reporting/sales", icon: "BarChart3" },
+      { key: "sales", label: "Orders", labelI18nKey: "workspace.modules.orders", url: "/dashboard/sales", icon: "TrendingUp", pluginCode: "PL0002SALES" },
       { key: "offers", label: "Offers", url: "/dashboard/offers", icon: "FileText", pluginCode: "PL0005OFFERS" },
       { key: "deals", label: "Deals", url: "/dashboard/deals", icon: "Handshake", pluginCode: "PL0003DEALS" },
       { key: "contacts", label: "Customers", url: "/dashboard/contacts?type=customer", icon: "Users", pluginCode: "PL0001CONTACTS" },
@@ -142,7 +147,6 @@ export const WORKSPACES: Workspace[] = [
     modules: [
       { key: "workflow", label: "Workflow", url: "/dashboard/workflow", icon: "GitBranch", pluginCode: "PL0031WORKFLOW" },
       { key: "external", label: "External APIs", url: "/dashboard/external", icon: "Webhook", pluginCode: "PL0030EXTERNAL" },
-      { key: "dynamic-forms", label: "Dynamic forms", url: "/dashboard/settings/dynamic-forms", icon: "FormInput", pluginCode: "PL0032DYNAMICFORMS" },
       { key: "sync", label: "Sync", url: "/dashboard/settings/sync", icon: "RefreshCw" },
     ],
   },
@@ -169,13 +173,19 @@ export const WORKSPACES: Workspace[] = [
   },
   {
     id: "settings",
-    label: "Settings",
-    icon: "Settings",
-    landingUrl: "/dashboard/settings",
+    label: "Administration",
+    labelI18nKey: "workspace.workspaces.administration",
+    icon: "Shield",
+    landingUrl: "/dashboard/settings?section=users",
     modules: [
-      { key: "settings", label: "General", url: "/dashboard/settings", icon: "Settings" },
-      { key: "users", label: "Users & roles", url: "/dashboard/settings?tab=users", icon: "User", pluginCode: "PL0043USERS" },
-      { key: "plugins", label: "Plugins", url: "/dashboard/settings?tab=plugins", icon: "Blocks" },
+      { key: "users", label: "Users", labelI18nKey: "workspace.modules.users", url: "/dashboard/settings?section=users", icon: "Users", pluginCode: "PL0043USERS" },
+      { key: "roles", label: "Roles", labelI18nKey: "workspace.modules.roles", url: "/dashboard/settings?section=roles", icon: "Shield" },
+      { key: "user-groups", label: "User groups", labelI18nKey: "workspace.modules.userGroups", url: "/dashboard/settings?section=userGroups", icon: "UsersRound" },
+      { key: "dynamic-forms", label: "Dynamic forms", labelI18nKey: "workspace.modules.dynamicForms", url: "/dashboard/settings/dynamic-forms", icon: "FormInput", pluginCode: "PL0032DYNAMICFORMS" },
+      { key: "background-services", label: "Background services", labelI18nKey: "workspace.modules.backgroundServices", url: "/dashboard/settings/sync", icon: "Activity" },
+      { key: "documentation", label: "Documentation", labelI18nKey: "workspace.modules.documentation", url: "/dashboard/settings/documentation", icon: "BookOpen" },
+      { key: "system-logs", label: "System logs", labelI18nKey: "workspace.modules.systemLogs", url: "/dashboard/settings/logs", icon: "ScrollText" },
+      { key: "settings", label: "Settings", labelI18nKey: "workspace.modules.settings", url: "/dashboard/settings", icon: "Settings" },
     ],
   },
 ];

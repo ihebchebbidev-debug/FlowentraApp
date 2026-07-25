@@ -258,5 +258,22 @@
     "previous": "Previous",
     "next": "Next",
     "page_of": "{{current}} of {{total}}"
+  },
+  "workspace": {
+    "workspaces": {
+      "administration": "Administration"
+    },
+    "modules": {
+      "orders": "Orders",
+      "ordersDashboard": "Orders dashboard",
+      "users": "Users",
+      "roles": "Roles",
+      "userGroups": "User groups",
+      "dynamicForms": "Dynamic forms",
+      "backgroundServices": "Background services",
+      "documentation": "Documentation",
+      "systemLogs": "System logs",
+      "settings": "Settings"
+    }
   }
 }

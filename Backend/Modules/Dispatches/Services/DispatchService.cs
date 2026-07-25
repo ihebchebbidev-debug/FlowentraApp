@@ -133,18 +133,10 @@ namespace MyApi.Modules.Dispatches.Services
             var hasTechnicians = dto.AssignedTechnicianIds != null && dto.AssignedTechnicianIds.Count > 0;
             var status = hasTechnicians ? "assigned" : "planned";
 
-            // Prevent duplicate dispatches for the same job: if a non-deleted dispatch
-            // already exists for this job, return it instead of creating a new one.
-            var existingDispatch = await _db.Dispatches
-                .Include(d => d.AssignedTechnicians)
-                .FirstOrDefaultAsync(d => d.JobId == jobId.ToString() && !d.IsDeleted);
+            // Multiple dispatches per job are allowed: each call creates a new,
+            // independent dispatch even if the job already has one or more.
 
-            if (existingDispatch != null)
-            {
-                _logger.LogWarning("CreateFromJobAsync: dispatch already exists for job {JobId} -> dispatchId {DispatchId}", jobId, existingDispatch.Id);
-                var existingNameMap = await GetTechnicianNameMapForDispatchAsync(existingDispatch.Id);
-                return DispatchMapping.ToDto(existingDispatch, existingNameMap);
-            }
+
             
             string dispatchNumber;
             try
@@ -189,17 +181,8 @@ namespace MyApi.Modules.Dispatches.Services
                 await using var tx = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
                 try
                 {
-                    // Race re-check inside the tx (DB unique indexes are the hard fence).
-                    var raceExisting = await _db.Dispatches
-                        .FirstOrDefaultAsync(d => d.JobId == jobId.ToString() && !d.IsDeleted);
-                    if (raceExisting != null)
-                    {
-                        _logger.LogWarning("CreateFromJobAsync: race caught, existing dispatch {DispatchId} for job {JobId}", raceExisting.Id, jobId);
-                        dispatch = raceExisting;
-                        await tx.CommitAsync();
-                        return;
-                    }
-                    _db.Dispatches.Add(dispatch);
+                    // Multiple dispatches per job allowed; no race re-check needed.
+
                     await _db.SaveChangesAsync();
 
                     // Always insert a DispatchJob row so GetPlanVsActualAsync (which queries
@@ -227,7 +210,9 @@ namespace MyApi.Modules.Dispatches.Services
                                 });
                             }
                         }
-                        job.Status = "dispatched";
+                        // Only flip job to "dispatched" on the first planning; later
+                        // dispatches leave the job's own status intact.
+                        if (job.Status != "dispatched") job.Status = "dispatched";
                     }
 
                     await _db.SaveChangesAsync();
@@ -286,30 +271,10 @@ namespace MyApi.Modules.Dispatches.Services
                 throw new KeyNotFoundException($"Jobs not found: {string.Join(", ", missingIds)}");
             }
 
-            // Check no job already has an active dispatch via DispatchJobs
-            var existingDispatchJobIds = await _db.Set<DispatchJob>()
-                .Where(dj => dto.JobIds.Contains(dj.JobId))
-                .Join(_db.Dispatches.Where(d => !d.IsDeleted),
-                    dj => dj.DispatchId, d => d.Id,
-                    (dj, d) => dj.JobId)
-                .ToListAsync();
+            // Multiple dispatches per job are allowed — no duplicate-job guard.
 
-            if (existingDispatchJobIds.Any())
-            {
-                throw new InvalidOperationException($"Jobs already dispatched: {string.Join(", ", existingDispatchJobIds)}");
-            }
 
-            // Also check legacy single-job dispatches
-            var jobIdStrings = dto.JobIds.Select(id => id.ToString()).ToList();
-            var legacyConflicts = await _db.Dispatches
-                .Where(d => !d.IsDeleted && d.JobId != null && jobIdStrings.Contains(d.JobId))
-                .Select(d => d.JobId)
-                .ToListAsync();
 
-            if (legacyConflicts.Any())
-            {
-                throw new InvalidOperationException($"Jobs already dispatched (legacy): {string.Join(", ", legacyConflicts)}");
-            }
 
             // Get contact from DTO or from first job's service order
             var contactId = dto.ContactId ?? jobs.First().ServiceOrder?.ContactId ?? 0;
@@ -375,28 +340,8 @@ namespace MyApi.Modules.Dispatches.Services
                 using var tx = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
                 try
                 {
-                    // Race re-check inside the serializable tx. The DB partial unique index
-                    // ux_dispatchjobs_tenant_jobid_active is the hard fence — this re-check
-                    // just yields a clean 409-style error instead of a raw DB constraint.
-                    var raceExistingJobs = await _db.Set<DispatchJob>()
-                        .Where(dj => dto.JobIds.Contains(dj.JobId) && !dj.IsDeleted)
-                        .Join(_db.Dispatches.Where(d => !d.IsDeleted),
-                            dj => dj.DispatchId, d => d.Id,
-                            (dj, d) => dj.JobId)
-                        .ToListAsync();
-                    if (raceExistingJobs.Any())
-                    {
-                        throw new InvalidOperationException($"Jobs already dispatched: {string.Join(", ", raceExistingJobs)}");
-                    }
-                    var raceLegacyIds = dto.JobIds.Select(id => id.ToString()).ToList();
-                    var raceLegacy = await _db.Dispatches
-                        .Where(d => !d.IsDeleted && d.JobId != null && raceLegacyIds.Contains(d.JobId))
-                        .Select(d => d.JobId)
-                        .ToListAsync();
-                    if (raceLegacy.Any())
-                    {
-                        throw new InvalidOperationException($"Jobs already dispatched (legacy): {string.Join(", ", raceLegacy)}");
-                    }
+                    // Multiple dispatches per job are allowed — no race re-check.
+
 
                     _db.Dispatches.Add(dispatch);
                     await _db.SaveChangesAsync();
@@ -431,10 +376,11 @@ namespace MyApi.Modules.Dispatches.Services
                         }
                         await _db.SaveChangesAsync();
 
-                        // Update all jobs' status to dispatched
+                        // Only flip a job's status to "dispatched" on its first planning;
+                        // subsequent dispatches leave the job status intact.
                         foreach (var job in jobs)
                         {
-                            job.Status = "dispatched";
+                            if (job.Status != "dispatched") job.Status = "dispatched";
                         }
                         await _db.SaveChangesAsync();
                     }
@@ -584,24 +530,8 @@ namespace MyApi.Modules.Dispatches.Services
 
                     if (newJobIds.Count > 0)
                     {
-                        // Make sure these jobs are not attached to ANOTHER non-deleted dispatch
-                        var conflicts = await _db.Set<DispatchJob>()
-                            .Where(dj => newJobIds.Contains(dj.JobId) && dj.DispatchId != existing.Id)
-                            .Join(_db.Dispatches.Where(d => !d.IsDeleted), dj => dj.DispatchId, d => d.Id, (dj, d) => dj.JobId)
-                            .ToListAsync();
+                        // Multiple dispatches per job are allowed — no cross-dispatch conflict check.
 
-                        if (conflicts.Any())
-                            throw new InvalidOperationException($"Jobs already dispatched: {string.Join(", ", conflicts)}");
-
-                        var legacyConflicts = await _db.Dispatches
-                            .Where(d => !d.IsDeleted
-                                && d.Id != existing.Id
-                                && d.JobId != null
-                                && newJobIds.Select(i => i.ToString()).Contains(d.JobId))
-                            .Select(d => d.JobId)
-                            .ToListAsync();
-                        if (legacyConflicts.Any())
-                            throw new InvalidOperationException($"Jobs already dispatched (legacy): {string.Join(", ", legacyConflicts)}");
 
                         foreach (var jid in newJobIds)
                         {
@@ -839,6 +769,15 @@ namespace MyApi.Modules.Dispatches.Services
             if (d == null) throw new KeyNotFoundException($"Dispatch {dispatchId} not found");
 
             var oldStatus = d.Status;
+
+            // Guard: do not allow cancelling a dispatch that is already closed or technically completed
+            if (dto.Status == "cancelled"
+                && (oldStatus == "closed" || oldStatus == "technically_completed" || oldStatus == "completed" || oldStatus == "invoiced"))
+            {
+                throw new InvalidOperationException(
+                    $"Cannot cancel dispatch {d.DispatchNumber}: it is already {oldStatus}.");
+            }
+
             d.Status = dto.Status;
             d.ModifiedDate = DateTime.UtcNow;
             d.ModifiedBy = userId;

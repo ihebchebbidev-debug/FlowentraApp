@@ -258,5 +258,22 @@
     "previous": "Précédent",
     "next": "Suivant",
     "page_of": "{{current}} sur {{total}}"
+  },
+  "workspace": {
+    "workspaces": {
+      "administration": "Administration"
+    },
+    "modules": {
+      "orders": "Commandes",
+      "ordersDashboard": "Tableau de bord commandes",
+      "users": "Utilisateurs",
+      "roles": "Rôles",
+      "userGroups": "Groupes d'utilisateurs",
+      "dynamicForms": "Formulaires dynamiques",
+      "backgroundServices": "Services en arrière-plan",
+      "documentation": "Documentation",
+      "systemLogs": "Journaux système",
+      "settings": "Paramètres"
+    }
   }
 }

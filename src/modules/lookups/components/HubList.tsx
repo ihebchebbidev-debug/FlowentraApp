@@ -17,7 +17,9 @@ export function HubList({
       <Card className="shadow-card border-0 bg-card">
         <CardContent className="p-0">
           <div className="divide-y divide-border">
-            {GROUP_CATEGORIES[group].map((c) => {
+            {[...GROUP_CATEGORIES[group]]
+              .sort((a, b) => getCategoryTitle(a).localeCompare(getCategoryTitle(b)))
+              .map((c) => {
                 const Icon = getCategoryIcon(c);
                 const count = counts[c];
                 return (
