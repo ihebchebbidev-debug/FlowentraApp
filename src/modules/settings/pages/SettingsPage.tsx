@@ -724,6 +724,68 @@ export default function SettingsPage({ standaloneSection }: SettingsPageProps = 
       </header>
 
       <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+        {/* Left sidebar navigation */}
+        <aside className="w-full md:w-64 lg:w-72 shrink-0 border-r border-border bg-card/30 overflow-y-auto">
+          <nav className="p-3 space-y-6">
+            {personalItems.length > 0 && (
+              <div>
+                <div className="px-2 pb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  {t('nav.sectionPersonal', 'Personal')}
+                </div>
+                <div className="space-y-1">
+                  {personalItems.map(item => {
+                    const Icon = item.icon;
+                    const active = activeSection === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => setActiveSection(item.id)}
+                        className={cn(
+                          "w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors",
+                          active
+                            ? "bg-primary/10 text-primary font-medium"
+                            : "text-foreground hover:bg-muted"
+                        )}
+                      >
+                        <Icon className="h-4 w-4 shrink-0" />
+                        <span className="truncate">{t(item.labelKey)}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            {adminItems.length > 0 && (
+              <div>
+                <div className="px-2 pb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  {t('nav.sectionGeneral', 'General')}
+                </div>
+                <div className="space-y-1">
+                  {adminItems.map(item => {
+                    const Icon = item.icon;
+                    const active = activeSection === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => setActiveSection(item.id)}
+                        className={cn(
+                          "w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors",
+                          active
+                            ? "bg-primary/10 text-primary font-medium"
+                            : "text-foreground hover:bg-muted"
+                        )}
+                      >
+                        <Icon className="h-4 w-4 shrink-0" />
+                        <span className="truncate">{t(item.labelKey)}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </nav>
+        </aside>
+
         {/* Main content area */}
         <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 lg:p-8 bg-background">
           <div className="w-full">
