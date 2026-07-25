@@ -1158,6 +1158,13 @@ i18n.addResourceBundle('en', 'purchases', purchasesEn, true, true);
 i18n.addResourceBundle('fr', 'purchases', purchasesFr, true, true);
 i18n.addResourceBundle('ar', 'purchases', purchasesAr, true, true);
 
+// Register traceability namespace
+import traceabilityEn from '../modules/traceability/locale/en.json';
+import traceabilityFr from '../modules/traceability/locale/fr.json';
+i18n.addResourceBundle('en', 'traceability', traceabilityEn, true, true);
+i18n.addResourceBundle('fr', 'traceability', traceabilityFr, true, true);
+
+
 // Register external namespace
 i18n.addResourceBundle('en', 'external', externalEn, true, true);
 i18n.addResourceBundle('fr', 'external', externalFr, true, true);

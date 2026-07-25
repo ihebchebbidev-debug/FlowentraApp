@@ -142,6 +142,7 @@ export const WORKSPACES: Workspace[] = [
       { key: "finance-report", label: "Finance", url: "/dashboard/reporting/finance", icon: "DollarSign" },
       { key: "hr-report", label: "HR", url: "/dashboard/reporting/hr", icon: "UserCog" },
       { key: "export-report", label: "Export reports", url: "/dashboard/reporting/export", icon: "Download" },
+      { key: "traceability", label: "Traceability", url: "/dashboard/traceability", icon: "Activity" },
     ],
   },
   {

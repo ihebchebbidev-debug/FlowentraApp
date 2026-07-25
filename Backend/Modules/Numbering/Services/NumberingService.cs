@@ -20,7 +20,12 @@ namespace MyApi.Modules.Numbering.Services
             // Without them the service throws ArgumentException on every Create*
             // call — callers catch and fall back to a GUID, but that loses the
             // configurable numbering template and pollutes order numbers.
-            "PurchaseOrder", "GoodsReceipt", "SupplierInvoice"
+            "PurchaseOrder", "GoodsReceipt", "SupplierInvoice",
+            // Customer invoice ledger (Phase B). InvoiceService.PostAsync calls
+            // GetNextAsync("Invoice"); without this entry it hits the catch
+            // block and falls back to a raw "INV-yyyyMMdd-{id}" string, losing
+            // the configurable numbering template.
+            "Invoice"
         };
 
         // Entity prefixes for legacy fallback
@@ -33,7 +38,8 @@ namespace MyApi.Modules.Numbering.Services
             { "Deal", "DEAL" },
             { "PurchaseOrder", "PO" },
             { "GoodsReceipt", "GR" },
-            { "SupplierInvoice", "INV" }
+            { "SupplierInvoice", "INV" },
+            { "Invoice", "INV" }
         };
 
         // Token regex: matches {TOKEN} or {TOKEN:param}
@@ -120,6 +126,7 @@ namespace MyApi.Modules.Numbering.Services
                     "PurchaseOrder" => await _context.PurchaseOrders.AnyAsync(o => o.OrderNumber == number),
                     "GoodsReceipt" => await _context.GoodsReceipts.AnyAsync(r => r.ReceiptNumber == number),
                     "SupplierInvoice" => await _context.SupplierInvoices.AnyAsync(i => i.InvoiceNumber == number),
+                    "Invoice" => await _context.Invoices.AnyAsync(i => i.InvoiceNumber == number),
                     _ => false
                 };
             }

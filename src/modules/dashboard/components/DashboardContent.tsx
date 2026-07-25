@@ -42,6 +42,7 @@ import { NotificationsModule } from "@/modules/notifications/NotificationsModule
 import HelpModule from "./HelpModule";
 const PurchasesModule = lazyWithRetry(() => import("@/modules/purchases/PurchasesModule").then(m => ({ default: m.PurchasesModule })));
 const ReportingModule = lazyWithRetry(() => import("@/modules/reporting/ReportingModule").then(m => ({ default: m.ReportingModule })));
+const TraceabilityModule = lazyWithRetry(() => import("@/modules/traceability").then(m => ({ default: m.TraceabilityModule })));
 
 export function DashboardContent() {
   return (
@@ -218,6 +219,13 @@ export function DashboardContent() {
             <ReportingModule />
           </Suspense>
         } />
+
+        <Route path="traceability/*" element={
+          <Suspense fallback={<PageSkeleton />}>
+            <TraceabilityModule />
+          </Suspense>
+        } />
+
 
         {/* Help/Support route */}
         <Route path="help/*" element={<HelpModule />} />
