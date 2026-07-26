@@ -37,6 +37,7 @@ import type { ServiceOrderDispatch } from "../../service-orders/entities/dispatc
 import { DispatchStatusFlow, type DispatchStatus } from "../components/DispatchStatusFlow";
 import { dispatchesApi, type TimeEntry, type Expense, type MaterialUsage } from "@/services/api/dispatchesApi";
 import { contactsApi } from "@/services/api/contactsApi";
+import { ContactUserGroupsInline } from "@/modules/contacts/components/ContactUserGroupsInline";
 import { serviceOrdersApi } from "@/services/api/serviceOrdersApi";
 import { workflowExecutionsApi } from "@/services/api/workflowApi";
 import { installationsApi } from "@/services/api/installationsApi";
@@ -897,6 +898,15 @@ export default function DispatchJobDetail() {
                           <a href={`mailto:${contact.email}`} className="hover:text-primary">{contact.email}</a>
                         </p>
                       </div>
+                    )}
+
+                    {(contact?.id || (contact as any)?.userGroups) && (
+                      <ContactUserGroupsInline
+                        groups={(contact as any)?.userGroups}
+                        contactId={contact?.id as any}
+                        variant="labeled"
+                        editable
+                      />
                     )}
 
                     {installation?.name && (

@@ -660,6 +660,12 @@
       "assigned": "Groupe assigné",
       "removed": "Groupe retiré",
       "error": "Impossible de mettre à jour les groupes"
-    }
+    },
+    "inline_label": "Groupes d'utilisateurs",
+    "not_specified": "Non spécifié",
+    "edit": "Modifier les groupes",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "saving": "Enregistrement…"
   }
 }

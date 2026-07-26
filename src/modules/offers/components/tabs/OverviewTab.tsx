@@ -8,6 +8,7 @@ import { ExternalLink, FileText } from "lucide-react";
 import { Offer } from "../../types";
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { useLookups } from '@/shared/contexts/LookupsContext';
+import { ContactUserGroupsInline } from '@/modules/contacts/components/ContactUserGroupsInline';
 
 interface OverviewTabProps {
   offer: Offer;
@@ -79,6 +80,10 @@ export function OverviewTab({ offer }: OverviewTabProps) {
               </div>
 
               <DetailField label={t('overviewTab.contactEmail')} value={offer.contactEmail || t('overviewTab.notSpecified')} />
+
+              {offer.contactId != null && (
+                <ContactUserGroupsInline contactId={offer.contactId as any} variant="labeled" editable />
+              )}
 
               <div>
                 <span className="text-sm text-muted-foreground">{t('overviewTab.relatedSaleOrder')}</span>

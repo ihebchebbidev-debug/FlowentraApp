@@ -28,6 +28,7 @@ import { MaterialsTab } from "../components/MaterialsTab";
 import { ServiceOrderActivityTab } from "../components/ServiceOrderActivityTab";
 import { DocumentsTab } from "../components/DocumentsTab";
 import { ChecklistsSection } from "@/modules/shared/components/documents";
+import { ContactUserGroupsInline } from "@/modules/contacts/components/ContactUserGroupsInline";
 // Plan-vs-Actual stats panel + separate planned editor were removed —
 // planned rows now render inline inside each tab via PlannedInlineList.
 import { cn } from "@/lib/utils";
@@ -1271,6 +1272,15 @@ export default function ServiceOrderDetail() {
                           {serviceOrder.contact?.phone || serviceOrder.contactPhone || t('detail.not_specified')}
                         </p>
                       </div>
+
+                      {(serviceOrder.contactId || (serviceOrder.contact as any)?.userGroups) && (
+                        <ContactUserGroupsInline
+                          groups={(serviceOrder.contact as any)?.userGroups}
+                          contactId={serviceOrder.contactId as any}
+                          variant="labeled"
+                          editable
+                        />
+                      )}
 
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">{t('detail.target_completion_date')}</label>

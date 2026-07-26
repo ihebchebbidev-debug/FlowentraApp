@@ -38,7 +38,14 @@ export class JobMappingService {
         const orders = ordersResponse.data.serviceOrders || [];
         const dispatchedJobIds = new Set<string>();
         dispatches.forEach((d: Dispatch) => {
-          if (d.jobId) dispatchedJobIds.add(String(d.jobId));
+          if (!d.jobId) return;
+          // Cancelled dispatches must not consume the underlying job — the
+          // work still needs planning. Mirrors the backend rule that
+          // resets job status to 'unscheduled' when a dispatch is cancelled
+          // or deleted.
+          const status = String((d as any).status || '').toLowerCase();
+          if (status === 'cancelled') return;
+          dispatchedJobIds.add(String(d.jobId));
         });
 
         const activeOrders = orders.filter((so: any) =>

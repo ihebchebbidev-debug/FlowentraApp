@@ -32,6 +32,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { usePermissions } from "@/hooks/usePermissions";
+import { ContactUserGroupsInline } from "@/modules/contacts/components/ContactUserGroupsInline";
 
 export function DealDetail() {
   const { t } = useTranslation("deals");
@@ -382,6 +383,14 @@ function OverviewTab({ deal }: { deal: Deal }) {
               </div>
               <DetailField label={t("detail.category")} value={deal.category || "—"} />
               <DetailField label={t("detail.source")} value={deal.source || "—"} />
+              {(deal.contactId || (contact as any)?.userGroups) && (
+                <ContactUserGroupsInline
+                  groups={(contact as any)?.userGroups}
+                  contactId={deal.contactId as any}
+                  variant="labeled"
+                  editable
+                />
+              )}
             </div>
 
             {/* Right */}

@@ -660,6 +660,12 @@
       "assigned": "User group assigned",
       "removed": "User group removed",
       "error": "Could not update user groups"
-    }
+    },
+    "inline_label": "User groups",
+    "not_specified": "Not specified",
+    "edit": "Edit user groups",
+    "save": "Save",
+    "cancel": "Cancel",
+    "saving": "Saving…"
   }
 }

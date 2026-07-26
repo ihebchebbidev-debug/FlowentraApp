@@ -786,6 +786,54 @@ namespace MyApi.Modules.Dispatches.Services
 
             await _db.SaveChangesAsync();
 
+            // When a dispatch is cancelled, revert its linked jobs back to
+            // 'unscheduled' so they reappear in the dispatcher's unassigned
+            // queue. Mirrors DeleteAsync so cancel and delete behave the
+            // same for downstream consumers (dispatcher board, reports).
+            if (dto.Status == "cancelled" && oldStatus != "cancelled")
+            {
+                try
+                {
+                    var allJobIds = new HashSet<int>();
+                    var djs = await _db.DispatchJobs
+                        .Where(dj => dj.DispatchId == d.Id && !dj.IsDeleted)
+                        .Select(dj => dj.JobId)
+                        .ToListAsync();
+                    foreach (var jid in djs) allJobIds.Add(jid);
+                    if (!string.IsNullOrEmpty(d.JobId) && int.TryParse(d.JobId, out var legacyJobId))
+                        allJobIds.Add(legacyJobId);
+
+                    if (allJobIds.Count > 0)
+                    {
+                        var jobs = await _db.ServiceOrderJobs
+                            .Where(j => allJobIds.Contains(j.Id))
+                            .ToListAsync();
+                        foreach (var job in jobs)
+                        {
+                            // Only reset non-terminal jobs. Completed/cancelled
+                            // jobs must stay put — cancelling a stale dispatch
+                            // for finished work should not "un-finish" it.
+                            var js = (job.Status ?? "").ToLowerInvariant();
+                            if (js == "completed" || js == "cancelled") continue;
+                            job.Status = "unscheduled";
+                            job.CompletionPercentage = 0;
+                            job.ActualDuration = null;
+                            job.ActualCost = 0;
+                            job.CompletedDate = null;
+                            job.UpdatedAt = DateTime.UtcNow;
+                        }
+                        await _db.SaveChangesAsync();
+                        _logger.LogInformation(
+                            "[DISPATCH-CANCEL] Reset {JobCount} jobs to 'unscheduled' after dispatch {DispatchId} cancellation",
+                            jobs.Count, dispatchId);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "[DISPATCH-CANCEL] Failed to revert job statuses for dispatch {DispatchId}", dispatchId);
+                }
+            }
+
             // Dedicated audit record for cancellations (persisted separately from notes)
             if (dto.Status == "cancelled" && oldStatus != "cancelled")
             {

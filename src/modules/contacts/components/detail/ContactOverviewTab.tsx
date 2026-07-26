@@ -1,25 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
-import { 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Building2, 
-  Briefcase,
-  Calendar,
-  User,
-  IdCard,
-  FileText,
-  Users,
-  X
-} from "lucide-react";
+import { User } from "lucide-react";
 import { format } from "date-fns";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
-import { contactsApi } from "@/services/api/contactsApi";
-import { UserGroupsPicker, useUserGroupsList } from "../UserGroupsPicker";
+import { ContactUserGroupsInline } from "../ContactUserGroupsInline";
 
 interface ContactOverviewTabProps {
   contact: {
@@ -44,186 +28,107 @@ interface ContactOverviewTabProps {
 
 export function ContactOverviewTab({ contact, onUserGroupsChange }: ContactOverviewTabProps) {
   const { t } = useTranslation('contacts');
-  const { data: allGroups = [] } = useUserGroupsList();
-  const [groups, setGroups] = useState<{ id: number; name: string }[]>(contact.userGroups ?? []);
-  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    setGroups(contact.userGroups ?? []);
-  }, [contact.userGroups]);
-
-  const applyGroups = async (nextIds: number[]) => {
-    const currentIds = groups.map((g) => g.id);
-    const toAdd = nextIds.filter((id) => !currentIds.includes(id));
-    const toRemove = currentIds.filter((id) => !nextIds.includes(id));
-    if (toAdd.length === 0 && toRemove.length === 0) return;
-
-    const previous = groups;
-    const next = nextIds
-      .map((id) => allGroups.find((g) => g.id === id))
-      .filter(Boolean)
-      .map((g) => ({ id: g!.id, name: g!.name }));
-    setGroups(next);
-    setSaving(true);
-
-    try {
-      await Promise.all([
-        ...toAdd.map((id) => contactsApi.assignUserGroup(contact.id, id)),
-        ...toRemove.map((id) => contactsApi.removeUserGroup(contact.id, id)),
-      ]);
-      onUserGroupsChange?.(next);
-      toast.success(toRemove.length > 0 && toAdd.length === 0
-        ? t('userGroups.toasts.removed')
-        : t('userGroups.toasts.assigned'));
-    } catch (error) {
-      setGroups(previous);
-      toast.error(t('userGroups.toasts.error'));
-    } finally {
-      setSaving(false);
-    }
+  const notSpecified = t('detail.info.not_specified', '-');
+  const fmtDate = (d?: string) => {
+    if (!d) return notSpecified;
+    const parsed = new Date(d);
+    if (isNaN(parsed.getTime())) return notSpecified;
+    return format(parsed, 'PPP');
   };
 
-  const infoItems = [
-    {
-      icon: Mail,
-      label: t('detail.info.email'),
-      value: contact.email,
-      href: contact.email ? `mailto:${contact.email}` : undefined,
-    },
-    {
-      icon: Phone,
-      label: t('detail.info.phone'),
-      value: contact.phone,
-      href: contact.phone ? `tel:${contact.phone}` : undefined,
-    },
-    {
-      icon: Building2,
-      label: t('detail.info.company'),
-      value: contact.company,
-    },
-    {
-      icon: User,
-      label: t('detail.info.position'),
-      value: contact.position,
-    },
-    {
-      icon: MapPin,
-      label: t('detail.info.address'),
-      value: contact.address,
-    },
-    {
-      icon: IdCard,
-      label: t('detail.info.cin'),
-      value: contact.cin,
-    },
-    // Matricule Fiscale - for both types
-    {
-      icon: FileText,
-      label: t('detail.info.matricule_fiscale'),
-      value: contact.matriculeFiscale,
-    },
-    {
-      icon: Briefcase,
-      label: t('detail.info.last_contact'),
-      value: contact.lastContactDate 
-        ? format(new Date(contact.lastContactDate), 'PPP') 
-        : undefined,
-    },
-    {
-      icon: Calendar,
-      label: t('detail.info.created_at'),
-      value: contact.createdAt 
-        ? format(new Date(contact.createdAt), 'PPP') 
-        : undefined,
-    },
-  ];
-
   return (
-    <Card className="shadow-sm">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <User className="h-5 w-5" />
-          {t('detail.info.title')}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Contact Information Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {infoItems.map((item, index) => (
-            <div key={index} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 border">
-              <div className="p-2 rounded-lg bg-background shrink-0">
-                <item.icon className="h-4 w-4 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">{item.label}</p>
-                {item.href && item.value ? (
-                  <a 
-                    href={item.href} 
-                    className="text-sm font-medium hover:underline truncate block"
-                  >
-                    {item.value || '-'}
-                  </a>
-                ) : (
-                  <p className="text-sm font-medium truncate">{item.value || '-'}</p>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+    <div className="space-y-4 sm:space-y-6">
+      <Card>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
+            <User className="h-4 w-4 text-primary" />
+            {t('detail.info.title')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Left Column */}
+            <div className="space-y-4">
+              <DetailField label={t('detail.info.name', 'Name')} value={contact.name || notSpecified} />
+              <DetailField
+                label={t('detail.info.email')}
+                value={contact.email || notSpecified}
+                href={contact.email ? `mailto:${contact.email}` : undefined}
+              />
+              <DetailField
+                label={t('detail.info.phone')}
+                value={contact.phone || notSpecified}
+                href={contact.phone ? `tel:${contact.phone}` : undefined}
+              />
+              <DetailField label={t('detail.info.company')} value={contact.company || notSpecified} />
+              <DetailField label={t('detail.info.position')} value={contact.position || notSpecified} />
+              <DetailField label={t('detail.info.address')} value={contact.address || notSpecified} />
 
-        {/* User Groups */}
-        <div className="pt-4 border-t space-y-3">
-          <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">{t('userGroups.section_title')}</span>
-          </div>
-          {groups.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t('userGroups.empty_assigned')}</p>
-          ) : (
-            <div className="flex flex-wrap gap-1.5">
-              {groups.map((g) => (
-                <Badge key={g.id} variant="secondary" className="gap-1 text-xs">
-                  {g.name}
-                  <button
-                    type="button"
-                    aria-label={`${t('userGroups.remove')} ${g.name}`}
-                    disabled={saving}
-                    onClick={() => applyGroups(groups.filter((x) => x.id !== g.id).map((x) => x.id))}
-                    className="rounded-sm hover:text-destructive"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
+              <ContactUserGroupsInline
+                contactId={contact.id}
+                groups={contact.userGroups ?? []}
+                variant="labeled"
+                editable
+                onChange={onUserGroupsChange}
+              />
             </div>
-          )}
-          <div className="max-w-xs">
-            <UserGroupsPicker
-              value={groups.map((g) => g.id)}
-              onChange={applyGroups}
-              disabled={saving}
-              size="sm"
-              triggerLabel={t('userGroups.add')}
-            />
-          </div>
-        </div>
 
-        {/* Status & Type Row */}
-        <div className="flex flex-wrap items-center gap-4 pt-4 border-t">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">{t('detail.info.status')}:</span>
-            <Badge variant="default" className="capitalize">
-              {t(`detail.status.${contact.status}`, contact.status)}
-            </Badge>
+            {/* Right Column */}
+            <div className="space-y-4">
+              <div>
+                <span className="text-sm text-muted-foreground">{t('detail.info.status')}</span>
+                <div className="mt-1">
+                  <Badge variant="default" className="capitalize">
+                    {t(`detail.status.${contact.status}`, contact.status)}
+                  </Badge>
+                </div>
+              </div>
+              <div>
+                <span className="text-sm text-muted-foreground">{t('detail.info.type')}</span>
+                <div className="mt-1">
+                  <Badge variant="outline" className="capitalize">
+                    {t(`detail.type.${contact.type}`, contact.type)}
+                  </Badge>
+                </div>
+              </div>
+              <DetailField label={t('detail.info.cin')} value={contact.cin || notSpecified} />
+              <DetailField
+                label={t('detail.info.matricule_fiscale')}
+                value={contact.matriculeFiscale || notSpecified}
+              />
+              <DetailField label={t('detail.info.last_contact')} value={fmtDate(contact.lastContactDate)} />
+              <DetailField label={t('detail.info.created_at')} value={fmtDate(contact.createdAt)} />
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">{t('detail.info.type')}:</span>
-            <Badge variant="outline" className="capitalize">
-              {t(`detail.type.${contact.type}`, contact.type)}
-            </Badge>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function DetailField({
+  label,
+  value,
+  href,
+}: {
+  label: string;
+  value: string;
+  href?: string;
+}) {
+  return (
+    <div>
+      <span className="text-sm text-muted-foreground">{label}</span>
+      {href ? (
+        <a
+          href={href}
+          className="mt-1 block text-sm text-primary hover:underline truncate"
+        >
+          {value}
+        </a>
+      ) : (
+        <p className="text-sm text-foreground mt-1 break-words">{value}</p>
+      )}
+    </div>
   );
 }

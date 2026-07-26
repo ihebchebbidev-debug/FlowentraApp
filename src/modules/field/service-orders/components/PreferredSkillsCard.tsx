@@ -1,19 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Plus, X, Loader2 } from "lucide-react";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Search, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { skillsApi } from "@/services/api/skillsApi";
 import { serviceOrdersApi } from "@/services/api/serviceOrdersApi";
@@ -30,9 +30,9 @@ export function PreferredSkillsCard({
   onChange,
 }: PreferredSkillsCardProps) {
   const [catalog, setCatalog] = useState<string[]>([]);
-  const [selectValue, setSelectValue] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -64,13 +64,16 @@ export function PreferredSkillsCard({
   );
 
   const persist = async (next: string[]) => {
+    // Optimistic — flip badges instantly, revert on failure.
+    const previous = skills;
+    onChange(next);
     setSaving(true);
     try {
       await serviceOrdersApi.update(serviceOrderId, { preferredSkills: next });
-      onChange(next);
     } catch (err) {
       console.error("Failed to update preferred skills", err);
       toast.error("Failed to update preferred skills");
+      onChange(previous);
     } finally {
       setSaving(false);
     }
@@ -83,6 +86,8 @@ export function PreferredSkillsCard({
       toast.info(`"${value}" is already added`);
       return;
     }
+    setQuery("");
+    setOpen(false);
     await persist([...skills, value]);
   };
 
@@ -90,10 +95,11 @@ export function PreferredSkillsCard({
     await persist(skills.filter((s) => s.toLowerCase() !== skill.toLowerCase()));
   };
 
-  const handleSelectCatalog = async (value: string) => {
-    setSelectValue("");
-    if (value) await addSkill(value);
-  };
+  const trimmedQuery = query.trim();
+  const canCreate =
+    trimmedQuery.length > 0 &&
+    !currentLower.has(trimmedQuery.toLowerCase()) &&
+    !catalog.some((c) => c.toLowerCase() === trimmedQuery.toLowerCase());
 
   return (
     <div className="space-y-1">
@@ -106,9 +112,6 @@ export function PreferredSkillsCard({
         )}
       </div>
       <div className="flex flex-wrap items-center gap-1.5">
-        {skills.length === 0 && (
-          <span className="text-sm text-muted-foreground">Not specified</span>
-        )}
         {skills.map((skill) => (
           <Badge
             key={skill}
@@ -127,46 +130,81 @@ export function PreferredSkillsCard({
             </button>
           </Badge>
         ))}
-        <Popover open={open} onOpenChange={setOpen}>
+        <Popover
+          open={open}
+          onOpenChange={(o) => {
+            setOpen(o);
+            if (!o) setQuery("");
+          }}
+        >
           <PopoverTrigger asChild>
-            <Button
+            <button
               type="button"
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6"
               disabled={saving}
+              className="inline-flex items-center gap-1 h-6 px-2 rounded-md border border-dashed border-border/70 text-xs text-muted-foreground hover:text-foreground hover:border-foreground/40 hover:bg-muted/50 transition-colors disabled:opacity-50"
             >
-              <Plus className="h-3.5 w-3.5" />
-            </Button>
+              <Search className="h-3 w-3" />
+              <span>
+                {skills.length === 0 ? "Add skill" : "Add another"}
+              </span>
+            </button>
           </PopoverTrigger>
-          <PopoverContent className="w-64 p-2 space-y-2" align="start">
-            <div className="text-xs font-medium text-muted-foreground">
-              Add skill from catalog
-            </div>
-            <Select
-              value={selectValue}
-              onValueChange={handleSelectCatalog}
-              disabled={saving || catalogOptions.length === 0}
-            >
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue
-                  placeholder={
-                    catalogOptions.length === 0
-                      ? "No more skills in catalog"
-                      : "From skills catalog"
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {catalogOptions.map((s) => (
-                  <SelectItem key={s} value={s} className="text-xs">
-                    {s}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <PopoverContent className="w-64 p-0" align="start">
+            <Command shouldFilter>
+              <CommandInput
+                placeholder="Search or type to create…"
+                value={query}
+                onValueChange={setQuery}
+                className="h-9"
+              />
+              <CommandList>
+                <CommandEmpty>
+                  {canCreate ? (
+                    <button
+                      type="button"
+                      onClick={() => addSkill(trimmedQuery)}
+                      className="w-full text-left px-2 py-1.5 text-xs hover:bg-accent rounded-sm"
+                    >
+                      Create "{trimmedQuery}"
+                    </button>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">
+                      No matches
+                    </span>
+                  )}
+                </CommandEmpty>
+                {catalogOptions.length > 0 && (
+                  <CommandGroup heading="From catalog">
+                    {catalogOptions.map((s) => (
+                      <CommandItem
+                        key={s}
+                        value={s}
+                        onSelect={() => addSkill(s)}
+                        className="text-xs"
+                      >
+                        {s}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                )}
+                {canCreate && catalogOptions.length > 0 && (
+                  <CommandGroup heading="Create new">
+                    <CommandItem
+                      value={`__create__${trimmedQuery}`}
+                      onSelect={() => addSkill(trimmedQuery)}
+                      className="text-xs"
+                    >
+                      + Create "{trimmedQuery}"
+                    </CommandItem>
+                  </CommandGroup>
+                )}
+              </CommandList>
+            </Command>
           </PopoverContent>
         </Popover>
+        {skills.length === 0 && !open && (
+          <span className="text-xs text-muted-foreground italic">Not specified</span>
+        )}
       </div>
     </div>
   );

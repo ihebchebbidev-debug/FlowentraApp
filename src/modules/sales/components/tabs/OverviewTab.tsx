@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, FileText } from "lucide-react";
+import { ContactUserGroupsInline } from '@/modules/contacts/components/ContactUserGroupsInline';
 import { Sale } from "../../types";
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { offersApi } from '@/services/api/offersApi';
@@ -89,6 +90,10 @@ export function OverviewTab({ sale }: OverviewTabProps) {
               </div>
 
               <DetailField label={t('overview.contactEmail')} value={sale.contactEmail || t('overview.notSpecified')} />
+
+              {sale.contactId != null && (
+                <ContactUserGroupsInline contactId={sale.contactId as any} variant="labeled" editable />
+              )}
 
               <div>
                 <span className="text-sm text-muted-foreground">{t('overview.relatedOffer')}</span>

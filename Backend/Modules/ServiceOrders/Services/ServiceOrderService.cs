@@ -2997,9 +2997,14 @@ namespace MyApi.Modules.ServiceOrders.Services
         // Eliminates the "double job" where users had to reopen each SO after
         // its items had already been transferred to the Sale.
         // =====================================================================
-        public async Task CascadeSaleStatusToServiceOrdersAsync(int saleId, string newSaleStatus, string userId)
+        public async Task CascadeSaleStatusToServiceOrdersAsync(
+            int saleId, string newSaleStatus, string userId, bool throwOnFailure = false)
         {
             if (saleId <= 0 || string.IsNullOrWhiteSpace(newSaleStatus)) return;
+
+            // Collected after the transaction commits so a workflow-trigger failure
+            // can never roll back (or be rolled back with) the status changes.
+            var pendingTriggers = new List<(int SoId, string OrderNumber, string From, string To)>();
 
             try
             {
@@ -3015,108 +3020,185 @@ namespace MyApi.Modules.ServiceOrders.Services
 
                 if (linkedOrders.Count == 0) return;
 
+                // --- Scope the cascade to the SOs this sale actually bills -------
+                // PrepareForInvoiceAsync stamps every transferred line with
+                // SaleItem.ServiceOrderId. When a sale carries items from several
+                // service orders, only the stamped ones may be cascaded — otherwise
+                // invoicing SO #1 would wrongly close SO #2 riding on the same sale.
+                // Sales with no stamped items at all (legacy / manual sales) keep the
+                // old behaviour and cascade to every linked SO.
+                var billedSoIds = await _context.SaleItems
+                    .Where(si => si.SaleId == saleId && si.ServiceOrderId != null && si.ServiceOrderId != "")
+                    .Select(si => si.ServiceOrderId!)
+                    .Distinct()
+                    .ToListAsync();
+
+                if (billedSoIds.Count > 0)
+                {
+                    var billedSet = new HashSet<string>(billedSoIds, StringComparer.OrdinalIgnoreCase);
+                    var scoped = linkedOrders
+                        .Where(so => billedSet.Contains(so.Id.ToString()))
+                        .ToList();
+
+                    if (scoped.Count == 0)
+                    {
+                        _logger.LogInformation(
+                            "Cascade: Sale {SaleId} → {NewSaleStatus} skipped — none of the {Count} linked service orders have items on this sale",
+                            saleId, newStatus, linkedOrders.Count);
+                        return;
+                    }
+
+                    if (scoped.Count != linkedOrders.Count)
+                    {
+                        _logger.LogInformation(
+                            "Cascade: Sale {SaleId} scoped from {Linked} linked to {Scoped} billed service order(s)",
+                            saleId, linkedOrders.Count, scoped.Count);
+                    }
+
+                    linkedOrders = scoped;
+                }
+
                 // Statuses considered "past prepare-for-invoice" — safe to cascade
                 // an invoicing/closing decision onto because their items already
                 // moved to the sale.
                 var invoiceableFromStatuses = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
                 {
                     "in_progress", "partially_completed", "technically_completed",
-                    "completed", "ready_for_invoice"
+                    "completed", "ready_for_invoice", "invoiced"
                 };
 
-                foreach (var so in linkedOrders)
+                // --- Apply every status change atomically -------------------------
+                async Task ApplyAsync()
                 {
-                    var current = (so.Status ?? string.Empty).ToLowerInvariant();
-                    string? target = null;
-
-                    switch (newStatus)
+                    pendingTriggers.Clear();
+                    // Join an ambient transaction when a caller already owns one.
+                    var ownsTx = _context.Database.CurrentTransaction == null;
+                    var tx = ownsTx ? await _context.Database.BeginTransactionAsync() : null;
+                    try
                     {
-                        case "invoiced":
-                            if (current == "cancelled" || current == "closed" || current == "invoiced") break;
-                            if (invoiceableFromStatuses.Contains(current)) target = "invoiced";
-                            break;
+                    foreach (var so in linkedOrders)
+                    {
+                        var current = (so.Status ?? string.Empty).ToLowerInvariant();
+                        string? target = null;
 
-                        case "closed":
-                        case "won":
-                        case "completed":
-                            if (current == "cancelled" || current == "closed") break;
-                            if (invoiceableFromStatuses.Contains(current) || current == "invoiced")
-                                target = "closed";
-                            break;
+                        switch (newStatus)
+                        {
+                            // Fully invoiced sale ⇒ the service order's work is billed
+                            // and done: close it automatically. This is the last link
+                            // of the sale → SO → dispatch → invoice chain and removes
+                            // the manual "close the SO afterwards" step.
+                            case "invoiced":
+                                if (current == "cancelled" || current == "closed") break;
+                                if (invoiceableFromStatuses.Contains(current)) target = "closed";
+                                break;
 
-                        case "cancelled":
-                        case "lost":
-                            if (current == "cancelled" || current == "closed") break;
-                            target = "cancelled";
-                            break;
+                            case "closed":
+                            case "won":
+                            case "completed":
+                                if (current == "cancelled" || current == "closed") break;
+                                if (invoiceableFromStatuses.Contains(current))
+                                    target = "closed";
+                                break;
 
-                        case "in_progress":
-                        case "created":
-                            // Sale was reopened — pull auto-invoiced SOs back so users
-                            // can add more items / regenerate invoice.
-                            if (current == "invoiced") target = "ready_for_invoice";
-                            break;
+                            case "cancelled":
+                            case "lost":
+                                if (current == "cancelled" || current == "closed") break;
+                                target = "cancelled";
+                                break;
 
-                        // partially_invoiced deliberately does not cascade — more SO
-                        // items may still be pending transfer to the sale.
-                        default:
-                            break;
+                            case "in_progress":
+                            case "created":
+                                // Sale was reopened / de-invoiced — pull the auto-closed
+                                // SOs back so users can add more items and re-invoice.
+                                if (current == "invoiced" || current == "closed")
+                                    target = "ready_for_invoice";
+                                break;
+
+                            // partially_invoiced deliberately does not cascade — more SO
+                            // items may still be pending transfer to the sale.
+                            default:
+                                break;
+                        }
+
+                        if (target == null || string.Equals(target, current, StringComparison.OrdinalIgnoreCase))
+                            continue;
+
+                        var previous = so.Status;
+                        so.Status = target;
+                        so.ModifiedDate = DateTime.UtcNow;
+                        so.ModifiedBy = userId;
+
+                        if (target == "closed")
+                        {
+                            if (!so.CompletedDate.HasValue) so.CompletedDate = DateTime.UtcNow;
+                            so.CompletionPercentage = 100;
+                        }
+                        else if (target == "ready_for_invoice")
+                        {
+                            so.CompletedDate = null;
+                        }
+
+                        _logger.LogInformation(
+                            "Cascade: Sale {SaleId} → {NewSaleStatus} propagated to ServiceOrder {SoId}: {From} → {To}",
+                            saleId, newStatus, so.Id, previous, target);
+
+                        pendingTriggers.Add((so.Id, so.OrderNumber ?? "", previous ?? string.Empty, target));
                     }
 
-                    if (target == null || string.Equals(target, current, StringComparison.OrdinalIgnoreCase))
-                        continue;
-
-                    var previous = so.Status;
-                    so.Status = target;
-                    so.ModifiedDate = DateTime.UtcNow;
-                    so.ModifiedBy = userId;
-
-                    if (target == "closed")
-                    {
-                        if (!so.CompletedDate.HasValue) so.CompletedDate = DateTime.UtcNow;
-                        so.CompletionPercentage = 100;
+                    await _context.SaveChangesAsync();
+                    if (tx != null) await tx.CommitAsync();
                     }
+                    finally
+                    {
+                        if (tx != null) await tx.DisposeAsync();
+                    }
+                }
 
-                    _logger.LogInformation(
-                        "Cascade: Sale {SaleId} → {NewSaleStatus} propagated to ServiceOrder {SoId}: {From} → {To}",
-                        saleId, newStatus, so.Id, previous, target);
+                // A retrying execution strategy cannot own a caller's transaction:
+                // when one is already ambient, run inline and let that caller retry.
+                if (_context.Database.CurrentTransaction != null)
+                    await ApplyAsync();
+                else
+                    await _context.Database.CreateExecutionStrategy().ExecuteAsync(ApplyAsync);
 
-                    // Fire workflow trigger (best-effort, per-SO).
-                    if (_workflowTriggerService != null)
+                // Fire workflow triggers only for changes that are actually committed.
+                if (_workflowTriggerService != null)
+                {
+                    foreach (var t in pendingTriggers)
                     {
                         try
                         {
                             await _workflowTriggerService.TriggerStatusChangeAsync(
                                 "service_order",
-                                so.Id,
-                                previous ?? string.Empty,
-                                target,
+                                t.SoId,
+                                t.From,
+                                t.To,
                                 userId,
                                 new Dictionary<string, object>
                                 {
-                                    { "serviceOrderId", so.Id },
-                                    { "orderNumber", so.OrderNumber ?? "" },
+                                    { "serviceOrderId", t.SoId },
+                                    { "orderNumber", t.OrderNumber },
                                     { "cascadedFromSaleId", saleId },
-                                    { "cascadedFromSaleStatus", newStatus }
+                                    { "cascadedFromSaleStatus", newSaleStatus.ToLowerInvariant() }
                                 });
                         }
                         catch (Exception wfEx)
                         {
                             _logger.LogWarning(wfEx,
                                 "Cascade: workflow trigger failed for SO {SoId} (Sale {SaleId} {NewSaleStatus})",
-                                so.Id, saleId, newStatus);
+                                t.SoId, saleId, newSaleStatus);
                         }
                     }
                 }
-
-                await _context.SaveChangesAsync();
             }
             catch (Exception ex)
             {
-                // Never let a cascade failure bubble up and roll back the sale/invoice save.
                 _logger.LogError(ex,
                     "CascadeSaleStatusToServiceOrdersAsync failed for Sale {SaleId} → {NewStatus}",
                     saleId, newSaleStatus);
+
+                // Callers that own the surrounding unit of work can opt into failing loudly.
+                if (throwOnFailure) throw;
             }
         }
     }

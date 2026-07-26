@@ -780,10 +780,17 @@ namespace MyApi.Modules.Invoices.Services
                 sale.UpdatedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
 
-                // Cascade the sale's new status onto every linked Service Order so
-                // an SO stuck at ready_for_invoice flips to invoiced automatically
-                // once the sale is fully invoiced. Best-effort — never throws.
-                if (statusChanged && _serviceProvider != null)
+                // Cascade the sale's new status onto the Service Orders this sale
+                // actually bills: once the sale is fully invoiced the SO is closed
+                // automatically (its work is done and billed). The cascade applies
+                // all SO updates inside its own transaction.
+                // Re-run it whenever the sale is fully invoiced — not only when the
+                // status just changed — so an SO left behind by an earlier failed
+                // cascade heals on the next invoice action. Best-effort: never throws.
+                var shouldCascade = statusChanged ||
+                                    string.Equals(next, "invoiced", StringComparison.OrdinalIgnoreCase);
+
+                if (shouldCascade && _serviceProvider != null)
                 {
                     try
                     {

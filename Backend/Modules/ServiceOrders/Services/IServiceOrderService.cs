@@ -69,11 +69,14 @@ namespace MyApi.Modules.ServiceOrders.Services
         Task<ServiceOrderDto> PrepareForInvoiceAsync(int id, PrepareInvoiceDto dto, string userId);
 
         /// <summary>
-        /// Cascade a Sale's status change onto every Service Order linked to it,
+        /// Cascade a Sale's status change onto the Service Orders it actually bills,
         /// so the user never has to re-open the SO to advance it after items were
-        /// transferred to the Sale. Best-effort: failures log but do not throw.
+        /// transferred to the Sale. A fully invoiced sale auto-closes its service orders.
+        /// Best-effort by default: failures log but do not throw unless
+        /// <paramref name="throwOnFailure"/> is set by a caller owning the unit of work.
         /// </summary>
-        Task CascadeSaleStatusToServiceOrdersAsync(int saleId, string newSaleStatus, string userId);
+        Task CascadeSaleStatusToServiceOrdersAsync(
+            int saleId, string newSaleStatus, string userId, bool throwOnFailure = false);
     }
 }
 
