@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,11 +11,15 @@ using MyApi.Modules.Processes.Services;
 namespace MyApi.Modules.Processes.Controllers
 {
     /// <summary>
-    /// Admin API for the Processes workspace page.
+    /// Admin API for the Processes workspace page. All endpoints are gated to
+    /// MainAdmin users (login_type == "admin") — process schedules are global,
+    /// so tenant users must never be able to read or mutate them.
+    ///
     /// - GET  /api/processes/schedules            — list all schedules (state overlay for the UI)
     /// - PUT  /api/processes/schedules            — upsert a schedule (interval/config/etc.)
     /// - POST /api/processes/schedules/{key}/pause?paused=true|false
     /// - POST /api/processes/schedules/{key}/enable?enabled=true|false
+    /// - POST /api/processes/schedules/{key}/reset-failures — clear BlockReason + failure counter
     /// - GET  /api/processes/runs/{key}?limit=20  — recent run history for one process
     /// - POST /api/processes/run                  — { key } → execute immediately, return result
     /// </summary>
@@ -32,9 +37,22 @@ namespace MyApi.Modules.Processes.Controllers
             _db = db; _registry = registry; _logger = logger;
         }
 
+        /// <summary>Same rule the Settings module applies — only lnUser/MainAdmin can touch cross-tenant admin surfaces.</summary>
+        private bool IsMainAdmin()
+        {
+            var loginType = User.FindFirst("login_type")?.Value
+                            ?? User.FindFirst("loginType")?.Value;
+            return string.Equals(loginType, "admin", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private IActionResult? RequireMainAdmin()
+            => IsMainAdmin() ? null : StatusCode(403, new { error = "MainAdmin permission required" });
+
+
         [HttpGet("schedules")]
         public async Task<ActionResult<IEnumerable<ProcessScheduleDto>>> List(CancellationToken ct)
         {
+            if (RequireMainAdmin() is { } deny) return deny;
             var rows = await _db.Set<ProcessSchedule>().AsNoTracking().ToListAsync(ct);
             return Ok(rows.Select(ToDto));
         }
@@ -42,6 +60,7 @@ namespace MyApi.Modules.Processes.Controllers
         [HttpPut("schedules")]
         public async Task<ActionResult<ProcessScheduleDto>> Upsert([FromBody] UpsertScheduleRequest req, CancellationToken ct)
         {
+            if (RequireMainAdmin() is { } deny) return deny;
             if (string.IsNullOrWhiteSpace(req.Key)) return BadRequest(new { error = "key is required" });
 
             var s = await _db.Set<ProcessSchedule>().FirstOrDefaultAsync(x => x.Key == req.Key, ct);
@@ -69,6 +88,7 @@ namespace MyApi.Modules.Processes.Controllers
         [HttpPost("schedules/{key}/pause")]
         public async Task<IActionResult> SetPaused(string key, [FromQuery] bool paused, CancellationToken ct)
         {
+            if (RequireMainAdmin() is { } deny) return deny;
             var s = await _db.Set<ProcessSchedule>().FirstOrDefaultAsync(x => x.Key == key, ct);
             if (s == null) return NotFound();
             s.Paused = paused;
@@ -81,6 +101,7 @@ namespace MyApi.Modules.Processes.Controllers
         [HttpPost("schedules/{key}/enable")]
         public async Task<IActionResult> SetEnabled(string key, [FromQuery] bool enabled, CancellationToken ct)
         {
+            if (RequireMainAdmin() is { } deny) return deny;
             var s = await _db.Set<ProcessSchedule>().FirstOrDefaultAsync(x => x.Key == key, ct);
             if (s == null) return NotFound();
             s.Enabled = enabled;
@@ -90,9 +111,25 @@ namespace MyApi.Modules.Processes.Controllers
             return Ok(ToDto(s));
         }
 
+        [HttpPost("schedules/{key}/reset-failures")]
+        public async Task<IActionResult> ResetFailures(string key, CancellationToken ct)
+        {
+            if (RequireMainAdmin() is { } deny) return deny;
+            var s = await _db.Set<ProcessSchedule>().FirstOrDefaultAsync(x => x.Key == key, ct);
+            if (s == null) return NotFound();
+            s.ConsecutiveFailures = 0;
+            s.BlockReason = null;
+            if (s.Enabled && !s.Paused && s.NextRunAt == null)
+                s.NextRunAt = DateTime.UtcNow.AddMinutes(Math.Max(1, s.IntervalMinutes));
+            s.UpdatedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync(ct);
+            return Ok(ToDto(s));
+        }
+
         [HttpGet("runs/{key}")]
         public async Task<ActionResult<IEnumerable<ProcessRunDto>>> ListRuns(string key, [FromQuery] int limit = 20, CancellationToken ct = default)
         {
+            if (RequireMainAdmin() is { } deny) return deny;
             limit = Math.Clamp(limit, 1, 200);
             var rows = await _db.Set<ProcessRun>().AsNoTracking()
                 .Where(r => r.ProcessKey == key)
@@ -107,6 +144,7 @@ namespace MyApi.Modules.Processes.Controllers
         [HttpPost("run")]
         public async Task<ActionResult<RunNowResult>> RunNow([FromBody] RunNowRequest req, CancellationToken ct)
         {
+            if (RequireMainAdmin() is { } deny) return deny;
             if (string.IsNullOrWhiteSpace(req.Key)) return BadRequest(new { error = "key is required" });
             if (!_registry.TryGet(req.Key, out var handler))
                 return BadRequest(new { error = $"No handler registered for '{req.Key}'" });
@@ -119,9 +157,12 @@ namespace MyApi.Modules.Processes.Controllers
                 await _db.SaveChangesAsync(ct);
             }
 
+            // Manual triggers are always attempt=1 (they don't participate in the retry ladder;
+            // if the handler fails, the operator sees the error and decides).
             var result = await ProcessSchedulerService.ExecuteOnceAsync(_db, s, handler, "manual", attempt: 1, ct);
             return Ok(result);
         }
+
 
         // ── mappers ──────────────────────────────────────────────────────────
         private static ProcessScheduleDto ToDto(ProcessSchedule s)

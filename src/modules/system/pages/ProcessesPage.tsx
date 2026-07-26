@@ -20,12 +20,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
 import {
-  PROCESSES, WORKSPACE_LABELS, type ProcessDefinition, type ProcessStatus, type WorkspaceId,
+  PROCESSES, WORKSPACE_LABELS, type ProcessDefinition, type ProcessRun as UiProcessRun, type ProcessStatus, type WorkspaceId,
 } from "@/modules/system/services/processesMock";
 import {
   listSchedules, upsertSchedule, setEnabled as apiSetEnabled, setPaused as apiSetPaused,
-  runNow as apiRunNow, overlay, REAL_HANDLER_KEYS, type ProcessSchedule,
+  runNow as apiRunNow, listRuns as apiListRuns, resetFailures as apiResetFailures,
+  overlay, REAL_HANDLER_KEYS, type ProcessSchedule,
 } from "@/modules/system/services/processesService";
+
 
 const STATUS_META: Record<ProcessStatus, { label: string; className: string; icon: any }> = {
   idle:     { label: "Idle",     className: "bg-muted text-muted-foreground border-border",                icon: CircleDot },
@@ -85,18 +87,27 @@ export default function ProcessesPage() {
   const { isMainAdmin, hasPermission, isLoading } = usePermissions();
   const canView = isMainAdmin || hasPermission("settings", "manage");
 
-  const [items, setItems] = useState<ProcessDefinition[]>(PROCESSES);
+  // Only surface processes that have a real, reliable backend handler. Unreliable
+  // / mock-only entries were dropped so users see just the jobs that actually run.
+  const reliableCatalog = useMemo(
+    () => PROCESSES.filter((p) => REAL_HANDLER_KEYS.has(p.key)),
+    []
+  );
+
+  const [items, setItems] = useState<ProcessDefinition[]>(reliableCatalog);
   const [schedules, setSchedules] = useState<Map<string, ProcessSchedule>>(new Map());
   const [workspace, setWorkspace] = useState<WorkspaceId | "all">("all");
   const [statusFilter, setStatusFilter] = useState<ProcessStatus | "all">("all");
   const [query, setQuery] = useState("");
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [liveHistory, setLiveHistory] = useState<UiProcessRun[] | null>(null);
+
 
   const refreshSchedules = async () => {
     try {
       const map = await listSchedules();
       setSchedules(map);
-      setItems(PROCESSES.map((p) => overlay(p, map.get(p.key))));
+      setItems(reliableCatalog.map((p) => overlay(p, map.get(p.key))));
     } catch (e) {
       // Table not created yet -> stay on mock data. Surfaced in UI banner below.
       console.warn("[processes] listSchedules failed:", (e as Error).message);
@@ -147,31 +158,26 @@ export default function ProcessesPage() {
     setItems((prev) => prev.map((p) => (p.key === key ? { ...p, ...patch } : p)));
 
   const runNow = async (p: ProcessDefinition) => {
+    // Every catalog entry that reaches this button is backed by a real handler
+    // (the list is filtered by REAL_HANDLER_KEYS). The backend auto-creates the
+    // schedule row on the first "Run now", so we don't need to gate on the
+    // presence of a persisted schedule.
     updateProcess(p.key, { status: "running", lastRunAt: new Date().toISOString() });
     toast({ title: "Process started", description: p.name });
-    // Real handlers -> call edge function. Others -> mock simulation.
-    if (REAL_HANDLER_KEYS.has(p.key) && schedules.has(p.key)) {
-      try {
-        const res = await apiRunNow(p.key);
-        toast({
-          title: res.status === "success" ? "Process completed" : res.status === "blocked" ? "Blocked" : "Process failed",
-          description: res.error ?? res.block_reason ?? `${p.name} — ${res.duration_ms}ms`,
-          variant: res.status === "success" ? "default" : "destructive",
-        });
-      } catch (e) {
-        toast({ title: "Run failed", description: (e as Error).message, variant: "destructive" });
-      }
-      await refreshSchedules();
-      return;
-    }
-    setTimeout(() => {
-      updateProcess(p.key, {
-        status: "idle",
-        lastDurationMs: 1_800,
-        lastItems: Math.round(Math.random() * 20),
+    try {
+      const res = await apiRunNow(p.key);
+      toast({
+        title: res.status === "success" ? "Process completed" : res.status === "blocked" ? "Blocked" : "Process failed",
+        description: res.error ?? res.block_reason ?? `${p.name} — ${res.duration_ms}ms`,
+        variant: res.status === "success" ? "default" : "destructive",
       });
-      toast({ title: "Process completed (mock)", description: p.name });
-    }, 1_800);
+    } catch (e) {
+      toast({ title: "Run failed", description: (e as Error).message, variant: "destructive" });
+    }
+    await refreshSchedules();
+    if (selectedKey === p.key) {
+      try { setLiveHistory(await apiListRuns(p.key, 30)); } catch { /* ignore */ }
+    }
   };
 
   const togglePause = async (p: ProcessDefinition) => {
@@ -208,11 +214,54 @@ export default function ProcessesPage() {
   };
 
   const stopRun = (p: ProcessDefinition) => {
-    updateProcess(p.key, { status: "idle" });
-    toast({ title: "Run cancelled", description: p.name });
+    // Cancellation across HTTP requests is not implemented server-side yet — surface
+    // that honestly rather than pretending the click did something.
+    toast({
+      title: "Stop not supported",
+      description: `${p.name} runs to completion. Pause the schedule to prevent future runs.`,
+    });
   };
 
+  const resetFailures = async (p: ProcessDefinition) => {
+    if (schedules.has(p.key)) {
+      try {
+        await apiResetFailures(p.key);
+        await refreshSchedules();
+        toast({ title: "Failures cleared", description: p.name });
+      } catch (e) {
+        toast({ title: "Could not reset failures", description: (e as Error).message, variant: "destructive" });
+      }
+    } else {
+      updateProcess(p.key, { consecutiveFailures: 0 });
+    }
+  };
+
+  const saveInterval = async (p: ProcessDefinition, intervalMinutes: number) => {
+    try {
+      await upsertSchedule({ key: p.key, name: p.name, interval_minutes: intervalMinutes });
+      await refreshSchedules();
+      toast({ title: "Schedule updated", description: `${p.name} now runs every ${intervalMinutes} min.` });
+    } catch (e) {
+      toast({ title: "Could not update schedule", description: (e as Error).message, variant: "destructive" });
+    }
+  };
+
+  // Load real run history from the backend whenever a real-handler process is opened.
+  useEffect(() => {
+    if (!selectedKey) { setLiveHistory(null); return; }
+    if (!REAL_HANDLER_KEYS.has(selectedKey) || !schedules.has(selectedKey)) {
+      setLiveHistory(null);
+      return;
+    }
+    let cancelled = false;
+    apiListRuns(selectedKey, 30)
+      .then((rows) => { if (!cancelled) setLiveHistory(rows); })
+      .catch(() => { if (!cancelled) setLiveHistory(null); });
+    return () => { cancelled = true; };
+  }, [selectedKey, schedules]);
+
   if (isLoading || !canView) return null;
+
 
   return (
     <div className="flex flex-col gap-4 p-4 sm:p-6">
@@ -326,13 +375,18 @@ export default function ProcessesPage() {
           {selected && (
             <ProcessDrawer
               p={selected}
+              liveHistory={liveHistory}
+              hasSchedule={schedules.has(selected.key)}
+              stopEnabled={false}
               onRun={() => runNow(selected)}
               onPause={() => togglePause(selected)}
               onStop={() => stopRun(selected)}
               onToggleEnabled={() => toggleEnabled(selected)}
-              onResetFailures={() => updateProcess(selected.key, { consecutiveFailures: 0 })}
+              onResetFailures={() => resetFailures(selected)}
+              onSaveInterval={(mins) => saveInterval(selected, mins)}
             />
           )}
+
         </SheetContent>
       </Sheet>
     </div>
@@ -402,15 +456,23 @@ function ProcessRow({
 }
 
 function ProcessDrawer({
-  p, onRun, onPause, onStop, onToggleEnabled, onResetFailures,
+  p, liveHistory, hasSchedule, stopEnabled,
+  onRun, onPause, onStop, onToggleEnabled, onResetFailures, onSaveInterval,
 }: {
   p: ProcessDefinition;
+  liveHistory: UiProcessRun[] | null;
+  hasSchedule: boolean;
+  stopEnabled: boolean;
   onRun: () => void;
   onPause: () => void;
   onStop: () => void;
   onToggleEnabled: () => void;
   onResetFailures: () => void;
+  onSaveInterval: (mins: number) => void;
 }) {
+  const [intervalDraft, setIntervalDraft] = useState<number>(p.intervalMinutes ?? 60);
+  const history = liveHistory ?? p.history;
+
   return (
     <>
       <SheetHeader className="pb-2">
@@ -434,9 +496,16 @@ function ProcessDrawer({
             ? <><Play className="h-3.5 w-3.5 mr-1.5" />Resume</>
             : <><Pause className="h-3.5 w-3.5 mr-1.5" />Pause</>}
         </Button>
-        <Button size="sm" variant="outline" onClick={onStop} disabled={p.status !== "running"}>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onStop}
+          disabled={!stopEnabled}
+          title="Stop is advisory — pause the schedule to prevent further runs"
+        >
           <StopCircle className="h-3.5 w-3.5 mr-1.5" />Stop
         </Button>
+
         <Button size="sm" variant="ghost" onClick={onResetFailures} disabled={p.consecutiveFailures === 0}>
           Reset failures
         </Button>
@@ -482,9 +551,34 @@ function ProcessDrawer({
           {p.intervalMinutes && <Row label="Interval" value={`Every ${p.intervalMinutes} min`} />}
           {p.cronExpression && <Row label="Cron" value={<code className="font-mono">{p.cronExpression}</code>} />}
           <Row label="Timezone" value={p.timezone} />
-          <div className="pt-2 text-xs text-muted-foreground">
-            Schedule editing (friendly picker) will be enabled once the backend Processes tables land.
-          </div>
+
+          {p.scheduleType === "interval" && (
+            <div className="flex items-end gap-2 pt-2">
+              <div className="flex-1">
+                <label className="text-xs text-muted-foreground">New interval (minutes)</label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={intervalDraft}
+                  onChange={(e) => setIntervalDraft(Math.max(1, Number(e.target.value) || 1))}
+                  className="h-9 mt-1"
+                />
+              </div>
+              <Button
+                size="sm"
+                onClick={() => onSaveInterval(intervalDraft)}
+                disabled={intervalDraft === (p.intervalMinutes ?? 60)}
+              >
+                Save
+              </Button>
+            </div>
+          )}
+          {!hasSchedule && (
+            <div className="pt-1 text-[11px] text-muted-foreground">
+              This process has no schedule row yet — enable it once from the drawer header to persist.
+            </div>
+          )}
+
           {p.settings.length > 0 && (
             <>
               <Separator className="my-2" />
@@ -497,9 +591,15 @@ function ProcessDrawer({
         </TabsContent>
 
         <TabsContent value="history" className="pt-3">
+          {liveHistory === null && REAL_HANDLER_KEYS.has(p.key) && (
+            <div className="pb-2 text-[11px] text-muted-foreground">
+              Showing sample history — enable the schedule to record real runs.
+            </div>
+          )}
           <ScrollArea className="h-[360px] pr-3">
             <div className="divide-y">
-              {p.history.map((r) => (
+              {history.map((r) => (
+
                 <div key={r.id} className="grid grid-cols-12 gap-2 py-2 text-xs">
                   <div className="col-span-4 text-muted-foreground">{fmtRelative(r.startedAt)}</div>
                   <div className="col-span-2">{fmtDuration(r.durationMs)}</div>

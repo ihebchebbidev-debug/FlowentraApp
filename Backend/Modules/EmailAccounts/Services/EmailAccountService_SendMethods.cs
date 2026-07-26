@@ -13,31 +13,100 @@ namespace MyApi.Modules.EmailAccounts.Services
     public partial class EmailAccountService
     {
 
-public async Task<SendEmailResultDto> SendEmailAsync(Guid accountId, int userId, SendEmailDto dto)
+public async Task<SendEmailResultDto> SendEmailAsync(Guid accountId, int userId, SendEmailDto dto, long? existingLogId = null)
 {
+    // Load-or-create the outbound log row FIRST so every send attempt is recorded,
+    // even the ones that never reach a provider (account missing, unsupported provider,
+    // token refresh crash, etc.). The retry handler passes existingLogId to reuse a row.
+    Models.OutboundEmailLog? log = null;
+    if (existingLogId.HasValue)
+    {
+        log = await _context.OutboundEmailLogs.FirstOrDefaultAsync(l => l.Id == existingLogId.Value);
+    }
+    if (log == null)
+    {
+        log = new Models.OutboundEmailLog
+        {
+            AccountId = accountId,
+            UserId = userId,
+            ToSummary = dto.To != null ? string.Join(", ", dto.To.Take(10)) : null,
+            Subject = dto.Subject,
+            PayloadJson = JsonSerializer.Serialize(dto),
+            Status = "pending",
+            MaxAttempts = 5,
+        };
+        _context.OutboundEmailLogs.Add(log);
+        await _context.SaveChangesAsync();
+    }
+
     var account = await _context.ConnectedEmailAccounts
         .FirstOrDefaultAsync(a => a.Id == accountId && a.UserId == userId);
 
+    log.Attempts += 1;
+    log.LastAttemptAt = DateTime.UtcNow;
+
     if (account == null)
+    {
+        log.Status = log.Attempts >= log.MaxAttempts ? "gave_up" : "failed";
+        log.LastError = "Account not found";
+        log.NextRetryAt = log.Status == "failed" ? ComputeNextRetry(log.Attempts) : null;
+        await _context.SaveChangesAsync();
         return new SendEmailResultDto { Success = false, Error = "Account not found" };
+    }
 
-        try
+    log.Provider = account.Provider ?? "";
+    log.FromHandle = account.Handle;
+    if (log.TenantId == 0) log.TenantId = account.TenantId;
+
+    SendEmailResultDto result;
+    try
+    {
+        result = account.Provider switch
         {
-            var result = account.Provider switch
-            {
-                "google" => await SendGmailEmailAsync(account, dto),
-                "microsoft" => await SendOutlookEmailAsync(account, dto),
-                "custom" => await SendCustomSmtpEmailAsync(account, dto),
-                _ => new SendEmailResultDto { Success = false, Error = $"Unsupported provider: {account.Provider}" }
-            };
-
-            return result;
-        }
+            "google" => await SendGmailEmailAsync(account, dto),
+            "microsoft" => await SendOutlookEmailAsync(account, dto),
+            "custom" => await SendCustomSmtpEmailAsync(account, dto),
+            _ => new SendEmailResultDto { Success = false, Error = $"Unsupported provider: {account.Provider}" }
+        };
+    }
     catch (Exception ex)
     {
         _logger.LogError(ex, "Failed to send email via {Provider} for account {Handle}", account.Provider, account.Handle);
-        return new SendEmailResultDto { Success = false, Error = ex.Message };
+        result = new SendEmailResultDto { Success = false, Error = ex.Message };
     }
+
+    if (result.Success)
+    {
+        log.Status = "success";
+        log.MessageId = result.MessageId;
+        log.SentAt = DateTime.UtcNow;
+        log.NextRetryAt = null;
+        log.LastError = null;
+    }
+    else
+    {
+        log.LastError = result.Error ?? "Unknown send failure";
+        if (log.Attempts >= log.MaxAttempts)
+        {
+            log.Status = "gave_up";
+            log.NextRetryAt = null;
+        }
+        else
+        {
+            log.Status = "failed";
+            log.NextRetryAt = ComputeNextRetry(log.Attempts);
+        }
+    }
+
+    await _context.SaveChangesAsync();
+    return result;
+}
+
+/// <summary>Exponential backoff: 1, 2, 4, 8, 16 minutes (capped).</summary>
+private static DateTime ComputeNextRetry(int attempt)
+{
+    var minutes = Math.Min(60, Math.Pow(2, Math.Max(0, attempt - 1)));
+    return DateTime.UtcNow.AddMinutes(minutes);
 }
 
 private async Task<SendEmailResultDto> SendGmailEmailAsync(ConnectedEmailAccount account, SendEmailDto dto)

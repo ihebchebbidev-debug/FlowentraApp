@@ -460,8 +460,28 @@ builder.Services.AddHostedService<WorkflowPollingService>();
 builder.Services.AddHostedService<MyApi.Modules.Payments.Services.PaymentReminderService>();
 
 // Processes module — schedule storage, per-key handlers, and the ticking scheduler.
+// Only fully-reliable handlers are registered; unreliable placeholders were removed
+// so the scheduler never advertises jobs that can't complete their work end-to-end.
 builder.Services.AddSingleton<MyApi.Modules.Processes.Services.IProcessHandler, MyApi.Modules.Processes.Services.Handlers.PurgeSystemLogsHandler>();
-builder.Services.AddSingleton<MyApi.Modules.Processes.Services.IProcessHandler, MyApi.Modules.Processes.Services.Handlers.RetryUnsentEmailsHandler>();
+builder.Services.AddSingleton<MyApi.Modules.Processes.Services.IProcessHandler, MyApi.Modules.Processes.Services.Handlers.RetryFailedEmailsHandler>();
+builder.Services.AddSingleton<MyApi.Modules.Processes.Services.IProcessHandler, MyApi.Modules.Processes.Services.Handlers.InvoicesMarkOverdueHandler>();
+builder.Services.AddSingleton<MyApi.Modules.Processes.Services.IProcessHandler, MyApi.Modules.Processes.Services.Handlers.OffersMarkExpiredHandler>();
+builder.Services.AddSingleton<MyApi.Modules.Processes.Services.IProcessHandler, MyApi.Modules.Processes.Services.Handlers.DispatchesMarkMissedHandler>();
+builder.Services.AddSingleton<MyApi.Modules.Processes.Services.IProcessHandler, MyApi.Modules.Processes.Services.Handlers.PaymentInstallmentsMarkOverdueHandler>();
+builder.Services.AddSingleton<MyApi.Modules.Processes.Services.IProcessHandler, MyApi.Modules.Processes.Services.Handlers.SupportTicketsAutocloseHandler>();
+builder.Services.AddSingleton<MyApi.Modules.Processes.Services.IProcessHandler, MyApi.Modules.Processes.Services.Handlers.DraftOffersPurgeHandler>();
+builder.Services.AddSingleton<MyApi.Modules.Processes.Services.IProcessHandler, MyApi.Modules.Processes.Services.Handlers.DraftInvoicesPurgeHandler>();
+builder.Services.AddSingleton<MyApi.Modules.Processes.Services.IProcessHandler, MyApi.Modules.Processes.Services.Handlers.NotificationsPurgeReadHandler>();
+builder.Services.AddSingleton<MyApi.Modules.Processes.Services.IProcessHandler, MyApi.Modules.Processes.Services.Handlers.NotificationsPurgeStaleUnreadHandler>();
+builder.Services.AddSingleton<MyApi.Modules.Processes.Services.IProcessHandler, MyApi.Modules.Processes.Services.Handlers.CalendarEventsPurgePastHandler>();
+builder.Services.AddSingleton<MyApi.Modules.Processes.Services.IProcessHandler, MyApi.Modules.Processes.Services.Handlers.SyncChangesPurgeHandler>();
+builder.Services.AddSingleton<MyApi.Modules.Processes.Services.IProcessHandler, MyApi.Modules.Processes.Services.Handlers.SyncReceiptsPurgeHandler>();
+builder.Services.AddSingleton<MyApi.Modules.Processes.Services.IProcessHandler, MyApi.Modules.Processes.Services.Handlers.WebhookJobsPurgeHandler>();
+builder.Services.AddSingleton<MyApi.Modules.Processes.Services.IProcessHandler, MyApi.Modules.Processes.Services.Handlers.ExternalEndpointLogsPurgeHandler>();
+builder.Services.AddSingleton<MyApi.Modules.Processes.Services.IProcessHandler, MyApi.Modules.Processes.Services.Handlers.DispatchAuditPurgeHandler>();
+builder.Services.AddSingleton<MyApi.Modules.Processes.Services.IProcessHandler, MyApi.Modules.Processes.Services.Handlers.HrAuditPurgeHandler>();
+builder.Services.AddSingleton<MyApi.Modules.Processes.Services.IProcessHandler, MyApi.Modules.Processes.Services.Handlers.SoftDeletedPurgeHandler>();
+builder.Services.AddSingleton<MyApi.Modules.Processes.Services.IProcessHandler, MyApi.Modules.Processes.Services.Handlers.RecurringTaskLogsPurgeHandler>();
 builder.Services.AddSingleton<MyApi.Modules.Processes.Services.ProcessHandlerRegistry>();
 builder.Services.AddHostedService<MyApi.Modules.Processes.Services.ProcessSchedulerService>();
 
@@ -715,6 +735,96 @@ CREATE INDEX IF NOT EXISTS ""idx_users_twofactor"" ON ""Users""(""TwoFactorEnabl
             {
                 migrationLogger.LogWarning("⚠️ Two-Factor schema check failed (non-fatal): {Error}", tfEx.Message);
             }
+
+            // ── Processes module tables (idempotent, mirrors Backend/Migrations/Processes_Migration.sql) ──
+            try
+            {
+                using var processesCmd = probe.CreateCommand();
+                processesCmd.CommandText = @"
+CREATE TABLE IF NOT EXISTS ""ProcessSchedules"" (
+  ""Id""                      SERIAL PRIMARY KEY,
+  ""Key""                     VARCHAR(120) NOT NULL UNIQUE,
+  ""Name""                    VARCHAR(200) NOT NULL,
+  ""Enabled""                 BOOLEAN NOT NULL DEFAULT TRUE,
+  ""Paused""                  BOOLEAN NOT NULL DEFAULT FALSE,
+  ""IntervalMinutes""         INTEGER NOT NULL DEFAULT 60,
+  ""MaxRetries""              INTEGER NOT NULL DEFAULT 3,
+  ""RetryBackoffSeconds""     INTEGER NOT NULL DEFAULT 60,
+  ""ConfigJson""              JSONB NOT NULL DEFAULT '{}'::jsonb,
+  ""Timezone""                VARCHAR(60) NOT NULL DEFAULT 'UTC',
+  ""NextRunAt""               TIMESTAMP NULL,
+  ""LastRunAt""               TIMESTAMP NULL,
+  ""LastStatus""              VARCHAR(20) NULL,
+  ""ConsecutiveFailures""     INTEGER NOT NULL DEFAULT 0,
+  ""BlockReason""             VARCHAR(500) NULL,
+  ""UpdatedAt""               TIMESTAMP NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
+  ""CreatedAt""               TIMESTAMP NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC')
+);
+CREATE INDEX IF NOT EXISTS ""IX_ProcessSchedules_NextRunAt""
+  ON ""ProcessSchedules"" (""Enabled"", ""Paused"", ""NextRunAt"");
+CREATE TABLE IF NOT EXISTS ""ProcessRuns"" (
+  ""Id""              BIGSERIAL PRIMARY KEY,
+  ""ProcessKey""      VARCHAR(120) NOT NULL,
+  ""TriggeredBy""     VARCHAR(20)  NOT NULL DEFAULT 'schedule',
+  ""Attempt""         INTEGER NOT NULL DEFAULT 1,
+  ""Status""          VARCHAR(20)  NOT NULL DEFAULT 'running',
+  ""StartedAt""       TIMESTAMP NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
+  ""FinishedAt""      TIMESTAMP NULL,
+  ""DurationMs""      INTEGER NULL,
+  ""ItemsProcessed""  INTEGER NULL,
+  ""Error""           TEXT NULL,
+  ""BlockReason""     VARCHAR(500) NULL,
+  ""NextRetryAt""     TIMESTAMP NULL,
+  ""OutputJson""      JSONB NULL
+);
+CREATE INDEX IF NOT EXISTS ""IX_ProcessRuns_Key_StartedAt""
+  ON ""ProcessRuns"" (""ProcessKey"", ""StartedAt"" DESC);";
+                processesCmd.ExecuteNonQuery();
+                migrationLogger.LogInformation("✅ Processes module schema verified");
+            }
+            catch (Exception prEx)
+            {
+                migrationLogger.LogWarning("⚠️ Processes schema check failed (non-fatal): {Error}", prEx.Message);
+            }
+
+            // ── Outbound email log (every send attempt, success or failure) ──
+            try
+            {
+                using var oecmd = probe.CreateCommand();
+                oecmd.CommandText = @"
+CREATE TABLE IF NOT EXISTS ""OutboundEmailLogs"" (
+  ""Id""              BIGSERIAL PRIMARY KEY,
+  ""AccountId""       UUID NULL,
+  ""UserId""          INTEGER NULL,
+  ""TenantId""        INTEGER NOT NULL DEFAULT 0,
+  ""Provider""        VARCHAR(40)  NOT NULL DEFAULT '',
+  ""FromHandle""      VARCHAR(320) NULL,
+  ""ToSummary""       VARCHAR(2000) NULL,
+  ""Subject""         VARCHAR(500) NULL,
+  ""PayloadJson""     JSONB NOT NULL DEFAULT '{}'::jsonb,
+  ""Status""          VARCHAR(20)  NOT NULL DEFAULT 'pending',
+  ""Attempts""        INTEGER NOT NULL DEFAULT 0,
+  ""MaxAttempts""     INTEGER NOT NULL DEFAULT 5,
+  ""MessageId""       VARCHAR(200) NULL,
+  ""LastError""       TEXT NULL,
+  ""CreatedAt""       TIMESTAMP NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
+  ""LastAttemptAt""   TIMESTAMP NULL,
+  ""SentAt""          TIMESTAMP NULL,
+  ""NextRetryAt""     TIMESTAMP NULL
+);
+CREATE INDEX IF NOT EXISTS ""IX_OutboundEmailLogs_Retry""
+  ON ""OutboundEmailLogs"" (""Status"", ""NextRetryAt"") WHERE ""Status"" = 'failed';
+CREATE INDEX IF NOT EXISTS ""IX_OutboundEmailLogs_Tenant_Created""
+  ON ""OutboundEmailLogs"" (""TenantId"", ""CreatedAt"" DESC);";
+                oecmd.ExecuteNonQuery();
+                migrationLogger.LogInformation("✅ OutboundEmailLogs schema verified");
+            }
+            catch (Exception oeEx)
+            {
+                migrationLogger.LogWarning("⚠️ OutboundEmailLogs schema check failed (non-fatal): {Error}", oeEx.Message);
+            }
+
+
         }
 
         catch (PostgresException pgEx)

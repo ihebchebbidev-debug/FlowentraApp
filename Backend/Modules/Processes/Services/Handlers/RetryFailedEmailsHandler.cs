@@ -1,0 +1,102 @@
+using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
+using MyApi.Data;
+using MyApi.Modules.EmailAccounts.DTOs;
+using MyApi.Modules.EmailAccounts.Models;
+using MyApi.Modules.EmailAccounts.Services;
+using MyApi.Modules.Processes.DTOs;
+
+namespace MyApi.Modules.Processes.Services.Handlers
+{
+    /// <summary>
+    /// Re-sends any <c>OutboundEmailLog</c> row with <c>Status = "failed"</c>,
+    /// <c>Attempts &lt; MaxAttempts</c>, and <c>NextRetryAt &lt;= now</c> by replaying
+    /// its stored payload through <see cref="EmailAccountService.SendEmailAsync"/>.
+    ///
+    /// The send method itself writes the outcome (status, attempts, next backoff,
+    /// error) — this handler only picks the candidates and drives the replay, so
+    /// success/failure logic stays in one place.
+    /// </summary>
+    public class RetryFailedEmailsHandler : IProcessHandler
+    {
+        public string Key => "admin.retry-failed-emails";
+
+        private readonly IServiceProvider _sp;
+        private readonly ILogger<RetryFailedEmailsHandler> _logger;
+        public RetryFailedEmailsHandler(IServiceProvider sp, ILogger<RetryFailedEmailsHandler> logger)
+        { _sp = sp; _logger = logger; }
+
+        public async Task<RunNowResult> ExecuteAsync(string configJson, CancellationToken ct)
+        {
+            int batchSize = 50;
+            try
+            {
+                using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(configJson) ? "{}" : configJson);
+                if (doc.RootElement.TryGetProperty("batch_size", out var v) && v.TryGetInt32(out var b)) batchSize = Math.Clamp(b, 1, 500);
+            }
+            catch { /* keep default */ }
+
+            using var scope = _sp.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var svc = scope.ServiceProvider.GetRequiredService<IEmailAccountService>();
+
+            var now = DateTime.UtcNow;
+            var candidates = await db.OutboundEmailLogs
+                .Where(l => l.Status == "failed"
+                            && l.Attempts < l.MaxAttempts
+                            && (l.NextRetryAt == null || l.NextRetryAt <= now)
+                            && l.AccountId != null
+                            && l.UserId != null)
+                .OrderBy(l => l.NextRetryAt ?? l.CreatedAt)
+                .Take(batchSize)
+                .ToListAsync(ct);
+
+            int retried = 0, succeeded = 0, stillFailed = 0, gaveUp = 0;
+
+            foreach (var log in candidates)
+            {
+                if (ct.IsCancellationRequested) break;
+                SendEmailDto? dto;
+                try
+                {
+                    dto = JsonSerializer.Deserialize<SendEmailDto>(log.PayloadJson);
+                }
+                catch (Exception ex)
+                {
+                    log.Status = "gave_up";
+                    log.LastError = "Retry aborted — payload could not be deserialized: " + ex.Message;
+                    log.LastAttemptAt = DateTime.UtcNow;
+                    gaveUp++;
+                    continue;
+                }
+                if (dto == null)
+                {
+                    log.Status = "gave_up";
+                    log.LastError = "Retry aborted — payload deserialized to null.";
+                    log.LastAttemptAt = DateTime.UtcNow;
+                    gaveUp++;
+                    continue;
+                }
+
+                retried++;
+                // SendEmailAsync updates the same row (attempts, status, error, next retry).
+                var result = await svc.SendEmailAsync(log.AccountId!.Value, log.UserId!.Value, dto, existingLogId: log.Id);
+                if (result.Success) succeeded++;
+                else if (log.Attempts >= log.MaxAttempts) gaveUp++;
+                else stillFailed++;
+            }
+
+            await db.SaveChangesAsync(ct);
+
+            _logger.LogInformation("📧 retry-failed-emails: retried={Retried} succeeded={Ok} stillFailed={Fail} gaveUp={Gave}",
+                retried, succeeded, stillFailed, gaveUp);
+
+            return new RunNowResult
+            {
+                Status = "success",
+                ItemsProcessed = retried,
+                Output = new { retried, succeeded, still_failed = stillFailed, gave_up = gaveUp, candidates = candidates.Count },
+            };
+        }
+    }
+}

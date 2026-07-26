@@ -43,7 +43,9 @@ namespace MyApi.Modules.EmailAccounts.Services
         Task<CreateExternalCalendarEventResultDto> CreateCalendarEventAsync(Guid accountId, int userId, CreateExternalCalendarEventDto dto);
 
         // ─── Send Email ───
-        Task<SendEmailResultDto> SendEmailAsync(Guid accountId, int userId, SendEmailDto dto);
+        // existingLogId is set by the retry handler so the same OutboundEmailLog row is
+        // updated instead of a new one being created. Callers should leave it null.
+        Task<SendEmailResultDto> SendEmailAsync(Guid accountId, int userId, SendEmailDto dto, long? existingLogId = null);
 
         // ─── Star / Delete Email ───
         Task<bool> ToggleStarEmailAsync(Guid accountId, int userId, Guid emailId);

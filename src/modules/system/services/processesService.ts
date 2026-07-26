@@ -14,18 +14,43 @@
  *   GET  /api/processes/runs/{key}?limit=
  *   POST /api/processes/run   { key }
  *
- * Two handlers are wired backend-side today:
- *   - admin.retry-unsent-emails
+ * Handlers wired backend-side today (see Backend/Modules/Processes/Services/Handlers):
  *   - admin.purge-system-logs
- * Every other process still persists its schedule but its "Run now" will
- * respond with a 400 until a handler is registered.
+ *   - admin.retry-failed-emails
+ * Both auto-seed on scheduler boot and run on their own interval; the
+ * "Run now" button reuses the same handler through POST /api/processes/run.
  */
 import { apiFetch } from "@/services/api/apiClient";
 import { PROCESSES, type ProcessDefinition, type ProcessRun } from "./processesMock";
 
+/**
+ * Process keys that are backed by a real, end-to-end reliable backend handler.
+ * The UI filters the catalog to just these so users never see jobs whose logic
+ * isn't proven — every entry here has a registered handler in
+ * Backend/Modules/Processes/Services/Handlers and runs automatically on the
+ * scheduler with no admin setup required.
+ */
 export const REAL_HANDLER_KEYS = new Set<string>([
-  "admin.retry-unsent-emails",
   "admin.purge-system-logs",
+  "admin.retry-failed-emails",
+  "admin.invoices-mark-overdue",
+  "admin.offers-mark-expired",
+  "admin.dispatches-mark-missed",
+  "admin.payment-installments-mark-overdue",
+  "admin.support-tickets-autoclose-resolved",
+  "admin.draft-offers-purge",
+  "admin.draft-invoices-purge",
+  "admin.notifications-purge-read",
+  "admin.notifications-purge-stale-unread",
+  "admin.calendar-events-purge-past",
+  "admin.sync-changes-purge",
+  "admin.sync-receipts-purge",
+  "admin.webhook-jobs-purge",
+  "admin.external-endpoint-logs-purge",
+  "admin.dispatch-audit-purge",
+  "admin.hr-audit-purge",
+  "admin.soft-deleted-purge",
+  "admin.recurring-task-logs-purge",
 ]);
 
 export interface ProcessSchedule {
@@ -113,6 +138,16 @@ export async function setPaused(key: string, paused: boolean): Promise<void> {
     )
   );
 }
+
+export async function resetFailures(key: string): Promise<ProcessSchedule> {
+  return unwrap(
+    await apiFetch<ProcessSchedule>(
+      `/api/processes/schedules/${encodeURIComponent(key)}/reset-failures`,
+      { method: "POST" }
+    )
+  );
+}
+
 
 export async function listRuns(key: string, limit = 20): Promise<ProcessRun[]> {
   const rows = unwrap(

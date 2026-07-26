@@ -121,6 +121,7 @@ namespace MyApi.Data
         public DbSet<SyncedEmail> SyncedEmails { get; set; }
         public DbSet<SyncedEmailAttachment> SyncedEmailAttachments { get; set; }
         public DbSet<SyncedCalendarEvent> SyncedCalendarEvents { get; set; }
+        public DbSet<MyApi.Modules.EmailAccounts.Models.OutboundEmailLog> OutboundEmailLogs { get; set; }
 
         // Tasks Module
         public DbSet<Project> Projects { get; set; }
