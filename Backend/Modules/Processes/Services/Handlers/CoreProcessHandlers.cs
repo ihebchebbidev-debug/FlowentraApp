@@ -52,11 +52,42 @@ namespace MyApi.Modules.Processes.Services.Handlers
             try
             {
                 using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(json) ? "{}" : json);
-                if (doc.RootElement.TryGetProperty(key, out var v) && v.TryGetInt32(out var i))
-                    return Math.Clamp(i, min, max);
+                if (doc.RootElement.TryGetProperty(key, out var v))
+                {
+                    // Accept both 42 and "42": the schedules API stores whatever JSON the
+                    // caller sent, so a string-typed number used to be silently ignored
+                    // and the handler ran with its default — a config that looked applied
+                    // in the UI but had no effect.
+                    if (v.ValueKind == JsonValueKind.Number && v.TryGetInt32(out var i))
+                        return Math.Clamp(i, min, max);
+                    if (v.ValueKind == JsonValueKind.String && int.TryParse(v.GetString(), out var si))
+                        return Math.Clamp(si, min, max);
+                }
             }
             catch { /* fall through */ }
             return fallback;
+        }
+    }
+
+    /// <summary>
+    /// Distinguishes a genuine constraint violation (safe to report as "skipped
+    /// / blocked by data model") from a transient database error (connection
+    /// drop, deadlock, retry exhaustion) which must still fail the run so the
+    /// retry ladder kicks in. Without this check every DbUpdateException was
+    /// reported as an FK block, hiding real outages behind a misleading reason.
+    /// </summary>
+    internal static class ProcessDbErrors
+    {
+        public static bool IsConstraintViolation(Exception ex)
+        {
+            for (Exception? e = ex; e != null; e = e.InnerException)
+            {
+                // 23xxx = integrity constraint violation (23503 = foreign key).
+                var state = (e as Npgsql.PostgresException)?.SqlState;
+                if (!string.IsNullOrEmpty(state) && state!.StartsWith("23", StringComparison.Ordinal))
+                    return true;
+            }
+            return false;
         }
     }
 
@@ -198,7 +229,7 @@ namespace MyApi.Modules.Processes.Services.Handlers
                                 && (o.UpdatedAt ?? o.ModifiedDate ?? o.CreatedDate) < cutoff)
                     .ExecuteDeleteAsync(ct);
             }
-            catch (DbUpdateException ex) // FK / constraint only — transient DB errors must still fail the run
+            catch (DbUpdateException ex) when (ProcessDbErrors.IsConstraintViolation(ex)) // FK/constraint only — transient DB errors must still fail the run
             {
                 _logger.LogWarning(ex, "draft-offers-purge skipped due to FK/constraint issue");
                 return new RunNowResult { Status = "skipped", ItemsProcessed = 0, BlockReason = "Blocked by a foreign-key constraint on offer children", Output = new { age_days = days, deleted = 0, skipped_reason = "fk_or_constraint" } };
@@ -228,7 +259,7 @@ namespace MyApi.Modules.Processes.Services.Handlers
                                 && (i.UpdatedAt ?? i.CreatedAt) < cutoff)
                     .ExecuteDeleteAsync(ct);
             }
-            catch (DbUpdateException ex) // FK / constraint only — transient DB errors must still fail the run
+            catch (DbUpdateException ex) when (ProcessDbErrors.IsConstraintViolation(ex)) // FK/constraint only — transient DB errors must still fail the run
             {
                 _logger.LogWarning(ex, "draft-invoices-purge skipped due to FK/constraint issue");
                 return new RunNowResult { Status = "skipped", ItemsProcessed = 0, BlockReason = "Blocked by a foreign-key constraint on invoice children", Output = new { age_days = days, deleted = 0, skipped_reason = "fk_or_constraint" } };
@@ -433,7 +464,7 @@ namespace MyApi.Modules.Processes.Services.Handlers
             IQueryable<T> query, List<string> skipped, CancellationToken ct) where T : class
         {
             try { return await query.ExecuteDeleteAsync(ct); }
-            catch (DbUpdateException ex) // FK / constraint only — transient DB errors must still fail the run
+            catch (DbUpdateException ex) when (ProcessDbErrors.IsConstraintViolation(ex)) // FK/constraint only — transient DB errors must still fail the run
             {
                 _logger.LogWarning(ex, "soft-deleted-purge: '{Label}' skipped due to FK/constraint", label);
                 skipped.Add(label);

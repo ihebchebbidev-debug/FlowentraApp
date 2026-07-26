@@ -253,7 +253,7 @@ namespace MyApi.Modules.Processes.Services
                         var scoped = await runDb.Set<ProcessSchedule>().FirstOrDefaultAsync(x => x.Id == s.Id, token);
                         if (scoped == null) return;
                         var attempt = Math.Max(1, scoped.ConsecutiveFailures + 1);
-                        var result = await ExecuteOnceAsync(runDb, scoped, handler, "schedule", attempt, token, running);
+                        var result = await ExecuteOnceAsync(runDb, scoped, handler, "schedule", attempt, token, running, _logger);
                         // Every scheduled outcome is logged, not just crashes, so
                         // operators can trace successes/blocks in the server log
                         // alongside the persisted ProcessRun row.
@@ -376,7 +376,10 @@ namespace MyApi.Modules.Processes.Services
             string triggeredBy,
             int attempt,
             CancellationToken ct,
-            RunningProcessRegistry? running = null)
+            RunningProcessRegistry? running = null,
+            // Static method, so it has no instance _logger: callers pass their own
+            // logger to keep lock-contention outcomes visible in the server log.
+            ILogger? logger = null)
         {
             // Prevent duplicate execution across scheduler ticks, manual "Run now",
             // and multiple app instances all pointing at the same database.
@@ -406,9 +409,9 @@ namespace MyApi.Modules.Processes.Services
                 }
                 catch (Exception auditEx)
                 {
-                    _logger.LogWarning(auditEx, "⚙️  Process '{Key}': failed to persist lock-contention audit row", s.Key);
+                    logger?.LogWarning(auditEx, "⚙️  Process '{Key}': failed to persist lock-contention audit row", s.Key);
                 }
-                _logger.LogWarning(
+                logger?.LogWarning(
                     "⚙️  Process '{Key}' skipped ({Trigger}): {Reason}", s.Key, triggeredBy, busyReason);
                 return new DTOs.RunNowResult
                 {
@@ -510,6 +513,18 @@ namespace MyApi.Modules.Processes.Services
                             ? null
                             : Truncate(result.BlockReason);
                         s.NextRunAt = DateTime.UtcNow.AddMinutes(Math.Max(1, s.IntervalMinutes));
+                    }
+                    else if (result.Status == "success")
+                    {
+                        // A manual run that actually succeeded proves the previous
+                        // block is gone. Clearing it (and the failure counter) keeps
+                        // the row from showing a stale "blocked" badge with an old
+                        // reason until the next scheduled tick. The cadence fields
+                        // (NextRunAt) stay untouched — manual runs never reschedule.
+                        s.BlockReason = string.IsNullOrWhiteSpace(result.BlockReason)
+                            ? null
+                            : Truncate(result.BlockReason);
+                        s.ConsecutiveFailures = 0;
                     }
                 }
                 else if (result.Status == "blocked")

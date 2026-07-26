@@ -1,7 +1,7 @@
 {
-  "title": "Processus",
+  "title": "Services d’arrière-plan",
   "description": "Planifiez, surveillez et contrôlez chaque tâche récurrente ou en arrière-plan dans tous les espaces de travail.",
-  "read_only_banner": "Lecture seule — seul l’administrateur principal peut exécuter ou configurer les processus.",
+  "read_only_banner": "Lecture seule — seul l’administrateur principal peut exécuter ou configurer les services d’arrière-plan.",
   "metrics": {
     "running": "En cours",
     "failed": "En échec",

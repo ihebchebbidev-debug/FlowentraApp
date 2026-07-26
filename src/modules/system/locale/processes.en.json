@@ -1,7 +1,7 @@
 {
-  "title": "Processes",
+  "title": "Background Services",
   "description": "Schedule, monitor and control every recurring or background job across all workspaces.",
-  "read_only_banner": "Read-only — only the main administrator can run or configure processes.",
+  "read_only_banner": "Read-only — only the main administrator can run or configure background services.",
   "metrics": {
     "running": "Running",
     "failed": "Failed",

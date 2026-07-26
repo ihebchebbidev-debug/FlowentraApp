@@ -94,7 +94,7 @@ function PageList({ state }: { state: ProcessesDemoState }) {
             <div>
               <h1 id="proc-demo-title" className="flex items-center gap-2 text-base font-semibold">
                 <Zap className="h-4 w-4 text-primary" />
-                Processes
+                Background Services
               </h1>
               <p className="mt-1 text-sm text-muted-foreground">
                 Schedule, monitor and control every recurring or background job across all workspaces.
@@ -415,8 +415,8 @@ export function ProcessesAutopilotDemo({ open, onClose }: Props) {
   const demoLang = pickLang(i18n.language);
   const captionText = getCaption(demoLang, Math.min(stepIndex, PROC_STEPS.length - 1), step.caption);
   const finishedMsg =
-    demoLang === 'fr' ? 'Votre module Processus est prêt — laissez-le tourner tout seul.' :
-    'Your Processes module is ready — let it run itself.';
+    demoLang === 'fr' ? 'Votre module Services d’arrière-plan est prêt — laissez-le tourner tout seul.' :
+    'Your Background Services module is ready — let it run itself.';
 
   useEffect(() => {
     if (open) { setStepIndex(0); setPlaying(true); }

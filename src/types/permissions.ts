@@ -231,8 +231,8 @@ export const PERMISSION_MODULES: {
   },
   {
     module: 'processes',
-    label: 'Processes',
-    description: 'View background processes; only MainAdmin and roles with manage can run, pause, stop, or reconfigure them',
+    label: 'Background Services',
+    description: 'View background services; only MainAdmin and roles with manage can run, pause, stop, or reconfigure them',
     actions: ['read', 'manage'],
     category: 'Administration'
   },

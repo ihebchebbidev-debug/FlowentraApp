@@ -29,8 +29,8 @@ export const CHAPTER_TITLES: Record<DemoLang, Record<string, string>> = {
 // English caption. Per-process step captions are translated via PROCESS_TALK_FR
 // which is looked up by the row target id.
 const FIXED_FR: Record<string, string> = {
-  'This is Processes — the control tower for every recurring or background job that keeps the platform tidy: overdue invoices, expiring offers, log purges, missed dispatches, and more.':
-    'Voici Processus — la tour de contrôle de chaque tâche récurrente ou d’arrière-plan qui garde la plateforme propre : factures en retard, offres expirées, purges de logs, missions manquées, et bien plus.',
+  'This is Background Services — the control tower for every recurring or background job that keeps the platform tidy: overdue invoices, expiring offers, log purges, missed dispatches, and more.':
+    'Voici les Services d’arrière-plan — la tour de contrôle de chaque tâche récurrente ou d’arrière-plan qui garde la plateforme propre : factures en retard, offres expirées, purges de logs, missions manquées, et bien plus.',
   'Running counts the jobs firing right now. The scheduler holds an advisory lock while a job runs so the exact same job can never double-fire, even across restarts.':
     'En cours compte les tâches qui s’exécutent maintenant. Le planificateur pose un verrou consultatif pendant l’exécution, donc la même tâche ne peut jamais se déclencher deux fois, même après un redémarrage.',
   'Failed shows jobs whose last run threw an error. The retry ladder backs them off automatically, and you can clear the counter once you fix the cause.':
@@ -47,7 +47,7 @@ const FIXED_FR: Record<string, string> = {
     'Le filtre Espace réduit à Ventes, Terrain, Admin, Communication… les mêmes espaces que vous connaissez déjà dans le reste de l’application.',
   'Status filter pins the list to Running, Failed, Blocked, Paused or Idle — perfect when you want a quick sweep of what needs your attention today.':
     'Le filtre Statut fige la liste sur En cours, Échecs, Bloqué, En pause ou Idle — parfait pour un balayage rapide de ce qui demande votre attention aujourd’hui.',
-  'Processes are grouped by workspace so the ownership is obvious. Each group shows a count of the jobs living inside it.':
+  'Background Services are grouped by workspace so the ownership is obvious. Each group shows a count of the jobs living inside it.':
     'Les processus sont regroupés par espace pour que la propriété soit évidente. Chaque groupe affiche le nombre de tâches qu’il contient.',
   'Each row tells the whole story at a glance — job name, module, schedule in plain English, and the last and next run.':
     'Chaque ligne raconte toute l’histoire d’un coup d’œil — nom, module, planification en clair, et dernière et prochaine exécution.',
@@ -71,8 +71,8 @@ const FIXED_FR: Record<string, string> = {
     'Diagnostics répond automatiquement à « pourquoi c’est bloqué ? » — table existe, permissions accordées, dépendances prêtes. Vert = ok, rouge pointe le correctif exact.',
   'The page polls the backend every fifteen seconds, and Refresh forces an immediate sync. Scheduler-driven runs surface here automatically — no page reload required.':
     'La page interroge le backend toutes les 15 secondes, et Actualiser force une synchro immédiate. Les runs déclenchés par le planificateur remontent tout seuls — pas besoin de recharger.',
-  'That is Processes end-to-end — every automated job explained, with lock-safe execution, live KPIs, per-row controls, a deep drawer, real history, and self-diagnosing checks. Set it once, and your platform keeps itself clean.':
-    'Voilà Processus de bout en bout — chaque tâche automatisée expliquée, avec verrouillage sûr, KPI en direct, actions par ligne, panneau profond, historique réel et diagnostics auto. Configurez une fois, la plateforme se maintient toute seule.',
+  'That is Background Services end-to-end — every automated job explained, with lock-safe execution, live KPIs, per-row controls, a deep drawer, real history, and self-diagnosing checks. Set it once, and your platform keeps itself clean.':
+    'Voilà les Services d’arrière-plan de bout en bout — chaque tâche automatisée expliquée, avec verrouillage sûr, KPI en direct, actions par ligne, panneau profond, historique réel et diagnostics auto. Configurez une fois, la plateforme se maintient toute seule.',
 };
 
 // Tour intro caption: dynamic (contains a count), matched by prefix.

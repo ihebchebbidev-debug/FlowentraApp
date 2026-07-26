@@ -32,10 +32,11 @@ namespace MyApi.Modules.Processes.Controllers
         private readonly ProcessHandlerRegistry _registry;
         private readonly RunningProcessRegistry _running;
         private readonly ILogger<ProcessesController> _logger;
+        private readonly IServiceScopeFactory _scopeFactory;
 
-        public ProcessesController(ApplicationDbContext db, ProcessHandlerRegistry registry, RunningProcessRegistry running, ILogger<ProcessesController> logger)
+        public ProcessesController(ApplicationDbContext db, ProcessHandlerRegistry registry, RunningProcessRegistry running, ILogger<ProcessesController> logger, IServiceScopeFactory scopeFactory)
         {
-            _db = db; _registry = registry; _running = running; _logger = logger;
+            _db = db; _registry = registry; _running = running; _logger = logger; _scopeFactory = scopeFactory;
         }
 
         // Admin-only gate.
@@ -325,7 +326,19 @@ namespace MyApi.Modules.Processes.Controllers
             if (!_registry.TryGet(req.Key, out var handler))
                 return BadRequest(new { error = $"No handler registered for '{req.Key}'" });
 
-            var s = await _db.Set<ProcessSchedule>().FirstOrDefaultAsync(x => x.Key == req.Key, ct);
+            // A manual run must survive the HTTP request that started it.
+            // Previously it executed on the request-scoped DbContext with
+            // HttpContext.RequestAborted: closing the tab (or any client
+            // timeout) disposed the context mid-handler, so the closing
+            // SaveChanges — and even its raw-SQL safety net — threw, leaving
+            // the ProcessRun row stuck at "running" until the next boot
+            // reconcile, and reporting a plain navigation-away as "failed".
+            // Run it on its own scope with a token detached from the request.
+            using var runScope = _scopeFactory.CreateScope();
+            var runDb = runScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var runCt = CancellationToken.None;
+
+            var s = await runDb.Set<ProcessSchedule>().FirstOrDefaultAsync(x => x.Key == req.Key, ct);
             if (s == null)
             {
                 // A row created by "Run now" must also get a NextRunAt, otherwise it shows
@@ -340,13 +353,13 @@ namespace MyApi.Modules.Processes.Controllers
                     Paused = false,
                 };
                 s.NextRunAt = DateTime.UtcNow.AddMinutes(Math.Max(1, s.IntervalMinutes));
-                _db.Set<ProcessSchedule>().Add(s);
-                await _db.SaveChangesAsync(ct);
+                runDb.Set<ProcessSchedule>().Add(s);
+                await runDb.SaveChangesAsync(runCt);
             }
 
             // Manual triggers are always attempt=1 (they don't participate in the retry ladder;
             // if the handler fails, the operator sees the error and decides).
-            var result = await ProcessSchedulerService.ExecuteOnceAsync(_db, s, handler, "manual", attempt: 1, ct, _running);
+            var result = await ProcessSchedulerService.ExecuteOnceAsync(runDb, s, handler, "manual", attempt: 1, runCt, _running, _logger);
             // Log every manual outcome so the server log mirrors the persisted run row.
             if (string.Equals(result.Status, "success", StringComparison.OrdinalIgnoreCase))
                 _logger.LogInformation("⚙️  Manual run of '{Key}' succeeded in {Duration}ms", req.Key, result.DurationMs);

@@ -262,7 +262,7 @@ const INTRO_STEPS: ProcessesDemoStep[] = [
   {
     target: 'proc-demo-title',
     caption:
-      'This is Processes — the control tower for every recurring or background job that keeps the platform tidy: overdue invoices, expiring offers, log purges, missed dispatches, and more.',
+      'This is Background Services — the control tower for every recurring or background job that keeps the platform tidy: overdue invoices, expiring offers, log purges, missed dispatches, and more.',
     duration: 6200,
     apply: pure(() => ({
       highlightMetric: null, searchActive: false, workspaceFilterOpen: false,
@@ -334,7 +334,7 @@ const INTRO_STEPS: ProcessesDemoStep[] = [
   {
     target: 'proc-demo-group-admin',
     caption:
-      'Processes are grouped by workspace so the ownership is obvious. Each group shows a count of the jobs living inside it.',
+      'Background Services are grouped by workspace so the ownership is obvious. Each group shows a count of the jobs living inside it.',
     duration: 4600,
     apply: pure(() => ({ statusFilterOpen: false })),
   },
@@ -437,7 +437,7 @@ const OUTRO_STEPS: ProcessesDemoStep[] = [
   {
     target: 'proc-demo-title',
     caption:
-      'That is Processes end-to-end — every automated job explained, with lock-safe execution, live KPIs, per-row controls, a deep drawer, real history, and self-diagnosing checks. Set it once, and your platform keeps itself clean.',
+      'That is Background Services end-to-end — every automated job explained, with lock-safe execution, live KPIs, per-row controls, a deep drawer, real history, and self-diagnosing checks. Set it once, and your platform keeps itself clean.',
     duration: 7000,
     apply: pure(() => ({ highlightMetric: null })),
   },

@@ -411,6 +411,13 @@ export default function ProcessesPage() {
   // and never clobbers live state with raw catalog defaults.
   const schedulesRef = useRef<Map<string, ProcessSchedule>>(new Map());
   const runningRef = useRef<Set<string>>(new Set());
+  // In-flight list refreshes must not write state after unmount (route change
+  // mid-poll used to warn and could resurrect torn-down state on remount).
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
 
   // Re-localize when language changes — re-apply the live overlay, don't reset
   // to the bare catalog (that used to blank out status/errors for up to 15s).
@@ -423,6 +430,7 @@ export default function ProcessesPage() {
   const refreshSchedules = async (hard = false) => {
     try {
       const [map, running] = await Promise.all([listSchedules(hard), listRunningKeys(hard)]);
+      if (!mountedRef.current) return;
       schedulesRef.current = map;
       runningRef.current = running;
       setSchedules(map);
@@ -430,6 +438,7 @@ export default function ProcessesPage() {
       setAccessError(null);
       setStale(false);
     } catch (e) {
+      if (!mountedRef.current) return;
       const err = e as ProcessesApiError;
       if (err?.status === 401 || err?.status === 403) {
         setAccessError({ status: err.status, message: err.message || "Access denied" });
@@ -442,7 +451,7 @@ export default function ProcessesPage() {
         console.warn("[processes] listSchedules failed:", (e as Error).message);
       }
     } finally {
-      setIsLoading(false);
+      if (mountedRef.current) setIsLoading(false);
     }
   };
 
