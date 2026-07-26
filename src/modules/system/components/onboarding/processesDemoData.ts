@@ -104,7 +104,10 @@ function scheduleFor(def: ProcessDefinition, index: number): ProcessSchedule {
     case DEMO_PAUSED_KEY:
       return { ...base, paused: true, next_run_at: null };
     case DEMO_FOCUS_KEY:
-      return { ...base, config: { grace_hours: 24 }, last_duration_ms: 184, last_items_processed: 3 };
+      // grace_days matches the real handler's schema field (see
+      // ProcessConfigSchemas["admin.invoices-mark-overdue"]) so the drawer's
+      // Effective Settings shows a real, admin-overridden value, not the default.
+      return { ...base, config: { grace_days: 3 }, last_duration_ms: 184, last_items_processed: 3 };
     default:
       return base;
   }

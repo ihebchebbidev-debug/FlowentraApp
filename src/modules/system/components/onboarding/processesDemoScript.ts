@@ -78,23 +78,23 @@ const PROCESS_TALKS: ProcessTalk[] = [
   {
     key: 'admin.invoices-mark-overdue',
     caption:
-      'Mark overdue invoices — every hour it flips any invoice past its due date with money still owed into the overdue bucket, so the KPI and chase list stay live.',
+      'Mark overdue invoices — every hour it flips any invoice past its due date with money still owed into the overdue bucket. A configurable grace_days knob lets you delay the flip so late payments in flight are not shamed.',
     captionFr:
-      'Marquer les factures en retard — chaque heure, toute facture dépassée avec un solde impayé bascule en « en retard », pour que le KPI et la liste de relance restent à jour.',
+      'Marquer les factures en retard — chaque heure, toute facture dépassée avec un solde impayé bascule en « en retard ». Un paramètre grace_days configurable permet de retarder la bascule pour ne pas pénaliser les paiements en cours de route.',
   },
   {
     key: 'admin.payment-installments-mark-overdue',
     caption:
-      'Overdue payment installments — same idea for payment plans: any pending or partially-paid installment past its due date is flipped to overdue automatically.',
+      'Overdue payment installments — same idea for payment plans: any pending or partially-paid installment past its due date flips to overdue, and shares the same grace_days knob so both stay in sync.',
     captionFr:
-      'Échéances en retard — même logique pour les plans de paiement : toute échéance en attente ou partiellement payée dépassée passe en « en retard » automatiquement.',
+      'Échéances en retard — même logique pour les plans de paiement : toute échéance en attente ou partiellement payée dépassée passe en « en retard », avec le même paramètre grace_days pour rester cohérent.',
   },
   {
     key: 'admin.offers-mark-expired',
     caption:
-      'Expire past-due offers — offers that were sent or pending past their validity date are set to expired, so the pipeline never carries dead quotes.',
+      'Expire past-due offers — offers sent or pending past their validity date are set to expired, so the pipeline never carries dead quotes. A grace_days knob lets you keep them alive an extra day or two while the customer decides.',
     captionFr:
-      'Expirer les offres échues — les offres envoyées ou en attente dépassant leur date de validité passent en « expirées », pour un pipeline sans devis morts.',
+      'Expirer les offres échues — les offres envoyées ou en attente dépassant leur date de validité passent en « expirées », pour un pipeline sans devis morts. Un paramètre grace_days les garde vivantes un jour ou deux pendant la décision du client.',
   },
   {
     key: 'admin.dispatches-mark-missed',
@@ -176,9 +176,9 @@ const PROCESS_TALKS: ProcessTalk[] = [
   {
     key: 'admin.external-endpoint-logs-purge',
     caption:
-      'Purge external endpoint logs — each external endpoint has its own retention window, and this job trims its logs down to exactly that.',
+      'Purge external endpoint logs — each endpoint has its own retention window, and this job trims its logs down to it. A fallback_retention_days knob covers endpoints that never set one, so nothing grows unbounded by default.',
     captionFr:
-      'Purger les logs d’endpoints externes — chaque endpoint externe a sa propre rétention, et ce job coupe ses logs exactement à cette limite.',
+      'Purger les logs d’endpoints externes — chaque endpoint a sa propre rétention, et ce job coupe ses logs à cette limite. Un paramètre fallback_retention_days couvre ceux qui n’en ont pas défini, pour qu’aucun log ne gonfle sans limite.',
   },
   {
     key: 'admin.dispatch-audit-purge',
@@ -211,9 +211,9 @@ const PROCESS_TALKS: ProcessTalk[] = [
   {
     key: 'admin.purge-system-logs',
     caption:
-      'Purge system logs — the platform log table is trimmed daily against a configurable retention window, with a floor so process history is never truncated by accident.',
+      'Purge system logs — the platform log table is trimmed daily against a configurable retention window, in bounded batches so the delete never blocks live traffic. A hard floor also protects process history from being truncated by accident.',
     captionFr:
-      'Purger les logs système — la table de logs plateforme est nettoyée chaque jour selon une rétention configurable, avec un plancher pour ne jamais tronquer l’historique des processus par accident.',
+      'Purger les logs système — la table de logs plateforme est nettoyée chaque jour selon une rétention configurable, par lots bornés pour ne jamais bloquer le trafic en cours. Un plancher dur protège aussi l’historique des processus d’une troncation accidentelle.',
   },
 ];
 
@@ -374,8 +374,8 @@ const OUTRO_STEPS: ProcessesDemoStep[] = [
   {
     target: 'proc-demo-drawer-tab-schedule',
     caption:
-      'Schedule tab lets you change the cadence — interval jobs get a live editor, cron jobs show their expression. Timezone is always spelled out so nothing runs in the wrong window.',
-    duration: 5800,
+      'Schedule tab lets you change the cadence — interval jobs get a live editor, cron jobs show their expression. Every job also exposes its own configurable knobs: retention days, grace periods, batch size, retry limits. They are schema-driven — the backend publishes defaults, min and max, so bad values are clamped before they ever hit the database, and labels and hints are localized from the same source of truth.',
+    duration: 8600,
     apply: pure(() => ({ drawerTab: 'schedule', drawerHighlight: 'schedule-interval', intervalDraft: 30 })),
   },
   {

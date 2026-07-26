@@ -18,22 +18,15 @@ namespace MyApi.Modules.Processes.Services.Handlers
 
         public async Task<RunNowResult> ExecuteAsync(string configJson, CancellationToken ct)
         {
-            int retentionDays = 30;
-            int? runRetentionDays = null;
-            try
-            {
-                using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(configJson) ? "{}" : configJson);
-                if (doc.RootElement.TryGetProperty("retention_days", out var v) && v.TryGetInt32(out var d)) retentionDays = d;
-                // Separate key so an admin who shortens log retention doesn't
-                // simultaneously wipe the process run history for every process.
-                if (doc.RootElement.TryGetProperty("run_retention_days", out var rv) && rv.TryGetInt32(out var rd)) runRetentionDays = rd;
-            }
-            catch { /* keep defaults */ }
+            // Defaults + clamps live in ProcessConfigSchemas — the schema also
+            // drives the API contract, the frontend labels and the tests.
+            int retentionDays = ProcessConfigSchemas.GetInt(Key, configJson, "retention_days");
+            int runRetentionDays = ProcessConfigSchemas.GetInt(Key, configJson, "run_retention_days");
 
-            var logCutoff = DateTime.UtcNow.AddDays(-Math.Max(1, retentionDays));
+            var logCutoff = DateTime.UtcNow.AddDays(-retentionDays);
             // Floor process-run history at 30 days so shortening system-log retention
             // never silently truncates the audit trail the Processes UI depends on.
-            var effectiveRunRetention = Math.Max(30, runRetentionDays ?? retentionDays);
+            var effectiveRunRetention = Math.Max(30, runRetentionDays);
             var runCutoff = DateTime.UtcNow.AddDays(-effectiveRunRetention);
 
             using var scope = _sp.CreateScope();

@@ -28,13 +28,7 @@ namespace MyApi.Modules.Processes.Services.Handlers
 
         public async Task<RunNowResult> ExecuteAsync(string configJson, CancellationToken ct)
         {
-            int batchSize = 50;
-            try
-            {
-                using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(configJson) ? "{}" : configJson);
-                if (doc.RootElement.TryGetProperty("batch_size", out var v) && v.TryGetInt32(out var b)) batchSize = Math.Clamp(b, 1, 500);
-            }
-            catch { /* keep default */ }
+            int batchSize = ProcessConfigSchemas.GetInt(Key, configJson, "batch_size");
 
             using var scope = _sp.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();

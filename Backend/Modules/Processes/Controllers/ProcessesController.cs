@@ -70,7 +70,21 @@ namespace MyApi.Modules.Processes.Controllers
         }
 
 
-
+        /// <summary>
+        /// Configuration schema for every registered process. The frontend uses
+        /// this to render inputs with the exact same labels, units, defaults
+        /// and clamps that the backend applies at runtime — so what an admin
+        /// sees always matches what the handler actually does.
+        /// </summary>
+        [HttpGet("schemas")]
+        public ActionResult<object> Schemas()
+        {
+            if (RequireAdmin() is { } deny) return deny;
+            return Ok(new
+            {
+                schemas = MyApi.Modules.Processes.Services.ProcessConfigSchemas.All.Values,
+            });
+        }
 
 
         [HttpGet("schedules")]
@@ -200,14 +214,22 @@ namespace MyApi.Modules.Processes.Controllers
             var isNew = s == null;
             s ??= new ProcessSchedule { Key = req.Key, Name = req.Name ?? req.Key };
 
+            // Pull per-process limits from the schema so purge jobs get a saner
+            // interval floor than the global 1-minute minimum (see ProcessConfigSchemas).
+            var schema = MyApi.Modules.Processes.Services.ProcessConfigSchemas.For(req.Key);
+            var limits = schema?.Limits ?? new MyApi.Modules.Processes.Services.ProcessConfigLimits();
+
             if (req.Name != null) s.Name = req.Name;
             if (req.Enabled.HasValue) s.Enabled = req.Enabled.Value;
             if (req.Paused.HasValue) s.Paused = req.Paused.Value;
-            if (req.IntervalMinutes.HasValue) s.IntervalMinutes = Math.Clamp(req.IntervalMinutes.Value, 1, 43_200);
-            if (req.MaxRetries.HasValue) s.MaxRetries = Math.Max(0, req.MaxRetries.Value);
-            if (req.RetryBackoffSeconds.HasValue) s.RetryBackoffSeconds = Math.Max(1, req.RetryBackoffSeconds.Value);
+            if (req.IntervalMinutes.HasValue) s.IntervalMinutes = Math.Clamp(req.IntervalMinutes.Value, limits.IntervalMinutesMin, limits.IntervalMinutesMax);
+            if (req.MaxRetries.HasValue) s.MaxRetries = Math.Clamp(req.MaxRetries.Value, limits.MaxRetriesMin, limits.MaxRetriesMax);
+            if (req.RetryBackoffSeconds.HasValue) s.RetryBackoffSeconds = Math.Clamp(req.RetryBackoffSeconds.Value, limits.BackoffSecondsMin, limits.BackoffSecondsMax);
             if (req.Timezone != null) s.Timezone = req.Timezone;
-            if (req.Config != null) s.ConfigJson = JsonSerializer.Serialize(req.Config);
+            // Sanitise config against the schema: drops unknown keys, coerces types,
+            // clamps numbers. Prevents a stale UI or a hand-crafted request from
+            // storing values the handler would silently reject anyway.
+            if (req.Config != null) s.ConfigJson = MyApi.Modules.Processes.Services.ProcessConfigSchemas.SanitiseConfig(req.Key, req.Config);
 
             s.UpdatedAt = DateTime.UtcNow;
             if (isNew || s.NextRunAt == null)

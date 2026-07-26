@@ -82,26 +82,33 @@ describe("processes: no fabricated data", () => {
       schedule({ config: { age_days: 7 } }),
       fmt, new Set(), texts
     );
-    expect(stored.settings).toEqual([{ label: "Age (days)", value: 7 }]);
+    expect(stored.settings).toEqual([{ label: "Age Days", value: "7 days" }]);
 
     const fallback = overlay(def("admin.notifications-purge-read"), schedule(), fmt, new Set(), texts);
-    // 30 is the literal default in CoreProcessHandlers.NotificationsPurgeReadHandler.
-    expect(fallback.settings).toEqual([{ label: "Age (days)", value: "30 (default)" }]);
+    // 30 is the literal default in CoreProcessHandlers.NotificationsPurgeReadHandler,
+    // sourced from ProcessConfigSchemas so the UI and handler never drift.
+    expect(fallback.settings).toEqual([{ label: "Age Days", value: "30 days (default)" }]);
   });
 
-  it("handlers that take no config expose no settings", () => {
-    const o = overlay(
-      def("admin.invoices-mark-overdue"),
-      schedule({ key: "admin.invoices-mark-overdue", interval_minutes: 60 }),
-      fmt, new Set(), texts
-    );
-    expect(o.settings).toEqual([]);
+  it("every handler that had implicit due-date logic now exposes a grace knob", () => {
+    // Prior to the unified schema, invoices/offers/payment-installments had no
+    // configurable behaviour and the UI showed nothing. Guarding here so a
+    // future refactor doesn't silently strip the knob back out.
+    for (const key of [
+      "admin.invoices-mark-overdue",
+      "admin.offers-mark-expired",
+      "admin.payment-installments-mark-overdue",
+    ]) {
+      const s = effectiveSettings(key, undefined);
+      expect(s, key).toHaveLength(1);
+      expect(s[0].value).toContain("days");
+    }
   });
 
   it("config values are clamped to the handler's own range", () => {
     // The handler clamps age_days to 1..3650, so the UI must not promise 9999.
     expect(effectiveSettings("admin.notifications-purge-read", { age_days: 9999 }))
-      .toEqual([{ label: "Age (days)", value: 3650 }]);
+      .toEqual([{ label: "Age Days", value: "3650 days" }]);
   });
 
   it("every config spec targets a real handler key", () => {

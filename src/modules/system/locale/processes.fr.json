@@ -6,7 +6,44 @@
     "minutes": "Minutes",
     "hours": "Heures",
     "days": "Jours",
-    "weeks": "Semaines"
+    "weeks": "Semaines",
+    "count": "éléments"
+  },
+  "config": {
+    "fields": {
+      "grace_days": {
+        "label": "Délai de grâce (jours)",
+        "help": "Attendre ce nombre de jours après l’échéance avant de changer le statut. 0 = bascule immédiate."
+      },
+      "grace_hours": {
+        "label": "Délai de grâce (heures)",
+        "help": "Attendre ce nombre d’heures après l’heure prévue avant de marquer comme manqué."
+      },
+      "days_resolved": {
+        "label": "Résolu depuis (jours)",
+        "help": "Clôturer automatiquement un ticket resté résolu ce nombre de jours sans activité."
+      },
+      "age_days": {
+        "label": "Âge (jours)",
+        "help": "Supprimer les enregistrements plus anciens que ce nombre de jours."
+      },
+      "retention_days": {
+        "label": "Rétention des journaux (jours)",
+        "help": "Supprimer les SystemLogs plus anciens que ce nombre de jours."
+      },
+      "run_retention_days": {
+        "label": "Historique des exécutions (jours)",
+        "help": "Supprimer l’historique d’exécution plus ancien que ce nombre de jours. Plancher à 30 pour préserver l’audit."
+      },
+      "fallback_retention_days": {
+        "label": "Rétention par défaut (jours)",
+        "help": "Utilisée lorsqu’un endpoint n’a pas de LogRetentionDays défini."
+      },
+      "batch_size": {
+        "label": "Taille du lot",
+        "help": "Nombre maximum d’emails traités par exécution."
+      }
+    }
   },
   "confirm": {
     "run_title": "Exécuter ce processus maintenant ?",

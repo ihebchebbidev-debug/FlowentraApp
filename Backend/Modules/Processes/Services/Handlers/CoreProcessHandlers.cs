@@ -45,29 +45,10 @@ namespace MyApi.Modules.Processes.Services.Handlers
         }
     }
 
-    internal static class ProcessConfig
-    {
-        public static int Int(string json, string key, int fallback, int min = 1, int max = 3650)
-        {
-            try
-            {
-                using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(json) ? "{}" : json);
-                if (doc.RootElement.TryGetProperty(key, out var v))
-                {
-                    // Accept both 42 and "42": the schedules API stores whatever JSON the
-                    // caller sent, so a string-typed number used to be silently ignored
-                    // and the handler ran with its default — a config that looked applied
-                    // in the UI but had no effect.
-                    if (v.ValueKind == JsonValueKind.Number && v.TryGetInt32(out var i))
-                        return Math.Clamp(i, min, max);
-                    if (v.ValueKind == JsonValueKind.String && int.TryParse(v.GetString(), out var si))
-                        return Math.Clamp(si, min, max);
-                }
-            }
-            catch { /* fall through */ }
-            return fallback;
-        }
-    }
+    // NOTE: The old ProcessConfig helper has been removed. All handlers now go
+    // through ProcessConfigSchemas.GetInt(Key, cfg, "field") so defaults and
+    // clamps live in one place (see ProcessConfigSchema.cs) and match what the
+    // /api/processes/schemas endpoint returns to the UI.
 
     /// <summary>
     /// Distinguishes a genuine constraint violation (safe to report as "skipped
@@ -99,19 +80,24 @@ namespace MyApi.Modules.Processes.Services.Handlers
         public InvoicesMarkOverdueHandler(IServiceProvider sp) { _sp = sp; }
         public async Task<RunNowResult> ExecuteAsync(string cfg, CancellationToken ct)
         {
+            // grace_days lets admins avoid flagging invoices as "overdue" the
+            // exact second they cross the due date — some workflows want a
+            // one-or-two-day buffer before customer-visible status flips.
+            int graceDays = ProcessConfigSchemas.GetInt(Key, cfg, "grace_days");
             using var scope = _sp.CreateScope();
             var db = ProcessDb.Resolve(scope);
             var now = DateTime.UtcNow;
+            var cutoff = now.AddDays(-graceDays);
             var updated = await db.Invoices
                 .Where(i => !i.IsDeleted
-                            && i.DueDate != null && i.DueDate < now
+                            && i.DueDate != null && i.DueDate < cutoff
                             && i.AmountPaid < i.GrandTotal
                             && i.Status == "posted")
                 .ExecuteUpdateAsync(s => s
                     .SetProperty(i => i.Status, "overdue")
                     .SetProperty(i => i.UpdatedAt, now), ct);
 
-            return new RunNowResult { Status = "success", ItemsProcessed = updated, Output = new { updated } };
+            return new RunNowResult { Status = "success", ItemsProcessed = updated, Output = new { grace_days = graceDays, updated } };
         }
     }
 
@@ -123,20 +109,22 @@ namespace MyApi.Modules.Processes.Services.Handlers
         public OffersMarkExpiredHandler(IServiceProvider sp) { _sp = sp; }
         public async Task<RunNowResult> ExecuteAsync(string cfg, CancellationToken ct)
         {
+            int graceDays = ProcessConfigSchemas.GetInt(Key, cfg, "grace_days");
             using var scope = _sp.CreateScope();
             var db = ProcessDb.Resolve(scope);
             var now = DateTime.UtcNow;
+            var cutoff = now.AddDays(-graceDays);
             // Drafts are excluded on purpose: an offer that was never sent to a customer
             // cannot "expire", and flipping it to 'expired' would also make it invisible
             // to admin.draft-offers-purge (which only matches Status == "draft").
             var updated = await db.Offers
                 .Where(o => !o.IsDeleted
-                            && o.ValidUntil != null && o.ValidUntil < now
+                            && o.ValidUntil != null && o.ValidUntil < cutoff
                             && (o.Status == "sent" || o.Status == "pending"))
                 .ExecuteUpdateAsync(s => s
                     .SetProperty(o => o.Status, "expired")
                     .SetProperty(o => o.UpdatedAt, now), ct);
-            return new RunNowResult { Status = "success", ItemsProcessed = updated, Output = new { updated } };
+            return new RunNowResult { Status = "success", ItemsProcessed = updated, Output = new { grace_days = graceDays, updated } };
         }
     }
 
@@ -148,7 +136,7 @@ namespace MyApi.Modules.Processes.Services.Handlers
         public DispatchesMarkMissedHandler(IServiceProvider sp) { _sp = sp; }
         public async Task<RunNowResult> ExecuteAsync(string cfg, CancellationToken ct)
         {
-            int hoursGrace = ProcessConfig.Int(cfg, "grace_hours", 2, 1, 168);
+            int hoursGrace = ProcessConfigSchemas.GetInt(Key, cfg, "grace_hours");
             using var scope = _sp.CreateScope();
             var db = ProcessDb.Resolve(scope);
             var cutoff = DateTime.UtcNow.AddHours(-hoursGrace);
@@ -172,15 +160,17 @@ namespace MyApi.Modules.Processes.Services.Handlers
         public PaymentInstallmentsMarkOverdueHandler(IServiceProvider sp) { _sp = sp; }
         public async Task<RunNowResult> ExecuteAsync(string cfg, CancellationToken ct)
         {
+            int graceDays = ProcessConfigSchemas.GetInt(Key, cfg, "grace_days");
             using var scope = _sp.CreateScope();
             var db = ProcessDb.Resolve(scope);
             var now = DateTime.UtcNow;
+            var cutoff = now.AddDays(-graceDays);
             // 'partially_paid' installments are still owed money, so they go overdue too
             // (PaymentService sets pending / partially_paid / paid).
             var updated = await db.PaymentPlanInstallments
-                .Where(p => (p.Status == "pending" || p.Status == "partially_paid") && p.DueDate < now)
+                .Where(p => (p.Status == "pending" || p.Status == "partially_paid") && p.DueDate < cutoff)
                 .ExecuteUpdateAsync(s => s.SetProperty(p => p.Status, "overdue"), ct);
-            return new RunNowResult { Status = "success", ItemsProcessed = updated, Output = new { updated } };
+            return new RunNowResult { Status = "success", ItemsProcessed = updated, Output = new { grace_days = graceDays, updated } };
         }
     }
 
@@ -192,7 +182,7 @@ namespace MyApi.Modules.Processes.Services.Handlers
         public SupportTicketsAutocloseHandler(IServiceProvider sp) { _sp = sp; }
         public async Task<RunNowResult> ExecuteAsync(string cfg, CancellationToken ct)
         {
-            int days = ProcessConfig.Int(cfg, "days_resolved", 7, 1, 365);
+            int days = ProcessConfigSchemas.GetInt(Key, cfg, "days_resolved");
             using var scope = _sp.CreateScope();
             var db = ProcessDb.Resolve(scope);
             var cutoff = DateTime.UtcNow.AddDays(-days);
@@ -217,7 +207,7 @@ namespace MyApi.Modules.Processes.Services.Handlers
         public DraftOffersPurgeHandler(IServiceProvider sp, ILogger<DraftOffersPurgeHandler> logger) { _sp = sp; _logger = logger; }
         public async Task<RunNowResult> ExecuteAsync(string cfg, CancellationToken ct)
         {
-            int days = ProcessConfig.Int(cfg, "age_days", 60, 7, 3650);
+            int days = ProcessConfigSchemas.GetInt(Key, cfg, "age_days");
             using var scope = _sp.CreateScope();
             var db = ProcessDb.Resolve(scope);
             var cutoff = DateTime.UtcNow.AddDays(-days);
@@ -247,7 +237,7 @@ namespace MyApi.Modules.Processes.Services.Handlers
         public DraftInvoicesPurgeHandler(IServiceProvider sp, ILogger<DraftInvoicesPurgeHandler> logger) { _sp = sp; _logger = logger; }
         public async Task<RunNowResult> ExecuteAsync(string cfg, CancellationToken ct)
         {
-            int days = ProcessConfig.Int(cfg, "age_days", 60, 7, 3650);
+            int days = ProcessConfigSchemas.GetInt(Key, cfg, "age_days");
             using var scope = _sp.CreateScope();
             var db = ProcessDb.Resolve(scope);
             var cutoff = DateTime.UtcNow.AddDays(-days);
@@ -276,7 +266,7 @@ namespace MyApi.Modules.Processes.Services.Handlers
         public NotificationsPurgeReadHandler(IServiceProvider sp) { _sp = sp; }
         public async Task<RunNowResult> ExecuteAsync(string cfg, CancellationToken ct)
         {
-            int days = ProcessConfig.Int(cfg, "age_days", 30, 1, 3650);
+            int days = ProcessConfigSchemas.GetInt(Key, cfg, "age_days");
             using var scope = _sp.CreateScope();
             var db = ProcessDb.Resolve(scope);
             var cutoff = DateTime.UtcNow.AddDays(-days);
@@ -295,7 +285,7 @@ namespace MyApi.Modules.Processes.Services.Handlers
         public NotificationsPurgeStaleUnreadHandler(IServiceProvider sp) { _sp = sp; }
         public async Task<RunNowResult> ExecuteAsync(string cfg, CancellationToken ct)
         {
-            int days = ProcessConfig.Int(cfg, "age_days", 180, 30, 3650);
+            int days = ProcessConfigSchemas.GetInt(Key, cfg, "age_days");
             using var scope = _sp.CreateScope();
             var db = ProcessDb.Resolve(scope);
             var cutoff = DateTime.UtcNow.AddDays(-days);
@@ -314,7 +304,7 @@ namespace MyApi.Modules.Processes.Services.Handlers
         public CalendarEventsPurgePastHandler(IServiceProvider sp) { _sp = sp; }
         public async Task<RunNowResult> ExecuteAsync(string cfg, CancellationToken ct)
         {
-            int days = ProcessConfig.Int(cfg, "age_days", 180, 30, 3650);
+            int days = ProcessConfigSchemas.GetInt(Key, cfg, "age_days");
             using var scope = _sp.CreateScope();
             var db = ProcessDb.Resolve(scope);
             var cutoff = DateTime.UtcNow.AddDays(-days);
@@ -333,7 +323,7 @@ namespace MyApi.Modules.Processes.Services.Handlers
         public SyncChangesPurgeHandler(IServiceProvider sp) { _sp = sp; }
         public async Task<RunNowResult> ExecuteAsync(string cfg, CancellationToken ct)
         {
-            int days = ProcessConfig.Int(cfg, "age_days", 30, 1, 3650);
+            int days = ProcessConfigSchemas.GetInt(Key, cfg, "age_days");
             using var scope = _sp.CreateScope();
             var db = ProcessDb.Resolve(scope);
             var cutoff = DateTime.UtcNow.AddDays(-days);
@@ -352,7 +342,7 @@ namespace MyApi.Modules.Processes.Services.Handlers
         public SyncReceiptsPurgeHandler(IServiceProvider sp) { _sp = sp; }
         public async Task<RunNowResult> ExecuteAsync(string cfg, CancellationToken ct)
         {
-            int days = ProcessConfig.Int(cfg, "age_days", 30, 1, 3650);
+            int days = ProcessConfigSchemas.GetInt(Key, cfg, "age_days");
             using var scope = _sp.CreateScope();
             var db = ProcessDb.Resolve(scope);
             var cutoff = DateTime.UtcNow.AddDays(-days);
@@ -371,7 +361,7 @@ namespace MyApi.Modules.Processes.Services.Handlers
         public WebhookJobsPurgeHandler(IServiceProvider sp) { _sp = sp; }
         public async Task<RunNowResult> ExecuteAsync(string cfg, CancellationToken ct)
         {
-            int days = ProcessConfig.Int(cfg, "age_days", 30, 1, 3650);
+            int days = ProcessConfigSchemas.GetInt(Key, cfg, "age_days");
             using var scope = _sp.CreateScope();
             var db = ProcessDb.Resolve(scope);
             var cutoff = DateTime.UtcNow.AddDays(-days);
@@ -391,6 +381,10 @@ namespace MyApi.Modules.Processes.Services.Handlers
         public ExternalEndpointLogsPurgeHandler(IServiceProvider sp) { _sp = sp; }
         public async Task<RunNowResult> ExecuteAsync(string cfg, CancellationToken ct)
         {
+            // Per-endpoint retention wins; fallback covers rows/endpoints that never
+            // set an explicit value. Sourced from the schema so the UI shows the
+            // same default admins would apply.
+            int fallbackDays = ProcessConfigSchemas.GetInt(Key, cfg, "fallback_retention_days");
             using var scope = _sp.CreateScope();
             var db = ProcessDb.Resolve(scope);
             int totalDeleted = 0;
@@ -400,13 +394,13 @@ namespace MyApi.Modules.Processes.Services.Handlers
                 .ToListAsync(ct);
             foreach (var ep in endpoints)
             {
-                var days = Math.Clamp(ep.LogRetentionDays <= 0 ? 30 : ep.LogRetentionDays, 1, 3650);
+                var days = Math.Clamp(ep.LogRetentionDays <= 0 ? fallbackDays : ep.LogRetentionDays, 1, 3650);
                 var cutoff = DateTime.UtcNow.AddDays(-days);
                 totalDeleted += await db.ExternalEndpointLogs
                     .Where(l => l.EndpointId == ep.Id && l.ReceivedAt < cutoff)
                     .ExecuteDeleteAsync(ct);
             }
-            return new RunNowResult { Status = "success", ItemsProcessed = totalDeleted, Output = new { endpoints = endpoints.Count, deleted = totalDeleted } };
+            return new RunNowResult { Status = "success", ItemsProcessed = totalDeleted, Output = new { endpoints = endpoints.Count, fallback_retention_days = fallbackDays, deleted = totalDeleted } };
         }
     }
 
@@ -418,7 +412,7 @@ namespace MyApi.Modules.Processes.Services.Handlers
         public DispatchAuditPurgeHandler(IServiceProvider sp) { _sp = sp; }
         public async Task<RunNowResult> ExecuteAsync(string cfg, CancellationToken ct)
         {
-            int days = ProcessConfig.Int(cfg, "age_days", 180, 30, 3650);
+            int days = ProcessConfigSchemas.GetInt(Key, cfg, "age_days");
             using var scope = _sp.CreateScope();
             var db = ProcessDb.Resolve(scope);
             var cutoff = DateTime.UtcNow.AddDays(-days);
@@ -437,7 +431,7 @@ namespace MyApi.Modules.Processes.Services.Handlers
         public HrAuditPurgeHandler(IServiceProvider sp) { _sp = sp; }
         public async Task<RunNowResult> ExecuteAsync(string cfg, CancellationToken ct)
         {
-            int days = ProcessConfig.Int(cfg, "age_days", 365, 90, 3650);
+            int days = ProcessConfigSchemas.GetInt(Key, cfg, "age_days");
             using var scope = _sp.CreateScope();
             var db = ProcessDb.Resolve(scope);
             var cutoff = DateTime.UtcNow.AddDays(-days);
@@ -474,7 +468,7 @@ namespace MyApi.Modules.Processes.Services.Handlers
 
         public async Task<RunNowResult> ExecuteAsync(string cfg, CancellationToken ct)
         {
-            int days = ProcessConfig.Int(cfg, "age_days", 90, 30, 3650);
+            int days = ProcessConfigSchemas.GetInt(Key, cfg, "age_days");
             using var scope = _sp.CreateScope();
             var db = ProcessDb.Resolve(scope);
             var cutoff = DateTime.UtcNow.AddDays(-days);
@@ -506,7 +500,7 @@ namespace MyApi.Modules.Processes.Services.Handlers
         public RecurringTaskLogsPurgeHandler(IServiceProvider sp) { _sp = sp; }
         public async Task<RunNowResult> ExecuteAsync(string cfg, CancellationToken ct)
         {
-            int days = ProcessConfig.Int(cfg, "age_days", 180, 30, 3650);
+            int days = ProcessConfigSchemas.GetInt(Key, cfg, "age_days");
             using var scope = _sp.CreateScope();
             var db = ProcessDb.Resolve(scope);
             var cutoff = DateTime.UtcNow.AddDays(-days);

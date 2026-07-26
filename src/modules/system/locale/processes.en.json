@@ -6,7 +6,44 @@
     "minutes": "Minutes",
     "hours": "Hours",
     "days": "Days",
-    "weeks": "Weeks"
+    "weeks": "Weeks",
+    "count": "items"
+  },
+  "config": {
+    "fields": {
+      "grace_days": {
+        "label": "Grace period (days)",
+        "help": "Wait this many days past the due date before flipping the status. 0 = flip immediately."
+      },
+      "grace_hours": {
+        "label": "Grace period (hours)",
+        "help": "Wait this many hours past the scheduled time before marking as missed."
+      },
+      "days_resolved": {
+        "label": "Resolved for (days)",
+        "help": "Auto-close a resolved ticket that stays resolved for this many days without activity."
+      },
+      "age_days": {
+        "label": "Age (days)",
+        "help": "Delete rows older than this many days. Older = more history kept."
+      },
+      "retention_days": {
+        "label": "Log retention (days)",
+        "help": "Delete SystemLogs older than this many days."
+      },
+      "run_retention_days": {
+        "label": "Run history retention (days)",
+        "help": "Delete process-run history older than this many days. Floored at 30 to preserve the audit trail."
+      },
+      "fallback_retention_days": {
+        "label": "Fallback retention (days)",
+        "help": "Used when an endpoint has no per-endpoint LogRetentionDays set."
+      },
+      "batch_size": {
+        "label": "Batch size",
+        "help": "Maximum number of emails processed per run."
+      }
+    }
   },
   "confirm": {
     "run_title": "Run this process now?",

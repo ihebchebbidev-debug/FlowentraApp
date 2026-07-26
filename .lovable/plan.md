@@ -1,145 +1,108 @@
-# Administration → Processes (per-workspace, grounded in real modules)
 
-Verified against `src/modules/dashboard/components/workspaces.config.ts` and `Backend/Modules/`. Every process below is tied to a workspace the app actually ships (Sales · Purchases · Service · Projects · HR · Reporting · Integrations · Lookups · Service Desk · Administration) and to a service/table that already exists.
+# Processes — unified configurable settings (revised)
 
-## 1. Where the page lives
+## Current state (verified)
 
-Route `/dashboard/settings/processes`, added to the **Administration** workspace sidebar (in `workspaces.config.ts`) between `system-config` and `system-logs`. Admin-gated (same guard as `SystemAdminPage`). Also linked from the current "Background services" entry (which today just points to Sync) so both surface the same control center.
+- 20 handlers registered; 14 read config keys via `ProcessConfig.Int(cfg, "...", fallback, min, max)`, 6 read nothing.
+- Generic knobs already stored per schedule: `interval_minutes`, `max_retries`, `retry_backoff_seconds`, `timezone`, plus free-form `ConfigJson` (jsonb).
+- Frontend mirror in `processesConfigSpec.ts` — hand-maintained, easy to drift.
+- Translations already scaffolded: `processes.en.json` / `processes.fr.json` contain `units.{minutes,hours,days,weeks}`, `labels.config_default`, and per-process `items.<key>.name/description/hints`. Field labels ("System log retention (days)", etc.) currently live only in `processesConfigSpec.ts` in English — not translated.
+- No DB schema change needed: `ProcessSchedules.ConfigJson jsonb` already stores arbitrary config.
 
-## 2. Processes catalogue, mapped to workspaces
+## Goal
 
-Each item includes: **workspace**, **anchor** (existing service/table it wraps), **why it matters**.
+One backend-owned schema drives validation, defaults, the settings display and an auto-generated form. All 20 processes end up with sensible knobs, edits actually apply, and every visible label goes through i18n.
 
-### Sales workspace (Offers · Orders · Invoices · Deals · Customers · Articles · Installations · Documents)
-1. **Offer expiration** — flip Offers past `ValidUntil` → `expired`, notify owner. *Anchor: `Offers/OfferService`.*
-2. **Deal rot watchdog** — deals with no activity > N days → nudge owner. *Anchor: `Deals/DealService`.*
-3. **Invoice overdue refresh** — status → `overdue` past due date. *Anchor: `Invoices` module + entity-status config.*
-4. **Payment reminders (customers)** — tiered reminders. *Anchor: `Payments/PaymentReminderService` (BackgroundService already running).*
-5. **Recurring invoice generator** — from templates. *Anchor: Invoices module.*
-6. **Fiscal stamp / RS compliance recompute** — nightly. *Anchor: `08_fiscal_stamp.sql`, `RetenueSource` module.*
-7. **Installation warranty reminders** — 30/7-day pings. *Anchor: `Installations/InstallationService`.*
+## Changes
 
-### Purchases workspace (Purchases · Suppliers · Articles · Payments · Documents)
-8. **Supplier invoice ↔ goods receipt matching** — flag unmatched. *Anchor: `Purchases/SupplierInvoiceService` + `GoodsReceiptService`.*
-9. **Preferred-supplier integrity** — enforce one-preferred-per-article. *Anchor: `20260722_ArticleSuppliers_OnePreferredPerArticle.sql` + `ArticleSupplierService`.*
-10. **Low-stock notifications** — reorder alerts. *Anchor: `lowStockNotificationService`.*
-11. **Purchase order auto-close** after full receipt. *Anchor: `PurchaseOrderService`.*
-12. **Supplier payment reminders** — outgoing side of PaymentReminderService.
+### 1. Backend — central schema (source of truth)
 
-### Service workspace (Service orders · Dispatches · Installations · Planning · Articles · Contacts · Documents)
-13. **Dispatch SLA watchdog** — flag `Dispatches` past SLA, notify dispatcher. *Anchor: `Dispatches` + `34_dispatch_audit_logs.sql`.*
-14. **Auto-close completed service orders** after N idle days. *Anchor: `ServiceOrders` module.*
-15. **Planning rollover** — daily technician availability refresh. *Anchor: `Planning/PlanningService` + `PlanningProfileService`.*
-16. **Preferred-skill match audit** — service orders unmatched to any qualified tech. *Anchor: `37_service_order_preferred_skills.sql`.*
-17. **Incident → ticket auto-creation** — expose existing background job with schedule & metrics. *Anchor: `Incidents/IncidentAutoTicketService`.*
+New `Backend/Modules/Processes/Services/ProcessConfigSchema.cs`:
 
-### Projects workspace (Projects · Contacts · Calendar · Documents)
-18. **Generate due recurring tasks** — wraps `RecurringTaskService.GenerateDueTasksAsync`.
-19. **Escalate overdue tasks** — status → overdue + notify. *Anchor: `tasks` FE + Projects backend.*
-20. **Project health / RAG recompute** — nightly. *Anchor: `30_projects_client_success.sql`.*
-21. **Calendar sync** — pull/push per connected calendar. *Anchor: `Calendar` backend + `SyncedCalendarEventsTable`.*
+- `ProcessConfigField { Key, LabelI18nKey, Type ("int"|"bool"|"enum"), Fallback, Min, Max, Unit ("days"|"hours"|"count"|"minutes"), HelpI18nKey, EnumValues? }`
+- `ProcessConfigSchemas` — static `Dictionary<string, ProcessConfigField[]>` keyed by process key, listing every field each handler reads.
+- Helpers `GetInt(key, cfg, field)` / `GetBool(...)` that pull fallback+clamp from the schema entry, so handlers no longer repeat magic numbers.
 
-### HR workspace (Employees · Payroll · Leaves · Recruitment · Performance · Skills · Documents)
-22. **Leave accrual** — monthly. *Anchor: `HrService`.*
-23. **Contract expiration reminders** — 30/7-day. *Anchor: `HrService.PerformanceRecruitment`.*
-24. **Interview reminders** — 24 h before. *Anchor: `HrInterview` model.*
-25. **Birthday / anniversary notifications** — daily 08:00. *Anchor: employee records.*
-26. **Payroll cutoff prep** — pre-compute variables the day before payroll. *Anchor: HR payroll page.*
+Refactor `CoreProcessHandlers.cs`, `PurgeSystemLogsHandler.cs`, `RetryFailedEmailsHandler.cs`, `RetryUnsentEmailsHandler.cs` to call the schema helpers.
 
-### Reporting workspace
-27. **Report cache warmup** — refresh top-N dashboard queries each morning. *Anchor: `Reporting` module + `33_dashboard_layout.sql`.*
-28. **Scheduled report export & email** — periodic CSV/PDF delivery. *Anchor: `Reporting/export` page.*
-29. **Reporting favorites cleanup** — orphaned favorites. *Anchor: `32_reporting_favorites.sql`.*
+**Fill the gaps** so every process has at least one knob:
 
-### Integrations workspace (Workflow · External APIs · Sync)
-30. **Cleanup stuck workflow executions** — wraps `WorkflowExecutionsController.CleanupStuckExecutionsAsync`.
-31. **Resume delayed executions** — `WorkflowExecutions` where `Status='waiting_delay' AND ResumeAt<=now`. *Anchor: `WorkflowPollingService` (expose as managed process).*
-32. **Expire pending approvals** — `WorkflowApprovals` past `ExpiresAt`.
-33. **Workflow reconciliation sweep** — wraps `WorkflowReconciliationController`.
-34. **External API webhook retry** — failed outbound calls in `ExternalEndpoints`.
-35. **Retry failed sync entries** — `29_sync_history_retry.sql` + `SyncService`.
-36. **Sync log rotation** — retention on `SyncLoggingService` output.
-37. **Rehydrate offline caches** — `OfflineHydration` module.
+- `admin.invoices-mark-overdue` → `grace_days` (0..60, default 0)
+- `admin.offers-mark-expired` → `grace_days` (0..60, default 0)
+- `admin.payment-installments-mark-overdue` → `grace_days` (0..60, default 0)
+- `admin.external-endpoint-logs-purge` → `fallback_retention_days` (7..3650, default 90) — used only when a row has no per-endpoint value
+- Purge handlers → add uniform `batch_size` (100..50000, default 5000) — passed to `ExecuteDeleteAsync` in chunks so a single run can't lock a huge table
 
-### Lookups workspace
-38. **Lookup usage audit** — orphan / unused lookup values report. *Anchor: `Lookups` module.*
+### 2. Backend — expose schema + validate on save
 
-### Service Desk workspace
-39. **Auto-close resolved tickets** after N idle days. *Anchor: `SupportTickets` backend.*
-40. **SLA breach watchdog** — pending tickets past first-response / resolution SLA.
-41. **Ticket re-open sweeper** — customer replied on closed ticket → re-open.
+- `ProcessesController`: new `GET /api/processes/schemas` returning `{ [processKey]: ProcessConfigField[] }` plus per-process default clamps for `interval_minutes` (e.g. purges min 5 min), `max_retries`, `retry_backoff_seconds`.
+- `POST /api/processes/schedule` (upsert): validate incoming `config` against the schema — drop unknown keys, coerce types, clamp `[min, max]`, reject unknown enum values with 400. Same clamp applied to interval/retries/backoff.
 
-### Administration workspace (housekeeping & platform)
-42. **Purge system logs** — retention. *Anchor: `SystemLogService.CleanupOldLogsAsync`.*
-43. **Purge traceability activity** — retention on the activity feed.
-44. **Purge notifications** — read + older than N days. *Anchor: `14_add_notifications_table.sql`.*
-45. **Purge soft-deleted rows** — sweep `IsDeleted=true` across Offers/Sales/Invoices/Articles/Contacts/Projects/WorkflowDefinitions.
-46. **Purge expired email-verification tokens** — `35_email_verification.sql`.
-47. **Purge expired 2FA challenges** — `36_two_factor.sql`.
-48. **Purge orphan uploads** — attachments with no parent entity. *Anchor: `uploadThingService`.*
-49. **Retry unsent notifications** — pending/failed rows.
-50. **IMAP inbox pull** — per connected `EmailAccount`; per-account block reason.
-51. **Dynamic-forms submission cleanup** — retention on submissions. *Anchor: `15_dynamic_forms.sql`.*
-52. **Plugin activation reconciliation** — `15_plugin_activations.sql`.
-53. **Yearly numbering reset** — Jan 1. *Anchor: `Numbering/NumberingService` + `24_numbering_system.sql`.*
-54. **Tenant storage snapshot** — feeds `SystemAdminPage` / `DatabaseSchemaPage`.
+### 3. Backend — migration
 
-Total: **54 real processes**, each tied to code that exists today, distributed across all 10 shipped workspaces.
+No table change. Add a **data migration** `Backend/Migrations/20260728_processes_backfill_config_defaults.sql` that:
 
-## 3. UI (frontend, phase 1)
+- For every `ProcessSchedules` row whose `ConfigJson` is `{}` or missing a schema key, merges the schema defaults so admins immediately see explicit values in the UI (no "(default)" ambiguity).
+- Uses `jsonb_set` with `ON CONFLICT DO NOTHING` semantics via `COALESCE`. Idempotent, safe to re-run.
+- Followed by the standard grant block if `app_user` role exists (mirrors `Processes_Migration.sql`).
 
-### Header
-"Processes" · description · counters (running / failing / blocked / paused) · buttons: Run selected · Pause selected · Resume selected · Refresh.
+### 4. Frontend — form, service, translations
 
-### List
-- Left rail: workspace filter (All · Sales · Purchases · Service · Projects · HR · Reporting · Integrations · Lookups · Service Desk · Administration).
-- Table columns: Name · Workspace badge · Module · Schedule (human) · Last run · Duration · Status pill · Next run · Actions (⋯).
-- Status pill: `idle` · `running` · `paused` · `failed` (red, tooltip = last error) · `blocked` (amber, tooltip = block reason).
-- Toolbar: search, "Only failing", "Only running", bulk select.
+New files:
+- `src/modules/system/services/processSchemasApi.ts` — `getProcessSchemas()` fetches `/api/processes/schemas`, memoised, with `processesConfigSpec.ts` as offline fallback (kept as types-only + last-known snapshot).
+- `src/modules/system/components/processes/ProcessConfigForm.tsx` — generic renderer: number input (with unit suffix, min/max/step), switch for bool, select for enum. Per-field "Reset to default" and per-process "Reset all". Uses `t()` for every label/help.
 
-### Detail drawer
-- **Overview** — schedule summary, next/last run, success rate (30 runs), avg duration, items processed, workspace + module link.
-- **Schedule** — friendly picker (Manual · Every N min/hr · Daily HH:MM · Weekly · Monthly · Custom cron) + timezone.
-- **History** — runs table (started, duration, status, items, error/block reason, "View logs" → SystemLogs filtered by process key + run id).
-- **Diagnostics** — per-process checklist that answers *"why is this blocked?"*, e.g.
-  - IMAP pull → account reachable? credentials valid? quota left?
-  - Retry notifications → SMTP / webhook target reachable?
-  - Cleanup stuck workflows → threshold set? DB reachable? not paused?
-  - Payment reminders → SMTP OK? template present? contacts with valid emails?
-- **Settings** — retention days / batch size / dry-run / notify-on-failure recipients.
-- Actions: **Run now**, **Pause**, **Resume**, **Stop current run**, **Reset failure counter**, **Disable**.
+Changes:
+- `src/modules/system/pages/ProcessesPage.tsx` — replace the current per-key manual config UI with `<ProcessConfigForm schema={schema[key]} value={cfg} onChange={...} />`. `effectiveSettings()` continues to drive the read-only summary but is fed from the API schema.
+- `processesConfigSpec.ts` becomes: (a) `ProcessConfigField` type, (b) static snapshot used only when the API call fails. New fields (grace_days, batch_size, fallback_retention_days) added here too.
 
-## 4. Backend (phase 2)
+**Translations** — every new label goes into both locales:
 
-Two tables + hosted scheduler + `IProcess` abstraction.
+- `src/modules/system/locale/processes.en.json` and `.fr.json`:
+  - `units.count`, `units.minutes` (already present) — add `units.count`
+  - `config.fields.<field_key>.label` / `.help` for every schema field (`retention_days`, `run_retention_days`, `batch_size`, `grace_hours`, `grace_days`, `days_resolved`, `age_days`, `fallback_retention_days`)
+  - `config.reset_field`, `config.reset_all`, `config.default_hint`, `config.out_of_range`, `config.saved`
+  - Update existing per-process `hints` strings that hard-code "Config: age_days (default 60, min 7)" to use the same keys via i18n interpolation, so changing a default touches one place.
 
-```
-Processes
-  Id, TenantId, Key (unique per tenant), Name, Workspace, Module, Category,
-  ScheduleType('manual'|'interval'|'cron'), IntervalMinutes, CronExpression, Timezone,
-  IsEnabled, IsPaused, MaxRuntimeSeconds, RetryPolicy(jsonb), Settings(jsonb),
-  LastStatus, LastStartedAt, LastFinishedAt, LastDurationMs, LastError, BlockReason,
-  NextRunAt, ConsecutiveFailures, CreatedAt, UpdatedAt
+Backend returns i18n keys, not English strings — the frontend resolves them so both languages stay in sync automatically.
 
-ProcessRuns
-  Id, TenantId, ProcessId, StartedAt, FinishedAt, Status,
-  ItemsProcessed, DurationMs, Error, BlockReason, TriggeredBy, LogsRef
-```
+### 5. Verification
 
-- `IProcess { Key; Workspace; Run(ct, settings) → ProcessResult; Diagnose() → DiagnosticsReport }`.
-- Each catalogued item = thin `IProcess` wrapper around the existing service — nothing reimplemented.
-- `ProcessScheduler : BackgroundService` polls every 30 s per tenant; concurrency = 1 per key; runtime > `MaxRuntimeSeconds` → `blocked/timeout`.
-- Existing `BackgroundService`s (`WorkflowPollingService`, `PaymentReminderService`, `IncidentAutoTicketService`) become **managed** processes: they read enable/pause flags from `Processes` so the admin page controls them without killing threads.
-- Endpoints: `GET/PATCH /admin/processes[/{key}]`, `POST /admin/processes/{key}/run|stop`, `GET /admin/processes/{key}/runs|diagnostics`.
+- Extend `src/modules/system/services/__tests__/processesCatalog.test.ts`:
+  - Every `REAL_HANDLER_KEYS` entry has a schema entry in the snapshot.
+  - Every schema field's `LabelI18nKey` / `HelpI18nKey` exists in both `processes.en.json` and `processes.fr.json`.
+- New `Backend/Modules/Processes/Tests/ProcessConfigSchemaTests.cs`:
+  - `GetInt` returns fallback on empty JSON.
+  - Values below `Min` / above `Max` clamp.
+  - String-typed numbers accepted (existing behaviour preserved).
+  - Upsert endpoint rejects unknown enum, drops unknown keys.
+- Manual smoke: open Processes page, edit `age_days` on `admin.notifications-purge-read`, save, Run now, confirm `output.age_days` and `deleted` reflect the new value; toggle language to FR and confirm labels translate.
 
-## 5. Phasing
+## Files touched
 
-- **Phase 1 (this task, FE-only)** — page + drawer + sidebar entry + role guard. All 54 processes rendered from a local mock (`src/modules/system/services/processesMock.ts`) with realistic schedules, history and diagnostics per workspace. Ships immediately for UX validation with no backend risk.
-- **Phase 2** — tables, `IProcess`, scheduler, wire the ~12 processes whose services are already coded (system logs cleanup, recurring tasks, stuck workflows, low-stock, payment reminders, incident auto-ticket, sync retry, IMAP pull, offer expiration, numbering reset, workflow reconciliation, planning rollover).
-- **Phase 3** — remaining processes, one workspace at a time; per-process diagnostics panels.
+**Added**
+- `Backend/Modules/Processes/Services/ProcessConfigSchema.cs`
+- `Backend/Modules/Processes/Tests/ProcessConfigSchemaTests.cs`
+- `Backend/Migrations/20260728_processes_backfill_config_defaults.sql`
+- `src/modules/system/services/processSchemasApi.ts`
+- `src/modules/system/components/processes/ProcessConfigForm.tsx`
 
-## 6. Questions before I build
+**Changed**
+- `Backend/Modules/Processes/Services/Handlers/CoreProcessHandlers.cs`
+- `Backend/Modules/Processes/Services/Handlers/PurgeSystemLogsHandler.cs`
+- `Backend/Modules/Processes/Services/Handlers/RetryFailedEmailsHandler.cs`
+- `Backend/Modules/Processes/Services/Handlers/RetryUnsentEmailsHandler.cs`
+- `Backend/Modules/Processes/Controllers/ProcessesController.cs`
+- `Backend/Modules/Processes/DTOs/ProcessDtos.cs` (new `ProcessConfigFieldDto`, schemas response)
+- `src/modules/system/pages/ProcessesPage.tsx`
+- `src/modules/system/services/processesConfigSpec.ts` (types + fallback snapshot + new fields)
+- `src/modules/system/services/__tests__/processesCatalog.test.ts`
+- `src/modules/system/locale/processes.en.json`
+- `src/modules/system/locale/processes.fr.json`
+- `Backend/Modules/Processes/PROCESSES_SCHEMA.md` (document the schema mechanism + new fields)
 
-1. Tenant-scoped by default (each tenant configures its own) with a small platform-only set (plugin reconciliation, tenant storage snapshot) — OK?
-2. Ship Phase 1 with mocked data so you review the UX first?
-3. Any process to drop, or workspace-specific ones (GDPR export, cash reconciliation, etc.) to add?
+## Out of scope
+
+- Cron-style scheduling — still interval-based.
+- Per-tenant overrides — still one row per process key.
+- Adding processes beyond the existing 20.
