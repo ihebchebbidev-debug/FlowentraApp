@@ -538,7 +538,35 @@
     "status": "Status",
     "retries_exhausted": "Retries exhausted — auto-run paused. Use “Reset failures” to re-arm.",
     "since": "Since",
-    "consecutive_failures": "Consecutive failures"
+    "consecutive_failures": "Consecutive failures",
+    "view_logs": "View backend log entries",
+    "category": {
+      "missing_handler": "Missing handler",
+      "missing_schedule": "Missing schedule",
+      "missing_dependency": "Missing dependency",
+      "permission_denied": "Permission denied",
+      "database_error": "Database error",
+      "timeout": "Timeout",
+      "retries_exhausted": "Retries exhausted",
+      "runtime_error": "Runtime error"
+    },
+    "category_hint": {
+      "missing_handler": "The server has no code registered for this process key. Redeploy the backend or check Program.cs registrations.",
+      "missing_schedule": "No schedule row exists yet — the process has never been persisted. Run it once or save an interval to create it.",
+      "missing_dependency": "A table, column, account or external service the process needs is not available. Check the last error text for details.",
+      "permission_denied": "The database or API user is missing rights for a table this process touches. Grant SELECT/INSERT/UPDATE/DELETE and retry.",
+      "database_error": "PostgreSQL rejected the query (constraint, deadlock, invalid schema). Inspect the raw error before retrying.",
+      "timeout": "The handler exceeded its runtime budget. Consider raising the interval or narrowing the workload.",
+      "retries_exhausted": "The retry ladder is used up. Reset failures once the underlying cause is fixed.",
+      "runtime_error": "The handler threw an unexpected error. Inspect the raw error text and backend logs."
+    }
+  },
+  "health": {
+    "all_idle": "All background services are healthy and idle. {{paused}} paused · {{total}} total.",
+    "no_issues": "No blocked or failing services. {{paused}} paused · {{total}} total.",
+    "running_now": "Running now",
+    "blocked": "Blocked — needs attention",
+    "failing": "Failing — will retry"
   },
   "stale_banner": "Showing the last known state — the server didn't respond to the latest refresh.",
   "history_empty": "No runs recorded yet. Use “Run now” to execute this process.",

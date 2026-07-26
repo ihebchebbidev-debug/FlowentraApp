@@ -320,9 +320,9 @@ function apiRunToUi(r: ApiRun): ProcessRun {
 export function overlay(
   def: ProcessDefinition,
   s: ProcessSchedule | undefined,
-  runningKeys?: Set<string>,
-  /** Localised "Every N min (paused)" formatter — keeps the row text translated. */
-  fmtSchedule?: (minutes: number, paused: boolean, enabled: boolean) => string
+  /** Localised "Every N min (paused)" formatter — required so the row text is always translated. */
+  fmtSchedule: (minutes: number, paused: boolean, enabled: boolean) => string,
+  runningKeys?: Set<string>
 ): ProcessDefinition {
   // A key can be reported as running by either source: the dedicated
   // running-keys endpoint, or the live projection embedded in the schedule row.
@@ -350,9 +350,7 @@ export function overlay(
     isEnabled: s.enabled,
     isPaused: s.paused,
     intervalMinutes: s.interval_minutes,
-    scheduleHuman: fmtSchedule
-      ? fmtSchedule(s.interval_minutes, s.paused, s.enabled)
-      : `Every ${s.interval_minutes} min${s.paused ? " (paused)" : s.enabled ? "" : " (disabled)"}`,
+    scheduleHuman: fmtSchedule(s.interval_minutes, s.paused, s.enabled),
     // Real status precedence: in-flight > blocked (incl. no handler) > failing
     // > paused/disabled > idle. Blocked outranks paused because the operator
     // needs to see the problem, not just that the job is stopped.

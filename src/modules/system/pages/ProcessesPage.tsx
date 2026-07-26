@@ -33,6 +33,8 @@ import { ProcessesAutopilotDemo } from "@/modules/system/components/onboarding/P
 import { localizeProcess } from "@/modules/system/utils/processesI18n";
 import { getProcessExplanation } from "@/modules/system/utils/processExplanations";
 import { usePermissions } from "@/hooks/usePermissions";
+import { usePaginatedData } from "@/shared/hooks/usePagination";
+import { SimplePaginationBar } from "@/components/shared/SimplePaginationBar";
 import type { TFunction } from "i18next";
 
 
@@ -241,6 +243,125 @@ function ErrorMessage({
   );
 }
 
+/**
+ * Header health panel. Replaces the old numeric counters with a live view of
+ * what is *actually* happening: which processes are running now, which are
+ * blocked, and which are failing — each with its reason and a click-through
+ * into the drawer. When nothing is wrong we show a single "all healthy" pill
+ * so the header stays quiet.
+ */
+function HealthSummary({
+  t, items, onOpen,
+}: {
+  t: TFunction;
+  items: ProcessDefinition[];
+  onOpen: (key: string) => void;
+}) {
+  const running = items.filter((i) => i.status === "running");
+  const blocked = items.filter((i) => i.status === "blocked");
+  const failed  = items.filter((i) => i.status === "failed");
+  const paused  = items.filter((i) => i.status === "paused" || !i.isEnabled);
+
+  const nothingWrong = blocked.length === 0 && failed.length === 0;
+
+  const Chip = ({
+    p, tone,
+  }: { p: ProcessDefinition; tone: "amber" | "destructive" | "primary" | "muted" }) => {
+    const toneCls =
+      tone === "amber"
+        ? "border-amber-500/30 bg-amber-500/5 text-amber-800 dark:text-amber-300 hover:bg-amber-500/10"
+        : tone === "destructive"
+        ? "border-destructive/30 bg-destructive/5 text-destructive hover:bg-destructive/10"
+        : tone === "primary"
+        ? "border-primary/30 bg-primary/5 text-primary hover:bg-primary/10"
+        : "border-border bg-muted/40 text-muted-foreground hover:bg-muted";
+    const Icon = STATUS_ICONS[p.status];
+    const reason = p.blockReason || p.lastError;
+    const label = (
+      <button
+        type="button"
+        onClick={() => onOpen(p.key)}
+        className={`inline-flex max-w-full items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium transition ${toneCls}`}
+      >
+        <Icon className={`h-3 w-3 shrink-0 ${p.status === "running" ? "animate-pulse" : ""}`} />
+        <span className="truncate max-w-[220px]">{p.name}</span>
+        {reason && (
+          <span className="hidden sm:inline opacity-70 truncate max-w-[260px]">— {reason}</span>
+        )}
+      </button>
+    );
+    if (!reason) return label;
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild><span className="max-w-full">{label}</span></TooltipTrigger>
+          <TooltipContent className="max-w-sm text-xs whitespace-pre-wrap">{reason}</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  };
+
+  return (
+    <Card className="border-0 shadow-card bg-card">
+      <CardContent className="p-3 sm:p-4 space-y-2">
+        {nothingWrong && running.length === 0 ? (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            <span>
+              {t("health.all_idle", {
+                defaultValue:
+                  "All background services are healthy and idle. {{paused}} paused · {{total}} total.",
+                paused: paused.length,
+                total: items.length,
+              })}
+            </span>
+          </div>
+        ) : null}
+
+        {running.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-primary">
+              <Activity className="h-3.5 w-3.5 animate-pulse" />
+              {t("health.running_now", { defaultValue: "Running now" })} ({running.length})
+            </span>
+            {running.map((p) => <Chip key={p.key} p={p} tone="primary" />)}
+          </div>
+        )}
+
+        {blocked.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              {t("health.blocked", { defaultValue: "Blocked — needs attention" })} ({blocked.length})
+            </span>
+            {blocked.map((p) => <Chip key={p.key} p={p} tone="amber" />)}
+          </div>
+        )}
+
+        {failed.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-destructive">
+              <XCircle className="h-3.5 w-3.5" />
+              {t("health.failing", { defaultValue: "Failing — will retry" })} ({failed.length})
+            </span>
+            {failed.map((p) => <Chip key={p.key} p={p} tone="destructive" />)}
+          </div>
+        )}
+
+        {nothingWrong && running.length > 0 && (
+          <div className="text-[11px] text-muted-foreground">
+            {t("health.no_issues", {
+              defaultValue: "No blocked or failing services. {{paused}} paused · {{total}} total.",
+              paused: paused.length,
+              total: items.length,
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function StatusPill({ t, status, reason }: { t: TFunction; status: ProcessStatus; reason?: string }) {
   const Icon = STATUS_ICONS[status];
   const pill = (
@@ -261,14 +382,47 @@ function StatusPill({ t, status, reason }: { t: TFunction; status: ProcessStatus
 }
 
 /**
+ * Classifies a block/error message into a small set of well-known reasons so
+ * we can show an operator-friendly chip ("Missing dependency", "Permission
+ * denied", …) alongside the raw text. Order matters: more specific patterns
+ * first. Falls back to a generic "runtime_error" bucket.
+ */
+type BlockCategory =
+  | "missing_handler"
+  | "missing_schedule"
+  | "missing_dependency"
+  | "permission_denied"
+  | "database_error"
+  | "timeout"
+  | "retries_exhausted"
+  | "runtime_error";
+
+function classifyBlockReason(p: ProcessDefinition): BlockCategory {
+  if (p.hasHandler === false) return "missing_handler";
+  const text = `${p.blockReason ?? ""} ${p.lastError ?? ""}`.toLowerCase();
+  if (!text.trim()) {
+    // No message but we're in blocked/failed state — most likely no schedule row.
+    return p.status === "blocked" ? "missing_schedule" : "runtime_error";
+  }
+  if (/no handler|not registered|handler.*missing/.test(text)) return "missing_handler";
+  if (/schedule.*not.*found|no schedule|schedule missing/.test(text)) return "missing_schedule";
+  if (/connectedemailaccounts|account not found|smtp|mailbox|missing table|does not exist|relation .* does not exist|column .* does not exist|dependency/.test(text)) return "missing_dependency";
+  if (/permission denied|forbidden|unauthorized|401|403|role.*denied/.test(text)) return "permission_denied";
+  if (/timeout|timed out|cancell?ed/.test(text)) return "timeout";
+  if (/retries exhausted|max retries|attempts exhausted/.test(text)) return "retries_exhausted";
+  if (/postgres|npgsql|deadlock|constraint|foreign key|duplicate key|syntax error/.test(text)) return "database_error";
+  return "runtime_error";
+}
+
+/**
  * Rich "why is this blocked / failing" panel. Surfaces every signal we get
  * from the backend so operators can diagnose without opening the drawer:
- * attempt vs. max retries, next retry countdown, missing handler, and the
- * full error / block reason text.
+ * category chip, attempt vs. max retries, next retry countdown, missing
+ * handler, the full error / block reason text, and a jump-to-logs link.
  */
 function BlockDetails({
-  t, p,
-}: { t: TFunction; p: ProcessDefinition }) {
+  t, p, onOpenLogs,
+}: { t: TFunction; p: ProcessDefinition; onOpenLogs?: (key: string) => void }) {
   const isBlocked = p.status === "blocked";
   const isFailed  = p.status === "failed";
   if (!isBlocked && !isFailed && !p.lastError && !p.blockReason) return null;
@@ -285,13 +439,26 @@ function BlockDetails({
   const maxRetries = p.maxRetries ?? 3;
   const attemptsExhausted = attempt > 0 && attempt >= maxRetries;
   const reason = p.blockReason || p.lastError;
+  const category = classifyBlockReason(p);
+  const categoryLabel = t(`block_details.category.${category}`, {
+    defaultValue: category.replace(/_/g, " "),
+  });
+  const categoryHint = t(`block_details.category_hint.${category}`, { defaultValue: "" });
 
   return (
     <div className={`mt-2 rounded-md border p-2.5 text-xs ${tone}`}>
       <div className="flex items-start gap-2">
         <Icon className="h-3.5 w-3.5 mt-0.5 shrink-0" />
         <div className="min-w-0 flex-1">
-          <div className="font-semibold">{title}</div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-semibold">{title}</span>
+            <span className="inline-flex items-center rounded-md border border-current/30 bg-background/40 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+              {categoryLabel}
+            </span>
+          </div>
+          {categoryHint && (
+            <div className="mt-1 opacity-80">{categoryHint}</div>
+          )}
           {reason && (
             <div className="mt-1.5">
               <ErrorMessage t={t} raw={reason} tone={isBlocked ? "warn" : "error"} compact />
@@ -339,6 +506,18 @@ function BlockDetails({
               </div>
             )}
           </div>
+          {onOpenLogs && (
+            <div className="mt-2">
+              <button
+                type="button"
+                onClick={() => onOpenLogs(p.key)}
+                className="inline-flex items-center gap-1 rounded-md border border-current/30 bg-background/40 px-2 py-1 text-[11px] font-medium hover:bg-background/70"
+              >
+                <Search className="h-3 w-3" />
+                {t("block_details.view_logs", { defaultValue: "View backend log entries" })}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -423,7 +602,7 @@ export default function ProcessesPage() {
   // to the bare catalog (that used to blank out status/errors for up to 15s).
   useEffect(() => {
     if (accessError) return;
-    setItems(reliableCatalog.map((p) => overlay(p, schedulesRef.current.get(p.key), runningRef.current, fmtSchedule)));
+    setItems(reliableCatalog.map((p) => overlay(p, schedulesRef.current.get(p.key), fmtSchedule, runningRef.current)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reliableCatalog]);
 
@@ -434,7 +613,7 @@ export default function ProcessesPage() {
       schedulesRef.current = map;
       runningRef.current = running;
       setSchedules(map);
-      setItems(reliableCatalog.map((p) => overlay(p, map.get(p.key), running, fmtSchedule)));
+      setItems(reliableCatalog.map((p) => overlay(p, map.get(p.key), fmtSchedule, running)));
       setAccessError(null);
       setStale(false);
     } catch (e) {
@@ -497,13 +676,9 @@ export default function ProcessesPage() {
   }, [drawerOpen]);
 
 
-  const counts = useMemo(() => ({
-    running: items.filter((i) => i.status === "running").length,
-    failed:  items.filter((i) => i.status === "failed").length,
-    blocked: items.filter((i) => i.status === "blocked").length,
-    paused:  items.filter((i) => i.status === "paused" || !i.isEnabled).length,
-    total:   items.length,
-  }), [items]);
+  // Note: header counters were replaced by <HealthSummary /> which computes
+  // its own view directly from `items`, so we no longer need a summary memo here.
+
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -515,15 +690,15 @@ export default function ProcessesPage() {
     });
   }, [items, workspace, statusFilter, query]);
 
-  const grouped = useMemo(() => {
-    const map = new Map<WorkspaceId, ProcessDefinition[]>();
-    filtered.forEach((p) => {
-      const arr = map.get(p.workspace) ?? [];
-      arr.push(p);
-      map.set(p.workspace, arr);
-    });
-    return map;
-  }, [filtered]);
+  // Paginate the flat filtered list. Mirrors the offers/sales list UX so
+  // when we grow past 20 background services operators can page through
+  // them with the same prev/next control they know from elsewhere.
+  const {
+    data: pageItems,
+    state: pageState,
+    info: pageInfo,
+    actions: pageActions,
+  } = usePaginatedData(filtered, 20);
 
   const selected = selectedKey ? items.find((p) => p.key === selectedKey) ?? null : null;
 
@@ -860,11 +1035,6 @@ export default function ProcessesPage() {
               )}
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Metric label={t("metrics.running")} value={counts.running} tone="primary" />
-              <Metric label={t("metrics.failed")}  value={counts.failed}  tone="destructive" />
-              <Metric label={t("metrics.blocked")} value={counts.blocked} tone="amber" />
-              <Metric label={t("metrics.paused")}  value={counts.paused}  tone="muted" />
-              <Metric label={t("metrics.total")}   value={counts.total}   tone="muted" />
               <Button size="sm" variant="outline" onClick={() => setDemoOpen(true)} className="gap-1.5">
                 <Play className="h-3.5 w-3.5" />
                 {t("actions.watch_demo")}
@@ -877,6 +1047,12 @@ export default function ProcessesPage() {
           </div>
         </CardHeader>
       </Card>
+
+      {/* Live health summary — replaces the old counter chips.
+          Shows exactly which processes are currently running, blocked, or
+          failing, with the reason text, so operators can act without
+          scrolling. Clicking a chip opens that process's drawer. */}
+      <HealthSummary t={t} items={items} onOpen={setSelectedKey} />
 
       {/* Toolbar */}
       <Card className="border-0 shadow-card bg-card">
@@ -918,23 +1094,27 @@ export default function ProcessesPage() {
         </CardContent>
       </Card>
 
-      {/* Grouped list */}
+      {/* Flat, paginated list — matches the offers/sales list UX so we can
+          grow beyond 20 background services with familiar prev/next controls. */}
       <div className="flex flex-col gap-4">
-        {[...grouped.entries()].map(([ws, list]) => (
-          <Card key={ws} className="border-0 shadow-card bg-card">
-            <CardHeader className="p-4 pb-2">
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="uppercase tracking-wider text-[10px]">
-                  {wsLabel(ws)}
-                </Badge>
-                <span className="text-xs text-muted-foreground">
-                  {t("workspace_count", { count: list.length })}
-                </span>
-              </div>
-            </CardHeader>
+        {filtered.length > 0 && (
+          <Card className="border-0 shadow-card bg-card">
             <CardContent className="p-0">
+              {filtered.length > pageState.itemsPerPage && (
+                <SimplePaginationBar
+                  startIndex={pageInfo.startIndex}
+                  endIndex={pageInfo.endIndex}
+                  totalItems={filtered.length}
+                  currentPage={pageState.currentPage}
+                  totalPages={pageInfo.totalPages}
+                  hasPreviousPage={pageInfo.hasPreviousPage}
+                  hasNextPage={pageInfo.hasNextPage}
+                  onPreviousPage={pageActions.previousPage}
+                  onNextPage={pageActions.nextPage}
+                />
+              )}
               <div className="divide-y">
-                {list.map((p) => (
+                {pageItems.map((p) => (
                   <ProcessRow
                     key={p.key}
                     t={t}
@@ -946,13 +1126,31 @@ export default function ProcessesPage() {
                     onRun={() => runNow(p)}
                     onPause={() => togglePause(p)}
                     onStop={() => stopRun(p)}
+                    onOpenLogs={(key) =>
+                      navigate(
+                        `/dashboard/settings/logs?module=Processes&q=${encodeURIComponent(key)}`
+                      )
+                    }
                   />
-
                 ))}
               </div>
+              {filtered.length > pageState.itemsPerPage && (
+                <SimplePaginationBar
+                  startIndex={pageInfo.startIndex}
+                  endIndex={pageInfo.endIndex}
+                  totalItems={filtered.length}
+                  currentPage={pageState.currentPage}
+                  totalPages={pageInfo.totalPages}
+                  hasPreviousPage={pageInfo.hasPreviousPage}
+                  hasNextPage={pageInfo.hasNextPage}
+                  onPreviousPage={pageActions.previousPage}
+                  onNextPage={pageActions.nextPage}
+                  className="border-b-0 border-t"
+                />
+              )}
             </CardContent>
           </Card>
-        ))}
+        )}
         {filtered.length === 0 && (
           <Card className="border-0 shadow-card bg-card">
             <CardContent className="p-8 text-center text-sm text-muted-foreground">
@@ -961,6 +1159,7 @@ export default function ProcessesPage() {
           </Card>
         )}
       </div>
+
 
       {/* Drawer */}
       <Sheet open={!!selected} onOpenChange={(o) => !o && setSelectedKey(null)}>
@@ -985,6 +1184,11 @@ export default function ProcessesPage() {
               onToggleEnabled={() => toggleEnabled(selected)}
               onResetFailures={() => resetFailures(selected)}
               onSaveInterval={(mins) => saveInterval(selected, mins)}
+              onOpenLogs={(key) =>
+                navigate(
+                  `/dashboard/settings/logs?module=Processes&q=${encodeURIComponent(key)}`
+                )
+              }
             />
           )}
         </SheetContent>
@@ -1010,7 +1214,7 @@ function Metric({ label, value, tone }: { label: string; value: number; tone: "p
 }
 
 function ProcessRow({
-  t, p, expanded, canManage, onToggleExpand, onOpen, onRun, onPause, onStop,
+  t, p, expanded, canManage, onToggleExpand, onOpen, onRun, onPause, onStop, onOpenLogs,
 }: {
   t: TFunction;
   p: ProcessDefinition;
@@ -1021,6 +1225,7 @@ function ProcessRow({
   onRun: () => void;
   onPause: () => void;
   onStop: () => void;
+  onOpenLogs?: (key: string) => void;
 }) {
   const explanation = getProcessExplanation(p.key, t);
   const stop = (e: React.MouseEvent) => e.stopPropagation();
@@ -1080,7 +1285,7 @@ function ProcessRow({
 
         {(p.status === "blocked" || p.status === "failed") && (
           <div className="col-span-12" onClick={stop}>
-            <BlockDetails t={t} p={p} />
+            <BlockDetails t={t} p={p} onOpenLogs={onOpenLogs} />
           </div>
         )}
       </div>
@@ -1297,7 +1502,7 @@ function LiveStatusBar({
 function ProcessDrawer({
   t, p, liveHistory, historyLoading, historyRefreshing, historyUpdatedAt, historyStale,
   onHardRefresh, historyError, hasSchedule, stopEnabled, canManage,
-  onRun, onPause, onStop, onToggleEnabled, onResetFailures, onSaveInterval,
+  onRun, onPause, onStop, onToggleEnabled, onResetFailures, onSaveInterval, onOpenLogs,
 }: {
   t: TFunction;
   p: ProcessDefinition;
@@ -1317,6 +1522,7 @@ function ProcessDrawer({
   onToggleEnabled: () => void;
   onResetFailures: () => void;
   onSaveInterval: (mins: number) => void;
+  onOpenLogs?: (key: string) => void;
 }) {
   const lockedTitle = t("actions.locked_tooltip", {
     defaultValue: "Only the main administrator can perform this action",
@@ -1342,7 +1548,7 @@ function ProcessDrawer({
         </div>
       </SheetHeader>
 
-      <BlockDetails t={t} p={p} />
+      <BlockDetails t={t} p={p} onOpenLogs={onOpenLogs} />
 
       <div className="flex flex-wrap items-center gap-2 py-3">
         {p.status === "running" ? (
