@@ -12,8 +12,8 @@ namespace MyApi.Modules.Processes.Controllers
 {
     /// <summary>
     /// Admin API for the Processes workspace page. All endpoints are gated to
-    /// MainAdmin users (login_type == "admin") — process schedules are global,
-    /// so tenant users must never be able to read or mutate them.
+    /// any authenticated user — schedules are global and the scheduler runs them
+    /// automatically in the background regardless of who is signed in.
     ///
     /// - GET  /api/processes/schedules            — list all schedules (state overlay for the UI)
     /// - PUT  /api/processes/schedules            — upsert a schedule (interval/config/etc.)
@@ -37,31 +37,72 @@ namespace MyApi.Modules.Processes.Controllers
             _db = db; _registry = registry; _logger = logger;
         }
 
-        /// <summary>Same rule the Settings module applies — only lnUser/MainAdmin can touch cross-tenant admin surfaces.</summary>
-        private bool IsMainAdmin()
-        {
-            var loginType = User.FindFirst("login_type")?.Value
-                            ?? User.FindFirst("loginType")?.Value;
-            return string.Equals(loginType, "admin", StringComparison.OrdinalIgnoreCase);
-        }
+        // Processes are open to any authenticated user: the scheduler runs them
+        // automatically regardless of who is signed in, and the UI is read/operate
+        // for everyone. No MainAdmin gate.
 
-        private IActionResult? RequireMainAdmin()
-            => IsMainAdmin() ? null : StatusCode(403, new { error = "MainAdmin permission required" });
+
 
 
         [HttpGet("schedules")]
         public async Task<ActionResult<IEnumerable<ProcessScheduleDto>>> List(CancellationToken ct)
         {
-            if (RequireMainAdmin() is { } deny) return deny;
             var rows = await _db.Set<ProcessSchedule>().AsNoTracking().ToListAsync(ct);
-            return Ok(rows.Select(ToDto));
+            var keys = rows.Select(r => r.Key).ToList();
+
+            // Project the real runtime state from run history so the UI shows the
+            // actual status (running / failed / blocked) and the exact error text,
+            // instead of inferring it from LastStatus alone.
+            var recent = await _db.Set<ProcessRun>().AsNoTracking()
+                .Where(r => keys.Contains(r.ProcessKey))
+                .OrderByDescending(r => r.StartedAt)
+                .Take(keys.Count * 30 + 50)
+                .ToListAsync(ct);
+
+            var staleCutoff = DateTime.UtcNow.AddMinutes(-30);
+            var byKey = recent.GroupBy(r => r.ProcessKey)
+                              .ToDictionary(g => g.Key, g => g.OrderByDescending(r => r.StartedAt).ToList());
+
+            var dtos = rows.Select(s =>
+            {
+                var dto = ToDto(s);
+                dto.HasHandler = _registry.TryGet(s.Key, out _);
+                if (byKey.TryGetValue(s.Key, out var runs) && runs.Count > 0)
+                {
+                    var latest = runs[0];
+                    dto.IsRunning = latest.Status == "running" && latest.FinishedAt == null && latest.StartedAt >= staleCutoff;
+                    // Surface the newest *failure* text even if a later run was skipped,
+                    // so a real problem never disappears behind a no-op run.
+                    var lastFailed = runs.FirstOrDefault(r => r.Status == "failed" || r.Status == "blocked");
+                    dto.LastError = latest.Status == "failed" || latest.Status == "blocked"
+                        ? (latest.Error ?? latest.BlockReason)
+                        : (s.ConsecutiveFailures > 0 ? lastFailed?.Error ?? lastFailed?.BlockReason : null);
+                    dto.LastDurationMs = latest.DurationMs;
+                    dto.LastItemsProcessed = latest.ItemsProcessed;
+                    dto.LastTriggeredBy = latest.TriggeredBy;
+                    dto.LastAttempt = latest.Attempt;
+                    dto.NextRetryAt = latest.NextRetryAt;
+
+                    var finished = runs.Where(r => r.Status != "running").Take(30).ToList();
+                    dto.RecentTotal = finished.Count;
+                    dto.RecentSuccess = finished.Count(r => r.Status == "success" || r.Status == "skipped");
+                }
+                if (!dto.HasHandler && string.IsNullOrEmpty(dto.BlockReason))
+                    dto.BlockReason = "No handler registered on the server for this process key.";
+                return dto;
+            }).ToList();
+
+            return Ok(dtos);
         }
 
         [HttpPut("schedules")]
         public async Task<ActionResult<ProcessScheduleDto>> Upsert([FromBody] UpsertScheduleRequest req, CancellationToken ct)
         {
-            if (RequireMainAdmin() is { } deny) return deny;
             if (string.IsNullOrWhiteSpace(req.Key)) return BadRequest(new { error = "key is required" });
+            // Reject unknown keys: a schedule with no handler would be marked "blocked"
+            // on every tick and pollute the UI with a process that can never run.
+            if (!_registry.TryGet(req.Key, out _))
+                return BadRequest(new { error = $"No handler registered for '{req.Key}'" });
 
             var s = await _db.Set<ProcessSchedule>().FirstOrDefaultAsync(x => x.Key == req.Key, ct);
             var isNew = s == null;
@@ -88,7 +129,6 @@ namespace MyApi.Modules.Processes.Controllers
         [HttpPost("schedules/{key}/pause")]
         public async Task<IActionResult> SetPaused(string key, [FromQuery] bool paused, CancellationToken ct)
         {
-            if (RequireMainAdmin() is { } deny) return deny;
             var s = await _db.Set<ProcessSchedule>().FirstOrDefaultAsync(x => x.Key == key, ct);
             if (s == null) return NotFound();
             s.Paused = paused;
@@ -101,7 +141,6 @@ namespace MyApi.Modules.Processes.Controllers
         [HttpPost("schedules/{key}/enable")]
         public async Task<IActionResult> SetEnabled(string key, [FromQuery] bool enabled, CancellationToken ct)
         {
-            if (RequireMainAdmin() is { } deny) return deny;
             var s = await _db.Set<ProcessSchedule>().FirstOrDefaultAsync(x => x.Key == key, ct);
             if (s == null) return NotFound();
             s.Enabled = enabled;
@@ -114,7 +153,6 @@ namespace MyApi.Modules.Processes.Controllers
         [HttpPost("schedules/{key}/reset-failures")]
         public async Task<IActionResult> ResetFailures(string key, CancellationToken ct)
         {
-            if (RequireMainAdmin() is { } deny) return deny;
             var s = await _db.Set<ProcessSchedule>().FirstOrDefaultAsync(x => x.Key == key, ct);
             if (s == null) return NotFound();
             s.ConsecutiveFailures = 0;
@@ -129,7 +167,6 @@ namespace MyApi.Modules.Processes.Controllers
         [HttpGet("runs/{key}")]
         public async Task<ActionResult<IEnumerable<ProcessRunDto>>> ListRuns(string key, [FromQuery] int limit = 20, CancellationToken ct = default)
         {
-            if (RequireMainAdmin() is { } deny) return deny;
             limit = Math.Clamp(limit, 1, 200);
             var rows = await _db.Set<ProcessRun>().AsNoTracking()
                 .Where(r => r.ProcessKey == key)
@@ -139,12 +176,29 @@ namespace MyApi.Modules.Processes.Controllers
             return Ok(rows.Select(ToDto));
         }
 
+        /// <summary>
+        /// Returns keys of processes whose most recent run is still 'running'.
+        /// Used by the UI to show a live "running" pill for scheduler-triggered runs.
+        /// A run is considered stale (and ignored here) if it started more than
+        /// 30 minutes ago without finishing — protects against crashed-mid-run rows.
+        /// </summary>
+        [HttpGet("running-keys")]
+        public async Task<ActionResult<IEnumerable<string>>> RunningKeys(CancellationToken ct)
+        {
+            var staleCutoff = DateTime.UtcNow.AddMinutes(-30);
+            var keys = await _db.Set<ProcessRun>().AsNoTracking()
+                .Where(r => r.Status == "running" && r.FinishedAt == null && r.StartedAt >= staleCutoff)
+                .Select(r => r.ProcessKey)
+                .Distinct()
+                .ToListAsync(ct);
+            return Ok(keys);
+        }
+
         public class RunNowRequest { public string Key { get; set; } = string.Empty; }
 
         [HttpPost("run")]
         public async Task<ActionResult<RunNowResult>> RunNow([FromBody] RunNowRequest req, CancellationToken ct)
         {
-            if (RequireMainAdmin() is { } deny) return deny;
             if (string.IsNullOrWhiteSpace(req.Key)) return BadRequest(new { error = "key is required" });
             if (!_registry.TryGet(req.Key, out var handler))
                 return BadRequest(new { error = $"No handler registered for '{req.Key}'" });

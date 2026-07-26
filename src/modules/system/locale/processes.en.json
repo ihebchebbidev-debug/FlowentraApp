@@ -1,0 +1,265 @@
+{
+  "title": "Processes",
+  "description": "Schedule, monitor and control every recurring or background job across all workspaces.",
+  "metrics": {
+    "running": "Running",
+    "failed": "Failed",
+    "blocked": "Blocked",
+    "paused": "Paused",
+    "total": "Total"
+  },
+  "actions": {
+    "watch_demo": "Watch Demo",
+    "refresh": "Refresh",
+    "run_now": "Run now",
+    "resume": "Resume",
+    "pause": "Pause",
+    "stop": "Stop",
+    "reset_failures": "Reset failures",
+    "save": "Save"
+  },
+  "toolbar": {
+    "search_placeholder": "Search processes…",
+    "workspace_placeholder": "Workspace",
+    "status_placeholder": "Status",
+    "all_workspaces": "All workspaces",
+    "all_status": "All status"
+  },
+  "workspaces": {
+    "administration": "Administration"
+  },
+  "workspace_count": "{{count}} processes",
+  "status": {
+    "idle": "Idle",
+    "running": "Running",
+    "paused": "Paused",
+    "failed": "Failed",
+    "blocked": "Blocked",
+    "disabled": "disabled"
+  },
+  "row": {
+    "last_prefix": "Last:",
+    "next_prefix": "Next:"
+  },
+  "empty": "No processes match your filters.",
+  "tabs": {
+    "overview": "Overview",
+    "schedule": "Schedule",
+    "history": "History",
+    "diagnostics": "Diagnostics"
+  },
+  "labels": {
+    "schedule": "Schedule",
+    "timezone": "Timezone",
+    "last_run": "Last run",
+    "last_duration": "Last duration",
+    "last_items": "Last items",
+    "next_run": "Next run",
+    "success_rate": "Success (30 runs)",
+    "consecutive_failures": "Consecutive failures",
+    "last_error": "Last error:",
+    "blocked": "Blocked:",
+    "type": "Type",
+    "interval": "Interval",
+    "cron": "Cron",
+    "new_interval": "New interval (minutes)",
+    "settings": "Settings",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "anchor": "anchor:",
+    "every_minutes": "Every {{count}} min"
+  },
+  "stop_tooltip": "Stop is advisory — pause the schedule to prevent further runs",
+  "no_schedule_hint": "This process has no schedule row yet — enable it once from the drawer header to persist.",
+  "history_sample_hint": "Showing sample history — enable the schedule to record real runs.",
+  "history_status": {
+    "ok": "ok",
+    "fail": "fail",
+    "block": "block",
+    "canc": "canc",
+    "running": "running",
+    "skipped": "skipped"
+  },
+  "diagnostics_intro": "Automated checks answering <em>why is this process blocked?</em>",
+  "relative": {
+    "dash": "—",
+    "just_now": "just now",
+    "ago": " ago",
+    "in": "in ",
+    "m": "m",
+    "h": "h",
+    "d": "d"
+  },
+  "access_banner": {
+    "403_title": "Access denied (403)",
+    "401_title": "Sign-in required (401)",
+    "body": "You don’t have permission to view processes. The list below is unavailable until an administrator grants access — no cached or sample data is being shown."
+  },
+  "toast": {
+    "access_denied_title": "Access denied",
+    "access_denied_desc": "Admin permission required.",
+    "started_title": "Process started",
+    "completed_title": "Process completed",
+    "already_running_title": "Already running",
+    "blocked_title": "Blocked",
+    "failed_title": "Process failed",
+    "run_failed_title": "Run failed",
+    "paused_title": "Process paused",
+    "resumed_title": "Process resumed",
+    "schedule_saved_title": "Schedule saved",
+    "schedule_saved_desc": "{{name}} will run every {{minutes}} min.",
+    "schedule_updated_title": "Schedule updated",
+    "schedule_updated_desc": "{{name}} now runs every {{minutes}} min.",
+    "could_not_update_title": "Could not update schedule",
+    "could_not_create_title": "Could not create schedule",
+    "could_not_reset_title": "Could not reset failures",
+    "failures_cleared_title": "Failures cleared",
+    "stop_not_supported_title": "Stop not supported",
+    "stop_not_supported_desc": "{{name}} runs to completion. Pause the schedule to prevent future runs."
+  },
+  "modules": {
+    "system_logs": "System logs",
+    "email_delivery": "Email delivery",
+    "invoices": "Invoices",
+    "offers": "Offers",
+    "dispatches": "Dispatches",
+    "payments": "Payments",
+    "support": "Support",
+    "notifications": "Notifications",
+    "calendar": "Calendar",
+    "offline_sync": "Offline sync",
+    "external_endpoints": "External endpoints",
+    "human_resources": "Human resources",
+    "data_retention": "Data retention",
+    "projects": "Projects"
+  },
+  "settings_labels": {
+    "retention_days": "Retention (days)",
+    "dry_run": "Dry run",
+    "batch_size": "Batch size",
+    "max_attempts_per_email": "Max attempts per email",
+    "statuses_considered": "Statuses considered",
+    "grace_hours": "Grace hours",
+    "days_resolved": "Days resolved",
+    "age_days": "Age (days)",
+    "retention_source": "Retention source",
+    "retention_source_value": "per-endpoint LogRetentionDays"
+  },
+  "diagnostics_labels": {
+    "systemlogs_present": "SystemLogs table present",
+    "db_reachable": "DB reachable",
+    "outbound_emails_present": "OutboundEmailLogs table present",
+    "email_service_reachable": "EmailAccountService reachable",
+    "invoices_present": "Invoices table present",
+    "offers_present": "Offers table present",
+    "dispatches_present": "Dispatches table present",
+    "installments_present": "PaymentPlanInstallments table present",
+    "tickets_present": "SupportTickets table present",
+    "notifications_present": "Notifications table present",
+    "calendar_events_present": "CalendarEvents table present",
+    "sync_changes_present": "SyncChanges table present",
+    "sync_receipts_present": "SyncOperationReceipts table present",
+    "webhook_jobs_present": "WebhookForwardJobs table present",
+    "endpoint_logs_present": "ExternalEndpointLogs table present",
+    "dispatch_audit_present": "DispatchAuditLogs table present",
+    "hr_audit_present": "HrAuditLogs table present",
+    "target_tables_present": "Target tables present",
+    "recurring_logs_present": "RecurringTaskLogs table present"
+  },
+  "schedule_human": {
+    "every_5_minutes": "Every 5 minutes",
+    "every_hour": "Every hour",
+    "every_6_hours": "Every 6 hours",
+    "every_24_hours": "Every 24 hours",
+    "every_minutes": "Every {{count}} min",
+    "every_minutes_paused": "Every {{count}} min (paused)",
+    "every_minutes_disabled": "Every {{count}} min (disabled)"
+  },
+  "items": {
+    "admin.purge-system-logs": {
+      "name": "Purge system logs",
+      "description": "Delete SystemLogs rows older than the retention window."
+    },
+    "admin.retry-failed-emails": {
+      "name": "Retry failed outbound emails",
+      "description": "Re-send OutboundEmailLog rows still in status=failed with attempts < max_attempts. Every send attempt (success or failure) is logged with its provider error for audit."
+    },
+    "admin.invoices-mark-overdue": {
+      "name": "Mark overdue invoices",
+      "description": "Flip invoices past their DueDate to status=overdue when they still have an unpaid balance. Skips drafts, cancelled, and fully-paid invoices."
+    },
+    "admin.offers-mark-expired": {
+      "name": "Expire past-due offers",
+      "description": "Move draft/sent/pending offers past ValidUntil into status=expired so pipeline views stay accurate."
+    },
+    "admin.dispatches-mark-missed": {
+      "name": "Mark missed dispatches",
+      "description": "Mark scheduled dispatches that never started (no ActualStartTime) more than a grace window past their ScheduledDate as status=missed."
+    },
+    "admin.payment-installments-mark-overdue": {
+      "name": "Mark overdue payment installments",
+      "description": "Flip pending PaymentPlanInstallments past their DueDate to status=overdue."
+    },
+    "admin.support-tickets-autoclose-resolved": {
+      "name": "Auto-close resolved support tickets",
+      "description": "Close tickets that have been in status=resolved for longer than the configured window."
+    },
+    "admin.draft-offers-purge": {
+      "name": "Purge abandoned draft offers",
+      "description": "Hard-delete offers stuck in status=draft that haven’t been touched for the age window."
+    },
+    "admin.draft-invoices-purge": {
+      "name": "Purge abandoned draft invoices",
+      "description": "Hard-delete invoices stuck in status=draft that haven’t been touched for the age window."
+    },
+    "admin.notifications-purge-read": {
+      "name": "Purge read notifications",
+      "description": "Delete Notification rows where IsRead=true and CreatedAt older than the retention window."
+    },
+    "admin.notifications-purge-stale-unread": {
+      "name": "Purge stale unread notifications",
+      "description": "Delete very old unread notifications so the tray doesn’t accumulate abandoned rows."
+    },
+    "admin.calendar-events-purge-past": {
+      "name": "Purge past calendar events",
+      "description": "Delete completed/cancelled calendar events whose End is older than the retention window."
+    },
+    "admin.sync-changes-purge": {
+      "name": "Purge old sync changes",
+      "description": "Trim the SyncChanges outbox so offline-sync bookkeeping doesn’t grow forever."
+    },
+    "admin.sync-receipts-purge": {
+      "name": "Purge old sync receipts",
+      "description": "Delete SyncOperationReceipt rows older than the retention window."
+    },
+    "admin.webhook-jobs-purge": {
+      "name": "Purge completed webhook jobs",
+      "description": "Delete WebhookForwardJobs that finished (completed or dead_letter) longer ago than the retention window."
+    },
+    "admin.external-endpoint-logs-purge": {
+      "name": "Purge external endpoint logs",
+      "description": "Per-endpoint retention: uses each ExternalEndpoint’s own LogRetentionDays to trim its ExternalEndpointLogs."
+    },
+    "admin.dispatch-audit-purge": {
+      "name": "Purge old dispatch audit logs",
+      "description": "Delete DispatchAuditLogs older than the retention window."
+    },
+    "admin.hr-audit-purge": {
+      "name": "Purge old HR audit logs",
+      "description": "Delete HrAuditLogs older than the retention window."
+    },
+    "admin.soft-deleted-purge": {
+      "name": "Hard-purge soft-deleted records",
+      "description": "Permanently delete rows across invoices, offers, deals, sales, articles, dispatches, and service orders that were soft-deleted longer than the retention window ago."
+    },
+    "admin.recurring-task-logs-purge": {
+      "name": "Purge old recurring task logs",
+      "description": "Delete RecurringTaskLog rows older than the retention window."
+    }
+  },
+  "trigger": {
+    "schedule": "schedule",
+    "manual": "manual",
+    "retry": "retry"
+  }
+}

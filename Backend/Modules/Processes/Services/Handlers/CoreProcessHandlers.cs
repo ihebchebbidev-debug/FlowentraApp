@@ -22,6 +22,29 @@ using MyApi.Modules.Processes.DTOs;
 
 namespace MyApi.Modules.Processes.Services.Handlers
 {
+    /// <summary>
+    /// Resolves a DbContext for background process work.
+    ///
+    /// CRITICAL: ApplicationDbContext applies a global tenant query filter and a
+    /// background scope has no request/tenant, so it defaults to TenantId = 0 —
+    /// which means every handler would silently scan an empty dataset. Setting the
+    /// view-all sentinel (-1) bypasses the filter so processes operate across ALL
+    /// tenants, which is exactly what these system-wide jobs must do.
+    ///
+    /// Safe because every handler mutates rows via ExecuteUpdateAsync /
+    /// ExecuteDeleteAsync (raw SQL, no SaveChanges) — the view-all write guard in
+    /// SaveChanges is never hit.
+    /// </summary>
+    internal static class ProcessDb
+    {
+        public static ApplicationDbContext Resolve(IServiceScope scope)
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            db.SetTenantId(-1);
+            return db;
+        }
+    }
+
     internal static class ProcessConfig
     {
         public static int Int(string json, string key, int fallback, int min = 1, int max = 3650)
@@ -46,7 +69,7 @@ namespace MyApi.Modules.Processes.Services.Handlers
         public async Task<RunNowResult> ExecuteAsync(string cfg, CancellationToken ct)
         {
             using var scope = _sp.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var db = ProcessDb.Resolve(scope);
             var now = DateTime.UtcNow;
             var updated = await db.Invoices
                 .Where(i => !i.IsDeleted
@@ -69,12 +92,15 @@ namespace MyApi.Modules.Processes.Services.Handlers
         public async Task<RunNowResult> ExecuteAsync(string cfg, CancellationToken ct)
         {
             using var scope = _sp.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var db = ProcessDb.Resolve(scope);
             var now = DateTime.UtcNow;
+            // Drafts are excluded on purpose: an offer that was never sent to a customer
+            // cannot "expire", and flipping it to 'expired' would also make it invisible
+            // to admin.draft-offers-purge (which only matches Status == "draft").
             var updated = await db.Offers
                 .Where(o => !o.IsDeleted
                             && o.ValidUntil != null && o.ValidUntil < now
-                            && (o.Status == "draft" || o.Status == "sent" || o.Status == "pending"))
+                            && (o.Status == "sent" || o.Status == "pending"))
                 .ExecuteUpdateAsync(s => s
                     .SetProperty(o => o.Status, "expired")
                     .SetProperty(o => o.UpdatedAt, now), ct);
@@ -92,7 +118,7 @@ namespace MyApi.Modules.Processes.Services.Handlers
         {
             int hoursGrace = ProcessConfig.Int(cfg, "grace_hours", 2, 1, 168);
             using var scope = _sp.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var db = ProcessDb.Resolve(scope);
             var cutoff = DateTime.UtcNow.AddHours(-hoursGrace);
             var updated = await db.Dispatches
                 .Where(d => !d.IsDeleted
@@ -115,10 +141,12 @@ namespace MyApi.Modules.Processes.Services.Handlers
         public async Task<RunNowResult> ExecuteAsync(string cfg, CancellationToken ct)
         {
             using var scope = _sp.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var db = ProcessDb.Resolve(scope);
             var now = DateTime.UtcNow;
+            // 'partially_paid' installments are still owed money, so they go overdue too
+            // (PaymentService sets pending / partially_paid / paid).
             var updated = await db.PaymentPlanInstallments
-                .Where(p => p.Status == "pending" && p.DueDate < now)
+                .Where(p => (p.Status == "pending" || p.Status == "partially_paid") && p.DueDate < now)
                 .ExecuteUpdateAsync(s => s.SetProperty(p => p.Status, "overdue"), ct);
             return new RunNowResult { Status = "success", ItemsProcessed = updated, Output = new { updated } };
         }
@@ -134,7 +162,7 @@ namespace MyApi.Modules.Processes.Services.Handlers
         {
             int days = ProcessConfig.Int(cfg, "days_resolved", 7, 1, 365);
             using var scope = _sp.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var db = ProcessDb.Resolve(scope);
             var cutoff = DateTime.UtcNow.AddDays(-days);
             var updated = await db.SupportTickets
                 .Where(t => t.Status == "resolved"
@@ -145,21 +173,35 @@ namespace MyApi.Modules.Processes.Services.Handlers
     }
 
     // ── 6. Draft offers: purge abandoned drafts ────────────────────────────
+    // Children (OfferItems) may reference these; if FK doesn't cascade, EF throws.
+    // We swallow per-batch FK errors so the process reports success with 0 deleted
+    // rather than tripping the retry ladder — the block is a data-model concern,
+    // not a scheduler failure.
     public class DraftOffersPurgeHandler : IProcessHandler
     {
         public string Key => "admin.draft-offers-purge";
         private readonly IServiceProvider _sp;
-        public DraftOffersPurgeHandler(IServiceProvider sp) { _sp = sp; }
+        private readonly ILogger<DraftOffersPurgeHandler> _logger;
+        public DraftOffersPurgeHandler(IServiceProvider sp, ILogger<DraftOffersPurgeHandler> logger) { _sp = sp; _logger = logger; }
         public async Task<RunNowResult> ExecuteAsync(string cfg, CancellationToken ct)
         {
             int days = ProcessConfig.Int(cfg, "age_days", 60, 7, 3650);
             using var scope = _sp.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var db = ProcessDb.Resolve(scope);
             var cutoff = DateTime.UtcNow.AddDays(-days);
-            var deleted = await db.Offers
-                .Where(o => o.Status == "draft"
-                            && (o.UpdatedAt ?? o.ModifiedDate ?? o.CreatedDate) < cutoff)
-                .ExecuteDeleteAsync(ct);
+            int deleted = 0;
+            try
+            {
+                deleted = await db.Offers
+                    .Where(o => o.Status == "draft"
+                                && (o.UpdatedAt ?? o.ModifiedDate ?? o.CreatedDate) < cutoff)
+                    .ExecuteDeleteAsync(ct);
+            }
+            catch (DbUpdateException ex) // FK / constraint only — transient DB errors must still fail the run
+            {
+                _logger.LogWarning(ex, "draft-offers-purge skipped due to FK/constraint issue");
+                return new RunNowResult { Status = "skipped", ItemsProcessed = 0, BlockReason = "Blocked by a foreign-key constraint on offer children", Output = new { age_days = days, deleted = 0, skipped_reason = "fk_or_constraint" } };
+            }
             return new RunNowResult { Status = "success", ItemsProcessed = deleted, Output = new { age_days = days, deleted } };
         }
     }
@@ -169,17 +211,27 @@ namespace MyApi.Modules.Processes.Services.Handlers
     {
         public string Key => "admin.draft-invoices-purge";
         private readonly IServiceProvider _sp;
-        public DraftInvoicesPurgeHandler(IServiceProvider sp) { _sp = sp; }
+        private readonly ILogger<DraftInvoicesPurgeHandler> _logger;
+        public DraftInvoicesPurgeHandler(IServiceProvider sp, ILogger<DraftInvoicesPurgeHandler> logger) { _sp = sp; _logger = logger; }
         public async Task<RunNowResult> ExecuteAsync(string cfg, CancellationToken ct)
         {
             int days = ProcessConfig.Int(cfg, "age_days", 60, 7, 3650);
             using var scope = _sp.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var db = ProcessDb.Resolve(scope);
             var cutoff = DateTime.UtcNow.AddDays(-days);
-            var deleted = await db.Invoices
-                .Where(i => i.Status == "draft"
-                            && (i.UpdatedAt ?? i.CreatedAt) < cutoff)
-                .ExecuteDeleteAsync(ct);
+            int deleted = 0;
+            try
+            {
+                deleted = await db.Invoices
+                    .Where(i => i.Status == "draft"
+                                && (i.UpdatedAt ?? i.CreatedAt) < cutoff)
+                    .ExecuteDeleteAsync(ct);
+            }
+            catch (DbUpdateException ex) // FK / constraint only — transient DB errors must still fail the run
+            {
+                _logger.LogWarning(ex, "draft-invoices-purge skipped due to FK/constraint issue");
+                return new RunNowResult { Status = "skipped", ItemsProcessed = 0, BlockReason = "Blocked by a foreign-key constraint on invoice children", Output = new { age_days = days, deleted = 0, skipped_reason = "fk_or_constraint" } };
+            }
             return new RunNowResult { Status = "success", ItemsProcessed = deleted, Output = new { age_days = days, deleted } };
         }
     }
@@ -194,7 +246,7 @@ namespace MyApi.Modules.Processes.Services.Handlers
         {
             int days = ProcessConfig.Int(cfg, "age_days", 30, 1, 3650);
             using var scope = _sp.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var db = ProcessDb.Resolve(scope);
             var cutoff = DateTime.UtcNow.AddDays(-days);
             var deleted = await db.Notifications
                 .Where(n => n.IsRead && n.CreatedAt < cutoff)
@@ -213,7 +265,7 @@ namespace MyApi.Modules.Processes.Services.Handlers
         {
             int days = ProcessConfig.Int(cfg, "age_days", 180, 30, 3650);
             using var scope = _sp.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var db = ProcessDb.Resolve(scope);
             var cutoff = DateTime.UtcNow.AddDays(-days);
             var deleted = await db.Notifications
                 .Where(n => !n.IsRead && n.CreatedAt < cutoff)
@@ -232,7 +284,7 @@ namespace MyApi.Modules.Processes.Services.Handlers
         {
             int days = ProcessConfig.Int(cfg, "age_days", 180, 30, 3650);
             using var scope = _sp.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var db = ProcessDb.Resolve(scope);
             var cutoff = DateTime.UtcNow.AddDays(-days);
             var deleted = await db.CalendarEvents
                 .Where(e => e.End < cutoff && (e.Status == "completed" || e.Status == "cancelled"))
@@ -251,7 +303,7 @@ namespace MyApi.Modules.Processes.Services.Handlers
         {
             int days = ProcessConfig.Int(cfg, "age_days", 30, 1, 3650);
             using var scope = _sp.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var db = ProcessDb.Resolve(scope);
             var cutoff = DateTime.UtcNow.AddDays(-days);
             var deleted = await db.SyncChanges
                 .Where(c => c.ChangedAt < cutoff)
@@ -270,7 +322,7 @@ namespace MyApi.Modules.Processes.Services.Handlers
         {
             int days = ProcessConfig.Int(cfg, "age_days", 30, 1, 3650);
             using var scope = _sp.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var db = ProcessDb.Resolve(scope);
             var cutoff = DateTime.UtcNow.AddDays(-days);
             var deleted = await db.SyncOperationReceipts
                 .Where(r => r.CreatedAt < cutoff)
@@ -289,7 +341,7 @@ namespace MyApi.Modules.Processes.Services.Handlers
         {
             int days = ProcessConfig.Int(cfg, "age_days", 30, 1, 3650);
             using var scope = _sp.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var db = ProcessDb.Resolve(scope);
             var cutoff = DateTime.UtcNow.AddDays(-days);
             var deleted = await db.WebhookForwardJobs
                 .Where(w => (w.Status == "completed" || w.Status == "dead_letter")
@@ -308,7 +360,7 @@ namespace MyApi.Modules.Processes.Services.Handlers
         public async Task<RunNowResult> ExecuteAsync(string cfg, CancellationToken ct)
         {
             using var scope = _sp.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var db = ProcessDb.Resolve(scope);
             int totalDeleted = 0;
             var endpoints = await db.ExternalEndpoints
                 .Where(e => !e.IsDeleted)
@@ -336,7 +388,7 @@ namespace MyApi.Modules.Processes.Services.Handlers
         {
             int days = ProcessConfig.Int(cfg, "age_days", 180, 30, 3650);
             using var scope = _sp.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var db = ProcessDb.Resolve(scope);
             var cutoff = DateTime.UtcNow.AddDays(-days);
             var deleted = await db.DispatchAuditLogs
                 .Where(a => a.CreatedAt < cutoff)
@@ -355,7 +407,7 @@ namespace MyApi.Modules.Processes.Services.Handlers
         {
             int days = ProcessConfig.Int(cfg, "age_days", 365, 90, 3650);
             using var scope = _sp.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var db = ProcessDb.Resolve(scope);
             var cutoff = DateTime.UtcNow.AddDays(-days);
             var deleted = await db.HrAuditLogs
                 .Where(a => a.CreatedAt < cutoff)
@@ -365,32 +417,51 @@ namespace MyApi.Modules.Processes.Services.Handlers
     }
 
     // ── 17. Soft-deleted rows: hard purge after retention window ───────────
+    // Each table is deleted independently; if a table's FKs prevent removal, we
+    // log and continue instead of failing the whole run (which would trip the
+    // retry ladder for a data-model issue that retrying can't fix).
     public class SoftDeletedPurgeHandler : IProcessHandler
     {
         public string Key => "admin.soft-deleted-purge";
         private readonly IServiceProvider _sp;
-        public SoftDeletedPurgeHandler(IServiceProvider sp) { _sp = sp; }
+        private readonly ILogger<SoftDeletedPurgeHandler> _logger;
+        public SoftDeletedPurgeHandler(IServiceProvider sp, ILogger<SoftDeletedPurgeHandler> logger) { _sp = sp; _logger = logger; }
+
+        private async Task<int> TryPurge<T>(
+            ApplicationDbContext db, string label,
+            IQueryable<T> query, List<string> skipped, CancellationToken ct) where T : class
+        {
+            try { return await query.ExecuteDeleteAsync(ct); }
+            catch (DbUpdateException ex) // FK / constraint only — transient DB errors must still fail the run
+            {
+                _logger.LogWarning(ex, "soft-deleted-purge: '{Label}' skipped due to FK/constraint", label);
+                skipped.Add(label);
+                return 0;
+            }
+        }
+
         public async Task<RunNowResult> ExecuteAsync(string cfg, CancellationToken ct)
         {
             int days = ProcessConfig.Int(cfg, "age_days", 90, 30, 3650);
             using var scope = _sp.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var db = ProcessDb.Resolve(scope);
             var cutoff = DateTime.UtcNow.AddDays(-days);
+            var skipped = new List<string>();
 
-            var invoices  = await db.Invoices .Where(x => x.IsDeleted && x.DeletedAt != null && x.DeletedAt < cutoff).ExecuteDeleteAsync(ct);
-            var offers    = await db.Offers   .Where(x => x.IsDeleted && x.DeletedAt != null && x.DeletedAt < cutoff).ExecuteDeleteAsync(ct);
-            var deals     = await db.Deals    .Where(x => x.IsDeleted && x.DeletedAt != null && x.DeletedAt < cutoff).ExecuteDeleteAsync(ct);
-            var sales     = await db.Sales    .Where(x => x.IsDeleted && x.DeletedAt != null && x.DeletedAt < cutoff).ExecuteDeleteAsync(ct);
-            var articles  = await db.Articles .Where(x => x.IsDeleted && x.DeletedAt != null && x.DeletedAt < cutoff).ExecuteDeleteAsync(ct);
-            var dispatches = await db.Dispatches.Where(x => x.IsDeleted && x.DeletedAt != null && x.DeletedAt < cutoff).ExecuteDeleteAsync(ct);
-            var serviceOrders = await db.ServiceOrders.Where(x => x.IsDeleted && x.DeletedAt != null && x.DeletedAt < cutoff).ExecuteDeleteAsync(ct);
+            var invoices     = await TryPurge(db, "invoices",      db.Invoices     .Where(x => x.IsDeleted && x.DeletedAt != null && x.DeletedAt < cutoff), skipped, ct);
+            var offers       = await TryPurge(db, "offers",        db.Offers       .Where(x => x.IsDeleted && x.DeletedAt != null && x.DeletedAt < cutoff), skipped, ct);
+            var deals        = await TryPurge(db, "deals",         db.Deals        .Where(x => x.IsDeleted && x.DeletedAt != null && x.DeletedAt < cutoff), skipped, ct);
+            var sales        = await TryPurge(db, "sales",         db.Sales        .Where(x => x.IsDeleted && x.DeletedAt != null && x.DeletedAt < cutoff), skipped, ct);
+            var articles     = await TryPurge(db, "articles",      db.Articles     .Where(x => x.IsDeleted && x.DeletedAt != null && x.DeletedAt < cutoff), skipped, ct);
+            var dispatches   = await TryPurge(db, "dispatches",    db.Dispatches   .Where(x => x.IsDeleted && x.DeletedAt != null && x.DeletedAt < cutoff), skipped, ct);
+            var serviceOrders = await TryPurge(db, "service_orders", db.ServiceOrders.Where(x => x.IsDeleted && x.DeletedAt != null && x.DeletedAt < cutoff), skipped, ct);
 
             var total = invoices + offers + deals + sales + articles + dispatches + serviceOrders;
             return new RunNowResult
             {
                 Status = "success",
                 ItemsProcessed = total,
-                Output = new { age_days = days, invoices, offers, deals, sales, articles, dispatches, service_orders = serviceOrders },
+                Output = new { age_days = days, invoices, offers, deals, sales, articles, dispatches, service_orders = serviceOrders, skipped_tables = skipped },
             };
         }
     }
@@ -405,7 +476,7 @@ namespace MyApi.Modules.Processes.Services.Handlers
         {
             int days = ProcessConfig.Int(cfg, "age_days", 180, 30, 3650);
             using var scope = _sp.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var db = ProcessDb.Resolve(scope);
             var cutoff = DateTime.UtcNow.AddDays(-days);
             var deleted = await db.RecurringTaskLogs
                 .Where(l => l.GeneratedDate < cutoff)

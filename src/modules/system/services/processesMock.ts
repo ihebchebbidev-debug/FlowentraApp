@@ -21,11 +21,11 @@ export interface ProcessRun {
   startedAt: string;
   finishedAt?: string;
   durationMs: number;
-  status: "success" | "failed" | "blocked" | "cancelled";
+  status: "success" | "failed" | "blocked" | "cancelled" | "running" | "skipped";
   itemsProcessed: number;
   error?: string;
   blockReason?: string;
-  triggeredBy: "schedule" | "manual";
+  triggeredBy: "schedule" | "manual" | "retry";
 }
 
 export interface DiagnosticCheck {

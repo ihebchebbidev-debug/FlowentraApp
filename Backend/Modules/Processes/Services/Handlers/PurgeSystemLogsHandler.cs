@@ -29,7 +29,7 @@ namespace MyApi.Modules.Processes.Services.Handlers
             var cutoff = DateTime.UtcNow.AddDays(-Math.Max(1, retentionDays));
 
             using var scope = _sp.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var db = ProcessDb.Resolve(scope); // view-all: purge logs for every tenant
 
             var logsDeleted = await db.SystemLogs.Where(l => l.Timestamp < cutoff).ExecuteDeleteAsync(ct);
             var runsDeleted = await db.Set<Models.ProcessRun>()

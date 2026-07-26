@@ -40,6 +40,12 @@ namespace MyApi.Modules.Processes.Services.Handlers
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var svc = scope.ServiceProvider.GetRequiredService<IEmailAccountService>();
 
+            // Background scopes default to TenantId = 0, which would hide every
+            // tenant's ConnectedEmailAccount behind the global query filter and make
+            // each retry fail with "Account not found". Start in view-all mode and
+            // switch to the log's own tenant before each send so writes stay scoped.
+            db.SetTenantId(-1);
+
             var now = DateTime.UtcNow;
             var candidates = await db.OutboundEmailLogs
                 .Where(l => l.Status == "failed"
@@ -79,14 +85,31 @@ namespace MyApi.Modules.Processes.Services.Handlers
                 }
 
                 retried++;
-                // SendEmailAsync updates the same row (attempts, status, error, next retry).
-                var result = await svc.SendEmailAsync(log.AccountId!.Value, log.UserId!.Value, dto, existingLogId: log.Id);
-                if (result.Success) succeeded++;
-                else if (log.Attempts >= log.MaxAttempts) gaveUp++;
-                else stillFailed++;
+                // Scope the context to the owning tenant: the account lookup passes the
+                // filter and any token refresh the provider performs saves cleanly.
+                db.SetTenantId(log.TenantId > 0 ? log.TenantId : -1);
+                try
+                {
+                    // SendEmailAsync updates the same row (attempts, status, error, next retry).
+                    var result = await svc.SendEmailAsync(log.AccountId!.Value, log.UserId!.Value, dto, existingLogId: log.Id);
+                    if (result.Success) succeeded++;
+                    else if (log.Attempts >= log.MaxAttempts) gaveUp++;
+                    else stillFailed++;
+                }
+                catch (Exception ex)
+                {
+                    // One bad message must never abort the whole batch.
+                    _logger.LogWarning(ex, "retry-failed-emails: send threw for log {Id}", log.Id);
+                    log.LastError = ex.Message;
+                    log.LastAttemptAt = DateTime.UtcNow;
+                    stillFailed++;
+                }
             }
 
+            // OutboundEmailLog is not tenant-scoped, so this save is safe in view-all mode.
+            db.SetTenantId(-1);
             await db.SaveChangesAsync(ct);
+
 
             _logger.LogInformation("📧 retry-failed-emails: retried={Retried} succeeded={Ok} stillFailed={Fail} gaveUp={Gave}",
                 retried, succeeded, stillFailed, gaveUp);

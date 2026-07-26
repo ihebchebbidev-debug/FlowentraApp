@@ -379,6 +379,17 @@ namespace MyApi.Data
             // Apply seed data
             ApplySeedData(modelBuilder);
 
+            // ═══ PROCESSES (global, non-tenant automation) ═══
+            // Unique key guarantees the scheduler seed + concurrent app instances can
+            // never create duplicate schedule rows for the same process key.
+            modelBuilder.Entity<MyApi.Modules.Processes.Models.ProcessSchedule>()
+                .HasIndex(s => s.Key)
+                .IsUnique();
+            // Run history is always queried by key, newest first.
+            modelBuilder.Entity<MyApi.Modules.Processes.Models.ProcessRun>()
+                .HasIndex(r => new { r.ProcessKey, r.StartedAt });
+
+
             // ═══ MULTI-TENANCY: Global Query Filters ═══
             // Automatically append WHERE "TenantId" = @current to every query
             // on entities implementing ITenantEntity.

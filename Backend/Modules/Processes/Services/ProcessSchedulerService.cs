@@ -23,6 +23,13 @@ namespace MyApi.Modules.Processes.Services
     public class ProcessSchedulerService : BackgroundService
     {
         private static readonly TimeSpan TickInterval = TimeSpan.FromMinutes(1);
+
+        /// <summary>Maximum wall-clock time one handler execution may take before it is cancelled.</summary>
+        private static readonly TimeSpan HandlerTimeout = TimeSpan.FromMinutes(10);
+
+        /// <summary>ProcessSchedule.BlockReason is capped at 500 chars in the schema.</summary>
+        private static string? Truncate(string? value, int max = 500)
+            => value != null && value.Length > max ? value.Substring(0, max - 1) + "…" : value;
         private readonly IServiceProvider _sp;
         private readonly ILogger<ProcessSchedulerService> _logger;
 
@@ -35,6 +42,11 @@ namespace MyApi.Modules.Processes.Services
         {
             _logger.LogInformation("⚙️  ProcessSchedulerService started — tick every {Interval}", TickInterval);
             await Task.Delay(TimeSpan.FromSeconds(15), stoppingToken);
+
+            // Close out runs that were still 'running' when the process died — otherwise
+            // the UI shows a phantom "running" pill and history keeps an open row forever.
+            try { await ReconcileStaleRunsAsync(stoppingToken); }
+            catch (Exception ex) { _logger.LogError(ex, "ProcessSchedulerService stale-run reconcile failed"); }
 
             // Seed the built-in reliable schedules on boot so processes execute on their
             // own without requiring an admin to first create the row from the UI.
@@ -85,6 +97,27 @@ namespace MyApi.Modules.Processes.Services
                 // Email retries — frequent
                 ("admin.retry-failed-emails",          "Retry failed outbound emails",       5),
             };
+
+        /// <summary>
+        /// Any ProcessRun left in 'running' state (crash / restart mid-run) is closed as
+        /// failed so the UI's running-keys endpoint and the history tab tell the truth.
+        /// Advisory locks are session-scoped, so they are already gone after a restart.
+        /// </summary>
+        private async Task ReconcileStaleRunsAsync(CancellationToken ct)
+        {
+            using var scope = _sp.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var now = DateTime.UtcNow;
+            var fixedUp = await db.Set<ProcessRun>()
+                .Where(r => r.Status == "running" && r.FinishedAt == null)
+                .ExecuteUpdateAsync(u => u
+                    .SetProperty(r => r.Status, "failed")
+                    .SetProperty(r => r.FinishedAt, now)
+                    .SetProperty(r => r.Error, "Interrupted — the application restarted while this run was in progress"), ct);
+            if (fixedUp > 0)
+                _logger.LogWarning("⚙️  Reconciled {Count} interrupted process run(s) on boot", fixedUp);
+        }
+
 
         private async Task SeedBuiltInSchedulesAsync(CancellationToken ct)
         {
@@ -236,10 +269,22 @@ namespace MyApi.Modules.Processes.Services
 
                 var sw = Stopwatch.StartNew();
                 DTOs.RunNowResult result;
+                // Hard cap: a hung handler must never block the scheduler loop (which
+                // executes due schedules sequentially) or an HTTP "Run now" request.
+                using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                timeoutCts.CancelAfter(HandlerTimeout);
                 try
                 {
-                    result = await handler.ExecuteAsync(s.ConfigJson ?? "{}", ct);
+                    result = await handler.ExecuteAsync(s.ConfigJson ?? "{}", timeoutCts.Token);
                     if (string.IsNullOrEmpty(result.Status)) result.Status = "success";
+                }
+                catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested && !ct.IsCancellationRequested)
+                {
+                    result = new DTOs.RunNowResult
+                    {
+                        Status = "failed",
+                        Error = $"Timed out after {HandlerTimeout.TotalMinutes:0} minutes",
+                    };
                 }
                 catch (Exception ex)
                 {
@@ -251,7 +296,7 @@ namespace MyApi.Modules.Processes.Services
                 run.DurationMs = (int)sw.ElapsedMilliseconds;
                 run.Status = result.Status;
                 run.Error = result.Error;
-                run.BlockReason = result.BlockReason;
+                run.BlockReason = Truncate(result.BlockReason); // column is capped at 500 chars
                 run.ItemsProcessed = result.ItemsProcessed;
                 run.OutputJson = result.Output != null ? System.Text.Json.JsonSerializer.Serialize(result.Output) : null;
 
@@ -262,37 +307,83 @@ namespace MyApi.Modules.Processes.Services
                 s.LastStatus = result.Status;
                 s.UpdatedAt = DateTime.UtcNow;
 
+                // Manual "Run now" is a diagnostic action — it records the run but must
+                // NOT mutate the retry ladder (ConsecutiveFailures / NextRunAt / Paused),
+                // otherwise an admin clicking Run to investigate can accidentally pause
+                // a healthy schedule.
+                var isManual = triggeredBy == "manual";
+
                 if (result.Status == "success" || result.Status == "skipped")
                 {
-                    s.ConsecutiveFailures = 0;
-                    s.BlockReason = null;
-                    if (triggeredBy != "manual")
+                    if (!isManual)
+                    {
+                        s.ConsecutiveFailures = 0;
+                        s.BlockReason = null;
                         s.NextRunAt = DateTime.UtcNow.AddMinutes(Math.Max(1, s.IntervalMinutes));
+                    }
                 }
                 else if (result.Status == "blocked")
                 {
-                    s.BlockReason = result.BlockReason ?? "Handler reported blocked";
-                    s.NextRunAt = DateTime.UtcNow.AddMinutes(Math.Max(1, s.IntervalMinutes));
+                    if (!isManual)
+                    {
+                        s.BlockReason = Truncate(result.BlockReason ?? "Handler reported blocked");
+                        s.NextRunAt = DateTime.UtcNow.AddMinutes(Math.Max(1, s.IntervalMinutes));
+                    }
                 }
-                else // failed
+                else if (!isManual) // failed, scheduled run
                 {
-                    s.ConsecutiveFailures = attempt >= 1 ? s.ConsecutiveFailures + 1 : s.ConsecutiveFailures;
+                    s.ConsecutiveFailures = s.ConsecutiveFailures + 1;
                     if (attempt < Math.Max(1, s.MaxRetries))
                     {
-                        var backoffSec = Math.Max(1, s.RetryBackoffSeconds) * (int)Math.Pow(2, attempt - 1);
+                        // Clamp the exponent (and the resulting delay) so a long failure
+                        // streak can never overflow or push the next run years away.
+                        var exponent = Math.Min(attempt - 1, 10);
+                        var backoffSec = Math.Min(
+                            (long)Math.Max(1, s.RetryBackoffSeconds) * (long)Math.Pow(2, exponent),
+                            86_400L);
                         var retryAt = DateTime.UtcNow.AddSeconds(backoffSec);
                         run.NextRetryAt = retryAt;
                         s.NextRunAt = retryAt; // scheduler will pick it up on the next tick past retryAt
                     }
                     else
                     {
-                        s.BlockReason = $"Failed after {attempt} attempts: {result.Error}";
-                        s.Paused = true; // require admin intervention
-                        s.NextRunAt = null;
+                        // Retry ladder exhausted. Processes must KEEP RUNNING — never
+                        // self-pause, otherwise a transient outage silently stops
+                        // automation until someone notices. Instead: surface the reason,
+                        // reset the ladder, and cool down until the next normal slot
+                        // (at least 15 minutes) so we don't hot-loop on a hard failure.
+                        s.BlockReason = Truncate($"Failed after {attempt} attempts: {result.Error}");
+                        s.ConsecutiveFailures = 0;
+                        var cooldown = Math.Max(15, Math.Max(1, s.IntervalMinutes));
+                        s.NextRunAt = DateTime.UtcNow.AddMinutes(cooldown);
+                        run.NextRetryAt = s.NextRunAt;
                     }
                 }
+                // manual + failed → surfaced to the operator via the response, no schedule mutation.
 
-                await db.SaveChangesAsync(ct);
+                try
+                {
+                    await db.SaveChangesAsync(ct);
+                }
+                catch (Exception saveEx)
+                {
+                    // Never leave the run row stuck as 'running'. Persist a minimal
+                    // closing update with raw SQL so the UI and history stay accurate.
+                    try
+                    {
+                        var finishedAt = DateTime.UtcNow;
+                        await db.Set<ProcessRun>()
+                            .Where(r => r.Id == run.Id)
+                            .ExecuteUpdateAsync(u => u
+                                .SetProperty(r => r.Status, "failed")
+                                .SetProperty(r => r.FinishedAt, finishedAt)
+                                .SetProperty(r => r.Error, "State persist failed: " + saveEx.Message), ct);
+                    }
+                    catch { /* best effort — boot reconcile will close it */ }
+
+                    result.Status = "failed";
+                    result.Error ??= saveEx.Message;
+                }
                 return result;
             }
             finally
