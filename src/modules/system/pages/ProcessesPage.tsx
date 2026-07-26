@@ -26,6 +26,7 @@ import {
 import {
   listSchedules, upsertSchedule, setEnabled as apiSetEnabled, setPaused as apiSetPaused,
   runNow as apiRunNow, listRuns as apiListRuns, resetFailures as apiResetFailures,
+  stopRun as apiStopRun,
   listRunningKeys, overlay, REAL_HANDLER_KEYS, ProcessesApiError, type ProcessSchedule,
 } from "@/modules/system/services/processesService";
 import { ProcessesAutopilotDemo } from "@/modules/system/components/onboarding/ProcessesAutopilotDemo";
@@ -164,10 +165,35 @@ export default function ProcessesPage() {
 
   useEffect(() => {
     refreshSchedules();
-    const timer = setInterval(refreshSchedules, 15_000);
-    return () => clearInterval(timer);
+    // Poll every 15s, but only while the tab is visible — background tabs
+    // don't need live status and the request loop was firing regardless.
+    // Also re-fetch immediately when the tab becomes visible again so the
+    // operator never stares at stale data after switching back.
+    let timer: number | null = null;
+    const start = () => {
+      if (timer != null) return;
+      timer = window.setInterval(refreshSchedules, 15_000);
+    };
+    const stop = () => {
+      if (timer != null) { window.clearInterval(timer); timer = null; }
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        refreshSchedules();
+        start();
+      } else {
+        stop();
+      }
+    };
+    if (document.visibilityState === "visible") start();
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      stop();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
 
   const counts = useMemo(() => ({
     running: items.filter((i) => i.status === "running").length,
@@ -299,12 +325,18 @@ export default function ProcessesPage() {
     }
   };
 
-  const stopRun = (p: ProcessDefinition) => {
+  const stopRun = async (p: ProcessDefinition) => {
     if (denyIfReadOnly()) return;
-    toast({
-      title: t("toast.stop_not_supported_title"),
-      description: t("toast.stop_not_supported_desc", { name: p.name }),
-    });
+    try {
+      const stopped = await apiStopRun(p.key);
+      await refreshSchedules();
+      toast({
+        title: stopped ? t("toast.stop_requested_title") : t("toast.stop_nothing_running_title"),
+        description: p.name,
+      });
+    } catch (e) {
+      toast({ title: t("toast.could_not_stop_title"), description: (e as Error).message, variant: "destructive" });
+    }
   };
 
   const resetFailures = async (p: ProcessDefinition) => {
@@ -503,7 +535,7 @@ export default function ProcessesPage() {
               p={selected}
               liveHistory={liveHistory}
               hasSchedule={schedules.has(selected.key)}
-              stopEnabled={false}
+              stopEnabled={selected.status === "running"}
               canManage={canManage}
               onRun={() => runNow(selected)}
               onPause={() => togglePause(selected)}
@@ -551,7 +583,7 @@ function ProcessRow({
   const issue = p.status === "blocked" ? (p.blockReason || p.lastError)
               : p.status === "failed" ? (p.lastError || p.blockReason)
               : undefined;
-  const explanation = getProcessExplanation(p.key);
+  const explanation = getProcessExplanation(p.key, t);
   return (
     <div>
       <div
@@ -773,7 +805,7 @@ function ProcessDrawer({
           <Row label={t("labels.last_duration")} value={fmtDuration(p.lastDurationMs)} />
           <Row label={t("labels.last_items")}    value={String(p.lastItems ?? "—")} />
           <Row label={t("labels.next_run")}      value={fmtRelative(t, p.nextRunAt)} />
-          <Row label={t("labels.success_rate")}  value={`${p.successRate30}%`} />
+          <Row label={t("labels.success_rate")}  value={p.successRate30 === undefined ? "—" : `${p.successRate30}%`} />
           <Row label={t("labels.consecutive_failures")} value={String(p.consecutiveFailures)} />
           {p.lastError && (
             <div className="mt-3 rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
@@ -835,11 +867,6 @@ function ProcessDrawer({
         </TabsContent>
 
         <TabsContent value="history" className="pt-3">
-          {liveHistory === null && REAL_HANDLER_KEYS.has(p.key) && (
-            <div className="pb-2 text-[11px] text-muted-foreground">
-              {t("history_sample_hint")}
-            </div>
-          )}
           <ScrollArea className="h-[360px] pr-3">
             <div className="divide-y">
               {history.map((r) => (

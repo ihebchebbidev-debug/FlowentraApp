@@ -56,7 +56,7 @@ export interface ProcessDefinition {
   blockReason?: string;
   nextRunAt?: string;
   consecutiveFailures: number;
-  successRate30: number;
+  successRate30?: number;
   settings: { label: string; value: string | number | boolean }[];
   diagnostics: DiagnosticCheck[];
   history: ProcessRun[];

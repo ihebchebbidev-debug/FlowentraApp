@@ -1,9 +1,10 @@
 {
   "title": "Processus",
-  "description": "Planifiez, surveillez et contrôlez chaque tâche récurrente ou en arrière-plan de tous les espaces de travail.",
+  "description": "Planifiez, surveillez et contrôlez chaque tâche récurrente ou en arrière-plan dans tous les espaces de travail.",
+  "read_only_banner": "Lecture seule — seul l’administrateur principal peut exécuter ou configurer les processus.",
   "metrics": {
     "running": "En cours",
-    "failed": "Échoués",
+    "failed": "En échec",
     "blocked": "Bloqués",
     "paused": "En pause",
     "total": "Total"
@@ -12,11 +13,16 @@
     "watch_demo": "Voir la démo",
     "refresh": "Actualiser",
     "run_now": "Exécuter",
+    "run_now_locked": "Seul l’administrateur principal peut exécuter les processus",
     "resume": "Reprendre",
     "pause": "Mettre en pause",
+    "pause_locked": "Seul l’administrateur principal peut mettre en pause les processus",
     "stop": "Arrêter",
     "reset_failures": "Réinitialiser les échecs",
-    "save": "Enregistrer"
+    "save": "Enregistrer",
+    "hide_details": "Masquer les détails",
+    "show_details": "Afficher les détails",
+    "locked_tooltip": "Seul l’administrateur principal peut effectuer cette action"
   },
   "toolbar": {
     "search_placeholder": "Rechercher des processus…",
@@ -33,13 +39,13 @@
     "idle": "Inactif",
     "running": "En cours",
     "paused": "En pause",
-    "failed": "Échoué",
+    "failed": "En échec",
     "blocked": "Bloqué",
     "disabled": "désactivé"
   },
   "row": {
-    "last_prefix": "Dernier :",
-    "next_prefix": "Prochain :"
+    "last_prefix": "Dernier :",
+    "next_prefix": "Prochain :"
   },
   "empty": "Aucun processus ne correspond à vos filtres.",
   "tabs": {
@@ -52,13 +58,13 @@
     "schedule": "Planification",
     "timezone": "Fuseau horaire",
     "last_run": "Dernière exécution",
-    "last_duration": "Durée précédente",
+    "last_duration": "Dernière durée",
     "last_items": "Derniers éléments",
     "next_run": "Prochaine exécution",
-    "success_rate": "Réussite (30 exécutions)",
+    "success_rate": "Réussite (30 exéc.)",
     "consecutive_failures": "Échecs consécutifs",
-    "last_error": "Dernière erreur :",
-    "blocked": "Bloqué :",
+    "last_error": "Dernière erreur :",
+    "blocked": "Bloqué :",
     "type": "Type",
     "interval": "Intervalle",
     "cron": "Cron",
@@ -66,21 +72,26 @@
     "settings": "Paramètres",
     "enabled": "Activé",
     "disabled": "Désactivé",
-    "anchor": "ancre :",
+    "anchor": "ancre :",
     "every_minutes": "Toutes les {{count}} min"
   },
-  "stop_tooltip": "Arrêter est informatif — mettez la planification en pause pour éviter d’autres exécutions",
-  "no_schedule_hint": "Ce processus n’a pas encore de planification — activez-le une fois depuis l’en-tête du panneau pour la conserver.",
+  "explain": {
+    "when_it_runs": "Quand ça s’exécute",
+    "inputs": "Entrées",
+    "outputs": "Sorties"
+  },
+  "stop_tooltip": "L’arrêt est indicatif — mettez la planification en pause pour empêcher les futures exécutions",
+  "no_schedule_hint": "Ce processus n’a pas encore de planification — activez-le une fois depuis l’en-tête du panneau pour le persister.",
   "history_sample_hint": "Historique d’exemple affiché — activez la planification pour enregistrer les exécutions réelles.",
   "history_status": {
     "ok": "ok",
     "fail": "échec",
-    "block": "bloqué",
-    "canc": "annulé",
+    "block": "bloc.",
+    "canc": "annul.",
     "running": "en cours",
     "skipped": "ignoré"
   },
-  "diagnostics_intro": "Contrôles automatiques répondant à <em>pourquoi ce processus est-il bloqué ?</em>",
+  "diagnostics_intro": "Vérifications automatiques répondant à <em>pourquoi ce processus est-il bloqué ?</em>",
   "relative": {
     "dash": "—",
     "just_now": "à l’instant",
@@ -93,63 +104,66 @@
   "access_banner": {
     "403_title": "Accès refusé (403)",
     "401_title": "Connexion requise (401)",
-    "body": "Vous n’avez pas la permission de voir les processus. La liste ci-dessous est indisponible tant qu’un administrateur ne vous a pas accordé l’accès — aucune donnée en cache ou d’exemple n’est affichée."
+    "body": "Vous n’avez pas la permission de voir les processus. La liste ci-dessous est indisponible tant qu’un administrateur ne vous accorde pas l’accès — aucune donnée mise en cache ou d’exemple n’est affichée."
   },
   "toast": {
     "access_denied_title": "Accès refusé",
-    "access_denied_desc": "Autorisation d’administrateur requise.",
+    "access_denied_desc": "Permission d’administrateur requise.",
+    "read_only_title": "Accès en lecture seule",
+    "read_only_desc": "Seul l’administrateur principal peut exécuter, mettre en pause ou configurer les processus.",
     "started_title": "Processus démarré",
     "completed_title": "Processus terminé",
     "already_running_title": "Déjà en cours",
     "blocked_title": "Bloqué",
-    "failed_title": "Échec du processus",
-    "run_failed_title": "Échec de l’exécution",
-    "paused_title": "Processus en pause",
+    "failed_title": "Processus en échec",
+    "run_failed_title": "Exécution en échec",
+    "paused_title": "Processus mis en pause",
     "resumed_title": "Processus repris",
     "schedule_saved_title": "Planification enregistrée",
     "schedule_saved_desc": "{{name}} s’exécutera toutes les {{minutes}} min.",
     "schedule_updated_title": "Planification mise à jour",
-    "schedule_updated_desc": "{{name}} s’exécute maintenant toutes les {{minutes}} min.",
+    "schedule_updated_desc": "{{name}} s’exécute désormais toutes les {{minutes}} min.",
     "could_not_update_title": "Impossible de mettre à jour la planification",
     "could_not_create_title": "Impossible de créer la planification",
     "could_not_reset_title": "Impossible de réinitialiser les échecs",
     "failures_cleared_title": "Échecs réinitialisés",
-    "stop_not_supported_title": "Arrêt non pris en charge",
-    "stop_not_supported_desc": "{{name}} s’exécute jusqu’au bout. Mettez la planification en pause pour éviter les prochaines exécutions."
+    "stop_requested_title": "Arrêt demandé",
+    "stop_nothing_running_title": "Aucune exécution à arrêter",
+    "could_not_stop_title": "Impossible d’arrêter le processus"
   },
   "modules": {
     "system_logs": "Journaux système",
     "email_delivery": "Envoi d’e-mails",
     "invoices": "Factures",
-    "offers": "Offres",
+    "offers": "Devis",
     "dispatches": "Interventions",
     "payments": "Paiements",
     "support": "Support",
     "notifications": "Notifications",
     "calendar": "Calendrier",
-    "offline_sync": "Synchronisation hors ligne",
-    "external_endpoints": "Points d’accès externes",
+    "offline_sync": "Sync hors ligne",
+    "external_endpoints": "Endpoints externes",
     "human_resources": "Ressources humaines",
     "data_retention": "Rétention des données",
     "projects": "Projets"
   },
   "settings_labels": {
     "retention_days": "Rétention (jours)",
-    "dry_run": "Simulation",
-    "batch_size": "Taille de lot",
+    "dry_run": "Exécution à blanc",
+    "batch_size": "Taille du lot",
     "max_attempts_per_email": "Tentatives max par e-mail",
-    "statuses_considered": "Statuts pris en compte",
+    "statuses_considered": "Statuts considérés",
     "grace_hours": "Heures de grâce",
     "days_resolved": "Jours résolus",
-    "age_days": "Âge (jours)",
+    "age_days": "Ancienneté (jours)",
     "retention_source": "Source de rétention",
-    "retention_source_value": "LogRetentionDays par point d’accès"
+    "retention_source_value": "LogRetentionDays par endpoint"
   },
   "diagnostics_labels": {
     "systemlogs_present": "Table SystemLogs présente",
     "db_reachable": "Base de données accessible",
     "outbound_emails_present": "Table OutboundEmailLogs présente",
-    "email_service_reachable": "EmailAccountService joignable",
+    "email_service_reachable": "EmailAccountService accessible",
     "invoices_present": "Table Invoices présente",
     "offers_present": "Table Offers présente",
     "dispatches_present": "Table Dispatches présente",
@@ -164,7 +178,13 @@
     "dispatch_audit_present": "Table DispatchAuditLogs présente",
     "hr_audit_present": "Table HrAuditLogs présente",
     "target_tables_present": "Tables cibles présentes",
-    "recurring_logs_present": "Table RecurringTaskLogs présente"
+    "recurring_logs_present": "Table RecurringTaskLogs présente",
+    "handler_registered": "Gestionnaire enregistré",
+    "schedule_registered": "Planification enregistrée",
+    "schedule_enabled": "Planification activée",
+    "not_paused": "Non suspendu",
+    "not_blocked": "Non bloqué",
+    "no_recent_failures": "Aucun échec récent"
   },
   "schedule_human": {
     "every_5_minutes": "Toutes les 5 minutes",
@@ -178,88 +198,270 @@
   "items": {
     "admin.purge-system-logs": {
       "name": "Purger les journaux système",
-      "description": "Supprimer les lignes SystemLogs plus anciennes que la fenêtre de rétention."
+      "description": "Supprime les lignes de SystemLogs plus anciennes que la fenêtre de rétention."
     },
     "admin.retry-failed-emails": {
-      "name": "Renvoyer les e-mails sortants échoués",
-      "description": "Renvoyer les lignes OutboundEmailLog encore en statut=failed avec attempts < max_attempts. Chaque tentative (réussite ou échec) est journalisée avec l’erreur du fournisseur à des fins d’audit."
+      "name": "Réessayer les e-mails sortants en échec",
+      "description": "Renvoie les lignes OutboundEmailLog en statut=failed avec attempts < max_attempts. Chaque tentative (succès ou échec) est journalisée avec l’erreur du fournisseur pour audit."
     },
     "admin.invoices-mark-overdue": {
       "name": "Marquer les factures en retard",
-      "description": "Passer les factures dépassées (DueDate) en statut=overdue quand un solde impayé subsiste. Ignore les brouillons, annulées et entièrement payées."
+      "description": "Passe en statut=overdue les factures dont la DueDate est dépassée et dont le solde reste impayé. Ignore les brouillons, annulées et entièrement payées."
     },
     "admin.offers-mark-expired": {
-      "name": "Expirer les offres échues",
-      "description": "Passer en statut=expired les offres draft/sent/pending dont ValidUntil est dépassé afin que le pipeline reste juste."
+      "name": "Expirer les devis dépassés",
+      "description": "Passe les devis draft/sent/pending au-delà de ValidUntil en statut=expired pour garder le pipeline à jour."
     },
     "admin.dispatches-mark-missed": {
       "name": "Marquer les interventions manquées",
-      "description": "Marquer en statut=missed les interventions planifiées jamais démarrées (aucun ActualStartTime) après la fenêtre de grâce suivant ScheduledDate."
+      "description": "Marque comme statut=missed les interventions planifiées jamais démarrées (sans ActualStartTime) au-delà de la fenêtre de grâce après leur ScheduledDate."
     },
     "admin.payment-installments-mark-overdue": {
-      "name": "Marquer les échéances de paiement en retard",
-      "description": "Passer les PaymentPlanInstallments en attente et dépassées (DueDate) en statut=overdue."
+      "name": "Marquer les échéances en retard",
+      "description": "Passe en statut=overdue les PaymentPlanInstallments en attente dont la DueDate est dépassée."
     },
     "admin.support-tickets-autoclose-resolved": {
-      "name": "Fermeture auto des tickets résolus",
-      "description": "Fermer les tickets restés en statut=resolved plus longtemps que la fenêtre configurée."
+      "name": "Clôturer auto. les tickets résolus",
+      "description": "Clôture les tickets restés en statut=resolved plus longtemps que la fenêtre configurée."
     },
     "admin.draft-offers-purge": {
-      "name": "Purger les brouillons d’offres abandonnés",
-      "description": "Suppression définitive des offres en statut=draft non modifiées pendant la fenêtre d’âge."
+      "name": "Purger les devis brouillons abandonnés",
+      "description": "Supprime définitivement les devis bloqués en statut=draft non modifiés depuis la fenêtre d’ancienneté."
     },
     "admin.draft-invoices-purge": {
-      "name": "Purger les brouillons de factures abandonnés",
-      "description": "Suppression définitive des factures en statut=draft non modifiées pendant la fenêtre d’âge."
+      "name": "Purger les factures brouillons abandonnées",
+      "description": "Supprime définitivement les factures bloquées en statut=draft non modifiées depuis la fenêtre d’ancienneté."
     },
     "admin.notifications-purge-read": {
       "name": "Purger les notifications lues",
-      "description": "Supprimer les Notifications avec IsRead=true et CreatedAt plus anciennes que la rétention."
+      "description": "Supprime les lignes Notification avec IsRead=true et CreatedAt plus ancienne que la fenêtre de rétention."
     },
     "admin.notifications-purge-stale-unread": {
       "name": "Purger les notifications non lues obsolètes",
-      "description": "Supprimer les notifications non lues très anciennes afin que la barre n’accumule pas de lignes abandonnées."
+      "description": "Supprime les notifications non lues très anciennes pour éviter l’accumulation."
     },
     "admin.calendar-events-purge-past": {
-      "name": "Purger les événements passés du calendrier",
-      "description": "Supprimer les événements terminés/annulés dont End est antérieur à la fenêtre de rétention."
+      "name": "Purger les événements passés",
+      "description": "Supprime les événements de calendrier terminés/annulés dont la fin est plus ancienne que la fenêtre de rétention."
     },
     "admin.sync-changes-purge": {
-      "name": "Purger les anciens changements de synchronisation",
-      "description": "Réduire l’outbox SyncChanges pour que la comptabilité de la synchronisation hors ligne ne grossisse pas indéfiniment."
+      "name": "Purger les anciens sync changes",
+      "description": "Élague la boîte SyncChanges pour que la comptabilité de sync hors ligne ne croisse pas indéfiniment."
     },
     "admin.sync-receipts-purge": {
-      "name": "Purger les anciens reçus de synchronisation",
-      "description": "Supprimer les SyncOperationReceipt plus anciens que la fenêtre de rétention."
+      "name": "Purger les anciens accusés de sync",
+      "description": "Supprime les lignes SyncOperationReceipt plus anciennes que la fenêtre de rétention."
     },
     "admin.webhook-jobs-purge": {
-      "name": "Purger les jobs webhook terminés",
-      "description": "Supprimer les WebhookForwardJobs terminés (completed ou dead_letter) au-delà de la fenêtre de rétention."
+      "name": "Purger les webhooks terminés",
+      "description": "Supprime les WebhookForwardJobs terminés (completed ou dead_letter) plus anciens que la fenêtre de rétention."
     },
     "admin.external-endpoint-logs-purge": {
-      "name": "Purger les journaux des points d’accès externes",
-      "description": "Rétention par point d’accès : utilise le LogRetentionDays propre à chaque ExternalEndpoint pour élaguer ses ExternalEndpointLogs."
+      "name": "Purger les journaux d’endpoints externes",
+      "description": "Rétention par endpoint : utilise le LogRetentionDays propre à chaque ExternalEndpoint pour élaguer ses ExternalEndpointLogs."
     },
     "admin.dispatch-audit-purge": {
-      "name": "Purger les anciens journaux d’audit des interventions",
-      "description": "Supprimer les DispatchAuditLogs plus anciens que la fenêtre de rétention."
+      "name": "Purger les journaux d’audit d’intervention",
+      "description": "Supprime les DispatchAuditLogs plus anciens que la fenêtre de rétention."
     },
     "admin.hr-audit-purge": {
-      "name": "Purger les anciens journaux d’audit RH",
-      "description": "Supprimer les HrAuditLogs plus anciens que la fenêtre de rétention."
+      "name": "Purger les journaux d’audit RH",
+      "description": "Supprime les HrAuditLogs plus anciens que la fenêtre de rétention."
     },
     "admin.soft-deleted-purge": {
-      "name": "Purge définitive des enregistrements supprimés en douceur",
-      "description": "Supprimer définitivement les lignes dans les factures, offres, deals, ventes, articles, interventions et ordres de service supprimées en douceur avant la fenêtre de rétention."
+      "name": "Purger définitivement les éléments supprimés",
+      "description": "Supprime définitivement les lignes marquées supprimées depuis plus longtemps que la fenêtre de rétention dans : factures, devis, affaires, ventes, articles, interventions et ordres de service."
     },
     "admin.recurring-task-logs-purge": {
-      "name": "Purger les anciens journaux de tâches récurrentes",
-      "description": "Supprimer les RecurringTaskLog plus anciens que la fenêtre de rétention."
+      "name": "Purger les anciens logs de tâches récurrentes",
+      "description": "Supprime les lignes RecurringTaskLog plus anciennes que la fenêtre de rétention."
+    }
+  },
+  "explanations": {
+    "admin.purge-system-logs": {
+      "whenItRuns": "Une fois toutes les 24 heures — après la fenêtre de maintenance de minuit.",
+      "inputs": [
+        "Lignes SystemLogs de tous les tenants",
+        "Historique ProcessRuns",
+        "Config : retention_days (par défaut 30), run_retention_days (min 30)"
+      ],
+      "outputs": [
+        "Supprime définitivement les SystemLogs plus anciens que retention_days",
+        "Supprime définitivement les ProcessRuns plus anciens que run_retention_days",
+        "Rapporte les compteurs : logs_deleted, runs_deleted"
+      ]
+    },
+    "admin.retry-failed-emails": {
+      "whenItRuns": "Toutes les 5 minutes — maintient la file d’envoi active.",
+      "inputs": [
+        "Lignes OutboundEmailLog avec Status=failed, Attempts<MaxAttempts, NextRetryAt≤maintenant",
+        "Payload d’envoi d’origine (destinataires, sujet, corps, pièces jointes)",
+        "Config : batch_size (par défaut 50, max 500)"
+      ],
+      "outputs": [
+        "Rejoue chaque candidat via EmailAccountService.SendEmailAsync",
+        "Met à jour Status → sent / failed avec NextRetryAt exponentiel",
+        "Bascule en gave_up les lignes orphelines (compte/utilisateur manquant)"
+      ]
+    },
+    "admin.invoices-mark-overdue": {
+      "whenItRuns": "Toutes les heures — garde le vieillissement des créances exact.",
+      "inputs": [
+        "Factures où DueDate<maintenant et AmountPaid<GrandTotal",
+        "Statuts considérés : posted, sent, partial"
+      ],
+      "outputs": ["Met Status='overdue' et met à jour UpdatedAt"]
+    },
+    "admin.offers-mark-expired": {
+      "whenItRuns": "Toutes les heures.",
+      "inputs": [
+        "Devis où ValidUntil<maintenant et Status dans (sent, pending)",
+        "Les brouillons sont exclus — un devis non envoyé ne peut expirer"
+      ],
+      "outputs": ["Met Status='expired' et met à jour UpdatedAt"]
+    },
+    "admin.dispatches-mark-missed": {
+      "whenItRuns": "Toutes les heures.",
+      "inputs": [
+        "Interventions avec ScheduledDate<maintenant−grace_hours et sans ActualStartTime",
+        "Statuts considérés : pending, scheduled, assigned",
+        "Config : grace_hours (par défaut 2, max 168)"
+      ],
+      "outputs": ["Met Status='missed' et met à jour ModifiedDate"]
+    },
+    "admin.payment-installments-mark-overdue": {
+      "whenItRuns": "Toutes les heures.",
+      "inputs": [
+        "PaymentPlanInstallments avec DueDate<maintenant",
+        "Statuts considérés : pending, partially_paid"
+      ],
+      "outputs": ["Met Status='overdue'"]
+    },
+    "admin.support-tickets-autoclose-resolved": {
+      "whenItRuns": "Toutes les 6 heures.",
+      "inputs": [
+        "SupportTickets avec Status=resolved et dernière activité plus ancienne que days_resolved",
+        "Config : days_resolved (par défaut 7, max 365)"
+      ],
+      "outputs": ["Met Status='closed'"]
+    },
+    "admin.draft-offers-purge": {
+      "whenItRuns": "Une fois toutes les 24 heures.",
+      "inputs": [
+        "Devis avec Status=draft plus anciens que age_days",
+        "Config : age_days (par défaut 60, min 7)"
+      ],
+      "outputs": [
+        "Supprime définitivement les devis correspondants",
+        "Rapporte « skipped » avec block_reason si des contraintes FK enfants empêchent la suppression (un nouvel essai ne changera rien)"
+      ]
+    },
+    "admin.draft-invoices-purge": {
+      "whenItRuns": "Une fois toutes les 24 heures.",
+      "inputs": [
+        "Factures avec Status=draft plus anciennes que age_days",
+        "Config : age_days (par défaut 60, min 7)"
+      ],
+      "outputs": [
+        "Supprime définitivement les factures correspondantes",
+        "Rapporte « skipped » avec block_reason en cas de contrainte FK"
+      ]
+    },
+    "admin.notifications-purge-read": {
+      "whenItRuns": "Une fois toutes les 24 heures.",
+      "inputs": [
+        "Notifications avec IsRead=true plus anciennes que age_days",
+        "Config : age_days (par défaut 30)"
+      ],
+      "outputs": ["Supprime définitivement les notifications correspondantes"]
+    },
+    "admin.notifications-purge-stale-unread": {
+      "whenItRuns": "Une fois toutes les 24 heures.",
+      "inputs": [
+        "Notifications avec IsRead=false plus anciennes que age_days",
+        "Config : age_days (par défaut 180, min 30)"
+      ],
+      "outputs": ["Supprime définitivement les notifications ignorées de longue date"]
+    },
+    "admin.calendar-events-purge-past": {
+      "whenItRuns": "Une fois toutes les 24 heures.",
+      "inputs": [
+        "CalendarEvents dont End<maintenant−age_days et Status dans (completed, cancelled)",
+        "Config : age_days (par défaut 180, min 30)"
+      ],
+      "outputs": ["Supprime définitivement les événements passés terminés"]
+    },
+    "admin.sync-changes-purge": {
+      "whenItRuns": "Une fois toutes les 24 heures.",
+      "inputs": [
+        "Lignes SyncChanges avec ChangedAt plus ancienne que age_days",
+        "Config : age_days (par défaut 30)"
+      ],
+      "outputs": ["Supprime définitivement les deltas de sync hors ligne obsolètes"]
+    },
+    "admin.sync-receipts-purge": {
+      "whenItRuns": "Une fois toutes les 24 heures.",
+      "inputs": [
+        "SyncOperationReceipts avec CreatedAt plus ancienne que age_days",
+        "Config : age_days (par défaut 30)"
+      ],
+      "outputs": ["Supprime définitivement les accusés de sync obsolètes"]
+    },
+    "admin.webhook-jobs-purge": {
+      "whenItRuns": "Une fois toutes les 24 heures.",
+      "inputs": [
+        "WebhookForwardJobs avec Status dans (completed, dead_letter) et CompletedAt plus ancienne que age_days",
+        "Config : age_days (par défaut 30)"
+      ],
+      "outputs": ["Supprime définitivement les webhooks terminés"]
+    },
+    "admin.external-endpoint-logs-purge": {
+      "whenItRuns": "Une fois toutes les 24 heures.",
+      "inputs": [
+        "ExternalEndpoints (non supprimés) et leur LogRetentionDays propre",
+        "ExternalEndpointLogs plus anciens que la rétention de chaque endpoint"
+      ],
+      "outputs": ["Supprime définitivement les journaux correspondants endpoint par endpoint"]
+    },
+    "admin.dispatch-audit-purge": {
+      "whenItRuns": "Une fois toutes les 24 heures.",
+      "inputs": [
+        "DispatchAuditLogs plus anciens que age_days",
+        "Config : age_days (par défaut 180, min 30)"
+      ],
+      "outputs": ["Supprime définitivement les anciens journaux d’audit"]
+    },
+    "admin.hr-audit-purge": {
+      "whenItRuns": "Une fois toutes les 24 heures.",
+      "inputs": [
+        "HrAuditLogs plus anciens que age_days",
+        "Config : age_days (par défaut 365, min 90)"
+      ],
+      "outputs": ["Supprime définitivement les anciens journaux d’audit RH"]
+    },
+    "admin.soft-deleted-purge": {
+      "whenItRuns": "Une fois toutes les 24 heures.",
+      "inputs": [
+        "Lignes avec IsDeleted=true et DeletedAt plus ancienne que age_days dans : factures, devis, affaires, ventes, articles, interventions, ordres de service",
+        "Config : age_days (par défaut 90, min 30)"
+      ],
+      "outputs": [
+        "Supprime définitivement les lignes correspondantes par table (indépendamment — le blocage FK d’une table ne fait jamais échouer toute l’exécution)",
+        "Rapporte les compteurs par table et une liste skipped_tables"
+      ]
+    },
+    "admin.recurring-task-logs-purge": {
+      "whenItRuns": "Une fois toutes les 24 heures.",
+      "inputs": [
+        "RecurringTaskLogs avec GeneratedDate plus ancienne que age_days",
+        "Config : age_days (par défaut 180, min 30)"
+      ],
+      "outputs": ["Supprime définitivement l’ancien historique de génération de tâches récurrentes"]
     }
   },
   "trigger": {
-    "schedule": "planifié",
+    "schedule": "planification",
     "manual": "manuel",
-    "retry": "nouvelle tentative"
+    "retry": "réessai"
   }
 }

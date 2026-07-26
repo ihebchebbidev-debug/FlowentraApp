@@ -170,9 +170,12 @@ namespace MyApi.Modules.Processes.Services
                 .Where(s => s.Enabled && !s.Paused && s.NextRunAt != null && s.NextRunAt <= now)
                 .ToListAsync(ct);
 
+            // Handle "no handler registered" cases synchronously — they only touch
+            // the schedule row and never fire user code.
+            var runnable = new List<ProcessSchedule>();
             foreach (var s in due)
             {
-                if (!registry.TryGet(s.Key, out var handler))
+                if (!registry.TryGet(s.Key, out _))
                 {
                     s.LastStatus = "blocked";
                     s.BlockReason = "No handler registered for this key";
@@ -181,13 +184,46 @@ namespace MyApi.Modules.Processes.Services
                     await db.SaveChangesAsync(ct);
                     continue;
                 }
-
-                // On a scheduler tick the next attempt number is the running failure count + 1.
-                // On success this resets to 0, so the next scheduled run is attempt=1 again.
-                var attempt = Math.Max(1, s.ConsecutiveFailures + 1);
-                await ExecuteOnceAsync(db, s, handler, "schedule", attempt, ct);
+                runnable.Add(s);
             }
+
+            if (runnable.Count == 0) return;
+
+            // Run due handlers with bounded concurrency. Sequential execution
+            // meant one slow handler (up to the 10-minute HandlerTimeout) stalled
+            // every other due schedule for the same window. Per-key advisory locks
+            // still prevent duplicate execution across instances/triggers.
+            //
+            // Each handler creates its own DbContext scope (see ProcessDb.Resolve),
+            // so we can also give ExecuteOnceAsync its own fresh scope here — the
+            // outer `db` is only used for reading the due list.
+            await Parallel.ForEachAsync(
+                runnable,
+                new ParallelOptions { MaxDegreeOfParallelism = 4, CancellationToken = ct },
+                async (s, token) =>
+                {
+                    try
+                    {
+                        using var runScope = _sp.CreateScope();
+                        var runDb = runScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                        var runRegistry = runScope.ServiceProvider.GetRequiredService<ProcessHandlerRegistry>();
+                        var running = runScope.ServiceProvider.GetRequiredService<RunningProcessRegistry>();
+                        if (!runRegistry.TryGet(s.Key, out var handler)) return;
+
+                        // Re-load the schedule on the run-scoped context so tracking
+                        // stays attached to that connection (advisory lock is per session).
+                        var scoped = await runDb.Set<ProcessSchedule>().FirstOrDefaultAsync(x => x.Id == s.Id, token);
+                        if (scoped == null) return;
+                        var attempt = Math.Max(1, scoped.ConsecutiveFailures + 1);
+                        await ExecuteOnceAsync(runDb, scoped, handler, "schedule", attempt, token, running);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "ProcessSchedulerService: handler '{Key}' threw outside ExecuteOnceAsync", s.Key);
+                    }
+                });
         }
+
 
         /// <summary>Stable 64-bit hash for Postgres pg_advisory_lock keys.</summary>
         private static long AdvisoryLockKey(string key)
@@ -250,7 +286,8 @@ namespace MyApi.Modules.Processes.Services
             IProcessHandler handler,
             string triggeredBy,
             int attempt,
-            CancellationToken ct)
+            CancellationToken ct,
+            RunningProcessRegistry? running = null)
         {
             // Prevent duplicate execution across scheduler ticks, manual "Run now",
             // and multiple app instances all pointing at the same database.
@@ -280,13 +317,17 @@ namespace MyApi.Modules.Processes.Services
 
                 var sw = Stopwatch.StartNew();
                 DTOs.RunNowResult result;
-                // Hard cap: a hung handler must never block the scheduler loop (which
-                // executes due schedules sequentially) or an HTTP "Run now" request.
+                // Hard cap: a hung handler must never block the scheduler loop or
+                // an HTTP "Run now" request. The registry adds cooperative cancel:
+                // an operator clicking Stop cancels the same linked token so the
+                // handler aborts at its next await point.
                 using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
                 timeoutCts.CancelAfter(HandlerTimeout);
+                using var stopReg = running?.Register(s.Key, timeoutCts.Token);
+                var runToken = stopReg?.Token ?? timeoutCts.Token;
                 try
                 {
-                    result = await handler.ExecuteAsync(s.ConfigJson ?? "{}", timeoutCts.Token);
+                    result = await handler.ExecuteAsync(s.ConfigJson ?? "{}", runToken);
                     if (string.IsNullOrEmpty(result.Status)) result.Status = "success";
                 }
                 catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested && !ct.IsCancellationRequested)
@@ -297,11 +338,21 @@ namespace MyApi.Modules.Processes.Services
                         Error = $"Timed out after {HandlerTimeout.TotalMinutes:0} minutes",
                     };
                 }
+                catch (OperationCanceledException) when (runToken.IsCancellationRequested && !ct.IsCancellationRequested && !timeoutCts.IsCancellationRequested)
+                {
+                    // Operator-requested stop via RunningProcessRegistry.RequestStop.
+                    result = new DTOs.RunNowResult
+                    {
+                        Status = "cancelled",
+                        Error = "Stopped by operator",
+                    };
+                }
                 catch (Exception ex)
                 {
                     result = new DTOs.RunNowResult { Status = "failed", Error = ex.Message };
                 }
                 sw.Stop();
+
 
                 run.FinishedAt = DateTime.UtcNow;
                 run.DurationMs = (int)sw.ElapsedMilliseconds;
@@ -327,10 +378,13 @@ namespace MyApi.Modules.Processes.Services
                 }
                 s.UpdatedAt = DateTime.UtcNow;
 
-                if (result.Status == "success" || result.Status == "skipped")
+                if (result.Status == "success" || result.Status == "skipped" || result.Status == "cancelled")
                 {
                     if (!isManual)
                     {
+                        // A cancelled run is not a failure — the operator stopped it
+                        // on purpose. Reset the ladder and reschedule normally so the
+                        // process keeps running on its cadence.
                         s.ConsecutiveFailures = 0;
                         s.BlockReason = null;
                         s.NextRunAt = DateTime.UtcNow.AddMinutes(Math.Max(1, s.IntervalMinutes));

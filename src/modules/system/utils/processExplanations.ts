@@ -1,19 +1,19 @@
-// Human-readable "what this process does" documentation for every real
-// backend handler. Rendered inline under a process row when the operator
-// expands it. Kept as plain data (no JSX) so it can be i18n-wrapped later.
+import type { TFunction } from "i18next";
+
+// Per-process "what this does" documentation. English strings remain here as
+// the fallback source of truth; when a translation exists under the
+// `explanations.<key>` namespace it is used instead, so the drawer's
+// When-it-runs / Inputs / Outputs blocks localise cleanly.
 
 export interface ProcessExplanation {
-  /** When the scheduler automatically triggers this handler. */
   whenItRuns: string;
-  /** What the handler reads from the database / configuration. */
   inputs: string[];
-  /** What rows the handler writes, updates, or deletes. */
   outputs: string[];
 }
 
-export const PROCESS_EXPLANATIONS: Record<string, ProcessExplanation> = {
+const PROCESS_EXPLANATIONS: Record<string, ProcessExplanation> = {
   "admin.purge-system-logs": {
-    whenItRuns: "Once every 24 hours — after midnight housekeeping window.",
+    whenItRuns: "Once every 24 hours — after the midnight housekeeping window.",
     inputs: [
       "SystemLogs rows across every tenant",
       "ProcessRuns history rows",
@@ -26,7 +26,7 @@ export const PROCESS_EXPLANATIONS: Record<string, ProcessExplanation> = {
     ],
   },
   "admin.retry-failed-emails": {
-    whenItRuns: "Every 5 minutes — keeps outbound queue moving.",
+    whenItRuns: "Every 5 minutes — keeps the outbound queue moving.",
     inputs: [
       "OutboundEmailLog rows with Status=failed, Attempts<MaxAttempts, NextRetryAt≤now",
       "Original send payload (recipients, subject, body, attachments)",
@@ -194,6 +194,39 @@ export const PROCESS_EXPLANATIONS: Record<string, ProcessExplanation> = {
   },
 };
 
-export function getProcessExplanation(key: string): ProcessExplanation | null {
-  return PROCESS_EXPLANATIONS[key] ?? null;
+/**
+ * Localised explanation. When called without `t` (or in a non-processes
+ * namespace), falls back to the English source above so no caller ever
+ * gets `undefined`. When `t` is provided, prefers `explanations.<key>.*`
+ * translations, then per-line fallback to the English source.
+ */
+export function getProcessExplanation(
+  key: string,
+  t?: TFunction
+): ProcessExplanation | null {
+  const src = PROCESS_EXPLANATIONS[key] ?? null;
+  if (!src) return null;
+  if (!t) return src;
+
+  // returnObjects for arrays; per-line defaultValue guards missing keys.
+  const whenItRuns = t(`explanations.${key}.whenItRuns`, {
+    defaultValue: src.whenItRuns,
+  }) as string;
+
+  const translateList = (field: "inputs" | "outputs"): string[] => {
+    const translated = t(`explanations.${key}.${field}`, {
+      returnObjects: true,
+      defaultValue: src[field],
+    }) as unknown;
+    if (Array.isArray(translated) && translated.every((x) => typeof x === "string")) {
+      return translated as string[];
+    }
+    return src[field];
+  };
+
+  return {
+    whenItRuns,
+    inputs: translateList("inputs"),
+    outputs: translateList("outputs"),
+  };
 }

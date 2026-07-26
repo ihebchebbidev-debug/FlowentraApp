@@ -65,6 +65,13 @@ const DIAG_KEY: Record<string, string> = {
   "HrAuditLogs table present": "hr_audit_present",
   "Target tables present": "target_tables_present",
   "RecurringTaskLogs table present": "recurring_logs_present",
+  // Live diagnostics derived from the schedule row (see processesService.buildDiagnostics).
+  "Handler registered": "handler_registered",
+  "Schedule registered": "schedule_registered",
+  "Schedule enabled": "schedule_enabled",
+  "Not paused": "not_paused",
+  "Not blocked": "not_blocked",
+  "No recent failures": "no_recent_failures",
 };
 
 export function tModule(t: TFunction, en: string): string {

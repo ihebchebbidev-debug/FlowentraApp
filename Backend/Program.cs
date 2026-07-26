@@ -483,6 +483,7 @@ builder.Services.AddSingleton<MyApi.Modules.Processes.Services.IProcessHandler, 
 builder.Services.AddSingleton<MyApi.Modules.Processes.Services.IProcessHandler, MyApi.Modules.Processes.Services.Handlers.SoftDeletedPurgeHandler>();
 builder.Services.AddSingleton<MyApi.Modules.Processes.Services.IProcessHandler, MyApi.Modules.Processes.Services.Handlers.RecurringTaskLogsPurgeHandler>();
 builder.Services.AddSingleton<MyApi.Modules.Processes.Services.ProcessHandlerRegistry>();
+builder.Services.AddSingleton<MyApi.Modules.Processes.Services.RunningProcessRegistry>();
 builder.Services.AddHostedService<MyApi.Modules.Processes.Services.ProcessSchedulerService>();
 
 // SignalR for real-time workflow notifications

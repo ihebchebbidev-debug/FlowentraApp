@@ -21,7 +21,7 @@
  * "Run now" button reuses the same handler through POST /api/processes/run.
  */
 import { apiFetch } from "@/services/api/apiClient";
-import { PROCESSES, type ProcessDefinition, type ProcessRun } from "./processesMock";
+import { PROCESSES, type DiagnosticCheck, type ProcessDefinition, type ProcessRun } from "./processesMock";
 
 /**
  * Process keys that are backed by a real, end-to-end reliable backend handler.
@@ -171,6 +171,22 @@ export async function resetFailures(key: string): Promise<ProcessSchedule> {
   );
 }
 
+/**
+ * Cooperatively stop the in-flight run for a process. Backend cancels the
+ * handler's CancellationToken so it aborts at the next await point.
+ * Returns whether a run was actually in flight.
+ */
+export async function stopRun(key: string): Promise<boolean> {
+  const res = unwrap(
+    await apiFetch<{ key: string; stopped: boolean }>(
+      `/api/processes/schedules/${encodeURIComponent(key)}/stop`,
+      { method: "POST" }
+    )
+  );
+  return res.stopped;
+}
+
+
 
 /** Keys whose most recent run is still in-flight. Used to show a live "running" pill. */
 export async function listRunningKeys(): Promise<Set<string>> {
@@ -243,9 +259,9 @@ export function overlay(
   // running-keys endpoint, or the live projection embedded in the schedule row.
   const isRunning = (runningKeys?.has(def.key) ?? false) || (s?.is_running ?? false);
   if (!s) {
-    // No schedule row on the server yet: the catalog's placeholder runtime
-    // fields (status/lastError/lastRunAt) are NOT real, so blank them out
-    // rather than displaying fiction as live state.
+    // No schedule row on the server yet: every runtime signal is unknown.
+    // Show blanks/unknown instead of the catalog placeholders so we never
+    // display fabricated "100% success" or "all green" diagnostics.
     return {
       ...def,
       status: isRunning ? "running" : "idle",
@@ -254,6 +270,8 @@ export function overlay(
       lastRunAt: undefined,
       nextRunAt: undefined,
       consecutiveFailures: 0,
+      successRate30: undefined,
+      diagnostics: buildDiagnostics(undefined),
     };
   }
   const lastError = s.last_error ?? undefined;
@@ -281,8 +299,44 @@ export function overlay(
     lastError,
     blockReason,
     consecutiveFailures: s.consecutive_failures,
+    // Real success rate only — no fabricated 100% baseline. undefined means
+    // "no runs recorded yet"; the UI renders it as "—".
     successRate30: s.recent_total && s.recent_total > 0
       ? Math.round(((s.recent_success ?? 0) / s.recent_total) * 100)
-      : def.successRate30,
+      : undefined,
+    diagnostics: buildDiagnostics(s),
   };
 }
+
+/**
+ * Diagnostics derived from the live schedule row — never from a static template.
+ * Each check is a boolean answering "is this reason to be blocked?" so the UI
+ * shows red only when the backend is actually in a bad state.
+ */
+function buildDiagnostics(s: ProcessSchedule | undefined): DiagnosticCheck[] {
+  if (!s) {
+    return [
+      { label: "Schedule registered", ok: false, detail: "No schedule row on the server yet." },
+    ];
+  }
+  return [
+    {
+      label: "Handler registered",
+      ok: s.has_handler !== false,
+      detail: s.has_handler === false ? "No backend handler is wired for this key." : undefined,
+    },
+    { label: "Schedule enabled", ok: s.enabled },
+    { label: "Not paused", ok: !s.paused },
+    {
+      label: "Not blocked",
+      ok: !s.block_reason,
+      detail: s.block_reason ?? undefined,
+    },
+    {
+      label: "No recent failures",
+      ok: s.consecutive_failures === 0 && s.last_status !== "failed",
+      detail: s.last_error ?? undefined,
+    },
+  ];
+}
+
