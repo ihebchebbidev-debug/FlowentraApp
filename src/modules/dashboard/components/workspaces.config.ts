@@ -194,7 +194,7 @@ export const WORKSPACES: Workspace[] = [
       { key: "roles", label: "Roles", labelI18nKey: "workspace.modules.roles", url: "/dashboard/settings/roles", icon: "Shield" },
       { key: "user-groups", label: "User groups", labelI18nKey: "workspace.modules.userGroups", url: "/dashboard/settings/user-groups", icon: "UsersRound" },
       { key: "dynamic-forms", label: "Dynamic forms", labelI18nKey: "workspace.modules.dynamicForms", url: "/dashboard/settings/dynamic-forms", icon: "FormInput", pluginCode: "PL0032DYNAMICFORMS" },
-      { key: "background-services", label: "Background services", labelI18nKey: "workspace.modules.backgroundServices", url: "/dashboard/settings/sync", icon: "Activity" },
+      
       { key: "documentation", label: "Documentation", labelI18nKey: "workspace.modules.documentation", url: "/dashboard/settings/documentation", icon: "BookOpen" },
       { key: "system-logs", label: "System logs", labelI18nKey: "workspace.modules.systemLogs", url: "/dashboard/settings/logs", icon: "ScrollText" },
       { key: "system-config", label: "System configuration", labelI18nKey: "workspace.modules.systemConfig", url: "/dashboard/settings/system-config", icon: "Monitor" },

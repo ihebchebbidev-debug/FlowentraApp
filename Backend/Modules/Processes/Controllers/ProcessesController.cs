@@ -87,11 +87,51 @@ namespace MyApi.Modules.Processes.Controllers
             // Per-key top-N (not a global Take): a chatty process (retry-failed-emails
             // runs every 5 min) can otherwise saturate a global cap and hide a lower-
             // frequency key's true latest run behind the cap boundary.
-            var recent = await _db.Set<ProcessRun>().AsNoTracking()
-                .Where(r => keys.Contains(r.ProcessKey))
-                .GroupBy(r => r.ProcessKey)
-                .SelectMany(g => g.OrderByDescending(r => r.StartedAt).Take(30))
-                .ToListAsync(ct);
+            // EF Core cannot translate GroupBy(...).SelectMany(g => g.Take(N))
+            // for PostgreSQL. Use the SQL-native window function instead so the
+            // endpoint stays one indexed query and still returns the latest 30
+            // runs per process key. This fixes stale UI refreshes caused by the
+            // previous query throwing at runtime.
+            var keyArray = keys.ToArray();
+            var recent = keyArray.Length == 0
+                ? new List<ProcessRun>()
+                : await _db.Set<ProcessRun>().FromSqlInterpolated($@"
+                    SELECT
+                        ranked.""Id"",
+                        ranked.""ProcessKey"",
+                        ranked.""TriggeredBy"",
+                        ranked.""Attempt"",
+                        ranked.""Status"",
+                        ranked.""StartedAt"",
+                        ranked.""FinishedAt"",
+                        ranked.""DurationMs"",
+                        ranked.""ItemsProcessed"",
+                        ranked.""Error"",
+                        ranked.""BlockReason"",
+                        ranked.""NextRetryAt"",
+                        ranked.""OutputJson""
+                    FROM (
+                        SELECT
+                            r.""Id"",
+                            r.""ProcessKey"",
+                            r.""TriggeredBy"",
+                            r.""Attempt"",
+                            r.""Status"",
+                            r.""StartedAt"",
+                            r.""FinishedAt"",
+                            r.""DurationMs"",
+                            r.""ItemsProcessed"",
+                            r.""Error"",
+                            r.""BlockReason"",
+                            r.""NextRetryAt"",
+                            r.""OutputJson"",
+                            ROW_NUMBER() OVER (PARTITION BY r.""ProcessKey"" ORDER BY r.""StartedAt"" DESC) AS rn
+                        FROM ""ProcessRuns"" AS r
+                        WHERE r.""ProcessKey"" = ANY({keyArray})
+                    ) AS ranked
+                    WHERE ranked.rn <= 30")
+                    .AsNoTracking()
+                    .ToListAsync(ct);
 
             var staleCutoff = DateTime.UtcNow.AddMinutes(-30);
             var byKey = recent.GroupBy(r => r.ProcessKey)
