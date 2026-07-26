@@ -47,6 +47,19 @@ namespace MyApi.Modules.Processes.Services.Handlers
             db.SetTenantId(-1);
 
             var now = DateTime.UtcNow;
+
+            // Orphaned failed sends whose account or user was deleted after the
+            // original attempt can never be retried — transition them to gave_up
+            // once so they stop appearing on the "failed emails" dashboard forever.
+            var orphaned = await db.OutboundEmailLogs
+                .Where(l => l.Status == "failed"
+                            && l.Attempts < l.MaxAttempts
+                            && (l.AccountId == null || l.UserId == null))
+                .ExecuteUpdateAsync(u => u
+                    .SetProperty(l => l.Status, "gave_up")
+                    .SetProperty(l => l.LastError, "Retry abandoned — the sending account or user no longer exists.")
+                    .SetProperty(l => l.LastAttemptAt, now), ct);
+
             var candidates = await db.OutboundEmailLogs
                 .Where(l => l.Status == "failed"
                             && l.Attempts < l.MaxAttempts
@@ -57,7 +70,7 @@ namespace MyApi.Modules.Processes.Services.Handlers
                 .Take(batchSize)
                 .ToListAsync(ct);
 
-            int retried = 0, succeeded = 0, stillFailed = 0, gaveUp = 0;
+            int retried = 0, succeeded = 0, stillFailed = 0, gaveUp = orphaned;
 
             foreach (var log in candidates)
             {

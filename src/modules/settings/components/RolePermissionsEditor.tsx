@@ -63,6 +63,7 @@ const MODULE_ICONS: Record<PermissionModule, React.ReactNode> = {
   external_endpoints: <Activity className="h-4 w-4" />,
   reporting_finance: <Activity className="h-4 w-4" />,
   reporting_hr: <Users className="h-4 w-4" />,
+  processes: <Activity className="h-4 w-4" />,
 };
 
 export function RolePermissionsEditor({ role, onClose }: RolePermissionsEditorProps) {

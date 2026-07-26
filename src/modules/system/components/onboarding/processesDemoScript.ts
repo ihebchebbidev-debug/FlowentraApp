@@ -3,6 +3,9 @@
 // English captions live inline here; translations in processesDemoTranslations.ts
 // (must stay PROC_STEPS.length long, same order).
 
+import { PROCESSES } from '@/modules/system/services/processesMock';
+import { REAL_HANDLER_KEYS } from '@/modules/system/services/processesService';
+
 export type ProcessesDemoPage = 'list';
 
 export type DrawerTab = 'overview' | 'schedule' | 'history' | 'diagnostics';
@@ -16,8 +19,10 @@ export interface ProcessesDemoState {
   workspaceFilterOpen: boolean;
   statusFilterOpen: boolean;
   // List row focus
-  focusRowIndex: number | null; // 0..3
+  focusRowIndex: number | null;
   focusRowAction: null | 'run' | 'pause';
+  // When set, highlights (and auto-scrolls to) a specific real-process row.
+  focusProcessKey: string | null;
   // Drawer
   drawerOpen: boolean;
   drawerTab: DrawerTab;
@@ -44,6 +49,7 @@ export const initialProcessesDemoState: ProcessesDemoState = {
   statusFilterOpen: false,
   focusRowIndex: null,
   focusRowAction: null,
+  focusProcessKey: null,
   drawerOpen: false,
   drawerTab: 'overview',
   drawerHighlight: null,
@@ -63,7 +69,195 @@ const pure =
   (apply: (s: ProcessesDemoState) => Partial<ProcessesDemoState>) =>
   (s: ProcessesDemoState): ProcessesDemoState => ({ ...s, ...apply(s) });
 
-export const PROC_STEPS: ProcessesDemoStep[] = [
+// ─── Per-process voiced explanations ────────────────────────────────────────
+// Short, spoken-friendly one-liner per real handler. Order defines the order
+// the demo walks through them. FR translations live in processesDemoTranslations.
+interface ProcessTalk { key: string; caption: string; captionFr: string }
+
+const PROCESS_TALKS: ProcessTalk[] = [
+  {
+    key: 'admin.invoices-mark-overdue',
+    caption:
+      'Mark overdue invoices — every hour it flips any invoice past its due date with money still owed into the overdue bucket, so the KPI and chase list stay live.',
+    captionFr:
+      'Marquer les factures en retard — chaque heure, toute facture dépassée avec un solde impayé bascule en « en retard », pour que le KPI et la liste de relance restent à jour.',
+  },
+  {
+    key: 'admin.payment-installments-mark-overdue',
+    caption:
+      'Overdue payment installments — same idea for payment plans: any pending or partially-paid installment past its due date is flipped to overdue automatically.',
+    captionFr:
+      'Échéances en retard — même logique pour les plans de paiement : toute échéance en attente ou partiellement payée dépassée passe en « en retard » automatiquement.',
+  },
+  {
+    key: 'admin.offers-mark-expired',
+    caption:
+      'Expire past-due offers — offers that were sent or pending past their validity date are set to expired, so the pipeline never carries dead quotes.',
+    captionFr:
+      'Expirer les offres échues — les offres envoyées ou en attente dépassant leur date de validité passent en « expirées », pour un pipeline sans devis morts.',
+  },
+  {
+    key: 'admin.dispatches-mark-missed',
+    caption:
+      'Missed dispatches — any scheduled dispatch that never started and is more than a two-hour grace past its date is marked missed, so field ops sees it fast.',
+    captionFr:
+      'Missions manquées — toute intervention planifiée jamais démarrée et dépassée depuis plus de deux heures est marquée « manquée » pour être vue immédiatement.',
+  },
+  {
+    key: 'admin.support-tickets-autoclose-resolved',
+    caption:
+      'Auto-close resolved tickets — after seven days in resolved status with no reopen, the ticket is closed so the queue only shows what still needs a human.',
+    captionFr:
+      'Fermeture automatique des tickets résolus — après sept jours en « résolu » sans réouverture, le ticket est fermé pour ne garder en file que ce qui demande une action.',
+  },
+  {
+    key: 'admin.retry-failed-emails',
+    caption:
+      'Retry failed emails — every five minutes it re-sends outbound emails that failed, up to five attempts, and orphaned ones with no account are given up cleanly.',
+    captionFr:
+      'Réessayer les emails en échec — toutes les cinq minutes, les emails sortants échoués sont renvoyés, jusqu’à cinq tentatives ; les orphelins sans compte sont abandonnés proprement.',
+  },
+  {
+    key: 'admin.draft-offers-purge',
+    caption:
+      'Purge abandoned draft offers — offers stuck in draft for over sixty days are hard-deleted so the list only holds real work.',
+    captionFr:
+      'Purger les brouillons d’offres abandonnés — les offres restées en brouillon plus de soixante jours sont supprimées pour ne garder que le travail réel.',
+  },
+  {
+    key: 'admin.draft-invoices-purge',
+    caption:
+      'Purge abandoned draft invoices — same treatment for invoices: sixty-day-old drafts are removed permanently.',
+    captionFr:
+      'Purger les brouillons de factures abandonnés — même traitement pour les factures : les brouillons de plus de soixante jours sont supprimés définitivement.',
+  },
+  {
+    key: 'admin.notifications-purge-read',
+    caption:
+      'Purge read notifications — notifications already read and older than thirty days are deleted so the tray stays fast and relevant.',
+    captionFr:
+      'Purger les notifications lues — les notifications déjà lues et âgées de plus de trente jours sont supprimées pour garder le tiroir rapide et pertinent.',
+  },
+  {
+    key: 'admin.notifications-purge-stale-unread',
+    caption:
+      'Purge stale unread notifications — very old unread notifications, past six months, are cleared out to prevent forever-growing tray backlogs.',
+    captionFr:
+      'Purger les notifications non lues obsolètes — les notifications non lues de plus de six mois sont supprimées pour éviter que le tiroir n’enfle sans fin.',
+  },
+  {
+    key: 'admin.calendar-events-purge-past',
+    caption:
+      'Purge past calendar events — completed or cancelled events older than six months are removed to keep the calendar snappy.',
+    captionFr:
+      'Purger les anciens événements du calendrier — les événements terminés ou annulés de plus de six mois sont supprimés pour garder le calendrier réactif.',
+  },
+  {
+    key: 'admin.sync-changes-purge',
+    caption:
+      'Purge old sync changes — the offline-sync outbox is trimmed after thirty days so mobile-sync bookkeeping never grows unbounded.',
+    captionFr:
+      'Purger les anciennes modifications de sync — la file de sync hors-ligne est nettoyée après trente jours pour ne jamais laisser gonfler la comptabilité de sync mobile.',
+  },
+  {
+    key: 'admin.sync-receipts-purge',
+    caption:
+      'Purge old sync receipts — the per-device sync receipts older than thirty days are deleted, same retention as the outbox.',
+    captionFr:
+      'Purger les vieux reçus de sync — les accusés de synchro par appareil de plus de trente jours sont supprimés, avec la même rétention que la file.',
+  },
+  {
+    key: 'admin.webhook-jobs-purge',
+    caption:
+      'Purge completed webhook jobs — webhook forwards that finished or hit dead-letter more than thirty days ago are cleaned up.',
+    captionFr:
+      'Purger les jobs webhook terminés — les envois webhook terminés ou en dead-letter depuis plus de trente jours sont nettoyés.',
+  },
+  {
+    key: 'admin.external-endpoint-logs-purge',
+    caption:
+      'Purge external endpoint logs — each external endpoint has its own retention window, and this job trims its logs down to exactly that.',
+    captionFr:
+      'Purger les logs d’endpoints externes — chaque endpoint externe a sa propre rétention, et ce job coupe ses logs exactement à cette limite.',
+  },
+  {
+    key: 'admin.dispatch-audit-purge',
+    caption:
+      'Purge dispatch audit logs — dispatch history older than six months is trimmed so audit tables stay compact.',
+    captionFr:
+      'Purger l’audit des missions — l’historique des missions de plus de six mois est nettoyé pour garder les tables d’audit compactes.',
+  },
+  {
+    key: 'admin.hr-audit-purge',
+    caption:
+      'Purge HR audit logs — HR audit entries older than a year are removed, keeping the compliance trail useful and not overwhelming.',
+    captionFr:
+      'Purger l’audit RH — les entrées d’audit RH de plus d’un an sont supprimées, gardant la piste de conformité utile et lisible.',
+  },
+  {
+    key: 'admin.soft-deleted-purge',
+    caption:
+      'Hard-purge soft-deleted records — invoices, offers, deals, sales and more that were soft-deleted over ninety days ago are permanently removed.',
+    captionFr:
+      'Purge définitive des enregistrements supprimés — factures, offres, deals, ventes et plus, supprimés en douceur depuis plus de quatre-vingt-dix jours, sont effacés définitivement.',
+  },
+  {
+    key: 'admin.recurring-task-logs-purge',
+    caption:
+      'Purge recurring task logs — logs of recurring project tasks older than six months are removed so the tasks stay light.',
+    captionFr:
+      'Purger les logs de tâches récurrentes — les logs de tâches de projet récurrentes de plus de six mois sont supprimés pour garder les tâches légères.',
+  },
+  {
+    key: 'admin.purge-system-logs',
+    caption:
+      'Purge system logs — the platform log table is trimmed daily against a configurable retention window, with a floor so process history is never truncated by accident.',
+    captionFr:
+      'Purger les logs système — la table de logs plateforme est nettoyée chaque jour selon une rétention configurable, avec un plancher pour ne jamais tronquer l’historique des processus par accident.',
+  },
+];
+
+// Filter to processes that actually have a handler AND appear in the catalogue,
+// preserving the order defined in PROCESS_TALKS so the demo tour stays curated.
+const CATALOG_BY_KEY = new Map(PROCESSES.map(p => [p.key, p]));
+const REAL_PROCESSES = PROCESS_TALKS
+  .filter(t => REAL_HANDLER_KEYS.has(t.key) && CATALOG_BY_KEY.has(t.key))
+  .map(t => ({ ...t, def: CATALOG_BY_KEY.get(t.key)! }));
+
+/** Ordered list of real processes the demo showcases, exposed for rendering. */
+export const DEMO_REAL_PROCESSES = REAL_PROCESSES.map(r => ({
+  key: r.key,
+  name: r.def.name,
+  module: `${r.def.module} · Admin`,
+  schedule: r.def.scheduleHuman,
+}));
+
+/** FR caption per process key, used by processesDemoTranslations. */
+export const PROCESS_TALK_FR: Record<string, string> = Object.fromEntries(
+  PROCESS_TALKS.map(t => [t.key, t.captionFr]),
+);
+
+// Steps generated for the "Every process, explained" chapter.
+const PROCESS_TOUR_STEPS: ProcessesDemoStep[] = REAL_PROCESSES.map((p) => ({
+  target: `proc-demo-row-key-${p.key}`,
+  caption: p.caption,
+  duration: Math.max(5200, p.caption.length * 55 + 1500),
+  apply: pure(() => ({
+    focusProcessKey: p.key,
+    focusRowIndex: null,
+    focusRowAction: null,
+    drawerOpen: false,
+    drawerHighlight: null,
+    highlightMetric: null,
+    searchActive: false,
+    workspaceFilterOpen: false,
+    statusFilterOpen: false,
+  })),
+}));
+
+// ─── Full step list ─────────────────────────────────────────────────────────
+
+const INTRO_STEPS: ProcessesDemoStep[] = [
   // ── Chapter 1 · Overview & KPIs ─────────────────────────────────────────
   {
     target: 'proc-demo-title',
@@ -73,6 +267,7 @@ export const PROC_STEPS: ProcessesDemoStep[] = [
     apply: pure(() => ({
       highlightMetric: null, searchActive: false, workspaceFilterOpen: false,
       statusFilterOpen: false, focusRowIndex: null, focusRowAction: null,
+      focusProcessKey: null,
       drawerOpen: false, drawerTab: 'overview', drawerHighlight: null,
     })),
   },
@@ -143,28 +338,31 @@ export const PROC_STEPS: ProcessesDemoStep[] = [
     duration: 4600,
     apply: pure(() => ({ statusFilterOpen: false })),
   },
-  {
-    target: 'proc-demo-row-0',
-    caption:
-      'Each row tells the whole story at a glance — the job name, the module and process key, the schedule in plain English, the last run, and the next scheduled run.',
-    duration: 5800,
-    apply: pure(() => ({ focusRowIndex: 0 })),
-  },
-  {
-    target: 'proc-demo-row-status',
-    caption:
-      'The status pill flips live — Idle when waiting, Running while executing, Failed with the error tooltip, and Blocked with the exact reason so you never guess.',
-    duration: 5400,
-    apply: pure(() => ({ focusRowIndex: 0 })),
-  },
+];
 
-  // ── Chapter 4 · Row actions ─────────────────────────────────────────────
+// Chapter 4 — walk EVERY real process with a one-line spoken explanation.
+const TOUR_CHAPTER_INTRO: ProcessesDemoStep = {
+  target: 'proc-demo-group-admin',
+  caption: `Here are all ${REAL_PROCESSES.length} live processes running on your platform today. Let me walk you through each one — what it does and how often it runs.`,
+  duration: 5600,
+  apply: pure(() => ({ focusProcessKey: null })),
+};
+
+const OUTRO_STEPS: ProcessesDemoStep[] = [
+  // ── Row story + actions ─────────────────────────────────────────────────
+  {
+    target: `proc-demo-row-key-admin.invoices-mark-overdue`,
+    caption:
+      'Each row tells the whole story at a glance — job name, module, schedule in plain English, and the last and next run.',
+    duration: 5400,
+    apply: pure(() => ({ focusProcessKey: 'admin.invoices-mark-overdue' })),
+  },
   {
     target: 'proc-demo-row-run',
     caption:
       'Run now fires the job on demand — it bypasses the schedule but respects the advisory lock, so if the scheduler is already running it you get a friendly "already running" toast instead of a duplicate.',
     duration: 6000,
-    apply: pure(() => ({ focusRowAction: 'run' })),
+    apply: pure(() => ({ focusProcessKey: 'admin.invoices-mark-overdue', focusRowAction: 'run' })),
   },
   {
     target: 'proc-demo-row-pause',
@@ -174,14 +372,14 @@ export const PROC_STEPS: ProcessesDemoStep[] = [
     apply: pure(() => ({ focusRowAction: 'pause' })),
   },
 
-  // ── Chapter 5 · Drawer deep-dive ────────────────────────────────────────
+  // ── Drawer deep-dive ────────────────────────────────────────────────────
   {
     target: 'proc-demo-drawer-header',
     caption:
       'Click any row to open the deep-dive drawer — workspace tag, live status, and the human description of what the job actually does under the hood.',
     duration: 5200,
     apply: pure(() => ({
-      focusRowAction: null, focusRowIndex: 0,
+      focusRowAction: null,
       drawerOpen: true, drawerTab: 'overview', drawerHighlight: 'header',
     })),
   },
@@ -228,28 +426,43 @@ export const PROC_STEPS: ProcessesDemoStep[] = [
     apply: pure(() => ({ drawerTab: 'diagnostics', drawerHighlight: 'diagnostic-item' })),
   },
 
-  // ── Chapter 6 · Wrap-up ─────────────────────────────────────────────────
+  // ── Wrap-up ─────────────────────────────────────────────────────────────
   {
     target: 'proc-demo-refresh',
     caption:
       'The page polls the backend every fifteen seconds, and Refresh forces an immediate sync. Scheduler-driven runs surface here automatically — no page reload required.',
     duration: 5400,
-    apply: pure(() => ({ drawerOpen: false, drawerHighlight: null })),
+    apply: pure(() => ({ drawerOpen: false, drawerHighlight: null, focusProcessKey: null })),
   },
   {
     target: 'proc-demo-title',
     caption:
-      'That is Processes end-to-end — auto-running jobs with lock-safe execution, live KPIs, per-row controls, a deep drawer with schedule editing, real history and self-diagnosing checks. Set it once, and your platform keeps itself clean.',
+      'That is Processes end-to-end — every automated job explained, with lock-safe execution, live KPIs, per-row controls, a deep drawer, real history, and self-diagnosing checks. Set it once, and your platform keeps itself clean.',
     duration: 7000,
     apply: pure(() => ({ highlightMetric: null })),
   },
 ];
 
+export const PROC_STEPS: ProcessesDemoStep[] = [
+  ...INTRO_STEPS,
+  TOUR_CHAPTER_INTRO,
+  ...PROCESS_TOUR_STEPS,
+  ...OUTRO_STEPS,
+];
+
+// Chapter boundaries computed from section lengths so they stay in sync.
+const INTRO_LEN = INTRO_STEPS.length;                          // 10
+const TOUR_LEN = 1 + PROCESS_TOUR_STEPS.length;                // intro + N
+const ROW_STORY_LEN = 3;                                       // row + run + pause
+const DRAWER_LEN = 7;                                          // header..diagnostics
+const WRAP_LEN = 2;                                            // refresh + closing
+
 export const PROC_CHAPTERS: ProcessesDemoChapter[] = [
-  { id: 'overview',   title: 'Overview & KPIs',    start: 0,  end: 6  },
-  { id: 'controls',   title: 'Search & Filters',   start: 6,  end: 9  },
-  { id: 'list',       title: 'List & Status',      start: 9,  end: 12 },
-  { id: 'actions',    title: 'Run & Pause',        start: 12, end: 14 },
-  { id: 'drawer',     title: 'Drawer Deep-Dive',   start: 14, end: 21 },
-  { id: 'wrap',       title: 'Live Sync & Wrap',   start: 21, end: PROC_STEPS.length },
+  { id: 'overview', title: 'Overview & KPIs',      start: 0,                                                 end: 6 },
+  { id: 'controls', title: 'Search & Filters',     start: 6,                                                 end: 9 },
+  { id: 'list',     title: 'List',                  start: 9,                                                 end: INTRO_LEN },
+  { id: 'tour',     title: 'Every Process',        start: INTRO_LEN,                                         end: INTRO_LEN + TOUR_LEN },
+  { id: 'actions',  title: 'Run & Pause',          start: INTRO_LEN + TOUR_LEN,                              end: INTRO_LEN + TOUR_LEN + ROW_STORY_LEN },
+  { id: 'drawer',   title: 'Drawer Deep-Dive',     start: INTRO_LEN + TOUR_LEN + ROW_STORY_LEN,              end: INTRO_LEN + TOUR_LEN + ROW_STORY_LEN + DRAWER_LEN },
+  { id: 'wrap',     title: 'Live Sync & Wrap',     start: INTRO_LEN + TOUR_LEN + ROW_STORY_LEN + DRAWER_LEN, end: PROC_STEPS.length },
 ];

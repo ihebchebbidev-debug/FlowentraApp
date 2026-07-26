@@ -108,8 +108,12 @@ namespace MyApi.Modules.Processes.Services
             using var scope = _sp.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var now = DateTime.UtcNow;
+            // Only close runs older than the hard handler timeout. In a multi-instance
+            // deployment (protected by advisory locks) a rolling restart on instance B
+            // must NOT mark instance A's still-executing run as failed.
+            var staleCutoff = now - HandlerTimeout;
             var fixedUp = await db.Set<ProcessRun>()
-                .Where(r => r.Status == "running" && r.FinishedAt == null)
+                .Where(r => r.Status == "running" && r.FinishedAt == null && r.StartedAt < staleCutoff)
                 .ExecuteUpdateAsync(u => u
                     .SetProperty(r => r.Status, "failed")
                     .SetProperty(r => r.FinishedAt, now)
@@ -215,9 +219,9 @@ namespace MyApi.Modules.Processes.Services
 
         private static async Task ReleaseLockAsync(ApplicationDbContext db, long lockId, CancellationToken ct)
         {
+            var conn = db.Database.GetDbConnection();
             try
             {
-                var conn = db.Database.GetDbConnection();
                 if (conn.State != ConnectionState.Open) await conn.OpenAsync(ct);
                 await using var cmd = conn.CreateCommand();
                 cmd.CommandText = "SELECT pg_advisory_unlock(@k)";
@@ -225,7 +229,14 @@ namespace MyApi.Modules.Processes.Services
                 cmd.Parameters.Add(p);
                 await cmd.ExecuteScalarAsync(ct);
             }
-            catch { /* best effort — session end releases the lock anyway */ }
+            catch
+            {
+                // Unlock failed. Advisory locks are session-scoped and Npgsql pools
+                // connections, so returning this connection to the pool would leak
+                // the lock and wedge every future run of this key. Force-close the
+                // physical connection so Npgsql discards it (session ends → lock released).
+                try { await conn.CloseAsync(); } catch { /* discarding anyway */ }
+            }
         }
 
 
@@ -302,16 +313,19 @@ namespace MyApi.Modules.Processes.Services
 
                 result.DurationMs = run.DurationMs ?? 0;
 
-                // Schedule state transition
-                s.LastRunAt = run.FinishedAt;
-                s.LastStatus = result.Status;
-                s.UpdatedAt = DateTime.UtcNow;
-
-                // Manual "Run now" is a diagnostic action — it records the run but must
-                // NOT mutate the retry ladder (ConsecutiveFailures / NextRunAt / Paused),
-                // otherwise an admin clicking Run to investigate can accidentally pause
-                // a healthy schedule.
+                // Schedule state transition.
+                // Manual "Run now" is a diagnostic action — it must NOT mutate the
+                // schedule's cadence/last-status audit trail or retry ladder,
+                // otherwise clicking Run on a broken schedule flips LastStatus to
+                // "success" while BlockReason/ConsecutiveFailures still reflect the
+                // real failure state, producing an internally inconsistent row.
                 var isManual = triggeredBy == "manual";
+                if (!isManual)
+                {
+                    s.LastRunAt = run.FinishedAt;
+                    s.LastStatus = result.Status;
+                }
+                s.UpdatedAt = DateTime.UtcNow;
 
                 if (result.Status == "success" || result.Status == "skipped")
                 {

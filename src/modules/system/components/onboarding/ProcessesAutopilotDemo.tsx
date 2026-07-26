@@ -8,7 +8,7 @@ import {
 import { DemoCursor } from '@/modules/external/components/onboarding/DemoCursor';
 import { pickBestVoice, splitForSpeech, languageTagFor, configureUtteranceForFemaleVoice } from '@/modules/external/components/onboarding/narrationVoice';
 import {
-  PROC_STEPS, PROC_CHAPTERS, initialProcessesDemoState,
+  PROC_STEPS, PROC_CHAPTERS, initialProcessesDemoState, DEMO_REAL_PROCESSES,
   type ProcessesDemoState,
 } from './processesDemoScript';
 import { pickLang, getCaption, getChapterTitle } from './processesDemoTranslations';
@@ -28,12 +28,22 @@ interface DemoRow {
   paused?: boolean;
 }
 
-const ROWS: DemoRow[] = [
-  { key: 'admin.invoices-mark-overdue',    name: 'Mark overdue invoices',      module: 'Invoices · Admin',       schedule: 'Every 60 min',    last: '12m ago', next: 'in 48m',  status: 'idle' },
-  { key: 'admin.retry-failed-emails',      name: 'Retry failed outbound emails', module: 'Communication · Admin', schedule: 'Every 15 min',    last: '4m ago',  next: 'in 11m',  status: 'running' },
-  { key: 'admin.offers-mark-expired',      name: 'Expire past-due offers',     module: 'Offers · Admin',         schedule: 'Daily at 02:00',   last: '9h ago',  next: 'in 15h',  status: 'idle' },
-  { key: 'admin.purge-system-logs',        name: 'Purge system logs',          module: 'Platform · Admin',       schedule: 'Daily at 03:00',   last: '10h ago', next: 'in 14h',  status: 'idle' },
-];
+// Rotating placeholders so the list feels alive without lying about real runs.
+const LAST_HINTS = ['12m ago', '48m ago', '2h ago', '9h ago', '17h ago', '3d ago'];
+const NEXT_HINTS = ['in 48m', 'in 11m', 'in 5h',  'in 15h', 'in 22h', 'in 1d'];
+
+const ROWS: DemoRow[] = DEMO_REAL_PROCESSES.map((p, i) => ({
+  key: p.key,
+  name: p.name,
+  module: p.module,
+  schedule: p.schedule,
+  last: LAST_HINTS[i % LAST_HINTS.length],
+  next: NEXT_HINTS[i % NEXT_HINTS.length],
+  // Keep exactly one row "running" so the Running KPI on the header reads 1.
+  status: p.key === 'admin.retry-failed-emails' ? 'running' : 'idle',
+}));
+
+const RUNNING_COUNT = ROWS.filter(r => r.status === 'running').length;
 
 const STATUS_META: Record<DemoRow['status'], { label: string; cls: string; Icon: any }> = {
   idle:    { label: 'Idle',    cls: 'bg-muted text-muted-foreground border-border',                Icon: CircleDot },
@@ -91,7 +101,7 @@ function PageList({ state }: { state: ProcessesDemoState }) {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Metric id="proc-demo-metric-running" label="Running" value={1} tone="primary"     active={state.highlightMetric === 'running'} />
+              <Metric id="proc-demo-metric-running" label="Running" value={RUNNING_COUNT} tone="primary"     active={state.highlightMetric === 'running'} />
               <Metric id="proc-demo-metric-failed"  label="Failed"  value={0} tone="destructive" active={state.highlightMetric === 'failed'} />
               <Metric id="proc-demo-metric-blocked" label="Blocked" value={0} tone="amber"       active={state.highlightMetric === 'blocked'} />
               <Metric id="proc-demo-metric-paused"  label="Paused"  value={0} tone="muted"       active={state.highlightMetric === 'paused'} />
@@ -153,14 +163,15 @@ function PageList({ state }: { state: ProcessesDemoState }) {
         </div>
         <div className="divide-y">
           {ROWS.map((r, i) => {
-            const focus = state.focusRowIndex === i;
+            const focus = state.focusRowIndex === i || state.focusProcessKey === r.key;
             return (
               <div
                 key={r.key}
-                id={i === 0 ? 'proc-demo-row-0' : undefined}
-                className={`grid grid-cols-12 items-center gap-2 px-4 py-3 transition-colors ${focus ? 'bg-primary/5 ring-1 ring-primary/30' : ''}`}
+                id={`proc-demo-row-key-${r.key}`}
+                data-row-index={i}
+                className={`grid grid-cols-12 items-center gap-2 px-4 py-3 transition-colors ${focus ? 'bg-primary/5 ring-1 ring-primary/40' : ''}`}
               >
-                <div className="col-span-5 min-w-0">
+                <div className="col-span-5 min-w-0" id={i === 0 ? 'proc-demo-row-0' : undefined}>
                   <div className="font-medium text-sm truncate">{r.name}</div>
                   <div className="text-xs text-muted-foreground truncate">
                     {r.module} · <span className="font-mono opacity-80">{r.key}</span>
@@ -424,13 +435,18 @@ export function ProcessesAutopilotDemo({ open, onClose }: Props) {
     const place = () => {
       const el = document.getElementById(step.target);
       if (!el) return;
+      // Scroll per-process rows into view so the whole tour is visible even
+      // when the list is 20 items long.
+      if (step.target.startsWith('proc-demo-row-key-')) {
+        try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch { /* noop */ }
+      }
       const r = el.getBoundingClientRect();
       setCursor({ x: r.left + Math.min(r.width / 2, 120), y: r.top + Math.min(r.height / 2, 40), clicking: true });
       if (clickRef.current) clearTimeout(clickRef.current);
       clickRef.current = setTimeout(() => setCursor(c => ({ ...c, clicking: false })), 450);
     };
-    const t = setTimeout(place, 200); return () => clearTimeout(t);
-  }, [stepIndex, open, finished, step?.target, state.drawerOpen, state.drawerTab, state.drawerHighlight, state.workspaceFilterOpen, state.statusFilterOpen, state.focusRowIndex, state.focusRowAction]);
+    const t = setTimeout(place, 260); return () => clearTimeout(t);
+  }, [stepIndex, open, finished, step?.target, state.drawerOpen, state.drawerTab, state.drawerHighlight, state.workspaceFilterOpen, state.statusFilterOpen, state.focusRowIndex, state.focusRowAction, state.focusProcessKey]);
 
   useEffect(() => {
     if (!open || !playing || finished) return;

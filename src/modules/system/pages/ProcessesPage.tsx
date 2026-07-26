@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
-  Activity, AlertTriangle, CheckCircle2, ChevronRight, CircleDot, Clock, Filter,
+  Activity, AlertTriangle, ArrowDownToLine, ArrowUpFromLine, CalendarClock,
+  CheckCircle2, ChevronDown, ChevronRight, CircleDot, Clock, Filter,
   Pause, Play, RefreshCw, Search, Square, StopCircle, XCircle, Zap,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,6 +30,8 @@ import {
 } from "@/modules/system/services/processesService";
 import { ProcessesAutopilotDemo } from "@/modules/system/components/onboarding/ProcessesAutopilotDemo";
 import { localizeProcess } from "@/modules/system/utils/processesI18n";
+import { getProcessExplanation } from "@/modules/system/utils/processExplanations";
+import { usePermissions } from "@/hooks/usePermissions";
 import type { TFunction } from "i18next";
 
 
@@ -95,8 +98,11 @@ export default function ProcessesPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useTranslation("processes");
-  // Processes are available to every signed-in user — the scheduler runs them
-  // on its own, and anyone can inspect / trigger them.
+  const { isMainAdmin, hasPermission } = usePermissions();
+  // Only MainAdmin (or roles explicitly granted processes.manage) can run,
+  // pause, stop, enable/disable, or reconfigure processes. Everyone else
+  // has read-only visibility into the schedules and history.
+  const canManage = isMainAdmin || hasPermission("processes", "manage");
   const isLoading = false;
 
 
@@ -112,9 +118,17 @@ export default function ProcessesPage() {
   const [statusFilter, setStatusFilter] = useState<ProcessStatus | "all">("all");
   const [query, setQuery] = useState("");
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
   const [liveHistory, setLiveHistory] = useState<UiProcessRun[] | null>(null);
   const [demoOpen, setDemoOpen] = useState(false);
   const [accessError, setAccessError] = useState<{ status: number; message: string } | null>(null);
+
+  const toggleExpanded = (key: string) =>
+    setExpandedKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
 
   // Re-localize when language changes.
   useEffect(() => { setItems(reliableCatalog); }, [reliableCatalog]);
@@ -188,7 +202,20 @@ export default function ProcessesPage() {
   const updateProcess = (key: string, patch: Partial<ProcessDefinition>) =>
     setItems((prev) => prev.map((p) => (p.key === key ? { ...p, ...patch } : p)));
 
+  const denyIfReadOnly = (): boolean => {
+    if (canManage) return false;
+    toast({
+      title: t("toast.read_only_title", { defaultValue: "Read-only access" }),
+      description: t("toast.read_only_desc", {
+        defaultValue: "Only the main administrator can run, pause, or configure processes.",
+      }),
+      variant: "destructive",
+    });
+    return true;
+  };
+
   const runNow = async (p: ProcessDefinition) => {
+    if (denyIfReadOnly()) return;
     updateProcess(p.key, { status: "running", lastRunAt: new Date().toISOString() });
     toast({ title: t("toast.started_title"), description: p.name });
     try {
@@ -212,6 +239,7 @@ export default function ProcessesPage() {
   };
 
   const togglePause = async (p: ProcessDefinition) => {
+    if (denyIfReadOnly()) return;
     const next = !p.isPaused;
     const prevPaused = p.isPaused;
     const prevStatus = p.status;
@@ -236,12 +264,20 @@ export default function ProcessesPage() {
   };
 
   const toggleEnabled = async (p: ProcessDefinition) => {
+    if (denyIfReadOnly()) return;
     const enabled = !p.isEnabled;
     const prevEnabled = p.isEnabled;
     const prevStatus = p.status;
     updateProcess(p.key, { isEnabled: enabled, status: enabled ? "idle" : "paused" });
     if (schedules.has(p.key)) {
-      try { await apiSetEnabled(p.key, enabled); } catch (e) {
+      try {
+        await apiSetEnabled(p.key, enabled);
+        await refreshSchedules();
+        toast({
+          title: enabled ? t("toast.resumed_title") : t("toast.paused_title"),
+          description: p.name,
+        });
+      } catch (e) {
         updateProcess(p.key, { isEnabled: prevEnabled, status: prevStatus });
         toast({ title: t("toast.could_not_update_title"), description: (e as Error).message, variant: "destructive" });
       }
@@ -264,6 +300,7 @@ export default function ProcessesPage() {
   };
 
   const stopRun = (p: ProcessDefinition) => {
+    if (denyIfReadOnly()) return;
     toast({
       title: t("toast.stop_not_supported_title"),
       description: t("toast.stop_not_supported_desc", { name: p.name }),
@@ -271,6 +308,7 @@ export default function ProcessesPage() {
   };
 
   const resetFailures = async (p: ProcessDefinition) => {
+    if (denyIfReadOnly()) return;
     if (schedules.has(p.key)) {
       try {
         await apiResetFailures(p.key);
@@ -285,6 +323,7 @@ export default function ProcessesPage() {
   };
 
   const saveInterval = async (p: ProcessDefinition, intervalMinutes: number) => {
+    if (denyIfReadOnly()) return;
     try {
       await upsertSchedule({ key: p.key, name: p.name, interval_minutes: intervalMinutes });
       await refreshSchedules();
@@ -344,6 +383,15 @@ export default function ProcessesPage() {
                 {t("title")}
               </CardTitle>
               <CardDescription className="mt-1">{t("description")}</CardDescription>
+              {!canManage && (
+                <div className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-[11px] font-medium text-amber-700 dark:text-amber-400">
+                  <AlertTriangle className="h-3 w-3" />
+                  {t("read_only_banner", {
+                    defaultValue:
+                      "Read-only — only the main administrator can run or configure processes.",
+                  })}
+                </div>
+              )}
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Metric label={t("metrics.running")} value={counts.running} tone="primary" />
@@ -425,6 +473,9 @@ export default function ProcessesPage() {
                     key={p.key}
                     t={t}
                     p={p}
+                    expanded={expandedKeys.has(p.key)}
+                    canManage={canManage}
+                    onToggleExpand={() => toggleExpanded(p.key)}
                     onOpen={() => setSelectedKey(p.key)}
                     onRun={() => runNow(p)}
                     onPause={() => togglePause(p)}
@@ -453,6 +504,7 @@ export default function ProcessesPage() {
               liveHistory={liveHistory}
               hasSchedule={schedules.has(selected.key)}
               stopEnabled={false}
+              canManage={canManage}
               onRun={() => runNow(selected)}
               onPause={() => togglePause(selected)}
               onStop={() => stopRun(selected)}
@@ -484,10 +536,13 @@ function Metric({ label, value, tone }: { label: string; value: number; tone: "p
 }
 
 function ProcessRow({
-  t, p, onOpen, onRun, onPause,
+  t, p, expanded, canManage, onToggleExpand, onOpen, onRun, onPause,
 }: {
   t: TFunction;
   p: ProcessDefinition;
+  expanded: boolean;
+  canManage: boolean;
+  onToggleExpand: () => void;
   onOpen: () => void;
   onRun: () => void;
   onPause: () => void;
@@ -496,61 +551,145 @@ function ProcessRow({
   const issue = p.status === "blocked" ? (p.blockReason || p.lastError)
               : p.status === "failed" ? (p.lastError || p.blockReason)
               : undefined;
+  const explanation = getProcessExplanation(p.key);
   return (
-    <div
-      className="grid grid-cols-12 items-start gap-2 px-4 py-3 hover:bg-muted/40 cursor-pointer transition-colors"
-      onClick={onOpen}
-    >
-      <div className="col-span-12 sm:col-span-5 min-w-0">
-        <div className="flex items-center gap-2">
-          <div className="font-medium text-sm truncate">{p.name}</div>
-          {!p.isEnabled && (
-            <Badge variant="outline" className="text-[10px] h-4">{t("status.disabled")}</Badge>
+    <div>
+      <div
+        className="grid grid-cols-12 items-start gap-2 px-4 py-3 hover:bg-muted/40 cursor-pointer transition-colors"
+        onClick={onOpen}
+      >
+        <div className="col-span-12 sm:col-span-5 min-w-0">
+          <div className="flex items-center gap-2">
+            <div className="font-medium text-sm truncate">{p.name}</div>
+            {!p.isEnabled && (
+              <Badge variant="outline" className="text-[10px] h-4">{t("status.disabled")}</Badge>
+            )}
+          </div>
+          <div className="text-xs text-muted-foreground truncate">
+            {p.module} · <span className="font-mono opacity-80">{p.key}</span>
+          </div>
+          {issue && (
+            <div className="mt-0.5 flex items-start gap-1 text-xs text-destructive">
+              <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
+              <span className="truncate" title={issue}>{issue}</span>
+            </div>
           )}
         </div>
-        <div className="text-xs text-muted-foreground truncate">
-          {p.module} · <span className="font-mono opacity-80">{p.key}</span>
+        <div className="hidden sm:flex sm:col-span-2 items-center gap-1.5 text-xs text-muted-foreground">
+          <Clock className="h-3 w-3" />
+          <span className="truncate">{p.scheduleHuman}</span>
         </div>
-        {/* Show the exact problem inline: a tooltip alone is unreachable on
-            touch devices and hides the one thing an operator needs to see. */}
-        {issue && (
-          <div className="mt-0.5 flex items-start gap-1 text-xs text-destructive">
-            <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
-            <span className="truncate" title={issue}>{issue}</span>
-          </div>
-        )}
+        <div className="hidden sm:block sm:col-span-2 text-xs text-muted-foreground">
+          <div>{t("row.last_prefix")} {fmtRelative(t, p.lastRunAt)}</div>
+          <div>{t("row.next_prefix")} {fmtRelative(t, p.nextRunAt)}</div>
+        </div>
+        <div className="col-span-6 sm:col-span-2">
+          <StatusPill t={t} status={p.status} reason={issue} />
+          {p.consecutiveFailures > 0 && (
+            <div className="mt-1 text-[10px] text-muted-foreground">
+              {t("labels.consecutive_failures")}: {p.consecutiveFailures}
+            </div>
+          )}
+        </div>
+        <div className="col-span-6 sm:col-span-1 flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7"
+            onClick={onRun}
+            disabled={!canManage}
+            title={canManage ? t("actions.run_now") : t("actions.run_now_locked", { defaultValue: "Only the main administrator can run processes" })}
+          >
+            <Play className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7"
+            onClick={onPause}
+            disabled={!canManage}
+            title={!canManage
+              ? t("actions.pause_locked", { defaultValue: "Only the main administrator can pause processes" })
+              : (p.isPaused ? t("actions.resume") : t("actions.pause"))}
+          >
+            {p.isPaused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
+          </Button>
+          {explanation && (
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7"
+              onClick={onToggleExpand}
+              aria-expanded={expanded}
+              aria-label={expanded ? t("actions.hide_details", { defaultValue: "Hide details" }) : t("actions.show_details", { defaultValue: "Show details" })}
+              title={expanded ? t("actions.hide_details", { defaultValue: "Hide details" }) : t("actions.show_details", { defaultValue: "Show details" })}
+            >
+              {expanded
+                ? <ChevronDown className="h-3.5 w-3.5" />
+                : <ChevronRight className="h-3.5 w-3.5" />}
+            </Button>
+          )}
+        </div>
       </div>
-      <div className="hidden sm:flex sm:col-span-2 items-center gap-1.5 text-xs text-muted-foreground">
-        <Clock className="h-3 w-3" />
-        <span className="truncate">{p.scheduleHuman}</span>
-      </div>
-      <div className="hidden sm:block sm:col-span-2 text-xs text-muted-foreground">
-        <div>{t("row.last_prefix")} {fmtRelative(t, p.lastRunAt)}</div>
-        <div>{t("row.next_prefix")} {fmtRelative(t, p.nextRunAt)}</div>
-      </div>
-      <div className="col-span-6 sm:col-span-2">
-        <StatusPill t={t} status={p.status} reason={issue} />
-        {p.consecutiveFailures > 0 && (
-          <div className="mt-1 text-[10px] text-muted-foreground">
-            {t("labels.consecutive_failures")}: {p.consecutiveFailures}
-          </div>
-        )}
-      </div>
-      <div className="col-span-6 sm:col-span-1 flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onRun} title={t("actions.run_now")}>
-          <Play className="h-3.5 w-3.5" />
-        </Button>
-        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onPause} title={p.isPaused ? t("actions.resume") : t("actions.pause")}>
-          {p.isPaused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
-        </Button>
-        <ChevronRight className="h-4 w-4 text-muted-foreground" />
-      </div>
+      {expanded && explanation && (
+        <div
+          className="grid gap-3 border-t bg-muted/30 px-4 py-3 sm:grid-cols-3"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <ExplainBlock
+            icon={<CalendarClock className="h-3.5 w-3.5" />}
+            title={t("explain.when_it_runs", { defaultValue: "When it runs" })}
+            body={<p className="text-xs text-muted-foreground">{explanation.whenItRuns}</p>}
+          />
+          <ExplainBlock
+            icon={<ArrowDownToLine className="h-3.5 w-3.5" />}
+            title={t("explain.inputs", { defaultValue: "Inputs" })}
+            body={
+              <ul className="space-y-1 text-xs text-muted-foreground">
+                {explanation.inputs.map((line, i) => (
+                  <li key={i} className="flex gap-1.5">
+                    <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-muted-foreground/60" />
+                    <span>{line}</span>
+                  </li>
+                ))}
+              </ul>
+            }
+          />
+          <ExplainBlock
+            icon={<ArrowUpFromLine className="h-3.5 w-3.5" />}
+            title={t("explain.outputs", { defaultValue: "Outputs" })}
+            body={
+              <ul className="space-y-1 text-xs text-muted-foreground">
+                {explanation.outputs.map((line, i) => (
+                  <li key={i} className="flex gap-1.5">
+                    <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-muted-foreground/60" />
+                    <span>{line}</span>
+                  </li>
+                ))}
+              </ul>
+            }
+          />
+        </div>
+      )}
     </div>
   );
 }
 
+function ExplainBlock({ icon, title, body }: { icon: React.ReactNode; title: string; body: React.ReactNode }) {
+  return (
+    <div className="rounded-md border bg-background p-2.5">
+      <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {icon}
+        {title}
+      </div>
+      {body}
+    </div>
+  );
+}
+
+
 function ProcessDrawer({
-  t, p, liveHistory, hasSchedule, stopEnabled,
+  t, p, liveHistory, hasSchedule, stopEnabled, canManage,
   onRun, onPause, onStop, onToggleEnabled, onResetFailures, onSaveInterval,
 }: {
   t: TFunction;
@@ -558,6 +697,7 @@ function ProcessDrawer({
   liveHistory: UiProcessRun[] | null;
   hasSchedule: boolean;
   stopEnabled: boolean;
+  canManage: boolean;
   onRun: () => void;
   onPause: () => void;
   onStop: () => void;
@@ -565,6 +705,9 @@ function ProcessDrawer({
   onResetFailures: () => void;
   onSaveInterval: (mins: number) => void;
 }) {
+  const lockedTitle = t("actions.locked_tooltip", {
+    defaultValue: "Only the main administrator can perform this action",
+  });
   const [intervalDraft, setIntervalDraft] = useState<number>(p.intervalMinutes ?? 60);
   const history = liveHistory ?? p.history;
   const wsLabel = t(`workspaces.${p.workspace}`, { defaultValue: WORKSPACE_LABELS[p.workspace] });
@@ -584,8 +727,10 @@ function ProcessDrawer({
       </SheetHeader>
 
       <div className="flex flex-wrap items-center gap-2 py-3">
-        <Button size="sm" onClick={onRun}><Play className="h-3.5 w-3.5 mr-1.5" />{t("actions.run_now")}</Button>
-        <Button size="sm" variant="outline" onClick={onPause}>
+        <Button size="sm" onClick={onRun} disabled={!canManage} title={canManage ? undefined : lockedTitle}>
+          <Play className="h-3.5 w-3.5 mr-1.5" />{t("actions.run_now")}
+        </Button>
+        <Button size="sm" variant="outline" onClick={onPause} disabled={!canManage} title={canManage ? undefined : lockedTitle}>
           {p.isPaused
             ? <><Play className="h-3.5 w-3.5 mr-1.5" />{t("actions.resume")}</>
             : <><Pause className="h-3.5 w-3.5 mr-1.5" />{t("actions.pause")}</>}
@@ -594,20 +739,20 @@ function ProcessDrawer({
           size="sm"
           variant="outline"
           onClick={onStop}
-          disabled={!stopEnabled}
-          title={t("stop_tooltip")}
+          disabled={!stopEnabled || !canManage}
+          title={canManage ? t("stop_tooltip") : lockedTitle}
         >
           <StopCircle className="h-3.5 w-3.5 mr-1.5" />{t("actions.stop")}
         </Button>
 
-        <Button size="sm" variant="ghost" onClick={onResetFailures} disabled={p.consecutiveFailures === 0}>
+        <Button size="sm" variant="ghost" onClick={onResetFailures} disabled={p.consecutiveFailures === 0 || !canManage} title={canManage ? undefined : lockedTitle}>
           {t("actions.reset_failures")}
         </Button>
         <div className="ml-auto flex items-center gap-2 text-xs">
           <span className="text-muted-foreground">
             {p.isEnabled ? t("labels.enabled") : t("labels.disabled")}
           </span>
-          <Switch checked={p.isEnabled} onCheckedChange={onToggleEnabled} />
+          <Switch checked={p.isEnabled} onCheckedChange={onToggleEnabled} disabled={!canManage} title={canManage ? undefined : lockedTitle} />
         </div>
       </div>
 
@@ -665,7 +810,8 @@ function ProcessDrawer({
               <Button
                 size="sm"
                 onClick={() => onSaveInterval(intervalDraft)}
-                disabled={intervalDraft === (p.intervalMinutes ?? 60)}
+                disabled={intervalDraft === (p.intervalMinutes ?? 60) || !canManage}
+                title={canManage ? undefined : lockedTitle}
               >
                 {t("actions.save")}
               </Button>

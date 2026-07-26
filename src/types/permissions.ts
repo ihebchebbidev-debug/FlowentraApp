@@ -25,7 +25,8 @@ export type PermissionModule =
   | 'purchases'
   | 'external_endpoints'
   | 'reporting_finance'
-  | 'reporting_hr';
+  | 'reporting_hr'
+  | 'processes';
 
 // CRUD + special actions
 export type PermissionAction = 
@@ -226,6 +227,13 @@ export const PERMISSION_MODULES: {
     label: 'Logs',
     description: 'View system audit logs and activity history',
     actions: ['read', 'delete'],
+    category: 'Administration'
+  },
+  {
+    module: 'processes',
+    label: 'Processes',
+    description: 'View background processes; only MainAdmin and roles with manage can run, pause, stop, or reconfigure them',
+    actions: ['read', 'manage'],
     category: 'Administration'
   },
   {
