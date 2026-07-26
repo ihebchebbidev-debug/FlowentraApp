@@ -61,6 +61,8 @@ import { salesApi } from "@/services/api/salesApi";
 import { checkDuplicateDocumentNumber } from "@/services/documentNumberValidator";
 import { CompanyBadge } from "@/components/CompanyBadge";
 import { TenantSelector } from "@/components/TenantSelector";
+import { usePermissions } from "@/hooks/usePermissions";
+
 
 
 export function SaleDetail() {
@@ -70,6 +72,9 @@ export function SaleDetail() {
   const { format: formatCurrency } = useCurrency();
   const { isMobile } = useLayoutModeContext();
   const workflowStatus = useWorkflowStatus();
+  const { canUpdate, canDelete, isMainAdmin } = usePermissions();
+  const canUpdateSale = isMainAdmin || canUpdate('sales');
+  const canDeleteSale = isMainAdmin || canDelete('sales');
   const [sale, setSale] = useState<Sale | null>(null);
   const [loading, setLoading] = useState(true);
   const [isStatusUpdating, setIsStatusUpdating] = useState(false);
@@ -257,12 +262,16 @@ export function SaleDetail() {
                   <FileDown className="h-4 w-4" />
                   {t('detail.downloadPdf')}
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleDeleteSale} className="gap-2 text-destructive">
-                  <Trash2 className="h-4 w-4" />
-                  {t('deleteSale')}
-                </DropdownMenuItem>
-                {hasServiceItems && (
+                {canDeleteSale && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleDeleteSale} className="gap-2 text-destructive">
+                      <Trash2 className="h-4 w-4" />
+                      {t('deleteSale')}
+                    </DropdownMenuItem>
+                  </>
+                )}
+                {hasServiceItems && canUpdateSale && (
                   <>
                     <DropdownMenuSeparator />
                     {!isAlreadyConverted ? (
@@ -426,14 +435,16 @@ export function SaleDetail() {
 
                         {/* Retenue à la Source (RS) + TEJ XML export are purchases-only — removed from sales. */}
 
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon-sm" onClick={handleDeleteSale} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="bottom">{t('delete')}</TooltipContent>
-                        </Tooltip>
+                        {canDeleteSale && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon-sm" onClick={handleDeleteSale} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom">{t('delete')}</TooltipContent>
+                          </Tooltip>
+                        )}
                       </div>
                     </TooltipProvider>
                   </div>
@@ -523,15 +534,17 @@ export function SaleDetail() {
                   >
                     {t('detail.skipServiceOrderShort', 'Skip')}
                   </Button>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={handleConvertToServiceOrder}
-                    className="gap-2"
-                  >
-                    <Wrench className="h-4 w-4" />
-                    {t('convertToServiceOrder')}
-                  </Button>
+                  {canUpdateSale && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={handleConvertToServiceOrder}
+                      className="gap-2"
+                    >
+                      <Wrench className="h-4 w-4" />
+                      {t('convertToServiceOrder')}
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <div className="flex items-center gap-2 shrink-0">

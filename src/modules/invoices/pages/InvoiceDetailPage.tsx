@@ -18,6 +18,7 @@ import { useCurrency } from '@/shared/hooks/useCurrency';
 import { PaymentsTab } from '@/modules/payments/components/PaymentsTab';
 import { InvoiceActivityTab } from '../components/tabs/InvoiceActivityTab';
 import { InvoiceDownloadPdfButton } from '../components/InvoiceDownloadPdfButton';
+import { usePermissions } from '@/hooks/usePermissions';
 
 const STATUS_COLOR: Record<string, string> = {
   draft: 'bg-muted text-muted-foreground',
@@ -34,6 +35,9 @@ export function InvoiceDetailPage() {
   const { format, current: currencyInfo } = useCurrency();
   const { data: invoice, isLoading } = useCustomerInvoice(invoiceId);
   const { post, void: voidMutation, remove, markPaid, reopen } = useInvoiceMutations();
+  const { canUpdate, canDelete, isMainAdmin } = usePermissions();
+  const canUpdateInvoice = isMainAdmin || canUpdate('sales');
+  const canDeleteInvoice = isMainAdmin || canDelete('sales');
 
   const [voidOpen, setVoidOpen] = useState(false);
   const [voidReason, setVoidReason] = useState('');
@@ -82,19 +86,19 @@ export function InvoiceDetailPage() {
             <span className="hidden sm:inline">{t('actions.print', 'Print / View PDF')}</span>
           </Button>
           <InvoiceDownloadPdfButton invoice={invoice} />
-          {invoice.status === 'draft' && (
+          {invoice.status === 'draft' && canUpdateInvoice && (
             <Button size="sm" className="gap-2 bg-primary text-white hover:bg-primary/90 shadow-medium" onClick={() => post.mutate(invoice.id)}>
               <Send className="h-4 w-4" />
               <span className="hidden sm:inline">{t('actions.post')}</span>
             </Button>
           )}
-          {(invoice.status === 'posted' || invoice.status === 'paid') && (
+          {(invoice.status === 'posted' || invoice.status === 'paid') && canDeleteInvoice && (
             <Button size="sm" variant="outline" className="gap-2" onClick={() => setVoidOpen(true)}>
               <Ban className="h-4 w-4" />
               <span className="hidden sm:inline">{t('actions.void')}</span>
             </Button>
           )}
-          {invoice.status === 'draft' && (
+          {invoice.status === 'draft' && canDeleteInvoice && (
             <Button size="sm" variant="outline" className="gap-2 text-destructive" onClick={() => setDeleteOpen(true)}>
               <Trash2 className="h-4 w-4" />
               <span className="hidden sm:inline">{t('actions.delete')}</span>
@@ -233,19 +237,19 @@ export function InvoiceDetailPage() {
             <TabsContent value="payments" className="mt-4 space-y-4">
               {(invoice.status === 'posted' || invoice.status === 'paid' || invoice.status === 'void') && (
                 <div className="flex flex-wrap gap-2 justify-end">
-                  {invoice.status === 'posted' && (
+                  {invoice.status === 'posted' && canUpdateInvoice && (
                     <Button size="sm" variant="outline" className="gap-2" onClick={() => setMarkPaidOpen(true)}>
                       <CheckCircle2 className="h-4 w-4" />
                       {t('actions.mark_paid')}
                     </Button>
                   )}
-                  {(invoice.status === 'paid' || invoice.status === 'void') && (
+                  {(invoice.status === 'paid' || invoice.status === 'void') && canUpdateInvoice && (
                     <Button size="sm" variant="outline" className="gap-2" onClick={() => setReopenOpen(true)}>
                       <RefreshCw className="h-4 w-4" />
                       {t('actions.reopen')}
                     </Button>
                   )}
-                  {(invoice.status === 'posted' || invoice.status === 'paid') && (
+                  {(invoice.status === 'posted' || invoice.status === 'paid') && canDeleteInvoice && (
                     <Button size="sm" variant="outline" className="gap-2 text-destructive" onClick={() => setVoidOpen(true)}>
                       <Ban className="h-4 w-4" />
                       {t('actions.void')}

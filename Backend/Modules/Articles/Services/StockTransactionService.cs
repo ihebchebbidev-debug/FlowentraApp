@@ -494,6 +494,29 @@ namespace MyApi.Modules.Articles.Services
                         Notes = $"Item: {item.ItemName}, Qty: {item.Quantity}"
                     }, userId, userName, ipAddress);
 
+                    // Fix #4: after the return, "reverse" the matching prior sale_deduction
+                    // rows by mutating their ReferenceId to a one-off suffix. Otherwise the
+                    // idempotency guard (partial unique index on
+                    // (tenant, article, ref_type, ref_id, txn_type)) would treat the next
+                    // close as a no-op — silently skipping stock deduction after a
+                    // reopen-and-edit-quantity cycle, while the sale reports success.
+                    var reversedTag = $"{saleId}:{item.Id}:reversed-{DateTime.UtcNow.Ticks}";
+                    var priorDeductions = await _context.Set<StockTransaction>()
+                        .Where(t => t.ArticleId == item.ArticleId.Value
+                                    && t.TransactionType == "sale_deduction"
+                                    && t.ReferenceType == "sale"
+                                    && t.ReferenceId == $"{saleId}:{item.Id}")
+                        .ToListAsync();
+                    foreach (var prior in priorDeductions)
+                    {
+                        prior.ReferenceId = reversedTag;
+                        prior.Notes = string.IsNullOrEmpty(prior.Notes)
+                            ? "Reversed by sale restore"
+                            : prior.Notes + " | Reversed by sale restore";
+                    }
+                    if (priorDeductions.Count > 0)
+                        await _context.SaveChangesAsync();
+
                     result.Transactions.Add(transaction);
                     result.ItemsRestored++;  // Fixed: was incorrectly named ItemsDeducted
                 }

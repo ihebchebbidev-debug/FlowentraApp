@@ -121,43 +121,84 @@ namespace MyApi.Modules.Invoices.Services
 
             var sale = await _context.Sales.FirstOrDefaultAsync(s => s.Id == dto.SaleId.Value && !s.IsDeleted);
             if (sale == null) throw new KeyNotFoundException($"Sale {dto.SaleId.Value} not found");
+            if (string.Equals(sale.Status, "cancelled", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException($"Sale {sale.Id} is cancelled and cannot be invoiced.");
             if (sale.ContactId != dto.ContactId)
                 throw new ArgumentException("ContactId does not match the sale's contact.");
 
-            var invoice = new Invoice
+            // Fix #7: wrap the over-invoicing guard + insert in a serializable transaction
+            // (same pattern as CreateDraftFromSaleAsync). Without this, two concurrent manual
+            // invoice creations against the same sale can both pass the guard before either
+            // commits, silently double-invoicing past the sale total.
+            Invoice invoice = null!;
+            var strategy = _context.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
             {
-                ContactId = dto.ContactId,
-                SaleId = dto.SaleId,
-                ServiceOrderId = dto.ServiceOrderId,
-                Title = dto.Title,
-                Notes = dto.Notes,
-                Currency = string.IsNullOrEmpty(dto.Currency) ? "TND" : dto.Currency!,
-                Status = "draft",
-                IssueDate = dto.IssueDate,
-                DueDate = dto.DueDate,
-                CreatedBy = userId,
-                CreatedAt = DateTime.UtcNow,
-                Lines = dto.Lines.Select((l, idx) => BuildLine(l, idx)).ToList(),
-            };
-            RecalculateTotals(invoice);
-
-            // Over-invoicing guard: the sum of a sale's live invoices may never
-            // exceed the order total.
-            var saleTotal = sale.GrandTotal > 0m ? sale.GrandTotal : sale.TotalAmount;
-            if (saleTotal > 0m)
-            {
-                var alreadyInvoiced = await GetInvoicedTotalForSaleAsync(sale.Id);
-                if (alreadyInvoiced + invoice.GrandTotal > saleTotal + 0.009m)
+                _context.ChangeTracker.Clear();
+                await using var tx = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+                try
                 {
-                    throw new InvalidOperationException(
-                        $"This invoice ({invoice.GrandTotal:0.##}) would take sale {sale.Id} to " +
-                        $"{alreadyInvoiced + invoice.GrandTotal:0.##} {invoice.Currency}, over its total of {saleTotal:0.##}. " +
-                        $"Remaining to invoice: {Math.Max(0m, saleTotal - alreadyInvoiced):0.##}.");
-                }
-            }
+                    // Fix #14: block re-billing a fiscal stamp already invoiced for this sale
+                    // on any live invoice (mirrors CreateDraftFromSaleAsync).
+                    var fiscalStampAlreadyBilled = await _context.Set<InvoiceLine>()
+                        .AnyAsync(l => l.SourceType == "fiscal_stamp"
+                                       && l.Invoice != null
+                                       && l.Invoice.SaleId == sale.Id
+                                       && l.Invoice.Status != "void"
+                                       && !l.Invoice.IsDeleted);
+                    if (fiscalStampAlreadyBilled &&
+                        dto.Lines.Any(l => string.Equals(l.SourceType, "fiscal_stamp", StringComparison.OrdinalIgnoreCase)))
+                    {
+                        throw new InvalidOperationException(
+                            $"Fiscal stamp is already billed on a prior invoice for sale {sale.Id}; remove the fiscal-stamp line.");
+                    }
 
-            _context.Add(invoice);
-            await _context.SaveChangesAsync();
+                    invoice = new Invoice
+                    {
+                        ContactId = dto.ContactId,
+                        SaleId = dto.SaleId,
+                        ServiceOrderId = dto.ServiceOrderId,
+                        Title = dto.Title,
+                        Notes = dto.Notes,
+                        // Currency always follows the parent sale (which itself was set from
+                        // the user's tenant preference at sale creation). Never fall back to
+                        // a hardcoded currency literal.
+                        Currency = !string.IsNullOrEmpty(dto.Currency) ? dto.Currency! : sale.Currency,
+                        Status = "draft",
+                        IssueDate = dto.IssueDate,
+                        DueDate = dto.DueDate,
+                        CreatedBy = userId,
+                        CreatedAt = DateTime.UtcNow,
+                        Lines = dto.Lines.Select((l, idx) => BuildLine(l, idx)).ToList(),
+                    };
+                    RecalculateTotals(invoice);
+
+                    // Over-invoicing guard, re-checked inside the serializable tx so a
+                    // concurrent draft cannot slip past before we commit.
+                    var saleTotal = sale.GrandTotal > 0m ? sale.GrandTotal : sale.TotalAmount;
+                    if (saleTotal > 0m)
+                    {
+                        var alreadyInvoiced = await GetInvoicedTotalForSaleAsync(sale.Id);
+                        if (alreadyInvoiced + invoice.GrandTotal > saleTotal + 0.009m)
+                        {
+                            throw new InvalidOperationException(
+                                $"This invoice ({invoice.GrandTotal:0.##}) would take sale {sale.Id} to " +
+                                $"{alreadyInvoiced + invoice.GrandTotal:0.##} {invoice.Currency}, over its total of {saleTotal:0.##}. " +
+                                $"Remaining to invoice: {Math.Max(0m, saleTotal - alreadyInvoiced):0.##}.");
+                        }
+                    }
+
+                    _context.Add(invoice);
+                    await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
+            });
+
             _logger.LogInformation("Invoice draft {Id} created for sale {SaleId} / contact {ContactId}",
                 invoice.Id, invoice.SaleId, invoice.ContactId);
             await LogActivityAsync(invoice.Id, "created", userId,
@@ -328,7 +369,9 @@ namespace MyApi.Modules.Invoices.Services
                         SaleId = sale.Id,
                         ServiceOrderId = serviceOrderId,
                         Title = sale.Title,
-                        Currency = string.IsNullOrEmpty(sale.Currency) ? "TND" : sale.Currency,
+                        // Currency always inherited from the parent sale (which itself came
+                        // from the user's tenant preference at creation). No hardcoded fallback.
+                        Currency = sale.Currency,
                         Status = "draft",
                         CreatedBy = userId,
                         CreatedAt = DateTime.UtcNow,
@@ -389,7 +432,9 @@ namespace MyApi.Modules.Invoices.Services
 
             invoice.Title = dto.Title ?? invoice.Title;
             invoice.Notes = dto.Notes ?? invoice.Notes;
-            if (!string.IsNullOrEmpty(dto.Currency)) invoice.Currency = dto.Currency!;
+            // Fix #15: currency is stamped at creation from the parent sale (which
+            // follows the tenant preference). It is intentionally immutable on the
+            // invoice so over-invoicing / payment math stays consistent.
             invoice.IssueDate = dto.IssueDate ?? invoice.IssueDate;
             invoice.DueDate = dto.DueDate ?? invoice.DueDate;
 
@@ -437,13 +482,21 @@ namespace MyApi.Modules.Invoices.Services
 
             if (string.IsNullOrEmpty(invoice.InvoiceNumber))
             {
-                string? number = null;
-                if (_numbering != null)
+                // Fix #13: posting an invoice with the wrong number breaks fiscal reporting.
+                // If the numbering service is unavailable, refuse to post — the user should
+                // retry rather than get a non-sequential fallback number silently persisted.
+                if (_numbering == null)
+                    throw new InvalidOperationException("Invoice numbering service is unavailable — cannot post right now. Please retry.");
+                string number;
+                try { number = await _numbering.GetNextAsync("Invoice"); }
+                catch (Exception ex)
                 {
-                    try { number = await _numbering.GetNextAsync("Invoice"); }
-                    catch (Exception ex) { _logger.LogWarning(ex, "Numbering failed for Invoice {Id}, falling back", id); }
+                    _logger.LogError(ex, "Invoice numbering failed for {Id}; refusing to post with a fallback number", id);
+                    throw new InvalidOperationException("Invoice numbering failed. Please retry — no fallback number was assigned.", ex);
                 }
-                invoice.InvoiceNumber = number ?? $"INV-{DateTime.UtcNow:yyyyMMdd}-{id:D5}";
+                if (string.IsNullOrWhiteSpace(number))
+                    throw new InvalidOperationException("Invoice numbering returned an empty value. Please retry.");
+                invoice.InvoiceNumber = number;
             }
 
             invoice.Status = "posted";
@@ -478,8 +531,24 @@ namespace MyApi.Modules.Invoices.Services
             if (invoice.Status == "draft")
                 throw new InvalidOperationException("Delete drafts instead of voiding them.");
 
+            // Fix #2: never void an invoice that still has money attached. Either the
+            // manual "mark paid" flag or real completed Payment rows would leave the
+            // ledger showing a paid, voided invoice. Force the operator to reverse
+            // payments first (delete the Payment records) then void.
+            var idStr = invoice.Id.ToString();
+            var completedPayments = await _context.Set<MyApi.Modules.Payments.Models.Payment>()
+                .Where(p => p.EntityType == "invoice" && p.EntityId == idStr && p.Status == "completed")
+                .SumAsync(p => (decimal?)p.Amount) ?? 0m;
+            if (completedPayments > 0m || invoice.AmountPaid > 0m)
+            {
+                throw new InvalidOperationException(
+                    $"Invoice {InvoiceLabel(invoice)} has {Math.Max(completedPayments, invoice.AmountPaid):0.##} {invoice.Currency} in recorded payments. " +
+                    "Delete/refund those payments before voiding.");
+            }
+
             var prevStatus = invoice.Status;
             invoice.Status = "void";
+            invoice.AmountPaid = 0m;
             invoice.VoidedAt = DateTime.UtcNow;
             invoice.VoidReason = dto.Reason!.Trim();
             invoice.UpdatedAt = DateTime.UtcNow;
@@ -509,19 +578,53 @@ namespace MyApi.Modules.Invoices.Services
                 throw new InvalidOperationException($"Invoice {id} is '{invoice.Status}'; only posted invoices can be marked as paid.");
 
             var prevStatus = invoice.Status;
+            var memo = dto.Memo!.Trim();
+
+            // Fix #1: without a backing Payment row the next call to
+            // RecalculatePaymentStateAsync (triggered by any other payment event)
+            // would recompute AmountPaid = SUM(Payments) = 0 and silently revert
+            // the invoice back to "posted". Insert a Payment row for the exact
+            // outstanding balance so the two views of the world stay consistent.
+            var idStr = invoice.Id.ToString();
+            var alreadyPaid = await _context.Set<MyApi.Modules.Payments.Models.Payment>()
+                .Where(p => p.EntityType == "invoice" && p.EntityId == idStr && p.Status == "completed")
+                .SumAsync(p => (decimal?)p.Amount) ?? 0m;
+            var outstanding = Round2(invoice.GrandTotal - alreadyPaid);
+            if (outstanding > 0m)
+            {
+                var count = await _context.Set<MyApi.Modules.Payments.Models.Payment>()
+                    .CountAsync(p => p.EntityType == "invoice" && p.EntityId == idStr);
+                var receiptNumber = $"REC-INV-{invoice.Id}-{(count + 1):D3}";
+                _context.Add(new MyApi.Modules.Payments.Models.Payment
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    EntityType = "invoice",
+                    EntityId = idStr,
+                    Amount = outstanding,
+                    Currency = invoice.Currency,
+                    PaymentMethod = "manual",
+                    PaymentDate = DateTime.UtcNow,
+                    Status = "completed",
+                    Notes = $"Manual mark-paid: {memo}",
+                    ReceiptNumber = receiptNumber,
+                    CreatedBy = userId,
+                    CreatedByName = userId,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                });
+            }
+
             invoice.Status = "paid";
-            // Manually marking paid means the full balance was settled — keep
-            // AmountPaid consistent so "due" never shows a phantom balance.
-            if (invoice.AmountPaid < invoice.GrandTotal) invoice.AmountPaid = invoice.GrandTotal;
+            invoice.AmountPaid = invoice.GrandTotal;
             invoice.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
             _logger.LogInformation("Invoice {Id} manually marked paid by {User}", invoice.Id, userId);
             await LogActivityAsync(invoice.Id, "manual_marked_paid", userId,
-                description: $"Invoice manually marked as paid. Memo: {dto.Memo!.Trim()}",
+                description: $"Invoice manually marked as paid ({outstanding:0.##} {invoice.Currency} recorded as a manual payment). Memo: {memo}",
                 oldValue: prevStatus,
                 newValue: "paid");
             await LogSaleActivityAsync(invoice.SaleId, "invoice_marked_paid", userId,
-                $"Invoice {InvoiceLabel(invoice)} marked as paid. Memo: {dto.Memo!.Trim()}");
+                $"Invoice {InvoiceLabel(invoice)} marked as paid. Memo: {memo}");
             return await EnrichAsync(invoice);
         }
 
@@ -576,42 +679,77 @@ namespace MyApi.Modules.Invoices.Services
 
         public async Task RecalculatePaymentStateAsync(int invoiceId)
         {
-            var invoice = await _context.Set<Invoice>().FirstOrDefaultAsync(i => i.Id == invoiceId);
-            if (invoice == null) return;
+            // Fix #5: wrap the read-then-write in a transaction with row-level lock on
+            // the invoice so two concurrent payment events (e.g. webhook + manual entry)
+            // can't interleave and clobber each other's AmountPaid / Status writes.
+            string prevStatus = string.Empty;
+            string newStatus = string.Empty;
+            decimal paid = 0m;
+            decimal grandTotal = 0m;
+            string currency = string.Empty;
+            int? saleId = null;
+            string label = string.Empty;
 
-            // Sum completed payments recorded against this invoice via the Payments module.
-            // EntityId is stored as string in Payments; match by string form.
-            var idStr = invoice.Id.ToString();
-            var paid = await _context.Set<MyApi.Modules.Payments.Models.Payment>()
-                .Where(p => p.EntityType == "invoice" && p.EntityId == idStr && p.Status == "completed")
-                .SumAsync(p => (decimal?)p.Amount) ?? 0m;
-
-            var prevStatus = invoice.Status;
-            invoice.AmountPaid = paid;
-
-            if (invoice.Status == "posted" && paid >= invoice.GrandTotal && invoice.GrandTotal > 0m)
-                invoice.Status = "paid";
-            else if (invoice.Status == "paid" && paid < invoice.GrandTotal)
-                invoice.Status = "posted";
-
-            invoice.UpdatedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
-
-            if (prevStatus != invoice.Status)
+            var strategy = _context.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
             {
-                var type = invoice.Status == "paid" ? "auto_marked_paid" : "auto_reopened";
-                await LogActivityAsync(invoice.Id, type, "system",
-                    description: invoice.Status == "paid"
-                        ? $"Fully paid ({paid:0.##} {invoice.Currency}) — status advanced from posted to paid."
-                        : $"Payment reversed — status returned to posted (paid {paid:0.##} of {invoice.GrandTotal:0.##} {invoice.Currency}).",
+                await using var tx = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    // FOR UPDATE lock on the invoice row serialises concurrent recalcs.
+                    var tenantId = _context.GetTenantId();
+                    var invoice = await _context.Set<Invoice>()
+                        .FromSqlRaw("SELECT * FROM \"Invoices\" WHERE \"Id\" = {0} AND \"TenantId\" = {1} FOR UPDATE", invoiceId, tenantId)
+                        .FirstOrDefaultAsync();
+                    if (invoice == null) { await tx.RollbackAsync(); return; }
+
+                    var idStr = invoice.Id.ToString();
+                    paid = await _context.Set<MyApi.Modules.Payments.Models.Payment>()
+                        .Where(p => p.EntityType == "invoice" && p.EntityId == idStr && p.Status == "completed")
+                        .SumAsync(p => (decimal?)p.Amount) ?? 0m;
+
+                    prevStatus = invoice.Status;
+                    invoice.AmountPaid = paid;
+
+                    // Fix #12: drop the "> 0m" guard so a legitimately zero-total posted
+                    // invoice (all lines discounted to nothing) can auto-transition to paid.
+                    if (invoice.Status == "posted" && paid >= invoice.GrandTotal)
+                        invoice.Status = "paid";
+                    else if (invoice.Status == "paid" && paid < invoice.GrandTotal)
+                        invoice.Status = "posted";
+
+                    invoice.UpdatedAt = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
+
+                    newStatus = invoice.Status;
+                    grandTotal = invoice.GrandTotal;
+                    currency = invoice.Currency;
+                    saleId = invoice.SaleId;
+                    label = InvoiceLabel(invoice);
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
+            });
+
+            if (!string.IsNullOrEmpty(prevStatus) && prevStatus != newStatus)
+            {
+                var type = newStatus == "paid" ? "auto_marked_paid" : "auto_reopened";
+                await LogActivityAsync(invoiceId, type, "system",
+                    description: newStatus == "paid"
+                        ? $"Fully paid ({paid:0.##} {currency}) — status advanced from posted to paid."
+                        : $"Payment reversed — status returned to posted (paid {paid:0.##} of {grandTotal:0.##} {currency}).",
                     oldValue: prevStatus,
-                    newValue: invoice.Status);
-                await LogSaleActivityAsync(invoice.SaleId,
-                    invoice.Status == "paid" ? "invoice_auto_marked_paid" : "invoice_auto_reopened",
+                    newValue: newStatus);
+                await LogSaleActivityAsync(saleId,
+                    newStatus == "paid" ? "invoice_auto_marked_paid" : "invoice_auto_reopened",
                     "system",
-                    invoice.Status == "paid"
-                        ? $"Invoice {InvoiceLabel(invoice)} fully paid ({paid:0.##} {invoice.Currency})."
-                        : $"Invoice {InvoiceLabel(invoice)} payment reversed — back to posted ({paid:0.##} / {invoice.GrandTotal:0.##} {invoice.Currency}).");
+                    newStatus == "paid"
+                        ? $"Invoice {label} fully paid ({paid:0.##} {currency})."
+                        : $"Invoice {label} payment reversed — back to posted ({paid:0.##} / {grandTotal:0.##} {currency}).");
             }
         }
 
@@ -773,12 +911,36 @@ namespace MyApi.Modules.Invoices.Services
                 else next = "partially_invoiced";
 
                 var statusChanged = !string.Equals(next, sale.Status, StringComparison.OrdinalIgnoreCase);
+                var prevSaleStatus = sale.Status;
                 if (statusChanged)
                 {
                     sale.Status = next;
                 }
                 sale.UpdatedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
+
+                // Fix #9: log the automatic sale-status transition so the sale's
+                // activity feed explains why it flipped in/out of invoiced states,
+                // instead of the change appearing out of nowhere.
+                if (statusChanged)
+                {
+                    try
+                    {
+                        _context.Add(new MyApi.Modules.Sales.Models.SaleActivity
+                        {
+                            SaleId = sale.Id,
+                            Type = "invoice_sync_status_changed",
+                            Description = $"Sale status auto-updated from '{prevSaleStatus}' to '{next}' (invoiced {invoiced:0.##} of {saleTotal:0.##}).",
+                            CreatedAt = DateTime.UtcNow,
+                            CreatedByName = "system",
+                        });
+                        await _context.SaveChangesAsync();
+                    }
+                    catch (Exception logEx)
+                    {
+                        _logger.LogWarning(logEx, "Failed to log invoice_sync_status_changed on sale {SaleId}", sale.Id);
+                    }
+                }
 
                 // Cascade the sale's new status onto the Service Orders this sale
                 // actually bills: once the sale is fully invoiced the SO is closed

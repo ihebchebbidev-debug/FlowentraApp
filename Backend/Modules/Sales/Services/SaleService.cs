@@ -171,10 +171,19 @@ namespace MyApi.Modules.Sales.Services
                 Description = createDto.Description,
                 ContactId = createDto.ContactId,
                 ProjectId = createDto.ProjectId,
-                Status = createDto.Status ?? "won",
-                Stage = createDto.Stage ?? "closed",
+                // Fix #8: default to the documented workflow start ('created'). Defaulting
+                // to 'won' silently short-circuited the pipeline for integration callers
+                // that don't send a status, AND bypassed stock deduction which only runs
+                // in UpdateSaleAsync's closing branch.
+                Status = createDto.Status ?? "created",
+                Stage = createDto.Stage ?? "new",
                 Priority = createDto.Priority,
-                Currency = createDto.Currency ?? "TND",
+                // Currency always comes from the caller (tenant preference on the FE).
+                // No hardcoded literal here; if truly missing we fail fast so the FE
+                // is fixed rather than silently persisting an incorrect currency.
+                Currency = !string.IsNullOrWhiteSpace(createDto.Currency)
+                    ? createDto.Currency!
+                    : throw new ArgumentException("Currency is required (comes from the user's preferences)."),
                 EstimatedCloseDate = createDto.EstimatedCloseDate,
                 ActualCloseDate = createDto.ActualCloseDate,
                 BillingAddress = createDto.BillingAddress,

@@ -26,6 +26,7 @@ import { useCurrency } from '@/shared/hooks/useCurrency';
 import { CreateInvoiceGlobalDialog } from '../components/CreateInvoiceGlobalDialog';
 import { InvoicesAutopilotDemo } from '../components/onboarding/InvoicesAutopilotDemo';
 import { getInitialViewMode } from '@/hooks/getInitialViewMode';
+import { usePermissions } from '@/hooks/usePermissions';
 
 type StatusFilter = InvoiceStatus | 'all' | 'overdue';
 const STATUS_TABS: StatusFilter[] = ['all', 'draft', 'posted', 'paid', 'overdue', 'void'];
@@ -43,6 +44,9 @@ export function InvoicesPage() {
   const { format } = useCurrency();
   const navigate = useNavigate();
   const { remove } = useInvoiceMutations();
+  const { canCreate, canDelete, isMainAdmin } = usePermissions();
+  const canCreateInvoice = isMainAdmin || canCreate('sales');
+  const canDeleteInvoice = isMainAdmin || canDelete('sales');
 
   const [viewMode, setViewMode] = useState<'list' | 'table'>(
     () => getInitialViewMode(['list', 'table'] as const, 'table'),
@@ -122,7 +126,7 @@ export function InvoicesPage() {
   const rowActions = (inv: any) => [
     { icon: Eye, label: t('actions.view', 'View'), onClick: (e: any) => { e.stopPropagation(); navigate(`/dashboard/invoices/${inv.id}`); } },
     ...(inv.saleId ? [{ icon: ExternalLink, label: t('actions.open_sale'), onClick: (e: any) => { e.stopPropagation(); navigate(`/dashboard/sales/${inv.saleId}`); } }] : []),
-    ...(inv.status === 'draft' ? [{ icon: Trash2, label: t('actions.delete'), variant: 'destructive' as const, onClick: (e: any) => { e.stopPropagation(); remove.mutate(inv.id); } }] : []),
+    ...(inv.status === 'draft' && canDeleteInvoice ? [{ icon: Trash2, label: t('actions.delete'), variant: 'destructive' as const, onClick: (e: any) => { e.stopPropagation(); remove.mutate(inv.id); } }] : []),
   ];
 
   return (
@@ -138,13 +142,15 @@ export function InvoicesPage() {
             <p className="text-px-10 text-muted-foreground truncate">{t('page.subtitle')}</p>
           </div>
         </div>
-        <CreateActionButton
-          size="sm"
-          className="gradient-primary text-primary-foreground shadow-medium hover-lift flex-shrink-0"
-          onClick={() => setCreateOpen(true)}
-        >
-          <Plus className="h-4 w-4" />
-        </CreateActionButton>
+        {canCreateInvoice && (
+          <CreateActionButton
+            size="sm"
+            className="gradient-primary text-primary-foreground shadow-medium hover-lift flex-shrink-0"
+            onClick={() => setCreateOpen(true)}
+          >
+            <Plus className="h-4 w-4" />
+          </CreateActionButton>
+        )}
       </div>
 
       {/* Desktop Header */}
@@ -162,13 +168,15 @@ export function InvoicesPage() {
           <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="hidden sm:inline-flex gap-1.5">
             <Play className="h-3.5 w-3.5" /> {t('watchDemo', 'Watch Demo')}
           </Button>
-          <CreateActionButton
-            className="bg-primary text-white hover:bg-primary/90 shadow-medium hover-lift"
-            onClick={() => setCreateOpen(true)}
-          >
-            <Plus className="h-4 w-4 text-white mr-2" />
-            {t('actions.new_from_sale')}
-          </CreateActionButton>
+          {canCreateInvoice && (
+            <CreateActionButton
+              className="bg-primary text-white hover:bg-primary/90 shadow-medium hover-lift"
+              onClick={() => setCreateOpen(true)}
+            >
+              <Plus className="h-4 w-4 text-white mr-2" />
+              {t('actions.new_from_sale')}
+            </CreateActionButton>
+          )}
         </div>
       </div>
 

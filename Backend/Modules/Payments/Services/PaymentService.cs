@@ -36,6 +36,37 @@ namespace MyApi.Modules.Payments.Services
 
         public async Task<PaymentDto> CreatePaymentAsync(string entityType, string entityId, CreatePaymentDto dto, string userId, string userName)
         {
+            if (dto.Amount <= 0m)
+                throw new ArgumentException("Payment amount must be greater than zero.");
+
+            // Fix #6: reject payments that would push AmountPaid past GrandTotal
+            // on an invoice. Without this guard AmountPaid silently exceeds the
+            // grand total, the invoice flips to "paid" but the customer ledger
+            // shows a negative "due" and no refund workflow is triggered.
+            if (entityType == "invoice" && int.TryParse(entityId, out var invoiceIdParsed))
+            {
+                var invoice = await _context.Invoices
+                    .FirstOrDefaultAsync(i => i.Id == invoiceIdParsed && !i.IsDeleted);
+                if (invoice == null)
+                    throw new KeyNotFoundException($"Invoice {invoiceIdParsed} not found");
+                if (invoice.Status == "void")
+                    throw new InvalidOperationException($"Invoice {invoiceIdParsed} is voided — cannot record payments.");
+                if (invoice.Status == "draft")
+                    throw new InvalidOperationException($"Invoice {invoiceIdParsed} is a draft — post it before recording payments.");
+
+                var idStr = invoice.Id.ToString();
+                var alreadyPaid = await _context.Payments
+                    .Where(p => p.EntityType == "invoice" && p.EntityId == idStr && p.Status == "completed")
+                    .SumAsync(p => (decimal?)p.Amount) ?? 0m;
+                var remaining = invoice.GrandTotal - alreadyPaid;
+                if (dto.Amount > remaining + 0.009m)
+                {
+                    throw new InvalidOperationException(
+                        $"Payment of {dto.Amount:0.##} {dto.Currency} exceeds the outstanding balance " +
+                        $"({Math.Max(0m, remaining):0.##} {invoice.Currency}). Enter the remaining amount or issue a credit/refund instead.");
+                }
+            }
+
             // Generate receipt number
             var count = await _context.Payments
                 .CountAsync(p => p.EntityType == entityType && p.EntityId == entityId);
