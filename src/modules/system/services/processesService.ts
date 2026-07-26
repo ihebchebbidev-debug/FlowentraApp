@@ -109,11 +109,63 @@ export class ProcessesApiError extends Error {
 function unwrap<T>(res: { data: T | null; error?: string; status: number }): T {
   if (res.error) throw new ProcessesApiError(res.status, res.error);
   if (res.data == null) throw new ProcessesApiError(res.status, `Empty response (HTTP ${res.status})`);
+  // The shared api client can short-circuit a mutation into the offline sync
+  // queue and hand back a synthetic { queued: true } envelope with HTTP 202.
+  // Processes are live server-side jobs — a queued "Run now" never executes and
+  // nothing persists, which looked exactly like a silent success in the UI.
+  // Treat any queued/synthetic envelope as a hard error instead.
+  const envelope = res.data as unknown as { queued?: boolean; offline?: boolean; skippedOffline?: boolean };
+  if (envelope && typeof envelope === "object" && (envelope.queued || envelope.offline || envelope.skippedOffline)) {
+    throw new ProcessesApiError(
+      503,
+      "You appear to be offline. Background processes run on the server and cannot be queued — reconnect and try again."
+    );
+  }
   return res.data;
 }
 
-export async function listSchedules(): Promise<Map<string, ProcessSchedule>> {
-  const rows = unwrap(await apiFetch<ProcessSchedule[]>("/api/processes/schedules"));
+/**
+ * Every Processes request must hit the real server.
+ *
+ * The shared api client otherwise (a) queues mutations into the offline sync
+ * engine and (b) can answer GETs from the hydration cache. Both make this page
+ * lie: "Run now" reports started but nothing ever runs, and a reload shows a
+ * cached snapshot, so no change appears to persist. These headers opt the whole
+ * module out of both layers.
+ */
+function processesFetch<T>(endpoint: string, options: RequestInit = {}) {
+  return apiFetch<T>(endpoint, {
+    ...options,
+    headers: {
+      ...(options.headers as Record<string, string> | undefined),
+      "X-Bypass-Offline-Queue": "true",
+      "X-Bypass-Hydration-Cache": "true",
+    },
+  });
+}
+
+/**
+ * Hard-refresh escape hatch. Even with the bypass headers, an intermediate
+ * proxy / service worker / browser heuristic cache can keep serving the same
+ * GET body. When the UI detects it is being fed stale data it retries with a
+ * unique query string plus explicit no-store headers, which no cache layer can
+ * satisfy from a stored response.
+ */
+function bust(endpoint: string, hard: boolean) {
+  if (!hard) return endpoint;
+  return `${endpoint}${endpoint.includes("?") ? "&" : "?"}_hr=${Date.now()}`;
+}
+
+function hardHeaders(hard: boolean): Record<string, string> {
+  return hard ? { "Cache-Control": "no-cache, no-store", Pragma: "no-cache" } : {};
+}
+
+export async function listSchedules(hard = false): Promise<Map<string, ProcessSchedule>> {
+  const rows = unwrap(
+    await processesFetch<ProcessSchedule[]>(bust("/api/processes/schedules", hard), {
+      headers: hardHeaders(hard),
+    })
+  );
   return new Map(rows.map((r) => [r.key, r]));
 }
 
@@ -138,7 +190,7 @@ export async function upsertSchedule(
   if (input.config !== undefined) body.config = input.config;
   if (input.timezone !== undefined) body.timezone = input.timezone;
   return unwrap(
-    await apiFetch<ProcessSchedule>("/api/processes/schedules", {
+    await processesFetch<ProcessSchedule>("/api/processes/schedules", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -148,7 +200,7 @@ export async function upsertSchedule(
 
 export async function setEnabled(key: string, enabled: boolean): Promise<void> {
   unwrap(
-    await apiFetch<ProcessSchedule>(
+    await processesFetch<ProcessSchedule>(
       `/api/processes/schedules/${encodeURIComponent(key)}/enable?enabled=${enabled}`,
       { method: "POST" }
     )
@@ -157,7 +209,7 @@ export async function setEnabled(key: string, enabled: boolean): Promise<void> {
 
 export async function setPaused(key: string, paused: boolean): Promise<void> {
   unwrap(
-    await apiFetch<ProcessSchedule>(
+    await processesFetch<ProcessSchedule>(
       `/api/processes/schedules/${encodeURIComponent(key)}/pause?paused=${paused}`,
       { method: "POST" }
     )
@@ -166,7 +218,7 @@ export async function setPaused(key: string, paused: boolean): Promise<void> {
 
 export async function resetFailures(key: string): Promise<ProcessSchedule> {
   return unwrap(
-    await apiFetch<ProcessSchedule>(
+    await processesFetch<ProcessSchedule>(
       `/api/processes/schedules/${encodeURIComponent(key)}/reset-failures`,
       { method: "POST" }
     )
@@ -180,7 +232,7 @@ export async function resetFailures(key: string): Promise<ProcessSchedule> {
  */
 export async function stopRun(key: string): Promise<boolean> {
   const res = unwrap(
-    await apiFetch<{ key: string; stopped: boolean }>(
+    await processesFetch<{ key: string; stopped: boolean }>(
       `/api/processes/schedules/${encodeURIComponent(key)}/stop`,
       { method: "POST" }
     )
@@ -191,19 +243,24 @@ export async function stopRun(key: string): Promise<boolean> {
 
 
 /** Keys whose most recent run is still in-flight. Used to show a live "running" pill. */
-export async function listRunningKeys(): Promise<Set<string>> {
+export async function listRunningKeys(hard = false): Promise<Set<string>> {
   try {
-    const rows = unwrap(await apiFetch<string[]>("/api/processes/running-keys"));
+    const rows = unwrap(
+      await processesFetch<string[]>(bust("/api/processes/running-keys", hard), {
+        headers: hardHeaders(hard),
+      })
+    );
     return new Set(rows);
   } catch {
     return new Set();
   }
 }
 
-export async function listRuns(key: string, limit = 20): Promise<ProcessRun[]> {
+export async function listRuns(key: string, limit = 20, hard = false): Promise<ProcessRun[]> {
   const rows = unwrap(
-    await apiFetch<ApiRun[]>(
-      `/api/processes/runs/${encodeURIComponent(key)}?limit=${limit}`
+    await processesFetch<ApiRun[]>(
+      bust(`/api/processes/runs/${encodeURIComponent(key)}?limit=${limit}`, hard),
+      { headers: hardHeaders(hard) }
     )
   );
   return rows.map(apiRunToUi);
@@ -213,13 +270,23 @@ export async function listRuns(key: string, limit = 20): Promise<ProcessRun[]> {
 export async function runNow(
   key: string
 ): Promise<{ status: string; duration_ms: number; error?: string; block_reason?: string; output?: unknown }> {
-  return unwrap(
-    await apiFetch("/api/processes/run", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key }),
-    })
+  const res = unwrap(
+    await processesFetch<{ status?: string; duration_ms?: number; error?: string; block_reason?: string; output?: unknown }>(
+      "/api/processes/run",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key }),
+      }
+    )
   );
+  // A real execution always reports a status. Anything else means the request
+  // never reached the handler (proxy/offline shim) — fail loudly rather than
+  // showing a success toast for a run that never happened.
+  if (!res || typeof res.status !== "string") {
+    throw new ProcessesApiError(502, "The server did not confirm the run — no execution result was returned.");
+  }
+  return { ...res, status: res.status, duration_ms: res.duration_ms ?? 0 };
 }
 
 function apiRunToUi(r: ApiRun): ProcessRun {

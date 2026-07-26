@@ -288,7 +288,18 @@ namespace MyApi.Modules.Processes.Controllers
             var s = await _db.Set<ProcessSchedule>().FirstOrDefaultAsync(x => x.Key == req.Key, ct);
             if (s == null)
             {
-                s = new ProcessSchedule { Key = req.Key, Name = req.Key, Enabled = true, Paused = false };
+                // A row created by "Run now" must also get a NextRunAt, otherwise it shows
+                // as Enabled in the UI while the scheduler's due-query (NextRunAt <= now)
+                // can never select it — the process would silently never run again on its
+                // own until an admin happens to save the schedule from the UI.
+                s = new ProcessSchedule
+                {
+                    Key = req.Key,
+                    Name = req.Key,
+                    Enabled = true,
+                    Paused = false,
+                };
+                s.NextRunAt = DateTime.UtcNow.AddMinutes(Math.Max(1, s.IntervalMinutes));
                 _db.Set<ProcessSchedule>().Add(s);
                 await _db.SaveChangesAsync(ct);
             }
@@ -296,6 +307,12 @@ namespace MyApi.Modules.Processes.Controllers
             // Manual triggers are always attempt=1 (they don't participate in the retry ladder;
             // if the handler fails, the operator sees the error and decides).
             var result = await ProcessSchedulerService.ExecuteOnceAsync(_db, s, handler, "manual", attempt: 1, ct, _running);
+            // Log every manual outcome so the server log mirrors the persisted run row.
+            if (string.Equals(result.Status, "success", StringComparison.OrdinalIgnoreCase))
+                _logger.LogInformation("⚙️  Manual run of '{Key}' succeeded in {Duration}ms", req.Key, result.DurationMs);
+            else
+                _logger.LogWarning("⚙️  Manual run of '{Key}' ended as '{Status}' in {Duration}ms: {Detail}",
+                    req.Key, result.Status, result.DurationMs, result.Error ?? result.BlockReason ?? "no detail");
             return Ok(result);
         }
 

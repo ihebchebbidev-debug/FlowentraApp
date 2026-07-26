@@ -129,9 +129,28 @@ namespace MyApi.Modules.Processes.Services
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var registry = scope.ServiceProvider.GetRequiredService<ProcessHandlerRegistry>();
 
+            // Adding a process means touching two independent lists: the DI handler
+            // registration and BuiltInSchedules below. Forgetting the seed entry used to
+            // fail silently (the process simply never self-scheduled), so warn loudly
+            // about any drift between the two at boot.
+            var seededKeys = BuiltInSchedules.Select(b => b.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            foreach (var handlerKey in registry.Keys)
+            {
+                if (!seededKeys.Contains(handlerKey))
+                    _logger.LogWarning(
+                        "⚙️  Process handler '{Key}' is registered but has no BuiltInSchedules entry — it will never run automatically until an admin saves a schedule for it",
+                        handlerKey);
+            }
+
             foreach (var (key, name, interval) in BuiltInSchedules)
             {
-                if (!registry.TryGet(key, out _)) continue; // handler not registered → skip
+                if (!registry.TryGet(key, out _))
+                {
+                    _logger.LogWarning(
+                        "⚙️  Built-in schedule '{Key}' has no registered handler — skipping seed", key);
+                    continue;
+                }
+
 
                 var existing = await db.Set<ProcessSchedule>().FirstOrDefaultAsync(s => s.Key == key, ct);
                 if (existing == null)
@@ -178,10 +197,29 @@ namespace MyApi.Modules.Processes.Services
                 if (!registry.TryGet(s.Key, out _))
                 {
                     s.LastStatus = "blocked";
+                    s.LastRunAt = now;
                     s.BlockReason = "No handler registered for this key";
                     s.NextRunAt = now.AddMinutes(Math.Max(1, s.IntervalMinutes));
                     s.UpdatedAt = now;
+                    // Audit it like any other outcome: without a run row the history
+                    // panel stays empty forever while the row shows "blocked", and the
+                    // operator has no timestamped trace of the missed slots.
+                    db.Set<ProcessRun>().Add(new ProcessRun
+                    {
+                        ProcessKey = s.Key,
+                        TriggeredBy = "schedule",
+                        Attempt = 1,
+                        Status = "blocked",
+                        StartedAt = now,
+                        FinishedAt = now,
+                        DurationMs = 0,
+                        ItemsProcessed = 0,
+                        BlockReason = "No handler registered for this key",
+                    });
                     await db.SaveChangesAsync(ct);
+                    _logger.LogWarning(
+                        "⚙️  Process '{Key}' is due but has no registered handler — skipping until {NextRun:o}",
+                        s.Key, s.NextRunAt);
                     continue;
                 }
                 runnable.Add(s);
@@ -215,7 +253,23 @@ namespace MyApi.Modules.Processes.Services
                         var scoped = await runDb.Set<ProcessSchedule>().FirstOrDefaultAsync(x => x.Id == s.Id, token);
                         if (scoped == null) return;
                         var attempt = Math.Max(1, scoped.ConsecutiveFailures + 1);
-                        await ExecuteOnceAsync(runDb, scoped, handler, "schedule", attempt, token, running);
+                        var result = await ExecuteOnceAsync(runDb, scoped, handler, "schedule", attempt, token, running);
+                        // Every scheduled outcome is logged, not just crashes, so
+                        // operators can trace successes/blocks in the server log
+                        // alongside the persisted ProcessRun row.
+                        if (string.Equals(result.Status, "success", StringComparison.OrdinalIgnoreCase))
+                        {
+                            _logger.LogInformation(
+                                "⚙️  Process '{Key}' succeeded in {Duration}ms (attempt {Attempt})",
+                                s.Key, result.DurationMs, attempt);
+                        }
+                        else
+                        {
+                            _logger.LogWarning(
+                                "⚙️  Process '{Key}' finished with status '{Status}' in {Duration}ms (attempt {Attempt}): {Detail}",
+                                s.Key, result.Status, result.DurationMs, attempt,
+                                result.Error ?? result.BlockReason ?? "no detail");
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -241,39 +295,74 @@ namespace MyApi.Modules.Processes.Services
             }
         }
 
-        private static async Task<bool> TryAcquireLockAsync(ApplicationDbContext db, long lockId, CancellationToken ct)
+        /// <summary>
+        /// A Postgres advisory lock held on its OWN dedicated connection.
+        ///
+        /// It must NOT ride on the EF DbContext connection: ApplicationDbContext is
+        /// configured with EnableRetryOnFailure, and EF's connection resiliency may
+        /// transparently reconnect on a transient error during SaveChangesAsync.
+        /// Advisory locks are *session*-scoped, so a silent reconnect would drop the
+        /// lock while this code still believes it holds it — defeating the "never run
+        /// the same handler twice at once" guarantee. A dedicated connection that we
+        /// open and close ourselves has a session lifetime we fully control.
+        /// </summary>
+        private sealed class AdvisoryLock : IAsyncDisposable
         {
-            var conn = db.Database.GetDbConnection();
-            if (conn.State != ConnectionState.Open) await conn.OpenAsync(ct);
-            await using var cmd = conn.CreateCommand();
-            cmd.CommandText = "SELECT pg_try_advisory_lock(@k)";
-            var p = cmd.CreateParameter(); p.ParameterName = "@k"; p.Value = lockId;
-            cmd.Parameters.Add(p);
-            var result = await cmd.ExecuteScalarAsync(ct);
-            return result is bool b && b;
+            private readonly Npgsql.NpgsqlConnection _conn;
+            private readonly long _lockId;
+
+            private AdvisoryLock(Npgsql.NpgsqlConnection conn, long lockId)
+            {
+                _conn = conn; _lockId = lockId;
+            }
+
+            /// <summary>Returns null when the lock is already held by someone else.</summary>
+            public static async Task<AdvisoryLock?> TryAcquireAsync(ApplicationDbContext db, long lockId, CancellationToken ct)
+            {
+                var connectionString = db.Database.GetConnectionString();
+                if (string.IsNullOrWhiteSpace(connectionString)) return null;
+
+                var conn = new Npgsql.NpgsqlConnection(connectionString);
+                try
+                {
+                    await conn.OpenAsync(ct);
+                    await using var cmd = conn.CreateCommand();
+                    cmd.CommandText = "SELECT pg_try_advisory_lock(@k)";
+                    cmd.Parameters.AddWithValue("@k", lockId);
+                    var result = await cmd.ExecuteScalarAsync(ct);
+                    if (result is bool b && b) return new AdvisoryLock(conn, lockId);
+                }
+                catch
+                {
+                    await conn.DisposeAsync();
+                    throw;
+                }
+
+                await conn.DisposeAsync();
+                return null;
+            }
+
+            public async ValueTask DisposeAsync()
+            {
+                try
+                {
+                    await using var cmd = _conn.CreateCommand();
+                    cmd.CommandText = "SELECT pg_advisory_unlock(@k)";
+                    cmd.Parameters.AddWithValue("@k", _lockId);
+                    await cmd.ExecuteScalarAsync();
+                }
+                catch
+                {
+                    // Unlock failed — closing the connection ends the session, which
+                    // releases every advisory lock it held anyway.
+                }
+                finally
+                {
+                    await _conn.DisposeAsync();
+                }
+            }
         }
 
-        private static async Task ReleaseLockAsync(ApplicationDbContext db, long lockId, CancellationToken ct)
-        {
-            var conn = db.Database.GetDbConnection();
-            try
-            {
-                if (conn.State != ConnectionState.Open) await conn.OpenAsync(ct);
-                await using var cmd = conn.CreateCommand();
-                cmd.CommandText = "SELECT pg_advisory_unlock(@k)";
-                var p = cmd.CreateParameter(); p.ParameterName = "@k"; p.Value = lockId;
-                cmd.Parameters.Add(p);
-                await cmd.ExecuteScalarAsync(ct);
-            }
-            catch
-            {
-                // Unlock failed. Advisory locks are session-scoped and Npgsql pools
-                // connections, so returning this connection to the pool would leak
-                // the lock and wedge every future run of this key. Force-close the
-                // physical connection so Npgsql discards it (session ends → lock released).
-                try { await conn.CloseAsync(); } catch { /* discarding anyway */ }
-            }
-        }
 
 
         /// <summary>
@@ -292,12 +381,39 @@ namespace MyApi.Modules.Processes.Services
             // Prevent duplicate execution across scheduler ticks, manual "Run now",
             // and multiple app instances all pointing at the same database.
             var lockId = AdvisoryLockKey(s.Key);
-            if (!await TryAcquireLockAsync(db, lockId, ct))
+            var advisoryLock = await AdvisoryLock.TryAcquireAsync(db, lockId, ct);
+            if (advisoryLock == null)
             {
+                // Contention is a real outcome, not a silent no-op: persist it so the
+                // history explains why a "Run now" click produced nothing, and log it.
+                var busyAt = DateTime.UtcNow;
+                const string busyReason = "Another execution of this process is already in progress";
+                try
+                {
+                    db.Set<ProcessRun>().Add(new ProcessRun
+                    {
+                        ProcessKey = s.Key,
+                        TriggeredBy = triggeredBy,
+                        Attempt = attempt,
+                        Status = "skipped",
+                        StartedAt = busyAt,
+                        FinishedAt = busyAt,
+                        DurationMs = 0,
+                        ItemsProcessed = 0,
+                        BlockReason = busyReason,
+                    });
+                    await db.SaveChangesAsync(ct);
+                }
+                catch (Exception auditEx)
+                {
+                    _logger.LogWarning(auditEx, "⚙️  Process '{Key}': failed to persist lock-contention audit row", s.Key);
+                }
+                _logger.LogWarning(
+                    "⚙️  Process '{Key}' skipped ({Trigger}): {Reason}", s.Key, triggeredBy, busyReason);
                 return new DTOs.RunNowResult
                 {
                     Status = "skipped",
-                    BlockReason = "Another execution of this process is already in progress",
+                    BlockReason = busyReason,
                 };
             }
 
@@ -365,17 +481,16 @@ namespace MyApi.Modules.Processes.Services
                 result.DurationMs = run.DurationMs ?? 0;
 
                 // Schedule state transition.
-                // Manual "Run now" is a diagnostic action — it must NOT mutate the
-                // schedule's cadence/last-status audit trail or retry ladder,
-                // otherwise clicking Run on a broken schedule flips LastStatus to
-                // "success" while BlockReason/ConsecutiveFailures still reflect the
-                // real failure state, producing an internally inconsistent row.
+                // "Last run" is a factual audit field: a manual run IS the most
+                // recent execution, so it is always recorded. Without this, a
+                // manual "Run now" left no trace on the row and the page looked
+                // unchanged after a reload, as if nothing had persisted.
+                // What manual runs still must NOT touch is the retry ladder
+                // (ConsecutiveFailures / NextRunAt / BlockReason) — those belong
+                // to the scheduled cadence.
                 var isManual = triggeredBy == "manual";
-                if (!isManual)
-                {
-                    s.LastRunAt = run.FinishedAt;
-                    s.LastStatus = result.Status;
-                }
+                s.LastRunAt = run.FinishedAt;
+                s.LastStatus = result.Status;
                 s.UpdatedAt = DateTime.UtcNow;
 
                 if (result.Status == "success" || result.Status == "skipped" || result.Status == "cancelled")
@@ -386,7 +501,14 @@ namespace MyApi.Modules.Processes.Services
                         // on purpose. Reset the ladder and reschedule normally so the
                         // process keeps running on its cadence.
                         s.ConsecutiveFailures = 0;
-                        s.BlockReason = null;
+                        // A "skipped" run can still carry a block signal (e.g. a purge
+                        // handler that hit a foreign-key constraint). Keep that reason on
+                        // the schedule row — the UI's diagnostics card reads block_reason
+                        // and would otherwise show a permanently green "Not blocked" for a
+                        // process that in fact never deletes anything.
+                        s.BlockReason = string.IsNullOrWhiteSpace(result.BlockReason)
+                            ? null
+                            : Truncate(result.BlockReason);
                         s.NextRunAt = DateTime.UtcNow.AddMinutes(Math.Max(1, s.IntervalMinutes));
                     }
                 }
@@ -479,7 +601,7 @@ namespace MyApi.Modules.Processes.Services
             }
             finally
             {
-                await ReleaseLockAsync(db, lockId, ct);
+                await advisoryLock.DisposeAsync();
             }
         }
 

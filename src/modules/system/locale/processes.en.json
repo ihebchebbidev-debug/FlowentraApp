@@ -82,7 +82,6 @@
   },
   "stop_tooltip": "Stop is advisory — pause the schedule to prevent further runs",
   "no_schedule_hint": "This process has no schedule row yet — enable it once from the drawer header to persist.",
-  "history_sample_hint": "Showing sample history — enable the schedule to record real runs.",
   "history_status": {
     "ok": "ok",
     "fail": "fail",
@@ -310,7 +309,9 @@
         "Invoices where DueDate<now and AmountPaid<GrandTotal",
         "Statuses considered: posted, sent, partial"
       ],
-      "outputs": ["Sets Status='overdue' and bumps UpdatedAt"]
+      "outputs": [
+        "Sets Status='overdue' and bumps UpdatedAt"
+      ]
     },
     "admin.offers-mark-expired": {
       "whenItRuns": "Every hour.",
@@ -318,7 +319,9 @@
         "Offers where ValidUntil<now and Status in (sent, pending)",
         "Drafts are excluded — an unsent offer cannot expire"
       ],
-      "outputs": ["Sets Status='expired' and bumps UpdatedAt"]
+      "outputs": [
+        "Sets Status='expired' and bumps UpdatedAt"
+      ]
     },
     "admin.dispatches-mark-missed": {
       "whenItRuns": "Every hour.",
@@ -327,7 +330,9 @@
         "Statuses considered: pending, scheduled, assigned",
         "Config: grace_hours (default 2, max 168)"
       ],
-      "outputs": ["Sets Status='missed' and bumps ModifiedDate"]
+      "outputs": [
+        "Sets Status='missed' and bumps ModifiedDate"
+      ]
     },
     "admin.payment-installments-mark-overdue": {
       "whenItRuns": "Every hour.",
@@ -335,7 +340,9 @@
         "PaymentPlanInstallments with DueDate<now",
         "Statuses considered: pending, partially_paid"
       ],
-      "outputs": ["Sets Status='overdue'"]
+      "outputs": [
+        "Sets Status='overdue'"
+      ]
     },
     "admin.support-tickets-autoclose-resolved": {
       "whenItRuns": "Every 6 hours.",
@@ -343,7 +350,9 @@
         "SupportTickets with Status=resolved and last activity older than days_resolved",
         "Config: days_resolved (default 7, max 365)"
       ],
-      "outputs": ["Sets Status='closed'"]
+      "outputs": [
+        "Sets Status='closed'"
+      ]
     },
     "admin.draft-offers-purge": {
       "whenItRuns": "Once every 24 hours.",
@@ -373,7 +382,9 @@
         "Notifications with IsRead=true older than age_days",
         "Config: age_days (default 30)"
       ],
-      "outputs": ["Hard-deletes matching notifications"]
+      "outputs": [
+        "Hard-deletes matching notifications"
+      ]
     },
     "admin.notifications-purge-stale-unread": {
       "whenItRuns": "Once every 24 hours.",
@@ -381,7 +392,9 @@
         "Notifications with IsRead=false older than age_days",
         "Config: age_days (default 180, min 30)"
       ],
-      "outputs": ["Hard-deletes long-ignored notifications"]
+      "outputs": [
+        "Hard-deletes long-ignored notifications"
+      ]
     },
     "admin.calendar-events-purge-past": {
       "whenItRuns": "Once every 24 hours.",
@@ -389,7 +402,9 @@
         "CalendarEvents whose End<now−age_days and Status in (completed, cancelled)",
         "Config: age_days (default 180, min 30)"
       ],
-      "outputs": ["Hard-deletes closed past events"]
+      "outputs": [
+        "Hard-deletes closed past events"
+      ]
     },
     "admin.sync-changes-purge": {
       "whenItRuns": "Once every 24 hours.",
@@ -397,7 +412,9 @@
         "SyncChanges rows with ChangedAt older than age_days",
         "Config: age_days (default 30)"
       ],
-      "outputs": ["Hard-deletes stale offline-sync deltas"]
+      "outputs": [
+        "Hard-deletes stale offline-sync deltas"
+      ]
     },
     "admin.sync-receipts-purge": {
       "whenItRuns": "Once every 24 hours.",
@@ -405,7 +422,9 @@
         "SyncOperationReceipts with CreatedAt older than age_days",
         "Config: age_days (default 30)"
       ],
-      "outputs": ["Hard-deletes stale sync receipts"]
+      "outputs": [
+        "Hard-deletes stale sync receipts"
+      ]
     },
     "admin.webhook-jobs-purge": {
       "whenItRuns": "Once every 24 hours.",
@@ -413,7 +432,9 @@
         "WebhookForwardJobs with Status in (completed, dead_letter) and CompletedAt older than age_days",
         "Config: age_days (default 30)"
       ],
-      "outputs": ["Hard-deletes finished webhook forward jobs"]
+      "outputs": [
+        "Hard-deletes finished webhook forward jobs"
+      ]
     },
     "admin.external-endpoint-logs-purge": {
       "whenItRuns": "Once every 24 hours.",
@@ -421,7 +442,9 @@
         "ExternalEndpoints (non-deleted) and their per-endpoint LogRetentionDays",
         "ExternalEndpointLogs older than each endpoint's retention"
       ],
-      "outputs": ["Hard-deletes matching logs endpoint by endpoint"]
+      "outputs": [
+        "Hard-deletes matching logs endpoint by endpoint"
+      ]
     },
     "admin.dispatch-audit-purge": {
       "whenItRuns": "Once every 24 hours.",
@@ -429,7 +452,9 @@
         "DispatchAuditLogs older than age_days",
         "Config: age_days (default 180, min 30)"
       ],
-      "outputs": ["Hard-deletes old audit rows"]
+      "outputs": [
+        "Hard-deletes old audit rows"
+      ]
     },
     "admin.hr-audit-purge": {
       "whenItRuns": "Once every 24 hours.",
@@ -437,7 +462,9 @@
         "HrAuditLogs older than age_days",
         "Config: age_days (default 365, min 90)"
       ],
-      "outputs": ["Hard-deletes old HR audit rows"]
+      "outputs": [
+        "Hard-deletes old HR audit rows"
+      ]
     },
     "admin.soft-deleted-purge": {
       "whenItRuns": "Once every 24 hours.",
@@ -456,12 +483,73 @@
         "RecurringTaskLogs with GeneratedDate older than age_days",
         "Config: age_days (default 180, min 30)"
       ],
-      "outputs": ["Hard-deletes old recurring-task generation history"]
+      "outputs": [
+        "Hard-deletes old recurring-task generation history"
+      ]
     }
   },
   "trigger": {
     "schedule": "schedule",
     "manual": "manual",
     "retry": "retry"
+  },
+  "errors": {
+    "check_violation": "Data validation failed (check constraint)",
+    "check_violation_hint_named": "A row violated the \"{{name}}\" rule. The allowed values or ranges for that column don't include what the process tried to write.",
+    "check_violation_hint": "A row violated a database check rule.",
+    "unique_violation": "Duplicate value not allowed",
+    "unique_violation_hint": "The process tried to insert a value that already exists in a unique column.",
+    "fk_violation": "Related record is missing",
+    "fk_violation_hint": "A foreign key points to a row that no longer exists.",
+    "not_null": "Required field is empty",
+    "not_null_hint": "A column that cannot be NULL was left empty.",
+    "undef_table": "Database table not found",
+    "undef_table_hint": "A migration may not have run. Restart the backend or check the schema.",
+    "undef_column": "Database column not found",
+    "undef_column_hint": "The code references a column that doesn't exist. A migration is likely out of sync.",
+    "serialization": "Concurrent update conflict",
+    "serialization_hint": "Two transactions touched the same rows. This usually retries automatically.",
+    "canceled": "Query canceled (timeout)",
+    "canceled_hint": "The database statement was aborted, likely due to a timeout.",
+    "conn_lost": "Database connection lost",
+    "conn_lost_hint": "The connection to Postgres dropped mid-query.",
+    "no_handler": "No backend handler registered",
+    "no_handler_hint": "The scheduler picked this process up but no handler is wired for its key.",
+    "op_canceled": "Operation canceled",
+    "op_canceled_hint": "The run was stopped — by an operator, a timeout, or a shutdown.",
+    "timeout": "Operation timed out",
+    "http": "HTTP {{code}} from downstream service",
+    "http_auth_hint": "Authentication or authorization failed.",
+    "http_404_hint": "The target resource wasn't found.",
+    "http_429_hint": "Rate limited by the downstream service.",
+    "http_5xx_hint": "Downstream service returned a server error.",
+    "constraint": "Constraint",
+    "attempts_made": "Attempts",
+    "show_raw": "Show technical details",
+    "hide_raw": "Hide technical details"
+  },
+  "block_details": {
+    "title_blocked": "Blocked — needs attention",
+    "title_failing": "Failing — will retry",
+    "handler": "Handler",
+    "handler_missing": "not registered on server",
+    "attempt": "Attempt",
+    "next_retry": "Next retry",
+    "status": "Status",
+    "retries_exhausted": "Retries exhausted — auto-run paused. Use “Reset failures” to re-arm.",
+    "since": "Since",
+    "consecutive_failures": "Consecutive failures"
+  },
+  "stale_banner": "Showing the last known state — the server didn't respond to the latest refresh.",
+  "history_empty": "No runs recorded yet. Use “Run now” to execute this process.",
+  "live": {
+    "updating": "Updating…",
+    "waiting": "Waiting for live data…",
+    "updated_ago_one": "updated {{count}}s ago",
+    "updated_ago_other": "updated {{count}}s ago",
+    "interval_fast": "live, every 3s",
+    "interval_normal": "live, every 10s",
+    "hard_refresh": "Hard refresh",
+    "stale_warning": "The server keeps returning the same data while this process is reported as running. The view may be cached — use Hard refresh to force live data."
   }
 }

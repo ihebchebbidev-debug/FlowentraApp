@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -356,7 +356,9 @@ export default function ProcessesPage() {
   // the "processes.manage" role permission here would show enabled controls that 403
   // on every action. Keep FE and BE in lockstep.
   const canManage = isMainAdmin;
-  const isLoading = false;
+  // True until the first schedule fetch settles. Without this the page painted
+  // the raw catalog (all idle / 100% success) as if it were live server data.
+  const [isLoading, setIsLoading] = useState(true);
 
 
   // Only surface processes that have a real, reliable backend handler.
@@ -373,8 +375,19 @@ export default function ProcessesPage() {
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
   const [liveHistory, setLiveHistory] = useState<UiProcessRun[] | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyRefreshing, setHistoryRefreshing] = useState(false);
+  const [historyUpdatedAt, setHistoryUpdatedAt] = useState<number | null>(null);
+  // Set when the drawer poll keeps receiving an identical payload while the
+  // process is reported in-flight — i.e. we are almost certainly reading a
+  // cached response rather than live state.
+  const [historyStale, setHistoryStale] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
   const [demoOpen, setDemoOpen] = useState(false);
   const [accessError, setAccessError] = useState<{ status: number; message: string } | null>(null);
+  // True when the latest poll failed for a non-auth reason: the rows on screen
+  // are the last good snapshot, not live data.
+  const [stale, setStale] = useState(false);
 
   const toggleExpanded = (key: string) =>
     setExpandedKeys((prev) => {
@@ -382,9 +395,6 @@ export default function ProcessesPage() {
       if (next.has(key)) next.delete(key); else next.add(key);
       return next;
     });
-
-  // Re-localize when language changes.
-  useEffect(() => { setItems(reliableCatalog); }, [reliableCatalog]);
 
   // Localised schedule text so the row never falls back to hardcoded English.
   const fmtSchedule = useMemo(
@@ -397,41 +407,72 @@ export default function ProcessesPage() {
     [t]
   );
 
-  const refreshSchedules = async () => {
+  // Last server snapshot, kept in refs so re-localizing never needs a refetch
+  // and never clobbers live state with raw catalog defaults.
+  const schedulesRef = useRef<Map<string, ProcessSchedule>>(new Map());
+  const runningRef = useRef<Set<string>>(new Set());
+
+  // Re-localize when language changes — re-apply the live overlay, don't reset
+  // to the bare catalog (that used to blank out status/errors for up to 15s).
+  useEffect(() => {
+    if (accessError) return;
+    setItems(reliableCatalog.map((p) => overlay(p, schedulesRef.current.get(p.key), runningRef.current, fmtSchedule)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reliableCatalog]);
+
+  const refreshSchedules = async (hard = false) => {
     try {
-      const [map, running] = await Promise.all([listSchedules(), listRunningKeys()]);
+      const [map, running] = await Promise.all([listSchedules(hard), listRunningKeys(hard)]);
+      schedulesRef.current = map;
+      runningRef.current = running;
       setSchedules(map);
       setItems(reliableCatalog.map((p) => overlay(p, map.get(p.key), running, fmtSchedule)));
       setAccessError(null);
+      setStale(false);
     } catch (e) {
       const err = e as ProcessesApiError;
       if (err?.status === 401 || err?.status === 403) {
         setAccessError({ status: err.status, message: err.message || "Access denied" });
         setSchedules(new Map());
         setItems([]);
+        setStale(false);
       } else {
+        // Keep showing the last good snapshot, but tell the operator it's stale.
+        setStale(true);
         console.warn("[processes] listSchedules failed:", (e as Error).message);
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  // Always call the newest closure from timers so polling never reads a stale
+  // catalog/formatter captured when the interval was created.
+  const refreshSchedulesRef = useRef(refreshSchedules);
+  refreshSchedulesRef.current = refreshSchedules;
+
+  // While the drawer is open the operator is watching one process live, so the
+  // list poll tightens from 15s to 5s; it relaxes again when the drawer closes.
+  const drawerOpen = selectedKey != null;
+
   useEffect(() => {
-    refreshSchedules();
-    // Poll every 15s, but only while the tab is visible — background tabs
-    // don't need live status and the request loop was firing regardless.
-    // Also re-fetch immediately when the tab becomes visible again so the
-    // operator never stares at stale data after switching back.
+    const tick = (hard = false) => void refreshSchedulesRef.current(hard);
+    tick();
+    // Poll only while the tab is visible — background tabs don't need live
+    // status and the request loop was firing regardless. Also re-fetch
+    // immediately when the tab becomes visible again so the operator never
+    // stares at stale data after switching back.
     let timer: number | null = null;
     const start = () => {
       if (timer != null) return;
-      timer = window.setInterval(refreshSchedules, 15_000);
+      timer = window.setInterval(() => tick(), drawerOpen ? 5_000 : 15_000);
     };
     const stop = () => {
       if (timer != null) { window.clearInterval(timer); timer = null; }
     };
     const onVisibility = () => {
       if (document.visibilityState === "visible") {
-        refreshSchedules();
+        tick();
         start();
       } else {
         stop();
@@ -444,7 +485,7 @@ export default function ProcessesPage() {
       stop();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [drawerOpen]);
 
 
   const counts = useMemo(() => ({
@@ -494,6 +535,7 @@ export default function ProcessesPage() {
 
   const runNow = async (p: ProcessDefinition) => {
     if (denyIfReadOnly()) return;
+    const prevStatus = p.status;
     updateProcess(p.key, { status: "running", lastRunAt: new Date().toISOString() });
     toast({ title: t("toast.started_title"), description: p.name });
     try {
@@ -508,11 +550,19 @@ export default function ProcessesPage() {
         variant: isSuccess || isSkipped ? "default" : "destructive",
       });
     } catch (e) {
+      // Revert the optimistic "running" pill — otherwise a failed request plus a
+      // failed refresh leaves the row spinning forever.
+      updateProcess(p.key, { status: prevStatus });
       toast({ title: t("toast.run_failed_title"), description: (e as Error).message, variant: "destructive" });
     }
     await refreshSchedules();
     if (selectedKey === p.key) {
-      try { setLiveHistory(await apiListRuns(p.key, 30)); } catch { /* ignore */ }
+      try {
+        setLiveHistory(await apiListRuns(p.key, 30));
+        setHistoryError(null);
+      } catch (e) {
+        setHistoryError((e as Error).message);
+      }
     }
   };
 
@@ -566,6 +616,9 @@ export default function ProcessesPage() {
       try {
         await upsertSchedule({
           key: p.key, name: p.name, enabled,
+          // Intent is unambiguous when enabling from the UI: don't inherit a
+          // server-side "paused" default that would leave the job never running.
+          paused: enabled ? false : undefined,
           interval_minutes: p.intervalMinutes ?? 60,
         });
         await refreshSchedules();
@@ -623,20 +676,128 @@ export default function ProcessesPage() {
     }
   };
 
+  // Imperative hard-refresh handle wired to the drawer's refresh button.
+  const hardRefreshRef = useRef<() => void>(() => {});
+
   useEffect(() => {
-    if (!selectedKey) { setLiveHistory(null); return; }
-    if (!REAL_HANDLER_KEYS.has(selectedKey) || !schedules.has(selectedKey)) {
+    setHistoryStale(false);
+    setHistoryUpdatedAt(null);
+    if (!selectedKey) {
       setLiveHistory(null);
+      setHistoryError(null);
+      setHistoryLoading(false);
+      setHistoryRefreshing(false);
+      hardRefreshRef.current = () => {};
       return;
     }
+    if (!REAL_HANDLER_KEYS.has(selectedKey)) {
+      // No backend handler exists for this key — there is nothing to fetch.
+      setLiveHistory([]);
+      setHistoryError(null);
+      setHistoryLoading(false);
+      setHistoryRefreshing(false);
+      hardRefreshRef.current = () => {};
+      return;
+    }
+    // NOTE: history is fetched even when no schedule row exists yet. Manual
+    // "Run now" writes run rows without creating a schedule, so gating on the
+    // schedule map hid real history behind an empty list.
     let cancelled = false;
-    apiListRuns(selectedKey, 30)
-      .then((rows) => { if (!cancelled) setLiveHistory(rows); })
-      .catch(() => { if (!cancelled) setLiveHistory(null); });
-    return () => { cancelled = true; };
-  }, [selectedKey, schedules]);
+    let timer: number | null = null;
+    let lastSignature: string | null = null;
+    let unchangedWhileRunning = 0;
 
-  if (isLoading) return null;
+    // Identity of the payload: if this string does not move while the process
+    // is reported in-flight, we are being served a cached response.
+    const signature = (rows: UiProcessRun[]) =>
+      rows.map((r) => `${r.id}:${r.status}:${r.finishedAt ?? ""}:${r.itemsProcessed}`).join("|");
+
+    const isRunningNow = (rows: UiProcessRun[]) =>
+      runningRef.current.has(selectedKey) || rows.some((r) => r.status === "running");
+
+    const load = async (mode: "initial" | "poll" | "hard") => {
+      if (mode === "initial") setHistoryLoading(true);
+      else setHistoryRefreshing(true);
+      try {
+        const rows = await apiListRuns(selectedKey, 30, mode === "hard");
+        if (cancelled) return;
+        const sig = signature(rows);
+        if (sig === lastSignature && isRunningNow(rows)) {
+          unchangedWhileRunning += 1;
+        } else {
+          unchangedWhileRunning = 0;
+          setHistoryStale(false);
+        }
+        lastSignature = sig;
+        setLiveHistory(rows);
+        setHistoryUpdatedAt(Date.now());
+        setHistoryError(null);
+
+        // Fallback ladder: three identical polls while the run is supposedly
+        // in flight → retry with a cache-busted, no-store request (and refresh
+        // the schedule row the same way). If that still returns the same body,
+        // tell the operator the view may be stale instead of pretending it's live.
+        if (unchangedWhileRunning >= 3) {
+          if (mode !== "hard") {
+            unchangedWhileRunning = 0;
+            void refreshSchedulesRef.current(true);
+            await load("hard");
+            return;
+          }
+          setHistoryStale(true);
+        }
+      } catch (e) {
+        if (cancelled) return;
+        // Keep whatever we already showed, but say why it may be out of date
+        // instead of silently rendering an empty history.
+        setHistoryError((e as Error).message);
+      } finally {
+        if (cancelled) return;
+        if (mode === "initial") setHistoryLoading(false);
+        else setHistoryRefreshing(false);
+      }
+    };
+
+    // Self-scheduling poll: 3s while the run is in flight (the operator is
+    // watching it move), 10s once it settles. Pauses on a hidden tab.
+    const schedule = () => {
+      if (cancelled) return;
+      const fast = runningRef.current.has(selectedKey);
+      timer = window.setTimeout(async () => {
+        if (document.visibilityState === "visible") await load("poll");
+        schedule();
+      }, fast ? 3_000 : 10_000);
+    };
+
+    hardRefreshRef.current = () => {
+      void refreshSchedulesRef.current(true);
+      void load("hard");
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void load("poll");
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    void load("initial").then(schedule);
+    return () => {
+      cancelled = true;
+      document.removeEventListener("visibilitychange", onVisibility);
+      if (timer != null) window.clearTimeout(timer);
+      hardRefreshRef.current = () => {};
+    };
+  }, [selectedKey]);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-4 p-4 sm:p-6" aria-busy="true">
+        <div className="h-24 rounded-lg bg-muted animate-pulse" />
+        {[0, 1, 2, 3, 4].map((i) => (
+          <div key={i} className="h-16 rounded-lg bg-muted/60 animate-pulse" />
+        ))}
+      </div>
+    );
+  }
 
   const wsLabel = (id: WorkspaceId) => t(`workspaces.${id}`, { defaultValue: WORKSPACE_LABELS[id] });
 
@@ -676,6 +837,15 @@ export default function ProcessesPage() {
                   {t("read_only_banner", {
                     defaultValue:
                       "Read-only — only the main administrator can run or configure processes.",
+                  })}
+                </div>
+              )}
+              {stale && !accessError && (
+                <div className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-[11px] font-medium text-amber-700 dark:text-amber-400">
+                  <AlertTriangle className="h-3 w-3" />
+                  {t("stale_banner", {
+                    defaultValue:
+                      "Showing the last known state — the server didn't respond to the latest refresh.",
                   })}
                 </div>
               )}
@@ -791,6 +961,12 @@ export default function ProcessesPage() {
               t={t}
               p={selected}
               liveHistory={liveHistory}
+              historyLoading={historyLoading}
+              historyRefreshing={historyRefreshing}
+              historyUpdatedAt={historyUpdatedAt}
+              historyStale={historyStale}
+              onHardRefresh={() => hardRefreshRef.current()}
+              historyError={historyError}
               hasSchedule={schedules.has(selected.key)}
               stopEnabled={selected.status === "running"}
               canManage={canManage}
@@ -1041,13 +1217,88 @@ function ExplainBlock({ icon, title, body }: { icon: React.ReactNode; title: str
 }
 
 
+/**
+ * Live polling indicator for the history tab: says whether the panel is
+ * currently fetching, how fresh the data is, and offers a hard refresh that
+ * bypasses every cache layer when the poll appears to be serving stale data.
+ */
+function LiveStatusBar({
+  t, refreshing, updatedAt, stale, running, onHardRefresh,
+}: {
+  t: TFunction;
+  refreshing: boolean;
+  updatedAt: number | null;
+  stale: boolean;
+  running: boolean;
+  onHardRefresh: () => void;
+}) {
+  // Re-render every second so "updated 12s ago" actually counts up.
+  const [, setNow] = useState(Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 1_000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const seconds = updatedAt == null ? null : Math.max(0, Math.round((Date.now() - updatedAt) / 1000));
+
+  return (
+    <div className="mb-2 space-y-2">
+      <div className="flex items-center justify-between gap-2 text-[11px]">
+        <span className="inline-flex items-center gap-1.5 text-muted-foreground" aria-live="polite">
+          {refreshing ? (
+            <>
+              <RefreshCw className="h-3 w-3 animate-spin" aria-hidden="true" />
+              {t("live.updating")}
+            </>
+          ) : (
+            <>
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${stale ? "bg-amber-500" : "bg-primary"} ${running && !stale ? "animate-pulse" : ""}`}
+                aria-hidden="true"
+              />
+              {seconds == null
+                ? t("live.waiting")
+                : t("live.updated_ago", { count: seconds })}
+              <span className="text-muted-foreground/70">
+                · {running ? t("live.interval_fast") : t("live.interval_normal")}
+              </span>
+            </>
+          )}
+        </span>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 gap-1 px-2 text-[11px]"
+          onClick={onHardRefresh}
+          disabled={refreshing}
+        >
+          <RefreshCw className="h-3 w-3" aria-hidden="true" />
+          {t("live.hard_refresh")}
+        </Button>
+      </div>
+      {stale && (
+        <div className="rounded border border-amber-500/30 bg-amber-500/5 p-2 text-[11px] text-amber-700 dark:text-amber-400">
+          {t("live.stale_warning")}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ProcessDrawer({
-  t, p, liveHistory, hasSchedule, stopEnabled, canManage,
+  t, p, liveHistory, historyLoading, historyRefreshing, historyUpdatedAt, historyStale,
+  onHardRefresh, historyError, hasSchedule, stopEnabled, canManage,
   onRun, onPause, onStop, onToggleEnabled, onResetFailures, onSaveInterval,
 }: {
   t: TFunction;
   p: ProcessDefinition;
   liveHistory: UiProcessRun[] | null;
+  historyLoading: boolean;
+  historyRefreshing: boolean;
+  historyUpdatedAt: number | null;
+  historyStale: boolean;
+  onHardRefresh: () => void;
+  historyError: string | null;
   hasSchedule: boolean;
   stopEnabled: boolean;
   canManage: boolean;
@@ -1062,7 +1313,10 @@ function ProcessDrawer({
     defaultValue: "Only the main administrator can perform this action",
   });
   const [intervalDraft, setIntervalDraft] = useState<number>(p.intervalMinutes ?? 60);
-  const history = liveHistory ?? p.history;
+  // Only real server rows are shown. The catalog's `history` is design-time
+  // sample data — falling back to it made the tab look populated with runs that
+  // never happened.
+  const history = liveHistory ?? [];
   const wsLabel = t(`workspaces.${p.workspace}`, { defaultValue: WORKSPACE_LABELS[p.workspace] });
 
   return (
@@ -1195,7 +1449,30 @@ function ProcessDrawer({
         </TabsContent>
 
         <TabsContent value="history" className="pt-3">
+          <LiveStatusBar
+            t={t}
+            refreshing={historyRefreshing || historyLoading}
+            updatedAt={historyUpdatedAt}
+            stale={historyStale}
+            running={p.status === "running"}
+            onHardRefresh={onHardRefresh}
+          />
+          {historyError && (
+            <div className="mb-2 rounded border border-destructive/30 bg-destructive/5 p-2">
+              <ErrorMessage t={t} raw={historyError} tone="error" compact />
+            </div>
+          )}
           <ScrollArea className="h-[360px] pr-3">
+            {historyLoading && history.length === 0 && (
+              <div className="space-y-2 py-2">
+                {[0, 1, 2].map((i) => <div key={i} className="h-6 rounded bg-muted/60 animate-pulse" />)}
+              </div>
+            )}
+            {!historyLoading && history.length === 0 && !historyError && (
+              <div className="py-8 text-center text-xs text-muted-foreground">
+                {t("history_empty", { defaultValue: "No runs recorded yet. Use “Run now” to execute this process." })}
+              </div>
+            )}
             <div className="divide-y">
               {history.map((r) => (
                 <div key={r.id} className="grid grid-cols-12 gap-2 py-2 text-xs">

@@ -42,3 +42,14 @@ CREATE TABLE IF NOT EXISTS "ProcessRuns" (
 
 CREATE INDEX IF NOT EXISTS "IX_ProcessRuns_Key_StartedAt"
   ON "ProcessRuns" ("ProcessKey", "StartedAt" DESC);
+
+-- Role grants. Other migrations in this repo grant the restricted application role
+-- explicitly; without this, enabling role separation makes every Processes query fail
+-- with "permission denied". Wrapped so the script still runs where app_user is absent.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'app_user') THEN
+    EXECUTE 'GRANT SELECT, INSERT, UPDATE, DELETE ON "ProcessSchedules", "ProcessRuns" TO app_user';
+    EXECUTE 'GRANT USAGE, SELECT ON SEQUENCE "ProcessSchedules_Id_seq", "ProcessRuns_Id_seq" TO app_user';
+  END IF;
+END $$;
