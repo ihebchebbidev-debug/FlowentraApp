@@ -11,9 +11,15 @@ import {
   Calendar,
   User,
   IdCard,
-  FileText
+  FileText,
+  Users,
+  X
 } from "lucide-react";
 import { format } from "date-fns";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { contactsApi } from "@/services/api/contactsApi";
+import { UserGroupsPicker, useUserGroupsList } from "../UserGroupsPicker";
 
 interface ContactOverviewTabProps {
   contact: {
@@ -31,11 +37,51 @@ interface ContactOverviewTabProps {
     updatedAt?: string;
     cin?: string;
     matriculeFiscale?: string;
+    userGroups?: { id: number; name: string }[];
   };
+  onUserGroupsChange?: (groups: { id: number; name: string }[]) => void;
 }
 
-export function ContactOverviewTab({ contact }: ContactOverviewTabProps) {
+export function ContactOverviewTab({ contact, onUserGroupsChange }: ContactOverviewTabProps) {
   const { t } = useTranslation('contacts');
+  const { data: allGroups = [] } = useUserGroupsList();
+  const [groups, setGroups] = useState<{ id: number; name: string }[]>(contact.userGroups ?? []);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setGroups(contact.userGroups ?? []);
+  }, [contact.userGroups]);
+
+  const applyGroups = async (nextIds: number[]) => {
+    const currentIds = groups.map((g) => g.id);
+    const toAdd = nextIds.filter((id) => !currentIds.includes(id));
+    const toRemove = currentIds.filter((id) => !nextIds.includes(id));
+    if (toAdd.length === 0 && toRemove.length === 0) return;
+
+    const previous = groups;
+    const next = nextIds
+      .map((id) => allGroups.find((g) => g.id === id))
+      .filter(Boolean)
+      .map((g) => ({ id: g!.id, name: g!.name }));
+    setGroups(next);
+    setSaving(true);
+
+    try {
+      await Promise.all([
+        ...toAdd.map((id) => contactsApi.assignUserGroup(contact.id, id)),
+        ...toRemove.map((id) => contactsApi.removeUserGroup(contact.id, id)),
+      ]);
+      onUserGroupsChange?.(next);
+      toast.success(toRemove.length > 0 && toAdd.length === 0
+        ? t('userGroups.toasts.removed')
+        : t('userGroups.toasts.assigned'));
+    } catch (error) {
+      setGroups(previous);
+      toast.error(t('userGroups.toasts.error'));
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const infoItems = [
     {
@@ -123,6 +169,43 @@ export function ContactOverviewTab({ contact }: ContactOverviewTabProps) {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* User Groups */}
+        <div className="pt-4 border-t space-y-3">
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">{t('userGroups.section_title')}</span>
+          </div>
+          {groups.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t('userGroups.empty_assigned')}</p>
+          ) : (
+            <div className="flex flex-wrap gap-1.5">
+              {groups.map((g) => (
+                <Badge key={g.id} variant="secondary" className="gap-1 text-xs">
+                  {g.name}
+                  <button
+                    type="button"
+                    aria-label={`${t('userGroups.remove')} ${g.name}`}
+                    disabled={saving}
+                    onClick={() => applyGroups(groups.filter((x) => x.id !== g.id).map((x) => x.id))}
+                    className="rounded-sm hover:text-destructive"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+          )}
+          <div className="max-w-xs">
+            <UserGroupsPicker
+              value={groups.map((g) => g.id)}
+              onChange={applyGroups}
+              disabled={saving}
+              size="sm"
+              triggerLabel={t('userGroups.add')}
+            />
+          </div>
         </div>
 
         {/* Status & Type Row */}

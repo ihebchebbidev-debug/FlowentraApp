@@ -18,6 +18,11 @@ export interface ContactNote {
   createdBy?: string;
 }
 
+export interface ContactUserGroup {
+  id: number;
+  name: string;
+}
+
 export interface Contact {
   id: number;
   name: string;
@@ -46,6 +51,7 @@ export interface Contact {
   modifiedBy?: string;
   tags: ContactTag[];
   notes: ContactNote[];
+  userGroups?: ContactUserGroup[];
 }
 
 export interface ContactListResponse {
@@ -81,6 +87,8 @@ export interface CreateContactRequest {
   longitude?: number;
   notes?: string;
   tagIds?: number[];
+  /** Optional. Omit to create the contact without any user group assignment. */
+  userGroupIds?: number[];
 }
 
 export interface UpdateContactRequest {
@@ -106,6 +114,8 @@ export interface UpdateContactRequest {
   latitude?: number;
   longitude?: number;
   tagIds?: number[];
+  /** Optional. Omit to leave assignments untouched; [] clears them. */
+  userGroupIds?: number[];
 }
 
 export interface ContactSearchParams {

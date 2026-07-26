@@ -96,6 +96,8 @@ namespace MyApi.Data
         public DbSet<ContactActivity> ContactActivities { get; set; }
         public DbSet<ContactTag> ContactTags { get; set; }
         public DbSet<ContactTagAssignment> ContactTagAssignments { get; set; }
+        public DbSet<ContactUserGroupAssignment> ContactUserGroups { get; set; }
+
 
         // Articles Module (Materials & Services)
         public DbSet<Article> Articles { get; set; }
@@ -614,6 +616,8 @@ namespace MyApi.Data
             new MyApi.Modules.Contacts.Data.Configurations.ContactConfiguration().Configure(modelBuilder);
             new MyApi.Modules.Contacts.Data.Configurations.ContactNoteConfiguration().Configure(modelBuilder);
             new MyApi.Modules.Contacts.Data.Configurations.ContactTagConfiguration().Configure(modelBuilder);
+            new MyApi.Modules.Contacts.Data.Configurations.ContactUserGroupConfiguration().Configure(modelBuilder);
+
 
             // Articles domain configurations
             new MyApi.Modules.Articles.Data.Configurations.ArticleNoteConfiguration().Configure(modelBuilder);

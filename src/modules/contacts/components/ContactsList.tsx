@@ -736,6 +736,31 @@ export function ContactsList() {
                       )
                     },
                     {
+                      key: 'userGroups',
+                      title: 'User groups',
+                      render: (contact: any) => {
+                        const groups = contact.userGroups ?? [];
+                        if (groups.length === 0) {
+                          return <span className="text-xs text-muted-foreground">—</span>;
+                        }
+                        return (
+                          <div className="flex gap-1 flex-wrap">
+                            {groups.slice(0, 2).map((g: any) => (
+                              <Badge key={g.id} variant="secondary" className="text-xs px-1.5 py-0.5">
+                                {g.name}
+                              </Badge>
+                            ))}
+                            {groups.length > 2 && (
+                              <Badge variant="secondary" className="text-xs px-1.5 py-0.5" title={groups.map((g: any) => g.name).join(', ')}>
+                                +{groups.length - 2}
+                              </Badge>
+                            )}
+                          </div>
+                        );
+                      }
+                    },
+                    {
+
                       key: 'lastContact',
                       title: 'Last Contact',
                       render: (contact: any) => (

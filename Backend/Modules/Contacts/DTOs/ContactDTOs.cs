@@ -2,6 +2,12 @@ using System.ComponentModel.DataAnnotations;
 
 namespace MyApi.Modules.Contacts.DTOs
 {
+    public class ContactUserGroupDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+    }
+
     // Response DTOs
     public class ContactResponseDto
     {
@@ -41,6 +47,7 @@ namespace MyApi.Modules.Contacts.DTOs
         public int HasLocation { get; set; } = 0;
 
         public List<ContactTagDto> Tags { get; set; } = new List<ContactTagDto>();
+        public List<ContactUserGroupDto> UserGroups { get; set; } = new List<ContactUserGroupDto>();
         public List<ContactNoteDto> ContactNotes { get; set; } = new List<ContactNoteDto>();
     }
 
@@ -119,6 +126,9 @@ namespace MyApi.Modules.Contacts.DTOs
         public decimal? Longitude { get; set; }
 
         public List<int> TagIds { get; set; } = new List<int>();
+
+        /// <summary>Optional. Null/absent → no user group assignments are created.</summary>
+        public List<int>? UserGroupIds { get; set; }
     }
 
     public class UpdateContactRequestDto
@@ -186,6 +196,9 @@ namespace MyApi.Modules.Contacts.DTOs
         public decimal? Longitude { get; set; }
 
         public List<int>? TagIds { get; set; }
+
+        /// <summary>Optional. Null/absent → assignments left untouched. Empty list → cleared.</summary>
+        public List<int>? UserGroupIds { get; set; }
     }
 
     public class ContactSearchRequestDto

@@ -21,6 +21,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { MapLocationPicker } from '@/components/shared/MapLocationPicker';
 import { FieldError } from '@/components/ui/field-error';
 import { useContactValidation } from '../hooks/useContactValidation';
+import { UserGroupsPicker } from '../components/UserGroupsPicker';
 import { TenantSelector } from '@/components/TenantSelector';
 import { useTargetTenant } from '@/hooks/useTargetTenant';
 
@@ -51,6 +52,7 @@ export default function AddContactPage() {
   const { canCreate, isMainAdmin, isLoading: permissionsLoading } = usePermissions();
   const [formData, setFormData] = useState(initialFormState);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [userGroupIds, setUserGroupIds] = useState<number[]>([]);
   const { validateField, getError, hasErrors, clearErrors } = useContactValidation(t);
   const { viewAll, targetTenantId, handleTenantChange, isTenantRequired } = useTargetTenant();
 
@@ -135,6 +137,7 @@ export default function AddContactPage() {
         matriculeFiscale: formData.matriculeFiscale || null,
         latitude: formData.latitude ? parseFloat(formData.latitude) : null,
         longitude: formData.longitude ? parseFloat(formData.longitude) : null,
+        userGroupIds,
       };
       await createContact(submitData as any);
       toast.success(t('addPage.toasts.created_success'));
@@ -351,6 +354,15 @@ export default function AddContactPage() {
                   />
                 </div>
               )}
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="userGroups">
+                  {t('addPage.fields.user_groups_label')}{' '}
+                  <span className="text-xs font-normal text-muted-foreground">
+                    ({t('addPage.fields.user_groups_optional_hint')})
+                  </span>
+                </Label>
+                <UserGroupsPicker value={userGroupIds} onChange={setUserGroupIds} />
+              </div>
             </CardContent>
           </Card>
 

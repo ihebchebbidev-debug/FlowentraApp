@@ -80,5 +80,7 @@ namespace MyApi.Modules.Contacts.Models
         // Navigation
         public virtual ICollection<ContactNote> ContactNotes { get; set; } = new List<ContactNote>();
         public virtual ICollection<ContactTagAssignment> TagAssignments { get; set; } = new List<ContactTagAssignment>();
+        public virtual ICollection<ContactUserGroupAssignment> UserGroupAssignments { get; set; } = new List<ContactUserGroupAssignment>();
+
     }
 }

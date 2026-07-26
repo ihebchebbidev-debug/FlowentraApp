@@ -530,7 +530,9 @@
       "latitude_label": "Latitude",
       "longitude_label": "Longitude",
       "geolocation_title": "Géolocalisation",
-      "geolocation_description": "Définir les coordonnées pour l'affichage sur la carte"
+      "geolocation_description": "Définir les coordonnées pour l'affichage sur la carte",
+      "user_groups_label": "Groupes d'utilisateurs",
+      "user_groups_optional_hint": "Facultatif"
     },
     "placeholders": {
       "first_name": "Jean",
@@ -641,5 +643,23 @@
     "name": "Contacts",
     "description": "Gérez clients, fournisseurs et contacts dans un répertoire unique.",
     "category": "CRM"
+  },
+  "userGroups": {
+    "placeholder": "Sélectionner des groupes…",
+    "search_placeholder": "Rechercher un groupe…",
+    "empty_assigned": "Aucun groupe assigné",
+    "none_available": "Aucun groupe d'utilisateurs disponible",
+    "manage_link": "Gérer les groupes",
+    "add": "Ajouter un groupe",
+    "remove": "Retirer",
+    "section_title": "Groupes assignés",
+    "column_header": "Groupes",
+    "overflow": "+{{count}} de plus",
+    "selected": "{{count}} sélectionné(s)",
+    "toasts": {
+      "assigned": "Groupe assigné",
+      "removed": "Groupe retiré",
+      "error": "Impossible de mettre à jour les groupes"
+    }
   }
 }

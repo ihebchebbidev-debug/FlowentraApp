@@ -23,6 +23,7 @@ import { Loader2, User, Building2, Package } from 'lucide-react';
 import { MapLocationPicker } from '@/components/shared/MapLocationPicker';
 import { FieldError } from '@/components/ui/field-error';
 import { useContactValidation } from '../hooks/useContactValidation';
+import { UserGroupsPicker } from './UserGroupsPicker';
 import type { Contact, CreateContactRequest, UpdateContactRequest } from '@/types/contacts';
 
 interface ContactFormProps {
@@ -56,6 +57,7 @@ const initialFormState = {
 export function ContactForm({ open, onOpenChange, onSubmit, contact, isLoading }: ContactFormProps) {
   const { t } = useTranslation('contacts');
   const [formData, setFormData] = useState(initialFormState);
+  const [userGroupIds, setUserGroupIds] = useState<number[]>([]);
   const { validateField, getError, hasErrors, clearErrors } = useContactValidation(t);
 
   // Sync form data when contact prop changes (for edit mode)
@@ -88,9 +90,11 @@ export function ContactForm({ open, onOpenChange, onSubmit, contact, isLoading }
         latitude: c.latitude != null ? String(c.latitude) : '',
         longitude: c.longitude != null ? String(c.longitude) : '',
       });
+      setUserGroupIds((contact.userGroups ?? []).map((g) => g.id));
       clearErrors();
     } else {
       setFormData(initialFormState);
+      setUserGroupIds([]);
       clearErrors();
     }
   }, [contact, clearErrors]);
@@ -139,6 +143,8 @@ export function ContactForm({ open, onOpenChange, onSubmit, contact, isLoading }
         submitData.lastContactDate = formData.lastContactDate.trim();
       }
       
+      submitData.userGroupIds = userGroupIds;
+
       await onSubmit(submitData as any);
       onOpenChange(false);
       setFormData(initialFormState);
@@ -362,6 +368,17 @@ export function ContactForm({ open, onOpenChange, onSubmit, contact, isLoading }
                 placeholder={t('addPage.placeholders.cin')}
                 maxLength={50}
               />
+            </div>
+
+            {/* User groups (optional) */}
+            <div className="col-span-2">
+              <Label htmlFor="userGroups">
+                {t('addPage.fields.user_groups_label')}{' '}
+                <span className="text-xs font-normal text-muted-foreground">
+                  ({t('addPage.fields.user_groups_optional_hint')})
+                </span>
+              </Label>
+              <UserGroupsPicker value={userGroupIds} onChange={setUserGroupIds} />
             </div>
 
             {/* Matricule Fiscale field */}

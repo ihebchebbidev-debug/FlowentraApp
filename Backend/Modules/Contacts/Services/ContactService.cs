@@ -28,6 +28,8 @@ namespace MyApi.Modules.Contacts.Services
                 // ✅ OPTIMIZATION 1: Remove eager loading for list view (3-5x faster)
                 var query = _context.Contacts
                     .AsNoTracking()
+                    .Include(c => c.UserGroupAssignments)
+                        .ThenInclude(a => a.UserGroup)
                     // Removed: .Include(c => c.TagAssignments).ThenInclude(ta => ta.Tag)
                     // Removed: .Include(c => c.ContactNotes)
                     // These are only needed for detail view, not lists
@@ -144,6 +146,8 @@ namespace MyApi.Modules.Contacts.Services
                     .Include(c => c.TagAssignments)
                         .ThenInclude(ta => ta.Tag)
                     .Include(c => c.ContactNotes)
+                    .Include(c => c.UserGroupAssignments)
+                        .ThenInclude(a => a.UserGroup)
                     .Where(c => c.Id == id && !c.IsDeleted && c.IsActive)
                     .FirstOrDefaultAsync();
 
@@ -245,6 +249,29 @@ namespace MyApi.Modules.Contacts.Services
                                 });
                             }
                             await _context.SaveChangesAsync();
+                        }
+
+                        // Assign user groups if provided (optional; unknown ids are ignored)
+                        if (createDto.UserGroupIds != null && createDto.UserGroupIds.Count > 0)
+                        {
+                            var validGroupIds = await _context.Set<MyApi.Modules.UserGroups.Models.UserGroup>()
+                                .Where(g => createDto.UserGroupIds.Contains(g.Id) && !g.IsDeleted)
+                                .Select(g => g.Id)
+                                .ToListAsync();
+
+                            foreach (var groupId in validGroupIds.Distinct())
+                            {
+                                _context.Set<ContactUserGroupAssignment>().Add(new ContactUserGroupAssignment
+                                {
+                                    ContactId = contact.Id,
+                                    UserGroupId = groupId,
+                                    AssignedAt = DateTime.UtcNow,
+                                    AssignedBy = createdByUser
+                                });
+                            }
+
+                            if (validGroupIds.Count > 0)
+                                await _context.SaveChangesAsync();
                         }
 
                         await tx.CommitAsync();
@@ -440,6 +467,35 @@ namespace MyApi.Modules.Contacts.Services
                                 AssignedDate = DateTime.UtcNow
                             };
                             _context.Set<ContactTagAssignment>().Add(tagAssignment);
+                        }
+                    }
+
+                    // Update user groups only when explicitly provided
+                    if (updateDto.UserGroupIds != null)
+                    {
+                        var desired = await _context.Set<MyApi.Modules.UserGroups.Models.UserGroup>()
+                            .Where(g => updateDto.UserGroupIds.Contains(g.Id) && !g.IsDeleted)
+                            .Select(g => g.Id)
+                            .ToListAsync();
+
+                        var existingGroupAssignments = await _context.Set<ContactUserGroupAssignment>()
+                            .Where(a => a.ContactId == id)
+                            .ToListAsync();
+
+                        var toRemove = existingGroupAssignments.Where(a => !desired.Contains(a.UserGroupId)).ToList();
+                        if (toRemove.Count > 0)
+                            _context.Set<ContactUserGroupAssignment>().RemoveRange(toRemove);
+
+                        var existingIds = existingGroupAssignments.Select(a => a.UserGroupId).ToHashSet();
+                        foreach (var groupId in desired.Distinct().Where(g => !existingIds.Contains(g)))
+                        {
+                            _context.Set<ContactUserGroupAssignment>().Add(new ContactUserGroupAssignment
+                            {
+                                ContactId = id,
+                                UserGroupId = groupId,
+                                AssignedAt = DateTime.UtcNow,
+                                AssignedBy = modifiedByUser
+                            });
                         }
                     }
 
@@ -845,6 +901,67 @@ namespace MyApi.Modules.Contacts.Services
             }
         }
 
+        public async Task<bool> AssignUserGroupToContactAsync(int contactId, int groupId, string assignedByUser)
+        {
+            try
+            {
+                var contactExists = await _context.Contacts.AnyAsync(c => c.Id == contactId && !c.IsDeleted);
+                var groupExists = await _context.Set<MyApi.Modules.UserGroups.Models.UserGroup>()
+                    .AnyAsync(g => g.Id == groupId && !g.IsDeleted);
+
+                if (!contactExists || !groupExists)
+                {
+                    return false;
+                }
+
+                var existing = await _context.Set<ContactUserGroupAssignment>()
+                    .FirstOrDefaultAsync(a => a.ContactId == contactId && a.UserGroupId == groupId);
+
+                if (existing != null)
+                {
+                    return true; // idempotent
+                }
+
+                _context.Set<ContactUserGroupAssignment>().Add(new ContactUserGroupAssignment
+                {
+                    ContactId = contactId,
+                    UserGroupId = groupId,
+                    AssignedAt = DateTime.UtcNow,
+                    AssignedBy = assignedByUser
+                });
+                await _context.SaveChangesAsync();
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error assigning user group {GroupId} to contact {ContactId}", groupId, contactId);
+                throw;
+            }
+        }
+
+        public async Task<bool> RemoveUserGroupFromContactAsync(int contactId, int groupId)
+        {
+            try
+            {
+                var assignment = await _context.Set<ContactUserGroupAssignment>()
+                    .FirstOrDefaultAsync(a => a.ContactId == contactId && a.UserGroupId == groupId);
+
+                if (assignment != null)
+                {
+                    _context.Set<ContactUserGroupAssignment>().Remove(assignment);
+                    await _context.SaveChangesAsync();
+                }
+
+                return true; // idempotent
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error removing user group {GroupId} from contact {ContactId}", groupId, contactId);
+                throw;
+            }
+        }
+
         public async Task<ContactListResponseDto> SearchContactsAsync(string searchTerm, int pageNumber = 1, int pageSize = 50)
         {
             var searchRequest = new ContactSearchRequestDto
@@ -896,6 +1013,13 @@ namespace MyApi.Modules.Contacts.Services
                     CreatedDate = ta.Tag?.CreatedDate ?? DateTime.MinValue,
                     CreatedBy = ta.Tag?.CreatedBy
                 }).ToList() ?? new List<ContactTagDto>(),
+                UserGroups = contact.UserGroupAssignments?
+                    .Where(a => a.UserGroup != null)
+                    .Select(a => new ContactUserGroupDto
+                    {
+                        Id = a.UserGroup!.Id,
+                        Name = a.UserGroup!.Name
+                    }).ToList() ?? new List<ContactUserGroupDto>(),
                 ContactNotes = contact.ContactNotes?.OrderByDescending(n => n.CreatedDate).Select(n => new ContactNoteDto
                 {
                     Id = n.Id,

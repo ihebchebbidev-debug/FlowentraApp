@@ -141,6 +141,28 @@ export const contactsApi = {
     }
   },
 
+  // Assign a user group to a contact (idempotent)
+  async assignUserGroup(contactId: number, groupId: number): Promise<void> {
+    const { error } = await apiFetch<void>(`/api/Contacts/${contactId}/user-groups/${groupId}`, {
+      method: 'POST',
+    });
+
+    if (error) {
+      throw new Error(error || 'Failed to assign user group');
+    }
+  },
+
+  // Remove a user group from a contact (idempotent)
+  async removeUserGroup(contactId: number, groupId: number): Promise<void> {
+    const { error } = await apiFetch<void>(`/api/Contacts/${contactId}/user-groups/${groupId}`, {
+      method: 'DELETE',
+    });
+
+    if (error) {
+      throw new Error(error || 'Failed to remove user group');
+    }
+  },
+
   // Remove tag from contact
   async removeTag(contactId: number, tagId: number): Promise<void> {
     const { error } = await apiFetch<void>(`/api/Contacts/${contactId}/tags/${tagId}`, {

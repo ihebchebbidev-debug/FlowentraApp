@@ -293,6 +293,52 @@ namespace MyApi.Modules.Contacts.Controllers
             }
         }
 
+        /// <summary>
+        /// Assign a user group to a contact (idempotent)
+        /// </summary>
+        [HttpPost("{contactId}/user-groups/{groupId}")]
+        public async Task<ActionResult> AssignUserGroupToContact(int contactId, int groupId)
+        {
+            try
+            {
+                var currentUser = GetCurrentUser();
+                var success = await _contactService.AssignUserGroupToContactAsync(contactId, groupId, currentUser);
+
+                if (!success)
+                {
+                    return NotFound("Contact or user group not found");
+                }
+
+                var contact = await _contactService.GetContactByIdAsync(contactId);
+                return Ok(new { userGroups = contact?.UserGroups ?? new List<MyApi.Modules.Contacts.DTOs.ContactUserGroupDto>() });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error assigning user group {GroupId} to contact {ContactId}", groupId, contactId);
+                return StatusCode(500, "An error occurred while assigning the user group");
+            }
+        }
+
+        /// <summary>
+        /// Remove a user group from a contact (idempotent)
+        /// </summary>
+        [HttpDelete("{contactId}/user-groups/{groupId}")]
+        public async Task<ActionResult> RemoveUserGroupFromContact(int contactId, int groupId)
+        {
+            try
+            {
+                await _contactService.RemoveUserGroupFromContactAsync(contactId, groupId);
+
+                var contact = await _contactService.GetContactByIdAsync(contactId);
+                return Ok(new { userGroups = contact?.UserGroups ?? new List<MyApi.Modules.Contacts.DTOs.ContactUserGroupDto>() });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error removing user group {GroupId} from contact {ContactId}", groupId, contactId);
+                return StatusCode(500, "An error occurred while removing the user group");
+            }
+        }
+
         private string GetCurrentUser()
         {
             return User.FindFirst(ClaimTypes.Email)?.Value ?? 

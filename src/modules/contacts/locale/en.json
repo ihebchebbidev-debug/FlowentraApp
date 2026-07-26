@@ -530,7 +530,9 @@
       "latitude_label": "Latitude",
       "longitude_label": "Longitude",
       "geolocation_title": "Geolocation",
-      "geolocation_description": "Set coordinates for map display"
+      "geolocation_description": "Set coordinates for map display",
+      "user_groups_label": "User groups",
+      "user_groups_optional_hint": "Optional"
     },
     "placeholders": {
       "first_name": "John",
@@ -641,5 +643,23 @@
     "name": "Contacts",
     "description": "Manage customers, suppliers and people in a single directory.",
     "category": "CRM"
+  },
+  "userGroups": {
+    "placeholder": "Select user groups…",
+    "search_placeholder": "Search groups…",
+    "empty_assigned": "No user groups assigned",
+    "none_available": "No user groups exist yet",
+    "manage_link": "Manage user groups",
+    "add": "Add user group",
+    "remove": "Remove",
+    "section_title": "Assigned user groups",
+    "column_header": "User groups",
+    "overflow": "+{{count}} more",
+    "selected": "{{count}} selected",
+    "toasts": {
+      "assigned": "User group assigned",
+      "removed": "User group removed",
+      "error": "Could not update user groups"
+    }
   }
 }
