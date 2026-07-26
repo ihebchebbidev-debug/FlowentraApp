@@ -130,9 +130,11 @@ export async function upsertSchedule(
   };
   if (input.enabled !== undefined) body.enabled = input.enabled;
   if (input.paused !== undefined) body.paused = input.paused;
-  if (input.interval_minutes !== undefined) body.intervalMinutes = input.interval_minutes;
-  if (input.max_retries !== undefined) body.maxRetries = input.max_retries;
-  if (input.retry_backoff_seconds !== undefined) body.retryBackoffSeconds = input.retry_backoff_seconds;
+  // Snake_case keys — the backend DTO binds each field via [JsonPropertyName]
+  // with the exact snake_case name, so camelCase silently no-ops the update.
+  if (input.interval_minutes !== undefined) body.interval_minutes = input.interval_minutes;
+  if (input.max_retries !== undefined) body.max_retries = input.max_retries;
+  if (input.retry_backoff_seconds !== undefined) body.retry_backoff_seconds = input.retry_backoff_seconds;
   if (input.config !== undefined) body.config = input.config;
   if (input.timezone !== undefined) body.timezone = input.timezone;
   return unwrap(
@@ -294,6 +296,11 @@ export function overlay(
             s.paused ? "paused" : "idle",
     lastRunAt: s.last_run_at ?? undefined,
     nextRunAt: s.next_run_at ?? undefined,
+    nextRetryAt: s.next_retry_at ?? undefined,
+    maxRetries: s.max_retries,
+    lastAttempt: s.last_attempt ?? undefined,
+    lastStatus: s.last_status ?? undefined,
+    hasHandler: s.has_handler !== false,
     lastDurationMs: s.last_duration_ms ?? undefined,
     lastItems: s.last_items_processed ?? undefined,
     lastError,
@@ -307,6 +314,7 @@ export function overlay(
     diagnostics: buildDiagnostics(s),
   };
 }
+
 
 /**
  * Diagnostics derived from the live schedule row — never from a static template.

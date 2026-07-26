@@ -788,6 +788,29 @@ CREATE INDEX IF NOT EXISTS ""IX_ProcessRuns_Key_StartedAt""
                 migrationLogger.LogWarning("⚠️ Processes schema check failed (non-fatal): {Error}", prEx.Message);
             }
 
+            // ── Invoices.Status constraint: allow 'overdue' (used by admin.invoices-mark-overdue) ──
+            try
+            {
+                using var invCmd = probe.CreateCommand();
+                invCmd.CommandText = @"
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'Invoices') THEN
+        ALTER TABLE ""Invoices"" DROP CONSTRAINT IF EXISTS ""CK_Invoices_Status"";
+        ALTER TABLE ""Invoices"" ADD CONSTRAINT ""CK_Invoices_Status""
+            CHECK (""Status"" IN ('draft','posted','paid','void','overdue'));
+    END IF;
+END $$;";
+                invCmd.ExecuteNonQuery();
+                migrationLogger.LogInformation("✅ Invoices.Status constraint verified (includes 'overdue')");
+            }
+            catch (Exception invEx)
+            {
+                migrationLogger.LogWarning("⚠️ Invoices.Status constraint update failed (non-fatal): {Error}", invEx.Message);
+            }
+
+
+
             // ── Outbound email log (every send attempt, success or failure) ──
             try
             {

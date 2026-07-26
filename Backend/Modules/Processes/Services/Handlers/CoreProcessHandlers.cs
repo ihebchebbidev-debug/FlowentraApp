@@ -75,10 +75,11 @@ namespace MyApi.Modules.Processes.Services.Handlers
                 .Where(i => !i.IsDeleted
                             && i.DueDate != null && i.DueDate < now
                             && i.AmountPaid < i.GrandTotal
-                            && (i.Status == "posted" || i.Status == "sent" || i.Status == "partial"))
+                            && i.Status == "posted")
                 .ExecuteUpdateAsync(s => s
                     .SetProperty(i => i.Status, "overdue")
                     .SetProperty(i => i.UpdatedAt, now), ct);
+
             return new RunNowResult { Status = "success", ItemsProcessed = updated, Output = new { updated } };
         }
     }

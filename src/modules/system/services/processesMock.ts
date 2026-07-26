@@ -55,12 +55,18 @@ export interface ProcessDefinition {
   lastError?: string;
   blockReason?: string;
   nextRunAt?: string;
+  nextRetryAt?: string;
+  maxRetries?: number;
+  lastAttempt?: number;
+  lastStatus?: string;
+  hasHandler?: boolean;
   consecutiveFailures: number;
   successRate30?: number;
   settings: { label: string; value: string | number | boolean }[];
   diagnostics: DiagnosticCheck[];
   history: ProcessRun[];
 }
+
 
 const okChecks = (labels: string[]): DiagnosticCheck[] =>
   labels.map((label) => ({ label, ok: true }));

@@ -449,6 +449,29 @@ namespace MyApi.Modules.Processes.Services
                     }
                     catch { /* best effort — boot reconcile will close it */ }
 
+                    // Also persist the schedule mutations we made above (NextRunAt,
+                    // ConsecutiveFailures, BlockReason, LastStatus) via raw SQL so a
+                    // tracked-save failure doesn't drop the retry ladder / cooldown.
+                    try
+                    {
+                        var nextRunAt = s.NextRunAt;
+                        var lastRunAt = s.LastRunAt;
+                        var lastStatus = s.LastStatus;
+                        var consecutive = s.ConsecutiveFailures;
+                        var blockReason = s.BlockReason;
+                        var updatedAt = DateTime.UtcNow;
+                        await db.Set<ProcessSchedule>()
+                            .Where(x => x.Id == s.Id)
+                            .ExecuteUpdateAsync(u => u
+                                .SetProperty(x => x.NextRunAt, nextRunAt)
+                                .SetProperty(x => x.LastRunAt, lastRunAt)
+                                .SetProperty(x => x.LastStatus, lastStatus)
+                                .SetProperty(x => x.ConsecutiveFailures, consecutive)
+                                .SetProperty(x => x.BlockReason, blockReason)
+                                .SetProperty(x => x.UpdatedAt, updatedAt), ct);
+                    }
+                    catch { /* best effort */ }
+
                     result.Status = "failed";
                     result.Error ??= saveEx.Message;
                 }

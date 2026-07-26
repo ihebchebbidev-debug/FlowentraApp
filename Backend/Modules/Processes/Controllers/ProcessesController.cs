@@ -83,10 +83,14 @@ namespace MyApi.Modules.Processes.Controllers
             // Project the real runtime state from run history so the UI shows the
             // actual status (running / failed / blocked) and the exact error text,
             // instead of inferring it from LastStatus alone.
+            //
+            // Per-key top-N (not a global Take): a chatty process (retry-failed-emails
+            // runs every 5 min) can otherwise saturate a global cap and hide a lower-
+            // frequency key's true latest run behind the cap boundary.
             var recent = await _db.Set<ProcessRun>().AsNoTracking()
                 .Where(r => keys.Contains(r.ProcessKey))
-                .OrderByDescending(r => r.StartedAt)
-                .Take(keys.Count * 30 + 50)
+                .GroupBy(r => r.ProcessKey)
+                .SelectMany(g => g.OrderByDescending(r => r.StartedAt).Take(30))
                 .ToListAsync(ct);
 
             var staleCutoff = DateTime.UtcNow.AddMinutes(-30);
@@ -120,6 +124,12 @@ namespace MyApi.Modules.Processes.Controllers
                     dto.LastTriggeredBy = latest.TriggeredBy;
                     dto.LastAttempt = latest.Attempt;
                     dto.NextRetryAt = latest.NextRetryAt;
+                    // Manual "Run now" deliberately does NOT update s.LastRunAt (it
+                    // must not overwrite the scheduled-cadence audit trail). Fall back
+                    // to the most recent finished run so the UI reflects manual runs.
+                    var mostRecentFinished = runs.FirstOrDefault(r => r.FinishedAt != null);
+                    if (mostRecentFinished != null && (dto.LastRunAt == null || mostRecentFinished.FinishedAt > dto.LastRunAt))
+                        dto.LastRunAt = mostRecentFinished.FinishedAt;
 
                     var finished = runs.Where(r => r.Status != "running").Take(30).ToList();
                     dto.RecentTotal = finished.Count;
@@ -152,7 +162,7 @@ namespace MyApi.Modules.Processes.Controllers
             if (req.Name != null) s.Name = req.Name;
             if (req.Enabled.HasValue) s.Enabled = req.Enabled.Value;
             if (req.Paused.HasValue) s.Paused = req.Paused.Value;
-            if (req.IntervalMinutes.HasValue) s.IntervalMinutes = Math.Max(1, req.IntervalMinutes.Value);
+            if (req.IntervalMinutes.HasValue) s.IntervalMinutes = Math.Clamp(req.IntervalMinutes.Value, 1, 43_200);
             if (req.MaxRetries.HasValue) s.MaxRetries = Math.Max(0, req.MaxRetries.Value);
             if (req.RetryBackoffSeconds.HasValue) s.RetryBackoffSeconds = Math.Max(1, req.RetryBackoffSeconds.Value);
             if (req.Timezone != null) s.Timezone = req.Timezone;
@@ -171,13 +181,23 @@ namespace MyApi.Modules.Processes.Controllers
         public async Task<IActionResult> SetPaused(string key, [FromQuery] bool paused, CancellationToken ct)
         {
             if (RequireAdmin() is { } deny) return deny;
-            var s = await _db.Set<ProcessSchedule>().FirstOrDefaultAsync(x => x.Key == key, ct);
-
-            if (s == null) return NotFound();
-            s.Paused = paused;
-            if (!paused) { s.BlockReason = null; s.ConsecutiveFailures = 0; if (s.NextRunAt == null) s.NextRunAt = DateTime.UtcNow.AddMinutes(s.IntervalMinutes); }
-            s.UpdatedAt = DateTime.UtcNow;
-            await _db.SaveChangesAsync(ct);
+            // Single-column ExecuteUpdate avoids the lost-update race with the
+            // scheduler's per-run save (different scope, no concurrency token on
+            // ProcessSchedule) — tracked SaveChanges would clobber NextRunAt /
+            // ConsecutiveFailures set by an in-flight run finishing at the same time.
+            var now = DateTime.UtcNow;
+            var affected = await _db.Set<ProcessSchedule>()
+                .Where(x => x.Key == key)
+                .ExecuteUpdateAsync(u => u
+                    .SetProperty(x => x.Paused, paused)
+                    .SetProperty(x => x.BlockReason, x => !paused ? null : x.BlockReason)
+                    .SetProperty(x => x.ConsecutiveFailures, x => !paused ? 0 : x.ConsecutiveFailures)
+                    .SetProperty(x => x.NextRunAt, x => !paused && x.NextRunAt == null
+                        ? now.AddMinutes(x.IntervalMinutes < 1 ? 1 : x.IntervalMinutes)
+                        : x.NextRunAt)
+                    .SetProperty(x => x.UpdatedAt, now), ct);
+            if (affected == 0) return NotFound();
+            var s = await _db.Set<ProcessSchedule>().AsNoTracking().FirstAsync(x => x.Key == key, ct);
             return Ok(ToDto(s));
         }
 
@@ -185,13 +205,17 @@ namespace MyApi.Modules.Processes.Controllers
         public async Task<IActionResult> SetEnabled(string key, [FromQuery] bool enabled, CancellationToken ct)
         {
             if (RequireAdmin() is { } deny) return deny;
-            var s = await _db.Set<ProcessSchedule>().FirstOrDefaultAsync(x => x.Key == key, ct);
-
-            if (s == null) return NotFound();
-            s.Enabled = enabled;
-            if (enabled && s.NextRunAt == null) s.NextRunAt = DateTime.UtcNow.AddMinutes(s.IntervalMinutes);
-            s.UpdatedAt = DateTime.UtcNow;
-            await _db.SaveChangesAsync(ct);
+            var now = DateTime.UtcNow;
+            var affected = await _db.Set<ProcessSchedule>()
+                .Where(x => x.Key == key)
+                .ExecuteUpdateAsync(u => u
+                    .SetProperty(x => x.Enabled, enabled)
+                    .SetProperty(x => x.NextRunAt, x => enabled && x.NextRunAt == null
+                        ? now.AddMinutes(x.IntervalMinutes < 1 ? 1 : x.IntervalMinutes)
+                        : x.NextRunAt)
+                    .SetProperty(x => x.UpdatedAt, now), ct);
+            if (affected == 0) return NotFound();
+            var s = await _db.Set<ProcessSchedule>().AsNoTracking().FirstAsync(x => x.Key == key, ct);
             return Ok(ToDto(s));
         }
 
@@ -199,15 +223,20 @@ namespace MyApi.Modules.Processes.Controllers
         public async Task<IActionResult> ResetFailures(string key, CancellationToken ct)
         {
             if (RequireAdmin() is { } deny) return deny;
-            var s = await _db.Set<ProcessSchedule>().FirstOrDefaultAsync(x => x.Key == key, ct);
-
-            if (s == null) return NotFound();
-            s.ConsecutiveFailures = 0;
-            s.BlockReason = null;
-            if (s.Enabled && !s.Paused && s.NextRunAt == null)
-                s.NextRunAt = DateTime.UtcNow.AddMinutes(Math.Max(1, s.IntervalMinutes));
-            s.UpdatedAt = DateTime.UtcNow;
-            await _db.SaveChangesAsync(ct);
+            var now = DateTime.UtcNow;
+            // ExecuteUpdate avoids the lost-update race with a concurrent run save.
+            // On an active schedule we force NextRunAt = now so "Clear failures" runs
+            // immediately — leaving the retry-exhausted cooldown time (up to 24h out)
+            // made the button appear to do nothing.
+            var affected = await _db.Set<ProcessSchedule>()
+                .Where(x => x.Key == key)
+                .ExecuteUpdateAsync(u => u
+                    .SetProperty(x => x.ConsecutiveFailures, 0)
+                    .SetProperty(x => x.BlockReason, (string?)null)
+                    .SetProperty(x => x.NextRunAt, x => x.Enabled && !x.Paused ? now : x.NextRunAt)
+                    .SetProperty(x => x.UpdatedAt, now), ct);
+            if (affected == 0) return NotFound();
+            var s = await _db.Set<ProcessSchedule>().AsNoTracking().FirstAsync(x => x.Key == key, ct);
             return Ok(ToDto(s));
         }
 

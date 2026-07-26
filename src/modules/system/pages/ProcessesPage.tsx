@@ -47,9 +47,19 @@ const STATUS_ICONS: Record<ProcessStatus, any> = {
 const STATUS_CLASSES: Record<ProcessStatus, string> = {
   idle:    "bg-muted text-muted-foreground border-border",
   running: "bg-primary/10 text-primary border-primary/30",
-  paused:  "bg-muted text-muted-foreground border-border",
+  paused:  "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30",
   failed:  "bg-destructive/10 text-destructive border-destructive/30",
   blocked: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30",
+};
+
+// Colored left-border rail so the row's state is legible at a glance,
+// without hunting for the pill on the right.
+const STATUS_RAIL: Record<ProcessStatus, string> = {
+  idle:    "border-l-transparent",
+  running: "border-l-primary",
+  paused:  "border-l-amber-500",
+  failed:  "border-l-destructive",
+  blocked: "border-l-amber-500",
 };
 
 function fmtRelative(t: TFunction, iso?: string): string {
@@ -76,6 +86,161 @@ function fmtDuration(ms?: number): string {
   return `${m.toFixed(1)}m`;
 }
 
+/**
+ * Turn a raw backend error string into a human-readable diagnosis.
+ * We keep the raw text available (users can expand it) but surface
+ * a clean title + actionable hint for the common cases.
+ *
+ * Handles:
+ *  - "Failed after N attempts: <inner>"  → strips the retry wrapper
+ *  - Postgres SQLSTATE codes (23514, 23505, 23503, 23502, 42P01, 42703, 40001, 57014, 08006)
+ *  - .NET timeouts / cancellations
+ *  - Missing handler registration
+ *  - HTTP status codes (401/403/404/5xx)
+ */
+type ParsedError = {
+  title: string;
+  hint?: string;
+  constraint?: string;
+  attempts?: number;
+  raw: string;
+};
+
+function humanizeError(raw: string, t: TFunction): ParsedError {
+  const out: ParsedError = { title: raw, raw };
+
+  // Peel off "Failed after N attempts:" wrapper
+  const wrap = raw.match(/^Failed after (\d+) attempts?:\s*(.+)$/is);
+  const inner = wrap ? wrap[2].trim() : raw;
+  if (wrap) out.attempts = Number(wrap[1]);
+
+  // Postgres SQLSTATE — 5 digits at the start, or "SQLSTATE: XXXXX"
+  const pg = inner.match(/(?:^|\s|:)(23514|23505|23503|23502|42P01|42703|40001|57014|08006|08003)\b/i);
+  const constraint = inner.match(/constraint\s+"([^"]+)"/i)?.[1]
+                  ?? inner.match(/relation\s+"([^"]+)"/i)?.[1];
+  if (constraint) out.constraint = constraint;
+
+  if (pg) {
+    const code = pg[1].toUpperCase();
+    switch (code) {
+      case "23514":
+        out.title = t("errors.check_violation", { defaultValue: "Data validation failed (check constraint)" });
+        out.hint  = constraint
+          ? t("errors.check_violation_hint_named", { defaultValue: `A row violated the "${constraint}" rule. The allowed values or ranges for that column don't include what the process tried to write.`, name: constraint })
+          : t("errors.check_violation_hint", { defaultValue: "A row violated a database check rule." });
+        break;
+      case "23505":
+        out.title = t("errors.unique_violation", { defaultValue: "Duplicate value not allowed" });
+        out.hint  = t("errors.unique_violation_hint", { defaultValue: "The process tried to insert a value that already exists in a unique column." });
+        break;
+      case "23503":
+        out.title = t("errors.fk_violation", { defaultValue: "Related record is missing" });
+        out.hint  = t("errors.fk_violation_hint", { defaultValue: "A foreign key points to a row that no longer exists." });
+        break;
+      case "23502":
+        out.title = t("errors.not_null", { defaultValue: "Required field is empty" });
+        out.hint  = t("errors.not_null_hint", { defaultValue: "A column that cannot be NULL was left empty." });
+        break;
+      case "42P01":
+        out.title = t("errors.undef_table", { defaultValue: "Database table not found" });
+        out.hint  = t("errors.undef_table_hint", { defaultValue: "A migration may not have run. Restart the backend or check the schema." });
+        break;
+      case "42703":
+        out.title = t("errors.undef_column", { defaultValue: "Database column not found" });
+        out.hint  = t("errors.undef_column_hint", { defaultValue: "The code references a column that doesn't exist. A migration is likely out of sync." });
+        break;
+      case "40001":
+        out.title = t("errors.serialization", { defaultValue: "Concurrent update conflict" });
+        out.hint  = t("errors.serialization_hint", { defaultValue: "Two transactions touched the same rows. This usually retries automatically." });
+        break;
+      case "57014":
+        out.title = t("errors.canceled", { defaultValue: "Query canceled (timeout)" });
+        out.hint  = t("errors.canceled_hint", { defaultValue: "The database statement was aborted, likely due to a timeout." });
+        break;
+      case "08006":
+      case "08003":
+        out.title = t("errors.conn_lost", { defaultValue: "Database connection lost" });
+        out.hint  = t("errors.conn_lost_hint", { defaultValue: "The connection to Postgres dropped mid-query." });
+        break;
+    }
+    return out;
+  }
+
+  if (/no handler registered|handler.*not.*found/i.test(inner)) {
+    out.title = t("errors.no_handler", { defaultValue: "No backend handler registered" });
+    out.hint  = t("errors.no_handler_hint", { defaultValue: "The scheduler picked this process up but no C# handler is wired for its key." });
+    return out;
+  }
+  if (/TaskCanceled|OperationCanceled|was canceled/i.test(inner)) {
+    out.title = t("errors.op_canceled", { defaultValue: "Operation canceled" });
+    out.hint  = t("errors.op_canceled_hint", { defaultValue: "The run was stopped — by an operator, a timeout, or a shutdown." });
+    return out;
+  }
+  if (/Timeout|TimedOut/i.test(inner)) {
+    out.title = t("errors.timeout", { defaultValue: "Operation timed out" });
+    return out;
+  }
+  const http = inner.match(/\b(401|403|404|408|409|429|5\d\d)\b/);
+  if (http) {
+    const code = http[1];
+    out.title = t("errors.http", { defaultValue: `HTTP ${code} from downstream service`, code });
+    if (code === "401" || code === "403") out.hint = t("errors.http_auth_hint", { defaultValue: "Authentication or authorization failed." });
+    else if (code === "404") out.hint = t("errors.http_404_hint", { defaultValue: "The target resource wasn't found." });
+    else if (code === "429") out.hint = t("errors.http_429_hint", { defaultValue: "Rate limited by the downstream service." });
+    else if (code.startsWith("5")) out.hint = t("errors.http_5xx_hint", { defaultValue: "Downstream service returned a server error." });
+    return out;
+  }
+
+  // Nothing matched — trim the "DETAIL: Detail redacted..." noise Postgres adds
+  out.title = inner.replace(/\s*DETAIL:\s*Detail redacted[^.]*\.?\s*/gi, "").trim() || inner;
+  return out;
+}
+
+/**
+ * Presents an error with a clean title, optional hint, and an expandable
+ * raw view. Compact by default so it fits inside row-level panels.
+ */
+function ErrorMessage({
+  t, raw, tone = "error", compact = false,
+}: { t: TFunction; raw: string; tone?: "error" | "warn"; compact?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const parsed = humanizeError(raw, t);
+  const showRawToggle = parsed.title !== parsed.raw;
+  const toneCls = tone === "warn"
+    ? "text-amber-800 dark:text-amber-300"
+    : "text-destructive";
+  return (
+    <div className={`${compact ? "text-xs" : "text-sm"} ${toneCls}`}>
+      <div className="font-medium break-words">{parsed.title}</div>
+      {parsed.hint && (
+        <div className="mt-0.5 opacity-80 break-words">{parsed.hint}</div>
+      )}
+      {(parsed.attempts != null || parsed.constraint) && (
+        <div className="mt-0.5 text-[11px] opacity-70">
+          {parsed.constraint && <span className="mr-3">{t("errors.constraint", { defaultValue: "Constraint" })}: <code className="font-mono">{parsed.constraint}</code></span>}
+          {parsed.attempts != null && <span>{t("errors.attempts_made", { defaultValue: "Attempts" })}: {parsed.attempts}</span>}
+        </div>
+      )}
+      {showRawToggle && (
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="mt-1 text-[11px] underline opacity-70 hover:opacity-100"
+        >
+          {open
+            ? t("errors.hide_raw", { defaultValue: "Hide technical details" })
+            : t("errors.show_raw", { defaultValue: "Show technical details" })}
+        </button>
+      )}
+      {open && (
+        <pre className="mt-1 max-h-40 overflow-auto rounded bg-background/50 p-2 text-[11px] font-mono whitespace-pre-wrap break-words border border-current/10">
+          {parsed.raw}
+        </pre>
+      )}
+    </div>
+  );
+}
+
 function StatusPill({ t, status, reason }: { t: TFunction; status: ProcessStatus; reason?: string }) {
   const Icon = STATUS_ICONS[status];
   const pill = (
@@ -95,15 +260,102 @@ function StatusPill({ t, status, reason }: { t: TFunction; status: ProcessStatus
   );
 }
 
+/**
+ * Rich "why is this blocked / failing" panel. Surfaces every signal we get
+ * from the backend so operators can diagnose without opening the drawer:
+ * attempt vs. max retries, next retry countdown, missing handler, and the
+ * full error / block reason text.
+ */
+function BlockDetails({
+  t, p,
+}: { t: TFunction; p: ProcessDefinition }) {
+  const isBlocked = p.status === "blocked";
+  const isFailed  = p.status === "failed";
+  if (!isBlocked && !isFailed && !p.lastError && !p.blockReason) return null;
+
+  const tone = isBlocked
+    ? "border-amber-500/30 bg-amber-500/5 text-amber-800 dark:text-amber-300"
+    : "border-destructive/30 bg-destructive/5 text-destructive";
+  const Icon = isBlocked ? AlertTriangle : XCircle;
+  const title = isBlocked
+    ? t("block_details.title_blocked", { defaultValue: "Blocked — needs attention" })
+    : t("block_details.title_failing", { defaultValue: "Failing — will retry" });
+
+  const attempt = p.lastAttempt ?? 0;
+  const maxRetries = p.maxRetries ?? 3;
+  const attemptsExhausted = attempt > 0 && attempt >= maxRetries;
+  const reason = p.blockReason || p.lastError;
+
+  return (
+    <div className={`mt-2 rounded-md border p-2.5 text-xs ${tone}`}>
+      <div className="flex items-start gap-2">
+        <Icon className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+        <div className="min-w-0 flex-1">
+          <div className="font-semibold">{title}</div>
+          {reason && (
+            <div className="mt-1.5">
+              <ErrorMessage t={t} raw={reason} tone={isBlocked ? "warn" : "error"} compact />
+            </div>
+          )}
+          <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3">
+            {p.hasHandler === false && (
+              <div className="col-span-full">
+                <span className="opacity-70">{t("block_details.handler", { defaultValue: "Handler" })}:</span>{" "}
+                <span className="font-medium">{t("block_details.handler_missing", { defaultValue: "not registered on server" })}</span>
+              </div>
+            )}
+            {attempt > 0 && (
+              <div>
+                <span className="opacity-70">{t("block_details.attempt", { defaultValue: "Attempt" })}:</span>{" "}
+                <span className="font-medium tabular-nums">{attempt}/{maxRetries}</span>
+              </div>
+            )}
+            {p.consecutiveFailures > 0 && (
+              <div>
+                <span className="opacity-70">{t("labels.consecutive_failures")}:</span>{" "}
+                <span className="font-medium tabular-nums">{p.consecutiveFailures}</span>
+              </div>
+            )}
+            {p.nextRetryAt && !attemptsExhausted && (
+              <div>
+                <span className="opacity-70">{t("block_details.next_retry", { defaultValue: "Next retry" })}:</span>{" "}
+                <span className="font-medium">{fmtRelative(t, p.nextRetryAt)}</span>
+              </div>
+            )}
+            {attemptsExhausted && (
+              <div className="col-span-full">
+                <span className="opacity-70">{t("block_details.status", { defaultValue: "Status" })}:</span>{" "}
+                <span className="font-medium">
+                  {t("block_details.retries_exhausted", {
+                    defaultValue: "Retries exhausted — auto-run paused. Use “Reset failures” to re-arm.",
+                  })}
+                </span>
+              </div>
+            )}
+            {p.lastRunAt && (
+              <div>
+                <span className="opacity-70">{t("block_details.since", { defaultValue: "Since" })}:</span>{" "}
+                <span className="font-medium">{fmtRelative(t, p.lastRunAt)}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 export default function ProcessesPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useTranslation("processes");
-  const { isMainAdmin, hasPermission } = usePermissions();
-  // Only MainAdmin (or roles explicitly granted processes.manage) can run,
-  // pause, stop, enable/disable, or reconfigure processes. Everyone else
-  // has read-only visibility into the schedules and history.
-  const canManage = isMainAdmin || hasPermission("processes", "manage");
+  const { isMainAdmin } = usePermissions();
+  // Only MainAdmin can run, pause, stop, enable/disable, or reconfigure processes.
+  // The backend's RequireAdmin() gate only accepts the MainAdmin claim, so surfacing
+  // the "processes.manage" role permission here would show enabled controls that 403
+  // on every action. Keep FE and BE in lockstep.
+  const canManage = isMainAdmin;
   const isLoading = false;
 
 
@@ -294,7 +546,10 @@ export default function ProcessesPage() {
     const enabled = !p.isEnabled;
     const prevEnabled = p.isEnabled;
     const prevStatus = p.status;
-    updateProcess(p.key, { isEnabled: enabled, status: enabled ? "idle" : "paused" });
+    // Match overlay()'s authoritative mapping: a disabled-but-not-paused schedule
+    // renders as "idle", not "paused" — otherwise the pill flashes wrong until the
+    // next refresh resolves it.
+    updateProcess(p.key, { isEnabled: enabled, status: "idle" });
     if (schedules.has(p.key)) {
       try {
         await apiSetEnabled(p.key, enabled);
@@ -511,7 +766,9 @@ export default function ProcessesPage() {
                     onOpen={() => setSelectedKey(p.key)}
                     onRun={() => runNow(p)}
                     onPause={() => togglePause(p)}
+                    onStop={() => stopRun(p)}
                   />
+
                 ))}
               </div>
             </CardContent>
@@ -568,7 +825,7 @@ function Metric({ label, value, tone }: { label: string; value: number; tone: "p
 }
 
 function ProcessRow({
-  t, p, expanded, canManage, onToggleExpand, onOpen, onRun, onPause,
+  t, p, expanded, canManage, onToggleExpand, onOpen, onRun, onPause, onStop,
 }: {
   t: TFunction;
   p: ProcessDefinition;
@@ -578,16 +835,14 @@ function ProcessRow({
   onOpen: () => void;
   onRun: () => void;
   onPause: () => void;
+  onStop: () => void;
 }) {
-  // The one line that explains *why* a process is not healthy.
-  const issue = p.status === "blocked" ? (p.blockReason || p.lastError)
-              : p.status === "failed" ? (p.lastError || p.blockReason)
-              : undefined;
   const explanation = getProcessExplanation(p.key, t);
+  const stop = (e: React.MouseEvent) => e.stopPropagation();
   return (
     <div>
       <div
-        className="grid grid-cols-12 items-start gap-2 px-4 py-3 hover:bg-muted/40 cursor-pointer transition-colors"
+        className={`grid grid-cols-12 items-start gap-2 border-l-4 px-4 py-3 hover:bg-muted/40 cursor-pointer transition-colors ${STATUS_RAIL[p.status]}`}
         onClick={onOpen}
       >
         <div className="col-span-12 sm:col-span-5 min-w-0">
@@ -600,12 +855,6 @@ function ProcessRow({
           <div className="text-xs text-muted-foreground truncate">
             {p.module} · <span className="font-mono opacity-80">{p.key}</span>
           </div>
-          {issue && (
-            <div className="mt-0.5 flex items-start gap-1 text-xs text-destructive">
-              <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
-              <span className="truncate" title={issue}>{issue}</span>
-            </div>
-          )}
         </div>
         <div className="hidden sm:flex sm:col-span-2 items-center gap-1.5 text-xs text-muted-foreground">
           <Clock className="h-3 w-3" />
@@ -616,36 +865,17 @@ function ProcessRow({
           <div>{t("row.next_prefix")} {fmtRelative(t, p.nextRunAt)}</div>
         </div>
         <div className="col-span-6 sm:col-span-2">
-          <StatusPill t={t} status={p.status} reason={issue} />
-          {p.consecutiveFailures > 0 && (
-            <div className="mt-1 text-[10px] text-muted-foreground">
-              {t("labels.consecutive_failures")}: {p.consecutiveFailures}
-            </div>
-          )}
+          <StatusPill t={t} status={p.status} reason={p.blockReason || p.lastError} />
         </div>
-        <div className="col-span-6 sm:col-span-1 flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-7 w-7"
-            onClick={onRun}
-            disabled={!canManage}
-            title={canManage ? t("actions.run_now") : t("actions.run_now_locked", { defaultValue: "Only the main administrator can run processes" })}
-          >
-            <Play className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-7 w-7"
-            onClick={onPause}
-            disabled={!canManage}
-            title={!canManage
-              ? t("actions.pause_locked", { defaultValue: "Only the main administrator can pause processes" })
-              : (p.isPaused ? t("actions.resume") : t("actions.pause"))}
-          >
-            {p.isPaused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
-          </Button>
+        <div className="col-span-6 sm:col-span-1 flex items-center justify-end gap-1" onClick={stop}>
+          <RowActions
+            t={t}
+            p={p}
+            canManage={canManage}
+            onRun={onRun}
+            onPause={onPause}
+            onStop={onStop}
+          />
           {explanation && (
             <Button
               size="icon"
@@ -662,11 +892,17 @@ function ProcessRow({
             </Button>
           )}
         </div>
+
+        {(p.status === "blocked" || p.status === "failed") && (
+          <div className="col-span-12" onClick={stop}>
+            <BlockDetails t={t} p={p} />
+          </div>
+        )}
       </div>
       {expanded && explanation && (
         <div
           className="grid gap-3 border-t bg-muted/30 px-4 py-3 sm:grid-cols-3"
-          onClick={(e) => e.stopPropagation()}
+          onClick={stop}
         >
           <ExplainBlock
             icon={<CalendarClock className="h-3.5 w-3.5" />}
@@ -706,6 +942,91 @@ function ProcessRow({
     </div>
   );
 }
+
+/**
+ * State-aware row controls. Only shows the buttons that make sense for the
+ * current status, so operators aren't guessing whether Play means "start" or
+ * "resume", and Pause never appears next to a job that isn't actually running
+ * on a schedule.
+ *   running        → Stop (destructive)
+ *   paused         → Resume (primary green)
+ *   disabled       → Enable-hint (Play, outline) — clicking runs it once ad-hoc
+ *   idle / failed / blocked → Run now (primary) + Pause (outline)
+ */
+function RowActions({
+  t, p, canManage, onRun, onPause, onStop,
+}: {
+  t: TFunction;
+  p: ProcessDefinition;
+  canManage: boolean;
+  onRun: () => void;
+  onPause: () => void;
+  onStop: () => void;
+}) {
+  const lockedTitle = t("actions.locked_tooltip", {
+    defaultValue: "Only the main administrator can perform this action",
+  });
+
+  if (p.status === "running") {
+    return (
+      <Button
+        size="sm"
+        variant="destructive"
+        className="h-7 gap-1.5 px-2"
+        onClick={onStop}
+        disabled={!canManage}
+        title={canManage ? t("actions.stop") : lockedTitle}
+      >
+        <StopCircle className="h-3.5 w-3.5" />
+        <span className="text-xs">{t("actions.stop")}</span>
+      </Button>
+    );
+  }
+
+  if (p.isPaused) {
+    return (
+      <Button
+        size="sm"
+        className="h-7 gap-1.5 px-2 bg-primary hover:bg-primary/90"
+        onClick={onPause}
+        disabled={!canManage}
+        title={canManage ? t("actions.resume") : lockedTitle}
+      >
+        <Play className="h-3.5 w-3.5" />
+        <span className="text-xs">{t("actions.resume")}</span>
+      </Button>
+    );
+  }
+
+  return (
+    <>
+      <Button
+        size="icon"
+        variant="ghost"
+        className="h-7 w-7 text-primary hover:bg-primary/10"
+        onClick={onRun}
+        disabled={!canManage}
+        title={canManage ? t("actions.run_now") : lockedTitle}
+      >
+        <Play className="h-3.5 w-3.5" />
+      </Button>
+      {p.isEnabled && (
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-7 w-7 text-amber-600 hover:bg-amber-500/10"
+          onClick={onPause}
+          disabled={!canManage}
+          title={canManage ? t("actions.pause") : lockedTitle}
+        >
+          <Pause className="h-3.5 w-3.5" />
+        </Button>
+      )}
+    </>
+  );
+}
+
+
 
 function ExplainBlock({ icon, title, body }: { icon: React.ReactNode; title: string; body: React.ReactNode }) {
   return (
@@ -758,24 +1079,38 @@ function ProcessDrawer({
         </div>
       </SheetHeader>
 
+      <BlockDetails t={t} p={p} />
+
       <div className="flex flex-wrap items-center gap-2 py-3">
-        <Button size="sm" onClick={onRun} disabled={!canManage} title={canManage ? undefined : lockedTitle}>
-          <Play className="h-3.5 w-3.5 mr-1.5" />{t("actions.run_now")}
-        </Button>
-        <Button size="sm" variant="outline" onClick={onPause} disabled={!canManage} title={canManage ? undefined : lockedTitle}>
-          {p.isPaused
-            ? <><Play className="h-3.5 w-3.5 mr-1.5" />{t("actions.resume")}</>
-            : <><Pause className="h-3.5 w-3.5 mr-1.5" />{t("actions.pause")}</>}
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={onStop}
-          disabled={!stopEnabled || !canManage}
-          title={canManage ? t("stop_tooltip") : lockedTitle}
-        >
-          <StopCircle className="h-3.5 w-3.5 mr-1.5" />{t("actions.stop")}
-        </Button>
+        {p.status === "running" ? (
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={onStop}
+            disabled={!stopEnabled || !canManage}
+            title={canManage ? t("stop_tooltip") : lockedTitle}
+          >
+            <StopCircle className="h-3.5 w-3.5 mr-1.5" />{t("actions.stop")}
+          </Button>
+        ) : (
+          <Button size="sm" onClick={onRun} disabled={!canManage} title={canManage ? undefined : lockedTitle}>
+            <Play className="h-3.5 w-3.5 mr-1.5" />{t("actions.run_now")}
+          </Button>
+        )}
+
+        {p.status !== "running" && (
+          <Button
+            size="sm"
+            variant={p.isPaused ? "default" : "outline"}
+            onClick={onPause}
+            disabled={!canManage || !p.isEnabled}
+            title={canManage ? undefined : lockedTitle}
+          >
+            {p.isPaused
+              ? <><Play className="h-3.5 w-3.5 mr-1.5" />{t("actions.resume")}</>
+              : <><Pause className="h-3.5 w-3.5 mr-1.5" />{t("actions.pause")}</>}
+          </Button>
+        )}
 
         <Button size="sm" variant="ghost" onClick={onResetFailures} disabled={p.consecutiveFailures === 0 || !canManage} title={canManage ? undefined : lockedTitle}>
           {t("actions.reset_failures")}
@@ -787,6 +1122,7 @@ function ProcessDrawer({
           <Switch checked={p.isEnabled} onCheckedChange={onToggleEnabled} disabled={!canManage} title={canManage ? undefined : lockedTitle} />
         </div>
       </div>
+
 
       <Separator />
 
@@ -807,16 +1143,8 @@ function ProcessDrawer({
           <Row label={t("labels.next_run")}      value={fmtRelative(t, p.nextRunAt)} />
           <Row label={t("labels.success_rate")}  value={p.successRate30 === undefined ? "—" : `${p.successRate30}%`} />
           <Row label={t("labels.consecutive_failures")} value={String(p.consecutiveFailures)} />
-          {p.lastError && (
-            <div className="mt-3 rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
-              <span className="font-medium">{t("labels.last_error")}</span> {p.lastError}
-            </div>
-          )}
-          {p.blockReason && (
-            <div className="mt-3 rounded-md border border-amber-500/30 bg-amber-500/5 p-2 text-xs text-amber-700 dark:text-amber-400">
-              <span className="font-medium">{t("labels.blocked")}</span> {p.blockReason}
-            </div>
-          )}
+          {/* Error and block reason are surfaced by the <BlockDetails /> panel
+              rendered at the top of the drawer — no need to repeat them here. */}
         </TabsContent>
 
         <TabsContent value="schedule" className="pt-3 space-y-3">
@@ -891,7 +1219,9 @@ function ProcessDrawer({
                       : <span className="inline-flex items-center gap-1 text-muted-foreground"><Square className="h-3 w-3" />{t("history_status.canc")}</span>}
                   </div>
                   {r.error && (
-                    <div className="col-span-12 pl-1 text-destructive/80">↳ {r.error}</div>
+                    <div className={`col-span-12 mt-1 rounded border p-2 ${r.status === "blocked" ? "border-amber-500/30 bg-amber-500/5" : "border-destructive/30 bg-destructive/5"}`}>
+                      <ErrorMessage t={t} raw={r.error} tone={r.status === "blocked" ? "warn" : "error"} compact />
+                    </div>
                   )}
                 </div>
               ))}
