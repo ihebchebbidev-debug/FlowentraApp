@@ -22,12 +22,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import {
   PROCESSES, WORKSPACE_LABELS, type ProcessDefinition, type ProcessRun as UiProcessRun, type ProcessStatus, type WorkspaceId,
-} from "@/modules/system/services/processesMock";
+} from "@/modules/system/services/processesCatalog";
 import {
   listSchedules, upsertSchedule, setEnabled as apiSetEnabled, setPaused as apiSetPaused,
   runNow as apiRunNow, listRuns as apiListRuns, resetFailures as apiResetFailures,
   stopRun as apiStopRun,
   listRunningKeys, overlay, REAL_HANDLER_KEYS, ProcessesApiError, type ProcessSchedule,
+  type OverlayTexts,
+
 } from "@/modules/system/services/processesService";
 import { ProcessesAutopilotDemo } from "@/modules/system/components/onboarding/ProcessesAutopilotDemo";
 import { localizeProcess } from "@/modules/system/utils/processesI18n";
@@ -39,7 +41,6 @@ import type { TFunction } from "i18next";
 
 
 const STATUS_ICONS: Record<ProcessStatus, any> = {
-  idle: CircleDot,
   running: Activity,
   paused: Pause,
   failed: XCircle,
@@ -47,7 +48,6 @@ const STATUS_ICONS: Record<ProcessStatus, any> = {
 };
 
 const STATUS_CLASSES: Record<ProcessStatus, string> = {
-  idle:    "bg-muted text-muted-foreground border-border",
   running: "bg-primary/10 text-primary border-primary/30",
   paused:  "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30",
   failed:  "bg-destructive/10 text-destructive border-destructive/30",
@@ -57,7 +57,6 @@ const STATUS_CLASSES: Record<ProcessStatus, string> = {
 // Colored left-border rail so the row's state is legible at a glance,
 // without hunting for the pill on the right.
 const STATUS_RAIL: Record<ProcessStatus, string> = {
-  idle:    "border-l-transparent",
   running: "border-l-primary",
   paused:  "border-l-amber-500",
   failed:  "border-l-destructive",
@@ -79,7 +78,30 @@ function fmtRelative(t: TFunction, iso?: string): string {
   return `${sign}${days}${t("relative.d")}${past}`;
 }
 
+/** Exact wall-clock timestamp, shown next to the relative label in the drawer. */
+function fmtAbsolute(iso?: string): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleString(undefined, {
+    year: "numeric", month: "short", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+  });
+}
+
+/** Relative label with the exact timestamp underneath. */
+function TimeValue({ t, iso }: { t: TFunction; iso?: string }) {
+  const abs = fmtAbsolute(iso);
+  return (
+    <span className="text-right">
+      <span className="block">{fmtRelative(t, iso)}</span>
+      {abs && <span className="block text-[11px] font-normal text-muted-foreground font-mono">{abs}</span>}
+    </span>
+  );
+}
+
 function fmtDuration(ms?: number): string {
+
   if (ms == null) return "—";
   if (ms < 1_000) return `${ms}ms`;
   const s = ms / 1_000;
@@ -257,10 +279,14 @@ function HealthSummary({
   items: ProcessDefinition[];
   onOpen: (key: string) => void;
 }) {
-  const running = items.filter((i) => i.status === "running");
+  // "Running now" means a run is literally in flight — not merely scheduled and
+  // healthy, which is the resting state of every well-behaved service.
+  const running = items.filter((i) => i.isExecuting);
+  const active  = items.filter((i) => i.status === "running");
   const blocked = items.filter((i) => i.status === "blocked");
   const failed  = items.filter((i) => i.status === "failed");
   const paused  = items.filter((i) => i.status === "paused" || !i.isEnabled);
+
 
   const nothingWrong = blocked.length === 0 && failed.length === 0;
 
@@ -308,15 +334,17 @@ function HealthSummary({
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <CheckCircle2 className="h-4 w-4 text-emerald-600" />
             <span>
-              {t("health.all_idle", {
+              {t("health.all_running", {
                 defaultValue:
-                  "All background services are healthy and idle. {{paused}} paused · {{total}} total.",
+                  "{{active}} background services are scheduled and running. {{paused}} paused · {{total}} total.",
+                active: active.length,
                 paused: paused.length,
                 total: items.length,
               })}
             </span>
           </div>
         ) : null}
+
 
         {running.length > 0 && (
           <div className="flex flex-wrap items-center gap-2">
@@ -362,14 +390,19 @@ function HealthSummary({
   );
 }
 
-function StatusPill({ t, status, reason }: { t: TFunction; status: ProcessStatus; reason?: string }) {
+function StatusPill({
+  t, status, reason, executing,
+}: { t: TFunction; status: ProcessStatus; reason?: string; executing?: boolean }) {
   const Icon = STATUS_ICONS[status];
   const pill = (
     <Badge variant="outline" className={`gap-1.5 font-medium ${STATUS_CLASSES[status]}`}>
-      <Icon className={`h-3 w-3 ${status === "running" ? "animate-pulse" : ""}`} />
-      {t(`status.${status}`)}
+      <Icon className={`h-3 w-3 ${executing ? "animate-pulse" : ""}`} />
+      {/* "Running" = the service is live and on schedule; only a run that is
+          literally in flight gets the louder "Executing now" wording. */}
+      {executing ? t("status.executing", { defaultValue: "Executing now" }) : t(`status.${status}`)}
     </Badge>
   );
+
   if (!reason) return pill;
   return (
     <TooltipProvider>
@@ -598,11 +631,32 @@ export default function ProcessesPage() {
     return () => { mountedRef.current = false; };
   }, []);
 
+  // Localised reasons for the states overlay() derives itself (not registered,
+  // overdue, disabled) so the row never falls back to hardcoded English.
+  const overlayTexts = useMemo<OverlayTexts>(
+    () => ({
+      notRegistered: t("reason.not_registered", {
+        defaultValue: "Not registered on the server — this job is not scheduled and will never run.",
+      }),
+      overdue: (n: string) =>
+        t("reason.overdue", {
+          defaultValue:
+            "Overdue — the scheduler has not executed this job since it was due at {{due}}.",
+          due: new Date(n).toLocaleString(),
+        }),
+      disabled: t("reason.disabled", { defaultValue: "Disabled — switched off by an administrator." }),
+      configDefault: t("labels.config_default", { defaultValue: "(default)" }),
+
+    }),
+    [t]
+  );
+
   // Re-localize when language changes — re-apply the live overlay, don't reset
   // to the bare catalog (that used to blank out status/errors for up to 15s).
   useEffect(() => {
     if (accessError) return;
-    setItems(reliableCatalog.map((p) => overlay(p, schedulesRef.current.get(p.key), fmtSchedule, runningRef.current)));
+    setItems(reliableCatalog.map((p) => overlay(p, schedulesRef.current.get(p.key), fmtSchedule, runningRef.current, overlayTexts)));
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reliableCatalog]);
 
@@ -613,7 +667,7 @@ export default function ProcessesPage() {
       schedulesRef.current = map;
       runningRef.current = running;
       setSchedules(map);
-      setItems(reliableCatalog.map((p) => overlay(p, map.get(p.key), fmtSchedule, running)));
+      setItems(reliableCatalog.map((p) => overlay(p, map.get(p.key), fmtSchedule, running, overlayTexts)));
       setAccessError(null);
       setStale(false);
     } catch (e) {
@@ -755,7 +809,7 @@ export default function ProcessesPage() {
     const next = !p.isPaused;
     const prevPaused = p.isPaused;
     const prevStatus = p.status;
-    updateProcess(p.key, { isPaused: next, status: next ? "paused" : "idle" });
+    updateProcess(p.key, { isPaused: next, status: next ? "paused" : "running" });
     try {
       if (schedules.has(p.key)) {
         await apiSetPaused(p.key, next);
@@ -780,10 +834,11 @@ export default function ProcessesPage() {
     const enabled = !p.isEnabled;
     const prevEnabled = p.isEnabled;
     const prevStatus = p.status;
-    // Match overlay()'s authoritative mapping: a disabled-but-not-paused schedule
-    // renders as "idle", not "paused" — otherwise the pill flashes wrong until the
-    // next refresh resolves it.
-    updateProcess(p.key, { isEnabled: enabled, status: "idle" });
+    // Match overlay()'s authoritative mapping: a disabled schedule renders as
+    // "paused" (stopped by an operator) and an enabled one as "running", so the
+    // pill never flashes a wrong state until the next refresh resolves it.
+    updateProcess(p.key, { isEnabled: enabled, status: enabled ? "running" : "paused" });
+
     if (schedules.has(p.key)) {
       try {
         await apiSetEnabled(p.key, enabled);
@@ -1255,7 +1310,7 @@ function ProcessRow({
           <div>{t("row.next_prefix")} {fmtRelative(t, p.nextRunAt)}</div>
         </div>
         <div className="col-span-6 sm:col-span-2">
-          <StatusPill t={t} status={p.status} reason={p.blockReason || p.lastError} />
+          <StatusPill t={t} status={p.status} executing={p.isExecuting} reason={p.blockReason || p.lastError} />
         </div>
         <div className="col-span-6 sm:col-span-1 flex items-center justify-end gap-1" onClick={stop}>
           <RowActions
@@ -1539,7 +1594,7 @@ function ProcessDrawer({
       <SheetHeader className="pb-2">
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="uppercase tracking-wider text-[10px]">{wsLabel}</Badge>
-          <StatusPill t={t} status={p.status} reason={p.blockReason || p.lastError} />
+          <StatusPill t={t} status={p.status} executing={p.isExecuting} reason={p.blockReason || p.lastError} />
         </div>
         <SheetTitle className="text-base">{p.name}</SheetTitle>
         <SheetDescription>{p.description}</SheetDescription>
@@ -1606,15 +1661,52 @@ function ProcessDrawer({
         <TabsContent value="overview" className="pt-3 space-y-2">
           <Row label={t("labels.schedule")}      value={p.scheduleHuman} />
           <Row label={t("labels.timezone")}      value={p.timezone} />
-          <Row label={t("labels.last_run")}      value={fmtRelative(t, p.lastRunAt)} />
+          <Row label={t("labels.last_run")}      value={<TimeValue t={t} iso={p.lastRunAt} />} />
           <Row label={t("labels.last_duration")} value={fmtDuration(p.lastDurationMs)} />
           <Row label={t("labels.last_items")}    value={String(p.lastItems ?? "—")} />
-          <Row label={t("labels.next_run")}      value={fmtRelative(t, p.nextRunAt)} />
+          <Row label={t("labels.next_run")}      value={<TimeValue t={t} iso={p.nextRunAt} />} />
           <Row label={t("labels.success_rate")}  value={p.successRate30 === undefined ? "—" : `${p.successRate30}%`} />
           <Row label={t("labels.consecutive_failures")} value={String(p.consecutiveFailures)} />
-          {/* Error and block reason are surfaced by the <BlockDetails /> panel
-              rendered at the top of the drawer — no need to repeat them here. */}
+
+          <Separator className="my-2" />
+
+          {/* Enablement state, why it is held back, and the scheduler handler key. */}
+          <Row
+            label={t("labels.enabled")}
+            value={
+              <span className={p.isEnabled ? undefined : "text-muted-foreground"}>
+                {p.isEnabled
+                  ? (p.isPaused
+                      ? t("labels.enabled_paused", { defaultValue: "Enabled (paused)" })
+                      : t("labels.yes", { defaultValue: "Yes" }))
+                  : t("labels.no", { defaultValue: "No" })}
+              </span>
+            }
+          />
+          <Row
+            label={t("labels.hold_reason", { defaultValue: "Paused / blocked reason" })}
+            value={
+              p.blockReason
+                ? <span className="text-amber-700 dark:text-amber-400">{p.blockReason}</span>
+                : p.isPaused
+                  ? <span className="text-amber-700 dark:text-amber-400">
+                      {t("labels.paused_manually", { defaultValue: "Paused manually by an administrator" })}
+                    </span>
+                  : !p.isEnabled
+                    ? <span className="text-muted-foreground">
+                        {t("labels.disabled_reason", { defaultValue: "Schedule disabled" })}
+                      </span>
+                    : <span className="text-muted-foreground">{t("relative.dash")}</span>
+            }
+          />
+          <Row
+            label={t("labels.handler_key", { defaultValue: "Handler key" })}
+            value={<code className="font-mono text-xs break-all">{p.key}</code>}
+          />
+          {/* Error and block reason are also surfaced by the <BlockDetails /> panel
+              rendered at the top of the drawer. */}
         </TabsContent>
+
 
         <TabsContent value="schedule" className="pt-3 space-y-3">
           <Row label={t("labels.type")} value={p.scheduleType} />

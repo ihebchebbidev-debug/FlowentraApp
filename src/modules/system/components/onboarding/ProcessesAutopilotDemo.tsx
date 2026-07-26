@@ -3,66 +3,51 @@ import { useTranslation } from 'react-i18next';
 import {
   X, Play, Pause, RotateCcw, Volume2, VolumeX, Languages,
   Zap, Search, Filter, RefreshCw, Clock, ChevronRight, ChevronDown,
-  Activity, CircleDot, AlertTriangle, XCircle, CheckCircle2, StopCircle, Square,
+  Activity, AlertTriangle, XCircle, CheckCircle2, StopCircle, Square,
 } from 'lucide-react';
 import { DemoCursor } from '@/modules/external/components/onboarding/DemoCursor';
 import { pickBestVoice, splitForSpeech, languageTagFor, configureUtteranceForFemaleVoice } from '@/modules/external/components/onboarding/narrationVoice';
 import {
-  PROC_STEPS, PROC_CHAPTERS, initialProcessesDemoState, DEMO_REAL_PROCESSES,
+  PROC_STEPS, PROC_CHAPTERS, initialProcessesDemoState,
   type ProcessesDemoState,
 } from './processesDemoScript';
+import {
+  DEMO_ROWS, DEMO_KPIS, DEMO_FOCUS_ROW, DEMO_HISTORY, DEMO_MANUAL_RUN, relativeLabel,
+} from './processesDemoData';
+import type { ProcessDefinition, ProcessStatus } from '@/modules/system/services/processesCatalog';
+
 import { pickLang, getCaption, getChapterTitle } from './processesDemoTranslations';
 
 interface Props { open: boolean; onClose: () => void; }
 
 // ─── Demo data ───────────────────────────────────────────────────────────────
+// Rows come from processesDemoData, which pushes scripted server rows through
+// the REAL overlay() used by Administration > Processes. Statuses, block
+// reasons, success rates, settings and diagnostics below are therefore computed
+// by production code, not written by hand.
 
-interface DemoRow {
-  key: string;
-  name: string;
-  module: string;
-  schedule: string;
-  last: string;
-  next: string;
-  status: 'idle' | 'running' | 'paused' | 'failed' | 'blocked';
-  paused?: boolean;
-}
+const ROWS = DEMO_ROWS;
 
-// Rotating placeholders so the list feels alive without lying about real runs.
-const LAST_HINTS = ['12m ago', '48m ago', '2h ago', '9h ago', '17h ago', '3d ago'];
-const NEXT_HINTS = ['in 48m', 'in 11m', 'in 5h',  'in 15h', 'in 22h', 'in 1d'];
-
-const ROWS: DemoRow[] = DEMO_REAL_PROCESSES.map((p, i) => ({
-  key: p.key,
-  name: p.name,
-  module: p.module,
-  schedule: p.schedule,
-  last: LAST_HINTS[i % LAST_HINTS.length],
-  next: NEXT_HINTS[i % NEXT_HINTS.length],
-  // Keep exactly one row "running" so the Running KPI on the header reads 1.
-  status: p.key === 'admin.retry-failed-emails' ? 'running' : 'idle',
-}));
-
-const RUNNING_COUNT = ROWS.filter(r => r.status === 'running').length;
-
-const STATUS_META: Record<DemoRow['status'], { label: string; cls: string; Icon: any }> = {
-  idle:    { label: 'Idle',    cls: 'bg-muted text-muted-foreground border-border',                Icon: CircleDot },
-  running: { label: 'Running', cls: 'bg-primary/10 text-primary border-primary/30',                Icon: Activity },
-  paused:  { label: 'Paused',  cls: 'bg-muted text-muted-foreground border-border',                Icon: Pause },
-  failed:  { label: 'Failed',  cls: 'bg-destructive/10 text-destructive border-destructive/30',    Icon: XCircle },
-  blocked: { label: 'Blocked', cls: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30', Icon: AlertTriangle },
+const STATUS_META: Record<ProcessStatus, { label: string; cls: string; Icon: any }> = {
+  running: { label: 'Running', cls: 'bg-primary/10 text-primary border-primary/30',                            Icon: Activity },
+  paused:  { label: 'Paused',  cls: 'bg-muted text-muted-foreground border-border',                            Icon: Pause },
+  failed:  { label: 'Failed',  cls: 'bg-destructive/10 text-destructive border-destructive/30',                Icon: XCircle },
+  blocked: { label: 'Blocked', cls: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30',  Icon: AlertTriangle },
 };
 
-function StatusPill({ s }: { s: DemoRow['status'] }) {
-  const m = STATUS_META[s];
+/** Same rule as the live page: "Executing now" only while a run is in flight. */
+function StatusPill({ p }: { p: ProcessDefinition }) {
+  const m = STATUS_META[p.status];
   const Icon = m.Icon;
+  const label = p.isExecuting ? 'Executing now' : m.label;
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-medium ${m.cls}`}>
-      <Icon className={`h-3 w-3 ${s === 'running' ? 'animate-pulse' : ''}`} />
-      {m.label}
+      <Icon className={`h-3 w-3 ${p.isExecuting ? 'animate-pulse' : ''}`} />
+      {label}
     </span>
   );
 }
+
 
 // ─── Metric chip ─────────────────────────────────────────────────────────────
 
@@ -101,11 +86,12 @@ function PageList({ state }: { state: ProcessesDemoState }) {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Metric id="proc-demo-metric-running" label="Running" value={RUNNING_COUNT} tone="primary"     active={state.highlightMetric === 'running'} />
-              <Metric id="proc-demo-metric-failed"  label="Failed"  value={0} tone="destructive" active={state.highlightMetric === 'failed'} />
-              <Metric id="proc-demo-metric-blocked" label="Blocked" value={0} tone="amber"       active={state.highlightMetric === 'blocked'} />
-              <Metric id="proc-demo-metric-paused"  label="Paused"  value={0} tone="muted"       active={state.highlightMetric === 'paused'} />
-              <Metric id="proc-demo-metric-total"   label="Total"   value={ROWS.length} tone="muted" active={state.highlightMetric === 'total'} />
+              <Metric id="proc-demo-metric-running" label="Running now" value={DEMO_KPIS.running} tone="primary"     active={state.highlightMetric === 'running'} />
+              <Metric id="proc-demo-metric-failed"  label="Failed"  value={DEMO_KPIS.failed}  tone="destructive" active={state.highlightMetric === 'failed'} />
+              <Metric id="proc-demo-metric-blocked" label="Blocked" value={DEMO_KPIS.blocked} tone="amber"       active={state.highlightMetric === 'blocked'} />
+              <Metric id="proc-demo-metric-paused"  label="Paused"  value={DEMO_KPIS.paused}  tone="muted"       active={state.highlightMetric === 'paused'} />
+              <Metric id="proc-demo-metric-total"   label="Total"   value={DEMO_KPIS.total}   tone="muted"       active={state.highlightMetric === 'total'} />
+
               <div id="proc-demo-refresh" className="h-8 px-3 rounded-md border border-border text-xs inline-flex items-center gap-1.5 text-foreground">
                 <RefreshCw className="h-3.5 w-3.5" /> Refresh
               </div>
@@ -143,7 +129,7 @@ function PageList({ state }: { state: ProcessesDemoState }) {
           )}
           {state.statusFilterOpen && (
             <div className="mt-2 w-[180px] rounded-md border border-border bg-popover shadow-lg p-1 text-sm">
-              {['All status', 'Running', 'Failed', 'Blocked', 'Paused', 'Idle'].map((w, i) => (
+              {['All status', 'Running', 'Failed', 'Blocked', 'Paused'].map((w, i) => (
                 <div key={w} className={`px-3 py-1.5 rounded ${i === 1 ? 'bg-accent text-accent-foreground' : ''}`}>{w}</div>
               ))}
             </div>
@@ -162,7 +148,8 @@ function PageList({ state }: { state: ProcessesDemoState }) {
           </div>
         </div>
         <div className="divide-y">
-          {ROWS.map((r, i) => {
+          {ROWS.map((row, i) => {
+            const r = row.process;
             const focus = state.focusRowIndex === i || state.focusProcessKey === r.key;
             return (
               <div
@@ -174,22 +161,30 @@ function PageList({ state }: { state: ProcessesDemoState }) {
                 <div className="col-span-5 min-w-0" id={i === 0 ? 'proc-demo-row-0' : undefined}>
                   <div className="font-medium text-sm truncate">{r.name}</div>
                   <div className="text-xs text-muted-foreground truncate">
-                    {r.module} · <span className="font-mono opacity-80">{r.key}</span>
+                    {row.moduleLabel} · <span className="font-mono opacity-80">{r.key}</span>
                   </div>
+                  {/* The real page always explains a non-healthy state inline. */}
+                  {r.blockReason && (
+                    <div className="text-xs text-amber-700 dark:text-amber-400 truncate">↳ {r.blockReason}</div>
+                  )}
+                  {!r.blockReason && r.lastError && (
+                    <div className="text-xs text-destructive/90 truncate">↳ {r.lastError}</div>
+                  )}
                 </div>
                 <div className="col-span-2 items-center gap-1.5 text-xs text-muted-foreground hidden sm:flex">
                   <Clock className="h-3 w-3" />
-                  <span className="truncate">{r.schedule}</span>
+                  <span className="truncate">{r.scheduleHuman}</span>
                 </div>
                 <div className="col-span-2 text-xs text-muted-foreground hidden sm:block">
-                  <div>Last: {r.last}</div>
-                  <div>Next: {r.next}</div>
+                  <div>Last: {row.lastLabel}</div>
+                  <div>Next: {row.nextLabel}</div>
                 </div>
                 <div className="col-span-2">
                   <span id={i === 0 ? 'proc-demo-row-status' : undefined}>
-                    <StatusPill s={r.status} />
+                    <StatusPill p={r} />
                   </span>
                 </div>
+
                 <div className="col-span-1 flex items-center justify-end gap-1">
                   <span
                     id={i === 0 ? 'proc-demo-row-run' : undefined}
@@ -218,7 +213,10 @@ function PageList({ state }: { state: ProcessesDemoState }) {
 
 function Drawer({ state }: { state: ProcessesDemoState }) {
   if (!state.drawerOpen) return null;
-  const r = ROWS[0];
+  // Deep-dive row, overlaid by the real service — description, anchor, schedule,
+  // settings and diagnostics all come from the catalog + overlay(), never
+  // from strings typed into this component.
+  const r = DEMO_FOCUS_ROW.process;
   const h = state.drawerHighlight;
   const ring = (key: NonNullable<ProcessesDemoState['drawerHighlight']>) =>
     h === key ? 'ring-2 ring-primary rounded-md' : '';
@@ -232,16 +230,15 @@ function Drawer({ state }: { state: ProcessesDemoState }) {
             <span className="uppercase tracking-wider text-[10px] rounded-md bg-secondary text-secondary-foreground px-2 py-0.5 font-medium">
               Admin
             </span>
-            <StatusPill s={r.status} />
+            <StatusPill p={r} />
           </div>
           <h2 className="text-base font-semibold">{r.name}</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Flip any invoice past its due date into <em>overdue</em> so the KPI is live and the chase list is accurate.
-          </p>
+          <p className="text-sm text-muted-foreground mt-0.5">{r.description}</p>
           <div className="text-[11px] text-muted-foreground font-mono pt-1">
-            {r.module} · anchor: invoices.mark-overdue
+            {DEMO_FOCUS_ROW.moduleLabel} · anchor: {r.anchor}
           </div>
         </div>
+
 
         {/* Action bar */}
         <div id="proc-demo-drawer-actions" className={`px-6 py-3 flex flex-wrap items-center gap-2 ${ring('actions')}`}>
@@ -281,18 +278,20 @@ function Drawer({ state }: { state: ProcessesDemoState }) {
             ))}
           </div>
 
-          {/* Overview */}
+          {/* Overview — every value read off the overlaid process. */}
           {state.drawerTab === 'overview' && (
             <div id="proc-demo-drawer-overview" className={`pt-3 space-y-2 ${ring('overview')}`}>
               {[
-                ['Schedule', 'Every 60 min'],
-                ['Timezone', 'Africa/Tunis'],
-                ['Last run', '12m ago'],
-                ['Last duration', '184ms'],
-                ['Last items', '3'],
-                ['Next run', 'in 48m'],
-                ['Success (30 runs)', '100%'],
-                ['Consecutive failures', '0'],
+                ['Schedule', r.scheduleHuman],
+                ['Timezone', r.timezone],
+                ['Last run', DEMO_FOCUS_ROW.lastLabel],
+                ['Last duration', r.lastDurationMs != null ? `${r.lastDurationMs}ms` : '—'],
+                ['Last items', r.lastItems != null ? String(r.lastItems) : '—'],
+                ['Next run', DEMO_FOCUS_ROW.nextLabel],
+                // Real stat or an honest dash — never a fabricated 100%.
+                ['Success (30 runs)', r.successRate30 != null ? `${r.successRate30}%` : '—'],
+                ['Consecutive failures', String(r.consecutiveFailures)],
+                ...r.settings.map(s => [s.label, String(s.value)] as [string, string]),
               ].map(([k, v]) => (
                 <div key={k} className="flex items-center justify-between gap-3 text-sm">
                   <span className="text-muted-foreground">{k}</span>
@@ -305,9 +304,9 @@ function Drawer({ state }: { state: ProcessesDemoState }) {
           {/* Schedule */}
           {state.drawerTab === 'schedule' && (
             <div className="pt-3 space-y-3">
-              <div className="flex items-center justify-between text-sm"><span className="text-muted-foreground">Type</span><span className="font-medium">interval</span></div>
-              <div className="flex items-center justify-between text-sm"><span className="text-muted-foreground">Interval</span><span className="font-medium">Every 60 min</span></div>
-              <div className="flex items-center justify-between text-sm"><span className="text-muted-foreground">Timezone</span><span className="font-medium">Africa/Tunis</span></div>
+              <div className="flex items-center justify-between text-sm"><span className="text-muted-foreground">Type</span><span className="font-medium">{r.scheduleType}</span></div>
+              <div className="flex items-center justify-between text-sm"><span className="text-muted-foreground">Interval</span><span className="font-medium">{r.scheduleHuman}</span></div>
+              <div className="flex items-center justify-between text-sm"><span className="text-muted-foreground">Timezone</span><span className="font-medium">{r.timezone}</span></div>
 
               <div className={`flex items-end gap-2 pt-2 p-2 ${ring('schedule-interval')}`}>
                 <div className="flex-1">
@@ -323,53 +322,47 @@ function Drawer({ state }: { state: ProcessesDemoState }) {
             </div>
           )}
 
-          {/* History */}
+          {/* History — real ProcessRun records, including a failure and a
+              lock-skipped tick, each with the reason the backend reported. */}
           {state.drawerTab === 'history' && (
             <div className="pt-3">
               <div className="divide-y text-xs">
-                {[
-                  state.runJustCompleted && { when: 'just now',  dur: '186ms', items: 4, by: 'manual',    status: 'success' as const, err: '' },
-                  { when: '12m ago',  dur: '184ms', items: 3, by: 'scheduler', status: 'success' as const, err: '' },
-                  { when: '1h ago',   dur: '191ms', items: 2, by: 'scheduler', status: 'success' as const, err: '' },
-                  { when: '2h ago',   dur: '208ms', items: 5, by: 'scheduler', status: 'success' as const, err: '' },
-                  { when: '3h ago',   dur: '512ms', items: 0, by: 'scheduler', status: 'failed'  as const, err: 'DB connection reset — retry scheduled.' },
-                  { when: '4h ago',   dur: '173ms', items: 1, by: 'scheduler', status: 'success' as const, err: '' },
-                ].filter(Boolean).map((row: any, i) => (
+                {(state.runJustCompleted ? [DEMO_MANUAL_RUN, ...DEMO_HISTORY] : DEMO_HISTORY).map((run, i) => (
                   <div
-                    key={i}
+                    key={run.id}
                     id={i === 0 ? 'proc-demo-drawer-tab-history-row' : undefined}
                     className={`grid grid-cols-12 gap-2 py-2 ${i === 0 && h === 'history-row' ? ring('history-row') + ' bg-primary/5' : ''}`}
                   >
-                    <div className="col-span-4 text-muted-foreground">{row.when}</div>
-                    <div className="col-span-2">{row.dur}</div>
-                    <div className="col-span-2 tabular-nums">{row.items}</div>
-                    <div className="col-span-2 capitalize text-muted-foreground">{row.by}</div>
-                    <div className="col-span-2 text-right">
-                      {row.status === 'success'
-                        ? <span className="inline-flex items-center gap-1 text-primary"><CheckCircle2 className="h-3 w-3" />ok</span>
-                        : <span className="inline-flex items-center gap-1 text-destructive"><XCircle className="h-3 w-3" />fail</span>}
+                    <div className="col-span-4 text-muted-foreground">
+                      {run.triggeredBy === 'manual' && state.runJustCompleted && i === 0 ? 'just now' : relativeLabel(run.startedAt, false)}
                     </div>
-                    {row.err && <div className="col-span-12 pl-1 text-destructive/80">↳ {row.err}</div>}
+                    <div className="col-span-2">{run.durationMs}ms</div>
+                    <div className="col-span-2 tabular-nums">{run.itemsProcessed}</div>
+                    <div className="col-span-2 capitalize text-muted-foreground">{run.triggeredBy}</div>
+                    <div className="col-span-2 text-right">
+                      {run.status === 'success'
+                        ? <span className="inline-flex items-center gap-1 text-primary"><CheckCircle2 className="h-3 w-3" />ok</span>
+                        : run.status === 'skipped'
+                          ? <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-400"><AlertTriangle className="h-3 w-3" />skipped</span>
+                          : <span className="inline-flex items-center gap-1 text-destructive"><XCircle className="h-3 w-3" />fail</span>}
+                    </div>
+                    {run.error && <div className="col-span-12 pl-1 text-destructive/80">↳ {run.error}</div>}
+                    {run.blockReason && <div className="col-span-12 pl-1 text-amber-700/90 dark:text-amber-400/90">↳ {run.blockReason}</div>}
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Diagnostics */}
+          {/* Diagnostics — produced by the service's own buildDiagnostics(). */}
           {state.drawerTab === 'diagnostics' && (
             <div className="pt-3 space-y-2">
               <div className="text-xs text-muted-foreground pb-1">
                 Automated checks answering <em>why is this process blocked?</em>
               </div>
-              {[
-                { ok: true,  label: 'Table invoices exists',       detail: 'public.invoices reachable · 12,842 rows' },
-                { ok: true,  label: 'Handler registered',           detail: 'MarkOverdueInvoicesHandler v3' },
-                { ok: true,  label: 'Scheduler advisory lock free', detail: 'pg_try_advisory_lock returns true' },
-                { ok: true,  label: 'Timezone set',                 detail: 'Africa/Tunis' },
-              ].map((d, i) => (
+              {r.diagnostics.map((d, i) => (
                 <div
-                  key={i}
+                  key={d.label}
                   id={i === 0 ? 'proc-demo-drawer-tab-diagnostics-item' : undefined}
                   className={`flex items-start gap-2 rounded-md border p-2 text-sm ${i === 0 && h === 'diagnostic-item' ? ring('diagnostic-item') + ' bg-primary/5' : ''}`}
                 >
@@ -378,12 +371,13 @@ function Drawer({ state }: { state: ProcessesDemoState }) {
                     : <XCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />}
                   <div className="min-w-0">
                     <div className="font-medium">{d.label}</div>
-                    <div className="text-xs text-muted-foreground">{d.detail}</div>
+                    {d.detail && <div className="text-xs text-muted-foreground">{d.detail}</div>}
                   </div>
                 </div>
               ))}
             </div>
           )}
+
         </div>
       </div>
     </div>

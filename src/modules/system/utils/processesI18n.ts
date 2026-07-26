@@ -1,8 +1,8 @@
 import type { TFunction } from "i18next";
-import type { ProcessDefinition } from "@/modules/system/services/processesMock";
+import type { ProcessDefinition } from "@/modules/system/services/processesCatalog";
 
 /**
- * Maps free-text strings from processesMock.ts to stable translation keys.
+ * Maps free-text strings from processesCatalog.ts to stable translation keys.
  * The mock file remains English (source of truth); this layer localizes it.
  */
 const MODULE_KEY: Record<string, string> = {

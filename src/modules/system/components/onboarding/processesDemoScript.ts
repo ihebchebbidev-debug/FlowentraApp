@@ -3,7 +3,7 @@
 // English captions live inline here; translations in processesDemoTranslations.ts
 // (must stay PROC_STEPS.length long, same order).
 
-import { PROCESSES } from '@/modules/system/services/processesMock';
+import { PROCESSES } from '@/modules/system/services/processesCatalog';
 import { REAL_HANDLER_KEYS } from '@/modules/system/services/processesService';
 
 export type ProcessesDemoPage = 'list';
@@ -288,7 +288,7 @@ const INTRO_STEPS: ProcessesDemoStep[] = [
   {
     target: 'proc-demo-metric-blocked',
     caption:
-      'Blocked means a job cannot run yet — usually a missing table, missing config, or a dependency that has not been set up. The diagnostics tab tells you exactly why.',
+      'Blocked means a job cannot run yet — its handler is not registered, or the scheduler has missed its window past the grace period. The diagnostics tab tells you exactly why.',
     duration: 5400,
     apply: pure(() => ({ highlightMetric: 'blocked' })),
   },
@@ -325,7 +325,7 @@ const INTRO_STEPS: ProcessesDemoStep[] = [
   {
     target: 'proc-demo-status-filter',
     caption:
-      'Status filter pins the list to Running, Failed, Blocked, Paused or Idle — perfect when you want a quick sweep of what needs your attention today.',
+      'Status filter pins the list to Running, Failed, Blocked or Paused — perfect when you want a quick sweep of what needs your attention today.',
     duration: 5200,
     apply: pure(() => ({ workspaceFilterOpen: false, statusFilterOpen: true })),
   },

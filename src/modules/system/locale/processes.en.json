@@ -36,12 +36,12 @@
   },
   "workspace_count": "{{count}} processes",
   "status": {
-    "idle": "Idle",
     "running": "Running",
     "paused": "Paused",
     "failed": "Failed",
     "blocked": "Blocked",
-    "disabled": "disabled"
+    "disabled": "disabled",
+    "executing": "Executing now"
   },
   "row": {
     "last_prefix": "Last:",
@@ -73,7 +73,15 @@
     "enabled": "Enabled",
     "disabled": "Disabled",
     "anchor": "anchor:",
-    "every_minutes": "Every {{count}} min"
+    "every_minutes": "Every {{count}} min",
+    "config_default": "(default)",
+    "yes": "Yes",
+    "no": "No",
+    "enabled_paused": "Enabled (paused)",
+    "hold_reason": "Paused / blocked reason",
+    "paused_manually": "Paused manually by an administrator",
+    "disabled_reason": "Schedule disabled",
+    "handler_key": "Handler key"
   },
   "explain": {
     "when_it_runs": "When it runs",
@@ -562,11 +570,11 @@
     }
   },
   "health": {
-    "all_idle": "All background services are healthy and idle. {{paused}} paused · {{total}} total.",
     "no_issues": "No blocked or failing services. {{paused}} paused · {{total}} total.",
     "running_now": "Running now",
     "blocked": "Blocked — needs attention",
-    "failing": "Failing — will retry"
+    "failing": "Failing — will retry",
+    "all_running": "{{active}} background services are scheduled and running. {{paused}} paused · {{total}} total."
   },
   "stale_banner": "Showing the last known state — the server didn't respond to the latest refresh.",
   "history_empty": "No runs recorded yet. Use “Run now” to execute this process.",
@@ -579,5 +587,10 @@
     "interval_normal": "live, every 10s",
     "hard_refresh": "Hard refresh",
     "stale_warning": "The server keeps returning the same data while this process is reported as running. The view may be cached — use Hard refresh to force live data."
+  },
+  "reason": {
+    "not_registered": "Not registered on the server — this job is not scheduled and will never run.",
+    "overdue": "Overdue — the scheduler has not executed this job since it was due at {{due}}.",
+    "disabled": "Disabled — switched off by an administrator."
   }
 }

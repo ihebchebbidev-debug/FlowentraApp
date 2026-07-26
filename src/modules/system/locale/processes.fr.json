@@ -36,12 +36,12 @@
   },
   "workspace_count": "{{count}} processus",
   "status": {
-    "idle": "Inactif",
     "running": "En cours",
     "paused": "En pause",
     "failed": "En échec",
     "blocked": "Bloqué",
-    "disabled": "désactivé"
+    "disabled": "désactivé",
+    "executing": "Exécution en cours"
   },
   "row": {
     "last_prefix": "Dernier :",
@@ -73,7 +73,15 @@
     "enabled": "Activé",
     "disabled": "Désactivé",
     "anchor": "ancre :",
-    "every_minutes": "Toutes les {{count}} min"
+    "every_minutes": "Toutes les {{count}} min",
+    "config_default": "(par défaut)",
+    "yes": "Oui",
+    "no": "Non",
+    "enabled_paused": "Activé (en pause)",
+    "hold_reason": "Raison de pause / blocage",
+    "paused_manually": "Mis en pause manuellement par un administrateur",
+    "disabled_reason": "Planification désactivée",
+    "handler_key": "Clé du handler"
   },
   "explain": {
     "when_it_runs": "Quand ça s’exécute",
@@ -562,11 +570,11 @@
     }
   },
   "health": {
-    "all_idle": "Tous les services d’arrière-plan sont sains et inactifs. {{paused}} en pause · {{total}} au total.",
     "no_issues": "Aucun service bloqué ou en échec. {{paused}} en pause · {{total}} au total.",
     "running_now": "En cours d’exécution",
     "blocked": "Bloqués — intervention requise",
-    "failing": "En échec — nouvelle tentative"
+    "failing": "En échec — nouvelle tentative",
+    "all_running": "{{active}} services d’arrière-plan sont planifiés et actifs. {{paused}} en pause · {{total}} au total."
   },
   "stale_banner": "Affichage du dernier état connu — le serveur n'a pas répondu au dernier rafraîchissement.",
   "history_empty": "Aucune exécution enregistrée. Utilisez « Exécuter » pour lancer ce processus.",
@@ -579,5 +587,10 @@
     "interval_normal": "en direct, toutes les 10 s",
     "hard_refresh": "Actualisation forcée",
     "stale_warning": "Le serveur renvoie les mêmes données alors que ce processus est signalé comme en cours. L’affichage est peut-être mis en cache — utilisez l’actualisation forcée pour obtenir les données réelles."
+  },
+  "reason": {
+    "not_registered": "Non enregistré sur le serveur — cette tâche n’est pas planifiée et ne s’exécutera jamais.",
+    "overdue": "En retard — le planificateur n’a pas exécuté cette tâche depuis son échéance du {{due}}.",
+    "disabled": "Désactivé — coupé par un administrateur."
   }
 }

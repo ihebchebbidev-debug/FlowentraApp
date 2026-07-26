@@ -1,13 +1,13 @@
 import "./localStorageShim";
 import { describe, it, expect } from "vitest";
-import { PROCESSES } from "../processesMock";
+import { PROCESSES } from "../processesCatalog";
 import { REAL_HANDLER_KEYS } from "../processesService";
 import en from "../../locale/processes.en.json";
 import fr from "../../locale/processes.fr.json";
 
 /**
  * The process catalog is linked across three places by convention only:
- * the catalog entry (processesMock), the handler allowlist (processesService),
+ * the catalog entry (processesCatalog), the handler allowlist (processesService),
  * and the localized name/description in both locale files. A mismatch used to
  * fail silently — the process simply never rendered. These tests make the
  * linkage explicit so adding a new process fails loudly if a step is missed.

@@ -35,8 +35,8 @@ const FIXED_FR: Record<string, string> = {
     'En cours compte les tâches qui s’exécutent maintenant. Le planificateur pose un verrou consultatif pendant l’exécution, donc la même tâche ne peut jamais se déclencher deux fois, même après un redémarrage.',
   'Failed shows jobs whose last run threw an error. The retry ladder backs them off automatically, and you can clear the counter once you fix the cause.':
     'Échecs affiche les tâches dont la dernière exécution a levé une erreur. L’échelle de reprise les temporise automatiquement, et vous pouvez remettre le compteur à zéro dès que la cause est corrigée.',
-  'Blocked means a job cannot run yet — usually a missing table, missing config, or a dependency that has not been set up. The diagnostics tab tells you exactly why.':
-    'Bloqué signifie qu’une tâche ne peut pas encore s’exécuter — souvent une table manquante, une config absente, ou une dépendance non installée. L’onglet Diagnostics vous dit exactement pourquoi.',
+  'Blocked means a job cannot run yet — its handler is not registered, or the scheduler has missed its window past the grace period. The diagnostics tab tells you exactly why.':
+    'Bloqué signifie qu’une tâche ne peut pas encore s’exécuter — son handler n’est pas enregistré, ou le planificateur a dépassé son délai de grâce. L’onglet Diagnostics vous dit exactement pourquoi.',
   'Paused is the count of schedules you have manually stopped. The rows stay listed so you can resume them the moment they are needed again.':
     'En pause, c’est le nombre de planifications que vous avez arrêtées manuellement. Les lignes restent listées pour que vous puissiez les reprendre au moment voulu.',
   'Total is every process backed by a real, verified handler — the ones we know execute end to end on your servers. Unreliable stubs are hidden by design.':
@@ -45,8 +45,8 @@ const FIXED_FR: Record<string, string> = {
     'La recherche filtre le nom, le module et la description en même temps — tapez « facture » pour sauter directement à toutes les tâches liées à la facturation.',
   'Workspace filter narrows to Sales, Field, Admin, Communication and more — the same workspace groups you already know from the rest of the app.':
     'Le filtre Espace réduit à Ventes, Terrain, Admin, Communication… les mêmes espaces que vous connaissez déjà dans le reste de l’application.',
-  'Status filter pins the list to Running, Failed, Blocked, Paused or Idle — perfect when you want a quick sweep of what needs your attention today.':
-    'Le filtre Statut fige la liste sur En cours, Échecs, Bloqué, En pause ou Idle — parfait pour un balayage rapide de ce qui demande votre attention aujourd’hui.',
+  'Status filter pins the list to Running, Failed, Blocked or Paused — perfect when you want a quick sweep of what needs your attention today.':
+    'Le filtre Statut fige la liste sur En cours, Échecs, Bloqué ou En pause — parfait pour un balayage rapide de ce qui demande votre attention aujourd’hui.',
   'Background Services are grouped by workspace so the ownership is obvious. Each group shows a count of the jobs living inside it.':
     'Les processus sont regroupés par espace pour que la propriété soit évidente. Chaque groupe affiche le nombre de tâches qu’il contient.',
   'Each row tells the whole story at a glance — job name, module, schedule in plain English, and the last and next run.':
