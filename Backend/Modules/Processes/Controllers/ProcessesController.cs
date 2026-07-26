@@ -59,7 +59,7 @@ namespace MyApi.Modules.Processes.Controllers
                  string.Equals(c.Value, "admin", StringComparison.OrdinalIgnoreCase)));
         }
 
-        private IActionResult? RequireAdmin()
+        private ObjectResult? RequireAdmin()
         {
             if (IsMainAdmin()) return null;
             return StatusCode(StatusCodes.Status403Forbidden, new
