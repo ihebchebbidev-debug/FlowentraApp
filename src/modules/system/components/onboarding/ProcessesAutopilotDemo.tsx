@@ -425,11 +425,16 @@ export function ProcessesAutopilotDemo({ open, onClose }: Props) {
     const place = () => {
       const el = document.getElementById(step.target);
       if (!el) return;
-      // Scroll per-process rows into view so the whole tour is visible even
-      // when the list is 20 items long.
-      if (step.target.startsWith('proc-demo-row-key-')) {
-        try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch { /* noop */ }
-      }
+      // Always scroll the current target into view — otherwise, once the tour
+      // has walked deep into the 20-row list, the header/KPI/toolbar steps
+      // stay parked far above the viewport and the user sees nothing move.
+      // `block: 'nearest'` is a no-op when the element is already visible and
+      // scrolls up (or down) just enough when it isn't, so header steps come
+      // back into view without yanking the page around for rows already on screen.
+      try {
+        const isRow = step.target.startsWith('proc-demo-row-key-');
+        el.scrollIntoView({ behavior: 'smooth', block: isRow ? 'center' : 'nearest' });
+      } catch { /* noop */ }
       const r = el.getBoundingClientRect();
       setCursor({ x: r.left + Math.min(r.width / 2, 120), y: r.top + Math.min(r.height / 2, 40), clicking: true });
       if (clickRef.current) clearTimeout(clickRef.current);
