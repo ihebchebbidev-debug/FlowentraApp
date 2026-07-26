@@ -10,7 +10,7 @@ namespace MyApi.Modules.Processes.Services
     /// </summary>
     public interface IProcessHandler
     {
-        /// <summary>Unique process key (e.g. "admin.retry-unsent-emails").</summary>
+        /// <summary>Unique process key (e.g. "admin.retry-failed-emails").</summary>
         string Key { get; }
 
         Task<RunNowResult> ExecuteAsync(string configJson, CancellationToken ct);

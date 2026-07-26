@@ -2,6 +2,19 @@
   "title": "Services d’arrière-plan",
   "description": "Planifiez, surveillez et contrôlez chaque tâche récurrente ou en arrière-plan dans tous les espaces de travail.",
   "read_only_banner": "Lecture seule — seul l’administrateur principal peut exécuter ou configurer les services d’arrière-plan.",
+  "units": {
+    "minutes": "Minutes",
+    "hours": "Heures",
+    "days": "Jours",
+    "weeks": "Semaines"
+  },
+  "confirm": {
+    "run_title": "Exécuter ce processus maintenant ?",
+    "run_desc": "« {{name}} » va démarrer immédiatement en dehors de sa planification habituelle.",
+    "stop_title": "Arrêter ce processus ?",
+    "stop_desc": "« {{name}} » est en cours d’exécution. L’arrêter en pleine exécution peut laisser des données incomplètes.",
+    "cancel": "Annuler"
+  },
   "metrics": {
     "running": "En cours",
     "failed": "En échec",
@@ -69,6 +82,9 @@
     "interval": "Intervalle",
     "cron": "Cron",
     "new_interval": "Nouvel intervalle (minutes)",
+    "new_interval_any": "Nouvel intervalle",
+    "unit": "Unité",
+    "every_equals_minutes": "= toutes les {{count}} min",
     "settings": "Paramètres",
     "enabled": "Activé",
     "disabled": "Désactivé",
@@ -556,6 +572,7 @@
       "database_error": "Erreur de base de données",
       "timeout": "Délai dépassé",
       "retries_exhausted": "Tentatives épuisées",
+      "scheduler_overdue": "Ordonnanceur en retard",
       "runtime_error": "Erreur d’exécution"
     },
     "category_hint": {
@@ -566,6 +583,7 @@
       "database_error": "PostgreSQL a rejeté la requête (contrainte, verrou, schéma invalide). Inspectez l’erreur brute avant de relancer.",
       "timeout": "Le gestionnaire a dépassé son budget d’exécution. Augmentez l’intervalle ou réduisez la charge.",
       "retries_exhausted": "L’échelle de tentatives est épuisée. Réinitialisez les échecs une fois la cause corrigée.",
+      "scheduler_overdue": "La planification est saine mais l’ordonnanceur ne l’a pas déclenchée depuis son heure prévue. Vérifiez que le service hébergé en arrière-plan tourne, que la boucle de tick n’a pas planté et qu’aucun job précédent ne la bloque.",
       "runtime_error": "Le gestionnaire a levé une erreur inattendue. Consultez l’erreur brute et les journaux du serveur."
     }
   },

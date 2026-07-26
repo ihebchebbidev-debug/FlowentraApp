@@ -271,41 +271,8 @@ const INTRO_STEPS: ProcessesDemoStep[] = [
       drawerOpen: false, drawerTab: 'overview', drawerHighlight: null,
     })),
   },
-  {
-    target: 'proc-demo-metric-running',
-    caption:
-      'Running counts the jobs firing right now. The scheduler holds an advisory lock while a job runs so the exact same job can never double-fire, even across restarts.',
-    duration: 5600,
-    apply: pure(() => ({ highlightMetric: 'running' })),
-  },
-  {
-    target: 'proc-demo-metric-failed',
-    caption:
-      'Failed shows jobs whose last run threw an error. The retry ladder backs them off automatically, and you can clear the counter once you fix the cause.',
-    duration: 5200,
-    apply: pure(() => ({ highlightMetric: 'failed' })),
-  },
-  {
-    target: 'proc-demo-metric-blocked',
-    caption:
-      'Blocked means a job cannot run yet — its handler is not registered, or the scheduler has missed its window past the grace period. The diagnostics tab tells you exactly why.',
-    duration: 5400,
-    apply: pure(() => ({ highlightMetric: 'blocked' })),
-  },
-  {
-    target: 'proc-demo-metric-paused',
-    caption:
-      'Paused is the count of schedules you have manually stopped. The rows stay listed so you can resume them the moment they are needed again.',
-    duration: 5000,
-    apply: pure(() => ({ highlightMetric: 'paused' })),
-  },
-  {
-    target: 'proc-demo-metric-total',
-    caption:
-      'Total is every process backed by a real, verified handler — the ones we know execute end to end on your servers. Unreliable stubs are hidden by design.',
-    duration: 5400,
-    apply: pure(() => ({ highlightMetric: 'total' })),
-  },
+  // KPI metric chips were removed from the header to match the real ProcessesPage,
+  // which surfaces health inline in the list rather than as top-row counters.
 
   // ── Chapter 2 · Search & Filters ────────────────────────────────────────
   {

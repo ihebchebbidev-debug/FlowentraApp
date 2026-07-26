@@ -273,9 +273,9 @@ export async function listRuns(key: string, limit = 20, hard = false): Promise<P
 /** Trigger a single process now via the backend controller. */
 export async function runNow(
   key: string
-): Promise<{ status: string; duration_ms: number; error?: string; block_reason?: string; output?: unknown }> {
+): Promise<{ status: string; duration_ms: number; items_processed?: number; error?: string; block_reason?: string; output?: unknown }> {
   const res = unwrap(
-    await processesFetch<{ status?: string; duration_ms?: number; error?: string; block_reason?: string; output?: unknown }>(
+    await processesFetch<{ status?: string; duration_ms?: number; items_processed?: number; error?: string; block_reason?: string; output?: unknown }>(
       "/api/processes/run",
       {
         method: "POST",

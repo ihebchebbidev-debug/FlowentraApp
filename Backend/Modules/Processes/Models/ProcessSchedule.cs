@@ -5,7 +5,7 @@ namespace MyApi.Modules.Processes.Models
 {
     /// <summary>
     /// A registered administration process (scheduled background job) with its
-    /// current runtime state. One row per process key (e.g. "admin.retry-unsent-emails").
+    /// current runtime state. One row per process key (e.g. "admin.retry-failed-emails").
     /// Global (not tenant-scoped) — admin/system-level automation.
     /// </summary>
     [Table("ProcessSchedules")]

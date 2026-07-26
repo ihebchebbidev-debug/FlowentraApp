@@ -86,12 +86,8 @@ function PageList({ state }: { state: ProcessesDemoState }) {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Metric id="proc-demo-metric-running" label="Running now" value={DEMO_KPIS.running} tone="primary"     active={state.highlightMetric === 'running'} />
-              <Metric id="proc-demo-metric-failed"  label="Failed"  value={DEMO_KPIS.failed}  tone="destructive" active={state.highlightMetric === 'failed'} />
-              <Metric id="proc-demo-metric-blocked" label="Blocked" value={DEMO_KPIS.blocked} tone="amber"       active={state.highlightMetric === 'blocked'} />
-              <Metric id="proc-demo-metric-paused"  label="Paused"  value={DEMO_KPIS.paused}  tone="muted"       active={state.highlightMetric === 'paused'} />
-              <Metric id="proc-demo-metric-total"   label="Total"   value={DEMO_KPIS.total}   tone="muted"       active={state.highlightMetric === 'total'} />
-
+              {/* The real ProcessesPage header does not surface Running/Failed/Blocked/Paused/Total
+                  KPI chips — health is summarised inline within the list. Keep the demo aligned. */}
               <div id="proc-demo-refresh" className="h-8 px-3 rounded-md border border-border text-xs inline-flex items-center gap-1.5 text-foreground">
                 <RefreshCw className="h-3.5 w-3.5" /> Refresh
               </div>

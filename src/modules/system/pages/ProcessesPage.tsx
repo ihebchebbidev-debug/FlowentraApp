@@ -19,6 +19,10 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
   PROCESSES, WORKSPACE_LABELS, type ProcessDefinition, type ProcessRun as UiProcessRun, type ProcessStatus, type WorkspaceId,
@@ -428,6 +432,7 @@ type BlockCategory =
   | "database_error"
   | "timeout"
   | "retries_exhausted"
+  | "scheduler_overdue"
   | "runtime_error";
 
 function classifyBlockReason(p: ProcessDefinition): BlockCategory {
@@ -444,6 +449,10 @@ function classifyBlockReason(p: ProcessDefinition): BlockCategory {
   if (/timeout|timed out|cancell?ed/.test(text)) return "timeout";
   if (/retries exhausted|max retries|attempts exhausted/.test(text)) return "retries_exhausted";
   if (/postgres|npgsql|deadlock|constraint|foreign key|duplicate key|syntax error/.test(text)) return "database_error";
+  // "Overdue — the scheduler has not executed this job since …" is set by the
+  // frontend overlay when next_run_at is far in the past. It's a scheduler
+  // problem, not a handler exception — do not mis-label it "Runtime error".
+  if (/overdue|scheduler has not executed|not picking/.test(text)) return "scheduler_overdue";
   return "runtime_error";
 }
 
@@ -557,6 +566,23 @@ function BlockDetails({
   );
 }
 
+/**
+ * Render a compact "key=value, key=value" summary of the handler's Output
+ * object for the Run-now toast. Handlers return small flat objects like
+ * `{ retention_days: 30, logs_deleted: 12405, runs_deleted: 0 }` — showing
+ * them verbatim (a) proves the run actually touched the database, and (b)
+ * lets the operator see why an empty run was empty (wrong retention window,
+ * grace period not reached, etc.). Non-object/empty output returns "".
+ */
+function summarizeRunOutput(output: unknown): string {
+  if (!output || typeof output !== "object" || Array.isArray(output)) return "";
+  const entries = Object.entries(output as Record<string, unknown>).filter(
+    ([, v]) => v !== null && v !== undefined && typeof v !== "object",
+  );
+  if (entries.length === 0) return "";
+  return entries.map(([k, v]) => `${k}=${v}`).join(", ");
+}
+
 
 export default function ProcessesPage() {
   const navigate = useNavigate();
@@ -600,6 +626,21 @@ export default function ProcessesPage() {
   // True when the latest poll failed for a non-auth reason: the rows on screen
   // are the last good snapshot, not live data.
   const [stale, setStale] = useState(false);
+  // Confirmation modal — every start/stop click routes through this so an
+  // operator cannot fire a production job or kill an in-flight run by an
+  // accidental double-tap. `busy` disables the confirm button while the async
+  // action is running so the modal can't be triggered twice.
+  const [confirm, setConfirm] = useState<{
+    open: boolean;
+    kind: "run" | "stop";
+    process: ProcessDefinition | null;
+    busy: boolean;
+  }>({ open: false, kind: "run", process: null, busy: false });
+  const askConfirm = (kind: "run" | "stop", p: ProcessDefinition) => {
+    if (denyIfReadOnlyRef.current()) return;
+    setConfirm({ open: true, kind, process: p, busy: false });
+  };
+  const denyIfReadOnlyRef = useRef<() => boolean>(() => false);
 
   const toggleExpanded = (key: string) =>
     setExpandedKeys((prev) => {
@@ -770,6 +811,8 @@ export default function ProcessesPage() {
     });
     return true;
   };
+  // Expose to askConfirm() which is defined above runNow/stopRun.
+  denyIfReadOnlyRef.current = denyIfReadOnly;
 
   const runNow = async (p: ProcessDefinition) => {
     if (denyIfReadOnly()) return;
@@ -780,11 +823,35 @@ export default function ProcessesPage() {
       const res = await apiRunNow(p.key);
       const isSkipped = res.status === "skipped";
       const isSuccess = res.status === "success";
+      // Success toast surfaces what the handler *actually did* — not just a
+      // duration. Before, "0 rows deleted" and "12,405 rows deleted" both
+      // showed as "Purge system logs — 8ms" and made real work look like a
+      // no-op. Show items_processed plus the handler's Output summary (e.g.
+      // "logs_deleted=12405, retention_days=30") so operators can see the
+      // exact effect, and can tell an empty run apart from an unconfigured
+      // retention window.
+      const items = res.items_processed;
+      const outputSummary = summarizeRunOutput(res.output);
+      const successDetail = items === 0
+        ? t("toast.completed_none_desc", {
+            defaultValue: "{{name}} — nothing to do (0 rows affected). {{summary}}",
+            name: p.name,
+            summary: outputSummary,
+          }).trim()
+        : t("toast.completed_desc", {
+            defaultValue: "{{name}} — {{items}} rows affected in {{ms}}ms. {{summary}}",
+            name: p.name,
+            items: items ?? 0,
+            ms: res.duration_ms,
+            summary: outputSummary,
+          }).trim();
       toast({
         title: isSuccess ? t("toast.completed_title")
              : isSkipped ? t("toast.already_running_title")
              : res.status === "blocked" ? t("toast.blocked_title") : t("toast.failed_title"),
-        description: res.error ?? res.block_reason ?? `${p.name} — ${res.duration_ms}ms`,
+        description: isSuccess
+          ? successDetail
+          : (res.error ?? res.block_reason ?? `${p.name} — ${res.duration_ms}ms`),
         variant: isSuccess || isSkipped ? "default" : "destructive",
       });
     } catch (e) {
@@ -874,6 +941,13 @@ export default function ProcessesPage() {
 
   const stopRun = async (p: ProcessDefinition) => {
     if (denyIfReadOnly()) return;
+    // Optimistic flip: the row's "Stop" button turns back into "Run now"
+    // immediately instead of waiting for the next schedule refresh (which can
+    // take up to 2s). If the stop request fails we restore the prior state.
+    const prevStatus = p.status;
+    const prevPaused = p.isPaused;
+    const optimistic: ProcessStatus = p.isEnabled && !p.isPaused ? "paused" : prevStatus;
+    updateProcess(p.key, { status: optimistic, isExecuting: false });
     try {
       const stopped = await apiStopRun(p.key);
       await refreshSchedules();
@@ -882,9 +956,11 @@ export default function ProcessesPage() {
         description: p.name,
       });
     } catch (e) {
+      updateProcess(p.key, { status: prevStatus, isPaused: prevPaused });
       toast({ title: t("toast.could_not_stop_title"), description: (e as Error).message, variant: "destructive" });
     }
   };
+
 
   const resetFailures = async (p: ProcessDefinition) => {
     if (denyIfReadOnly()) return;
@@ -1178,9 +1254,9 @@ export default function ProcessesPage() {
                     canManage={canManage}
                     onToggleExpand={() => toggleExpanded(p.key)}
                     onOpen={() => setSelectedKey(p.key)}
-                    onRun={() => runNow(p)}
+                    onRun={() => askConfirm("run", p)}
                     onPause={() => togglePause(p)}
-                    onStop={() => stopRun(p)}
+                    onStop={() => askConfirm("stop", p)}
                     onOpenLogs={(key) =>
                       navigate(
                         `/dashboard/settings/logs?module=Processes&q=${encodeURIComponent(key)}`
@@ -1233,9 +1309,9 @@ export default function ProcessesPage() {
               hasSchedule={schedules.has(selected.key)}
               stopEnabled={selected.status === "running"}
               canManage={canManage}
-              onRun={() => runNow(selected)}
+              onRun={() => askConfirm("run", selected)}
               onPause={() => togglePause(selected)}
-              onStop={() => stopRun(selected)}
+              onStop={() => askConfirm("stop", selected)}
               onToggleEnabled={() => toggleEnabled(selected)}
               onResetFailures={() => resetFailures(selected)}
               onSaveInterval={(mins) => saveInterval(selected, mins)}
@@ -1248,6 +1324,22 @@ export default function ProcessesPage() {
           )}
         </SheetContent>
       </Sheet>
+
+      <ConfirmActionDialog
+        t={t}
+        state={confirm}
+        onCancel={() => setConfirm((c) => ({ ...c, open: false }))}
+        onConfirm={async () => {
+          if (!confirm.process) return;
+          setConfirm((c) => ({ ...c, busy: true }));
+          try {
+            if (confirm.kind === "run") await runNow(confirm.process);
+            else await stopRun(confirm.process);
+          } finally {
+            setConfirm({ open: false, kind: confirm.kind, process: null, busy: false });
+          }
+        }}
+      />
 
       <ProcessesAutopilotDemo open={demoOpen} onClose={() => setDemoOpen(false)} />
     </div>
@@ -1417,7 +1509,7 @@ function RowActions({
       <Button
         size="sm"
         variant="destructive"
-        className="h-7 gap-1.5 px-2"
+        className="h-7 gap-1.5 px-2 text-white hover:text-white"
         onClick={onStop}
         disabled={!canManage}
         title={canManage ? t("actions.stop") : lockedTitle}
@@ -1582,7 +1674,22 @@ function ProcessDrawer({
   const lockedTitle = t("actions.locked_tooltip", {
     defaultValue: "Only the main administrator can perform this action",
   });
-  const [intervalDraft, setIntervalDraft] = useState<number>(p.intervalMinutes ?? 60);
+  // Human-friendly unit picker: minutes are how the backend stores the value,
+  // but operators think in "every 2 hours" or "every 3 days" — we translate
+  // between the two on save so both stays honest.
+  const initialMinutes = p.intervalMinutes ?? 60;
+  const pickInitialUnit = (m: number): "m" | "h" | "d" | "w" => {
+    if (m > 0 && m % 10080 === 0) return "w";
+    if (m > 0 && m % 1440 === 0) return "d";
+    if (m > 0 && m % 60 === 0) return "h";
+    return "m";
+  };
+  const unitToMinutes = { m: 1, h: 60, d: 1440, w: 10080 } as const;
+  const [intervalUnit, setIntervalUnit] = useState<"m" | "h" | "d" | "w">(pickInitialUnit(initialMinutes));
+  const [intervalDraft, setIntervalDraft] = useState<number>(
+    Math.max(1, Math.round(initialMinutes / unitToMinutes[pickInitialUnit(initialMinutes)]))
+  );
+  const draftMinutes = Math.max(1, intervalDraft) * unitToMinutes[intervalUnit];
   // Only real server rows are shown. The catalog's `history` is design-time
   // sample data — falling back to it made the tab look populated with runs that
   // never happened.
@@ -1610,6 +1717,7 @@ function ProcessDrawer({
           <Button
             size="sm"
             variant="destructive"
+            className="text-white hover:text-white"
             onClick={onStop}
             disabled={!stopEnabled || !canManage}
             title={canManage ? t("stop_tooltip") : lockedTitle}
@@ -1719,7 +1827,7 @@ function ProcessDrawer({
           {p.scheduleType === "interval" && (
             <div className="flex items-end gap-2 pt-2">
               <div className="flex-1">
-                <label className="text-xs text-muted-foreground">{t("labels.new_interval")}</label>
+                <label className="text-xs text-muted-foreground">{t("labels.new_interval_any")}</label>
                 <Input
                   type="number"
                   min={1}
@@ -1728,14 +1836,33 @@ function ProcessDrawer({
                   className="h-9 mt-1"
                 />
               </div>
+              <div className="w-[130px]">
+                <label className="text-xs text-muted-foreground">{t("labels.unit")}</label>
+                <Select value={intervalUnit} onValueChange={(v) => setIntervalUnit(v as "m" | "h" | "d" | "w")}>
+                  <SelectTrigger className="h-9 mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="m">{t("units.minutes", { count: intervalDraft })}</SelectItem>
+                    <SelectItem value="h">{t("units.hours",   { count: intervalDraft })}</SelectItem>
+                    <SelectItem value="d">{t("units.days",    { count: intervalDraft })}</SelectItem>
+                    <SelectItem value="w">{t("units.weeks",   { count: intervalDraft })}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <Button
                 size="sm"
-                onClick={() => onSaveInterval(intervalDraft)}
-                disabled={intervalDraft === (p.intervalMinutes ?? 60) || !canManage}
+                onClick={() => onSaveInterval(draftMinutes)}
+                disabled={draftMinutes === (p.intervalMinutes ?? 60) || !canManage}
                 title={canManage ? undefined : lockedTitle}
               >
                 {t("actions.save")}
               </Button>
+            </div>
+          )}
+          {p.scheduleType === "interval" && (
+            <div className="text-[11px] text-muted-foreground">
+              {t("labels.every_equals_minutes", { count: draftMinutes, defaultValue: "= every {{count}} min" })}
             </div>
           )}
           {!hasSchedule && (
@@ -1841,5 +1968,49 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
       <span className="text-muted-foreground">{label}</span>
       <span className="font-medium text-right">{value}</span>
     </div>
+  );
+}
+
+// Confirmation modal for start/stop actions. Every trigger point on this page
+// (list row, drawer header) routes through this so the operator cannot fire a
+// production job or kill an in-flight run by an accidental double-tap.
+function ConfirmActionDialog({
+  t, state, onCancel, onConfirm,
+}: {
+  t: (k: string, o?: any) => string;
+  state: { open: boolean; kind: "run" | "stop"; process: ProcessDefinition | null; busy: boolean };
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const isStop = state.kind === "stop";
+  const name = state.process?.name ?? "";
+  return (
+    <AlertDialog open={state.open} onOpenChange={(o) => { if (!o && !state.busy) onCancel(); }}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            {isStop ? t("confirm.stop_title", { defaultValue: "Stop this process?" })
+                    : t("confirm.run_title",  { defaultValue: "Run this process now?" })}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {isStop
+              ? t("confirm.stop_desc", { name, defaultValue: `"${name}" is currently running. Stopping mid-run may leave partial work behind.` })
+              : t("confirm.run_desc",  { name, defaultValue: `"${name}" will start immediately outside its normal schedule.` })}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={state.busy}>
+            {t("confirm.cancel", { defaultValue: "Cancel" })}
+          </AlertDialogCancel>
+          <AlertDialogAction
+            onClick={onConfirm}
+            disabled={state.busy}
+            className={isStop ? "bg-destructive text-white hover:bg-destructive/90 hover:text-white" : undefined}
+          >
+            {isStop ? t("actions.stop") : t("actions.run_now")}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

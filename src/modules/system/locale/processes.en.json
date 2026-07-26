@@ -2,6 +2,19 @@
   "title": "Background Services",
   "description": "Schedule, monitor and control every recurring or background job across all workspaces.",
   "read_only_banner": "Read-only — only the main administrator can run or configure background services.",
+  "units": {
+    "minutes": "Minutes",
+    "hours": "Hours",
+    "days": "Days",
+    "weeks": "Weeks"
+  },
+  "confirm": {
+    "run_title": "Run this process now?",
+    "run_desc": "\"{{name}}\" will start immediately outside its normal schedule.",
+    "stop_title": "Stop this process?",
+    "stop_desc": "\"{{name}}\" is currently running. Stopping mid-run may leave partial work behind.",
+    "cancel": "Cancel"
+  },
   "metrics": {
     "running": "Running",
     "failed": "Failed",
@@ -69,6 +82,9 @@
     "interval": "Interval",
     "cron": "Cron",
     "new_interval": "New interval (minutes)",
+    "new_interval_any": "New interval",
+    "unit": "Unit",
+    "every_equals_minutes": "= every {{count}} min",
     "settings": "Settings",
     "enabled": "Enabled",
     "disabled": "Disabled",
@@ -556,6 +572,7 @@
       "database_error": "Database error",
       "timeout": "Timeout",
       "retries_exhausted": "Retries exhausted",
+      "scheduler_overdue": "Scheduler overdue",
       "runtime_error": "Runtime error"
     },
     "category_hint": {
@@ -566,6 +583,7 @@
       "database_error": "PostgreSQL rejected the query (constraint, deadlock, invalid schema). Inspect the raw error before retrying.",
       "timeout": "The handler exceeded its runtime budget. Consider raising the interval or narrowing the workload.",
       "retries_exhausted": "The retry ladder is used up. Reset failures once the underlying cause is fixed.",
+      "scheduler_overdue": "The schedule row is healthy but the scheduler has not picked it up since its due time. Check that the background hosted service is running, that the process tick loop hasn't crashed, and that no earlier long-running job is blocking the tick.",
       "runtime_error": "The handler threw an unexpected error. Inspect the raw error text and backend logs."
     }
   },
