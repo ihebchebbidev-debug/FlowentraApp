@@ -664,36 +664,56 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
 
     setIsAssigning(true);
 
+    const { job, technicianId, technician } = pendingAssignment;
+    const technicianName = technician ? `${technician.firstName} ${technician.lastName}` : undefined;
+    // Optimistic UI: paint the new dispatch on the board immediately so the
+    // card doesn't "snap back" on slow networks. previewJobs is merged into
+    // rawAssignedJobs via the useMemo at the top of this component and is
+    // cleared once the authoritative reload lands (or on error).
+    const optimisticKey = `${technicianId}-${format(scheduledStart, 'yyyy-MM-dd')}`;
+    const optimisticId = `optimistic-${job.id}-${Date.now()}`;
+    const optimisticJob: Job = {
+      ...job,
+      id: optimisticId,
+      assignedTechnicianId: technicianId,
+      status: 'assigned',
+      priority: priority as Job['priority'],
+      scheduledStart,
+      scheduledEnd,
+    };
+    setPreviewJobs(prev => ({
+      ...prev,
+      [optimisticKey]: [...(prev[optimisticKey] || []), optimisticJob],
+    }));
+
     try {
-      const { job, technicianId, technician } = pendingAssignment;
-      const technicianName = technician ? `${technician.firstName} ${technician.lastName}` : undefined;
-
-      console.log('Confirming assignment:', {
-        jobId: job.id,
-        technicianId,
-        technicianName,
-        priority,
-        scheduledStart: scheduledStart.toISOString(),
-        scheduledEnd: scheduledEnd.toISOString()
-      });
-
       await DispatcherService.assignJob(job.id, technicianId, scheduledStart, scheduledEnd, technicianName, priority);
       onJobAssignment(job.id, technicianId, scheduledStart, scheduledEnd);
-      
-      // Reload assigned jobs to show the new assignment
+
+      // Reload assigned jobs to show the authoritative record
       await loadAssignedJobs();
-      
+
       toast.success(t('dispatcher.job_assigned_success'));
-      
-      // Close modal and clear pending assignment
+
       setShowAssignmentModal(false);
       setPendingAssignment(null);
-      
     } catch (error) {
       console.error('Failed to assign job:', error);
       const errorMessage = error instanceof Error ? error.message : t('dispatcher.failed_to_assign_job');
       toast.error(errorMessage);
     } finally {
+      // Always clear the optimistic preview — either the reload replaced it
+      // with the real dispatch, or the mutation failed and we shouldn't leave
+      // a phantom card on the board.
+      setPreviewJobs(prev => {
+        const next = { ...prev };
+        if (next[optimisticKey]) {
+          const filtered = next[optimisticKey].filter(j => j.id !== optimisticId);
+          if (filtered.length === 0) delete next[optimisticKey];
+          else next[optimisticKey] = filtered;
+        }
+        return next;
+      });
       setIsAssigning(false);
     }
   };
@@ -707,36 +727,61 @@ export function CustomCalendar({ view, technicians, selectedTechnician, onJobAss
   // Handle confirmed reschedule
   const handleConfirmReschedule = async () => {
     if (!pendingReschedule) return;
-    
+
     setIsRescheduling(true);
-    
+
+    const { job, newScheduledStart } = pendingReschedule;
+    // Optimistic UI for reschedule: move the card immediately.
+    const duration = job.scheduledStart && job.scheduledEnd
+      ? (new Date(job.scheduledEnd).getTime() - new Date(job.scheduledStart).getTime())
+      : 60 * 60 * 1000;
+    const newScheduledEnd = new Date(newScheduledStart.getTime() + duration);
+    const techId = job.assignedTechnicianId
+      ?? job.assignedTechnicianIds?.[0]
+      ?? null;
+    const optimisticKey = techId
+      ? `${techId}-${format(newScheduledStart, 'yyyy-MM-dd')}`
+      : null;
+    const optimisticId = `optimistic-${job.id}-${Date.now()}`;
+    if (optimisticKey) {
+      const optimisticJob: Job = {
+        ...job,
+        id: optimisticId,
+        scheduledStart: newScheduledStart,
+        scheduledEnd: newScheduledEnd,
+      };
+      setPreviewJobs(prev => ({
+        ...prev,
+        [optimisticKey]: [...(prev[optimisticKey] || []), optimisticJob],
+      }));
+    }
+
     try {
-      const { job, newScheduledStart } = pendingReschedule;
-      
-      console.log('Confirming reschedule:', {
-        dispatchId: job.id,
-        newScheduledStart: newScheduledStart.toISOString()
-      });
-      
       await DispatcherService.rescheduleDispatch(job.id, newScheduledStart);
-      
-      // Reload assigned jobs to show the update
       await loadAssignedJobs();
-      
       toast.success(t('dispatcher.dispatch_rescheduled_success'));
-      
-      // Close modal and clear pending reschedule
       setShowRescheduleModal(false);
       setPendingReschedule(null);
-      
     } catch (error) {
       console.error('Failed to reschedule dispatch:', error);
       const errorMessage = error instanceof Error ? error.message : t('dispatcher.failed_to_reschedule');
       toast.error(errorMessage);
     } finally {
+      if (optimisticKey) {
+        setPreviewJobs(prev => {
+          const next = { ...prev };
+          if (next[optimisticKey]) {
+            const filtered = next[optimisticKey].filter(j => j.id !== optimisticId);
+            if (filtered.length === 0) delete next[optimisticKey];
+            else next[optimisticKey] = filtered;
+          }
+          return next;
+        });
+      }
       setIsRescheduling(false);
     }
   };
+
 
   // Handle cancelled reschedule
   const handleCancelReschedule = () => {

@@ -89,6 +89,18 @@ export function UnassignedJobsList({
   const [showPlanned, setShowPlanned] = useState(loadPlannedServiceOrders);
   const [plannedOrders, setPlannedOrders] = useState<ServiceOrder[]>([]);
   const [isLoadingPlanned, setIsLoadingPlanned] = useState(false);
+  const [plannedError, setPlannedError] = useState<string | null>(null);
+  const [plannedRetryTick, setPlannedRetryTick] = useState(0);
+
+  // Debounce searchTerm so typing doesn't re-run the (sort + group + filter)
+  // memo on every keystroke against large unassigned lists.
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearchTerm(searchTerm), 200);
+    return () => clearTimeout(id);
+  }, [searchTerm]);
+
+
 
 
   
@@ -98,7 +110,7 @@ export function UnassignedJobsList({
   const groupedData = useMemo(() => {
     const serviceOrders = DispatcherService.getServiceOrders();
     const serviceOrdersById = new Map(serviceOrders.map(order => [String(order.id), order]));
-    const searchLower = searchTerm.trim().toLowerCase();
+    const searchLower = debouncedSearchTerm.trim().toLowerCase();
 
     const jobsByServiceOrder = jobs.reduce((groups, job) => {
       const serviceOrderId = String(job.serviceOrderId);
@@ -153,7 +165,7 @@ export function UnassignedJobsList({
         }
       });
     // jobs reference changes whenever the parent reloads unassigned jobs (= SO cache version).
-  }, [jobs, searchTerm, priorityFilter, statusFilter, sortBy]);
+  }, [jobs, debouncedSearchTerm, priorityFilter, statusFilter, sortBy]);
 
   // ── Section grouping (collapsible headers above the service-order cards) ──
   type SOGroup = (typeof groupedData)[number];
@@ -244,18 +256,25 @@ export function UnassignedJobsList({
     setShowPlanned(loadPlannedServiceOrders);
   }, [loadPlannedServiceOrders]);
 
-  // Fetch planned orders when toggle is activated
+  // Fetch planned orders when toggle is activated (or the user hits Retry).
   useEffect(() => {
     if (!showPlanned) {
       setPlannedOrders([]);
+      setPlannedError(null);
       return;
     }
     setIsLoadingPlanned(true);
+    setPlannedError(null);
     JobMappingService.fetchPlannedServiceOrders(loadClosedServiceOrders)
-      .then(setPlannedOrders)
-      .catch(console.error)
+      .then(orders => { setPlannedOrders(orders); setPlannedError(null); })
+      .catch((err: unknown) => {
+        console.error('Failed to load planned orders', err);
+        setPlannedOrders([]);
+        setPlannedError(err instanceof Error ? err.message : String(err));
+      })
       .finally(() => setIsLoadingPlanned(false));
-  }, [showPlanned, loadClosedServiceOrders]);
+  }, [showPlanned, loadClosedServiceOrders, plannedRetryTick]);
+
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -1105,6 +1124,21 @@ export function UnassignedJobsList({
                         <Skeleton className="h-3 w-32" />
                       </div>
                     ))}
+                  </div>
+                ) : plannedError ? (
+                  <div className="text-center py-4 space-y-2">
+                    <p className="text-xs text-destructive">
+                      {t('dispatcher.planned_orders_error', 'Could not load planned orders.')}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground break-words">{plannedError}</p>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setPlannedRetryTick(n => n + 1)}
+                    >
+                      {t('common.retry', 'Retry')}
+                    </Button>
                   </div>
                 ) : plannedOrders.length === 0 ? (
                   <p className="text-center text-xs text-muted-foreground py-4">

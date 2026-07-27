@@ -144,6 +144,19 @@ class DispatcherCacheService {
     this._dispatches = null;
     this._dispatchesTimestamp = 0;
     this._unassignedJobsTimestamp = 0;
+    // Also wipe assigned-jobs snapshots — a mutation (assign / reschedule /
+    // unassign / resize) always invalidates them, and rapid drag-drop was
+    // evaluating collisions against pre-mutation cached snapshots.
+    this._assignedJobs.clear();
+  }
+
+
+  // Invalidate a single technician-date assigned-jobs cache entry. Called after a
+  // mutation so the very next collision check reads fresh data instead of the
+  // 30s-cached snapshot that pre-dates the assignment.
+  invalidateAssignedJobs(key?: string): void {
+    if (!key) { this._assignedJobs.clear(); return; }
+    this._assignedJobs.delete(key);
   }
 
   hasFreshCache(): boolean {
@@ -153,3 +166,13 @@ class DispatcherCacheService {
 
 // Singleton
 export const cacheService = new DispatcherCacheService();
+
+// Wipe the dispatcher cache whenever the active tenant/company changes. Without
+// this, a rapid tenant switch could surface the previous tenant's dispatches for
+// up to 60s (dispatches TTL) on the board.
+if (typeof window !== 'undefined') {
+  window.addEventListener('flowentra:target-tenant-changed', () => {
+    cacheService.clearAll();
+  });
+}
+

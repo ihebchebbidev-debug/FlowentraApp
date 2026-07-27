@@ -93,6 +93,11 @@ public class TenantMiddleware
             || path.Contains("/api/me", StringComparison.OrdinalIgnoreCase)
             || path.Contains("/api/module-scope", StringComparison.OrdinalIgnoreCase)
             || path.Contains("/api/health", StringComparison.OrdinalIgnoreCase)
+            // Onboarding uploads: profile picture + company logo hit
+            // /api/Documents/upload and /api/Upload BEFORE the first tenant is
+            // created, so they must be reachable without an active company.
+            || path.Contains("/api/documents/upload", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/api/upload", StringComparison.OrdinalIgnoreCase)
             || path.Contains("/swagger", StringComparison.OrdinalIgnoreCase);
     }
 

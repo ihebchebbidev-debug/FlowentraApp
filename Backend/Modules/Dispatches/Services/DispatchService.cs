@@ -249,10 +249,26 @@ namespace MyApi.Modules.Dispatches.Services
             return DispatchMapping.ToDto(createdDispatch, nameMap);
         }
 
-        public async Task<DispatchDto> CreateFromInstallationAsync(CreateDispatchFromInstallationDto dto, string userId)
+        public Task<DispatchDto> CreateFromInstallationAsync(CreateDispatchFromInstallationDto dto, string userId)
+            => CreateFromInstallationCoreAsync(dto, userId, insideTransaction: false);
+
+        /// <summary>
+        /// Shared implementation for both the public CreateFromInstallationAsync entry point and the
+        /// merge-into-installation-dispatch fallback in AddJobsToInstallationDispatchAsync.
+        ///
+        /// When <paramref name="insideTransaction"/> is true, the writes participate in the caller's
+        /// already-open transaction — we MUST NOT wrap them in a nested ExecutionStrategy /
+        /// BeginTransactionAsync (EF throws "A transaction is already started" and retrying execution
+        /// strategies do not support user-initiated nested transactions). When false, we open our own
+        /// serializable transaction under the standard execution strategy.
+        /// </summary>
+        private async Task<DispatchDto> CreateFromInstallationCoreAsync(
+            CreateDispatchFromInstallationDto dto,
+            string userId,
+            bool insideTransaction)
         {
-            _logger.LogInformation("CreateFromInstallationAsync called by {UserId} for Installation {InstallationId} with {JobCount} jobs",
-                userId, dto.InstallationId, dto.JobIds.Count);
+            _logger.LogInformation("CreateFromInstallationCoreAsync called by {UserId} for Installation {InstallationId} with {JobCount} jobs (nested={Nested})",
+                userId, dto.InstallationId, dto.JobIds.Count, insideTransaction);
             ValidateScheduleWindow(dto.ScheduledDate, dto.ScheduledStartTime, dto.ScheduledEndTime);
 
             // Validate all jobs exist
@@ -270,11 +286,6 @@ namespace MyApi.Modules.Dispatches.Services
                 var missingIds = dto.JobIds.Where(id => !foundIds.Contains(id)).ToList();
                 throw new KeyNotFoundException($"Jobs not found: {string.Join(", ", missingIds)}");
             }
-
-            // Multiple dispatches per job are allowed — no duplicate-job guard.
-
-
-
 
             // Get contact from DTO or from first job's service order
             var contactId = dto.ContactId ?? jobs.First().ServiceOrder?.ContactId ?? 0;
@@ -305,13 +316,10 @@ namespace MyApi.Modules.Dispatches.Services
             var dispatch = new Dispatch
             {
                 DispatchNumber = dispatchNumber,
-                // Installation dispatches are multi-job; the canonical job list lives in DispatchJobs.
-                // Leave legacy JobId NULL so single-job lookups don't accidentally match this dispatch.
                 JobId = null,
                 ContactId = contactId,
                 ServiceOrderId = serviceOrderId,
                 ProjectId = jobs.FirstOrDefault()?.ServiceOrder?.ProjectId,
-                // installationId <= 0 means this is a whole-service-order dispatch, not an installation.
                 InstallationId = dto.InstallationId > 0 ? dto.InstallationId : (int?)null,
                 InstallationName = string.IsNullOrWhiteSpace(dto.InstallationName) ? null : dto.InstallationName,
                 Status = status,
@@ -323,8 +331,6 @@ namespace MyApi.Modules.Dispatches.Services
                 Description = dto.Notes ?? (dto.InstallationId > 0
                     ? $"Installation: {dto.InstallationName} ({dto.JobIds.Count} jobs)"
                     : $"Service order dispatch ({dto.JobIds.Count} jobs)"),
-                // Union of RequiredSkills across the grouped jobs plus the parent
-                // service order's preferred skills. Used for technician matching.
                 RequiredSkills = MergeSkills(
                     jobs.SelectMany(j => j.RequiredSkills ?? Array.Empty<string>()).ToArray(),
                     jobs.FirstOrDefault()?.ServiceOrder?.PreferredSkills),
@@ -334,65 +340,72 @@ namespace MyApi.Modules.Dispatches.Services
                 DispatchedAt = DateTime.UtcNow
             };
 
-            var strategy = _db.Database.CreateExecutionStrategy();
-            await strategy.ExecuteAsync(async () =>
+            // Local write function — used by both branches so the SQL is identical.
+            async Task WriteAsync()
             {
-                using var tx = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
-                try
+                _db.Dispatches.Add(dispatch);
+                await _db.SaveChangesAsync();
+
+                foreach (var jobId in dto.JobIds)
                 {
-                    // Multiple dispatches per job are allowed — no race re-check.
-
-
-                    _db.Dispatches.Add(dispatch);
-                    await _db.SaveChangesAsync();
-
-                    // Insert all jobs into DispatchJobs join table
-                    foreach (var jobId in dto.JobIds)
+                    _db.Set<DispatchJob>().Add(new DispatchJob
                     {
-                        _db.Set<DispatchJob>().Add(new DispatchJob
-                        {
-                            DispatchId = dispatch.Id,
-                            JobId = jobId,
-                            CreatedDate = DateTime.UtcNow
-                        });
-                    }
-                    await _db.SaveChangesAsync();
+                        DispatchId = dispatch.Id,
+                        JobId = jobId,
+                        CreatedDate = DateTime.UtcNow
+                    });
+                }
+                await _db.SaveChangesAsync();
 
-                    // Add assigned technicians
-                    if (hasTechnicians)
+                if (hasTechnicians)
+                {
+                    foreach (var techIdStr in dto.AssignedTechnicianIds!)
                     {
-                        foreach (var techIdStr in dto.AssignedTechnicianIds!)
+                        if (int.TryParse(techIdStr, out var techId))
                         {
-                            if (int.TryParse(techIdStr, out var techId))
+                            _db.Set<DispatchTechnician>().Add(new DispatchTechnician
                             {
-                                _db.Set<DispatchTechnician>().Add(new DispatchTechnician
-                                {
-                                    DispatchId = dispatch.Id,
-                                    TechnicianId = techId,
-                                    AssignedDate = DateTime.UtcNow,
-                                    Role = "technician"
-                                });
-                            }
+                                DispatchId = dispatch.Id,
+                                TechnicianId = techId,
+                                AssignedDate = DateTime.UtcNow,
+                                Role = "technician"
+                            });
                         }
-                        await _db.SaveChangesAsync();
-
-                        // Only flip a job's status to "dispatched" on its first planning;
-                        // subsequent dispatches leave the job status intact.
-                        foreach (var job in jobs)
-                        {
-                            if (job.Status != "dispatched") job.Status = "dispatched";
-                        }
-                        await _db.SaveChangesAsync();
                     }
+                    await _db.SaveChangesAsync();
 
-                    await tx.CommitAsync();
+                    // Only flip a job's status to "dispatched" on its first planning.
+                    foreach (var job in jobs)
+                    {
+                        if (job.Status != "dispatched") job.Status = "dispatched";
+                    }
+                    await _db.SaveChangesAsync();
                 }
-                catch
+            }
+
+            if (insideTransaction)
+            {
+                // Caller already owns the transaction — writes enlist automatically.
+                await WriteAsync();
+            }
+            else
+            {
+                var strategy = _db.Database.CreateExecutionStrategy();
+                await strategy.ExecuteAsync(async () =>
                 {
-                    await tx.RollbackAsync();
-                    throw;
-                }
-            });
+                    using var tx = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+                    try
+                    {
+                        await WriteAsync();
+                        await tx.CommitAsync();
+                    }
+                    catch
+                    {
+                        await tx.RollbackAsync();
+                        throw;
+                    }
+                });
+            }
 
             _logger.LogInformation(
                 "Dispatch created from installation {InstallationId} with ID {DispatchId}, {JobCount} jobs, Status: {Status}",
@@ -581,9 +594,10 @@ namespace MyApi.Modules.Dispatches.Services
                     ContactId = contactId,
                     ServiceOrderId = serviceOrderId,
                 };
-                // CreateFromInstallationAsync uses the same DbContext / connection and will
-                // enlist in this transaction so its writes are covered by the advisory lock too.
-                var created = await CreateFromInstallationAsync(createDto, userId);
+                // Reuse the core writer with insideTransaction: true so we DO NOT open a nested
+                // ExecutionStrategy / BeginTransactionAsync on the same DbContext (that would throw
+                // "A transaction is already started" and 500 the whole request).
+                var created = await CreateFromInstallationCoreAsync(createDto, userId, insideTransaction: true);
                 await tx.CommitAsync();
                 return created;
             });
