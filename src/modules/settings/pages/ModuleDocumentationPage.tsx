@@ -3,18 +3,19 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft, Book, ChevronLeft, ChevronRight, ExternalLink, FolderKanban,
   Maximize2, X, Layers, ListChecks, Image as ImageIcon, Plug, Database,
+  ChevronDown, KeyRound, GitBranch, ShieldCheck, AlertTriangle, Workflow,
+  Link2, FileCode2, CircleDot,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import {
-  MODULES, SHOTS, MODULE_ICON, CATEGORY_ICON,
-} from "./DocumentationPage";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { MODULES, SHOTS, MODULE_ICON, CATEGORY_ICON } from "./DocumentationPage";
 import { MODULE_APIS, MODULE_TABLES } from "./moduleTechnicalRefs";
 import { getTableColumns } from "./tableSchemas";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, KeyRound } from "lucide-react";
+import { MODULE_GUIDES } from "./docs";
 
 function typeBadgeColor(type: string): string {
   const t = type.toLowerCase();
@@ -39,7 +40,6 @@ const METHOD_COLORS: Record<string, string> = {
   DELETE: "bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/30",
 };
 function methodBadge(method: string) {
-  // Methods may be combined like "GET/POST/PUT" — colorize by first.
   const first = method.split("/")[0].trim().toUpperCase();
   return METHOD_COLORS[first] ?? "bg-muted text-foreground border-border";
 }
@@ -48,6 +48,7 @@ export default function ModuleDocumentationPage() {
   const navigate = useNavigate();
   const { moduleKey } = useParams<{ moduleKey: string }>();
   const mod = useMemo(() => MODULES.find((m) => m.key === moduleKey), [moduleKey]);
+  const guide = moduleKey ? MODULE_GUIDES[moduleKey] : undefined;
 
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const shots = mod ? (SHOTS[mod.key] || []) : [];
@@ -73,9 +74,8 @@ export default function ModuleDocumentationPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, [lightboxIdx, closeLightbox, prevShot, nextShot]);
 
-  // Sibling navigation (prev/next module)
   const sortedModules = useMemo(() => MODULES, []);
-  const idx = mod ? sortedModules.findIndex((m) => m.key === mod.key) : -1;
+  const idx = sortedModules.findIndex((m) => m.key === moduleKey);
   const prevMod = idx > 0 ? sortedModules[idx - 1] : null;
   const nextMod = idx >= 0 && idx < sortedModules.length - 1 ? sortedModules[idx + 1] : null;
 
@@ -103,48 +103,38 @@ export default function ModuleDocumentationPage() {
 
   const MIcon = MODULE_ICON[mod.key] ?? FolderKanban;
   const CIcon = CATEGORY_ICON[mod.category] ?? FolderKanban;
+  const apis = MODULE_APIS[mod.key] ?? [];
+  const tables = MODULE_TABLES[mod.key] ?? [];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30 overflow-x-hidden">
-      {/* Sticky header */}
-      <div className="sticky top-0 z-20 backdrop-blur-md bg-background/80 border-b">
-        <div className="w-full px-3 sm:px-4 lg:px-8 py-3 flex items-center gap-2 min-w-0">
+    <div className="min-h-screen bg-background overflow-x-hidden">
+      {/* Breadcrumb bar */}
+      <div className="sticky top-0 z-20 backdrop-blur-md bg-background/85 border-b">
+        <div className="max-w-[1400px] mx-auto px-4 lg:px-8 py-3 flex items-center gap-2 min-w-0">
           <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate("/dashboard/settings/documentation")}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground min-w-0 flex-1">
-            <Link to="/dashboard/settings" className="hover:text-foreground hidden sm:inline">Settings</Link>
-            <ChevronRight className="h-3 w-3 hidden sm:inline shrink-0" />
             <Link to="/dashboard/settings/documentation" className="hover:text-foreground shrink-0">Docs</Link>
             <ChevronRight className="h-3 w-3 shrink-0" />
+            <span className="hidden sm:inline shrink-0">{mod.category}</span>
+            <ChevronRight className="h-3 w-3 hidden sm:inline shrink-0" />
             <span className="text-foreground font-medium truncate">{mod.name}</span>
           </div>
           <div className="ml-auto flex items-center gap-1.5 shrink-0">
             {prevMod && (
-              <Button variant="outline" size="icon" className="sm:hidden h-8 w-8" asChild aria-label={`Previous: ${prevMod.name}`}>
+              <Button variant="outline" size="sm" className="h-8" asChild aria-label={`Previous: ${prevMod.name}`}>
                 <Link to={`/dashboard/settings/documentation/module/${prevMod.key}`}>
                   <ChevronLeft className="h-4 w-4" />
+                  <span className="hidden lg:inline ml-1 max-w-[120px] truncate">{prevMod.name}</span>
                 </Link>
               </Button>
             )}
             {nextMod && (
-              <Button variant="outline" size="icon" className="sm:hidden h-8 w-8" asChild aria-label={`Next: ${nextMod.name}`}>
+              <Button variant="outline" size="sm" className="h-8" asChild aria-label={`Next: ${nextMod.name}`}>
                 <Link to={`/dashboard/settings/documentation/module/${nextMod.key}`}>
+                  <span className="hidden lg:inline mr-1 max-w-[120px] truncate">{nextMod.name}</span>
                   <ChevronRight className="h-4 w-4" />
-                </Link>
-              </Button>
-            )}
-            {prevMod && (
-              <Button variant="outline" size="sm" className="hidden sm:inline-flex max-w-[180px]" asChild>
-                <Link to={`/dashboard/settings/documentation/module/${prevMod.key}`}>
-                  <ChevronLeft className="h-4 w-4 mr-1 shrink-0" /> <span className="truncate">{prevMod.name}</span>
-                </Link>
-              </Button>
-            )}
-            {nextMod && (
-              <Button variant="outline" size="sm" className="hidden sm:inline-flex max-w-[180px]" asChild>
-                <Link to={`/dashboard/settings/documentation/module/${nextMod.key}`}>
-                  <span className="truncate">{nextMod.name}</span> <ChevronRight className="h-4 w-4 ml-1 shrink-0" />
                 </Link>
               </Button>
             )}
@@ -153,111 +143,213 @@ export default function ModuleDocumentationPage() {
       </div>
 
       {/* Hero */}
-      <div className="w-full px-3 sm:px-4 lg:px-8 pt-6 pb-5 border-b bg-gradient-to-br from-primary/5 via-transparent to-transparent">
-        <div className="flex items-start gap-3 sm:gap-5 max-w-[1600px] mx-auto min-w-0">
-          <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0 border border-primary/20">
-            <MIcon className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1.5">
-              <CIcon className="h-3.5 w-3.5 shrink-0" />
-              <span className="truncate">{mod.category}</span>
+      <div className="border-b bg-gradient-to-br from-primary/8 via-background to-background">
+        <div className="max-w-[1400px] mx-auto px-4 lg:px-8 pt-8 pb-7">
+          <div className="flex items-start gap-4">
+            <div className="h-14 w-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+              <MIcon className="h-7 w-7 text-primary" />
             </div>
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight break-words">{mod.name}</h1>
-            <p className="text-sm lg:text-base text-muted-foreground mt-2 max-w-3xl break-words">{mod.description}</p>
-            <div className="flex items-center gap-2 mt-4 flex-wrap">
-              <Badge variant="secondary" className="gap-1"><ListChecks className="h-3 w-3" /> {mod.features.length} features</Badge>
-              <Badge variant="secondary" className="gap-1"><ExternalLink className="h-3 w-3" /> {mod.routes.length} routes</Badge>
-              {shots.length > 0 && (
-                <Badge variant="secondary" className="gap-1"><ImageIcon className="h-3 w-3" /> {shots.length} screenshots</Badge>
-              )}
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1.5">
+                <CIcon className="h-3.5 w-3.5" /> {mod.category}
+              </div>
+              <h1 className="text-2xl lg:text-3xl font-bold tracking-tight break-words">{mod.name}</h1>
+              <p className="text-sm lg:text-base text-muted-foreground mt-2 max-w-3xl leading-relaxed">
+                {guide?.purpose ?? mod.description}
+              </p>
+              <div className="flex items-center gap-2 mt-4 flex-wrap">
+                {guide?.workflows.length ? (
+                  <Badge variant="secondary" className="gap-1"><Workflow className="h-3 w-3" /> {guide.workflows.length} workflows</Badge>
+                ) : null}
+                {guide?.rules.length ? (
+                  <Badge variant="secondary" className="gap-1"><ShieldCheck className="h-3 w-3" /> {guide.rules.length} rules</Badge>
+                ) : null}
+                <Badge variant="outline" className="gap-1"><ListChecks className="h-3 w-3" /> {mod.features.length} features</Badge>
+                <Badge variant="outline" className="gap-1"><Layers className="h-3 w-3" /> {mod.routes.length} routes</Badge>
+                {apis.length ? <Badge variant="outline" className="gap-1"><Plug className="h-3 w-3" /> {apis.length} endpoints</Badge> : null}
+                {tables.length ? <Badge variant="outline" className="gap-1"><Database className="h-3 w-3" /> {tables.length} tables</Badge> : null}
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Body — full width */}
-      <div className="w-full px-3 sm:px-4 lg:px-8 py-6 sm:py-8">
-        <div className="max-w-[1600px] mx-auto grid gap-4 sm:gap-6 lg:grid-cols-3 min-w-0">
-          {/* Features */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <ListChecks className="h-4 w-4 text-primary" /> Functionalities
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
-                {mod.features.map((f, i) => (
-                  <li key={i} className="flex gap-2">
-                    <span className="text-primary mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
-                    <span>{f}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
+      <div className="max-w-[1400px] mx-auto px-4 lg:px-8 py-6">
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="mb-6 flex-wrap h-auto">
+            <TabsTrigger value="overview" className="gap-1.5"><Book className="h-3.5 w-3.5" /> Overview</TabsTrigger>
+            <TabsTrigger value="workflows" className="gap-1.5"><Workflow className="h-3.5 w-3.5" /> How it works</TabsTrigger>
+            <TabsTrigger value="rules" className="gap-1.5"><ShieldCheck className="h-3.5 w-3.5" /> Business rules</TabsTrigger>
+            {shots.length > 0 && (
+              <TabsTrigger value="screens" className="gap-1.5"><ImageIcon className="h-3.5 w-3.5" /> Screens</TabsTrigger>
+            )}
+            <TabsTrigger value="technical" className="gap-1.5"><FileCode2 className="h-3.5 w-3.5" /> API & data</TabsTrigger>
+          </TabsList>
 
-          {/* Routes */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Layers className="h-4 w-4 text-primary" /> URLs & Routes
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2">
-                {mod.routes.map((r) => (
-                  <li key={r.path}>
-                    <Link
-                      to={r.path}
-                      className="group flex items-start gap-2 p-2 rounded-md hover:bg-muted/60 transition-colors"
-                    >
-                      <ExternalLink className="h-3.5 w-3.5 mt-0.5 text-primary shrink-0 opacity-70 group-hover:opacity-100" />
-                      <div className="min-w-0 flex-1">
-                        <div className="font-mono text-xs text-primary group-hover:underline truncate">{r.path}</div>
-                        <div className="text-xs text-muted-foreground">{r.label}</div>
-                      </div>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Backend API + Database tables */}
-        {(MODULE_APIS[mod.key]?.length || MODULE_TABLES[mod.key]?.length) ? (
-          <div className="max-w-[1600px] mx-auto mt-6 grid gap-4 sm:gap-6 lg:grid-cols-3 min-w-0">
-            {MODULE_APIS[mod.key]?.length ? (
+          {/* ── Overview ── */}
+          <TabsContent value="overview" className="space-y-6 mt-0">
+            <div className="grid gap-6 lg:grid-cols-3">
               <Card className="lg:col-span-2">
-                <CardHeader>
+                <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
-                    <Plug className="h-4 w-4 text-primary" /> Backend API endpoints
+                    <ListChecks className="h-4 w-4 text-primary" /> What this module does
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                    {mod.features.map((f, i) => (
+                      <li key={i} className="flex gap-2">
+                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                        <span className="leading-relaxed">{f}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Layers className="h-4 w-4 text-primary" /> Screens & routes
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <ul className="space-y-1">
+                      {mod.routes.map((r) => (
+                        <li key={r.path}>
+                          <Link to={r.path} className="group flex items-start gap-2 p-2 rounded-md hover:bg-muted/60 transition-colors">
+                            <ExternalLink className="h-3.5 w-3.5 mt-0.5 text-primary shrink-0 opacity-70 group-hover:opacity-100" />
+                            <div className="min-w-0 flex-1">
+                              <div className="text-xs text-foreground">{r.label}</div>
+                              <code className="font-mono text-px-10 text-primary group-hover:underline break-all">{r.path}</code>
+                            </div>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+
+                {guide?.statuses?.length ? (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <CircleDot className="h-4 w-4 text-primary" /> Status vocabulary
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <ul className="space-y-2">
+                        {guide.statuses.map((s) => (
+                          <li key={s.name} className="text-xs">
+                            <Badge variant="outline" className="font-mono text-px-10 mr-2">{s.name}</Badge>
+                            <span className="text-muted-foreground">{s.meaning}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                ) : null}
+              </div>
+            </div>
+
+            {guide?.integrations?.length ? (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Link2 className="h-4 w-4 text-primary" /> How it connects to other modules
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                    {guide.integrations.map((i, n) => (
+                      <li key={n} className="flex gap-2">
+                        <GitBranch className="h-3.5 w-3.5 mt-0.5 text-primary shrink-0" />
+                        <span className="leading-relaxed">{i}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            ) : null}
+          </TabsContent>
+
+          {/* ── Workflows ── */}
+          <TabsContent value="workflows" className="mt-0">
+            {guide?.workflows.length ? (
+              <div className="grid gap-6 lg:grid-cols-2">
+                {guide.workflows.map((w) => (
+                  <Card key={w.name}>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Workflow className="h-4 w-4 text-primary" /> {w.name}
+                      </CardTitle>
+                      <CardDescription>{w.steps.length} steps</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <ol className="space-y-3">
+                        {w.steps.map((s, i) => (
+                          <li key={i} className="flex gap-3">
+                            <span className="h-5 w-5 rounded-full bg-primary/10 text-primary text-px-10 font-semibold flex items-center justify-center shrink-0 mt-0.5">
+                              {i + 1}
+                            </span>
+                            <span className="text-sm leading-relaxed">{s}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card><CardContent className="py-12 text-center text-sm text-muted-foreground">
+                No written workflows for this module yet.
+              </CardContent></Card>
+            )}
+          </TabsContent>
+
+          {/* ── Rules ── */}
+          <TabsContent value="rules" className="space-y-6 mt-0">
+            {guide?.rules.length ? (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4 text-primary" /> Rules the system enforces
                   </CardTitle>
                   <CardDescription>
-                    REST endpoints consumed by this module ({MODULE_APIS[mod.key].length}).
-                    Path params are shown as <code className="text-px-11">{"{id}"}</code>.
+                    Validations, guards and calculations applied by the backend — not just UI hints.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <ul className="divide-y divide-border/60">
-                    {MODULE_APIS[mod.key].map((ep, i) => (
-                      <li key={i} className="py-2 flex items-start gap-3">
-                        <Badge
-                          variant="outline"
-                          className={`shrink-0 font-mono text-px-10 px-1.5 py-0.5 ${methodBadge(ep.method)}`}
-                        >
-                          {ep.method}
-                        </Badge>
-                        <div className="min-w-0 flex-1">
-                          <code className="block text-xs font-mono text-foreground break-all">
-                            {ep.path}
-                          </code>
-                          {ep.description ? (
-                            <div className="text-px-11 text-muted-foreground mt-0.5">{ep.description}</div>
-                          ) : null}
-                        </div>
+                    {guide.rules.map((r, i) => (
+                      <li key={i} className="py-3 first:pt-0 last:pb-0">
+                        <div className="text-sm font-medium">{r.title}</div>
+                        <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{r.detail}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card><CardContent className="py-12 text-center text-sm text-muted-foreground">
+                No documented rules for this module yet.
+              </CardContent></Card>
+            )}
+
+            {guide?.gotchas?.length ? (
+              <Card className="border-amber-500/30">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-amber-500" /> Limitations & things to watch
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2 text-sm">
+                    {guide.gotchas.map((g, i) => (
+                      <li key={i} className="flex gap-2">
+                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
+                        <span className="leading-relaxed">{g}</span>
                       </li>
                     ))}
                   </ul>
@@ -265,186 +357,198 @@ export default function ModuleDocumentationPage() {
               </Card>
             ) : null}
 
-            {MODULE_TABLES[mod.key]?.length ? (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Database className="h-4 w-4 text-primary" /> Database tables
+            {guide?.sources?.length ? (
+              <Card className="border-dashed">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <FileCode2 className="h-4 w-4 text-muted-foreground" /> Source of truth
                   </CardTitle>
-                  <CardDescription>
-                    Backend entities/tables this module reads & writes ({MODULE_TABLES[mod.key].length}).
+                  <CardDescription className="text-xs">
+                    This page was written from these files. If behaviour changes there, update the docs.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ul className="space-y-2">
-                    {MODULE_TABLES[mod.key].map((t) => {
-                      const cols = getTableColumns(t);
-                      return (
-                        <li key={t} className="rounded-md border bg-muted/30 overflow-hidden">
-                          {cols ? (
-                            <Collapsible>
-                              <CollapsibleTrigger className="w-full flex items-center gap-2 px-2.5 py-2 hover:bg-muted/60 transition-colors text-left group">
-                                <Database className="h-3.5 w-3.5 text-primary/70 shrink-0" />
-                                <code className="text-xs font-mono font-semibold flex-1 truncate">{t}</code>
-                                <Badge variant="outline" className="text-px-10 shrink-0">{cols.length} cols</Badge>
-                                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground transition-transform group-data-[state=open]:rotate-180 shrink-0" />
-                              </CollapsibleTrigger>
-                              <CollapsibleContent>
-                                <div className="border-t bg-background/40">
-                                  <ul className="divide-y divide-border/50">
-                                    {cols.map((c) => (
-                                      <li key={c.name} className="flex items-center gap-2 px-2.5 py-1.5 text-xs">
-                                        {c.pk ? (
-                                          <KeyRound className="h-3 w-3 text-amber-500 shrink-0" aria-label="Primary key" />
-                                        ) : (
-                                          <span className="h-3 w-3 shrink-0" />
-                                        )}
-                                        <code className="font-mono font-medium truncate flex-1">{c.name}</code>
-                                        <Badge
-                                          variant="outline"
-                                          className={`text-px-10 font-mono px-1.5 py-0 shrink-0 ${typeBadgeColor(c.type)}`}
-                                        >
-                                          {c.type}
-                                        </Badge>
-                                        {c.notNull && (
-                                          <Badge variant="outline" className="text-px-9 px-1 py-0 shrink-0 border-red-500/30 text-red-600 dark:text-red-300">
-                                            NOT NULL
-                                          </Badge>
-                                        )}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              </CollapsibleContent>
-                            </Collapsible>
-                          ) : (
-                            <div className="flex items-center gap-2 px-2.5 py-2">
-                              <Database className="h-3.5 w-3.5 text-primary/70 shrink-0" />
-                              <code className="text-xs font-mono flex-1 truncate">{t}</code>
-                              <Badge variant="outline" className="text-px-10 text-muted-foreground shrink-0">schema n/a</Badge>
-                            </div>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
+                  <div className="flex flex-wrap gap-1.5">
+                    {guide.sources.map((s) => (
+                      <code key={s} className="text-px-10 font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground break-all">
+                        {s}
+                      </code>
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
             ) : null}
-          </div>
-        ) : null}
+          </TabsContent>
 
-        {/* Screenshots */}
-        {shots.length > 0 && (
-          <div className="max-w-[1600px] mx-auto mt-8">
-            <div className="flex items-center gap-2 mb-4">
-              <ImageIcon className="h-5 w-5 text-primary" />
-              <h2 className="text-lg font-semibold">Screenshots & walkthroughs</h2>
-              <Badge variant="outline" className="ml-1">{shots.length}</Badge>
-            </div>
-
-            <div className="space-y-8">
-              {shots.map((s, idx) => (
-                <Card key={s.src} className="overflow-hidden">
-                  <div className="grid lg:grid-cols-5 gap-0">
-                    <button
-                      type="button"
-                      onClick={() => setLightboxIdx(idx)}
-                      className="lg:col-span-3 relative group bg-muted/30"
-                      aria-label={`Open ${s.caption} fullscreen`}
-                    >
-                      <img
-                        src={s.src}
-                        alt={s.caption}
-                        loading="lazy"
-                        className="w-full h-full object-cover max-h-[520px] group-hover:opacity-95 transition-opacity cursor-zoom-in"
-                      />
-                      <span className="absolute top-3 right-3 rounded bg-background/85 backdrop-blur p-1.5 opacity-0 group-hover:opacity-100 transition-opacity border">
-                        <Maximize2 className="h-4 w-4" />
-                      </span>
-                      <span className="absolute bottom-3 left-3 rounded bg-background/85 backdrop-blur px-2 py-1 text-px-11 font-mono border">
-                        {idx + 1} / {shots.length}
-                      </span>
-                    </button>
-                    <div className="lg:col-span-2 p-5 lg:p-6 space-y-4">
-                      <h3 className="font-semibold text-sm leading-snug">{s.caption}</h3>
-                      {s.details?.length ? (
-                        <div>
-                          <p className="text-px-11 font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Details</p>
-                          <ul className="text-xs space-y-1.5 text-foreground/85">
-                            {s.details.map((d, i) => (
-                              <li key={i} className="flex gap-2">
-                                <span className="text-primary mt-1 h-1 w-1 rounded-full bg-primary shrink-0" />
-                                <span>{d}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ) : null}
-                      {s.whatYouCanDo?.length ? (
-                        <>
-                          <Separator />
-                          <div>
-                            <p className="text-px-11 font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">What you can do</p>
-                            <ul className="text-xs space-y-1.5 text-foreground/85">
-                              {s.whatYouCanDo.map((d, i) => (
-                                <li key={i} className="flex gap-2">
-                                  <span className="text-primary mt-1 h-1 w-1 rounded-full bg-primary shrink-0" />
-                                  <span>{d}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        </>
-                      ) : null}
-                      {s.fieldsActions?.length ? (
-                        <>
-                          <Separator />
-                          <div>
-                            <p className="text-px-11 font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Fields & actions</p>
-                            <ul className="text-xs space-y-1.5 text-foreground/85">
-                              {s.fieldsActions.map((d, i) => (
-                                <li key={i} className="flex gap-2">
-                                  <span className="text-primary mt-1 h-1 w-1 rounded-full bg-primary shrink-0" />
-                                  <span>{d}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        </>
-                      ) : null}
+          {/* ── Screens ── */}
+          {shots.length > 0 && (
+            <TabsContent value="screens" className="mt-0">
+              <div className="space-y-8">
+                {shots.map((s, i) => (
+                  <Card key={s.src} className="overflow-hidden">
+                    <div className="grid lg:grid-cols-5 gap-0">
+                      <button
+                        type="button"
+                        onClick={() => setLightboxIdx(i)}
+                        className="lg:col-span-3 relative group bg-muted/30"
+                        aria-label={`Open ${s.caption} fullscreen`}
+                      >
+                        <img
+                          src={s.src}
+                          alt={s.caption}
+                          loading="lazy"
+                          className="w-full h-full object-cover max-h-[520px] group-hover:opacity-95 transition-opacity cursor-zoom-in"
+                        />
+                        <span className="absolute top-3 right-3 rounded bg-background/85 backdrop-blur p-1.5 opacity-0 group-hover:opacity-100 transition-opacity border">
+                          <Maximize2 className="h-4 w-4" />
+                        </span>
+                        <span className="absolute bottom-3 left-3 rounded bg-background/85 backdrop-blur px-2 py-1 text-px-11 font-mono border">
+                          {i + 1} / {shots.length}
+                        </span>
+                      </button>
+                      <div className="lg:col-span-2 p-5 lg:p-6 space-y-4">
+                        <h3 className="font-semibold text-sm leading-snug">{s.caption}</h3>
+                        {([
+                          ["Details", s.details],
+                          ["What you can do", s.whatYouCanDo],
+                          ["Fields & actions", s.fieldsActions],
+                        ] as const).map(([label, list], n) =>
+                          list?.length ? (
+                            <div key={label}>
+                              {n > 0 && <Separator className="mb-4" />}
+                              <p className="text-px-11 font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">{label}</p>
+                              <ul className="text-xs space-y-1.5 text-foreground/85">
+                                {list.map((d, j) => (
+                                  <li key={j} className="flex gap-2">
+                                    <span className="mt-1 h-1 w-1 rounded-full bg-primary shrink-0" />
+                                    <span>{d}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          ) : null
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </Card>
-              ))}
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+          )}
+
+          {/* ── Technical ── */}
+          <TabsContent value="technical" className="mt-0">
+            <div className="grid gap-6 lg:grid-cols-3">
+              <Card className="lg:col-span-2">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Plug className="h-4 w-4 text-primary" /> Backend API endpoints
+                  </CardTitle>
+                  <CardDescription>
+                    REST endpoints this module calls ({apis.length}). Path params appear as <code className="text-px-11">{"{id}"}</code>.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {apis.length ? (
+                    <ul className="divide-y divide-border/60">
+                      {apis.map((ep, i) => (
+                        <li key={i} className="py-2 flex items-start gap-3">
+                          <Badge variant="outline" className={`shrink-0 font-mono text-px-10 px-1.5 py-0.5 ${methodBadge(ep.method)}`}>
+                            {ep.method}
+                          </Badge>
+                          <div className="min-w-0 flex-1">
+                            <code className="block text-xs font-mono break-all">{ep.path}</code>
+                            {ep.description && <div className="text-px-11 text-muted-foreground mt-0.5">{ep.description}</div>}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-muted-foreground py-6 text-center">
+                      No dedicated endpoints — this module reuses another module's API.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Database className="h-4 w-4 text-primary" /> Database tables
+                  </CardTitle>
+                  <CardDescription>Tables this module reads & writes ({tables.length}).</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {tables.length ? (
+                    <ul className="space-y-2">
+                      {tables.map((t) => {
+                        const cols = getTableColumns(t);
+                        return (
+                          <li key={t} className="rounded-md border bg-muted/30 overflow-hidden">
+                            {cols ? (
+                              <Collapsible>
+                                <CollapsibleTrigger className="w-full flex items-center gap-2 px-2.5 py-2 hover:bg-muted/60 transition-colors text-left group">
+                                  <Database className="h-3.5 w-3.5 text-primary/70 shrink-0" />
+                                  <code className="text-xs font-mono font-semibold flex-1 truncate">{t}</code>
+                                  <Badge variant="outline" className="text-px-10 shrink-0">{cols.length} cols</Badge>
+                                  <ChevronDown className="h-3.5 w-3.5 text-muted-foreground transition-transform group-data-[state=open]:rotate-180 shrink-0" />
+                                </CollapsibleTrigger>
+                                <CollapsibleContent>
+                                  <div className="border-t bg-background/40">
+                                    <ul className="divide-y divide-border/50">
+                                      {cols.map((c) => (
+                                        <li key={c.name} className="flex items-center gap-2 px-2.5 py-1.5 text-xs">
+                                          {c.pk ? (
+                                            <KeyRound className="h-3 w-3 text-amber-500 shrink-0" aria-label="Primary key" />
+                                          ) : (
+                                            <span className="h-3 w-3 shrink-0" />
+                                          )}
+                                          <code className="font-mono font-medium truncate flex-1">{c.name}</code>
+                                          <Badge variant="outline" className={`text-px-10 font-mono px-1.5 py-0 shrink-0 ${typeBadgeColor(c.type)}`}>
+                                            {c.type}
+                                          </Badge>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                </CollapsibleContent>
+                              </Collapsible>
+                            ) : (
+                              <div className="flex items-center gap-2 px-2.5 py-2">
+                                <Database className="h-3.5 w-3.5 text-primary/70 shrink-0" />
+                                <code className="text-xs font-mono flex-1 truncate">{t}</code>
+                                <Badge variant="outline" className="text-px-10 text-muted-foreground shrink-0">schema n/a</Badge>
+                              </div>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-muted-foreground py-6 text-center">No tables mapped.</p>
+                  )}
+                </CardContent>
+              </Card>
             </div>
-          </div>
-        )}
+          </TabsContent>
+        </Tabs>
 
         {/* Footer nav */}
-        <div className="max-w-[1600px] mx-auto mt-10 flex items-center justify-between gap-2 pt-6 border-t flex-wrap">
+        <div className="mt-10 flex items-center justify-between gap-2 pt-6 border-t flex-wrap">
           {prevMod ? (
-            <Button variant="outline" asChild className="max-w-[45%] sm:max-w-[200px]">
-              <Link to={`/dashboard/settings/documentation/module/${prevMod.key}`} className="min-w-0">
-                <ChevronLeft className="h-4 w-4 mr-2 shrink-0" />
-                <span className="text-left min-w-0">
-                  <span className="block text-px-10 text-muted-foreground uppercase tracking-wider">Previous</span>
-                  <span className="block text-sm truncate">{prevMod.name}</span>
-                </span>
+            <Button variant="outline" asChild>
+              <Link to={`/dashboard/settings/documentation/module/${prevMod.key}`}>
+                <ChevronLeft className="h-4 w-4 mr-1" /> {prevMod.name}
               </Link>
             </Button>
           ) : <span />}
-          <Button variant="ghost" onClick={() => navigate("/dashboard/settings/documentation")} className="shrink-0">
-            All modules
+          <Button variant="ghost" asChild>
+            <Link to="/dashboard/settings/documentation">All modules</Link>
           </Button>
           {nextMod ? (
-            <Button variant="outline" asChild className="max-w-[45%] sm:max-w-[200px]">
-              <Link to={`/dashboard/settings/documentation/module/${nextMod.key}`} className="min-w-0">
-                <span className="text-right min-w-0">
-                  <span className="block text-px-10 text-muted-foreground uppercase tracking-wider">Next</span>
-                  <span className="block text-sm truncate">{nextMod.name}</span>
-                </span>
-                <ChevronRight className="h-4 w-4 ml-2 shrink-0" />
+            <Button variant="outline" asChild>
+              <Link to={`/dashboard/settings/documentation/module/${nextMod.key}`}>
+                {nextMod.name} <ChevronRight className="h-4 w-4 ml-1" />
               </Link>
             </Button>
           ) : <span />}
@@ -481,11 +585,7 @@ export default function ModuleDocumentationPage() {
             >
               <ChevronLeft className="h-5 w-5" />
             </Button>
-            <img
-              src={currentShot.src}
-              alt={currentShot.caption}
-              className="max-h-full max-w-full object-contain rounded shadow-2xl"
-            />
+            <img src={currentShot.src} alt={currentShot.caption} className="max-h-full max-w-full object-contain rounded shadow-2xl" />
             <Button
               variant="secondary"
               size="icon"

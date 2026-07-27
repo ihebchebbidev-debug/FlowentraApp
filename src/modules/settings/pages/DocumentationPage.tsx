@@ -7,6 +7,7 @@ import {
   Zap, Webhook, BarChart3, Globe, Database, Bell, LifeBuoy, Settings as SettingsIcon,
   Bot, Lock, LayoutGrid, CreditCard, Sparkles, SlidersHorizontal, CalendarClock,
   Map, GraduationCap, UserCog, FileSpreadsheet, Signature, RefreshCw, Puzzle,
+  Server, ShieldCheck, Compass,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { MODULE_GUIDES, guideSearchText, NAVIGATION_MAP } from "./docs";
 
 export type ModuleRoute = { path: string; label: string };
 export type ModuleScreenshot = {
@@ -2986,340 +2988,407 @@ export const MODULE_ICON: Record<string, React.ComponentType<{ className?: strin
   plugins: Puzzle,
 };
 
+type HubTab = "modules" | "navigation";
+
 export default function DocumentationPage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("all");
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const [lightbox, setLightbox] = useState<{ moduleKey: string; index: number } | null>(null);
-
-  const lightboxShots = lightbox ? SHOTS[lightbox.moduleKey] || [] : [];
-  const currentShot = lightbox ? lightboxShots[lightbox.index] : null;
-  const closeLightbox = useCallback(() => setLightbox(null), []);
-  const prevShot = useCallback(() => {
-    setLightbox((lb) => (lb ? { ...lb, index: (lb.index - 1 + (SHOTS[lb.moduleKey]?.length || 1)) % (SHOTS[lb.moduleKey]?.length || 1) } : lb));
-  }, []);
-  const nextShot = useCallback(() => {
-    setLightbox((lb) => (lb ? { ...lb, index: (lb.index + 1) % (SHOTS[lb.moduleKey]?.length || 1) } : lb));
-  }, []);
-
-  useEffect(() => {
-    if (!lightbox) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeLightbox();
-      else if (e.key === "ArrowLeft") prevShot();
-      else if (e.key === "ArrowRight") nextShot();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [lightbox, closeLightbox, prevShot, nextShot]);
+  const [tab, setTab] = useState<HubTab>("modules");
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return MODULES.filter((m) => {
       if (activeCategory !== "all" && m.category !== activeCategory) return false;
       if (!q) return true;
+      const guide = MODULE_GUIDES[m.key];
       return (
         m.name.toLowerCase().includes(q) ||
         m.description.toLowerCase().includes(q) ||
         m.category.toLowerCase().includes(q) ||
         m.features.some((f) => f.toLowerCase().includes(q)) ||
-        m.routes.some((r) => r.path.toLowerCase().includes(q) || r.label.toLowerCase().includes(q))
+        m.routes.some((r) => r.path.toLowerCase().includes(q) || r.label.toLowerCase().includes(q)) ||
+        (guide ? guideSearchText(guide).includes(q) : false)
       );
     });
   }, [query, activeCategory]);
 
   const grouped = useMemo(() => {
     const map: Record<string, ModuleDoc[]> = {};
-    for (const m of filtered) {
-      (map[m.category] ||= []).push(m);
-    }
+    for (const m of filtered) (map[m.category] ||= []).push(m);
     return map;
   }, [filtered]);
 
+  const filteredNav = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return NAVIGATION_MAP;
+    return NAVIGATION_MAP.map((g) => ({
+      ...g,
+      items: g.items.filter(
+        (i) =>
+          i.label.toLowerCase().includes(q) ||
+          i.route.toLowerCase().includes(q) ||
+          i.description.toLowerCase().includes(q)
+      ),
+    })).filter((g) => g.items.length > 0);
+  }, [query]);
+
   const totalRoutes = MODULES.reduce((acc, m) => acc + m.routes.length, 0);
-  const totalFeatures = MODULES.reduce((acc, m) => acc + m.features.length, 0);
+  const guides = Object.values(MODULE_GUIDES);
+  const totalWorkflows = guides.reduce((acc, g) => acc + g.workflows.length, 0);
+  const totalRules = guides.reduce((acc, g) => acc + g.rules.length, 0);
 
-
+  const quickLinks = [
+    {
+      title: "Backend & architecture",
+      description: "Layers, services, auth pipeline and deployment.",
+      icon: Server,
+      to: "/dashboard/settings/documentation/backend",
+    },
+    {
+      title: "Database schema",
+      description: "Every table and column, grouped by module.",
+      icon: Database,
+      to: "/dashboard/settings/documentation/database",
+    },
+    {
+      title: "Settings index",
+      description: "What each screen in Administration configures.",
+      icon: SettingsIcon,
+      to: "/dashboard/settings/documentation/settings",
+    },
+  ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 overflow-x-hidden">
-      {/* Sticky header */}
-      <div className="sticky top-0 z-20 backdrop-blur-md bg-background/80 border-b">
-        <div className="px-3 sm:px-4 lg:px-8 py-4">
-          <div className="flex items-center gap-3 mb-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard/settings")}>
+    <div className="min-h-screen bg-background overflow-x-hidden">
+      {/* Hero */}
+      <div className="border-b bg-gradient-to-br from-primary/10 via-background to-background">
+        <div className="max-w-[1600px] mx-auto px-4 lg:px-8 pt-6 pb-8">
+          <div className="flex items-center gap-2 mb-6">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard/settings")} aria-label="Back to settings">
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl lg:text-2xl font-bold flex items-center gap-2">
-                <Book className="h-6 w-6 text-primary" />
-                Application Documentation
-              </h1>
-              <p className="text-xs lg:text-sm text-muted-foreground">
-                Browse every module — features, routes & screenshots.
-              </p>
-            </div>
-            <div className="hidden md:flex items-center gap-2">
-              <Badge variant="secondary">{MODULES.length} modules</Badge>
-              <Badge variant="outline">{totalRoutes} routes</Badge>
-              <Badge variant="outline">{totalFeatures} features</Badge>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => navigate("/dashboard/settings/documentation/backend")}
-                className="ml-2"
-              >
-                <Database className="h-3.5 w-3.5 mr-1.5" />
-                Backend & Architecture
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => navigate("/dashboard/settings/documentation/database")}
-              >
-                <Database className="h-3.5 w-3.5 mr-1.5" />
-                Database schema
-              </Button>
-              <Button
-                size="sm"
-                variant="default"
-                onClick={() => navigate("/dashboard/settings/documentation/settings")}
-              >
-                <SettingsIcon className="h-3.5 w-3.5 mr-1.5" />
-                Settings index
-              </Button>
+            <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+              <Link to="/dashboard/settings" className="hover:text-foreground">Settings</Link>
+              <ChevronRight className="h-3 w-3" />
+              <span className="text-foreground font-medium">Documentation</span>
             </div>
           </div>
 
-          <div className="flex flex-col lg:flex-row gap-3">
+          <div className="max-w-3xl">
+            <Badge variant="secondary" className="mb-3 gap-1.5">
+              <Book className="h-3 w-3" /> Product handbook
+            </Badge>
+            <h1 className="text-3xl lg:text-4xl font-bold tracking-tight">
+              How this application actually works
+            </h1>
+            <p className="text-sm lg:text-base text-muted-foreground mt-3">
+              A working reference for every workspace in the sidebar: what each module is for, the
+              end-to-end workflows it supports, the business rules the server enforces, the screens
+              and routes, the REST endpoints and the database tables behind them.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6 max-w-3xl">
+            {[
+              { label: "Modules", value: MODULES.length, icon: LayoutGrid },
+              { label: "Documented workflows", value: totalWorkflows, icon: GitBranch },
+              { label: "Business rules", value: totalRules, icon: ShieldCheck },
+              { label: "Routes", value: totalRoutes, icon: Compass },
+            ].map((s) => (
+              <div key={s.label} className="rounded-xl border bg-card/70 backdrop-blur px-4 py-3">
+                <s.icon className="h-4 w-4 text-primary mb-2" />
+                <div className="text-2xl font-semibold tabular-nums leading-none">{s.value}</div>
+                <div className="text-xs text-muted-foreground mt-1">{s.label}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid sm:grid-cols-3 gap-3 mt-6">
+            {quickLinks.map((q) => (
+              <Link
+                key={q.to}
+                to={q.to}
+                className="group rounded-xl border bg-card px-4 py-3 flex items-start gap-3 hover:border-primary/50 hover:shadow-sm transition-all"
+              >
+                <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <q.icon className="h-4 w-4 text-primary" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-medium flex items-center gap-1 group-hover:text-primary transition-colors">
+                    {q.title}
+                    <ChevronRight className="h-3.5 w-3.5 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{q.description}</div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Sticky toolbar */}
+      <div className="sticky top-0 z-20 border-b bg-background/85 backdrop-blur-md">
+        <div className="max-w-[1600px] mx-auto px-4 lg:px-8 py-3 space-y-3">
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+            <div className="inline-flex rounded-lg border p-0.5 bg-muted/40 self-start">
+              {([
+                { id: "modules" as const, label: "Modules", icon: LayoutGrid },
+                { id: "navigation" as const, label: "Sidebar map", icon: Compass },
+              ]).map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setTab(t.id)}
+                  className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md transition-colors ${
+                    tab === t.id ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <t.icon className="h-3.5 w-3.5" />
+                  {t.label}
+                </button>
+              ))}
+            </div>
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search modules, features, routes…"
+                placeholder="Search modules, workflows, rules, routes…"
                 className="pl-9"
               />
+              {query && (
+                <button
+                  onClick={() => setQuery("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-muted"
+                  aria-label="Clear search"
+                >
+                  <X className="h-3.5 w-3.5 text-muted-foreground" />
+                </button>
+              )}
             </div>
           </div>
 
-          <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
-            <button
-              onClick={() => setActiveCategory("all")}
-              className={`text-xs px-3 py-1.5 rounded-full border whitespace-nowrap transition-colors ${
-                activeCategory === "all"
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-background hover:bg-muted"
-              }`}
-            >
-              All ({MODULES.length})
-            </button>
-            {CATEGORIES.map((cat) => {
-              const Icon = CATEGORY_ICON[cat] ?? FolderKanban;
-              const count = MODULES.filter((m) => m.category === cat).length;
-              const active = activeCategory === cat;
-              return (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={`text-xs px-3 py-1.5 rounded-full border whitespace-nowrap inline-flex items-center gap-1.5 transition-colors ${
-                    active
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-background hover:bg-muted"
-                  }`}
-                >
-                  <Icon className="h-3 w-3" />
-                  {cat} ({count})
-                </button>
-              );
-            })}
-          </div>
+          {tab === "modules" && (
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              <button
+                onClick={() => setActiveCategory("all")}
+                className={`text-xs px-3 py-1.5 rounded-full border whitespace-nowrap transition-colors ${
+                  activeCategory === "all" ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-muted"
+                }`}
+              >
+                All ({MODULES.length})
+              </button>
+              {CATEGORIES.map((cat) => {
+                const Icon = CATEGORY_ICON[cat] ?? FolderKanban;
+                const count = MODULES.filter((m) => m.category === cat).length;
+                const active = activeCategory === cat;
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => setActiveCategory(cat)}
+                    className={`text-xs px-3 py-1.5 rounded-full border whitespace-nowrap inline-flex items-center gap-1.5 transition-colors ${
+                      active ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-muted"
+                    }`}
+                  >
+                    <Icon className="h-3 w-3" />
+                    {cat} ({count})
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="px-3 sm:px-4 lg:px-8 py-6">
-        <div className="flex gap-6 max-w-[1800px] mx-auto min-w-0">
-          {/* Sidebar TOC */}
-          <aside className="hidden xl:block w-64 shrink-0">
-            <div className="sticky top-48">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm">On this page</CardTitle>
-                </CardHeader>
-                <CardContent className="p-2">
-                  <ScrollArea className="h-[calc(100vh-22rem)] pr-2">
-                    {Object.entries(grouped).map(([cat, mods]) => {
-                      const Icon = CATEGORY_ICON[cat] ?? FolderKanban;
-                      return (
-                        <div key={cat} className="mb-3">
-                          <div className="text-px-10 font-semibold uppercase tracking-wider text-muted-foreground px-2 mb-1 inline-flex items-center gap-1">
-                            <Icon className="h-3 w-3" /> {cat}
-                          </div>
-                          <ul className="space-y-0.5">
-                            {mods.map((m) => {
-                              const MIcon = MODULE_ICON[m.key] ?? FolderKanban;
-                              return (
-                                <li key={m.key}>
-                                  <a
-                                    href={`#mod-${m.key}`}
-                                    className="flex items-center gap-2 text-xs px-2 py-1.5 rounded-md hover:bg-muted text-foreground/80 hover:text-foreground transition-colors"
-                                  >
-                                    <MIcon className="h-3.5 w-3.5 shrink-0" />
-                                    <span className="truncate">{m.name}</span>
-                                  </a>
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        </div>
-                      );
-                    })}
-                  </ScrollArea>
-                </CardContent>
-              </Card>
+      <div className="max-w-[1600px] mx-auto px-4 lg:px-8 py-8">
+        {tab === "navigation" ? (
+          <section className="space-y-6">
+            <div>
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Compass className="h-5 w-5 text-primary" /> Sidebar map
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Every workspace in the left navigation, in the order it appears, with the route it opens.
+              </p>
             </div>
-          </aside>
-
-          {/* Main */}
-          <main className="flex-1 min-w-0 space-y-8">
-            {filtered.length === 0 ? (
-              <Card>
-                <CardContent className="py-16 text-center text-muted-foreground">
-                  <Search className="h-10 w-10 mx-auto mb-3 opacity-40" />
-                  <p className="text-sm">No modules match "{query}".</p>
-                  <Button variant="link" onClick={() => { setQuery(""); setActiveCategory("all"); }}>
-                    Clear filters
-                  </Button>
-                </CardContent>
-              </Card>
+            {filteredNav.length === 0 ? (
+              <Card><CardContent className="py-12 text-center text-sm text-muted-foreground">No navigation entry matches “{query}”.</CardContent></Card>
             ) : (
-              Object.entries(grouped).map(([cat, mods]) => {
-                const Icon = CATEGORY_ICON[cat] ?? FolderKanban;
-                return (
-                  <section key={cat} className="space-y-4">
-                    <div className="flex items-center gap-2 border-b pb-2">
-                      <Icon className="h-5 w-5 text-primary" />
-                      <h2 className="text-lg font-semibold">{cat}</h2>
-                      <Badge variant="secondary" className="ml-1">{mods.length}</Badge>
-                    </div>
-                    <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-                      {mods.map((m) => {
-                        const MIcon = MODULE_ICON[m.key] ?? FolderKanban;
-                        const hasShots = !!SHOTS[m.key]?.length;
-                        return (
-                          <Link
-                            key={m.key}
-                            to={`/dashboard/settings/documentation/module/${m.key}`}
-                            id={`mod-${m.key}`}
-                            className="group block scroll-mt-48"
-                          >
-                            <Card className="h-full hover:shadow-lg hover:border-primary/40 transition-all border-border/60 group-hover:-translate-y-0.5">
-                              <CardHeader className="pb-3">
-                                <div className="flex items-start gap-3">
-                                  <div className="h-11 w-11 rounded-lg bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center shrink-0 group-hover:from-primary/25 group-hover:to-primary/10 transition-colors">
-                                    <MIcon className="h-5 w-5 text-primary" />
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <CardTitle className="text-base flex items-center gap-1.5 group-hover:text-primary transition-colors">
-                                      {m.name}
-                                      <ChevronRight className="h-4 w-4 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                                    </CardTitle>
-                                    <CardDescription className="mt-1 line-clamp-2">{m.description}</CardDescription>
-                                    <div className="flex items-center gap-1.5 mt-2.5 flex-wrap">
-                                      <Badge variant="outline" className="text-px-10">{m.routes.length} routes</Badge>
-                                      <Badge variant="outline" className="text-px-10">{m.features.length} features</Badge>
-                                      {hasShots && (
-                                        <Badge variant="secondary" className="text-px-10">{SHOTS[m.key].length} screenshots</Badge>
-                                      )}
+              <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+                {filteredNav.map((g) => (
+                  <Card key={g.group} className="h-full">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm uppercase tracking-wide text-muted-foreground">{g.group}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <ul className="divide-y divide-border/60">
+                        {g.items.map((i) => (
+                          <li key={i.route} className="py-2">
+                            <div className="flex items-start gap-2">
+                              <div className="min-w-0 flex-1">
+                                <div className="text-sm font-medium">{i.label}</div>
+                                <div className="text-xs text-muted-foreground">{i.description}</div>
+                                <code className="text-px-10 font-mono text-primary/80 break-all">{i.route}</code>
+                              </div>
+                              {i.moduleKey && MODULES.some((m) => m.key === i.moduleKey) && (
+                                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs shrink-0" asChild>
+                                  <Link to={`/dashboard/settings/documentation/module/${i.moduleKey}`}>Docs</Link>
+                                </Button>
+                              )}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </section>
+        ) : (
+          <div className="flex gap-8 min-w-0">
+            {/* TOC */}
+            <aside className="hidden xl:block w-56 shrink-0">
+              <div className="sticky top-32">
+                <p className="text-px-10 font-semibold uppercase tracking-wider text-muted-foreground px-2 mb-2">
+                  Categories
+                </p>
+                <ScrollArea className="h-[calc(100vh-16rem)] pr-2">
+                  {Object.entries(grouped).map(([cat, mods]) => {
+                    const Icon = CATEGORY_ICON[cat] ?? FolderKanban;
+                    return (
+                      <div key={cat} className="mb-4">
+                        <a
+                          href={`#cat-${cat.replace(/\s+/g, "-").toLowerCase()}`}
+                          className="flex items-center gap-1.5 text-xs font-semibold px-2 mb-1 hover:text-primary"
+                        >
+                          <Icon className="h-3 w-3" /> {cat}
+                        </a>
+                        <ul className="space-y-0.5 border-l ml-3 pl-2">
+                          {mods.map((m) => (
+                            <li key={m.key}>
+                              <Link
+                                to={`/dashboard/settings/documentation/module/${m.key}`}
+                                className="block text-xs px-2 py-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground truncate"
+                              >
+                                {m.name}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  })}
+                </ScrollArea>
+              </div>
+            </aside>
+
+            <main className="flex-1 min-w-0 space-y-10">
+              {filtered.length === 0 ? (
+                <Card>
+                  <CardContent className="py-16 text-center text-muted-foreground">
+                    <Search className="h-10 w-10 mx-auto mb-3 opacity-40" />
+                    <p className="text-sm">No module matches “{query}”.</p>
+                    <Button variant="link" onClick={() => { setQuery(""); setActiveCategory("all"); }}>
+                      Clear filters
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                Object.entries(grouped).map(([cat, mods]) => {
+                  const Icon = CATEGORY_ICON[cat] ?? FolderKanban;
+                  return (
+                    <section
+                      key={cat}
+                      id={`cat-${cat.replace(/\s+/g, "-").toLowerCase()}`}
+                      className="space-y-4 scroll-mt-32"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Icon className="h-4 w-4 text-primary" />
+                        <h2 className="text-base font-semibold">{cat}</h2>
+                        <span className="text-xs text-muted-foreground">{mods.length}</span>
+                        <Separator className="flex-1" />
+                      </div>
+                      <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+                        {mods.map((m) => {
+                          const MIcon = MODULE_ICON[m.key] ?? FolderKanban;
+                          const guide = MODULE_GUIDES[m.key];
+                          return (
+                            <Link
+                              key={m.key}
+                              to={`/dashboard/settings/documentation/module/${m.key}`}
+                              id={`mod-${m.key}`}
+                              className="group block scroll-mt-32"
+                            >
+                              <Card className="h-full transition-all border-border/60 hover:border-primary/40 hover:shadow-md group-hover:-translate-y-0.5">
+                                <CardHeader className="pb-3">
+                                  <div className="flex items-start gap-3">
+                                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+                                      <MIcon className="h-5 w-5 text-primary" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <CardTitle className="text-sm font-semibold flex items-center gap-1.5 group-hover:text-primary transition-colors">
+                                        {m.name}
+                                        <ChevronRight className="h-3.5 w-3.5 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                                      </CardTitle>
+                                      <CardDescription className="mt-1 line-clamp-3 text-xs leading-relaxed">
+                                        {guide?.purpose ?? m.description}
+                                      </CardDescription>
                                     </div>
                                   </div>
-                                </div>
-                              </CardHeader>
-                            </Card>
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  </section>
-                );
-              })
-            )}
+                                </CardHeader>
+                                <CardContent className="pt-0">
+                                  <div className="flex flex-wrap items-center gap-1.5">
+                                    {guide?.workflows.length ? (
+                                      <Badge variant="secondary" className="text-px-10 gap-1">
+                                        <GitBranch className="h-3 w-3" /> {guide.workflows.length} workflows
+                                      </Badge>
+                                    ) : null}
+                                    {guide?.rules.length ? (
+                                      <Badge variant="secondary" className="text-px-10 gap-1">
+                                        <ShieldCheck className="h-3 w-3" /> {guide.rules.length} rules
+                                      </Badge>
+                                    ) : null}
+                                    <Badge variant="outline" className="text-px-10">{m.routes.length} routes</Badge>
+                                    {SHOTS[m.key]?.length ? (
+                                      <Badge variant="outline" className="text-px-10">{SHOTS[m.key].length} screens</Badge>
+                                    ) : null}
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  );
+                })
+              )}
 
-            <Card className="border-dashed">
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <LifeBuoy className="h-4 w-4" /> Notes
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm text-muted-foreground space-y-2">
-                <p>
-                  Some routes require specific plugins to be enabled, or specific permissions. If a link
-                  shows a "no access" page, enable the plugin in{" "}
-                  <Link to="/dashboard/settings/plugins" className="text-primary hover:underline">Settings → Plugins</Link>{" "}
-                  or grant the role permission in{" "}
-                  <Link to="/dashboard/settings/advanced" className="text-primary hover:underline">Advanced settings</Link>.
-                </p>
-                <p>
-                  Detail / edit pages (e.g. <code className="font-mono">/dashboard/sales/:id</code>) are
-                  reachable from the corresponding list pages above.
-                </p>
-              </CardContent>
-            </Card>
-          </main>
-        </div>
+              <Card className="border-dashed">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <LifeBuoy className="h-4 w-4 text-primary" /> Before you report a missing screen
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-muted-foreground space-y-2">
+                  <p>
+                    Most routes are gated twice: the module's plugin must be enabled in{" "}
+                    <Link to="/dashboard/settings/plugins" className="text-primary hover:underline">Settings → Plugins</Link>, and
+                    your role must hold the matching permission in{" "}
+                    <Link to="/dashboard/settings/roles" className="text-primary hover:underline">Settings → Roles</Link>.
+                    A “no access” page almost always means one of those two is off.
+                  </p>
+                  <p>
+                    Detail and edit pages such as <code className="font-mono text-xs">/dashboard/sales/:id</code> are reached from
+                    their list page — they are documented on each module page.
+                  </p>
+                </CardContent>
+              </Card>
+            </main>
+          </div>
+        )}
       </div>
-
-      {lightbox && currentShot && (
-        <div
-          className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-sm flex flex-col"
-          role="dialog"
-          aria-modal="true"
-          onClick={closeLightbox}
-        >
-          <div className="flex items-center justify-between px-4 py-2 border-b bg-background/80">
-            <div className="text-sm font-medium truncate">
-              {currentShot.caption}
-              <span className="ml-2 text-xs text-muted-foreground font-mono">
-                {lightbox.index + 1} / {lightboxShots.length}
-              </span>
-            </div>
-            <Button variant="ghost" size="icon-sm" onClick={(e) => { e.stopPropagation(); closeLightbox(); }} aria-label="Close">
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-          <div className="flex-1 flex items-center justify-center relative overflow-auto p-4" onClick={(e) => e.stopPropagation()}>
-            <Button
-              variant="secondary"
-              size="icon"
-              className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full shadow-lg z-10"
-              onClick={(e) => { e.stopPropagation(); prevShot(); }}
-              aria-label="Previous"
-              disabled={lightboxShots.length < 2}
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-            <img
-              src={currentShot.src}
-              alt={currentShot.caption}
-              className="max-h-full max-w-full object-contain rounded shadow-2xl"
-            />
-            <Button
-              variant="secondary"
-              size="icon"
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full shadow-lg z-10"
-              onClick={(e) => { e.stopPropagation(); nextShot(); }}
-              aria-label="Next"
-              disabled={lightboxShots.length < 2}
-            >
-              <ChevronRight className="h-5 w-5" />
-            </Button>
-          </div>
-          <div className="border-t bg-background/80 px-4 py-2 text-px-11 text-muted-foreground text-center">
-            ← / → to navigate · Esc to close
-          </div>
-        </div>
-      )}
     </div>
   );
 }
