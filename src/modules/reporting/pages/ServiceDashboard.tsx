@@ -37,8 +37,8 @@ export const ServiceDashboard = () => {
     ]},
     { key: 'status', label: t('service.orderStatus', 'Order Status'), options: [
       { value: 'all', label: t('filters.all', 'All') },
-      { value: 'open', label: 'Open' }, { value: 'progress', label: 'In Progress' },
-      { value: 'completed', label: 'Completed' },
+      { value: 'open', label: t('statuses.open', { ns: 'translation', defaultValue: 'Open' }) }, { value: 'progress', label: t('statuses.in_progress', { ns: 'translation', defaultValue: 'In Progress' }) },
+      { value: 'completed', label: t('statuses.completed', { ns: 'translation', defaultValue: 'Completed' }) },
     ]},
     { key: 'type', label: t('service.orderType', 'Order Type'), options: [
       { value: 'all', label: t('filters.all', 'All Types') },

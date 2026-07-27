@@ -29,6 +29,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useDashboardLayout } from '../store/useDashboardLayoutStore';
 import { useFavoritesStore } from '@/modules/reporting/store/useFavoritesStore';
 import { FavoriteWidgetCard, getWidgetSize } from '@/modules/reporting/widgets/FavoriteWidgets';
+import { useStatusLabel } from '@/modules/reporting/utils/statusLabel';
 import { DashboardCustomizeSheet, type CustomizeRow } from './DashboardCustomizeSheet';
 import {
   AlertDialog,
@@ -76,7 +77,16 @@ const fmtHours = (minutes: number) => {
   return h >= 10 ? `${Math.round(h)}h` : `${Math.round(h * 10) / 10}h`;
 };
 
-const DONUT_PALETTE = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#a855f7', '#ec4899', '#14b8a6'];
+const DONUT_PALETTE = [
+  'hsl(var(--chart-1))',
+  'hsl(var(--chart-2))',
+  'hsl(var(--chart-3))',
+  'hsl(var(--chart-4))',
+  'hsl(var(--chart-5))',
+  'hsl(var(--chart-6))',
+  'hsl(var(--chart-orange))',
+  'hsl(var(--rag-neutral))',
+];
 
 const PANEL = 'rounded-xl border border-border/60 bg-card shadow-[0_1px_2px_rgba(0,0,0,0.04)]';
 
@@ -268,6 +278,7 @@ function SortableCard({
 export default function DashboardOverview() {
   const { format } = useCurrency();
   const { t } = useTranslation('dashboard');
+  const translateStatus = useStatusLabel();
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -349,13 +360,13 @@ export default function DashboardOverview() {
   const serviceOrderStatus = React.useMemo(() => {
     const counts: Record<string, number> = {};
     serviceOrders.forEach(so => {
-      const k = (so.status || 'unknown').toString().replace(/_/g, ' ');
+      const k = (so.status || 'unknown').toString().trim().toLowerCase().replace(/[\s-]+/g, '_');
       counts[k] = (counts[k] || 0) + 1;
     });
     return Object.entries(counts)
       .sort((a, b) => b[1] - a[1])
-      .map(([name, value], i) => ({ name, value, color: DONUT_PALETTE[i % DONUT_PALETTE.length] }));
-  }, [serviceOrders]);
+      .map(([status, value], i) => ({ name: translateStatus(status), value, color: DONUT_PALETTE[i % DONUT_PALETTE.length] }));
+  }, [serviceOrders, translateStatus]);
 
   // ── Section 2: Team / technicians ────────────────────────────
   const techStats = React.useMemo(() => {
@@ -397,9 +408,9 @@ export default function DashboardOverview() {
   }, [articles]);
 
   const stockDonut = React.useMemo(() => ([
-    { name: t('overview.available', { defaultValue: 'Available' }), value: stockStats.available, color: '#10b981' },
-    { name: t('overview.lowStock', { defaultValue: 'Low stock' }), value: stockStats.low, color: '#f59e0b' },
-    { name: t('overview.outOfStock', { defaultValue: 'Out of stock' }), value: stockStats.out, color: '#ef4444' },
+    { name: t('overview.available', { defaultValue: 'Available' }), value: stockStats.available, color: 'hsl(var(--rag-green))' },
+    { name: t('overview.lowStock', { defaultValue: 'Low stock' }), value: stockStats.low, color: 'hsl(var(--rag-yellow))' },
+    { name: t('overview.outOfStock', { defaultValue: 'Out of stock' }), value: stockStats.out, color: 'hsl(var(--rag-red))' },
   ].filter(d => d.value > 0)), [stockStats, t]);
 
   const lowStockItems = React.useMemo(

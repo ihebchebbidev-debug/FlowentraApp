@@ -15,6 +15,9 @@ import { entityStatusConfigs, allEntityTypes } from '@/config/entity-statuses';
 const normalize = (raw: string): string =>
   raw.trim().toLowerCase().replace(/[\s\-]+/g, '_');
 
+const camelStatusKey = (id: string): string =>
+  id.replace(/_([a-z0-9])/g, (_, char: string) => char.toUpperCase());
+
 /** Title-case fallback: "in_progress" → "In Progress". */
 const titleize = (raw: string): string =>
   raw
@@ -41,15 +44,35 @@ export const translateStatusLabel = (
   const id = normalize(value);
   const fallback = titleize(value);
 
+  // Prefer the explicit global status dictionary. It contains exact shared
+  // labels for dashboards/reporting and avoids config aliases turning
+  // "completed" into sale "closed", etc.
+  const globalLabel = t(`statuses.${id}`, { defaultValue: '' }) as string;
+  if (globalLabel) return globalLabel;
+
   for (const type of allEntityTypes) {
     const config = entityStatusConfigs[type];
     if (!config) continue;
     for (const status of config.statuses) {
       if (status.id === id || status.aliases?.includes(id)) {
-        return t(status.translationKey, { defaultValue: fallback }) as string;
+        const byCanonicalStatus = t(`statuses.${status.id}`, { defaultValue: '' }) as string;
+        if (byCanonicalStatus) return byCanonicalStatus;
+
+        const byTranslationKey = t(status.translationKey, { defaultValue: '' }) as string;
+        if (byTranslationKey) return byTranslationKey;
+
+        const byWorkflowKey = t(status.workflowTranslationKey, { defaultValue: '' }) as string;
+        if (byWorkflowKey) return byWorkflowKey;
       }
     }
   }
+
+  const statusLabel = t(`status.${id}`, { defaultValue: '' }) as string;
+  if (statusLabel) return statusLabel;
+
+  const statusFlowLabel = t(`statusFlow.${camelStatusKey(id)}`, { defaultValue: '' }) as string;
+  if (statusFlowLabel) return statusFlowLabel;
+
   return fallback;
 };
 

@@ -20,6 +20,7 @@ import { useReportFilters } from '../store/useReportFiltersStore';
 import { filterByStatusName, filterTableByStatus, sliceByPeriod } from '../utils/applyFilters';
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { FavoriteWidget } from '../store/useFavoritesStore';
+import { useStatusLabel } from '../utils/statusLabel';
 
 /** Layout size for each widget so the My Dashboard grid mirrors the source layout. */
 export type WidgetSize = 'kpi' | 'chart' | 'wide';
@@ -65,11 +66,12 @@ const SalesWidget = ({ fav }: { fav: FavoriteWidget }) => {
   const { current: currency } = useCurrency();
   const { values: applied } = useReportFilters('sales');
   const { data, isLoading } = useReportingSales(applied);
+  const translateStatus = useStatusLabel();
 
   const status = applied.status;
   const period = applied.period;
-  const offersByStatus = filterByStatusName(data?.offersByStatus ?? [], status);
-  const salesByStatus = filterByStatusName(data?.salesByStatus ?? [], status);
+  const offersByStatus = filterByStatusName(data?.offersByStatus ?? [], status).map((d) => ({ ...d, name: translateStatus(d.name) }));
+  const salesByStatus = filterByStatusName(data?.salesByStatus ?? [], status).map((d) => ({ ...d, name: translateStatus(d.name) }));
   const conversion = sliceByPeriod(data?.conversionTrend ?? [], period);
   const yoy = data?.yoyComparison ?? [];
   const topCustomers = filterTableByStatus(data?.topCustomers ?? [], status);
@@ -175,7 +177,7 @@ const SalesWidget = ({ fav }: { fav: FavoriteWidget }) => {
                   <tr key={c.id} className="border-t hover:bg-muted/30">
                     <td className="whitespace-nowrap px-3 py-2 font-medium text-foreground">{c.title}</td>
                     <td className="whitespace-nowrap px-3 py-2 text-right font-semibold">{money(currency.code, c.amount)}</td>
-                    <td className="whitespace-nowrap px-3 py-2"><RagBadge status={(c.ragDot as any) || 'green'}>{c.status || t('sales.active', 'Active')}</RagBadge></td>
+                    <td className="whitespace-nowrap px-3 py-2"><RagBadge status={(c.ragDot as any) || 'green'}>{c.status ? translateStatus(c.status) : t('sales.active', 'Active')}</RagBadge></td>
                   </tr>
                 ))}
               </tbody>
@@ -195,19 +197,14 @@ const ServiceWidget = ({ fav }: { fav: FavoriteWidget }) => {
   const { t } = useTranslation(['reporting', 'serviceOrders']);
   const { values: applied } = useReportFilters('service');
   const { data, isLoading } = useReportingService(applied);
-
-  const translateStatusName = (name: string): string => {
-    if (!name) return '—';
-    const key = name.toLowerCase().replace(/\s+/g, '_');
-    return t(`statuses.${key}`, { ns: 'serviceOrders', defaultValue: name });
-  };
+  const translateStatus = useStatusLabel();
 
   const period = applied.period;
   const status = applied.status;
   const type = applied.type;
   const completion = sliceByPeriod(data?.completionByMonth ?? [], period);
-  const byStatusAll = filterByStatusName(data?.workOrdersByStatus ?? [], status).map((d) => ({ ...d, name: translateStatusName(d.name) }));
-  const byTypeAll = filterByStatusName(data?.workOrdersByType ?? [], type).map((d) => ({ ...d, name: translateStatusName(d.name) }));
+  const byStatusAll = filterByStatusName(data?.workOrdersByStatus ?? [], status).map((d) => ({ ...d, name: translateStatus(d.name) }));
+  const byTypeAll = filterByStatusName(data?.workOrdersByType ?? [], type).map((d) => ({ ...d, name: translateStatus(d.name) }));
   const byStatusTop5 = [...byStatusAll].sort((a, b) => Number(b.value) - Number(a.value)).slice(0, 5);
   const byTypeTop5 = [...byTypeAll].sort((a, b) => Number(b.value) - Number(a.value)).slice(0, 5);
   const dispatches = data?.dispatchesPerTech ?? [];
@@ -329,7 +326,7 @@ const ServiceWidget = ({ fav }: { fav: FavoriteWidget }) => {
                   <tr key={r.id} className="border-t hover:bg-muted/30">
                     <td className="whitespace-nowrap px-3 py-2 font-medium">{r.title}</td>
                     <td className="whitespace-nowrap px-3 py-2 text-right">{r.subtitle}</td>
-                    <td className="whitespace-nowrap px-3 py-2 text-right"><RagBadge status={(r.ragDot as any) || 'green'}>{r.status || '—'}</RagBadge></td>
+                    <td className="whitespace-nowrap px-3 py-2 text-right"><RagBadge status={(r.ragDot as any) || 'green'}>{translateStatus(r.status)}</RagBadge></td>
                   </tr>
                 ))}
               </tbody>
@@ -351,10 +348,11 @@ const FinanceWidget = ({ fav }: { fav: FavoriteWidget }) => {
   const { current: currency } = useCurrency();
   const { values: applied } = useReportFilters('finance');
   const { data, isLoading } = useReportingFinance(applied);
+  const translateStatus = useStatusLabel();
 
   const status = applied.status;
   const kpis = data?.kpis ?? [];
-  const donut = filterByStatusName(data?.invoiceStatusDonut ?? [], status);
+  const donut = filterByStatusName(data?.invoiceStatusDonut ?? [], status).map((d) => ({ ...d, name: translateStatus(d.name) }));
   const expenses = data?.expensesByCategory ?? [];
   const invoices = filterTableByStatus(data?.invoiceTable ?? [], status);
   const donutColors = ['green', 'yellow', 'red', 'neutral'] as const;
@@ -425,7 +423,7 @@ const FinanceWidget = ({ fav }: { fav: FavoriteWidget }) => {
                     <td className="px-3 py-2"><span className={`inline-block h-2.5 w-2.5 rounded-full ${inv.ragDot === 'green' ? 'bg-success' : inv.ragDot === 'yellow' ? 'bg-warning' : inv.ragDot === 'red' ? 'bg-destructive' : 'bg-muted-foreground'}`} /></td>
                     <td className="whitespace-nowrap px-3 py-2 font-medium">{inv.title}</td>
                     <td className="whitespace-nowrap px-3 py-2">{inv.subtitle}</td>
-                    <td className="whitespace-nowrap px-3 py-2"><RagBadge status={(inv.ragDot as any) || 'neutral'}>{inv.status}</RagBadge></td>
+                    <td className="whitespace-nowrap px-3 py-2"><RagBadge status={(inv.ragDot as any) || 'neutral'}>{translateStatus(inv.status)}</RagBadge></td>
                     <td className="whitespace-nowrap px-3 py-2 text-right font-semibold">{money(currency.code, inv.amount)}</td>
                   </tr>
                 ))}
@@ -447,6 +445,7 @@ const HrWidget = ({ fav }: { fav: FavoriteWidget }) => {
   const { current: currency } = useCurrency();
   const { values: applied } = useReportFilters('hr');
   const { data, isLoading } = useReportingHr(applied);
+  const translateStatus = useStatusLabel();
 
   const period = applied.period;
   const dept = applied.dept;
@@ -543,7 +542,7 @@ const HrWidget = ({ fav }: { fav: FavoriteWidget }) => {
                   <tr key={e.id} className="border-t hover:bg-muted/30">
                     <td className="whitespace-nowrap px-3 py-2 font-medium">{e.title}</td>
                     <td className="whitespace-nowrap px-3 py-2">{e.subtitle}</td>
-                    <td className="whitespace-nowrap px-3 py-2"><RagBadge status={(e.ragDot as any) || 'neutral'}>{e.status}</RagBadge></td>
+                    <td className="whitespace-nowrap px-3 py-2"><RagBadge status={(e.ragDot as any) || 'neutral'}>{translateStatus(e.status)}</RagBadge></td>
                     <td className="whitespace-nowrap px-3 py-2 text-right font-semibold">{money(currency.code, e.amount)}</td>
                   </tr>
                 ))}
@@ -565,6 +564,7 @@ const PurchaseWidget = ({ fav }: { fav: FavoriteWidget }) => {
   const { current: currency } = useCurrency();
   const { values: applied } = useReportFilters('purchase');
   const { data, isLoading } = useReportingPurchase(applied);
+  const translateStatus = useStatusLabel();
 
   const period = applied.period;
   const supplier = applied.supplier;
@@ -659,7 +659,7 @@ const PurchaseWidget = ({ fav }: { fav: FavoriteWidget }) => {
                   <tr key={p.id} className={`border-t hover:bg-muted/30 ${p.ragDot === 'red' ? 'bg-destructive/5' : ''}`}>
                     <td className="whitespace-nowrap px-3 py-2 font-medium">{p.title}</td>
                     <td className="whitespace-nowrap px-3 py-2">{p.subtitle}</td>
-                    <td className="whitespace-nowrap px-3 py-2"><RagBadge status={(p.ragDot as any) || 'neutral'}>{p.status}</RagBadge></td>
+                    <td className="whitespace-nowrap px-3 py-2"><RagBadge status={(p.ragDot as any) || 'neutral'}>{translateStatus(p.status)}</RagBadge></td>
                     <td className="whitespace-nowrap px-3 py-2 text-right font-semibold">{money(currency.code, p.amount)}</td>
                   </tr>
                 ))}

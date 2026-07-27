@@ -37,8 +37,8 @@ export const SalesDashboard = () => {
     ]},
     { key: 'status', label: t('sales.orderStatus', 'Order Status'), options: [
       { value: 'all', label: t('filters.all', 'All') },
-      { value: 'draft', label: 'Draft' }, { value: 'confirmed', label: 'Confirmed' },
-      { value: 'shipped', label: 'Shipped' }, { value: 'invoiced', label: 'Invoiced' },
+      { value: 'draft', label: t('statuses.draft', { ns: 'translation', defaultValue: 'Draft' }) }, { value: 'confirmed', label: t('statuses.confirmed', { ns: 'translation', defaultValue: 'Confirmed' }) },
+      { value: 'shipped', label: t('statuses.shipped', { ns: 'translation', defaultValue: 'Shipped' }) }, { value: 'invoiced', label: t('statuses.invoiced', { ns: 'translation', defaultValue: 'Invoiced' }) },
     ]},
   ];
 

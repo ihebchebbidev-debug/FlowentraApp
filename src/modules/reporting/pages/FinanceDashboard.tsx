@@ -36,8 +36,8 @@ export const FinanceDashboard = () => {
     ]},
     { key: 'status', label: t('finance.invoiceStatus', 'Invoice Status'), options: [
       { value: 'all', label: t('filters.all', 'All') },
-      { value: 'paid', label: 'Paid' }, { value: 'pending', label: 'Pending' },
-      { value: 'overdue', label: 'Overdue' },
+      { value: 'paid', label: t('statuses.paid', { ns: 'translation', defaultValue: 'Paid' }) }, { value: 'pending', label: t('statuses.pending', { ns: 'translation', defaultValue: 'Pending' }) },
+      { value: 'overdue', label: t('statuses.overdue', { ns: 'translation', defaultValue: 'Overdue' }) },
     ]},
   ];
 

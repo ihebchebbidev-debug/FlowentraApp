@@ -7,7 +7,7 @@ import {
   Zap, Webhook, BarChart3, Globe, Database, Bell, LifeBuoy, Settings as SettingsIcon,
   Bot, Lock, LayoutGrid, CreditCard, Sparkles, SlidersHorizontal, CalendarClock,
   Map, GraduationCap, UserCog, FileSpreadsheet, Signature, RefreshCw, Puzzle,
-  Server, ShieldCheck, Compass,
+  Server, ShieldCheck,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MODULE_GUIDES, guideSearchText, NAVIGATION_MAP } from "./docs";
+import { MODULE_GUIDES, guideSearchText } from "./docs";
 
 export type ModuleRoute = { path: string; label: string };
 export type ModuleScreenshot = {
@@ -1719,31 +1719,24 @@ SHOTS["workflow"] = [
 export const MODULES: ModuleDoc[] = [
   {
     key: "dashboard",
-    name: "Dashboard & Builder",
+    name: "Dashboard",
     category: "Core",
     description:
-      "Configurable home dashboards. Build per-role dashboards from widgets (KPIs, charts, lists), pin views, and switch between built-in and custom dashboards.",
+      "The home screen every user lands on after login. It presents role-tuned built-in dashboards (Service, Sales, Field, HR, Finance, Executive) with KPI tiles, charts and a recent-activity feed, plus quick global filters (Target Company, owner, date range) that apply to every widget at once.",
     features: [
-      "Custom dashboard builder (drag & drop widgets)",
-      "KPI cards, charts, recent activity feeds",
-      "Per-user / per-role default dashboard",
-      "Public sharing of dashboards via token URL",
-      "Built-in dashboards — Service (default), Sales, Field, HR, Finance, Executive — each tuned to its persona",
-      "Switcher — top-bar dropdown to flip between built-in and custom dashboards; remembers per user",
-      "Pin a dashboard — set as your default landing dashboard",
-      "Time-range — global control with comparison to previous period; per-widget override possible",
-      "Quick filters — global Target Company, owner, and date range applied to all widgets at once",
+      "Built-in dashboards — Service (default), Sales, Field, HR, Finance and Executive, each tuned to its persona",
+      "Dashboard switcher — top-bar dropdown to flip between the built-in dashboards; the choice is remembered per user",
+      "Pin a dashboard — set any built-in dashboard as your default landing screen",
+      "Time-range control — global range with comparison to the previous period",
+      "Quick filters — Target Company, owner and date range applied to every KPI/chart at once",
+      "KPI tiles and charts — click through to the underlying list (offers, sales, service orders, tasks, articles, events…)",
       "Recent activity — chronological feed of changes across modules with click-to-open",
-      "Tour — first-time user product tour highlighting the sidebar, top bar, and KPI tiles",
-      "Realtime — KPI tiles refresh via SignalR when underlying entities change",
-      "Mobile — responsive grid with a 1-column stack and per-widget hide-on-mobile flag",
+      "Product tour — first-time users are walked through the sidebar, top bar and main KPI tiles",
+      "Realtime — KPI tiles refresh automatically when the underlying entities change",
+      "Mobile-friendly — responsive grid collapses to a single column on phones",
     ],
-    routes: [
+        routes: [
       { path: "/dashboard", label: "Home dashboard" },
-      { path: "/dashboard/dashboards", label: "Dashboard builder / manager" },
-      { path: "/dashboard/dashboards/:id", label: "View a specific dashboard" },
-      { path: "/dashboard/dashboards/:id/edit", label: "Edit a dashboard" },
-      { path: "/public/dashboards/:token", label: "Public shared dashboard" },
     ],
   },
   {
@@ -1765,12 +1758,13 @@ export const MODULES: ModuleDoc[] = [
       "Multi-company aware — every contact is scoped to a Target Company (header company switcher)",
       "Quick actions — favorite (pin), edit, delete from the list rows",
     ],
-    routes: [
-      { path: "/dashboard/contacts", label: "All Contacts list" },
-      { path: "/dashboard/contacts/add", label: "Add Contact (Person / Company / Supplier)" },
-      { path: "/dashboard/contacts/:id", label: "Contact detail (Overview, Offers, Sales, Service Orders, Purchases, Notes)" },
+        routes: [
+      { path: "/dashboard/contacts", label: "Contacts list" },
+      { path: "/dashboard/contacts/add", label: "Add contact" },
+      { path: "/dashboard/contacts/:id", label: "Contact detail" },
       { path: "/dashboard/suppliers", label: "Suppliers list" },
-      { path: "/dashboard/suppliers/add", label: "Add Supplier" },
+      { path: "/dashboard/suppliers/add", label: "Add supplier" },
+      { path: "/dashboard/suppliers/:id", label: "Supplier detail" },
     ],
   },
   {
@@ -1791,12 +1785,12 @@ export const MODULES: ModuleDoc[] = [
       "Permissions — view/create/edit/delete are role-permission gated; Send is hidden unless status ∈ {draft, modified}; row actions adapt to the user's role in real time (permission broadcast)",
       "Multi-company — the Target Company picker scopes the list and 'View All' mode adds a Company column",
     ],
-    routes: [
-      { path: "/dashboard/offers", label: "Offers list (KPIs, Table/Kanban/Map, filters, export, bulk actions)" },
-      { path: "/dashboard/offers/add", label: "New offer (header + parties + items + totals + notes)" },
-      { path: "/dashboard/offers/:id", label: "Offer detail (Overview / Items / Notes / Checklists / Documents tabs + Send/PDF/Convert/Edit/Delete)" },
+        routes: [
+      { path: "/dashboard/offers", label: "Offers list" },
+      { path: "/dashboard/offers/add", label: "New offer" },
+      { path: "/dashboard/offers/:id", label: "Offer detail" },
       { path: "/dashboard/offers/:id/edit", label: "Edit offer" },
-      { path: "/dashboard/offers/:id/report", label: "Public/printable PDF report page" },
+      { path: "/dashboard/offers/:id/report", label: "Offer report / printable" },
     ],
   },
   {
@@ -1817,12 +1811,13 @@ export const MODULES: ModuleDoc[] = [
       "Permissions — full RBAC matrix; the Convert button is conditionally shown when items contain service type and the sale is not already converted",
       "Multi-company — Target Company scope; 'View All' adds Company column",
     ],
-    routes: [
-      { path: "/dashboard/sales", label: "Sales list (KPIs, List/Table/Kanban, filters, export, bulk, FastAdd)" },
+        routes: [
+      { path: "/dashboard/sales", label: "Sales list" },
       { path: "/dashboard/sales/add", label: "New sale" },
-      { path: "/dashboard/sales/:id", label: "Sale detail (Overview / Items / Payments / Notes / Checklists / Documents)" },
+      { path: "/dashboard/sales/:id", label: "Sale detail" },
       { path: "/dashboard/sales/:id/edit", label: "Edit sale" },
-      { path: "/dashboard/sales/:id/report", label: "Public/printable PDF report page" },
+      { path: "/dashboard/sales/:id/report", label: "Sale report / printable" },
+      { path: "/dashboard/invoices", label: "Invoices list" },
     ],
   },
   {
@@ -1844,12 +1839,11 @@ export const MODULES: ModuleDoc[] = [
       "Permissions — view/create/edit/delete RBAC; owners-only mode optional (users see only their deals)",
       "Multi-company — Target Company scope; 'View All' adds Company column and aggregates KPIs across companies",
     ],
-    routes: [
-      { path: "/dashboard/deals", label: "Deals pipeline (Kanban / Table / Forecast)" },
-      { path: "/dashboard/deals/add", label: "Create deal" },
-      { path: "/dashboard/deals/:id", label: "Deal detail (Overview / Activities / Links / Documents)" },
+        routes: [
+      { path: "/dashboard/deals", label: "Deals pipeline (kanban)" },
+      { path: "/dashboard/deals/add", label: "New deal" },
+      { path: "/dashboard/deals/:id", label: "Deal detail" },
       { path: "/dashboard/deals/:id/edit", label: "Edit deal" },
-      { path: "/dashboard/deals/forecast", label: "Forecast & analytics" },
     ],
   },
   {
@@ -1873,13 +1867,11 @@ export const MODULES: ModuleDoc[] = [
       "Used by — Offers, Sales, Purchase Orders, Service Orders (line items autocomplete), Stock Management (movements)",
       "Permissions — view/create/edit/delete RBAC; deactivation preserves history without breaking past documents",
     ],
-    routes: [
-      { path: "/dashboard/articles", label: "Articles list (KPIs, filters, Table/Grid)" },
-      { path: "/dashboard/articles/add", label: "Add article (identity, pricing, stock, suppliers, media)" },
-      { path: "/dashboard/articles/:id", label: "Article detail (Overview / Pricing / Stock / Suppliers / Media)" },
+        routes: [
+      { path: "/dashboard/articles", label: "Articles list" },
+      { path: "/dashboard/articles/add", label: "New article" },
+      { path: "/dashboard/articles/:id", label: "Article detail" },
       { path: "/dashboard/articles/:id/edit", label: "Edit article" },
-      { path: "/dashboard/articles/categories", label: "Categories tree manager" },
-      { path: "/dashboard/articles/price-lists", label: "Price lists & customer tiers" },
     ],
   },
   {
@@ -1897,11 +1889,13 @@ export const MODULES: ModuleDoc[] = [
       "Bulk import — single .xlsx accepting both items and services with a 'type' column",
       "Cross-references — see which Offers/Sales/Service Orders use a given item/service",
     ],
-    routes: [
-      { path: "/dashboard/inventory-services", label: "Unified inventory & services list" },
-      { path: "/dashboard/inventory-services/add-article", label: "Add unified article (item or service)" },
-      { path: "/dashboard/inventory-services/items/:id", label: "Inventory item detail (movements, valuation)" },
-      { path: "/dashboard/inventory-services/services/:id", label: "Service detail (pricing, billable unit)" },
+        routes: [
+      { path: "/dashboard/inventory-services", label: "Unified catalog (items + services)" },
+      { path: "/dashboard/inventory-services/add-article", label: "Add item or service" },
+      { path: "/dashboard/inventory-services/article/:id", label: "Catalog entry detail" },
+      { path: "/dashboard/inventory-services/article/:id/edit", label: "Edit catalog entry" },
+      { path: "/dashboard/inventory-services/inventory/:id", label: "Inventory item detail" },
+      { path: "/dashboard/inventory-services/service/:id", label: "Service detail" },
     ],
   },
   {
@@ -1924,15 +1918,8 @@ export const MODULES: ModuleDoc[] = [
       "Permissions — RBAC for view/move/adjust; transfers and adjustments can require approval based on value threshold",
       "Audit trail — every movement immutable once posted; corrections done via reverse + repost",
     ],
-    routes: [
-      { path: "/dashboard/stock-management", label: "Stock dashboard (KPIs, low-stock, recent movements)" },
-      { path: "/dashboard/stock-management/movements", label: "Movements log" },
-      { path: "/dashboard/stock-management/adjustments", label: "Adjustments" },
-      { path: "/dashboard/stock-management/transfers", label: "Transfers between warehouses" },
-      { path: "/dashboard/stock-management/stock-takes", label: "Stock takes / inventory counts" },
-      { path: "/dashboard/stock-management/warehouses", label: "Warehouses manager" },
-      { path: "/dashboard/stock-management/replenishment", label: "Replenishment proposals" },
-      { path: "/dashboard/stock-management/reports", label: "Stock reports" },
+        routes: [
+      { path: "/dashboard/stock-management", label: "Stock management (movements, adjustments, warehouses in tabs)" },
     ],
   },
   {
@@ -1953,24 +1940,26 @@ export const MODULES: ModuleDoc[] = [
       "Multi-company — every document is scoped to a Target Company, with the company picker in the header",
       "CSV export from list views, advanced filters and grid/list toggle",
     ],
-    routes: [
-      { path: "/dashboard/purchases", label: "Purchases hub (KPIs + recent activity)" },
-      { path: "/dashboard/purchases/orders", label: "Purchase Orders list" },
-      { path: "/dashboard/purchases/orders/add", label: "Create Purchase Order" },
-      { path: "/dashboard/purchases/orders/:id", label: "Purchase Order detail" },
-      { path: "/dashboard/purchases/receipts", label: "Goods Receipts list" },
-      { path: "/dashboard/purchases/receipts/add", label: "Create Goods Receipt" },
-      { path: "/dashboard/purchases/receipts/:id", label: "Goods Receipt detail" },
-      { path: "/dashboard/purchases/receipts/:id/edit", label: "Edit Goods Receipt" },
-      { path: "/dashboard/purchases/invoices", label: "Supplier Invoices list" },
-      { path: "/dashboard/purchases/invoices/add", label: "Create Supplier Invoice" },
-      { path: "/dashboard/purchases/invoices/:id", label: "Supplier Invoice detail" },
-      { path: "/dashboard/purchases/compliance", label: "Fiscal Compliance dashboard" },
-      { path: "/dashboard/purchases/reports", label: "Reports overview" },
-      { path: "/dashboard/purchases/reports/supplier-performance", label: "Supplier Performance" },
-      { path: "/dashboard/purchases/reports/price-evolution", label: "Price Evolution" },
-      { path: "/dashboard/purchases/reports/aging", label: "Supplier Invoice Aging" },
-      { path: "/dashboard/purchases/audit-log", label: "Audit Log" },
+        routes: [
+      { path: "/dashboard/purchases/orders", label: "Purchase orders list" },
+      { path: "/dashboard/purchases/orders/add", label: "New purchase order" },
+      { path: "/dashboard/purchases/orders/:id", label: "Purchase order detail" },
+      { path: "/dashboard/purchases/orders/:id/report", label: "Purchase order report / printable" },
+      { path: "/dashboard/purchases/receipts", label: "Goods receipts list" },
+      { path: "/dashboard/purchases/receipts/add", label: "New goods receipt" },
+      { path: "/dashboard/purchases/receipts/:id", label: "Goods receipt detail" },
+      { path: "/dashboard/purchases/receipts/:id/edit", label: "Edit goods receipt" },
+      { path: "/dashboard/purchases/receipts/:id/report", label: "Goods receipt report" },
+      { path: "/dashboard/purchases/invoices", label: "Supplier invoices list" },
+      { path: "/dashboard/purchases/invoices/add", label: "New supplier invoice" },
+      { path: "/dashboard/purchases/invoices/:id", label: "Supplier invoice detail" },
+      { path: "/dashboard/purchases/invoices/:id/report", label: "Supplier invoice report" },
+      { path: "/dashboard/purchases/compliance", label: "Compliance dashboard" },
+      { path: "/dashboard/purchases/audit-log", label: "Audit log" },
+      { path: "/dashboard/purchases/reports", label: "Purchase reports" },
+      { path: "/dashboard/purchases/reports/supplier-performance", label: "Supplier performance report" },
+      { path: "/dashboard/purchases/reports/price-evolution", label: "Price evolution report" },
+      { path: "/dashboard/purchases/reports/aging", label: "Aging report" },
     ],
   },
   {
@@ -1993,20 +1982,19 @@ export const MODULES: ModuleDoc[] = [
       "HR Settings — CNSS rates history, Public holidays calendar, General config (currency TND, locale fr-TN, fiscal year)",
       "Localization — French (Tunisia) labels, TND formatting (3 decimals), Arabic-friendly fonts in payslips",
     ],
-    routes: [
-      { path: "/dashboard/hr", label: "HR dashboard (headcount, absences, payroll & CNSS estimates)" },
+        routes: [
       { path: "/dashboard/hr/employees", label: "Employees list" },
-      { path: "/dashboard/hr/employees/:id", label: "Employee detail (Profile / Salary / CNSS / Bonuses / Leaves / Documents)" },
+      { path: "/dashboard/hr/employees/:id", label: "Employee detail" },
+      { path: "/dashboard/hr/departments", label: "Departments" },
       { path: "/dashboard/hr/attendance", label: "Attendance" },
-      { path: "/dashboard/hr/leaves", label: "Leaves (Calendar / List / Balances / Approvals)" },
-      { path: "/dashboard/hr/payroll", label: "Payroll runs" },
-      { path: "/dashboard/hr/bonuses", label: "Bonuses & deductions" },
-      { path: "/dashboard/hr/cnss", label: "CNSS rates & declaration" },
-      { path: "/dashboard/hr/departments", label: "Departments & org chart" },
-      { path: "/dashboard/hr/performance", label: "Performance Management" },
-      { path: "/dashboard/hr/recruitment", label: "Recruitment pipeline" },
-      { path: "/dashboard/hr/reports", label: "HR reports (Employee cost / Payroll / CNSS / Absences)" },
-      { path: "/dashboard/hr/settings", label: "HR settings (CNSS rates / Public holidays / General)" },
+      { path: "/dashboard/hr/leaves", label: "Leaves / absences" },
+      { path: "/dashboard/hr/payroll", label: "Payroll" },
+      { path: "/dashboard/hr/bonuses", label: "Bonuses" },
+      { path: "/dashboard/hr/cnss", label: "CNSS (social security)" },
+      { path: "/dashboard/hr/performance", label: "Performance" },
+      { path: "/dashboard/hr/recruitment", label: "Recruitment" },
+      { path: "/dashboard/hr/reports", label: "HR reports" },
+      { path: "/dashboard/hr/settings", label: "HR settings" },
     ],
   },
 
@@ -2030,18 +2018,16 @@ export const MODULES: ModuleDoc[] = [
       "Field reports — Technician productivity, First-time fix rate, Average travel/onsite time, Cost per dispatch, SLA breaches",
       "Plugin-gated (PL0010FIELD); RBAC; multi-company aware",
     ],
-    routes: [
+        routes: [
       { path: "/dashboard/field/dashboard", label: "Field dashboard" },
-      { path: "/dashboard/field/service-orders", label: "Service Orders list" },
-      { path: "/dashboard/field/dispatches", label: "Dispatches list" },
-      { path: "/dashboard/field/dispatches/:id", label: "Dispatch detail (status flow, signature, photos, materials)" },
-      { path: "/dashboard/field/dispatcher", label: "Dispatcher board (drag-and-drop planner)" },
-      { path: "/dashboard/field/installations", label: "Installations registry" },
-      { path: "/dashboard/field/installations/:id", label: "Installation detail (warranty, history)" },
-      { path: "/dashboard/field/inventory", label: "Field (van) inventory per technician" },
-      { path: "/dashboard/field/time-expenses", label: "Time & expenses log + approval queue" },
-      { path: "/dashboard/field/documents", label: "Field documents (photos, signatures, certificates)" },
-      { path: "/dashboard/field/reports", label: "Field reports (productivity, fix rate, SLA)" },
+      { path: "/dashboard/field/service-orders", label: "Service orders" },
+      { path: "/dashboard/field/dispatches", label: "Dispatches" },
+      { path: "/dashboard/field/dispatcher", label: "Dispatcher console" },
+      { path: "/dashboard/field/installations", label: "Installations" },
+      { path: "/dashboard/field/inventory", label: "Field inventory" },
+      { path: "/dashboard/field/time-expenses", label: "Time & expenses" },
+      { path: "/dashboard/field/documents", label: "Field documents" },
+      { path: "/dashboard/field/reports", label: "Field reports" },
     ],
   },
   {
@@ -2062,11 +2048,11 @@ export const MODULES: ModuleDoc[] = [
       "Comments — per-task discussion thread with @mentions, attachments and notification fan-out",
       "Bulk actions — bulk assign, bulk status change, bulk delete, CSV export",
     ],
-    routes: [
-      { path: "/dashboard/tasks", label: "Tasks (My / List / Kanban / Calendar)" },
-      { path: "/dashboard/tasks/add", label: "Create task" },
-      { path: "/dashboard/tasks/:id", label: "Task detail (checklist, time, comments)" },
-      { path: "/dashboard/tasks/recurring", label: "Recurring task definitions" },
+        routes: [
+      { path: "/dashboard/tasks", label: "Tasks (redirects to Projects)" },
+      { path: "/dashboard/tasks/daily", label: "Daily tasks" },
+      { path: "/dashboard/tasks/projects", label: "Projects list" },
+      { path: "/dashboard/tasks/projects/:projectId", label: "Project tasks board" },
     ],
   },
   {
@@ -2088,10 +2074,8 @@ export const MODULES: ModuleDoc[] = [
       "iCal feed — read-only public-token URL that any calendar app can subscribe to",
       "Multi-tenant — all calendar data scoped per company",
     ],
-    routes: [
-      { path: "/dashboard/calendar", label: "Calendar (Month / Week / Day / Agenda)" },
-      { path: "/dashboard/calendar/events/:id", label: "Event detail" },
-      { path: "/dashboard/calendar/feed", label: "iCal subscription URL" },
+        routes: [
+      { path: "/dashboard/calendar", label: "Calendar" },
     ],
   },
   {
@@ -2114,12 +2098,9 @@ export const MODULES: ModuleDoc[] = [
       "Notifications — desktop notification on new mail in selected folders; mute per-thread",
       "Privacy — per-account toggle to keep emails local-only (not shared with the team)",
     ],
-    routes: [
-      { path: "/dashboard/email-calendar/emails", label: "Inbox & email accounts" },
-      { path: "/dashboard/email-calendar/emails/:id", label: "Email thread" },
+        routes: [
+      { path: "/dashboard/email-calendar/emails", label: "Emails inbox" },
       { path: "/dashboard/email-calendar/calendar", label: "Synced calendar" },
-      { path: "/dashboard/email-calendar/accounts", label: "Connected accounts manager" },
-      { path: "/dashboard/email-calendar/templates", label: "Email templates" },
     ],
   },
   {
@@ -2139,11 +2120,9 @@ export const MODULES: ModuleDoc[] = [
       "Status & type lookups — configurable from the Lookups module",
       "Reports — project profitability (revenue − cost from logged hours × cost rate − expenses), on-time delivery, milestone slip",
     ],
-    routes: [
-      { path: "/dashboard/projects", label: "Projects list" },
-      { path: "/dashboard/projects/add", label: "Create project" },
-      { path: "/dashboard/projects/:id", label: "Project detail (Overview / Tasks / Time / Documents / Notes)" },
-      { path: "/dashboard/projects/:id/edit", label: "Edit project" },
+        routes: [
+      { path: "/dashboard/tasks/projects", label: "Projects list" },
+      { path: "/dashboard/tasks/projects/:projectId", label: "Project tasks board" },
     ],
   },
   {
@@ -2163,14 +2142,8 @@ export const MODULES: ModuleDoc[] = [
       "Unsubscribe page — branded public page with the unsubscribe token URL",
       "Reports — per-campaign engagement, list growth, top-clicked links, contact heatmap",
     ],
-    routes: [
-      { path: "/dashboard/communication", label: "Communication hub" },
-      { path: "/dashboard/communication/lists", label: "Newsletter lists" },
-      { path: "/dashboard/communication/campaigns", label: "Campaigns" },
-      { path: "/dashboard/communication/campaigns/new", label: "Create campaign" },
-      { path: "/dashboard/communication/templates", label: "Email & SMS templates" },
-      { path: "/dashboard/communication/sms", label: "SMS center" },
-      { path: "/dashboard/communication/reports", label: "Reports" },
+        routes: [
+      { path: "/dashboard/communication", label: "Communication (campaigns, lists, templates)" },
     ],
   },
   {
@@ -2193,12 +2166,8 @@ export const MODULES: ModuleDoc[] = [
       "Bulk actions — bulk download as ZIP, bulk move, bulk tag, bulk delete, bulk re-compress",
       "Audit log — view/download/sign/delete events with user + timestamp",
     ],
-    routes: [
-      { path: "/dashboard/documents", label: "Document library (folders / search)" },
-      { path: "/dashboard/documents/folders/:id", label: "Folder view" },
-      { path: "/dashboard/documents/files/:id", label: "Document detail (versions / signatures / links)" },
-      { path: "/dashboard/documents/signatures", label: "Pending signature requests" },
-      { path: "/dashboard/documents/shared", label: "Active share links" },
+        routes: [
+      { path: "/dashboard/documents", label: "Documents" },
     ],
   },
   {
@@ -2246,13 +2215,12 @@ export const MODULES: ModuleDoc[] = [
       "Backend (WorkflowEngine, ~10K LOC) — 4 controllers (workflows, executions, approvals, reconciliation), 17 services, EF entities for Workflow / WorkflowVersion / WorkflowExecution / WorkflowStep / WorkflowApproval / WorkflowProcessedEntity; API surface: /api/workflows, /api/workflow-executions, /api/workflow-approvals, /api/workflow-reconciliation",
       "Migrations — 17_workflow_automation.sql + 18_workflow_processed_entities.sql (tenant-scoped, RLS-enforced, retry/idempotency tracking)",
     ],
-    routes: [
-      { path: "/dashboard/workflow", label: "Workflow Builder (visual canvas)" },
-      { path: "/dashboard/workflow/calendar", label: "Workflow Calendar (interventions planner)" },
-      { path: "/dashboard/workflow/dispatch-board", label: "Dispatch Board (Kanban + Map)" },
-      { path: "/dashboard/workflow/offers/:id", label: "Offer flow detail" },
-      { path: "/dashboard/workflow/sales/:id", label: "Sale flow detail" },
-      { path: "/dashboard/workflow/service-orders/:id", label: "Service Order flow detail" },
+        routes: [
+      { path: "/dashboard/workflow/offers/:id", label: "Offer workflow view" },
+      { path: "/dashboard/workflow/sales/:id", label: "Sale workflow view" },
+      { path: "/dashboard/workflow/service-orders/:id", label: "Service-order workflow view" },
+      { path: "/dashboard/workflow/dispatch-board", label: "Dispatch board" },
+      { path: "/dashboard/workflow/calendar", label: "Workflow calendar" },
     ],
     screenshots: [
       {
@@ -2330,12 +2298,8 @@ export const MODULES: ModuleDoc[] = [
       "Test mode — dry-run a rule against the last N matching entities and preview the actions without executing them",
       "Active/Inactive toggle, audit history, ownership and RBAC per rule",
     ],
-    routes: [
-      { path: "/dashboard/automation", label: "Automation rules list" },
-      { path: "/dashboard/automation/new", label: "Create rule" },
-      { path: "/dashboard/automation/:id", label: "Rule detail (definition / runs / failures)" },
-      { path: "/dashboard/automation/:id/edit", label: "Edit rule" },
-      { path: "/dashboard/automation/processed", label: "Processed entities log (all rules)" },
+        routes: [
+      { path: "/dashboard/automation", label: "Automation (workflow designer & runs)" },
     ],
   },
   {
@@ -2358,11 +2322,12 @@ export const MODULES: ModuleDoc[] = [
       "Multi-company scoping — each endpoint is bound to a Target Company",
       "Search & filter endpoints by status (All / Active / Inactive)",
     ],
-    routes: [
-      { path: "/dashboard/external", label: "Endpoints list (KPIs + table)" },
-      { path: "/dashboard/external/create", label: "Create Endpoint (templates + custom)" },
-      { path: "/dashboard/external/:id", label: "Endpoint detail (Public URL, API key, received-data log, Test)" },
-      { path: "/dashboard/external/:id/edit", label: "Edit Endpoint (name, description, methods, schema, active)" },
+        routes: [
+      { path: "/dashboard/external", label: "External endpoints list" },
+      { path: "/dashboard/external/create", label: "New external endpoint" },
+      { path: "/dashboard/external/:id", label: "Endpoint detail" },
+      { path: "/dashboard/external/:id/edit", label: "Edit endpoint" },
+      { path: "/dashboard/external/connect/:connectorId", label: "Connect a third-party connector" },
     ],
   },
 
@@ -2382,14 +2347,8 @@ export const MODULES: ModuleDoc[] = [
       "Multi-currency — all monetary KPIs converted to a base currency using historical rates (configurable)",
       "Permissions — per-report visibility by role; sensitive reports (HR cost) gated to authorized roles only",
     ],
-    routes: [
-      { path: "/dashboard/analytics", label: "Analytics overview" },
-      { path: "/dashboard/analytics/sales", label: "Sales analytics" },
-      { path: "/dashboard/analytics/offers", label: "Offers analytics" },
-      { path: "/dashboard/analytics/purchases", label: "Purchases analytics" },
-      { path: "/dashboard/analytics/hr", label: "HR analytics" },
-      { path: "/dashboard/analytics/field", label: "Field service analytics" },
-      { path: "/dashboard/analytics/custom", label: "Custom reports" },
+        routes: [
+      { path: "/dashboard/analytics", label: "Analytics" },
     ],
   },
   {
@@ -2411,13 +2370,10 @@ export const MODULES: ModuleDoc[] = [
       "Multi-language — content per locale (EN/FR), language switcher block, hreflang tags",
       "Image optimization — auto WebP conversion, responsive srcset, lazy loading",
     ],
-    routes: [
-      { path: "/dashboard/website-builder", label: "Sites list" },
-      { path: "/dashboard/website-builder/sites/:id", label: "Site dashboard (pages / theme / SEO / analytics)" },
-      { path: "/dashboard/website-builder/sites/:id/pages/:pageId", label: "Page editor (drag-and-drop blocks)" },
-      { path: "/dashboard/website-builder/sites/:id/theme", label: "Theme editor" },
-      { path: "/dashboard/website-builder/sites/:id/domains", label: "Domains & DNS" },
-      { path: "/public/sites/:slug", label: "Public site (rendered)" },
+        routes: [
+      { path: "/dashboard/website-builder", label: "Website builder" },
+      { path: "/public/sites/:siteSlug", label: "Public site (published)" },
+      { path: "/public/sites/:siteSlug/:pageSlug", label: "Public page" },
     ],
   },
   {
@@ -2435,9 +2391,8 @@ export const MODULES: ModuleDoc[] = [
       "Import/Export — CSV per category with full schema",
       "Migration safety — system-protected values (e.g. 'draft', 'cancelled') are read-only to prevent breaking flows",
     ],
-    routes: [
-      { path: "/dashboard/lookups", label: "Lookups (category browser)" },
-      { path: "/dashboard/lookups/:category", label: "Manage values for a category" },
+        routes: [
+      { path: "/dashboard/lookups", label: "Lookups (reference data)" },
     ],
   },
   {
@@ -2456,9 +2411,8 @@ export const MODULES: ModuleDoc[] = [
       "Bulk actions — mark all as read, archive all, mute a thread/source",
       "Deep-link — every notification links to the originating record (offer, task, dispatch…) preserving filters",
     ],
-    routes: [
-      { path: "/dashboard/notifications", label: "Notification center (full list)" },
-      { path: "/dashboard/notifications/preferences", label: "Channel & frequency preferences" },
+        routes: [
+      { path: "/dashboard/notifications", label: "Notifications" },
     ],
   },
   {
@@ -2477,13 +2431,13 @@ export const MODULES: ModuleDoc[] = [
       "Reports — open vs resolved over time, average first-response, SLA compliance, top categories",
       "Permissions — agents see assigned + unassigned, admins see all; customers see only their own",
     ],
-    routes: [
-      { path: "/dashboard/help", label: "Help / Support" },
-      { path: "/dashboard/help/articles/:slug", label: "Knowledge-base article" },
-      { path: "/dashboard/help/new", label: "Open a new ticket" },
-      { path: "/dashboard/ticketsadmin", label: "Tickets admin (queue)" },
-      { path: "/dashboard/ticketsadmin/:id", label: "Ticket detail (admin)" },
-      { path: "/dashboard/ticketsadmin/reports", label: "Support reports" },
+        routes: [
+      { path: "/dashboard/support/tickets/dashboard", label: "Tickets dashboard" },
+      { path: "/dashboard/support/tickets", label: "My tickets" },
+      { path: "/dashboard/support/tickets/new", label: "New ticket" },
+      { path: "/dashboard/support/tickets/:ticketId", label: "Ticket detail" },
+      { path: "/dashboard/help", label: "Help center" },
+      { path: "/dashboard/ticketsadmin", label: "Tickets admin" },
     ],
   },
   {
@@ -2501,17 +2455,22 @@ export const MODULES: ModuleDoc[] = [
       "Sync dashboard — offline queue & conflict resolution",
       "Documentation — module docs (this page) + dedicated Settings index with searchable fields/modals",
     ],
-    routes: [
+        routes: [
       { path: "/dashboard/settings", label: "Settings home" },
-      { path: "/dashboard/settings/advanced", label: "Advanced settings" },
       { path: "/dashboard/settings/system", label: "System settings" },
+      { path: "/dashboard/settings/advanced", label: "Advanced settings" },
+      { path: "/dashboard/settings/system-config", label: "System configuration" },
+      { path: "/dashboard/settings/users", label: "Users admin" },
+      { path: "/dashboard/settings/roles", label: "Roles admin" },
+      { path: "/dashboard/settings/user-groups", label: "User groups" },
       { path: "/dashboard/settings/plugins", label: "Plugins" },
       { path: "/dashboard/settings/dynamic-forms", label: "Dynamic forms" },
+      { path: "/dashboard/settings/processes", label: "Processes" },
       { path: "/dashboard/settings/logs", label: "System logs" },
       { path: "/dashboard/settings/database-full-view", label: "Database full view" },
-      { path: "/dashboard/settings/sync", label: "Sync dashboard" },
+      { path: "/dashboard/settings/db-console", label: "DB console" },
+      { path: "/dashboard/settings/sync", label: "Offline sync dashboard" },
       { path: "/dashboard/settings/documentation", label: "Documentation" },
-      { path: "/dashboard/settings/documentation/settings", label: "Settings documentation index (searchable)" },
     ],
   },
 ];
@@ -2536,13 +2495,13 @@ MODULES.push(
       "Public/printable report (/dashboard/field/service-orders/:id/report) — branded PDF for customer or technician handoff",
       "Permissions — RBAC for view/create/edit/delete; technicians see only their assigned dispatches; multi-company scope via Target Company",
     ],
-    routes: [
-      { path: "/dashboard/field/service-orders", label: "Service Orders list" },
-      { path: "/dashboard/field/service-orders/create", label: "Create Service Order" },
-      { path: "/dashboard/field/service-orders/:id", label: "Service Order detail (Overview / Jobs / Dispatches / Time & Expenses / Materials / Attachments / Checklists / Activity)" },
-      { path: "/dashboard/field/service-orders/:id/report", label: "Public/printable PDF report page" },
-      { path: "/dashboard/field/service-orders/:soId/jobs/create", label: "Create Job inside a Service Order" },
-      { path: "/dashboard/field/service-orders/:soId/jobs/:jobId", label: "Job detail" },
+        routes: [
+      { path: "/dashboard/field/service-orders", label: "Service orders list" },
+      { path: "/dashboard/field/service-orders/create", label: "New service order" },
+      { path: "/dashboard/field/service-orders/:id", label: "Service order detail" },
+      { path: "/dashboard/field/service-orders/:id/report", label: "Service order report / printable" },
+      { path: "/dashboard/field/service-orders/:serviceOrderId/jobs/create", label: "New job on a service order" },
+      { path: "/dashboard/field/service-orders/:serviceOrderId/jobs/:jobId", label: "Job detail" },
     ],
   },
   {
@@ -2565,11 +2524,7 @@ MODULES.push(
       "Conversation export — download a thread as Markdown / PDF",
       "Suggested prompts — context-aware prompt chips on the dashboard and on each major page",
     ],
-    routes: [
-      { path: "/dashboard/ai-assistant", label: "AI Assistant settings (model, prompt, limits)" },
-      { path: "/dashboard/ai-assistant/history", label: "Conversation history" },
-      { path: "/dashboard/ai-assistant/usage", label: "Usage & cost (tenant)" },
-    ],
+        routes: [],
   },
   {
     key: "auth",
@@ -2592,44 +2547,13 @@ MODULES.push(
       "Audit log — every auth event (sign-in, sign-out, password change, MFA enroll/disable, OAuth link)",
       "Localization — login screen translated EN/FR with branding override per tenant",
     ],
-    routes: [
-      { path: "/login", label: "Login" },
-      { path: "/signup", label: "Sign up" },
-      { path: "/forgot-password", label: "Forgot password" },
-      { path: "/reset-password", label: "Reset password" },
-      { path: "/mfa/setup", label: "Enable MFA" },
-      { path: "/mfa/challenge", label: "MFA challenge" },
-      { path: "/auth/sso", label: "SSO entry (per-tenant)" },
-      { path: "/auth/sessions", label: "Active sessions manager" },
-    ],
-  },
-  {
-    key: "dashboard-builder",
-    name: "Dashboard Builder",
-    category: "Insights",
-    description:
-      "Drag-and-drop builder for custom dashboards. Mix KPI tiles, charts (bar/pie/donut/line/area/funnel/radar/heatmap/map), tables and external API widgets.",
-    features: [
-      "14 widget types incl. KPI, charts, gauge, sparkline, table, map",
-      "Per-widget data source: Sales, Offers, Contacts, Tasks, Articles, Service Orders, Dispatches, Time & Expenses, External API",
-      "Public-share dashboards with frozen data snapshots",
-      "Per-role sharing & default dashboards",
-      "Customizable grid: gap, row height, radius, card style, animations",
-      "Widget config — title, data source, filters (status/owner/date/company), aggregation (sum/avg/count/min/max), grouping, color palette",
-      "Drill-down — click a chart segment to open a filtered list of underlying records",
-      "Time-range control — global dashboard time range with comparison to previous period",
-      "Refresh policy — per-widget auto-refresh interval (off / 30s / 1m / 5m / 15m / 1h)",
-      "Templates — pre-built dashboards per role (Sales rep, Service manager, HR, CFO) cloneable in one click",
-      "Mobile layout — responsive grid with per-widget hide-on-mobile flag",
-      "Export — PNG screenshot of full dashboard, PDF report, scheduled email delivery",
-      "Multi-tenant — dashboards scoped per company; cross-company aggregate dashboards for super-admins",
-    ],
-    routes: [
-      { path: "/dashboard/dashboard-builder", label: "Dashboards list" },
-      { path: "/dashboard/dashboard-builder/new", label: "New dashboard" },
-      { path: "/dashboard/dashboard-builder/:id", label: "Dashboard detail (view mode)" },
-      { path: "/dashboard/dashboard-builder/:id/edit", label: "Dashboard editor (drag-and-drop)" },
-      { path: "/public/dashboards/:token", label: "Public shared dashboard" },
+        routes: [
+      { path: "/login", label: "Company / tenant login" },
+      { path: "/user-login", label: "User login" },
+      { path: "/verify-email", label: "Email verification" },
+      { path: "/two-factor", label: "Two-factor challenge" },
+      { path: "/select-company", label: "Select company after login" },
+      { path: "/oauth/callback", label: "OAuth callback" },
     ],
   },
   {
@@ -2653,14 +2577,7 @@ MODULES.push(
       "Refunds — full or partial refund records, linked back to the original payment",
       "KPIs — Outstanding receivables, Outstanding payables, Cash collected (period), Average days to pay (DSO)",
     ],
-    routes: [
-      { path: "/dashboard/payments", label: "Payments dashboard (KPIs, recent, aging)" },
-      { path: "/dashboard/payments/inbound", label: "Inbound payments" },
-      { path: "/dashboard/payments/outbound", label: "Outbound payments" },
-      { path: "/dashboard/payments/new", label: "Record a payment" },
-      { path: "/dashboard/payments/import", label: "Bank statement import" },
-      { path: "/dashboard/payments/reminders", label: "Dunning reminders" },
-    ],
+        routes: [],
   },
   {
     key: "onboarding",
@@ -2679,13 +2596,8 @@ MODULES.push(
       "Per-module mini-tours — first time a user opens Offers/Sales/Service Orders, a 3-step coach mark explains the layout",
       "Help drawer — replay any tour, browse the knowledge base, open a ticket, watch how-to videos",
     ],
-    routes: [
+        routes: [
       { path: "/onboarding", label: "Onboarding wizard" },
-      { path: "/onboarding/welcome", label: "Welcome step" },
-      { path: "/onboarding/company", label: "Company setup" },
-      { path: "/onboarding/team", label: "Invite teammates" },
-      { path: "/onboarding/plugins", label: "Activate plugins" },
-      { path: "/onboarding/sample-data", label: "Load sample data (optional)" },
     ],
   },
   {
@@ -2708,13 +2620,7 @@ MODULES.push(
       "Keyboard shortcuts — view & customize the shortcut map (e.g. Cmd+K command palette)",
       "Reset — one-click 'restore defaults' that wipes overrides and reloads",
     ],
-    routes: [
-      { path: "/dashboard/preferences", label: "Preferences" },
-      { path: "/dashboard/preferences/appearance", label: "Appearance (theme, accent, density)" },
-      { path: "/dashboard/preferences/locale", label: "Language, timezone & formats" },
-      { path: "/dashboard/preferences/notifications", label: "Notification channels" },
-      { path: "/dashboard/preferences/shortcuts", label: "Keyboard shortcuts" },
-    ],
+        routes: [],
   },
   {
     key: "scheduling",
@@ -2737,11 +2643,7 @@ MODULES.push(
       "Print — printable daily run-sheet per technician (PDF)",
       "Multi-company aware; permissions tied to Field Service RBAC",
     ],
-    routes: [
-      { path: "/dashboard/scheduling", label: "Scheduling board (Day / Week / Month)" },
-      { path: "/dashboard/scheduling/backlog", label: "Backlog (unassigned jobs)" },
-      { path: "/dashboard/scheduling/technicians", label: "Technicians capacity & shifts" },
-    ],
+        routes: [],
   },
   {
     key: "dispatcher",
@@ -2763,9 +2665,11 @@ MODULES.push(
       "Audit — every reassignment / status override logged with user + timestamp",
       "Multi-company; map provider Mapbox or Leaflet (configurable in Settings)",
     ],
-    routes: [
-      { path: "/dashboard/dispatcher", label: "Dispatcher console (map + list)" },
-      { path: "/dashboard/dispatcher/queue", label: "Live dispatch queue" },
+        routes: [
+      { path: "/dashboard/field/dispatcher/interface", label: "Dispatching interface" },
+      { path: "/dashboard/field/dispatcher/job/:id", label: "Dispatch job detail" },
+      { path: "/dashboard/field/dispatcher/manage-scheduler", label: "Manage scheduler" },
+      { path: "/dashboard/field/dispatcher/manage-scheduler/edit/:technicianId", label: "Edit technician schedule" },
     ],
   },
   {
@@ -2785,11 +2689,7 @@ MODULES.push(
       "Bulk import skills via CSV; per-skill audit log",
       "Permissions — managers can edit their team's skills; admins can edit any",
     ],
-    routes: [
-      { path: "/dashboard/skills", label: "Skills catalog" },
-      { path: "/dashboard/skills/matrix", label: "Skill matrix report" },
-      { path: "/dashboard/skills/users/:userId", label: "User skills profile" },
-    ],
+        routes: [],
   },
   {
     key: "users",
@@ -2811,12 +2711,10 @@ MODULES.push(
       "Multi-company role mapping — a user can have different roles per company",
       "SCIM provisioning (enterprise) — auto-create/disable users from your identity provider",
     ],
-    routes: [
-      { path: "/dashboard/users", label: "Users list" },
-      { path: "/dashboard/users/:id", label: "User detail (profile, role, sessions, audit)" },
-      { path: "/dashboard/users/invite", label: "Bulk invite" },
-      { path: "/dashboard/users/roles", label: "Roles & permissions" },
-      { path: "/dashboard/users/roles/:id", label: "Role detail (permission matrix)" },
+        routes: [
+      { path: "/dashboard/settings/users", label: "Users admin" },
+      { path: "/dashboard/settings/roles", label: "Roles admin" },
+      { path: "/dashboard/settings/user-groups", label: "User groups" },
     ],
   },
   {
@@ -2841,13 +2739,13 @@ MODULES.push(
       "Versioning — every publish creates a revision; older submissions keep their original schema",
       "i18n — translate field labels per locale",
     ],
-    routes: [
-      { path: "/dashboard/settings/dynamic-forms", label: "Forms list" },
-      { path: "/dashboard/settings/dynamic-forms/new", label: "New form" },
-      { path: "/dashboard/settings/dynamic-forms/:id", label: "Form builder (drag-and-drop)" },
-      { path: "/dashboard/settings/dynamic-forms/:id/submissions", label: "Submissions inbox" },
-      { path: "/dashboard/settings/dynamic-forms/:id/embed", label: "Embed & share" },
-      { path: "/forms/:slug", label: "Public form (rendered)" },
+        routes: [
+      { path: "/dashboard/settings/dynamic-forms", label: "Dynamic forms list" },
+      { path: "/dashboard/settings/dynamic-forms/create", label: "New form" },
+      { path: "/dashboard/settings/dynamic-forms/:id/edit", label: "Edit form" },
+      { path: "/dashboard/settings/dynamic-forms/:id/preview", label: "Preview form" },
+      { path: "/dashboard/settings/dynamic-forms/:id/responses", label: "Form responses" },
+      { path: "/public/forms/:slug", label: "Public form (submission)" },
     ],
   },
   {
@@ -2870,12 +2768,7 @@ MODULES.push(
       "Status tracking — Sent / Viewed / Signed / Declined / Expired per signer; webhook on each event",
       "Templates — reusable templates with pre-placed fields for recurring documents",
     ],
-    routes: [
-      { path: "/dashboard/signatures", label: "Signatures dashboard" },
-      { path: "/dashboard/signatures/requests", label: "Signature requests (pending / completed)" },
-      { path: "/dashboard/signatures/templates", label: "Templates" },
-      { path: "/sign/:token", label: "Public signing page" },
-    ],
+        routes: [],
   },
   {
     key: "sync",
@@ -2896,10 +2789,8 @@ MODULES.push(
       "Background sync — service worker re-tries when network returns; web push to notify completion",
       "Logs — per-attempt log with HTTP status, duration, payload size",
     ],
-    routes: [
-      { path: "/dashboard/settings/sync", label: "Sync dashboard (queue, history, conflicts)" },
-      { path: "/dashboard/settings/sync/conflicts", label: "Conflict resolution" },
-      { path: "/dashboard/settings/sync/logs", label: "Sync logs" },
+        routes: [
+      { path: "/dashboard/settings/sync", label: "Offline sync dashboard" },
     ],
   },
   {
@@ -2921,9 +2812,8 @@ MODULES.push(
       "Per-plugin settings deep-link — jump from the plugin row to its dedicated settings page",
       "Sidebar refresh — disabling a plugin instantly removes its menu item across all open sessions (broadcast)",
     ],
-    routes: [
-      { path: "/dashboard/settings/plugins", label: "Plugins catalog" },
-      { path: "/dashboard/settings/plugins/:code", label: "Plugin detail & settings" },
+        routes: [
+      { path: "/dashboard/settings/plugins", label: "Plugins admin" },
     ],
   },
 );
@@ -2988,13 +2878,12 @@ export const MODULE_ICON: Record<string, React.ComponentType<{ className?: strin
   plugins: Puzzle,
 };
 
-type HubTab = "modules" | "navigation";
-
 export default function DocumentationPage() {
+
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("all");
-  const [tab, setTab] = useState<HubTab>("modules");
+
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -3019,45 +2908,14 @@ export default function DocumentationPage() {
     return map;
   }, [filtered]);
 
-  const filteredNav = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return NAVIGATION_MAP;
-    return NAVIGATION_MAP.map((g) => ({
-      ...g,
-      items: g.items.filter(
-        (i) =>
-          i.label.toLowerCase().includes(q) ||
-          i.route.toLowerCase().includes(q) ||
-          i.description.toLowerCase().includes(q)
-      ),
-    })).filter((g) => g.items.length > 0);
-  }, [query]);
 
   const totalRoutes = MODULES.reduce((acc, m) => acc + m.routes.length, 0);
   const guides = Object.values(MODULE_GUIDES);
   const totalWorkflows = guides.reduce((acc, g) => acc + g.workflows.length, 0);
   const totalRules = guides.reduce((acc, g) => acc + g.rules.length, 0);
 
-  const quickLinks = [
-    {
-      title: "Backend & architecture",
-      description: "Layers, services, auth pipeline and deployment.",
-      icon: Server,
-      to: "/dashboard/settings/documentation/backend",
-    },
-    {
-      title: "Database schema",
-      description: "Every table and column, grouped by module.",
-      icon: Database,
-      to: "/dashboard/settings/documentation/database",
-    },
-    {
-      title: "Settings index",
-      description: "What each screen in Administration configures.",
-      icon: SettingsIcon,
-      to: "/dashboard/settings/documentation/settings",
-    },
-  ];
+  
+
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
@@ -3077,53 +2935,18 @@ export default function DocumentationPage() {
 
           <div className="max-w-3xl">
             <Badge variant="secondary" className="mb-3 gap-1.5">
-              <Book className="h-3 w-3" /> Product handbook
+              <Book className="h-3 w-3" /> Knowledge base
             </Badge>
             <h1 className="text-3xl lg:text-4xl font-bold tracking-tight">
-              How this application actually works
+              User guide &amp; know-how
             </h1>
             <p className="text-sm lg:text-base text-muted-foreground mt-3">
-              A working reference for every workspace in the sidebar: what each module is for, the
-              end-to-end workflows it supports, the business rules the server enforces, the screens
-              and routes, the REST endpoints and the database tables behind them.
+              Practical guidance for every module in your workspace — what each screen does,
+              the day-to-day workflows your teams follow, the rules that keep data clean, and
+              where to find each feature in the sidebar.
             </p>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6 max-w-3xl">
-            {[
-              { label: "Modules", value: MODULES.length, icon: LayoutGrid },
-              { label: "Documented workflows", value: totalWorkflows, icon: GitBranch },
-              { label: "Business rules", value: totalRules, icon: ShieldCheck },
-              { label: "Routes", value: totalRoutes, icon: Compass },
-            ].map((s) => (
-              <div key={s.label} className="rounded-xl border bg-card/70 backdrop-blur px-4 py-3">
-                <s.icon className="h-4 w-4 text-primary mb-2" />
-                <div className="text-2xl font-semibold tabular-nums leading-none">{s.value}</div>
-                <div className="text-xs text-muted-foreground mt-1">{s.label}</div>
-              </div>
-            ))}
-          </div>
-
-          <div className="grid sm:grid-cols-3 gap-3 mt-6">
-            {quickLinks.map((q) => (
-              <Link
-                key={q.to}
-                to={q.to}
-                className="group rounded-xl border bg-card px-4 py-3 flex items-start gap-3 hover:border-primary/50 hover:shadow-sm transition-all"
-              >
-                <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <q.icon className="h-4 w-4 text-primary" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-sm font-medium flex items-center gap-1 group-hover:text-primary transition-colors">
-                    {q.title}
-                    <ChevronRight className="h-3.5 w-3.5 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-0.5">{q.description}</div>
-                </div>
-              </Link>
-            ))}
-          </div>
         </div>
       </div>
 
@@ -3131,24 +2954,9 @@ export default function DocumentationPage() {
       <div className="sticky top-0 z-20 border-b bg-background/85 backdrop-blur-md">
         <div className="max-w-[1600px] mx-auto px-4 lg:px-8 py-3 space-y-3">
           <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-            <div className="inline-flex rounded-lg border p-0.5 bg-muted/40 self-start">
-              {([
-                { id: "modules" as const, label: "Modules", icon: LayoutGrid },
-                { id: "navigation" as const, label: "Sidebar map", icon: Compass },
-              ]).map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => setTab(t.id)}
-                  className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md transition-colors ${
-                    tab === t.id ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <t.icon className="h-3.5 w-3.5" />
-                  {t.label}
-                </button>
-              ))}
-            </div>
             <div className="relative flex-1">
+
+
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 value={query}
@@ -3168,226 +2976,160 @@ export default function DocumentationPage() {
             </div>
           </div>
 
-          {tab === "modules" && (
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              <button
-                onClick={() => setActiveCategory("all")}
-                className={`text-xs px-3 py-1.5 rounded-full border whitespace-nowrap transition-colors ${
-                  activeCategory === "all" ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-muted"
-                }`}
-              >
-                All ({MODULES.length})
-              </button>
-              {CATEGORIES.map((cat) => {
-                const Icon = CATEGORY_ICON[cat] ?? FolderKanban;
-                const count = MODULES.filter((m) => m.category === cat).length;
-                const active = activeCategory === cat;
-                return (
-                  <button
-                    key={cat}
-                    onClick={() => setActiveCategory(cat)}
-                    className={`text-xs px-3 py-1.5 rounded-full border whitespace-nowrap inline-flex items-center gap-1.5 transition-colors ${
-                      active ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-muted"
-                    }`}
-                  >
-                    <Icon className="h-3 w-3" />
-                    {cat} ({count})
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            <button
+              onClick={() => setActiveCategory("all")}
+              className={`text-xs px-3 py-1.5 rounded-full border whitespace-nowrap transition-colors ${
+                activeCategory === "all" ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-muted"
+              }`}
+            >
+              All ({MODULES.length})
+            </button>
+            {CATEGORIES.map((cat) => {
+              const Icon = CATEGORY_ICON[cat] ?? FolderKanban;
+              const count = MODULES.filter((m) => m.category === cat).length;
+              const active = activeCategory === cat;
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={`text-xs px-3 py-1.5 rounded-full border whitespace-nowrap inline-flex items-center gap-1.5 transition-colors ${
+                    active ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-muted"
+                  }`}
+                >
+                  <Icon className="h-3 w-3" />
+                  {cat} ({count})
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
+
       <div className="max-w-[1600px] mx-auto px-4 lg:px-8 py-8">
-        {tab === "navigation" ? (
-          <section className="space-y-6">
-            <div>
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Compass className="h-5 w-5 text-primary" /> Sidebar map
-              </h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Every workspace in the left navigation, in the order it appears, with the route it opens.
+        <div className="flex gap-8 min-w-0">
+          {/* TOC */}
+          <aside className="hidden xl:block w-56 shrink-0">
+            <div className="sticky top-32">
+              <p className="text-px-10 font-semibold uppercase tracking-wider text-muted-foreground px-2 mb-2">
+                Categories
               </p>
-            </div>
-            {filteredNav.length === 0 ? (
-              <Card><CardContent className="py-12 text-center text-sm text-muted-foreground">No navigation entry matches “{query}”.</CardContent></Card>
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-                {filteredNav.map((g) => (
-                  <Card key={g.group} className="h-full">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm uppercase tracking-wide text-muted-foreground">{g.group}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <ul className="divide-y divide-border/60">
-                        {g.items.map((i) => (
-                          <li key={i.route} className="py-2">
-                            <div className="flex items-start gap-2">
-                              <div className="min-w-0 flex-1">
-                                <div className="text-sm font-medium">{i.label}</div>
-                                <div className="text-xs text-muted-foreground">{i.description}</div>
-                                <code className="text-px-10 font-mono text-primary/80 break-all">{i.route}</code>
-                              </div>
-                              {i.moduleKey && MODULES.some((m) => m.key === i.moduleKey) && (
-                                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs shrink-0" asChild>
-                                  <Link to={`/dashboard/settings/documentation/module/${i.moduleKey}`}>Docs</Link>
-                                </Button>
-                              )}
-                            </div>
+              <ScrollArea className="h-[calc(100vh-16rem)] pr-2">
+                {Object.entries(grouped).map(([cat, mods]) => {
+                  const Icon = CATEGORY_ICON[cat] ?? FolderKanban;
+                  return (
+                    <div key={cat} className="mb-4">
+                      <a
+                        href={`#cat-${cat.replace(/\s+/g, "-").toLowerCase()}`}
+                        className="flex items-center gap-1.5 text-xs font-semibold px-2 mb-1 hover:text-primary"
+                      >
+                        <Icon className="h-3 w-3" /> {cat}
+                      </a>
+                      <ul className="space-y-0.5 border-l ml-3 pl-2">
+                        {mods.map((m) => (
+                          <li key={m.key}>
+                            <Link
+                              to={`/dashboard/settings/documentation/module/${m.key}`}
+                              className="block text-xs px-2 py-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground truncate"
+                            >
+                              {m.name}
+                            </Link>
                           </li>
                         ))}
                       </ul>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </section>
-        ) : (
-          <div className="flex gap-8 min-w-0">
-            {/* TOC */}
-            <aside className="hidden xl:block w-56 shrink-0">
-              <div className="sticky top-32">
-                <p className="text-px-10 font-semibold uppercase tracking-wider text-muted-foreground px-2 mb-2">
-                  Categories
-                </p>
-                <ScrollArea className="h-[calc(100vh-16rem)] pr-2">
-                  {Object.entries(grouped).map(([cat, mods]) => {
-                    const Icon = CATEGORY_ICON[cat] ?? FolderKanban;
-                    return (
-                      <div key={cat} className="mb-4">
-                        <a
-                          href={`#cat-${cat.replace(/\s+/g, "-").toLowerCase()}`}
-                          className="flex items-center gap-1.5 text-xs font-semibold px-2 mb-1 hover:text-primary"
-                        >
-                          <Icon className="h-3 w-3" /> {cat}
-                        </a>
-                        <ul className="space-y-0.5 border-l ml-3 pl-2">
-                          {mods.map((m) => (
-                            <li key={m.key}>
-                              <Link
-                                to={`/dashboard/settings/documentation/module/${m.key}`}
-                                className="block text-xs px-2 py-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground truncate"
-                              >
-                                {m.name}
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    );
-                  })}
-                </ScrollArea>
-              </div>
-            </aside>
-
-            <main className="flex-1 min-w-0 space-y-10">
-              {filtered.length === 0 ? (
-                <Card>
-                  <CardContent className="py-16 text-center text-muted-foreground">
-                    <Search className="h-10 w-10 mx-auto mb-3 opacity-40" />
-                    <p className="text-sm">No module matches “{query}”.</p>
-                    <Button variant="link" onClick={() => { setQuery(""); setActiveCategory("all"); }}>
-                      Clear filters
-                    </Button>
-                  </CardContent>
-                </Card>
-              ) : (
-                Object.entries(grouped).map(([cat, mods]) => {
-                  const Icon = CATEGORY_ICON[cat] ?? FolderKanban;
-                  return (
-                    <section
-                      key={cat}
-                      id={`cat-${cat.replace(/\s+/g, "-").toLowerCase()}`}
-                      className="space-y-4 scroll-mt-32"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Icon className="h-4 w-4 text-primary" />
-                        <h2 className="text-base font-semibold">{cat}</h2>
-                        <span className="text-xs text-muted-foreground">{mods.length}</span>
-                        <Separator className="flex-1" />
-                      </div>
-                      <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-                        {mods.map((m) => {
-                          const MIcon = MODULE_ICON[m.key] ?? FolderKanban;
-                          const guide = MODULE_GUIDES[m.key];
-                          return (
-                            <Link
-                              key={m.key}
-                              to={`/dashboard/settings/documentation/module/${m.key}`}
-                              id={`mod-${m.key}`}
-                              className="group block scroll-mt-32"
-                            >
-                              <Card className="h-full transition-all border-border/60 hover:border-primary/40 hover:shadow-md group-hover:-translate-y-0.5">
-                                <CardHeader className="pb-3">
-                                  <div className="flex items-start gap-3">
-                                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
-                                      <MIcon className="h-5 w-5 text-primary" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <CardTitle className="text-sm font-semibold flex items-center gap-1.5 group-hover:text-primary transition-colors">
-                                        {m.name}
-                                        <ChevronRight className="h-3.5 w-3.5 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                                      </CardTitle>
-                                      <CardDescription className="mt-1 line-clamp-3 text-xs leading-relaxed">
-                                        {guide?.purpose ?? m.description}
-                                      </CardDescription>
-                                    </div>
-                                  </div>
-                                </CardHeader>
-                                <CardContent className="pt-0">
-                                  <div className="flex flex-wrap items-center gap-1.5">
-                                    {guide?.workflows.length ? (
-                                      <Badge variant="secondary" className="text-px-10 gap-1">
-                                        <GitBranch className="h-3 w-3" /> {guide.workflows.length} workflows
-                                      </Badge>
-                                    ) : null}
-                                    {guide?.rules.length ? (
-                                      <Badge variant="secondary" className="text-px-10 gap-1">
-                                        <ShieldCheck className="h-3 w-3" /> {guide.rules.length} rules
-                                      </Badge>
-                                    ) : null}
-                                    <Badge variant="outline" className="text-px-10">{m.routes.length} routes</Badge>
-                                    {SHOTS[m.key]?.length ? (
-                                      <Badge variant="outline" className="text-px-10">{SHOTS[m.key].length} screens</Badge>
-                                    ) : null}
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    </section>
+                    </div>
                   );
-                })
-              )}
+                })}
+              </ScrollArea>
+            </div>
+          </aside>
 
-              <Card className="border-dashed">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <LifeBuoy className="h-4 w-4 text-primary" /> Before you report a missing screen
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm text-muted-foreground space-y-2">
-                  <p>
-                    Most routes are gated twice: the module's plugin must be enabled in{" "}
-                    <Link to="/dashboard/settings/plugins" className="text-primary hover:underline">Settings → Plugins</Link>, and
-                    your role must hold the matching permission in{" "}
-                    <Link to="/dashboard/settings/roles" className="text-primary hover:underline">Settings → Roles</Link>.
-                    A “no access” page almost always means one of those two is off.
-                  </p>
-                  <p>
-                    Detail and edit pages such as <code className="font-mono text-xs">/dashboard/sales/:id</code> are reached from
-                    their list page — they are documented on each module page.
-                  </p>
+          <main className="flex-1 min-w-0 space-y-10">
+            {filtered.length === 0 ? (
+              <Card>
+                <CardContent className="py-16 text-center text-muted-foreground">
+                  <Search className="h-10 w-10 mx-auto mb-3 opacity-40" />
+                  <p className="text-sm">No module matches “{query}”.</p>
+                  <Button variant="link" onClick={() => { setQuery(""); setActiveCategory("all"); }}>
+                    Clear filters
+                  </Button>
                 </CardContent>
               </Card>
-            </main>
-          </div>
-        )}
+            ) : (
+              Object.entries(grouped).map(([cat, mods]) => {
+                const Icon = CATEGORY_ICON[cat] ?? FolderKanban;
+                return (
+                  <section
+                    key={cat}
+                    id={`cat-${cat.replace(/\s+/g, "-").toLowerCase()}`}
+                    className="space-y-4 scroll-mt-32"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Icon className="h-4 w-4 text-primary" />
+                      <h2 className="text-base font-semibold">{cat}</h2>
+                      <span className="text-xs text-muted-foreground">{mods.length}</span>
+                      <Separator className="flex-1" />
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+                      {mods.map((m) => {
+                        const MIcon = MODULE_ICON[m.key] ?? FolderKanban;
+                        const guide = MODULE_GUIDES[m.key];
+                        return (
+                          <Link
+                            key={m.key}
+                            to={`/dashboard/settings/documentation/module/${m.key}`}
+                            id={`mod-${m.key}`}
+                            className="group block scroll-mt-32"
+                          >
+                            <Card className="h-full transition-all border-border/60 hover:border-primary/40 hover:shadow-md group-hover:-translate-y-0.5">
+                              <CardHeader className="pb-3">
+                                <div className="flex items-start gap-3">
+                                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+                                    <MIcon className="h-5 w-5 text-primary" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <CardTitle className="text-sm font-semibold flex items-center gap-1.5 group-hover:text-primary transition-colors">
+                                      {m.name}
+                                      <ChevronRight className="h-3.5 w-3.5 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                                    </CardTitle>
+                                    <CardDescription className="mt-1 line-clamp-3 text-xs leading-relaxed">
+                                      {guide?.purpose ?? m.description}
+                                    </CardDescription>
+                                  </div>
+                                </div>
+                              </CardHeader>
+                              <CardContent className="pt-0">
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  {guide?.workflows.length ? (
+                                    <Badge variant="secondary" className="text-px-10 gap-1">
+                                      <GitBranch className="h-3 w-3" /> {guide.workflows.length} workflows
+                                    </Badge>
+                                  ) : null}
+                                  {guide?.rules.length ? (
+                                    <Badge variant="secondary" className="text-px-10 gap-1">
+                                      <ShieldCheck className="h-3 w-3" /> {guide.rules.length} rules
+                                    </Badge>
+                                  ) : null}
+                                  <Badge variant="outline" className="text-px-10">{m.routes.length} routes</Badge>
+                                  {SHOTS[m.key]?.length ? (
+                                    <Badge variant="outline" className="text-px-10">{SHOTS[m.key].length} screens</Badge>
+                                  ) : null}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </section>
+                );
+              })
+            )}
+
+          </main>
+        </div>
+
       </div>
     </div>
   );
