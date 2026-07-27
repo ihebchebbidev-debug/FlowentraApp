@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { useNavigate, useParams, useSearchParams, Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FormBuilder } from '../components/FormBuilder';
 import { ThankYouSettings } from '../components/ThankYouSettings';
+import { UnsavedChangesDialog } from '@/components/dialogs/UnsavedChangesDialog';
 import { useDynamicForm, useUpdateDynamicForm } from '../hooks/useDynamicForms';
 import { useFormCategories } from '@/modules/lookups/hooks/useLookups';
 import { FormField, UpdateDynamicFormDto, ThankYouSettings as ThankYouSettingsType } from '../types';
@@ -80,6 +81,12 @@ export default function EditFormPage() {
   });
   
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // Snapshot of the last persisted state, used for dirty tracking
+  const baselineRef = useRef<string | null>(null);
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
+
+  const currentSnapshot = useMemo(() => JSON.stringify(formData), [formData]);
+  const isDirty = baselineRef.current !== null && baselineRef.current !== currentSnapshot;
   
   // Redirect if no edit permission
   useEffect(() => {
@@ -107,7 +114,7 @@ export default function EditFormPage() {
   
   useEffect(() => {
     if (form) {
-      setFormData({
+      const next = {
         name_en: form.name_en,
         name_fr: form.name_fr,
         description_en: form.description_en || '',
@@ -126,9 +133,22 @@ export default function EditFormPage() {
           },
           rules: [],
         },
-      });
+      };
+      setFormData(next);
+      baselineRef.current = JSON.stringify(next);
     }
   }, [form]);
+
+  // Warn on browser/tab close while edits are pending
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isDirty]);
   
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -144,13 +164,13 @@ export default function EditFormPage() {
     return Object.keys(newErrors).length === 0;
   };
   
-  const handleSubmit = async () => {
+  const handleSubmit = async (targetRoute: string | null = '/dashboard/settings/dynamic-forms') => {
     if (!formId || !validate()) {
       // If validation fails, switch to basic info tab to show errors
       if (!formData.name_en.trim() || !formData.name_fr.trim()) {
         setActiveTab('info');
       }
-      return;
+      return false;
     }
     
     const dto: UpdateDynamicFormDto = {
@@ -162,15 +182,27 @@ export default function EditFormPage() {
       category: formData.category || undefined,
       fields: formData.fields,
       thank_you_settings: formData.thank_you_settings,
+      // Optimistic concurrency: reject the write if someone else saved meanwhile
+      expected_version: form?.version,
     };
     
     await updateMutation.mutateAsync(dto);
-    navigate('/dashboard/settings/dynamic-forms');
+    baselineRef.current = JSON.stringify(formData);
+    if (targetRoute) navigate(targetRoute);
+    return true;
   };
-  
+
+  const requestNavigation = useCallback((route: string) => {
+    if (isDirty) {
+      setPendingNavigation(route);
+      return;
+    }
+    navigate(route);
+  }, [isDirty, navigate]);
+
   const handleBack = () => {
     logButtonClick('Back', { entityType: 'DynamicForm', entityId: formId });
-    navigate('/dashboard/settings/dynamic-forms');
+    requestNavigation('/dashboard/settings/dynamic-forms');
   };
   
   // Show loading while checking permissions
@@ -210,7 +242,7 @@ export default function EditFormPage() {
         </div>
         <Button
           size="sm"
-          onClick={handleSubmit}
+          onClick={() => handleSubmit()}
           disabled={updateMutation.isPending}
           className="gradient-primary flex-shrink-0"
         >
@@ -222,6 +254,25 @@ export default function EditFormPage() {
           <span className="hidden sm:inline">{t('common.save')}</span>
         </Button>
       </header>
+
+      <UnsavedChangesDialog
+        open={pendingNavigation !== null}
+        onOpenChange={(open) => { if (!open) setPendingNavigation(null); }}
+        isSaving={updateMutation.isPending}
+        onSave={async () => {
+          const target = pendingNavigation;
+          const saved = await handleSubmit(null);
+          setPendingNavigation(null);
+          if (saved && target) navigate(target);
+        }}
+        onDiscard={() => {
+          const target = pendingNavigation;
+          baselineRef.current = currentSnapshot;
+          setPendingNavigation(null);
+          if (target) navigate(target);
+        }}
+        onCancel={() => setPendingNavigation(null)}
+      />
       
       {/* Content with Tabs */}
       <div className="flex-1 overflow-auto">

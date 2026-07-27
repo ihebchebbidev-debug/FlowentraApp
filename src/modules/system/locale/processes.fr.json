@@ -42,6 +42,14 @@
       "batch_size": {
         "label": "Taille du lot",
         "help": "Nombre maximum d’emails traités par exécution."
+      },
+      "lookback_hours": {
+        "label": "Fenêtre d'analyse",
+        "help": "Profondeur d'analyse du journal pour les e-mails sortants en échec."
+      },
+      "rate_per_minute": {
+        "label": "Limite de débit",
+        "help": "Nombre maximal de tentatives par minute."
       }
     }
   },
@@ -70,6 +78,8 @@
     "stop": "Arrêter",
     "reset_failures": "Réinitialiser les échecs",
     "save": "Enregistrer",
+    "save_config": "Enregistrer la configuration",
+    "reset_defaults": "Réinitialiser les valeurs par défaut",
     "hide_details": "Masquer les détails",
     "show_details": "Afficher les détails",
     "locked_tooltip": "Seul l’administrateur principal peut effectuer cette action"
@@ -106,6 +116,12 @@
   },
   "labels": {
     "schedule": "Planification",
+    "configuration": "Configuration",
+    "no_config": "Ce processus n’a aucune option configurable.",
+    "overridden": "personnalisé",
+    "config_default": "(par défaut)",
+    "default_short": "Défaut {{value}}",
+    "range": "Plage {{min}}–{{max}}",
     "timezone": "Fuseau horaire",
     "last_run": "Dernière exécution",
     "last_duration": "Dernière durée",
@@ -127,7 +143,6 @@
     "disabled": "Désactivé",
     "anchor": "ancre :",
     "every_minutes": "Toutes les {{count}} min",
-    "config_default": "(par défaut)",
     "yes": "Oui",
     "no": "Non",
     "enabled_paused": "Activé (en pause)",
@@ -189,7 +204,9 @@
     "failures_cleared_title": "Échecs réinitialisés",
     "stop_requested_title": "Arrêt demandé",
     "stop_nothing_running_title": "Aucune exécution à arrêter",
-    "could_not_stop_title": "Impossible d’arrêter le processus"
+    "could_not_stop_title": "Impossible d’arrêter le processus",
+    "config_saved_title": "Configuration enregistrée",
+    "config_saved_desc": "{{name}} utilisera les nouveaux paramètres lors de sa prochaine exécution."
   },
   "modules": {
     "system_logs": "Journaux système",

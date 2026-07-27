@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useCompanyLogo } from '@/hooks/useCompanyLogo';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -53,6 +53,9 @@ export default function FormResponsesPage() {
   const { data: responses, isLoading } = useFormResponses(formId);
   
   const [exportingPdf, setExportingPdf] = useState<number | null>(null);
+  // Progress + cancel support for the bulk PDF export
+  const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
+  const cancelBulkRef = useRef(false);
   const [previewResponse, setPreviewResponse] = useState<DynamicFormResponse | null>(null);
   const [showExportDialog, setShowExportDialog] = useState(false);
   
@@ -129,10 +132,15 @@ export default function FormResponsesPage() {
     if (!form || !responses || responses.length === 0) return;
     
     setExportingPdf(-1); // -1 indicates exporting all
+    cancelBulkRef.current = false;
+    setBulkProgress({ done: 0, total: responses.length });
     logButtonClick('Export All PDF', { entityType: 'DynamicForm', entityId: formId });
     
     try {
+      let done = 0;
       for (const response of responses) {
+        if (cancelBulkRef.current) break;
+
         const blob = await pdf(
           <FormResponsePDF
             form={form}
@@ -151,15 +159,26 @@ export default function FormResponsesPage() {
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
+
+        done += 1;
+        setBulkProgress({ done, total: responses.length });
+        // Yield to the browser so the UI stays responsive on large exports
+        await new Promise((resolve) => setTimeout(resolve, 0));
       }
       
-      logExport('PDF', responses.length, { entityType: 'DynamicFormResponse', details: `Exported ${responses.length} responses` });
-      toast.success(t('responses.pdf_generated'));
+      logExport('PDF', done, { entityType: 'DynamicFormResponse', details: `Exported ${done} responses` });
+      if (cancelBulkRef.current) {
+        toast.info(t('responses.pdf_export_cancelled', { done, total: responses.length, defaultValue: 'Export cancelled after {{done}} of {{total}}' }));
+      } else {
+        toast.success(t('responses.pdf_generated'));
+      }
     } catch (error) {
       console.error('PDF generation error:', error);
       toast.error(t('responses.pdf_error'));
     } finally {
       setExportingPdf(null);
+      setBulkProgress(null);
+      cancelBulkRef.current = false;
     }
   };
   
@@ -203,6 +222,22 @@ export default function FormResponsesPage() {
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          {/* Bulk PDF export progress + cancel */}
+          {bulkProgress && (
+            <div className="flex items-center gap-2">
+              <span className="text-px-11 text-muted-foreground whitespace-nowrap">
+                {t('responses.pdf_export_progress', {
+                  done: bulkProgress.done,
+                  total: bulkProgress.total,
+                  defaultValue: 'Exporting {{done}}/{{total}}',
+                })}
+              </span>
+              <Button variant="ghost" size="sm" onClick={() => { cancelBulkRef.current = true; }}>
+                {t('common.cancel', 'Cancel')}
+              </Button>
+            </div>
+          )}
+
           {/* Export to Entity Button */}
           <Button
             variant="default"

@@ -286,12 +286,14 @@ namespace MyApi.Modules.Processes.Services
 
         /// <summary>
         /// Normalise an incoming config object against the schema:
-        /// drops unknown keys, coerces types, clamps numbers to [min, max].
+        /// coerces types and clamps declared numbers to [min, max]. Keys the
+        /// schema does not declare are preserved verbatim — some handlers read
+        /// free-form values (e.g. the "modules" array on retry-unsent-emails)
+        /// and silently dropping them would erase admin configuration.
         /// Returns the sanitised JSON string ready for storage.
         /// </summary>
         public static string SanitiseConfig(string processKey, object? incoming)
         {
-            if (!All.TryGetValue(processKey, out var entry)) return "{}";
             if (incoming == null) return "{}";
 
             // Round-trip through JsonDocument so we handle both Dictionary<...>
@@ -299,11 +301,19 @@ namespace MyApi.Modules.Processes.Services
             var raw = JsonSerializer.Serialize(incoming);
             using var doc = JsonDocument.Parse(raw);
             var root = doc.RootElement;
+            if (root.ValueKind != JsonValueKind.Object) return "{}";
+
+            // No schema declared for this key: store the object unchanged.
+            if (!All.TryGetValue(processKey, out var entry)) return raw;
 
             var clean = new Dictionary<string, object?>();
+            var declared = new HashSet<string>(entry.Fields.Select(f => f.Key), System.StringComparer.OrdinalIgnoreCase);
+            foreach (var prop in root.EnumerateObject())
+                if (!declared.Contains(prop.Name))
+                    clean[prop.Name] = prop.Value.Clone();
+
             foreach (var f in entry.Fields)
             {
-                if (root.ValueKind != JsonValueKind.Object) break;
                 if (!root.TryGetProperty(f.Key, out var v)) continue;
 
                 if (f.Type == "int")

@@ -9,7 +9,8 @@ import {
   FormStatus,
   FormField,
   FieldOption,
-  ThankYouSettings
+  ThankYouSettings,
+  PagedResult
 } from '../types';
 
 const BASE_URL = '/api/DynamicForms';
@@ -223,6 +224,8 @@ const transformFormFromBackend = (data: any): DynamicForm => ({
   is_public: data.isPublic ?? data.IsPublic ?? false,
   public_slug: data.publicSlug || data.PublicSlug,
   public_url: data.publicUrl || data.PublicUrl,
+  closes_at: data.closesAt ?? data.ClosesAt ?? null,
+  max_responses: data.maxResponses ?? data.MaxResponses ?? null,
   thank_you_settings: transformThankYouSettingsFromBackend(data.thankYouSettings || data.ThankYouSettings),
   created_by: data.createdBy || data.CreatedBy || '',
   modified_by: data.modifiedBy || data.ModifiedBy,
@@ -231,32 +234,78 @@ const transformFormFromBackend = (data: any): DynamicForm => ({
   is_deleted: data.isDeleted ?? data.IsDeleted ?? false,
 });
 
+// The list endpoints answer with { items, totalCount, page, pageSize }.
+// Older deployments returned a bare array, so unwrap defensively.
+const unwrapList = (data: any): { items: any[]; totalCount: number; page: number; pageSize: number } => {
+  if (Array.isArray(data)) {
+    return { items: data, totalCount: data.length, page: 1, pageSize: data.length };
+  }
+  const items = data?.items ?? data?.Items ?? [];
+  return {
+    items,
+    totalCount: data?.totalCount ?? data?.TotalCount ?? items.length,
+    page: data?.page ?? data?.Page ?? 1,
+    pageSize: data?.pageSize ?? data?.PageSize ?? items.length,
+  };
+};
+
+export interface FormListFilters {
+  status?: FormStatus;
+  category?: string;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+const mapResponseFromBackend = (r: any): DynamicFormResponse => ({
+  id: r.id || r.Id,
+  form_id: r.formId || r.FormId,
+  form_version: r.formVersion || r.FormVersion,
+  entity_type: r.entityType || r.EntityType,
+  entity_id: r.entityId || r.EntityId,
+  responses: r.responses || r.Responses || {},
+  submitted_by: r.submittedBy || r.SubmittedBy || '',
+  submitted_at: r.submittedAt || r.SubmittedAt || new Date().toISOString(),
+  notes: r.notes || r.Notes,
+  submitter_name: r.submitterName || r.SubmitterName,
+  submitter_email: r.submitterEmail || r.SubmitterEmail,
+  is_public_submission: r.isPublicSubmission ?? r.IsPublicSubmission ?? false,
+});
+
+const buildListQuery = (filters?: FormListFilters): string => {
+  const params = new URLSearchParams();
+  if (filters?.status) params.append('status', filters.status);
+  if (filters?.category) params.append('category', filters.category);
+  if (filters?.search) params.append('search', filters.search);
+  if (filters?.page) params.append('page', String(filters.page));
+  if (filters?.pageSize) params.append('pageSize', String(filters.pageSize));
+  const qs = params.toString();
+  return qs ? `${BASE_URL}?${qs}` : BASE_URL;
+};
+
 export const dynamicFormsService = {
-  // Get all forms with optional filters
-  async getAll(filters?: { status?: FormStatus; category?: string; search?: string }): Promise<DynamicForm[]> {
-    const params = new URLSearchParams();
-    
-    if (filters?.status) {
-      params.append('status', filters.status);
-    }
-    if (filters?.category) {
-      params.append('category', filters.category);
-    }
-    if (filters?.search) {
-      params.append('search', filters.search);
-    }
-    
-    const queryString = params.toString();
-    const endpoint = queryString ? `${BASE_URL}?${queryString}` : BASE_URL;
-    
-    const { data, error } = await apiFetch<any[]>(endpoint);
-    
+  // Get forms with optional filters/pagination, returning the full page envelope
+  async getPaged(filters?: FormListFilters): Promise<PagedResult<DynamicForm>> {
+    const { data, error } = await apiFetch<any>(buildListQuery(filters));
+
     if (error) {
       console.error('Failed to fetch dynamic forms:', error);
-      return [];
+      return { items: [], total_count: 0, page: filters?.page ?? 1, page_size: filters?.pageSize ?? 0 };
     }
-    
-    return (data || []).map(transformFormFromBackend);
+
+    const { items, totalCount, page, pageSize } = unwrapList(data);
+    return {
+      items: items.map(transformFormFromBackend),
+      total_count: totalCount,
+      page,
+      page_size: pageSize,
+    };
+  },
+
+  // Get all forms with optional filters (no pagination -> full list)
+  async getAll(filters?: FormListFilters): Promise<DynamicForm[]> {
+    const result = await this.getPaged(filters);
+    return result.items;
   },
   
   // Get a single form by ID
@@ -306,6 +355,15 @@ export const dynamicFormsService = {
     if (dto.status !== undefined) backendDto.Status = dto.status;
     if (dto.category !== undefined) backendDto.Category = dto.category;
     if (dto.fields !== undefined) backendDto.Fields = dto.fields.map(transformFieldToBackend);
+    if (dto.expected_version !== undefined) backendDto.ExpectedVersion = dto.expected_version;
+    if (dto.closes_at !== undefined) {
+      if (dto.closes_at === null) backendDto.ClearClosesAt = true;
+      else backendDto.ClosesAt = dto.closes_at;
+    }
+    if (dto.max_responses !== undefined) {
+      if (dto.max_responses === null) backendDto.ClearMaxResponses = true;
+      else backendDto.MaxResponses = dto.max_responses;
+    }
     // Transform thank you settings if provided
     if (dto.thank_you_settings !== undefined) {
       backendDto.ThankYouSettings = transformThankYouSettingsToBackend(dto.thank_you_settings);
@@ -361,31 +419,39 @@ export const dynamicFormsService = {
     return transformFormFromBackend(data);
   },
   
-  // Get responses for a form
-  async getResponses(formId: number): Promise<DynamicFormResponse[]> {
-    const { data, error } = await apiFetch<any[]>(`${BASE_URL}/${formId}/responses`);
-    
+  // Get responses for a form (optionally paged)
+  async getResponsesPaged(
+    formId: number,
+    pagination?: { page?: number; pageSize?: number }
+  ): Promise<PagedResult<DynamicFormResponse>> {
+    const params = new URLSearchParams();
+    if (pagination?.page) params.append('page', String(pagination.page));
+    if (pagination?.pageSize) params.append('pageSize', String(pagination.pageSize));
+    const qs = params.toString();
+    const { data, error } = await apiFetch<any>(
+      `${BASE_URL}/${formId}/responses${qs ? `?${qs}` : ''}`
+    );
+
     if (error) {
       console.error(`Failed to fetch responses for form ${formId}:`, error);
-      return [];
+      return { items: [], total_count: 0, page: pagination?.page ?? 1, page_size: pagination?.pageSize ?? 0 };
     }
-    
-    return (data || []).map((r: any) => ({
-      id: r.id || r.Id,
-      form_id: r.formId || r.FormId,
-      form_version: r.formVersion || r.FormVersion,
-      entity_type: r.entityType || r.EntityType,
-      entity_id: r.entityId || r.EntityId,
-      responses: r.responses || r.Responses || {},
-      submitted_by: r.submittedBy || r.SubmittedBy || '',
-      submitted_at: r.submittedAt || r.SubmittedAt || new Date().toISOString(),
-      notes: r.notes || r.Notes,
-      submitter_name: r.submitterName || r.SubmitterName,
-      submitter_email: r.submitterEmail || r.SubmitterEmail,
-      is_public_submission: r.isPublicSubmission ?? r.IsPublicSubmission ?? false,
-    }));
+
+    const { items, totalCount, page, pageSize } = unwrapList(data);
+    return {
+      items: items.map(mapResponseFromBackend),
+      total_count: totalCount,
+      page,
+      page_size: pageSize,
+    };
   },
-  
+
+  // Get responses for a form
+  async getResponses(formId: number, pagination?: { page?: number; pageSize?: number }): Promise<DynamicFormResponse[]> {
+    const result = await this.getResponsesPaged(formId, pagination);
+    return result.items;
+  },
+
   // Submit a form response
   async submitResponse(dto: SubmitFormResponseDto): Promise<DynamicFormResponse> {
     const backendDto = {

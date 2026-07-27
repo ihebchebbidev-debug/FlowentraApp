@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useRef } from 'react';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { dynamicFormsService } from '../services/dynamicFormsService';
 import { DynamicForm, FormStatus, CreateDynamicFormDto, UpdateDynamicFormDto, SubmitFormResponseDto } from '../types';
 import { useToast } from '@/hooks/use-toast';
@@ -8,20 +9,55 @@ import { useActionLogger } from '@/hooks/useActionLogger';
 const QUERY_KEY = 'dynamic-forms';
 
 export function useDynamicForms(filters?: { status?: FormStatus; category?: string; search?: string }) {
-  const { logSearch, logFilter } = useActionLogger('DynamicForms');
-  
   const query = useQuery({
     queryKey: [QUERY_KEY, filters],
     queryFn: () => dynamicFormsService.getAll(filters),
     staleTime: 30000,
   });
 
-  // Log search when filters change
-  if (filters?.search && query.data) {
-    logSearch(filters.search, query.data.length, { entityType: 'DynamicForm' });
-  }
-  
+  useFormSearchLogger(filters?.search, query.data?.length);
+
   return query;
+}
+
+/**
+ * Paged variant used by the forms list screen. Returns the page envelope so the
+ * UI can render real pagination instead of silently truncating at the API cap.
+ */
+export function useDynamicFormsPaged(filters: {
+  status?: FormStatus;
+  category?: string;
+  search?: string;
+  page: number;
+  pageSize: number;
+}) {
+  const query = useQuery({
+    queryKey: [QUERY_KEY, 'paged', filters],
+    queryFn: () => dynamicFormsService.getPaged(filters),
+    staleTime: 30000,
+    placeholderData: keepPreviousData,
+  });
+
+  useFormSearchLogger(filters.search, query.data?.total_count);
+
+  return query;
+}
+
+/**
+ * Logs a search exactly once per distinct term/result pair, in an effect so it
+ * never fires during render (which duplicated every entry under StrictMode).
+ */
+function useFormSearchLogger(search: string | undefined, resultCount: number | undefined) {
+  const { logSearch } = useActionLogger('DynamicForms');
+  const lastLogged = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!search || resultCount === undefined) return;
+    const signature = `${search}::${resultCount}`;
+    if (lastLogged.current === signature) return;
+    lastLogged.current = signature;
+    logSearch(search, resultCount, { entityType: 'DynamicForm' });
+  }, [search, resultCount, logSearch]);
 }
 
 export function useDynamicForm(id: number | undefined) {

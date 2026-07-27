@@ -3,6 +3,17 @@ using System.ComponentModel.DataAnnotations;
 namespace MyApi.Modules.DynamicForms.DTOs
 {
     /// <summary>
+    /// Generic paged envelope returned by list endpoints
+    /// </summary>
+    public class PagedResultDto<T>
+    {
+        public List<T> Items { get; set; } = new();
+        public int TotalCount { get; set; }
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; }
+    }
+
+    /// <summary>
     /// DTO for reading dynamic form data
     /// </summary>
     public class DynamicFormDto
@@ -25,6 +36,16 @@ namespace MyApi.Modules.DynamicForms.DTOs
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public int ResponseCount { get; set; }
+
+        /// <summary>
+        /// Optional date after which the public form stops accepting submissions
+        /// </summary>
+        public DateTime? ClosesAt { get; set; }
+
+        /// <summary>
+        /// Optional maximum number of accepted submissions
+        /// </summary>
+        public int? MaxResponses { get; set; }
     }
 
     /// <summary>
@@ -82,6 +103,26 @@ namespace MyApi.Modules.DynamicForms.DTOs
         public List<FormFieldDto>? Fields { get; set; }
 
         public ThankYouSettingsDto? ThankYouSettings { get; set; }
+
+        public DateTime? ClosesAt { get; set; }
+
+        /// <summary>
+        /// Explicitly clear the close date when true
+        /// </summary>
+        public bool? ClearClosesAt { get; set; }
+
+        public int? MaxResponses { get; set; }
+
+        /// <summary>
+        /// Explicitly clear the max-responses cap when true
+        /// </summary>
+        public bool? ClearMaxResponses { get; set; }
+
+        /// <summary>
+        /// Optimistic concurrency guard - the version the client loaded.
+        /// When it no longer matches the stored version the update is rejected.
+        /// </summary>
+        public int? ExpectedVersion { get; set; }
     }
 
     /// <summary>
@@ -303,8 +344,11 @@ namespace MyApi.Modules.DynamicForms.DTOs
         public string? Status { get; set; }
         public string? Category { get; set; }
         public string? Search { get; set; }
-        public int Page { get; set; } = 1;
-        public int PageSize { get; set; } = 20;
+        /// <summary>
+        /// 1-based page index. When null (or PageSize is null) no pagination is applied.
+        /// </summary>
+        public int? Page { get; set; }
+        public int? PageSize { get; set; }
         public string SortBy { get; set; } = "UpdatedAt";
         public bool SortDesc { get; set; } = true;
     }

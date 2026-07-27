@@ -315,6 +315,38 @@ function Drawer({ state }: { state: ProcessesDemoState }) {
                   Save
                 </div>
               </div>
+
+              {/* Editable Configuration panel — mirrors the real drawer's
+                  ConfigurationPanel: schema-driven field, default marker, range
+                  hint and Save button. Uses focused row's grace_days knob. */}
+              <div
+                id="proc-demo-drawer-tab-schedule-config"
+                className={`space-y-2 rounded-md border p-3 ${ring('schedule-config')}`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-medium text-muted-foreground">Configuration</div>
+                  <span className="text-[10px] text-muted-foreground">
+                    {state.configJustSaved ? 'custom' : '(default)'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <label className="font-medium">Grace days</label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-9 flex-1 rounded-md border border-input bg-background px-3 text-sm flex items-center">
+                    {state.configDraft}
+                  </div>
+                  <span className="text-xs text-muted-foreground w-16">days</span>
+                </div>
+                <div className="text-[11px] text-muted-foreground">
+                  Days after the due date before an invoice flips to overdue. Default 0 · Range 0–60
+                </div>
+                <div className="flex justify-end">
+                  <div className={`h-8 px-3 rounded-md text-xs font-medium inline-flex items-center ${state.configJustSaved ? 'bg-primary/15 text-primary' : 'bg-primary text-primary-foreground'}`}>
+                    {state.configJustSaved ? 'Saved' : 'Save configuration'}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 

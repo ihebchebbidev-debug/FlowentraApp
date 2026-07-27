@@ -267,7 +267,9 @@
     "not_answered": "Non répondu",
     "notes": "Notes",
     "form_version": "Version du Formulaire",
-    "form_not_found": "Formulaire non trouvé"
+    "form_not_found": "Formulaire non trouvé",
+    "pdf_export_progress": "Exportation {{done}}/{{total}}",
+    "pdf_export_cancelled": "Exportation annulée après {{done}} sur {{total}}"
   },
   "table": {
     "name": "Nom",
@@ -295,7 +297,8 @@
     "name_required": "Le nom du formulaire est obligatoire",
     "name_en_required": "Le nom en anglais est obligatoire",
     "name_fr_required": "Le nom en français est obligatoire",
-    "at_least_one_field": "Le formulaire doit avoir au moins un champ"
+    "at_least_one_field": "Le formulaire doit avoir au moins un champ",
+    "failed": "Échec de la validation"
   },
   "categories": {
     "checklist": "Liste de Contrôle",
@@ -325,7 +328,8 @@
     "no_edit_permission": "Vous n'avez pas la permission de modifier des formulaires.",
     "no_delete_permission": "Vous n'avez pas la permission de supprimer des formulaires.",
     "form_released_no_edit": "Les formulaires publiés ne peuvent pas être modifiés. Restaurez-les d'abord en brouillon.",
-    "optional": "optionnel"
+    "optional": "optionnel",
+    "export_pdf": "Exporter en PDF"
   },
   "pdf": {
     "report_title": "Rapport de Réponse au Formulaire",
@@ -457,7 +461,10 @@
     "fields_mapped": "Champs Mappés",
     "entities_created": "À Créer",
     "export_button": "Exporter",
-    "export_to_entity": "Exporter vers une Entité"
+    "export_to_entity": "Exporter vers une Entité",
+    "ai_suggest": "Suggestion IA",
+    "ai_thinking": "L'IA analyse vos réponses…",
+    "basic_suggest": "Suggestion de base"
   },
   "dynamic_data": {
     "use_dynamic": "Source de Données Dynamique",
@@ -502,5 +509,14 @@
     "name": "Formulaires dynamiques",
     "description": "Créez et publiez des formulaires personnalisés.",
     "category": "Système"
+  },
+  "errors": {
+    "network_error": "Erreur réseau. Vérifiez votre connexion et réessayez."
+  },
+  "pagination": {
+    "showing": "Affichage de {{from}} à {{to}} sur {{total}}",
+    "page": "Page {{page}} sur {{totalPages}}",
+    "previous": "Précédent",
+    "next": "Suivant"
   }
 }

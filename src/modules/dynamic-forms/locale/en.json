@@ -267,7 +267,9 @@
     "not_answered": "Not answered",
     "notes": "Notes",
     "form_version": "Form Version",
-    "form_not_found": "Form not found"
+    "form_not_found": "Form not found",
+    "pdf_export_progress": "Exporting {{done}}/{{total}}",
+    "pdf_export_cancelled": "Export cancelled after {{done}} of {{total}}"
   },
   "table": {
     "name": "Name",
@@ -295,7 +297,8 @@
     "name_required": "Form name is required",
     "name_en_required": "English name is required",
     "name_fr_required": "French name is required",
-    "at_least_one_field": "Form must have at least one field"
+    "at_least_one_field": "Form must have at least one field",
+    "failed": "Validation failed"
   },
   "categories": {
     "checklist": "Checklist",
@@ -325,7 +328,8 @@
     "no_edit_permission": "You don't have permission to edit forms.",
     "no_delete_permission": "You don't have permission to delete forms.",
     "form_released_no_edit": "Released forms cannot be edited. Restore to draft first.",
-    "optional": "optional"
+    "optional": "optional",
+    "export_pdf": "Export PDF"
   },
   "pdf": {
     "report_title": "Form Response Report",
@@ -457,7 +461,10 @@
     "fields_mapped": "Fields Mapped",
     "entities_created": "To Create",
     "export_button": "Export",
-    "export_to_entity": "Export to Entity"
+    "export_to_entity": "Export to Entity",
+    "ai_suggest": "AI suggestion",
+    "ai_thinking": "AI is analysing your responses…",
+    "basic_suggest": "Basic suggestion"
   },
   "dynamic_data": {
     "use_dynamic": "Dynamic Data Source",
@@ -502,5 +509,14 @@
     "name": "Dynamic Forms",
     "description": "Build and publish custom forms.",
     "category": "System"
+  },
+  "errors": {
+    "network_error": "Network error. Please check your connection and try again."
+  },
+  "pagination": {
+    "showing": "Showing {{from}}-{{to}} of {{total}}",
+    "page": "Page {{page}} of {{totalPages}}",
+    "previous": "Previous",
+    "next": "Next"
   }
 }

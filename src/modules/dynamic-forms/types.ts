@@ -150,6 +150,10 @@ export interface DynamicForm {
   public_slug?: string;
   public_url?: string;
   thank_you_settings?: ThankYouSettings;
+  /** ISO date after which public submissions are refused */
+  closes_at?: string | null;
+  /** Maximum number of accepted submissions */
+  max_responses?: number | null;
   created_by: string;
   modified_by?: string;
   created_at: string;
@@ -201,6 +205,18 @@ export interface UpdateDynamicFormDto {
   category?: string;
   fields?: FormField[];
   thank_you_settings?: ThankYouSettings;
+  closes_at?: string | null;
+  max_responses?: number | null;
+  /** Version the client loaded; server rejects the write when it is stale */
+  expected_version?: number;
+}
+
+/** Paged envelope returned by the forms/responses list endpoints */
+export interface PagedResult<T> {
+  items: T[];
+  total_count: number;
+  page: number;
+  page_size: number;
 }
 
 export interface SubmitFormResponseDto {

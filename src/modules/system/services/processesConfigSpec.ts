@@ -117,6 +117,11 @@ export async function loadProcessSchemas(): Promise<Record<string, ProcessConfig
         }));
       }
       cache = merged;
+      // Keep the local fallback catalog in sync with the server schema so
+      // callers that read PROCESS_CONFIG_FIELDS directly (effectiveSettings'
+      // default map, used by the table + drawer overview) never render a stale
+      // default or clamp after the fetch resolves.
+      for (const k of Object.keys(merged)) PROCESS_CONFIG_FIELDS[k] = merged[k];
       return merged;
     } catch {
       cache = { ...PROCESS_CONFIG_FIELDS };

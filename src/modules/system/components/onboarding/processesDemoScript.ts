@@ -33,8 +33,13 @@ export interface ProcessesDemoState {
     | 'enable'
     | 'overview'
     | 'schedule-interval'
+    | 'schedule-config'
     | 'history-row'
     | 'diagnostic-item';
+  /** Simulated draft value for the demo's editable config field (grace_days). */
+  configDraft: number;
+  /** Flashes the "saved" state on the demo config panel. */
+  configJustSaved: boolean;
   // Simulated run outcome shown in history
   runJustCompleted: boolean;
   // Interval editor animation
@@ -55,6 +60,8 @@ export const initialProcessesDemoState: ProcessesDemoState = {
   drawerHighlight: null,
   runJustCompleted: false,
   intervalDraft: 60,
+  configDraft: 3,
+  configJustSaved: false,
 };
 
 export interface ProcessesDemoStep {
@@ -377,6 +384,13 @@ const OUTRO_STEPS: ProcessesDemoStep[] = [
       'Schedule tab lets you change the cadence — interval jobs get a live editor, cron jobs show their expression. Every job also exposes its own configurable knobs: retention days, grace periods, batch size, retry limits. They are schema-driven — the backend publishes defaults, min and max, so bad values are clamped before they ever hit the database, and labels and hints are localized from the same source of truth.',
     duration: 8600,
     apply: pure(() => ({ drawerTab: 'schedule', drawerHighlight: 'schedule-interval', intervalDraft: 30 })),
+  },
+  {
+    target: 'proc-demo-drawer-tab-schedule-config',
+    caption:
+      'Under the interval, the Configuration panel exposes this job\'s own knobs — here grace_days for overdue invoices. Every field shows the current value, the schema default and the allowed range, so you never have to guess. Change grace_days from 3 to 5, hit Save, and the backend sanitises, clamps and persists — the next tick reads the new value.',
+    duration: 9200,
+    apply: pure(() => ({ drawerTab: 'schedule', drawerHighlight: 'schedule-config', configDraft: 5, configJustSaved: true })),
   },
   {
     target: 'proc-demo-drawer-tab-history',

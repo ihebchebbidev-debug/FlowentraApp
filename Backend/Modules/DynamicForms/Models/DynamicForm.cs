@@ -79,6 +79,16 @@ namespace MyApi.Modules.DynamicForms.Models
         public string? PublicSlug { get; set; }
 
         /// <summary>
+        /// Optional cut-off date - public submissions are refused after it
+        /// </summary>
+        public DateTime? ClosesAt { get; set; }
+
+        /// <summary>
+        /// Optional cap on the number of accepted submissions
+        /// </summary>
+        public int? MaxResponses { get; set; }
+
+        /// <summary>
         /// JSON blob containing field definitions
         /// </summary>
         [Column(TypeName = "jsonb")]

@@ -77,7 +77,16 @@ export function DynamicDataConfig({
     if (useDynamicData && dataSource?.entity_type && dataSource?.display_field && dataSource?.value_field) {
       loadPreview();
     }
-  }, [useDynamicData, dataSource?.entity_type, dataSource?.display_field, dataSource?.value_field]);
+    // Serialised filters keep the preview in sync without re-running on identity changes
+  }, [
+    useDynamicData,
+    dataSource?.entity_type,
+    dataSource?.display_field,
+    dataSource?.value_field,
+    dataSource?.sort_field,
+    dataSource?.sort_order,
+    JSON.stringify(dataSource?.filters ?? null),
+  ]);
   
   const loadPreview = async () => {
     if (!dataSource) return;

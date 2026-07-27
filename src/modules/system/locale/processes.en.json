@@ -42,6 +42,14 @@
       "batch_size": {
         "label": "Batch size",
         "help": "Maximum number of emails processed per run."
+      },
+      "lookback_hours": {
+        "label": "Lookback window",
+        "help": "How far back to scan the log for failed outbound emails."
+      },
+      "rate_per_minute": {
+        "label": "Rate limit",
+        "help": "Maximum retries attempted per minute."
       }
     }
   },
@@ -70,6 +78,8 @@
     "stop": "Stop",
     "reset_failures": "Reset failures",
     "save": "Save",
+    "save_config": "Save configuration",
+    "reset_defaults": "Reset to defaults",
     "hide_details": "Hide details",
     "show_details": "Show details",
     "locked_tooltip": "Only the main administrator can perform this action"
@@ -106,6 +116,12 @@
   },
   "labels": {
     "schedule": "Schedule",
+    "configuration": "Configuration",
+    "no_config": "This process has no configurable options.",
+    "overridden": "custom",
+    "config_default": "(default)",
+    "default_short": "Default {{value}}",
+    "range": "Range {{min}}–{{max}}",
     "timezone": "Timezone",
     "last_run": "Last run",
     "last_duration": "Last duration",
@@ -127,7 +143,6 @@
     "disabled": "Disabled",
     "anchor": "anchor:",
     "every_minutes": "Every {{count}} min",
-    "config_default": "(default)",
     "yes": "Yes",
     "no": "No",
     "enabled_paused": "Enabled (paused)",
@@ -189,7 +204,9 @@
     "failures_cleared_title": "Failures cleared",
     "stop_requested_title": "Stop requested",
     "stop_nothing_running_title": "Nothing to stop",
-    "could_not_stop_title": "Could not stop the process"
+    "could_not_stop_title": "Could not stop the process",
+    "config_saved_title": "Configuration saved",
+    "config_saved_desc": "{{name}} will use the new settings on its next run."
   },
   "modules": {
     "system_logs": "System logs",

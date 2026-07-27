@@ -58,21 +58,18 @@ export function FormBuilder({ fields, onFieldsChange, formName, formDescription 
     if (active.data.current?.fromPalette) {
       const fieldType = active.data.current.type as FieldType;
       const newField = createNewField(fieldType);
-      
-      if (over.id === 'form-canvas') {
-        // Add to end
-        onFieldsChange([...fields, newField]);
+
+      const newFields = [...fields];
+      const targetIndex = over.id === 'form-canvas' ? -1 : fields.findIndex(f => f.id === over.id);
+      if (targetIndex !== -1) {
+        newFields.splice(targetIndex, 0, newField);
       } else {
-        // Insert before the target field
-        const targetIndex = fields.findIndex(f => f.id === over.id);
-        if (targetIndex !== -1) {
-          const newFields = [...fields];
-          newFields.splice(targetIndex, 0, newField);
-          onFieldsChange(newFields);
-        } else {
-          onFieldsChange([...fields, newField]);
-        }
+        newFields.push(newField);
       }
+
+      // Always renumber so visual position and persisted order agree
+      // (otherwise page_break boundaries scramble on save).
+      onFieldsChange(newFields.map((f, idx) => ({ ...f, order: idx })));
       setSelectedFieldId(newField.id);
     } else {
       // Reordering existing fields

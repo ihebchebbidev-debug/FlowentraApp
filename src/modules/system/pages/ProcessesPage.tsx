@@ -36,6 +36,11 @@ import {
 
 } from "@/modules/system/services/processesService";
 import { ProcessesAutopilotDemo } from "@/modules/system/components/onboarding/ProcessesAutopilotDemo";
+import {
+  PROCESS_CONFIG_FIELDS,
+  loadProcessSchemas,
+  type ProcessConfigField,
+} from "@/modules/system/services/processesConfigSpec";
 import { localizeProcess } from "@/modules/system/utils/processesI18n";
 import { getProcessExplanation } from "@/modules/system/utils/processExplanations";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -687,7 +692,14 @@ export default function ProcessesPage() {
         }),
       disabled: t("reason.disabled", { defaultValue: "Disabled — switched off by an administrator." }),
       configDefault: t("labels.config_default", { defaultValue: "(default)" }),
-
+      translateConfigLabel: (f) =>
+        f.labelI18nKey ? t(f.labelI18nKey, { defaultValue: f.label }) : f.label,
+      translateConfigUnit: (u) =>
+        u === "days"
+          ? t("units.days", { defaultValue: "Days" }).toLowerCase()
+          : u === "hours"
+          ? t("units.hours", { defaultValue: "Hours" }).toLowerCase()
+          : t("units.count", { defaultValue: "items" }),
     }),
     [t]
   );
@@ -985,6 +997,23 @@ export default function ProcessesPage() {
       toast({
         title: t("toast.schedule_updated_title"),
         description: t("toast.schedule_updated_desc", { name: p.name, minutes: intervalMinutes }),
+      });
+    } catch (e) {
+      toast({ title: t("toast.could_not_update_title"), description: (e as Error).message, variant: "destructive" });
+    }
+  };
+
+  // Persist the drawer's editable Configuration panel. Sends the full config
+  // object; the backend's SanitiseConfig drops unknown keys and clamps values,
+  // so we don't need to validate twice.
+  const saveConfig = async (p: ProcessDefinition, config: Record<string, unknown>) => {
+    if (denyIfReadOnly()) return;
+    try {
+      await upsertSchedule({ key: p.key, name: p.name, config });
+      await refreshSchedules();
+      toast({
+        title: t("toast.config_saved_title", { defaultValue: "Configuration saved" }),
+        description: t("toast.config_saved_desc", { defaultValue: "{{name}} will use the new settings on its next run.", name: p.name }),
       });
     } catch (e) {
       toast({ title: t("toast.could_not_update_title"), description: (e as Error).message, variant: "destructive" });
@@ -1315,6 +1344,7 @@ export default function ProcessesPage() {
               onToggleEnabled={() => toggleEnabled(selected)}
               onResetFailures={() => resetFailures(selected)}
               onSaveInterval={(mins) => saveInterval(selected, mins)}
+              onSaveConfig={(cfg) => saveConfig(selected, cfg)}
               onOpenLogs={(key) =>
                 navigate(
                   `/dashboard/settings/logs?module=Processes&q=${encodeURIComponent(key)}`
@@ -1649,7 +1679,7 @@ function LiveStatusBar({
 function ProcessDrawer({
   t, p, liveHistory, historyLoading, historyRefreshing, historyUpdatedAt, historyStale,
   onHardRefresh, historyError, hasSchedule, stopEnabled, canManage,
-  onRun, onPause, onStop, onToggleEnabled, onResetFailures, onSaveInterval, onOpenLogs,
+  onRun, onPause, onStop, onToggleEnabled, onResetFailures, onSaveInterval, onSaveConfig, onOpenLogs,
 }: {
   t: TFunction;
   p: ProcessDefinition;
@@ -1669,6 +1699,7 @@ function ProcessDrawer({
   onToggleEnabled: () => void;
   onResetFailures: () => void;
   onSaveInterval: (mins: number) => void;
+  onSaveConfig: (config: Record<string, unknown>) => void;
   onOpenLogs?: (key: string) => void;
 }) {
   const lockedTitle = t("actions.locked_tooltip", {
@@ -1871,15 +1902,15 @@ function ProcessDrawer({
             </div>
           )}
 
-          {p.settings.length > 0 && (
-            <>
-              <Separator className="my-2" />
-              <div className="text-xs font-medium text-muted-foreground">{t("labels.settings")}</div>
-              {p.settings.map((s) => (
-                <Row key={s.label} label={s.label} value={String(s.value)} />
-              ))}
-            </>
-          )}
+          <Separator className="my-2" />
+          <ConfigurationPanel
+            t={t}
+            processKey={p.key}
+            currentConfig={p.configRaw ?? {}}
+            canManage={canManage}
+            lockedTitle={lockedTitle}
+            onSave={onSaveConfig}
+          />
         </TabsContent>
 
         <TabsContent value="history" className="pt-3">
@@ -1959,6 +1990,188 @@ function ProcessDrawer({
         </TabsContent>
       </Tabs>
     </>
+  );
+}
+
+/**
+ * Editable configuration panel shown on the drawer's Schedule tab.
+ *
+ * Reads the field schema from PROCESS_CONFIG_FIELDS (local fallback) and
+ * upgrades it in-place from /api/processes/schemas on mount, so the inputs
+ * always match what the C# handler will actually read. Values are clamped
+ * client-side to the schema's min/max — the backend sanitises again, this is
+ * just to give the operator immediate feedback.
+ */
+function ConfigurationPanel({
+  t, processKey, currentConfig, canManage, lockedTitle, onSave,
+}: {
+  t: TFunction;
+  processKey: string;
+  currentConfig: Record<string, unknown>;
+  canManage: boolean;
+  lockedTitle: string;
+  onSave: (config: Record<string, unknown>) => void;
+}) {
+  const [fields, setFields] = useState<ProcessConfigField[]>(
+    () => PROCESS_CONFIG_FIELDS[processKey] ?? []
+  );
+  useEffect(() => {
+    let cancelled = false;
+    loadProcessSchemas().then((map) => {
+      if (cancelled) return;
+      setFields(map[processKey] ?? PROCESS_CONFIG_FIELDS[processKey] ?? []);
+    });
+    return () => { cancelled = true; };
+  }, [processKey]);
+
+  // Draft mirrors current values; reset when the process or its stored config
+  // changes so the panel never leaks stale numbers into a different job.
+  const initialDraft = () => {
+    const out: Record<string, number> = {};
+    for (const f of fields) {
+      const raw = currentConfig?.[f.key];
+      const num = typeof raw === "number" ? raw : typeof raw === "string" ? Number(raw) : NaN;
+      out[f.key] = Number.isFinite(num) ? num : f.fallback;
+    }
+    return out;
+  };
+  const [draft, setDraft] = useState<Record<string, number>>(initialDraft);
+  // Key on the serialised config, not the object identity: the parent rebuilds
+  // `currentConfig` on every render, so an identity dep would reset the draft
+  // (and re-render) in a loop while the admin is typing.
+  const configKey = JSON.stringify(currentConfig ?? {});
+  useEffect(() => { setDraft(initialDraft()); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [processKey, fields, configKey]);
+
+  if (fields.length === 0) {
+    return (
+      <div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
+        <div className="font-medium text-foreground mb-1">
+          {t("labels.configuration", { defaultValue: "Configuration" })}
+        </div>
+        {t("labels.no_config", { defaultValue: "This process has no configurable options." })}
+      </div>
+    );
+  }
+
+  const unitLabel = (u?: ProcessConfigField["unit"]): string => {
+    if (!u) return "";
+    if (u === "days") return t("units.days", { defaultValue: "Days" }).toLowerCase();
+    if (u === "hours") return t("units.hours", { defaultValue: "Hours" }).toLowerCase();
+    return t("units.count", { defaultValue: "items" });
+  };
+  const clamp = (v: number, f: ProcessConfigField) => {
+    let out = v;
+    if (f.min !== undefined) out = Math.max(f.min, out);
+    if (f.max !== undefined) out = Math.min(f.max, out);
+    return out;
+  };
+  const dirty = fields.some((f) => {
+    const stored = currentConfig?.[f.key];
+    const storedNum = typeof stored === "number" ? stored : typeof stored === "string" ? Number(stored) : NaN;
+    const base = Number.isFinite(storedNum) ? storedNum : f.fallback;
+    return draft[f.key] !== base;
+  });
+
+  const save = () => {
+    // Build a full config object using the sanitised draft. Backend merges
+    // over any existing stored keys and drops anything unknown.
+    const next: Record<string, unknown> = { ...currentConfig };
+    for (const f of fields) {
+      const v = draft[f.key];
+      next[f.key] = clamp(Number.isFinite(v) ? v : f.fallback, f);
+    }
+    onSave(next);
+  };
+  const resetToDefaults = () => {
+    const out: Record<string, number> = {};
+    for (const f of fields) out[f.key] = f.fallback;
+    setDraft(out);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="text-xs font-medium text-muted-foreground">
+          {t("labels.configuration", { defaultValue: "Configuration" })}
+        </div>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 text-xs"
+          onClick={resetToDefaults}
+          disabled={!canManage}
+          title={canManage ? undefined : lockedTitle}
+        >
+          {t("actions.reset_defaults", { defaultValue: "Reset to defaults" })}
+        </Button>
+      </div>
+
+      {fields.map((f) => {
+        const stored = currentConfig?.[f.key];
+        const storedNum = typeof stored === "number" ? stored : typeof stored === "string" ? Number(stored) : NaN;
+        const isOverridden = Number.isFinite(storedNum);
+        const label = f.labelI18nKey
+          ? t(f.labelI18nKey, { defaultValue: f.label })
+          : f.label;
+        const help = f.helpI18nKey ? t(f.helpI18nKey, { defaultValue: "" }) : "";
+        return (
+          <div key={f.key} className="space-y-1">
+            <div className="flex items-center justify-between gap-2">
+              <label className="text-xs font-medium" htmlFor={`cfg-${f.key}`}>
+                {label}
+              </label>
+              <span className="text-[10px] text-muted-foreground">
+                {isOverridden
+                  ? t("labels.overridden", { defaultValue: "custom" })
+                  : t("labels.config_default", { defaultValue: "(default)" })}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Input
+                id={`cfg-${f.key}`}
+                type="number"
+                min={f.min}
+                max={f.max}
+                value={draft[f.key] ?? f.fallback}
+                onChange={(e) => setDraft((d) => ({ ...d, [f.key]: Number(e.target.value) }))}
+                disabled={!canManage}
+                className="h-9 flex-1"
+              />
+              {f.unit && (
+                <span className="text-xs text-muted-foreground w-16">{unitLabel(f.unit)}</span>
+              )}
+            </div>
+            <div className="text-[11px] text-muted-foreground">
+              {help && <span>{help} </span>}
+              <span className="opacity-75">
+                {t("labels.default_short", { defaultValue: "Default {{value}}", value: f.fallback })}
+                {(f.min !== undefined || f.max !== undefined) && (
+                  <>
+                    {" · "}
+                    {t("labels.range", {
+                      defaultValue: "Range {{min}}–{{max}}",
+                      min: f.min ?? "–∞",
+                      max: f.max ?? "∞",
+                    })}
+                  </>
+                )}
+              </span>
+            </div>
+          </div>
+        );
+      })}
+
+      <div className="flex justify-end">
+        <Button
+          size="sm"
+          onClick={save}
+          disabled={!dirty || !canManage}
+          title={canManage ? undefined : lockedTitle}
+        >
+          {t("actions.save_config", { defaultValue: "Save configuration" })}
+        </Button>
+      </div>
+    </div>
   );
 }
 

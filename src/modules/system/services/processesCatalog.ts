@@ -76,6 +76,13 @@ export interface ProcessDefinition {
   consecutiveFailures: number;
   successRate30?: number;
   settings: { label: string; value: string | number | boolean }[];
+  /**
+   * Raw config JSON as stored on the schedule row (or {} for a fresh process).
+   * The drawer's editable Configuration panel needs the untouched values so it
+   * can pre-fill inputs with what the handler actually reads, not the humanised
+   * strings rendered in `settings`.
+   */
+  configRaw?: Record<string, unknown>;
   diagnostics: DiagnosticCheck[];
   history: ProcessRun[];
 }

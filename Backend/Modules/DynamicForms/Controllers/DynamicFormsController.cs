@@ -29,12 +29,13 @@ namespace MyApi.Modules.DynamicForms.Controllers
         /// Get all dynamic forms with optional filters
         /// </summary>
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<DynamicFormDto>>> GetAll([FromQuery] DynamicFormQueryParams queryParams)
+        public async Task<ActionResult<PagedResultDto<DynamicFormDto>>> GetAll([FromQuery] DynamicFormQueryParams queryParams)
         {
             try
             {
-                var forms = await _formService.GetAllAsync(queryParams);
-                return Ok(forms);
+                var result = await _formService.GetAllAsync(queryParams);
+                Response.Headers["X-Total-Count"] = result.TotalCount.ToString();
+                return Ok(result);
             }
             catch (Exception ex)
             {
@@ -100,6 +101,10 @@ namespace MyApi.Modules.DynamicForms.Controllers
             {
                 return NotFound(new { message = $"Form with ID {id} not found" });
             }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException ex)
+            {
+                return Conflict(new { message = ex.Message });
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating form {FormId}", id);
@@ -164,6 +169,10 @@ namespace MyApi.Modules.DynamicForms.Controllers
                 var form = await _formService.ChangeStatusAsync(id, dto.Status, userId);
                 return Ok(form);
             }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
             catch (KeyNotFoundException)
             {
                 return NotFound(new { message = $"Form with ID {id} not found" });
@@ -179,12 +188,13 @@ namespace MyApi.Modules.DynamicForms.Controllers
         /// Get all responses for a specific form
         /// </summary>
         [HttpGet("{id}/responses")]
-        public async Task<ActionResult<IEnumerable<DynamicFormResponseDto>>> GetResponses(int id)
+        public async Task<ActionResult<PagedResultDto<DynamicFormResponseDto>>> GetResponses(int id, [FromQuery] int? page = null, [FromQuery] int? pageSize = null)
         {
             try
             {
-                var responses = await _formService.GetResponsesAsync(id);
-                return Ok(responses);
+                var result = await _formService.GetResponsesAsync(id, page, pageSize);
+                Response.Headers["X-Total-Count"] = result.TotalCount.ToString();
+                return Ok(result);
             }
             catch (Exception ex)
             {

@@ -9,7 +9,7 @@ namespace MyApi.Modules.DynamicForms.Services
     public interface IDynamicFormService
     {
         // Form CRUD operations
-        Task<IEnumerable<DynamicFormDto>> GetAllAsync(DynamicFormQueryParams? queryParams = null);
+        Task<PagedResultDto<DynamicFormDto>> GetAllAsync(DynamicFormQueryParams? queryParams = null);
         Task<DynamicFormDto?> GetByIdAsync(int id);
         Task<DynamicFormDto> CreateAsync(CreateDynamicFormDto dto, string userId);
         Task<DynamicFormDto> UpdateAsync(int id, UpdateDynamicFormDto dto, string userId);
@@ -18,7 +18,7 @@ namespace MyApi.Modules.DynamicForms.Services
         Task<DynamicFormDto> ChangeStatusAsync(int id, string status, string userId);
 
         // Response operations
-        Task<IEnumerable<DynamicFormResponseDto>> GetResponsesAsync(int formId);
+        Task<PagedResultDto<DynamicFormResponseDto>> GetResponsesAsync(int formId, int? page = null, int? pageSize = null);
         Task<DynamicFormResponseDto> SubmitResponseAsync(SubmitFormResponseDto dto, string userId);
         Task<int> GetResponseCountAsync(int formId);
 

@@ -16,12 +16,17 @@ namespace MyApi.Modules.DynamicForms.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly INotificationService _notificationService;
+        private readonly ILogger<DynamicFormService> _logger;
         private readonly JsonSerializerOptions _jsonOptions;
 
-        public DynamicFormService(ApplicationDbContext context, INotificationService notificationService)
+        public DynamicFormService(
+            ApplicationDbContext context,
+            INotificationService notificationService,
+            ILogger<DynamicFormService> logger)
         {
             _context = context;
             _notificationService = notificationService;
+            _logger = logger;
             _jsonOptions = new JsonSerializerOptions
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -29,9 +34,10 @@ namespace MyApi.Modules.DynamicForms.Services
             };
         }
 
-        public async Task<IEnumerable<DynamicFormDto>> GetAllAsync(DynamicFormQueryParams? queryParams = null)
+        public async Task<PagedResultDto<DynamicFormDto>> GetAllAsync(DynamicFormQueryParams? queryParams = null)
         {
             var query = _context.Set<DynamicForm>()
+                .AsNoTracking()
                 .Where(f => !f.IsDeleted)
                 .AsQueryable();
 
@@ -61,29 +67,39 @@ namespace MyApi.Modules.DynamicForms.Services
                         (f.DescriptionFr != null && f.DescriptionFr.ToLower().Contains(search))
                     );
                 }
-
-                // Sorting
-                query = queryParams.SortDesc
-                    ? query.OrderByDescending(f => f.UpdatedAt ?? f.CreatedAt)
-                    : query.OrderBy(f => f.UpdatedAt ?? f.CreatedAt);
-
-                // Pagination
-                query = query
-                    .Skip((queryParams.Page - 1) * queryParams.PageSize)
-                    .Take(queryParams.PageSize);
             }
-            else
+
+            var totalCount = await query.CountAsync();
+
+            // Sorting (stable: tie-break on Id so paging never repeats/skips rows)
+            query = queryParams?.SortDesc == false
+                ? query.OrderBy(f => f.UpdatedAt ?? f.CreatedAt).ThenBy(f => f.Id)
+                : query.OrderByDescending(f => f.UpdatedAt ?? f.CreatedAt).ThenByDescending(f => f.Id);
+
+            // Pagination is opt-in: without explicit page/pageSize the full list is returned
+            var page = queryParams?.Page ?? 0;
+            var pageSize = queryParams?.PageSize ?? 0;
+            if (page > 0 && pageSize > 0)
             {
-                query = query.OrderByDescending(f => f.UpdatedAt ?? f.CreatedAt);
+                pageSize = Math.Min(pageSize, 200);
+                query = query.Skip((page - 1) * pageSize).Take(pageSize);
             }
 
             var forms = await query.ToListAsync();
-            return forms.Select(MapToDto);
+
+            return new PagedResultDto<DynamicFormDto>
+            {
+                Items = forms.Select(MapToDto).ToList(),
+                TotalCount = totalCount,
+                Page = page > 0 ? page : 1,
+                PageSize = pageSize > 0 ? pageSize : totalCount
+            };
         }
 
         public async Task<DynamicFormDto?> GetByIdAsync(int id)
         {
             var form = await _context.Set<DynamicForm>()
+                .AsNoTracking()
                 .Where(f => f.Id == id && !f.IsDeleted)
                 .FirstOrDefaultAsync();
 
@@ -125,6 +141,13 @@ namespace MyApi.Modules.DynamicForms.Services
                 throw new KeyNotFoundException($"Form with ID {id} not found");
             }
 
+            // Optimistic concurrency: reject writes based on a stale snapshot
+            if (dto.ExpectedVersion.HasValue && dto.ExpectedVersion.Value != form.Version)
+            {
+                throw new DbUpdateConcurrencyException(
+                    $"Form {id} was modified by someone else (expected version {dto.ExpectedVersion.Value}, current {form.Version}).");
+            }
+
             // If form is released and fields are changing, increment version
             var shouldIncrementVersion = form.Status == FormStatus.Released && dto.Fields != null;
 
@@ -160,6 +183,13 @@ namespace MyApi.Modules.DynamicForms.Services
                 form.ThankYouSettings = JsonSerializer.Serialize(dto.ThankYouSettings, _jsonOptions);
             }
 
+            // Submission window / cap
+            if (dto.ClearClosesAt == true) form.ClosesAt = null;
+            else if (dto.ClosesAt.HasValue) form.ClosesAt = DateTime.SpecifyKind(dto.ClosesAt.Value, DateTimeKind.Utc);
+
+            if (dto.ClearMaxResponses == true) form.MaxResponses = null;
+            else if (dto.MaxResponses.HasValue) form.MaxResponses = dto.MaxResponses.Value > 0 ? dto.MaxResponses.Value : null;
+
             if (shouldIncrementVersion)
             {
                 form.Version++;
@@ -168,7 +198,7 @@ namespace MyApi.Modules.DynamicForms.Services
             form.ModifyUser = userId;
             form.UpdatedAt = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
+            await SaveWithSlugRetryAsync(form);
 
             return MapToDto(form);
         }
@@ -236,25 +266,61 @@ namespace MyApi.Modules.DynamicForms.Services
                 throw new KeyNotFoundException($"Form with ID {id} not found");
             }
 
-            if (Enum.TryParse<FormStatus>(status, true, out var newStatus))
+            if (!Enum.TryParse<FormStatus>(status, true, out var newStatus))
             {
-                form.Status = newStatus;
-                form.ModifyUser = userId;
-                form.UpdatedAt = DateTime.UtcNow;
-                await _context.SaveChangesAsync();
+                throw new ArgumentException($"'{status}' is not a valid form status. Expected draft, released or archived.", nameof(status));
             }
+
+            // Publishing a form freezes its schema for respondents - bump the version
+            // so responses can be traced back to the exact schema that was live.
+            if (newStatus == FormStatus.Released && form.Status != FormStatus.Released)
+            {
+                form.Version++;
+            }
+
+            form.Status = newStatus;
+            form.ModifyUser = userId;
+            form.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
 
             return MapToDto(form);
         }
 
-        public async Task<IEnumerable<DynamicFormResponseDto>> GetResponsesAsync(int formId)
+        public async Task<PagedResultDto<DynamicFormResponseDto>> GetResponsesAsync(int formId, int? page = null, int? pageSize = null)
         {
-            var responses = await _context.Set<DynamicFormResponse>()
-                .Where(r => r.FormId == formId)
-                .OrderByDescending(r => r.SubmittedAt)
-                .ToListAsync();
+            var query = _context.Set<DynamicFormResponse>()
+                .AsNoTracking()
+                .Where(r => r.FormId == formId);
 
-            return responses.Select(MapResponseToDto);
+            var totalCount = await query.CountAsync();
+
+            query = query
+                .OrderByDescending(r => r.SubmittedAt)
+                .ThenByDescending(r => r.Id);
+
+            var effectivePage = page ?? 0;
+            var effectiveSize = pageSize ?? 0;
+            if (effectivePage > 0 && effectiveSize > 0)
+            {
+                effectiveSize = Math.Min(effectiveSize, 500);
+                query = query.Skip((effectivePage - 1) * effectiveSize).Take(effectiveSize);
+            }
+            else
+            {
+                // Hard safety cap so a form with a huge history can never blow up the response
+                effectiveSize = 500;
+                query = query.Take(effectiveSize);
+            }
+
+            var responses = await query.ToListAsync();
+
+            return new PagedResultDto<DynamicFormResponseDto>
+            {
+                Items = responses.Select(MapResponseToDto).ToList(),
+                TotalCount = totalCount,
+                Page = effectivePage > 0 ? effectivePage : 1,
+                PageSize = effectiveSize
+            };
         }
 
         public async Task<DynamicFormResponseDto> SubmitResponseAsync(SubmitFormResponseDto dto, string userId)
@@ -296,7 +362,9 @@ namespace MyApi.Modules.DynamicForms.Services
         public async Task<DynamicFormDto?> GetBySlugAsync(string slug)
         {
             var form = await _context.Set<DynamicForm>()
+                .AsNoTracking()
                 .Where(f => f.PublicSlug == slug && f.IsPublic && !f.IsDeleted && f.Status == FormStatus.Released)
+                .OrderBy(f => f.Id)
                 .FirstOrDefaultAsync();
 
             return form != null ? MapToDto(form) : null;
@@ -306,11 +374,29 @@ namespace MyApi.Modules.DynamicForms.Services
         {
             var form = await _context.Set<DynamicForm>()
                 .Where(f => f.PublicSlug == slug && f.IsPublic && !f.IsDeleted && f.Status == FormStatus.Released)
+                .OrderBy(f => f.Id)
                 .FirstOrDefaultAsync();
 
             if (form == null)
             {
                 throw new KeyNotFoundException($"Public form with slug '{slug}' not found");
+            }
+
+            // Submission window
+            if (form.ClosesAt.HasValue && DateTime.UtcNow > form.ClosesAt.Value)
+            {
+                throw new InvalidOperationException("This form is closed and no longer accepts responses.");
+            }
+
+            // Submission cap
+            if (form.MaxResponses.HasValue)
+            {
+                var existing = await _context.Set<DynamicFormResponse>()
+                    .CountAsync(r => r.FormId == form.Id);
+                if (existing >= form.MaxResponses.Value)
+                {
+                    throw new InvalidOperationException("This form has reached its maximum number of responses.");
+                }
             }
 
             var response = new DynamicFormResponse
@@ -375,6 +461,35 @@ namespace MyApi.Modules.DynamicForms.Services
             return slug;
         }
 
+        /// <summary>
+        /// Saves a form, recovering from the unique-slug constraint when two shares race.
+        /// The DB index is the source of truth; the check-then-act generator is only a hint.
+        /// </summary>
+        private async Task SaveWithSlugRetryAsync(DynamicForm form)
+        {
+            for (var attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    await _context.SaveChangesAsync();
+                    return;
+                }
+                catch (DbUpdateException ex) when (attempt < 3 && IsSlugUniqueViolation(ex) && !string.IsNullOrEmpty(form.PublicSlug))
+                {
+                    var suffix = Guid.NewGuid().ToString("N").Substring(0, 6);
+                    var baseSlug = form.PublicSlug!.Length > 190 ? form.PublicSlug!.Substring(0, 190) : form.PublicSlug!;
+                    form.PublicSlug = $"{baseSlug}-{suffix}";
+                    _logger.LogWarning(ex, "Public slug collision for form {FormId}; retrying with {Slug}", form.Id, form.PublicSlug);
+                }
+            }
+        }
+
+        private static bool IsSlugUniqueViolation(DbUpdateException ex)
+        {
+            var message = (ex.InnerException?.Message ?? ex.Message).ToLowerInvariant();
+            return message.Contains("23505") || message.Contains("duplicate key");
+        }
+
         private DynamicFormDto MapToDto(DynamicForm form)
         {
             var fields = new List<FormFieldDto>();
@@ -382,7 +497,10 @@ namespace MyApi.Modules.DynamicForms.Services
             {
                 fields = JsonSerializer.Deserialize<List<FormFieldDto>>(form.Fields, _jsonOptions) ?? new List<FormFieldDto>();
             }
-            catch { }
+            catch (JsonException ex)
+            {
+                _logger.LogError(ex, "Corrupt Fields JSON on form {FormId} - returning an empty field list", form.Id);
+            }
 
             ThankYouSettingsDto? thankYouSettings = null;
             if (!string.IsNullOrEmpty(form.ThankYouSettings))
@@ -391,7 +509,10 @@ namespace MyApi.Modules.DynamicForms.Services
                 {
                     thankYouSettings = JsonSerializer.Deserialize<ThankYouSettingsDto>(form.ThankYouSettings, _jsonOptions);
                 }
-                catch { }
+                catch (JsonException ex)
+                {
+                    _logger.LogError(ex, "Corrupt ThankYouSettings JSON on form {FormId}", form.Id);
+                }
             }
 
             return new DynamicFormDto
@@ -411,6 +532,8 @@ namespace MyApi.Modules.DynamicForms.Services
                     : null,
                 Fields = fields,
                 ThankYouSettings = thankYouSettings,
+                ClosesAt = form.ClosesAt,
+                MaxResponses = form.MaxResponses,
                 CreatedBy = form.CreatedUser,
                 ModifiedBy = form.ModifyUser,
                 CreatedAt = form.CreatedAt,
@@ -425,7 +548,10 @@ namespace MyApi.Modules.DynamicForms.Services
             {
                 responses = JsonSerializer.Deserialize<Dictionary<string, object>>(response.Responses, _jsonOptions) ?? new Dictionary<string, object>();
             }
-            catch { }
+            catch (JsonException ex)
+            {
+                _logger.LogError(ex, "Corrupt Responses JSON on response {ResponseId} (form {FormId})", response.Id, response.FormId);
+            }
 
             return new DynamicFormResponseDto
             {

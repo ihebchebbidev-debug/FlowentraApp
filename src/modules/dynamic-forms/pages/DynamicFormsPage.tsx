@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, FileText, X, Play } from 'lucide-react';
+import { Plus, FileText, X, Play, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DynamicFormsAutopilotDemo } from '../components/onboarding/DynamicFormsAutopilotDemo';
 import { CollapsibleSearch } from '@/components/ui/collapsible-search';
@@ -13,13 +13,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useDynamicForms } from '../hooks/useDynamicForms';
+import { useDynamicFormsPaged } from '../hooks/useDynamicForms';
 import { FormsTable } from '../components/FormsTable';
 import { FormStatus } from '../types';
 import { usePermissions } from '@/hooks/usePermissions.tsx';
 import { useActionLogger } from '@/hooks/useActionLogger';
 import { useToast } from '@/hooks/use-toast';
 import { PermissionButton } from '@/components/permissions/PermissionButton';
+
+const PAGE_SIZE = 20;
 
 export default function DynamicFormsPage() {
   const { t } = useTranslation('dynamic-forms');
@@ -31,15 +33,27 @@ export default function DynamicFormsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<FormStatus | 'all'>('all');
   const [demoOpen, setDemoOpen] = useState(false);
+  const [page, setPage] = useState(1);
   
   // Permission checks
   const canView = isMainAdmin || hasPermission('dynamic_forms', 'read');
   const canCreate = isMainAdmin || hasPermission('dynamic_forms', 'create');
   
-  const { data: forms, isLoading } = useDynamicForms({
+  const { data: pagedForms, isLoading } = useDynamicFormsPaged({
     status: statusFilter === 'all' ? undefined : statusFilter,
     search: searchTerm || undefined,
+    page,
+    pageSize: PAGE_SIZE,
   });
+
+  const forms = pagedForms?.items ?? [];
+  const totalCount = pagedForms?.total_count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+
+  // Filter/search changes always restart from the first page
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, searchTerm]);
   
   const activeFilterCount = [statusFilter !== 'all' ? statusFilter : null].filter(Boolean).length;
   
@@ -54,6 +68,7 @@ export default function DynamicFormsPage() {
   const clearFilters = () => {
     setStatusFilter('all');
     setSearchTerm('');
+    setPage(1);
     logButtonClick('Clear Filters', { entityType: 'DynamicForm' });
   };
   
@@ -164,8 +179,44 @@ export default function DynamicFormsPage() {
       {/* Table with card container */}
       <div className="flex-1 p-3 sm:p-4 lg:p-6 overflow-auto">
         <div className="bg-card rounded-lg border border-border shadow-sm">
-          <FormsTable forms={forms || []} isLoading={isLoading} />
+          <FormsTable forms={forms} isLoading={isLoading} />
         </div>
+
+        {totalCount > PAGE_SIZE && (
+          <div className="flex items-center justify-between gap-3 mt-3">
+            <p className="text-px-11 text-muted-foreground">
+              {t('pagination.showing', {
+                from: (page - 1) * PAGE_SIZE + 1,
+                to: Math.min(page * PAGE_SIZE, totalCount),
+                total: totalCount,
+                defaultValue: `Showing {{from}}-{{to}} of {{total}}`,
+              })}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page <= 1 || isLoading}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                <span className="hidden sm:inline">{t('pagination.previous', 'Previous')}</span>
+              </Button>
+              <span className="text-px-11 text-muted-foreground">
+                {t('pagination.page', { page, totalPages, defaultValue: `Page {{page}} of {{totalPages}}` })}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page >= totalPages || isLoading}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              >
+                <span className="hidden sm:inline">{t('pagination.next', 'Next')}</span>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -325,6 +325,10 @@ export interface OverlayTexts {
   disabled: string;
   /** Marks a setting the admin has not overridden, e.g. "(default)". */
   configDefault: string;
+  /** Optional localiser for a config field's label (falls back to the humanised key). */
+  translateConfigLabel?: (field: { key: string; label: string; labelI18nKey?: string }) => string;
+  /** Optional localiser for a config field's unit suffix ("days" → "jours"). */
+  translateConfigUnit?: (unit: "days" | "hours" | "count") => string;
 }
 
 const DEFAULT_OVERLAY_TEXTS: OverlayTexts = {
@@ -380,7 +384,12 @@ export function overlay(
       successRate30: undefined,
       // No row means no stored config — show the handler's real defaults, which
       // is exactly what would apply if the schedule were created right now.
-      settings: effectiveSettings(def.key, undefined, { defaultSuffix: texts.configDefault }),
+      settings: effectiveSettings(def.key, undefined, {
+        defaultSuffix: texts.configDefault,
+        unit: texts.translateConfigUnit,
+        translateLabel: texts.translateConfigLabel,
+      }),
+      configRaw: {},
       diagnostics: buildDiagnostics(undefined),
     };
   }
@@ -438,7 +447,12 @@ export function overlay(
       : undefined,
     // Effective settings = what the handler will actually use on its next run:
     // the stored config value, or the handler's own default marked as such.
-    settings: effectiveSettings(def.key, s.config, { defaultSuffix: texts.configDefault }),
+    settings: effectiveSettings(def.key, s.config, {
+      defaultSuffix: texts.configDefault,
+      unit: texts.translateConfigUnit,
+      translateLabel: texts.translateConfigLabel,
+    }),
+    configRaw: (s.config && typeof s.config === "object" ? s.config : {}) as Record<string, unknown>,
     diagnostics: buildDiagnostics(s),
 
   };
