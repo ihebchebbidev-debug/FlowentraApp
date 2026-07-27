@@ -16,6 +16,7 @@ import { RagBadge } from '../components/RagDot';
 import { CHART_COLORS, AXIS_TICK, GRID_STROKE, tooltipStyle } from '../components/chartTheme';
 import { DashboardSkeleton } from '../components/DashboardSkeleton';
 import { useReportingHr } from '../hooks/useReporting';
+import { useStatusLabel } from '../utils/statusLabel';
 import { useCurrency } from '@/shared/hooks/useCurrency';
 
 const SOURCE = 'HR' as const;
@@ -43,6 +44,7 @@ export const HrDashboard = () => {
   const salary = filterByStatusName(data?.salaryByDepartment ?? [], dept);
   const performance = data?.performanceDistribution ?? [];
   const hiring = sliceByPeriod(data?.hiringVsTurnover ?? [], period);
+  const translateStatus = useStatusLabel();
   const employees = data?.employeeTable ?? [];
   const totalHeadcount = headcount.reduce((s, x) => s + Number(x.value ?? 0), 0);
   const totalHires = hiring.reduce((s, x) => s + Number(x.series1 ?? 0), 0);
@@ -139,7 +141,7 @@ export const HrDashboard = () => {
                       <tr key={e.id} className="border-t hover:bg-muted/30">
                         <td className="whitespace-nowrap px-3 py-2 font-medium">{e.title}</td>
                         <td className="whitespace-nowrap px-3 py-2">{e.subtitle}</td>
-                        <td className="whitespace-nowrap px-3 py-2"><RagBadge status={(e.ragDot as any) || 'neutral'}>{e.status}</RagBadge></td>
+                        <td className="whitespace-nowrap px-3 py-2"><RagBadge status={(e.ragDot as any) || 'neutral'}>{translateStatus(e.status)}</RagBadge></td>
                         <td className="whitespace-nowrap px-3 py-2 text-right font-semibold">
                           {new Intl.NumberFormat(undefined, { style: 'currency', currency: currency.code, maximumFractionDigits: 0 }).format(Number(e.amount ?? 0))}
                         </td>

@@ -18,14 +18,9 @@ import { CHART_COLORS, AXIS_TICK, GRID_STROKE, tooltipStyle } from '../component
 import { DashboardSkeleton } from '../components/DashboardSkeleton';
 import { useReportingService } from '../hooks/useReporting';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { useStatusLabel } from '../utils/statusLabel';
 
 const SOURCE = 'Service' as const;
-
-const translateStatusName = (t: (k: string, opts?: any) => string, name: string): string => {
-  if (!name) return '—';
-  const key = name.toLowerCase().replace(/\s+/g, '_');
-  return t(`statuses.${key}`, { ns: 'serviceOrders', defaultValue: name });
-};
 
 export const ServiceDashboard = () => {
   const { t } = useTranslation(['reporting', 'serviceOrders']);
@@ -57,8 +52,9 @@ export const ServiceDashboard = () => {
   const completion = sliceByPeriod(data?.completionByMonth ?? [], period);
   const byStatusRaw = filterByStatusName(data?.workOrdersByStatus ?? [], status);
   const byTypeRaw = filterByStatusName(data?.workOrdersByType ?? [], type);
-  const byStatusAll = byStatusRaw.map((d) => ({ ...d, name: translateStatusName(t, d.name) }));
-  const byTypeAll = byTypeRaw.map((d) => ({ ...d, name: translateStatusName(t, d.name) }));
+  const translateStatus = useStatusLabel();
+  const byStatusAll = byStatusRaw.map((d) => ({ ...d, name: translateStatus(d.name) }));
+  const byTypeAll = byTypeRaw.map((d) => ({ ...d, name: translateStatus(d.name) }));
   const byStatusTop5 = [...byStatusAll].sort((a, b) => Number(b.value) - Number(a.value)).slice(0, 5);
   const byTypeTop5 = [...byTypeAll].sort((a, b) => Number(b.value) - Number(a.value)).slice(0, 5);
   const dispatches = data?.dispatchesPerTech ?? [];
@@ -230,7 +226,7 @@ export const ServiceDashboard = () => {
                         <td className="whitespace-nowrap px-3 py-2 font-medium">{r.title}</td>
                         <td className="whitespace-nowrap px-3 py-2 text-right">{r.subtitle}</td>
                         <td className="whitespace-nowrap px-3 py-2 text-right">
-                          <RagBadge status={(r.ragDot as any) || 'green'}>{r.status || '—'}</RagBadge>
+                          <RagBadge status={(r.ragDot as any) || 'green'}>{translateStatus(r.status) || '—'}</RagBadge>
                         </td>
                       </tr>
                     ))}

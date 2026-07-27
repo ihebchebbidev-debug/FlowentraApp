@@ -16,6 +16,7 @@ import { RagBadge } from '../components/RagDot';
 import { CHART_COLORS, AXIS_TICK, GRID_STROKE, tooltipStyle, RAG_COLORS } from '../components/chartTheme';
 import { DashboardSkeleton } from '../components/DashboardSkeleton';
 import { useReportingFinance } from '../hooks/useReporting';
+import { useStatusLabel } from '../utils/statusLabel';
 import { useCurrency } from '@/shared/hooks/useCurrency';
 
 const SOURCE = 'Finance' as const;
@@ -42,7 +43,9 @@ export const FinanceDashboard = () => {
 
   const status = appliedFilters.status;
   const kpis = data?.kpis ?? [];
-  const donut = filterByStatusName(data?.invoiceStatusDonut ?? [], status);
+  const translateStatus = useStatusLabel();
+  const donutRaw = filterByStatusName(data?.invoiceStatusDonut ?? [], status);
+  const donut = donutRaw.map((d) => ({ ...d, name: translateStatus(d.name) }));
   const expenses = data?.expensesByCategory ?? [];
   const invoices = filterTableByStatus(data?.invoiceTable ?? [], status);
   const donutColors = ['green', 'yellow', 'red', 'neutral'] as const;
@@ -122,7 +125,7 @@ export const FinanceDashboard = () => {
                         <td className="px-3 py-2"><span className={`inline-block h-2.5 w-2.5 rounded-full ${inv.ragDot === 'green' ? 'bg-success' : inv.ragDot === 'yellow' ? 'bg-warning' : inv.ragDot === 'red' ? 'bg-destructive' : 'bg-muted-foreground'}`} /></td>
                         <td className="whitespace-nowrap px-3 py-2 font-medium">{inv.title}</td>
                         <td className="whitespace-nowrap px-3 py-2">{inv.subtitle}</td>
-                        <td className="whitespace-nowrap px-3 py-2"><RagBadge status={(inv.ragDot as any) || 'neutral'}>{inv.status}</RagBadge></td>
+                        <td className="whitespace-nowrap px-3 py-2"><RagBadge status={(inv.ragDot as any) || 'neutral'}>{translateStatus(inv.status)}</RagBadge></td>
                         <td className="whitespace-nowrap px-3 py-2 text-right font-semibold">
                           {new Intl.NumberFormat(undefined, { style: 'currency', currency: currency.code, maximumFractionDigits: 0 }).format(Number(inv.amount ?? 0))}
                         </td>

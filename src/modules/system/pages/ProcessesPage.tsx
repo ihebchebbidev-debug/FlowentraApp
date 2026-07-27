@@ -365,15 +365,6 @@ function HealthSummary({
           </div>
         )}
 
-        {blocked.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
-              <AlertTriangle className="h-3.5 w-3.5" />
-              {t("health.blocked", { defaultValue: "Blocked — needs attention" })} ({blocked.length})
-            </span>
-            {blocked.map((p) => <Chip key={p.key} p={p} tone="amber" />)}
-          </div>
-        )}
 
         {failed.length > 0 && (
           <div className="flex flex-wrap items-center gap-2">

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Plus, FileText, X, Play, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DynamicFormsAutopilotDemo } from '../components/onboarding/DynamicFormsAutopilotDemo';
 import { CollapsibleSearch } from '@/components/ui/collapsible-search';
 import { Badge } from '@/components/ui/badge';
@@ -95,129 +96,133 @@ export default function DynamicFormsPage() {
   }
   
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <header className="flex items-center justify-between gap-2 p-3 sm:p-4 border-b border-border bg-card/50 backdrop-blur">
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-          <div className="p-2 rounded-lg bg-primary/10 flex-shrink-0">
-            <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-          </div>
-          <div className="min-w-0">
-            <h1 className="text-base sm:text-xl font-semibold text-foreground truncate">{t('header.title')}</h1>
-            <p className="text-px-10 sm:text-px-11 text-muted-foreground truncate">{t('header.subtitle')}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-          <Button variant="outline" size="sm" onClick={() => setDemoOpen(true)} className="hidden sm:inline-flex gap-1.5">
-            <Play className="h-3.5 w-3.5" /> <span className="hidden md:inline">{t('actions.watchDemo', 'Watch Demo')}</span>
-          </Button>
-          <PermissionButton
-            module="dynamic_forms"
-            action="create"
-            onClick={handleCreateClick}
-            className="gradient-primary"
-            tooltipWhenDisabled={t('common.no_create_permission', "You don't have permission to create forms")}
-          >
-            <Plus className="h-4 w-4 md:mr-2" />
-            <span className="hidden md:inline">{t('actions.create')}</span>
-          </PermissionButton>
-        </div>
-      </header>
+    <div className="flex flex-col h-full overflow-auto">
+      <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
+        <Card className="shadow-card border-0 bg-card">
+          <CardHeader className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="min-w-0">
+                <CardTitle className="text-lg sm:text-xl font-semibold text-foreground flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                  </div>
+                  {t('header.title')}
+                </CardTitle>
+                <CardDescription>{t('header.subtitle')}</CardDescription>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setDemoOpen(true)}
+                  className="hidden sm:inline-flex gap-1.5"
+                >
+                  <Play className="h-3.5 w-3.5" />
+                  <span className="hidden md:inline">{t('actions.watchDemo', 'Watch Demo')}</span>
+                </Button>
+                <PermissionButton
+                  module="dynamic_forms"
+                  action="create"
+                  onClick={handleCreateClick}
+                  className="gradient-primary text-primary-foreground shadow-medium hover-lift"
+                  tooltipWhenDisabled={t('common.no_create_permission', "You don't have permission to create forms")}
+                >
+                  <Plus className="h-4 w-4 md:mr-2" />
+                  <span className="hidden md:inline">{t('actions.create')}</span>
+                </PermissionButton>
+              </div>
+            </div>
+          </CardHeader>
+
+          <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-4">
+            {/* Search + filters row */}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <CollapsibleSearch
+                  placeholder={t('search.placeholder')}
+                  value={searchTerm}
+                  onChange={setSearchTerm}
+                />
+                {activeFilterCount > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearFilters}
+                    className="gap-1 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-3 w-3" />
+                    {t('filters.clear')}
+                  </Button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
+                  <SelectTrigger className="w-[160px] bg-background">
+                    <SelectValue placeholder={t('filters.status')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('status.all')}</SelectItem>
+                    <SelectItem value="draft">{t('status.draft')}</SelectItem>
+                    <SelectItem value="released">{t('status.released')}</SelectItem>
+                    <SelectItem value="archived">{t('status.archived')}</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {activeFilterCount > 0 && (
+                  <Badge variant="secondary" className="h-6 px-2">
+                    {activeFilterCount}
+                  </Badge>
+                )}
+              </div>
+            </div>
+
+            {/* Forms list */}
+            <div className="rounded-lg border border-border/50 bg-muted/10 overflow-hidden">
+              <FormsTable forms={forms} isLoading={isLoading} />
+            </div>
+
+            {totalCount > PAGE_SIZE && (
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-px-11 text-muted-foreground">
+                  {t('pagination.showing', {
+                    from: (page - 1) * PAGE_SIZE + 1,
+                    to: Math.min(page * PAGE_SIZE, totalCount),
+                    total: totalCount,
+                    defaultValue: `Showing {{from}}-{{to}} of {{total}}`,
+                  })}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page <= 1 || isLoading}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    <span className="hidden sm:inline">{t('pagination.previous', 'Previous')}</span>
+                  </Button>
+                  <span className="text-px-11 text-muted-foreground">
+                    {t('pagination.page', { page, totalPages, defaultValue: `Page {{page}} of {{totalPages}}` })}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page >= totalPages || isLoading}
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  >
+                    <span className="hidden sm:inline">{t('pagination.next', 'Next')}</span>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Autopilot product demo */}
       <DynamicFormsAutopilotDemo open={demoOpen} onClose={() => setDemoOpen(false)} />
-      
-      {/* Search and filters row */}
-      <div className="p-3 sm:p-4 border-b border-border bg-card">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <CollapsibleSearch
-              placeholder={t('search.placeholder')}
-              value={searchTerm}
-              onChange={setSearchTerm}
-            />
-            
-            {activeFilterCount > 0 && (
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={clearFilters}
-                className="gap-1 text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-3 w-3" />
-                {t('filters.clear')}
-              </Button>
-            )}
-          </div>
-          
-          {/* Filters on the right */}
-          <div className="flex items-center gap-2">
-            <Select 
-              value={statusFilter} 
-              onValueChange={handleStatusFilterChange}
-            >
-              <SelectTrigger className="w-[160px] bg-background">
-                <SelectValue placeholder={t('filters.status')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('status.all')}</SelectItem>
-                <SelectItem value="draft">{t('status.draft')}</SelectItem>
-                <SelectItem value="released">{t('status.released')}</SelectItem>
-                <SelectItem value="archived">{t('status.archived')}</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            {activeFilterCount > 0 && (
-              <Badge variant="secondary" className="h-6 px-2">
-                {activeFilterCount}
-              </Badge>
-            )}
-          </div>
-        </div>
-      </div>
-        
-      {/* Table with card container */}
-      <div className="flex-1 p-3 sm:p-4 lg:p-6 overflow-auto">
-        <div className="bg-card rounded-lg border border-border shadow-sm">
-          <FormsTable forms={forms} isLoading={isLoading} />
-        </div>
-
-        {totalCount > PAGE_SIZE && (
-          <div className="flex items-center justify-between gap-3 mt-3">
-            <p className="text-px-11 text-muted-foreground">
-              {t('pagination.showing', {
-                from: (page - 1) * PAGE_SIZE + 1,
-                to: Math.min(page * PAGE_SIZE, totalCount),
-                total: totalCount,
-                defaultValue: `Showing {{from}}-{{to}} of {{total}}`,
-              })}
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page <= 1 || isLoading}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-              >
-                <ChevronLeft className="h-4 w-4" />
-                <span className="hidden sm:inline">{t('pagination.previous', 'Previous')}</span>
-              </Button>
-              <span className="text-px-11 text-muted-foreground">
-                {t('pagination.page', { page, totalPages, defaultValue: `Page {{page}} of {{totalPages}}` })}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page >= totalPages || isLoading}
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              >
-                <span className="hidden sm:inline">{t('pagination.next', 'Next')}</span>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        )}
-      </div>
     </div>
   );
 }

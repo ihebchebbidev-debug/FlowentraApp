@@ -199,7 +199,7 @@ export const WORKSPACES: Workspace[] = [
       { key: "system-logs", label: "System logs", labelI18nKey: "workspace.modules.systemLogs", url: "/dashboard/settings/logs", icon: "ScrollText" },
       { key: "system-config", label: "System configuration", labelI18nKey: "workspace.modules.systemConfig", url: "/dashboard/settings/system-config", icon: "Monitor" },
       { key: "processes", label: "Background Services", url: "/dashboard/settings/processes", icon: "Zap" },
-      { key: "admin-traceability", label: "Traceability", url: "/dashboard/traceability?workspace=administration", icon: "Activity" },
+      
       {
         key: "settings",
         label: "Settings",

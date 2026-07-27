@@ -18,6 +18,7 @@ import { useReportFilters } from '../store/useReportFiltersStore';
 import { filterByStatusName, filterTableByStatus, sliceByPeriod } from '../utils/applyFilters';
 import { exportSingleReport } from '../utils/exportReport';
 import { useXlsxI18n } from '../hooks/useXlsxI18n';
+import { useStatusLabel } from '../utils/statusLabel';
 
 const SOURCE = 'Sales' as const;
 
@@ -43,8 +44,11 @@ export const SalesDashboard = () => {
 
   const period = appliedFilters.period;
   const status = appliedFilters.status;
-  const offersByStatus = filterByStatusName(data?.offersByStatus ?? [], status);
-  const salesByStatus = filterByStatusName(data?.salesByStatus ?? [], status);
+  const translateStatus = useStatusLabel();
+  const offersByStatusRaw = filterByStatusName(data?.offersByStatus ?? [], status);
+  const salesByStatusRaw = filterByStatusName(data?.salesByStatus ?? [], status);
+  const offersByStatus = offersByStatusRaw.map((d) => ({ ...d, name: translateStatus(d.name) }));
+  const salesByStatus = salesByStatusRaw.map((d) => ({ ...d, name: translateStatus(d.name) }));
   const conversion = sliceByPeriod(data?.conversionTrend ?? [], period);
   const yoy = data?.yoyComparison ?? [];
   const topCustomers = filterTableByStatus(data?.topCustomers ?? [], status);
@@ -156,7 +160,7 @@ export const SalesDashboard = () => {
                           {new Intl.NumberFormat(undefined, { style: 'currency', currency: currency.code, maximumFractionDigits: 0 }).format(Number(c.amount ?? 0))}
                         </td>
                         <td className="whitespace-nowrap px-3 py-2">
-                          <RagBadge status={(c.ragDot as any) || 'green'}>{c.status || t('sales.active', 'Active')}</RagBadge>
+                          <RagBadge status={(c.ragDot as any) || 'green'}>{translateStatus(c.status) || t('sales.active', 'Active')}</RagBadge>
                         </td>
                       </tr>
                     ))}

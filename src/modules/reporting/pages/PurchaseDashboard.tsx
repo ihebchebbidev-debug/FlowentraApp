@@ -16,6 +16,7 @@ import { RagBadge } from '../components/RagDot';
 import { CHART_COLORS, AXIS_TICK, GRID_STROKE, tooltipStyle, RAG_COLORS } from '../components/chartTheme';
 import { DashboardSkeleton } from '../components/DashboardSkeleton';
 import { useReportingPurchase } from '../hooks/useReporting';
+import { useStatusLabel } from '../utils/statusLabel';
 import { useCurrency } from '@/shared/hooks/useCurrency';
 
 const SOURCE = 'Purchase' as const;
@@ -39,9 +40,11 @@ export const PurchaseDashboard = () => {
 
   const period = appliedFilters.period;
   const supplier = appliedFilters.supplier;
+  const translateStatus = useStatusLabel();
   const bySupplier = filterByStatusName(data?.spendBySupplier ?? [], supplier);
   const byCategory = data?.spendByCategory ?? [];
-  const receiptStatus = data?.receiptStatus ?? [];
+  const receiptStatusRaw = data?.receiptStatus ?? [];
+  const receiptStatus = receiptStatusRaw.map((d) => ({ ...d, name: translateStatus(d.name) }));
   const trend = sliceByPeriod(data?.poSpendTrend ?? [], period);
   const pos = data?.poTable ?? [];
   const totalSpend = bySupplier.reduce((s, x) => s + Number(x.value ?? 0), 0);
@@ -67,7 +70,7 @@ export const PurchaseDashboard = () => {
             <KpiCard favorite={{ id: 'p-kpi-spend', title: 'Total Spend', source: SOURCE }} icon={DollarSign} tone="warning" tag="YTD" value={new Intl.NumberFormat(undefined, { style: 'currency', currency: currency.code, maximumFractionDigits: 0, notation: 'compact' }).format(totalSpend)} label={t('purchase.kpi.spend', 'Total Spend')} />
             <KpiCard favorite={{ id: 'p-kpi-pos', title: 'Purchase Orders', source: SOURCE }} icon={ShoppingCart} tone="primary" tag="LIVE" value={pos.length || '—'} label={t('purchase.kpi.pos', 'Purchase Orders')} />
             <KpiCard favorite={{ id: 'p-kpi-sup', title: 'Active Suppliers', source: SOURCE }} icon={Package} tone="info" tag="AVG" value={bySupplier.length || '—'} label={t('purchase.kpi.suppliers', 'Active Suppliers')} />
-            <KpiCard favorite={{ id: 'p-kpi-rec', title: 'Receipt Rate', source: SOURCE }} icon={Truck} tone="accent" tag="AVG" value={receiptStatus.length ? `${((receiptStatus.find(r => r.name?.toLowerCase() === 'received')?.value ?? 0) as number / Math.max(receiptStatus.reduce((s, x) => s + Number(x.value ?? 0), 0), 1) * 100).toFixed(0)}%` : '—'} label={t('purchase.kpi.receipt', 'Receipt Rate')} />
+            <KpiCard favorite={{ id: 'p-kpi-rec', title: 'Receipt Rate', source: SOURCE }} icon={Truck} tone="accent" tag="AVG" value={receiptStatusRaw.length ? `${((receiptStatusRaw.find(r => r.name?.toLowerCase() === 'received')?.value ?? 0) as number / Math.max(receiptStatusRaw.reduce((s, x) => s + Number(x.value ?? 0), 0), 1) * 100).toFixed(0)}%` : '—'} label={t('purchase.kpi.receipt', 'Receipt Rate')} />
           </div>
 
           <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-3">
@@ -137,7 +140,7 @@ export const PurchaseDashboard = () => {
                       <tr key={p.id} className={`border-t hover:bg-muted/30 ${p.ragDot === 'red' ? 'bg-destructive/5' : ''}`}>
                         <td className="whitespace-nowrap px-3 py-2 font-medium">{p.title}</td>
                         <td className="whitespace-nowrap px-3 py-2">{p.subtitle}</td>
-                        <td className="whitespace-nowrap px-3 py-2"><RagBadge status={(p.ragDot as any) || 'neutral'}>{p.status}</RagBadge></td>
+                        <td className="whitespace-nowrap px-3 py-2"><RagBadge status={(p.ragDot as any) || 'neutral'}>{translateStatus(p.status)}</RagBadge></td>
                         <td className="whitespace-nowrap px-3 py-2 text-right font-semibold">
                           {new Intl.NumberFormat(undefined, { style: 'currency', currency: currency.code, maximumFractionDigits: 0 }).format(Number(p.amount ?? 0))}
                         </td>
