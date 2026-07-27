@@ -1,8 +1,11 @@
+using System.Data;
 using Microsoft.EntityFrameworkCore;
 using MyApi.Data;
 using MyApi.Modules.Payments.DTOs;
 using MyApi.Modules.Payments.Models;
 using MyApi.Modules.Invoices.Services;
+
+
 
 namespace MyApi.Modules.Payments.Services
 {
@@ -38,160 +41,191 @@ namespace MyApi.Modules.Payments.Services
         {
             if (dto.Amount <= 0m)
                 throw new ArgumentException("Payment amount must be greater than zero.");
+            if (string.IsNullOrWhiteSpace(entityType) || entityType.Length < 3)
+                throw new ArgumentException("Invalid entityType.");
+            // Currency is managed globally via preferences — no per-payment currency check.
 
-            // Fix #6: reject payments that would push AmountPaid past GrandTotal
-            // on an invoice. Without this guard AmountPaid silently exceeds the
-            // grand total, the invoice flips to "paid" but the customer ledger
-            // shows a negative "due" and no refund workflow is triggered.
-            if (entityType == "invoice" && int.TryParse(entityId, out var invoiceIdParsed))
+            // Fix §1.1/§1.5: read-check-insert MUST run inside a Serializable
+            // transaction with a row lock on the parent entity, otherwise two
+            // concurrent calls can both pass the "remaining" check and overpay.
+            // Uses the EF execution strategy for transient-retry safety.
+            var strategy = _context.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(async () =>
             {
-                var invoice = await _context.Invoices
-                    .FirstOrDefaultAsync(i => i.Id == invoiceIdParsed && !i.IsDeleted);
-                if (invoice == null)
-                    throw new KeyNotFoundException($"Invoice {invoiceIdParsed} not found");
-                if (invoice.Status == "void")
-                    throw new InvalidOperationException($"Invoice {invoiceIdParsed} is voided — cannot record payments.");
-                if (invoice.Status == "draft")
-                    throw new InvalidOperationException($"Invoice {invoiceIdParsed} is a draft — post it before recording payments.");
+                await using var tx = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
 
-                var idStr = invoice.Id.ToString();
+                // ── Cross-check: entity exists and is billable ──
+                //     Overpay guard applies for EVERY entityType (sale/offer/invoice),
+                //     not just invoice (was §1.5).
+                var (entityTotal, entityCurrency) = await GetEntityTotalAndCurrencyAsync(entityType, entityId);
+                if (entityTotal <= 0m && entityType != "offer")
+                    throw new KeyNotFoundException($"{entityType} {entityId} not found or has zero total.");
+
+                // Invoice-specific status guards (unchanged behavior, kept inside tx)
+                if (entityType == "invoice" && int.TryParse(entityId, out var invoiceIdParsed))
+                {
+                    var invoice = await _context.Invoices
+                        .FirstOrDefaultAsync(i => i.Id == invoiceIdParsed && !i.IsDeleted);
+                    if (invoice == null)
+                        throw new KeyNotFoundException($"Invoice {invoiceIdParsed} not found");
+                    if (invoice.Status == "void")
+                        throw new InvalidOperationException($"Invoice {invoiceIdParsed} is voided — cannot record payments.");
+                    if (invoice.Status == "draft")
+                        throw new InvalidOperationException($"Invoice {invoiceIdParsed} is a draft — post it before recording payments.");
+                }
+
+                // Overpay guard for ALL entity types. SUM re-read inside the serializable
+                // transaction so a concurrent payment cannot slip past this check.
                 var alreadyPaid = await _context.Payments
-                    .Where(p => p.EntityType == "invoice" && p.EntityId == idStr && p.Status == "completed")
+                    .Where(p => p.EntityType == entityType && p.EntityId == entityId && p.Status == "completed")
                     .SumAsync(p => (decimal?)p.Amount) ?? 0m;
-                var remaining = invoice.GrandTotal - alreadyPaid;
+                var remaining = entityTotal - alreadyPaid;
                 if (dto.Amount > remaining + 0.009m)
                 {
                     throw new InvalidOperationException(
                         $"Payment of {dto.Amount:0.##} {dto.Currency} exceeds the outstanding balance " +
-                        $"({Math.Max(0m, remaining):0.##} {invoice.Currency}). Enter the remaining amount or issue a credit/refund instead.");
+                        $"({Math.Max(0m, remaining):0.##} {entityCurrency ?? dto.Currency}). Enter the remaining amount or issue a credit/refund instead.");
                 }
-            }
 
-            // Generate receipt number
-            var count = await _context.Payments
-                .CountAsync(p => p.EntityType == entityType && p.EntityId == entityId);
-            var receiptNumber = $"REC-{entityType.ToUpper().Substring(0, 3)}-{entityId}-{(count + 1):D3}";
+                // Fix §1.2: derive receipt number from GUID; keep human-friendly prefix but
+                // append a short unique suffix so concurrent inserts cannot collide even
+                // without a DB uniqueness constraint. `entityType` length is guarded above.
+                var prefix = entityType.ToUpper();
+                if (prefix.Length > 3) prefix = prefix.Substring(0, 3);
+                var uniq = Guid.NewGuid().ToString("N").Substring(0, 8).ToUpper();
+                var receiptNumber = $"REC-{prefix}-{entityId}-{uniq}";
 
-            var payment = new Payment
-            {
-                Id = Guid.NewGuid().ToString(),
-                EntityType = entityType,
-                EntityId = entityId,
-                Amount = dto.Amount,
-                Currency = dto.Currency,
-                PaymentMethod = dto.PaymentMethod,
-                PaymentReference = dto.PaymentReference,
-                PaymentDate = dto.PaymentDate ?? DateTime.UtcNow,
-                Status = "completed",
-                Notes = dto.Notes,
-                ReceiptNumber = receiptNumber,
-                InstallmentId = dto.InstallmentId,
-                CreatedBy = userId,
-                CreatedByName = userName,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-            };
-
-            // Link to plan if installment is specified
-            if (!string.IsNullOrEmpty(dto.InstallmentId))
-            {
-                var installment = await _context.PaymentPlanInstallments
-                    .Include(i => i.Plan)
-                    .FirstOrDefaultAsync(i => i.Id == dto.InstallmentId);
-                if (installment != null)
+                var payment = new Payment
                 {
-                    payment.PlanId = installment.PlanId;
-                    // Update installment paid amount
-                    installment.PaidAmount += dto.Amount;
-                    if (installment.PaidAmount >= installment.Amount)
-                    {
-                        installment.Status = "paid";
-                        installment.PaidAt = DateTime.UtcNow;
-                    }
-                    else
-                    {
-                        installment.Status = "partially_paid";
-                    }
+                    Id = Guid.NewGuid().ToString(),
+                    EntityType = entityType,
+                    EntityId = entityId,
+                    Amount = dto.Amount,
+                    Currency = dto.Currency,
+                    PaymentMethod = dto.PaymentMethod,
+                    PaymentReference = dto.PaymentReference,
+                    PaymentDate = dto.PaymentDate ?? DateTime.UtcNow,
+                    Status = "completed",
+                    Notes = dto.Notes,
+                    ReceiptNumber = receiptNumber,
+                    InstallmentId = dto.InstallmentId,
+                    CreatedBy = userId,
+                    CreatedByName = userName,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                };
 
-                    // Check if all installments are paid → mark plan completed
-                    var plan = installment.Plan;
-                    if (plan != null)
+                // Link to plan if installment is specified
+                if (!string.IsNullOrEmpty(dto.InstallmentId))
+                {
+                    var installment = await _context.PaymentPlanInstallments
+                        .Include(i => i.Plan)
+                        .FirstOrDefaultAsync(i => i.Id == dto.InstallmentId);
+                    if (installment != null)
                     {
-                        var allInstallments = await _context.PaymentPlanInstallments
-                            .Where(i => i.PlanId == plan.Id)
-                            .ToListAsync();
-                        if (allInstallments.All(i => i.Status == "paid"))
+                        // Guard against installment overpay too (was §1.5 sub-finding)
+                        if (installment.PaidAmount + dto.Amount > installment.Amount + 0.009m)
                         {
-                            plan.Status = "completed";
-                            plan.UpdatedAt = DateTime.UtcNow;
+                            throw new InvalidOperationException(
+                                $"Payment of {dto.Amount:0.##} would overpay installment #{installment.InstallmentNumber} " +
+                                $"(remaining {Math.Max(0m, installment.Amount - installment.PaidAmount):0.##}).");
+                        }
+                        payment.PlanId = installment.PlanId;
+                        installment.PaidAmount += dto.Amount;
+                        if (installment.PaidAmount >= installment.Amount)
+                        {
+                            installment.Status = "paid";
+                            installment.PaidAt = DateTime.UtcNow;
+                        }
+                        else
+                        {
+                            installment.Status = "partially_paid";
+                        }
+
+                        var plan = installment.Plan;
+                        if (plan != null)
+                        {
+                            var allInstallments = await _context.PaymentPlanInstallments
+                                .Where(i => i.PlanId == plan.Id)
+                                .ToListAsync();
+                            if (allInstallments.All(i => i.Status == "paid"))
+                            {
+                                plan.Status = "completed";
+                                plan.UpdatedAt = DateTime.UtcNow;
+                            }
                         }
                     }
                 }
-            }
 
-            _context.Payments.Add(payment);
+                _context.Payments.Add(payment);
 
-            // Add item allocations
-            if (dto.ItemAllocations != null)
-            {
-                foreach (var alloc in dto.ItemAllocations)
+                if (dto.ItemAllocations != null)
                 {
-                    _context.PaymentItemAllocations.Add(new PaymentItemAllocation
+                    foreach (var alloc in dto.ItemAllocations)
                     {
-                        Id = Guid.NewGuid().ToString(),
-                        PaymentId = payment.Id,
-                        ItemId = alloc.ItemId,
-                        ItemName = alloc.ItemName,
-                        AllocatedAmount = alloc.AllocatedAmount,
-                        ItemTotal = alloc.ItemTotal,
-                        CreatedAt = DateTime.UtcNow,
-                    });
+                        _context.PaymentItemAllocations.Add(new PaymentItemAllocation
+                        {
+                            Id = Guid.NewGuid().ToString(),
+                            PaymentId = payment.Id,
+                            ItemId = alloc.ItemId,
+                            ItemName = alloc.ItemName,
+                            AllocatedAmount = alloc.AllocatedAmount,
+                            ItemTotal = alloc.ItemTotal,
+                            CreatedAt = DateTime.UtcNow,
+                        });
+                    }
                 }
-            }
 
-            // Update parent entity paid_amount and payment_status
-            await UpdateEntityPaymentStatusAsync(entityType, entityId);
+                await UpdateEntityPaymentStatusAsync(entityType, entityId);
+                await _context.SaveChangesAsync();
+                await tx.CommitAsync();
 
-            await _context.SaveChangesAsync();
-
-            return MapToDto(payment);
+                return MapToDto(payment);
+            });
         }
 
         public async Task<bool> DeletePaymentAsync(string entityType, string entityId, string paymentId)
         {
-            var payment = await _context.Payments
-                .Include(p => p.ItemAllocations)
-                .FirstOrDefaultAsync(p => p.Id == paymentId && p.EntityType == entityType && p.EntityId == entityId);
-            if (payment == null) return false;
-
-            // Reverse installment tracking if linked
-            if (!string.IsNullOrEmpty(payment.InstallmentId))
+            // Fix §1.3: wrap the payment removal + parent recalculation in ONE
+            // transaction. Previously ran as two independent SaveChangesAsync calls,
+            // leaving the parent Sale/Invoice PaidAmount stale if the process died
+            // between them.
+            var strategy = _context.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(async () =>
             {
-                var installment = await _context.PaymentPlanInstallments.FindAsync(payment.InstallmentId);
-                if (installment != null)
+                await using var tx = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+
+                var payment = await _context.Payments
+                    .Include(p => p.ItemAllocations)
+                    .FirstOrDefaultAsync(p => p.Id == paymentId && p.EntityType == entityType && p.EntityId == entityId);
+                if (payment == null) return false;
+
+                if (!string.IsNullOrEmpty(payment.InstallmentId))
                 {
-                    installment.PaidAmount -= payment.Amount;
-                    if (installment.PaidAmount <= 0)
+                    var installment = await _context.PaymentPlanInstallments.FindAsync(payment.InstallmentId);
+                    if (installment != null)
                     {
-                        installment.PaidAmount = 0;
-                        installment.Status = "pending";
-                        installment.PaidAt = null;
-                    }
-                    else
-                    {
-                        installment.Status = "partially_paid";
+                        installment.PaidAmount -= payment.Amount;
+                        if (installment.PaidAmount <= 0)
+                        {
+                            installment.PaidAmount = 0;
+                            installment.Status = "pending";
+                            installment.PaidAt = null;
+                        }
+                        else
+                        {
+                            installment.Status = "partially_paid";
+                        }
                     }
                 }
-            }
 
-            _context.PaymentItemAllocations.RemoveRange(payment.ItemAllocations);
-            _context.Payments.Remove(payment);
-            await _context.SaveChangesAsync();
-
-            await UpdateEntityPaymentStatusAsync(entityType, entityId);
-            await _context.SaveChangesAsync();
-
-            return true;
+                _context.PaymentItemAllocations.RemoveRange(payment.ItemAllocations);
+                _context.Payments.Remove(payment);
+                await UpdateEntityPaymentStatusAsync(entityType, entityId);
+                await _context.SaveChangesAsync();
+                await tx.CommitAsync();
+                return true;
+            });
         }
 
         // ── Summary ───────────────────────────────────
@@ -201,7 +235,10 @@ namespace MyApi.Modules.Payments.Services
                 .Where(p => p.EntityType == entityType && p.EntityId == entityId && p.Status == "completed")
                 .ToListAsync();
 
-            var totalAmount = await GetEntityTotalAmountAsync(entityType, entityId);
+            // Fix §1.4: use the parent entity's own currency (Sale.Currency /
+            // Invoice.Currency / Offer.Currency) rather than the first payment's
+            // currency, which was arbitrary and misleading for mixed-currency data.
+            var (totalAmount, entityCurrency) = await GetEntityTotalAndCurrencyAsync(entityType, entityId);
             var paidAmount = payments.Sum(p => p.Amount);
             var remaining = totalAmount - paidAmount;
 
@@ -217,8 +254,29 @@ namespace MyApi.Modules.Payments.Services
                 PaymentStatus = paymentStatus,
                 PaymentCount = payments.Count,
                 LastPaymentDate = payments.OrderByDescending(p => p.PaymentDate).FirstOrDefault()?.PaymentDate,
-                Currency = payments.FirstOrDefault()?.Currency ?? "TND",
+                Currency = !string.IsNullOrWhiteSpace(entityCurrency)
+                    ? entityCurrency!
+                    : (payments.FirstOrDefault()?.Currency ?? "TND"),
             };
+        }
+
+        // Combined helper: returns total + currency for the parent entity in one
+        // pass. Used by CreatePaymentAsync (currency + overpay guard) and by
+        // GetPaymentSummaryAsync (accurate summary currency).
+        private async Task<(decimal total, string? currency)> GetEntityTotalAndCurrencyAsync(string entityType, string entityId)
+        {
+            if (entityType == "sale")
+            {
+                var s = await _context.Sales.FirstOrDefaultAsync(x => x.Id.ToString() == entityId && !x.IsDeleted);
+                return (s?.TotalAmount ?? 0m, s?.Currency);
+            }
+            if (entityType == "invoice")
+            {
+                var i = await _context.Invoices.FirstOrDefaultAsync(x => x.Id.ToString() == entityId && !x.IsDeleted);
+                return (i?.GrandTotal ?? 0m, i?.Currency);
+            }
+            var o = await _context.Offers.FirstOrDefaultAsync(x => x.Id.ToString() == entityId && !x.IsDeleted);
+            return (o?.TotalAmount ?? 0m, o?.Currency);
         }
 
         // ── Payment Plans ─────────────────────────────

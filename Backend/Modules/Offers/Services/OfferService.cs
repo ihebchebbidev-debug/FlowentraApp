@@ -825,9 +825,10 @@ namespace MyApi.Modules.Offers.Services
                         userId);
 
                     // Copy offer items → sale items
+                    List<MyApi.Modules.Sales.Models.SaleItem> saleItems;
                     if (offer.Items != null && offer.Items.Any())
                     {
-                        var saleItems = offer.Items.OrderBy(i => i.DisplayOrder).ThenBy(i => i.Id).Select(oi => new MyApi.Modules.Sales.Models.SaleItem
+                        saleItems = offer.Items.OrderBy(i => i.DisplayOrder).ThenBy(i => i.Id).Select(oi => new MyApi.Modules.Sales.Models.SaleItem
                         {
                             SaleId = sale.Id,
                             // Phase A (A2): explicit FK to the source offer item.
@@ -851,12 +852,17 @@ namespace MyApi.Modules.Offers.Services
                             Currency = sale.Currency
                         }).ToList();
                         _context.SaleItems.AddRange(saleItems);
-
-                        // #7 fix: recompute the sale's authoritative totals from the freshly
-                        // copied line items instead of trusting the offer's stored TotalAmount,
-                        // which may be stale if the offer was edited without a total refresh.
-                        MyApi.Modules.Sales.Services.SaleTotalsCalculator.Apply(sale, saleItems);
                     }
+                    else
+                    {
+                        saleItems = new List<MyApi.Modules.Sales.Models.SaleItem>();
+                    }
+
+                    // Fix §3.3: ALWAYS recompute the sale's authoritative totals, even for
+                    // an empty offer. Previously the recalc only ran inside the "items exist"
+                    // branch, so zero-item offers left sale.TotalAmount at whatever stale
+                    // value offer.TotalAmount happened to hold.
+                    MyApi.Modules.Sales.Services.SaleTotalsCalculator.Apply(sale, saleItems);
 
 
                     // Log sale creation activity

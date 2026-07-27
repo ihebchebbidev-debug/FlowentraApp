@@ -775,6 +775,16 @@ namespace MyApi.Modules.WorkflowEngine.Services
                             nextNodes.Add(edge.Target);
                         }
                     }
+
+                    // Fix §6.1: match the condition-node path — warn when nothing routes
+                    // instead of silently dead-ending the branch (which was asymmetric with
+                    // condition nodes and made "why did this workflow stop?" undebuggable).
+                    if (!nextNodes.Any())
+                    {
+                        _logger.LogWarning(
+                            "[WORKFLOW-GRAPH] Switch node {NodeId}: case '{Case}' matched no edge and no 'default' edge exists; halting branch.",
+                            node.Id, selectedCase);
+                    }
                 }
             }
             // For regular nodes, follow all outgoing edges

@@ -40,6 +40,8 @@ namespace MyApi.Modules.ServiceOrders.Services
         Task<ServiceOrderDto> RecalculateStatusFromDispatchesAsync(int id, string userId);
         Task<ServiceOrderDto> ApproveAsync(int id, ApproveServiceOrderDto approveDto, string userId);
         Task<ServiceOrderDto> CompleteAsync(int id, CompleteServiceOrderDto completeDto, string userId);
+        /// <summary>Fix §4.2: retry shadow-Sale generation after a completion warned about it.</summary>
+        Task<ServiceOrderDto> RetryShadowSaleAsync(int id, string userId);
         Task<ServiceOrderDto> CancelAsync(int id, CancelServiceOrderDto cancelDto, string userId);
         Task<bool> DeleteAsync(int id, string userId);
         Task<ServiceOrderStatsDto> GetStatisticsAsync(DateTime? startDate = null, DateTime? endDate = null, string? status = null, int? contactId = null);

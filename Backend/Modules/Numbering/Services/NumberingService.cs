@@ -68,9 +68,24 @@ namespace MyApi.Modules.Numbering.Services
             var settings = await _context.Set<NumberingSettings>()
                 .FirstOrDefaultAsync(s => s.EntityName == entity);
 
-            // Fallback to legacy if not configured or disabled
+            // Fix §2.1: legacy fallback path must also verify uniqueness. Two
+            // concurrent creates while numbering is disabled could otherwise
+            // produce identical GUID-prefixed numbers (birthday-paradox on 6 hex
+            // chars = 1 collision per ~4k rows/day is small but non-zero and has
+            // been observed on bulk-imports).
             if (settings == null || !settings.IsEnabled)
-                return GenerateLegacy(entity);
+            {
+                for (int i = 0; i < 5; i++)
+                {
+                    var candidate = GenerateLegacy(entity);
+                    if (!await DocumentNumberExistsAsync(entity, candidate))
+                        return candidate;
+                    _logger.LogWarning("Legacy number {Number} collision for {Entity}, retrying (attempt {Retry}/5)", candidate, entity, i + 1);
+                }
+                // Ultimate: append extra entropy
+                var prefixLegacy = EntityPrefixes.GetValueOrDefault(entity, entity);
+                return $"{prefixLegacy}-{DateTime.UtcNow:yyyyMMddHHmmssfff}-{Guid.NewGuid().ToString("N")[..10].ToUpper()}";
+            }
 
             int retries = 0;
             const int maxRetries = 10;
@@ -304,36 +319,46 @@ namespace MyApi.Modules.Numbering.Services
             if (!isValid)
                 throw new InvalidOperationException($"Invalid template: {string.Join("; ", errors)}");
 
-            var settings = await _context.Set<NumberingSettings>()
-                .FirstOrDefaultAsync(s => s.EntityName == entity);
-
-            if (settings == null)
+            // Fix §11.4: wrap settings upsert + AutoSync in one transaction so
+            // enabling {SEQ} numbering can never leave IsEnabled=true with a stale
+            // counter (which was the very race the auto-sync exists to prevent,
+            // just shifted one step later).
+            var strategy = _context.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(async () =>
             {
-                settings = new NumberingSettings
+                await using var tx = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+
+                var settings = await _context.Set<NumberingSettings>()
+                    .FirstOrDefaultAsync(s => s.EntityName == entity);
+
+                if (settings == null)
                 {
-                    EntityName = entity,
-                    CreatedAt = DateTime.UtcNow,
-                };
-                _context.Set<NumberingSettings>().Add(settings);
-            }
+                    settings = new NumberingSettings
+                    {
+                        EntityName = entity,
+                        CreatedAt = DateTime.UtcNow,
+                    };
+                    _context.Set<NumberingSettings>().Add(settings);
+                }
 
-            settings.IsEnabled = request.IsEnabled;
-            settings.Template = request.Template;
-            settings.Strategy = request.Strategy;
-            settings.ResetFrequency = request.ResetFrequency;
-            settings.StartValue = request.StartValue;
-            settings.Padding = request.Padding;
-            settings.UpdatedAt = DateTime.UtcNow;
+                settings.IsEnabled = request.IsEnabled;
+                settings.Template = request.Template;
+                settings.Strategy = request.Strategy;
+                settings.ResetFrequency = request.ResetFrequency;
+                settings.StartValue = request.StartValue;
+                settings.Padding = request.Padding;
+                settings.UpdatedAt = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync();
 
-            // Auto-sync: when enabling with {SEQ}, ensure counter is past existing records
-            if (request.IsEnabled && request.Template.Contains("{SEQ", StringComparison.OrdinalIgnoreCase))
-            {
-                await AutoSyncSequenceCounterAsync(entity, request.ResetFrequency, request.StartValue);
-            }
+                if (request.IsEnabled && request.Template.Contains("{SEQ", StringComparison.OrdinalIgnoreCase))
+                {
+                    await AutoSyncSequenceCounterAsync(entity, request.ResetFrequency, request.StartValue);
+                }
 
-            return MapToDto(settings);
+                await tx.CommitAsync();
+                return MapToDto(settings);
+            });
         }
 
         /// <summary>
@@ -347,7 +372,11 @@ namespace MyApi.Modules.Numbering.Services
                 var now = DateTime.UtcNow;
                 var periodKey = GetPeriodKey(resetFrequency, now);
 
-                // Count existing documents to determine a safe counter floor
+                // Fix §2.2: cover ALL valid entities, not just the original 5.
+                // Previously PurchaseOrder / GoodsReceipt / SupplierInvoice / Invoice
+                // fell through to `_ => 0`, so safeFloor was always 100 regardless of
+                // real volume, causing collisions when {SEQ} numbering was enabled on
+                // a table that already had >100 records.
                 long existingCount = entity switch
                 {
                     "Offer" => await _context.Offers.CountAsync(),
@@ -355,11 +384,15 @@ namespace MyApi.Modules.Numbering.Services
                     "ServiceOrder" => await _context.ServiceOrders.CountAsync(),
                     "Dispatch" => await _context.Dispatches.CountAsync(),
                     "Deal" => await _context.Deals.CountAsync(),
+                    "PurchaseOrder" => await _context.PurchaseOrders.CountAsync(),
+                    "GoodsReceipt" => await _context.GoodsReceipts.CountAsync(),
+                    "SupplierInvoice" => await _context.SupplierInvoices.CountAsync(),
+                    "Invoice" => await _context.Invoices.CountAsync(),
                     _ => 0
                 };
 
                 // Add buffer of 100 to safely skip any gaps/deleted records
-                long safeFloor = existingCount + 100;
+                long safeFloor = Math.Max(existingCount + 100, startValue);
 
                 // Only update if current counter is below safe floor
                 var sql = @"
@@ -375,6 +408,7 @@ namespace MyApi.Modules.Numbering.Services
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Failed to auto-sync sequence counter for {Entity}, numbering will still work via collision detection", entity);
+                throw; // Re-raise so the outer SaveSettingsAsync transaction rolls back — was §11.4 silent-swallow bug.
             }
         }
 

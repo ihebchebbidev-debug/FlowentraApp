@@ -69,11 +69,19 @@ namespace MyApi.Modules.Invoices.Services
             if (q.DateTo.HasValue) query = query.Where(i => (i.IssueDate ?? i.CreatedAt) <= q.DateTo.Value);
             if (!string.IsNullOrEmpty(q.Search))
             {
-                var s = q.Search.ToLower();
+                // Fix §5.2: use Postgres ILIKE (via EF.Functions.ILike) instead of
+                // .ToLower().Contains(). ILike is index-friendly against the trigram
+                // indexes added in add_invoice_search_indexes.sql, whereas
+                // lower(col).Contains forces a Seq Scan on every request.
+                // Escape user-supplied LIKE metacharacters so a search for "50%" or
+                // "foo_bar" doesn't accidentally become a wildcard.
+                var raw = q.Search;
+                var escaped = raw.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_");
+                var pattern = $"%{escaped}%";
                 query = query.Where(i =>
-                    (i.InvoiceNumber != null && i.InvoiceNumber.ToLower().Contains(s)) ||
-                    (i.Title != null && i.Title.ToLower().Contains(s)) ||
-                    (i.Notes != null && i.Notes.ToLower().Contains(s)));
+                    (i.InvoiceNumber != null && EF.Functions.ILike(i.InvoiceNumber, pattern)) ||
+                    (i.Title != null && EF.Functions.ILike(i.Title, pattern)) ||
+                    (i.Notes != null && EF.Functions.ILike(i.Notes, pattern)));
             }
 
 
