@@ -56,6 +56,17 @@ export default function FormResponsesPage() {
   // Progress + cancel support for the bulk PDF export
   const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
   const cancelBulkRef = useRef(false);
+  const isMountedRef = useRef(true);
+
+  // On unmount: stop the export loop at the next iteration and suppress
+  // trailing state updates so we don't setState on an unmounted component.
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      cancelBulkRef.current = true;
+    };
+  }, []);
   const [previewResponse, setPreviewResponse] = useState<DynamicFormResponse | null>(null);
   const [showExportDialog, setShowExportDialog] = useState(false);
   
@@ -139,7 +150,7 @@ export default function FormResponsesPage() {
     try {
       let done = 0;
       for (const response of responses) {
-        if (cancelBulkRef.current) break;
+        if (cancelBulkRef.current || !isMountedRef.current) break;
 
         const blob = await pdf(
           <FormResponsePDF
@@ -150,7 +161,9 @@ export default function FormResponsesPage() {
             language={isEnglish ? 'en' : 'fr'}
           />
         ).toBlob();
-        
+
+        if (cancelBulkRef.current || !isMountedRef.current) break;
+
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
@@ -161,23 +174,29 @@ export default function FormResponsesPage() {
         URL.revokeObjectURL(url);
 
         done += 1;
-        setBulkProgress({ done, total: responses.length });
+        if (isMountedRef.current) {
+          setBulkProgress({ done, total: responses.length });
+        }
         // Yield to the browser so the UI stays responsive on large exports
         await new Promise((resolve) => setTimeout(resolve, 0));
       }
-      
+
       logExport('PDF', done, { entityType: 'DynamicFormResponse', details: `Exported ${done} responses` });
-      if (cancelBulkRef.current) {
-        toast.info(t('responses.pdf_export_cancelled', { done, total: responses.length, defaultValue: 'Export cancelled after {{done}} of {{total}}' }));
-      } else {
-        toast.success(t('responses.pdf_generated'));
+      if (isMountedRef.current) {
+        if (cancelBulkRef.current) {
+          toast.info(t('responses.pdf_export_cancelled', { done, total: responses.length, defaultValue: 'Export cancelled after {{done}} of {{total}}' }));
+        } else {
+          toast.success(t('responses.pdf_generated'));
+        }
       }
     } catch (error) {
       console.error('PDF generation error:', error);
-      toast.error(t('responses.pdf_error'));
+      if (isMountedRef.current) toast.error(t('responses.pdf_error'));
     } finally {
-      setExportingPdf(null);
-      setBulkProgress(null);
+      if (isMountedRef.current) {
+        setExportingPdf(null);
+        setBulkProgress(null);
+      }
       cancelBulkRef.current = false;
     }
   };

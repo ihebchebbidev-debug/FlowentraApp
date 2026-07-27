@@ -26,16 +26,25 @@ export default function HRModule() {
         <Route path="attendance" element={<AttendancePage />} />
         <Route path="leaves" element={<LeavesPage />} />
         <Route path="absences" element={<Navigate to="/dashboard/hr/leaves" replace />} />
-        <Route path="payroll" element={<PayrollPage />} />
-        <Route path="bonuses" element={<BonusesPage />} />
-        <Route path="cnss" element={<CnssPage />} />
+        <Route path="payroll" element={
+          <PermissionRoute module="hr" action="update"><PayrollPage /></PermissionRoute>
+        } />
+        <Route path="bonuses" element={
+          <PermissionRoute module="hr" action="update"><BonusesPage /></PermissionRoute>
+        } />
+        <Route path="cnss" element={
+          <PermissionRoute module="hr" action="update"><CnssPage /></PermissionRoute>
+        } />
         <Route path="reports" element={<ReportsPage />} />
-        <Route path="settings" element={<HrSettingsPage />} />
+        <Route path="settings" element={
+          <PermissionRoute module="hr" action="update"><HrSettingsPage /></PermissionRoute>
+        } />
         <Route path="departments" element={<DepartmentsPage />} />
         <Route path="performance" element={<PerformancePage />} />
         <Route path="recruitment" element={<RecruitmentPage />} />
         <Route path="*" element={<Navigate to="/dashboard/hr" replace />} />
       </Routes>
+
       </PermissionRoute>
     </PluginGate>
   );

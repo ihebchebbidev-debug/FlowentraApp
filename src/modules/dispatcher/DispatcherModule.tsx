@@ -1,4 +1,5 @@
 import { Routes, Route } from "react-router-dom";
+import { PermissionRoute } from "@/components/permissions/PermissionRoute";
 import { DispatcherPage } from "./pages/DispatcherPage";
 import { DispatchingInterface } from "./components/DispatchingInterface";
 import { SchedulerManager } from "../scheduling/pages/SchedulerManager";
@@ -14,9 +15,14 @@ export function DispatcherModule() {
         <Route index element={<DispatcherPage />} />
         <Route path="interface" element={<DispatchingInterface />} />
         <Route path="job/:id" element={<DispatchJobDetail />} />
-        <Route path="manage-scheduler" element={<SchedulerManager />} />
-        <Route path="manage-scheduler/edit/:technicianId" element={<ScheduleEditorPage />} />
+        <Route path="manage-scheduler" element={
+          <PermissionRoute module="service_orders" action="update"><SchedulerManager /></PermissionRoute>
+        } />
+        <Route path="manage-scheduler/edit/:technicianId" element={
+          <PermissionRoute module="service_orders" action="update"><ScheduleEditorPage /></PermissionRoute>
+        } />
       </Routes>
     </PluginGate>
   );
 }
+

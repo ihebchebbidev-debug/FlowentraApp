@@ -11,9 +11,24 @@ import { PermissionRoute } from '@/components/permissions/PermissionRoute';
 export const ReportingModule = () => {
   return (
     <Routes>
+      {/* MyDashboard is user-scoped, safe for any authenticated user */}
       <Route path="my" element={<MyDashboard />} />
-      <Route path="sales" element={<SalesDashboard />} />
-      <Route path="service" element={<ServiceDashboard />} />
+      <Route
+        path="sales"
+        element={
+          <PermissionRoute module="sales" action="read" redirectTo="/dashboard/reporting/my">
+            <SalesDashboard />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="service"
+        element={
+          <PermissionRoute module="service_orders" action="read" redirectTo="/dashboard/reporting/my">
+            <ServiceDashboard />
+          </PermissionRoute>
+        }
+      />
       <Route
         path="finance"
         element={
@@ -30,7 +45,14 @@ export const ReportingModule = () => {
           </PermissionRoute>
         }
       />
-      <Route path="purchase" element={<PurchaseDashboard />} />
+      <Route
+        path="purchase"
+        element={
+          <PermissionRoute module="purchases" action="read" redirectTo="/dashboard/reporting/my">
+            <PurchaseDashboard />
+          </PermissionRoute>
+        }
+      />
       <Route path="export" element={<ExportReports />} />
       <Route index element={<Navigate to="my" replace />} />
     </Routes>

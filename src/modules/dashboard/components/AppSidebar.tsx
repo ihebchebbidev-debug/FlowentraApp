@@ -146,6 +146,20 @@ const SIDEBAR_PERMISSION_MAP: Record<string, PermissionModule> = {
   'purchase-orders': 'purchases',
   'goods-receipts': 'purchases',
   'supplier-invoices': 'purchases',
+  // Reporting sub-items (parent 'reporting' stays visible; sub-items filter by module)
+  'reporting-sales': 'sales',
+  'reporting-service': 'service_orders',
+  'reporting-finance': 'reporting_finance',
+  'reporting-hr': 'reporting_hr',
+  'reporting-purchase': 'purchases',
+  // Misc
+  'ai-assistant': 'ai_assistant',
+  'processes': 'processes',
+  'background-services': 'processes',
+  'ticketsadmin': 'settings',
+  'user-groups': 'users',
+  'user_groups': 'users',
+  'tickets-admin': 'settings',
 };
 
 export function AppSidebar() {

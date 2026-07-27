@@ -83,6 +83,7 @@ export default function EditFormPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   // Snapshot of the last persisted state, used for dirty tracking
   const baselineRef = useRef<string | null>(null);
+  // pendingNavigation: string route to navigate to, or 'BACK' sentinel for browser back
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
 
   const currentSnapshot = useMemo(() => JSON.stringify(formData), [formData]);
@@ -149,6 +150,50 @@ export default function EditFormPage() {
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
   }, [isDirty]);
+
+  // Intercept in-app navigation (sidebar links, breadcrumbs, browser back/forward)
+  // while there are unsaved changes. BrowserRouter doesn't support useBlocker,
+  // so we capture anchor clicks and popstate manually.
+  useEffect(() => {
+    if (!isDirty) return;
+
+    const clickHandler = (e: MouseEvent) => {
+      if (e.defaultPrevented || e.button !== 0) return;
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const anchor = (e.target as HTMLElement | null)?.closest('a');
+      if (!anchor) return;
+      const href = anchor.getAttribute('href');
+      if (!href || href.startsWith('#') || anchor.target === '_blank') return;
+      // Only intercept same-origin internal navigations
+      let url: URL;
+      try {
+        url = new URL(href, window.location.origin);
+      } catch {
+        return;
+      }
+      if (url.origin !== window.location.origin) return;
+      const target = url.pathname + url.search + url.hash;
+      if (target === location.pathname + location.search) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setPendingNavigation(target);
+    };
+
+    // Push a sentinel state so browser back triggers popstate on our page
+    window.history.pushState({ __dfGuard: true }, '');
+    const popHandler = () => {
+      // Re-push so we remain on this page until user confirms
+      window.history.pushState({ __dfGuard: true }, '');
+      setPendingNavigation('BACK');
+    };
+
+    document.addEventListener('click', clickHandler, true);
+    window.addEventListener('popstate', popHandler);
+    return () => {
+      document.removeEventListener('click', clickHandler, true);
+      window.removeEventListener('popstate', popHandler);
+    };
+  }, [isDirty, location.pathname, location.search]);
   
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -263,13 +308,17 @@ export default function EditFormPage() {
           const target = pendingNavigation;
           const saved = await handleSubmit(null);
           setPendingNavigation(null);
-          if (saved && target) navigate(target);
+          if (saved && target) {
+            if (target === 'BACK') navigate(-1);
+            else navigate(target);
+          }
         }}
         onDiscard={() => {
           const target = pendingNavigation;
           baselineRef.current = currentSnapshot;
           setPendingNavigation(null);
-          if (target) navigate(target);
+          if (target === 'BACK') navigate(-1);
+          else if (target) navigate(target);
         }}
         onCancel={() => setPendingNavigation(null)}
       />

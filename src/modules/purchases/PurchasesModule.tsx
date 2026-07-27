@@ -74,26 +74,37 @@ export function PurchasesModule() {
 
             {/* Purchase Orders */}
             <Route path="orders" element={<PurchaseOrderListPage />} />
-            <Route path="orders/add" element={<CreatePurchaseOrderPage />} />
+            <Route path="orders/add" element={
+              <PermissionRoute module="purchases" action="create"><CreatePurchaseOrderPage /></PermissionRoute>
+            } />
             <Route path="orders/:id" element={<PurchaseOrderDetailPage />} />
 
             {/* Goods Receipts */}
             <Route path="receipts" element={<GoodsReceiptListPage />} />
-            <Route path="receipts/add" element={<CreateGoodsReceiptPage />} />
+            <Route path="receipts/add" element={
+              <PermissionRoute module="purchases" action="create"><CreateGoodsReceiptPage /></PermissionRoute>
+            } />
             <Route path="receipts/:id" element={<GoodsReceiptDetailPage />} />
-            <Route path="receipts/:id/edit" element={<EditGoodsReceiptPage />} />
+            <Route path="receipts/:id/edit" element={
+              <PermissionRoute module="purchases" action="update"><EditGoodsReceiptPage /></PermissionRoute>
+            } />
 
             {/* Supplier Invoices */}
             <Route path="invoices" element={<SupplierInvoiceListPage />} />
-            <Route path="invoices/add" element={<CreateSupplierInvoicePage />} />
+            <Route path="invoices/add" element={
+              <PermissionRoute module="purchases" action="create"><CreateSupplierInvoicePage /></PermissionRoute>
+            } />
             <Route path="invoices/:id" element={<SupplierInvoiceDetailPage />} />
 
             {/* Compliance & audit */}
             <Route path="compliance" element={<ComplianceDashboardPage />} />
-            <Route path="audit-log" element={<PurchaseAuditLogPage />} />
+            <Route path="audit-log" element={
+              <PermissionRoute module="audit_logs" action="read"><PurchaseAuditLogPage /></PermissionRoute>
+            } />
 
             {/* Reports (overview + dedicated sub-reports) */}
             <Route path="reports" element={<PurchaseReportsPage />} />
+
             <Route
               path="reports/supplier-performance"
               element={<SupplierPerformancePage />}

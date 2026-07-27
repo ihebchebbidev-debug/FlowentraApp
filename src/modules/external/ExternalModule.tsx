@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
+import { PermissionRoute } from '@/components/permissions/PermissionRoute';
 import { IntegrationHub } from './pages/IntegrationHub';
 import { CreateEndpoint } from './pages/CreateEndpoint';
 import { EditEndpoint } from './pages/EditEndpoint';
@@ -14,15 +15,22 @@ export function ExternalModule() {
         <Route index element={<IntegrationHub />} />
 
         {/* ERP / connector setup wizard — must be before :id to avoid conflict */}
-        <Route path="connect/:connectorId" element={<CreateConnection />} />
+        <Route path="connect/:connectorId" element={
+          <PermissionRoute module="external_endpoints" action="create"><CreateConnection /></PermissionRoute>
+        } />
 
         {/* Custom webhook endpoint CRUD */}
-        <Route path="create" element={<CreateEndpoint />} />
+        <Route path="create" element={
+          <PermissionRoute module="external_endpoints" action="create"><CreateEndpoint /></PermissionRoute>
+        } />
         <Route path=":id" element={<EndpointDetail />} />
-        <Route path=":id/edit" element={<EditEndpoint />} />
+        <Route path=":id/edit" element={
+          <PermissionRoute module="external_endpoints" action="update"><EditEndpoint /></PermissionRoute>
+        } />
       </Routes>
     </PluginGate>
   );
 }
 
 export default ExternalModule;
+
