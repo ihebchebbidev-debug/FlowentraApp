@@ -404,8 +404,15 @@ export const supplierInvoiceService = {
   downloadTejXml: (id: string): Promise<void> =>
     downloadTejXmlFile(`/api/supplier-invoices/${id}/tej-xml`, `RS-invoice-${id}.xml`),
 
-  sendFactureEnLigne: (id: string) =>
-    extract<SupplierInvoice>(apiFetch(`/api/supplier-invoices/${id}/facture-en-ligne`, { method: 'POST' }), 'Failed'),
+  /**
+   * Records a Facture-en-Ligne submission the user made on the TTN portal. Nothing is
+   * transmitted from here — the portal reference is required as proof of the filing.
+   */
+  recordFactureEnLigne: (id: string, data: { factureEnLigneId: string; status?: string; sentAt?: string }) =>
+    extract<SupplierInvoice>(
+      apiFetch(`/api/supplier-invoices/${id}/facture-en-ligne`, { method: 'POST', body: JSON.stringify(data) }),
+      'Failed'
+    ),
 
   // Items (only when invoice.status === 'draft')
   addItem: (invoiceId: string, data: Record<string, unknown>) => {

@@ -53,6 +53,15 @@ namespace MyApi.Modules.Contacts.Models
         [Column("HasLocation")] public int HasLocation { get; set; } = 0;
 
         // ── TEJ / RiTEJ compliance fields (DGI cahier de charges) ──
+        /// <summary>
+        /// Marks THIS contact as the tenant's own company — the TEJ/RiTEJ declarant
+        /// (the withholder). Without an explicit marker the declarant used to be
+        /// guessed as "first company contact with a Matricule Fiscal", which can
+        /// resolve to a B2B customer and declare the wrong entity to the DGI.
+        /// </summary>
+        [Column("IsTejDeclarant")]
+        public bool IsTejDeclarant { get; set; } = false;
+
         /// <summary>PM (Personne Morale) or PP (Personne Physique). Drives TEJ CategorieContribuable.</summary>
         [Column("CategorieContribuable")] [MaxLength(2)]
         public string? CategorieContribuable { get; set; }

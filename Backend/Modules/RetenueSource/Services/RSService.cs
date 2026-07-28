@@ -15,19 +15,9 @@ namespace MyApi.Modules.RetenueSource.Services
         private readonly ILogger<RSService> _logger;
         private readonly IWebHostEnvironment _env;
 
-        // RS rates by type code — legacy 2-digit codes + P-series (Tunisian DGI v1.0)
-        private static readonly Dictionary<string, decimal> RS_RATES = new()
-        {
-            { "10", 10m },
-            { "05", 0.5m },
-            { "03", 3m },
-            { "20", 20m },
-            { "P1", 1.5m },
-            { "P2", 5m },
-            { "P3", 10m },
-            { "P4", 15m },
-            { "P5", 25m },
-        };
+        // Rates live in Constants/RsRates.cs — SINGLE source of truth shared with
+        // SupplierInvoiceService and the TEJ operation-code table.
+        private static IReadOnlyDictionary<string, decimal> RS_RATES => Constants.RsRates.ByTypeCode;
 
         public RSService(ApplicationDbContext db, ILogger<RSService> logger, IWebHostEnvironment env)
         {
@@ -43,7 +33,7 @@ namespace MyApi.Modules.RetenueSource.Services
             string? status, string? supplierTaxId, string? search,
             int page, int limit)
         {
-            var query = _db.RSRecords.AsQueryable();
+            var query = _db.RSRecords.Where(r => !r.IsDeleted).AsQueryable();
 
             if (!string.IsNullOrEmpty(entityType))
                 query = query.Where(r => r.EntityType == entityType);
@@ -88,7 +78,7 @@ namespace MyApi.Modules.RetenueSource.Services
 
         public async Task<RSRecordDto?> GetRSRecordByIdAsync(int id)
         {
-            var record = await _db.RSRecords.FindAsync(id);
+            var record = await _db.RSRecords.FirstOrDefaultAsync(r => r.Id == id && !r.IsDeleted);
             return record == null ? null : MapToDto(record);
         }
 
@@ -99,8 +89,11 @@ namespace MyApi.Modules.RetenueSource.Services
             // 1. CRITICAL: Tax ID Format Validation (Matricule Fiscal)
             if (string.IsNullOrWhiteSpace(dto.SupplierTaxId))
                 throw new ArgumentException("Supplier Tax ID (Matricule Fiscal) is required");
-            if (!Regex.IsMatch(dto.SupplierTaxId, @"^\d{10,15}$"))
-                throw new ArgumentException("Invalid Matricule Fiscal format: must be 10-15 digits");
+            // Real Matricule Fiscal structure (7 digits + letters + establishment code).
+            // The old ^\d{10,15}$ rejected valid MFs and accepted arbitrary digit strings.
+            if (!Constants.TunisianTaxId.IsValidForIdType(dto.SupplierTaxId, dto.BeneficiaireIdType ?? 1))
+                throw new ArgumentException(
+                    $"Invalid supplier identifier: expected a {Constants.TunisianTaxId.DescribeExpectedFormat(dto.BeneficiaireIdType ?? 1)}");
 
             // 2. CRITICAL: Date Validations
             if (dto.PaymentDate > DateTime.UtcNow.Date)
@@ -115,8 +108,15 @@ namespace MyApi.Modules.RetenueSource.Services
                 throw new ArgumentException("Invoice amount must be positive");
             if (dto.AmountPaid <= 0)
                 throw new ArgumentException("Amount paid must be positive");
-            if (!RS_RATES.ContainsKey(dto.RSTypeCode))
+            if (!Constants.RsRates.IsKnownTypeCode(dto.RSTypeCode))
                 throw new ArgumentException($"Unknown RS type code: {dto.RSTypeCode}");
+
+            // The declared IdTypeOperation and the applied rate must agree — the DGI
+            // cross-checks MontantRS against the operation's official rate.
+            var opCodeForCheck = dto.OperationCode ?? Constants.TejOperationCodes.LegacyToOperationCode(dto.RSTypeCode);
+            if (Constants.RsRates.IsRateMismatch(opCodeForCheck, dto.RSTypeCode))
+                throw new ArgumentException(
+                    $"Operation code {opCodeForCheck} declares a different rate than RS type '{dto.RSTypeCode}' ({Constants.RsRates.GetRate(dto.RSTypeCode)}%)");
 
             // 4. MEDIUM PRIORITY: Supplier Type & Treaty Validations
             if (dto.IsExemptByTreaty && string.IsNullOrWhiteSpace(dto.TreatyCode))
@@ -126,6 +126,7 @@ namespace MyApi.Modules.RetenueSource.Services
 
             // Check for duplicates
             var duplicate = await _db.RSRecords.AnyAsync(r =>
+                !r.IsDeleted &&
                 r.InvoiceNumber == dto.InvoiceNumber &&
                 r.PaymentDate == dto.PaymentDate &&
                 r.EntityId == dto.EntityId &&
@@ -135,22 +136,11 @@ namespace MyApi.Modules.RetenueSource.Services
 
             // ─── CRITICAL COMPLIANCE: Calculate Declaration Deadline ───
             // Tunisia requirement: Declaration must be filed by 20th of month following payment
-            var paymentNextMonth = dto.PaymentDate.AddMonths(1);
-            var declarationDeadline = new DateTime(paymentNextMonth.Year, paymentNextMonth.Month, 20);
-            var isOverdue = DateTime.UtcNow > declarationDeadline;
-            var daysLate = isOverdue ? (int)(DateTime.UtcNow - declarationDeadline).TotalDays : 0;
-            
-            // CRITICAL COMPLIANCE: Calculate penalty for late declaration
-            // Tunisia: Typically 5% of RS amount per month late (simplified approach)
-            decimal penaltyAmount = 0m;
-            if (isOverdue && daysLate > 0)
-            {
-                // 5% per month or part thereof
-                int monthsLate = (daysLate / 30) + (daysLate % 30 > 0 ? 1 : 0);
-                penaltyAmount = rsAmount * 0.05m * monthsLate;
+            var (declarationDeadline, isOverdue, daysLate, penaltyAmount) =
+                ComputeDeadlineAndPenalty(dto.PaymentDate, rsAmount);
+            if (isOverdue)
                 _logger.LogWarning("RS Record {Invoice} is overdue by {DaysLate} days, penalty: {Penalty} TND",
                     dto.InvoiceNumber, daysLate, penaltyAmount);
-            }
 
             var record = new RSRecord
             {
@@ -217,7 +207,7 @@ namespace MyApi.Modules.RetenueSource.Services
 
         public async Task<RSRecordDto> UpdateRSRecordAsync(int id, UpdateRSRecordDto dto, string userId)
         {
-            var record = await _db.RSRecords.FindAsync(id);
+            var record = await _db.RSRecords.FirstOrDefaultAsync(r => r.Id == id && !r.IsDeleted);
             if (record == null)
                 throw new KeyNotFoundException("RS record not found");
 
@@ -243,6 +233,12 @@ namespace MyApi.Modules.RetenueSource.Services
             if (dto.AmountPaid.HasValue || dto.RSTypeCode != null)
             {
                 record.RSAmount = CalculateRSAmountInternal(record.AmountPaid, record.RSTypeCode);
+                record.MontantNetServi = Math.Round(record.AmountPaid - record.RSAmount - record.RsTvaAmount, 2);
+                var (deadline, overdue, late, penalty) = ComputeDeadlineAndPenalty(record.PaymentDate, record.RSAmount);
+                record.DeclarationDeadline = deadline;
+                record.IsOverdue = overdue;
+                record.DaysLate = late;
+                record.PenaltyAmount = penalty;
             }
 
             // ─── Update Compliance Fields ───
@@ -261,21 +257,54 @@ namespace MyApi.Modules.RetenueSource.Services
 
         public async Task<bool> DeleteRSRecordAsync(int id)
         {
-            var record = await _db.RSRecords.FindAsync(id);
+            var record = await _db.RSRecords.FirstOrDefaultAsync(r => r.Id == id && !r.IsDeleted);
             if (record == null) return false;
             if (record.TEJExported)
                 throw new InvalidOperationException("Cannot delete an already-exported RS record");
 
-            _db.RSRecords.Remove(record);
+            // Soft delete: RS records are fiscal-declaration data and must stay
+            // auditable. Also unlink any supplier invoice pointing at it so the
+            // invoice can be re-declared cleanly.
+            record.IsDeleted = true;
+            record.DeletedAt = DateTime.UtcNow;
+            record.Status = "cancelled";
+            var linked = await _db.SupplierInvoices.Where(i => i.RsRecordId == record.Id).ToListAsync();
+            foreach (var inv in linked)
+            {
+                inv.RsRecordId = null;
+                inv.TejSynced = false;
+                inv.TejSyncStatus = "not_synced";
+            }
             await _db.SaveChangesAsync();
             return true;
+        }
+
+        /// <summary>
+        /// Tunisia: the declaration is due by the 20th of the month following payment;
+        /// late filing carries 5% of the withheld amount per started month.
+        /// Shared by every creation path so penalties are never silently zero.
+        /// </summary>
+        private static (DateTime deadline, bool isOverdue, int daysLate, decimal penalty)
+            ComputeDeadlineAndPenalty(DateTime paymentDate, decimal rsAmount)
+        {
+            var next = paymentDate.AddMonths(1);
+            var deadline = DateTime.SpecifyKind(new DateTime(next.Year, next.Month, 20), DateTimeKind.Utc);
+            var isOverdue = DateTime.UtcNow > deadline;
+            var daysLate = isOverdue ? (int)(DateTime.UtcNow - deadline).TotalDays : 0;
+            decimal penalty = 0m;
+            if (isOverdue && daysLate > 0)
+            {
+                var monthsLate = (daysLate / 30) + (daysLate % 30 > 0 ? 1 : 0);
+                penalty = Math.Round(rsAmount * 0.05m * monthsLate, 2);
+            }
+            return (deadline, isOverdue, daysLate, penalty);
         }
 
         // ─── Calculation ───
 
         public RSCalculationDto CalculateRS(decimal amountPaid, string rsTypeCode)
         {
-            if (!RS_RATES.TryGetValue(rsTypeCode, out var rate))
+            if (!Constants.RsRates.TryGetRate(rsTypeCode, out var rate))
                 throw new ArgumentException($"Unknown RS type code: {rsTypeCode}");
 
             var rsAmount = CalculateRSAmountInternal(amountPaid, rsTypeCode);
@@ -509,14 +538,20 @@ namespace MyApi.Modules.RetenueSource.Services
             var declaredRs    = Math.Round(invoice.RsAmount    * paidRatio, 2);
             var declaredRsTva = Math.Round(invoice.RsTvaAmount * paidRatio, 2);
             var netServi      = Math.Round(basis - declaredRs - declaredRsTva, 2);
+            // Real invoice HT / VAT, pro-rated to the declared basis (TEJ MontantHT / MontantTVA).
+            var discountValue = invoice.DiscountType == "percentage"
+                ? Math.Round(invoice.SubTotal * invoice.Discount / 100m, 2)
+                : invoice.Discount;
+            var invoiceHt     = Math.Round((invoice.SubTotal - discountValue) * paidRatio, 2);
+            var invoiceTva    = Math.Round(invoice.TaxAmount * paidRatio, 2);
 
             var operationCode = invoice.RsOperationCode
                 ?? Constants.TejOperationCodes.LegacyToOperationCode(invoice.RsTypeCode);
 
             var paymentDate = invoice.PaymentDate.HasValue ? ToUtcKind(invoice.PaymentDate.Value) : DateTime.UtcNow;
             var invoiceDate = ToUtcKind(invoice.InvoiceDate);
-            var declarationDeadline = ToUtcKind(new DateTime(
-                paymentDate.AddMonths(1).Year, paymentDate.AddMonths(1).Month, 20));
+            var (declarationDeadline, isOverdue, daysLate, penaltyAmount) =
+                ComputeDeadlineAndPenalty(paymentDate, declaredRs);
 
             return new RSRecord
             {
@@ -539,10 +574,10 @@ namespace MyApi.Modules.RetenueSource.Services
                 Status = "pending",
                 TEJExported = false,
                 DeclarationDeadline = declarationDeadline,
-                IsOverdue = DateTime.UtcNow > declarationDeadline,
-                DaysLate = DateTime.UtcNow > declarationDeadline
-                    ? (int)(DateTime.UtcNow - declarationDeadline).TotalDays : 0,
-                PenaltyAmount = 0m,
+                IsOverdue = isOverdue,
+                DaysLate = daysLate,
+                // Was hardcoded 0 — late filings silently declared no penalty.
+                PenaltyAmount = penaltyAmount,
                 OperationCode = operationCode,
                 Cnpc = invoice.Cnpc,
                 PriseEnCharge = invoice.PriseEnCharge,
@@ -552,6 +587,8 @@ namespace MyApi.Modules.RetenueSource.Services
                 RsTvaTaux = invoice.RsTvaTaux,
                 RsTvaAmount = declaredRsTva,
                 MontantNetServi = netServi,
+                MontantHT = invoiceHt,
+                MontantTvaFacture = invoiceTva,
                 BeneficiaireCategorie = supplier.CategorieContribuable ?? "PM",
                 BeneficiaireIsResident = supplier.IsResident,
                 BeneficiaireIdType = supplier.IdTaxpayerType ?? 1,
@@ -802,7 +839,7 @@ namespace MyApi.Modules.RetenueSource.Services
 
         private decimal CalculateRSAmountInternal(decimal amountPaid, string rsTypeCode)
         {
-            if (!RS_RATES.TryGetValue(rsTypeCode, out var rate))
+            if (!Constants.RsRates.TryGetRate(rsTypeCode, out var rate))
                 throw new ArgumentException($"Unknown RS type code: {rsTypeCode}");
             return Math.Round(amountPaid * rate / 100m, 2);
         }
@@ -817,7 +854,7 @@ namespace MyApi.Modules.RetenueSource.Services
         ///   * IdTypeOperation = OperationCode (RS1_xxxxxx). Falls back to legacy-code mapping.
         ///   * Per-certificate totals (TotalMontantHT / TotalMontantTVA / TotalMontantNetServi)
         /// </summary>
-        private string GenerateTEJXml(TEJDeclarantDto declarant, List<RSRecord> records)
+        private string GenerateTEJXml(TEJDeclarantDto declarant, List<RSRecord> records, int depotSequence = 0)
         {
             var first = records.First();
             var year  = first.PaymentDate.Year;
@@ -843,7 +880,8 @@ namespace MyApi.Modules.RetenueSource.Services
                 // ── Déclarant ──
                 writer.WriteStartElement("Declarant");
                 WriteIdentifiant(writer, 1, declarant.TaxId);                       // 1=MF
-                writer.WriteElementString("CategorieContribuable", "PM");           // company by default
+                writer.WriteElementString("CategorieContribuable",
+                    declarant.Categorie is "PP" ? "PP" : "PM");
                 writer.WriteElementString("NometprenonOuRaisonsociale", Trunc(declarant.Name, 200));
                 writer.WriteStartElement("InfosContact");
                 writer.WriteElementString("Adresse", Trunc(declarant.Address ?? "", 200));
@@ -856,7 +894,10 @@ namespace MyApi.Modules.RetenueSource.Services
 
                 // ── Référence Déclaration ──
                 writer.WriteStartElement("ReferenceDeclaration");
-                writer.WriteElementString("ActeDepot", "0");                         // 0=initial dépôt
+                // 0 = dépôt initial, 1..n = dépôt rectificatif for the same period.
+                // Hardcoding "0" made every corrective filing look like a first filing,
+                // which the DGI rejects as a duplicate declaration.
+                writer.WriteElementString("ActeDepot", Math.Max(0, depotSequence).ToString());
                 writer.WriteElementString("AnneeDepot", year.ToString());
                 writer.WriteElementString("MoisDepot", month.ToString("D2"));
                 writer.WriteEndElement();
@@ -876,9 +917,10 @@ namespace MyApi.Modules.RetenueSource.Services
                     foreach (var r in grp)
                     {
                         WriteCertificat(writer, r);
-                        // HT base = AmountPaid (assume hors TVA already on RS base for purchases)
-                        totalHT  += ToMillimes(r.AmountPaid);
-                        totalTVA += ToMillimes(r.RsTvaAmount);
+                        // Real invoice HT / TVA (AmountPaid is a TTC figure and RsTvaAmount is
+                        // VAT *withheld*, not the invoice VAT — using them here misstated the base).
+                        totalHT  += ToMillimes(r.MontantHT > 0 ? r.MontantHT : r.AmountPaid);
+                        totalTVA += ToMillimes(r.MontantTvaFacture);
                         totalRS  += ToMillimes(r.RSAmount + r.RsTvaAmount);
                         totalNet += ToMillimes(r.MontantNetServi > 0
                             ? r.MontantNetServi
@@ -933,9 +975,12 @@ namespace MyApi.Modules.RetenueSource.Services
             w.WriteElementString("NumeroFacture", Trunc(r.InvoiceNumber, 50));
             w.WriteElementString("DateFacture", r.InvoiceDate.ToString("dd/MM/yyyy"));
             w.WriteElementString("DatePayement", r.PaymentDate.ToString("dd/MM/yyyy"));
-            w.WriteElementString("MontantHT",          ToMillimes(r.AmountPaid).ToString());
-            w.WriteElementString("MontantTVA",         ToMillimes(r.RsTvaAmount).ToString());
-            w.WriteElementString("TauxRS",             ((int)Math.Round(GetRSRate(r.RSTypeCode) * 100)).ToString()); // 10.00% -> 1000
+            w.WriteElementString("MontantHT",
+                ToMillimes(r.MontantHT > 0 ? r.MontantHT : r.AmountPaid).ToString());
+            w.WriteElementString("MontantTVA",         ToMillimes(r.MontantTvaFacture).ToString());
+            // Rate must match the declared IdTypeOperation (DGI cross-check).
+            w.WriteElementString("TauxRS",
+                ((int)Math.Round(Constants.RsRates.GetEffectiveRate(r.OperationCode, r.RSTypeCode) * 100)).ToString()); // 10.00% -> 1000
             w.WriteElementString("MontantRS",          ToMillimes(r.RSAmount).ToString());
             if (r.RsTvaAmount > 0)
                 w.WriteElementString("MontantRSTVA",   ToMillimes(r.RsTvaAmount).ToString());
@@ -971,8 +1016,12 @@ namespace MyApi.Modules.RetenueSource.Services
         private static long ToMillimes(decimal amount) =>
             (long)Math.Round(amount * 1000m, MidpointRounding.AwayFromZero);
 
-        private static string Trunc(string s, int max) =>
-            string.IsNullOrEmpty(s) ? "" : (s.Length <= max ? s : s.Substring(0, max));
+        private string Trunc(string s, int max)
+        {
+            if (string.IsNullOrEmpty(s) || s.Length <= max) return s ?? "";
+            _logger.LogWarning("TEJ field truncated from {Len} to {Max} chars: '{Value}'", s.Length, max, s);
+            return s.Substring(0, max);
+        }
 
         private async Task<int> SaveTEJFileAsDocument(
             string fileName, string xmlContent,
@@ -1024,7 +1073,7 @@ namespace MyApi.Modules.RetenueSource.Services
 
         private decimal GetRSRate(string typeCode)
         {
-            return RS_RATES.ContainsKey(typeCode) ? RS_RATES[typeCode] : 0m;
+            return Constants.RsRates.GetRate(typeCode);
         }
 
         private static RSRecordDto MapToDto(RSRecord r) => new()

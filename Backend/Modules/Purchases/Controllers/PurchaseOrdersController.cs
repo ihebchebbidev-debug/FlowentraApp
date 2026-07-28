@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MyApi.Infrastructure;
 using MyApi.Modules.Purchases.DTOs;
 using MyApi.Modules.Purchases.Services;
 using MyApi.Modules.RetenueSource.Services;
@@ -34,6 +35,7 @@ namespace MyApi.Modules.Purchases.Controllers
         /// from this order's RS-applicable supplier invoices. Returns 400 with a `missing`
         /// list (e.g. "create the invoice first") when nothing is ready to declare.
         /// </summary>
+        [RequirePermission("purchases", "read")]
         [HttpGet("{id:int}/tej-xml")]
         public async Task<IActionResult> DownloadTejXml(int id)
         {
@@ -63,6 +65,7 @@ namespace MyApi.Modules.Purchases.Controllers
             }
         }
 
+        [RequirePermission("purchases", "read")]
         [HttpGet]
         public async Task<IActionResult> GetOrders(
             [FromQuery] string? status = null, [FromQuery] string? supplier_id = null,
@@ -83,6 +86,7 @@ namespace MyApi.Modules.Purchases.Controllers
             }
         }
 
+        [RequirePermission("purchases", "read")]
         [HttpGet("stats")]
         public async Task<IActionResult> GetStats([FromQuery] DateTime? date_from = null, [FromQuery] DateTime? date_to = null)
         {
@@ -98,6 +102,7 @@ namespace MyApi.Modules.Purchases.Controllers
             }
         }
 
+        [RequirePermission("purchases", "read")]
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetOrder(int id)
         {
@@ -119,6 +124,7 @@ namespace MyApi.Modules.Purchases.Controllers
         // Without this handler the {id:int} route would 404 with a meaningless body
         // and the deep-link looked like a server failure. Return a clear 400 so the
         // FE can react instead of showing "Failed to load".
+        [RequirePermission("purchases", "read")]
         [HttpGet("new")]
         public IActionResult GetNewSentinel()
         {
@@ -133,6 +139,7 @@ namespace MyApi.Modules.Purchases.Controllers
             });
         }
 
+        [RequirePermission("purchases", "create")]
         [HttpPost]
         public async Task<IActionResult> CreateOrder(
             [FromBody] CreatePurchaseOrderDto dto,
@@ -165,6 +172,7 @@ namespace MyApi.Modules.Purchases.Controllers
         }
 
 
+        [RequirePermission("purchases", "update")]
         [HttpPatch("{id:int}")]
         public async Task<IActionResult> UpdateOrder(int id, [FromBody] UpdatePurchaseOrderDto dto)
         {
@@ -186,6 +194,7 @@ namespace MyApi.Modules.Purchases.Controllers
             }
         }
 
+        [RequirePermission("purchases", "delete")]
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteOrder(int id)
         {
@@ -205,6 +214,7 @@ namespace MyApi.Modules.Purchases.Controllers
             }
         }
 
+        [RequirePermission("purchases", "read")]
         [HttpGet("{id:int}/activities")]
         public async Task<IActionResult> GetActivities(int id, [FromQuery] int page = 1, [FromQuery] int limit = 20)
         {
@@ -220,6 +230,7 @@ namespace MyApi.Modules.Purchases.Controllers
             }
         }
 
+        [RequirePermission("purchases", "create")]
         [HttpPost("{id:int}/items")]
         public async Task<IActionResult> AddItem(int id, [FromBody] CreatePurchaseOrderItemDto dto)
         {
@@ -238,6 +249,7 @@ namespace MyApi.Modules.Purchases.Controllers
             }
         }
 
+        [RequirePermission("purchases", "update")]
         [HttpPatch("{id:int}/items/{itemId:int}")]
         public async Task<IActionResult> UpdateItem(int id, int itemId, [FromBody] CreatePurchaseOrderItemDto dto)
         {
@@ -256,6 +268,7 @@ namespace MyApi.Modules.Purchases.Controllers
             }
         }
 
+        [RequirePermission("purchases", "delete")]
         [HttpDelete("{id:int}/items/{itemId:int}")]
         public async Task<IActionResult> DeleteItem(int id, int itemId)
         {

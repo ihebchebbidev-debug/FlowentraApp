@@ -25,6 +25,7 @@ namespace MyApi.Modules.RetenueSource.Constants
             // RS2 — Marchés / fournitures (sur paiements > seuil)
             new("RS2_000001", "Montants >= 1000 TND TTC", 1m,  "Marchés"),
             new("RS2_000002", "Marchés conclus avec l'État / collectivités",            1.5m, "Marchés"),
+            new("RS2_000003", "Acquisitions soumises au taux réduit (0,5%)",            0.5m, "Marchés"),
 
             // RS3 — Redevances, intérêts, plus-values
             new("RS3_000001", "Redevances - non résidents", 15m, "Redevances"),
@@ -49,7 +50,7 @@ namespace MyApi.Modules.RetenueSource.Constants
         public static string LegacyToOperationCode(string? legacyCode) => legacyCode switch
         {
             "10" => "RS1_000002",  // 10% honoraires PP
-            "05" => "RS3_000003",  // 0.5% (closest: 5% bank interests; flag for manual review)
+            "05" => "RS2_000003",  // 0.5% — rate-matched (was RS3_000003 @5%, a real mismatch)
             "03" => "RS1_000001",  // 3% honoraires PM
             "20" => "RS3_000002",  // 20% intérêts
             "P1" => "RS2_000002",  // 1.5%

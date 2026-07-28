@@ -156,6 +156,8 @@ namespace MyApi.Modules.RetenueSource.DTOs
         public string Address { get; set; } = string.Empty;
         public string? Email { get; set; }
         public string? Phone { get; set; }
+        /// <summary>PM (legal entity) or PP (individual) — declared as CategorieContribuable.</summary>
+        public string? Categorie { get; set; } = "PM";
     }
 
     // ─── TEJ Export Response ───

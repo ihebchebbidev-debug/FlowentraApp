@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MyApi.Infrastructure;
 using MyApi.Modules.Purchases.DTOs;
 using MyApi.Modules.Purchases.Services;
 using MyApi.Modules.RetenueSource.Services;
@@ -30,6 +31,7 @@ namespace MyApi.Modules.Purchases.Controllers
         /// GET /api/supplier-invoices/{id}/tej-xml — download the TEJ/RiTEJ XML for this
         /// invoice on demand. Returns 400 with a `missing` list if info still needs filling.
         /// </summary>
+        [RequirePermission("purchases", "read")]
         [HttpGet("{id:int}/tej-xml")]
         public async Task<IActionResult> DownloadTejXml(int id)
         {
@@ -66,6 +68,7 @@ namespace MyApi.Modules.Purchases.Controllers
         private string GetUserId() => User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "anonymous";
         private string GetUserName() => User.FindFirst(ClaimTypes.Name)?.Value ?? User.FindFirst(ClaimTypes.Email)?.Value ?? "anonymous";
 
+        [RequirePermission("purchases", "read")]
         [HttpGet]
         public async Task<IActionResult> GetInvoices(
             [FromQuery] string? status = null, [FromQuery] string? supplier_id = null,
@@ -86,6 +89,7 @@ namespace MyApi.Modules.Purchases.Controllers
             }
         }
 
+        [RequirePermission("purchases", "read")]
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetInvoice(int id)
         {
@@ -102,6 +106,7 @@ namespace MyApi.Modules.Purchases.Controllers
             }
         }
 
+        [RequirePermission("purchases", "create")]
         [HttpPost]
         public async Task<IActionResult> CreateInvoice(
             [FromBody] CreateSupplierInvoiceDto dto,
@@ -139,6 +144,7 @@ namespace MyApi.Modules.Purchases.Controllers
         }
 
 
+        [RequirePermission("purchases", "update")]
         [HttpPatch("{id:int}")]
         public async Task<IActionResult> UpdateInvoice(int id, [FromBody] UpdateSupplierInvoiceDto dto)
         {
@@ -158,6 +164,7 @@ namespace MyApi.Modules.Purchases.Controllers
             }
         }
 
+        [RequirePermission("purchases", "delete")]
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteInvoice(int id)
         {
@@ -176,20 +183,48 @@ namespace MyApi.Modules.Purchases.Controllers
             }
         }
 
-        // Mark invoice as sent to Facture en Ligne.
+        /// <summary>
+        /// Records a Facture en Ligne (TTN) submission for this invoice.
+        ///
+        /// There is NO automated TTN transmission in this system: the previous version of
+        /// this endpoint flipped the status to "sent" without transmitting anything, which
+        /// made the UI claim a filing that never happened. It now only records a
+        /// submission the user performed on the TTN portal, and requires the reference
+        /// returned by that portal as proof.
+        /// </summary>
+        [RequirePermission("purchases", "update")]
         [HttpPost("{id:int}/facture-en-ligne")]
-        public async Task<IActionResult> SendFactureEnLigne(int id)
+        public async Task<IActionResult> RecordFactureEnLigneSubmission(int id, [FromBody] RecordFactureEnLigneDto? body)
         {
             try
             {
+                if (body == null || string.IsNullOrWhiteSpace(body.FactureEnLigneId))
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        error = new
+                        {
+                            code = "FEL_REFERENCE_REQUIRED",
+                            message = "No automated Facture en Ligne transmission is configured. Submit the invoice on the TTN portal and record the reference it returned."
+                        }
+                    });
+                }
+
                 var userId = GetUserId();
+                var status = string.IsNullOrWhiteSpace(body.Status) ? "sent" : body.Status!.Trim();
+                var allowed = new[] { "pending", "sent", "validated", "rejected" };
+                if (!allowed.Contains(status, StringComparer.OrdinalIgnoreCase))
+                    return BadRequest(new { success = false, error = new { code = "BAD_REQUEST", message = $"Status must be one of: {string.Join(", ", allowed)}" } });
+
                 var dto = new UpdateSupplierInvoiceDto
                 {
-                    FactureEnLigneStatus = "sent",
-                    FactureEnLigneSentAt = DateTime.UtcNow,
+                    FactureEnLigneId = body.FactureEnLigneId!.Trim(),
+                    FactureEnLigneStatus = status.ToLowerInvariant(),
+                    FactureEnLigneSentAt = body.SentAt ?? DateTime.UtcNow,
                 };
                 var invoice = await _service.UpdateInvoiceAsync(id, dto, userId, GetUserName());
-                await _systemLogService.LogSuccessAsync($"Facture en ligne sent: {invoice.InvoiceNumber}", "Purchases", "update", userId, GetUserName(), "SupplierInvoice", id.ToString());
+                await _systemLogService.LogSuccessAsync($"Facture en ligne submission recorded ({dto.FactureEnLigneId}) for {invoice.InvoiceNumber}", "Purchases", "update", userId, GetUserName(), "SupplierInvoice", id.ToString());
                 return Ok(new { success = true, data = invoice });
             }
             catch (KeyNotFoundException) { return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = "Invoice not found" } }); }
@@ -201,6 +236,7 @@ namespace MyApi.Modules.Purchases.Controllers
         }
 
         // ── Items (only allowed when invoice.status == 'draft') ──
+        [RequirePermission("purchases", "create")]
         [HttpPost("{id:int}/items")]
         public async Task<IActionResult> AddItem(int id, [FromBody] CreateSupplierInvoiceItemDto dto)
         {
@@ -218,6 +254,7 @@ namespace MyApi.Modules.Purchases.Controllers
             }
         }
 
+        [RequirePermission("purchases", "update")]
         [HttpPatch("{id:int}/items/{itemId:int}")]
         public async Task<IActionResult> UpdateItem(int id, int itemId, [FromBody] CreateSupplierInvoiceItemDto dto)
         {
@@ -235,6 +272,7 @@ namespace MyApi.Modules.Purchases.Controllers
             }
         }
 
+        [RequirePermission("purchases", "delete")]
         [HttpDelete("{id:int}/items/{itemId:int}")]
         public async Task<IActionResult> DeleteItem(int id, int itemId)
         {

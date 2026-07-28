@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MyApi.Infrastructure;
 using MyApi.Modules.RetenueSource.DTOs;
 using MyApi.Modules.RetenueSource.Services;
 using System.Security.Claims;
@@ -28,6 +29,7 @@ namespace MyApi.Modules.RetenueSource.Controllers
         /// <summary>
         /// GET /api/retenue-source — List RS records with filters
         /// </summary>
+        [RequirePermission("purchases", "read")]
         [HttpGet]
         public async Task<IActionResult> GetRSRecords(
             [FromQuery] string? entity_type = null,
@@ -57,6 +59,7 @@ namespace MyApi.Modules.RetenueSource.Controllers
         /// <summary>
         /// GET /api/retenue-source/{id}
         /// </summary>
+        [RequirePermission("purchases", "read")]
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetRSRecordById(int id)
         {
@@ -77,6 +80,7 @@ namespace MyApi.Modules.RetenueSource.Controllers
         /// <summary>
         /// POST /api/retenue-source — Create RS record
         /// </summary>
+        [RequirePermission("purchases", "create")]
         [HttpPost]
         public async Task<IActionResult> CreateRSRecord([FromBody] CreateRSRecordDto dto)
         {
@@ -104,6 +108,7 @@ namespace MyApi.Modules.RetenueSource.Controllers
         /// <summary>
         /// PATCH /api/retenue-source/{id} — Update RS record
         /// </summary>
+        [RequirePermission("purchases", "update")]
         [HttpPatch("{id:int}")]
         public async Task<IActionResult> UpdateRSRecord(int id, [FromBody] UpdateRSRecordDto dto)
         {
@@ -130,6 +135,7 @@ namespace MyApi.Modules.RetenueSource.Controllers
         /// <summary>
         /// DELETE /api/retenue-source/{id}
         /// </summary>
+        [RequirePermission("purchases", "delete")]
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteRSRecord(int id)
         {
@@ -156,6 +162,7 @@ namespace MyApi.Modules.RetenueSource.Controllers
         /// <summary>
         /// GET /api/retenue-source/calculate?amount_paid=1000&amp;rs_type_code=10
         /// </summary>
+        [RequirePermission("purchases", "read")]
         [HttpGet("calculate")]
         public IActionResult CalculateRS([FromQuery] decimal amount_paid, [FromQuery] string rs_type_code = "10")
         {
@@ -175,6 +182,7 @@ namespace MyApi.Modules.RetenueSource.Controllers
         /// <summary>
         /// POST /api/retenue-source/tej-export — Generate TEJ XML and save as document
         /// </summary>
+        [RequirePermission("purchases", "update")]
         [HttpPost("tej-export")]
         public async Task<IActionResult> ExportTEJ([FromBody] TEJExportRequestDto request)
         {
@@ -197,6 +205,7 @@ namespace MyApi.Modules.RetenueSource.Controllers
         /// <summary>
         /// GET /api/retenue-source/tej-logs — TEJ export history
         /// </summary>
+        [RequirePermission("purchases", "read")]
         [HttpGet("tej-logs")]
         public async Task<IActionResult> GetTEJExportLogs([FromQuery] int? year = null)
         {
@@ -217,6 +226,7 @@ namespace MyApi.Modules.RetenueSource.Controllers
         /// <summary>
         /// GET /api/retenue-source/stats
         /// </summary>
+        [RequirePermission("purchases", "read")]
         [HttpGet("stats")]
         public async Task<IActionResult> GetRSStats(
             [FromQuery] string? entity_type = null,

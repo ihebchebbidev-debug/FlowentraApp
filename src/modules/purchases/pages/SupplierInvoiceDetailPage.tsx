@@ -9,6 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Building2, Calendar, FileText, Shield, CheckCircle, AlertTriangle, XCircle, Download, Pencil, Plus, Trash2, Save, X, Loader2, Send, FileDown } from "lucide-react";
 import { supplierInvoiceService } from "../services/purchaseService";
@@ -54,6 +56,8 @@ function SupplierInvoiceDetailContent() {
   const [supplierCin, setSupplierCin] = useState<string>('');
   const [supplierMatriculeFiscale, setSupplierMatriculeFiscale] = useState<string>('');
   const [savingSupplierFiscalInfo, setSavingSupplierFiscalInfo] = useState(false);
+  const [felOpen, setFelOpen] = useState(false);
+  const [felReference, setFelReference] = useState('');
 
   const fetchData = useCallback(() => {
     if (!id) return;
@@ -269,15 +273,22 @@ function SupplierInvoiceDetailContent() {
     }
   };
 
-  const handleSendFactureEnLigne = async () => {
-    if (!id) return;
+  // Nothing is transmitted to TTN from here: the user files on the TTN portal and
+  // records the reference it returned, so the app never claims a filing it didn't make.
+  const handleRecordFactureEnLigne = async () => {
+    if (!id || !felReference.trim()) return;
     setActionLoading('fel');
     try {
-      const updated = await supplierInvoiceService.sendFactureEnLigne(id);
+      const updated = await supplierInvoiceService.recordFactureEnLigne(id, {
+        factureEnLigneId: felReference.trim(),
+        status: 'sent',
+      });
       setInv(updated);
-      toast.success(t('actions.factureEnLigneSent', 'Facture-en-Ligne sent'));
+      setFelOpen(false);
+      setFelReference('');
+      toast.success(t('actions.factureEnLigneRecorded', 'Facture-en-Ligne submission recorded'));
     } catch (e: any) {
-      toastApiError(e, t, { fallback: t('common.error', 'Send failed') as string });
+      toastApiError(e, t, { fallback: t('common.error', 'Failed to record the submission') as string });
     } finally {
       setActionLoading(null);
     }
@@ -375,9 +386,9 @@ function SupplierInvoiceDetailContent() {
               </Button>
             )}
             {inv.status !== 'draft' && inv.status !== 'cancelled' && inv.factureEnLigneStatus !== 'sent' && inv.factureEnLigneStatus !== 'validated' && (
-              <Button size="sm" variant="outline" onClick={handleSendFactureEnLigne} disabled={actionLoading !== null}>
+              <Button size="sm" variant="outline" onClick={() => setFelOpen(true)} disabled={actionLoading !== null}>
                 {actionLoading === 'fel' ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Send className="h-3.5 w-3.5 mr-1" />}
-                {t('actions.sendFactureEnLigne', 'Send F.E.L')}
+                {t('actions.recordFactureEnLigne', 'Record F.E.L')}
               </Button>
             )}
           </div>
@@ -591,6 +602,39 @@ function SupplierInvoiceDetailContent() {
         onSaveSupplier={saveSupplierFiscalInfo}
         savingSupplier={savingSupplierFiscalInfo}
       />
+
+      <Dialog open={felOpen} onOpenChange={setFelOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('actions.recordFactureEnLigne', 'Record F.E.L')}</DialogTitle>
+            <DialogDescription>
+              {t(
+                'compliance.felManualHelp',
+                'This app does not transmit to the TTN portal. Submit the invoice there, then paste the reference it returned to keep the audit trail accurate.'
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="fel-reference">{t('compliance.felReference', 'TTN reference')}</Label>
+            <Input
+              id="fel-reference"
+              value={felReference}
+              onChange={(e) => setFelReference(e.target.value)}
+              placeholder="TTN-XXXXXXXX"
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFelOpen(false)} disabled={actionLoading === 'fel'}>
+              {t('common.cancel', 'Cancel')}
+            </Button>
+            <Button onClick={handleRecordFactureEnLigne} disabled={!felReference.trim() || actionLoading === 'fel'}>
+              {actionLoading === 'fel' && <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />}
+              {t('common.save', 'Save')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

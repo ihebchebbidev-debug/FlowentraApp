@@ -196,4 +196,15 @@ namespace MyApi.Modules.Purchases.DTOs
         public List<SupplierInvoiceDto> Invoices { get; set; } = new();
         public PurchasePaginationInfo Pagination { get; set; } = new();
     }
+
+    /// <summary>
+    /// Payload for recording a Facture en Ligne (TTN) submission that the user performed
+    /// on the TTN portal. The reference is mandatory — the system does not transmit to TTN.
+    /// </summary>
+    public class RecordFactureEnLigneDto
+    {
+        [Required] [MaxLength(100)] public string? FactureEnLigneId { get; set; }
+        [MaxLength(20)] public string? Status { get; set; }
+        public DateTime? SentAt { get; set; }
+    }
 }

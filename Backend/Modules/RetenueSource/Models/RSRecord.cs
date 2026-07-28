@@ -51,6 +51,17 @@ namespace MyApi.Modules.RetenueSource.Models
         [Column("TEJExported")] public bool TEJExported { get; set; } = false;
         [Column("TEJFileName")] [MaxLength(255)] public string? TEJFileName { get; set; }
 
+        /// <summary>
+        /// Soft delete. RS records are fiscal-declaration data and must never be
+        /// physically removed (audit trail), unlike the previous hard delete.
+        /// </summary>
+        [Column("IsDeleted")] public bool IsDeleted { get; set; } = false;
+        [Column("DeletedAt")] public DateTime? DeletedAt { get; set; }
+        [Column("DeletedBy")] [MaxLength(100)] public string? DeletedBy { get; set; }
+
+        /// <summary>Deposit sequence for the month's TEJ file (0 = initial, 1..n = rectifications).</summary>
+        [Column("DepotSequence")] public int DepotSequence { get; set; } = 0;
+
         // ── Compliance ──
         [Column("DeclarationDeadline")] public DateTime? DeclarationDeadline { get; set; }
         [Column("IsOverdue")] public bool IsOverdue { get; set; } = false;
@@ -83,6 +94,20 @@ namespace MyApi.Modules.RetenueSource.Models
 
         /// <summary>Computed: AmountPaid - RSAmount - RsTvaAmount.</summary>
         [Column("MontantNetServi", TypeName = "decimal(15,2)")] public decimal MontantNetServi { get; set; } = 0m;
+
+        /// <summary>
+        /// Real tax-exclusive (hors taxe) amount of the invoice, pro-rated to the declared
+        /// basis. Declared as TEJ <c>MontantHT</c> — previously AmountPaid (a TTC figure
+        /// already net of RS) was written there, misstating the base to the DGI.
+        /// </summary>
+        [Column("MontantHT", TypeName = "decimal(15,2)")] public decimal MontantHT { get; set; } = 0m;
+
+        /// <summary>
+        /// Real VAT of the invoice, pro-rated to the declared basis. Declared as TEJ
+        /// <c>MontantTVA</c>. Distinct from <see cref="RsTvaAmount"/> (VAT *withheld*),
+        /// which is declared as <c>MontantRSTVA</c>.
+        /// </summary>
+        [Column("MontantTvaFacture", TypeName = "decimal(15,2)")] public decimal MontantTvaFacture { get; set; } = 0m;
 
         // Beneficiary snapshot (TEJ Beneficiaire block)
         [Column("BeneficiaireCategorie")] [MaxLength(2)] public string? BeneficiaireCategorie { get; set; }

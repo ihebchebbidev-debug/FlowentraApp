@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MyApi.Infrastructure;
 using MyApi.Modules.Purchases.DTOs;
 using MyApi.Modules.Purchases.Services;
 using MyApi.Modules.Shared.Services;
@@ -26,6 +27,7 @@ namespace MyApi.Modules.Purchases.Controllers
         private string GetUserId() => User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "anonymous";
         private string GetUserName() => User.FindFirst(ClaimTypes.Name)?.Value ?? User.FindFirst(ClaimTypes.Email)?.Value ?? "anonymous";
 
+        [RequirePermission("purchases", "read")]
         [HttpGet("by-article/{articleId:int}")]
         public async Task<IActionResult> GetByArticle(int articleId)
         {
@@ -41,6 +43,7 @@ namespace MyApi.Modules.Purchases.Controllers
             }
         }
 
+        [RequirePermission("purchases", "read")]
         [HttpGet("by-supplier/{supplierId:int}")]
         public async Task<IActionResult> GetBySupplier(int supplierId)
         {
@@ -56,6 +59,7 @@ namespace MyApi.Modules.Purchases.Controllers
             }
         }
 
+        [RequirePermission("purchases", "read")]
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById(int id)
         {
@@ -72,6 +76,7 @@ namespace MyApi.Modules.Purchases.Controllers
             }
         }
 
+        [RequirePermission("purchases", "create")]
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateArticleSupplierDto dto)
         {
@@ -89,6 +94,7 @@ namespace MyApi.Modules.Purchases.Controllers
             }
         }
 
+        [RequirePermission("purchases", "update")]
         [HttpPatch("{id:int}")]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateArticleSupplierDto dto)
         {
@@ -107,6 +113,7 @@ namespace MyApi.Modules.Purchases.Controllers
             }
         }
 
+        [RequirePermission("purchases", "delete")]
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {
@@ -124,6 +131,7 @@ namespace MyApi.Modules.Purchases.Controllers
             }
         }
 
+        [RequirePermission("purchases", "read")]
         [HttpGet("{id:int}/price-history")]
         public async Task<IActionResult> GetPriceHistory(int id)
         {

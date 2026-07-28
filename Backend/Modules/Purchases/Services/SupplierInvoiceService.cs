@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MyApi.Data;
 using MyApi.Modules.Purchases.DTOs;
 using MyApi.Modules.Purchases.Models;
+using MyApi.Modules.RetenueSource.Constants;
 
 namespace MyApi.Modules.Purchases.Services
 {
@@ -189,7 +190,10 @@ namespace MyApi.Modules.Purchases.Services
             // of recomputing Quantity*UnitPrice — otherwise a PO with per-line
             // discounts and the invoice generated from it would disagree on
             // SubTotal / TaxAmount / GrandTotal, defeating reconciliation.
-            var linkedPoItemLineTotals = new Dictionary<int, decimal>();
+            // Value = the PO line's post-discount tax-exclusive total AND its ordered
+            // quantity, so a partial invoice can pro-rate instead of copying the full
+            // PO line total (which over-billed every partial invoice).
+            var linkedPoItemLineTotals = new Dictionary<int, (decimal LineTotal, decimal Quantity)>();
             if (dto.Items?.Any() == true)
             {
                 var linkedPoItemIds = dto.Items.Where(i => i.PurchaseOrderItemId.HasValue)
@@ -201,13 +205,13 @@ namespace MyApi.Modules.Purchases.Services
                         throw new InvalidOperationException("Cannot link PO items to an invoice that has no PurchaseOrderId");
                     var poItems = await _context.PurchaseOrderItems
                         .Where(p => linkedPoItemIds.Contains(p.Id) && p.PurchaseOrderId == dto.PurchaseOrderId.Value)
-                        .Select(p => new { p.Id, p.LineTotal })
+                        .Select(p => new { p.Id, p.LineTotal, p.Quantity })
                         .ToListAsync();
                     var validIds = poItems.Select(p => p.Id).ToList();
                     var orphans = linkedPoItemIds.Except(validIds).ToList();
                     if (orphans.Count > 0)
                         throw new InvalidOperationException($"PurchaseOrderItem(s) [{string.Join(",", orphans)}] do not belong to PO {dto.PurchaseOrderId}");
-                    foreach (var p in poItems) linkedPoItemLineTotals[p.Id] = p.LineTotal;
+                    foreach (var p in poItems) linkedPoItemLineTotals[p.Id] = (p.LineTotal, p.Quantity);
                 }
             }
 
@@ -238,9 +242,12 @@ namespace MyApi.Modules.Purchases.Services
                             // When the line is linked to a PurchaseOrderItem, copy the PO's
                             // post-line-discount LineTotal verbatim so invoice totals reconcile
                             // with the originating PO even when the PO used per-line discounts.
+                            // Pro-rate the PO line total by the quantity actually being
+                            // invoiced: invoicing 2 of 10 ordered units must bill 20% of
+                            // the PO line, not 100% of it.
                             LineTotal = item.PurchaseOrderItemId.HasValue
-                                        && linkedPoItemLineTotals.TryGetValue(item.PurchaseOrderItemId.Value, out var poLt)
-                                ? poLt
+                                        && linkedPoItemLineTotals.TryGetValue(item.PurchaseOrderItemId.Value, out var poLine)
+                                ? ProRatePoLineTotal(poLine.LineTotal, poLine.Quantity, item.Quantity, item.UnitPrice)
                                 : item.Quantity * item.UnitPrice,
                             DisplayOrder = idx
                         }).ToList();
@@ -302,6 +309,22 @@ namespace MyApi.Modules.Purchases.Services
                         ?? throw new KeyNotFoundException($"SupplierInvoice {id} not found");
 
                     var oldStatus = invoice.Status;
+
+                    // ── TEJ compliance guard ───────────────────────────────────────
+                    // Once the invoice has been declared to the DGI (TejSynced), editing
+                    // any figure that feeds the certificate silently invalidates the filed
+                    // declaration. We do not block the edit (real-world corrections happen)
+                    // but we force it back into the rectification lane: the certificate
+                    // must be re-filed as a "Modifier" deposit.
+                    var fiscallyMaterialEdit =
+                        dto.Discount.HasValue || dto.DiscountType != null || dto.FiscalStamp.HasValue
+                        || dto.RsApplicable.HasValue || dto.RsTypeCode != null || dto.RsOperationCode != null
+                        || dto.RsTvaCode != null || dto.RsTvaTaux.HasValue
+                        || dto.AmountPaid.HasValue || dto.PaymentDate.HasValue
+                        || dto.SupplierInvoiceRef != null
+                        || dto.PriseEnCharge.HasValue || dto.AnneeFacturation.HasValue;
+                    var requiresTejResync = invoice.TejSynced && fiscallyMaterialEdit
+                                            && dto.TejSynced != true; // explicit re-sync marking wins
                     if (dto.SupplierInvoiceRef != null) invoice.SupplierInvoiceRef = dto.SupplierInvoiceRef;
                     if (dto.Status != null)
                     {
@@ -395,6 +418,42 @@ namespace MyApi.Modules.Purchases.Services
                     if (dto.FactureEnLigneId != null) invoice.FactureEnLigneId = dto.FactureEnLigneId;
                     if (dto.FactureEnLigneStatus != null) invoice.FactureEnLigneStatus = dto.FactureEnLigneStatus;
                     if (dto.FactureEnLigneSentAt.HasValue) invoice.FactureEnLigneSentAt = AsUtc(dto.FactureEnLigneSentAt);
+
+                    // Apply the TEJ rectification lane decided above. The certificate is
+                    // no longer in sync with what was filed, so flag it for a "Modifier"
+                    // (Acte = 1) re-deposit and reopen the linked RS record.
+                    if (requiresTejResync)
+                    {
+                        invoice.TejSynced = false;
+                        invoice.TejSyncStatus = "requires_resync";
+                        if (invoice.TejActe == 0) invoice.TejActe = 1; // 1 = ModifierCertificats
+                        invoice.TejErrorMessage =
+                            "Invoice edited after TEJ export — a rectifying deposit (Acte=Modifier) must be re-generated and filed.";
+
+                        if (invoice.RsRecordId.HasValue)
+                        {
+                            var rs = await _context.RSRecords
+                                .FirstOrDefaultAsync(r => r.Id == invoice.RsRecordId.Value && !r.IsDeleted);
+                            if (rs != null)
+                            {
+                                rs.Status = "pending";
+                                rs.TEJExported = false;
+                                rs.TEJTransmissionStatus = "pending";
+                                if (rs.Acte == 0) rs.Acte = 1;
+                                rs.DepotSequence += 1;   // next file for the month is a rectification
+                                rs.ModifiedAt = DateTime.UtcNow;
+                                rs.ModifiedBy = userId;
+                            }
+                        }
+
+                        _context.PurchaseActivities.Add(new PurchaseActivity
+                        {
+                            EntityType = "supplier_invoice", EntityId = id, ActivityType = "tej_resync_required",
+                            Description = "Fiscal fields changed after TEJ export; certificate flagged for rectifying deposit",
+                            PerformedBy = userId, PerformedByName = userName, PerformedAt = DateTime.UtcNow
+                        });
+                    }
+
                     invoice.ModifiedDate = DateTime.UtcNow;
                     invoice.ModifiedBy = userId;
 
@@ -453,6 +512,16 @@ namespace MyApi.Modules.Purchases.Services
             {
                 throw new InvalidOperationException(
                     $"Cannot delete invoice {invoice.InvoiceNumber}: it has recorded payments (AmountPaid={invoice.AmountPaid}, Status={invoice.Status}). Cancel the invoice or reverse the payment first.");
+            }
+
+            // Fiscal-integrity guard: a declared invoice cannot simply vanish. The DGI
+            // holds a certificate for it; removing the row would leave the filed
+            // declaration unbacked and untraceable. The correct move is an annulment
+            // (Acte = 2) filed as a rectifying deposit.
+            if (invoice.TejSynced)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot delete invoice {invoice.InvoiceNumber}: it was already declared to the DGI (TEJ export). File an annulment (Acte=Annuler) instead.");
             }
 
             // Wrap soft-delete + activity-log + PO sync in a single transaction so a
@@ -703,13 +772,25 @@ namespace MyApi.Modules.Purchases.Services
         {
             if (dto.PurchaseOrderItemId.HasValue)
             {
-                var poLt = await _context.PurchaseOrderItems
+                var poLine = await _context.PurchaseOrderItems
                     .Where(p => p.Id == dto.PurchaseOrderItemId.Value)
-                    .Select(p => (decimal?)p.LineTotal)
+                    .Select(p => new { p.LineTotal, p.Quantity })
                     .FirstOrDefaultAsync();
-                if (poLt.HasValue) return poLt.Value;
+                if (poLine != null)
+                    return ProRatePoLineTotal(poLine.LineTotal, poLine.Quantity, dto.Quantity, dto.UnitPrice);
             }
             return dto.Quantity * dto.UnitPrice;
+        }
+
+        // A PO line's LineTotal covers the FULL ordered quantity (net of the line
+        // discount). An invoice line may cover only part of it, so scale by
+        // invoicedQty / orderedQty. Falls back to qty*unitPrice when the PO quantity
+        // is unusable (0 / negative), which would otherwise divide by zero.
+        private static decimal ProRatePoLineTotal(decimal poLineTotal, decimal poQuantity, decimal invoicedQty, decimal unitPrice)
+        {
+            if (poQuantity <= 0) return invoicedQty * unitPrice;
+            if (invoicedQty == poQuantity) return poLineTotal;
+            return Math.Round(poLineTotal * invoicedQty / poQuantity, 2);
         }
 
         private async Task RecalculateInvoiceTotalsAsync(int invoiceId)
@@ -745,13 +826,9 @@ namespace MyApi.Modules.Purchases.Services
             invoice.RsTvaAmount = 0m;
             if (invoice.RsApplicable && !string.IsNullOrEmpty(invoice.RsTypeCode))
             {
-                var rsRate = invoice.RsTypeCode switch
-                {
-                    "P1" => 1.5m, "P2" => 5m, "P3" => 10m, "P4" => 15m, "P5" => 25m,
-                    // legacy rate codes
-                    "10" => 10m, "05" => 0.5m, "03" => 3m, "20" => 20m,
-                    _ => 0m
-                };
+                // Single source of truth (RsRates); the declared TEJ operation code wins
+                // over the legacy short code so RsAmount always matches what the XML declares.
+                var rsRate = RsRates.GetEffectiveRate(invoice.RsOperationCode, invoice.RsTypeCode);
                 invoice.RsAmount = Math.Round(afterDiscount * rsRate / 100m, 2);
                 // RS-TVA (separate withholding on VAT) when configured
                 if (invoice.RsTvaTaux is decimal tvaRate && tvaRate > 0)

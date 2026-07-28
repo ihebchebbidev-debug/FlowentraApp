@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MyApi.Infrastructure;
 using MyApi.Modules.Purchases.DTOs;
 using MyApi.Modules.Purchases.Services;
 using MyApi.Modules.Shared.Services;
@@ -26,6 +27,7 @@ namespace MyApi.Modules.Purchases.Controllers
         private string GetUserId() => User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "anonymous";
         private string GetUserName() => User.FindFirst(ClaimTypes.Name)?.Value ?? User.FindFirst(ClaimTypes.Email)?.Value ?? "anonymous";
 
+        [RequirePermission("purchases", "read")]
         [HttpGet]
         public async Task<IActionResult> GetReceipts(
             [FromQuery] int? purchase_order_id = null, [FromQuery] string? supplier_id = null,
@@ -46,6 +48,7 @@ namespace MyApi.Modules.Purchases.Controllers
             }
         }
 
+        [RequirePermission("purchases", "read")]
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetReceipt(int id)
         {
@@ -62,6 +65,7 @@ namespace MyApi.Modules.Purchases.Controllers
             }
         }
 
+        [RequirePermission("purchases", "create")]
         [HttpPost]
         public async Task<IActionResult> CreateReceipt(
             [FromBody] CreateGoodsReceiptDto dto,
@@ -99,6 +103,7 @@ namespace MyApi.Modules.Purchases.Controllers
         // Verb consistency across the purchases module: PO + SupplierInvoice both use PATCH
         // for header updates, so accept PATCH here too. HttpPut is kept as an alias so any
         // older client cached the previous route contract still works.
+        [RequirePermission("purchases", "update")]
         [HttpPatch("{id:int}")]
         [HttpPut("{id:int}")]
 
@@ -128,6 +133,7 @@ namespace MyApi.Modules.Purchases.Controllers
             }
         }
 
+        [RequirePermission("purchases", "delete")]
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteReceipt(int id)
         {
