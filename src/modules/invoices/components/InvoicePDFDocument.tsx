@@ -328,21 +328,9 @@ export function InvoicePDFDocument({
               ) : null}
             </View>
           )}
-          <View style={styles.docTitleBlock}>
-            <Text style={styles.docTitle}>{t.invoice}</Text>
-            <Text style={styles.docNumber}>
-              {t.invoiceNumber}: {invoice.invoiceNumber || t.draftNumber}
-            </Text>
-            <Text style={styles.docDate}>
-              {t.issueDate}: {formatDate(invoice.issueDate || invoice.createdAt)}
-            </Text>
-            {invoice.dueDate ? (
-              <Text style={styles.docDate}>
-                {t.dueDate}: {formatDate(invoice.dueDate)}
-              </Text>
-            ) : null}
-            <Text style={styles.statusPill}>{statusLabel || invoice.status}</Text>
-          </View>
+          {/* Title/number/date/status intentionally omitted here — they are shown
+              in the structured "Invoice Details" box below to avoid duplication. */}
+
         </View>
 
         <View style={{ borderBottomWidth: 2, borderBottomColor: '#374151', marginBottom: 14 }} />

@@ -54,16 +54,19 @@ namespace MyApi.Modules.Payments.Services
             {
                 await using var tx = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
 
-                // ── Cross-check: entity exists and is billable ──
-                //     Overpay guard applies for EVERY entityType (sale/offer/invoice),
-                //     not just invoice (was §1.5).
-                var (entityTotal, entityCurrency) = await GetEntityTotalAndCurrencyAsync(entityType, entityId);
-                if (entityTotal <= 0m && entityType != "offer")
-                    throw new KeyNotFoundException($"{entityType} {entityId} not found or has zero total.");
-
-                // Invoice-specific status guards (unchanged behavior, kept inside tx)
+                // Invoice-specific status guards. A draft invoice is AUTO-POSTED so the
+                // user is never blocked when recording a payment.
                 if (entityType == "invoice" && int.TryParse(entityId, out var invoiceIdParsed))
                 {
+                    const string trigger = "auto:payment_recording";
+                    using var logScope = _logger.BeginScope(new Dictionary<string, object?>
+                    {
+                        ["Operation"] = "PaymentInvoiceAutoPost",
+                        ["InvoiceId"] = invoiceIdParsed,
+                        ["Trigger"] = trigger,
+                        ["UserId"] = userId,
+                    });
+
                     var invoice = await _context.Invoices
                         .FirstOrDefaultAsync(i => i.Id == invoiceIdParsed && !i.IsDeleted);
                     if (invoice == null)
@@ -71,8 +74,46 @@ namespace MyApi.Modules.Payments.Services
                     if (invoice.Status == "void")
                         throw new InvalidOperationException($"Invoice {invoiceIdParsed} is voided — cannot record payments.");
                     if (invoice.Status == "draft")
-                        throw new InvalidOperationException($"Invoice {invoiceIdParsed} is a draft — post it before recording payments.");
+                    {
+                        if (_invoiceService == null)
+                        {
+                            _logger.LogError(
+                                "Cannot auto-post draft invoice {InvoiceId}: invoice service is not available (sale {SaleId})",
+                                invoiceIdParsed, invoice.SaleId);
+                            throw new InvalidOperationException($"Invoice {invoiceIdParsed} is a draft and cannot be posted automatically right now. Please retry.");
+                        }
+                        _logger.LogInformation(
+                            "Auto-posting draft invoice {InvoiceId} (sale {SaleId}) before recording payment of {Amount} {Currency}",
+                            invoiceIdParsed, invoice.SaleId, dto.Amount, dto.Currency);
+                        try
+                        {
+                            await _invoiceService.PostAsync(invoiceIdParsed, new MyApi.Modules.Invoices.DTOs.PostInvoiceDto(), userId, trigger);
+                            _logger.LogInformation("Draft invoice {InvoiceId} auto-posted for payment recording", invoiceIdParsed);
+                        }
+                        catch (Exception ex) when (ex is InvalidOperationException || ex is ArgumentException)
+                        {
+                            _logger.LogWarning(ex,
+                                "Auto-post failed for draft invoice {InvoiceId} — payment rejected: {Reason}",
+                                invoiceIdParsed, ex.Message);
+                            await _invoiceService.LogAutoPostSkippedAsync(invoiceIdParsed, userId, trigger, ex.Message);
+                            throw;
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogInformation("Invoice {InvoiceId} already '{Status}' — no auto-post needed for this payment",
+                            invoiceIdParsed, invoice.Status);
+                    }
                 }
+
+
+                // ── Cross-check: entity exists and is billable ──
+                //     Overpay guard applies for EVERY entityType (sale/offer/invoice),
+                //     not just invoice (was §1.5). Read AFTER any auto-post so totals are fresh.
+                var (entityTotal, entityCurrency) = await GetEntityTotalAndCurrencyAsync(entityType, entityId);
+                if (entityTotal <= 0m && entityType != "offer")
+                    throw new KeyNotFoundException($"{entityType} {entityId} not found or has zero total.");
+
 
                 // Overpay guard for ALL entity types. SUM re-read inside the serializable
                 // transaction so a concurrent payment cannot slip past this check.

@@ -11,14 +11,15 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, ExternalLink, Receipt, Send, Trash2, Ban, CheckCircle2, RefreshCw, User, Printer } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Receipt, Send, Trash2, Ban, CheckCircle2, RefreshCw, User, Printer, Download } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCustomerInvoice, useInvoiceMutations } from '../hooks/useCustomerInvoices';
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { PaymentsTab } from '@/modules/payments/components/PaymentsTab';
 import { InvoiceActivityTab } from '../components/tabs/InvoiceActivityTab';
-import { InvoiceDownloadPdfButton } from '../components/InvoiceDownloadPdfButton';
+import { InvoicePDFPreviewModal } from '../components/InvoicePDFPreviewModal';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useQueryClient } from '@tanstack/react-query';
 
 const STATUS_COLOR: Record<string, string> = {
   draft: 'bg-muted text-muted-foreground',
@@ -36,6 +37,7 @@ export function InvoiceDetailPage() {
   const { data: invoice, isLoading } = useCustomerInvoice(invoiceId);
   const { post, void: voidMutation, remove, markPaid, reopen } = useInvoiceMutations();
   const { canUpdate, canDelete, isMainAdmin } = usePermissions();
+  const qc = useQueryClient();
   const canUpdateInvoice = isMainAdmin || canUpdate('sales');
   const canDeleteInvoice = isMainAdmin || canDelete('sales');
 
@@ -46,6 +48,13 @@ export function InvoiceDetailPage() {
   const [reopenOpen, setReopenOpen] = useState(false);
   const [reopenMemo, setReopenMemo] = useState('');
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false);
+
+  // Totals must always render a number (0 included) — never a dash.
+  const money = (amount?: number | null) => {
+    const value = typeof amount === 'number' && Number.isFinite(amount) ? amount : 0;
+    return value === 0 ? `0 ${currencyInfo.code}` : format(value);
+  };
 
   if (isLoading || !invoice) {
     return <div className="p-6 text-sm text-muted-foreground">{t('loading')}</div>;
@@ -80,12 +89,21 @@ export function InvoiceDetailPage() {
             size="sm"
             variant="outline"
             className="gap-2"
-            onClick={() => window.open(`/dashboard/invoices/${invoice.id}/report`, '_blank', 'noopener,noreferrer')}
+            onClick={() => setPdfPreviewOpen(true)}
           >
             <Printer className="h-4 w-4" />
             <span className="hidden sm:inline">{t('actions.print', 'Print / View PDF')}</span>
           </Button>
-          <InvoiceDownloadPdfButton invoice={invoice} />
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-2"
+            onClick={() => setPdfPreviewOpen(true)}
+          >
+            <Download className="h-4 w-4" />
+            <span className="hidden sm:inline">{t('actions.download_pdf', 'Download PDF')}</span>
+          </Button>
+
           {invoice.status === 'draft' && canUpdateInvoice && (
             <Button size="sm" className="gap-2 bg-primary text-white hover:bg-primary/90 shadow-medium" onClick={() => post.mutate(invoice.id)}>
               <Send className="h-4 w-4" />
@@ -199,11 +217,11 @@ export function InvoiceDetailPage() {
         <Card className="shadow-card border-0">
           <CardContent className="pt-6 space-y-2.5 text-sm">
             <div className="flex justify-between"><span className="text-muted-foreground">{t('detail.subtotal')}</span><span className="font-medium">{format(invoice.subtotal)}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">{t('detail.tax')}</span><span className="font-medium">{format(invoice.taxAmount)}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">{t('detail.tax')}</span><span className="font-medium">{money(invoice.taxAmount)}</span></div>
             <Separator />
             <div className="flex justify-between font-semibold text-base"><span>{t('detail.grand_total')}</span><span>{format(invoice.grandTotal)}</span></div>
-            <div className="flex justify-between text-green-700 dark:text-green-400"><span>{t('detail.amount_paid')}</span><span className="font-medium">{format(invoice.amountPaid)}</span></div>
-            <div className="flex justify-between text-amber-700 dark:text-amber-400"><span>{t('detail.amount_due')}</span><span className="font-medium">{format(invoice.amountDue)}</span></div>
+            <div className="flex justify-between text-green-700 dark:text-green-400"><span>{t('detail.amount_paid')}</span><span className="font-medium">{money(invoice.amountPaid)}</span></div>
+            <div className="flex justify-between text-amber-700 dark:text-amber-400"><span>{t('detail.amount_due')}</span><span className="font-medium">{money(invoice.amountDue)}</span></div>
             {invoice.grandTotal > 0 && (
               <div className="pt-2">
                 <div className="h-1.5 rounded-full bg-muted overflow-hidden">
@@ -258,6 +276,7 @@ export function InvoiceDetailPage() {
                 </div>
               )}
               <PaymentsTab
+                onPaymentsChanged={() => qc.invalidateQueries({ queryKey: ['customer-invoices'] })}
                 entityType="invoice"
                 entityId={String(invoice.id)}
                 entityNumber={invoice.invoiceNumber}
@@ -357,8 +376,15 @@ export function InvoiceDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <InvoicePDFPreviewModal
+        isOpen={pdfPreviewOpen}
+        onClose={() => setPdfPreviewOpen(false)}
+        invoice={invoice}
+      />
       </div>
     </div>
+
   );
 }
 

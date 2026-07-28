@@ -13,7 +13,12 @@ namespace MyApi.Modules.Invoices.Controllers
     public class InvoicesController : ControllerBase
     {
         private readonly IInvoiceService _service;
-        public InvoicesController(IInvoiceService service) { _service = service; }
+        private readonly ILogger<InvoicesController>? _logger;
+        public InvoicesController(IInvoiceService service, ILogger<InvoicesController>? logger = null)
+        {
+            _service = service;
+            _logger = logger;
+        }
 
         private string UserId() =>
             User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "anonymous";
@@ -37,11 +42,54 @@ namespace MyApi.Modules.Invoices.Controllers
         }
 
         [HttpPost("from-sale/{saleId:int}")]
-        public async Task<IActionResult> CreateFromSale(int saleId, [FromQuery] int? serviceOrderId = null)
+        public async Task<IActionResult> CreateFromSale(int saleId, [FromQuery] int? serviceOrderId = null, [FromQuery] bool post = true)
         {
+            const string trigger = "auto:create_from_sale";
+            using var logScope = _logger?.BeginScope(new Dictionary<string, object?>
+            {
+                ["Operation"] = "InvoiceCreateFromSale",
+                ["SaleId"] = saleId,
+                ["ServiceOrderId"] = serviceOrderId,
+                ["AutoPostRequested"] = post,
+                ["UserId"] = UserId(),
+            });
+
             var invoice = await _service.CreateDraftFromSaleAsync(saleId, UserId(), serviceOrderId);
+            _logger?.LogInformation(
+                "Draft invoice {InvoiceId} created from sale {SaleId} (total {Total} {Currency}); auto-post requested: {AutoPostRequested}",
+                invoice.Id, saleId, invoice.GrandTotal, invoice.Currency, post);
+
+            // Invoices raised from the sale's Invoices tab go straight to "posted" so the
+            // user can record payments immediately. Pass ?post=false to keep it a draft.
+            if (!post)
+            {
+                _logger?.LogInformation("Auto-post disabled by caller for invoice {InvoiceId} — left as draft", invoice.Id);
+                await _service.LogAutoPostSkippedAsync(invoice.Id, UserId(), trigger, "auto-post disabled by the caller (post=false)");
+            }
+            else if (invoice.Status != "draft")
+            {
+                _logger?.LogInformation("Invoice {InvoiceId} already '{Status}' after creation — no auto-post needed", invoice.Id, invoice.Status);
+            }
+            else
+            {
+                try
+                {
+                    invoice = await _service.PostAsync(invoice.Id, new PostInvoiceDto(), UserId(), trigger);
+                    _logger?.LogInformation("Invoice {InvoiceId} auto-posted as {Number} for sale {SaleId}",
+                        invoice.Id, invoice.InvoiceNumber, saleId);
+                }
+                catch (Exception ex) when (ex is InvalidOperationException || ex is ArgumentException)
+                {
+                    // Auto-post is best-effort: keep the created draft rather than failing.
+                    _logger?.LogWarning(ex, "Auto-post failed for invoice {InvoiceId} (sale {SaleId}); left as draft: {Reason}",
+                        invoice.Id, saleId, ex.Message);
+                    await _service.LogAutoPostSkippedAsync(invoice.Id, UserId(), trigger, ex.Message);
+                }
+            }
             return CreatedAtAction(nameof(Get), new { id = invoice.Id }, invoice);
         }
+
+
 
         [HttpPatch("{id:int}")]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateInvoiceDto dto)

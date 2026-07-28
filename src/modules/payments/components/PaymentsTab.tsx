@@ -74,6 +74,8 @@ interface PaymentsTabProps {
   items?: { id: string; itemName: string; totalPrice: number }[];
   /** Full offer/sale data object for generating payment receipt PDFs */
   entityData?: any;
+  /** Called after payments/plans change so the parent can refresh its own totals. */
+  onPaymentsChanged?: () => void;
 }
 
 // ── Method icon helper ────────────────────────────────
@@ -102,7 +104,7 @@ const statusColor = (status: string) => {
 // ═══════════════════════════════════════════════════════
 // Main PaymentsTab Component
 // ═══════════════════════════════════════════════════════
-export function PaymentsTab({ entityType, entityId, entityNumber, totalAmount, currency, items = [], entityData }: PaymentsTabProps) {
+export function PaymentsTab({ entityType, entityId, entityNumber, totalAmount, currency, items = [], entityData, onPaymentsChanged }: PaymentsTabProps) {
   const { t } = useTranslation('payments');
   const { format: formatCurrency, current: currencyInfo } = useCurrency();
 
@@ -164,6 +166,13 @@ export function PaymentsTab({ entityType, entityId, entityNumber, totalAmount, c
   }, [entityType, entityId, totalAmount, currency]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Refresh local payment data AND let the parent (invoice/sale/offer detail)
+  // refetch its header totals, which the backend recalculates on every payment.
+  const refreshAll = useCallback(async () => {
+    await fetchData();
+    onPaymentsChanged?.();
+  }, [fetchData, onPaymentsChanged]);
 
   // ── Download Payment Receipt PDF ──
   const handleDownloadReceipt = useCallback(async (payment: Payment) => {
@@ -443,7 +452,7 @@ export function PaymentsTab({ entityType, entityId, entityNumber, totalAmount, c
                             try {
                               await paymentsApi.deletePayment(entityType, entityId, payment.id);
                               toast.success(t('paymentDeleted'));
-                              fetchData();
+                              refreshAll();
                             } catch (err: any) {
                               console.error('[PaymentsTab] Delete failed:', err);
                               const status = err?.status || err?.response?.status || '';
@@ -524,7 +533,7 @@ export function PaymentsTab({ entityType, entityId, entityNumber, totalAmount, c
         items={items}
         plans={plans}
         existingCount={payments.length}
-        onSuccess={fetchData}
+        onSuccess={refreshAll}
       />
 
       {/* ── Create Plan Modal ──────────────────────────── */}
@@ -535,7 +544,7 @@ export function PaymentsTab({ entityType, entityId, entityNumber, totalAmount, c
         entityId={entityId}
         totalAmount={summary?.remainingAmount ?? totalAmount}
         currency={currency}
-        onSuccess={fetchData}
+        onSuccess={refreshAll}
       />
 
       {/* ── Statement Modal ────────────────────────────── */}

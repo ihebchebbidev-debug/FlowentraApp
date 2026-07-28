@@ -115,8 +115,10 @@ export const paymentsApi = {
       },
     );
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to create payment' }));
-      const err: any = new Error(error.message || 'Failed to create payment');
+      const error: any = await response.json().catch(() => ({}));
+      const msg = error?.error?.message || error?.message || 'Failed to create payment';
+      const err: any = new Error(msg);
+
       err.status = response.status;
       throw err;
     }
@@ -221,8 +223,10 @@ export const paymentsApi = {
       },
     );
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to create plan' }));
-      const err: any = new Error(error.message || 'Failed to create plan');
+      const error: any = await response.json().catch(() => ({}));
+      const msg = error?.error?.message || error?.message || 'Failed to create plan';
+      const err: any = new Error(msg);
+
       err.status = response.status;
       throw err;
     }

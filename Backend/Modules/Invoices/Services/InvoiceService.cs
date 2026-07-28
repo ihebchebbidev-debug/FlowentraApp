@@ -475,16 +475,40 @@ namespace MyApi.Modules.Invoices.Services
             return await EnrichAsync(invoice);
         }
 
-        public async Task<InvoiceDto> PostAsync(int id, PostInvoiceDto dto, string userId)
+        public async Task<InvoiceDto> PostAsync(int id, PostInvoiceDto dto, string userId, string? trigger = null)
         {
+            trigger = string.IsNullOrWhiteSpace(trigger) ? "manual" : trigger!;
+            using var logScope = _logger.BeginScope(new Dictionary<string, object?>
+            {
+                ["Operation"] = "InvoicePost",
+                ["InvoiceId"] = id,
+                ["Trigger"] = trigger,
+                ["UserId"] = userId,
+            });
+
             var invoice = await _context.Set<Invoice>()
                 .Include(i => i.Lines)
                 .FirstOrDefaultAsync(i => i.Id == id && !i.IsDeleted);
-            if (invoice == null) throw new KeyNotFoundException($"Invoice {id} not found");
+            if (invoice == null)
+            {
+                _logger.LogWarning("Invoice post skipped: invoice {InvoiceId} not found (trigger {Trigger})", id, trigger);
+                throw new KeyNotFoundException($"Invoice {id} not found");
+            }
             if (invoice.Status != "draft")
+            {
+                _logger.LogWarning("Invoice post skipped: invoice {InvoiceId} is '{Status}', not a draft (trigger {Trigger})",
+                    id, invoice.Status, trigger);
                 throw new InvalidOperationException($"Invoice {id} is '{invoice.Status}', cannot post.");
+            }
             if (!invoice.Lines.Any())
+            {
+                _logger.LogWarning("Invoice post skipped: invoice {InvoiceId} has no lines (trigger {Trigger})", id, trigger);
                 throw new InvalidOperationException("Cannot post an invoice with no lines.");
+            }
+
+            _logger.LogInformation(
+                "Posting invoice {InvoiceId} (sale {SaleId}, {LineCount} line(s)) — trigger {Trigger}, requested by {UserId}",
+                id, invoice.SaleId, invoice.Lines.Count, trigger, userId);
 
             RecalculateTotals(invoice);
 
@@ -494,16 +518,22 @@ namespace MyApi.Modules.Invoices.Services
                 // If the numbering service is unavailable, refuse to post — the user should
                 // retry rather than get a non-sequential fallback number silently persisted.
                 if (_numbering == null)
+                {
+                    _logger.LogError("Invoice post aborted for {InvoiceId}: numbering service unavailable (trigger {Trigger})", id, trigger);
                     throw new InvalidOperationException("Invoice numbering service is unavailable — cannot post right now. Please retry.");
+                }
                 string number;
                 try { number = await _numbering.GetNextAsync("Invoice"); }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Invoice numbering failed for {Id}; refusing to post with a fallback number", id);
+                    _logger.LogError(ex, "Invoice numbering failed for {InvoiceId} (trigger {Trigger}); refusing to post with a fallback number", id, trigger);
                     throw new InvalidOperationException("Invoice numbering failed. Please retry — no fallback number was assigned.", ex);
                 }
                 if (string.IsNullOrWhiteSpace(number))
+                {
+                    _logger.LogError("Invoice numbering returned empty for {InvoiceId} (trigger {Trigger})", id, trigger);
                     throw new InvalidOperationException("Invoice numbering returned an empty value. Please retry.");
+                }
                 invoice.InvoiceNumber = number;
             }
 
@@ -514,17 +544,50 @@ namespace MyApi.Modules.Invoices.Services
             invoice.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Invoice {Id} posted as {Number}", invoice.Id, invoice.InvoiceNumber);
+            _logger.LogInformation(
+                "Invoice {InvoiceId} posted as {Number} — total {Total} {Currency}, sale {SaleId}, trigger {Trigger}",
+                invoice.Id, invoice.InvoiceNumber, invoice.GrandTotal, invoice.Currency, invoice.SaleId, trigger);
+
+            var triggerNote = trigger == "manual" ? "" : $" (auto-posted — {DescribeTrigger(trigger)})";
             await LogActivityAsync(invoice.Id, "posted", userId,
-                description: $"Invoice posted as {invoice.InvoiceNumber} — total {invoice.GrandTotal:0.##} {invoice.Currency}.",
+                description: $"Invoice posted as {invoice.InvoiceNumber} — total {invoice.GrandTotal:0.##} {invoice.Currency}.{triggerNote}",
                 oldValue: "draft",
                 newValue: invoice.InvoiceNumber);
             await LogSaleActivityAsync(invoice.SaleId, "invoice_posted", userId,
-                $"Invoice {InvoiceLabel(invoice)} posted — total {invoice.GrandTotal:0.##} {invoice.Currency}.");
+                $"Invoice {InvoiceLabel(invoice)} posted — total {invoice.GrandTotal:0.##} {invoice.Currency}.{triggerNote}");
             await RecalculatePaymentStateAsync(invoice.Id);
             if (invoice.SaleId.HasValue) await SyncSaleInvoiceStateAsync(invoice.SaleId.Value);
             return await EnrichAsync(invoice);
         }
+
+        /// <summary>Human-readable label for an auto-post trigger, used in activity feeds.</summary>
+        private static string DescribeTrigger(string trigger) => trigger switch
+        {
+            "auto:create_from_sale" => "created from the sale's Invoices tab",
+            "auto:payment_recording" => "a payment was recorded against it",
+            _ => trigger,
+        };
+
+        public async Task LogAutoPostSkippedAsync(int invoiceId, string userId, string trigger, string reason)
+        {
+            var invoice = await _context.Set<Invoice>()
+                .FirstOrDefaultAsync(i => i.Id == invoiceId && !i.IsDeleted);
+
+            _logger.LogWarning(
+                "Auto-post did not complete for invoice {InvoiceId} (sale {SaleId}, status {Status}) — trigger {Trigger}, reason: {Reason}",
+                invoiceId, invoice?.SaleId, invoice?.Status, trigger, reason);
+
+            await LogActivityAsync(invoiceId, "auto_post_skipped", userId,
+                description: $"Auto-post skipped ({DescribeTrigger(trigger)}) — left as draft. Reason: {reason}",
+                oldValue: invoice?.Status,
+                newValue: invoice?.Status);
+            if (invoice != null)
+            {
+                await LogSaleActivityAsync(invoice.SaleId, "invoice_auto_post_skipped", userId,
+                    $"Invoice {InvoiceLabel(invoice)} stayed a draft ({DescribeTrigger(trigger)}) — {reason}");
+            }
+        }
+
 
         public async Task<InvoiceDto> VoidAsync(int id, VoidInvoiceDto dto, string userId)
         {

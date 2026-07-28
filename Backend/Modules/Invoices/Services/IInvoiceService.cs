@@ -18,7 +18,14 @@ namespace MyApi.Modules.Invoices.Services
         Task<InvoiceDto> CreateDraftFromSaleAsync(int saleId, string userId, int? serviceOrderId = null);
 
         Task<InvoiceDto> UpdateDraftAsync(int id, UpdateInvoiceDto dto, string userId);
-        Task<InvoiceDto> PostAsync(int id, PostInvoiceDto dto, string userId);
+        // `trigger` describes WHO/WHAT posted the invoice (e.g. "manual",
+        // "auto:create_from_sale", "auto:payment_recording") and is written to the
+        // structured logs plus the invoice/sale activity feeds for traceability.
+        Task<InvoiceDto> PostAsync(int id, PostInvoiceDto dto, string userId, string? trigger = null);
+
+        // Records why an automatic post attempt did NOT happen (or failed) on both the
+        // invoice activity feed and the related sale/order activity timeline.
+        Task LogAutoPostSkippedAsync(int invoiceId, string userId, string trigger, string reason);
         Task<InvoiceDto> VoidAsync(int id, VoidInvoiceDto dto, string userId);
         Task<InvoiceDto> MarkPaidAsync(int id, MarkPaidInvoiceDto dto, string userId);
         Task<InvoiceDto> ReopenAsync(int id, ReopenInvoiceDto dto, string userId);
