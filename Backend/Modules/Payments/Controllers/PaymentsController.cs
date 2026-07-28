@@ -282,6 +282,145 @@ namespace MyApi.Modules.Payments.Controllers
         }
 
         // ══════════════════════════════════════════════
+        // Invoice Payments (customer invoice ledger)
+        // ══════════════════════════════════════════════
+
+        [HttpGet("api/invoices/{entityId}/payments")]
+        public async Task<IActionResult> GetInvoicePayments(string entityId)
+        {
+            try
+            {
+                var payments = await _paymentService.GetPaymentsAsync("invoice", entityId);
+                return Ok(new { success = true, data = new { payments } });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching invoice payments for {EntityId}", entityId);
+                return StatusCode(500, new { success = false, error = new { message = "Failed to fetch payments" } });
+            }
+        }
+
+        [HttpPost("api/invoices/{entityId}/payments")]
+        public async Task<IActionResult> CreateInvoicePayment(string entityId, [FromBody] CreatePaymentDto dto)
+        {
+            try
+            {
+                var payment = await _paymentService.CreatePaymentAsync("invoice", entityId, dto, GetUserId(), GetUserName());
+                return Created($"/api/invoices/{entityId}/payments/{payment.Id}", new { success = true, data = payment });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { success = false, error = new { message = ex.Message } });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { success = false, error = new { message = ex.Message } });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { success = false, error = new { message = ex.Message } });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating invoice payment for {EntityId}", entityId);
+                return StatusCode(500, new { success = false, error = new { message = "Failed to create payment" } });
+            }
+        }
+
+        [HttpDelete("api/invoices/{entityId}/payments/{paymentId}")]
+        public async Task<IActionResult> DeleteInvoicePayment(string entityId, string paymentId)
+        {
+            try
+            {
+                var result = await _paymentService.DeletePaymentAsync("invoice", entityId, paymentId);
+                if (!result) return NotFound(new { success = false, error = new { message = "Payment not found" } });
+                return Ok(new { success = true, message = "Payment deleted" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting invoice payment {PaymentId}", paymentId);
+                return StatusCode(500, new { success = false, error = new { message = "Failed to delete payment" } });
+            }
+        }
+
+        [HttpGet("api/invoices/{entityId}/payments/summary")]
+        public async Task<IActionResult> GetInvoicePaymentSummary(string entityId)
+        {
+            try
+            {
+                var summary = await _paymentService.GetPaymentSummaryAsync("invoice", entityId);
+                return Ok(new { success = true, data = summary });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching invoice payment summary for {EntityId}", entityId);
+                return StatusCode(500, new { success = false, error = new { message = "Failed to fetch summary" } });
+            }
+        }
+
+        [HttpGet("api/invoices/{entityId}/payments/statement")]
+        public async Task<IActionResult> GetInvoicePaymentStatement(string entityId)
+        {
+            try
+            {
+                var statement = await _paymentService.GetPaymentStatementAsync("invoice", entityId);
+                return Ok(new { success = true, data = statement });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching invoice payment statement for {EntityId}", entityId);
+                return StatusCode(500, new { success = false, error = new { message = "Failed to fetch statement" } });
+            }
+        }
+
+        [HttpGet("api/invoices/{entityId}/payment-plans")]
+        public async Task<IActionResult> GetInvoicePaymentPlans(string entityId)
+        {
+            try
+            {
+                var plans = await _paymentService.GetPaymentPlansAsync("invoice", entityId);
+                return Ok(new { success = true, data = new { plans } });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching invoice payment plans for {EntityId}", entityId);
+                return StatusCode(500, new { success = false, error = new { message = "Failed to fetch plans" } });
+            }
+        }
+
+        [HttpPost("api/invoices/{entityId}/payment-plans")]
+        public async Task<IActionResult> CreateInvoicePaymentPlan(string entityId, [FromBody] CreatePaymentPlanDto dto)
+        {
+            try
+            {
+                var plan = await _paymentService.CreatePaymentPlanAsync("invoice", entityId, dto, GetUserId());
+                return Created($"/api/invoices/{entityId}/payment-plans/{plan.Id}", new { success = true, data = plan });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating invoice payment plan for {EntityId}", entityId);
+                return StatusCode(500, new { success = false, error = new { message = "Failed to create plan" } });
+            }
+        }
+
+        [HttpDelete("api/invoices/{entityId}/payment-plans/{planId}")]
+        public async Task<IActionResult> DeleteInvoicePaymentPlan(string entityId, string planId)
+        {
+            try
+            {
+                var result = await _paymentService.DeletePaymentPlanAsync("invoice", entityId, planId);
+                if (!result) return NotFound(new { success = false, error = new { message = "Plan not found" } });
+                return Ok(new { success = true, message = "Plan deleted" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting invoice payment plan {PlanId}", planId);
+                return StatusCode(500, new { success = false, error = new { message = "Failed to delete plan" } });
+            }
+        }
+
+
+        // ══════════════════════════════════════════════
         // Email Reminders & Confirmations (shared)
         // ══════════════════════════════════════════════
 
