@@ -111,12 +111,12 @@ export function readCachedTenants(): Tenant[] {
   }
 }
 
-let _memo: { profile: CompanyProfile; at: number } | null = null;
+const _memo = new Map<string, { profile: CompanyProfile; at: number }>();
 const MEMO_TTL_MS = 30_000;
 
 /** Drop the memoised profile — call after saving Company Information. */
 export function invalidateActiveCompany(): void {
-  _memo = null;
+  _memo.clear();
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('active-company-changed'));
   }
@@ -126,7 +126,7 @@ export function invalidateActiveCompany(): void {
 // would print the previous company's footer.
 if (typeof window !== 'undefined') {
   window.addEventListener(TARGET_TENANT_CHANGED_EVENT, () => {
-    _memo = null;
+    _memo.clear();
   });
 }
 
@@ -135,24 +135,34 @@ if (typeof window !== 'undefined') {
  * Serves instantly from the tenant cache; only hits the API when the cache is
  * empty, so report generation never blocks on a round-trip.
  */
-export async function loadActiveCompany(): Promise<CompanyProfile> {
-  if (_memo && Date.now() - _memo.at < MEMO_TTL_MS) return _memo.profile;
+export async function loadActiveCompany(ownerTenantId?: number): Promise<CompanyProfile> {
+  const key = ownerTenantId ? `id:${ownerTenantId}` : 'active';
+  const hit = _memo.get(key);
+  if (hit && Date.now() - hit.at < MEMO_TTL_MS) return hit.profile;
 
   let tenants = readCachedTenants();
-  if (!tenants.length) {
+  const needsFetch = !tenants.length
+    || (ownerTenantId !== undefined && !tenants.some(t => t.id === ownerTenantId));
+  if (needsFetch) {
     try {
       tenants = await tenantsApi.list();
     } catch {
-      tenants = [];
+      /* keep whatever the cache gave us */
     }
   }
-  const profile = tenantToCompanyProfile(pickActiveTenant(tenants));
-  _memo = { profile, at: Date.now() };
+  // A record printed in cross-company mode must show ITS OWN company's footer,
+  // so an explicit owner id always wins over the active-company selection.
+  const owner = ownerTenantId !== undefined
+    ? tenants.find(t => t.id === ownerTenantId)
+    : undefined;
+  const profile = tenantToCompanyProfile(owner ?? pickActiveTenant(tenants));
+  _memo.set(key, { profile, at: Date.now() });
   return profile;
 }
 
 /** Synchronous best-effort variant (cache only). */
 export function getActiveCompanySync(): CompanyProfile {
-  if (_memo) return _memo.profile;
+  const hit = _memo.get('active');
+  if (hit) return hit.profile;
   return tenantToCompanyProfile(pickActiveTenant(readCachedTenants()));
 }

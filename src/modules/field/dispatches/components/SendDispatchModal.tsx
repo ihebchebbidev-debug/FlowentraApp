@@ -8,7 +8,7 @@ import { useCompanyLogo } from '@/hooks/useCompanyLogo';
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { EmailComposer, type EmailComposerDocumentInfo } from '@/shared/components/email/EmailComposer';
 import type { ServiceOrderDispatch } from '../../service-orders/entities/dispatches/types';
-import { resolveCompanyForPdf } from '@/shared/pdf/resolveCompany';
+import { resolveCompanyForPdf, getRecordTenantId } from '@/shared/pdf/resolveCompany';
 
 interface SendDispatchModalProps {
   open: boolean;
@@ -30,7 +30,7 @@ export function SendDispatchModal({ open, onOpenChange, dispatch, onSendSuccess 
       try {
         const settings = await PdfSettingsService.loadSettingsAsync();
         const logoBase64 = await getCompanyLogoBase64(companyLogo);
-        setPdfSettings({ ...settings, company: await resolveCompanyForPdf(settings.company, logoBase64 || '') });
+        setPdfSettings({ ...settings, company: await resolveCompanyForPdf(settings.company, logoBase64 || '', getRecordTenantId(dispatch)) });
       } catch { setPdfSettings(defaultSettings); }
     };
     load();

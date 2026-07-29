@@ -1,5 +1,5 @@
 import { getCurrentTenant, TENANT_HEADER } from '@/utils/tenant';
-import { getTargetTenantHeaders } from '@/utils/targetTenant';
+import { getTargetTenantHeaders, getActiveCompanyId, TARGET_TENANT_CHANGED_EVENT } from '@/utils/targetTenant';
 
 /**
  * Global PDF Settings API Service
@@ -21,6 +21,31 @@ const LOCAL_STORAGE_KEYS: Record<PdfSettingsModule, string> = {
   dispatches: 'dispatch-pdf-settings',
   serviceOrders: 'service-order-pdf-settings',
 };
+
+/**
+ * PDF settings are per-company: the company block inside them holds an address
+ * that belongs to exactly one tenant. Scoping the localStorage cache by
+ * app-tenant + active-company id stops company A's saved override from being
+ * served to company B while the backend round-trip is still in flight.
+ */
+function companyScopeKey(): string {
+  const app = (getCurrentTenant() || 'default').trim().toLowerCase();
+  const id = getActiveCompanyId();
+  return `${app}:${id ?? 'default'}`;
+}
+
+function scopedStorageKey(module: PdfSettingsModule): string {
+  return `${LOCAL_STORAGE_KEYS[module]}::${companyScopeKey()}`;
+}
+
+/** Caches that must be dropped when the user switches company. */
+const cacheResetHooks = new Set<() => void>();
+
+/** Register a module-level settings cache so it is cleared on company switch. */
+export function registerPdfSettingsCacheReset(fn: () => void): () => void {
+  cacheResetHooks.add(fn);
+  return () => cacheResetHooks.delete(fn);
+}
 
 // API response structure
 interface PdfSettingsApiResponse {
@@ -84,7 +109,7 @@ export function normalizePdfCompanySettings<T>(defaults: T, stored: any): T {
 class PdfSettingsApiService {
   private API_URL = import.meta.env.VITE_API_URL || import.meta.env.REACT_APP_API_URL || 'https://api.flowentra.app';
   private syncInProgress = false;
-  private pendingSyncs: Map<PdfSettingsModule, any> = new Map();
+  private pendingSyncs: Map<PdfSettingsModule, { settings: any; headers: Record<string, string> }> = new Map();
   private cache: Map<PdfSettingsModule, any> = new Map();
 
   /**
@@ -155,8 +180,13 @@ class PdfSettingsApiService {
     this.saveToLocalStorage(module, settings);
     console.log(`[PdfSettingsApi] Saved ${module} settings to cache/localStorage`);
 
-    // Queue the sync to backend
-    this.pendingSyncs.set(module, settings);
+    // Queue the sync to backend. The tenant headers are snapshotted NOW: if the
+    // user switches company during the debounce window, the write must still
+    // land on the company the settings were edited for.
+    this.pendingSyncs.set(module, {
+      settings,
+      headers: this.getMutationHeaders() as Record<string, string>,
+    });
     this.debouncedSync();
   }
 
@@ -171,8 +201,18 @@ class PdfSettingsApiService {
     }
     
     this.syncTimeout = window.setTimeout(() => {
+      this.syncTimeout = null;
       this.syncToBackend();
     }, 1000);
+  }
+
+  /** Push everything queued right now (used before a company switch). */
+  flushPendingSyncs(): void {
+    if (this.syncTimeout) {
+      clearTimeout(this.syncTimeout);
+      this.syncTimeout = null;
+    }
+    void this.syncToBackend();
   }
 
   /**
@@ -186,13 +226,17 @@ class PdfSettingsApiService {
     this.syncInProgress = true;
 
     try {
-      // Process all pending syncs
-      for (const [module, settings] of this.pendingSyncs) {
+      // Snapshot the queue: entries added while we await must survive.
+      const batch = Array.from(this.pendingSyncs.entries());
+      for (const [module, entry] of batch) {
+        // A newer save (or a reset) may have replaced/removed this entry.
+        if (this.pendingSyncs.get(module) !== entry) continue;
+        this.pendingSyncs.delete(module);
         try {
           const response = await fetch(`${this.API_URL}/api/PdfSettings/${module}`, {
             method: 'PUT',
-            headers: this.getMutationHeaders(),
-            body: JSON.stringify({ settingsJson: settings }),
+            headers: entry.headers,
+            body: JSON.stringify({ settingsJson: entry.settings }),
           });
 
           if (response.ok) {
@@ -204,8 +248,6 @@ class PdfSettingsApiService {
           console.error(`[PdfSettingsApi] Error syncing ${module}:`, error);
         }
       }
-
-      this.pendingSyncs.clear();
     } finally {
       this.syncInProgress = false;
       
@@ -215,15 +257,21 @@ class PdfSettingsApiService {
     }
   }
 
+
   /**
    * Reset settings for a module to defaults
    */
   async resetSettings<T>(module: PdfSettingsModule, defaultSettings: T): Promise<T> {
+    // Drop any queued save first, otherwise the debounced sync would re-write
+    // the settings we are about to reset.
+    this.pendingSyncs.delete(module);
+
     // Clear cache
     this.cache.delete(module);
     
     // Remove from localStorage
-    localStorage.removeItem(LOCAL_STORAGE_KEYS[module]);
+    this.removeLocal(module);
+    
     
     // Save empty/default to backend
     try {
@@ -308,17 +356,52 @@ class PdfSettingsApiService {
    * Load from localStorage (fallback)
    */
   private loadFromLocalStorage<T>(module: PdfSettingsModule, defaultSettings: T): T {
-    try {
-      const stored = localStorage.getItem(LOCAL_STORAGE_KEYS[module]);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        this.cache.set(module, parsed);
-        return normalizePdfCompanySettings(defaultSettings, parsed);
-      }
-    } catch (error) {
-      console.warn(`[PdfSettingsApi] Failed to load ${module} from localStorage:`, error);
+    const parsedRaw = this.readRawLocal(module);
+    if (parsedRaw !== null) {
+      this.cache.set(module, parsedRaw);
+      return normalizePdfCompanySettings(defaultSettings, parsedRaw);
     }
     return defaultSettings;
+  }
+
+  /** Raw (un-normalised) scoped read, with one-time migration of the legacy key. */
+  private readRawLocal(module: PdfSettingsModule): any | null {
+    try {
+      const scoped = localStorage.getItem(scopedStorageKey(module));
+      if (scoped) return JSON.parse(scoped);
+      // Legacy unscoped key: only trust it while no explicit company is selected,
+      // then migrate it into the scoped slot so it can never bleed across tenants.
+      if (getActiveCompanyId() === undefined) {
+        const legacy = localStorage.getItem(LOCAL_STORAGE_KEYS[module]);
+        if (legacy) {
+          localStorage.setItem(scopedStorageKey(module), legacy);
+          localStorage.removeItem(LOCAL_STORAGE_KEYS[module]);
+          return JSON.parse(legacy);
+        }
+      }
+    } catch (error) {
+      console.warn(`[PdfSettingsApi] Failed to read ${module} from localStorage:`, error);
+    }
+    return null;
+  }
+
+  /**
+   * Synchronous, company-scoped read used by the per-module services for
+   * instant first paint. Returns null when nothing is cached locally.
+   */
+  readLocalSync<T>(module: PdfSettingsModule, defaultSettings: T): T | null {
+    const raw = this.readRawLocal(module);
+    if (raw === null) return null;
+    this.cache.set(module, raw);
+    return normalizePdfCompanySettings(defaultSettings, raw);
+  }
+
+  /** Remove the company-scoped local copy (and any legacy leftover). */
+  removeLocal(module: PdfSettingsModule): void {
+    try {
+      localStorage.removeItem(scopedStorageKey(module));
+      localStorage.removeItem(LOCAL_STORAGE_KEYS[module]);
+    } catch { /* ignore */ }
   }
 
   /**
@@ -326,7 +409,7 @@ class PdfSettingsApiService {
    */
   private saveToLocalStorage<T>(module: PdfSettingsModule, settings: T): void {
     try {
-      localStorage.setItem(LOCAL_STORAGE_KEYS[module], JSON.stringify(settings));
+      localStorage.setItem(scopedStorageKey(module), JSON.stringify(settings));
     } catch (error) {
       console.error(`[PdfSettingsApi] Failed to save ${module} to localStorage:`, error);
     }
@@ -373,12 +456,32 @@ class PdfSettingsApiService {
    * Clear all localStorage PDF settings (forces fresh defaults)
    */
   clearAllLocalStorage(): void {
-    Object.values(LOCAL_STORAGE_KEYS).forEach(key => {
-      localStorage.removeItem(key);
-    });
+    const bases = Object.values(LOCAL_STORAGE_KEYS);
+    try {
+      const doomed: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && bases.some(base => key === base || key.startsWith(`${base}::`))) doomed.push(key);
+      }
+      doomed.forEach(key => localStorage.removeItem(key));
+    } catch { /* ignore */ }
     this.cache.clear();
     console.log('[PdfSettingsApi] Cleared all localStorage PDF settings');
   }
 }
 
 export const pdfSettingsApi = new PdfSettingsApiService();
+
+// Switching company must invalidate every in-memory PDF settings cache — the
+// next report would otherwise render the previous company's override block.
+if (typeof window !== 'undefined') {
+  window.addEventListener(TARGET_TENANT_CHANGED_EVENT, () => {
+    // Push pending edits with their original tenant headers BEFORE the caches
+    // are dropped, so an in-flight save cannot land on the new company.
+    pdfSettingsApi.flushPendingSyncs();
+    pdfSettingsApi.clearCache();
+    cacheResetHooks.forEach(fn => {
+      try { fn(); } catch { /* ignore */ }
+    });
+  });
+}

@@ -19,7 +19,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useCompanyLogo } from '@/hooks/useCompanyLogo';
 import { buildPdfFilename } from '@/shared/pdf/filename';
 import { toast } from 'sonner';
-import { resolveCompanyForPdf } from '@/shared/pdf/resolveCompany';
+import { resolveCompanyForPdf, getRecordTenantId } from '@/shared/pdf/resolveCompany';
 
 interface DispatchPDFPreviewModalProps {
   isOpen: boolean;
@@ -154,7 +154,7 @@ export function DispatchPDFPreviewModal({
           }
           setPdfSettings({
             ...settings,
-            company: await resolveCompanyForPdf(settings.company, logoBase64 || '')
+            company: await resolveCompanyForPdf(settings.company, logoBase64 || '', getRecordTenantId(dispatch))
           });
         }
       } catch (error) {

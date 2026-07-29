@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { Loader2 } from 'lucide-react';
 import { dispatchesApi } from '@/services/api/dispatchesApi';
-import { resolveCompanyForPdf } from '@/shared/pdf/resolveCompany';
+import { resolveCompanyForPdf, getRecordTenantId } from '@/shared/pdf/resolveCompany';
 
 export default function DispatchReportPage() {
   const { id } = useParams<{ id: string }>();
@@ -30,7 +30,7 @@ export default function DispatchReportPage() {
           dispatchesApi.getById(Number(id!)),
         ]);
         const logoBase64 = await getCompanyLogoBase64(companyLogo);
-        setPdfSettings({ ...settings, company: await resolveCompanyForPdf(settings.company, logoBase64 || '') });
+        setPdfSettings({ ...settings, company: await resolveCompanyForPdf(settings.company, logoBase64 || '', getRecordTenantId(dispatchData)) });
         setDispatch(dispatchData);
 
         try {

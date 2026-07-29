@@ -44,6 +44,9 @@ import { PaymentReceiptPDF } from './PaymentReceiptPDF';
 import { PaymentReceiptPreviewModal } from './PaymentReceiptPreviewModal';
 import { SendReportEmailDialog } from '@/components/shared/SendReportEmailDialog';
 import { PdfSettingsService } from '@/modules/offers/services/pdfSettings.service';
+import { useCompanyLogo } from '@/hooks/useCompanyLogo';
+import { getCompanyLogoBase64 } from '@/hooks/companyLogoUtils';
+import { resolveCompanyForPdf, getRecordTenantId } from '@/shared/pdf/resolveCompany';
 import type {
   EntityType,
   Payment,
@@ -107,6 +110,7 @@ const statusColor = (status: string) => {
 export function PaymentsTab({ entityType, entityId, entityNumber, totalAmount, currency, items = [], entityData, onPaymentsChanged }: PaymentsTabProps) {
   const { t } = useTranslation('payments');
   const { format: formatCurrency, current: currencyInfo } = useCurrency();
+  const companyLogo = useCompanyLogo();
 
   // Always show real numbers in payments (never '-' for zero)
   const formatAmount = (amount?: number) => {
@@ -182,7 +186,16 @@ export function PaymentsTab({ entityType, entityId, entityNumber, totalAmount, c
     }
     try {
       toast.info('Generating receipt PDF...');
-      const pdfSettings = PdfSettingsService.loadSettings();
+      const baseSettings = await PdfSettingsService.loadSettingsAsync();
+      const logoBase64 = await getCompanyLogoBase64(companyLogo);
+      const pdfSettings = {
+        ...baseSettings,
+        company: await resolveCompanyForPdf(
+          baseSettings.company,
+          logoBase64 || '',
+          getRecordTenantId(entityData),
+        ),
+      };
       const formatAmt = (amount: number) => {
         try {
           return `${new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(Math.round(amount))} ${currencyInfo.code}`;
@@ -212,7 +225,7 @@ export function PaymentsTab({ entityType, entityId, entityNumber, totalAmount, c
       console.error('Failed to generate receipt PDF:', error);
       toast.error('Failed to generate receipt');
     }
-  }, [entityData, payments, currencyInfo.code]);
+  }, [entityData, payments, currencyInfo.code, companyLogo]);
 
   const paidPct = summary ? Math.min(100, (summary.paidAmount / Math.max(summary.totalAmount, 1)) * 100) : 0;
 

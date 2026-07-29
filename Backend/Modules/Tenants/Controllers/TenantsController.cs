@@ -164,15 +164,23 @@ namespace MyApi.Modules.Tenants.Controllers
             var adminId = GetMainAdminUserId();
             if (adminId == null) return Forbid();
 
+            // Validate required fields + slug format before touching the DB.
+            var slug = (request.Slug ?? string.Empty).Trim().ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(request.CompanyName))
+                return BadRequest(new { message = "Company name is required." });
+            if (slug.Length < 2 || slug.Length > 50 ||
+                !System.Text.RegularExpressions.Regex.IsMatch(slug, "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$"))
+                return BadRequest(new { message = "Slug must be 2-50 characters, lowercase letters, digits or hyphens." });
+
             // Validate slug uniqueness
-            var slugExists = await _context.Tenants.AnyAsync(t => t.Slug == request.Slug.ToLower());
+            var slugExists = await _context.Tenants.AnyAsync(t => t.Slug == slug);
             if (slugExists)
                 return BadRequest(new { message = "A company with this slug already exists." });
 
             var tenant = new Tenant
             {
                 MainAdminUserId = adminId.Value,
-                Slug = request.Slug.ToLower().Trim(),
+                Slug = slug,
                 CompanyName = request.CompanyName,
                 CompanyLogoUrl = request.CompanyLogoUrl,
                 CompanyWebsite = request.CompanyWebsite,
@@ -306,6 +314,10 @@ namespace MyApi.Modules.Tenants.Controllers
                 .FirstOrDefaultAsync(t => t.Id == id && t.MainAdminUserId == adminId.Value);
 
             if (tenant == null) return NotFound();
+
+            // A deactivated company must never become the fallback company.
+            if (!tenant.IsActive)
+                return BadRequest(new { message = "Cannot set a deactivated company as default. Reactivate it first." });
 
             // Unset all other defaults for this admin
             var allTenants = await _context.Tenants

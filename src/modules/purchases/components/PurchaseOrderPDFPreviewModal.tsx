@@ -15,7 +15,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useTranslation } from 'react-i18next';
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { useToast } from '@/hooks/use-toast';
-import { resolveCompanyForPdf } from '@/shared/pdf/resolveCompany';
+import { resolveCompanyForPdf, getRecordTenantId } from '@/shared/pdf/resolveCompany';
 
 interface PurchaseOrderPDFPreviewModalProps {
   isOpen: boolean;
@@ -73,7 +73,7 @@ export function PurchaseOrderPDFPreviewModal({ isOpen, onClose, order, formatCur
         const settings = await PdfSettingsService.loadSettingsAsync();
         if (isMounted) {
           const logoBase64 = await getCompanyLogoBase64(companyLogo);
-          setPdfSettings({ ...settings, company: await resolveCompanyForPdf(settings.company, logoBase64 || '') } as any);
+          setPdfSettings({ ...settings, company: await resolveCompanyForPdf(settings.company, logoBase64 || '', getRecordTenantId(order)) } as any);
         }
       } catch { if (isMounted) setPdfSettings(defaultSettings); }
       finally { if (isMounted) setIsLoading(false); }

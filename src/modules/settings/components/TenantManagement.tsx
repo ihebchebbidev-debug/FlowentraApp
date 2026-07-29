@@ -3,7 +3,7 @@
  * Only accessible by MainAdminUser.
  */
 import { useState, useEffect } from 'react';
-import { Building2, Plus, Save, Loader2, Trash2, Star, Pencil, Upload, X, Layers, Eye, Settings2, ImageOff } from 'lucide-react';
+import { Building2, Plus, Save, Loader2, Trash2, Star, Pencil, Upload, X, Layers, Eye, Settings2, ImageOff, RotateCcw } from 'lucide-react';
 import { ModuleScopeDialog } from './ModuleScopeDialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -351,6 +351,25 @@ export function TenantManagement() {
     }
   };
 
+  /** Bring a deactivated company back — without it the row was a dead end. */
+  const handleReactivate = async (tenant: Tenant) => {
+    try {
+      await tenantsApi.update(tenant.id, { isActive: true });
+      toast({
+        title: t('companies.reactivateTitle', 'Company reactivated'),
+        description: t('companies.reactivateSuccess', { companyName: tenant.companyName }),
+      });
+      invalidateActiveCompany();
+      fetchTenants();
+    } catch (error: any) {
+      toast({
+        title: t('companies.errorTitle'),
+        description: error?.response?.data?.message || t('companies.reactivateError', 'Failed to reactivate company.'),
+        variant: 'destructive',
+      });
+    }
+  };
+
   // Drag & Drop Handlers
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -511,15 +530,21 @@ export function TenantManagement() {
                 return (
                 <div
                   key={tenant.id}
-                  className={`flex items-center gap-4 p-4 rounded-lg border transition-colors cursor-pointer ${
+                  className={`flex items-center gap-4 p-4 rounded-lg border transition-colors ${
+                    tenant.isActive ? 'cursor-pointer' : 'cursor-default opacity-70'
+                  } ${
                     isCurrentTenant
                       ? 'border-primary/50 bg-primary/5'
                       : 'border-border/50 bg-muted/20 hover:border-primary/30'
                   }`}
                   onClick={() => {
+                    // Switching into a deactivated company would load a company
+                    // the backend no longer serves — keep the row read-only.
+                    if (!tenant.isActive) return;
                     setTenantOverride(tenant.slug);
                   }}
                 >
+
                   {/* Company Logo (real) or a clean "no logo" placeholder */}
                   <CompanyAvatar tenant={tenant} adminLogoUrl={(user as any)?.companyLogoUrl} />
 
@@ -579,7 +604,7 @@ export function TenantManagement() {
 
                   {/* Actions */}
                   <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                    {!tenant.isDefault && (
+                    {!tenant.isDefault && tenant.isActive && (
                       <Button
                         type="button"
                         variant="ghost"
@@ -601,7 +626,7 @@ export function TenantManagement() {
                     >
                       <Pencil className="h-4 w-4 text-muted-foreground" />
                     </Button>
-                    {!tenant.isDefault && (
+                    {!tenant.isDefault && tenant.isActive && (
                       <Button
                         type="button"
                         variant="ghost"
@@ -613,6 +638,19 @@ export function TenantManagement() {
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     )}
+                    {!tenant.isActive && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={(e) => { e.stopPropagation(); handleReactivate(tenant); }}
+                        title={t('companies.reactivate', 'Reactivate')}
+                      >
+                        <RotateCcw className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    )}
+
                   </div>
                 </div>
                 );

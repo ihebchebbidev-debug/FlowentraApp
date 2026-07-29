@@ -19,7 +19,7 @@ import { useTranslation } from 'react-i18next';
 import { PDFAnnotationViewer, AnnotationsMap } from '@/components/shared/PDFAnnotationViewer';
 import { useCompanyLogo } from '@/hooks/useCompanyLogo';
 import { buildPdfFilename } from '@/shared/pdf/filename';
-import { resolveCompanyForPdf } from '@/shared/pdf/resolveCompany';
+import { resolveCompanyForPdf, getRecordTenantId } from '@/shared/pdf/resolveCompany';
 
 interface SalePDFPreviewModalProps {
   isOpen: boolean;
@@ -112,7 +112,7 @@ export function SalePDFPreviewModal({
           }
           setPdfSettings({
             ...settings,
-            company: await resolveCompanyForPdf(settings.company, logoBase64 || '')
+            company: await resolveCompanyForPdf(settings.company, logoBase64 || '', getRecordTenantId(sale))
           });
         }
       } catch (error) {

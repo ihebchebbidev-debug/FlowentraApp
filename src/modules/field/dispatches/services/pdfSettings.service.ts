@@ -6,11 +6,10 @@
  */
 
 import { PdfSettings, defaultSettings } from '../utils/pdfSettings.utils';
-import { pdfSettingsApi, normalizePdfCompanySettings } from '@/services/pdfSettingsApi';
+import { pdfSettingsApi, registerPdfSettingsCacheReset } from '@/services/pdfSettingsApi';
 
 export class PdfSettingsService {
   private static readonly MODULE = 'dispatches' as const;
-  private static readonly STORAGE_KEY = 'dispatch-pdf-settings';
   private static settingsCache: PdfSettings | null = null;
   private static loadPromise: Promise<PdfSettings> | null = null;
 
@@ -52,17 +51,11 @@ export class PdfSettingsService {
       return this.settingsCache;
     }
 
-    // Try localStorage for immediate display
-    try {
-      const stored = localStorage.getItem(this.STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        const merged = normalizePdfCompanySettings(defaultSettings, parsed);
-        this.settingsCache = merged;
-        return merged;
-      }
-    } catch (error) {
-      console.warn('[DispatchesPdfSettings] Failed to load from localStorage:', error);
+    // Try the company-scoped localStorage copy for immediate display.
+    const local = pdfSettingsApi.readLocalSync(this.MODULE, defaultSettings);
+    if (local) {
+      this.settingsCache = local;
+      return local;
     }
 
     // Start background load from backend
@@ -103,7 +96,7 @@ export class PdfSettingsService {
    */
   static resetSettings(): PdfSettings {
     this.settingsCache = null;
-    localStorage.removeItem(this.STORAGE_KEY);
+    pdfSettingsApi.removeLocal(this.MODULE);
     pdfSettingsApi.resetSettings(this.MODULE, defaultSettings).catch(() => {});
     return defaultSettings;
   }
@@ -150,3 +143,7 @@ export class PdfSettingsService {
     return await this.loadSettingsAsync();
   }
 }
+
+// Switching company invalidates these settings: the company block inside them
+// belongs to exactly one tenant.
+registerPdfSettingsCacheReset(() => PdfSettingsService.clearCache());

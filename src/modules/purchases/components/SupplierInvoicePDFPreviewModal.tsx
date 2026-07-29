@@ -15,7 +15,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '@/hooks/use-toast';
 import { useCurrency } from '@/shared/hooks/useCurrency';
-import { resolveCompanyForPdf } from '@/shared/pdf/resolveCompany';
+import { resolveCompanyForPdf, getRecordTenantId } from '@/shared/pdf/resolveCompany';
 
 interface SupplierInvoicePDFPreviewModalProps {
   isOpen: boolean;
@@ -79,7 +79,7 @@ export function SupplierInvoicePDFPreviewModal({ isOpen, onClose, invoice, forma
         const settings = await PdfSettingsService.loadSettingsAsync();
         if (isMounted) {
           const logoBase64 = await getCompanyLogoBase64(companyLogo);
-          setPdfSettings({ ...settings, company: await resolveCompanyForPdf(settings.company, logoBase64 || '') } as any);
+          setPdfSettings({ ...settings, company: await resolveCompanyForPdf(settings.company, logoBase64 || '', getRecordTenantId(invoice)) } as any);
         }
       } catch { if (isMounted) setPdfSettings(defaultSettings); }
       finally { if (isMounted) setIsLoading(false); }

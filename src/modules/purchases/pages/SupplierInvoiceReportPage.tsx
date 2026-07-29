@@ -12,7 +12,7 @@ import {
 import { PdfSettingsService } from "@/modules/sales/services/pdfSettings.service";
 import { useCompanyLogo } from "@/hooks/useCompanyLogo";
 import { useCurrency } from "@/shared/hooks/useCurrency";
-import { resolveCompanyForPdf } from '@/shared/pdf/resolveCompany';
+import { resolveCompanyForPdf, getRecordTenantId } from '@/shared/pdf/resolveCompany';
 
 /**
  * Full-screen PDF report for a Supplier Invoice. Mirrors OfferReportPage.
@@ -42,7 +42,7 @@ export default function SupplierInvoiceReportPage() {
         const logoBase64 = await getCompanyLogoBase64(companyLogo);
         setPdfSettings({
           ...settings,
-          company: await resolveCompanyForPdf(settings.company, logoBase64 || ""),
+          company: await resolveCompanyForPdf(settings.company, logoBase64 || '', getRecordTenantId(fetched)),
         } as any);
       } catch (err) {
         console.error("[SupplierInvoiceReportPage] load failed", err);

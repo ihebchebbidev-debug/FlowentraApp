@@ -7,7 +7,7 @@ import { PdfSettingsService } from '../services/pdfSettings.service';
 import { useCompanyLogo } from '@/hooks/useCompanyLogo';
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { EmailComposer, type EmailComposerDocumentInfo } from '@/shared/components/email/EmailComposer';
-import { resolveCompanyForPdf } from '@/shared/pdf/resolveCompany';
+import { resolveCompanyForPdf, getRecordTenantId } from '@/shared/pdf/resolveCompany';
 
 interface SendServiceOrderModalProps {
   open: boolean;
@@ -29,7 +29,7 @@ export function SendServiceOrderModal({ open, onOpenChange, serviceOrder, onSend
       try {
         const settings = await PdfSettingsService.loadSettingsAsync();
         const logoBase64 = await getCompanyLogoBase64(companyLogo);
-        setPdfSettings({ ...settings, company: await resolveCompanyForPdf(settings.company, logoBase64 || '') });
+        setPdfSettings({ ...settings, company: await resolveCompanyForPdf(settings.company, logoBase64 || '', getRecordTenantId(serviceOrder)) });
       } catch { setPdfSettings(defaultSettings); }
     };
     load();

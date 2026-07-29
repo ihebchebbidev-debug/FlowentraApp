@@ -53,9 +53,33 @@ const DEMO_VALUES = new Set(
   ].map(v => v.toLowerCase()),
 );
 
+/**
+ * Variants of the same demo data (different casing, suffixes like "Inc.",
+ * placeholder phone/email/website patterns). Exact-string matching alone let
+ * "Peak Solutions Inc." or "info@yourcompany.com" through into real footers.
+ */
+const DEMO_PATTERNS: RegExp[] = [
+  /^peak\s*solutions\b/i,
+  /^your\s+company\b/i,
+  /^(acme|example)\s+(corp|company|inc)\b/i,
+  /^(company|your)\s*(name|address|logo)$/i,
+  /^\s*(n\/a|tbd|xxx+|lorem ipsum)\s*$/i,
+  /\b1234\s+(service|business|main)\s+street\b/i,
+  /\btech city,?\s*tc\s*12345\b/i,
+  /\bcity,\s*state\s*12345\b/i,
+  /^\+?\(?555\)?[\s.-]?\d{3}[\s.-]?\d{4}$/,
+  /^\(555\)\s*\d{3}-\d{4}$/,
+  /@(peaksolutions|yourcompany|example|test)\.(com|org|net)$/i,
+  /^(https?:\/\/)?(www\.)?(peaksolutions|yourcompany|example)\.(com|org|net)\/?$/i,
+  /^(mountain service excellence|professional field services)$/i,
+];
+
 export function isDemoValue(value: string | undefined | null): boolean {
   if (!value) return false;
-  return DEMO_VALUES.has(value.trim().toLowerCase());
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+  if (DEMO_VALUES.has(trimmed.toLowerCase())) return true;
+  return DEMO_PATTERNS.some(re => re.test(trimmed));
 }
 
 const clean = (v: string | undefined | null): string => {
@@ -143,8 +167,23 @@ export function buildFooterLines(c: PdfCompanyBlock | undefined): string[] {
 export async function resolveCompanyForPdf(
   override: PdfCompanyBlock | undefined,
   logoBase64?: string,
+  /**
+   * The tenant that OWNS the record being printed. Pass it whenever the record
+   * carries one (cross-company "view all" mode shows records from tenants other
+   * than the active one — without this the footer would print the wrong company).
+   */
+  ownerTenantId?: number | null,
 ) {
   const { loadActiveCompany } = await import('@/shared/company/activeCompany');
-  const company = await loadActiveCompany();
+  const company = await loadActiveCompany(ownerTenantId ?? undefined);
   return resolvePdfCompany(override, company, logoBase64);
+}
+
+/** Read the owning tenant id off a record, whatever casing the API used. */
+export function getRecordTenantId(record: unknown): number | undefined {
+  if (!record || typeof record !== 'object') return undefined;
+  const r = record as Record<string, unknown>;
+  const raw = r.tenantId ?? r.TenantId ?? r.companyId ?? r.CompanyId;
+  const n = typeof raw === 'string' ? Number(raw) : raw;
+  return typeof n === 'number' && Number.isFinite(n) && n > 0 ? n : undefined;
 }

@@ -39,6 +39,9 @@ import { ServiceOrderPDFPreviewModal } from "../components/ServiceOrderPDFPrevie
 import { SendServiceOrderModal } from "../components/SendServiceOrderModal";
 import { ServiceOrderPDFDocument } from "../components/ServiceOrderPDFDocument";
 import { defaultSettings } from "../utils/pdfSettings.utils";
+import { PdfSettingsService } from "../services/pdfSettings.service";
+import { useResolvedPdfSettings } from "@/shared/pdf/useResolvedPdfSettings";
+import { getRecordTenantId } from "@/shared/pdf/resolveCompany";
 import { AddMaterialModal } from "../../components/AddMaterialModal";
 import { InvoicePreparationModal } from "../components/InvoicePreparationModal";
 import { PreferredSkillsCard } from "../components/PreferredSkillsCard";
@@ -219,6 +222,13 @@ export default function ServiceOrderDetail() {
 
   // State for API data
   const [serviceOrder, setServiceOrder] = useState<ApiServiceOrder | null>(null);
+  // The share sheet used to print with bare defaults — no saved layout and no
+  // company footer. Resolve both, scoped to the order's owning company.
+  const { settings: sharePdfSettings } = useResolvedPdfSettings(
+    () => PdfSettingsService.loadSettingsAsync(),
+    defaultSettings,
+    getRecordTenantId(serviceOrder),
+  );
   const [timeEntries, setTimeEntries] = useState<ApiTimeEntry[]>([]);
   const [expenses, setExpenses] = useState<ApiExpense[]>([]);
   const [materials, setMaterials] = useState<ApiMaterial[]>([]);
@@ -1507,7 +1517,7 @@ export default function ServiceOrderDetail() {
             type: 'service_order',
             currentUrl: window.location.href
           }}
-          pdfComponent={<ServiceOrderPDFDocument serviceOrder={serviceOrderForComponents} formatCurrency={formatCurrency} settings={defaultSettings} />}
+          pdfComponent={<ServiceOrderPDFDocument serviceOrder={serviceOrderForComponents} formatCurrency={formatCurrency} settings={sharePdfSettings} />}
           pdfFileName={`service-report-${serviceOrderForComponents.orderNumber}.pdf`}
         />
 

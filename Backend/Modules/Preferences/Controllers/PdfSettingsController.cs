@@ -1,11 +1,15 @@
 using MyApi.Modules.Preferences.DTOs;
 using MyApi.Modules.Preferences.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MyApi.Modules.Preferences.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    // PDF settings are tenant-scoped rows: an anonymous caller could otherwise
+    // read or overwrite another company's report configuration.
+    [Authorize]
     public class PdfSettingsController : ControllerBase
     {
         private readonly IPdfSettingsService _pdfSettingsService;

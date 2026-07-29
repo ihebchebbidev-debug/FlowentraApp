@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { buildPdfFilename } from '@/shared/pdf/filename';
 import { InvoicePDFDocument, type InvoicePDFTranslations } from './InvoicePDFDocument';
-import { resolveCompanyForPdf } from '@/shared/pdf/resolveCompany';
+import { resolveCompanyForPdf, getRecordTenantId } from '@/shared/pdf/resolveCompany';
 
 interface InvoicePDFPreviewModalProps {
   isOpen: boolean;
@@ -74,7 +74,7 @@ export function InvoicePDFPreviewModal({ isOpen, onClose, invoice }: InvoicePDFP
         const settings = await PdfSettingsService.loadSettingsAsync();
         const logoBase64 = await getCompanyLogoBase64(companyLogo);
         if (isMounted) {
-          setPdfSettings({ ...settings, company: await resolveCompanyForPdf(settings.company, logoBase64 || '') });
+          setPdfSettings({ ...settings, company: await resolveCompanyForPdf(settings.company, logoBase64 || '', getRecordTenantId(invoice)) });
         }
       } catch {
         if (isMounted) setPdfSettings(defaultSettings);

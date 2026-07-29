@@ -10,7 +10,7 @@ import { defaultSettings, getCompanyLogoBase64 } from '@/modules/sales/utils/pdf
 import { buildPdfFilename } from '@/shared/pdf/filename';
 import type { Invoice } from '../types';
 import { InvoicePDFDocument, type InvoicePDFTranslations } from './InvoicePDFDocument';
-import { resolveCompanyForPdf } from '@/shared/pdf/resolveCompany';
+import { resolveCompanyForPdf, getRecordTenantId } from '@/shared/pdf/resolveCompany';
 
 interface Props {
   invoice: Invoice & Record<string, any>;
@@ -32,7 +32,7 @@ export function InvoiceDownloadPdfButton({ invoice }: Props) {
         if (!mounted) return;
         setSettings({
           ...loaded,
-          company: await resolveCompanyForPdf(loaded.company, logoBase64 || ''),
+          company: await resolveCompanyForPdf(loaded.company, logoBase64 || '', getRecordTenantId(invoice)),
         });
       } catch {
         if (mounted) setSettings(defaultSettings);
