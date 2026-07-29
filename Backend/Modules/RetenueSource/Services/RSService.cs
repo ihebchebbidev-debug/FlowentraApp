@@ -370,6 +370,11 @@ namespace MyApi.Modules.RetenueSource.Services
 
         public async Task<TEJExportResponseDto> ExportTEJAsync(TEJExportRequestDto request, string userId)
         {
+            // Materialize declarations for RS-applicable supplier invoices of the period
+            // that were never downloaded individually — otherwise they'd silently be
+            // missing from the monthly DGI declaration.
+            await MaterializePeriodInvoiceRecordsAsync(request.Month, request.Year, userId);
+
             var records = await _db.RSRecords
                 .Where(r => r.PaymentDate.Month == request.Month &&
                             r.PaymentDate.Year == request.Year &&
@@ -648,6 +653,66 @@ namespace MyApi.Modules.RetenueSource.Services
         /// that is missing/invalid on a record. Empty list = ready to export.
         /// </summary>
         private static List<string> CollectRecordFieldErrors(RSRecord r)
+        {
+            return CollectRecordFieldErrorsCore(r);
+        }
+
+        /// <summary>
+        /// Ensure every RS-applicable supplier invoice paid during the given period has
+        /// a persisted RSRecord, so the monthly TEJ export is exhaustive even when the
+        /// user never downloaded the per-invoice XML. Invoices with incomplete fiscal
+        /// data are skipped (they are surfaced by the per-invoice "missing info" flow).
+        /// </summary>
+        private async Task MaterializePeriodInvoiceRecordsAsync(int month, int year, string userId)
+        {
+            var settingsCompany = await _db.Contacts.AsNoTracking()
+                .Where(c => !c.IsDeleted && c.Type == "company" && !string.IsNullOrEmpty(c.MatriculeFiscale))
+                .OrderBy(c => c.Id)
+                .FirstOrDefaultAsync();
+            if (settingsCompany == null) return;
+
+            var declarant = new TEJDeclarantDto
+            {
+                Name = settingsCompany.Name,
+                TaxId = settingsCompany.MatriculeFiscale ?? "",
+                Address = settingsCompany.Address ?? "",
+                Email = settingsCompany.Email,
+                Phone = settingsCompany.Phone
+            };
+
+            var candidates = await _db.SupplierInvoices.AsNoTracking()
+                .Where(i => !i.IsDeleted
+                            && i.RsApplicable
+                            && i.RsAmount > 0
+                            && i.RsRecordId == null
+                            && i.PaymentDate.HasValue
+                            && i.PaymentDate.Value.Month == month
+                            && i.PaymentDate.Value.Year == year)
+                .ToListAsync();
+
+            foreach (var inv in candidates)
+            {
+                var supplier = await _db.Contacts.AsNoTracking()
+                    .FirstOrDefaultAsync(c => c.Id == inv.SupplierId);
+                if (supplier == null)
+                {
+                    _logger.LogWarning("TEJ materialization skipped invoice {Id}: supplier not found", inv.Id);
+                    continue;
+                }
+
+                var rec = BuildRsRecordFromInvoice(inv.Id, inv, supplier, declarant, userId);
+                var errs = CollectRecordFieldErrors(rec);
+                if (errs.Count > 0)
+                {
+                    _logger.LogWarning("TEJ materialization skipped invoice {Id}: {Errors}", inv.Id, string.Join("; ", errs));
+                    continue;
+                }
+
+                await EnsureRsRecordPersistedAsync(inv.Id, rec);
+            }
+        }
+
+        private static List<string> CollectRecordFieldErrorsCore(RSRecord r)
         {
             var e = new List<string>();
             if (string.IsNullOrWhiteSpace(r.SupplierTaxId))

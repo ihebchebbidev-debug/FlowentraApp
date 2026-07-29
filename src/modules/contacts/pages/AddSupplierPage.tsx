@@ -36,6 +36,13 @@ const initialFormState = {
   country: '',
   cin: '',
   matriculeFiscale: '',
+  // TEJ / RiTEJ fiscal identity
+  categorieContribuable: '',
+  isResident: 'true',
+  idTaxpayerType: '',
+  dateNaissance: '',
+  paysCode: 'TN',
+  autreIdentifiantFiscal: '',
   latitude: '',
   longitude: '',
 };
@@ -134,6 +141,15 @@ export default function AddSupplierPage() {
         lastContactDate: null,
         cin: isCompany ? null : (formData.cin || null),
         matriculeFiscale: formData.matriculeFiscale || null,
+        // TEJ / RiTEJ fiscal identity (drives the Retenue à la Source XML export)
+        categorieContribuable: formData.categorieContribuable || (isCompany ? 'PM' : 'PP'),
+        isResident: formData.isResident === 'true',
+        idTaxpayerType: formData.idTaxpayerType
+          ? parseInt(formData.idTaxpayerType, 10)
+          : (isCompany ? 1 : 2),
+        dateNaissance: !isCompany && formData.dateNaissance ? formData.dateNaissance : null,
+        paysCode: formData.paysCode || 'TN',
+        autreIdentifiantFiscal: formData.autreIdentifiantFiscal || null,
         latitude: formData.latitude ? parseFloat(formData.latitude) : null,
         longitude: formData.longitude ? parseFloat(formData.longitude) : null,
       };
@@ -403,6 +419,113 @@ export default function AddSupplierPage() {
                   </SelectContent>
                 </Select>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Fiscal identity (TEJ / Retenue à la Source) */}
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('addPage.fiscal.title', 'Identité fiscale (TEJ / Retenue à la source)')}</CardTitle>
+              <CardDescription>
+                {t('addPage.fiscal.description', "Utilisée pour générer la déclaration XML RiTEJ. Des valeurs incorrectes bloquent l'export mensuel.")}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="categorieContribuable">
+                  {t('addPage.fiscal.categorie_label', 'Catégorie de contribuable')}
+                </Label>
+                <Select
+                  value={formData.categorieContribuable || (subType === 'company' ? 'PM' : 'PP')}
+                  onValueChange={(value) => setFormData({ ...formData, categorieContribuable: value })}
+                >
+                  <SelectTrigger id="categorieContribuable">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PM">{t('addPage.fiscal.categorie_pm', 'PM — Personne morale')}</SelectItem>
+                    <SelectItem value="PP">{t('addPage.fiscal.categorie_pp', 'PP — Personne physique')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="isResident">{t('addPage.fiscal.resident_label', 'Résidence fiscale')}</Label>
+                <Select
+                  value={formData.isResident}
+                  onValueChange={(value) => setFormData({ ...formData, isResident: value })}
+                >
+                  <SelectTrigger id="isResident">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="true">{t('addPage.fiscal.resident_yes', 'Résident en Tunisie')}</SelectItem>
+                    <SelectItem value="false">{t('addPage.fiscal.resident_no', 'Non résident')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="idTaxpayerType">
+                  {t('addPage.fiscal.id_type_label', "Type d'identifiant")}
+                </Label>
+                <Select
+                  value={formData.idTaxpayerType || (subType === 'company' ? '1' : '2')}
+                  onValueChange={(value) => setFormData({ ...formData, idTaxpayerType: value })}
+                >
+                  <SelectTrigger id="idTaxpayerType">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">{t('addPage.fiscal.id_type_1', '1 — Matricule fiscal')}</SelectItem>
+                    <SelectItem value="2">{t('addPage.fiscal.id_type_2', '2 — CIN')}</SelectItem>
+                    <SelectItem value="3">{t('addPage.fiscal.id_type_3', '3 — Carte de séjour')}</SelectItem>
+                    <SelectItem value="4">{t('addPage.fiscal.id_type_4', '4 — Identifiant fiscal étranger')}</SelectItem>
+                    <SelectItem value="5">{t('addPage.fiscal.id_type_5', '5 — Autre')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="paysCode">{t('addPage.fiscal.pays_label', 'Code pays (ISO, ex. TN)')}</Label>
+                <Input
+                  id="paysCode"
+                  value={formData.paysCode}
+                  onChange={(e) =>
+                    setFormData({ ...formData, paysCode: e.target.value.toUpperCase().slice(0, 3) })
+                  }
+                  placeholder="TN"
+                  maxLength={3}
+                />
+              </div>
+
+              {(formData.idTaxpayerType === '5' || formData.idTaxpayerType === '4') && (
+                <div className="space-y-2">
+                  <Label htmlFor="autreIdentifiantFiscal">
+                    {t('addPage.fiscal.autre_id_label', 'Autre identifiant fiscal')}
+                  </Label>
+                  <Input
+                    id="autreIdentifiantFiscal"
+                    value={formData.autreIdentifiantFiscal}
+                    onChange={(e) => setFormData({ ...formData, autreIdentifiantFiscal: e.target.value })}
+                    maxLength={50}
+                  />
+                </div>
+              )}
+
+              {subType === 'individual' && (
+                <div className="space-y-2">
+                  <Label htmlFor="dateNaissance">
+                    {t('addPage.fiscal.date_naissance_label', 'Date de naissance')}
+                  </Label>
+                  <Input
+                    id="dateNaissance"
+                    type="date"
+                    value={formData.dateNaissance}
+                    onChange={(e) => setFormData({ ...formData, dateNaissance: e.target.value })}
+                  />
+                </div>
+              )}
             </CardContent>
           </Card>
 

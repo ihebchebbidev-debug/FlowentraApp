@@ -40,6 +40,14 @@ namespace MyApi.Modules.Contacts.DTOs
         // Fiscal identification fields
         public string? Cin { get; set; }
         public string? MatriculeFiscale { get; set; }
+
+        // TEJ / RiTEJ fiscal identity
+        public string? CategorieContribuable { get; set; }
+        public bool IsResident { get; set; } = true;
+        public short? IdTaxpayerType { get; set; }
+        public DateTime? DateNaissance { get; set; }
+        public string? PaysCode { get; set; }
+        public string? AutreIdentifiantFiscal { get; set; }
         
         // Geolocation fields
         public decimal? Latitude { get; set; }
@@ -121,6 +129,17 @@ namespace MyApi.Modules.Contacts.DTOs
         [StringLength(100)]
         public string? MatriculeFiscale { get; set; }
 
+        // TEJ / RiTEJ fiscal identity
+        [StringLength(2)]
+        public string? CategorieContribuable { get; set; }
+        public bool? IsResident { get; set; }
+        public short? IdTaxpayerType { get; set; }
+        public DateTime? DateNaissance { get; set; }
+        [StringLength(3)]
+        public string? PaysCode { get; set; }
+        [StringLength(50)]
+        public string? AutreIdentifiantFiscal { get; set; }
+
         // Geolocation fields
         public decimal? Latitude { get; set; }
         public decimal? Longitude { get; set; }
@@ -190,6 +209,17 @@ namespace MyApi.Modules.Contacts.DTOs
 
         [StringLength(100)]
         public string? MatriculeFiscale { get; set; }
+
+        // TEJ / RiTEJ fiscal identity
+        [StringLength(2)]
+        public string? CategorieContribuable { get; set; }
+        public bool? IsResident { get; set; }
+        public short? IdTaxpayerType { get; set; }
+        public DateTime? DateNaissance { get; set; }
+        [StringLength(3)]
+        public string? PaysCode { get; set; }
+        [StringLength(50)]
+        public string? AutreIdentifiantFiscal { get; set; }
 
         // Geolocation fields
         public decimal? Latitude { get; set; }

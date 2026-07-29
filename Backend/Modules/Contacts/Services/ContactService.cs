@@ -218,6 +218,15 @@ namespace MyApi.Modules.Contacts.Services
                     Type = createDto.Type ?? "individual",
                     Cin = createDto.Cin,
                     MatriculeFiscale = createDto.MatriculeFiscale,
+                    CategorieContribuable = createDto.CategorieContribuable
+                        ?? ((createDto.Type ?? "individual") == "company" ? "PM" : "PP"),
+                    IsResident = createDto.IsResident ?? true,
+                    IdTaxpayerType = createDto.IdTaxpayerType,
+                    DateNaissance = createDto.DateNaissance.HasValue
+                        ? DateTime.SpecifyKind(createDto.DateNaissance.Value, DateTimeKind.Utc)
+                        : null,
+                    PaysCode = string.IsNullOrWhiteSpace(createDto.PaysCode) ? "TN" : createDto.PaysCode,
+                    AutreIdentifiantFiscal = createDto.AutreIdentifiantFiscal,
                     Latitude = createDto.Latitude,
                     Longitude = createDto.Longitude,
                     HasLocation = (createDto.Latitude.HasValue && createDto.Longitude.HasValue) ? 1 : 0,
@@ -432,6 +441,25 @@ namespace MyApi.Modules.Contacts.Services
 
                     if (updateDto.MatriculeFiscale != null)
                         contact.MatriculeFiscale = updateDto.MatriculeFiscale;
+
+                    // Update TEJ / RiTEJ fiscal identity
+                    if (updateDto.CategorieContribuable != null)
+                        contact.CategorieContribuable = updateDto.CategorieContribuable;
+
+                    if (updateDto.IsResident.HasValue)
+                        contact.IsResident = updateDto.IsResident.Value;
+
+                    if (updateDto.IdTaxpayerType.HasValue)
+                        contact.IdTaxpayerType = updateDto.IdTaxpayerType;
+
+                    if (updateDto.DateNaissance.HasValue)
+                        contact.DateNaissance = DateTime.SpecifyKind(updateDto.DateNaissance.Value, DateTimeKind.Utc);
+
+                    if (!string.IsNullOrWhiteSpace(updateDto.PaysCode))
+                        contact.PaysCode = updateDto.PaysCode;
+
+                    if (updateDto.AutreIdentifiantFiscal != null)
+                        contact.AutreIdentifiantFiscal = updateDto.AutreIdentifiantFiscal;
 
                     // Update geolocation fields
                     if (updateDto.Latitude.HasValue)
@@ -1002,6 +1030,12 @@ namespace MyApi.Modules.Contacts.Services
                 LastContactDate = contact.LastContactDate,
                 Cin = contact.Cin,
                 MatriculeFiscale = contact.MatriculeFiscale,
+                CategorieContribuable = contact.CategorieContribuable,
+                IsResident = contact.IsResident,
+                IdTaxpayerType = contact.IdTaxpayerType,
+                DateNaissance = contact.DateNaissance,
+                PaysCode = contact.PaysCode,
+                AutreIdentifiantFiscal = contact.AutreIdentifiantFiscal,
                 Latitude = contact.Latitude,
                 Longitude = contact.Longitude,
                 HasLocation = contact.HasLocation,

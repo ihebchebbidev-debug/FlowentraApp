@@ -205,13 +205,47 @@ namespace MyApi.Modules.Purchases.Services
                         throw new InvalidOperationException("Cannot link PO items to an invoice that has no PurchaseOrderId");
                     var poItems = await _context.PurchaseOrderItems
                         .Where(p => linkedPoItemIds.Contains(p.Id) && p.PurchaseOrderId == dto.PurchaseOrderId.Value)
-                        .Select(p => new { p.Id, p.LineTotal, p.Quantity })
+                        .Select(p => new { p.Id, p.LineTotal, p.Quantity, p.ReceivedQty, p.Description })
                         .ToListAsync();
                     var validIds = poItems.Select(p => p.Id).ToList();
                     var orphans = linkedPoItemIds.Except(validIds).ToList();
                     if (orphans.Count > 0)
                         throw new InvalidOperationException($"PurchaseOrderItem(s) [{string.Join(",", orphans)}] do not belong to PO {dto.PurchaseOrderId}");
                     foreach (var p in poItems) linkedPoItemLineTotals[p.Id] = (p.LineTotal, p.Quantity);
+
+                    // ─── Three-way match guard (PO ↔ Goods Receipt ↔ Invoice) ───
+                    // Never let the cumulative invoiced quantity of a PO line exceed
+                    // what was ordered, nor what was actually received once at least
+                    // one goods receipt exists for that line.
+                    var linkedIdStrings = linkedPoItemIds.Select(id => id.ToString()).ToList();
+                    var alreadyInvoiced = await (
+                        from it in _context.SupplierInvoiceItems
+                        join inv in _context.SupplierInvoices on it.SupplierInvoiceId equals inv.Id
+                        where it.PurchaseOrderItemId != null
+                              && linkedIdStrings.Contains(it.PurchaseOrderItemId)
+                              && !inv.IsDeleted && inv.Status != "cancelled"
+                        group it by it.PurchaseOrderItemId into g
+                        select new { PoItemId = g.Key!, Qty = g.Sum(x => x.Quantity) }
+                    ).ToListAsync();
+                    var invoicedByPoItem = alreadyInvoiced.ToDictionary(x => x.PoItemId, x => x.Qty);
+
+                    foreach (var grp in dto.Items.Where(i => i.PurchaseOrderItemId.HasValue)
+                                                 .GroupBy(i => i.PurchaseOrderItemId!.Value))
+                    {
+                        var po = poItems.First(p => p.Id == grp.Key);
+                        var newQty = grp.Sum(i => i.Quantity);
+                        var prevQty = invoicedByPoItem.GetValueOrDefault(grp.Key.ToString(), 0m);
+                        var total = prevQty + newQty;
+                        var label = po.Description ?? $"line {po.Id}";
+
+                        if (total > po.Quantity)
+                            throw new InvalidOperationException(
+                                $"Cannot invoice {total} of \"{label}\": only {po.Quantity} was ordered ({prevQty} already invoiced).");
+
+                        if (po.ReceivedQty > 0 && total > po.ReceivedQty)
+                            throw new InvalidOperationException(
+                                $"Cannot invoice {total} of \"{label}\": only {po.ReceivedQty} has been received ({prevQty} already invoiced). Record the goods receipt first.");
+                    }
                 }
             }
 

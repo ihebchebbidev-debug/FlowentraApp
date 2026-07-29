@@ -50,6 +50,12 @@ const initialFormState = {
   lastContactDate: '',
   cin: '',
   matriculeFiscale: '',
+  // TEJ / RiTEJ fiscal identity
+  categorieContribuable: '',
+  isResident: 'true',
+  idTaxpayerType: '',
+  paysCode: 'TN',
+  autreIdentifiantFiscal: '',
   latitude: '',
   longitude: '',
 };
@@ -87,6 +93,11 @@ export function ContactForm({ open, onOpenChange, onSubmit, contact, isLoading }
         lastContactDate: c.lastContactDate || '',
         cin: c.cin || '',
         matriculeFiscale: c.matriculeFiscale || '',
+        categorieContribuable: c.categorieContribuable || (c.type === 'company' ? 'PM' : 'PP'),
+        isResident: c.isResident === false ? 'false' : 'true',
+        idTaxpayerType: c.idTaxpayerType != null ? String(c.idTaxpayerType) : '',
+        paysCode: c.paysCode || 'TN',
+        autreIdentifiantFiscal: c.autreIdentifiantFiscal || '',
         latitude: c.latitude != null ? String(c.latitude) : '',
         longitude: c.longitude != null ? String(c.longitude) : '',
       });
@@ -132,6 +143,12 @@ export function ContactForm({ open, onOpenChange, onSubmit, contact, isLoading }
         name: `${formData.firstName} ${formData.lastName}`.trim(),
         cin: formData.cin.trim() || null,
         matriculeFiscale: formData.matriculeFiscale.trim() || null,
+        categorieContribuable:
+          formData.categorieContribuable || (formData.type === 'company' ? 'PM' : 'PP'),
+        isResident: formData.isResident === 'true',
+        idTaxpayerType: formData.idTaxpayerType ? parseInt(formData.idTaxpayerType, 10) : null,
+        paysCode: formData.paysCode.trim().toUpperCase() || 'TN',
+        autreIdentifiantFiscal: formData.autreIdentifiantFiscal.trim() || null,
         latitude: formData.latitude ? parseFloat(formData.latitude) : null,
         longitude: formData.longitude ? parseFloat(formData.longitude) : null,
       };
@@ -392,6 +409,85 @@ export function ContactForm({ open, onOpenChange, onSubmit, contact, isLoading }
                 maxLength={100}
               />
             </div>
+
+            {/* TEJ / RS fiscal identity */}
+            <div>
+              <Label htmlFor="categorieContribuable">
+                {t('addPage.fiscal.categorie_label', 'Catégorie de contribuable')}
+              </Label>
+              <Select
+                value={formData.categorieContribuable || 'PP'}
+                onValueChange={(value) => handleFieldChange('categorieContribuable', value)}
+              >
+                <SelectTrigger id="categorieContribuable">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PM">{t('addPage.fiscal.categorie_pm', 'PM — Personne morale')}</SelectItem>
+                  <SelectItem value="PP">{t('addPage.fiscal.categorie_pp', 'PP — Personne physique')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="isResident">{t('addPage.fiscal.resident_label', 'Résidence fiscale')}</Label>
+              <Select
+                value={formData.isResident}
+                onValueChange={(value) => handleFieldChange('isResident', value)}
+              >
+                <SelectTrigger id="isResident">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">{t('addPage.fiscal.resident_yes', 'Résident en Tunisie')}</SelectItem>
+                  <SelectItem value="false">{t('addPage.fiscal.resident_no', 'Non résident')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="idTaxpayerType">{t('addPage.fiscal.id_type_label', "Type d'identifiant")}</Label>
+              <Select
+                value={formData.idTaxpayerType || '1'}
+                onValueChange={(value) => handleFieldChange('idTaxpayerType', value)}
+              >
+                <SelectTrigger id="idTaxpayerType">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">{t('addPage.fiscal.id_type_1', '1 — Matricule fiscal')}</SelectItem>
+                  <SelectItem value="2">{t('addPage.fiscal.id_type_2', '2 — CIN')}</SelectItem>
+                  <SelectItem value="3">{t('addPage.fiscal.id_type_3', '3 — Carte de séjour')}</SelectItem>
+                  <SelectItem value="4">{t('addPage.fiscal.id_type_4', '4 — Identifiant fiscal étranger')}</SelectItem>
+                  <SelectItem value="5">{t('addPage.fiscal.id_type_5', '5 — Autre')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="paysCode">{t('addPage.fiscal.pays_label', 'Code pays (ISO, ex. TN)')}</Label>
+              <Input
+                id="paysCode"
+                value={formData.paysCode}
+                onChange={(e) => handleFieldChange('paysCode', e.target.value.toUpperCase().slice(0, 3))}
+                placeholder="TN"
+                maxLength={3}
+              />
+            </div>
+
+            {(formData.idTaxpayerType === '4' || formData.idTaxpayerType === '5') && (
+              <div>
+                <Label htmlFor="autreIdentifiantFiscal">
+                  {t('addPage.fiscal.autre_id_label', 'Autre identifiant fiscal')}
+                </Label>
+                <Input
+                  id="autreIdentifiantFiscal"
+                  value={formData.autreIdentifiantFiscal}
+                  onChange={(e) => handleFieldChange('autreIdentifiantFiscal', e.target.value)}
+                  maxLength={50}
+                />
+              </div>
+            )}
 
           </div>
 

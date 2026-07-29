@@ -41,6 +41,13 @@ export interface Contact {
   lastContactDate?: string;
   cin?: string;
   matriculeFiscale?: string;
+  // TEJ / RiTEJ fiscal identity
+  categorieContribuable?: string;
+  isResident?: boolean;
+  idTaxpayerType?: number;
+  dateNaissance?: string;
+  paysCode?: string;
+  autreIdentifiantFiscal?: string;
   // Geolocation fields
   latitude?: number;
   longitude?: number;
@@ -82,6 +89,13 @@ export interface CreateContactRequest {
   lastContactDate?: string;
   cin?: string;
   matriculeFiscale?: string;
+  // TEJ / RiTEJ fiscal identity
+  categorieContribuable?: string;
+  isResident?: boolean;
+  idTaxpayerType?: number;
+  dateNaissance?: string;
+  paysCode?: string;
+  autreIdentifiantFiscal?: string;
   // Geolocation fields
   latitude?: number;
   longitude?: number;
@@ -110,6 +124,13 @@ export interface UpdateContactRequest {
   lastContactDate?: string;
   cin?: string;
   matriculeFiscale?: string;
+  // TEJ / RiTEJ fiscal identity
+  categorieContribuable?: string;
+  isResident?: boolean;
+  idTaxpayerType?: number;
+  dateNaissance?: string;
+  paysCode?: string;
+  autreIdentifiantFiscal?: string;
   // Geolocation fields
   latitude?: number;
   longitude?: number;
