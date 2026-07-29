@@ -259,7 +259,6 @@ namespace MyApi.Modules.Processes.Controllers
         /// <summary>Postgres unique-violation SQLSTATE 23505.</summary>
         private static bool IsUniqueViolation(DbUpdateException ex) =>
             ex.InnerException is Npgsql.PostgresException { SqlState: "23505" };
-        }
 
         [HttpPost("schedules/{key}/pause")]
         public async Task<IActionResult> SetPaused(string key, [FromQuery] bool paused, CancellationToken ct)
