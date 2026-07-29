@@ -192,7 +192,16 @@ export function SendReportEmailDialog({
       const base64 = btoa(binary);
 
       // Build HTML body
-      const bodyHtml = `<div style="font-family: Arial, sans-serif; font-size: 14px; color: #333; line-height: 1.6;">${body.replace(/\n/g, '<br/>')}</div>`;
+      // Escape before injecting free text into HTML, otherwise `<`, `>` and `&`
+      // typed by the user are interpreted as markup in the sent email.
+      const escapeHtml = (value: string) =>
+        value
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      const bodyHtml = `<div style="font-family: Arial, sans-serif; font-size: 14px; color: #333; line-height: 1.6;">${escapeHtml(body).replace(/\n/g, '<br/>')}</div>`;
 
       const dto: SendEmailDto = {
         to: toEmails,

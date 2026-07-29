@@ -102,8 +102,13 @@ export function SalePDFPreviewModal({
         setIsLoading(true);
         const settings = await PdfSettingsService.loadSettingsAsync();
         if (isMounted) {
-          const logoBase64 = await getCompanyLogoBase64(companyLogo);
-          console.log('[SalePDF] Logo resolved:', logoBase64 ? `${logoBase64.substring(0, 60)}...` : 'EMPTY');
+          // A failing logo fetch must not discard the settings we just loaded.
+          let logoBase64 = '';
+          try {
+            logoBase64 = (await getCompanyLogoBase64(companyLogo)) || '';
+          } catch (logoError) {
+            console.warn('[SalePDF] Company logo could not be resolved:', logoError);
+          }
           setPdfSettings({
             ...settings,
             company: { ...settings.company, logo: logoBase64 || '' }

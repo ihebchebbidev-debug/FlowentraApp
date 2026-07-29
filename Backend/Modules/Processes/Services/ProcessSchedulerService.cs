@@ -13,8 +13,10 @@ namespace MyApi.Modules.Processes.Services
     /// A run either:
     ///   - succeeds → schedule's NextRunAt is bumped by IntervalMinutes,
     ///   - fails and attempts &lt; MaxRetries → NextRetryAt = now + Backoff*2^(attempt-1),
-    ///   - fails and attempts ≥ MaxRetries → schedule is marked BlockReason and paused
-    ///     until an admin re-enables it from the UI.
+    ///   - fails and attempts ≥ MaxRetries → schedule is marked with a BlockReason, the
+    ///     retry ladder resets and the process cools down until its next normal slot
+    ///     (min 15 minutes). It is deliberately NEVER auto-paused: a transient outage
+    ///     must not silently stop automation until an admin notices.
     ///
     /// Concurrency: every execution is guarded by a Postgres advisory lock keyed
     /// on the process Key, so a scheduler tick + a manual "Run now" (or two app
@@ -53,10 +55,20 @@ namespace MyApi.Modules.Processes.Services
             try { await SeedBuiltInSchedulesAsync(stoppingToken); }
             catch (Exception ex) { _logger.LogError(ex, "ProcessSchedulerService seed failed"); }
 
+            var ticks = 0L;
             while (!stoppingToken.IsCancellationRequested)
             {
                 try { await TickAsync(stoppingToken); }
                 catch (Exception ex) { _logger.LogError(ex, "ProcessSchedulerService tick failed"); }
+
+                // A boot-only reconcile leaves phantom 'running' rows forever in a
+                // long-lived instance (e.g. the app was SIGKILLed mid-run). Re-run the
+                // sweep hourly so run history and analytics stay truthful.
+                if (++ticks % 60 == 0)
+                {
+                    try { await ReconcileStaleRunsAsync(stoppingToken); }
+                    catch (Exception ex) { _logger.LogError(ex, "ProcessSchedulerService periodic stale-run reconcile failed"); }
+                }
 
                 try { await Task.Delay(TickInterval, stoppingToken); }
                 catch (TaskCanceledException) { break; }

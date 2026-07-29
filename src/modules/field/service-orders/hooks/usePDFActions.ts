@@ -1,58 +1,32 @@
-import { useState, useCallback } from 'react';
+import { useMemo } from 'react';
 import type { ReactElement } from 'react';
-import { toast } from 'sonner';
-import { openPdfForPrint, sharePdfDocument } from '@/shared/pdf/browserActions';
+import { useTranslation } from 'react-i18next';
+import { usePdfActions } from '@/shared/pdf/usePdfActions';
 
 interface UsePDFActionsProps {
-  serviceOrder: any;
+  serviceOrder?: any;
   pdfDocument: ReactElement;
   fileName: string;
   shareTitle: string;
   shareText: string;
 }
 
-export const usePDFActions = ({ serviceOrder, pdfDocument, fileName, shareTitle, shareText }: UsePDFActionsProps) => {
-  const [isGenerating, setIsGenerating] = useState(false);
+/** Service-orders wrapper around the shared PDF actions hook — supplies translated toasts. */
+export const usePDFActions = ({ pdfDocument, fileName, shareTitle, shareText }: UsePDFActionsProps) => {
+  const { t } = useTranslation('service_orders');
 
-  const handlePrint = useCallback(async () => {
-    try {
-      setIsGenerating(true);
-      await openPdfForPrint(pdfDocument, fileName);
-      toast.success('Print dialog opened');
-    } catch (error) {
-      toast.error('Failed to print service report');
-      console.error('Print error:', error);
-    } finally {
-      setIsGenerating(false);
-    }
-  }, [pdfDocument, fileName]);
+  const labels = useMemo(
+    () => ({
+      printStarted: t('pdfActions.printStarted', 'Print dialog opened'),
+      printFailed: t('pdfActions.printFailed', 'Failed to print the service report'),
+      popupBlocked: t('pdfActions.popupBlocked', 'Your browser blocked the print window. Allow popups and try again.'),
+      shareSuccess: t('pdfActions.shareSuccess', 'Service report shared successfully'),
+      shareFailed: t('pdfActions.shareFailed', 'Failed to share the service report'),
+      downloadSuccess: t('pdfActions.downloadSuccess', 'Service report PDF downloaded successfully'),
+      downloadFailed: t('pdfActions.downloadFailed', 'Failed to download the service report PDF'),
+    }),
+    [t]
+  );
 
-  const handleShare = useCallback(async (platform?: string) => {
-    try {
-      setIsGenerating(true);
-      await sharePdfDocument({ document: pdfDocument, fileName, title: shareTitle, text: shareText });
-      toast.success('Service report shared successfully');
-    } catch (error) {
-      toast.error('Failed to share service report');
-      console.error('Share error:', error);
-    } finally {
-      setIsGenerating(false);
-    }
-  }, [pdfDocument, fileName, shareTitle, shareText]);
-
-  const handleDownloadSuccess = useCallback(() => {
-    toast.success('Service report PDF downloaded successfully');
-  }, []);
-
-  const handleDownloadError = useCallback(() => {
-    toast.error('Failed to download service report PDF');
-  }, []);
-
-  return {
-    isGenerating,
-    handlePrint,
-    handleShare,
-    handleDownloadSuccess,
-    handleDownloadError
-  };
+  return usePdfActions({ pdfDocument, fileName, shareTitle, shareText, labels });
 };

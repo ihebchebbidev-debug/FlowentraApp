@@ -1,5 +1,6 @@
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 import { numberToWords } from '@/lib/numberToWords';
+import { calculateDocumentTotal } from '@/lib/calculateTotal';
 
 const styles = StyleSheet.create({
   page: { flexDirection: 'column', backgroundColor: '#FFFFFF', paddingHorizontal: 30, paddingTop: 20, paddingBottom: 12, fontFamily: 'Helvetica', fontSize: 9 },
@@ -89,13 +90,24 @@ export function SupplierInvoicePDFDocument({ invoice, formatCurrency, settings, 
   };
 
   const items = invoice.items || [];
-  const subTotal = invoice.subTotal || 0;
-  const discountAmount = invoice.discountType === 'percentage' ? subTotal * ((invoice.discount || 0) / 100) : (invoice.discount || 0);
-  const afterDiscount = subTotal - discountAmount;
-  const taxAmount = invoice.taxAmount || 0;
-  const fiscalStamp = invoice.fiscalStamp || 0;
-  const rsAmount = invoice.rsAmount || 0;
-  const grandTotal = invoice.grandTotal || (afterDiscount + taxAmount + fiscalStamp);
+  // Shared money pipeline (subtotal -> discount -> tax -> stamp). `??` keeps a
+  // legitimate stored value of 0 instead of recomputing over it.
+  const subTotal = invoice.subTotal ?? items.reduce((s: number, i: any) => s + (i.lineTotal ?? 0), 0);
+  const computed = calculateDocumentTotal({
+    subtotal: subTotal,
+    discount: invoice.discount,
+    discountType: invoice.discountType,
+    // Supplier invoices store tax as an absolute amount, not a rate.
+    tax: invoice.taxAmount,
+    taxType: 'fixed',
+    fiscalStamp: invoice.fiscalStamp,
+  });
+  const discountAmount = computed.discountAmount;
+  const afterDiscount = computed.afterDiscount;
+  const taxAmount = computed.taxAmount;
+  const fiscalStamp = computed.fiscalStamp;
+  const rsAmount = invoice.rsAmount ?? 0;
+  const grandTotal = invoice.grandTotal ?? computed.total;
   const netPayable = grandTotal - rsAmount;
 
   return (

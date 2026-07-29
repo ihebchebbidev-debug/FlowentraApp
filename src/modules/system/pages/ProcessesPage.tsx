@@ -817,8 +817,15 @@ export default function ProcessesPage() {
   // Expose to askConfirm() which is defined above runNow/stopRun.
   denyIfReadOnlyRef.current = denyIfReadOnly;
 
+  // Re-entrancy guard: a second "Run now" while the first request is still in
+  // flight is rejected server-side by the advisory lock (it comes back "skipped"),
+  // but it still spams the operator with toasts and writes a junk audit row.
+  const runInFlightRef = useRef<Set<string>>(new Set());
+
   const runNow = async (p: ProcessDefinition) => {
     if (denyIfReadOnly()) return;
+    if (runInFlightRef.current.has(p.key)) return;
+    runInFlightRef.current.add(p.key);
     const prevStatus = p.status;
     updateProcess(p.key, { status: "running", lastRunAt: new Date().toISOString() });
     toast({ title: t("toast.started_title"), description: p.name });
@@ -862,6 +869,8 @@ export default function ProcessesPage() {
       // failed refresh leaves the row spinning forever.
       updateProcess(p.key, { status: prevStatus });
       toast({ title: t("toast.run_failed_title"), description: (e as Error).message, variant: "destructive" });
+    } finally {
+      runInFlightRef.current.delete(p.key);
     }
     await refreshSchedules();
     if (selectedKey === p.key) {

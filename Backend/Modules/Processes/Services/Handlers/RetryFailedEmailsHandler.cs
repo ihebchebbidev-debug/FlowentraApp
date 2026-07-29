@@ -115,7 +115,10 @@ namespace MyApi.Modules.Processes.Services.Handlers
 
             // OutboundEmailLog is not tenant-scoped, so this save is safe in view-all mode.
             db.SetTenantId(-1);
-            await db.SaveChangesAsync(ct);
+            // Use None, not ct: on cancellation the loop breaks with 'gave_up' / error
+            // bookkeeping still pending. Saving with a cancelled token would throw and
+            // lose it, so those messages would be retried forever.
+            await db.SaveChangesAsync(CancellationToken.None);
 
 
             _logger.LogInformation("📧 retry-failed-emails: retried={Retried} succeeded={Ok} stillFailed={Fail} gaveUp={Gave}",

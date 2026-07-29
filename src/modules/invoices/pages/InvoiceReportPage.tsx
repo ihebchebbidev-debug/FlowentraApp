@@ -72,6 +72,8 @@ export default function InvoiceReportPage() {
       total: s('detail.line_total'),
       subtotal: s('detail.subtotal') + ' (HT)',
       tax: s('detail.tax'),
+      discount: s('detail.discount', 'Discount'),
+      adjustment: s('detail.adjustment', 'Adjustment'),
       grandTotal: s('detail.grand_total'),
       paymentSummary: s('pdf.payment_summary', 'Payment Summary'),
       amountPaid: s('detail.amount_paid'),

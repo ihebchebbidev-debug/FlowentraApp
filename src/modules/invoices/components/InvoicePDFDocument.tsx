@@ -209,6 +209,10 @@ export interface InvoicePDFTranslations {
   total: string;
   subtotal: string;
   tax: string;
+  /** Shown when the stored grand total is below subtotal + tax. */
+  discount?: string;
+  /** Shown when the stored grand total exceeds subtotal + tax (stamp, rounding…). */
+  adjustment?: string;
   grandTotal: string;
   paymentSummary: string;
   amountPaid: string;
@@ -304,6 +308,17 @@ export function InvoicePDFDocument({
 
   const currency = invoice.currency || 'TND';
   const lines = invoice.lines || [];
+
+  // Totals reconciliation: invoices store only subtotal / tax / grandTotal, so a
+  // document-level discount (or stamp) applied upstream used to silently vanish
+  // from the PDF and the printed rows didn't add up. Derive the residual and
+  // render it as an explicit adjustment row when it's non-trivial.
+  const subtotalValue =
+    invoice.subtotal ?? lines.reduce((sum: number, line: any) => sum + (line.lineTotal ?? line.total ?? 0), 0);
+  const taxValue = invoice.taxAmount ?? 0;
+  const grandTotalValue = invoice.grandTotal ?? subtotalValue + taxValue;
+  const adjustmentValue = grandTotalValue - (subtotalValue + taxValue);
+  const hasAdjustment = Math.abs(adjustmentValue) >= 0.005;
 
   return (
     <Document>
@@ -514,19 +529,29 @@ export function InvoicePDFDocument({
                 <View style={styles.summaryRow}>
                   <Text style={styles.summaryLabel}>{t.subtotal}</Text>
                   <Text style={styles.summaryValue}>
-                    {formatCurrency(invoice.subtotal || 0)} {currency}
+                    {formatCurrency(subtotalValue)} {currency}
                   </Text>
                 </View>
                 <View style={styles.summaryRow}>
                   <Text style={styles.summaryLabel}>{t.tax}</Text>
                   <Text style={styles.summaryValue}>
-                    {formatCurrency(invoice.taxAmount || 0)} {currency}
+                    {formatCurrency(taxValue)} {currency}
                   </Text>
                 </View>
+                {hasAdjustment ? (
+                  <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>
+                      {adjustmentValue < 0 ? t.discount ?? 'Discount' : t.adjustment ?? 'Adjustment'}
+                    </Text>
+                    <Text style={styles.summaryValue}>
+                      {formatCurrency(adjustmentValue)} {currency}
+                    </Text>
+                  </View>
+                ) : null}
                 <View style={styles.totalRow}>
                   <Text style={styles.totalLabel}>{t.grandTotal}</Text>
                   <Text style={styles.totalValue}>
-                    {formatCurrency(invoice.grandTotal || 0)} {currency}
+                    {formatCurrency(grandTotalValue)} {currency}
                   </Text>
                 </View>
               </View>

@@ -29,6 +29,9 @@ export function ShareLinkDialog({
   const [copied, setCopied] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
 
+  // This is the in-app document URL, not a public share token: recipients must
+  // be signed in with access to this record. The copy below says so explicitly
+  // instead of promising anonymous access the backend does not grant.
   const shareUrl = window.location.href;
 
   const handleCopyLink = useCallback(async () => {
@@ -88,7 +91,7 @@ export function ShareLinkDialog({
             {t('pdfActions.shareVia', { platform: platformLabel, defaultValue: `Share via ${platformLabel}` })}
           </DialogTitle>
           <DialogDescription>
-            {t('pdfActions.shareDescription', 'Share this link publicly. Anyone with the link can view and download the PDF — no login required.')}
+            {t('pdfActions.shareDescription', 'Share this document link. Recipients need an account with access to this record — or send them the PDF file directly.')}
           </DialogDescription>
         </DialogHeader>
 
@@ -96,7 +99,7 @@ export function ShareLinkDialog({
           {/* Public Link */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">
-              {t('pdfActions.publicLink', 'Public Link')}
+              {t('pdfActions.documentLink', 'Document Link')}
             </label>
             <div className="flex items-center gap-2">
               <Input value={shareUrl} readOnly className="font-mono text-xs" />
@@ -105,7 +108,7 @@ export function ShareLinkDialog({
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              {t('pdfActions.noLoginRequired', 'No login required — accessible to anyone with this link')}
+              {t('pdfActions.signInRequired', 'Sign-in required — only users with access to this record can open the link')}
             </p>
           </div>
 

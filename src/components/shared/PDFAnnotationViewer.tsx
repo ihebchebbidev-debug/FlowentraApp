@@ -115,6 +115,7 @@ export function PDFAnnotationViewer({
         const dims: Array<{ width: number; height: number }> = [];
 
         for (let i = 0; i < pdfDoc.numPages; i++) {
+          if (cancelled) break;
           const page = await pdfDoc.getPage(i + 1);
           const viewport = page.getViewport({ scale });
 
@@ -127,7 +128,16 @@ export function PDFAnnotationViewer({
 
           images.push(canvas.toDataURL('image/png'));
           dims.push({ width: viewport.width, height: viewport.height });
+
+          // Release the backing bitmap immediately — at scale 2 these canvases
+          // are several MB each and otherwise pile up until GC gets around to it.
+          canvas.width = 0;
+          canvas.height = 0;
+          page.cleanup();
         }
+
+        // Free the parsed document; the rendered PNGs are all we still need.
+        await pdfDoc.destroy();
 
         if (!cancelled) {
           setPageImages(images);
@@ -144,6 +154,16 @@ export function PDFAnnotationViewer({
     renderPages();
     return () => { cancelled = true; };
   }, [pdfDocument, scale]);
+
+  // Drop the rendered page images (data URLs, several MB at scale 2) on unmount
+  // so closing the viewer actually reclaims the memory.
+  useEffect(() => {
+    return () => {
+      setPageImages([]);
+      setPageDimensions([]);
+      pdfBlobRef.current = null;
+    };
+  }, []);
 
   // Track previous hasAnnotations to avoid redundant parent callbacks
   const prevHasAnnotationsRef = useRef(false);

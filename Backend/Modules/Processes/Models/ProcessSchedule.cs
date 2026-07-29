@@ -37,6 +37,12 @@ namespace MyApi.Modules.Processes.Models
         [Column(TypeName = "jsonb")]
         public string ConfigJson { get; set; } = "{}";
 
+        /// <summary>
+        /// Informational only. Scheduling is purely interval-based (IntervalMinutes)
+        /// and every computation uses DateTime.UtcNow, so there is no wall-clock slot
+        /// for a timezone to shift. Kept as UTC; do not expose it as an editable field
+        /// until cron/time-of-day scheduling actually exists.
+        /// </summary>
         [MaxLength(60)]
         public string Timezone { get; set; } = "UTC";
 

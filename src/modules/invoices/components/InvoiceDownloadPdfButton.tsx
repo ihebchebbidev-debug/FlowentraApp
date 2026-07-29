@@ -66,6 +66,8 @@ export function InvoiceDownloadPdfButton({ invoice }: Props) {
     total: t('detail.line_total'),
     subtotal: t('detail.subtotal') + ' (HT)',
     tax: t('detail.tax'),
+    discount: t('detail.discount', { defaultValue: 'Discount' }),
+    adjustment: t('detail.adjustment', { defaultValue: 'Adjustment' }),
     grandTotal: t('detail.grand_total'),
     paymentSummary: t('pdf.payment_summary', 'Payment Summary'),
     amountPaid: t('detail.amount_paid'),

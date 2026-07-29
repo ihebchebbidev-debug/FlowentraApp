@@ -1,58 +1,32 @@
-import { useState, useCallback } from 'react';
+import { useMemo } from 'react';
 import type { ReactElement } from 'react';
-import { toast } from 'sonner';
-import { openPdfForPrint, sharePdfDocument } from '@/shared/pdf/browserActions';
+import { useTranslation } from 'react-i18next';
+import { usePdfActions } from '@/shared/pdf/usePdfActions';
 
 interface UsePDFActionsProps {
-  offer: any;
+  offer?: any;
   pdfDocument: ReactElement;
   fileName: string;
   shareTitle: string;
   shareText: string;
 }
 
-export const usePDFActions = ({ offer, pdfDocument, fileName, shareTitle, shareText }: UsePDFActionsProps) => {
-  const [isGenerating, setIsGenerating] = useState(false);
+/** Offers wrapper around the shared PDF actions hook — supplies translated toasts. */
+export const usePDFActions = ({ pdfDocument, fileName, shareTitle, shareText }: UsePDFActionsProps) => {
+  const { t } = useTranslation('offers');
 
-  const handlePrint = useCallback(async () => {
-    try {
-      setIsGenerating(true);
-      await openPdfForPrint(pdfDocument, fileName);
-      toast.success('Opening PDF for printing...');
-    } catch (error) {
-      toast.error('Failed to print offer');
-      console.error('Print error:', error);
-    } finally {
-      setIsGenerating(false);
-    }
-  }, [pdfDocument, fileName]);
+  const labels = useMemo(
+    () => ({
+      printStarted: t('pdfActions.printStarted', 'Opening PDF for printing…'),
+      printFailed: t('pdfActions.printFailed', 'Failed to print the quote'),
+      popupBlocked: t('pdfActions.popupBlocked', 'Your browser blocked the print window. Allow popups and try again.'),
+      shareSuccess: t('pdfActions.shareSuccess', 'Quote shared successfully'),
+      shareFailed: t('pdfActions.shareFailed', 'Failed to share the quote'),
+      downloadSuccess: t('pdfActions.downloadSuccess', 'Quote PDF downloaded successfully'),
+      downloadFailed: t('pdfActions.downloadFailed', 'Failed to download the quote PDF'),
+    }),
+    [t]
+  );
 
-  const handleShare = useCallback(async (platform?: string) => {
-    try {
-      setIsGenerating(true);
-      await sharePdfDocument({ document: pdfDocument, fileName, title: shareTitle, text: shareText });
-      toast.success('Quote shared successfully');
-    } catch (error) {
-      toast.error('Failed to share quote');
-      console.error('Share error:', error);
-    } finally {
-      setIsGenerating(false);
-    }
-  }, [pdfDocument, fileName, shareTitle, shareText]);
-
-  const handleDownloadSuccess = useCallback(() => {
-    toast.success('Quote PDF downloaded successfully');
-  }, []);
-
-  const handleDownloadError = useCallback(() => {
-    toast.error('Failed to download quote PDF');
-  }, []);
-
-  return {
-    isGenerating,
-    handlePrint,
-    handleShare,
-    handleDownloadSuccess,
-    handleDownloadError
-  };
+  return usePdfActions({ pdfDocument, fileName, shareTitle, shareText, labels });
 };

@@ -47,27 +47,75 @@ namespace MyApi.Modules.Payments.Services
             }
         }
 
-        private async Task CheckUpcomingInstallments(CancellationToken ct)
+        /// <summary>
+        /// A BackgroundService has no HttpContext, so ApplicationDbContext keeps its
+        /// default _currentTenantId = 0 and every installment query would be filtered
+        /// to tenant 0 — meaning no real company ever gets a reminder. Run one pass
+        /// per active tenant instead.
+        /// </summary>
+        private async Task<List<int>> ResolveTenantIdsAsync(CancellationToken ct)
         {
             using var scope = _serviceProvider.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var ids = await db.Tenants
+                .Where(t => t.IsActive)
+                .Select(t => t.Id)
+                .ToListAsync(ct);
+            if (!ids.Contains(0)) ids.Insert(0, 0);
+            return ids;
+        }
+
+        private async Task CheckUpcomingInstallments(CancellationToken ct)
+        {
+            var tenantIds = await ResolveTenantIdsAsync(ct);
+
+            // Purge dedupe keys from previous days once per cycle (not per installment).
+            var today = DateTime.UtcNow.ToString("yyyy-MM-dd");
+            foreach (var old in _remindedInstallments.Where(k => !k.EndsWith(today)).ToList())
+                _remindedInstallments.Remove(old);
+
+            foreach (var tenantId in tenantIds)
+            {
+                if (ct.IsCancellationRequested) break;
+                try
+                {
+                    await CheckUpcomingInstallmentsForTenant(tenantId, ct);
+                }
+                catch (Exception ex)
+                {
+                    // One bad tenant must never abort the whole cycle.
+                    _logger.LogError(ex, "Payment reminder cycle failed for tenant {TenantId}", tenantId);
+                }
+            }
+        }
+
+        private async Task CheckUpcomingInstallmentsForTenant(int tenantId, CancellationToken ct)
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            // Scope reads AND writes to this tenant before resolving anything that uses it.
+            context.SetTenantId(tenantId);
+
             var paymentService = scope.ServiceProvider.GetRequiredService<IPaymentService>();
             var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
             var emailAccountService = scope.ServiceProvider.GetRequiredService<IEmailAccountService>();
-            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
             var upcoming = await paymentService.GetUpcomingInstallmentsAsync(daysAhead: 3);
 
             if (upcoming.Count == 0)
             {
-                _logger.LogDebug("No upcoming installments found");
+                _logger.LogDebug("No upcoming installments found for tenant {TenantId}", tenantId);
                 return;
             }
 
-            _logger.LogInformation("Found {Count} upcoming installment reminders to process", upcoming.Count);
+            _logger.LogInformation("Found {Count} upcoming installment reminders to process for tenant {TenantId}",
+                upcoming.Count, tenantId);
 
             foreach (var inst in upcoming)
             {
-                var reminderKey = $"{inst.InstallmentId}_{DateTime.UtcNow:yyyy-MM-dd}";
+                // Installment ids are only unique within a tenant — key the dedupe cache
+                // by tenant too, otherwise two tenants suppress each other's reminders.
+                var reminderKey = $"{tenantId}_{inst.InstallmentId}_{DateTime.UtcNow:yyyy-MM-dd}";
                 if (_remindedInstallments.Contains(reminderKey))
                     continue;
 
@@ -114,13 +162,6 @@ namespace MyApi.Modules.Payments.Services
                     }
 
                     _remindedInstallments.Add(reminderKey);
-
-                    // Cleanup old keys
-                    var oldKeys = _remindedInstallments
-                        .Where(k => !k.EndsWith(DateTime.UtcNow.ToString("yyyy-MM-dd")))
-                        .ToList();
-                    foreach (var old in oldKeys)
-                        _remindedInstallments.Remove(old);
                 }
                 catch (Exception ex)
                 {

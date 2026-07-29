@@ -1,78 +1,32 @@
-import { useState } from 'react';
+import { useMemo } from 'react';
 import type { ReactElement } from 'react';
-import { useToast } from '@/hooks/use-toast';
-import { openPdfForPrint, sharePdfDocument } from '@/shared/pdf/browserActions';
+import { useTranslation } from 'react-i18next';
+import { usePdfActions } from '@/shared/pdf/usePdfActions';
 
 interface UsePDFActionsProps {
-  sale: any;
+  sale?: any;
   pdfDocument: ReactElement;
   fileName: string;
   shareTitle: string;
   shareText: string;
 }
 
-export function usePDFActions({ sale, pdfDocument, fileName, shareTitle, shareText }: UsePDFActionsProps) {
-  const [isGenerating, setIsGenerating] = useState(false);
-  const { toast } = useToast();
+/** Sales wrapper around the shared PDF actions hook — supplies translated toasts. */
+export function usePDFActions({ pdfDocument, fileName, shareTitle, shareText }: UsePDFActionsProps) {
+  const { t } = useTranslation('sales');
 
-  const handlePrint = async () => {
-    try {
-      setIsGenerating(true);
-      await openPdfForPrint(pdfDocument, fileName);
-      toast({
-        title: "Print Ready",
-        description: "PDF opened in new window for printing"
-      });
-    } catch (error) {
-      toast({
-        title: "Print Error",
-        description: "Failed to prepare PDF for printing",
-        variant: "destructive"
-      });
-    } finally {
-      setIsGenerating(false);
-    }
-  };
+  const labels = useMemo(
+    () => ({
+      printStarted: t('pdfActions.printStarted', 'Opening PDF for printing…'),
+      printFailed: t('pdfActions.printFailed', 'Failed to prepare the PDF for printing'),
+      popupBlocked: t('pdfActions.popupBlocked', 'Your browser blocked the print window. Allow popups and try again.'),
+      shareSuccess: t('pdfActions.shareSuccess', 'PDF shared successfully'),
+      shareFailed: t('pdfActions.shareFailed', 'Failed to share the PDF'),
+      downloadSuccess: t('pdfActions.downloadSuccess', 'Sale order PDF downloaded successfully'),
+      downloadFailed: t('pdfActions.downloadFailed', 'Failed to download the PDF'),
+    }),
+    [t]
+  );
 
-  const handleShare = async (platform?: string) => {
-    try {
-      setIsGenerating(true);
-      await sharePdfDocument({ document: pdfDocument, fileName, title: shareTitle, text: shareText });
-      toast({
-        title: "Shared Successfully",
-        description: "PDF has been shared"
-      });
-    } catch (error) {
-      toast({
-        title: "Share Error",
-        description: "Failed to share PDF",
-        variant: "destructive"
-      });
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const handleDownloadSuccess = () => {
-    toast({
-      title: "Download Complete",
-      description: `Sale order ${sale.id} has been downloaded successfully`
-    });
-  };
-
-  const handleDownloadError = () => {
-    toast({
-      title: "Download Error",
-      description: "Failed to download the PDF",
-      variant: "destructive"
-    });
-  };
-
-  return {
-    isGenerating,
-    handlePrint,
-    handleShare,
-    handleDownloadSuccess,
-    handleDownloadError
-  };
+  return usePdfActions({ pdfDocument, fileName, shareTitle, shareText, labels });
 }

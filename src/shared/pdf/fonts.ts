@@ -19,6 +19,16 @@ let registered = false;
 
 export function registerUnicodeFonts(): void {
   if (registered) return;
+  // Hyphenation is registered first and outside the try: react-pdf's default
+  // hyphenator butchers non-English words, and it must stay disabled even if
+  // the font registration below throws.
+  try {
+    Font.registerHyphenationCallback((word) => [word]);
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.warn('[pdf/fonts] Could not disable hyphenation:', err);
+  }
+
   try {
     Font.register({
       family: UNICODE_FONT_FAMILY,
@@ -33,12 +43,12 @@ export function registerUnicodeFonts(): void {
         },
       ],
     });
-    // Disable hyphenation — react-pdf's default hyphenator butchers non-English
-    // words. Callers can override per-document if needed.
-    Font.registerHyphenationCallback((word) => [word]);
     registered = true;
   } catch (err) {
     // Never break the PDF pipeline if font fetch fails at register time.
+    // NOTE: these are fetched from the Google Fonts CDN at first render. On a
+    // network failure react-pdf silently falls back to Helvetica, which mangles
+    // accented text. Self-hosting these two weights is the durable fix.
     // eslint-disable-next-line no-console
     console.error('[pdf/fonts] Failed to register Unicode fonts:', err);
   }

@@ -1,5 +1,6 @@
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 import { numberToWords } from '@/lib/numberToWords';
+import { calculateDocumentTotal } from '@/lib/calculateTotal';
 
 const styles = StyleSheet.create({
   page: { flexDirection: 'column', backgroundColor: '#FFFFFF', paddingHorizontal: 30, paddingTop: 20, paddingBottom: 12, fontFamily: 'Helvetica', fontSize: 9 },
@@ -90,12 +91,24 @@ export function PurchaseOrderPDFDocument({ order, formatCurrency, settings, tran
   };
 
   const items = order.items || [];
-  const subTotal = order.subTotal || items.reduce((s: number, i: any) => s + (i.lineTotal || 0), 0);
-  const discountAmount = order.discountType === 'percentage' ? subTotal * ((order.discount || 0) / 100) : (order.discount || 0);
-  const afterDiscount = subTotal - discountAmount;
-  const taxAmount = order.taxAmount || 0;
-  const fiscalStamp = order.fiscalStamp || 0;
-  const grandTotal = order.grandTotal || (afterDiscount + taxAmount + fiscalStamp);
+  // Use the shared money pipeline (subtotal → discount → tax → stamp) instead of
+  // a local copy. `??` matters: a legitimate stored total of 0 must be trusted
+  // rather than silently recomputed, which `||` did.
+  const subTotal = order.subTotal ?? items.reduce((s: number, i: any) => s + (i.lineTotal ?? 0), 0);
+  const computed = calculateDocumentTotal({
+    subtotal: subTotal,
+    discount: order.discount,
+    discountType: order.discountType,
+    // Purchase documents store tax as an absolute amount, not a rate.
+    tax: order.taxAmount,
+    taxType: 'fixed',
+    fiscalStamp: order.fiscalStamp,
+  });
+  const discountAmount = computed.discountAmount;
+  const afterDiscount = computed.afterDiscount;
+  const taxAmount = computed.taxAmount;
+  const fiscalStamp = computed.fiscalStamp;
+  const grandTotal = order.grandTotal ?? computed.total;
 
   return (
     <Document>

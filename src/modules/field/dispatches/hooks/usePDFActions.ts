@@ -1,58 +1,32 @@
-import { useState, useCallback } from 'react';
+import { useMemo } from 'react';
 import type { ReactElement } from 'react';
-import { toast } from 'sonner';
-import { openPdfForPrint, sharePdfDocument } from '@/shared/pdf/browserActions';
+import { useTranslation } from 'react-i18next';
+import { usePdfActions } from '@/shared/pdf/usePdfActions';
 
 interface UsePDFActionsProps {
-  dispatch: any;
+  dispatch?: any;
   pdfDocument: ReactElement;
   fileName: string;
   shareTitle: string;
   shareText: string;
 }
 
-export const usePDFActions = ({ dispatch, pdfDocument, fileName, shareTitle, shareText }: UsePDFActionsProps) => {
-  const [isGenerating, setIsGenerating] = useState(false);
+/** Dispatches wrapper around the shared PDF actions hook — supplies translated toasts. */
+export const usePDFActions = ({ pdfDocument, fileName, shareTitle, shareText }: UsePDFActionsProps) => {
+  const { t } = useTranslation('dispatches');
 
-  const handlePrint = useCallback(async () => {
-    try {
-      setIsGenerating(true);
-      await openPdfForPrint(pdfDocument, fileName);
-      toast.success('Print dialog opened');
-    } catch (error) {
-      toast.error('Failed to print dispatch report');
-      console.error('Print error:', error);
-    } finally {
-      setIsGenerating(false);
-    }
-  }, [pdfDocument, fileName]);
+  const labels = useMemo(
+    () => ({
+      printStarted: t('pdfActions.printStarted', 'Print dialog opened'),
+      printFailed: t('pdfActions.printFailed', 'Failed to print the dispatch report'),
+      popupBlocked: t('pdfActions.popupBlocked', 'Your browser blocked the print window. Allow popups and try again.'),
+      shareSuccess: t('pdfActions.shareSuccess', 'Dispatch report shared successfully'),
+      shareFailed: t('pdfActions.shareFailed', 'Failed to share the dispatch report'),
+      downloadSuccess: t('pdfActions.downloadSuccess', 'Dispatch report PDF downloaded successfully'),
+      downloadFailed: t('pdfActions.downloadFailed', 'Failed to download the dispatch report PDF'),
+    }),
+    [t]
+  );
 
-  const handleShare = useCallback(async (platform?: string) => {
-    try {
-      setIsGenerating(true);
-      await sharePdfDocument({ document: pdfDocument, fileName, title: shareTitle, text: shareText });
-      toast.success('Dispatch report shared successfully');
-    } catch (error) {
-      toast.error('Failed to share dispatch report');
-      console.error('Share error:', error);
-    } finally {
-      setIsGenerating(false);
-    }
-  }, [pdfDocument, fileName, shareTitle, shareText]);
-
-  const handleDownloadSuccess = useCallback(() => {
-    toast.success('Dispatch report PDF downloaded successfully');
-  }, []);
-
-  const handleDownloadError = useCallback(() => {
-    toast.error('Failed to download dispatch report PDF');
-  }, []);
-
-  return {
-    isGenerating,
-    handlePrint,
-    handleShare,
-    handleDownloadSuccess,
-    handleDownloadError
-  };
+  return usePdfActions({ pdfDocument, fileName, shareTitle, shareText, labels });
 };

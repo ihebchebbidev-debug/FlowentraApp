@@ -52,15 +52,70 @@ namespace MyApi.Modules.WorkflowEngine.Services
             _logger.LogInformation("[WORKFLOW-POLLING] Workflow polling service stopped");
         }
 
+        /// <summary>
+        /// Resolve which tenants this cycle must run for.
+        /// A BackgroundService has no HttpContext, so ApplicationDbContext keeps its
+        /// default _currentTenantId = 0 and every workflow query would be filtered to
+        /// tenant 0 only — silently skipping every real company. We therefore run one
+        /// full cycle per active tenant. When the workflow_engine module is configured
+        /// as "shared" all rows live at TenantId = 0, so a single pass is enough (and
+        /// looping would process the same rows N times).
+        /// </summary>
+        private async Task<List<int>> ResolveTenantIdsAsync(CancellationToken cancellationToken)
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+            if (db.IsModuleShared("workflow_engine"))
+                return new List<int> { 0 };
+
+            var ids = await db.Tenants
+                .Where(t => t.IsActive)
+                .Select(t => t.Id)
+                .ToListAsync(cancellationToken);
+
+            // Tenant 0 is the system/default bucket — always include it.
+            if (!ids.Contains(0)) ids.Insert(0, 0);
+            return ids;
+        }
+
         private async Task PollAndTriggerWorkflowsAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("[WORKFLOW-POLLING] ═══════════════════════════════════════════════════════════════");
             _logger.LogInformation("[WORKFLOW-POLLING] Starting polling cycle at {Time}", DateTime.UtcNow);
 
+            var tenantIds = await ResolveTenantIdsAsync(cancellationToken);
+            _logger.LogInformation("[WORKFLOW-POLLING] Running cycle for {Count} tenant(s): {Tenants}",
+                tenantIds.Count, string.Join(",", tenantIds));
+
+            foreach (var tenantId in tenantIds)
+            {
+                if (cancellationToken.IsCancellationRequested) break;
+                try
+                {
+                    await PollTenantAsync(tenantId, cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    // One bad tenant must never abort the whole cycle.
+                    _logger.LogError(ex, "[WORKFLOW-POLLING] Cycle failed for tenant {TenantId}", tenantId);
+                }
+            }
+
+            _logger.LogInformation("[WORKFLOW-POLLING] ═══════════════════════════════════════════════════════════════");
+        }
+
+        private async Task PollTenantAsync(int tenantId, CancellationToken cancellationToken)
+        {
             using var scope = _serviceProvider.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            // Scope every query AND every insert in this cycle to the owning tenant.
+            // (Do not use the -1 "view all" sentinel here: StampTenantIdOnNewEntities
+            // throws on any tenant-scoped write while it is active.)
+            db.SetTenantId(tenantId);
             var notificationService = scope.ServiceProvider.GetRequiredService<IWorkflowNotificationService>();
             var graphExecutor = scope.ServiceProvider.GetRequiredService<IWorkflowGraphExecutor>();
+
 
             // ═══ PHASE 0: Purge stale execution records (TTL housekeeping) ═══
             var purged = await PurgeStaleExecutionsAsync(db, cancellationToken);
@@ -114,9 +169,8 @@ namespace MyApi.Modules.WorkflowEngine.Services
                 }
             }
 
-            _logger.LogInformation("[WORKFLOW-POLLING] Polling cycle complete. Consistency fixes: {ConsistencyFixes}, Entities checked: {Processed}, Workflows triggered: {Triggered}",
-                consistencyFixes, totalProcessed, totalTriggered);
-            _logger.LogInformation("[WORKFLOW-POLLING] ═══════════════════════════════════════════════════════════════");
+            _logger.LogInformation("[WORKFLOW-POLLING] Tenant {TenantId} complete. Consistency fixes: {ConsistencyFixes}, Entities checked: {Processed}, Workflows triggered: {Triggered}",
+                tenantId, consistencyFixes, totalProcessed, totalTriggered);
         }
 
         /// <summary>

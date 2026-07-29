@@ -236,8 +236,29 @@ namespace MyApi.Modules.Processes.Controllers
                 s.NextRunAt = DateTime.UtcNow.AddMinutes(s.IntervalMinutes);
 
             if (isNew) _db.Set<ProcessSchedule>().Add(s);
-            await _db.SaveChangesAsync(ct);
+
+            try
+            {
+                await _db.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateException ex) when (isNew && IsUniqueViolation(ex))
+            {
+                // Two admins (or the scheduler seed) created the same key concurrently.
+                // The UNIQUE("Key") index won the race — reload the winning row and
+                // return it instead of surfacing a raw 500.
+                _db.Entry(s).State = EntityState.Detached;
+                var existing = await _db.Set<ProcessSchedule>()
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.Key == req.Key, ct);
+                if (existing == null) throw;
+                return Ok(ToDto(existing));
+            }
             return Ok(ToDto(s));
+        }
+
+        /// <summary>Postgres unique-violation SQLSTATE 23505.</summary>
+        private static bool IsUniqueViolation(DbUpdateException ex) =>
+            ex.InnerException is Npgsql.PostgresException { SqlState: "23505" };
         }
 
         [HttpPost("schedules/{key}/pause")]

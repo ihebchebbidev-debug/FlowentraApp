@@ -64,13 +64,14 @@ export function DealPDFPreviewModal({ deal, isOpen, onClose, formatCurrency }: D
       assignedToName: deal.assignedToName || deal.createdByName,
       notes: deal.notes,
       currency: deal.currency,
-      // Deals carry no document-level discount / tax / stamp — totals derive
-      // purely from the line items.
-      discount: 0,
-      discountType: "fixed" as const,
-      taxes: 0,
-      taxType: "percentage" as const,
-      fiscalStamp: 0,
+      // Deals have no document-level discount / tax / stamp today, but read
+      // through from the record instead of hardcoding zeroes so the PDF stays
+      // correct the moment those fields exist.
+      discount: (deal as any).discount ?? 0,
+      discountType: ((deal as any).discountType ?? "fixed") as "fixed" | "percentage",
+      taxes: (deal as any).taxes ?? 0,
+      taxType: ((deal as any).taxType ?? "percentage") as "fixed" | "percentage",
+      fiscalStamp: (deal as any).fiscalStamp ?? 0,
       items,
       totalAmount: subtotal,
       amount: subtotal,

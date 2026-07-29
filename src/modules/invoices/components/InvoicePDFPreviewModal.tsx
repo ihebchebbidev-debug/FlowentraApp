@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { FileText, Download, Printer } from 'lucide-react';
-import { pdf } from '@react-pdf/renderer';
+import { downloadPdfDocument, openPdfForPrint, PopupBlockedError } from '@/shared/pdf/browserActions';
 import { useTranslation } from 'react-i18next';
 import { PDFAnnotationViewer } from '@/components/shared/PDFAnnotationViewer';
 import { PdfSettingsService } from '@/modules/sales/services/pdfSettings.service';
@@ -54,6 +54,8 @@ export function InvoicePDFPreviewModal({ isOpen, onClose, invoice }: InvoicePDFP
     total: t('detail.line_total'),
     subtotal: t('detail.subtotal') + ' (HT)',
     tax: t('detail.tax'),
+    discount: t('detail.discount', { defaultValue: 'Discount' }),
+    adjustment: t('detail.adjustment', { defaultValue: 'Adjustment' }),
     grandTotal: t('detail.grand_total'),
     paymentSummary: t('pdf.payment_summary', 'Payment Summary'),
     amountPaid: t('detail.amount_paid'),
@@ -112,31 +114,36 @@ export function InvoicePDFPreviewModal({ isOpen, onClose, invoice }: InvoicePDFP
     [invoice?.invoiceNumber, invoice?.id]
   );
 
+  // Use the shared helpers: they revoke the object URL correctly and surface a
+  // specific message when the browser blocks the print popup (this modal used
+  // to fail silently and leak the blob on every blocked attempt).
   const handleDownload = useCallback(async () => {
     try {
-      const blob = await pdf(pdfDocElement as any).toBlob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      a.click();
-      URL.revokeObjectURL(url);
+      await downloadPdfDocument(pdfDocElement, fileName);
       toast({ title: t('pdf.download_complete', 'Download complete') });
-    } catch {
-      toast({ title: t('pdf.download_error', 'Download failed'), variant: 'destructive' });
+    } catch (error) {
+      toast({
+        title: t('pdf.download_error', 'Download failed'),
+        description: error instanceof Error ? error.message : undefined,
+        variant: 'destructive',
+      });
     }
   }, [pdfDocElement, fileName, toast, t]);
 
   const handlePrint = useCallback(async () => {
     try {
-      const blob = await pdf(pdfDocElement as any).toBlob();
-      const url = URL.createObjectURL(blob);
-      const printWindow = window.open(url);
-      if (printWindow) printWindow.onload = () => printWindow.print();
-    } catch {
-      toast({ title: t('pdf.print_error', 'Print failed'), variant: 'destructive' });
+      await openPdfForPrint(pdfDocElement, fileName);
+    } catch (error) {
+      toast({
+        title:
+          error instanceof PopupBlockedError
+            ? t('pdf.popup_blocked', 'Your browser blocked the print window. Allow popups and try again.')
+            : t('pdf.print_error', 'Print failed'),
+        description: error instanceof PopupBlockedError ? undefined : error instanceof Error ? error.message : undefined,
+        variant: 'destructive',
+      });
     }
-  }, [pdfDocElement, toast, t]);
+  }, [pdfDocElement, fileName, toast, t]);
 
   if (!invoice) return null;
 
