@@ -1,8 +1,5 @@
-import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -11,6 +8,7 @@ import { formatDisplayName } from '../../utils/pdfSettings.utils';
 import { PdfSettings } from '../../utils/pdfSettings.utils';
 import { Building2, Upload, X, Image } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { CompanyOverrideSection } from '@/shared/pdf/CompanyOverrideSection';
 
 interface DataTabProps {
   settings: PdfSettings;
@@ -21,38 +19,6 @@ interface DataTabProps {
 export function DataTab({ settings, onSettingsChange }: DataTabProps) {
   const { t } = useTranslation('offers');
   const fileInputId = 'pdf-logo-upload-input';
-  const [adminCompanyLoaded, setAdminCompanyLoaded] = useState(false);
-
-  // Load MainAdminUser's company info on mount
-  useEffect(() => {
-    if (adminCompanyLoaded) return;
-    
-    try {
-      const userData = localStorage.getItem('user_data');
-      if (userData) {
-        const user = JSON.parse(userData);
-        // Only auto-fill if company name is empty (not yet set)
-        if (!settings.company.name && user.companyName) {
-          onSettingsChange('company.name', user.companyName);
-        }
-        // Auto-fill email from admin if empty
-        if (!settings.company.email && user.email) {
-          onSettingsChange('company.email', user.email);
-        }
-        // Auto-fill phone from admin if empty
-        if (!settings.company.phone && user.phoneNumber) {
-          onSettingsChange('company.phone', user.phoneNumber);
-        }
-        // Auto-fill website from admin if empty
-        if (!settings.company.website && user.companyWebsite) {
-          onSettingsChange('company.website', user.companyWebsite);
-        }
-      }
-    } catch (error) {
-      console.warn('Could not load MainAdminUser company info:', error);
-    }
-    setAdminCompanyLoaded(true);
-  }, [settings.company, onSettingsChange, adminCompanyLoaded]);
 
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -102,102 +68,11 @@ export function DataTab({ settings, onSettingsChange }: DataTabProps) {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="company-name">{t('pdfSettings.companyName', 'Company Name')}</Label>
-            <Input
-              id="company-name"
-              value={settings.company.name}
-              onChange={(e) => onSettingsChange('company.name', e.target.value)}
-              placeholder={t('pdfSettings.companyNamePlaceholder', 'Your Company Name')}
-            />
-            <p className="text-xs text-muted-foreground">
-              {t('pdfSettings.loadedFromAccount', "Loaded from your account's company name")}
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="company-address">{t('pdfSettings.address', 'Address')}</Label>
-            <Textarea
-              id="company-address"
-              value={settings.company.address}
-              onChange={(e) => onSettingsChange('company.address', e.target.value)}
-              placeholder={t('pdfSettings.addressPlaceholder', 'Full company address')}
-              rows={2}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="company-phone">{t('pdfSettings.phone', 'Phone')}</Label>
-              <Input
-                id="company-phone"
-                value={settings.company.phone}
-                onChange={(e) => onSettingsChange('company.phone', e.target.value)}
-                placeholder="(555) 123-4567"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="company-email">{t('pdfSettings.email', 'Email')}</Label>
-              <Input
-                id="company-email"
-                type="email"
-                value={settings.company.email}
-                onChange={(e) => onSettingsChange('company.email', e.target.value)}
-                placeholder="quotes@company.com"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="company-website">{t('pdfSettings.website', 'Website')}</Label>
-              <Input
-                id="company-website"
-                value={settings.company.website}
-                onChange={(e) => onSettingsChange('company.website', e.target.value)}
-                placeholder="www.company.com"
-              />
-            </div>
-          </div>
-
-          {/* Footer Message */}
-          <div className="space-y-2">
-            <Label htmlFor="footer-message">{t('pdfSettings.footerMessage', 'Footer Message')}</Label>
-            <Textarea
-              id="footer-message"
-              value={settings.company.footerMessage || ''}
-              onChange={(e) => onSettingsChange('company.footerMessage', e.target.value)}
-              placeholder={t('pdfSettings.footerMessagePlaceholder', 'Thank you for considering our offer. We look forward to working with you.')}
-              rows={2}
-            />
-            <p className="text-xs text-muted-foreground">
-              {t('pdfSettings.footerMessageDescription', 'This message appears at the bottom of all PDF reports')}
-            </p>
-          </div>
-
-          {/* Footer Preview */}
-          <div className="space-y-2">
-            <Label className="text-xs font-medium">{t('pdfSettings.footerPreview', 'Footer Preview')}</Label>
-            <div className={`relative rounded-md border p-4 text-xs ${settings.showElements.footer ? 'bg-background' : 'bg-muted/30 opacity-60'}`}>
-              {!settings.showElements.footer && (
-                <div className="absolute inset-0 flex items-center justify-center z-10">
-                  <span className="bg-destructive/10 text-destructive text-xs font-medium px-2 py-1 rounded">
-                    {t('pdfSettings.footerDisabled', 'Footer is currently disabled')}
-                  </span>
-                </div>
-              )}
-              <div className="border-t pt-3 space-y-1">
-                <p className="text-muted-foreground">
-                  {settings.company.name || 'Company Name'} • {settings.company.address || 'Address'}
-                </p>
-                <p className="text-muted-foreground">
-                  {settings.company.phone || 'Phone'} • {settings.company.email || 'Email'} • {settings.company.website || 'Website'}
-                </p>
-                {settings.company.footerMessage && (
-                  <p className="text-muted-foreground italic">{settings.company.footerMessage}</p>
-                )}
-              </div>
-            </div>
-          </div>
+          <CompanyOverrideSection
+            company={settings.company}
+            onSettingsChange={onSettingsChange}
+            footerEnabled={settings.showElements.footer}
+          />
 
           <Separator />
 

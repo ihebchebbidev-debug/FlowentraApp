@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Users, Shield, Settings2, Palette, Filter, ChevronDown, Database, Monitor, Link2, User, Building2, Lock, CreditCard, Layers, RefreshCw, WifiOff, Play } from "lucide-react";
+import { Plus, Users, Shield, Settings2, Palette, Filter, ChevronDown, Monitor, Link2, User, Building2, Lock, CreditCard, Layers, RefreshCw, WifiOff, Play } from "lucide-react";
 import { SettingsAutopilotDemo } from "@/modules/settings/components/onboarding/SettingsAutopilotDemo";
 import { useLayoutModeContext } from "@/hooks/useLayoutMode";
 import { useQuery } from "@tanstack/react-query";
@@ -305,7 +305,7 @@ export default function SettingsPage({ standaloneSection }: SettingsPageProps = 
     { id: 'offline', labelKey: 'nav.offline', icon: WifiOff, section: 'general', visible: true },
     { id: 'system', labelKey: 'nav.system', icon: Monitor, section: 'general', visible: canViewSystem },
     // Reachable via direct URL from the Administration workspace sidebar:
-    { id: 'companies', labelKey: 'nav.companies', icon: Layers, section: 'admin', visible: false },
+    { id: 'companies', labelKey: 'nav.companies', icon: Layers, section: 'general', visible: isMainAdmin },
     { id: 'users', labelKey: 'nav.users', icon: Users, section: 'admin', visible: false },
     { id: 'roles', labelKey: 'nav.roles', icon: Shield, section: 'admin', visible: false },
     { id: 'userGroups', labelKey: 'nav.userGroups', icon: Users, section: 'admin', visible: false },

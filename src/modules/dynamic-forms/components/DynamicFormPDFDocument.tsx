@@ -1,5 +1,6 @@
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 import { DynamicForm, FormField } from '../types';
+import { buildFooterLines, type PdfCompanyBlock } from '@/shared/pdf/resolveCompany';
 
 // Professional PDF Styles
 const styles = StyleSheet.create({
@@ -293,13 +294,8 @@ interface DynamicFormPDFDocumentProps {
   form: DynamicForm;
   formValues: Record<string, any>;
   language: 'en' | 'fr';
-  companySettings?: {
-    name?: string;
-    logo?: string;
-    address?: string;
-    phone?: string;
-    email?: string;
-  };
+  /** Resolved from the OWNING company's Company Information. */
+  companySettings?: PdfCompanyBlock;
   submittedBy?: string;
   submittedAt?: Date;
 }
@@ -495,6 +491,12 @@ export function DynamicFormPDFDocument({
                 © {new Date().getFullYear()} {companySettings.name}
               </Text>
             )}
+            {buildFooterLines(companySettings).map((line, idx) => (
+              <Text key={idx} style={styles.footerText}>{line}</Text>
+            ))}
+            {companySettings?.footerMessage ? (
+              <Text style={styles.footerText}>{companySettings.footerMessage}</Text>
+            ) : null}
           </View>
           <Text style={styles.pageNumber} render={({ pageNumber, totalPages }) => (
             `${pageNumber} / ${totalPages}`

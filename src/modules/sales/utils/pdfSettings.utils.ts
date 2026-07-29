@@ -45,12 +45,24 @@ export interface PdfSettings {
   
   // Company Info
   company: {
+    /** false (default) = inherit this company's own Company Information. */
+    useOverride?: boolean;
     name: string;
     tagline: string;
     address: string;
+    city?: string;
+    postalCode?: string;
+    state?: string;
+    country?: string;
     phone: string;
     email: string;
     website: string;
+    taxId?: string;
+    registrationNumber?: string;
+    shareCapital?: string;
+    bankName?: string;
+    bankAccount?: string;
+    bankSwift?: string;
     logo?: string;
     footerMessage?: string;
   };
@@ -130,14 +142,27 @@ export const defaultSettings: PdfSettings = {
     right: 24,
   },
   company: {
-    name: 'PEAK SOLUTIONS',
-    tagline: 'Mountain Service Excellence',
-    address: '1234 Service Street, Tech City, TC 12345',
-    phone: '(555) 123-4567',
-    email: 'service@peaksolutions.com',
-    website: 'www.peaksolutions.com',
+    // Empty by default: every company inherits its OWN Company Information
+    // (Settings -> Company). Only an explicit override fills these in.
+    useOverride: false,
+    name: '',
+    tagline: '',
+    address: '',
+    city: '',
+    postalCode: '',
+    state: '',
+    country: '',
+    phone: '',
+    email: '',
+    website: '',
+    taxId: '',
+    registrationNumber: '',
+    shareCapital: '',
+    bankName: '',
+    bankAccount: '',
+    bankSwift: '',
     logo: getCompanyLogoCachedBase64() || '',
-    footerMessage: 'Thank you for your business. We look forward to serving you again.',
+    footerMessage: '',
   },
   showElements: {
     customerInfo: true,

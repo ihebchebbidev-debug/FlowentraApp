@@ -180,6 +180,18 @@ namespace MyApi.Modules.Tenants.Controllers
                 CompanyAddress = request.CompanyAddress,
                 CompanyCountry = request.CompanyCountry,
                 Industry = request.Industry,
+                CompanyEmail = request.CompanyEmail,
+                CompanyTagline = request.CompanyTagline,
+                CompanyCity = request.CompanyCity,
+                CompanyPostalCode = request.CompanyPostalCode,
+                CompanyState = request.CompanyState,
+                TaxId = request.TaxId,
+                RegistrationNumber = request.RegistrationNumber,
+                ShareCapital = request.ShareCapital,
+                BankName = request.BankName,
+                BankAccount = request.BankAccount,
+                BankSwift = request.BankSwift,
+                ReportFooterMessage = request.ReportFooterMessage,
                 IsActive = true,
                 IsDefault = false,
                 CreatedAt = DateTime.UtcNow,
@@ -229,6 +241,18 @@ namespace MyApi.Modules.Tenants.Controllers
             if (request.CompanyPhone != null) tenant.CompanyPhone = request.CompanyPhone;
             if (request.CompanyAddress != null) tenant.CompanyAddress = request.CompanyAddress;
             if (request.CompanyCountry != null) tenant.CompanyCountry = request.CompanyCountry;
+            if (request.CompanyEmail != null) tenant.CompanyEmail = request.CompanyEmail;
+            if (request.CompanyTagline != null) tenant.CompanyTagline = request.CompanyTagline;
+            if (request.CompanyCity != null) tenant.CompanyCity = request.CompanyCity;
+            if (request.CompanyPostalCode != null) tenant.CompanyPostalCode = request.CompanyPostalCode;
+            if (request.CompanyState != null) tenant.CompanyState = request.CompanyState;
+            if (request.TaxId != null) tenant.TaxId = request.TaxId;
+            if (request.RegistrationNumber != null) tenant.RegistrationNumber = request.RegistrationNumber;
+            if (request.ShareCapital != null) tenant.ShareCapital = request.ShareCapital;
+            if (request.BankName != null) tenant.BankName = request.BankName;
+            if (request.BankAccount != null) tenant.BankAccount = request.BankAccount;
+            if (request.BankSwift != null) tenant.BankSwift = request.BankSwift;
+            if (request.ReportFooterMessage != null) tenant.ReportFooterMessage = request.ReportFooterMessage;
             if (request.Industry != null) tenant.Industry = request.Industry;
             if (request.IsActive.HasValue) tenant.IsActive = request.IsActive.Value;
             tenant.UpdatedAt = DateTime.UtcNow;
@@ -380,6 +404,18 @@ namespace MyApi.Modules.Tenants.Controllers
         public string? CompanyAddress { get; set; }
         public string? CompanyCountry { get; set; }
         public string? Industry { get; set; }
+        public string? CompanyEmail { get; set; }
+        public string? CompanyTagline { get; set; }
+        public string? CompanyCity { get; set; }
+        public string? CompanyPostalCode { get; set; }
+        public string? CompanyState { get; set; }
+        public string? TaxId { get; set; }
+        public string? RegistrationNumber { get; set; }
+        public string? ShareCapital { get; set; }
+        public string? BankName { get; set; }
+        public string? BankAccount { get; set; }
+        public string? BankSwift { get; set; }
+        public string? ReportFooterMessage { get; set; }
     }
 
     public class UpdateTenantRequest
@@ -391,6 +427,18 @@ namespace MyApi.Modules.Tenants.Controllers
         public string? CompanyAddress { get; set; }
         public string? CompanyCountry { get; set; }
         public string? Industry { get; set; }
+        public string? CompanyEmail { get; set; }
+        public string? CompanyTagline { get; set; }
+        public string? CompanyCity { get; set; }
+        public string? CompanyPostalCode { get; set; }
+        public string? CompanyState { get; set; }
+        public string? TaxId { get; set; }
+        public string? RegistrationNumber { get; set; }
+        public string? ShareCapital { get; set; }
+        public string? BankName { get; set; }
+        public string? BankAccount { get; set; }
+        public string? BankSwift { get; set; }
+        public string? ReportFooterMessage { get; set; }
         public bool? IsActive { get; set; }
     }
 }

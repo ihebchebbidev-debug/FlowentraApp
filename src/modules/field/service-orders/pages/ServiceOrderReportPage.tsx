@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { Loader2 } from 'lucide-react';
 import { serviceOrdersApi } from '@/services/api/serviceOrdersApi';
+import { resolveCompanyForPdf } from '@/shared/pdf/resolveCompany';
 
 export default function ServiceOrderReportPage() {
   const { id } = useParams<{ id: string }>();
@@ -28,7 +29,7 @@ export default function ServiceOrderReportPage() {
           serviceOrdersApi.getById(Number(id!)),
         ]);
         const logoBase64 = await getCompanyLogoBase64(companyLogo);
-        setPdfSettings({ ...settings, company: { ...settings.company, logo: logoBase64 || '' } });
+        setPdfSettings({ ...settings, company: await resolveCompanyForPdf(settings.company, logoBase64 || '') });
         setServiceOrder(order);
       } catch {
         setPdfSettings(defaultSettings);

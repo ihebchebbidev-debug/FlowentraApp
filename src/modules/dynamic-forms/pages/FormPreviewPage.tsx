@@ -27,6 +27,7 @@ import { usePermissions } from '@/hooks/usePermissions.tsx';
 import { useToast } from '@/hooks/use-toast';
 import { useActionLogger } from '@/hooks/useActionLogger';
 import { pdfSettingsApi } from '@/services/pdfSettingsApi';
+import { resolveCompanyForPdf, type PdfCompanyBlock } from '@/shared/pdf/resolveCompany';
 
 export default function FormPreviewPage() {
   const { t, i18n } = useTranslation('dynamic-forms');
@@ -48,37 +49,20 @@ export default function FormPreviewPage() {
   const [isSaving, setIsSaving] = useState(false);
   
   // Company settings for PDF
-  const [companySettings, setCompanySettings] = useState<{
-    name?: string;
-    logo?: string;
-    address?: string;
-    phone?: string;
-    email?: string;
-  }>({});
+  const [companySettings, setCompanySettings] = useState<PdfCompanyBlock>({});
   
   // Load company settings from PDF settings + resolve logo to base64
   useEffect(() => {
     const loadCompanySettings = async () => {
       try {
-        const settings = await pdfSettingsApi.loadSettings('offers', {
-          company: { name: '', logo: '', address: '', phone: '', email: '' }
-        });
+        const settings = await pdfSettingsApi.loadSettings<{ company?: PdfCompanyBlock }>('offers', {});
         // Always resolve logo to base64 for reliable rendering.
         // Pass logoUrl (from tenant-aware singleton) so the active company's
         // logo is used, not the MainAdmin global fallback.
         const { getCompanyLogoBase64 } = await import('@/hooks/companyLogoUtils');
         const logoBase64 = await getCompanyLogoBase64(logoUrl || undefined);
-        if (settings?.company) {
-          setCompanySettings({
-            name: settings.company.name,
-            logo: logoBase64 || '',
-            address: settings.company.address,
-            phone: settings.company.phone,
-            email: settings.company.email,
-          });
-        } else if (logoBase64) {
-          setCompanySettings(prev => ({ ...prev, logo: logoBase64 }));
-        }
+        // Footer identity comes from the OWNING company's own record.
+        setCompanySettings(await resolveCompanyForPdf(settings?.company, logoBase64 || ''));
       } catch (error) {
         console.warn('Failed to load company settings:', error);
       }

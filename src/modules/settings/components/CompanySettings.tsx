@@ -10,18 +10,21 @@ import { useAuth } from "@/contexts/AuthContext";
 import { authService } from "@/services/authService";
 import { setCompanyLogo, setCompanyLogoExplicitNone, useCompanyLogo } from "@/hooks/useCompanyLogo";
 import { API_URL } from "@/config/api";
-import { getAuthHeadersNoContentType, getMutationHeadersNoContentType } from "@/utils/apiHeaders";
+import { getMutationHeadersNoContentType } from "@/utils/apiHeaders";
 import { tenantsApi, type Tenant } from "@/services/api/tenantsApi";
 import { getCurrentTenant, isViewAllMode } from "@/utils/tenant";
 import { getActiveCompanyId } from "@/utils/targetTenant";
 import { useTenantMap } from "@/contexts/TenantMapContext";
+import { invalidateActiveCompany } from "@/shared/company/activeCompany";
+import { buildFooterLines } from "@/shared/pdf/resolveCompany";
+import { Textarea } from "@/components/ui/textarea";
 
 
 
 export function CompanySettings() {
   const { toast } = useToast();
   const { t } = useTranslation(['settings', 'translation']);
-  const { user } = useAuth();
+  const { user, isMainAdmin } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -30,12 +33,32 @@ export function CompanySettings() {
   const currentLogo = useCompanyLogo();
   const { refetch } = useTenantMap();
 
+  // Every field below belongs to THIS company only (the active tenant row).
+  // Another company's settings page edits a different row entirely.
   const [companyData, setCompanyData] = useState({
     name: "",
+    tagline: "",
     website: "",
     phone: "",
+    email: "",
+    address: "",
+    city: "",
+    postalCode: "",
+    state: "",
+    country: "",
+    taxId: "",
+    registrationNumber: "",
+    shareCapital: "",
+    bankName: "",
+    bankAccount: "",
+    bankSwift: "",
+    footerMessage: "",
     logoUrl: "",
   });
+
+  // Only a MainAdminUser may write to /api/Tenants/{id}. Regular users get a
+  // read-only view instead of a save that fails with 403.
+  const canEdit = isMainAdmin && !isLoading;
 
   // Load company data from the ACTIVE tenant (matches current X-Tenant slug, or default).
   // Falls back to user_data in localStorage if tenants API is unavailable.
@@ -67,8 +90,22 @@ export function CompanySettings() {
           setActiveTenant(matched);
           setCompanyData({
             name: matched.companyName || "",
+            tagline: matched.companyTagline || "",
             website: matched.companyWebsite || "",
             phone: matched.companyPhone || "",
+            email: matched.companyEmail || "",
+            address: matched.companyAddress || "",
+            city: matched.companyCity || "",
+            postalCode: matched.companyPostalCode || "",
+            state: matched.companyState || "",
+            country: matched.companyCountry || "",
+            taxId: matched.taxId || "",
+            registrationNumber: matched.registrationNumber || "",
+            shareCapital: matched.shareCapital || "",
+            bankName: matched.bankName || "",
+            bankAccount: matched.bankAccount || "",
+            bankSwift: matched.bankSwift || "",
+            footerMessage: matched.reportFooterMessage || "",
             logoUrl: matched.companyLogoUrl || "",
           });
           // Do NOT call setCompanyLogo here — TenantMapContext is the
@@ -86,12 +123,13 @@ export function CompanySettings() {
       if (userData) {
         try {
           const parsed = JSON.parse(userData);
-          setCompanyData({
+          setCompanyData(prev => ({
+            ...prev,
             name: parsed.companyName || "",
             website: parsed.companyWebsite || "",
             phone: parsed.phoneNumber || "",
             logoUrl: parsed.companyLogoUrl || "",
-          });
+          }));
         } catch {
           // ignore
         }
@@ -279,8 +317,22 @@ export function CompanySettings() {
         try {
           const updated = await tenantsApi.update(activeTenant.id, {
             companyName: companyData.name,
+            companyTagline: companyData.tagline,
             companyWebsite: companyData.website,
             companyPhone: companyData.phone,
+            companyEmail: companyData.email,
+            companyAddress: companyData.address,
+            companyCity: companyData.city,
+            companyPostalCode: companyData.postalCode,
+            companyState: companyData.state,
+            companyCountry: companyData.country,
+            taxId: companyData.taxId,
+            registrationNumber: companyData.registrationNumber,
+            shareCapital: companyData.shareCapital,
+            bankName: companyData.bankName,
+            bankAccount: companyData.bankAccount,
+            bankSwift: companyData.bankSwift,
+            reportFooterMessage: companyData.footerMessage,
             companyLogoUrl: companyData.logoUrl || "",
           });
           setActiveTenant(updated);
@@ -317,6 +369,8 @@ export function CompanySettings() {
             localStorage.setItem('user_data', JSON.stringify(parsed));
           } catch { /* ignore */ }
         }
+        // Reports open in other tabs pick up the new footer immediately.
+        invalidateActiveCompany();
         if (companyData.logoUrl) setCompanyLogo(companyData.logoUrl);
         else setCompanyLogoExplicitNone();
         void refetch();
@@ -354,6 +408,11 @@ export function CompanySettings() {
         <CardDescription className="text-xs">{t('company.sectionDesc')}</CardDescription>
       </CardHeader>
       <CardContent className="p-4 sm:p-6 space-y-6">
+        {!canEdit && (
+          <div className="rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+            {t('company.readOnlyNotice', { defaultValue: 'Only an administrator can change this company\u2019s information. These details appear on all PDF report footers.' })}
+          </div>
+        )}
         {/* Company Logo Upload */}
         <div className="space-y-3">
           <Label className="text-sm font-medium">
@@ -399,7 +458,7 @@ export function CompanySettings() {
                 variant="outline"
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
+                disabled={isUploading || !canEdit}
                 className="w-fit"
               >
                 {isUploading ? (
@@ -430,6 +489,7 @@ export function CompanySettings() {
               value={companyData.name}
               onChange={(e) => handleInputChange('name', e.target.value)}
               placeholder={t('company.enterCompanyNamePlaceholder')}
+              disabled={!canEdit}
               className="h-9 sm:h-10"
             />
           </div>
@@ -444,6 +504,7 @@ export function CompanySettings() {
                 value={companyData.website}
                 onChange={(e) => handleInputChange('website', e.target.value)}
                 placeholder={t('company.enterWebsitePlaceholder')}
+                disabled={!canEdit}
                 className="h-9 sm:h-10 flex-1"
               />
               <Button
@@ -461,7 +522,7 @@ export function CompanySettings() {
           </div>
         </div>
 
-        {/* Phone Number */}
+        {/* Contact */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="settingsPhone" className="text-sm font-medium">
@@ -472,8 +533,254 @@ export function CompanySettings() {
               value={companyData.phone}
               onChange={(e) => handleInputChange('phone', e.target.value)}
               placeholder={t('company.enterPhonePlaceholder')}
+              disabled={!canEdit}
               className="h-9 sm:h-10"
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="settingsCompanyEmail" className="text-sm font-medium">
+              {t('company.emailLabel', { defaultValue: 'Email' })}
+            </Label>
+            <Input
+              id="settingsCompanyEmail"
+              value={companyData.email}
+              onChange={(e) => handleInputChange('email', e.target.value)}
+              placeholder="contact@company.com"
+              disabled={!canEdit}
+              className="h-9 sm:h-10"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="settingsCompanyTagline" className="text-sm font-medium">
+              {t('company.taglineLabel', { defaultValue: 'Tagline' })}
+            </Label>
+            <Input
+              id="settingsCompanyTagline"
+              value={companyData.tagline}
+              onChange={(e) => handleInputChange('tagline', e.target.value)}
+              placeholder="Your slogan"
+              disabled={!canEdit}
+              className="h-9 sm:h-10"
+            />
+          </div>
+        </div>
+
+        {/* Address — printed on every report footer */}
+        <div className="space-y-4">
+          <div>
+            <h4 className="text-sm font-medium text-foreground">
+              {t('company.addressSection', { defaultValue: 'Address' })}
+            </h4>
+            <p className="text-xs text-muted-foreground">
+              {t('company.addressSectionDesc', { defaultValue: 'Shown in the footer of every PDF report for this company.' })}
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="settingsCompanyAddress" className="text-sm font-medium">
+              {t('company.addressLabel', { defaultValue: 'Street address' })}
+            </Label>
+            <Input
+              id="settingsCompanyAddress"
+              value={companyData.address}
+              onChange={(e) => handleInputChange('address', e.target.value)}
+              placeholder="123 Main Street"
+              disabled={!canEdit}
+              className="h-9 sm:h-10"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="settingsCompanyCity" className="text-sm font-medium">
+              {t('company.cityLabel', { defaultValue: 'City' })}
+            </Label>
+            <Input
+              id="settingsCompanyCity"
+              value={companyData.city}
+              onChange={(e) => handleInputChange('city', e.target.value)}
+              placeholder=""
+              disabled={!canEdit}
+              className="h-9 sm:h-10"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="settingsCompanyPostalCode" className="text-sm font-medium">
+              {t('company.postalCodeLabel', { defaultValue: 'Postal code' })}
+            </Label>
+            <Input
+              id="settingsCompanyPostalCode"
+              value={companyData.postalCode}
+              onChange={(e) => handleInputChange('postalCode', e.target.value)}
+              placeholder=""
+              disabled={!canEdit}
+              className="h-9 sm:h-10"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="settingsCompanyState" className="text-sm font-medium">
+              {t('company.stateLabel', { defaultValue: 'State / Region' })}
+            </Label>
+            <Input
+              id="settingsCompanyState"
+              value={companyData.state}
+              onChange={(e) => handleInputChange('state', e.target.value)}
+              placeholder=""
+              disabled={!canEdit}
+              className="h-9 sm:h-10"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="settingsCompanyCountry" className="text-sm font-medium">
+              {t('company.countryLabel', { defaultValue: 'Country' })}
+            </Label>
+            <Input
+              id="settingsCompanyCountry"
+              value={companyData.country}
+              onChange={(e) => handleInputChange('country', e.target.value)}
+              placeholder=""
+              disabled={!canEdit}
+              className="h-9 sm:h-10"
+            />
+          </div>
+          </div>
+        </div>
+
+        {/* Legal identifiers */}
+        <div className="space-y-4">
+          <h4 className="text-sm font-medium text-foreground">
+            {t('company.legalSection', { defaultValue: 'Legal identifiers' })}
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="settingsTaxId" className="text-sm font-medium">
+              {t('company.taxIdLabel', { defaultValue: 'Tax ID / VAT' })}
+            </Label>
+            <Input
+              id="settingsTaxId"
+              value={companyData.taxId}
+              onChange={(e) => handleInputChange('taxId', e.target.value)}
+              placeholder=""
+              disabled={!canEdit}
+              className="h-9 sm:h-10"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="settingsRegistrationNumber" className="text-sm font-medium">
+              {t('company.registrationNumberLabel', { defaultValue: 'Registration number' })}
+            </Label>
+            <Input
+              id="settingsRegistrationNumber"
+              value={companyData.registrationNumber}
+              onChange={(e) => handleInputChange('registrationNumber', e.target.value)}
+              placeholder=""
+              disabled={!canEdit}
+              className="h-9 sm:h-10"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="settingsShareCapital" className="text-sm font-medium">
+              {t('company.shareCapitalLabel', { defaultValue: 'Share capital' })}
+            </Label>
+            <Input
+              id="settingsShareCapital"
+              value={companyData.shareCapital}
+              onChange={(e) => handleInputChange('shareCapital', e.target.value)}
+              placeholder=""
+              disabled={!canEdit}
+              className="h-9 sm:h-10"
+            />
+          </div>
+          </div>
+        </div>
+
+        {/* Bank details */}
+        <div className="space-y-4">
+          <h4 className="text-sm font-medium text-foreground">
+            {t('company.bankSection', { defaultValue: 'Bank details' })}
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="settingsBankName" className="text-sm font-medium">
+              {t('company.bankNameLabel', { defaultValue: 'Bank name' })}
+            </Label>
+            <Input
+              id="settingsBankName"
+              value={companyData.bankName}
+              onChange={(e) => handleInputChange('bankName', e.target.value)}
+              placeholder=""
+              disabled={!canEdit}
+              className="h-9 sm:h-10"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="settingsBankAccount" className="text-sm font-medium">
+              {t('company.bankAccountLabel', { defaultValue: 'Account / IBAN' })}
+            </Label>
+            <Input
+              id="settingsBankAccount"
+              value={companyData.bankAccount}
+              onChange={(e) => handleInputChange('bankAccount', e.target.value)}
+              placeholder=""
+              disabled={!canEdit}
+              className="h-9 sm:h-10"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="settingsBankSwift" className="text-sm font-medium">
+              {t('company.bankSwiftLabel', { defaultValue: 'SWIFT / BIC' })}
+            </Label>
+            <Input
+              id="settingsBankSwift"
+              value={companyData.bankSwift}
+              onChange={(e) => handleInputChange('bankSwift', e.target.value)}
+              placeholder=""
+              disabled={!canEdit}
+              className="h-9 sm:h-10"
+            />
+          </div>
+          </div>
+        </div>
+
+        {/* Footer message + live preview */}
+        <div className="space-y-3">
+          <Label htmlFor="settingsFooterMessage" className="text-sm font-medium">
+            {t('company.footerMessageLabel', { defaultValue: 'Report footer message' })}
+          </Label>
+          <Textarea
+            id="settingsFooterMessage"
+            value={companyData.footerMessage}
+            onChange={(e) => handleInputChange('footerMessage', e.target.value)}
+            placeholder={t('company.footerMessagePlaceholder', { defaultValue: 'Thank you for your business.' })}
+            disabled={!canEdit}
+            rows={2}
+          />
+          <div className="rounded-lg border border-border bg-muted/30 p-3">
+            <p className="text-xs font-medium text-muted-foreground mb-1">
+              {t('company.footerPreview', { defaultValue: 'Report footer preview' })}
+            </p>
+            {companyData.name ? (
+              <p className="text-xs text-foreground">{companyData.name}</p>
+            ) : null}
+            {buildFooterLines({
+              address: companyData.address,
+              city: companyData.city,
+              postalCode: companyData.postalCode,
+              state: companyData.state,
+              country: companyData.country,
+              phone: companyData.phone,
+              email: companyData.email,
+              website: companyData.website,
+              taxId: companyData.taxId,
+              registrationNumber: companyData.registrationNumber,
+              shareCapital: companyData.shareCapital,
+              bankName: companyData.bankName,
+              bankAccount: companyData.bankAccount,
+              bankSwift: companyData.bankSwift,
+            }).map((line, idx) => (
+              <p key={idx} className="text-xs text-muted-foreground">{line}</p>
+            ))}
+            {companyData.footerMessage ? (
+              <p className="text-xs text-muted-foreground">{companyData.footerMessage}</p>
+            ) : null}
           </div>
         </div>
 
@@ -481,7 +788,7 @@ export function CompanySettings() {
         <div className="pt-4">
           <Button
             onClick={handleSave}
-            disabled={isSaving}
+            disabled={isSaving || !canEdit}
             className="w-full sm:w-auto shadow-medium hover-lift"
           >
             {isSaving ? (

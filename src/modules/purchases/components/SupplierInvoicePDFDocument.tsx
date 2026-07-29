@@ -1,6 +1,7 @@
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 import { numberToWords } from '@/lib/numberToWords';
 import { calculateDocumentTotal } from '@/lib/calculateTotal';
+import { buildFooterLines } from '@/shared/pdf/resolveCompany';
 
 const styles = StyleSheet.create({
   page: { flexDirection: 'column', backgroundColor: '#FFFFFF', paddingHorizontal: 30, paddingTop: 20, paddingBottom: 12, fontFamily: 'Helvetica', fontSize: 9 },
@@ -238,8 +239,15 @@ export function SupplierInvoicePDFDocument({ invoice, formatCurrency, settings, 
         {config.showElements?.footer !== false && (
           <View style={styles.footer} wrap={false}>
             <View>
-              <Text style={styles.footerText}>{config.company?.name || ''} • {config.company?.address || ''}</Text>
-              <Text style={styles.footerText}>{config.company?.phone || ''} • {config.company?.email || ''}</Text>
+              {config.company?.name ? (
+                <Text style={styles.footerText}>{config.company.name}</Text>
+              ) : null}
+              {buildFooterLines(config.company).map((line, idx) => (
+                <Text key={idx} style={styles.footerText}>{line}</Text>
+              ))}
+              {config.company?.footerMessage ? (
+                <Text style={styles.footerText}>{config.company.footerMessage}</Text>
+              ) : null}
             </View>
             {config.showElements?.pageNumbers && (
               <Text style={styles.pageNum} render={({ pageNumber, totalPages }) => `Page ${pageNumber} / ${totalPages}`} />

@@ -21,6 +21,7 @@ import { useCompanyLogo } from '@/hooks/useCompanyLogo';
 import { PdfLabelOverrides, applyPdfLabelOverrides } from './PDF/pdfLabels';
 import { buildPdfFilename } from '@/shared/pdf/filename';
 import { toast } from 'sonner';
+import { resolveCompanyForPdf } from '@/shared/pdf/resolveCompany';
 
 interface OfferPDFPreviewModalProps {
   isOpen: boolean;
@@ -126,7 +127,7 @@ export function OfferPDFPreviewModal({
           }
           setPdfSettings({
             ...settings,
-            company: { ...settings.company, logo: logoBase64 || '' }
+            company: await resolveCompanyForPdf(settings.company, logoBase64 || '')
           });
         }
       } catch (error) {

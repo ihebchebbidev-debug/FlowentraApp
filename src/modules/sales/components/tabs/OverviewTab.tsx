@@ -54,6 +54,9 @@ export function OverviewTab({ sale }: OverviewTabProps) {
   const taxAmount = totals.taxAmount;
   const fiscalStampAmount = totals.fiscalStamp;
   const calculatedTotal = totals.total;
+  // Strikethrough "before discount" price: recompute with no discount so the
+  // tax shown there is tax-on-subtotal, not tax-on-after-discount.
+  const undiscountedTotal = calculateEntityTotal({ ...sale, discount: 0 }).total;
 
   const hasServices = sale.items.some(item => item.type === 'service');
   const hasServiceOrder = !!sale.convertedToServiceOrderId;
@@ -121,7 +124,7 @@ export function OverviewTab({ sale }: OverviewTabProps) {
                 <p className="text-sm text-foreground mt-1">
                   {discountAmount > 0 && (
                     <span className="text-muted-foreground line-through mr-2">
-                      {formatCurrency(totalItemsValue + taxAmount + fiscalStampAmount)}
+                      {formatCurrency(undiscountedTotal)}
                     </span>
                   )}
                   {formatCurrency(calculatedTotal)}

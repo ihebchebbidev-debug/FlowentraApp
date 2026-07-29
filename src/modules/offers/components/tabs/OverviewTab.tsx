@@ -42,7 +42,9 @@ export function OverviewTab({ offer }: OverviewTabProps) {
   const totals = calculateEntityTotal(offer);
   const totalItemsValue = totals.subtotal;
   const discountAmount = totals.discountAmount;
-  const afterDiscount = totals.afterDiscount;
+  // Strikethrough "before discount" price: recompute with no discount so the
+  // tax shown there is tax-on-subtotal, not tax-on-after-discount.
+  const undiscountedTotal = calculateEntityTotal({ ...offer, discount: 0 }).total;
   const taxAmount = totals.taxAmount;
   const fiscalStampAmount = totals.fiscalStamp;
   const computedTotal = totals.total;
@@ -111,7 +113,7 @@ export function OverviewTab({ offer }: OverviewTabProps) {
                 <p className="text-sm text-foreground mt-1">
                   {discountAmount > 0 && (
                     <span className="text-muted-foreground line-through mr-2">
-                      {formatCurrency(totalItemsValue + taxAmount + fiscalStampAmount)}
+                      {formatCurrency(undiscountedTotal)}
                     </span>
                   )}
                   {formatCurrency(computedTotal)}

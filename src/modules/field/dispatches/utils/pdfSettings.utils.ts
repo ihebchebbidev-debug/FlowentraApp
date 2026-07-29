@@ -33,12 +33,24 @@ export interface PdfSettings {
   
   // Company Info
   company: {
+    /** false (default) = inherit this company's own Company Information. */
+    useOverride?: boolean;
     name: string;
     tagline: string;
     address: string;
+    city?: string;
+    postalCode?: string;
+    state?: string;
+    country?: string;
     phone: string;
     email: string;
     website: string;
+    taxId?: string;
+    registrationNumber?: string;
+    shareCapital?: string;
+    bankName?: string;
+    bankAccount?: string;
+    bankSwift?: string;
     logo?: string;
     footerMessage?: string;
   };
@@ -58,6 +70,9 @@ export interface PdfSettings {
     pageNumbers: boolean;
   };
   
+  // Logo settings
+  logoSize: number;
+
   // Table Settings
   table: {
     showPositions: boolean;
@@ -116,14 +131,29 @@ export const defaultSettings: PdfSettings = {
     right: 24,
   },
   company: {
-    name: 'YOUR COMPANY',
-    tagline: 'Professional Field Services',
-    address: '1234 Business Street, City, State 12345',
-    phone: '(555) 123-4567',
-    email: 'dispatch@yourcompany.com',
-    website: 'www.yourcompany.com',
+    // Empty by default: every company inherits its OWN Company Information
+    // (Settings -> Company). Only an explicit override fills these in.
+    useOverride: false,
+    name: '',
+    tagline: '',
+    address: '',
+    city: '',
+    postalCode: '',
+    state: '',
+    country: '',
+    phone: '',
+    email: '',
+    website: '',
+    taxId: '',
+    registrationNumber: '',
+    shareCapital: '',
+    bankName: '',
+    bankAccount: '',
+    bankSwift: '',
     logo: getCompanyLogoCachedBase64() || '',
+    footerMessage: '',
   },
+  logoSize: 48,
   showElements: {
     customerInfo: true,
     dispatchInfo: true,

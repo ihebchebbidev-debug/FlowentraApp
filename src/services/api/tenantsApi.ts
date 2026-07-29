@@ -4,7 +4,26 @@
  */
 import axiosInstance from '@/services/api/axiosInstance';
 
-export interface Tenant {
+/**
+ * Per-company report/footer identity. Every company (tenant) row carries its
+ * OWN contact, address, legal and bank details — nothing here is shared.
+ */
+export interface TenantCompanyDetails {
+  companyEmail?: string | null;
+  companyTagline?: string | null;
+  companyCity?: string | null;
+  companyPostalCode?: string | null;
+  companyState?: string | null;
+  taxId?: string | null;
+  registrationNumber?: string | null;
+  shareCapital?: string | null;
+  bankName?: string | null;
+  bankAccount?: string | null;
+  bankSwift?: string | null;
+  reportFooterMessage?: string | null;
+}
+
+export interface Tenant extends TenantCompanyDetails {
   id: number;
   slug: string;
   companyName: string;
@@ -20,7 +39,7 @@ export interface Tenant {
   updatedAt?: string | null;
 }
 
-export interface CreateTenantRequest {
+export interface CreateTenantRequest extends TenantCompanyDetails {
   slug: string;
   companyName: string;
   companyLogoUrl?: string;
@@ -31,7 +50,7 @@ export interface CreateTenantRequest {
   industry?: string;
 }
 
-export interface UpdateTenantRequest {
+export interface UpdateTenantRequest extends TenantCompanyDetails {
   companyName?: string;
   companyLogoUrl?: string;
   companyWebsite?: string;

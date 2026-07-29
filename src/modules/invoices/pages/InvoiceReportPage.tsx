@@ -9,6 +9,7 @@ import { useCompanyLogo } from '@/hooks/useCompanyLogo';
 import { PdfSettingsService } from '@/modules/sales/services/pdfSettings.service';
 import { defaultSettings, getCompanyLogoBase64 } from '@/modules/sales/utils/pdfSettings.utils';
 import { InvoicePDFDocument, type InvoicePDFTranslations } from '../components/InvoicePDFDocument';
+import { resolveCompanyForPdf } from '@/shared/pdf/resolveCompany';
 
 export default function InvoiceReportPage() {
   const { id } = useParams<{ id: string }>();
@@ -34,7 +35,7 @@ export default function InvoiceReportPage() {
         setInvoice(fetched);
         setPdfSettings({
           ...settings,
-          company: { ...settings.company, logo: logoBase64 || '' },
+          company: await resolveCompanyForPdf(settings.company, logoBase64 || ''),
         });
       } catch (err) {
         console.error('[InvoiceReportPage] load error:', err);

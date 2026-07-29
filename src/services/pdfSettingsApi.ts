@@ -9,6 +9,7 @@ import { getTargetTenantHeaders } from '@/utils/targetTenant';
  */
 
 import { apiFetch } from './api/apiClient';
+import { isDemoValue } from '@/shared/pdf/resolveCompany';
 
 // Module types for PDF settings
 export type PdfSettingsModule = 'offers' | 'sales' | 'dispatches' | 'serviceOrders';
@@ -42,6 +43,42 @@ interface PdfSettingsListResponse {
     settingsJson: any;
     updatedAt: string;
   }>;
+}
+
+
+/**
+ * Data hygiene: older saved settings still hold the demo company strings that
+ * used to ship as defaults ("PEAK SOLUTIONS", "1234 Service Street", ...).
+ * Strip those on load and leave `useOverride` off, so the report falls back to
+ * the owning company's own Company Information. Anything the user genuinely
+ * typed is preserved and flips the override on.
+ */
+export function normalizePdfCompanySettings<T>(defaults: T, stored: any): T {
+  const merged: any = { ...(defaults as any), ...(stored ?? {}) };
+  const defCompany = (defaults as any)?.company;
+  if (!defCompany || typeof defCompany !== 'object') return merged as T;
+
+  const storedCompany = (stored?.company && typeof stored.company === 'object') ? stored.company : {};
+  const company: any = { ...defCompany, ...storedCompany };
+
+  let hasRealOverride = false;
+  Object.keys(company).forEach(key => {
+    if (key === 'logo' || key === 'useOverride') return;
+    const value = company[key];
+    if (typeof value !== 'string') return;
+    if (isDemoValue(value)) {
+      company[key] = '';
+    } else if (value.trim()) {
+      hasRealOverride = true;
+    }
+  });
+
+  company.useOverride = storedCompany.useOverride === true
+    ? true
+    : (storedCompany.useOverride === false ? false : hasRealOverride);
+
+  merged.company = company;
+  return merged as T;
 }
 
 class PdfSettingsApiService {
@@ -79,7 +116,7 @@ class PdfSettingsApiService {
     // Check cache first
     const cached = this.cache.get(module);
     if (cached) {
-      return { ...defaultSettings, ...cached };
+      return normalizePdfCompanySettings(defaultSettings, cached);
     }
 
     try {
@@ -97,7 +134,7 @@ class PdfSettingsApiService {
         this.cache.set(module, settings);
         this.saveToLocalStorage(module, settings);
         console.log(`[PdfSettingsApi] Loaded ${module} settings from backend`);
-        return { ...defaultSettings, ...settings };
+        return normalizePdfCompanySettings(defaultSettings, settings);
       }
     } catch (error) {
       console.warn(`[PdfSettingsApi] Backend load failed for ${module}, using local:`, error);
@@ -276,7 +313,7 @@ class PdfSettingsApiService {
       if (stored) {
         const parsed = JSON.parse(stored);
         this.cache.set(module, parsed);
-        return { ...defaultSettings, ...parsed };
+        return normalizePdfCompanySettings(defaultSettings, parsed);
       }
     } catch (error) {
       console.warn(`[PdfSettingsApi] Failed to load ${module} from localStorage:`, error);

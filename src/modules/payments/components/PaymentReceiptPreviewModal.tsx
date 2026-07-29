@@ -16,6 +16,7 @@ import { useCompanyLogo } from '@/hooks/useCompanyLogo';
 import { pdf } from '@react-pdf/renderer';
 import { toast } from 'sonner';
 import type { Payment } from '@/modules/payments/types';
+import { resolveCompanyForPdf } from '@/shared/pdf/resolveCompany';
 
 interface PaymentReceiptPreviewModalProps {
   isOpen: boolean;
@@ -54,7 +55,7 @@ export function PaymentReceiptPreviewModal({
         const settings = await PdfSettingsService.loadSettingsAsync();
         if (isMounted) {
           const logoBase64 = await getCompanyLogoBase64(companyLogo);
-          setPdfSettings({ ...settings, company: { ...settings.company, logo: logoBase64 || '' } });
+          setPdfSettings({ ...settings, company: await resolveCompanyForPdf(settings.company, logoBase64 || '') });
         }
       } catch {
         if (isMounted) setPdfSettings(defaultSettings);

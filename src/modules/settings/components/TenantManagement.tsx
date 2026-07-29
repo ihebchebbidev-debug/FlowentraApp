@@ -3,18 +3,18 @@
  * Only accessible by MainAdminUser.
  */
 import { useState, useEffect } from 'react';
-import { Building2, Plus, Save, Loader2, Trash2, Star, StarOff, Power, PowerOff, Pencil, Upload, X, Layers, Eye, Settings2, ImageOff } from 'lucide-react';
+import { Building2, Plus, Save, Loader2, Trash2, Star, Pencil, Upload, X, Layers, Eye, Settings2, ImageOff } from 'lucide-react';
 import { ModuleScopeDialog } from './ModuleScopeDialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
 import { useRef } from 'react';
 import { API_URL } from '@/config/api';
-import { getAuthHeadersNoContentType , getMutationHeaders, getMutationHeadersNoContentType} from '@/utils/apiHeaders';
 import { setTenantOverride, isViewAllMode, VIEW_ALL_SENTINEL, getCurrentTenant } from '@/utils/tenant';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -35,6 +35,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { buildFooterLines } from '@/shared/pdf/resolveCompany';
+import { invalidateActiveCompany } from '@/shared/company/activeCompany';
 import { tenantsApi, type Tenant, type CreateTenantRequest, type UpdateTenantRequest } from '@/services/api/tenantsApi';
 
 /**
@@ -112,6 +114,39 @@ export function TenantManagement() {
     companyCountry: '',
     industry: '',
     companyLogoUrl: '',
+    companyEmail: '',
+    companyTagline: '',
+    companyCity: '',
+    companyPostalCode: '',
+    companyState: '',
+    taxId: '',
+    registrationNumber: '',
+    shareCapital: '',
+    bankName: '',
+    bankAccount: '',
+    bankSwift: '',
+    reportFooterMessage: '',
+  });
+
+  /** Live preview of how this company's identity prints on report footers. */
+  const footerPreview = buildFooterLines({
+    name: form.companyName,
+    tagline: form.companyTagline ?? '',
+    address: form.companyAddress ?? '',
+    city: form.companyCity ?? '',
+    postalCode: form.companyPostalCode ?? '',
+    state: form.companyState ?? '',
+    country: form.companyCountry ?? '',
+    phone: form.companyPhone ?? '',
+    email: form.companyEmail ?? '',
+    website: form.companyWebsite ?? '',
+    taxId: form.taxId ?? '',
+    registrationNumber: form.registrationNumber ?? '',
+    shareCapital: form.shareCapital ?? '',
+    bankName: form.bankName ?? '',
+    bankAccount: form.bankAccount ?? '',
+    bankSwift: form.bankSwift ?? '',
+    footerMessage: form.reportFooterMessage ?? '',
   });
 
   const fetchTenants = async () => {
@@ -133,7 +168,28 @@ export function TenantManagement() {
 
   const openCreate = () => {
     setEditingTenant(null);
-    setForm({ slug: '', companyName: '', companyWebsite: '', companyPhone: '', companyAddress: '', companyCountry: '', industry: '', companyLogoUrl: '' });
+    setForm({
+    slug: '',
+    companyName: '',
+    companyWebsite: '',
+    companyPhone: '',
+    companyAddress: '',
+    companyCountry: '',
+    industry: '',
+    companyLogoUrl: '',
+    companyEmail: '',
+    companyTagline: '',
+    companyCity: '',
+    companyPostalCode: '',
+    companyState: '',
+    taxId: '',
+    registrationNumber: '',
+    shareCapital: '',
+    bankName: '',
+    bankAccount: '',
+    bankSwift: '',
+    reportFooterMessage: '',
+  });
     setLogoFile(null);
     setLogoPreview(null);
     setDialogOpen(true);
@@ -155,6 +211,18 @@ export function TenantManagement() {
         companyCountry: tnt.companyCountry || '',
         industry: tnt.industry || '',
         companyLogoUrl: tnt.companyLogoUrl || '',
+        companyEmail: tnt.companyEmail || '',
+        companyTagline: tnt.companyTagline || '',
+        companyCity: tnt.companyCity || '',
+        companyPostalCode: tnt.companyPostalCode || '',
+        companyState: tnt.companyState || '',
+        taxId: tnt.taxId || '',
+        registrationNumber: tnt.registrationNumber || '',
+        shareCapital: tnt.shareCapital || '',
+        bankName: tnt.bankName || '',
+        bankAccount: tnt.bankAccount || '',
+        bankSwift: tnt.bankSwift || '',
+        reportFooterMessage: tnt.reportFooterMessage || '',
       });
       setLogoFile(null);
       setLogoPreview(tnt.companyLogoUrl ? `${API_URL}/${String(tnt.companyLogoUrl).replace(/^\/+/, '')}` : null);
@@ -181,11 +249,11 @@ export function TenantManagement() {
 
   const handleSave = async () => {
     if (!form.companyName.trim()) {
-      toast({ title: 'Error', description: t('companies.companyNameRequired'), variant: 'destructive' });
+      toast({ title: t('companies.errorTitle'), description: t('companies.companyNameRequired'), variant: 'destructive' });
       return;
     }
     if (!editingTenant && !form.slug.trim()) {
-      toast({ title: 'Error', description: t('companies.slugRequired'), variant: 'destructive' });
+      toast({ title: t('companies.errorTitle'), description: t('companies.slugRequired'), variant: 'destructive' });
       return;
     }
 
@@ -201,6 +269,19 @@ export function TenantManagement() {
           companyAddress: form.companyAddress || undefined,
           companyCountry: form.companyCountry || undefined,
           industry: form.industry || undefined,
+          // Per-company report identity — always sent so clearing a field persists.
+          companyEmail: form.companyEmail ?? '',
+          companyTagline: form.companyTagline ?? '',
+          companyCity: form.companyCity ?? '',
+          companyPostalCode: form.companyPostalCode ?? '',
+          companyState: form.companyState ?? '',
+          taxId: form.taxId ?? '',
+          registrationNumber: form.registrationNumber ?? '',
+          shareCapital: form.shareCapital ?? '',
+          bankName: form.bankName ?? '',
+          bankAccount: form.bankAccount ?? '',
+          bankSwift: form.bankSwift ?? '',
+          reportFooterMessage: form.reportFooterMessage ?? '',
           // Only send logoUrl if user removed it (empty string) and didn't pick a new file.
           // If a new file is picked, the upload endpoint will set it.
           ...(logoFile ? {} : { companyLogoUrl: form.companyLogoUrl ?? '' }),
@@ -219,10 +300,10 @@ export function TenantManagement() {
           await tenantsApi.uploadLogo(savedTenant.id, logoFile);
         } catch (uploadErr: any) {
           toast({
-            title: 'Logo upload failed',
+            title: t('companies.logoUploadFailed', 'Logo upload failed'),
             description: uploadErr?.response?.data?.message
               || uploadErr?.message
-              || 'Could not upload the logo image.',
+              || t('companies.logoUploadFailedDesc', 'Could not upload the logo image.'),
             variant: 'destructive',
           });
           // Keep the rest of the save successful — don't return early
@@ -230,19 +311,20 @@ export function TenantManagement() {
       }
 
       toast({
-        title: editingTenant ? 'Updated' : 'Created',
+        title: editingTenant ? t('companies.editTitle') : t('companies.createTitle'),
         description: t(
           editingTenant ? 'companies.editSuccess' : 'companies.createSuccess',
           { companyName: form.companyName },
         ),
       });
+      invalidateActiveCompany();
       setDialogOpen(false);
       setLogoFile(null);
       setLogoPreview(null);
       fetchTenants();
     } catch (error: any) {
       toast({
-        title: 'Error',
+        title: t('companies.errorTitle'),
         description: error?.response?.data?.message || t('companies.saveError'),
         variant: 'destructive',
       });
@@ -255,11 +337,11 @@ export function TenantManagement() {
     if (!deletingTenant) return;
     try {
       await tenantsApi.delete(deletingTenant.id);
-      toast({ title: 'Deactivated', description: t('companies.deactivateSuccess', { companyName: deletingTenant.companyName }) });
+      toast({ title: t('companies.deactivateTitle'), description: t('companies.deactivateSuccess', { companyName: deletingTenant.companyName }) });
       fetchTenants();
     } catch (error: any) {
       toast({
-        title: 'Error',
+        title: t('companies.errorTitle'),
         description: error?.response?.data?.message || t('companies.deactivateError'),
         variant: 'destructive',
       });
@@ -328,7 +410,7 @@ export function TenantManagement() {
       });
       setTenantOverride(tenant.slug);
     } catch {
-      toast({ title: 'Error', description: t('companies.setDefaultError'), variant: 'destructive' });
+      toast({ title: t('companies.errorTitle'), description: t('companies.setDefaultError'), variant: 'destructive' });
     }
   };
 
@@ -464,6 +546,35 @@ export function TenantManagement() {
                         <span className="text-xs text-muted-foreground">• {tenant.companyCountry}</span>
                       )}
                     </div>
+                    {(() => {
+                      const details = buildFooterLines({
+                        address: tenant.companyAddress || '',
+                        city: tenant.companyCity || '',
+                        postalCode: tenant.companyPostalCode || '',
+                        state: tenant.companyState || '',
+                        country: tenant.companyCountry || '',
+                        phone: tenant.companyPhone || '',
+                        email: tenant.companyEmail || '',
+                        website: tenant.companyWebsite || '',
+                        taxId: tenant.taxId || '',
+                        registrationNumber: tenant.registrationNumber || '',
+                        shareCapital: tenant.shareCapital || '',
+                        bankName: tenant.bankName || '',
+                        bankAccount: tenant.bankAccount || '',
+                        bankSwift: tenant.bankSwift || '',
+                      });
+                      return details.length ? (
+                        <div className="mt-1 space-y-0.5">
+                          {details.map((line, i) => (
+                            <p key={i} className="text-px-10 text-muted-foreground truncate">{line}</p>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="mt-1 text-px-10 text-muted-foreground italic">
+                          {t('companies.noDetails', 'No report details yet — edit to add address, contact and legal info.')}
+                        </p>
+                      );
+                    })()}
                   </div>
 
                   {/* Actions */}
@@ -513,7 +624,7 @@ export function TenantManagement() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingTenant ? t('companies.editTitle') : t('companies.createTitle')}</DialogTitle>
             <DialogDescription>
@@ -560,8 +671,8 @@ export function TenantManagement() {
                       className="w-12 h-12 object-contain rounded-lg bg-background shadow-sm"
                     />
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm text-foreground truncate">{form.companyName || 'Logo preview'}</p>
-                      <p className="text-xs text-muted-foreground">Click the X to remove</p>
+                      <p className="font-medium text-sm text-foreground truncate">{form.companyName || t('companies.logoPreview', 'Logo preview')}</p>
+                      <p className="text-xs text-muted-foreground">{t('companies.logoRemoveHint', 'Click the X to remove')}</p>
                     </div>
                     <Button
                       type="button"
@@ -597,49 +708,114 @@ export function TenantManagement() {
                       <Upload className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <p className="font-medium text-sm text-foreground">Upload or drag a file</p>
-                      <p className="text-xs text-muted-foreground">PNG, JPG up to 5MB</p>
+                      <p className="font-medium text-sm text-foreground">{t('companies.logoUploadCta', 'Upload or drag a file')}</p>
+                      <p className="text-xs text-muted-foreground">{t('companies.logoUploadHint', 'PNG, JPG up to 5MB')}</p>
                     </div>
                   </div>
                 </div>
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label>{t('companies.companyNameLabel')} <span className="text-destructive">*</span></Label>
-              <Input
-                value={form.companyName}
-                onChange={e => setForm(f => ({ ...f, companyName: e.target.value }))}
-                placeholder={t('companies.companyNamePlaceholder')}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>{t('companies.websiteLabel')}</Label>
+                <Label>{t('companies.companyNameLabel')} <span className="text-destructive">*</span></Label>
                 <Input
-                  value={form.companyWebsite}
-                  onChange={e => setForm(f => ({ ...f, companyWebsite: e.target.value }))}
-                  placeholder={t('companies.websitePlaceholder')}
+                  value={form.companyName}
+                  onChange={e => setForm(f => ({ ...f, companyName: e.target.value }))}
+                  placeholder={t('companies.companyNamePlaceholder')}
                 />
               </div>
               <div className="space-y-2">
-                <Label>{t('companies.phoneLabel')}</Label>
+                <Label>{t('companies.taglineLabel', 'Tagline')}</Label>
                 <Input
-                  value={form.companyPhone}
-                  onChange={e => setForm(f => ({ ...f, companyPhone: e.target.value }))}
-                  placeholder={t('companies.phonePlaceholder')}
+                  value={form.companyTagline ?? ''}
+                  onChange={e => setForm(f => ({ ...f, companyTagline: e.target.value }))}
+                  placeholder={t('companies.taglinePlaceholder', 'Your company slogan')}
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+
+            {/* Contact */}
+            <div className="space-y-3 pt-2">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {t('companies.sectionContact', 'Contact')}
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>{t('companies.emailLabel', 'Email')}</Label>
+                  <Input
+                    type="email"
+                    value={form.companyEmail ?? ''}
+                    onChange={e => setForm(f => ({ ...f, companyEmail: e.target.value }))}
+                    placeholder={t('companies.emailPlaceholder', 'contact@company.com')}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t('companies.phoneLabel')}</Label>
+                  <Input
+                    value={form.companyPhone}
+                    onChange={e => setForm(f => ({ ...f, companyPhone: e.target.value }))}
+                    placeholder={t('companies.phonePlaceholder')}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t('companies.websiteLabel')}</Label>
+                  <Input
+                    value={form.companyWebsite}
+                    onChange={e => setForm(f => ({ ...f, companyWebsite: e.target.value }))}
+                    placeholder={t('companies.websitePlaceholder')}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Address */}
+            <div className="space-y-3 pt-2">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {t('companies.sectionAddress', 'Address')}
+              </h4>
               <div className="space-y-2">
-                <Label>{t('companies.countryLabel')}</Label>
+                <Label>{t('companies.addressLabel')}</Label>
                 <Input
-                  value={form.companyCountry}
-                  onChange={e => setForm(f => ({ ...f, companyCountry: e.target.value.toUpperCase().slice(0, 2) }))}
-                  placeholder={t('companies.countryPlaceholder')}
-                  maxLength={2}
+                  value={form.companyAddress}
+                  onChange={e => setForm(f => ({ ...f, companyAddress: e.target.value }))}
+                  placeholder={t('companies.addressPlaceholder')}
                 />
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <Label>{t('companies.cityLabel', 'City')}</Label>
+                  <Input
+                    value={form.companyCity ?? ''}
+                    onChange={e => setForm(f => ({ ...f, companyCity: e.target.value }))}
+                    placeholder={t('companies.cityPlaceholder', 'City')}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t('companies.postalCodeLabel', 'Postal code')}</Label>
+                  <Input
+                    value={form.companyPostalCode ?? ''}
+                    onChange={e => setForm(f => ({ ...f, companyPostalCode: e.target.value }))}
+                    placeholder={t('companies.postalCodePlaceholder', '75001')}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t('companies.stateLabel', 'State / Region')}</Label>
+                  <Input
+                    value={form.companyState ?? ''}
+                    onChange={e => setForm(f => ({ ...f, companyState: e.target.value }))}
+                    placeholder={t('companies.statePlaceholder', 'Region')}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t('companies.countryLabel')}</Label>
+                  <Input
+                    value={form.companyCountry}
+                    onChange={e => setForm(f => ({ ...f, companyCountry: e.target.value.toUpperCase().slice(0, 2) }))}
+                    placeholder={t('companies.countryPlaceholder')}
+                    maxLength={2}
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>{t('companies.industryLabel')}</Label>
@@ -650,14 +826,109 @@ export function TenantManagement() {
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>{t('companies.addressLabel')}</Label>
-              <Input
-                value={form.companyAddress}
-                onChange={e => setForm(f => ({ ...f, companyAddress: e.target.value }))}
-                placeholder={t('companies.addressPlaceholder')}
-              />
+
+            {/* Legal identifiers */}
+            <div className="space-y-3 pt-2">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {t('companies.sectionLegal', 'Legal identifiers')}
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>{t('companies.taxIdLabel', 'Tax ID / VAT')}</Label>
+                  <Input
+                    value={form.taxId ?? ''}
+                    onChange={e => setForm(f => ({ ...f, taxId: e.target.value }))}
+                    placeholder={t('companies.taxIdPlaceholder', 'FR12345678901')}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t('companies.registrationLabel', 'Registration number')}</Label>
+                  <Input
+                    value={form.registrationNumber ?? ''}
+                    onChange={e => setForm(f => ({ ...f, registrationNumber: e.target.value }))}
+                    placeholder={t('companies.registrationPlaceholder', 'RCS Paris 123 456 789')}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t('companies.shareCapitalLabel', 'Share capital')}</Label>
+                  <Input
+                    value={form.shareCapital ?? ''}
+                    onChange={e => setForm(f => ({ ...f, shareCapital: e.target.value }))}
+                    placeholder={t('companies.shareCapitalPlaceholder', '10 000 EUR')}
+                  />
+                </div>
+              </div>
             </div>
+
+            {/* Bank details */}
+            <div className="space-y-3 pt-2">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {t('companies.sectionBank', 'Bank details')}
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>{t('companies.bankNameLabel', 'Bank name')}</Label>
+                  <Input
+                    value={form.bankName ?? ''}
+                    onChange={e => setForm(f => ({ ...f, bankName: e.target.value }))}
+                    placeholder={t('companies.bankNamePlaceholder', 'Bank name')}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t('companies.bankAccountLabel', 'Account / IBAN')}</Label>
+                  <Input
+                    value={form.bankAccount ?? ''}
+                    onChange={e => setForm(f => ({ ...f, bankAccount: e.target.value }))}
+                    placeholder={t('companies.bankAccountPlaceholder', 'IBAN')}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t('companies.bankSwiftLabel', 'SWIFT / BIC')}</Label>
+                  <Input
+                    value={form.bankSwift ?? ''}
+                    onChange={e => setForm(f => ({ ...f, bankSwift: e.target.value }))}
+                    placeholder={t('companies.bankSwiftPlaceholder', 'BNPAFRPP')}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Report footer */}
+            <div className="space-y-3 pt-2">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {t('companies.sectionFooter', 'Report footer')}
+              </h4>
+              <div className="space-y-2">
+                <Label>{t('companies.footerMessageLabel', 'Footer message')}</Label>
+                <Textarea
+                  rows={2}
+                  value={form.reportFooterMessage ?? ''}
+                  onChange={e => setForm(f => ({ ...f, reportFooterMessage: e.target.value }))}
+                  placeholder={t('companies.footerMessagePlaceholder', 'Thank you for your business')}
+                />
+                <p className="text-px-10 text-muted-foreground">
+                  {t('companies.footerHint', 'These details print at the bottom of this company\u2019s reports and PDFs.')}
+                </p>
+              </div>
+              <div className="rounded-lg border border-border/60 bg-muted/30 p-3">
+                <p className="text-px-10 uppercase tracking-wide text-muted-foreground mb-1">
+                  {t('companies.footerPreview', 'Footer preview')}
+                </p>
+                {footerPreview.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">
+                    {t('companies.footerPreviewEmpty', 'Fill in the fields above to see the footer.')}
+                  </p>
+                ) : (
+                  footerPreview.map((line, i) => (
+                    <p key={i} className="text-xs text-muted-foreground leading-relaxed">{line}</p>
+                  ))
+                )}
+                {form.reportFooterMessage ? (
+                  <p className="text-xs text-muted-foreground italic mt-1">{form.reportFooterMessage}</p>
+                ) : null}
+              </div>
+            </div>
+
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>{t('companies.cancelButton')}</Button>

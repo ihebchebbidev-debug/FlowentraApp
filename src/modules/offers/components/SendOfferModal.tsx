@@ -9,6 +9,7 @@ import { PdfSettingsService } from '../services/pdfSettings.service';
 import { useCompanyLogo } from '@/hooks/useCompanyLogo';
 import { EmailComposer, type EmailComposerDocumentInfo } from '@/shared/components/email/EmailComposer';
 import { useState, useEffect } from 'react';
+import { resolveCompanyForPdf } from '@/shared/pdf/resolveCompany';
 
 interface SendOfferModalProps {
   open: boolean;
@@ -30,7 +31,7 @@ export function SendOfferModal({ open, onOpenChange, offer, onSendSuccess }: Sen
       try {
         const settings = await PdfSettingsService.loadSettingsAsync();
         const logoBase64 = await getCompanyLogoBase64(companyLogo);
-        setPdfSettings({ ...settings, company: { ...settings.company, logo: logoBase64 || '' } });
+        setPdfSettings({ ...settings, company: await resolveCompanyForPdf(settings.company, logoBase64 || '') });
       } catch { setPdfSettings(defaultSettings); }
     };
     load();

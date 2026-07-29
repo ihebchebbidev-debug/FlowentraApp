@@ -5,6 +5,7 @@ import { calculateEntityTotal } from '@/lib/calculateTotal';
 import { InstallationDataTable } from '@/shared/components/PDFInstallationTable';
 
 import { registerUnicodeFonts, UNICODE_FONT_FAMILY } from '@/shared/pdf/fonts';
+import { buildFooterLines } from '@/shared/pdf/resolveCompany';
 
 registerUnicodeFonts();
 // Professional devis/facture — structured, bordered sections, clean typography
@@ -556,15 +557,15 @@ export function OfferPDFDocument({ offer, formatCurrency, settings, translations
         {config.showElements?.footer !== false && (
           <View style={styles.footer} wrap={false}>
             <View>
-              <Text style={styles.footerText}>
-                {config.company?.name || ''} • {config.company?.address || ''}
-              </Text>
-              <Text style={styles.footerText}>
-                {config.company?.phone || ''} • {config.company?.email || ''} • {config.company?.website || ''}
-              </Text>
-              {config.company?.footerMessage && (
+              {config.company?.name ? (
+                <Text style={styles.footerText}>{config.company.name}</Text>
+              ) : null}
+              {buildFooterLines(config.company).map((line, idx) => (
+                <Text key={idx} style={styles.footerText}>{line}</Text>
+              ))}
+              {config.company?.footerMessage ? (
                 <Text style={styles.footerText}>{config.company.footerMessage}</Text>
-              )}
+              ) : null}
             </View>
             {config.showElements?.pageNumbers && (
               <Text

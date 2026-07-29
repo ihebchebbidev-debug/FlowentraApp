@@ -1,5 +1,6 @@
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 import type { Invoice } from '../types';
+import { buildFooterLines } from '@/shared/pdf/resolveCompany';
 
 // Shared "facture" style — matches SalePDFDocument / OfferPDFDocument
 const styles = StyleSheet.create({
@@ -571,14 +572,12 @@ export function InvoicePDFDocument({
         {config.showElements?.footer !== false && (
           <View style={styles.footer} wrap={false} fixed>
             <View>
-              <Text style={styles.footerText}>
-                {config.company?.name || ''} {config.company?.address ? `• ${config.company.address}` : ''}
-              </Text>
-              <Text style={styles.footerText}>
-                {config.company?.phone || ''}
-                {config.company?.email ? ` • ${config.company.email}` : ''}
-                {config.company?.website ? ` • ${config.company.website}` : ''}
-              </Text>
+              {config.company?.name ? (
+                <Text style={styles.footerText}>{config.company.name}</Text>
+              ) : null}
+              {buildFooterLines(config.company).map((line, idx) => (
+                <Text key={idx} style={styles.footerText}>{line}</Text>
+              ))}
               {config.company?.footerMessage ? (
                 <Text style={styles.footerText}>{config.company.footerMessage}</Text>
               ) : null}

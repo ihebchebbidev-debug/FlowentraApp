@@ -33,11 +33,24 @@ export interface PdfSettings {
   
   // Company Info (name is loaded from MainAdminUser.CompanyName)
   company: {
+    /** false (default) = inherit this company's own Company Information. */
+    useOverride?: boolean;
     name: string;
+    tagline: string;
     address: string;
+    city?: string;
+    postalCode?: string;
+    state?: string;
+    country?: string;
     phone: string;
     email: string;
     website: string;
+    taxId?: string;
+    registrationNumber?: string;
+    shareCapital?: string;
+    bankName?: string;
+    bankAccount?: string;
+    bankSwift?: string;
     logo?: string;
     footerMessage?: string;
   };
@@ -117,13 +130,27 @@ export const defaultSettings: PdfSettings = {
     right: 24,
   },
   company: {
-    name: '', // Will be loaded from MainAdminUser.CompanyName
+    // Empty by default: every company inherits its OWN Company Information
+    // (Settings -> Company). Only an explicit override fills these in.
+    useOverride: false,
+    name: '',
+    tagline: '',
     address: '',
+    city: '',
+    postalCode: '',
+    state: '',
+    country: '',
     phone: '',
     email: '',
     website: '',
+    taxId: '',
+    registrationNumber: '',
+    shareCapital: '',
+    bankName: '',
+    bankAccount: '',
+    bankSwift: '',
     logo: getCompanyLogoCachedBase64() || '',
-    footerMessage: 'Thank you for considering our offer. We look forward to working with you.',
+    footerMessage: '',
   },
   showElements: {
     customerInfo: true,

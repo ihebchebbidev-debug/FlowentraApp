@@ -12,6 +12,7 @@ import {
 import { PdfSettingsService } from "@/modules/sales/services/pdfSettings.service";
 import { useCompanyLogo } from "@/hooks/useCompanyLogo";
 import { useCurrency } from "@/shared/hooks/useCurrency";
+import { resolveCompanyForPdf } from '@/shared/pdf/resolveCompany';
 
 /**
  * Full-screen PDF report for a Purchase Order, mirroring OfferReportPage.
@@ -43,7 +44,7 @@ export default function PurchaseOrderReportPage() {
         const logoBase64 = await getCompanyLogoBase64(companyLogo);
         setPdfSettings({
           ...settings,
-          company: { ...settings.company, logo: logoBase64 || "" },
+          company: await resolveCompanyForPdf(settings.company, logoBase64 || ""),
         } as any);
       } catch (err) {
         console.error("[PurchaseOrderReportPage] load failed", err);

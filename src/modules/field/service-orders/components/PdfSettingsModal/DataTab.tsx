@@ -1,11 +1,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Separator } from '@/components/ui/separator';
 import { formatDisplayName } from '../../utils/pdfSettings.utils';
 import { PdfSettings } from '../../utils/pdfSettings.utils';
+import { CompanyOverrideSection } from '@/shared/pdf/CompanyOverrideSection';
 
 interface DataTabProps {
   settings: PdfSettings;
@@ -24,108 +22,11 @@ export function DataTab({ settings, onSettingsChange }: DataTabProps) {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="company-name">Company Name</Label>
-              <Input
-                id="company-name"
-                value={settings.company.name}
-                onChange={(e) => onSettingsChange('company.name', e.target.value)}
-                placeholder="Your Company Name"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="company-tagline">Tagline</Label>
-              <Input
-                id="company-tagline"
-                value={settings.company.tagline}
-                onChange={(e) => onSettingsChange('company.tagline', e.target.value)}
-                placeholder="Professional Field Services"
-              />
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="company-address">Address</Label>
-            <Textarea
-              id="company-address"
-              value={settings.company.address}
-              onChange={(e) => onSettingsChange('company.address', e.target.value)}
-              placeholder="1234 Business Street, City, State 12345"
-              rows={3}
-            />
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="company-phone">Phone</Label>
-              <Input
-                id="company-phone"
-                value={settings.company.phone}
-                onChange={(e) => onSettingsChange('company.phone', e.target.value)}
-                placeholder="(555) 123-4567"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="company-email">Email</Label>
-              <Input
-                id="company-email"
-                value={settings.company.email}
-                onChange={(e) => onSettingsChange('company.email', e.target.value)}
-                placeholder="service@yourcompany.com"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="company-website">Website</Label>
-              <Input
-                id="company-website"
-                value={settings.company.website}
-                onChange={(e) => onSettingsChange('company.website', e.target.value)}
-                placeholder="www.yourcompany.com"
-              />
-            </div>
-          </div>
-
-          {/* Footer Message */}
-          <Separator />
-          <div className="space-y-2">
-            <Label htmlFor="footer-message">Footer Message</Label>
-            <Textarea
-              id="footer-message"
-              value={settings.company.footerMessage || ''}
-              onChange={(e) => onSettingsChange('company.footerMessage', e.target.value)}
-              placeholder="Thank you for choosing our services. We look forward to serving you again."
-              rows={2}
-            />
-            <p className="text-xs text-muted-foreground">
-              This message appears at the bottom of all PDF reports
-            </p>
-          </div>
-
-          {/* Footer Preview */}
-          <div className="space-y-2">
-            <Label className="text-xs font-medium">Footer Preview</Label>
-            <div className={`relative rounded-md border p-4 text-xs ${settings.showElements.footer ? 'bg-background' : 'bg-muted/30 opacity-60'}`}>
-              {!settings.showElements.footer && (
-                <div className="absolute inset-0 flex items-center justify-center z-10">
-                  <span className="bg-destructive/10 text-destructive text-xs font-medium px-2 py-1 rounded">
-                    Footer is currently disabled
-                  </span>
-                </div>
-              )}
-              <div className="border-t pt-3 space-y-1">
-                <p className="text-muted-foreground">
-                  {settings.company.name || 'Company Name'} • {settings.company.address || 'Address'}
-                </p>
-                <p className="text-muted-foreground">
-                  {settings.company.phone || 'Phone'} • {settings.company.email || 'Email'} • {settings.company.website || 'Website'}
-                </p>
-                {settings.company.footerMessage && (
-                  <p className="text-muted-foreground italic">{settings.company.footerMessage}</p>
-                )}
-              </div>
-            </div>
-          </div>
+          <CompanyOverrideSection
+            company={settings.company}
+            onSettingsChange={onSettingsChange}
+            footerEnabled={settings.showElements.footer}
+          />
         </CardContent>
       </Card>
 

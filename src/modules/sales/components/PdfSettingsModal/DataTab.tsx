@@ -1,9 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
@@ -12,6 +10,7 @@ import { Slider } from '@/components/ui/slider';
 import { Image, Eye, EyeOff, Grid } from 'lucide-react';
 import { PdfSettings, formatDisplayName } from '../../utils/pdfSettings.utils';
 import { useTranslation } from 'react-i18next';
+import { CompanyOverrideSection } from '@/shared/pdf/CompanyOverrideSection';
 
 interface DataTabProps {
   settings: PdfSettings;
@@ -142,76 +141,11 @@ export function DataTab({ settings, updateSettings }: DataTabProps) {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor="companyName" className="text-xs">{t('pdfSettings.companyName', 'Company Name')}</Label>
-                  <Input id="companyName" value={settings.company.name} onChange={(e) => updateSettings('company.name', e.target.value)} className="h-8 text-xs" />
-                </div>
-                <div>
-                  <Label htmlFor="companyTagline" className="text-xs">{t('pdfSettings.tagline', 'Tagline')}</Label>
-                  <Input id="companyTagline" value={settings.company.tagline} onChange={(e) => updateSettings('company.tagline', e.target.value)} className="h-8 text-xs" />
-                </div>
-                <div>
-                  <Label htmlFor="companyEmail" className="text-xs">{t('pdfSettings.email', 'Email')}</Label>
-                  <Input id="companyEmail" type="email" value={settings.company.email} onChange={(e) => updateSettings('company.email', e.target.value)} className="h-8 text-xs" />
-                </div>
-                <div>
-                  <Label htmlFor="companyPhone" className="text-xs">{t('pdfSettings.phone', 'Phone')}</Label>
-                  <Input id="companyPhone" value={settings.company.phone} onChange={(e) => updateSettings('company.phone', e.target.value)} className="h-8 text-xs" />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor="companyWebsite" className="text-xs">{t('pdfSettings.website', 'Website')}</Label>
-                  <Input id="companyWebsite" value={settings.company.website} onChange={(e) => updateSettings('company.website', e.target.value)} className="h-8 text-xs" />
-                </div>
-                <div className="sm:col-span-1">
-                  <Label htmlFor="companyAddress" className="text-xs">{t('pdfSettings.address', 'Address')}</Label>
-                  <Textarea id="companyAddress" value={settings.company.address} onChange={(e) => updateSettings('company.address', e.target.value)} className="min-h-[32px] text-xs resize-none" rows={2} />
-                </div>
-              </div>
-
-              {/* Footer Message */}
-              <div className="space-y-2">
-                <Label htmlFor="footerMessage" className="text-xs">{t('pdfSettings.footerMessage', 'Footer Message')}</Label>
-                <Textarea
-                  id="footerMessage"
-                  value={settings.company.footerMessage || ''}
-                  onChange={(e) => updateSettings('company.footerMessage', e.target.value)}
-                  placeholder={t('pdfSettings.footerMessagePlaceholder', 'Thank you for your business. We look forward to serving you again.')}
-                  className="min-h-[48px] text-xs resize-none"
-                  rows={2}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {t('pdfSettings.footerMessageDescription', 'This message appears at the bottom of all PDF reports')}
-                </p>
-              </div>
-
-              {/* Footer Preview */}
-              <div className="space-y-2">
-                <Label className="text-xs font-medium">{t('pdfSettings.footerPreview', 'Footer Preview')}</Label>
-                <div className={`relative rounded-md border p-3 text-xs ${settings.showElements.footer ? 'bg-background' : 'bg-muted/30 opacity-60'}`}>
-                  {!settings.showElements.footer && (
-                    <div className="absolute inset-0 flex items-center justify-center z-10">
-                      <span className="bg-destructive/10 text-destructive text-xs font-medium px-2 py-1 rounded">
-                        {t('pdfSettings.footerDisabled', 'Footer is currently disabled')}
-                      </span>
-                    </div>
-                  )}
-                  <div className="border-t pt-2 space-y-1">
-                    <p className="text-muted-foreground">
-                      {settings.company.name || t('pdfSettings.companyName', 'Company Name')} • {settings.company.address || t('pdfSettings.address', 'Address')}
-                    </p>
-                    <p className="text-muted-foreground">
-                      {settings.company.phone || t('pdfSettings.phone', 'Phone')} • {settings.company.email || t('pdfSettings.email', 'Email')} • {settings.company.website || t('pdfSettings.website', 'Website')}
-                    </p>
-                    {settings.company.footerMessage && (
-                      <p className="text-muted-foreground italic">{settings.company.footerMessage}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
+              <CompanyOverrideSection
+                company={settings.company}
+                onSettingsChange={updateSettings}
+                footerEnabled={settings.showElements.footer}
+              />
             </CardContent>
           </Card>
 

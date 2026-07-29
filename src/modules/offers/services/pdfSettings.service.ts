@@ -6,7 +6,7 @@
  */
 
 import { PdfSettings, defaultSettings } from '../utils/pdfSettings.utils';
-import { pdfSettingsApi } from '@/services/pdfSettingsApi';
+import { pdfSettingsApi, normalizePdfCompanySettings } from '@/services/pdfSettingsApi';
 
 export class PdfSettingsService {
   private static readonly MODULE = 'offers' as const;
@@ -57,7 +57,7 @@ export class PdfSettingsService {
       const stored = localStorage.getItem(this.STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        const merged = { ...defaultSettings, ...parsed };
+        const merged = normalizePdfCompanySettings(defaultSettings, parsed);
         this.settingsCache = merged;
         return merged;
       }
