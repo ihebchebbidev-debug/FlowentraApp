@@ -1,8 +1,16 @@
+import { Buffer } from 'buffer'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import { applyTypography } from './config/typography.runtime'
 import App from './App.tsx'
+
+// @react-pdf/renderer decodes fetched images through Node's Buffer. Vite does
+// not polyfill Node globals, so PDF rendering crashed with "Buffer is not
+// defined" as soon as a document embedded a logo.
+if (typeof globalThis.Buffer === 'undefined') {
+  ;(globalThis as any).Buffer = Buffer
+}
 
 // Inject the shared typography system as CSS custom properties on :root
 // BEFORE the first paint so Tailwind semantic tokens (text-body, text-h1,

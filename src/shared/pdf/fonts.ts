@@ -34,12 +34,25 @@ export function registerUnicodeFonts(): void {
       family: UNICODE_FONT_FAMILY,
       fonts: [
         {
-          src: 'https://fonts.gstatic.com/s/notosans/v27/o-0IIpQlx3QUlC5A4PNr5TRA.ttf',
+          src: 'https://fonts.gstatic.com/s/notosans/v42/o-0kIpQlx3QUlC5A4PNr4C5OaxRsfNNlKbCePevHtVtX57DGjDU1QDce6Vc.ttf',
           fontWeight: 400,
         },
         {
-          src: 'https://fonts.gstatic.com/s/notosans/v27/o-0NIpQlx3QUlC5A4PNjXhFVadyBx2pqPIif.ttf',
+          src: 'https://fonts.gstatic.com/s/notosans/v42/o-0kIpQlx3QUlC5A4PNr4C5OaxRsfNNlKbCePevHtVtX57DGjDU1QNAZ6Vc.ttf',
           fontWeight: 700,
+        },
+        // Italic faces: react-pdf throws "Could not resolve font for NotoSans,
+        // fontStyle italic" if a document uses fontStyle: 'italic' and no
+        // italic source is registered.
+        {
+          src: 'https://fonts.gstatic.com/s/notosans/v42/o-0mIpQlx3QUlC5A4PNB6Ryti20_6n1iPHjcz6L1SoM-jCpoiyD9A99d.ttf',
+          fontWeight: 400,
+          fontStyle: 'italic',
+        },
+        {
+          src: 'https://fonts.gstatic.com/s/notosans/v42/o-0mIpQlx3QUlC5A4PNB6Ryti20_6n1iPHjcz6L1SoM-jCpoiyAaBN9d.ttf',
+          fontWeight: 700,
+          fontStyle: 'italic',
         },
       ],
     });
