@@ -761,10 +761,15 @@ namespace MyApi.Modules.Invoices.Services
             int? saleId = null;
             string label = string.Empty;
 
-            var strategy = _context.Database.CreateExecutionStrategy();
-            await strategy.ExecuteAsync(async () =>
+            // This method is also called from inside an outer transaction (e.g.
+            // PaymentService.CreatePaymentAsync auto-posts a draft invoice while holding a
+            // serializable transaction). Npgsql does not support nested transactions, so
+            // when a transaction is already open we join it instead of starting a new one
+            // (and skip the execution strategy, which rejects user-initiated transactions).
+            async Task RecalcCoreAsync()
             {
-                await using var tx = await _context.Database.BeginTransactionAsync();
+                var ambient = _context.Database.CurrentTransaction;
+                var tx = ambient == null ? await _context.Database.BeginTransactionAsync() : null;
                 try
                 {
                     // FOR UPDATE lock on the invoice row serialises concurrent recalcs.
@@ -772,7 +777,11 @@ namespace MyApi.Modules.Invoices.Services
                     var invoice = await _context.Set<Invoice>()
                         .FromSqlRaw("SELECT * FROM \"Invoices\" WHERE \"Id\" = {0} AND \"TenantId\" = {1} FOR UPDATE", invoiceId, tenantId)
                         .FirstOrDefaultAsync();
-                    if (invoice == null) { await tx.RollbackAsync(); return; }
+                    if (invoice == null)
+                    {
+                        if (tx != null) await tx.RollbackAsync();
+                        return;
+                    }
 
                     var idStr = invoice.Id.ToString();
                     paid = await _context.Set<MyApi.Modules.Payments.Models.Payment>()
@@ -791,7 +800,7 @@ namespace MyApi.Modules.Invoices.Services
 
                     invoice.UpdatedAt = DateTime.UtcNow;
                     await _context.SaveChangesAsync();
-                    await tx.CommitAsync();
+                    if (tx != null) await tx.CommitAsync();
 
                     newStatus = invoice.Status;
                     grandTotal = invoice.GrandTotal;
@@ -801,10 +810,24 @@ namespace MyApi.Modules.Invoices.Services
                 }
                 catch
                 {
-                    await tx.RollbackAsync();
+                    if (tx != null) await tx.RollbackAsync();
                     throw;
                 }
-            });
+                finally
+                {
+                    if (tx != null) await tx.DisposeAsync();
+                }
+            }
+
+            if (_context.Database.CurrentTransaction != null)
+            {
+                await RecalcCoreAsync();
+            }
+            else
+            {
+                var strategy = _context.Database.CreateExecutionStrategy();
+                await strategy.ExecuteAsync(RecalcCoreAsync);
+            }
 
             if (!string.IsNullOrEmpty(prevStatus) && prevStatus != newStatus)
             {
