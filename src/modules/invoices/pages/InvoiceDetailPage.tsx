@@ -35,7 +35,7 @@ export function InvoiceDetailPage() {
   const navigate = useNavigate();
   const { format, current: currencyInfo } = useCurrency();
   const { data: invoice, isLoading } = useCustomerInvoice(invoiceId);
-  const { post, void: voidMutation, remove, markPaid, reopen } = useInvoiceMutations();
+  const { post, void: voidMutation, remove, reopen } = useInvoiceMutations();
   const { canUpdate, canDelete, isMainAdmin } = usePermissions();
   const qc = useQueryClient();
   const canUpdateInvoice = isMainAdmin || canUpdate('sales');
@@ -43,8 +43,6 @@ export function InvoiceDetailPage() {
 
   const [voidOpen, setVoidOpen] = useState(false);
   const [voidReason, setVoidReason] = useState('');
-  const [markPaidOpen, setMarkPaidOpen] = useState(false);
-  const [markPaidMemo, setMarkPaidMemo] = useState('');
   const [reopenOpen, setReopenOpen] = useState(false);
   const [reopenMemo, setReopenMemo] = useState('');
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -255,12 +253,6 @@ export function InvoiceDetailPage() {
             <TabsContent value="payments" className="mt-4 space-y-4">
               {(invoice.status === 'posted' || invoice.status === 'paid' || invoice.status === 'void') && (
                 <div className="flex flex-wrap gap-2 justify-end">
-                  {invoice.status === 'posted' && canUpdateInvoice && (
-                    <Button size="sm" variant="outline" className="gap-2" onClick={() => setMarkPaidOpen(true)}>
-                      <CheckCircle2 className="h-4 w-4" />
-                      {t('actions.mark_paid')}
-                    </Button>
-                  )}
                   {(invoice.status === 'paid' || invoice.status === 'void') && canUpdateInvoice && (
                     <Button size="sm" variant="outline" className="gap-2" onClick={() => setReopenOpen(true)}>
                       <RefreshCw className="h-4 w-4" />
@@ -311,29 +303,6 @@ export function InvoiceDetailPage() {
               onClick={() => voidMutation.mutate({ id: invoice.id, reason: voidReason.trim() }, { onSuccess: () => { setVoidOpen(false); setVoidReason(''); } })}
             >
               {t('actions.void')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={markPaidOpen} onOpenChange={(o) => { setMarkPaidOpen(o); if (!o) setMarkPaidMemo(''); }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('confirm.mark_paid_title')}</DialogTitle>
-            <DialogDescription>{t('confirm.mark_paid_body')}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2">
-            <Label>{t('confirm.memo')} <span className="text-destructive">*</span></Label>
-            <Textarea value={markPaidMemo} onChange={(e) => setMarkPaidMemo(e.target.value)} placeholder={t('confirm.memo_placeholder')} />
-            {!markPaidMemo.trim() && <p className="text-xs text-destructive">{t('confirm.memo_required')}</p>}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setMarkPaidOpen(false)}>{t('actions.cancel')}</Button>
-            <Button
-              disabled={!markPaidMemo.trim() || markPaid.isPending}
-              onClick={() => markPaid.mutate({ id: invoice.id, memo: markPaidMemo.trim() }, { onSuccess: () => { setMarkPaidOpen(false); setMarkPaidMemo(''); } })}
-            >
-              {t('actions.mark_paid')}
             </Button>
           </DialogFooter>
         </DialogContent>

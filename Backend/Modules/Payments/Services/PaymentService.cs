@@ -217,6 +217,10 @@ namespace MyApi.Modules.Payments.Services
                     }
                 }
 
+                // Persist the payment (and allocations) BEFORE recalculating: the
+                // recalculation SUMs payments straight from the database, so an
+                // unflushed insert would be ignored and AmountPaid would stay stale.
+                await _context.SaveChangesAsync();
                 await UpdateEntityPaymentStatusAsync(entityType, entityId);
                 await _context.SaveChangesAsync();
                 await tx.CommitAsync();
@@ -262,6 +266,9 @@ namespace MyApi.Modules.Payments.Services
 
                 _context.PaymentItemAllocations.RemoveRange(payment.ItemAllocations);
                 _context.Payments.Remove(payment);
+                // Flush the deletion first — the recalculation reads payments from the
+                // database and would otherwise still count the removed payment.
+                await _context.SaveChangesAsync();
                 await UpdateEntityPaymentStatusAsync(entityType, entityId);
                 await _context.SaveChangesAsync();
                 await tx.CommitAsync();
