@@ -178,13 +178,13 @@ namespace MyApi.Modules.Processes.Controllers
                     dto.LastItemsProcessed = latest.ItemsProcessed;
                     dto.LastTriggeredBy = latest.TriggeredBy;
                     dto.LastAttempt = latest.Attempt;
-                    dto.NextRetryAt = latest.NextRetryAt;
+                    dto.NextRetryAt = AsUtc(latest.NextRetryAt);
                     // Manual "Run now" deliberately does NOT update s.LastRunAt (it
                     // must not overwrite the scheduled-cadence audit trail). Fall back
                     // to the most recent finished run so the UI reflects manual runs.
                     var mostRecentFinished = runs.FirstOrDefault(r => r.FinishedAt != null);
                     if (mostRecentFinished != null && (dto.LastRunAt == null || mostRecentFinished.FinishedAt > dto.LastRunAt))
-                        dto.LastRunAt = mostRecentFinished.FinishedAt;
+                        dto.LastRunAt = AsUtc(mostRecentFinished.FinishedAt);
 
                     var finished = runs.Where(r => r.Status != "running").Take(30).ToList();
                     dto.RecentTotal = finished.Count;
@@ -427,6 +427,19 @@ namespace MyApi.Modules.Processes.Controllers
 
 
         // ── mappers ──────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Process tables use Postgres TIMESTAMP (without time zone) and always store
+        /// DateTime.UtcNow, but Npgsql returns them with Kind = Unspecified, so
+        /// System.Text.Json emits them without a trailing "Z". Browsers then parse the
+        /// value as LOCAL time, shifting every timestamp by the client's UTC offset and
+        /// making healthy jobs look "Scheduler overdue". Stamp the kind explicitly.
+        /// </summary>
+        private static DateTime? AsUtc(DateTime? value)
+            => value == null ? null : DateTime.SpecifyKind(value.Value, DateTimeKind.Utc);
+
+        private static DateTime AsUtc(DateTime value)
+            => DateTime.SpecifyKind(value, DateTimeKind.Utc);
         private static ProcessScheduleDto ToDto(ProcessSchedule s)
         {
             object cfg = new { };
@@ -443,12 +456,12 @@ namespace MyApi.Modules.Processes.Controllers
                 RetryBackoffSeconds = s.RetryBackoffSeconds,
                 Config = cfg,
                 Timezone = s.Timezone,
-                NextRunAt = s.NextRunAt,
-                LastRunAt = s.LastRunAt,
+                NextRunAt = AsUtc(s.NextRunAt),
+                LastRunAt = AsUtc(s.LastRunAt),
                 LastStatus = s.LastStatus,
                 ConsecutiveFailures = s.ConsecutiveFailures,
                 BlockReason = s.BlockReason,
-                UpdatedAt = s.UpdatedAt,
+                UpdatedAt = AsUtc(s.UpdatedAt),
             };
         }
 
@@ -459,13 +472,13 @@ namespace MyApi.Modules.Processes.Controllers
             TriggeredBy = r.TriggeredBy,
             Attempt = r.Attempt,
             Status = r.Status,
-            StartedAt = r.StartedAt,
-            FinishedAt = r.FinishedAt,
+            StartedAt = AsUtc(r.StartedAt),
+            FinishedAt = AsUtc(r.FinishedAt),
             DurationMs = r.DurationMs,
             ItemsProcessed = r.ItemsProcessed,
             Error = r.Error,
             BlockReason = r.BlockReason,
-            NextRetryAt = r.NextRetryAt,
+            NextRetryAt = AsUtc(r.NextRetryAt),
         };
     }
 }

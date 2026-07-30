@@ -294,6 +294,7 @@ builder.Services.AddDataProtection();
 // Register custom services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IForgotEmailService, ForgotEmailService>();
+builder.Services.AddScoped<MyApi.Modules.ModuleRequests.Services.IModuleRequestEmailService, MyApi.Modules.ModuleRequests.Services.ModuleRequestEmailService>();
 builder.Services.AddScoped<MyApi.Modules.Auth.Services.IEmailVerificationService, MyApi.Modules.Auth.Services.EmailVerificationService>();
 builder.Services.AddScoped<MyApi.Modules.Auth.Services.ITwoFactorService, MyApi.Modules.Auth.Services.TwoFactorService>();
 builder.Services.AddScoped<IPreferencesService, PreferencesService>();

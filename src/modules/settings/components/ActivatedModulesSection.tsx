@@ -8,15 +8,18 @@ import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Lock, Search } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Lock, Search, ShoppingCart, MinusCircle } from 'lucide-react';
 import { usePlugins } from '@/modules/shared/plugins';
 import { getLucideIcon } from './plugins/lucideIconResolver';
+import { ModuleRequestDialog, type ModuleRequestTarget } from './ModuleRequestDialog';
 
 export function ActivatedModulesSection() {
   const { t } = useTranslation('settings');
   const { runtimeState, activeCount, totalCount, isLoading } = usePlugins();
 
   const [search, setSearch] = useState('');
+  const [requestTarget, setRequestTarget] = useState<ModuleRequestTarget | null>(null);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -117,12 +120,44 @@ export function ActivatedModulesSection() {
                       ? t('plugins.statusActive', 'Active')
                       : t('plugins.statusInactive', 'Inactive')}
                   </Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-px-10 shrink-0"
+                    onClick={() =>
+                      setRequestTarget({
+                        action: s.isEnabled ? 'deactivate' : 'activate',
+                        moduleCode: s.manifest.code,
+                        moduleKey: s.manifest.moduleKey,
+                        moduleName: name,
+                        currentlyEnabled: s.isEnabled,
+                      })
+                    }
+                    title={
+                      s.isEnabled
+                        ? t('subscription.moduleRequest.deactivateAction', 'Request deactivation')
+                        : t('subscription.moduleRequest.activateAction', 'Request activation')
+                    }
+                  >
+                    {s.isEnabled ? (
+                      <MinusCircle className="h-3.5 w-3.5" />
+                    ) : (
+                      <ShoppingCart className="h-3.5 w-3.5" />
+                    )}
+                  </Button>
                 </div>
               );
             })}
           </div>
         )}
       </CardContent>
+
+      <ModuleRequestDialog
+        target={requestTarget}
+        onOpenChange={(open) => {
+          if (!open) setRequestTarget(null);
+        }}
+      />
     </Card>
   );
 }

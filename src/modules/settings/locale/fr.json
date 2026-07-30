@@ -759,6 +759,23 @@
       "pending": "En attente",
       "failed": "Échouée",
       "void": "Annulée"
+    },
+    "moduleRequest": {
+      "deactivateTitle": "Demander la désactivation du module",
+      "activateTitle": "Demander l'activation du module",
+      "deactivateDesc": "Nous étudierons votre demande et désactiverons ce module pour votre espace.",
+      "activateDesc": "Nous étudierons votre demande et vous enverrons les détails pour ajouter ce module à votre abonnement.",
+      "deactivateAction": "Demander la désactivation",
+      "activateAction": "Demander l'activation",
+      "moduleCode": "Code du module",
+      "tenant": "Espace",
+      "url": "URL",
+      "reasonLabel": "Message à notre équipe (facultatif)",
+      "reasonPlaceholder": "Expliquez-nous pourquoi vous souhaitez ce changement…",
+      "send": "Envoyer la demande",
+      "sentTitle": "Demande envoyée",
+      "sentDesc": "Notre équipe a été notifiée et vous répondra rapidement.",
+      "failed": "Impossible d'envoyer votre demande. Veuillez réessayer."
     }
   },
   "companies": {
@@ -794,6 +811,8 @@
     "saveButton": "Enregistrer les modifications",
     "cancelButton": "Annuler",
     "defaultBadge": "Par défaut",
+    "defaultEditHint": "Le tenant par défaut est géré dans Entreprise et préférences.",
+    "defaultEditHintTitle": "Géré dans Entreprise et préférences",
     "inactiveBadge": "Inactif",
     "setDefault": "Définir comme défaut",
     "edit": "Modifier",

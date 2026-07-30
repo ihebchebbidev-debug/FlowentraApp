@@ -3,7 +3,7 @@
  * Only accessible by MainAdminUser.
  */
 import { useState, useEffect } from 'react';
-import { Building2, Plus, Save, Loader2, Trash2, Star, Pencil, Upload, X, Layers, Eye, Settings2, ImageOff, RotateCcw } from 'lucide-react';
+import { Building2, Plus, Save, Loader2, Trash2, Star, Pencil, Upload, X, Layers, Eye, Settings2, ImageOff, RotateCcw, Info } from 'lucide-react';
 import { ModuleScopeDialog } from './ModuleScopeDialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -35,6 +35,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { buildFooterLines } from '@/shared/pdf/resolveCompany';
 import { invalidateActiveCompany } from '@/shared/company/activeCompany';
 import { tenantsApi, type Tenant, type CreateTenantRequest, type UpdateTenantRequest } from '@/services/api/tenantsApi';
@@ -196,6 +202,15 @@ export function TenantManagement() {
   };
 
   const openEdit = (tenant: Tenant) => {
+    // The default tenant is edited in Company & preferences, not here.
+    if (tenant.isDefault) {
+      toast({
+        title: t('companies.defaultEditHintTitle', 'Managed in Company & preferences'),
+        description: t('companies.defaultEditHint', 'The default tenant is edited from the Company & preferences section.'),
+      });
+      return;
+    }
+
     // Open immediately with current row data, then refresh from backend
     setEditingTenant(tenant);
     setDialogOpen(true);
@@ -616,16 +631,37 @@ export function TenantManagement() {
                         <Star className="h-4 w-4 text-muted-foreground" />
                       </Button>
                     )}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={(e) => { e.stopPropagation(); openEdit(tenant); }}
-                      title={t('companies.edit')}
-                    >
-                      <Pencil className="h-4 w-4 text-muted-foreground" />
-                    </Button>
+                    {tenant.isDefault ? (
+                      <TooltipProvider delayDuration={200}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 cursor-help"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Info className="h-4 w-4 text-muted-foreground" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-xs">
+                            <p>{t('companies.defaultEditHint', 'The default tenant is managed in Company & preferences.')}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={(e) => { e.stopPropagation(); openEdit(tenant); }}
+                        title={t('companies.edit')}
+                      >
+                        <Pencil className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    )}
                     {!tenant.isDefault && tenant.isActive && (
                       <Button
                         type="button"

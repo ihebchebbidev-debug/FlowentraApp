@@ -759,6 +759,23 @@
       "pending": "Pending",
       "failed": "Failed",
       "void": "Void"
+    },
+    "moduleRequest": {
+      "deactivateTitle": "Request module deactivation",
+      "activateTitle": "Request module activation",
+      "deactivateDesc": "We will review your request and disable this module for your workspace.",
+      "activateDesc": "We will review your request and send you the details to add this module to your subscription.",
+      "deactivateAction": "Request deactivation",
+      "activateAction": "Request activation",
+      "moduleCode": "Module code",
+      "tenant": "Workspace",
+      "url": "URL",
+      "reasonLabel": "Message to our team (optional)",
+      "reasonPlaceholder": "Tell us why you need this change…",
+      "send": "Send request",
+      "sentTitle": "Request sent",
+      "sentDesc": "Our team has been notified and will get back to you shortly.",
+      "failed": "Could not send your request. Please try again."
     }
   },
   "companies": {
@@ -794,6 +811,8 @@
     "saveButton": "Save Changes",
     "cancelButton": "Cancel",
     "defaultBadge": "Default",
+    "defaultEditHint": "The default tenant is managed in Company & preferences.",
+    "defaultEditHintTitle": "Managed in Company & preferences",
     "inactiveBadge": "Inactive",
     "setDefault": "Set as default",
     "edit": "Edit",

@@ -24,6 +24,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { parseServerDate } from "@/utils/serverDate";
 import {
   PROCESSES, WORKSPACE_LABELS, type ProcessDefinition, type ProcessRun as UiProcessRun, type ProcessStatus, type WorkspaceId,
 } from "@/modules/system/services/processesCatalog";
@@ -74,7 +75,9 @@ const STATUS_RAIL: Record<ProcessStatus, string> = {
 
 function fmtRelative(t: TFunction, iso?: string): string {
   if (!iso) return t("relative.dash");
-  const diff = Date.now() - new Date(iso).getTime();
+  const parsed = parseServerDate(iso);
+  if (!parsed) return t("relative.dash");
+  const diff = Date.now() - parsed.getTime();
   const abs = Math.abs(diff);
   const sign = diff >= 0 ? "" : t("relative.in");
   const past = diff >= 0 ? t("relative.ago") : "";
@@ -90,8 +93,8 @@ function fmtRelative(t: TFunction, iso?: string): string {
 /** Exact wall-clock timestamp, shown next to the relative label in the drawer. */
 function fmtAbsolute(iso?: string): string | null {
   if (!iso) return null;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
+  const d = parseServerDate(iso);
+  if (!d) return null;
   return d.toLocaleString(undefined, {
     year: "numeric", month: "short", day: "2-digit",
     hour: "2-digit", minute: "2-digit", second: "2-digit",
@@ -679,7 +682,7 @@ export default function ProcessesPage() {
         t("reason.overdue", {
           defaultValue:
             "Overdue — the scheduler has not executed this job since it was due at {{due}}.",
-          due: new Date(n).toLocaleString(),
+          due: (parseServerDate(n) ?? new Date(n)).toLocaleString(),
         }),
       disabled: t("reason.disabled", { defaultValue: "Disabled — switched off by an administrator." }),
       configDefault: t("labels.config_default", { defaultValue: "(default)" }),

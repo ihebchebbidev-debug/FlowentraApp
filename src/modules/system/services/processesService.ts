@@ -23,6 +23,7 @@
  * POST /api/processes/run.
  */
 import { apiFetch } from "@/services/api/apiClient";
+import { parseServerDate, serverDateMs } from "@/utils/serverDate";
 import { PROCESSES, type DiagnosticCheck, type ProcessDefinition, type ProcessRun } from "./processesCatalog";
 import { effectiveSettings } from "./processesConfigSpec";
 
@@ -333,7 +334,7 @@ export interface OverlayTexts {
 
 const DEFAULT_OVERLAY_TEXTS: OverlayTexts = {
   notRegistered: "Not registered on the server — this job is not scheduled and will never run.",
-  overdue: (n) => `Overdue — the scheduler has not executed this job since it was due at ${new Date(n).toLocaleString()}.`,
+  overdue: (n) => `Overdue — the scheduler has not executed this job since it was due at ${(parseServerDate(n) ?? new Date(n)).toLocaleString()}.`,
   disabled: "Disabled — switched off by an administrator.",
   configDefault: "(default)",
 };
@@ -405,7 +406,7 @@ export function overlay(
     s.enabled &&
     !s.paused &&
     !!s.next_run_at &&
-    Date.now() - new Date(s.next_run_at).getTime() > graceMs;
+    Date.now() - serverDateMs(s.next_run_at) > graceMs;
   const blockReason =
     s.block_reason ??
     (isOverdue && s.next_run_at ? texts.overdue(s.next_run_at) : undefined) ??

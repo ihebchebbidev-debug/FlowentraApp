@@ -6,7 +6,8 @@ import {
   Upload, Save, Eye, ExternalLink, ChevronDown, Check, CheckCircle2,
   Sun, Moon, Monitor, Sidebar as SidebarIcon, Layout, Table as TableIcon, List,
   FileText, ShoppingCart, Wrench, Truck, Handshake, Receipt, Hash, Info,
-  Loader2, RefreshCw,
+  Loader2, RefreshCw, ShieldCheck, Search, Lock as LockIcon, ShoppingCart as Cart,
+  MinusCircle, Layers, Plus, Pencil, Power, Send, Users, Package,
 } from 'lucide-react';
 import { DemoCursor } from '@/modules/external/components/onboarding/DemoCursor';
 import { pickBestVoice, splitForSpeech, languageTagFor, configureUtteranceForFemaleVoice } from '@/modules/external/components/onboarding/narrationVoice';
@@ -26,6 +27,7 @@ const PERSONAL: { id: SettingsSection; label: string; icon: any; navId: string }
 const GENERAL: { id: SettingsSection; label: string; icon: any; navId: string }[] = [
   { id: 'company',      label: 'Company & preferences', icon: Building2,  navId: 'set-demo-nav-company' },
   { id: 'subscription', label: 'Tenants subscription',  icon: CreditCard, navId: 'set-demo-nav-subscription' },
+  { id: 'companies',    label: 'Companies',             icon: Layers,     navId: 'set-demo-nav-companies' },
   { id: 'offline',      label: 'Offline sync',          icon: WifiOff,    navId: 'set-demo-nav-offline' },
   { id: 'system',       label: 'System configuration',  icon: Sliders,    navId: 'set-demo-nav-system' },
 ];
@@ -41,6 +43,34 @@ const INVOICES = [
   { num: 'INV-2026-000031', date: 'May 01, 2026', amount: '1 335 TND', status: 'paid'    },
   { num: 'INV-2026-000020', date: 'Apr 01, 2026', amount: '1 335 TND', status: 'paid'    },
   { num: 'INV-2026-000009', date: 'Mar 01, 2026', amount: '1 335 TND', status: 'pending' },
+];
+
+// ─── Activated modules (mirrors ActivatedModulesSection) ────────────────────
+const MODULES = [
+  { name: 'Contacts',        code: 'core.contacts',    icon: Users,       on: true,  core: true  },
+  { name: 'Articles',        code: 'core.articles',    icon: Package,     on: true,  core: true  },
+  { name: 'Offers',          code: 'sales.offers',     icon: FileText,    on: true,  core: false },
+  { name: 'Sales',           code: 'sales.orders',     icon: ShoppingCart,on: true,  core: false },
+  { name: 'Service Orders',  code: 'field.serviceord', icon: Wrench,      on: true,  core: false },
+  { name: 'Dispatches',      code: 'field.dispatch',   icon: Truck,       on: true,  core: false },
+  { name: 'HR',              code: 'hr.core',          icon: Users,       on: false, core: false },
+  { name: 'Payments',        code: 'fin.payments',     icon: Receipt,     on: false, core: false },
+];
+
+// ─── Companies (mirrors TenantManagement) ───────────────────────────────────
+const COMPANIES = [
+  { name: 'SolarTech SARL',    slug: 'solartech', email: 'contact@solartech.tn', users: 15, active: true  },
+  { name: 'SolarTech Sud',     slug: 'solar-sud', email: 'sud@solartech.tn',     users: 6,  active: true  },
+  { name: 'Krossier Services', slug: 'krossier',  email: 'hello@krossier.io',    users: 9,  active: true  },
+  { name: 'Legacy Branch',     slug: 'legacy',    email: 'old@solartech.tn',     users: 0,  active: false },
+];
+const SCOPES = [
+  { key: 'contacts',  label: 'Contacts',  scope: 'shared'      },
+  { key: 'articles',  label: 'Articles',  scope: 'shared'      },
+  { key: 'offers',    label: 'Offers',    scope: 'per_company' },
+  { key: 'sales',     label: 'Sales',     scope: 'per_company' },
+  { key: 'purchases', label: 'Purchases', scope: 'per_company' },
+  { key: 'hr',        label: 'HR',        scope: 'per_company' },
 ];
 
 // ─── Offline hydration modules (mirrors HYDRATION_MODULES) ───────────────────
@@ -128,6 +158,29 @@ function SecurityPanel() {
   );
 }
 
+function TwoFactorPanel({ state }: { state: SettingsDemoState }) {
+  const on = state.twoFactor;
+  return (
+    <Panel icon={ShieldCheck} title="Two-factor authentication" desc="Extra protection on every sign-in" id="set-demo-security-2fa">
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-xs font-medium">Require a one-time code by email</p>
+          <p className="text-px-10 text-muted-foreground mt-0.5">When enabled, a 6-digit code is emailed at each login before access is granted.</p>
+        </div>
+        <span className={`h-5 w-9 rounded-full p-0.5 shrink-0 flex ${on ? 'bg-primary justify-end' : 'bg-muted justify-start'}`}>
+          <span className="h-4 w-4 rounded-full bg-background shadow-sm" />
+        </span>
+      </div>
+      {on && (
+        <div className="mt-3 rounded-md border border-primary/30 bg-primary/5 px-2.5 py-1.5 flex items-center gap-2">
+          <CheckCircle2 className="h-3 w-3 text-primary" />
+          <span className="text-px-10 text-muted-foreground">Two-factor authentication enabled for your account.</span>
+        </div>
+      )}
+    </Panel>
+  );
+}
+
 function CompanyAndPreferencesPanel({ state }: { state: SettingsDemoState }) {
   const dark = state.prefTheme === 'dark';
   const colors = ['bg-blue-500', 'bg-red-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500', 'bg-indigo-500'];
@@ -150,6 +203,27 @@ function CompanyAndPreferencesPanel({ state }: { state: SettingsDemoState }) {
         </div>
         <div className="grid grid-cols-2 gap-3 text-xs mt-3"><Field label="Phone" value="+216 74 200 100" /><div /></div>
         <div className="mt-4"><div className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-xs font-medium inline-flex items-center gap-1.5 cursor-default"><Save className="h-3.5 w-3.5" /> Save Changes</div></div>
+      </Panel>
+
+      <Panel icon={Building2} title="Bank details & report footer" desc="These details print at the bottom of this company’s reports and PDFs" id="set-demo-company-bank">
+        <p className="text-xs font-medium mb-2">Bank details</p>
+        <div className="grid grid-cols-3 gap-3 text-xs">
+          <Field label="Bank name" value="Banque de Tunisie" />
+          <Field label="Account / IBAN" value="TN59 1000 6035 1835 9847 8831" />
+          <Field label="SWIFT / BIC" value="BTBKTNTT" />
+        </div>
+        <p className="text-xs font-medium mt-4 mb-2">Report footer</p>
+        <div>
+          <label className="block text-px-11 text-muted-foreground mb-1">Footer message</label>
+          <div className="min-h-[3.5rem] px-3 py-2 rounded-md border border-primary text-sm">Thank you for your business — payment due within 30 days.</div>
+        </div>
+        <div className="mt-3 rounded-lg border border-border bg-muted/30 p-3">
+          <p className="text-px-10 font-medium text-muted-foreground mb-1">Footer preview</p>
+          <p className="text-px-10">SolarTech SARL</p>
+          <p className="text-px-10 text-muted-foreground">Route de Gabès km 3, 3003 Sfax, Tunisia · +216 74 200 100 · solartech.tn</p>
+          <p className="text-px-10 text-muted-foreground">Bank: Banque de Tunisie · IBAN TN59 1000 6035 1835 9847 8831 · SWIFT BTBKTNTT</p>
+          <p className="text-px-10 text-muted-foreground">Thank you for your business — payment due within 30 days.</p>
+        </div>
       </Panel>
 
       <Panel icon={Palette} title="Preferences" desc="Personalize how the app looks and behaves — auto-saved">
@@ -276,6 +350,164 @@ function SubscriptionPanel({ state }: { state: SettingsDemoState }) {
           </table>
         </div>
       </Panel>
+
+      <ActivatedModulesCard state={state} />
+    </div>
+  );
+}
+
+function ActivatedModulesCard({ state }: { state: SettingsDemoState }) {
+  const active = MODULES.filter(m => m.on).length;
+  return (
+    <div id="set-demo-sub-modules" className="border border-border rounded-lg bg-card shadow-card">
+      <div className="px-4 py-3 border-b border-border flex items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2"><Package className="h-4 w-4 text-primary" /><span className="text-sm font-semibold">Activated modules</span></div>
+          <p className="text-px-11 text-muted-foreground mt-0.5">Modules included in your subscription. Request a change and our team handles it.</p>
+        </div>
+        <span className="text-px-10 px-2 py-0.5 rounded-full bg-muted font-medium shrink-0">{active} / {MODULES.length}</span>
+      </div>
+      <div className="p-4 space-y-3">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <div className="h-8 pl-8 rounded-md border border-border text-px-11 flex items-center text-muted-foreground">Search modules…</div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {MODULES.map((m, i) => {
+            const Ic = m.icon;
+            const highlighted = state.moduleRequest !== 'none' && i === 6;
+            return (
+              <div key={m.code} id={highlighted ? 'set-demo-sub-module-request' : undefined}
+                className={`flex items-center gap-2.5 px-2.5 py-2 rounded-md border ${
+                  highlighted ? 'border-primary bg-primary/5' : m.on ? 'border-border bg-background' : 'border-dashed border-muted-foreground/25 opacity-70'}`}>
+                <span className={`h-7 w-7 rounded-md flex items-center justify-center shrink-0 ${m.on ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}><Ic className="h-3.5 w-3.5" /></span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-xs font-medium truncate">{m.name}</p>
+                    {m.core && <LockIcon className="h-2.5 w-2.5 text-muted-foreground shrink-0" />}
+                  </div>
+                  <p className="text-px-10 text-muted-foreground font-mono truncate">{m.code}</p>
+                </div>
+                <span className={`text-px-10 px-1.5 py-0.5 rounded-full shrink-0 font-medium ${m.on ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-muted text-muted-foreground'}`}>{m.on ? 'Active' : 'Inactive'}</span>
+                <span className={`h-6 w-6 rounded-md flex items-center justify-center shrink-0 ${highlighted ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>
+                  {m.on ? <MinusCircle className="h-3.5 w-3.5" /> : <Cart className="h-3.5 w-3.5" />}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ModuleRequestDialogMock({ state }: { state: SettingsDemoState }) {
+  const sent = state.moduleRequestSent;
+  return (
+    <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/70 backdrop-blur-[2px]">
+      <div id="set-demo-module-dialog" className="w-[min(92%,520px)] rounded-xl border border-border bg-card shadow-lg p-4 space-y-3">
+        <div>
+          <p className="text-sm font-semibold">Request module activation</p>
+          <p className="text-px-11 text-muted-foreground mt-0.5">We will review your request and send you the details to add this module to your subscription.</p>
+        </div>
+        <div className="rounded-lg border border-border/60 p-3 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-medium">HR</span>
+            <span className="text-px-10 px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">Inactive</span>
+          </div>
+          {[['Module code', 'hr.core'], ['Workspace', 'krossier'], ['URL', 'https://krossier.flowentra.app']].map(([k, v]) => (
+            <div key={k} className="flex items-center justify-between gap-3">
+              <span className="text-px-11 text-muted-foreground">{k}</span>
+              <span className="text-px-11 font-mono truncate">{v}</span>
+            </div>
+          ))}
+        </div>
+        <div className="space-y-1.5">
+          <p className="text-px-11 text-muted-foreground">Message to our team <span className="text-destructive">*</span></p>
+          <div className="min-h-[62px] rounded-md border border-primary p-2 text-px-11 text-foreground">
+            {sent ? 'We are onboarding 6 technicians next month and need the HR module for leave and timesheets.' : 'Tell us why you need this change…'}
+          </div>
+          <div className="flex justify-end"><span className="text-px-10 text-muted-foreground">{sent ? '96' : '0'}/2000</span></div>
+        </div>
+        <div className="flex justify-end gap-2">
+          <div className="h-8 px-3 rounded-md border border-border text-px-11 inline-flex items-center text-muted-foreground">Cancel</div>
+          <div className={`h-8 px-3 rounded-md text-px-11 font-medium inline-flex items-center gap-1.5 ${sent ? 'bg-primary text-primary-foreground' : 'bg-primary/40 text-primary-foreground'}`}><Send className="h-3 w-3" /> Send request</div>
+        </div>
+        {sent && (
+          <div className="rounded-md border border-green-500/30 bg-green-500/10 px-2.5 py-1.5 flex items-center gap-2">
+            <CheckCircle2 className="h-3 w-3 text-green-600" />
+            <span className="text-px-10 text-muted-foreground">Sent to contact@flowentra.io — tenant, user, module, time and action needed included.</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CompaniesPanel({ state }: { state: SettingsDemoState }) {
+  return (
+    <div className="space-y-4 relative">
+      <div className="border border-border rounded-lg bg-card shadow-card">
+        <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2"><Building2 className="h-4 w-4 text-primary" /><span className="text-sm font-semibold">Companies</span></div>
+            <p className="text-px-11 text-muted-foreground mt-0.5">Manage the companies inside your workspace</p>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <div className={`h-8 px-2.5 rounded-md text-px-11 inline-flex items-center gap-1.5 ${state.companiesScopeOpen ? 'bg-primary text-primary-foreground' : 'border border-border text-muted-foreground'}`}><Sliders className="h-3 w-3" /> Module data scope</div>
+            <div className="h-8 px-2.5 rounded-md bg-primary text-primary-foreground text-px-11 font-medium inline-flex items-center gap-1.5"><Plus className="h-3 w-3" /> Add company</div>
+          </div>
+        </div>
+        <div className="p-4">
+          <div className="border border-border rounded-lg overflow-hidden">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-muted/30 border-b border-border/60 text-muted-foreground uppercase tracking-wide text-px-10">
+                  <th className="text-left font-medium px-3 py-2">Company</th>
+                  <th className="text-left font-medium px-3 py-2">Slug</th>
+                  <th className="text-left font-medium px-3 py-2">Contact</th>
+                  <th className="text-left font-medium px-3 py-2">Users</th>
+                  <th className="text-left font-medium px-3 py-2">Status</th>
+                  <th className="text-right font-medium px-3 py-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {COMPANIES.map(c => (
+                  <tr key={c.slug} className="border-b border-border/40 last:border-0">
+                    <td className="px-3 py-2 font-medium">{c.name}</td>
+                    <td className="px-3 py-2 font-mono text-muted-foreground">{c.slug}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{c.email}</td>
+                    <td className="px-3 py-2">{c.users}</td>
+                    <td className="px-3 py-2"><span className={`inline-flex rounded-full px-2 py-0.5 text-px-10 font-medium ${c.active ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-muted text-muted-foreground'}`}>{c.active ? 'Active' : 'Inactive'}</span></td>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center justify-end gap-1.5 text-muted-foreground">
+                        <Pencil className="h-3.5 w-3.5" /><Power className="h-3.5 w-3.5" />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {state.companiesScopeOpen && (
+        <div id="set-demo-companies-scope" className="border border-primary/40 rounded-lg bg-card shadow-card">
+          <div className="px-4 py-3 border-b border-border">
+            <div className="flex items-center gap-2"><Sliders className="h-4 w-4 text-primary" /><span className="text-sm font-semibold">Module data scope</span></div>
+            <p className="text-px-11 text-muted-foreground mt-0.5">Shared across companies, or isolated per company</p>
+          </div>
+          <div className="p-4 grid grid-cols-2 gap-2">
+            {SCOPES.map(sc => (
+              <div key={sc.key} className="flex items-center justify-between gap-2 rounded-md border border-border px-2.5 py-2">
+                <span className="text-xs font-medium">{sc.label}</span>
+                <span className={`text-px-10 px-1.5 py-0.5 rounded-full font-medium ${sc.scope === 'shared' ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'}`}>{sc.scope === 'shared' ? 'Shared' : 'Per company'}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -416,9 +648,17 @@ function PageSettings({ state }: { state: SettingsDemoState }) {
 
         <div className="col-span-8 lg:col-span-9">
           {state.section === 'profile'      && <ProfilePanel />}
-          {state.section === 'security'     && <SecurityPanel />}
+          {state.section === 'security'     && (
+            <div className="space-y-4"><SecurityPanel /><TwoFactorPanel state={state} /></div>
+          )}
           {state.section === 'company'      && <CompanyAndPreferencesPanel state={state} />}
-          {state.section === 'subscription' && <SubscriptionPanel state={state} />}
+          {state.section === 'subscription' && (
+            <div className="relative">
+              <SubscriptionPanel state={state} />
+              {state.moduleRequest !== 'none' && <ModuleRequestDialogMock state={state} />}
+            </div>
+          )}
+          {state.section === 'companies'    && <CompaniesPanel state={state} />}
           {state.section === 'offline'      && <OfflinePanel state={state} />}
           {state.section === 'system'       && <SystemPanel state={state} />}
         </div>
@@ -480,6 +720,7 @@ export function SettingsAutopilotDemo({ open, onClose }: Props) {
     state.section, state.prefTheme, state.prefColorPicked,
     state.showPlans, state.planPicked, state.offlineAllOn,
     state.jobMode, state.numberingExpanded, state.numberingEdited,
+    state.twoFactor, state.moduleRequest, state.moduleRequestSent, state.companiesScopeOpen,
   ]);
 
   useEffect(() => {

@@ -19,17 +19,25 @@ export type SettingsSection =
   | 'security'
   | 'company'
   | 'subscription'
+  | 'companies'
   | 'offline'
   | 'system';
 
 export interface SettingsDemoState {
   section: SettingsSection;
+  // Security
+  twoFactor: boolean;
   // Company & preferences
   prefTheme: 'system' | 'dark';
   prefColorPicked: boolean;
   // Subscription
   showPlans: boolean;
   planPicked: boolean;
+  // Activated modules / module requests
+  moduleRequest: 'none' | 'activate' | 'deactivate';
+  moduleRequestSent: boolean;
+  // Companies (tenants)
+  companiesScopeOpen: boolean;
   // Offline sync
   offlineAllOn: boolean;
   // System configuration
@@ -40,10 +48,14 @@ export interface SettingsDemoState {
 
 export const initialSettingsDemoState: SettingsDemoState = {
   section: 'profile',
+  twoFactor: false,
   prefTheme: 'system',
   prefColorPicked: false,
   showPlans: false,
   planPicked: false,
+  moduleRequest: 'none',
+  moduleRequestSent: false,
+  companiesScopeOpen: false,
   offlineAllOn: false,
   jobMode: 'installation',
   numberingExpanded: false,
@@ -96,6 +108,13 @@ export const SET_STEPS: SettingsDemoStep[] = [
     duration: 5000,
     apply: pure(() => ({ section: 'security' })),
   },
+  {
+    target: 'set-demo-security-2fa',
+    caption:
+      'Right below, switch on two-factor authentication. Every sign-in then asks for a one-time code sent to your email — the single fastest way to protect your workspace.',
+    duration: 5400,
+    apply: pure(() => ({ twoFactor: true })),
+  },
 
   // ── Chapter 4 · General · Company & preferences ───────────────────────────
   {
@@ -103,6 +122,13 @@ export const SET_STEPS: SettingsDemoStep[] = [
     caption:
       'Company settings hold your brand. Upload a logo — it appears in the sidebar, the header, the login page and every PDF report — then set your company name, website and phone.',
     duration: 5800,
+    apply: pure(() => ({ section: 'company' })),
+  },
+  {
+    target: 'set-demo-company-bank',
+    caption:
+      'Scroll on and you get the bank details — bank name, account or IBAN, and SWIFT / BIC — plus the report footer message. Everything you type here prints at the bottom of this company’s reports and PDFs, and the live footer preview shows exactly how it will look.',
+    duration: 6000,
     apply: pure(() => ({ section: 'company' })),
   },
   {
@@ -143,7 +169,45 @@ export const SET_STEPS: SettingsDemoStep[] = [
     apply: pure(() => ({ planPicked: true })),
   },
 
-  // ── Chapter 6 · General · Offline sync ────────────────────────────────────
+  {
+    target: 'set-demo-sub-modules',
+    caption:
+      'Under billing sits Activated modules — every module of your workspace with its code and a live Active or Inactive badge, plus a counter and a search box so you can find any of them instantly.',
+    duration: 6000,
+    apply: pure(() => ({})),
+  },
+  {
+    target: 'set-demo-sub-module-request',
+    caption:
+      'A module you do not have yet? Click the cart icon to request its purchase. Already have one you no longer need? The minus icon requests its deactivation. Core modules stay locked.',
+    duration: 6200,
+    apply: pure(() => ({ moduleRequest: 'activate' })),
+  },
+  {
+    target: 'set-demo-module-dialog',
+    caption:
+      'The dialog recaps the module, your workspace and its URL, then asks for a short message — required, so our team knows exactly what you need. Send it, and an email lands with our team instantly, with your address, the exact time and the action required.',
+    duration: 7200,
+    apply: pure(() => ({ moduleRequestSent: true })),
+  },
+
+  // ── Chapter 6b · General · Companies ──────────────────────────────────────
+  {
+    target: 'set-demo-nav-companies',
+    caption:
+      'Companies is where owners manage every company inside the tenant — name, slug, contact, status and users — create a new one, edit, or deactivate it in a click.',
+    duration: 6000,
+    apply: pure(() => ({ section: 'companies' })),
+  },
+  {
+    target: 'set-demo-companies-scope',
+    caption:
+      'Module data scope decides, per module, whether data is shared across all companies or kept strictly per company. Contacts shared, sales per company — you choose.',
+    duration: 6000,
+    apply: pure(() => ({ companiesScopeOpen: true })),
+  },
+
+  // ── Chapter 7 · General · Offline sync ────────────────────────────────────
   {
     target: 'set-demo-nav-offline',
     caption:
@@ -202,10 +266,11 @@ export const SET_STEPS: SettingsDemoStep[] = [
 export const SET_CHAPTERS: SettingsDemoChapter[] = [
   { id: 'overview',     title: 'Overview',      start: 0,  end: 2  },
   { id: 'profile',      title: 'Profile',       start: 2,  end: 3  },
-  { id: 'security',     title: 'Security',      start: 3,  end: 4  },
-  { id: 'company',      title: 'Company',       start: 4,  end: 7  },
-  { id: 'subscription', title: 'Subscription',  start: 7,  end: 10 },
-  { id: 'offline',      title: 'Offline sync',  start: 10, end: 12 },
-  { id: 'system',       title: 'System',        start: 12, end: 16 },
-  { id: 'wrapup',       title: 'Wrap-up',       start: 16, end: SET_STEPS.length },
+  { id: 'security',     title: 'Security',      start: 3,  end: 5  },
+  { id: 'company',      title: 'Company',       start: 5,  end: 9  },
+  { id: 'subscription', title: 'Subscription',  start: 9,  end: 15 },
+  { id: 'companies',    title: 'Companies',     start: 15, end: 17 },
+  { id: 'offline',      title: 'Offline sync',  start: 17, end: 19 },
+  { id: 'system',       title: 'System',        start: 19, end: 23 },
+  { id: 'wrapup',       title: 'Wrap-up',       start: 23, end: SET_STEPS.length },
 ];
