@@ -7,7 +7,8 @@ import { Loader2, Paperclip, Pencil, Trash2, Eye, Check, X, Upload } from 'lucid
 import { toast } from 'sonner';
 import { paymentsApi } from '@/services/api/paymentsApi';
 import type { EntityType, Payment, PaymentProofDocument } from '@/modules/payments/types';
-import { uploadPaymentProofs, PROOF_ACCEPT, PROOF_MAX_BYTES } from './paymentProofUpload';
+import { uploadPaymentProofs, PROOF_MAX_BYTES } from './paymentProofUpload';
+import { ProofFileDropzone } from './ProofFileDropzone';
 
 interface Props {
   open: boolean;
@@ -42,7 +43,7 @@ export function PaymentProofsDialog({
 
   useEffect(() => { if (open) load(); }, [open, load]);
 
-  const handleUpload = async (files: FileList | null) => {
+  const handleUpload = async (files: File[] | FileList | null) => {
     if (!files?.length) return;
     const list = Array.from(files);
     if (list.some((f) => f.size > PROOF_MAX_BYTES)) {
@@ -173,22 +174,12 @@ export function PaymentProofsDialog({
           )}
         </div>
 
-        <div className="space-y-1.5">
-          <Input
-            type="file"
-            multiple
-            accept={PROOF_ACCEPT}
-            className="cursor-pointer"
-            disabled={uploading}
-            onChange={(e) => { handleUpload(e.target.files); e.target.value = ''; }}
-          />
-          <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-            {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
-            {uploading
-              ? t('uploading', 'Uploading...')
-              : t('proofOfPaymentHint', "PDF or image. Saved to this record's documents.")}
-          </p>
-        </div>
+        <ProofFileDropzone
+          files={[]}
+          autoUpload
+          uploading={uploading}
+          onFilesChange={(picked) => handleUpload(picked)}
+        />
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>{t('close', 'Close')}</Button>

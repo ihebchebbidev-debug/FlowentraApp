@@ -5,8 +5,11 @@ export type ActivitySource =
   | 'invoices'
   | 'purchases'
   | 'service'
+  | 'dispatches'
+  | 'articles'
   | 'hr'
-  | 'contacts';
+  | 'contacts'
+  | 'settings';
 
 export type ActivityLevel = 'info' | 'success' | 'warning' | 'error';
 
@@ -49,12 +52,13 @@ export interface ActivityFilters {
 
 /** Workspace → domain sources it should surface. */
 export const WORKSPACE_SOURCES: Record<string, ActivitySource[]> = {
-  sales: ['sales', 'offers', 'deals', 'invoices', 'contacts'],
-  purchases: ['purchases'],
-  service: ['service'],
+  sales: ['sales', 'offers', 'deals', 'invoices', 'contacts', 'articles'],
+  purchases: ['purchases', 'articles'],
+  service: ['service', 'dispatches', 'articles'],
   hr: ['hr'],
   contacts: ['contacts'],
-  projects: ['service', 'sales'],
+  projects: ['service', 'dispatches', 'sales'],
+  administration: ['settings', 'hr'],
 };
 
 export const ALL_SOURCES: ActivitySource[] = [
@@ -64,6 +68,9 @@ export const ALL_SOURCES: ActivitySource[] = [
   'invoices',
   'purchases',
   'service',
+  'dispatches',
+  'articles',
   'hr',
   'contacts',
+  'settings',
 ];

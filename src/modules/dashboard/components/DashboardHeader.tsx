@@ -26,6 +26,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { useNotifications } from "@/hooks/useNotifications";
+import { NotificationCenterSheet } from "@/components/navigation/NotificationCenterSheet";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { EmailVerificationBanner } from "@/shared/components/EmailVerificationBanner";
@@ -82,7 +83,8 @@ export function DashboardHeader() {
   const canAccessAi = isMainAdmin || hasPermission('ai_assistant', 'read');
   
   // Use dynamic notifications
-  const { notifications, unreadCount, loading, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, unreadCount, loading, markAsRead, markAllAsRead, refetch: refetchNotifications } = useNotifications();
+  const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
   
   // Get user initials from first and last name
   const getUserInitials = (firstName?: string, lastName?: string) => {
@@ -257,79 +259,36 @@ export function DashboardHeader() {
             </Button>
           )}
 
-          {/* Notifications - Dynamic */}
-          <Popover>
-            <PopoverTrigger asChild data-tour="notifications">
-              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t('notifications') ?? 'Notifications'} title={t('notifications') ?? 'Notifications'}>
-                <div className="relative">
-                  <Bell className="h-4 w-4" />
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary text-primary-foreground text-px-10 leading-none px-1">
-                      {unreadCount > 99 ? '99+' : unreadCount}
-                    </span>
-                  )}
-                </div>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-96 p-0">
-              <div className="p-3 border-b border-border">
-                <div className="flex items-center justify-between">
-                  <div className="font-semibold">{t('notifications')}</div>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="text-muted-foreground hover:text-foreground text-xs" 
-                    onClick={handleMarkAllAsRead}
-                    disabled={unreadCount === 0}
-                  >
-                    {t('markAllAsRead')}
-                  </Button>
-                </div>
-              </div>
-              <ScrollArea className="max-h-96">
-                {loading ? (
-                  <ListSkeleton rows={4} />
-                ) : notifications.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                    <Bell className="h-8 w-8 mb-2 opacity-50" />
-                    <p className="text-sm">{t('noNotifications')}</p>
-                  </div>
-                ) : (
-                  <ul className="divide-y divide-border">
-                    {notifications.slice(0, 8).map((n) => {
-                      const badge = getCategoryBadge(n.category);
-                      return (
-                        <li 
-                          key={n.id} 
-                          className={`p-3 hover:bg-accent/40 transition-colors cursor-pointer ${!n.read ? 'bg-primary/5' : ''}`}
-                          onClick={() => handleNotificationClick(n)}
-                        >
-                          <div className="flex items-start gap-3">
-                            <div className={`mt-1.5 h-2 w-2 rounded-full flex-shrink-0 ${n.read ? 'bg-muted-foreground/40' : getTypeColor(n.type)}`} />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-0.5">
-                                <Badge variant={badge.variant} className="text-px-10 px-1.5 py-0">
-                                  {badge.label}
-                                </Badge>
-                                <span className="text-xs text-muted-foreground">{n.time}</span>
-                              </div>
-                              <p className="text-sm font-medium text-foreground truncate">{n.title}</p>
-                              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.description}</p>
-                            </div>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </ScrollArea>
-              <div className="p-2 border-t border-border">
-                <Button variant="secondary" className="w-full" onClick={() => navigate('/dashboard/notifications')}>
-                  {t('viewAllNotifications')}
-                </Button>
-              </div>
-            </PopoverContent>
-          </Popover>
+          {/* Notifications — right-side drawer with notifications + activity trace */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            data-tour="notifications"
+            aria-label={t('notifications') ?? 'Notifications'}
+            title={t('notifications') ?? 'Notifications'}
+            onClick={() => setNotificationPanelOpen(true)}
+          >
+            <div className="relative">
+              <Bell className="h-4 w-4" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary text-primary-foreground text-px-10 leading-none px-1">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </div>
+          </Button>
+
+          <NotificationCenterSheet
+            open={notificationPanelOpen}
+            onOpenChange={setNotificationPanelOpen}
+            notifications={notifications}
+            unreadCount={unreadCount}
+            loading={loading}
+            onMarkAsRead={markAsRead}
+            onMarkAllAsRead={markAllAsRead}
+            onRefreshNotifications={refetchNotifications}
+          />
 
           <ReportIssueModal
             open={reportIssueOpen}

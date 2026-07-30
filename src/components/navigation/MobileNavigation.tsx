@@ -23,8 +23,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useNotifications } from "@/hooks/useNotifications";
+import { NotificationCenterSheet } from "@/components/navigation/NotificationCenterSheet";
 import { PermissionModule } from "@/types/permissions";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 // Map navigation item titles to permission modules
 const NAV_PERMISSION_MAP: Record<string, PermissionModule> = {
@@ -109,7 +110,8 @@ export function MobileNavigation() {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const { hasPermission, isMainAdmin, isLoading: permissionsLoading } = usePermissions();
-  const { notifications, unreadCount, loading: notificationsLoading, markAsRead, markAllAsRead, hasNewNotifications, clearNewNotificationsFlag } = useNotifications();
+  const { notifications, unreadCount, loading: notificationsLoading, markAsRead, markAllAsRead, refetch: refetchNotifications, hasNewNotifications, clearNewNotificationsFlag } = useNotifications();
+  const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
   
   // Check if user has permission to view a navigation item
   const canViewItem = (itemTitle: string): boolean => {
@@ -254,91 +256,31 @@ export function MobileNavigation() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Notifications Bell */}
-        <Popover onOpenChange={(open) => open && clearNewNotificationsFlag()}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className={`relative ${hasNewNotifications ? 'animate-pulse border-primary' : ''}`}
-            >
-              <Bell className={`h-4 w-4 ${hasNewNotifications ? 'text-primary' : ''}`} />
-              {unreadCount > 0 && (
-                <span className={`absolute -top-1 -right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary text-primary-foreground text-px-10 leading-none px-1 ${hasNewNotifications ? 'animate-bounce' : ''}`}>
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </span>
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent align="end" className="w-80 p-0 bg-background border border-border shadow-xl rounded-xl z-[100]">
-            <div className="p-3 border-b border-border">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-sm">{t('notifications')}</h3>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="text-muted-foreground hover:text-foreground text-xs h-auto p-1" 
-                  onClick={() => markAllAsRead()}
-                  disabled={unreadCount === 0}
-                >
-                  {t('markAllAsRead')}
-                </Button>
-              </div>
-            </div>
-            <ScrollArea className="max-h-72">
-              {notificationsLoading ? (
-                <div className="space-y-3 p-2">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="flex items-start gap-3 p-2 animate-pulse">
-                      <div className="h-8 w-8 rounded-full bg-muted" />
-                      <div className="flex-1 space-y-1.5">
-                        <div className="h-4 w-3/4 bg-muted rounded" />
-                        <div className="h-3 w-1/2 bg-muted/60 rounded" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : notifications.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                  <Bell className="h-8 w-8 mb-2 opacity-50" />
-                  <p className="text-sm">{t('noNotifications')}</p>
-                </div>
-              ) : (
-                <ul className="divide-y divide-border">
-                  {notifications.slice(0, 6).map((n) => {
-                    const badge = getCategoryBadge(n.category);
-                    return (
-                      <li 
-                        key={n.id} 
-                        className={`p-3 hover:bg-accent/40 transition-colors cursor-pointer ${!n.read ? 'bg-primary/5' : ''}`}
-                        onClick={() => handleNotificationClick(n)}
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className={`mt-1.5 h-2 w-2 rounded-full flex-shrink-0 ${n.read ? 'bg-muted-foreground/40' : getTypeColor(n.type)}`} />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-0.5">
-                              <Badge variant={badge.variant} className="text-px-10 px-1.5 py-0">
-                                {badge.label}
-                              </Badge>
-                              <span className="text-xs text-muted-foreground">{n.time}</span>
-                            </div>
-                            <p className="text-sm font-medium text-foreground truncate">{n.title}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.description}</p>
-                          </div>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </ScrollArea>
-            <div className="p-2 border-t border-border">
-              <Button variant="secondary" className="w-full text-sm" onClick={() => navigate('/dashboard/notifications')}>
-                {t('viewAllNotifications')}
-              </Button>
-            </div>
-          </PopoverContent>
-        </Popover>
+        {/* Notifications Bell — opens the right-side notification / activity drawer */}
+        <Button
+          variant="outline"
+          size="sm"
+          className={`relative ${hasNewNotifications ? 'animate-pulse border-primary' : ''}`}
+          onClick={() => { clearNewNotificationsFlag(); setNotificationPanelOpen(true); }}
+        >
+          <Bell className={`h-4 w-4 ${hasNewNotifications ? 'text-primary' : ''}`} />
+          {unreadCount > 0 && (
+            <span className={`absolute -top-1 -right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary text-primary-foreground text-px-10 leading-none px-1 ${hasNewNotifications ? 'animate-bounce' : ''}`}>
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
+        </Button>
+
+        <NotificationCenterSheet
+          open={notificationPanelOpen}
+          onOpenChange={setNotificationPanelOpen}
+          notifications={notifications}
+          unreadCount={unreadCount}
+          loading={notificationsLoading}
+          onMarkAsRead={markAsRead}
+          onMarkAllAsRead={markAllAsRead}
+            onRefreshNotifications={refetchNotifications}
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-4">

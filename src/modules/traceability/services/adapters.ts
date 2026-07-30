@@ -6,6 +6,9 @@ import { purchaseOrderService } from '@/modules/purchases/services/purchaseServi
 import { dispatchesApi } from '@/services/api/dispatchesApi';
 import { hrApi } from '@/modules/hr/services/hrApi';
 import { contactsApi } from '@/services/api/contactsApi';
+import { serviceOrdersApi } from '@/services/api/serviceOrdersApi';
+import { articlesApi, transactionsApi } from '@/services/api/articlesApi';
+import { logsApi } from '@/services/api/logsApi';
 import { contactActivityApi } from '@/services/api/contactActivityApi';
 import type {
   ActivityBucket,
@@ -30,6 +33,9 @@ const LEVEL_BY_ACTION: Record<string, ActivityLevel> = {
   auto_reopened: 'warning',
   manual_reopened: 'warning',
   deleted: 'warning',
+  note_added: 'info',
+  imported: 'info',
+  exported: 'info',
   // Invoice lifecycle events mirrored onto the related sale's feed.
   invoice_created: 'info',
   invoice_posted: 'info',
@@ -39,6 +45,14 @@ const LEVEL_BY_ACTION: Record<string, ActivityLevel> = {
   invoice_deleted: 'warning',
   invoice_reopened: 'warning',
   invoice_auto_reopened: 'warning',
+};
+
+const SETTINGS_ACTION_MAP: Record<string, string> = {
+  create: 'created',
+  update: 'updated',
+  delete: 'deleted',
+  import: 'imported',
+  export: 'exported',
 };
 
 function levelFor(action?: string): ActivityLevel {
@@ -53,6 +67,8 @@ function bucketFor(action?: string): ActivityBucket {
   if (/(created|added|opened)/.test(a)) return 'created';
   if (/(status|posted|sent|paid|voided|void|reopened|completed|started|assigned|confirmed|cancelled|accepted|rejected)/.test(a))
     return 'status';
+  if (/(stock_)/.test(a)) return 'status';
+  if (/(note_added|imported|exported)/.test(a)) return 'other';
   if (/(updated|edited|changed|modified|note_updated)/.test(a)) return 'updated';
   return 'other';
 }
@@ -60,6 +76,63 @@ function bucketFor(action?: string): ActivityBucket {
 function humanize(action?: string): string {
   if (!action) return '—';
   return action.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+
+interface SynthEvent {
+  key: string;
+  action: string;
+  performedAt: string;
+  message: string;
+  actorId?: string;
+  actorName?: string;
+  newValue?: string;
+}
+
+/**
+ * Builds real business events for records that have no dedicated activity
+ * endpoint: creation, last update, current status and user-authored notes.
+ */
+function synthesizeRecordEvents(record: any, notes: any[] = []): SynthEvent[] {
+  const out: SynthEvent[] = [];
+  const createdAt = record?.createdAt || record?.created_at;
+  const updatedAt = record?.updatedAt || record?.updated_at;
+  const createdBy = record?.createdBy || record?.created_by;
+  const updatedBy = record?.updatedBy || record?.updated_by;
+  if (createdAt) {
+    out.push({
+      key: 'created',
+      action: 'created',
+      performedAt: createdAt,
+      message: 'Record created',
+      actorId: createdBy,
+      actorName: record?.createdByName || createdBy,
+    });
+  }
+  if (updatedAt && updatedAt !== createdAt) {
+    out.push({
+      key: 'updated',
+      action: record?.status ? 'status_changed' : 'updated',
+      performedAt: updatedAt,
+      message: record?.status ? `Current status: ${record.status}` : 'Record updated',
+      actorId: updatedBy,
+      actorName: record?.updatedByName || updatedBy,
+      newValue: record?.status ? String(record.status) : undefined,
+    });
+  }
+  for (const n of notes) {
+    const at = n?.createdAt || n?.created_at;
+    if (!at) continue;
+    out.push({
+      key: `note:${n.id}`,
+      action: 'note_added',
+      performedAt: at,
+      message: n.content || n.note || 'Note added',
+      actorId: n.createdBy || n.userId,
+      actorName: n.createdByName || n.createdBy,
+    });
+  }
+  return out;
 }
 
 async function collectFrom<T, A>(opts: {
@@ -251,7 +324,7 @@ export const adapters: Record<ActivitySource, () => Promise<ActivityEvent[]>> = 
     });
   },
 
-  async service() {
+  async dispatches() {
     return collectFrom({
       fetchList: async () => {
         const res = await dispatchesApi.getAll({ pageNumber: 1, pageSize: 25 } as any);
@@ -261,8 +334,8 @@ export const adapters: Record<ActivitySource, () => Promise<ActivityEvent[]>> = 
         return await dispatchesApi.getActivityLog(d.id);
       },
       toEvent: (a: any, d: any) => ({
-        id: `service:${a.id}`,
-        source: 'service',
+        id: `dispatches:${a.id}`,
+        source: 'dispatches',
         entityType: 'dispatch',
         entityId: d.id,
         entityLabel: d.dispatchNumber || d.number || `#${d.id}`,
@@ -305,6 +378,134 @@ export const adapters: Record<ActivitySource, () => Promise<ActivityEvent[]>> = 
         },
         performedAt: l.timestamp,
         message: l.description || humanize(l.eventType),
+        metadata: l.metadata,
+      }));
+    } catch {
+      return [];
+    }
+  },
+
+  /**
+   * Service orders have no dedicated activity endpoint, so we derive real
+   * business events from the record itself (created / updated / status) plus
+   * its notes, which are user-authored actions.
+   */
+  async service() {
+    return collectFrom({
+      fetchList: async () => {
+        const res = await serviceOrdersApi.getAll({ page: 1, pageSize: 25 } as any);
+        return res.data?.serviceOrders || [];
+      },
+      fetchActivities: async (o: any) => {
+        const notes = await serviceOrdersApi.getNotes(o.id).catch(() => []);
+        return synthesizeRecordEvents(o, notes || []);
+      },
+      toEvent: (a: any, o: any) => ({
+        id: `service:${o.id}:${a.key}`,
+        source: 'service',
+        entityType: 'service_order',
+        entityId: o.id,
+        entityLabel: o.orderNumber || o.serviceOrderNumber || o.title || `#${o.id}`,
+        entityUrl: `/dashboard/service-orders/${o.id}`,
+        action: a.action,
+        actionLabel: humanize(a.action),
+        level: levelFor(a.action),
+        bucket: bucketFor(a.action),
+        actor: { id: a.actorId, name: a.actorName || 'System', kind: a.actorId ? 'user' : 'system' },
+        performedAt: a.performedAt,
+        message: a.message,
+        newValue: a.newValue,
+      }),
+    });
+  },
+
+  /**
+   * Articles: creations / updates on the article record plus every stock
+   * movement (in, out, adjustment) recorded against it.
+   */
+  async articles() {
+    const events: ActivityEvent[] = [];
+    try {
+      const res = await articlesApi.getAll({ page: 1, limit: 25 } as any);
+      const list = (res as any)?.data || [];
+      for (const art of list) {
+        for (const ev of synthesizeRecordEvents(art, [])) {
+          events.push({
+            id: `articles:${art.id}:${ev.key}`,
+            source: 'articles',
+            entityType: 'article',
+            entityId: art.id,
+            entityLabel: art.name || art.sku || art.articleNumber || `#${art.id}`,
+            entityUrl: `/dashboard/articles/${art.id}`,
+            action: ev.action,
+            actionLabel: humanize(ev.action),
+            level: levelFor(ev.action),
+            bucket: bucketFor(ev.action),
+            actor: { id: ev.actorId, name: ev.actorName || 'System', kind: ev.actorId ? 'user' : 'system' },
+            performedAt: ev.performedAt,
+            message: ev.message,
+            newValue: ev.newValue,
+          });
+        }
+      }
+    } catch {
+      /* ignore — other sources still render */
+    }
+    try {
+      const txs = await transactionsApi.getAll();
+      for (const tx of (txs || []).slice(0, 50) as any[]) {
+        const type = (tx.type || tx.transactionType || 'stock_movement').toString().toLowerCase();
+        events.push({
+          id: `articles:tx:${tx.id}`,
+          source: 'articles',
+          entityType: 'stock_transaction',
+          entityId: tx.articleId ?? tx.id,
+          entityLabel: tx.articleName || tx.articleNumber || `Article #${tx.articleId ?? '—'}`,
+          entityUrl: tx.articleId ? `/dashboard/articles/${tx.articleId}` : undefined,
+          action: `stock_${type}`,
+          actionLabel: humanize(`stock_${type}`),
+          level: 'info',
+          bucket: 'status',
+          actor: {
+            id: tx.createdBy || tx.userId,
+            name: tx.createdByName || tx.createdBy || 'System',
+            kind: tx.createdBy || tx.userId ? 'user' : 'system',
+          },
+          performedAt: tx.createdAt || tx.transactionDate || tx.date,
+          message: `${humanize(type)} ${tx.quantity ?? ''}${tx.reason ? ` — ${tx.reason}` : ''}`.trim(),
+          newValue: tx.quantity != null ? String(tx.quantity) : undefined,
+        });
+      }
+    } catch {
+      /* ignore */
+    }
+    return events.filter((e) => !!e.performedAt);
+  },
+
+  /**
+   * Settings: configuration changes recorded in the system log. Only real
+   * data mutations are surfaced — never errors or read traffic.
+   */
+  async settings() {
+    try {
+      const res = await logsApi.getAll({ module: 'settings', pageSize: 50, pageNumber: 1 } as any);
+      const logs = (res?.logs || []).filter((l: any) =>
+        ['create', 'update', 'delete', 'import', 'export'].includes((l.action || '').toLowerCase()),
+      );
+      return logs.map((l: any): ActivityEvent => ({
+        id: `settings:${l.id}`,
+        source: 'settings',
+        entityType: l.entityType || 'setting',
+        entityId: l.entityId ?? l.id,
+        entityLabel: l.entityType ? `${l.entityType}${l.entityId ? ` #${l.entityId}` : ''}` : 'Settings',
+        entityUrl: '/dashboard/settings',
+        action: SETTINGS_ACTION_MAP[(l.action || '').toLowerCase()] || 'updated',
+        actionLabel: humanize(SETTINGS_ACTION_MAP[(l.action || '').toLowerCase()] || 'updated'),
+        level: 'info',
+        bucket: bucketFor(SETTINGS_ACTION_MAP[(l.action || '').toLowerCase()] || 'updated'),
+        actor: { id: l.userId, name: l.userName || l.userId || 'System', kind: l.userId ? 'user' : 'system' },
+        performedAt: l.timestamp,
+        message: l.message || l.details || humanize(l.action),
         metadata: l.metadata,
       }));
     } catch {

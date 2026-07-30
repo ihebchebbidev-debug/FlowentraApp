@@ -15,7 +15,7 @@ export async function uploadPaymentProofs(
 ): Promise<CreatePaymentProofData[]> {
   if (!files.length) return [];
   const { entityType, entityId, entityNumber, reference } = opts;
-  const moduleType = entityType === 'offer' ? 'offers' : 'sales';
+  const moduleType = entityType === 'offer' ? 'offers' : entityType === 'invoice' ? 'invoices' : 'sales';
   const label = entityNumber || entityId;
 
   const renamed = files.map((file) => new File(

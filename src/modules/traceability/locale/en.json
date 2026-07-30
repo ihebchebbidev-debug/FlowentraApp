@@ -52,9 +52,12 @@
     "deals": "Deals",
     "invoices": "Invoices",
     "purchases": "Purchases",
-    "service": "Service",
+    "service": "Service orders",
     "hr": "HR",
-    "contacts": "Contacts"
+    "contacts": "Contacts",
+    "dispatches": "Dispatches",
+    "articles": "Articles",
+    "settings": "Settings"
   },
   "source": {
     "sales": "Orders",
@@ -62,9 +65,12 @@
     "deals": "Deals",
     "invoices": "Invoices",
     "purchases": "Purchases",
-    "service": "Service",
+    "service": "Service orders",
     "hr": "HR",
-    "contacts": "Contacts"
+    "contacts": "Contacts",
+    "dispatches": "Dispatches",
+    "articles": "Articles",
+    "settings": "Settings"
   },
   "action": {
     "created": "Created",
@@ -94,7 +100,13 @@
     "invoice_reopened": "Invoice reopened",
     "invoice_deleted": "Invoice deleted",
     "invoice_auto_marked_paid": "Invoice paid",
-    "invoice_auto_reopened": "Invoice payment reversed"
+    "invoice_auto_reopened": "Invoice payment reversed",
+    "note_added": "Note added",
+    "stock_in": "Stock in",
+    "stock_out": "Stock out",
+    "stock_adjustment": "Stock adjusted",
+    "imported": "Imported",
+    "exported": "Exported"
   },
   "csv": {
     "timestamp": "Timestamp",

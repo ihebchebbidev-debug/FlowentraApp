@@ -49,7 +49,8 @@ import { pdf } from '@react-pdf/renderer';
 import { PaymentReceiptPDF } from './PaymentReceiptPDF';
 import { PaymentReceiptPreviewModal } from './PaymentReceiptPreviewModal';
 import { PaymentProofsDialog } from './PaymentProofsDialog';
-import { uploadPaymentProofs, PROOF_ACCEPT, PROOF_MAX_BYTES } from './paymentProofUpload';
+import { uploadPaymentProofs, PROOF_MAX_BYTES } from './paymentProofUpload';
+import { ProofFileDropzone } from './ProofFileDropzone';
 import { SendReportEmailDialog } from '@/components/shared/SendReportEmailDialog';
 import { PdfSettingsService } from '@/modules/offers/services/pdfSettings.service';
 import { useCompanyLogo } from '@/hooks/useCompanyLogo';
@@ -942,44 +943,12 @@ function AddPaymentModal({
           {/* Proof of payment (optional) */}
           <div className="space-y-1.5">
             <Label>{t('proofOfPayment', 'Proof of payment')} <span className="text-xs text-muted-foreground font-normal">({t('optional', 'optional')})</span></Label>
-            {proofFiles.length > 0 && (
-              <div className="space-y-1.5">
-                {proofFiles.map((file, idx) => (
-                  <div key={`${file.name}-${idx}`} className="flex items-center gap-2 rounded-md border border-border px-3 py-2">
-                    <Paperclip className="h-3.5 w-3.5 text-primary shrink-0" />
-                    <span className="text-xs truncate flex-1">{file.name}</span>
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                      onClick={() => setProofFiles((prev) => prev.filter((_, i) => i !== idx))}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-            <Input
-              type="file"
-              multiple
-              accept={PROOF_ACCEPT}
-              className="cursor-pointer"
-              onChange={(e) => {
-                const picked = Array.from(e.target.files ?? []);
-                const tooBig = picked.filter((f) => f.size > PROOF_MAX_BYTES);
-                if (tooBig.length) {
-                  toast.error(t('fileTooLarge', 'File is too large (max 20MB)'));
-                }
-                setProofFiles((prev) => [...prev, ...picked.filter((f) => f.size <= PROOF_MAX_BYTES)]);
-                e.target.value = '';
-              }}
+            <ProofFileDropzone
+              files={proofFiles}
+              onFilesChange={setProofFiles}
+              uploading={uploadingProof}
+              disabled={saving}
             />
-
-            <p className="text-[11px] text-muted-foreground">
-              {t('proofOfPaymentHint', 'PDF or image. Saved to this record\'s documents.')}
-            </p>
           </div>
         </div>
         <DialogFooter>

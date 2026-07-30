@@ -8,7 +8,7 @@ export interface Document {
   mimeType: string;
   
   // Module association (optional — general documents have no module)
-  moduleType: 'contacts' | 'sales' | 'offers' | 'services' | 'projects' | 'field' | 'deals' | 'general';
+  moduleType: 'contacts' | 'sales' | 'offers' | 'services' | 'projects' | 'field' | 'deals' | 'invoices' | 'general';
   moduleId?: string;
   moduleName?: string;
   

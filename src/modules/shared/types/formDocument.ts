@@ -3,7 +3,7 @@
 export type EntityType = 'offer' | 'sale' | 'service_order' | 'dispatch' | 'installation' | 'project' | 'user' | 'deal'
   // Item-level lineage targets — a checklist attached to a service line follows
   // offer_item → sale_item → service_order_job (the job in the dispatch).
-  | 'offer_item' | 'sale_item' | 'service_order_job';
+  | 'offer_item' | 'sale_item' | 'service_order_job' | 'invoice';
 export type FormDocumentStatus = 'draft' | 'completed';
 
 export interface EntityFormDocument {
@@ -67,6 +67,7 @@ export const ENTITY_TYPE_LABELS: Record<EntityType, { en: string; fr: string }> 
   offer_item: { en: 'Offer Item', fr: 'Ligne d\'offre' },
   sale_item: { en: 'Sale Item', fr: 'Ligne de vente' },
   service_order_job: { en: 'Service Order Job', fr: 'Tâche d\'ordre de service' },
+  invoice: { en: 'Invoice', fr: 'Facture' },
 };
 
 // Workflow order for document propagation

@@ -11,12 +11,15 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, ExternalLink, Receipt, Send, Trash2, Ban, CheckCircle2, RefreshCw, User, Printer, Download } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Receipt, Send, Trash2, Ban, CheckCircle2, RefreshCw, User, Printer, Download, FileText } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useLayoutModeContext } from '@/hooks/useLayoutMode';
 import { useCustomerInvoice, useInvoiceMutations } from '../hooks/useCustomerInvoices';
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { PaymentsTab } from '@/modules/payments/components/PaymentsTab';
 import { InvoiceActivityTab } from '../components/tabs/InvoiceActivityTab';
+import { InvoiceDocumentsTab } from '../components/tabs/InvoiceDocumentsTab';
 import { InvoicePDFPreviewModal } from '../components/InvoicePDFPreviewModal';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useQueryClient } from '@tanstack/react-query';
@@ -28,7 +31,15 @@ const STATUS_COLOR: Record<string, string> = {
   void: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
 };
 
+const INVOICE_TABS = [
+  { value: 'payments', icon: CheckCircle2, labelKey: 'detail.payments', fallback: 'Payments' },
+  { value: 'documents', icon: FileText, labelKey: 'detail.documents', fallback: 'Documents' },
+  { value: 'activity', icon: RefreshCw, labelKey: 'detail.activity', fallback: 'Activity' },
+] as const;
+
 export function InvoiceDetailPage() {
+  const [activeTab, setActiveTab] = useState<string>('payments');
+  const { isMobile } = useLayoutModeContext();
   const { id } = useParams<{ id: string }>();
   const invoiceId = id ? parseInt(id, 10) : null;
   const { t } = useTranslation('invoices');
@@ -239,18 +250,52 @@ export function InvoiceDetailPage() {
 
       <Card className="shadow-card border-0">
         <CardContent className="pt-6">
-          <Tabs defaultValue="payments" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 sm:w-auto sm:inline-flex">
-              <TabsTrigger value="payments" className="gap-2">
-                <CheckCircle2 className="h-4 w-4" />
-                {t('detail.payments')}
-              </TabsTrigger>
-              <TabsTrigger value="activity" className="gap-2">
-                <RefreshCw className="h-4 w-4" />
-                {t('detail.activity')}
-              </TabsTrigger>
-            </TabsList>
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v)} className="w-full">
+            <div className="w-full mb-6">
+              {isMobile ? (
+                (() => {
+                  const current = INVOICE_TABS.find((tab) => tab.value === activeTab);
+                  return (
+                    <Select value={activeTab} onValueChange={(v) => setActiveTab(v)}>
+                      <SelectTrigger className="w-full h-11 rounded-xl border-primary/20 bg-primary/5 text-foreground font-medium shadow-sm focus:ring-primary/30">
+                        <SelectValue>
+                          {current && (
+                            <span className="flex items-center gap-2">
+                              <current.icon className="h-4 w-4 text-primary flex-shrink-0" />
+                              {String(t(current.labelKey, current.fallback))}
+                            </span>
+                          )}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent className="bg-white dark:bg-card rounded-xl shadow-lg border-border/60">
+                        {INVOICE_TABS.map(({ value, icon: Icon, labelKey, fallback }) => (
+                          <SelectItem key={value} value={value} className="rounded-lg cursor-pointer py-2.5">
+                            <span className="flex items-center gap-2.5">
+                              <span className={`p-1 rounded-md ${activeTab === value ? 'bg-primary/10' : 'bg-muted'}`}>
+                                <Icon className={`h-3.5 w-3.5 ${activeTab === value ? 'text-primary' : 'text-muted-foreground'}`} />
+                              </span>
+                              <span className={activeTab === value ? 'text-primary font-medium' : ''}>
+                                {String(t(labelKey, fallback))}
+                              </span>
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  );
+                })()
+              ) : (
+                <TabsList variant="underline">
+                  {INVOICE_TABS.map(({ value, labelKey, fallback }) => (
+                    <TabsTrigger key={value} value={value}>
+                      {String(t(labelKey, fallback))}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              )}
+            </div>
             <TabsContent value="payments" className="mt-4 space-y-4">
+
               {(invoice.status === 'posted' || invoice.status === 'paid' || invoice.status === 'void') && (
                 <div className="flex flex-wrap gap-2 justify-end">
                   {(invoice.status === 'paid' || invoice.status === 'void') && canUpdateInvoice && (
@@ -274,6 +319,13 @@ export function InvoiceDetailPage() {
                 entityNumber={invoice.invoiceNumber}
                 totalAmount={invoice.grandTotal}
                 currency={currencyInfo.code}
+              />
+            </TabsContent>
+            <TabsContent value="documents" className="mt-4">
+              <InvoiceDocumentsTab
+                invoiceId={invoice.id}
+                invoiceNumber={invoice.invoiceNumber}
+                saleId={invoice.saleId}
               />
             </TabsContent>
             <TabsContent value="activity" className="mt-4">

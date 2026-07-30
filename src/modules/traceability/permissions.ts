@@ -12,6 +12,9 @@ export const SOURCE_TO_MODULE: Record<ActivitySource, PermissionModule> = {
   invoices: 'sales',
   purchases: 'purchases',
   service: 'service_orders',
+  dispatches: 'dispatches',
+  articles: 'articles',
   hr: 'hr',
   contacts: 'contacts',
+  settings: 'settings',
 };

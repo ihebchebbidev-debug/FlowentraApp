@@ -52,9 +52,12 @@
     "deals": "Affaires",
     "invoices": "Factures",
     "purchases": "Achats",
-    "service": "Service",
+    "service": "Ordres de service",
     "hr": "RH",
-    "contacts": "Contacts"
+    "contacts": "Contacts",
+    "dispatches": "Interventions",
+    "articles": "Articles",
+    "settings": "Paramètres"
   },
   "source": {
     "sales": "Commandes",
@@ -62,9 +65,12 @@
     "deals": "Affaires",
     "invoices": "Factures",
     "purchases": "Achats",
-    "service": "Service",
+    "service": "Ordres de service",
     "hr": "RH",
-    "contacts": "Contacts"
+    "contacts": "Contacts",
+    "dispatches": "Interventions",
+    "articles": "Articles",
+    "settings": "Paramètres"
   },
   "action": {
     "created": "Créé",
@@ -94,7 +100,13 @@
     "invoice_reopened": "Facture rouverte",
     "invoice_deleted": "Facture supprimée",
     "invoice_auto_marked_paid": "Facture payée",
-    "invoice_auto_reopened": "Paiement de facture annulé"
+    "invoice_auto_reopened": "Paiement de facture annulé",
+    "note_added": "Note ajoutée",
+    "stock_in": "Entrée de stock",
+    "stock_out": "Sortie de stock",
+    "stock_adjustment": "Stock ajusté",
+    "imported": "Importé",
+    "exported": "Exporté"
   },
   "csv": {
     "timestamp": "Horodatage",

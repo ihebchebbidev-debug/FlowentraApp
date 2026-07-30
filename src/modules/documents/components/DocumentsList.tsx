@@ -65,7 +65,7 @@ export function DocumentsList() {
   // (or ?workspace=<id>), we restrict the list to those module types and hide the
   // top stats + filter bar so the page acts as a workspace-local documents view.
   const WORKSPACE_MODULE_MAP: Record<string, string[]> = {
-    sales: ['sales', 'offers', 'deals'],
+    sales: ['sales', 'offers', 'deals', 'invoices'],
     purchases: ['purchases'],
     service: ['services', 'field'],
     projects: ['projects'],
@@ -81,7 +81,7 @@ export function DocumentsList() {
   }, [searchParams]);
   const isWorkspaceScoped = scopedModules !== null;
 
-  const [activeTab, setActiveTab] = useState<'all' | 'offers' | 'sales' | 'services' | 'field' | 'deals'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'offers' | 'sales' | 'services' | 'field' | 'deals' | 'invoices'>('all');
   const [searchInput, setSearchInput] = useState('');
   const [showUpload, setShowUpload] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
@@ -123,7 +123,7 @@ export function DocumentsList() {
 
   // Only show documents related to core modules (offers, sales, services, field, deals),
   // or narrowed further when scoped to a workspace.
-  const relevantModuleTypes = scopedModules ?? ['offers', 'sales', 'services', 'field', 'deals'];
+  const relevantModuleTypes = scopedModules ?? ['offers', 'sales', 'services', 'field', 'deals', 'invoices'];
   const documents = useMemo(() => {
     const moduleFiltered = allDocuments.filter(doc => relevantModuleTypes.includes(doc.moduleType));
     if (isWorkspaceScoped) return moduleFiltered;
@@ -237,6 +237,7 @@ export function DocumentsList() {
       case 'projects': return 'text-destructive bg-destructive/10';
       case 'field': return 'text-warning bg-warning/10';
       case 'deals': return 'text-violet-700 bg-violet-100 dark:text-violet-400 dark:bg-violet-900/30';
+      case 'invoices': return 'text-sky-700 bg-sky-100 dark:text-sky-400 dark:bg-sky-900/30';
       case 'general': return 'text-muted-foreground bg-muted';
       default: return 'text-muted-foreground bg-muted';
     }
@@ -256,6 +257,7 @@ export function DocumentsList() {
       case 'projects': return '/dashboard/tasks/projects';
       case 'contacts': return '/dashboard/contacts';
       case 'deals': return '/dashboard/deals';
+      case 'invoices': return '/dashboard/invoices';
       default: return null; // field / general → no clickable link
     }
   };
@@ -333,8 +335,17 @@ export function DocumentsList() {
       icon: FolderOpen,
       color: "chart-1",
       filter: 'deals'
+    },
+    {
+      label: t('documents.invoices', 'Invoices'),
+      // Not part of the backend stats payload yet — derived client-side.
+      value: allDocuments.filter(d => d.moduleType === 'invoices').length,
+      icon: FileText,
+      color: "chart-2",
+      filter: 'invoices'
     }
-  ], [stats, t]);
+  ], [stats, t, allDocuments]);
+
 
   const handleStatClick = (stat: any) => {
     setSelectedStat(stat.filter);

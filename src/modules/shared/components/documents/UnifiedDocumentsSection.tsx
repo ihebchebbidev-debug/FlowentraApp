@@ -84,6 +84,7 @@ const translations = {
     entityServiceOrder: 'Service Order',
     entityDispatch: 'Dispatch',
     entityInstallation: 'Installation',
+    entityInvoice: 'Invoice',
     searchPlaceholder: 'Search documents...',
     filterByType: 'All types',
     filterPdf: 'PDF',
@@ -132,6 +133,7 @@ const translations = {
     entityServiceOrder: 'Ordre de Service',
     entityDispatch: 'Intervention',
     entityInstallation: 'Installation',
+    entityInvoice: 'Facture',
     searchPlaceholder: 'Rechercher des documents...',
     filterByType: 'Tous les types',
     filterPdf: 'PDF',
@@ -152,7 +154,7 @@ const translations = {
 
 /** Describes a module association for document queries */
 export interface DocumentEntityRef {
-  moduleType: 'offers' | 'sales' | 'services' | 'field' | 'projects' | 'hr' | 'deals';
+  moduleType: 'offers' | 'sales' | 'services' | 'field' | 'projects' | 'hr' | 'deals' | 'invoices';
   moduleId: string;
   label?: string; // e.g. "Offer", "Sale" for badge display
 }
@@ -161,13 +163,14 @@ interface UnifiedDocumentsSectionProps {
   entityType: EntityType;
   entityId: number | string;
   /** The moduleType used when uploading to backend */
-  moduleType: 'offers' | 'sales' | 'services' | 'field' | 'projects' | 'hr' | 'deals';
+  moduleType: 'offers' | 'sales' | 'services' | 'field' | 'projects' | 'hr' | 'deals' | 'invoices';
   /** Human-readable name for the module (shown in Documents module) */
   moduleName?: string;
   /** Additional related entities to fetch documents from (for upward propagation) */
   relatedEntities?: DocumentEntityRef[];
   showFileUpload?: boolean;
 }
+
 
 export function UnifiedDocumentsSection({
   entityType,
@@ -211,9 +214,11 @@ export function UnifiedDocumentsSection({
       case 'sales': return language === 'fr' ? t.entitySale : t.entitySale;
       case 'services': return language === 'fr' ? t.entityServiceOrder : t.entityServiceOrder;
       case 'field': return language === 'fr' ? t.entityDispatch : t.entityDispatch;
+      case 'invoices': return t.entityInvoice;
       default: return modType;
     }
   };
+
 
   // Fetch file documents from backend
   const fetchFileDocuments = useCallback(async () => {
