@@ -457,7 +457,115 @@ namespace MyApi.Modules.Payments.Controllers
                 return StatusCode(500, new { success = false, error = new { message = "Failed to send confirmation" } });
             }
         }
+
+
+        // ══════════════════════════════════════════════
+        // Proof-of-payment documents (multiple per payment)
+        // Shared routes for sales / offers / invoices.
+        // ══════════════════════════════════════════════
+
+        private static string? NormalizeEntityType(string entityType) => entityType?.ToLowerInvariant() switch
+        {
+            "sales" or "sale" => "sale",
+            "offers" or "offer" => "offer",
+            "invoices" or "invoice" => "invoice",
+            _ => null,
+        };
+
+        [HttpGet("api/{entityType}/{entityId}/payments/{paymentId}/proofs")]
+        public async Task<IActionResult> GetPaymentProofs(string entityType, string entityId, string paymentId)
+        {
+            var type = NormalizeEntityType(entityType);
+            if (type == null) return BadRequest(new { success = false, error = new { message = "Unsupported entity type" } });
+            try
+            {
+                var proofs = await _paymentService.GetPaymentProofsAsync(type, entityId, paymentId);
+                return Ok(new { success = true, data = new { proofs } });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { success = false, error = new { message = ex.Message } });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching payment proofs for {PaymentId}", paymentId);
+                return StatusCode(500, new { success = false, error = new { message = "Failed to fetch proofs" } });
+            }
+        }
+
+        [HttpPost("api/{entityType}/{entityId}/payments/{paymentId}/proofs")]
+        public async Task<IActionResult> AddPaymentProofs(
+            string entityType, string entityId, string paymentId, [FromBody] List<CreatePaymentProofDocumentDto> proofs)
+        {
+            var type = NormalizeEntityType(entityType);
+            if (type == null) return BadRequest(new { success = false, error = new { message = "Unsupported entity type" } });
+            if (proofs == null || proofs.Count == 0)
+                return BadRequest(new { success = false, error = new { message = "No proof documents supplied" } });
+            try
+            {
+                var result = await _paymentService.AddPaymentProofsAsync(type, entityId, paymentId, proofs, GetUserId());
+                return Ok(new { success = true, data = new { proofs = result } });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { success = false, error = new { message = ex.Message } });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error adding payment proofs for {PaymentId}", paymentId);
+                return StatusCode(500, new { success = false, error = new { message = "Failed to add proofs" } });
+            }
+        }
+
+        [HttpPut("api/{entityType}/{entityId}/payments/{paymentId}/proofs/{proofId}")]
+        public async Task<IActionResult> UpdatePaymentProof(
+            string entityType, string entityId, string paymentId, string proofId,
+            [FromBody] UpdatePaymentProofDocumentDto dto)
+        {
+            var type = NormalizeEntityType(entityType);
+            if (type == null) return BadRequest(new { success = false, error = new { message = "Unsupported entity type" } });
+            if (string.IsNullOrWhiteSpace(dto?.DocumentName))
+                return BadRequest(new { success = false, error = new { message = "Document name is required" } });
+            try
+            {
+                var updated = await _paymentService.UpdatePaymentProofAsync(type, entityId, paymentId, proofId, dto.DocumentName.Trim());
+                if (updated == null) return NotFound(new { success = false, error = new { message = "Proof not found" } });
+                return Ok(new { success = true, data = updated });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { success = false, error = new { message = ex.Message } });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating payment proof {ProofId}", proofId);
+                return StatusCode(500, new { success = false, error = new { message = "Failed to update proof" } });
+            }
+        }
+
+        [HttpDelete("api/{entityType}/{entityId}/payments/{paymentId}/proofs/{proofId}")]
+        public async Task<IActionResult> DeletePaymentProof(string entityType, string entityId, string paymentId, string proofId)
+        {
+            var type = NormalizeEntityType(entityType);
+            if (type == null) return BadRequest(new { success = false, error = new { message = "Unsupported entity type" } });
+            try
+            {
+                var removed = await _paymentService.DeletePaymentProofAsync(type, entityId, paymentId, proofId);
+                if (!removed) return NotFound(new { success = false, error = new { message = "Proof not found" } });
+                return Ok(new { success = true, message = "Proof removed" });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { success = false, error = new { message = ex.Message } });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting payment proof {ProofId}", proofId);
+                return StatusCode(500, new { success = false, error = new { message = "Failed to delete proof" } });
+            }
+        }
     }
+
 
     public class SendReminderRequest
     {

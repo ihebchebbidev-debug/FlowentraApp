@@ -9,6 +9,12 @@ namespace MyApi.Modules.Payments.Services
         Task<PaymentDto> CreatePaymentAsync(string entityType, string entityId, CreatePaymentDto dto, string userId, string userName);
         Task<bool> DeletePaymentAsync(string entityType, string entityId, string paymentId);
 
+        // Proof-of-payment documents (multiple per payment)
+        Task<List<PaymentProofDocumentDto>> GetPaymentProofsAsync(string entityType, string entityId, string paymentId);
+        Task<List<PaymentProofDocumentDto>> AddPaymentProofsAsync(string entityType, string entityId, string paymentId, List<CreatePaymentProofDocumentDto> proofs, string userId);
+        Task<PaymentProofDocumentDto?> UpdatePaymentProofAsync(string entityType, string entityId, string paymentId, string proofId, string documentName);
+        Task<bool> DeletePaymentProofAsync(string entityType, string entityId, string paymentId, string proofId);
+
         // Payment Summary
         Task<PaymentSummaryDto> GetPaymentSummaryAsync(string entityType, string entityId);
 

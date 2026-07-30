@@ -168,6 +168,24 @@ namespace MyApi.Modules.Payments.Models
         [MaxLength(100)]
         public string? ReceiptNumber { get; set; }
 
+        /// <summary>
+        /// Optional proof-of-payment attachment. Points at a row in the shared
+        /// documents table (same upload path used by sales/offers), so the file
+        /// also shows up in the related record's Documents tab.
+        /// Nullable by design: payments recorded without proof stay valid.
+        /// </summary>
+        [Column("proof_document_id")]
+        public int? ProofDocumentId { get; set; }
+
+        [Column("proof_document_name")]
+        [MaxLength(500)]
+        public string? ProofDocumentName { get; set; }
+
+        [Column("proof_document_url")]
+        [MaxLength(1000)]
+        public string? ProofDocumentUrl { get; set; }
+
+
         [Required]
         [Column("created_by")]
         [MaxLength(50)]
@@ -185,6 +203,8 @@ namespace MyApi.Modules.Payments.Models
 
         // Navigation
         public virtual ICollection<PaymentItemAllocation> ItemAllocations { get; set; } = new List<PaymentItemAllocation>();
+        public virtual ICollection<PaymentProofDocument> ProofDocuments { get; set; } = new List<PaymentProofDocument>();
+
     }
 
     [Table("payment_item_allocations")]
@@ -224,4 +244,53 @@ namespace MyApi.Modules.Payments.Models
         [ForeignKey("PaymentId")]
         public virtual Payment? Payment { get; set; }
     }
+
+    /// <summary>
+    /// Link row between a payment and an uploaded proof document.
+    /// A payment can carry any number of proofs (bank slip, cheque scan, receipt...).
+    /// The file itself lives in the shared `documents` table; this table only holds
+    /// the association plus a display label, so removing a document from the
+    /// Documents tab can never break payment reads.
+    /// </summary>
+    [Table("payment_proof_documents")]
+    public class PaymentProofDocument : ITenantEntity
+    {
+        public int TenantId { get; set; }
+
+        [Key]
+        [Column("id")]
+        [MaxLength(50)]
+        public string Id { get; set; } = Guid.NewGuid().ToString();
+
+        [Required]
+        [Column("payment_id")]
+        [MaxLength(50)]
+        public string PaymentId { get; set; } = string.Empty;
+
+        [Column("document_id")]
+        public int? DocumentId { get; set; }
+
+        [Column("document_name")]
+        [MaxLength(500)]
+        public string? DocumentName { get; set; }
+
+        [Column("document_url")]
+        [MaxLength(1000)]
+        public string? DocumentUrl { get; set; }
+
+        [Column("created_by")]
+        [MaxLength(50)]
+        public string? CreatedBy { get; set; }
+
+        [Column("created_at")]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        [Column("updated_at")]
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+        // Navigation
+        [ForeignKey("PaymentId")]
+        public virtual Payment? Payment { get; set; }
+    }
 }
+

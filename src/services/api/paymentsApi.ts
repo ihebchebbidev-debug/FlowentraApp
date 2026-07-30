@@ -4,6 +4,8 @@ import type {
   Payment,
   PaymentPlan,
   CreatePaymentData,
+  CreatePaymentProofData,
+  PaymentProofDocument,
   CreatePaymentPlanData,
   PaymentSummary,
 } from '@/modules/payments/types';
@@ -11,6 +13,17 @@ import { getAuthHeaders, getMutationHeaders, getMutationHeadersNoContentType } f
 
 import { API_URL } from '@/config/api';
 import { isOfflineNoCache503, parseOfflineNoCacheBody } from '@/services/offline/offlineHttpRead';
+
+const mapProof = (raw: any): PaymentProofDocument => ({
+  id: String(raw.id),
+  paymentId: String(raw.paymentId ?? ''),
+  documentId: raw.documentId != null ? String(raw.documentId) : undefined,
+  documentName: raw.documentName ?? undefined,
+  documentUrl: raw.documentUrl ?? undefined,
+  createdBy: raw.createdBy ?? undefined,
+  createdAt: new Date(raw.createdAt),
+  updatedAt: new Date(raw.updatedAt ?? raw.createdAt),
+});
 
 // ── Helpers ────────────────────────────────────────────
 const mapPayment = (raw: any): Payment => ({
@@ -27,6 +40,11 @@ const mapPayment = (raw: any): Payment => ({
   status: raw.status ?? 'completed',
   notes: raw.notes,
   receiptNumber: raw.receiptNumber,
+  proofDocumentId: raw.proofDocumentId != null ? String(raw.proofDocumentId) : undefined,
+  proofDocumentName: raw.proofDocumentName ?? undefined,
+  proofDocumentUrl: raw.proofDocumentUrl ?? undefined,
+  proofDocuments: (raw.proofDocuments ?? []).map(mapProof),
+
   itemAllocations: (raw.itemAllocations ?? []).map((a: any) => ({
     id: String(a.id),
     paymentId: String(a.paymentId),
@@ -110,7 +128,18 @@ export const paymentsApi = {
           paymentDate: data.paymentDate.toISOString(),
           notes: data.notes,
           installmentId: data.installmentId,
+          proofDocumentId: data.proofDocumentId ? Number(data.proofDocumentId) : undefined,
+          proofDocumentName: data.proofDocumentName,
+          proofDocumentUrl: data.proofDocumentUrl,
+          proofDocuments: data.proofDocuments?.length
+            ? data.proofDocuments.map((p) => ({
+                documentId: Number(p.documentId),
+                documentName: p.documentName,
+                documentUrl: p.documentUrl,
+              }))
+            : undefined,
           itemAllocations: data.itemAllocations,
+
         }),
       },
     );
@@ -137,6 +166,88 @@ export const paymentsApi = {
       throw err;
     }
   },
+
+  // ── Proof documents (multiple per payment) ──
+  async getProofs(entityType: EntityType, entityId: string, paymentId: string): Promise<PaymentProofDocument[]> {
+    const response = await fetch(
+      `${API_URL}/api/${entityType}s/${entityId}/payments/${paymentId}/proofs`,
+      { method: 'GET', headers: getAuthHeaders() },
+    );
+    if (!response.ok) return [];
+    const result = await response.json().catch(() => null);
+    const proofs = result?.data?.proofs ?? result?.proofs ?? [];
+    return proofs.map(mapProof);
+  },
+
+  async addProofs(
+    entityType: EntityType,
+    entityId: string,
+    paymentId: string,
+    proofs: CreatePaymentProofData[],
+  ): Promise<PaymentProofDocument[]> {
+    const response = await fetch(
+      `${API_URL}/api/${entityType}s/${entityId}/payments/${paymentId}/proofs`,
+      {
+        method: 'POST',
+        headers: getMutationHeaders(),
+        body: JSON.stringify(
+          proofs.map((p) => ({
+            documentId: Number(p.documentId),
+            documentName: p.documentName,
+            documentUrl: p.documentUrl,
+          })),
+        ),
+      },
+    );
+    if (!response.ok) {
+      const error: any = await response.json().catch(() => ({}));
+      const err: any = new Error(error?.error?.message || 'Failed to add proof documents');
+      err.status = response.status;
+      throw err;
+    }
+    const result = await response.json();
+    return (result?.data?.proofs ?? []).map(mapProof);
+  },
+
+  async renameProof(
+    entityType: EntityType,
+    entityId: string,
+    paymentId: string,
+    proofId: string,
+    documentName: string,
+  ): Promise<PaymentProofDocument | null> {
+    const response = await fetch(
+      `${API_URL}/api/${entityType}s/${entityId}/payments/${paymentId}/proofs/${proofId}`,
+      { method: 'PUT', headers: getMutationHeaders(), body: JSON.stringify({ documentName }) },
+    );
+    if (!response.ok) {
+      const error: any = await response.json().catch(() => ({}));
+      const err: any = new Error(error?.error?.message || 'Failed to rename proof document');
+      err.status = response.status;
+      throw err;
+    }
+    const result = await response.json();
+    const proof = result?.data?.proof ?? result?.data;
+    return proof ? mapProof(proof) : null;
+  },
+
+  async deleteProof(
+    entityType: EntityType,
+    entityId: string,
+    paymentId: string,
+    proofId: string,
+  ): Promise<void> {
+    const response = await fetch(
+      `${API_URL}/api/${entityType}s/${entityId}/payments/${paymentId}/proofs/${proofId}`,
+      { method: 'DELETE', headers: getMutationHeaders() },
+    );
+    if (!response.ok) {
+      const err: any = new Error('Failed to delete proof document');
+      err.status = response.status;
+      throw err;
+    }
+  },
+
 
   // ── Summary ──
   async getSummary(entityType: EntityType, entityId: string): Promise<PaymentSummary> {

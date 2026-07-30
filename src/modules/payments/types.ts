@@ -35,6 +35,19 @@ export interface PaymentPlanInstallment {
   createdAt: Date;
 }
 
+export interface PaymentProofDocument {
+  /** Link row id (used for rename/delete). */
+  id: string;
+  paymentId: string;
+  /** Id of the row in the shared documents table. */
+  documentId?: string;
+  documentName?: string;
+  documentUrl?: string;
+  createdBy?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface Payment {
   id: string;
   entityType: EntityType;
@@ -49,6 +62,13 @@ export interface Payment {
   status: 'pending' | 'completed' | 'cancelled' | 'refunded';
   notes?: string;
   receiptNumber?: string;
+  /** Legacy single proof (mirrors the first entry of proofDocuments). */
+  proofDocumentId?: string;
+  proofDocumentName?: string;
+  proofDocumentUrl?: string;
+  /** All proof-of-payment attachments for this payment. */
+  proofDocuments?: PaymentProofDocument[];
+
   itemAllocations: PaymentItemAllocation[];
   createdBy: string;
   createdByName?: string;
@@ -66,6 +86,12 @@ export interface PaymentItemAllocation {
   createdAt: Date;
 }
 
+export interface CreatePaymentProofData {
+  documentId: string;
+  documentName?: string;
+  documentUrl?: string;
+}
+
 export interface CreatePaymentData {
   entityType: EntityType;
   entityId: string;
@@ -76,6 +102,12 @@ export interface CreatePaymentData {
   paymentDate: Date;
   notes?: string;
   installmentId?: string;
+  proofDocumentId?: string;
+  proofDocumentName?: string;
+  proofDocumentUrl?: string;
+  /** Multiple proof attachments (preferred over the single fields above). */
+  proofDocuments?: CreatePaymentProofData[];
+
   itemAllocations?: {
     itemId: string;
     itemName: string;

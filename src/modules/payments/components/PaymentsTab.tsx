@@ -34,14 +34,22 @@ import {
   Bell,
   Send,
   Download,
+  Paperclip,
+  Loader2,
+  X,
   Calendar as CalendarIcon,
 } from 'lucide-react';
+import { DocumentsService } from '@/modules/documents/services/documents.service';
+import { FilePreviewModal } from '@/modules/shared/components/documents/FilePreviewModal';
+import type { Document as AppDocument } from '@/modules/documents/types';
 import { toast } from 'sonner';
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { paymentsApi } from '@/services/api/paymentsApi';
 import { pdf } from '@react-pdf/renderer';
 import { PaymentReceiptPDF } from './PaymentReceiptPDF';
 import { PaymentReceiptPreviewModal } from './PaymentReceiptPreviewModal';
+import { PaymentProofsDialog } from './PaymentProofsDialog';
+import { uploadPaymentProofs, PROOF_ACCEPT, PROOF_MAX_BYTES } from './paymentProofUpload';
 import { SendReportEmailDialog } from '@/components/shared/SendReportEmailDialog';
 import { PdfSettingsService } from '@/modules/offers/services/pdfSettings.service';
 import { useCompanyLogo } from '@/hooks/useCompanyLogo';
@@ -134,6 +142,25 @@ export function PaymentsTab({ entityType, entityId, entityNumber, totalAmount, c
   const [showCreatePlan, setShowCreatePlan] = useState(false);
   const [showStatement, setShowStatement] = useState(false);
   const [receiptPayment, setReceiptPayment] = useState<Payment | null>(null);
+  // Proof-of-payment (documents fetched lazily by id)
+  const [proofDoc, setProofDoc] = useState<AppDocument | null>(null);
+  const [proofPayment, setProofPayment] = useState<Payment | null>(null);
+
+  const previewDocumentById = useCallback(async (documentId?: string) => {
+    if (!documentId) return;
+    try {
+      const doc = await DocumentsService.getDocumentById(documentId);
+      if (!doc) {
+        toast.error('Proof document not found');
+        return;
+      }
+      setProofDoc(doc);
+    } catch (err) {
+      console.error('[PaymentsTab] Failed to load proof document:', err);
+      toast.error('Failed to load proof document');
+    }
+  }, []);
+
   const [emailPayment, setEmailPayment] = useState<Payment | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -409,7 +436,7 @@ export function PaymentsTab({ entityType, entityId, entityNumber, totalAmount, c
                   <TableHead className="text-xs py-1.5">{t('method')}</TableHead>
                   <TableHead className="text-xs py-1.5 text-right">{t('amount')}</TableHead>
                   <TableHead className="text-xs py-1.5">{t('status')}</TableHead>
-                  <TableHead className="text-xs py-1.5 w-[90px]"></TableHead>
+                  <TableHead className="text-xs py-1.5 w-[120px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -448,6 +475,26 @@ export function PaymentsTab({ entityType, entityId, entityNumber, totalAmount, c
                             <FileText className="h-3 w-3" />
                           </Button>
                         )}
+                        {(() => {
+                          const count = payment.proofDocuments?.length ?? (payment.proofDocumentId ? 1 : 0);
+                          return (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className={`h-6 w-6 relative ${count ? 'text-primary' : 'text-muted-foreground'} hover:text-primary`}
+                              title={t('proofOfPayment', 'Proof of payment')}
+                              onClick={() => setProofPayment(payment)}
+                            >
+                              <Paperclip className="h-3 w-3" />
+                              {count > 1 && (
+                                <span className="absolute -top-0.5 -right-0.5 text-[9px] leading-none font-semibold">
+                                  {count}
+                                </span>
+                              )}
+                            </Button>
+                          );
+                        })()}
+
                         <Button
                           size="icon"
                           variant="ghost"
@@ -484,6 +531,28 @@ export function PaymentsTab({ entityType, entityId, entityNumber, totalAmount, c
           )}
         </CardContent>
       </Card>
+
+      {/* Proof-of-payment manager (list / add / rename / delete) */}
+      {proofPayment && (
+        <PaymentProofsDialog
+          open={!!proofPayment}
+          onOpenChange={(v) => { if (!v) setProofPayment(null); }}
+          payment={proofPayment}
+          entityType={entityType}
+          entityId={entityId}
+          entityNumber={entityNumber}
+          onPreview={previewDocumentById}
+          onChanged={refreshAll}
+        />
+      )}
+
+      {/* Proof-of-payment preview */}
+      <FilePreviewModal
+        open={!!proofDoc}
+        onOpenChange={(v) => { if (!v) setProofDoc(null); }}
+        document={proofDoc}
+      />
+
 
       {/* Payment Receipt Preview Modal */}
       {receiptPayment && entityData && (
@@ -612,6 +681,9 @@ function AddPaymentModal({
   const [selectedInstallment, setSelectedInstallment] = useState('');
   const [itemAllocations, setItemAllocations] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
+  // Optional proof-of-payment attachments (multiple files allowed)
+  const [proofFiles, setProofFiles] = useState<File[]>([]);
+  const [uploadingProof, setUploadingProof] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -626,6 +698,7 @@ function AddPaymentModal({
       setAllocateItems(false);
       setSelectedInstallment('');
       setItemAllocations({});
+      setProofFiles([]);
     }
   }, [open, remainingAmount]);
 
@@ -646,6 +719,24 @@ function AddPaymentModal({
     }
     setSaving(true);
     try {
+      // Upload the proof documents first (same pipeline as sales/offers documents).
+      // If it fails we abort before creating the payment so we never end up with
+      // a payment that silently lost its proof.
+      let proofs: Awaited<ReturnType<typeof uploadPaymentProofs>> = [];
+      if (proofFiles.length) {
+        setUploadingProof(true);
+        try {
+          proofs = await uploadPaymentProofs(proofFiles, {
+            entityType,
+            entityId,
+            entityNumber,
+            reference,
+          });
+        } finally {
+          setUploadingProof(false);
+        }
+      }
+
       const data: CreatePaymentData = {
         entityType,
         entityId,
@@ -656,6 +747,11 @@ function AddPaymentModal({
         paymentDate: new Date(dateStr),
         notes: notes || undefined,
         installmentId: selectedInstallment || undefined,
+        proofDocumentId: proofs[0]?.documentId,
+        proofDocumentName: proofs[0]?.documentName,
+        proofDocumentUrl: proofs[0]?.documentUrl,
+        proofDocuments: proofs.length ? proofs : undefined,
+
         itemAllocations: allocateItems
           ? Object.entries(itemAllocations)
               .filter(([, v]) => v > 0)
@@ -843,10 +939,55 @@ function AddPaymentModal({
             <Label>{t('notes')}</Label>
             <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
+          {/* Proof of payment (optional) */}
+          <div className="space-y-1.5">
+            <Label>{t('proofOfPayment', 'Proof of payment')} <span className="text-xs text-muted-foreground font-normal">({t('optional', 'optional')})</span></Label>
+            {proofFiles.length > 0 && (
+              <div className="space-y-1.5">
+                {proofFiles.map((file, idx) => (
+                  <div key={`${file.name}-${idx}`} className="flex items-center gap-2 rounded-md border border-border px-3 py-2">
+                    <Paperclip className="h-3.5 w-3.5 text-primary shrink-0" />
+                    <span className="text-xs truncate flex-1">{file.name}</span>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                      onClick={() => setProofFiles((prev) => prev.filter((_, i) => i !== idx))}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <Input
+              type="file"
+              multiple
+              accept={PROOF_ACCEPT}
+              className="cursor-pointer"
+              onChange={(e) => {
+                const picked = Array.from(e.target.files ?? []);
+                const tooBig = picked.filter((f) => f.size > PROOF_MAX_BYTES);
+                if (tooBig.length) {
+                  toast.error(t('fileTooLarge', 'File is too large (max 20MB)'));
+                }
+                setProofFiles((prev) => [...prev, ...picked.filter((f) => f.size <= PROOF_MAX_BYTES)]);
+                e.target.value = '';
+              }}
+            />
+
+            <p className="text-[11px] text-muted-foreground">
+              {t('proofOfPaymentHint', 'PDF or image. Saved to this record\'s documents.')}
+            </p>
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>{t('cancel')}</Button>
-          <Button onClick={handleSave} disabled={saving}>{t('save')}</Button>
+          <Button onClick={handleSave} disabled={saving}>
+            {(saving || uploadingProof) && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
+            {uploadingProof ? t('uploading', 'Uploading...') : t('save')}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

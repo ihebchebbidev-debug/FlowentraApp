@@ -290,6 +290,7 @@ namespace MyApi.Data
         public DbSet<PaymentPlan> PaymentPlans { get; set; }
         public DbSet<PaymentPlanInstallment> PaymentPlanInstallments { get; set; }
         public DbSet<PaymentItemAllocation> PaymentItemAllocations { get; set; }
+        public DbSet<PaymentProofDocument> PaymentProofDocuments { get; set; }
 
         // Retenue à la Source Module
         public DbSet<RSRecord> RSRecords { get; set; }

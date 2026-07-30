@@ -1,54 +1,55 @@
-## Correction to the plan
+## Goal
 
-Company details are **per company (per tenant)** — every company in the app carries its own address, email, tax ID, bank details and footer message. Nothing is global or shared across companies. A report always prints the footer of the company that owns the document.
+When recording a payment (Payment Summary → Add Payment), let the user attach a proof file (PDF, image, Office doc). The proof is:
+1. stored through the same document system already used by Sales/Offers (`/api/Documents/upload`),
+2. shown in the Payment History row with view/download,
+3. also visible in the related document's Documents tab, named `invoice_<InvoiceNumber>_payment_<Ref>_<originalname>`.
 
-## Problem
+## How it fits what already exists
 
-Company identity is entered twice today and neither place is complete:
+- Upload path already exists: `DocumentsService.uploadDocuments({ files, moduleType, moduleId, moduleName, category })` → `Document` rows with `ModuleType` / `ModuleId`, used by `UnifiedDocumentsSection` on sales/offers. Nothing new is invented; payments just call the same service.
+- Preview/download already exists: `FilePreviewModal` + `DocumentsService.downloadDocument`.
+- Payments already carry `EntityType` (`offer | sale | invoice`) and `EntityId`, so the "related document" is already known.
 
-- **Settings → Company Information** writes to that company's `Tenants` row, but only holds name, website, phone, logo. No email, city, tax ID, bank details.
-- **Each PDF settings modal** keeps its own hand-typed company block, still shipping demo defaults ("PEAK SOLUTIONS", "1234 Service Street"). Nothing links the two, so a footer can silently print another company's stale data or fake data.
+## Backend changes
 
-## Phase 1 — Each company's record gets the missing fields
+1. **Payment entity + DTOs** (`Backend/Modules/Payments/Models/PaymentModels.cs`, `DTOs/PaymentDtos.cs`)
+   - Add nullable `ProofDocumentId` (int?), `ProofDocumentName` (string?), `ProofDocumentUrl` (string?) to `Payment`, `PaymentDto`, `CreatePaymentDto`, and an update DTO.
+   - All nullable → existing payments and any client that omits them keep working.
+2. **Migration** — additive `ALTER TABLE payments ADD COLUMN IF NOT EXISTS proof_document_id ... proof_document_name ... proof_document_url`. No data backfill, no constraint, no FK cascade (a deleted document just leaves a dangling name, handled gracefully in UI).
+3. **PaymentService** — map the three fields on create/get/update. On delete of a payment, do **not** delete the document (documents stay in the entity's document tab; deleting is done from there).
+4. No change to totals, status sync, or receipt logic — proof is metadata only.
 
-EF migrations are disabled in this repo, so the schema change is a hand-written SQL file.
+## Frontend changes
 
-- `Backend/Migrations/20260729_Tenants_AddCompanyDetails.sql` — `ALTER TABLE "Tenants" ADD COLUMN IF NOT EXISTS ...`, all nullable: `CompanyEmail`, `CompanyTagline`, `CompanyCity`, `CompanyPostalCode`, `CompanyState`, `TaxId`, `RegistrationNumber`, `ShareCapital`, `BankName`, `BankAccount`, `BankSwift`, `ReportFooterMessage`. (`CompanyAddress`, `CompanyCountry`, `Industry` already exist.) Every column lives on the tenant row, so each company holds its own values.
-- Mirror the fields in `Tenant.cs`, `CreateTenantRequest`, `UpdateTenantRequest`, the mapping blocks in `TenantsController.Create`/`Update`, and the frontend `Tenant` interface in `src/services/api/tenantsApi.ts`.
+1. **`src/modules/payments/types.ts`** — add the three optional fields to `Payment` and `CreatePaymentData`.
+2. **Add Payment dialog** (`PaymentsTab.tsx`, the dialog at line ~695)
+   - New optional "Proof of Payment" field after Notes: drop-zone/file button accepting `application/pdf`, `image/*`, and common office types, single file, max size aligned with the existing document upload limit.
+   - Show selected file chip with remove (x). Upload happens on **Save Payment**, before `paymentsApi.create`, so a cancelled dialog uploads nothing.
+   - Upload call:
+     ```
+     DocumentsService.uploadDocuments({
+       files: [file],
+       moduleType: entityType === 'invoice' ? 'invoices' : entityType === 'sale' ? 'sales' : 'offers',
+       moduleId: entityId,
+       moduleName: `${entityNumber}_payment_${reference}_${file.name}`,
+       category: 'crm',
+     })
+     ```
+     The returned document id/name/url go into the create-payment payload.
+   - If the upload fails: show the error and do **not** create the payment (avoids a payment claiming a proof that doesn't exist). If the payment create fails after upload, keep the document (it's already in the entity's document tab) and surface the error.
+3. **Payment History rows** — add a small paperclip/file button when `proofDocumentId` exists: click opens the existing `FilePreviewModal` (images/PDF inline), with a download fallback for non-previewable types. Rows without a proof render exactly as today.
+4. **Naming in the related document tab** — because the upload is posted with `moduleType`/`moduleId` of the invoice/sale/offer, the file automatically appears in that record's Documents tab; `moduleName` carries the `invoice_<number>_payment_<ref>_<filename>` label. For an invoice linked to a sale, the file is attached to the invoice; the sale's document view already aggregates related-entity documents through `UnifiedDocumentsSection`'s "From" grouping, so it surfaces there too without extra work.
 
-**Settings page** (`CompanySettings.tsx`) — edits *the currently active company only* — reorganised into cards: Identity (name, tagline, industry, logo) · Contact (email, phone, website) · Address (street, city, postal code, state, country) · Legal & finance (tax ID/VAT, trade register, share capital) · Bank (bank name, RIB/IBAN, SWIFT) · Reports (footer message). Plus a live preview of the exact footer lines that company will print.
+## Safety / non-breaking notes
 
-**Permission gotcha, handled up front:** `PUT /api/Tenants/{id}` is MainAdminUser-only; a regular user gets 403. `GET /api/Tenants` is open to regular users. So non-admins see the form read-only with a note, instead of hitting a failed save.
+- Every new column and field is nullable/optional; old rows, old payloads and the receipt PDF are untouched.
+- No changes to payment amount, allocation, installment, plan, or invoice/sale status logic.
+- No new upload infrastructure, permissions, or storage buckets — reuses the audited `/api/Documents` path with existing tenant scoping.
+- Deleting a proof document from the Documents tab only makes the history button fall back to a disabled/"file removed" state.
 
-## Phase 2 — Per-company resolver
+## Verification before finishing
 
-`src/shared/company/useActiveCompany.ts`:
-
-- Resolves the **document's owning company**: active company id → tenant row from the already-cached `useTenantMap()` list. Same resolution order `CompanySettings` uses today, extracted so it exists once.
-- `useActiveCompany()` (hook) + `loadActiveCompany()` (promise, for non-React callers), served from the existing tenant cache so reports don't wait on a round-trip.
-- Switching companies re-resolves; `invalidateActiveCompany()` fires after a save so open report tabs pick up the new values without a reload.
-
-`src/shared/pdf/resolveCompany.ts`:
-
-- `resolvePdfCompany(settings, company, logoBase64)` → merged company block. Order: **module override (only when the override switch is on and the field is non-empty) → that company's Company Information → empty string.**
-- `buildFooterLines(company)` → joins only non-empty parts with " • " so missing fields never leave "• •" gaps. Up to three lines: contact, legal (tax ID / register / capital), bank.
-
-## Phase 3 — Wire every consumer
-
-- **The 4 `pdfSettings.utils.ts` copies** (sales, offers, dispatches, service-orders): demo defaults stripped to empty; type normalised — dispatches is missing `footerMessage`/`logoSize` (its DataTab casts `as any`), offers is missing `tagline`. Add the new legal/bank fields plus `company.useOverride` (default `false` = inherit from the company record).
-- **The ~20 merge sites** (7 report pages, 9 preview modals, 4 Send*Modals) currently do `company: {...settings.company, logo: logoBase64}` → each becomes `resolvePdfCompany(...)`. `FormPreviewPage` builds a hardcoded empty company object and gets the same call.
-- **The 9 PDF documents**: footers switch to `buildFooterLines(config.company)`. This also fixes `PurchaseOrderPDFDocument`/`SupplierInvoicePDFDocument` dropping website + footer message, and `DynamicFormPDFDocument` printing only the name.
-- **The 4 DataTab copies**: "Override company information" switch, inherited values shown greyed/read-only while off, new legal/bank fields, "Reset to Company Information" button. The offers DataTab's ad-hoc auto-fill effect is deleted — the resolver replaces it.
-
-Note: PDF settings are stored **per tenant** (the "per-user" comments in the services are wrong — `pdfSettingsApi` sends the tenant header). So an override also stays scoped to one company, never leaking to another.
-
-## Phase 4 — Data hygiene
-
-Saved PDF settings still contain demo strings. A one-time normaliser on load clears any `company` field exactly matching a shipped demo default ("PEAK SOLUTIONS", "Mountain Service Excellence", the Service Street address, the peaksolutions.com email/site, "YOUR COMPANY") and leaves `useOverride: false`. Anything genuinely typed is kept and flips `useOverride` on.
-
-## Verification
-
-1. Typecheck.
-2. Vitest units for `resolvePdfCompany` (override on/off, partial, empty) and `buildFooterLines` (no stray separators).
-3. Playwright against the live preview: fill company A's details, open one report per family (quote, sale, invoice, purchase order, supplier invoice, dispatch, service order, payment receipt), screenshot each footer. Then **switch to company B, fill different details, and re-open the same reports to confirm B's footer prints B's address — not A's.** Finally flip one module's override and confirm only that module, for that company, changes.
-4. Confirm the non-admin read-only path shows the notice rather than a failed save.
+- Add a payment with a PDF, with a PNG, and with no file at all.
+- Confirm the history row's view button opens each file, and that the file shows in the invoice's Documents tab with the composed name.
+- Confirm existing payments (no proof) render and export receipts unchanged.

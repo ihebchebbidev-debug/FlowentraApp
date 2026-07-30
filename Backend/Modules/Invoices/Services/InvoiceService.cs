@@ -845,6 +845,14 @@ namespace MyApi.Modules.Invoices.Services
                         ? $"Invoice {label} fully paid ({paid:0.##} {currency})."
                         : $"Invoice {label} payment reversed — back to posted ({paid:0.##} / {grandTotal:0.##} {currency}).");
             }
+
+            // Payment state drives the sale's invoicing state: a sale only becomes
+            // "invoiced" once its invoices are fully paid, so every payment /
+            // reversal must re-evaluate the sale. Best-effort (never throws).
+            if (saleId.HasValue)
+            {
+                await SyncSaleInvoiceStateAsync(saleId.Value);
+            }
         }
 
         public async Task<IReadOnlyList<InvoiceActivityDto>> GetActivitiesAsync(int invoiceId)
@@ -970,6 +978,18 @@ namespace MyApi.Modules.Invoices.Services
         }
 
         /// <summary>
+        /// Total actually collected against this sale's invoices (voided excluded).
+        /// A sale only reaches the terminal "invoiced" state once this covers the
+        /// sale total — being billed is not the same as being paid.
+        /// </summary>
+        private async Task<decimal> GetPaidTotalForSaleAsync(int saleId)
+        {
+            return await _context.Set<Invoice>()
+                .Where(i => !i.IsDeleted && i.SaleId == saleId && i.Status != "void")
+                .SumAsync(i => (decimal?)i.AmountPaid) ?? 0m;
+        }
+
+        /// <summary>
         /// Reflects invoicing progress back onto the sale so the orders list /
         /// kanban shows whether an order is partially or fully invoiced.
         /// Never overrides a terminal sale status (closed, cancelled, lost, ...).
@@ -998,10 +1018,18 @@ namespace MyApi.Modules.Invoices.Services
                     saleTotal = sale.TotalAmount;
 
                 var invoiced = await GetInvoicedTotalForSaleAsync(saleId);
+                var paid = await GetPaidTotalForSaleAsync(saleId);
+
+                // "invoiced" is reserved for a sale that is fully billed AND fully
+                // paid. Anything billed but not yet collected stays
+                // "partially_invoiced" so the pipeline never shows money as done
+                // before it has actually come in.
+                var fullyBilled = saleTotal > 0m && invoiced + 0.009m >= saleTotal;
+                var fullyPaid = saleTotal > 0m && paid + 0.009m >= saleTotal;
 
                 string next;
                 if (invoiced <= 0m) next = sale.Status == "invoiced" || sale.Status == "partially_invoiced" ? "in_progress" : sale.Status!;
-                else if (saleTotal > 0m && invoiced + 0.009m >= saleTotal) next = "invoiced";
+                else if (fullyBilled && fullyPaid) next = "invoiced";
                 else next = "partially_invoiced";
 
                 var statusChanged = !string.Equals(next, sale.Status, StringComparison.OrdinalIgnoreCase);
@@ -1024,7 +1052,7 @@ namespace MyApi.Modules.Invoices.Services
                         {
                             SaleId = sale.Id,
                             Type = "invoice_sync_status_changed",
-                            Description = $"Sale status auto-updated from '{prevSaleStatus}' to '{next}' (invoiced {invoiced:0.##} of {saleTotal:0.##}).",
+                            Description = $"Sale status auto-updated from '{prevSaleStatus}' to '{next}' (invoiced {invoiced:0.##}, paid {paid:0.##} of {saleTotal:0.##}).",
                             CreatedAt = DateTime.UtcNow,
                             CreatedByName = "system",
                         });

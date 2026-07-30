@@ -30,6 +30,7 @@ namespace MyApi.Modules.Payments.Services
         {
             var payments = await _context.Payments
                 .Include(p => p.ItemAllocations)
+                .Include(p => p.ProofDocuments)
                 .Where(p => p.EntityType == entityType && p.EntityId == entityId)
                 .OrderByDescending(p => p.PaymentDate)
                 .ToListAsync();
@@ -149,6 +150,9 @@ namespace MyApi.Modules.Payments.Services
                     Status = "completed",
                     Notes = dto.Notes,
                     ReceiptNumber = receiptNumber,
+                    ProofDocumentId = dto.ProofDocumentId,
+                    ProofDocumentName = dto.ProofDocumentName,
+                    ProofDocumentUrl = dto.ProofDocumentUrl,
                     InstallmentId = dto.InstallmentId,
                     CreatedBy = userId,
                     CreatedByName = userName,
@@ -217,6 +221,48 @@ namespace MyApi.Modules.Payments.Services
                     }
                 }
 
+                // Proof documents (multi-file). Accept both the legacy single-field
+                // shape and the new list; de-duplicate by document id so a client
+                // sending both does not create two links to the same file.
+                var proofInputs = new List<CreatePaymentProofDocumentDto>();
+                if (dto.ProofDocuments != null) proofInputs.AddRange(dto.ProofDocuments);
+                if (dto.ProofDocumentId.HasValue &&
+                    !proofInputs.Any(p => p.DocumentId == dto.ProofDocumentId))
+                {
+                    proofInputs.Add(new CreatePaymentProofDocumentDto
+                    {
+                        DocumentId = dto.ProofDocumentId,
+                        DocumentName = dto.ProofDocumentName,
+                        DocumentUrl = dto.ProofDocumentUrl,
+                    });
+                }
+
+                foreach (var proof in proofInputs
+                             .Where(p => p.DocumentId.HasValue)
+                             .GroupBy(p => p.DocumentId)
+                             .Select(g => g.First()))
+                {
+                    var link = new PaymentProofDocument
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        PaymentId = payment.Id,
+                        DocumentId = proof.DocumentId,
+                        DocumentName = proof.DocumentName,
+                        DocumentUrl = proof.DocumentUrl,
+                        CreatedBy = userId,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow,
+                    };
+                    _context.PaymentProofDocuments.Add(link);
+                    payment.ProofDocuments.Add(link);
+                }
+
+                // Keep the legacy single-proof columns in sync with the first proof.
+                var first = payment.ProofDocuments.FirstOrDefault();
+                payment.ProofDocumentId = first?.DocumentId;
+                payment.ProofDocumentName = first?.DocumentName;
+                payment.ProofDocumentUrl = first?.DocumentUrl;
+
                 // Persist the payment (and allocations) BEFORE recalculating: the
                 // recalculation SUMs payments straight from the database, so an
                 // unflushed insert would be ignored and AmountPaid would stay stale.
@@ -242,6 +288,7 @@ namespace MyApi.Modules.Payments.Services
 
                 var payment = await _context.Payments
                     .Include(p => p.ItemAllocations)
+                    .Include(p => p.ProofDocuments)
                     .FirstOrDefaultAsync(p => p.Id == paymentId && p.EntityType == entityType && p.EntityId == entityId);
                 if (payment == null) return false;
 
@@ -265,6 +312,9 @@ namespace MyApi.Modules.Payments.Services
                 }
 
                 _context.PaymentItemAllocations.RemoveRange(payment.ItemAllocations);
+                // Only the links are removed; the uploaded files stay in the
+                // Documents module so the parent record keeps its paper trail.
+                _context.PaymentProofDocuments.RemoveRange(payment.ProofDocuments);
                 _context.Payments.Remove(payment);
                 // Flush the deletion first — the recalculation reads payments from the
                 // database and would otherwise still count the removed payment.
@@ -275,6 +325,116 @@ namespace MyApi.Modules.Payments.Services
                 return true;
             });
         }
+
+        // ── Proof documents ───────────────────────────
+        public async Task<List<PaymentProofDocumentDto>> GetPaymentProofsAsync(
+            string entityType, string entityId, string paymentId)
+        {
+            var payment = await _context.Payments
+                .Include(p => p.ProofDocuments)
+                .FirstOrDefaultAsync(p => p.Id == paymentId && p.EntityType == entityType && p.EntityId == entityId);
+            if (payment == null) throw new KeyNotFoundException("Payment not found");
+
+            return payment.ProofDocuments.OrderBy(d => d.CreatedAt).Select(MapProofToDto).ToList();
+        }
+
+        public async Task<List<PaymentProofDocumentDto>> AddPaymentProofsAsync(
+            string entityType, string entityId, string paymentId,
+            List<CreatePaymentProofDocumentDto> proofs, string userId)
+        {
+            var payment = await _context.Payments
+                .Include(p => p.ProofDocuments)
+                .FirstOrDefaultAsync(p => p.Id == paymentId && p.EntityType == entityType && p.EntityId == entityId);
+            if (payment == null) throw new KeyNotFoundException("Payment not found");
+
+            var existingIds = payment.ProofDocuments.Select(d => d.DocumentId).ToHashSet();
+            foreach (var proof in proofs.Where(p => p.DocumentId.HasValue))
+            {
+                if (existingIds.Contains(proof.DocumentId)) continue;
+                existingIds.Add(proof.DocumentId);
+
+                var link = new PaymentProofDocument
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    PaymentId = payment.Id,
+                    DocumentId = proof.DocumentId,
+                    DocumentName = proof.DocumentName,
+                    DocumentUrl = proof.DocumentUrl,
+                    CreatedBy = userId,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                };
+                _context.PaymentProofDocuments.Add(link);
+                payment.ProofDocuments.Add(link);
+            }
+
+            SyncLegacyProofColumns(payment);
+            payment.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            return payment.ProofDocuments.OrderBy(d => d.CreatedAt).Select(MapProofToDto).ToList();
+        }
+
+        public async Task<PaymentProofDocumentDto?> UpdatePaymentProofAsync(
+            string entityType, string entityId, string paymentId, string proofId, string documentName)
+        {
+            var payment = await _context.Payments
+                .Include(p => p.ProofDocuments)
+                .FirstOrDefaultAsync(p => p.Id == paymentId && p.EntityType == entityType && p.EntityId == entityId);
+            if (payment == null) throw new KeyNotFoundException("Payment not found");
+
+            var proof = payment.ProofDocuments.FirstOrDefault(d => d.Id == proofId);
+            if (proof == null) return null;
+
+            proof.DocumentName = documentName;
+            proof.UpdatedAt = DateTime.UtcNow;
+            SyncLegacyProofColumns(payment);
+            payment.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            return MapProofToDto(proof);
+        }
+
+        public async Task<bool> DeletePaymentProofAsync(
+            string entityType, string entityId, string paymentId, string proofId)
+        {
+            var payment = await _context.Payments
+                .Include(p => p.ProofDocuments)
+                .FirstOrDefaultAsync(p => p.Id == paymentId && p.EntityType == entityType && p.EntityId == entityId);
+            if (payment == null) throw new KeyNotFoundException("Payment not found");
+
+            var proof = payment.ProofDocuments.FirstOrDefault(d => d.Id == proofId);
+            if (proof == null) return false;
+
+            // Detach only. The uploaded file itself is managed by the Documents
+            // module; deleting it there is a separate, explicit user action.
+            _context.PaymentProofDocuments.Remove(proof);
+            payment.ProofDocuments.Remove(proof);
+            SyncLegacyProofColumns(payment);
+            payment.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        private static void SyncLegacyProofColumns(Payment payment)
+        {
+            var first = payment.ProofDocuments.OrderBy(d => d.CreatedAt).FirstOrDefault();
+            payment.ProofDocumentId = first?.DocumentId;
+            payment.ProofDocumentName = first?.DocumentName;
+            payment.ProofDocumentUrl = first?.DocumentUrl;
+        }
+
+        private static PaymentProofDocumentDto MapProofToDto(PaymentProofDocument d) => new()
+        {
+            Id = d.Id,
+            PaymentId = d.PaymentId,
+            DocumentId = d.DocumentId,
+            DocumentName = d.DocumentName,
+            DocumentUrl = d.DocumentUrl,
+            CreatedBy = d.CreatedBy,
+            CreatedAt = d.CreatedAt,
+            UpdatedAt = d.UpdatedAt,
+        };
 
         // ── Summary ───────────────────────────────────
         public async Task<PaymentSummaryDto> GetPaymentSummaryAsync(string entityType, string entityId)
@@ -587,6 +747,13 @@ namespace MyApi.Modules.Payments.Services
             Status = p.Status,
             Notes = p.Notes,
             ReceiptNumber = p.ReceiptNumber,
+            ProofDocumentId = p.ProofDocumentId,
+            ProofDocumentName = p.ProofDocumentName,
+            ProofDocumentUrl = p.ProofDocumentUrl,
+            ProofDocuments = (p.ProofDocuments ?? new List<PaymentProofDocument>())
+                .OrderBy(d => d.CreatedAt)
+                .Select(MapProofToDto)
+                .ToList(),
             ItemAllocations = (p.ItemAllocations ?? new List<PaymentItemAllocation>()).Select(a => new PaymentItemAllocationDto
             {
                 Id = a.Id,

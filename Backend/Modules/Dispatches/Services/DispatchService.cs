@@ -20,6 +20,7 @@ namespace MyApi.Modules.Dispatches.Services
         private readonly ApplicationDbContext _db;
         private readonly ILogger<DispatchService> _logger;
         private readonly IWorkflowTriggerService? _workflowTriggerService;
+        private readonly IBusinessWorkflowService? _businessWorkflowService;
         private readonly MyApi.Modules.Numbering.Services.INumberingService? _numberingService;
         private readonly MyApi.Modules.Planning.Services.IPlannedLineEntryService? _plannedEntries;
         private readonly IStockTransactionService? _stockTransactionService;
@@ -36,7 +37,8 @@ namespace MyApi.Modules.Dispatches.Services
             IStockTransactionService? stockTransactionService = null,
             MyApi.Modules.Shared.Services.IActivityLogger? activityLogger = null,
             MyApi.Modules.Contacts.Services.IContactActivityService? contactActivity = null,
-            MyApi.Modules.Shared.Services.IUploadThingService? uploadThing = null)
+            MyApi.Modules.Shared.Services.IUploadThingService? uploadThing = null,
+            IBusinessWorkflowService? businessWorkflowService = null)
         {
             _db = db;
             _logger = logger;
@@ -47,7 +49,156 @@ namespace MyApi.Modules.Dispatches.Services
             _activityLogger = activityLogger;
             _contactActivity = contactActivity;
             _uploadThing = uploadThing;
+            _businessWorkflowService = businessWorkflowService;
         }
+
+        /// <summary>
+        /// Domain-level dispatch → service-order cascade.
+        ///
+        /// This runs unconditionally on every dispatch status change, independently
+        /// of the Workflow Engine. The workflow engine remains available for
+        /// *custom, tenant-configured* automation (notifications, approvals, extra
+        /// actions), but the core business propagation (dispatch in progress /
+        /// completed / rejected → service order state) is guaranteed here so that
+        /// disabling or misconfiguring a workflow can never break it.
+        ///
+        /// Safe to run twice: the underlying handlers are no-ops when the service
+        /// order is already in the target state, so a workflow graph that also
+        /// invokes them cannot double-apply.
+        /// </summary>
+        private async Task ApplyDispatchCascadeAsync(Dispatch d, string? oldStatus, string newStatus, string userId)
+        {
+            if (d.ServiceOrderId == null) return;
+            var status = (newStatus ?? string.Empty).ToLowerInvariant();
+
+            try
+            {
+                if (status == "in_progress")
+                {
+                    if (_businessWorkflowService != null)
+                        await _businessWorkflowService.HandleDispatchInProgressAsync(d.Id, userId);
+                }
+                else if (status == "completed" || status == "technically_completed")
+                {
+                    if (_businessWorkflowService != null)
+                        await _businessWorkflowService.HandleDispatchTechnicallyCompletedAsync(d.Id, userId);
+                }
+                else if (status == "rejected")
+                {
+                    await HandleDispatchRejectedCascadeAsync(d, userId);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Never fail the dispatch status change because of a cascade error:
+                // the dispatch state itself is already committed and authoritative.
+                _logger.LogError(ex,
+                    "[DISPATCH-CASCADE] Failed to cascade dispatch {DispatchId} status '{OldStatus}' -> '{NewStatus}' onto service order {ServiceOrderId}",
+                    d.Id, oldStatus, newStatus, d.ServiceOrderId);
+            }
+        }
+
+        /// <summary>
+        /// A rejected dispatch sends its service order back to planning so the
+        /// dispatcher can re-assign it — unless another dispatch is still active
+        /// or the order has already moved past planning.
+        /// </summary>
+        private async Task HandleDispatchRejectedCascadeAsync(Dispatch d, string userId)
+        {
+            var serviceOrderId = d.ServiceOrderId!.Value;
+            var so = await _db.ServiceOrders.FirstOrDefaultAsync(x => x.Id == serviceOrderId);
+            if (so == null) return;
+
+            var current = (so.Status ?? string.Empty).ToLowerInvariant();
+            // Only pull back orders that are still in the scheduling phase.
+            var reschedulable = new[] { "pending", "planned", "scheduled", "in_progress" };
+            if (!reschedulable.Contains(current)) return;
+
+            // If any sibling dispatch is still live, the order stays where it is.
+            var siblingActive = await _db.Dispatches.AnyAsync(x =>
+                x.ServiceOrderId == serviceOrderId
+                && x.Id != d.Id
+                && !x.IsDeleted
+                && x.Status != "rejected"
+                && x.Status != "cancelled");
+            if (siblingActive) return;
+
+            so.Status = "ready_for_planning";
+            so.ModifiedBy = userId;
+            so.ModifiedDate = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "[DISPATCH-CASCADE] Dispatch {DispatchId} rejected → service order {ServiceOrderId} moved '{Old}' -> 'ready_for_planning'",
+                d.Id, serviceOrderId, current);
+        }
+
+        /// <summary>
+        /// Returns to inventory every quantity this dispatch took out through its
+        /// material lines. Called when a dispatch is cancelled (or soft-deleted):
+        /// the work will not happen, so the goods are back on the shelf.
+        ///
+        /// Idempotent: the restore is written as a <c>return</c> transaction keyed on
+        /// <c>(article, dispatch_material, materialId)</c>, which the stock ledger's
+        /// partial unique index rejects on a second attempt — so re-cancelling a
+        /// dispatch cannot inflate stock.
+        /// </summary>
+        private async Task RestoreDispatchMaterialStockAsync(Dispatch d, string userId)
+        {
+            if (_stockTransactionService == null) return;
+
+            try
+            {
+                var materials = await _db.DispatchMaterials
+                    .Where(m => m.DispatchId == d.Id && m.ArticleId != null && m.Quantity > 0)
+                    .ToListAsync();
+                if (materials.Count == 0) return;
+
+                foreach (var m in materials)
+                {
+                    // Only restore what was actually deducted by this dispatch. If the
+                    // parent sale covered the goods, no dispatch-level deduction was
+                    // written and there is nothing to give back here.
+                    var wasDeducted = await _db.StockTransactions.AnyAsync(t =>
+                        t.ArticleId == m.ArticleId!.Value
+                        && t.ReferenceType == "dispatch_material"
+                        && t.ReferenceId == m.Id.ToString()
+                        && t.TransactionType == "remove");
+                    if (!wasDeducted) continue;
+
+                    try
+                    {
+                        await _stockTransactionService.CreateTransactionAsync(new CreateStockTransactionDto
+                        {
+                            ArticleId = m.ArticleId!.Value,
+                            TransactionType = "return",
+                            Quantity = m.Quantity,
+                            Reason = "Dispatch cancelled - material returned to stock",
+                            ReferenceType = "dispatch_material",
+                            ReferenceId = m.Id.ToString(),
+                            ReferenceNumber = d.DispatchNumber,
+                            Notes = m.Description,
+                        }, userId);
+
+                        _logger.LogInformation(
+                            "[DISPATCH-CANCEL] Restored {Qty} of article {ArticleId} from material {MaterialId} (dispatch {DispatchId})",
+                            m.Quantity, m.ArticleId, m.Id, d.Id);
+                    }
+                    catch (Exception ex)
+                    {
+                        // One bad line must not block the remaining restores.
+                        _logger.LogError(ex,
+                            "[DISPATCH-CANCEL] Failed to restore stock for material {MaterialId} on dispatch {DispatchId}",
+                            m.Id, d.Id);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[DISPATCH-CANCEL] Stock restoration failed for dispatch {DispatchId}", d.Id);
+            }
+        }
+
 
         // Reject obviously invalid schedule windows before any DB work.
         // Runs on every create path so non-UI callers (mobile app, scripts) cannot
@@ -848,6 +999,14 @@ namespace MyApi.Modules.Dispatches.Services
                 }
             }
 
+            // Restore inventory consumed by this dispatch's material lines.
+            // Without this, cancelling a dispatch that already recorded material
+            // usage leaves the deducted quantity permanently missing from stock.
+            if (dto.Status == "cancelled" && oldStatus != "cancelled")
+            {
+                await RestoreDispatchMaterialStockAsync(d, userId);
+            }
+
             // Dedicated audit record for cancellations (persisted separately from notes)
             if (dto.Status == "cancelled" && oldStatus != "cancelled")
             {
@@ -969,8 +1128,14 @@ namespace MyApi.Modules.Dispatches.Services
             {
                 _logger.LogWarning(
                     "[DISPATCH-STATUS] No workflow trigger service available for dispatch {DispatchId} status change: {OldStatus} -> {NewStatus}. " +
-                    "Ensure workflow engine is properly configured.",
+                    "Custom automation is skipped; the domain cascade below still runs.",
                     dispatchId, oldStatus, dto.Status);
+            }
+
+            // Domain cascade: always applied, workflow engine or not.
+            if (oldStatus != dto.Status)
+            {
+                await ApplyDispatchCascadeAsync(d, oldStatus, dto.Status, userId);
             }
 
             var nameMap = await GetTechnicianNameMapForDispatchAsync(d.Id);
@@ -1209,11 +1374,14 @@ namespace MyApi.Modules.Dispatches.Services
             }
             catch (Exception ex)
             {
-                // Fail open: if we cannot determine sale coverage, allow the
-                // dispatch deduction so stock isn't silently skipped. The DB-level
-                // partial unique index remains as last-line defence.
-                _logger.LogWarning(ex, "Failed to resolve parent sale for dispatch {DispatchId} while checking stock idempotency", dispatch.Id);
-                return false;
+                // Fail CLOSED: a lookup error means we cannot tell whether the parent
+                // sale already took these goods out of inventory. Deducting anyway
+                // would risk double-counting real stock, so abort the material line
+                // instead and let the caller compensate + surface the error.
+                _logger.LogError(ex, "Failed to resolve parent sale for dispatch {DispatchId} while checking stock idempotency", dispatch.Id);
+                throw new InvalidOperationException(
+                    "dispatches.material.stockCheckFailed: could not verify whether the parent sale already deducted this article; material not recorded.",
+                    ex);
             }
         }
 
@@ -1248,6 +1416,14 @@ namespace MyApi.Modules.Dispatches.Services
                     _logger.LogError(ex, "Failed to trigger workflow for dispatch {DispatchId} start", dispatchId);
                 }
             }
+
+            // Domain cascade: guaranteed regardless of workflow configuration.
+            if (oldStatus != "in_progress")
+            {
+                await ApplyDispatchCascadeAsync(d, oldStatus, "in_progress", userId);
+            }
+
+
 
             var nameMap = await GetTechnicianNameMapForDispatchAsync(d.Id);
             return DispatchMapping.ToDto(d, nameMap);
@@ -1288,8 +1464,13 @@ namespace MyApi.Modules.Dispatches.Services
                 }
             }
 
-            // NOTE: Service order status updates are now handled entirely by the Workflow Engine
-            // No hardcoded fallback - status transitions must be configured via workflow triggers
+            // Service order roll-up is applied by the domain cascade below. The
+            // workflow engine above only layers optional, tenant-configured
+            // automation on top; it is never required for correctness.
+            if (oldStatus != "completed")
+            {
+                await ApplyDispatchCascadeAsync(d, oldStatus, "completed", userId);
+            }
 
             var nameMap = await GetTechnicianNameMapForDispatchAsync(d.Id);
             return DispatchMapping.ToDto(d, nameMap);

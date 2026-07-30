@@ -18,6 +18,12 @@ namespace MyApi.Modules.Payments.DTOs
         public string Status { get; set; } = "completed";
         public string? Notes { get; set; }
         public string? ReceiptNumber { get; set; }
+        // Legacy single-proof fields, kept so older clients keep working.
+        // Mirrors the first entry of ProofDocuments.
+        public int? ProofDocumentId { get; set; }
+        public string? ProofDocumentName { get; set; }
+        public string? ProofDocumentUrl { get; set; }
+        public List<PaymentProofDocumentDto> ProofDocuments { get; set; } = new();
         public List<PaymentItemAllocationDto> ItemAllocations { get; set; } = new();
         public string CreatedBy { get; set; } = string.Empty;
         public string? CreatedByName { get; set; }
@@ -35,7 +41,39 @@ namespace MyApi.Modules.Payments.DTOs
         public DateTime? PaymentDate { get; set; }
         public string? Notes { get; set; }
         public string? InstallmentId { get; set; }
+        // Optional proof-of-payment attachments (already uploaded via /api/Documents).
+        // Single-file fields kept for backward compatibility; ProofDocuments is preferred.
+        public int? ProofDocumentId { get; set; }
+        public string? ProofDocumentName { get; set; }
+        public string? ProofDocumentUrl { get; set; }
+        public List<CreatePaymentProofDocumentDto>? ProofDocuments { get; set; }
         public List<CreatePaymentItemAllocationDto>? ItemAllocations { get; set; }
+    }
+
+    public class PaymentProofDocumentDto
+    {
+        public string Id { get; set; } = string.Empty;
+        public string PaymentId { get; set; } = string.Empty;
+        public int? DocumentId { get; set; }
+        public string? DocumentName { get; set; }
+        public string? DocumentUrl { get; set; }
+        public string? CreatedBy { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+    }
+
+    public class CreatePaymentProofDocumentDto
+    {
+        public int? DocumentId { get; set; }
+        public string? DocumentName { get; set; }
+        public string? DocumentUrl { get; set; }
+    }
+
+    public class UpdatePaymentProofDocumentDto
+    {
+        [Required]
+        [MaxLength(500)]
+        public string DocumentName { get; set; } = string.Empty;
     }
 
     public class PaymentItemAllocationDto
