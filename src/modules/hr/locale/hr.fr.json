@@ -124,7 +124,9 @@
     "salaryConfigSaved": "Configuration salariale enregistrée",
     "salaryConfigHint": "Renseignez le brut et la situation familiale pour prévisualiser le net et les taxes.",
     "netPreview": "Aperçu net",
-    "irppPreview": "Aperçu IRPP"
+    "irppPreview": "Aperçu IRPP",
+    "selectEmployee": "Sélectionner un employé...",
+    "searchPlaceholder": "Rechercher des employés..."
   },
   "employeeHr": {
     "section": {
@@ -182,7 +184,8 @@
     "lateCount": "En retard",
     "loadError": "Impossible de charger les pointages.",
     "selectEmployee": "Sélectionner un employé",
-    "totalRecords": "Total des saisies"
+    "totalRecords": "Total des saisies",
+    "deleteTitle": "Supprimer ce pointage ?"
   },
   "attendanceErrors": {
     "userRequired": "Veuillez sélectionner un employé.",
@@ -248,7 +251,12 @@
     "standardHoursPerDay": "Heures standard/jour",
     "overtimeThreshold": "Seuil heures sup. (heures)",
     "overtimeMultiplier": "Coefficient heures sup.",
-    "lateThresholdMinutes": "Seuil retard (minutes)"
+    "lateThresholdMinutes": "Seuil retard (minutes)",
+    "overtimeThresholdHours": "Seuil d'heures supplémentaires (h)",
+    "calc": {
+      "actualHours": "Heures réelles",
+      "standardDay": "Journée standard"
+    }
   },
   "attendanceStatus": {
     "present": "Présent",
@@ -277,6 +285,8 @@
     "tunisianLaw2025": "Loi tunisienne (2025)",
     "methodology": "Méthodologie",
     "methodologyHint": "Tous les montants sont calculés mensuellement avec des tranches IRPP progressives.",
+    "absenceDeduction": "Retenue absence non payée",
+    "unpaidDays": "{{count}} jours non payés",
     "totalDeductions": "Total retenues",
     "bracketCount": "tranches",
     "infinity": "∞"
@@ -348,7 +358,8 @@
       "confirm": "Confirmer",
       "markPaid": "Marquer payé",
       "confirmed": "Run de paie confirmé",
-      "paid": "Paie marquée comme payée"
+      "paid": "Paie marquée comme payée",
+      "generated": "Traitement de paie généré"
     },
     "export": {
       "button": "Exporter PDF",
@@ -378,7 +389,10 @@
     "perChild": "Par enfant",
     "bracketsTitle": "Tranches IRPP",
     "bracketsHint": "Tranches mensuelles progressives (par portion).",
-    "resetDefaults": "Réinitialiser aux valeurs 2025"
+    "resetDefaults": "Réinitialiser aux valeurs 2025",
+    "manageRates": "Gérer les taux",
+    "noActiveRate": "Aucun taux CNSS actif n'est configuré. La paie ne peut pas être calculée tant qu'un taux n'est pas enregistré sur la page CNSS.",
+    "effectiveFrom": "À partir du"
   },
   "leavesPage": {
     "subtitle": "Demandes, validations et soldes",
@@ -409,7 +423,9 @@
     "remaining": "Restant",
     "startDate": "Date début",
     "endDate": "Date fin",
-    "reason": "Motif"
+    "reason": "Motif",
+    "created": "Demande de congé créée",
+    "createFailed": "Échec de la création de la demande de congé"
   },
   "leaveStatus": {
     "pending": "En attente",
@@ -439,7 +455,12 @@
     "filtersPlural": "filtres",
     "today": "Aujourd’hui",
     "prev": "Préc.",
-    "next": "Suiv."
+    "next": "Suiv.",
+    "deleteTitle": "Supprimer cet élément ?",
+    "deleteHint": "Cette action est irréversible.",
+    "delete": "Supprimer",
+    "error": "Erreur",
+    "noResults": "Aucun résultat."
   },
   "filters": {
     "employee": "Employé",
@@ -549,7 +570,8 @@
     "allowance": "Indemnité",
     "bonus": "Prime",
     "deduction": "Retenue",
-    "reimbursement": "Remboursement"
+    "reimbursement": "Remboursement",
+    "other_cost": "Autre coût / retenue"
   },
   "bonusesPage": {
     "add": "Ajouter",
@@ -573,7 +595,14 @@
       "count": "Entrées",
       "deductions": "Retenues",
       "net": "Net"
-    }
+    },
+    "updated": "Prime mise à jour",
+    "editTitle": "Modifier la prime / le coût",
+    "affectsPayroll": "Impacte la paie",
+    "subjectToCnss": "Soumis à la CNSS",
+    "deleteTitle": "Supprimer la prime ?",
+    "deleteDescription": "Cette action est irréversible. La prime sera définitivement supprimée.",
+    "deleteHint": "Cette action est irréversible."
   },
   "cnssPage": {
     "ceiling": "Plafond",
@@ -601,8 +630,11 @@
       "employee": "Total salarié",
       "employer": "Total patronal",
       "gross": "Total brut",
-      "subject": "Total soumis"
-    }
+      "subject": "Total soumis",
+      "css": "CSS"
+    },
+    "rateInvalid": "Taux CNSS invalide",
+    "noData": "Aucune donnée de déclaration pour cette période."
   },
   "cnssTab": {
     "category": "Catégorie",
@@ -654,7 +686,9 @@
     "absencePending": "En attente",
     "absenceType": "Type de congé",
     "absenceCount": "Nombre",
-    "absenceEmpty": "Aucune absence pour cette période"
+    "absenceEmpty": "Aucune absence pour cette période",
+    "allowances": "Indemnités",
+    "noData": "Aucune donnée pour cette période."
   },
   "settingsPage": {
     "subtitle": "Configuration RH spécifique à la Tunisie",
@@ -719,6 +753,404 @@
       "cnss": "CNSS",
       "medical": "Médical",
       "other": "Autre"
+    }
+  },
+  "edit": "Modifier",
+  "delete": "Supprimer",
+  "validation": {
+    "tenantRequired": "Veuillez sélectionner une société cible",
+    "datesRequired": "Les dates de début et de fin sont obligatoires",
+    "endBeforeStart": "La date de fin doit être postérieure à la date de début",
+    "checkForm": "Veuillez renseigner les champs obligatoires",
+    "required": "Obligatoire"
+  },
+  "serverErrors": {
+    "employeeNotFound": "Employé introuvable.",
+    "attendanceNotFound": "Pointage introuvable.",
+    "invalidMonth": "Mois invalide.",
+    "invalidYear": "Année invalide.",
+    "payrollRunExists": "Un traitement de paie existe déjà pour cette période. Supprimez-le ou réutilisez-le au lieu d'en générer un doublon.",
+    "payrollRunNotFound": "Traitement de paie introuvable.",
+    "payrollRunAlreadyPaid": "Ce traitement de paie est déjà marqué comme payé.",
+    "payrollRunNotConfirmed": "Le traitement de paie doit être confirmé avant d'être marqué comme payé.",
+    "payrollEntryNotFound": "Fiche de paie introuvable.",
+    "departmentNameRequired": "Le nom du département est obligatoire.",
+    "departmentNotFound": "Département introuvable.",
+    "bonusNotFound": "Prime / coût introuvable.",
+    "bonusNegativeAmount": "Le montant ne peut pas être négatif.",
+    "holidayNotFound": "Jour férié introuvable.",
+    "documentNotFound": "Document introuvable.",
+    "goalNotFound": "Objectif introuvable.",
+    "cycleNotFound": "Cycle d'évaluation introuvable.",
+    "reviewNotFound": "Évaluation introuvable.",
+    "openingNotFound": "Offre d'emploi introuvable.",
+    "applicantNotFound": "Candidat introuvable.",
+    "interviewNotFound": "Entretien introuvable."
+  },
+  "bonusErrors": {
+    "employeeRequired": "L'employé est obligatoire.",
+    "invalidKind": "Type de prime invalide.",
+    "invalidFrequency": "Fréquence invalide.",
+    "labelRequired": "Le libellé est obligatoire.",
+    "labelTooLong": "Le libellé est trop long.",
+    "amountNumber": "Le montant doit être un nombre.",
+    "amountNonZero": "Le montant doit être différent de zéro.",
+    "monthRange": "Le mois doit être compris entre 1 et 12.",
+    "invalidYear": "Année invalide."
+  },
+  "cnssErrors": {
+    "employeeRateRequired": "Le taux salarial est obligatoire.",
+    "employeeRateMin": "Le taux salarial doit être ≥ 0.",
+    "employeeRateMax": "Le taux salarial doit être ≤ 100.",
+    "employerRateRequired": "Le taux patronal est obligatoire.",
+    "employerRateMin": "Le taux patronal doit être ≥ 0.",
+    "employerRateMax": "Le taux patronal doit être ≤ 100.",
+    "ceilingMin": "Le plafond doit être ≥ 0.",
+    "effectiveFromRequired": "La date d'effet est obligatoire."
+  },
+  "permissions": {
+    "deniedTitle": "Accès refusé",
+    "deniedGeneric": "Vous n'avez pas la permission d'effectuer cette action dans les RH.",
+    "denied": {
+      "view": "Vous n'avez pas la permission de consulter les données RH.",
+      "create": "Vous n'avez pas la permission de créer des enregistrements RH.",
+      "edit": "Vous n'avez pas la permission de modifier des enregistrements RH.",
+      "delete": "Vous n'avez pas la permission de supprimer des enregistrements RH.",
+      "approve": "Vous n'avez pas la permission d'approuver des enregistrements RH.",
+      "export": "Vous n'avez pas la permission d'exporter les données RH."
+    }
+  },
+  "reportsExport": {
+    "employee": "Employé",
+    "department": "Département",
+    "gross": "Brut",
+    "bonuses": "Primes",
+    "allowances": "Indemnités",
+    "cnssEmployer": "CNSS patronale",
+    "totalCost": "Coût total",
+    "ytdGross": "Brut cumulé",
+    "ytdBonuses": "Primes cumulées",
+    "ytdCnssEmployer": "CNSS patronale cumulée",
+    "ytdTotalCost": "Coût total cumulé",
+    "employerRate": "Taux patronal",
+    "cnssSheet": "Rapport CNSS",
+    "costSheet": "Coût employé"
+  },
+  "performancePage": {
+    "title": "Gestion de la performance",
+    "subtitle": "Objectifs, cycles d'évaluation et évaluations de performance des employés",
+    "tabs": {
+      "goals": "Objectifs",
+      "cycles": "Cycles d'évaluation",
+      "reviews": "Évaluations"
+    },
+    "common": {
+      "employee": "Employé",
+      "selectEmployee": "Sélectionner un employé",
+      "reviewCycle": "Cycle d'évaluation",
+      "reviewCycleOptional": "Cycle d'évaluation (optionnel)",
+      "selectCycle": "Sélectionner un cycle",
+      "none": "Aucun",
+      "all": "Tous",
+      "status": "Statut",
+      "cancel": "Annuler",
+      "save": "Enregistrer",
+      "create": "Créer",
+      "close": "Fermer",
+      "actions": "Actions",
+      "delete": "Supprimer"
+    },
+    "goals": {
+      "title": "Objectifs des employés",
+      "addGoal": "Ajouter un objectif",
+      "newGoal": "Nouvel objectif",
+      "titleField": "Titre",
+      "description": "Description",
+      "category": "Catégorie",
+      "weight": "Pondération (%)",
+      "dueDate": "Date d'échéance",
+      "requiredError": "L'employé et le titre sont obligatoires",
+      "addedToast": "Objectif ajouté",
+      "filterEmployee": "Employé",
+      "filterStatus": "Statut",
+      "table": {
+        "employee": "Employé",
+        "title": "Titre",
+        "category": "Catégorie",
+        "cycle": "Cycle",
+        "weight": "Pondération",
+        "progress": "Progression",
+        "status": "Statut",
+        "due": "Échéance",
+        "actions": "Actions"
+      },
+      "noGoals": "Aucun objectif pour le moment",
+      "deleteConfirmTitle": "Supprimer cet objectif ?",
+      "categoryOptions": {
+        "smart": "SMART",
+        "okr": "OKR",
+        "kpi": "KPI",
+        "other": "Autre"
+      }
+    },
+    "status": {
+      "not_started": "Non démarré",
+      "in_progress": "En cours",
+      "achieved": "Atteint",
+      "partially": "Partiellement atteint",
+      "missed": "Non atteint",
+      "cancelled": "Annulé",
+      "draft": "Brouillon",
+      "open": "Ouvert",
+      "closed": "Clôturé",
+      "pending": "En attente",
+      "self_assessment": "Auto-évaluation",
+      "manager_review": "Évaluation du manager",
+      "completed": "Terminé",
+      "acknowledged": "Validé"
+    },
+    "cycles": {
+      "title": "Cycles d'évaluation",
+      "newCycle": "Nouveau cycle",
+      "newReviewCycle": "Nouveau cycle d'évaluation",
+      "name": "Nom",
+      "namePlaceholder": "Évaluation annuelle 2025",
+      "frequency": "Fréquence",
+      "periodStart": "Début de période",
+      "periodEnd": "Fin de période",
+      "requireSelfAssessment": "Exiger une auto-évaluation",
+      "requiredError": "Le nom et la période sont obligatoires",
+      "createdToast": "Cycle créé",
+      "noCycles": "Aucun cycle pour le moment",
+      "deleteConfirmTitle": "Supprimer ce cycle d'évaluation ?",
+      "frequencyOptions": {
+        "annual": "Annuel",
+        "semi_annual": "Semestriel",
+        "quarterly": "Trimestriel",
+        "custom": "Personnalisé"
+      },
+      "table": {
+        "name": "Nom",
+        "frequency": "Fréquence",
+        "period": "Période",
+        "status": "Statut",
+        "reviews": "Évaluations",
+        "selfAssessment": "Auto-évaluation",
+        "actions": "Actions"
+      },
+      "yes": "Oui",
+      "no": "Non"
+    },
+    "reviews": {
+      "title": "Évaluations de performance",
+      "newReview": "Nouvelle évaluation",
+      "startNewReview": "Démarrer une nouvelle évaluation",
+      "reviewer": "Évaluateur (manager)",
+      "optional": "Optionnel",
+      "requiredError": "L'employé et le cycle sont obligatoires",
+      "createdToast": "Évaluation créée",
+      "updatedToast": "Évaluation mise à jour",
+      "filterCycle": "Cycle",
+      "filterStatus": "Statut",
+      "table": {
+        "employee": "Employé",
+        "cycle": "Cycle",
+        "reviewer": "Évaluateur",
+        "status": "Statut",
+        "score": "Score",
+        "rating": "Appréciation",
+        "actions": "Actions"
+      },
+      "noReviews": "Aucune évaluation pour le moment",
+      "deleteConfirmTitle": "Supprimer cette évaluation ?",
+      "detail": {
+        "status": "Statut",
+        "overallScore": "Score global (0–5)",
+        "rating": "Appréciation",
+        "selfAssessment": "Auto-évaluation (employé)",
+        "managerComments": "Commentaires du manager",
+        "strengths": "Points forts",
+        "improvements": "Axes d'amélioration",
+        "developmentPlan": "Plan de développement",
+        "linkedGoals": "Objectifs liés"
+      },
+      "ratingOptions": {
+        "exceeds": "Dépasse les attentes",
+        "meets": "Répond aux attentes",
+        "partially_meets": "Répond partiellement",
+        "below": "En dessous des attentes",
+        "new_to_role": "Nouveau dans le poste"
+      }
+    }
+  },
+  "recruitmentPage": {
+    "header": {
+      "title": "Recrutement",
+      "subtitle": "Offres d'emploi, candidats et pipeline d'entretiens"
+    },
+    "tabs": {
+      "dashboard": "Tableau de bord",
+      "openings": "Offres d'emploi",
+      "applicants": "Candidats",
+      "interviews": "Entretiens"
+    },
+    "dashboard": {
+      "openPositions": "Postes ouverts",
+      "activeApplicants": "Candidats actifs",
+      "interviewsThisWeek": "Entretiens cette semaine",
+      "offersOut": "Offres envoyées",
+      "pipeline": "Pipeline"
+    },
+    "openings": {
+      "title": "Offres d'emploi",
+      "newOpening": "Nouvelle offre",
+      "newOpeningDialogTitle": "Nouvelle offre d'emploi",
+      "fields": {
+        "title": "Intitulé",
+        "contract": "Contrat",
+        "seniority": "Séniorité",
+        "openings": "Postes",
+        "description": "Description",
+        "status": "Statut"
+      },
+      "table": {
+        "title": "Intitulé",
+        "contract": "Contrat",
+        "seniority": "Séniorité",
+        "openings": "Postes",
+        "applicants": "Candidats",
+        "status": "Statut",
+        "actions": "Actions"
+      },
+      "empty": "Aucune offre pour le moment",
+      "deleteConfirmTitle": "Supprimer l'offre d'emploi ?",
+      "toasts": {
+        "titleRequired": "L'intitulé est requis",
+        "created": "Offre créée"
+      }
+    },
+    "applicants": {
+      "title": "Candidats",
+      "newApplicant": "Nouveau candidat",
+      "newApplicantDialogTitle": "Nouveau candidat",
+      "fields": {
+        "opening": "Offre",
+        "openingPlaceholder": "Sélectionner une offre",
+        "firstName": "Prénom",
+        "lastName": "Nom",
+        "email": "E-mail",
+        "phone": "Téléphone",
+        "source": "Source"
+      },
+      "filters": {
+        "opening": "Offre",
+        "stage": "Étape",
+        "all": "Toutes"
+      },
+      "table": {
+        "name": "Nom",
+        "opening": "Offre",
+        "email": "E-mail",
+        "source": "Source",
+        "stage": "Étape",
+        "interviews": "Entretiens",
+        "actions": "Actions"
+      },
+      "empty": "Aucun candidat pour le moment",
+      "notesButton": "Notes",
+      "deleteConfirmTitle": "Supprimer le candidat ?",
+      "notesDialogTitle": "Notes du candidat",
+      "notesPlaceholder": "Ajouter une note…",
+      "notesAdd": "Ajouter",
+      "notesEmpty": "Aucune note",
+      "notesSystemAuthor": "Système",
+      "notesDeleteLabel": "Supprimer",
+      "notesDeleteConfirmTitle": "Supprimer la note ?",
+      "toasts": {
+        "requiredFields": "L'offre, le prénom et le nom sont requis",
+        "added": "Candidat ajouté"
+      }
+    },
+    "interviews": {
+      "title": "Entretiens",
+      "schedule": "Planifier",
+      "scheduleDialogTitle": "Planifier un entretien",
+      "fields": {
+        "applicant": "Candidat",
+        "applicantPlaceholder": "Sélectionner un candidat",
+        "kind": "Type",
+        "when": "Date",
+        "durationMinutes": "Durée (min)",
+        "meetingUrl": "Lien de réunion"
+      },
+      "table": {
+        "applicant": "Candidat",
+        "kind": "Type",
+        "when": "Date",
+        "duration": "Durée",
+        "status": "Statut",
+        "recommendation": "Recommandation",
+        "actions": "Actions"
+      },
+      "empty": "Aucun entretien planifié",
+      "deleteConfirmTitle": "Supprimer l'entretien ?",
+      "durationMinutesShort": "{{count}} min",
+      "toasts": {
+        "requiredFields": "Le candidat et la date sont requis",
+        "scheduled": "Entretien planifié"
+      }
+    },
+    "stages": {
+      "applied": "Candidature reçue",
+      "screening": "Présélection",
+      "interview": "Entretien",
+      "offer": "Offre",
+      "hired": "Recruté",
+      "rejected": "Refusé",
+      "withdrawn": "Retiré"
+    },
+    "openingStatuses": {
+      "draft": "Brouillon",
+      "open": "Ouvert",
+      "on_hold": "En attente",
+      "closed": "Fermé",
+      "filled": "Pourvu"
+    },
+    "interviewStatuses": {
+      "scheduled": "Planifié",
+      "done": "Terminé",
+      "cancelled": "Annulé",
+      "no_show": "Absence"
+    },
+    "interviewKinds": {
+      "phone": "Téléphone",
+      "technical": "Technique",
+      "hr": "RH",
+      "onsite": "Sur site",
+      "final": "Final"
+    },
+    "contracts": {
+      "CDI": "CDI",
+      "CDD": "CDD",
+      "Stage": "Stage",
+      "Freelance": "Freelance"
+    },
+    "seniority": {
+      "junior": "Junior",
+      "mid": "Intermédiaire",
+      "senior": "Senior",
+      "lead": "Lead"
+    },
+    "sources": {
+      "linkedin": "LinkedIn",
+      "referral": "Cooptation",
+      "website": "Site web",
+      "other": "Autre"
+    },
+    "actions": {
+      "cancel": "Annuler",
+      "create": "Créer",
+      "add": "Ajouter"
     }
   }
 }

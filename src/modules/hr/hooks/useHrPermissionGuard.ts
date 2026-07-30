@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useToast } from '@/hooks/use-toast';
 import type { PermissionAction } from '@/types/permissions';
@@ -22,19 +23,20 @@ import type { PermissionAction } from '@/types/permissions';
 export function useHrPermissionGuard() {
   const { isMainAdmin, hasPermission } = usePermissions();
   const { toast } = useToast();
+  const { t } = useTranslation('hr');
 
   return useCallback(
     (action: PermissionAction): boolean => {
       if (isMainAdmin) return true;
       if (hasPermission('hr', action)) return true;
       toast({
-        title: 'Access Denied',
-        description: `You don't have permission to ${action} in HR.`,
+        title: t('permissions.deniedTitle'),
+        description: t(`permissions.denied.${action}`, { defaultValue: t('permissions.deniedGeneric') }),
         variant: 'destructive',
       });
       return false;
     },
-    [isMainAdmin, hasPermission, toast],
+    [isMainAdmin, hasPermission, toast, t],
   );
 }
 

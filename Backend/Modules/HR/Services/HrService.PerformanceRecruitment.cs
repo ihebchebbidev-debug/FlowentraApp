@@ -101,7 +101,7 @@ namespace MyApi.Modules.HR.Services
         public async Task<HrGoalDto> UpdateGoalAsync(int id, UpsertHrGoalDto dto, int actorUserId)
         {
             var entity = await _db.HrGoals.FirstOrDefaultAsync(g => g.Id == id && !g.IsDeleted)
-                         ?? throw new KeyNotFoundException("Goal not found");
+                         ?? throw new KeyNotFoundException("hr.goal_not_found");
             if (dto.Title != null) entity.Title = dto.Title.Trim();
             if (dto.Description != null) entity.Description = dto.Description;
             if (dto.Category != null) entity.Category = dto.Category;
@@ -174,7 +174,7 @@ namespace MyApi.Modules.HR.Services
         public async Task<HrReviewCycleDto> UpdateReviewCycleAsync(int id, UpsertHrReviewCycleDto dto, int actorUserId)
         {
             var entity = await _db.HrReviewCycles.FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted)
-                ?? throw new KeyNotFoundException("Cycle not found");
+                ?? throw new KeyNotFoundException("hr.cycle_not_found");
             if (!string.IsNullOrWhiteSpace(dto.Name)) entity.Name = dto.Name.Trim();
             if (dto.Description != null) entity.Description = dto.Description;
             if (!string.IsNullOrWhiteSpace(dto.Frequency)) entity.Frequency = dto.Frequency;
@@ -309,7 +309,7 @@ namespace MyApi.Modules.HR.Services
         public async Task<HrPerformanceReviewDto> GetReviewAsync(int id)
         {
             var r = await _db.HrPerformanceReviews.FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted)
-                ?? throw new KeyNotFoundException("Review not found");
+                ?? throw new KeyNotFoundException("hr.review_not_found");
             return await MapReviewAsync(r);
         }
 
@@ -338,7 +338,7 @@ namespace MyApi.Modules.HR.Services
         public async Task<HrPerformanceReviewDto> UpdateReviewAsync(int id, UpsertHrPerformanceReviewDto dto, int actorUserId)
         {
             var entity = await _db.HrPerformanceReviews.FirstOrDefaultAsync(r => r.Id == id && !r.IsDeleted)
-                ?? throw new KeyNotFoundException("Review not found");
+                ?? throw new KeyNotFoundException("hr.review_not_found");
             if (dto.ReviewerUserId.HasValue) entity.ReviewerUserId = dto.ReviewerUserId;
             if (!string.IsNullOrWhiteSpace(dto.Status)) entity.Status = dto.Status;
             if (dto.SelfAssessment != null)
@@ -443,7 +443,7 @@ namespace MyApi.Modules.HR.Services
         public async Task<HrJobOpeningDto> GetJobOpeningAsync(int id)
         {
             var o = await _db.HrJobOpenings.FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted)
-                ?? throw new KeyNotFoundException("Opening not found");
+                ?? throw new KeyNotFoundException("hr.opening_not_found");
             return await MapOpeningAsync(o);
         }
 
@@ -476,7 +476,7 @@ namespace MyApi.Modules.HR.Services
         public async Task<HrJobOpeningDto> UpdateJobOpeningAsync(int id, UpsertHrJobOpeningDto dto, int actorUserId)
         {
             var entity = await _db.HrJobOpenings.FirstOrDefaultAsync(o => o.Id == id && !o.IsDeleted)
-                ?? throw new KeyNotFoundException("Opening not found");
+                ?? throw new KeyNotFoundException("hr.opening_not_found");
             if (!string.IsNullOrWhiteSpace(dto.Title)) entity.Title = dto.Title.Trim();
             if (dto.DepartmentId.HasValue) entity.DepartmentId = dto.DepartmentId;
             if (dto.Location != null) entity.Location = dto.Location;
@@ -577,7 +577,7 @@ namespace MyApi.Modules.HR.Services
         public async Task<HrApplicantDto> GetApplicantAsync(int id)
         {
             var a = await _db.HrApplicants.FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted)
-                ?? throw new KeyNotFoundException("Applicant not found");
+                ?? throw new KeyNotFoundException("hr.applicant_not_found");
             return await MapApplicantAsync(a);
         }
 
@@ -604,7 +604,7 @@ namespace MyApi.Modules.HR.Services
         public async Task<HrApplicantDto> UpdateApplicantAsync(int id, UpsertHrApplicantDto dto, int actorUserId)
         {
             var entity = await _db.HrApplicants.FirstOrDefaultAsync(a => a.Id == id && !a.IsDeleted)
-                ?? throw new KeyNotFoundException("Applicant not found");
+                ?? throw new KeyNotFoundException("hr.applicant_not_found");
             if (dto.OpeningId > 0) entity.OpeningId = dto.OpeningId;
             if (!string.IsNullOrWhiteSpace(dto.FirstName)) entity.FirstName = dto.FirstName.Trim();
             if (!string.IsNullOrWhiteSpace(dto.LastName)) entity.LastName = dto.LastName.Trim();
@@ -627,7 +627,7 @@ namespace MyApi.Modules.HR.Services
         public async Task<HrApplicantDto> MoveApplicantStageAsync(int id, MoveApplicantStageDto dto, int actorUserId)
         {
             var entity = await _db.HrApplicants.FirstOrDefaultAsync(a => a.Id == id && !a.IsDeleted)
-                ?? throw new KeyNotFoundException("Applicant not found");
+                ?? throw new KeyNotFoundException("hr.applicant_not_found");
             entity.Stage = dto.Stage ?? "applied";
             if (entity.Stage == "rejected") entity.RejectionReason = dto.RejectionReason;
             entity.UpdatedAt = DateTime.UtcNow;
@@ -722,7 +722,7 @@ namespace MyApi.Modules.HR.Services
         public async Task<HrInterviewDto> UpdateInterviewAsync(int id, UpsertHrInterviewDto dto, int actorUserId)
         {
             var entity = await _db.HrInterviews.FirstOrDefaultAsync(i => i.Id == id && !i.IsDeleted)
-                ?? throw new KeyNotFoundException("Interview not found");
+                ?? throw new KeyNotFoundException("hr.interview_not_found");
             if (dto.ApplicantId > 0) entity.ApplicantId = dto.ApplicantId;
             if (!string.IsNullOrWhiteSpace(dto.Kind)) entity.Kind = dto.Kind;
             if (dto.ScheduledAt != default) entity.ScheduledAt = dto.ScheduledAt;

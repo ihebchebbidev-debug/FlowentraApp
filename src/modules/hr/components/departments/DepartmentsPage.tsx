@@ -17,7 +17,7 @@ import {
 import { HRPageHeader } from '../HRPageHeader';
 import { useDepartments } from '../../hooks/useDepartments';
 import { useEmployees } from '../../hooks/useEmployees';
-import { Building2, Plus, Pencil, Trash2, Users, Network } from 'lucide-react';
+import { Building2, Plus, Pencil, Trash2, Users } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   AlertDialog,
@@ -150,12 +150,6 @@ export function DepartmentsPage() {
         backTo={{ to: '/dashboard/hr', label: t('dashboard') }}
         actions={
           <div className="flex gap-2">
-            <Button asChild variant="outline" size="sm">
-              <Link to="/dashboard/hr/org-chart">
-                <Network className="h-4 w-4 mr-2" />
-                {t('departments.orgChart')}
-              </Link>
-            </Button>
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
               <DialogTrigger asChild>
                 <HrPermissionButton action="create" size="sm">

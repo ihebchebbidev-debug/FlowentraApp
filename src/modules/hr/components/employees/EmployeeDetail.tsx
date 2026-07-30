@@ -306,9 +306,9 @@ export function EmployeeDetail() {
                     <TableBody>
                       {(salaryHistoryQuery.data ?? []).map(h => (
                         <TableRow key={h.id}>
-                          <TableCell>{h.effectiveDate}</TableCell>
-                          <TableCell>{formatTnd(h.grossSalary)}</TableCell>
-                          <TableCell className="text-muted-foreground">{h.notes ?? '—'}</TableCell>
+                          <TableCell>{h.effectiveDate ? new Date(h.effectiveDate).toLocaleDateString() : '—'}</TableCell>
+                          <TableCell>{formatTnd(h.newGross)}</TableCell>
+                          <TableCell className="text-muted-foreground">{h.reason || '—'}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -450,8 +450,8 @@ export function EmployeeDetail() {
                               onConfirm={() => deleteBonus.mutate(b.id)}
                               disabled={deleteBonus.isPending}
                               triggerContent={<Trash2 className="h-4 w-4 text-destructive" />}
-                              title={t('bonuses.deleteTitle', { defaultValue: 'Delete bonus?' })}
-                              description={t('bonuses.deleteHint', { defaultValue: 'This action cannot be undone.' })}
+                              title={t('bonusesPage.deleteTitle', { defaultValue: 'Delete bonus?' })}
+                              description={t('bonusesPage.deleteHint', { defaultValue: 'This action cannot be undone.' })}
                             />
                           </TableCell>
                         </TableRow>

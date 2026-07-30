@@ -11,14 +11,16 @@ import { Plus, Trash2, Settings as SettingsIcon } from 'lucide-react';
 import { HRPageHeader } from '../HRPageHeader';
 import { useCnssRates } from '../../hooks/useCnss';
 import { usePublicHolidays } from '../../hooks/useHolidays';
+import { useAttendanceSettings } from '../../hooks/useAttendance';
+import type { AttendanceSettings } from '../../types/hr.types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import dayjs from 'dayjs';
-import { getCurrentTenant } from '@/utils/tenant';
 import { HrPermissionButton } from '../common/HrPermissionButton';
 import { useHrPermissionGuard } from '../../hooks/useHrPermissionGuard';
 
-const HR_SETTINGS_KEY = () => `t:${getCurrentTenant() || 'default'}:hr_settings_v1`;
+
 
 export function HrSettingsPage() {
   const { t } = useTranslation('hr');
@@ -62,19 +64,28 @@ export function HrSettingsPage() {
     toast({ title: t('settingsPage.holidays.added') });
   };
 
-  // Working-day & leave config saved in localStorage
-  const [config, setConfig] = useState(() => {
-    try {
-      const scopedKey = HR_SETTINGS_KEY();
-      const raw = localStorage.getItem(scopedKey) ?? localStorage.getItem('hr_settings_v1');
-      if (raw) return JSON.parse(raw);
-    } catch { /* noop */ }
-    return { workingDays: [1, 2, 3, 4, 5], annualLeaveDays: 21, currency: 'TND' };
-  });
+  // Working-time configuration — persisted server-side in hr_attendance_settings
+  // and consumed by the attendance/overtime calculation. No local-only state.
+  const { settingsQuery, saveSettings } = useAttendanceSettings();
+  const [draft, setDraft] = useState<Partial<AttendanceSettings> | null>(null);
+  const settings = draft ?? settingsQuery.data ?? null;
 
-  const saveConfig = () => {
+  const patch = (p: Partial<AttendanceSettings>) =>
+    setDraft({ ...(settingsQuery.data ?? {}), ...(draft ?? {}), ...p });
+
+  const saveConfig = async () => {
     if (!guardHr('configure')) return;
-    try { localStorage.setItem(HR_SETTINGS_KEY(), JSON.stringify(config)); } catch { /* noop */ }
+    if (!settings) return;
+    await saveSettings.mutateAsync({
+      workDays: settings.workDays ?? [1, 2, 3, 4, 5],
+      standardHoursPerDay: Number(settings.standardHoursPerDay ?? 8),
+      overtimeThresholdHours: Number(settings.overtimeThresholdHours ?? 8),
+      overtimeMultiplier: Number(settings.overtimeMultiplier ?? 1.75),
+      lateThresholdMinutes: Number(settings.lateThresholdMinutes ?? 15),
+      roundingMethod: settings.roundingMethod ?? '15min',
+      calculationMethod: settings.calculationMethod ?? 'actual_hours',
+    });
+    setDraft(null);
     toast({ title: t('settingsPage.general.saved') });
   };
 
@@ -89,10 +100,11 @@ export function HrSettingsPage() {
   ]), [t]);
 
   const toggleDay = (id: number) => {
-    const set = new Set<number>(config.workingDays);
+    const set = new Set<number>(settings?.workDays ?? []);
     if (set.has(id)) set.delete(id); else set.add(id);
-    setConfig({ ...config, workingDays: Array.from(set).sort() });
+    patch({ workDays: Array.from(set).sort((a, b) => a - b) });
   };
+
 
   return (
     <div className="flex flex-col">
@@ -238,38 +250,93 @@ export function HrSettingsPage() {
             <Card className="shadow-card border-0 bg-card">
               <CardHeader><CardTitle className="text-base">{t('settingsPage.general.title')}</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <Label>{t('settingsPage.general.workingDays')}</Label>
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {dayLabels.map(d => (
-                      <Button
-                        key={d.id}
-                        type="button"
-                        size="sm"
-                        variant={config.workingDays.includes(d.id) ? 'default' : 'outline'}
-                        onClick={() => toggleDay(d.id)}
-                      >
-                        {d.label}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-                <div className="grid sm:grid-cols-2 gap-3">
-                  <div>
-                    <Label>{t('settingsPage.general.annualLeaveDays')}</Label>
-                    <Input type="number" min={0} value={config.annualLeaveDays} onChange={(e) => setConfig({ ...config, annualLeaveDays: Number(e.target.value) })} />
-                  </div>
-                  <div>
-                    <Label>{t('settingsPage.general.currency')}</Label>
-                    <Input value={config.currency} onChange={(e) => setConfig({ ...config, currency: e.target.value })} />
-                  </div>
-                </div>
-                <div className="flex justify-end">
-                  <HrPermissionButton action="configure" onClick={saveConfig}>{t('save')}</HrPermissionButton>
-                </div>
+                {settingsQuery.isLoading || !settings ? (
+                  <div className="text-sm text-muted-foreground">{t('loading', { defaultValue: 'Loading…' })}</div>
+                ) : (
+                  <>
+                    <div>
+                      <Label>{t('settingsPage.general.workingDays')}</Label>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {dayLabels.map(d => (
+                          <Button
+                            key={d.id}
+                            type="button"
+                            size="sm"
+                            variant={(settings.workDays ?? []).includes(d.id) ? 'default' : 'outline'}
+                            onClick={() => toggleDay(d.id)}
+                          >
+                            {d.label}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      <div>
+                        <Label>{t('attendanceSettings.standardHoursPerDay', { defaultValue: 'Standard hours / day' })}</Label>
+                        <Input
+                          type="number" step="0.25" min={0}
+                          value={settings.standardHoursPerDay ?? 8}
+                          onChange={(e) => patch({ standardHoursPerDay: Number(e.target.value) })}
+                        />
+                      </div>
+                      <div>
+                        <Label>{t('attendanceSettings.overtimeThresholdHours', { defaultValue: 'Overtime threshold (h)' })}</Label>
+                        <Input
+                          type="number" step="0.25" min={0}
+                          value={settings.overtimeThresholdHours ?? 8}
+                          onChange={(e) => patch({ overtimeThresholdHours: Number(e.target.value) })}
+                        />
+                      </div>
+                      <div>
+                        <Label>{t('attendanceSettings.overtimeMultiplier', { defaultValue: 'Overtime multiplier' })}</Label>
+                        <Input
+                          type="number" step="0.05" min={1}
+                          value={settings.overtimeMultiplier ?? 1.75}
+                          onChange={(e) => patch({ overtimeMultiplier: Number(e.target.value) })}
+                        />
+                      </div>
+                      <div>
+                        <Label>{t('attendanceSettings.lateThresholdMinutes', { defaultValue: 'Late threshold (min)' })}</Label>
+                        <Input
+                          type="number" min={0}
+                          value={settings.lateThresholdMinutes ?? 15}
+                          onChange={(e) => patch({ lateThresholdMinutes: Number(e.target.value) })}
+                        />
+                      </div>
+                      <div>
+                        <Label>{t('attendanceSettings.roundingMethod', { defaultValue: 'Rounding' })}</Label>
+                        <Select value={String(settings.roundingMethod ?? '15min')} onValueChange={(v) => patch({ roundingMethod: v })}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">{t('attendanceSettings.rounding.none', { defaultValue: 'None' })}</SelectItem>
+                            <SelectItem value="15min">15 min</SelectItem>
+                            <SelectItem value="30min">30 min</SelectItem>
+                            <SelectItem value="hour">{t('attendanceSettings.rounding.hour', { defaultValue: '1 hour' })}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label>{t('attendanceSettings.calculationMethod', { defaultValue: 'Calculation method' })}</Label>
+                        <Select value={String(settings.calculationMethod ?? 'actual_hours')} onValueChange={(v) => patch({ calculationMethod: v })}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="actual_hours">{t('attendanceSettings.calc.actualHours', { defaultValue: 'Actual hours' })}</SelectItem>
+                            <SelectItem value="standard_day">{t('attendanceSettings.calc.standardDay', { defaultValue: 'Standard day' })}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="flex justify-end">
+                      <HrPermissionButton action="configure" onClick={saveConfig} disabled={saveSettings.isPending}>
+                        {t('save')}
+                      </HrPermissionButton>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
+
         </Tabs>
       </div>
     </div>

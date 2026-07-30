@@ -16,6 +16,9 @@ export function PaySlipDetail(props: { breakdown: SalaryBreakdown }) {
   const overtimeHours = Number(b.overtimeHours ?? 0);
   const overtimeAmount = Number(b.overtimeAmount ?? 0);
   const hasOvertime = overtimeHours > 0 || overtimeAmount > 0;
+  const unpaidDays = Number(b.unpaidDays ?? 0);
+  const absenceDeduction = Number(b.absenceDeduction ?? 0);
+  const hasAbsenceDeduction = unpaidDays > 0 || absenceDeduction > 0;
 
   const rows: Array<{ label: string; value: number; hint?: string }> = [
     { label: t('payrollSlip.grossSalary'), value: b.grossSalary },
@@ -27,6 +30,13 @@ export function PaySlipDetail(props: { breakdown: SalaryBreakdown }) {
       hint: `${overtimeHours.toFixed(2)} h`,
     });
   }
+  if (hasAbsenceDeduction) {
+    rows.push({
+      label: t('payrollSlip.absenceDeduction', { defaultValue: 'Unpaid absence deduction' }),
+      value: -absenceDeduction,
+      hint: t('payrollSlip.unpaidDays', { count: unpaidDays, defaultValue: '{{count}} unpaid days' }),
+    });
+  }
   rows.push(
     { label: t('payrollSlip.cnss'), value: b.cnss },
     { label: t('payrollSlip.taxableGross'), value: b.taxableGross },
@@ -36,6 +46,7 @@ export function PaySlipDetail(props: { breakdown: SalaryBreakdown }) {
     { label: t('payrollSlip.css'), value: b.css },
     { label: t('payrollSlip.netSalary'), value: b.netSalary },
   );
+
 
   return (
     <Card className="shadow-card border-0 bg-card">

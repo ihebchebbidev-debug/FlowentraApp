@@ -117,6 +117,11 @@ export interface SalaryBreakdown {
   totalHours?: number;
   overtimeHours?: number;
   overtimeAmount?: number;
+  /** Unpaid absence proration (leave beyond the annual allowance + absences). */
+  paidLeaveDays?: number;
+  unpaidDays?: number;
+  absenceDeduction?: number;
+
 }
 
 export interface AttendanceRecord {
@@ -238,14 +243,17 @@ export interface EmployeeDocument {
   uploadedBy?: number;
 }
 
+/** Mirrors backend HrSalaryHistoryDto exactly. */
 export interface SalaryHistory {
   id: number;
   userId: number;
-  grossSalary: number;
+  /** Null for the first recorded salary. */
+  previousGross?: number | null;
+  newGross: number;
+  currency: string;
   effectiveDate: string;
-  changedBy?: number;
-  changedAt: string;
-  notes?: string;
+  reason?: string | null;
+  changedBy?: number | null;
 }
 
 export type AuditEventType =
@@ -268,4 +276,43 @@ export interface AuditLog {
   description: string;
   metadata?: Record<string, any>;
   timestamp: string;
+}
+
+// ============= Server-computed reports =============
+
+/** Line of GET /api/hr/cnss/declaration — authoritative CNSS figures. */
+export interface CnssDeclarationLine {
+  userId: number;
+  userName: string;
+  cnssNumber?: string | null;
+  salarySubject: number;
+  employeeCnss: number;
+  employerCnss: number;
+  css: number;
+}
+
+export interface CnssDeclaration {
+  year: number;
+  month: number;
+  totalSalarySubject: number;
+  totalEmployeeCnss: number;
+  totalEmployerCnss: number;
+  totalCss: number;
+  lines: CnssDeclarationLine[];
+}
+
+/** Row of GET /api/hr/reports/employee-cost — authoritative employer cost. */
+export interface EmployeeCostRow {
+  userId: number;
+  userName: string;
+  department?: string | null;
+  gross: number;
+  bonuses: number;
+  allowances: number;
+  employerCnss: number;
+  totalCost: number;
+  ytdGross: number;
+  ytdBonuses: number;
+  ytdEmployerCnss: number;
+  ytdTotalCost: number;
 }

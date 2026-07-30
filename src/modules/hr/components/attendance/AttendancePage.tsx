@@ -22,6 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { setTargetTenantId, clearTargetTenant } from '@/utils/targetTenant';
 import { HrPermissionButton } from '../common/HrPermissionButton';
+import { translateHrServerError } from '../../utils/hrServerError';
 import { useHrPermissionGuard } from '../../hooks/useHrPermissionGuard';
 
 type FormState = {
@@ -104,19 +105,7 @@ function buildAttendanceSchema(t: (k: string, opts?: any) => string) {
 }
 
 function mapBackendError(t: (k: string, opts?: any) => string, err: any): string {
-  const code = err?.response?.data?.errorCode || err?.response?.data?.message;
-  const map: Record<string, string> = {
-    'attendance.invalid_user': t('attendanceErrors.userRequired'),
-    'attendance.invalid_date': t('attendanceErrors.dateInvalid'),
-    'attendance.future_date': t('attendanceErrors.dateFuture'),
-    'attendance.invalid_break': t('attendanceErrors.breakInvalid'),
-    'attendance.checkout_before_checkin': t('attendanceErrors.checkoutBeforeCheckin'),
-    'attendance.break_exceeds_worked': t('attendanceErrors.breakExceedsWorked'),
-    'attendance.range_too_long': t('attendanceErrors.rangeTooLong'),
-    'attendance.checkout_without_checkin': t('attendanceErrors.checkoutWithoutCheckin'),
-    'attendance.invalid_status': t('attendanceErrors.statusInvalid'),
-  };
-  return (code && map[code]) || t('attendancePage.saveError');
+  return translateHrServerError(t, err, t('attendancePage.saveError'));
 }
 
 const emptyForm = (date: string): FormState => ({

@@ -78,7 +78,7 @@ namespace MyApi.Modules.HR.Services
         public async Task<object> GetEmployeeDetailAsync(int userId)
         {
             var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId && !u.IsDeleted);
-            if (user == null) throw new KeyNotFoundException("Employee not found");
+            if (user == null) throw new KeyNotFoundException("hr.employee_not_found");
 
             var salaryConfig = await _db.Set<HrEmployeeSalaryConfig>().FirstOrDefaultAsync(x => x.UserId == userId);
             var leaves = await _db.Set<UserLeave>()
@@ -343,7 +343,30 @@ namespace MyApi.Modules.HR.Services
             if (row.OvertimeHours > row.TotalHours) row.OvertimeHours = row.TotalHours;
             row.UpdatedAt = DateTime.UtcNow;
 
-            await _db.SaveChangesAsync();
+            try
+            {
+                await _db.SaveChangesAsync();
+            }
+            catch (DbUpdateException) when (isNew)
+            {
+                // Concurrent insert for the same (user, date) won the race — reload the
+                // existing row and apply the same values as an update instead of failing.
+                _db.Entry(row).State = EntityState.Detached;
+                var existing = await _db.Set<HrAttendance>().FirstOrDefaultAsync(x => x.UserId == dto.UserId && x.Date == date);
+                if (existing == null) throw;
+                existing.CheckIn = row.CheckIn;
+                existing.CheckOut = row.CheckOut;
+                existing.BreakMinutes = row.BreakMinutes;
+                existing.Status = row.Status;
+                existing.Notes = row.Notes;
+                existing.Source = row.Source;
+                existing.TotalHours = row.TotalHours;
+                existing.OvertimeHours = row.OvertimeHours;
+                existing.UpdatedAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+                row = existing;
+                isNew = false;
+            }
             await LogAsync(dto.UserId, isNew ? "attendance_added" : "attendance_updated", $"Attendance saved for {date:yyyy-MM-dd}", new { dto.UserId, date, row.TotalHours, row.OvertimeHours }, actorUserId);
 
             var userMap = await _db.Users.Where(u => u.Id == dto.UserId)
@@ -354,7 +377,7 @@ namespace MyApi.Modules.HR.Services
         public async Task DeleteAttendanceAsync(int id, int actorUserId)
         {
             var row = await _db.Set<HrAttendance>().FirstOrDefaultAsync(x => x.Id == id);
-            if (row == null) throw new KeyNotFoundException("Attendance record not found");
+            if (row == null) throw new KeyNotFoundException("hr.attendance_not_found");
             _db.Set<HrAttendance>().Remove(row);
             await _db.SaveChangesAsync();
             await LogAsync(row.UserId, "attendance_deleted", $"Attendance deleted for {row.Date:yyyy-MM-dd}", new { id }, actorUserId);
@@ -449,8 +472,8 @@ namespace MyApi.Modules.HR.Services
         // ===========================================================================
         public async Task<HrPayrollRunDto> GeneratePayrollRunAsync(CreatePayrollRunDto dto, int createdByUserId)
         {
-            if (dto.Month < 1 || dto.Month > 12) throw new InvalidOperationException("Invalid month.");
-            if (dto.Year < 2000 || dto.Year > 2100) throw new InvalidOperationException("Invalid year.");
+            if (dto.Month < 1 || dto.Month > 12) throw new InvalidOperationException("hr.invalid_month");
+            if (dto.Year < 2000 || dto.Year > 2100) throw new InvalidOperationException("hr.invalid_year");
 
             // Duplicate guard: prevent a second run for the same tenant/year/month
             // (blocks double-clicks and concurrent admin submissions).
@@ -461,7 +484,7 @@ namespace MyApi.Modules.HR.Services
             if (existing != null)
             {
                 throw new InvalidOperationException(
-                    $"A payroll run for {dto.Month:D2}/{dto.Year} already exists (status: {existing.Status}). Delete or reuse it instead of generating a duplicate.");
+                    "hr.payroll_run_exists");
             }
 
             var rate = await GetActiveCnssRateEntityAsync();
@@ -482,16 +505,34 @@ namespace MyApi.Modules.HR.Services
             {
                 // Concurrent request won the race — surface a clean 4xx instead of a 500.
                 throw new InvalidOperationException(
-                    $"A payroll run for {dto.Month:D2}/{dto.Year} already exists.");
+                    "hr.payroll_run_exists");
             }
 
             var users = await _db.Users.AsNoTracking().Where(u => u.IsActive && !u.IsDeleted).ToListAsync();
             var userIds = users.Select(u => u.Id).ToList();
             var salaryConfigMap = (await _db.Set<HrEmployeeSalaryConfig>().AsNoTracking().Where(x => userIds.Contains(x.UserId)).ToListAsync())
                 .GroupBy(x => x.UserId).ToDictionary(g => g.Key, g => g.First());
+            // Exclude employees whose contract ended before the payroll period starts.
+            var periodStart = new DateTime(dto.Year, dto.Month, 1);
+            users = users.Where(u => !salaryConfigMap.TryGetValue(u.Id, out var c)
+                                     || c.ContractEndDate == null
+                                     || c.ContractEndDate.Value.Date >= periodStart).ToList();
+            userIds = users.Select(u => u.Id).ToList();
+            // Load every approved leave of the YEAR (not just the month): paid-leave
+            // entitlement is annual, so days already consumed in earlier months
+            // determine how much of this month's leave is still paid.
+            var yearStart = new DateTime(dto.Year, 1, 1);
+            var yearEnd = new DateTime(dto.Year, 12, 31);
             var leaves = await _db.Set<UserLeave>().AsNoTracking()
-                .Where(x => (x.StartDate.Month == dto.Month && x.StartDate.Year == dto.Year) || (x.EndDate.Month == dto.Month && x.EndDate.Year == dto.Year))
+                .Where(x => x.Status == "approved" && x.StartDate <= yearEnd && x.EndDate >= yearStart)
                 .ToListAsync();
+            // Annual paid allowance per user (all paid leave types summed).
+            var allowanceByUser = (await _db.Set<HrLeaveBalance>().AsNoTracking()
+                .Where(x => x.Year == dto.Year)
+                .ToListAsync())
+                .GroupBy(x => x.UserId)
+                .ToDictionary(g => g.Key, g => g.Sum(x => x.AnnualAllowance));
+
             var bonusesByUser = (await _db.Set<HrBonusCost>().AsNoTracking()
                 .Where(x => !x.IsDeleted && x.Year == dto.Year && x.Month == dto.Month && x.AffectsPayroll)
                 .ToListAsync())
@@ -500,6 +541,9 @@ namespace MyApi.Modules.HR.Services
                 .Where(x => x.Date.Year == dto.Year && x.Date.Month == dto.Month)
                 .ToListAsync())
                 .GroupBy(a => a.UserId).ToDictionary(g => g.Key, g => g.ToList());
+
+            var periodEnd = periodStart.AddMonths(1).AddDays(-1);
+            const decimal PayrollDaysPerMonth = 26m; // same divisor used for the hourly rate
 
             foreach (var user in users)
             {
@@ -515,16 +559,44 @@ namespace MyApi.Modules.HR.Services
                 var overtimeHours = userAttendance.Sum(a => a.OvertimeHours);
                 var workedDays = userAttendance.Count(a => a.Status != "absent" && a.Status != "leave");
                 var hourlyRate = attendanceSettings.StandardHoursPerDay > 0
-                    ? Math.Round(baseGross / 26m / attendanceSettings.StandardHoursPerDay, 6)
+                    ? Math.Round(baseGross / PayrollDaysPerMonth / attendanceSettings.StandardHoursPerDay, 6)
                     : 0m;
                 var overtimeAmount = Math.Round(overtimeHours * hourlyRate * Math.Max(1m, attendanceSettings.OvertimeMultiplier), 3);
 
-                var grossSubjectToCnss = baseGross + subjectExtra + overtimeAmount;
-                var grossTotal = baseGross + allowances + bonusAmount + overtimeAmount;
+                // ---- Paid vs unpaid absence -------------------------------------
+                // Leave is only paid while the employee still has annual entitlement
+                // left. Days beyond the allowance (and unjustified absences recorded
+                // in attendance) are deducted from the monthly salary.
+                var userLeaves = leaves.Where(x => x.UserId == user.Id).ToList();
+                decimal DaysInRange(DateTime rangeStart, DateTime rangeEnd) =>
+                    userLeaves.Sum(l =>
+                    {
+                        var s = l.StartDate.Date < rangeStart ? rangeStart : l.StartDate.Date;
+                        var e = l.EndDate.Date > rangeEnd ? rangeEnd : l.EndDate.Date;
+                        return e < s ? 0m : (decimal)(e - s).TotalDays + 1m;
+                    });
+
+                var leaveDays = DaysInRange(periodStart, periodEnd);
+                var leaveDaysBefore = periodStart > yearStart
+                    ? DaysInRange(yearStart, periodStart.AddDays(-1))
+                    : 0m;
+                var annualAllowance = allowanceByUser.TryGetValue(user.Id, out var allow) ? allow : 0m;
+                var allowanceRemaining = Math.Max(0m, annualAllowance - leaveDaysBefore);
+                var paidLeaveDays = Math.Min(leaveDays, allowanceRemaining);
+                var unpaidLeaveDays = Math.Max(0m, leaveDays - paidLeaveDays);
+                var absentDays = (decimal)userAttendance.Count(a => a.Status == "absent");
+                var unpaidDays = unpaidLeaveDays + absentDays;
+                var dailyRate = Math.Round(baseGross / PayrollDaysPerMonth, 6);
+                var absenceDeduction = Math.Min(baseGross, Math.Round(unpaidDays * dailyRate, 3));
+                var payableBase = baseGross - absenceDeduction;
+
+                var grossSubjectToCnss = payableBase + subjectExtra + overtimeAmount;
+                var grossTotal = payableBase + allowances + bonusAmount + overtimeAmount;
 
                 var cnssBase = rate.SalaryCeiling > 0 ? Math.Min(grossSubjectToCnss, rate.SalaryCeiling) : grossSubjectToCnss;
                 var cnss = Math.Round(cnssBase * rate.EmployeeRate, 3);
                 var employerCnss = Math.Round(cnssBase * rate.EmployerRate, 3);
+
 
                 var taxableGross = grossTotal - cnss;
                 var abattement = (cfg?.IsHeadOfFamily ?? false ? rate.AbattementHeadOfFamily : 0m)
@@ -532,8 +604,6 @@ namespace MyApi.Modules.HR.Services
                 var taxableBase = Math.Max(0, taxableGross - abattement);
                 var irpp = Math.Round(ComputeIrpp(taxableBase, brackets), 3);
                 var css = Math.Round(taxableGross * rate.CssRate, 3);
-                var leaveDays = leaves.Where(x => x.UserId == user.Id && x.Status == "approved")
-                    .Sum(x => (decimal)(x.EndDate.Date - x.StartDate.Date).TotalDays + 1);
 
                 var net = grossTotal - cnss - irpp - css - (cfg?.CustomDeductions ?? 0m);
 
@@ -555,13 +625,24 @@ namespace MyApi.Modules.HR.Services
                     LeaveDays = leaveDays,
                     Details = JsonSerializer.Serialize(new
                     {
-                        formula = "tn_v2",
+                        formula = "tn_v3",
                         baseGross,
+                        payableBase,
                         allowances,
                         bonuses = bonusAmount,
                         overtimeAmount,
                         overtimeHours,
                         hourlyRate,
+                        dailyRate,
+                        payrollDaysPerMonth = PayrollDaysPerMonth,
+                        leaveDays,
+                        paidLeaveDays,
+                        unpaidLeaveDays,
+                        absentDays,
+                        unpaidDays,
+                        absenceDeduction,
+                        annualLeaveAllowance = annualAllowance,
+                        leaveAllowanceRemainingBefore = allowanceRemaining,
                         overtimeMultiplier = attendanceSettings.OvertimeMultiplier,
                         employerCnss,
                         cnssBase,
@@ -571,6 +652,7 @@ namespace MyApi.Modules.HR.Services
                     CreatedAt = DateTime.UtcNow
                 });
             }
+
 
             await _db.SaveChangesAsync();
             await LogAsync(0, "payroll_generated", $"Payroll run {dto.Month}/{dto.Year} generated", new { runId = run.Id, dto.Month, dto.Year }, createdByUserId);
@@ -604,7 +686,7 @@ namespace MyApi.Modules.HR.Services
         public async Task<HrPayrollRunDto> GetPayrollRunAsync(int id)
         {
             var run = await _db.Set<HrPayrollRun>().AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
-            if (run == null) throw new KeyNotFoundException("Payroll run not found");
+            if (run == null) throw new KeyNotFoundException("hr.payroll_run_not_found");
 
             var entries = await _db.Set<HrPayrollEntry>().AsNoTracking().Where(x => x.PayrollRunId == id).ToListAsync();
             var entryUserIds = entries.Select(e => e.UserId).Distinct().ToList();
@@ -622,8 +704,8 @@ namespace MyApi.Modules.HR.Services
         public async Task<HrPayrollRunDto> ConfirmPayrollRunAsync(int id, int actorUserId)
         {
             var run = await _db.Set<HrPayrollRun>().FirstOrDefaultAsync(x => x.Id == id);
-            if (run == null) throw new KeyNotFoundException("Payroll run not found");
-            if (run.Status == "paid") throw new InvalidOperationException("Payroll run already marked as paid");
+            if (run == null) throw new KeyNotFoundException("hr.payroll_run_not_found");
+            if (run.Status == "paid") throw new InvalidOperationException("hr.payroll_run_already_paid");
             run.Status = "confirmed";
             run.ConfirmedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();
@@ -634,8 +716,8 @@ namespace MyApi.Modules.HR.Services
         public async Task<HrPayrollRunDto> MarkPayrollRunPaidAsync(int id, int actorUserId)
         {
             var run = await _db.Set<HrPayrollRun>().FirstOrDefaultAsync(x => x.Id == id);
-            if (run == null) throw new KeyNotFoundException("Payroll run not found");
-            if (run.Status != "confirmed") throw new InvalidOperationException("Payroll run must be confirmed before marking as paid");
+            if (run == null) throw new KeyNotFoundException("hr.payroll_run_not_found");
+            if (run.Status != "confirmed") throw new InvalidOperationException("hr.payroll_run_not_confirmed");
             run.Status = "paid";
             await _db.SaveChangesAsync();
             await LogAsync(0, "payroll_paid", $"Payroll run {run.Month}/{run.Year} marked paid", new { runId = id }, actorUserId);
@@ -645,7 +727,7 @@ namespace MyApi.Modules.HR.Services
         public async Task<object> GetPayslipAsync(int entryId)
         {
             var entry = await _db.Set<HrPayrollEntry>().FirstOrDefaultAsync(x => x.Id == entryId);
-            if (entry == null) throw new KeyNotFoundException("Payroll entry not found");
+            if (entry == null) throw new KeyNotFoundException("hr.payroll_entry_not_found");
             var run = await _db.Set<HrPayrollRun>().FirstOrDefaultAsync(x => x.Id == entry.PayrollRunId);
             var user = await _db.Users.FirstOrDefaultAsync(x => x.Id == entry.UserId);
 
@@ -680,7 +762,7 @@ namespace MyApi.Modules.HR.Services
 
         public async Task<HrDepartmentDto> CreateDepartmentAsync(UpsertDepartmentDto dto)
         {
-            if (string.IsNullOrWhiteSpace(dto.Name)) throw new InvalidOperationException("Department name is required");
+            if (string.IsNullOrWhiteSpace(dto.Name)) throw new InvalidOperationException("hr.department_name_required");
             var row = new HrDepartment
             {
                 Name = dto.Name.Trim(), Code = dto.Code, ParentId = dto.ParentId,
@@ -695,7 +777,7 @@ namespace MyApi.Modules.HR.Services
         public async Task<HrDepartmentDto> UpdateDepartmentAsync(int id, UpsertDepartmentDto dto)
         {
             var row = await _db.Set<HrDepartment>().FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
-            if (row == null) throw new KeyNotFoundException("Department not found");
+            if (row == null) throw new KeyNotFoundException("hr.department_not_found");
             if (!string.IsNullOrWhiteSpace(dto.Name)) row.Name = dto.Name.Trim();
             if (dto.Code != null) row.Code = dto.Code;
             if (dto.ParentId.HasValue) row.ParentId = dto.ParentId;
@@ -710,7 +792,7 @@ namespace MyApi.Modules.HR.Services
         public async Task DeleteDepartmentAsync(int id)
         {
             var row = await _db.Set<HrDepartment>().FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
-            if (row == null) throw new KeyNotFoundException("Department not found");
+            if (row == null) throw new KeyNotFoundException("hr.department_not_found");
             row.IsDeleted = true;
             row.UpdatedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();
@@ -763,7 +845,7 @@ namespace MyApi.Modules.HR.Services
             if (dto.Amount < 0)
                 throw new ArgumentException("bonus.negative_amount", nameof(dto.Amount));
             var row = await _db.Set<HrBonusCost>().FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
-            if (row == null) throw new KeyNotFoundException("Bonus/cost not found");
+            if (row == null) throw new KeyNotFoundException("hr.bonus_not_found");
             row.UserId = dto.UserId; row.Kind = dto.Kind; row.Category = dto.Category;
             row.Label = dto.Label; row.Amount = dto.Amount; row.Frequency = dto.Frequency;
             row.Year = dto.Year; row.Month = dto.Month; row.AffectsPayroll = dto.AffectsPayroll;
@@ -776,7 +858,7 @@ namespace MyApi.Modules.HR.Services
         public async Task DeleteBonusCostAsync(int id, int actorUserId)
         {
             var row = await _db.Set<HrBonusCost>().FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
-            if (row == null) throw new KeyNotFoundException("Bonus/cost not found");
+            if (row == null) throw new KeyNotFoundException("hr.bonus_not_found");
             row.IsDeleted = true;
             row.UpdatedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();
@@ -881,7 +963,7 @@ namespace MyApi.Modules.HR.Services
         public async Task<HrPublicHolidayDto> UpdatePublicHolidayAsync(int id, UpsertPublicHolidayDto dto)
         {
             var row = await _db.Set<HrPublicHoliday>().FirstOrDefaultAsync(x => x.Id == id);
-            if (row == null) throw new KeyNotFoundException("Holiday not found");
+            if (row == null) throw new KeyNotFoundException("hr.holiday_not_found");
             row.Date = DateTime.SpecifyKind(dto.Date.Date, DateTimeKind.Utc); row.Name = dto.Name; row.Category = dto.Category; row.IsRecurring = dto.IsRecurring;
             await _db.SaveChangesAsync();
             return MapHolidayDto(row);
@@ -890,7 +972,7 @@ namespace MyApi.Modules.HR.Services
         public async Task DeletePublicHolidayAsync(int id)
         {
             var row = await _db.Set<HrPublicHoliday>().FirstOrDefaultAsync(x => x.Id == id);
-            if (row == null) throw new KeyNotFoundException("Holiday not found");
+            if (row == null) throw new KeyNotFoundException("hr.holiday_not_found");
             _db.Set<HrPublicHoliday>().Remove(row);
             await _db.SaveChangesAsync();
         }
@@ -936,7 +1018,7 @@ namespace MyApi.Modules.HR.Services
         public async Task DeleteEmployeeDocumentAsync(int id)
         {
             var row = await _db.Set<HrEmployeeDocument>().FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
-            if (row == null) throw new KeyNotFoundException("Document not found");
+            if (row == null) throw new KeyNotFoundException("hr.document_not_found");
             row.IsDeleted = true;
             await _db.SaveChangesAsync();
         }
@@ -981,6 +1063,13 @@ namespace MyApi.Modules.HR.Services
             var users = await _db.Users.Where(u => u.IsActive && !u.IsDeleted).ToListAsync();
             var userIds = users.Select(u => u.Id).ToList();
             var configs = await _db.Set<HrEmployeeSalaryConfig>().Where(x => userIds.Contains(x.UserId)).ToListAsync();
+            // Exclude employees whose contract ended before the reported period.
+            var reportStart = new DateTime(year, month ?? 1, 1);
+            users = users.Where(u =>
+            {
+                var c = configs.FirstOrDefault(x => x.UserId == u.Id);
+                return c?.ContractEndDate == null || c.ContractEndDate.Value.Date >= reportStart;
+            }).ToList();
             var rate = await GetActiveCnssRateEntityAsync();
 
             var bonusQ = _db.Set<HrBonusCost>().Where(x => !x.IsDeleted && x.Year == year);
@@ -1001,14 +1090,19 @@ namespace MyApi.Modules.HR.Services
                 var allowanceAmt = b.Where(x => x.Kind == "allowance").Sum(x => x.Amount);
                 var subjectExtra = b.Where(x => x.SubjectToCnss).Sum(x => x.Amount);
                 var cnssBase = baseGross + subjectExtra;
-                var employerCnss = Math.Round(cnssBase * rate.EmployerRate, 3);
+                // Ceiling cap must match RunPayrollAsync / GetCnssDeclarationAsync,
+                // otherwise the cost report drifts from the payroll figures.
+                var cappedBase = rate.SalaryCeiling > 0 ? Math.Min(cnssBase, rate.SalaryCeiling * monthsCount) : cnssBase;
+                var employerCnss = Math.Round(cappedBase * rate.EmployerRate, 3);
 
                 // YTD aggregates
                 var ytdGross = (cfg?.GrossSalary ?? 0m) * ytdMonthsCount;
                 var ytdB = ytdBonuses.Where(x => x.UserId == u.Id).ToList();
                 var ytdBonusAmt = ytdB.Where(x => x.Kind == "bonus" || x.Kind == "allowance").Sum(x => x.Amount);
                 var ytdSubjectExtra = ytdB.Where(x => x.SubjectToCnss).Sum(x => x.Amount);
-                var ytdEmployerCnss = Math.Round((ytdGross + ytdSubjectExtra) * rate.EmployerRate, 3);
+                var ytdCnssBase = ytdGross + ytdSubjectExtra;
+                var ytdCapped = rate.SalaryCeiling > 0 ? Math.Min(ytdCnssBase, rate.SalaryCeiling * ytdMonthsCount) : ytdCnssBase;
+                var ytdEmployerCnss = Math.Round(ytdCapped * rate.EmployerRate, 3);
 
                 return new HrEmployeeCostDto
                 {

@@ -21,6 +21,8 @@ export function PaySlipPDF(props: {
     period: string;
     gross: string;
     overtime?: string;
+    absenceDeduction?: string;
+
     cnss: string;
     taxableGross: string;
     abattement: string;
@@ -35,6 +37,9 @@ export function PaySlipPDF(props: {
   const overtimeHours = Number(b.overtimeHours ?? 0);
   const overtimeAmount = Number(b.overtimeAmount ?? 0);
   const hasOvertime = overtimeHours > 0 || overtimeAmount > 0;
+  const unpaidDays = Number(b.unpaidDays ?? 0);
+  const absenceDeduction = Number(b.absenceDeduction ?? 0);
+  const hasAbsenceDeduction = unpaidDays > 0 || absenceDeduction > 0;
 
   return (
     <Document>
@@ -57,6 +62,14 @@ export function PaySlipPDF(props: {
                 {(labels?.overtime ?? 'Overtime / Heures sup.')} ({overtimeHours.toFixed(2)} h)
               </Text>
               <Text style={styles.value}>{overtimeAmount.toFixed(3)} TND</Text>
+            </View>
+          ) : null}
+          {hasAbsenceDeduction ? (
+            <View style={styles.row}>
+              <Text style={styles.label}>
+                {(labels?.absenceDeduction ?? 'Unpaid absence / Absence non payée')} ({unpaidDays.toFixed(2)} j)
+              </Text>
+              <Text style={styles.value}>-{absenceDeduction.toFixed(3)} TND</Text>
             </View>
           ) : null}
           <View style={styles.row}><Text style={styles.label}>{labels?.cnss ?? 'CNSS'}</Text><Text style={styles.value}>{b.cnss.toFixed(3)} TND</Text></View>

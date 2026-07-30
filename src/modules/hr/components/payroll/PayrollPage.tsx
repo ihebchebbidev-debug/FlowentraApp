@@ -23,6 +23,7 @@ import { pdf } from '@react-pdf/renderer';
 import { PaySlipPDF } from './PaySlipPDF';
 import { useToast } from '@/hooks/use-toast';
 import { extractApiErrorMessage } from '@/utils/extractApiErrorMessage';
+import { translateHrServerError } from '../../utils/hrServerError';
 import { HrPermissionButton } from '../common/HrPermissionButton';
 import { useHrPermissionGuard } from '../../hooks/useHrPermissionGuard';
 
@@ -55,7 +56,11 @@ function entryToBreakdown(e: PayrollEntry): SalaryBreakdown {
     totalHours: Number(e.totalHours || 0),
     overtimeHours: Number(e.overtimeHours || 0),
     overtimeAmount,
+    paidLeaveDays: Number(details?.paidLeaveDays ?? 0),
+    unpaidDays: Number(details?.unpaidDays ?? 0),
+    absenceDeduction: Number(details?.absenceDeduction ?? 0),
   };
+
 }
 
 export function PayrollPage() {
@@ -137,6 +142,8 @@ export function PayrollPage() {
     period: t('payrollDraft.pdf.period'),
     gross: t('payrollSlip.grossSalary'),
     overtime: t('payrollSlip.overtime', { defaultValue: 'Overtime / Heures sup.' }),
+    absenceDeduction: t('payrollSlip.absenceDeduction', { defaultValue: 'Unpaid absence deduction' }),
+
     cnss: t('payrollSlip.cnss'),
     taxableGross: t('payrollSlip.taxableGross'),
     abattement: t('payrollSlip.abattement'),
@@ -196,7 +203,7 @@ export function PayrollPage() {
       setSelectedUserIds(new Set());
       toast({ title: t('payrollDraft.actions.generated', { defaultValue: 'Payroll run generated' }) });
     } catch (e) {
-      toast({ title: t('common.error', { defaultValue: 'Error' }), description: extractApiErrorMessage(e), variant: 'destructive' });
+      toast({ title: t('common.error', { defaultValue: 'Error' }), description: translateHrServerError(t, e), variant: 'destructive' });
       throw e;
     }
   };
@@ -208,7 +215,7 @@ export function PayrollPage() {
       await confirmMutation.mutateAsync(activeRun.id);
       toast({ title: t('payrollDraft.actions.confirmed') });
     } catch (e) {
-      toast({ title: t('common.error', { defaultValue: 'Error' }), description: extractApiErrorMessage(e), variant: 'destructive' });
+      toast({ title: t('common.error', { defaultValue: 'Error' }), description: translateHrServerError(t, e), variant: 'destructive' });
     }
   };
 
@@ -219,7 +226,7 @@ export function PayrollPage() {
       await payMutation.mutateAsync(activeRun.id);
       toast({ title: t('payrollDraft.actions.paid') });
     } catch (e) {
-      toast({ title: t('common.error', { defaultValue: 'Error' }), description: extractApiErrorMessage(e), variant: 'destructive' });
+      toast({ title: t('common.error', { defaultValue: 'Error' }), description: translateHrServerError(t, e), variant: 'destructive' });
     }
   };
 

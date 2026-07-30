@@ -9,8 +9,7 @@ import { Label } from '@/components/ui/label';
 import { ShieldCheck, FileDown, Save } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { HRPageHeader } from '../HRPageHeader';
-import { useEmployees } from '../../hooks/useEmployees';
-import { useCnssRates } from '../../hooks/useCnss';
+import { useCnssRates, useCnssDeclaration } from '../../hooks/useCnss';
 import { formatTnd } from '../../utils/money';
 import { useToast } from '@/hooks/use-toast';
 import dayjs from 'dayjs';
@@ -18,23 +17,25 @@ import { z } from 'zod';
 import { HrPermissionButton } from '../common/HrPermissionButton';
 import { useHrPermissionGuard } from '../../hooks/useHrPermissionGuard';
 
-const cnssRateSchema = z.object({
-  employeeRatePct: z.coerce.number({ invalid_type_error: 'Employee rate is required' })
-    .min(0, 'Employee rate must be ≥ 0')
-    .max(100, 'Employee rate must be ≤ 100'),
-  employerRatePct: z.coerce.number({ invalid_type_error: 'Employer rate is required' })
-    .min(0, 'Employer rate must be ≥ 0')
-    .max(100, 'Employer rate must be ≤ 100'),
-  ceiling: z.union([z.literal(''), z.coerce.number().min(0, 'Ceiling must be ≥ 0')]),
-  effectiveFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Effective date is required'),
+type TFunc = (key: string, options?: any) => string;
+
+const makeCnssRateSchema = (t: TFunc) => z.object({
+  employeeRatePct: z.coerce.number({ invalid_type_error: t('cnssErrors.employeeRateRequired') })
+    .min(0, t('cnssErrors.employeeRateMin'))
+    .max(100, t('cnssErrors.employeeRateMax')),
+  employerRatePct: z.coerce.number({ invalid_type_error: t('cnssErrors.employerRateRequired') })
+    .min(0, t('cnssErrors.employerRateMin'))
+    .max(100, t('cnssErrors.employerRateMax')),
+  ceiling: z.union([z.literal(''), z.coerce.number().min(0, t('cnssErrors.ceilingMin'))]),
+  effectiveFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, t('cnssErrors.effectiveFromRequired')),
 });
 type CnssRateErrors = Partial<Record<'employeeRatePct' | 'employerRatePct' | 'ceiling' | 'effectiveFrom', string>>;
 
 export function CnssPage() {
   const { t } = useTranslation('hr');
+  const cnssRateSchema = useMemo(() => makeCnssRateSchema(t), [t]);
   const { toast } = useToast();
   const guardHr = useHrPermissionGuard();
-  const { employeesQuery } = useEmployees();
   const { ratesQuery, activeRateQuery, upsertRate } = useCnssRates();
 
   const [year, setYear] = useState(dayjs().year());
@@ -56,33 +57,11 @@ export function CnssPage() {
   const [effectiveFrom, setEffectiveFrom] = useState<string>(active?.effectiveFrom ?? dayjs().format('YYYY-MM-DD'));
   const [rateErrors, setRateErrors] = useState<CnssRateErrors>({});
 
-  const calcs = useMemo(() => {
-    const er = Number(employerRate) / 100;
-    const ee = Number(employeeRate) / 100;
-    const rows = (employeesQuery.data ?? []).map((r: any) => {
-      const cfg = r.salaryConfig ?? null;
-      const gross = Number(cfg?.grossSalary ?? 0);
-      const subject = ceiling && Number(ceiling) > 0 ? Math.min(gross, Number(ceiling)) : gross;
-      const employee = subject * ee;
-      const employer = subject * er;
-      return {
-        userId: Number(r.user?.id),
-        name: `${r.user?.firstName ?? ''} ${r.user?.lastName ?? ''}`.trim() || r.user?.email || `#${r.user?.id}`,
-        cnssNumber: cfg?.cnssNumber ?? null,
-        gross, subject, employee, employer,
-      };
-    });
-    const totals = rows.reduce(
-      (acc, r) => ({
-        gross: acc.gross + r.gross,
-        subject: acc.subject + r.subject,
-        employee: acc.employee + r.employee,
-        employer: acc.employer + r.employer,
-      }),
-      { gross: 0, subject: 0, employee: 0, employer: 0 },
-    );
-    return { rows, totals };
-  }, [employeesQuery.data, employeeRate, employerRate, ceiling]);
+  // The declaration is computed SERVER-SIDE (GET /api/hr/cnss/declaration) so the
+  // filed figures always match the payroll engine. No client-side re-derivation.
+  const declarationQuery = useCnssDeclaration(year, month);
+  const declaration = declarationQuery.data ?? null;
+  const lines = declaration?.lines ?? [];
 
   const saveRate = async () => {
     if (!guardHr('update')) return;
@@ -129,14 +108,14 @@ export function CnssPage() {
   };
 
   const exportCsv = () => {
-    const header = ['cnssNumber', 'employee', 'gross', 'subject', 'employeeShare', 'employerShare'];
-    const rows = calcs.rows.map(r => [
+    const header = ['cnssNumber', 'employee', 'salarySubject', 'employeeCnss', 'employerCnss', 'css'];
+    const rows = lines.map(r => [
       r.cnssNumber ?? '',
-      r.name,
-      r.gross.toFixed(3),
-      r.subject.toFixed(3),
-      r.employee.toFixed(3),
-      r.employer.toFixed(3),
+      r.userName,
+      Number(r.salarySubject).toFixed(3),
+      Number(r.employeeCnss).toFixed(3),
+      Number(r.employerCnss).toFixed(3),
+      Number(r.css).toFixed(3),
     ]);
     const csv = [header, ...rows].map(line => line.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
@@ -166,26 +145,26 @@ export function CnssPage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <Card className="shadow-card border-0 bg-card">
             <CardContent className="p-4">
-              <div className="text-xs text-muted-foreground">{t('cnssPage.totals.gross')}</div>
-              <div className="text-xl font-semibold mt-1">{formatTnd(calcs.totals.gross)}</div>
+              <div className="text-xs text-muted-foreground">{t('cnssPage.totals.subject')}</div>
+              <div className="text-xl font-semibold mt-1">{formatTnd(declaration?.totalSalarySubject ?? 0)}</div>
             </CardContent>
           </Card>
           <Card className="shadow-card border-0 bg-card">
             <CardContent className="p-4">
-              <div className="text-xs text-muted-foreground">{t('cnssPage.totals.subject')}</div>
-              <div className="text-xl font-semibold mt-1">{formatTnd(calcs.totals.subject)}</div>
+              <div className="text-xs text-muted-foreground">{t('cnssPage.totals.css', { defaultValue: 'CSS' })}</div>
+              <div className="text-xl font-semibold mt-1">{formatTnd(declaration?.totalCss ?? 0)}</div>
             </CardContent>
           </Card>
           <Card className="shadow-card border-0 bg-card">
             <CardContent className="p-4">
               <div className="text-xs text-muted-foreground">{t('cnssPage.totals.employee')}</div>
-              <div className="text-xl font-semibold mt-1">{formatTnd(calcs.totals.employee)}</div>
+              <div className="text-xl font-semibold mt-1">{formatTnd(declaration?.totalEmployeeCnss ?? 0)}</div>
             </CardContent>
           </Card>
           <Card className="shadow-card border-0 bg-card">
             <CardContent className="p-4">
               <div className="text-xs text-muted-foreground">{t('cnssPage.totals.employer')}</div>
-              <div className="text-xl font-semibold mt-1">{formatTnd(calcs.totals.employer)}</div>
+              <div className="text-xl font-semibold mt-1">{formatTnd(declaration?.totalEmployerCnss ?? 0)}</div>
             </CardContent>
           </Card>
         </div>
@@ -261,21 +240,27 @@ export function CnssPage() {
                 <TableRow>
                   <TableHead>{t('cnssPage.cnssNumber')}</TableHead>
                   <TableHead>{t('cnssPage.employee')}</TableHead>
-                  <TableHead>{t('cnssPage.gross')}</TableHead>
                   <TableHead>{t('cnssPage.subject')}</TableHead>
                   <TableHead>{t('cnssPage.employeeShare')}</TableHead>
                   <TableHead>{t('cnssPage.employerShare')}</TableHead>
+                  <TableHead>{t('cnssPage.totals.css', { defaultValue: 'CSS' })}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {calcs.rows.map(r => (
+                {declarationQuery.isLoading && (
+                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">{t('loading', { defaultValue: 'Loading…' })}</TableCell></TableRow>
+                )}
+                {!declarationQuery.isLoading && lines.length === 0 && (
+                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">{t('cnssPage.noData', { defaultValue: 'No declaration data for this period.' })}</TableCell></TableRow>
+                )}
+                {lines.map(r => (
                   <TableRow key={r.userId}>
                     <TableCell className="font-mono text-xs">{r.cnssNumber ?? '—'}</TableCell>
-                    <TableCell className="font-medium">{r.name}</TableCell>
-                    <TableCell>{formatTnd(r.gross)}</TableCell>
-                    <TableCell>{formatTnd(r.subject)}</TableCell>
-                    <TableCell>{formatTnd(r.employee)}</TableCell>
-                    <TableCell>{formatTnd(r.employer)}</TableCell>
+                    <TableCell className="font-medium">{r.userName}</TableCell>
+                    <TableCell>{formatTnd(r.salarySubject)}</TableCell>
+                    <TableCell>{formatTnd(r.employeeCnss)}</TableCell>
+                    <TableCell>{formatTnd(r.employerCnss)}</TableCell>
+                    <TableCell>{formatTnd(r.css)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

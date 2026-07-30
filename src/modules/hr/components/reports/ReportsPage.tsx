@@ -10,9 +10,8 @@ import { Label } from '@/components/ui/label';
 import { BarChart3, FileDown, FileSpreadsheet } from 'lucide-react';
 import { HRPageHeader } from '../HRPageHeader';
 import { useEmployees } from '../../hooks/useEmployees';
-import { useBonuses } from '../../hooks/useBonuses';
 import { useCnssRates } from '../../hooks/useCnss';
-import { calculateTunisianNetSalary, cnssRateToTaxEngineRates } from '../../utils/tunisianTaxEngine';
+import { hrApi } from '../../services/hrApi';
 import dayjs from 'dayjs';
 import { useQuery } from '@tanstack/react-query';
 import { schedulesApi, type UserLeave } from '@/services/api/schedulesApi';
@@ -26,79 +25,27 @@ export function ReportsPage() {
   const [month, setMonth] = useState(dayjs().month() + 1);
 
   const { employeesQuery } = useEmployees();
-  const { bonusesQuery } = useBonuses({ year, month });
   const { activeRateQuery } = useCnssRates();
-  const { bonusesQuery: ytdBonusesQuery } = useBonuses({ year });
+  const employerRate = Number(activeRateQuery.data?.employerRate ?? 0);
 
-  const employerRate = Number(activeRateQuery.data?.employerRate ?? 0.1657);
-  // Full tax-engine rates from the active backend CNSS row so IRPP/CSS/net
-  // and the ceiling-capped CNSS bases in reports match backend payroll.
-  const engineRates = useMemo(
-    () => cnssRateToTaxEngineRates(activeRateQuery.data as any),
-    [activeRateQuery.data],
-  );
-  const ceiling = Number(engineRates.salaryCeiling ?? 0);
-
-  const employeeCostRows = useMemo(() => {
-    const bonusByUser = new Map<number, { bonus: number; deduction: number }>();
-    for (const b of bonusesQuery.data ?? []) {
-      const cur = bonusByUser.get(b.userId) ?? { bonus: 0, deduction: 0 };
-      const amt = Number(b.amount) || 0;
-      if (b.kind === 'other_cost' || amt < 0) cur.deduction += Math.abs(amt);
-      else cur.bonus += amt;
-      bonusByUser.set(b.userId, cur);
-    }
-    const ytdBonusByUser = new Map<number, number>();
-    for (const b of ytdBonusesQuery.data ?? []) {
-      if (b.month && b.month > month) continue; // YTD = Jan..month
-      const amt = Number(b.amount) || 0;
-      if (b.kind === 'other_cost' || amt < 0) continue;
-      ytdBonusByUser.set(b.userId, (ytdBonusByUser.get(b.userId) ?? 0) + amt);
-    }
-    return (employeesQuery.data ?? []).map((r: any) => {
-      const u = r.user;
-      const cfg = r.salaryConfig;
-      const gross = Number(cfg?.grossSalary ?? 0);
-      const ub = bonusByUser.get(Number(u?.id)) ?? { bonus: 0, deduction: 0 };
-      // Employer CNSS is capped at the salary ceiling, same rule the backend
-      // uses in HrService.RunPayrollAsync / GetCnssDeclarationAsync.
-      const employerBase = ceiling > 0 ? Math.min(gross + ub.bonus, ceiling) : gross + ub.bonus;
-      const cnssEmployer = employerBase * employerRate;
-      const totalCost = gross + ub.bonus - ub.deduction + cnssEmployer;
-      const breakdown = cfg ? calculateTunisianNetSalary({
-        grossSalary: gross + ub.bonus,
-        isHeadOfFamily: Boolean(cfg.isHeadOfFamily),
-        childrenCount: Number(cfg.childrenCount || 0),
-        customDeductions: Number(cfg.customDeductions || 0) + ub.deduction,
-      }, engineRates) : null;
-      // YTD = Jan..selected month  => `month` months of base salary
-      const ytdGross = gross * month;
-      const ytdBonuses = ytdBonusByUser.get(Number(u?.id)) ?? 0;
-      // YTD employer CNSS also respects the ceiling per month (backend rule).
-      const ytdEmployerBase = ceiling > 0 ? Math.min(gross, ceiling) * month : ytdGross;
-      const ytdEmployerCnss = ytdEmployerBase * employerRate;
-      const ytdTotalCost = ytdGross + ytdBonuses + ytdEmployerCnss;
-      return {
-        userId: Number(u?.id),
-        name: `${u?.firstName ?? ''} ${u?.lastName ?? ''}`.trim() || u?.email || `#${u?.id}`,
-        gross, bonuses: ub.bonus, deductions: ub.deduction, cnssEmployer,
-        net: breakdown?.netSalary ?? 0, totalCost,
-        ytdGross, ytdBonuses, ytdEmployerCnss, ytdTotalCost,
-      };
-    });
-  }, [employeesQuery.data, bonusesQuery.data, ytdBonusesQuery.data, employerRate, month, engineRates, ceiling]);
+  // Employee cost is computed SERVER-SIDE (GET /api/hr/reports/employee-cost)
+  // so report figures always reconcile with the payroll engine.
+  const costQuery = useQuery({
+    queryKey: ['hr', 'reports', 'employee-cost', year, month],
+    queryFn: () => hrApi.getEmployeeCostReport(year, month),
+  });
+  const employeeCostRows = costQuery.data ?? [];
 
   const totals = useMemo(() => employeeCostRows.reduce(
     (acc, r) => ({
-      gross: acc.gross + r.gross,
-      bonuses: acc.bonuses + r.bonuses,
-      deductions: acc.deductions + r.deductions,
-      cnssEmployer: acc.cnssEmployer + r.cnssEmployer,
-      net: acc.net + r.net,
-      totalCost: acc.totalCost + r.totalCost,
-      ytdTotalCost: acc.ytdTotalCost + r.ytdTotalCost,
+      gross: acc.gross + Number(r.gross || 0),
+      bonuses: acc.bonuses + Number(r.bonuses || 0),
+      allowances: acc.allowances + Number(r.allowances || 0),
+      employerCnss: acc.employerCnss + Number(r.employerCnss || 0),
+      totalCost: acc.totalCost + Number(r.totalCost || 0),
+      ytdTotalCost: acc.ytdTotalCost + Number(r.ytdTotalCost || 0),
     }),
-    { gross: 0, bonuses: 0, deductions: 0, cnssEmployer: 0, net: 0, totalCost: 0, ytdTotalCost: 0 },
+    { gross: 0, bonuses: 0, allowances: 0, employerCnss: 0, totalCost: 0, ytdTotalCost: 0 },
   ), [employeeCostRows]);
 
   const exportCsv = (filename: string, header: string[], rows: (string | number)[][]) => {
@@ -172,13 +119,13 @@ export function ReportsPage() {
                   <CardTitle className="text-base">{t('reportsPage.employeeCostTitle')}</CardTitle>
                   <div className="flex items-center gap-2">
                     {(() => {
-                      const header = ['Employee', 'Gross', 'Bonuses', 'Deductions', 'CNSS Employer', 'Net', 'Total Cost'];
-                      const headerYtd = [...header, 'YTD Gross', 'YTD Bonuses', 'YTD CNSS Employer', 'YTD Total Cost'];
+                      const header = [t('reportsExport.employee'), t('reportsExport.department'), t('reportsExport.gross'), t('reportsExport.bonuses'), t('reportsExport.allowances'), t('reportsExport.cnssEmployer'), t('reportsExport.totalCost')];
+                      const headerYtd = [...header, t('reportsExport.ytdGross'), t('reportsExport.ytdBonuses'), t('reportsExport.ytdCnssEmployer'), t('reportsExport.ytdTotalCost')];
                       const rows = employeeCostRows.map(r => [
-                        r.name, Number(r.gross.toFixed(3)), Number(r.bonuses.toFixed(3)), Number(r.deductions.toFixed(3)),
-                        Number(r.cnssEmployer.toFixed(3)), Number(r.net.toFixed(3)), Number(r.totalCost.toFixed(3)),
-                        Number(r.ytdGross.toFixed(3)), Number(r.ytdBonuses.toFixed(3)),
-                        Number(r.ytdEmployerCnss.toFixed(3)), Number(r.ytdTotalCost.toFixed(3)),
+                        r.userName, r.department ?? '', Number(Number(r.gross).toFixed(3)), Number(Number(r.bonuses).toFixed(3)),
+                        Number(Number(r.allowances).toFixed(3)), Number(Number(r.employerCnss).toFixed(3)), Number(Number(r.totalCost).toFixed(3)),
+                        Number(Number(r.ytdGross).toFixed(3)), Number(Number(r.ytdBonuses).toFixed(3)),
+                        Number(Number(r.ytdEmployerCnss).toFixed(3)), Number(Number(r.ytdTotalCost).toFixed(3)),
                       ]);
                       const base = `employee-cost-${year}-${String(month).padStart(2, '0')}`;
                       return (
@@ -186,7 +133,7 @@ export function ReportsPage() {
                           <Button size="sm" variant="outline" className="gap-2" onClick={() => exportCsv(`${base}.csv`, headerYtd, rows as any)}>
                             <FileDown className="h-4 w-4" /> {t('reportsPage.exportCsv')}
                           </Button>
-                          <Button size="sm" variant="outline" className="gap-2" onClick={() => exportXlsx(`${base}.xlsx`, 'Employee Cost', headerYtd, rows as any)}>
+                          <Button size="sm" variant="outline" className="gap-2" onClick={() => exportXlsx(`${base}.xlsx`, t('reportsExport.costSheet'), headerYtd, rows as any)}>
                             <FileSpreadsheet className="h-4 w-4" /> {t('reportsPage.exportXlsx', 'Export Excel')}
                           </Button>
                         </>
@@ -202,20 +149,26 @@ export function ReportsPage() {
                       <TableHead>{t('reportsPage.employee')}</TableHead>
                       <TableHead>{t('reportsPage.gross')}</TableHead>
                       <TableHead>{t('reportsPage.bonuses')}</TableHead>
-                      <TableHead>{t('reportsPage.deductions')}</TableHead>
+                      <TableHead>{t('reportsPage.allowances', 'Allowances')}</TableHead>
                       <TableHead>{t('reportsPage.cnssEmployer')}</TableHead>
                       <TableHead>{t('reportsPage.totalCost')}</TableHead>
                       <TableHead className="border-l">{t('reportsPage.ytdTotalCost', 'YTD total cost')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
+                    {costQuery.isLoading && (
+                      <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">{t('loading', { defaultValue: 'Loading…' })}</TableCell></TableRow>
+                    )}
+                    {!costQuery.isLoading && employeeCostRows.length === 0 && (
+                      <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">{t('reportsPage.noData', { defaultValue: 'No data for this period.' })}</TableCell></TableRow>
+                    )}
                     {employeeCostRows.map(r => (
                       <TableRow key={r.userId}>
-                        <TableCell className="font-medium">{r.name}</TableCell>
+                        <TableCell className="font-medium">{r.userName}</TableCell>
                         <TableCell>{formatMoney(r.gross)}</TableCell>
                         <TableCell className="text-primary">{formatMoney(r.bonuses)}</TableCell>
-                        <TableCell className="text-destructive">{formatMoney(r.deductions)}</TableCell>
-                        <TableCell>{formatMoney(r.cnssEmployer)}</TableCell>
+                        <TableCell>{formatMoney(r.allowances)}</TableCell>
+                        <TableCell>{formatMoney(r.employerCnss)}</TableCell>
                         <TableCell className="font-semibold">{formatMoney(r.totalCost)}</TableCell>
                         <TableCell className="border-l font-semibold text-primary">{formatMoney(r.ytdTotalCost)}</TableCell>
                       </TableRow>
@@ -224,8 +177,8 @@ export function ReportsPage() {
                       <TableCell>{t('reportsPage.total')}</TableCell>
                       <TableCell>{formatMoney(totals.gross)}</TableCell>
                       <TableCell>{formatMoney(totals.bonuses)}</TableCell>
-                      <TableCell>{formatMoney(totals.deductions)}</TableCell>
-                      <TableCell>{formatMoney(totals.cnssEmployer)}</TableCell>
+                      <TableCell>{formatMoney(totals.allowances)}</TableCell>
+                      <TableCell>{formatMoney(totals.employerCnss)}</TableCell>
                       <TableCell>{formatMoney(totals.totalCost)}</TableCell>
                       <TableCell className="border-l">{formatMoney(totals.ytdTotalCost)}</TableCell>
                     </TableRow>
@@ -245,7 +198,7 @@ export function ReportsPage() {
                       const header = ['Metric', `Amount (${currency.code})`];
                       const rows = [
                         [t('reportsPage.totalGross'), Number(totals.gross.toFixed(3))],
-                        [t('reportsPage.totalNet'), Number(totals.net.toFixed(3))],
+                        [t('reportsPage.cnssEmployer'), Number(totals.employerCnss.toFixed(3))],
                         [t('reportsPage.totalCost'), Number(totals.totalCost.toFixed(3))],
                       ];
                       const base = `payroll-summary-${year}-${String(month).padStart(2, '0')}`;
@@ -270,8 +223,8 @@ export function ReportsPage() {
                     <div className="text-xl font-semibold mt-1">{formatMoney(totals.gross)}</div>
                   </div>
                   <div className="rounded-lg border bg-muted/30 p-3">
-                    <div className="text-xs text-muted-foreground">{t('reportsPage.totalNet')}</div>
-                    <div className="text-xl font-semibold mt-1">{formatMoney(totals.net)}</div>
+                    <div className="text-xs text-muted-foreground">{t('reportsPage.cnssEmployer')}</div>
+                    <div className="text-xl font-semibold mt-1">{formatMoney(totals.employerCnss)}</div>
                   </div>
                   <div className="rounded-lg border bg-muted/30 p-3">
                     <div className="text-xs text-muted-foreground">{t('reportsPage.totalCost')}</div>
@@ -289,15 +242,15 @@ export function ReportsPage() {
                   <CardTitle className="text-base">{t('reportsPage.cnssTitle')}</CardTitle>
                   <div className="flex items-center gap-2">
                     {(() => {
-                      const header = ['Employee', 'Gross', 'CNSS Employer', 'Employer Rate'];
-                      const rows = employeeCostRows.map(r => [r.name, Number(r.gross.toFixed(3)), Number(r.cnssEmployer.toFixed(3)), Number((employerRate * 100).toFixed(2))]);
+                      const header = [t('reportsExport.employee'), t('reportsExport.gross'), t('reportsExport.cnssEmployer'), t('reportsExport.employerRate')];
+                      const rows = employeeCostRows.map(r => [r.userName, Number(Number(r.gross).toFixed(3)), Number(Number(r.employerCnss).toFixed(3)), Number((employerRate * 100).toFixed(2))]);
                       const base = `cnss-report-${year}-${String(month).padStart(2, '0')}`;
                       return (
                         <>
                           <Button size="sm" variant="outline" className="gap-2" onClick={() => exportCsv(`${base}.csv`, header, rows as any)}>
                             <FileDown className="h-4 w-4" /> {t('reportsPage.exportCsv')}
                           </Button>
-                          <Button size="sm" variant="outline" className="gap-2" onClick={() => exportXlsx(`${base}.xlsx`, 'CNSS Report', header, rows as any)}>
+                          <Button size="sm" variant="outline" className="gap-2" onClick={() => exportXlsx(`${base}.xlsx`, t('reportsExport.cnssSheet'), header, rows as any)}>
                             <FileSpreadsheet className="h-4 w-4" /> {t('reportsPage.exportXlsx', 'Export Excel')}
                           </Button>
                         </>
@@ -310,7 +263,7 @@ export function ReportsPage() {
                 <div className="grid gap-3 sm:grid-cols-3">
                   <div className="rounded-lg border bg-muted/30 p-3">
                     <div className="text-xs text-muted-foreground">{t('reportsPage.cnssEmployer')}</div>
-                    <div className="text-xl font-semibold mt-1">{formatMoney(totals.cnssEmployer)}</div>
+                    <div className="text-xl font-semibold mt-1">{formatMoney(totals.employerCnss)}</div>
                   </div>
                   <div className="rounded-lg border bg-muted/30 p-3">
                     <div className="text-xs text-muted-foreground">{t('reportsPage.employerRate')}</div>

@@ -3,12 +3,14 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyApi.Modules.HR.DTOs;
+using MyApi.Modules.HR.Filters;
 using MyApi.Modules.HR.Services;
 
 namespace MyApi.Modules.HR.Controllers
 {
     [ApiController]
     [Authorize]
+    [HrExceptionFilter]
     [Route("api/hr")]
     public class HrController : ControllerBase
     {
@@ -93,7 +95,7 @@ namespace MyApi.Modules.HR.Controllers
         public async Task<IActionResult> ConfirmRun(int id)
         {
             try { return Ok(new { success = true, data = await _hr.ConfirmPayrollRunAsync(id, GetActorId()) }); }
-            catch (KeyNotFoundException) { return NotFound(new { success = false, error = "Payroll run not found" }); }
+            catch (KeyNotFoundException) { return NotFound(new { success = false, error = "hr.payroll_run_not_found" }); }
             catch (InvalidOperationException ex) { return BadRequest(new { success = false, error = ex.Message }); }
         }
 
@@ -101,7 +103,7 @@ namespace MyApi.Modules.HR.Controllers
         public async Task<IActionResult> MarkRunPaid(int id)
         {
             try { return Ok(new { success = true, data = await _hr.MarkPayrollRunPaidAsync(id, GetActorId()) }); }
-            catch (KeyNotFoundException) { return NotFound(new { success = false, error = "Payroll run not found" }); }
+            catch (KeyNotFoundException) { return NotFound(new { success = false, error = "hr.payroll_run_not_found" }); }
             catch (InvalidOperationException ex) { return BadRequest(new { success = false, error = ex.Message }); }
         }
 

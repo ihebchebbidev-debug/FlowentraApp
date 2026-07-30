@@ -16,6 +16,7 @@ import { useEmployees } from '../../hooks/useEmployees';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { HrPermissionButton } from '../common/HrPermissionButton';
+import { translateHrServerError } from '../../utils/hrServerError';
 
 async function mapWithConcurrency<T, R>(items: T[], concurrency: number, fn: (item: T) => Promise<R>): Promise<R[]> {
   const results: R[] = [];
@@ -143,7 +144,7 @@ export function LeavesPage() {
               queryClient.invalidateQueries({ queryKey: ['hr', 'leaveBalances'] }),
             ]);
           } catch (e: any) {
-            toast.error(e?.message || t('leavesPage.createFailed', 'Failed to create leave request'));
+            toast.error(translateHrServerError(t, e, t('leavesPage.createFailed', 'Failed to create leave request')));
             throw e;
           }
         }}

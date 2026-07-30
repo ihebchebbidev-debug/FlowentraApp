@@ -124,7 +124,9 @@
     "salaryConfigSaved": "Salary configuration saved",
     "salaryConfigHint": "Fill gross salary and family details to preview net salary and taxes.",
     "netPreview": "Net preview",
-    "irppPreview": "IRPP preview"
+    "irppPreview": "IRPP preview",
+    "selectEmployee": "Select employee...",
+    "searchPlaceholder": "Search employees..."
   },
   "employeeHr": {
     "section": {
@@ -182,7 +184,8 @@
     "lateCount": "Late",
     "loadError": "Could not load attendance records.",
     "selectEmployee": "Select an employee",
-    "totalRecords": "Total records"
+    "totalRecords": "Total records",
+    "deleteTitle": "Delete attendance record?"
   },
   "attendanceErrors": {
     "userRequired": "Please select an employee.",
@@ -248,7 +251,12 @@
     "standardHoursPerDay": "Standard hours/day",
     "overtimeThreshold": "Overtime threshold (hours)",
     "overtimeMultiplier": "Overtime multiplier",
-    "lateThresholdMinutes": "Late threshold (minutes)"
+    "lateThresholdMinutes": "Late threshold (minutes)",
+    "overtimeThresholdHours": "Overtime threshold (h)",
+    "calc": {
+      "actualHours": "Actual hours",
+      "standardDay": "Standard day"
+    }
   },
   "attendanceStatus": {
     "present": "Present",
@@ -277,6 +285,8 @@
     "tunisianLaw2025": "Tunisian law (2025)",
     "methodology": "Methodology",
     "methodologyHint": "All amounts are computed per month using progressive IRPP brackets.",
+    "absenceDeduction": "Unpaid absence deduction",
+    "unpaidDays": "{{count}} unpaid days",
     "totalDeductions": "Total deductions",
     "bracketCount": "brackets",
     "infinity": "∞"
@@ -348,7 +358,8 @@
       "confirm": "Confirm",
       "markPaid": "Mark paid",
       "confirmed": "Payroll run confirmed",
-      "paid": "Payroll marked as paid"
+      "paid": "Payroll marked as paid",
+      "generated": "Payroll run generated"
     },
     "export": {
       "button": "Export PDF",
@@ -378,7 +389,10 @@
     "perChild": "Per child",
     "bracketsTitle": "IRPP brackets",
     "bracketsHint": "Progressive monthly brackets (per portion).",
-    "resetDefaults": "Reset to 2025 defaults"
+    "resetDefaults": "Reset to 2025 defaults",
+    "manageRates": "Manage rates",
+    "noActiveRate": "No active CNSS rate is configured. Payroll cannot be calculated until a rate is saved on the CNSS page.",
+    "effectiveFrom": "From"
   },
   "leavesPage": {
     "subtitle": "Requests, approvals and balances",
@@ -409,7 +423,9 @@
     "remaining": "Remaining",
     "startDate": "Start date",
     "endDate": "End date",
-    "reason": "Reason"
+    "reason": "Reason",
+    "created": "Leave request created",
+    "createFailed": "Failed to create leave request"
   },
   "leaveStatus": {
     "pending": "Pending",
@@ -439,7 +455,12 @@
     "filtersPlural": "filters",
     "today": "Today",
     "prev": "Prev",
-    "next": "Next"
+    "next": "Next",
+    "deleteTitle": "Delete this item?",
+    "deleteHint": "This action cannot be undone.",
+    "delete": "Delete",
+    "error": "Error",
+    "noResults": "No results."
   },
   "filters": {
     "employee": "Employee",
@@ -549,7 +570,8 @@
     "allowance": "Allowance",
     "bonus": "Bonus",
     "deduction": "Deduction",
-    "reimbursement": "Reimbursement"
+    "reimbursement": "Reimbursement",
+    "other_cost": "Other cost / deduction"
   },
   "bonusesPage": {
     "add": "Add",
@@ -573,7 +595,14 @@
       "count": "Entries",
       "deductions": "Deductions",
       "net": "Net"
-    }
+    },
+    "updated": "Bonus updated",
+    "editTitle": "Edit bonus / cost",
+    "affectsPayroll": "Affects payroll",
+    "subjectToCnss": "Subject to CNSS",
+    "deleteTitle": "Delete bonus?",
+    "deleteDescription": "This action cannot be undone. The bonus will be permanently removed.",
+    "deleteHint": "This action cannot be undone."
   },
   "cnssPage": {
     "ceiling": "Ceiling",
@@ -601,8 +630,11 @@
       "employee": "Employee total",
       "employer": "Employer total",
       "gross": "Gross total",
-      "subject": "Subject total"
-    }
+      "subject": "Subject total",
+      "css": "CSS"
+    },
+    "rateInvalid": "Invalid CNSS rate",
+    "noData": "No declaration data for this period."
   },
   "cnssTab": {
     "category": "Category",
@@ -654,7 +686,9 @@
     "absencePending": "Pending",
     "absenceType": "Leave type",
     "absenceCount": "Count",
-    "absenceEmpty": "No absences for this period"
+    "absenceEmpty": "No absences for this period",
+    "allowances": "Allowances",
+    "noData": "No data for this period."
   },
   "settingsPage": {
     "subtitle": "Tunisia-specific HR configuration",
@@ -719,6 +753,404 @@
       "cnss": "CNSS",
       "medical": "Medical",
       "other": "Other"
+    }
+  },
+  "edit": "Edit",
+  "delete": "Delete",
+  "validation": {
+    "tenantRequired": "Please select a target company",
+    "datesRequired": "Start and end dates are required",
+    "endBeforeStart": "End date must be after start date",
+    "checkForm": "Please complete the required fields",
+    "required": "Required"
+  },
+  "serverErrors": {
+    "employeeNotFound": "Employee not found.",
+    "attendanceNotFound": "Attendance record not found.",
+    "invalidMonth": "Invalid month.",
+    "invalidYear": "Invalid year.",
+    "payrollRunExists": "A payroll run already exists for this period. Delete or reuse it instead of generating a duplicate.",
+    "payrollRunNotFound": "Payroll run not found.",
+    "payrollRunAlreadyPaid": "This payroll run is already marked as paid.",
+    "payrollRunNotConfirmed": "The payroll run must be confirmed before it can be marked as paid.",
+    "payrollEntryNotFound": "Pay slip not found.",
+    "departmentNameRequired": "Department name is required.",
+    "departmentNotFound": "Department not found.",
+    "bonusNotFound": "Bonus / cost not found.",
+    "bonusNegativeAmount": "The amount cannot be negative.",
+    "holidayNotFound": "Public holiday not found.",
+    "documentNotFound": "Document not found.",
+    "goalNotFound": "Goal not found.",
+    "cycleNotFound": "Review cycle not found.",
+    "reviewNotFound": "Review not found.",
+    "openingNotFound": "Job opening not found.",
+    "applicantNotFound": "Applicant not found.",
+    "interviewNotFound": "Interview not found."
+  },
+  "bonusErrors": {
+    "employeeRequired": "Employee is required.",
+    "invalidKind": "Invalid bonus type.",
+    "invalidFrequency": "Invalid frequency.",
+    "labelRequired": "Label is required.",
+    "labelTooLong": "Label is too long.",
+    "amountNumber": "Amount must be a number.",
+    "amountNonZero": "Amount must be a non-zero number.",
+    "monthRange": "Month must be between 1 and 12.",
+    "invalidYear": "Invalid year."
+  },
+  "cnssErrors": {
+    "employeeRateRequired": "Employee rate is required.",
+    "employeeRateMin": "Employee rate must be ≥ 0.",
+    "employeeRateMax": "Employee rate must be ≤ 100.",
+    "employerRateRequired": "Employer rate is required.",
+    "employerRateMin": "Employer rate must be ≥ 0.",
+    "employerRateMax": "Employer rate must be ≤ 100.",
+    "ceilingMin": "Ceiling must be ≥ 0.",
+    "effectiveFromRequired": "Effective date is required."
+  },
+  "permissions": {
+    "deniedTitle": "Access denied",
+    "deniedGeneric": "You don't have permission to perform this action in HR.",
+    "denied": {
+      "view": "You don't have permission to view HR data.",
+      "create": "You don't have permission to create HR records.",
+      "edit": "You don't have permission to edit HR records.",
+      "delete": "You don't have permission to delete HR records.",
+      "approve": "You don't have permission to approve HR records.",
+      "export": "You don't have permission to export HR data."
+    }
+  },
+  "reportsExport": {
+    "employee": "Employee",
+    "department": "Department",
+    "gross": "Gross",
+    "bonuses": "Bonuses",
+    "allowances": "Allowances",
+    "cnssEmployer": "CNSS employer",
+    "totalCost": "Total cost",
+    "ytdGross": "YTD gross",
+    "ytdBonuses": "YTD bonuses",
+    "ytdCnssEmployer": "YTD CNSS employer",
+    "ytdTotalCost": "YTD total cost",
+    "employerRate": "Employer rate",
+    "cnssSheet": "CNSS report",
+    "costSheet": "Employee cost"
+  },
+  "performancePage": {
+    "title": "Performance Management",
+    "subtitle": "Goals, review cycles and employee performance reviews",
+    "tabs": {
+      "goals": "Goals",
+      "cycles": "Review cycles",
+      "reviews": "Reviews"
+    },
+    "common": {
+      "employee": "Employee",
+      "selectEmployee": "Select employee",
+      "reviewCycle": "Review cycle",
+      "reviewCycleOptional": "Review cycle (optional)",
+      "selectCycle": "Select cycle",
+      "none": "None",
+      "all": "All",
+      "status": "Status",
+      "cancel": "Cancel",
+      "save": "Save",
+      "create": "Create",
+      "close": "Close",
+      "actions": "Actions",
+      "delete": "Delete"
+    },
+    "goals": {
+      "title": "Employee Goals",
+      "addGoal": "Add goal",
+      "newGoal": "New goal",
+      "titleField": "Title",
+      "description": "Description",
+      "category": "Category",
+      "weight": "Weight (%)",
+      "dueDate": "Due date",
+      "requiredError": "Employee and title are required",
+      "addedToast": "Goal added",
+      "filterEmployee": "Employee",
+      "filterStatus": "Status",
+      "table": {
+        "employee": "Employee",
+        "title": "Title",
+        "category": "Category",
+        "cycle": "Cycle",
+        "weight": "Weight",
+        "progress": "Progress",
+        "status": "Status",
+        "due": "Due",
+        "actions": "Actions"
+      },
+      "noGoals": "No goals yet",
+      "deleteConfirmTitle": "Delete goal?",
+      "categoryOptions": {
+        "smart": "SMART",
+        "okr": "OKR",
+        "kpi": "KPI",
+        "other": "Other"
+      }
+    },
+    "status": {
+      "not_started": "Not started",
+      "in_progress": "In progress",
+      "achieved": "Achieved",
+      "partially": "Partially",
+      "missed": "Missed",
+      "cancelled": "Cancelled",
+      "draft": "Draft",
+      "open": "Open",
+      "closed": "Closed",
+      "pending": "Pending",
+      "self_assessment": "Self-assessment",
+      "manager_review": "Manager review",
+      "completed": "Completed",
+      "acknowledged": "Acknowledged"
+    },
+    "cycles": {
+      "title": "Review Cycles",
+      "newCycle": "New cycle",
+      "newReviewCycle": "New review cycle",
+      "name": "Name",
+      "namePlaceholder": "2025 Annual Review",
+      "frequency": "Frequency",
+      "periodStart": "Period start",
+      "periodEnd": "Period end",
+      "requireSelfAssessment": "Require self-assessment",
+      "requiredError": "Name and period are required",
+      "createdToast": "Cycle created",
+      "noCycles": "No cycles yet",
+      "deleteConfirmTitle": "Delete review cycle?",
+      "frequencyOptions": {
+        "annual": "Annual",
+        "semi_annual": "Semi-annual",
+        "quarterly": "Quarterly",
+        "custom": "Custom"
+      },
+      "table": {
+        "name": "Name",
+        "frequency": "Frequency",
+        "period": "Period",
+        "status": "Status",
+        "reviews": "Reviews",
+        "selfAssessment": "Self-assessment",
+        "actions": "Actions"
+      },
+      "yes": "Yes",
+      "no": "No"
+    },
+    "reviews": {
+      "title": "Performance Reviews",
+      "newReview": "New review",
+      "startNewReview": "Start a new review",
+      "reviewer": "Reviewer (manager)",
+      "optional": "Optional",
+      "requiredError": "Employee and cycle are required",
+      "createdToast": "Review created",
+      "updatedToast": "Review updated",
+      "filterCycle": "Cycle",
+      "filterStatus": "Status",
+      "table": {
+        "employee": "Employee",
+        "cycle": "Cycle",
+        "reviewer": "Reviewer",
+        "status": "Status",
+        "score": "Score",
+        "rating": "Rating",
+        "actions": "Actions"
+      },
+      "noReviews": "No reviews yet",
+      "deleteConfirmTitle": "Delete review?",
+      "detail": {
+        "status": "Status",
+        "overallScore": "Overall score (0–5)",
+        "rating": "Rating",
+        "selfAssessment": "Self-assessment (employee)",
+        "managerComments": "Manager comments",
+        "strengths": "Strengths",
+        "improvements": "Improvements",
+        "developmentPlan": "Development plan",
+        "linkedGoals": "Linked goals"
+      },
+      "ratingOptions": {
+        "exceeds": "Exceeds expectations",
+        "meets": "Meets expectations",
+        "partially_meets": "Partially meets",
+        "below": "Below expectations",
+        "new_to_role": "New to role"
+      }
+    }
+  },
+  "recruitmentPage": {
+    "header": {
+      "title": "Recruitment",
+      "subtitle": "Job openings, applicants and interview pipeline"
+    },
+    "tabs": {
+      "dashboard": "Dashboard",
+      "openings": "Job openings",
+      "applicants": "Applicants",
+      "interviews": "Interviews"
+    },
+    "dashboard": {
+      "openPositions": "Open positions",
+      "activeApplicants": "Active applicants",
+      "interviewsThisWeek": "Interviews this week",
+      "offersOut": "Offers out",
+      "pipeline": "Pipeline"
+    },
+    "openings": {
+      "title": "Job openings",
+      "newOpening": "New opening",
+      "newOpeningDialogTitle": "New job opening",
+      "fields": {
+        "title": "Title",
+        "contract": "Contract",
+        "seniority": "Seniority",
+        "openings": "Openings",
+        "description": "Description",
+        "status": "Status"
+      },
+      "table": {
+        "title": "Title",
+        "contract": "Contract",
+        "seniority": "Seniority",
+        "openings": "Openings",
+        "applicants": "Applicants",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "empty": "No openings yet",
+      "deleteConfirmTitle": "Delete job opening?",
+      "toasts": {
+        "titleRequired": "Title required",
+        "created": "Opening created"
+      }
+    },
+    "applicants": {
+      "title": "Applicants",
+      "newApplicant": "New applicant",
+      "newApplicantDialogTitle": "New applicant",
+      "fields": {
+        "opening": "Opening",
+        "openingPlaceholder": "Select opening",
+        "firstName": "First name",
+        "lastName": "Last name",
+        "email": "Email",
+        "phone": "Phone",
+        "source": "Source"
+      },
+      "filters": {
+        "opening": "Opening",
+        "stage": "Stage",
+        "all": "All"
+      },
+      "table": {
+        "name": "Name",
+        "opening": "Opening",
+        "email": "Email",
+        "source": "Source",
+        "stage": "Stage",
+        "interviews": "Interviews",
+        "actions": "Actions"
+      },
+      "empty": "No applicants yet",
+      "notesButton": "Notes",
+      "deleteConfirmTitle": "Delete applicant?",
+      "notesDialogTitle": "Applicant notes",
+      "notesPlaceholder": "Add a note…",
+      "notesAdd": "Add",
+      "notesEmpty": "No notes",
+      "notesSystemAuthor": "System",
+      "notesDeleteLabel": "Delete",
+      "notesDeleteConfirmTitle": "Delete note?",
+      "toasts": {
+        "requiredFields": "Opening, first & last name required",
+        "added": "Applicant added"
+      }
+    },
+    "interviews": {
+      "title": "Interviews",
+      "schedule": "Schedule",
+      "scheduleDialogTitle": "Schedule interview",
+      "fields": {
+        "applicant": "Applicant",
+        "applicantPlaceholder": "Select applicant",
+        "kind": "Kind",
+        "when": "When",
+        "durationMinutes": "Duration (min)",
+        "meetingUrl": "Meeting URL"
+      },
+      "table": {
+        "applicant": "Applicant",
+        "kind": "Kind",
+        "when": "When",
+        "duration": "Duration",
+        "status": "Status",
+        "recommendation": "Recommendation",
+        "actions": "Actions"
+      },
+      "empty": "No interviews scheduled",
+      "deleteConfirmTitle": "Delete interview?",
+      "durationMinutesShort": "{{count}} min",
+      "toasts": {
+        "requiredFields": "Applicant and date are required",
+        "scheduled": "Interview scheduled"
+      }
+    },
+    "stages": {
+      "applied": "Applied",
+      "screening": "Screening",
+      "interview": "Interview",
+      "offer": "Offer",
+      "hired": "Hired",
+      "rejected": "Rejected",
+      "withdrawn": "Withdrawn"
+    },
+    "openingStatuses": {
+      "draft": "Draft",
+      "open": "Open",
+      "on_hold": "On hold",
+      "closed": "Closed",
+      "filled": "Filled"
+    },
+    "interviewStatuses": {
+      "scheduled": "Scheduled",
+      "done": "Done",
+      "cancelled": "Cancelled",
+      "no_show": "No show"
+    },
+    "interviewKinds": {
+      "phone": "Phone",
+      "technical": "Technical",
+      "hr": "HR",
+      "onsite": "Onsite",
+      "final": "Final"
+    },
+    "contracts": {
+      "CDI": "CDI",
+      "CDD": "CDD",
+      "Stage": "Internship",
+      "Freelance": "Freelance"
+    },
+    "seniority": {
+      "junior": "Junior",
+      "mid": "Mid",
+      "senior": "Senior",
+      "lead": "Lead"
+    },
+    "sources": {
+      "linkedin": "LinkedIn",
+      "referral": "Referral",
+      "website": "Website",
+      "other": "Other"
+    },
+    "actions": {
+      "cancel": "Cancel",
+      "create": "Create",
+      "add": "Add"
     }
   }
 }

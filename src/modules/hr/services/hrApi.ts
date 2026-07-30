@@ -7,8 +7,11 @@ import type {
   AttendanceRecord,
   AttendanceSettings,
   BonusCost,
+  CnssDeclaration,
   CnssRate,
   Department,
+  EmployeeCostRow,
+
   EmployeeDocument,
   EmployeeSalaryConfig,
   LeaveBalance,
@@ -247,7 +250,7 @@ export const hrApi = {
     return unwrapData(res);
   },
 
-  async getCnssDeclaration(year: number, month: number): Promise<any> {
+  async getCnssDeclaration(year: number, month: number): Promise<CnssDeclaration> {
     const res = await axiosInstance.get(`/api/hr/cnss/declaration?year=${year}&month=${month}`);
     return unwrapData(res);
   },
@@ -302,15 +305,12 @@ export const hrApi = {
   },
 
   // ---- Reports ----
-  async getEmployeeCostReport(year: number, month?: number): Promise<any> {
-    try {
-      const qs = new URLSearchParams({ year: String(year) });
-      if (month) qs.set('month', String(month));
-      const res = await axiosInstance.get(`/api/hr/reports/employee-cost?${qs}`);
-      return unwrapData(res);
-    } catch {
-      return { rows: [], totals: { gross: 0, cnss: 0, total: 0 } };
-    }
+  async getEmployeeCostReport(year: number, month?: number): Promise<EmployeeCostRow[]> {
+    const qs = new URLSearchParams({ year: String(year) });
+    if (month) qs.set('month', String(month));
+    const res = await axiosInstance.get(`/api/hr/reports/employee-cost?${qs}`);
+    const data = unwrapData<EmployeeCostRow[]>(res);
+    return Array.isArray(data) ? data : [];
   },
 
   // ---- Active leaves (Planning calendar integration) ----

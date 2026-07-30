@@ -4,8 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Trash2, Gift } from 'lucide-react';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Plus, Trash2, Gift, Pencil } from 'lucide-react';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -25,23 +25,26 @@ import { useHrPermissionGuard } from '../../hooks/useHrPermissionGuard';
 const BONUS_KINDS = ['bonus', 'allowance', 'reimbursement', 'other_cost'] as const;
 const BONUS_FREQUENCIES = ['monthly', 'one_off'] as const;
 
-const bonusFormSchema = z.object({
-  userId: z.coerce.number({ invalid_type_error: 'Employee is required' })
-    .int().positive('Employee is required'),
-  kind: z.enum(BONUS_KINDS, { errorMap: () => ({ message: 'Invalid bonus kind' }) }),
-  frequency: z.enum(BONUS_FREQUENCIES, { errorMap: () => ({ message: 'Invalid frequency' }) }),
-  label: z.string().trim().min(1, 'Label is required').max(120, 'Label too long'),
-  amount: z.coerce.number({ invalid_type_error: 'Amount must be a number' })
-    .refine((n) => Number.isFinite(n) && n !== 0, 'Amount must be a non-zero number'),
-  month: z.coerce.number().int().min(1, 'Month 1-12').max(12, 'Month 1-12'),
-  year: z.coerce.number().int().min(2000, 'Invalid year').max(2100, 'Invalid year'),
+type TFunc = (key: string, options?: any) => string;
+
+const makeBonusFormSchema = (t: TFunc) => z.object({
+  userId: z.coerce.number({ invalid_type_error: t('bonusErrors.employeeRequired') })
+    .int().positive(t('bonusErrors.employeeRequired')),
+  kind: z.enum(BONUS_KINDS, { errorMap: () => ({ message: t('bonusErrors.invalidKind') }) }),
+  frequency: z.enum(BONUS_FREQUENCIES, { errorMap: () => ({ message: t('bonusErrors.invalidFrequency') }) }),
+  label: z.string().trim().min(1, t('bonusErrors.labelRequired')).max(120, t('bonusErrors.labelTooLong')),
+  amount: z.coerce.number({ invalid_type_error: t('bonusErrors.amountNumber') })
+    .refine((n) => Number.isFinite(n) && n !== 0, t('bonusErrors.amountNonZero')),
+  month: z.coerce.number().int().min(1, t('bonusErrors.monthRange')).max(12, t('bonusErrors.monthRange')),
+  year: z.coerce.number().int().min(2000, t('bonusErrors.invalidYear')).max(2100, t('bonusErrors.invalidYear')),
   subjectToCnss: z.boolean(),
   affectsPayroll: z.boolean(),
 });
-type BonusFormValues = z.infer<typeof bonusFormSchema>;
+type BonusFormValues = z.infer<ReturnType<typeof makeBonusFormSchema>>;
 
 export function BonusesPage() {
   const { t } = useTranslation('hr');
+  const bonusFormSchema = useMemo(() => makeBonusFormSchema(t), [t]);
   const { toast } = useToast();
   const guardHr = useHrPermissionGuard();
   const [filterMonth, setFilterMonth] = useState<number>(dayjs().month() + 1);
@@ -49,7 +52,7 @@ export function BonusesPage() {
   const [filterUser, setFilterUser] = useState<string>('all');
 
   const { employeesQuery } = useEmployees();
-  const { bonusesQuery, createBonus, deleteBonus } = useBonuses({
+  const { bonusesQuery, createBonus, updateBonus, deleteBonus } = useBonuses({
     year: filterYear, month: filterMonth,
     userId: filterUser === 'all' ? undefined : Number(filterUser),
   });
@@ -69,8 +72,9 @@ export function BonusesPage() {
     return map;
   }, [users]);
 
-  // Add dialog
+  // Add / edit dialog — same form, `editingId` decides create vs update.
   const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [userId, setUserId] = useState<string>('');
   const [kind, setKind] = useState<'bonus' | 'allowance' | 'reimbursement' | 'other_cost'>('bonus');
   const [label, setLabel] = useState('');
@@ -82,8 +86,38 @@ export function BonusesPage() {
 
   const [errors, setErrors] = useState<Partial<Record<keyof BonusFormValues, string>>>({});
 
-  const submit = async () => {
+  const resetForm = () => {
+    setEditingId(null);
+    setUserId(''); setKind('bonus'); setLabel(''); setAmount(0);
+    setMonth(dayjs().month() + 1); setYear(dayjs().year());
+    setSubjectToCnss(false); setAffectsPayroll(true);
+    setErrors({});
+  };
+
+  const openCreate = () => {
     if (!guardHr('create')) return;
+    resetForm();
+    setOpen(true);
+  };
+
+  const openEdit = (b: BonusCost) => {
+    if (!guardHr('update')) return;
+    setEditingId(b.id);
+    setUserId(String(b.userId));
+    setKind((b.kind as typeof kind) ?? 'bonus');
+    setLabel(b.label ?? '');
+    setAmount(Number(b.amount) || 0);
+    setMonth(Number(b.month) || dayjs().month() + 1);
+    setYear(Number(b.year) || dayjs().year());
+    setSubjectToCnss(Boolean(b.subjectToCnss));
+    setAffectsPayroll(b.affectsPayroll !== false);
+    setErrors({});
+    setOpen(true);
+  };
+
+  const submit = async () => {
+    const isEdit = editingId !== null;
+    if (!guardHr(isEdit ? 'update' : 'create')) return;
     const parsed = bonusFormSchema.safeParse({
       userId, kind, label, amount,
       frequency: 'one_off' as const,
@@ -104,10 +138,15 @@ export function BonusesPage() {
       return;
     }
     setErrors({});
-    await createBonus.mutateAsync(parsed.data);
-    toast({ title: t('bonusesPage.added') });
+    if (isEdit) {
+      await updateBonus.mutateAsync({ id: editingId, payload: parsed.data });
+      toast({ title: t('bonusesPage.updated', { defaultValue: 'Bonus updated' }) });
+    } else {
+      await createBonus.mutateAsync(parsed.data);
+      toast({ title: t('bonusesPage.added') });
+    }
     setOpen(false);
-    setLabel(''); setAmount(0);
+    resetForm();
   };
 
   // A bonus row counts as a "negative" line when its kind is `other_cost`
@@ -135,12 +174,11 @@ export function BonusesPage() {
         accentColor="chart-5"
         backTo={{ to: '/dashboard/hr', label: t('dashboard') }}
         actions={
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <HrPermissionButton action="create" size="sm" className="gap-2"><Plus className="h-4 w-4" /> {t('bonusesPage.add')}</HrPermissionButton>
-            </DialogTrigger>
+          <>
+            <HrPermissionButton action="create" size="sm" className="gap-2" onClick={openCreate}><Plus className="h-4 w-4" /> {t('bonusesPage.add')}</HrPermissionButton>
+            <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
             <DialogContent>
-              <DialogHeader><DialogTitle>{t('bonusesPage.addTitle')}</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{editingId !== null ? t('bonusesPage.editTitle', { defaultValue: 'Edit bonus / cost' }) : t('bonusesPage.addTitle')}</DialogTitle></DialogHeader>
               <div className="space-y-3">
                 <div>
                   <Label>{t('bonusesPage.employee')}</Label>
@@ -206,10 +244,15 @@ export function BonusesPage() {
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setOpen(false)}>{t('cancel')}</Button>
-                <HrPermissionButton action="create" onClick={submit} disabled={createBonus.isPending}>{t('save')}</HrPermissionButton>
+                <HrPermissionButton
+                  action={editingId !== null ? 'update' : 'create'}
+                  onClick={submit}
+                  disabled={createBonus.isPending || updateBonus.isPending}
+                >{t('save')}</HrPermissionButton>
               </DialogFooter>
             </DialogContent>
-          </Dialog>
+            </Dialog>
+          </>
         }
       />
 
@@ -281,7 +324,7 @@ export function BonusesPage() {
                     <TableHead>{t('bonusesPage.label')}</TableHead>
                     <TableHead>{t('bonusesPage.period')}</TableHead>
                     <TableHead>{t('bonusesPage.amount')}</TableHead>
-                    <TableHead className="w-10"></TableHead>
+                    <TableHead className="w-20"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -296,7 +339,10 @@ export function BonusesPage() {
                       <TableCell className={isNegativeBonus(b) ? 'text-destructive font-medium' : 'text-emerald-600 dark:text-emerald-400 font-medium'}>
                         {isNegativeBonus(b) ? '-' : '+'}{formatTnd(Math.abs(Number(b.amount)))}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="flex items-center gap-1">
+                        <HrPermissionButton action="update" size="icon" variant="ghost" aria-label={t('edit', 'Edit') as string} onClick={() => openEdit(b)}>
+                          <Pencil className="h-4 w-4" />
+                        </HrPermissionButton>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <HrPermissionButton action="delete" size="icon" variant="ghost" aria-label={t('delete', 'Delete') as string}>
@@ -305,9 +351,9 @@ export function BonusesPage() {
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>{t('bonuses.deleteTitle', 'Delete bonus?')}</AlertDialogTitle>
+                              <AlertDialogTitle>{t('bonusesPage.deleteTitle', 'Delete bonus?')}</AlertDialogTitle>
                               <AlertDialogDescription>
-                                {t('bonuses.deleteDescription', 'This action cannot be undone. The bonus will be permanently removed.')}
+                                {t('bonusesPage.deleteDescription', 'This action cannot be undone. The bonus will be permanently removed.')}
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>

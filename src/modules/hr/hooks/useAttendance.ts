@@ -49,3 +49,26 @@ export function useAttendance(params: { year: number; month: number; userId?: nu
     upsertAttendanceSettings,
   };
 }
+
+/**
+ * Standalone hook for the working-time configuration (`hr_attendance_settings`).
+ * Used by the HR settings page, which must not pull a month of attendance rows.
+ */
+export function useAttendanceSettings() {
+  const qc = useQueryClient();
+
+  const settingsQuery = useQuery({
+    queryKey: ['hr', 'attendance-settings'],
+    queryFn: () => hrApi.getAttendanceSettings(),
+  });
+
+  const saveSettings = useMutation({
+    mutationFn: (payload: Partial<AttendanceSettings>) => hrApi.upsertAttendanceSettings(payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['hr', 'attendance-settings'] });
+      qc.invalidateQueries({ queryKey: ['hr', 'attendance'] });
+    },
+  });
+
+  return { settingsQuery, saveSettings };
+}
